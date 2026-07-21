@@ -11,12 +11,12 @@ fois celle-ci stabilisée.
 | Phase | Objet                                                                                   | Statut          |
 | ----- | --------------------------------------------------------------------------------------- | --------------- |
 | 01    | Socle du monorepo : Nx package-based, bun, structure, versions, conventions, garde-fous | ✅ Terminée     |
-| 02    | Application `apps/backoffice-angular` (`@cmz/backoffice-angular`) en Angular 22         | ⏳ Non démarrée |
-| 03    | Découpage en bibliothèques (domain / data / application / ui / feature) + frontières    | ⏳ Non démarrée |
-| 04    | Dépendances métier (NgRx, PrimeNG, Tailwind, i18n…)                                     | ⏳ Non démarrée |
-| 05    | Qualité et tests : ESLint + boundaries, Stylelint, Vitest, Playwright                   | ⏳ Non démarrée |
-| 06    | Environnements, Docker, CI (`nx affected`), Nx Cloud                                    | ⏳ Non démarrée |
-| 07    | Reconstruction des domaines métier par génération                                       | ⏳ Non démarrée |
+| 02    | Application Angular 22 + **validation du pattern sur une entité**                       | ⏳ Non démarrée |
+| 03    | **Mesure de couverture** des patterns sur les 53 entités                                | ⏳ Non démarrée |
+| 04    | Adaptation des générateurs SEOS au monorepo (sortie en packages)                        | ⏳ Non démarrée |
+| 05    | Socle transverse `shared/` + `core/` (584 fichiers) et dépendances métier               | ⏳ Non démarrée |
+| 06    | Qualité, tests, configuration, Docker, CI, Nx Cloud                                     | ⏳ Non démarrée |
+| 07    | Reconstruction des 53 entités par génération                                            | ⏳ Non démarrée |
 | 08    | Vérification fonctionnelle par rapport à l'application source                           | ⏳ Non démarrée |
 
 L'état détaillé du socle est décrit dans

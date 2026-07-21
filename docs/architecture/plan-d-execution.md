@@ -274,6 +274,30 @@ Le domaine ne dépend de rien ; les composants dépendent de tout le reste.
 mériterait probablement d'être scindé — à décider une fois son contenu
 inventorié.
 
+### Dépendances métier
+
+Elles arrivent **ici** et non plus tôt : `shared/components` en est le principal
+consommateur, et rien ne sert d'installer PrimeNG avant d'avoir un composant qui
+l'utilise.
+
+| Famille      | Paquets                                                              |
+| ------------ | -------------------------------------------------------------------- |
+| État         | `@ngrx/store`, `effects`, `entity`, `signals`, `router-store`        |
+| UI           | `primeng`, `@primeng/themes`, `primeicons`, `primeflex`, `bootstrap` |
+| i18n         | `@ngx-translate/core`, `http-loader`                                 |
+| Cartographie | `ol`                                                                 |
+| Documents    | `exceljs`, `file-saver`, `pdfmake`                                   |
+| Divers       | `quill`, `apexcharts`, `sweetalert2`, `date-fns`, `jwt-decode`       |
+
+Chacune est ajoutée **au catalog** au moment de son introduction
+([ADR-0005](../adr/0005-versions-du-socle.md)) — un paquet métier installé en
+version libre dans un package est exactement ce que `check:versions` refuse.
+
+Ne pas reprendre en bloc les 60 dépendances du projet source : n'installer que
+ce qu'un package consomme réellement. Le `package.json` source contient des
+dépendances manifestement inutilisées (`i`, `chalk`, `commander`,
+`replace-json-property`).
+
 ### Étapes
 
 **05.1** Inventorier les dépendances internes de `shared/` — quel sous-dossier
