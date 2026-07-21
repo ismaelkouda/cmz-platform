@@ -38,6 +38,8 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 - [État du socle](./architecture/etat-du-socle.md) — ce qui existe aujourd'hui
 - [Feuille de route](./architecture/feuille-de-route.md) — phases et
   séquencement
+- [Plan d'exécution](./architecture/plan-d-execution.md) — étapes détaillées,
+  critères de sortie, décisions bloquantes
 - [Analyse du projet source](./architecture/analyse-du-projet-source.md) —
   mesures sur `cmz-backoffice-frontend`
 - [Stratégie de reconstruction](./architecture/strategie-de-reconstruction.md) —
@@ -55,4 +57,5 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 | Qu'est-ce qui existe déjà ?         | [État du socle](./architecture/etat-du-socle.md)                       |
 | Pourquoi ce choix ?                 | L'ADR correspondant                                                    |
 | Qu'est-ce qui vient ensuite ?       | [Feuille de route](./architecture/feuille-de-route.md)                 |
+| Comment on s'y prend concrètement ? | [Plan d'exécution](./architecture/plan-d-execution.md)                 |
 | Que contient l'application source ? | [Analyse du projet source](./architecture/analyse-du-projet-source.md) |

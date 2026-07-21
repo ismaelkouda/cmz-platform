@@ -20,7 +20,12 @@ fois celle-ci stabilisée.
 | 08    | Vérification fonctionnelle par rapport à l'application source                           | ⏳ Non démarrée |
 
 L'état détaillé du socle est décrit dans
-[`etat-du-socle.md`](./etat-du-socle.md).
+[`etat-du-socle.md`](./etat-du-socle.md). Les étapes, commandes et critères de
+sortie de chaque phase sont dans le [plan d'exécution](./plan-d-execution.md).
+
+Les phases 02 et 03 sont des **phases de mesure** : peu coûteuses, mais elles
+conditionnent le chiffrage de tout le reste. Aucun calendrier ne devrait être
+annoncé avant qu'elles ne soient passées.
 
 ## Objectif de sortie de la Phase 02
 
