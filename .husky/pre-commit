@@ -1,2 +1,8 @@
+# Les clients Git graphiques (VS Code, Sourcetree, GitKraken…) ne chargent pas
+# le profil du shell : bun peut être absent du PATH. On rétablit son
+# emplacement d'installation par défaut, sans quoi le hook échoue sur un
+# « bun: not found » incompréhensible. Voir ADR-0006.
+export PATH="$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"
+
 bun run check:weight
 bunx lint-staged

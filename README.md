@@ -97,7 +97,7 @@ Angular.
 L'intégration se fait **stack par stack**, chacune découpée en phases validées
 une à une.
 
-1. **Angular** — en cours (phases 01 et 01b terminées). Reconstruction du
+1. **Angular** — en cours (phases 01 à 01d terminées). Reconstruction du
    back-office.
 2. React, React Native, Kotlin, Swift, PHP, Spring Boot, Rust, Grafana — non
    démarrées.

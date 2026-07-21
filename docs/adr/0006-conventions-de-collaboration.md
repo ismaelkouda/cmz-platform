@@ -109,6 +109,15 @@ garde-fou vérifié.
 - Friction supplémentaire à chaque commit. `--no-verify` reste disponible pour
   les cas légitimes, et le message d'erreur du contrôle de poids le rappelle
   explicitement plutôt que de laisser l'utilisateur bloqué.
+- **Les hooks dépendent de `bun` dans le PATH.** Les clients Git graphiques
+  n'exécutent pas le profil du shell ; chaque hook rétablit donc explicitement
+  `$HOME/.bun/bin` en tête de PATH. Une installation de bun à un emplacement non
+  standard nécessitera un
+  [`~/.config/husky/init.sh`](https://typicode.github.io/husky/how-to.html).
+- **Le `preinstall` contraint le `Dockerfile`.** Le schéma habituel
+  `COPY package.json` puis `RUN bun install` échoue, `tools/` n'étant pas encore
+  copié. Le `Dockerfile` doit copier `tools/` avant l'installation — contrainte
+  à appliquer en Phase 06.
 - Les hooks ne s'exécutent que localement : la CI devra rejouer les mêmes
   contrôles, sans quoi ils restent contournables (Phase 06).
 - `CODEOWNERS` ne désigne qu'un propriétaire aujourd'hui. **Une équipe

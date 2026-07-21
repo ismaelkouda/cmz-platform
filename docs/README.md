@@ -28,8 +28,8 @@ documentation ne s'effondre pas sous son propre poids :
    plus `adr/README.md` et `phases/README.md`.
 4. **Les documents datés ne sont jamais réécrits.** Corriger l'histoire rend le
    journal inutilisable. On ajoute une entrée, on ne remplace pas.
-5. **La documentation par stack vit avec son code.** Quand un package
-   `packages/<stack>-*` sera créé, son README local documente ses spécificités ;
+5. **La documentation par stack vit avec son code.** Quand un package sera créé
+   sous `apps/` ou `libs/`, son README local documente ses spécificités ;
    `docs/` ne contient que ce qui est transverse au monorepo.
 
 ## Index
@@ -60,7 +60,8 @@ Voir [`phases/README.md`](./phases/README.md) pour la feuille de route complète
 
 ### Revues de socle
 
-- [2026-07-21 — Revue avant Phase 02](./reviews/2026-07-21-revue-socle-avant-phase-02.md)
+- [2026-07-21 — Revue de socle avant Phase 02](./reviews/2026-07-21-revue-socle-avant-phase-02.md)
+- [2026-07-21 — Revue adverse avant Phase 02](./reviews/2026-07-21-revue-adverse-avant-phase-02.md)
 
 ### Guides
 
