@@ -1,17 +1,14 @@
 # Stratégie de reconstruction de cmz-backoffice-frontend
 
-- **Statut :** Cadrage — préparé en Phase 01e, appliqué à partir de la Phase 07
+- **Statut :** Cadrage — appliqué à partir de la Phase 07
 - **Dernière mise à jour :** 2026-07-21
-- **Remplace :** `docs/architecture/strategie-de-migration.md` (supprimée), dont
-  le cadrage « migration fichier par fichier » est invalidé par
-  l'[ADR-0010](../adr/0010-reconstruction-pilotee-par-patterns.md)
-- **ADR associés :** [ADR-0009](../adr/0009-cible-angular-22.md),
-  [ADR-0010](../adr/0010-reconstruction-pilotee-par-patterns.md),
+- **ADR associés :** [ADR-0009](../adr/0005-versions-du-socle.md),
+  [ADR-0009](../adr/0009-reconstruction-pilotee-par-patterns.md),
   [ADR-0004](../adr/0004-graphe-de-dependances-declarees.md)
 
-## Ce qui change par rapport au cadrage initial
+## Nature du travail
 
-|                               | Cadrage initial                  | Cadrage retenu                                                   |
+|                               | Ce que ce n'est pas              | Ce que c'est                                                     |
 | ----------------------------- | -------------------------------- | ---------------------------------------------------------------- |
 | Nature                        | Migration                        | **Reconstruction générative**                                    |
 | Unité de travail              | Le fichier                       | **L'entité** (106 fichiers) ou **l'opération** (34 fichiers)     |
@@ -130,7 +127,7 @@ main.
 - [ ] Dépendances déclarées en `workspace:*`
       ([ADR-0004](../adr/0004-graphe-de-dependances-declarees.md)).
 - [ ] Dépendances du socle passant par le catalog
-      ([ADR-0005](../adr/0005-politique-de-version-unique.md)).
+      ([ADR-0005](../adr/0005-versions-du-socle.md)).
 - [ ] `nx build` et `nx lint` passent.
 - [ ] Tests unitaires Vitest ([ADR-0008](../adr/0008-outillage-de-tests.md))
       passants.

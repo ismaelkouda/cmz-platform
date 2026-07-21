@@ -2,8 +2,6 @@
 
 - **Statut :** Proposed | Accepted | Superseded by ADR-XXXX | Deprecated
 - **Date :** YYYY-MM-DD
-- **Phase concernée :** <lien vers docs/phases/phase-NN-....md>
-- **Décideurs :** <qui a tranché>
 
 ## Contexte
 

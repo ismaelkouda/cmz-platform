@@ -1,14 +1,7 @@
-# ADR-0010 — Reconstruction pilotée par les patterns SEOS
+# ADR-0009 — Reconstruction pilotée par les patterns SEOS
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :**
-  [Phase 01e](../phases/phase-01e-recadrage-angular-22-seos.md), appliqué à
-  partir de la Phase 02
-- **Remplace :** l'approche de migration fichier par fichier décrite dans la
-  première version de la `strategie-de-migration.md` (supprimée, remplacée par
-  la
-  [stratégie de reconstruction](../architecture/strategie-de-reconstruction.md))
 
 ## Contexte
 
@@ -145,8 +138,8 @@ répondre à cette question sur du code réel, et non par supposition.
   généralisation que SEOS voulait éprouver — mais c'est un travail réel, à
   chiffrer.
 - **Les patterns ont été extraits sur Angular 21.** Leur validité sur Angular 22
-  ([ADR-0009](./0009-cible-angular-22.md)) est probable mais à confirmer sur une
-  entité avant tout engagement.
+  ([ADR-0009](./0005-versions-du-socle.md)) est probable mais à confirmer sur
+  une entité avant tout engagement.
 - **La couverture est partiellement inconnue** (voir ci-dessus).
 - Deux dépôts porteront temporairement une vérité partagée : les schémas vivent
   dans le projet d'origine, la reconstruction ici. À trancher rapidement.

@@ -2,20 +2,11 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :** [Phase 01](../phases/phase-01-squelette-nx.md)
-
-> **Note d'amendement (2026-07-21)** — la décision de fond (mode package-based)
-> reste inchangée. En revanche, l'emplacement `packages/*` mentionné ci-dessous
-> a été remplacé par `apps/` + `libs/` : voir
-> [ADR-0003](./0003-nommage-et-structure-du-monorepo.md). La manière dont le
-> graphe de dépendances est construit est précisée par
-> [ADR-0004](./0004-graphe-de-dependances-declarees.md).
 
 ## Contexte
 
 L'objectif est de reconstruire `cmz-backoffice-frontend` — application Angular
-21 existante, autonome, à l'architecture Clean/Hexagonal — au sein d'un
-monorepo.
+existante, autonome, à l'architecture Clean/Hexagonal — au sein d'un monorepo.
 
 Le monorepo n'est pas destiné à héberger seulement Angular : la feuille de route
 prévoit d'y accueillir progressivement React, React Native, Kotlin, Swift, PHP,
@@ -55,8 +46,10 @@ Nx propose trois styles de workspace :
 ## Décision
 
 Le monorepo est créé en mode **package-based**, via le preset `npm` de Nx
-(`--preset=npm --workspaceType=package-based`), avec les packages sous
-`packages/*` déclarés dans les _workspaces_ bun de la racine.
+(`--preset=npm --workspaceType=package-based`). Les packages sont déclarés dans
+les _workspaces_ bun de la racine ; leur emplacement (`apps/` et `libs/`) relève
+de l'[ADR-0003](./0003-nommage-et-structure.md), et la construction du graphe de
+dépendances de l'[ADR-0004](./0004-graphe-de-dependances-declarees.md).
 
 ## Justification
 

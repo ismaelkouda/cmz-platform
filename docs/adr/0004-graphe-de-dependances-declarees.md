@@ -2,10 +2,6 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :** [Phase 01b](../phases/phase-01b-corrections-socle.md),
-  applicable à partir de la Phase 03
-- **Origine :** point C1 de la
-  [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
 
 ## Contexte
 
@@ -123,4 +119,4 @@ documentaire.
 
 - `node_modules/nx/dist/presets/npm.json` (contenu du preset hérité)
 - `tsconfig.app.json` du projet d'origine (alias de chemins)
-- [Revue de socle du 2026-07-21, point C1](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
+- [analyse du projet source](../architecture/analyse-du-projet-source.md)

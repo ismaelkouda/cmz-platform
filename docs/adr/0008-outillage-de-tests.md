@@ -2,9 +2,6 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :** application en Phase 05
-- **Origine :** observation O4 de la
-  [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
 
 ## Contexte
 
@@ -13,7 +10,7 @@ end-to-end. Protractor est abandonné depuis Angular 12 : il n'y a rien à migre
 de ce côté, seulement à réécrire. Karma, de son côté, est déprécié en amont par
 l'équipe Angular.
 
-Le contexte a changé depuis la mise en place du projet d'origine : Angular 21
+Le contexte a changé depuis la mise en place du projet d'origine : Angular 22
 embarque un support natif de Vitest via le builder `@angular/build:unit-test`,
 et les nouveaux projets de la CLI Angular l'utilisent par défaut. Nx s'appuie
 sur ce même builder pour les nouveaux projets Angular.
@@ -28,8 +25,8 @@ chaque package sera généré.
 | Option          | Évaluation                                                                                                                        |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | Karma + Jasmine | Identique à l'existant, mais déprécié en amont — on migrerait vers une impasse                                                    |
-| Jest            | Standard Nx historique, écosystème mature, mais plus le défaut d'Angular 21                                                       |
-| Vitest          | Défaut d'Angular 21 et de la CLI, démarrage à froid et watch nettement plus rapides, même builder esbuild que le build applicatif |
+| Jest            | Standard Nx historique, écosystème mature, mais plus le défaut d'Angular                                                          |
+| Vitest          | Défaut d'Angular 22 et de la CLI, démarrage à froid et watch nettement plus rapides, même builder esbuild que le build applicatif |
 
 ### Tests end-to-end
 
@@ -42,7 +39,7 @@ chaque package sera généré.
 ## Décision
 
 - **Tests unitaires : Vitest**, via le builder `@angular/build:unit-test`
-  d'Angular 21.
+  d'Angular 22.
 - **Tests end-to-end : Playwright.**
 - Les tests d'un package vivent **dans ce package**, pas dans un projet de test
   centralisé — cohérent avec le mode package-based
@@ -51,7 +48,7 @@ chaque package sera généré.
 
 ## Justification
 
-Pour l'unitaire, le critère décisif est l'alignement avec l'amont : Angular 21
+Pour l'unitaire, le critère décisif est l'alignement avec l'amont : Angular 22
 et Nx convergent tous deux vers Vitest, et le même moteur esbuild sert le build
 applicatif et les tests. Choisir Karma reviendrait à migrer vers une technologie
 dépréciée ; choisir Jest ajouterait une chaîne de transformation distincte de
@@ -89,7 +86,7 @@ domaines, une suite instable est une suite qu'on finit par désactiver.
 
 ## Références
 
-- Angular 21 : builder `@angular/build:unit-test`, Vitest par défaut sur les
+- Angular 22 : builder `@angular/build:unit-test`, Vitest par défaut sur les
   nouveaux projets de la CLI.
 - [Modern Angular Testing with Nx](https://nx.dev/blog/modern-angular-testing-with-nx)
-- [Revue de socle du 2026-07-21, observation O4](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
+- [analyse du projet source](../architecture/analyse-du-projet-source.md)

@@ -1,80 +1,58 @@
 # Documentation — cmz-platform
 
-Point d'entrée de toute la documentation du monorepo. Chaque document a un
-emplacement déterminé par sa **nature**, pas par le moment où il a été écrit.
-
 ## Organisation
 
-| Dossier         | Contenu                                                                                      | Cycle de vie                                                                        |
-| --------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `adr/`          | Architecture Decision Records — une décision structurante par fichier, numérotée et immuable | Immuable (on ne modifie pas un ADR, on le remplace par un nouveau qui le supersède) |
-| `phases/`       | Journal d'exécution — une phase de construction du monorepo par fichier                      | Append-only (une phase terminée n'est plus modifiée)                                |
-| `reviews/`      | Revues de socle — audit de l'état du monorepo à un jalon donné, datée                        | Immuable (photographie d'un instant)                                                |
-| `guides/`       | Documentation opérationnelle — comment démarrer, builder, tester, déployer                   | Vivante (mise à jour en continu)                                                    |
-| `architecture/` | Vue d'ensemble courante — structure des packages, règles de dépendances, conventions         | Vivante (reflète toujours l'état actuel)                                            |
+| Dossier         | Contenu                                              | Cycle de vie                 |
+| --------------- | ---------------------------------------------------- | ---------------------------- |
+| `adr/`          | Décisions structurantes — une par fichier, numérotée | Remplacée, jamais amendée    |
+| `architecture/` | État courant du socle, analyses, stratégies          | Vivante — corrigée sur place |
+| `guides/`       | Procédures opérationnelles                           | Vivante                      |
 
-## Principe de scalabilité
+**Aucun journal historique.** Un document décrit ce qui est vrai aujourd'hui ;
+quand une information devient fausse, elle est corrigée ou le fichier est
+supprimé. L'historique est dans Git, qui le fait mieux.
 
-Le monorepo est destiné à accueillir plusieurs stacks (Angular, React, React
-Native, Kotlin, Swift, PHP, Spring Boot, Rust, Grafana). Pour que la
-documentation ne s'effondre pas sous son propre poids :
+C'est une leçon tirée à nos dépens : un journal de phases append-only avait
+produit cinq documents de corrections successives, dans lesquels il fallait
+reconstituer l'état réel en lisant les cinq. Un document qui oblige à faire de
+l'archéologie a cessé d'être de la documentation.
 
-1. **Un fichier = un sujet.** Jamais de document fourre-tout qui grossit
-   indéfiniment.
-2. **Les décisions sont séparées de l'exécution.** Un ADR explique _pourquoi_,
-   un document de phase raconte _ce qui a été fait_. Les deux se référencent
-   mutuellement mais ne se dupliquent pas.
-3. **L'index est la seule chose qu'on met à jour à chaque ajout.** Ce fichier,
-   plus `adr/README.md` et `phases/README.md`.
-4. **Les documents datés ne sont jamais réécrits.** Corriger l'histoire rend le
-   journal inutilisable. On ajoute une entrée, on ne remplace pas.
-5. **La documentation par stack vit avec son code.** Quand un package sera créé
-   sous `apps/` ou `libs/`, son README local documente ses spécificités ;
-   `docs/` ne contient que ce qui est transverse au monorepo.
+## Décisions
 
-## Index
+| N°                                                        | Titre                                                |
+| --------------------------------------------------------- | ---------------------------------------------------- |
+| [0001](./adr/0001-monorepo-nx-package-based.md)           | Monorepo Nx en mode package-based                    |
+| [0002](./adr/0002-bun-package-manager.md)                 | bun comme gestionnaire de paquets                    |
+| [0003](./adr/0003-nommage-et-structure.md)                | Nommage et structure du monorepo                     |
+| [0004](./adr/0004-graphe-de-dependances-declarees.md)     | Graphe de dépendances par déclaration explicite      |
+| [0005](./adr/0005-versions-du-socle.md)                   | Versions du socle : Angular 22 et catalog centralisé |
+| [0006](./adr/0006-conventions-de-collaboration.md)        | Conventions de collaboration et garde-fous           |
+| [0007](./adr/0007-configuration-runtime.md)               | Configuration injectée à l'exécution                 |
+| [0008](./adr/0008-outillage-de-tests.md)                  | Outillage de tests — Vitest et Playwright            |
+| [0009](./adr/0009-reconstruction-pilotee-par-patterns.md) | Reconstruction pilotée par les patterns SEOS         |
 
-### Décisions d'architecture (ADR)
+Règles de rédaction : [`adr/README.md`](./adr/README.md).
 
-Voir [`adr/README.md`](./adr/README.md) pour la liste complète.
+## Architecture
 
-- [ADR-0001 — Monorepo Nx en mode package-based](./adr/0001-monorepo-nx-package-based.md)
-- [ADR-0002 — bun comme gestionnaire de paquets](./adr/0002-bun-package-manager.md)
-- [ADR-0003 — Nommage et structure du monorepo](./adr/0003-nommage-et-structure-du-monorepo.md)
-- [ADR-0004 — Graphe de dépendances par déclaration explicite](./adr/0004-graphe-de-dependances-declarees.md)
-- [ADR-0005 — Politique de version unique pour le socle](./adr/0005-politique-de-version-unique.md)
-- [ADR-0006 — Conventions de collaboration et garde-fous](./adr/0006-conventions-de-collaboration.md)
-- [ADR-0007 — Configuration injectée à l'exécution](./adr/0007-configuration-runtime.md)
-- [ADR-0008 — Outillage de tests](./adr/0008-outillage-de-tests.md)
-- [ADR-0009 — Cible Angular 22](./adr/0009-cible-angular-22.md)
-- [ADR-0010 — Reconstruction pilotée par les patterns SEOS](./adr/0010-reconstruction-pilotee-par-patterns.md)
+- [État du socle](./architecture/etat-du-socle.md) — ce qui existe aujourd'hui
+- [Feuille de route](./architecture/feuille-de-route.md) — phases et
+  séquencement
+- [Analyse du projet source](./architecture/analyse-du-projet-source.md) —
+  mesures sur `cmz-backoffice-frontend`
+- [Stratégie de reconstruction](./architecture/strategie-de-reconstruction.md) —
+  comment le code sera produit
 
-### Journal des phases
+## Guides
 
-Voir [`phases/README.md`](./phases/README.md) pour la feuille de route complète.
+- [Contribuer](./guides/contribuer.md) — prérequis, commandes, conventions
 
-- [Phase 01 — Squelette du workspace Nx](./phases/phase-01-squelette-nx.md) ✅
-- [Phase 01b — Corrections de socle](./phases/phase-01b-corrections-socle.md) ✅
-- [Phase 01c — Politique de version unique](./phases/phase-01c-politique-de-versions.md)
-  ✅
-- [Phase 01d — Conventions et observations](./phases/phase-01d-conventions-et-observations.md)
-  ✅
-- [Phase 01e — Recadrage Angular 22 et patterns SEOS](./phases/phase-01e-recadrage-angular-22-seos.md)
-  ✅
+## Pour s'y retrouver
 
-### Revues de socle
-
-- [2026-07-21 — Revue de socle avant Phase 02](./reviews/2026-07-21-revue-socle-avant-phase-02.md)
-- [2026-07-21 — Revue adverse avant Phase 02](./reviews/2026-07-21-revue-adverse-avant-phase-02.md)
-
-### Guides
-
-_Aucun guide pour l'instant — les premiers arriveront avec l'application Angular
-(Phase 2)._
-
-### Architecture
-
-- [Stratégie de reconstruction de cmz-backoffice-frontend](./architecture/strategie-de-reconstruction.md)
-
-_La vue d'ensemble de la structure des packages sera ajoutée à partir de la
-Phase 03 (découpage en bibliothèques)._
+| Question                            | Document                                                               |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| Comment je démarre ?                | [Contribuer](./guides/contribuer.md)                                   |
+| Qu'est-ce qui existe déjà ?         | [État du socle](./architecture/etat-du-socle.md)                       |
+| Pourquoi ce choix ?                 | L'ADR correspondant                                                    |
+| Qu'est-ce qui vient ensuite ?       | [Feuille de route](./architecture/feuille-de-route.md)                 |
+| Que contient l'application source ? | [Analyse du projet source](./architecture/analyse-du-projet-source.md) |

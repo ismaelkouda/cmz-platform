@@ -2,10 +2,6 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :**
-  [Phase 01d](../phases/phase-01d-conventions-et-observations.md)
-- **Origine :** points A1, A2, A4, A5 et observations O1, O3 de la
-  [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
 
 ## Contexte
 
@@ -46,13 +42,13 @@ La portée reste facultative : certains commits sont légitimement transverses.
 
 ### Convention de branches
 
-| Motif                         | Usage                                                        |
-| ----------------------------- | ------------------------------------------------------------ |
-| `main`                        | Branche de référence, base de `nx affected`                  |
-| `feat/<ticket>-<description>` | Nouvelle fonctionnalité                                      |
-| `fix/<ticket>-<description>`  | Correction                                                   |
-| `refactor/<description>`      | Refonte sans changement de comportement                      |
-| `migration/<domaine>`         | Migration d'un domaine depuis le projet d'origine (Phase 07) |
+| Motif                         | Usage                                               |
+| ----------------------------- | --------------------------------------------------- |
+| `main`                        | Branche de référence, base de `nx affected`         |
+| `feat/<ticket>-<description>` | Nouvelle fonctionnalité                             |
+| `fix/<ticket>-<description>`  | Correction                                          |
+| `refactor/<description>`      | Refonte sans changement de comportement             |
+| `reconstruction/<domaine>`    | Reconstruction d'un domaine depuis le projet source |
 
 Cette convention est documentée et non vérifiée automatiquement : une règle de
 protection de branche côté forge est le bon endroit pour l'imposer, pas un hook
@@ -134,4 +130,4 @@ garde-fou vérifié.
 ## Références
 
 - Constats issus de `git ls-files` et `du -sh .git` sur le projet d'origine.
-- [Revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
+- [analyse du projet source](../architecture/analyse-du-projet-source.md)

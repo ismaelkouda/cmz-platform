@@ -2,9 +2,6 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :** application en Phase 06
-- **Origine :** observations O1 et O2 de la
-  [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
 
 ## Contexte
 
@@ -116,4 +113,4 @@ premier secret ajouté le sera aussi, sans que personne ne s'en aperçoive.
 ## Références
 
 - `tools/env/generate-env.js` et `tools/env/config.js` du projet d'origine.
-- [Revue de socle du 2026-07-21, observations O1 et O2](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
+- [analyse du projet source](../architecture/analyse-du-projet-source.md)

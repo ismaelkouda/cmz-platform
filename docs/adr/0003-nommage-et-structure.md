@@ -2,33 +2,27 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :** [Phase 01b](../phases/phase-01b-corrections-socle.md)
-- **Origine :** points C2 et C3 de la
-  [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
 
 ## Contexte
 
-Le workspace généré en Phase 01 s'appelait `cmz-backoffice-angular`, avec le
-package racine `@cmz-backoffice-angular/source` et une unique zone `packages/*`.
+Le nom du dépôt et l'emplacement des packages devaient être arrêtés **avant que
+le premier package n'existe** : ils se propagent à l'URL Git, aux scopes npm,
+aux images Docker, aux jobs de CI et aux imports de chaque package. Les corriger
+ensuite impose de déplacer chaque package et de réécrire ses références.
 
-Ce nommage reflète le premier chantier (le back-office Angular), pas la vocation
-du dépôt : il est destiné à héberger React, React Native, Kotlin, Swift, PHP,
-Spring Boot, Rust et Grafana. Le nom du dépôt se propage à l'URL Git, aux scopes
-npm, aux images Docker, aux jobs de CI et aux imports de chaque package — le
-corriger devient coûteux dès qu'un package existe.
-
-La structure devait être arrêtée pour les mêmes raisons : déplacer des packages
-après coup impose de réécrire toutes leurs références.
+Le premier chantier est le back-office Angular, mais le dépôt est destiné à
+héberger React, React Native, Kotlin, Swift, PHP, Spring Boot, Rust et Grafana.
+Un nom qui reflète le premier chantier vieillirait mal.
 
 ## Options envisagées
 
 ### Nommage
 
-| Option                             | Évaluation                                                                    |
-| ---------------------------------- | ----------------------------------------------------------------------------- |
-| Conserver `cmz-backoffice-angular` | Un package Rust vivrait à terme dans un dépôt nommé « angular »               |
-| `cmz-platform`                     | Neutre vis-à-vis des technologies, décrit ce que le dépôt contient réellement |
-| `cmz-monorepo`                     | Neutre également, mais décrit le contenant plutôt que le produit              |
+| Option                                                 | Évaluation                                                                    |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Nom lié à la première stack (`cmz-backoffice-angular`) | Un package Rust vivrait à terme dans un dépôt nommé « angular »               |
+| `cmz-platform`                                         | Neutre vis-à-vis des technologies, décrit ce que le dépôt contient réellement |
+| `cmz-monorepo`                                         | Neutre également, mais décrit le contenant plutôt que le produit              |
 
 ### Structure
 
@@ -83,4 +77,4 @@ aujourd'hui, une migration transverse plus tard.
 
 ## Références
 
-- [Revue de socle du 2026-07-21, points C2 et C3](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
+- [analyse du projet source](../architecture/analyse-du-projet-source.md)

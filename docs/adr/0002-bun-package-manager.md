@@ -2,7 +2,6 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :** [Phase 01](../phases/phase-01-squelette-nx.md)
 
 ## Contexte
 
