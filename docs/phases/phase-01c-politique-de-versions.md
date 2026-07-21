@@ -3,7 +3,8 @@
 - **Statut :** ✅ Terminée
 - **Date :** 2026-07-21
 - **Prérequis :** [Phase 01b](./phase-01b-corrections-socle.md)
-- **ADR associé :** [ADR-0005 — Politique de version unique](../adr/0005-politique-de-version-unique.md)
+- **ADR associé :**
+  [ADR-0005 — Politique de version unique](../adr/0005-politique-de-version-unique.md)
 - **Origine :** point C4 de la
   [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
 
@@ -61,8 +62,10 @@ domaine a besoin de TypeScript, pas de la CLI Angular.
 Les packages déclareront ensuite :
 
 ```json
-{ "dependencies": { "@angular/core": "catalog:" },
-  "devDependencies": { "typescript": "catalog:tooling" } }
+{
+    "dependencies": { "@angular/core": "catalog:" },
+    "devDependencies": { "typescript": "catalog:tooling" }
+}
 ```
 
 Les versions retenues sont celles **effectivement résolues** dans le projet
@@ -75,7 +78,7 @@ reconstruire.
 `tools/check-catalog-usage.mjs`, exposé via `bun run check:versions`.
 
 Le catalog garantit qu'une dépendance déclarée `catalog:` résout vers la bonne
-version — il ne garantit pas qu'un package *utilise* le catalog. Écrire
+version — il ne garantit pas qu'un package _utilise_ le catalog. Écrire
 `"@angular/core": "^20.0.0"` en dur reste accepté par `bun install`. Le script
 ferme cette brèche : toute dépendance présente au catalog doit être déclarée
 `catalog:` ou `catalog:<nom>` par les packages qui l'utilisent, sous peine de
@@ -83,15 +86,15 @@ sortie en code 1.
 
 ## Vérifications
 
-Le script a été validé sur trois cas, dont un cas d'échec délibéré — un garde-fou
-qui n'a jamais échoué n'est pas un garde-fou vérifié.
+Le script a été validé sur trois cas, dont un cas d'échec délibéré — un
+garde-fou qui n'a jamais échoué n'est pas un garde-fou vérifié.
 
-| Cas | Résultat attendu | Résultat |
-| --- | --- | --- |
-| Aucun package | Succès | ✅ code 0 |
-| Package déclarant `catalog:` et `catalog:tooling` | Succès | ✅ code 0 |
-| Package déclarant `@angular/core: ^20.0.0` et `typescript: ~5.9.0` | Échec, 2 violations signalées | ✅ code 1, les deux violations nommées avec la valeur attendue |
-| Résolution du catalog par bun | `catalog:` résolu à la version centralisée | ✅ confirmé dans `bun.lock` |
+| Cas                                                                | Résultat attendu                           | Résultat                                                       |
+| ------------------------------------------------------------------ | ------------------------------------------ | -------------------------------------------------------------- |
+| Aucun package                                                      | Succès                                     | ✅ code 0                                                      |
+| Package déclarant `catalog:` et `catalog:tooling`                  | Succès                                     | ✅ code 0                                                      |
+| Package déclarant `@angular/core: ^20.0.0` et `typescript: ~5.9.0` | Échec, 2 violations signalées              | ✅ code 1, les deux violations nommées avec la valeur attendue |
+| Résolution du catalog par bun                                      | `catalog:` résolu à la version centralisée | ✅ confirmé dans `bun.lock`                                    |
 
 Le package de test a été supprimé après validation.
 

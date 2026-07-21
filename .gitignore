@@ -1,14 +1,65 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
-
-# compiled output
+# ---------------------------------------------------------------------------
+# Sorties de compilation
+# ---------------------------------------------------------------------------
 dist
 tmp
 out-tsc
+build
+target
+.angular
 
-# dependencies
+# ---------------------------------------------------------------------------
+# Dépendances
+# ---------------------------------------------------------------------------
 node_modules
+.pnp
+.pnp.js
 
-# IDEs and editors
+# ---------------------------------------------------------------------------
+# Cache Nx
+# ---------------------------------------------------------------------------
+.nx/cache
+.nx/workspace-data
+.nx/migrate-runs
+
+# ---------------------------------------------------------------------------
+# Configuration d'environnement — observation O1
+#
+# Ces motifs n'ont d'effet que sur des fichiers NON ENCORE SUIVIS par Git.
+# Un fichier déjà versionné continue de l'être malgré son inscription ici :
+# c'est exactement le piège rencontré sur le projet d'origine, dont le
+# .gitignore listait tools/env et src/assets/config alors que ces fichiers
+# étaient suivis depuis longtemps.
+#
+# Pour retirer un fichier déjà suivi :  git rm --cached <fichier>
+# Pour vérifier qu'un fichier est bien ignoré :  git check-ignore -v <fichier>
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+**/src/assets/config/env.js
+**/environments/environment.local.ts
+*.local.json
+
+# Secrets et certificats — ne doivent jamais entrer dans l'historique
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+
+# ---------------------------------------------------------------------------
+# Tests et couverture
+# ---------------------------------------------------------------------------
+/coverage
+test-results
+playwright-report
+.playwright
+
+# ---------------------------------------------------------------------------
+# Éditeurs et IDE
+# ---------------------------------------------------------------------------
 /.idea
 .project
 .classpath
@@ -17,29 +68,29 @@ node_modules
 .settings/
 *.sublime-workspace
 
-# IDE - VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# misc
+# ---------------------------------------------------------------------------
+# Journaux et fichiers système
+# ---------------------------------------------------------------------------
 /.sass-cache
 /connect.lock
-/coverage
 /libpeerconnection.log
 npm-debug.log
 yarn-error.log
 testem.log
 /typings
+*.log
 
-# System Files
 .DS_Store
 Thumbs.db
 
-.nx/cache
-.nx/workspace-data
-.nx/migrate-runs
+# ---------------------------------------------------------------------------
+# Outils
+# ---------------------------------------------------------------------------
 .claude/worktrees
 .claude/settings.local.json

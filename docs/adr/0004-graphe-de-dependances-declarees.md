@@ -2,7 +2,8 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :** [Phase 01b](../phases/phase-01b-corrections-socle.md), applicable à partir de la Phase 03
+- **Phase concernée :** [Phase 01b](../phases/phase-01b-corrections-socle.md),
+  applicable à partir de la Phase 03
 - **Origine :** point C1 de la
   [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
 
@@ -54,10 +55,10 @@ et les imports passent par le nom du package :
 import { Report } from '@cmz/shared-domain';
 ```
 
-- Avantages : graphe exact et vérifiable ; usage canonique du mode
-  package-based ; une dépendance non déclarée devient une erreur de résolution
-  immédiate, ce qui rend les frontières entre couches réellement opposables ;
-  chaque package reste extractible du monorepo.
+- Avantages : graphe exact et vérifiable ; usage canonique du mode package-based
+  ; une dépendance non déclarée devient une erreur de résolution immédiate, ce
+  qui rend les frontières entre couches réellement opposables ; chaque package
+  reste extractible du monorepo.
 - Inconvénients : une déclaration à maintenir par dépendance ; réécriture des
   imports lors de la migration.
 
@@ -74,19 +75,20 @@ Nx déduit le graphe des imports TypeScript, les alias sont conservés.
 ## Décision
 
 Le graphe repose sur des **dépendances déclarées** : `"workspace:*"` dans les
-`package.json`, imports par nom de package. `analyzeSourceFiles` reste à `false`.
+`package.json`, imports par nom de package. `analyzeSourceFiles` reste à
+`false`.
 
 Les alias de chemins TypeScript hérités du projet d'origine (`@core/*`,
 `@shared/*`, `@presentation/*`, `@pages/*`) **ne sont pas reconduits** entre
-packages. Ils restent acceptables *à l'intérieur* d'un package, pour ses chemins
+packages. Ils restent acceptables _à l'intérieur_ d'un package, pour ses chemins
 internes.
 
 ## Justification
 
-Ce choix est la contrepartie logique de l'[ADR-0001](./0001-monorepo-nx-package-based.md).
-Adopter le mode package-based pour son cloisonnement, puis rétablir des alias
-globaux qui traversent les packages, reviendrait à en conserver les contraintes
-sans les bénéfices.
+Ce choix est la contrepartie logique de
+l'[ADR-0001](./0001-monorepo-nx-package-based.md). Adopter le mode package-based
+pour son cloisonnement, puis rétablir des alias globaux qui traversent les
+packages, reviendrait à en conserver les contraintes sans les bénéfices.
 
 La déclaration explicite apporte en outre une propriété que l'analyse statique
 ne donne pas : une dépendance non déclarée **échoue à la résolution**, sans

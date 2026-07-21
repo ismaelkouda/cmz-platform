@@ -15,7 +15,7 @@ Le projet d'origine `cmz-backoffice-frontend` utilise déjà bun
 et l'équipe l'utilise donc au quotidien.
 
 Nx supporte officiellement npm, yarn, pnpm et bun via l'option `--pm`, et les
-quatre implémentent la notion de *workspaces* nécessaire au mode package-based.
+quatre implémentent la notion de _workspaces_ nécessaire au mode package-based.
 
 ## Options envisagées
 
@@ -57,8 +57,7 @@ double rupture.
 
 ### Positives
 
-- Les commandes du projet d'origine restent transposables presque à
-  l'identique.
+- Les commandes du projet d'origine restent transposables presque à l'identique.
 - Installations et exécutions de scripts rapides, ce qui compte sur un monorepo
   destiné à grossir.
 
@@ -74,10 +73,10 @@ double rupture.
 
 - Si un outil critique de la chaîne Angular/Nx se révèle durablement
   incompatible avec bun, reconsidérer pnpm.
-- Les *stacks* non-JS à venir (Kotlin, Swift, PHP, Rust, Spring Boot) ne sont
+- Les _stacks_ non-JS à venir (Kotlin, Swift, PHP, Rust, Spring Boot) ne sont
   pas concernées par ce choix : elles conservent leurs propres gestionnaires de
-  dépendances et s'intègrent au graphe Nx par un autre mécanisme
-  (cf. [ADR-0001](./0001-monorepo-nx-package-based.md)).
+  dépendances et s'intègrent au graphe Nx par un autre mécanisme (cf.
+  [ADR-0001](./0001-monorepo-nx-package-based.md)).
 
 ## Références
 

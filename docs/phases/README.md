@@ -15,18 +15,19 @@ avec les commandes exactes, pour que le workspace soit reproductible.
 
 ## Feuille de route
 
-| Phase | Objet | Statut |
-| --- | --- | --- |
-| [01](./phase-01-squelette-nx.md) | Squelette du workspace Nx package-based + socle documentaire | ✅ Terminée |
-| [01b](./phase-01b-corrections-socle.md) | Corrections de socle issues de la revue (nommage, structure, Git, versions) | ✅ Terminée |
-| [01c](./phase-01c-politique-de-versions.md) | Politique de version unique (catalog bun + vérification) | ✅ Terminée |
-| 02 | Application Angular (`apps/backoffice-angular`) | ⏳ Non démarrée |
-| 03 | Découpage en packages (domain / data / application / ui / feature) | ⏳ Non démarrée |
-| 04 | Dépendances métier (NgRx, PrimeNG, Tailwind, i18n…) | ⏳ Non démarrée |
-| 05 | Qualité & tests (ESLint + boundaries, Prettier, Stylelint, Vitest, e2e) | ⏳ Non démarrée |
-| 06 | Environnements, Docker, CI (`nx affected`) | ⏳ Non démarrée |
-| 07 | Migration progressive des pages métier | ⏳ Non démarrée |
-| 08 | Vérification fonctionnelle vs. l'application d'origine | ⏳ Non démarrée |
+| Phase                                             | Objet                                                                       | Statut          |
+| ------------------------------------------------- | --------------------------------------------------------------------------- | --------------- |
+| [01](./phase-01-squelette-nx.md)                  | Squelette du workspace Nx package-based + socle documentaire                | ✅ Terminée     |
+| [01b](./phase-01b-corrections-socle.md)           | Corrections de socle issues de la revue (nommage, structure, Git, versions) | ✅ Terminée     |
+| [01c](./phase-01c-politique-de-versions.md)       | Politique de version unique (catalog bun + vérification)                    | ✅ Terminée     |
+| [01d](./phase-01d-conventions-et-observations.md) | Conventions de collaboration, garde-fous, traitement des observations       | ✅ Terminée     |
+| 02                                                | Application Angular (`apps/backoffice-angular`)                             | ⏳ Non démarrée |
+| 03                                                | Découpage en packages (domain / data / application / ui / feature)          | ⏳ Non démarrée |
+| 04                                                | Dépendances métier (NgRx, PrimeNG, Tailwind, i18n…)                         | ⏳ Non démarrée |
+| 05                                                | Qualité & tests (ESLint + boundaries, Prettier, Stylelint, Vitest, e2e)     | ⏳ Non démarrée |
+| 06                                                | Environnements, Docker, CI (`nx affected`)                                  | ⏳ Non démarrée |
+| 07                                                | Migration progressive des pages métier                                      | ⏳ Non démarrée |
+| 08                                                | Vérification fonctionnelle vs. l'application d'origine                      | ⏳ Non démarrée |
 
 ### Stacks ultérieures
 

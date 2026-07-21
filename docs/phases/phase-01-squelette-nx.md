@@ -60,13 +60,13 @@ bunx --bun create-nx-workspace@latest cmz-backoffice-angular \
   --no-git
 ```
 
-| Option | Raison |
-| --- | --- |
-| `--preset=npm` | Preset des workspaces package-based (le nom fait référence au mécanisme *npm workspaces*, standard implémenté aussi par bun — il n'impose pas npm comme gestionnaire) |
-| `--workspaceType=package-based` | Cf. [ADR-0001](../adr/0001-monorepo-nx-package-based.md) |
-| `--pm=bun` | Cf. [ADR-0002](../adr/0002-bun-package-manager.md) |
-| `--nxCloud=skip` | Pas de cache distribué à ce stade ; décision reportée à la Phase 06 (CI) |
-| `--no-git` | L'initialisation Git et la stratégie de branches seront décidées séparément |
+| Option                          | Raison                                                                                                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--preset=npm`                  | Preset des workspaces package-based (le nom fait référence au mécanisme _npm workspaces_, standard implémenté aussi par bun — il n'impose pas npm comme gestionnaire) |
+| `--workspaceType=package-based` | Cf. [ADR-0001](../adr/0001-monorepo-nx-package-based.md)                                                                                                              |
+| `--pm=bun`                      | Cf. [ADR-0002](../adr/0002-bun-package-manager.md)                                                                                                                    |
+| `--nxCloud=skip`                | Pas de cache distribué à ce stade ; décision reportée à la Phase 06 (CI)                                                                                              |
+| `--no-git`                      | L'initialisation Git et la stratégie de branches seront décidées séparément                                                                                           |
 
 ### 3. Installation des dépendances
 
@@ -79,8 +79,8 @@ bun install
 ### 4. Socle documentaire
 
 Création de `docs/` selon la structure décrite dans
-[`docs/README.md`](../README.md) : séparation entre décisions (`adr/`),
-journal d'exécution (`phases/`), et — à venir — `guides/` et `architecture/`.
+[`docs/README.md`](../README.md) : séparation entre décisions (`adr/`), journal
+d'exécution (`phases/`), et — à venir — `guides/` et `architecture/`.
 
 ## État du workspace à l'issue de la phase
 
@@ -112,9 +112,9 @@ cmz-backoffice-angular/
 
 ```json
 {
-  "extends": "nx/presets/npm.json",
-  "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "analytics": false
+    "extends": "nx/presets/npm.json",
+    "$schema": "./node_modules/nx/schemas/nx-schema.json",
+    "analytics": false
 }
 ```
 
@@ -122,14 +122,14 @@ cmz-backoffice-angular/
 
 ```json
 {
-  "name": "@cmz-backoffice-angular/source",
-  "version": "0.0.0",
-  "private": true,
-  "workspaces": ["packages/*"],
-  "devDependencies": {
-    "@nx/js": "23.1.0",
-    "nx": "23.1.0"
-  }
+    "name": "@cmz-backoffice-angular/source",
+    "version": "0.0.0",
+    "private": true,
+    "workspaces": ["packages/*"],
+    "devDependencies": {
+        "@nx/js": "23.1.0",
+        "nx": "23.1.0"
+    }
 }
 ```
 
@@ -139,12 +139,12 @@ déclare lui-même.
 
 ## Vérifications
 
-| Contrôle | Commande | Résultat |
-| --- | --- | --- |
-| Nx installé localement | `bunx nx --version` | ✅ v23.1.0 |
+| Contrôle                  | Commande                | Résultat                          |
+| ------------------------- | ----------------------- | --------------------------------- |
+| Nx installé localement    | `bunx nx --version`     | ✅ v23.1.0                        |
 | Graphe de projets lisible | `bunx nx show projects` | ✅ vide (attendu : aucun package) |
-| Lockfile bun généré | `ls bun.lock` | ✅ présent |
-| Dépendances installées | `bun install` | ✅ 284 paquets |
+| Lockfile bun généré       | `ls bun.lock`           | ✅ présent                        |
+| Dépendances installées    | `bun install`           | ✅ 284 paquets                    |
 
 ## Points d'attention
 
@@ -153,8 +153,8 @@ déclare lui-même.
 - **Pas de `tsconfig.base.json`.** Le preset `npm` n'en génère pas : en mode
   package-based, chaque package porte sa propre configuration TypeScript. Le
   besoin éventuel d'un tsconfig partagé sera tranché en Phase 03.
-- **Git non initialisé.** À faire avant tout développement, pour que `nx affected`
-  dispose d'une base de comparaison.
+- **Git non initialisé.** À faire avant tout développement, pour que
+  `nx affected` dispose d'une base de comparaison.
 - **Nx Cloud non configuré.** Sans lui, le cache reste local ; à reconsidérer en
   Phase 06 si les temps de CI le justifient.
 

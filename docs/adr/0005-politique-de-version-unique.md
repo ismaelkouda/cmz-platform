@@ -2,7 +2,8 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Phase concernée :** [Phase 01c](../phases/phase-01c-politique-de-versions.md)
+- **Phase concernée :**
+  [Phase 01c](../phases/phase-01c-politique-de-versions.md)
 - **Origine :** point C4 de la
   [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
 
@@ -44,8 +45,8 @@ divergence.
 
 - Avantages : indépendant du gestionnaire de paquets, applicable à toutes les
   stacks.
-- Inconvénients : purement défensif — la divergence est détectée après coup,
-  pas empêchée ; oblige à répéter la version dans chaque package.
+- Inconvénients : purement défensif — la divergence est détectée après coup, pas
+  empêchée ; oblige à répéter la version dans chaque package.
 
 ### Option C — Dépendances au niveau racine
 
@@ -60,10 +61,10 @@ Toutes les dépendances Angular déclarées à la racine, aucune dans les packag
 **Options A et B combinées.**
 
 1. Le **catalog de bun** centralise les versions du socle à la racine :
-   - catalog par défaut — dépendances d'exécution : `@angular/*`, `rxjs`,
-     `zone.js`, `tslib` ;
-   - catalog `tooling` — dépendances de compilation : `@angular/build`,
-     `@angular/cli`, `@angular/compiler-cli`, `typescript`.
+    - catalog par défaut — dépendances d'exécution : `@angular/*`, `rxjs`,
+      `zone.js`, `tslib` ;
+    - catalog `tooling` — dépendances de compilation : `@angular/build`,
+      `@angular/cli`, `@angular/compiler-cli`, `typescript`.
 2. Un script **`bun run check:versions`** (`tools/check-catalog-usage.mjs`)
    vérifie que tout package utilisant une dépendance présente au catalog la
    déclare bien en `catalog:`. Il sort en code 1 en cas de violation, et sera
@@ -103,15 +104,15 @@ décision d'architecture qui l'a créé.
   l'instant, à ajouter le jour où le besoin se présente réellement.
 - La politique ne couvre que l'écosystème JS/TS. Les stacks Kotlin, Swift, PHP,
   Rust et Spring Boot auront besoin d'un mécanisme équivalent propre à leur
-  gestionnaire de dépendances (version catalog Gradle, `Cargo.toml` de workspace,
-  contraintes Composer) — à traiter lors de leur intégration.
+  gestionnaire de dépendances (version catalog Gradle, `Cargo.toml` de
+  workspace, contraintes Composer) — à traiter lors de leur intégration.
 
 ### Points à réévaluer
 
 - Étendre le catalog au-delà du socle (PrimeNG, NgRx, etc.) une fois les
   dépendances métier introduites en Phase 04.
-- Si le nombre d'exceptions légitimes devenait significatif, revoir le
-  périmètre du catalog plutôt que d'affaiblir la vérification.
+- Si le nombre d'exceptions légitimes devenait significatif, revoir le périmètre
+  du catalog plutôt que d'affaiblir la vérification.
 
 ## Références
 

@@ -1,0 +1,10 @@
+node_modules
+dist
+tmp
+out-tsc
+coverage
+.nx
+.angular
+bun.lock
+*.min.js
+*.min.css

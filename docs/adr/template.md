@@ -8,7 +8,7 @@
 ## Contexte
 
 Quel problème se pose ? Quelles contraintes s'imposent (techniques, humaines,
-calendaires) ? Cette section décrit la situation *avant* la décision, sans
+calendaires) ? Cette section décrit la situation _avant_ la décision, sans
 révéler le choix.
 
 ## Options envisagées

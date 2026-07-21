@@ -24,18 +24,18 @@ après coup impose de réécrire toutes leurs références.
 
 ### Nommage
 
-| Option | Évaluation |
-| --- | --- |
-| Conserver `cmz-backoffice-angular` | Un package Rust vivrait à terme dans un dépôt nommé « angular » |
-| `cmz-platform` | Neutre vis-à-vis des technologies, décrit ce que le dépôt contient réellement |
-| `cmz-monorepo` | Neutre également, mais décrit le contenant plutôt que le produit |
+| Option                             | Évaluation                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| Conserver `cmz-backoffice-angular` | Un package Rust vivrait à terme dans un dépôt nommé « angular »               |
+| `cmz-platform`                     | Neutre vis-à-vis des technologies, décrit ce que le dépôt contient réellement |
+| `cmz-monorepo`                     | Neutre également, mais décrit le contenant plutôt que le produit              |
 
 ### Structure
 
-| Option | Évaluation |
-| --- | --- |
-| `packages/*` plat | Simple, mais ne distingue ni la nature ni la stack ; illisible à l'échelle |
-| `apps/` + `libs/` | Sépare le déployable du réutilisable ; convention Nx la mieux outillée |
+| Option                   | Évaluation                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `packages/*` plat        | Simple, mais ne distingue ni la nature ni la stack ; illisible à l'échelle   |
+| `apps/` + `libs/`        | Sépare le déployable du réutilisable ; convention Nx la mieux outillée       |
 | `packages/<stack>/<nom>` | Bon cloisonnement par technologie, mais éclate les bibliothèques transverses |
 
 ## Décision
@@ -43,18 +43,18 @@ après coup impose de réécrire toutes leurs références.
 - Le dépôt s'appelle **`cmz-platform`**, le package racine **`@cmz/source`**, et
   tous les packages adoptent le scope **`@cmz/*`**.
 - La structure retenue est **`apps/` + `libs/`**, déclarée à la fois dans les
-  *workspaces* bun et dans `workspaceLayout` de `nx.json`.
-- La technologie d'un package est portée par **son nom** (`@cmz/backoffice-angular`,
-  `@cmz/api-spring`, `@cmz/ingest-rust`) et par ses **tags Nx**, jamais par
-  l'arborescence.
+  _workspaces_ bun et dans `workspaceLayout` de `nx.json`.
+- La technologie d'un package est portée par **son nom**
+  (`@cmz/backoffice-angular`, `@cmz/api-spring`, `@cmz/ingest-rust`) et par ses
+  **tags Nx**, jamais par l'arborescence.
 
 ## Justification
 
 La distinction utile au quotidien est « qu'est-ce qui se déploie ? » — c'est
-celle que `apps/` + `libs/` matérialise, et elle reste pertinente quelle que soit
-la technologie : une application Spring Boot est une *app*, un module de domaine
-partagé est une *lib*. Un découpage par stack, à l'inverse, obligerait à choisir
-un dossier arbitraire pour toute bibliothèque transverse.
+celle que `apps/` + `libs/` matérialise, et elle reste pertinente quelle que
+soit la technologie : une application Spring Boot est une _app_, un module de
+domaine partagé est une _lib_. Un découpage par stack, à l'inverse, obligerait à
+choisir un dossier arbitraire pour toute bibliothèque transverse.
 
 Quant au nommage, le coût de la décision est asymétrique : quelques minutes
 aujourd'hui, une migration transverse plus tard.
@@ -64,8 +64,10 @@ aujourd'hui, une migration transverse plus tard.
 ### Positives
 
 - Le dépôt peut accueillir n'importe quelle technologie sans incohérence de nom.
-- Le scope `@cmz/*` est court, cohérent, et prêt pour une éventuelle publication.
-- `apps/` + `libs/` est la convention attendue par la majorité des générateurs Nx.
+- Le scope `@cmz/*` est court, cohérent, et prêt pour une éventuelle
+  publication.
+- `apps/` + `libs/` est la convention attendue par la majorité des générateurs
+  Nx.
 
 ### Négatives / dette acceptée
 

@@ -38,7 +38,7 @@ Ce que cette phase doit produire, en une ou deux phrases.
 ## Vérifications
 
 | Contrôle | Commande | Résultat |
-| --- | --- | --- |
+| -------- | -------- | -------- |
 
 ## Points d'attention
 

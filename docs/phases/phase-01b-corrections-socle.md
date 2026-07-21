@@ -6,7 +6,8 @@
 - **ADR associés :**
   [ADR-0003 — Nommage et structure](../adr/0003-nommage-et-structure-du-monorepo.md),
   [ADR-0004 — Graphe de dépendances déclarées](../adr/0004-graphe-de-dependances-declarees.md)
-- **Origine :** [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
+- **Origine :**
+  [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
 
 ## Objectif
 
@@ -24,7 +25,8 @@ corrections coûteuses.
   Phase 03.
 - Initialisation de Git (B1), contrainte des versions Node et bun (B2),
   correction de la licence (B3).
-- Fichiers de socle manquants : `.editorconfig`, `.gitattributes`, `.nvmrc` (A1).
+- Fichiers de socle manquants : `.editorconfig`, `.gitattributes`, `.nvmrc`
+  (A1).
 
 ### Explicitement exclu
 
@@ -50,7 +52,7 @@ mv cmz-backoffice-angular cmz-platform
 mkdir -p apps libs && rm -rf packages
 ```
 
-Répercuté à deux endroits — les *workspaces* bun et `workspaceLayout` de Nx :
+Répercuté à deux endroits — les _workspaces_ bun et `workspaceLayout` de Nx :
 
 ```json
 // package.json
@@ -89,8 +91,8 @@ La plage Node reprend exactement celle exigée par `@angular/core` 21.2.x. Un
 - `.editorconfig` — indentation, encodage, fins de ligne, avec des règles par
   type de fichier (2 espaces pour JSON/YAML, tabulations pour les Makefile,
   préservation des espaces significatifs en Markdown).
-- `.gitattributes` — normalisation LF, exceptions CRLF pour les scripts
-  Windows, marquage des binaires et des lockfiles.
+- `.gitattributes` — normalisation LF, exceptions CRLF pour les scripts Windows,
+  marquage des binaires et des lockfiles.
 
 ### 6. Initialisation de Git (B1)
 
@@ -136,22 +138,22 @@ cmz-platform/
 
 ```json
 {
-  "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "extends": "nx/presets/npm.json",
-  "analytics": false,
-  "defaultBase": "main",
-  "workspaceLayout": { "appsDir": "apps", "libsDir": "libs" }
+    "$schema": "./node_modules/nx/schemas/nx-schema.json",
+    "extends": "nx/presets/npm.json",
+    "analytics": false,
+    "defaultBase": "main",
+    "workspaceLayout": { "appsDir": "apps", "libsDir": "libs" }
 }
 ```
 
 ## Vérifications
 
-| Contrôle | Commande | Résultat |
-| --- | --- | --- |
-| Nx lit toujours la configuration | `bunx nx show projects` | ✅ vide, sans erreur |
-| Dépôt Git initialisé sur `main` | `git log --oneline` | ✅ 1 commit |
-| Aucun fichier oublié | `git status --short` | ✅ arbre propre |
-| `node_modules` et `.nx` bien exclus | `git ls-files` | ✅ 20 fichiers suivis, aucun artefact |
+| Contrôle                            | Commande                | Résultat                              |
+| ----------------------------------- | ----------------------- | ------------------------------------- |
+| Nx lit toujours la configuration    | `bunx nx show projects` | ✅ vide, sans erreur                  |
+| Dépôt Git initialisé sur `main`     | `git log --oneline`     | ✅ 1 commit                           |
+| Aucun fichier oublié                | `git status --short`    | ✅ arbre propre                       |
+| `node_modules` et `.nx` bien exclus | `git ls-files`          | ✅ 20 fichiers suivis, aucun artefact |
 
 ## Points d'attention
 
@@ -161,12 +163,12 @@ cmz-platform/
   au moment d'introduire Angular : sans elle, rien n'empêche deux packages
   d'embarquer deux versions du framework.
 - **Aucun remote Git n'est configuré.** À faire avant tout travail collaboratif.
-- Les points A2 à A5 de la revue restent ouverts et sont rattachés aux phases
-  05 et 06.
+- Les points A2 à A5 de la revue restent ouverts et sont rattachés aux phases 05
+  et 06.
 
 ## Suite
 
-**Phase 02 — Application Angular** : installation de `@nx/angular`, génération de
-`apps/backoffice-angular` (package `@cmz/backoffice-angular`) en Angular 21
+**Phase 02 — Application Angular** : installation de `@nx/angular`, génération
+de `apps/backoffice-angular` (package `@cmz/backoffice-angular`) en Angular 21
 standalone avec le builder `application`, et mise en place de la politique de
 version unique pour le socle Angular/TypeScript/RxJS.

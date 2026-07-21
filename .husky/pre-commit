@@ -1,0 +1,2 @@
+bun run check:weight
+bunx lint-staged

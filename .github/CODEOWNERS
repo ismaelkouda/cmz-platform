@@ -1,0 +1,56 @@
+# CODEOWNERS — relecture obligatoire par zone du monorepo
+#
+# Objectif : sur un monorepo multi-stack, empêcher qu'une modification du socle
+# ou d'un domaine partagé passe sans relecture de l'équipe qui en est
+# responsable. La dernière règle qui correspond à un fichier l'emporte : les
+# règles vont donc du plus général au plus spécifique.
+#
+# Format : <motif>  <propriétaires>
+# Les propriétaires sont des comptes (@utilisateur) ou des équipes
+# (@organisation/equipe) de la forge.
+#
+# ⚠️ À COMPLÉTER — un seul propriétaire est déclaré aujourd'hui. Remplacez les
+# lignes ci-dessous par les équipes réelles au fur et à mesure qu'elles sont
+# constituées. Une équipe inexistante ne provoque pas d'erreur : la règle est
+# simplement ignorée, sans avertissement. Vérifiez chaque handle.
+#
+# GitLab : ce fichier doit se trouver à la racine, dans .gitlab/ ou dans .github/.
+# GitHub : à la racine, dans .github/ ou dans docs/.
+
+# ---------------------------------------------------------------------------
+# Défaut — tout ce qui n'est pas couvert par une règle plus spécifique
+# ---------------------------------------------------------------------------
+*                           @ismaelkouda
+
+# ---------------------------------------------------------------------------
+# Socle du monorepo — les modifications ici affectent tous les packages
+# ---------------------------------------------------------------------------
+/package.json               @ismaelkouda
+/bun.lock                   @ismaelkouda
+/nx.json                    @ismaelkouda
+/tools/                     @ismaelkouda
+/.husky/                    @ismaelkouda
+/commitlint.config.mjs      @ismaelkouda
+/.github/CODEOWNERS         @ismaelkouda
+
+# Le catalog de versions (ADR-0005) vit dans package.json : toute montée de
+# version du socle Angular passe donc par une relecture.
+
+# ---------------------------------------------------------------------------
+# Documentation — ADR et journal des phases
+# ---------------------------------------------------------------------------
+/docs/                      @ismaelkouda
+/docs/adr/                  @ismaelkouda
+
+# ---------------------------------------------------------------------------
+# Applications et bibliothèques
+# ---------------------------------------------------------------------------
+# À décliner au fur et à mesure de leur création, par exemple :
+#
+#   /apps/backoffice-angular/    @cmz/equipe-frontend
+#   /libs/shared-domain/         @cmz/equipe-domaine
+#   /libs/shared-ui/             @cmz/equipe-design-system
+#   /apps/api-spring/            @cmz/equipe-backend
+#
+# Les bibliothèques de domaine méritent une attention particulière : elles sont
+# consommées par plusieurs packages, et une modification s'y propage largement.

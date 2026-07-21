@@ -13,8 +13,9 @@
 
 ## Contexte
 
-L'objectif est de reconstruire `cmz-backoffice-frontend` — application Angular 21
-existante, autonome, à l'architecture Clean/Hexagonal — au sein d'un monorepo.
+L'objectif est de reconstruire `cmz-backoffice-frontend` — application Angular
+21 existante, autonome, à l'architecture Clean/Hexagonal — au sein d'un
+monorepo.
 
 Le monorepo n'est pas destiné à héberger seulement Angular : la feuille de route
 prévoit d'y accueillir progressivement React, React Native, Kotlin, Swift, PHP,
@@ -24,10 +25,10 @@ ni `package.json` ni dépendances npm.
 
 Nx propose trois styles de workspace :
 
-| Style | Principe |
-| --- | --- |
-| `standalone` | Une seule application à la racine |
-| `integrated` | Nx pilote la configuration : dépendances centralisées à la racine, projets sans `package.json` propre |
+| Style           | Principe                                                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `standalone`    | Une seule application à la racine                                                                                              |
+| `integrated`    | Nx pilote la configuration : dépendances centralisées à la racine, projets sans `package.json` propre                          |
 | `package-based` | Chaque projet est un package autonome avec son propre `package.json` ; Nx se limite à orchestrer et mettre en cache les tâches |
 
 ## Options envisagées
@@ -38,8 +39,8 @@ Nx propose trois styles de workspace :
   génération de code Nx la plus fluide ; configuration mutualisée.
 - Inconvénients : impose le modèle Nx à tous les projets ; couplage fort entre
   packages ; s'accommode mal de projets non-JS qui n'ont rien à faire d'un
-  `package.json` racine ; toute montée de version affecte l'ensemble du
-  monorepo d'un coup.
+  `package.json` racine ; toute montée de version affecte l'ensemble du monorepo
+  d'un coup.
 
 ### Option B — Workspace package-based
 
@@ -55,7 +56,7 @@ Nx propose trois styles de workspace :
 
 Le monorepo est créé en mode **package-based**, via le preset `npm` de Nx
 (`--preset=npm --workspaceType=package-based`), avec les packages sous
-`packages/*` déclarés dans les *workspaces* bun de la racine.
+`packages/*` déclarés dans les _workspaces_ bun de la racine.
 
 ## Justification
 
@@ -100,4 +101,5 @@ peut être migrée package par package, chacun restant fonctionnel isolément.
 ## Références
 
 - [create-nx-workspace — `--workspaceType` et presets](https://nx.dev/docs/reference/create-nx-workspace)
-- Projet d'origine analysé : `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend`
+- Projet d'origine analysé :
+  `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend`

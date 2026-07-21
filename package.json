@@ -4,12 +4,24 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
-    "check:versions": "node tools/check-catalog-usage.mjs"
+    "preinstall": "node tools/check-engines.mjs",
+    "prepare": "husky",
+    "check:engines": "node tools/check-engines.mjs",
+    "check:versions": "node tools/check-catalog-usage.mjs",
+    "check:weight": "node tools/check-file-weight.mjs",
+    "check:all": "bun run check:engines && bun run check:versions && bun run check:weight",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {},
   "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
     "@nx/js": "23.1.0",
-    "nx": "23.1.0"
+    "husky": "^9.1.7",
+    "lint-staged": "^17.1.0",
+    "nx": "23.1.0",
+    "prettier": "^3.9.6"
   },
   "workspaces": {
     "packages": [

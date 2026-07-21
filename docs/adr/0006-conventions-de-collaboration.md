@@ -1,0 +1,128 @@
+# ADR-0006 — Conventions de collaboration et garde-fous automatisés
+
+- **Statut :** Accepted
+- **Date :** 2026-07-21
+- **Phase concernée :**
+  [Phase 01d](../phases/phase-01d-conventions-et-observations.md)
+- **Origine :** points A1, A2, A4, A5 et observations O1, O3 de la
+  [revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
+
+## Contexte
+
+Un monorepo concentre le travail de plusieurs équipes et de plusieurs
+technologies dans un même historique. Ce qui n'était qu'une préférence dans un
+dépôt mono-application y devient une contrainte de fonctionnement : un
+historique illisible rend `nx affected` difficile à exploiter, une modification
+du socle qui passe sans relecture affecte tous les packages, et un binaire
+committé alourdit le clone de tout le monde, définitivement.
+
+Le projet d'origine fournit trois exemples concrets de ce qui arrive faute de
+garde-fous :
+
+- son `.gitignore` liste `tools/env`, `src/environments` et `src/assets/config`,
+  mais `git ls-files` montre que ces fichiers **sont suivis** — ils l'étaient
+  avant l'ajout de la règle, qui ne s'applique donc pas à eux ;
+- `src/assets.zip` (9,9 Mo) est versionné, et le dépôt Git pèse 87 Mo ;
+- la CI déclare Node 18 alors qu'Angular 21 exige Node ≥ 20.19.
+
+Aucun de ces trois problèmes n'est dû à de la négligence : ce sont des erreurs
+qu'aucun outil ne signalait.
+
+## Décision
+
+### Convention de commit — Conventional Commits
+
+Vérifiée automatiquement par commitlint sur le hook `commit-msg`. Types
+autorisés restreints à dix (`feat`, `fix`, `refactor`, `perf`, `docs`, `test`,
+`build`, `ci`, `chore`, `revert`), portée en kebab-case désignant le package
+concerné, en-tête limité à 72 caractères.
+
+```
+feat(backoffice-angular): ajoute la page de connexion
+fix(shared-domain): corrige la validation des coordonnées
+```
+
+La portée reste facultative : certains commits sont légitimement transverses.
+
+### Convention de branches
+
+| Motif                         | Usage                                                        |
+| ----------------------------- | ------------------------------------------------------------ |
+| `main`                        | Branche de référence, base de `nx affected`                  |
+| `feat/<ticket>-<description>` | Nouvelle fonctionnalité                                      |
+| `fix/<ticket>-<description>`  | Correction                                                   |
+| `refactor/<description>`      | Refonte sans changement de comportement                      |
+| `migration/<domaine>`         | Migration d'un domaine depuis le projet d'origine (Phase 07) |
+
+Cette convention est documentée et non vérifiée automatiquement : une règle de
+protection de branche côté forge est le bon endroit pour l'imposer, pas un hook
+local.
+
+### Garde-fous automatisés
+
+| Hook         | Contrôle                              | Script                   |
+| ------------ | ------------------------------------- | ------------------------ |
+| `pre-commit` | Aucun fichier volumineux ajouté       | `check:weight`           |
+| `pre-commit` | Formatage des fichiers modifiés       | `lint-staged` + Prettier |
+| `commit-msg` | Message conforme à la convention      | `commitlint`             |
+| `pre-push`   | Politique de version unique respectée | `check:versions`         |
+| `preinstall` | Node et bun conformes à `engines`     | `check:engines`          |
+
+Le placement de chaque contrôle est délibéré : au plus tôt, mais pas au point de
+gêner. Vérifier les versions à chaque commit serait pénible pour un bénéfice nul
+— au `push` suffit. Vérifier le moteur Node au `preinstall`, en revanche, évite
+un échec de build incompréhensible une demi-heure plus tard.
+
+### Relecture — `CODEOWNERS`
+
+`.github/CODEOWNERS` impose une relecture par zone. Le socle (`package.json` —
+qui contient le catalog de versions —, `nx.json`, `tools/`, `.husky/`) est
+explicitement couvert. Les règles par package seront ajoutées à mesure que les
+packages et les équipes existeront.
+
+## Justification
+
+Chaque garde-fou répond à un problème **constaté**, pas supposé. C'est le
+critère qui a présidé au choix : aucun contrôle n'a été ajouté « au cas où ».
+
+Le contrôle de poids mérite une justification particulière : contrairement aux
+autres, il porte sur un dommage **irréversible**. Un commit mal formaté se
+corrige, une version divergente se rectifie ; un binaire entré dans l'historique
+n'en sort qu'au prix d'une réécriture complète du dépôt et d'une
+resynchronisation de tous les clones. Il vaut donc mieux le bloquer avant.
+
+Chaque garde-fou a été validé **sur un cas d'échec délibéré** et pas seulement
+sur le cas nominal : un garde-fou qu'on n'a jamais vu échouer n'est pas un
+garde-fou vérifié.
+
+## Conséquences
+
+### Positives
+
+- L'historique reste exploitable, ce qui est la matière première de
+  `nx affected`.
+- Les erreurs du projet d'origine ne peuvent pas se reproduire silencieusement.
+- Le socle ne peut pas être modifié sans relecture.
+
+### Négatives / dette acceptée
+
+- Friction supplémentaire à chaque commit. `--no-verify` reste disponible pour
+  les cas légitimes, et le message d'erreur du contrôle de poids le rappelle
+  explicitement plutôt que de laisser l'utilisateur bloqué.
+- Les hooks ne s'exécutent que localement : la CI devra rejouer les mêmes
+  contrôles, sans quoi ils restent contournables (Phase 06).
+- `CODEOWNERS` ne désigne qu'un propriétaire aujourd'hui. **Une équipe
+  inexistante ne provoque aucune erreur** : la règle est ignorée en silence — le
+  fichier doit donc être relu à chaque constitution d'équipe.
+
+### Points à réévaluer
+
+- Le seuil de 1 Mo (100 Ko pour les archives et binaires) est arbitraire. À
+  ajuster si les assets légitimes du back-office le dépassent régulièrement.
+- Si les hooks ralentissent trop les commits une fois le dépôt volumineux,
+  déplacer `lint-staged` du `pre-commit` vers le `pre-push`.
+
+## Références
+
+- Constats issus de `git ls-files` et `du -sh .git` sur le projet d'origine.
+- [Revue de socle du 2026-07-21](../reviews/2026-07-21-revue-socle-avant-phase-02.md)
