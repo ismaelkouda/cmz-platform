@@ -46,6 +46,8 @@ Voir [`adr/README.md`](./adr/README.md) pour la liste complète.
 - [ADR-0006 — Conventions de collaboration et garde-fous](./adr/0006-conventions-de-collaboration.md)
 - [ADR-0007 — Configuration injectée à l'exécution](./adr/0007-configuration-runtime.md)
 - [ADR-0008 — Outillage de tests](./adr/0008-outillage-de-tests.md)
+- [ADR-0009 — Cible Angular 22](./adr/0009-cible-angular-22.md)
+- [ADR-0010 — Reconstruction pilotée par les patterns SEOS](./adr/0010-reconstruction-pilotee-par-patterns.md)
 
 ### Journal des phases
 
@@ -56,6 +58,8 @@ Voir [`phases/README.md`](./phases/README.md) pour la feuille de route complète
 - [Phase 01c — Politique de version unique](./phases/phase-01c-politique-de-versions.md)
   ✅
 - [Phase 01d — Conventions et observations](./phases/phase-01d-conventions-et-observations.md)
+  ✅
+- [Phase 01e — Recadrage Angular 22 et patterns SEOS](./phases/phase-01e-recadrage-angular-22-seos.md)
   ✅
 
 ### Revues de socle
@@ -70,7 +74,7 @@ _Aucun guide pour l'instant — les premiers arriveront avec l'application Angul
 
 ### Architecture
 
-- [Stratégie de migration depuis cmz-backoffice-frontend](./architecture/strategie-de-migration.md)
+- [Stratégie de reconstruction de cmz-backoffice-frontend](./architecture/strategie-de-reconstruction.md)
 
 _La vue d'ensemble de la structure des packages sera ajoutée à partir de la
 Phase 03 (découpage en bibliothèques)._

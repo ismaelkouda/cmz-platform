@@ -33,7 +33,7 @@ les phases qui en découlent.
 | O2     | Configuration runtime — bon pattern à conserver | [ADR-0007](../adr/0007-configuration-runtime.md)                                                                                   |
 | O3     | Poids du dépôt d'origine                        | [ADR-0006](../adr/0006-conventions-de-collaboration.md), [Phase 01d](../phases/phase-01d-conventions-et-observations.md)           |
 | O4     | Tests e2e à réécrire, pas à migrer              | [ADR-0008](../adr/0008-outillage-de-tests.md)                                                                                      |
-| O5     | Volume conditionnant la Phase 07                | [Stratégie de migration](../architecture/strategie-de-migration.md)                                                                |
+| O5     | Volume conditionnant la Phase 07                | [Stratégie de reconstruction](../architecture/strategie-de-reconstruction.md)                                                      |
 
 ---
 
@@ -87,4 +87,4 @@ pratiquement pas entre eux, tout passe par `shared/`. Une fois `shared/` et
 la Phase 07 tenable.
 
 Le détail est repris dans la
-[stratégie de migration](../architecture/strategie-de-migration.md).
+[stratégie de reconstruction](../architecture/strategie-de-reconstruction.md).

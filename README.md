@@ -9,16 +9,18 @@ composants de la plateforme.
 
 ## Caractéristiques
 
-| Aspect                  | Choix                                               | Décision                                                        |
-| ----------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
-| Orchestrateur           | Nx 23.1.0                                           | —                                                               |
-| Style de workspace      | package-based                                       | [ADR-0001](./docs/adr/0001-monorepo-nx-package-based.md)        |
-| Gestionnaire de paquets | bun 1.3.x                                           | [ADR-0002](./docs/adr/0002-bun-package-manager.md)              |
-| Structure               | `apps/` + `libs/`, scope `@cmz/*`                   | [ADR-0003](./docs/adr/0003-nommage-et-structure-du-monorepo.md) |
-| Graphe de dépendances   | Déclaré (`workspace:*`), pas d'alias inter-packages | [ADR-0004](./docs/adr/0004-graphe-de-dependances-declarees.md)  |
-| Versions du socle       | Catalog bun centralisé + vérification               | [ADR-0005](./docs/adr/0005-politique-de-version-unique.md)      |
-| Commits                 | Conventional Commits, vérifiés par hook             | [ADR-0006](./docs/adr/0006-conventions-de-collaboration.md)     |
-| Tests                   | Vitest (unitaire), Playwright (e2e)                 | [ADR-0008](./docs/adr/0008-outillage-de-tests.md)               |
+| Aspect                  | Choix                                               | Décision                                                           |
+| ----------------------- | --------------------------------------------------- | ------------------------------------------------------------------ |
+| Orchestrateur           | Nx 23.1.0                                           | —                                                                  |
+| Style de workspace      | package-based                                       | [ADR-0001](./docs/adr/0001-monorepo-nx-package-based.md)           |
+| Gestionnaire de paquets | bun 1.3.x                                           | [ADR-0002](./docs/adr/0002-bun-package-manager.md)                 |
+| Structure               | `apps/` + `libs/`, scope `@cmz/*`                   | [ADR-0003](./docs/adr/0003-nommage-et-structure-du-monorepo.md)    |
+| Graphe de dépendances   | Déclaré (`workspace:*`), pas d'alias inter-packages | [ADR-0004](./docs/adr/0004-graphe-de-dependances-declarees.md)     |
+| Versions du socle       | Catalog bun centralisé + vérification               | [ADR-0005](./docs/adr/0005-politique-de-version-unique.md)         |
+| Framework               | Angular 22.0.7                                      | [ADR-0009](./docs/adr/0009-cible-angular-22.md)                    |
+| Reconstruction          | Génération pilotée par les patterns SEOS            | [ADR-0010](./docs/adr/0010-reconstruction-pilotee-par-patterns.md) |
+| Commits                 | Conventional Commits, vérifiés par hook             | [ADR-0006](./docs/adr/0006-conventions-de-collaboration.md)        |
+| Tests                   | Vitest (unitaire), Playwright (e2e)                 | [ADR-0008](./docs/adr/0008-outillage-de-tests.md)                  |
 
 En mode package-based, chaque package est autonome : il porte son propre
 `package.json` et ses propres dépendances. Nx apporte le graphe de dépendances,
@@ -28,10 +30,10 @@ simple `project.json`.
 
 ## Prérequis
 
-| Outil | Version                                                    |
-| ----- | ---------------------------------------------------------- |
-| Node  | `^20.19.0 \|\| ^22.12.0 \|\| >=24.0.0` (cf. `.nvmrc` → 22) |
-| bun   | `>= 1.3.0`                                                 |
+| Outil | Version                                                         |
+| ----- | --------------------------------------------------------------- |
+| Node  | `^22.22.3 \|\| ^24.15.0 \|\| >=26.0.0` (cf. `.nvmrc` → 22.22.3) |
+| bun   | `>= 1.3.0`                                                      |
 
 Ces contraintes sont déclarées dans `engines` et `packageManager` : poste de
 développement, CI et image Docker doivent s'y conformer.
@@ -97,8 +99,8 @@ Angular.
 L'intégration se fait **stack par stack**, chacune découpée en phases validées
 une à une.
 
-1. **Angular** — en cours (phases 01 à 01d terminées). Reconstruction du
-   back-office.
+1. **Angular 22** — en cours (phases 01 à 01e terminées). Reconstruction du
+   back-office à partir des patterns SEOS.
 2. React, React Native, Kotlin, Swift, PHP, Spring Boot, Rust, Grafana — non
    démarrées.
 

@@ -21,7 +21,8 @@ avec les commandes exactes, pour que le workspace soit reproductible.
 | [01b](./phase-01b-corrections-socle.md)           | Corrections de socle issues de la revue (nommage, structure, Git, versions) | ✅ Terminée     |
 | [01c](./phase-01c-politique-de-versions.md)       | Politique de version unique (catalog bun + vérification)                    | ✅ Terminée     |
 | [01d](./phase-01d-conventions-et-observations.md) | Conventions de collaboration, garde-fous, traitement des observations       | ✅ Terminée     |
-| 02                                                | Application Angular (`apps/backoffice-angular`)                             | ⏳ Non démarrée |
+| [01e](./phase-01e-recadrage-angular-22-seos.md)   | Recadrage : Angular 22 et reconstruction pilotée par les patterns SEOS      | ✅ Terminée     |
+| 02                                                | Application Angular 22 (`apps/backoffice-angular`)                          | ⏳ Non démarrée |
 | 03                                                | Découpage en packages (domain / data / application / ui / feature)          | ⏳ Non démarrée |
 | 04                                                | Dépendances métier (NgRx, PrimeNG, Tailwind, i18n…)                         | ⏳ Non démarrée |
 | 05                                                | Qualité & tests (ESLint + boundaries, Prettier, Stylelint, Vitest, e2e)     | ⏳ Non démarrée |

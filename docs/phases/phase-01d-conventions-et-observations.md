@@ -103,8 +103,8 @@ l'utilisateur bloqué sans issue.
 - **[ADR-0008](../adr/0008-outillage-de-tests.md)** — Vitest en unitaire (défaut
   d'Angular 21) et Playwright en end-to-end. Protractor n'est pas migré mais
   réécrit.
-- **[Stratégie de migration](../architecture/strategie-de-migration.md)** —
-  cadrage de la Phase 07.
+- **[Stratégie de reconstruction](../architecture/strategie-de-reconstruction.md)**
+  — cadrage de la Phase 07.
 
 ### 8. Analyse du couplage du projet d'origine
 
