@@ -19,6 +19,7 @@ avec les commandes exactes, pour que le workspace soit reproductible.
 | --- | --- | --- |
 | [01](./phase-01-squelette-nx.md) | Squelette du workspace Nx package-based + socle documentaire | ✅ Terminée |
 | [01b](./phase-01b-corrections-socle.md) | Corrections de socle issues de la revue (nommage, structure, Git, versions) | ✅ Terminée |
+| [01c](./phase-01c-politique-de-versions.md) | Politique de version unique (catalog bun + vérification) | ✅ Terminée |
 | 02 | Application Angular (`apps/backoffice-angular`) | ⏳ Non démarrée |
 | 03 | Découpage en packages (domain / data / application / ui / feature) | ⏳ Non démarrée |
 | 04 | Dépendances métier (NgRx, PrimeNG, Tailwind, i18n…) | ⏳ Non démarrée |

@@ -16,6 +16,7 @@ Voir le [journal des phases](./docs/phases/README.md).
 | Gestionnaire de paquets | bun 1.3.x | [ADR-0002](./docs/adr/0002-bun-package-manager.md) |
 | Structure | `apps/` + `libs/`, scope `@cmz/*` | [ADR-0003](./docs/adr/0003-nommage-et-structure-du-monorepo.md) |
 | Graphe de dépendances | Déclaré (`workspace:*`), pas d'alias inter-packages | [ADR-0004](./docs/adr/0004-graphe-de-dependances-declarees.md) |
+| Versions du socle | Catalog bun centralisé + vérification | [ADR-0005](./docs/adr/0005-politique-de-version-unique.md) |
 
 En mode package-based, chaque package est autonome : il porte son propre
 `package.json` et ses propres dépendances. Nx apporte le graphe de dépendances,
@@ -40,7 +41,22 @@ bun install                 # installe les dépendances du workspace
 bunx nx show projects       # liste les packages du monorepo
 bunx nx graph               # visualise le graphe de dépendances
 bunx nx affected -t build   # ne reconstruit que ce qui a changé depuis `main`
+bun run check:versions      # vérifie la politique de version unique du socle
 ```
+
+## Versions du socle
+
+Les versions d'Angular, TypeScript, RxJS et zone.js sont centralisées dans le
+*catalog* bun, à la racine du `package.json`. Un package ne les redéclare
+jamais :
+
+```json
+{ "dependencies": { "@angular/core": "catalog:" },
+  "devDependencies": { "typescript": "catalog:tooling" } }
+```
+
+`bun run check:versions` échoue si un package déclare une version en dur — cf.
+[ADR-0005](./docs/adr/0005-politique-de-version-unique.md).
 
 ## Structure
 

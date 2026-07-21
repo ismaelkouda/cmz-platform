@@ -42,6 +42,7 @@ Voir [`adr/README.md`](./adr/README.md) pour la liste complète.
 - [ADR-0002 — bun comme gestionnaire de paquets](./adr/0002-bun-package-manager.md)
 - [ADR-0003 — Nommage et structure du monorepo](./adr/0003-nommage-et-structure-du-monorepo.md)
 - [ADR-0004 — Graphe de dépendances par déclaration explicite](./adr/0004-graphe-de-dependances-declarees.md)
+- [ADR-0005 — Politique de version unique pour le socle](./adr/0005-politique-de-version-unique.md)
 
 ### Journal des phases
 
@@ -49,6 +50,7 @@ Voir [`phases/README.md`](./phases/README.md) pour la feuille de route complète
 
 - [Phase 01 — Squelette du workspace Nx](./phases/phase-01-squelette-nx.md) ✅
 - [Phase 01b — Corrections de socle](./phases/phase-01b-corrections-socle.md) ✅
+- [Phase 01c — Politique de version unique](./phases/phase-01c-politique-de-versions.md) ✅
 
 ### Revues de socle
 
