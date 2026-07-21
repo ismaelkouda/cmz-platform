@@ -4,6 +4,13 @@
 - **Date :** 2026-07-21
 - **Phase concernée :** [Phase 01](../phases/phase-01-squelette-nx.md)
 
+> **Note d'amendement (2026-07-21)** — la décision de fond (mode package-based)
+> reste inchangée. En revanche, l'emplacement `packages/*` mentionné ci-dessous
+> a été remplacé par `apps/` + `libs/` : voir
+> [ADR-0003](./0003-nommage-et-structure-du-monorepo.md). La manière dont le
+> graphe de dépendances est construit est précisée par
+> [ADR-0004](./0004-graphe-de-dependances-declarees.md).
+
 ## Contexte
 
 L'objectif est de reconstruire `cmz-backoffice-frontend` — application Angular 21

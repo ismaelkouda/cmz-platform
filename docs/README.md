@@ -1,4 +1,4 @@
-# Documentation — cmz-backoffice-angular
+# Documentation — cmz-platform
 
 Point d'entrée de toute la documentation du monorepo. Chaque document a un
 emplacement déterminé par sa **nature**, pas par le moment où il a été écrit.
@@ -40,12 +40,15 @@ Voir [`adr/README.md`](./adr/README.md) pour la liste complète.
 
 - [ADR-0001 — Monorepo Nx en mode package-based](./adr/0001-monorepo-nx-package-based.md)
 - [ADR-0002 — bun comme gestionnaire de paquets](./adr/0002-bun-package-manager.md)
+- [ADR-0003 — Nommage et structure du monorepo](./adr/0003-nommage-et-structure-du-monorepo.md)
+- [ADR-0004 — Graphe de dépendances par déclaration explicite](./adr/0004-graphe-de-dependances-declarees.md)
 
 ### Journal des phases
 
 Voir [`phases/README.md`](./phases/README.md) pour la feuille de route complète.
 
 - [Phase 01 — Squelette du workspace Nx](./phases/phase-01-squelette-nx.md) ✅
+- [Phase 01b — Corrections de socle](./phases/phase-01b-corrections-socle.md) ✅
 
 ### Revues de socle
 

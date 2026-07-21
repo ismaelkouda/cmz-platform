@@ -28,3 +28,5 @@ envisagées, le choix retenu et ses conséquences.
 | --- | --- | --- | --- |
 | [0001](./0001-monorepo-nx-package-based.md) | Monorepo Nx en mode package-based | Accepted | 2026-07-21 |
 | [0002](./0002-bun-package-manager.md) | bun comme gestionnaire de paquets | Accepted | 2026-07-21 |
+| [0003](./0003-nommage-et-structure-du-monorepo.md) | Nommage et structure du monorepo | Accepted | 2026-07-21 |
+| [0004](./0004-graphe-de-dependances-declarees.md) | Graphe de dépendances par déclaration explicite | Accepted | 2026-07-21 |
