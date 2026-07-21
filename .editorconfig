@@ -1,0 +1,27 @@
+# EditorConfig — https://editorconfig.org
+# Normalise les réglages d'édition entre les postes (Windows / macOS / Linux).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,jsonc,yml,yaml}]
+indent_size = 2
+
+[*.md]
+# Deux espaces en fin de ligne = retour à la ligne en Markdown : ne pas les supprimer.
+trim_trailing_whitespace = false
+
+[*.{kt,kts,java,gradle}]
+indent_size = 4
+
+[*.{rs,go}]
+indent_size = 4
+
+[Makefile]
+indent_style = tab

@@ -1,0 +1,34 @@
+# Normalisation des fins de ligne.
+# Sans cette configuration, un poste Windows et un poste macOS produisent des
+# diffs entiers sur des fichiers inchangés, ce qui fausse `nx affected`.
+
+# Par défaut : Git normalise en LF dans le dépôt et laisse le poste décider en local.
+* text=auto eol=lf
+
+# Scripts qui doivent impérativement conserver leurs fins de ligne
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.sh    text eol=lf
+
+# Fichiers binaires : jamais de normalisation
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.otf   binary
+*.pdf   binary
+*.zip   binary
+*.jar   binary
+*.keystore binary
+
+# Lockfiles : générés, exclus des diffs et des statistiques de langage
+bun.lock       -diff linguist-generated
+bun.lockb      binary
+package-lock.json -diff linguist-generated
