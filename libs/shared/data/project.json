@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/shared-data",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/data/src",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:data"]
+}

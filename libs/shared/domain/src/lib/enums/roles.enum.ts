@@ -1,0 +1,5 @@
+export enum Roles {
+    SUPERVISOR = 'COMMON.SUPERVISOR',
+    'TEAM-LEADER' = 'COMMON.LEADER',
+    AGENT = 'COMMON.AGENT',
+}
