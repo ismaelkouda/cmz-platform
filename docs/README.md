@@ -46,6 +46,8 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
   mesures sur `cmz-backoffice-frontend`
 - [Stratégie de reconstruction](./architecture/strategie-de-reconstruction.md) —
   comment le code sera produit
+- [Phase 05a — Kernel transverse](./architecture/kernel-05a.md) — catalogue
+  d'archétypes et génération du noyau `shared/`
 
 ## Guides
 
