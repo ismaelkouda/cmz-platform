@@ -4,7 +4,7 @@ Mesures réalisées sur le code réel de `cmz-backoffice-frontend`, et non
 supposées. Elles fondent la
 [stratégie de reconstruction](./strategie-de-reconstruction.md).
 
-- **Dernière mise à jour :** 2026-07-21
+- **Dernière mise à jour :** 2026-07-22
 - **Source analysée :** `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend`,
   branche `feature/CMZ-feat-module-infrastructures`
 
@@ -101,22 +101,65 @@ généralisation à un autre _paradigme_ (Rust, Solana), mais à une autre
 **structure organisationnelle** — monorepo multi-packages, frontières de build,
 versions indépendantes. Le document source insiste sur cette distinction.
 
-## Couverture des patterns — le risque principal
+## Couverture des patterns — mesurée (Phase 03)
 
-| Schéma              | Validé sur                                   | Module de référence                       |
-| ------------------- | -------------------------------------------- | ----------------------------------------- |
-| `crud-entity` v23   | `departments`, `municipalities`, `regions`   | `administrative-infrastructure` — 106/106 |
-| `action-request` v6 | `login`, `forgot-password`, `reset-password` | `authentication`                          |
+`check-pattern.js` a été passé sur les **53 entités**, contre les deux schémas
+existants (`crud-entity`, `action-request`). Classement par meilleur score des
+deux schémas :
 
-**Les patterns sont prouvés sur 6 unités. Le projet en compte 53.**
+| Classe                         | Critère                                | Nombre | Part |
+| ------------------------------ | -------------------------------------- | -----: | ---: |
+| **Conforme**                   | ≥ 95 % sur un schéma                   |      7 | 13 % |
+| **Proche**                     | 65–95 % sur `crud-entity`              |     15 | 28 % |
+| **Partiel — famille workflow** | 40–65 %, chaîne de commandes partielle |     19 | 36 % |
+| **Lecture seule**              | pipeline query-only                    |      9 | 17 % |
+| **Divers**                     | cas isolés                             |      3 |  6 % |
 
-L'hypothèse de SEOS est que la majorité des entités restantes se conforme au
-schéma `crud-entity`. Elle est plausible — l'architecture est homogène — mais
-**elle n'est pas établie**. Trois domaines (`interactive-map`, `monitoring`,
-`reporting`) ne déclarent aucune commande et ne relèvent visiblement d'aucun des
-deux schémas.
+### Lecture des résultats
 
-Mesurer cette couverture est le préalable à tout chiffrage.
+**22 entités (41 %) relèvent des deux patterns prouvés** — 7 conformes (les
+modules de référence) + 15 « proches ». Les proches sont de vraies entités CRUD
+à 65–89 %, dont l'écart s'explique : `administrative-boundary`
+(departments/municipalities/regions, ~72 %) n'a pas encore été migré à la
+convention « point » (déviation v10 documentée du schéma). Elles atteindront la
+conformité après la même normalisation que le module de référence a reçue.
+
+**Les 59 % restants ne sont pas du chaos : ce sont deux familles régulières,**
+non encore extraites en patterns :
+
+- **Famille workflow-action (19, 36 %)** — `finalization`, `processing`,
+  `requests`, `report-states` : des vues (`all`/`queues`/`tasks`/`details`) et
+  des transitions d'état (`approve`/`close`/`reject`/`evaluate`/`download`) sur
+  une file de tâches partagée. Elles partagent une chaîne de commandes partielle
+  (~41 % `action-request`) mais ni le CRUD complet ni l'`action-request` pur. →
+  **un nouveau pattern à extraire**.
+- **Lecture seule (9, 17 %)** — `interactive-map` (1), `monitoring` (4),
+  `reporting` (4). Pipeline minimal query-only vérifié : entité + query
+  (bus/handler) + use-case + repository, ~4 fichiers, aucune commande. → pattern
+  **`read-only-view`** à extraire (décision D4, [plan](./plan-d-execution.md)).
+
+**Divers (3)** — `communication/notifications`, `settings-security/access-logs`,
+`team-organization/daily-goal` : à traiter au cas par cas une fois les deux
+familles ci-dessus extraites (elles s'y rattacheront probablement).
+
+### Conséquence sur le chiffrage
+
+Contre les **deux patterns existants**, la couverture est de **41 %** — dans la
+bande « 40–80 % » du [plan](./plan-d-execution.md), dont la conséquence prévue
+est : **extraire davantage de patterns**, pas de reprise manuelle.
+
+L'approche générative tient donc, mais elle demande d'**extraire 2 patterns
+supplémentaires** (`read-only-view`, `workflow-action`) avant la Phase 07. C'est
+un travail borné et régulier — exactement la méthode SEOS (extraire un pattern
+depuis du code réel qui se répète) — et non une dérive. Une fois ces deux
+patterns extraits et validés, la couverture générable dépasse **90 %**, les 3 «
+divers » restant à trancher individuellement.
+
+**Ce que ça change dans le plan :** la Phase 04 (adaptation des générateurs)
+doit produire, en plus du CRUD et de l'action-request, les générateurs des deux
+nouveaux patterns. L'ordre de la Phase 07 suit la maturité des patterns :
+d'abord les 22 conformes/proches (patterns prouvés), puis les familles au fur et
+à mesure de leur extraction.
 
 ## Ce qu'il ne faut pas reprendre
 
@@ -134,3 +177,69 @@ inopérant.
 
 En revanche, le mécanisme de configuration lui-même est un bon choix à conserver
 ([ADR-0007](../adr/0007-configuration-runtime.md)).
+
+## Annexe — classification des 53 entités (Phase 03)
+
+Score `check-pattern.js` de chaque entité contre les deux schémas existants.
+`crud %` = conformité au schéma `crud-entity` (106 fichiers) ; `action %` =
+conformité au schéma `action-request` (34 fichiers). Classe = meilleur
+ajustement (voir la lecture ci-dessus). Regénérable par :
+`node seos/tools/check-pattern.js <module> <entité> [--schema …]`.
+
+| Entité                                              | crud % | action % | Classe            |
+| --------------------------------------------------- | -----: | -------: | ----------------- |
+| `administrative-boundary/departments`               |     72 |       29 | Proche            |
+| `administrative-boundary/municipalities`            |     72 |       29 | Proche            |
+| `administrative-boundary/regions`                   |     74 |       29 | Proche            |
+| `administrative-infrastructure/infrastructure`      |    100 |       47 | Conforme          |
+| `administrative-infrastructure/infrastructure-type` |    100 |       47 | Conforme          |
+| `authentication/forgot-password`                    |     15 |      100 | Conforme          |
+| `authentication/login`                              |     15 |      100 | Conforme          |
+| `authentication/reset-password`                     |     15 |      100 | Conforme          |
+| `communication/messaging`                           |     69 |       29 | Proche            |
+| `communication/notifications`                       |     39 |       29 | Divers            |
+| `content-management/home`                           |     76 |       29 | Proche            |
+| `content-management/legal-notice`                   |     74 |       29 | Proche            |
+| `content-management/news`                           |     76 |       29 | Proche            |
+| `content-management/privacy-policy`                 |     74 |       29 | Proche            |
+| `content-management/slide`                          |     76 |       29 | Proche            |
+| `content-management/terms-use`                      |     74 |       29 | Proche            |
+| `coverage-areas/mobile-network`                     |     89 |       38 | Proche            |
+| `coverage-areas/site-group`                         |     96 |       38 | Conforme          |
+| `finalization/all`                                  |     22 |       41 | Workflow          |
+| `finalization/details`                              |     18 |       26 | Workflow (détail) |
+| `finalization/queues`                               |     22 |       41 | Workflow          |
+| `finalization/tasks`                                |     22 |       41 | Workflow          |
+| `interactive-map/map`                               |      7 |       12 | Lecture seule     |
+| `monitoring/jobs`                                   |      7 |       12 | Lecture seule     |
+| `monitoring/node`                                   |      7 |       12 | Lecture seule     |
+| `monitoring/resources`                              |      7 |       12 | Lecture seule     |
+| `monitoring/services`                               |      7 |       12 | Lecture seule     |
+| `processing/all`                                    |     23 |       41 | Workflow          |
+| `processing/details`                                |     18 |       26 | Workflow (détail) |
+| `processing/queues`                                 |     23 |       41 | Workflow          |
+| `processing/tasks`                                  |     23 |       41 | Workflow          |
+| `report-states/approve`                             |     24 |       41 | Workflow          |
+| `report-states/close`                               |     24 |       41 | Workflow          |
+| `report-states/details`                             |     18 |       26 | Workflow (détail) |
+| `report-states/download`                            |     24 |       41 | Workflow          |
+| `report-states/evaluate`                            |     24 |       41 | Workflow          |
+| `report-states/reject`                              |     24 |       41 | Workflow          |
+| `reporting/report-by-channel`                       |      6 |        9 | Lecture seule     |
+| `reporting/report-by-operator`                      |      6 |        9 | Lecture seule     |
+| `reporting/reports`                                 |      6 |        9 | Lecture seule     |
+| `reporting/requests`                                |      6 |        9 | Lecture seule     |
+| `requests/all`                                      |     23 |       41 | Workflow          |
+| `requests/details`                                  |     18 |       26 | Workflow (détail) |
+| `requests/queues`                                   |     23 |       41 | Workflow          |
+| `requests/tasks`                                    |     23 |       41 | Workflow          |
+| `seos-reference-action/sample-action`               |     15 |      100 | Conforme          |
+| `settings-security/access-logs`                     |     20 |       29 | Divers            |
+| `settings-security/profiles-permissions`            |     72 |       29 | Proche            |
+| `settings-security/users`                           |     68 |       29 | Proche            |
+| `team-organization/agents-performances`             |     41 |       26 | Workflow          |
+| `team-organization/daily-goal`                      |     26 |       26 | Divers            |
+| `team-organization/participants`                    |     80 |       26 | Proche            |
+| `team-organization/teams`                           |     78 |       24 | Proche            |
+
+Les `details` sont rattachés à la famille workflow (vues de détail d'une tâche).

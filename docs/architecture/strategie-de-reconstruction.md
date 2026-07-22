@@ -20,39 +20,42 @@
 
 ## L'état des lieux, mesuré
 
-| Indicateur                                          | Valeur                      |
-| --------------------------------------------------- | --------------------------- |
-| Entités déclarées dans le projet d'origine          | 53                          |
-| Domaines fonctionnels                               | 18 (16 portant des entités) |
-| Fichiers canoniques par entité CRUD                 | 106 (schéma v23)            |
-| Fichiers canoniques par opération                   | 34 (schéma v6)              |
-| Unités sur lesquelles les patterns sont **prouvés** | **6**                       |
+| Indicateur                                 | Valeur                                  |
+| ------------------------------------------ | --------------------------------------- |
+| Entités déclarées dans le projet d'origine | 53                                      |
+| Domaines fonctionnels                      | 18 (16 portant des entités)             |
+| Fichiers canoniques par entité CRUD        | 106 (schéma v23)                        |
+| Fichiers canoniques par opération          | 34 (schéma v6)                          |
+| Patterns **prouvés** aujourd'hui           | 2 (`crud-entity`, `action-request`)     |
+| Patterns **à extraire**                    | 2 (`read-only-view`, `workflow-action`) |
+| Couverture par les patterns prouvés        | **41 %** (22/53)                        |
+| Couverture générable après extraction      | **> 90 %**                              |
 
-Ce dernier chiffre est le plus important de ce document, et le seul qui doive
-guider le séquencement.
+La couverture — et non le nombre de patterns — guide le séquencement. Elle a été
+mesurée en Phase 03 ; le détail est dans
+[l'analyse du projet source](./analyse-du-projet-source.md).
 
-## Le risque principal : la couverture des patterns
+## La couverture des patterns — mesurée (Phase 03)
 
-Les schémas sont validés sur 6 unités : `departments`, `municipalities`,
-`regions` (CRUD), `login`, `forgot-password`, `reset-password` (opérations). Le
-projet en compte 53.
+La mesure a été faite sur les 53 entités (détail et table complète dans
+[l'analyse du projet source](./analyse-du-projet-source.md)). Résultat :
 
-L'hypothèse de SEOS est que la majorité des entités restantes se conforme au
-schéma `crud-entity`. C'est plausible — l'architecture d'origine est homogène —
-mais **ce n'est pas établi**. Trois domaines (`interactive-map`, `monitoring`,
-`reporting`) ne déclarent aucune commande et ne relèvent visiblement d'aucun des
-deux schémas.
+| Famille           |       Entités | Couverture                                                                                      |
+| ----------------- | ------------: | ----------------------------------------------------------------------------------------------- |
+| Conforme + Proche | **22 (41 %)** | Les deux patterns prouvés (`crud-entity`, `action-request`), directement ou après normalisation |
+| Workflow-action   |     19 (36 %) | Un pattern **à extraire** (vues + transitions d'état sur file de tâches)                        |
+| Lecture seule     |      9 (17 %) | Pattern **`read-only-view` à extraire** (D4)                                                    |
+| Divers            |       3 (6 %) | Au cas par cas                                                                                  |
 
-Trois issues sont possibles, et elles n'ont pas le même coût :
+**Verdict : l'approche générative tient.** La couverture par les deux patterns
+existants est de 41 % — bande « moyenne » du plan, dont la conséquence est
+d'**extraire davantage de patterns**. Or les 59 % non couverts ne sont pas
+dispersés : ce sont **deux familles régulières** (workflow-action, lecture
+seule), extractibles par `extract-pattern.js` comme les deux premières. Une fois
+ces deux patterns extraits, la couverture générable dépasse **90 %**.
 
-| Couverture réelle | Conséquence                                                                                                |
-| ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| Élevée (> 80 %)   | La génération porte l'essentiel du travail ; le cadrage tient                                              |
-| Moyenne (40–80 %) | Extraire davantage de patterns pour couvrir les entités « proches »                                        |
-| Faible (< 40 %)   | Le cadrage doit être revu — enrichir fortement les patterns, ou reconsidérer l'approche pour cette portion |
-
-**Aucun calendrier ne doit être annoncé avant cette mesure.**
-`extract-pattern.js` existe pour y répondre sur du code réel.
+Ce n'est donc pas un cas « < 40 % — reconsidérer l'approche ». C'est un cas «
+extraire 2 patterns de plus », borné et conforme à la méthode SEOS.
 
 ## Séquencement
 
