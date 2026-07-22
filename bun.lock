@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@cmz-backoffice-angular/source",
+      "name": "@cmz/source",
       "dependencies": {
         "@angular/common": "catalog:",
         "@angular/compiler": "catalog:",

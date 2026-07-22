@@ -102,7 +102,8 @@ if (failures.length > 0) {
         );
     }
     console.error(
-        '\nAngular 21 ne fonctionne pas en dessous de Node 20.19 (cf. ADR-0006).\n'
+        '\nAngular 22 exige Node ^22.22.3 || ^24.15.0 || >=26.0.0 (cf. ADR-0005).' +
+            '\nInstallez la bonne version : `nvm install 22.22.3 && nvm use`.\n'
     );
     process.exit(1);
 }
