@@ -12,14 +12,21 @@ consulter, l'historique Git fait foi.
 
 ```
 apps/backoffice-angular   application Angular 22.0.7 — squelette, build vert
-libs/                     bibliothèques réutilisables — vide
+libs/                     bibliothèques réutilisables — vide (à générer)
 conventions/              profils de convention par version de framework
+tools/seos-adapter/       adaptateur monorepo (sortie générateur → libs de couche)
 tools/                    scripts de vérification du socle
 docs/                     décisions, architecture, guides
 .husky/                   hooks Git
 nx.json                   configuration Nx
-package.json              catalog de versions + scripts
+package.json              catalog de versions + scripts (workspaces libs/*/*)
 ```
+
+L'adaptateur `tools/seos-adapter/` est validé (Phase 04) : il transforme la
+sortie plate d'un générateur SEOS en libs
+`@cmz/<module>-{domain,data,application,ui,feature}` — distribution, réécriture
+d'imports, `package.json`/`project.json`/paths TS. Voir son
+[README](../../tools/seos-adapter/README.md).
 
 ## Application Angular
 
