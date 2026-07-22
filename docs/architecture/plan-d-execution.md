@@ -238,40 +238,59 @@ prix de frontières imposées plutôt que documentées — et la structure `apps
 `libs/` a été choisie pour l'absorber. Le générateur produisant les
 `package.json`, la multiplication n'est pas un coût manuel.
 
-**04.2 — Paramétrer la sortie du générateur**
+**04.2 — Un adaptateur monorepo, pas un fork des générateurs
+([ADR-0011](../adr/0011-adaptation-monorepo-par-post-traitement.md))**
 
-Ajouter une notion de package cible : chemin de sortie, nom `@cmz/*`,
-`package.json` généré avec les dépendances internes en `workspace:*` et les
-dépendances du socle en `catalog:`.
+Décision prise après lecture du générateur (1 984 lignes) et de la structure
+d'imports du module de référence : **on ne forke pas les générateurs.** On écrit
+**un adaptateur** (`tools/seos-adapter/`) qui post-traite la sortie de n'importe
+quel générateur SEOS — un seul outil pour les 4 patterns.
 
-**04.3 — Générer le `project.json` et les tags Nx**
+L'adaptateur :
 
-Tags de couche (`type:domain`, `type:data`, `type:feature`…) pour que les règles
-de frontières ESLint de la Phase 06 aient prise.
+1. **distribue** les dossiers de couche dans les libs de couche (table couche →
+   lib de l'ADR-0011) ;
+2. **réécrit** les imports alias en imports de package, par AST (ts-morph) et
+   non par regex : `@presentation/pages/<m>/domain/…` → `@cmz/<m>-domain`,
+   `@shared/domain/…` → `@cmz/shared-domain`, etc. ;
+3. **émet** `package.json` (deps internes en `workspace:*`, socle en `catalog:`)
+   et `project.json` (tags `type:domain`…`type:feature`) par lib.
 
-**04.4 — Adapter `check-pattern.js` et `check-semantics.js`**
+La lecture a confirmé que le découpage tient : les imports du module de
+référence expriment déjà les dépendances de couche dans le sens Clean
+Architecture (`application` → `domain`, `di` → tout).
 
-Ils prennent un chemin de module ; il faut qu'ils acceptent un chemin de
-package.
+**04.3 — Ordre du pipeline**
+
+`check-pattern` s'exécute **avant** distribution (il valide le pattern sur la
+sortie plate, pas la disposition monorepo) ; l'adaptateur distribue ensuite. Pas
+besoin de modifier `check-pattern.js` ni `check-semantics.js` — ils gardent leur
+chemin de module plat, appliqué à la sortie intermédiaire.
+
+```
+générer (plat) → check-pattern 106/106 → adapter (distribue + réécrit + émet) → tsc/build/graph
+```
 
 ### Critère de sortie
 
-Le générateur produit un package `libs/*` qui :
+L'adaptateur transforme la sortie d'un générateur en libs qui :
 
 ```bash
 bun install                                  # résout les workspace:*
-bunx nx build <package>                      # compile
-bunx nx graph                                # dépendances attendues, aucune autre
-node <seos>/tools/check-pattern.js ...       # 106/106
+bunx nx build <lib>                          # compile
+bunx nx graph                                # dépendances attendues, aucune autre, acyclique
 bun run check:versions                       # aucune violation
 ```
 
+le tout après un `check-pattern` à 106/106 sur la sortie plate intermédiaire.
+
 ### Risque principal
 
-Le générateur fait 1 984 lignes écrites pour un seul mode de sortie. Si son
-architecture ne s'y prête pas, il faudra soit le refondre, soit générer dans
-l'ancienne forme puis transformer — **décider après lecture du code, pas
-avant.**
+Le risque s'est **déplacé** du générateur (intact, éprouvé) vers l'adaptateur
+(neuf, mais isolé et testable). La réécriture d'imports par AST est déterministe
+; le point à surveiller est un couplage circulaire entre couches qui rendrait le
+graphe cyclique — détecté par `nx graph`, et relevant alors du découpage du
+pattern concerné, pas de l'adaptateur.
 
 ---
 
