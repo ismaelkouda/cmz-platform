@@ -78,6 +78,31 @@ Deux différences appliquées automatiquement : `@Injectable({providedIn:'root'}
 → `@Service()`, et `||` → `??` (défaut plus sûr sur les valeurs falsy
 légitimes).
 
+## Bases de mappers (support de pattern)
+
+Le source fournit une famille de **bases abstraites** qui factorisent la
+validation d'enveloppe (`{error, message, data}`) et le mapping d'items. Analyse
+d'usage (par **nom de classe**, qui diffère du nom de fichier) :
+
+| Base                    | Fichier            | Sous-classes | Décision                             |
+| ----------------------- | ------------------ | -----------: | ------------------------------------ |
+| `PaginatedMapper`       | paginated-response |           48 | **générée** (data = `Paginate<T>`)   |
+| `SimpleResponseMapper`  | simple-response    |           41 | **générée** (data = `T`)             |
+| `ArrayResponseMapper`   | array-response     |           15 | **générée** (data = `T[]`)           |
+| `MessageResponseMapper` | message-response   |            1 | **générée** (message seul)           |
+| `SimplePaginatedMapper` | custom-response    |            0 | **non reproduite** (100 % commentée) |
+| `BaseMapper`            | base-mapper        |            0 | **non reproduite** (100 % commentée) |
+
+Non-reproduction appliquée : les deux bases mortes ne sont pas portées ; la
+fuite `console.log('dto: ', dto)` de `SimpleResponseMapper` est **supprimée**.
+
+**Option de convention ouverte (approbation requise)** : les 4 bases vivantes
+répètent le même `validateResponse` et ne diffèrent que par la forme de `data`.
+Elles pourraient fusionner en **une** base générique (template method : valider
+une fois, différer `extractAndMap`). Défaut retenu ici : **garder les 4 bases
+explicites** du source (plus débogables, plus proche du source, réversible) ; la
+consolidation reste proposable.
+
 ## Prompt
 
 > Produis un fichier `<entité>.mapper.ts` : une classe exportée `<Entité>Mapper`
