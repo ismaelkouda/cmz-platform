@@ -118,11 +118,12 @@ bunx nx affected -t build   # ne reconstruit que ce qui a changé depuis main
 
 ## Points ouverts
 
-| Point                                                                        | Échéance                      |
-| ---------------------------------------------------------------------------- | ----------------------------- |
-| Nx Cloud non activé — nécessite un compte, `bunx nx connect`                 | Phase 06 (CI)                 |
-| Contrôles non rejoués en CI                                                  | Phase 06                      |
-| `Dockerfile` copiant `tools/` avant l'installation                           | Phase 06                      |
-| `CODEOWNERS` à peupler — une équipe inexistante y est ignorée sans erreur    | À la constitution des équipes |
-| Catalog à compléter (`@angular-devkit/build-angular`, `@schematics/angular`) | Phase 02                      |
-| Emplacement définitif des schémas et outils SEOS                             | Phase 02                      |
+| Point                                                                          | Échéance                              |
+| ------------------------------------------------------------------------------ | ------------------------------------- |
+| Nx Cloud non activé — nécessite un compte, `bunx nx connect`                   | Phase 06 (CI)                         |
+| Contrôles non rejoués en CI                                                    | Phase 06                              |
+| `Dockerfile` copiant `tools/` avant l'installation                             | Phase 06                              |
+| `CODEOWNERS` à peupler — une équipe inexistante y est ignorée sans erreur      | À la constitution des équipes         |
+| Cadrage IA (skills Angular, MCP Nx, Web Codegen Scorer) à installer localement | Phase 02, avant génération de contenu |
+| Validation du pattern SEOS sur Angular 22 (étape 02.5)                         | Phase 02                              |
+| `nx-welcome.ts` (dépasse le budget SCSS) à retirer                             | Au câblage des routes                 |
