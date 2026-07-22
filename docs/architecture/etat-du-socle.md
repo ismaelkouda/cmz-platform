@@ -5,8 +5,10 @@ jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
 - **Dernière mise à jour :** 2026-07-22
-- **État :** socle outillé + **application Angular 22 générée et compilant**
-  (Phase 02 en cours). Aucune bibliothèque, aucun contenu métier.
+- **État :** socle outillé + **application Angular 22 compilant** + **adaptateur
+  monorepo validé** (Phases 02–04 faites). Aucune bibliothèque générée, aucun
+  contenu métier. Reste : socle transverse `shared/` (Phase 05), puis
+  reconstruction (Phase 07).
 
 ## Contenu du dépôt
 
