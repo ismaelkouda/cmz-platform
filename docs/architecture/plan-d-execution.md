@@ -300,30 +300,50 @@ pattern concerné, pas de l'adaptateur.
 `shared/application` 5, `shared/components` 351, `core/` 28, divers 21.
 
 Plus de 3 300 imports du projet source pointent vers `shared/*` : **rien ne peut
-être reconstruit avant**. C'est la seule phase réellement séquentielle.
+être reconstruit avant**.
 
-### Ordre imposé par les dépendances
+### Ce que la cartographie a établi (mesuré)
 
-```
-shared/domain  →  shared/data  →  shared/application  →  shared/components  →  core/
-```
+Contrairement aux entités (couches proprement en pile), le `shared/` du projet
+source a des dépendances **circulaires et inversées**. Mais la mesure les réduit
+à peu de chose :
 
-Le domaine ne dépend de rien ; les composants dépendent de tout le reste.
+| Constat                                      | Mesure                                                                             |
+| -------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Cycle `domain → data`                        | **1 fichier** (`domain/enums/priority-level.enum.ts` importe un DTO de `data`)     |
+| Cycle `domain → components`                  | **1 fichier** (`domain/services/history-data-parser.ts`)                           |
+| Back-references `shared → @pages`            | 20 fichiers, **tous dans `shared/components`** (widgets) ; le kernel en est exempt |
+| Back-references `shared → @core`             | 10 fichiers                                                                        |
+| Sous-espaces feuilles (0 dépendance interne) | `constants`, `interface`, `class`                                                  |
+| `core` → `shared`                            | 16 (bon sens ; core dépend de shared, pas l'inverse)                               |
 
-### Packages cibles
+**Une fois les 2 fichiers relocalisés, le kernel est un DAG propre :**
+`constants·interface·class` (feuilles) ← `domain` ← `data` ← `application`.
 
-| Package                   | Source                                    | Fichiers |
-| ------------------------- | ----------------------------------------- | -------- |
-| `@cmz/shared-domain`      | `shared/domain` + `shared/class`          | ~130     |
-| `@cmz/shared-data`        | `shared/data`                             | 50       |
-| `@cmz/shared-application` | `shared/application`                      | 5        |
-| `@cmz/shared-ui`          | `shared/components` + `shared/directives` | ~352     |
-| `@cmz/core`               | `core/`                                   | 28       |
-| `@cmz/shared-constants`   | `shared/constants` + `shared/interface`   | ~15      |
+### Le découpage qui en découle : kernel d'abord, composants ensuite
 
-`shared/components` (351 fichiers, 30 composants) est le gros morceau et
-mériterait probablement d'être scindé — à décider une fois son contenu
-inventorié.
+| Sous-phase              | Contenu                                                            | Fichiers | Débloque                                                                       |
+| ----------------------- | ------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------ |
+| **05a — Kernel**        | `domain`, `data`, `application`, `constants`, `interface`, `class` | **200**  | Les couches `domain`/`data`/`application` de **toutes les entités** (Phase 07) |
+| **05b — Composants UI** | `shared/components` (48 widgets) + `directives`                    | **352**  | Seulement la couche `ui` des entités                                           |
+| **05c — Core**          | `core/`                                                            | 28       | Configuration, guards, intercepteurs                                           |
+
+**Le point décisif : la sous-phase 05a (200 fichiers) suffit à débloquer la
+reconstruction des entités** aux couches domain/data/application. Les 352
+fichiers de composants (05b) ne bloquent que la couche `ui` — ils sont
+parallélisables et non critiques pour valider le pipeline entité.
+
+### Packages cibles (05a — kernel)
+
+| Package                   | Source                    | Tag                | Dépend de                  |
+| ------------------------- | ------------------------- | ------------------ | -------------------------- |
+| `@cmz/shared-constants`   | `constants` + `interface` | `type:util`        | (rien)                     |
+| `@cmz/shared-domain`      | `domain` + `class`        | `type:domain`      | shared-constants           |
+| `@cmz/shared-data`        | `data`                    | `type:data`        | shared-domain              |
+| `@cmz/shared-application` | `application`             | `type:application` | shared-domain, shared-data |
+
+Les composants (05b) donneront `@cmz/shared-ui`, `core` (05c) donnera
+`@cmz/core`.
 
 ### Dépendances métier
 
@@ -349,50 +369,67 @@ ce qu'un package consomme réellement. Le `package.json` source contient des
 dépendances manifestement inutilisées (`i`, `chalk`, `commander`,
 `replace-json-property`).
 
-### Étapes
+### Étapes (05a — kernel)
 
-**05.1** Inventorier les dépendances internes de `shared/` — quel sous-dossier
-importe quel autre. Sans cette carte, le découpage produira des cycles.
+**05a.1 — Casser les 2 cycles.** Relocaliser les 2 fichiers mal placés :
+`priority-level.enum.ts` (le DTO qu'il référence rejoint le domaine, ou l'enum
+cesse d'y référer) et `history-data-parser.ts` (vers `application` ou une lib
+dédiée). Vérifier ensuite que le kernel est acyclique.
 
-**05.2 à 05.6** Un package par étape, dans l'ordre ci-dessus. Chacun compile et
-passe `nx graph` avant de passer au suivant.
+**05a.2 — Produire les 4 libs kernel**, dans l'ordre du DAG (`constants` →
+`domain` → `data` → `application`). Chaque lib compile et passe `nx graph` avant
+la suivante.
 
-**05.7** Vérifier l'absence de cycle : `bunx nx graph` doit rester acyclique.
+**05a.3 — Résoudre les back-references `@core` du kernel** (10 fichiers) : soit
+le concept a sa place dans le kernel, soit c'est un couplage à inverser. Aucun
+ne doit subsister vers `@pages` (le kernel en est déjà exempt).
 
-### Critère de sortie
+### Critère de sortie (05a)
 
 ```bash
-bunx nx run-many -t build --projects=tag:scope:shared   # tout compile
-bunx nx graph                                            # aucun cycle
+bunx nx run-many -t build --projects=tag:scope:shared   # les 4 libs kernel compilent
+bunx nx graph                                            # acyclique
+# puis : une entité générée+adaptée dont domain/data/application build vert
 ```
 
-### `shared/` est reconstitué, pas repris manuellement
+Le vrai critère de sortie de 05a : **une entité (couches
+domain/data/application) compile**, c'est-à-dire que les `@cmz/shared-*` que
+l'adaptateur a produits en Phase 04 résolvent enfin.
 
-Règle de projet : **aucun code manuel**, y compris pour le socle transverse.
-`shared/` est reconstitué **conformément aux conventions Nx et aux règles
-DDD/CQRS**, en deux catégories de contenu :
+### Comment le kernel est produit — décision à prendre
 
-1. **Le code de support des patterns** (les briques dont les archétypes CRUD /
-   read-only-view dépendent : classe d'erreur de domaine, bus commands/queries,
-   service de feedback UI, types génériques…) fait l'objet d'une **génération
-   automatique par script**, avec la même discipline que les entités : profil de
-   convention externe, contrat d'archétype, portail de validation.
+Le kernel est un **one-off** : il n'a pas d'exemplaire de référence validé
+106/106 comme les 53 entités, et ce n'est pas _N instances d'une même forme_
+mais un ensemble hétérogène (value-objects, hiérarchies d'erreurs, bus
+générique, DTO, types). Extraire un « pattern » d'un one-off aurait peu de sens.
 
-    La difficulté propre à `shared/` est que ce code doit être **généré ET
-    rester ouvert** aux conventions qui évoluent (`@Injectable` → `@Service`).
-    Réponse : il n'est jamais figé dans le générateur — il est régénérable à
-    partir du profil de convention courant
-    ([ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md)). Un
-    changement de convention se traite en régénérant, pas en éditant.
+Deux voies, à trancher (voir la question posée à la fin de la Phase 05) :
 
-2. **Le contenu métier transverse** que les patterns ne couvrent pas (composants
-   UI spécifiques, utilitaires) est produit par l'IA sous contrat d'archétype et
-   passe le portail de validation — comme une entité, jamais à la main.
+- **Voie A — Transformer le source par l'adaptateur.** `shared` est déjà
+  structuré en couches ; l'adaptateur (ADR-0011), étendu pour traiter
+  `@shared/<couche>` comme interne, le distribue en libs et réécrit les imports.
+  Le contenu reste le code réel, éprouvé, du source ; la transformation est
+  **déterministe et scriptée** (donc « aucun code manuel »). La normalisation
+  aux conventions Angular 22 (`@Service`…) se fait par une passe séparée pilotée
+  par le profil.
+- **Voie B — Générer le kernel par l'IA sous contrats d'archétype.** Aligné sur
+  la génération, applique les conventions nativement, mais l'hétérogénéité du
+  kernel impose de nombreux archétypes pour un objet unique — coût élevé,
+  bénéfice moindre que pour des entités répétées.
 
-Contrairement aux entités métier (Phase 07), `shared/` n'a pas d'exemplaire de
-référence validé 106/106 : une partie du travail de la Phase 05 consiste
-justement à **extraire les patterns du socle** (`extract-pattern.js`) pour le
-rendre générable. C'est ce qui explique son coût, pas un recours au manuel.
+Dans les deux cas : **aucun code écrit à la main**, et le résultat passe le
+portail de validation
+([ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md)).
+
+### Dépendances métier — en 05b, pas en 05a
+
+Le kernel (05a) n'a besoin que d'`@angular/*`, `rxjs`, `tslib`. Les paquets
+métier (NgRx, PrimeNG, `ol`, `exceljs`…) n'arrivent qu'avec les composants UI
+(05b) : inutile d'installer PrimeNG avant d'avoir un composant qui l'utilise.
+Chacun est ajouté **au catalog** à son introduction
+([ADR-0005](../adr/0005-versions-du-socle.md)), et seulement s'il est réellement
+consommé — le `package.json` source contient des dépendances mortes (`i`,
+`chalk`, `commander`, `replace-json-property`).
 
 ---
 
