@@ -1,6 +1,6 @@
-import { Coordinates } from '../interfaces/coordinates.interface';
+import { CoordinatesProps } from '../props/coordinates.props';
 
-export class CoordinatesEntity implements Coordinates {
+export class CoordinatesEntity implements CoordinatesProps {
     constructor(
         public readonly latitude: number,
         public readonly longitude: number,

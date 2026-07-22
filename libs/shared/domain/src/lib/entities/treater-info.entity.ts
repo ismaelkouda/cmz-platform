@@ -1,6 +1,6 @@
-import { TreaterInfo } from '../interfaces/treater-info.interface';
+import { TreaterInfoProps } from '../props/treater-info.props';
 
-export class TreaterInfoEntity implements TreaterInfo {
+export class TreaterInfoEntity implements TreaterInfoProps {
     constructor(
         public readonly acknowledgedAt: string | null,
         public readonly createdAt: string,

@@ -19,26 +19,28 @@ peut porter des accesseurs et, plus tard, des invariants. Le DTO reste étranger
 - **Aucun décorateur** (ce n'est pas un service Angular).
 - **Aucun import de `data`** (pas de DTO) ni d'UI — anti-cycle. Peut référencer
   d'autres types du domaine (enum, interface) en **import relatif** intra-lib.
-- **La forme est externalisée** : la forme métier de l'entité vit dans une
-  `interface` **exportée** du dossier `interfaces/` (archétype `interface`), que
-  l'entité **importe et `implements`**. Jamais d'interface déclarée _inline_
-  dans le fichier d'entité — une forme = un fichier, réutilisable et non caché.
+- **La forme est externalisée dans `props/`** : la forme d'une entité vit dans
+  une interface **exportée** `<Nom>Props` du dossier `props/`
+  (`props/<nom>.props.ts`), que l'entité **importe et `implements`**. Jamais
+  d'interface _inline_, et **jamais dans `interfaces/`** (réservé aux formes
+  qu'aucune classe n'implémente — cf.
+  [`conventions/nommage.md`](../conventions/nommage.md)).
 - Deux variantes observées, toutes deux admises :
     - **champs plats** : chaque donnée est un `readonly` du constructeur, typé
-      par l'interface externalisée (`ActorEntity implements Actor`, `Actor`
-      étant dans `interfaces/actor.interface.ts`).
+      par la props (`ActorEntity implements ActorProps`, `ActorProps` dans
+      `props/actor.props.ts`).
     - **objet `props`** : le constructeur reçoit un unique `props` typé par une
-      interface du domaine, exposé via des **getters** (`MessageEntity` +
+      `<Nom>Props`, exposé via des **getters** (`MessageEntity` +
       `MessageProps`).
 - Structures **récursives** autorisées
   (`TreeNodeEntity.children: TreeNodeEntity[]`).
 
 ## Exemplaire
 
-`interfaces/actor.interface.ts` :
+`props/actor.props.ts` :
 
 ```ts
-export interface Actor {
+export interface ActorProps {
     readonly id: string;
     readonly firstName: string;
     readonly lastName: string;
@@ -50,9 +52,9 @@ export interface Actor {
 `entities/actor.entity.ts` :
 
 ```ts
-import { Actor } from '../interfaces/actor.interface';
+import { ActorProps } from '../props/actor.props';
 
-export class ActorEntity implements Actor {
+export class ActorEntity implements ActorProps {
     constructor(
         public readonly id: string,
         public readonly firstName: string,
@@ -68,9 +70,9 @@ export class ActorEntity implements Actor {
 > Produis une classe exportée `<Nom>Entity` aux champs `public readonly`
 > fournis, déclarés en paramètres de constructeur, en `camelCase`. Aucun
 > décorateur, aucun import de DTO. Réfère les enums/interfaces du domaine en
-> import relatif. La forme métier est une `interface` exportée du dossier
-> `interfaces/` que l'entité `implements` (jamais d'interface inline). Selon les
-> données : champs plats ou objet `props` + getters.
+> import relatif. La forme métier est une `<Nom>Props` exportée du dossier
+> `props/` que l'entité `implements` (jamais inline, jamais dans `interfaces/`).
+> Selon les données : champs plats ou objet `props` + getters.
 
 **Données** : les champs → types du concept métier (issus de l'entité source,
 `camelCase`).

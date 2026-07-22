@@ -1,6 +1,6 @@
-import { Actor } from '../interfaces/actor.interface';
+import { ActorProps } from '../props/actor.props';
 
-export class ActorEntity implements Actor {
+export class ActorEntity implements ActorProps {
     constructor(
         public readonly id: string,
         public readonly firstName: string,

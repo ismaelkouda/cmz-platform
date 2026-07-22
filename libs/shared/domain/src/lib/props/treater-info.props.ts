@@ -1,4 +1,4 @@
-export interface TreaterInfo {
+export interface TreaterInfoProps {
     readonly acknowledgedAt: string | null;
     readonly createdAt: string;
     readonly reportedAt: string;

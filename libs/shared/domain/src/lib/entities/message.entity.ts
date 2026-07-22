@@ -1,4 +1,4 @@
-import { MessageProps } from '../interfaces/message-props.interface';
+import { MessageProps } from '../props/message.props';
 
 export class MessageEntity {
     constructor(public readonly props: MessageProps) {}

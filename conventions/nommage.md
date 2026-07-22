@@ -11,7 +11,8 @@ Externalisée ici, jamais codée en dur dans un générateur.
 | Archétype    | Suffixe         | Exemple                     |
 | ------------ | --------------- | --------------------------- |
 | entité       | `.entity.ts`    | `report-location.entity.ts` |
-| interface    | `.interface.ts` | `coordinates.interface.ts`  |
+| props        | `.props.ts`     | `actor.props.ts`            |
+| interface    | `.interface.ts` | (forme de valeur autonome)  |
 | enum         | `.enum.ts`      | `location-method.enum.ts`   |
 | erreur       | `.error.ts`     | `api.error.ts`              |
 | mapper       | `.mapper.ts`    | `report-source.mapper.ts`   |
@@ -35,9 +36,19 @@ l'écosystème TypeScript / NestJS / Angular. Pluraliser en `dtos/` serait _moin
 idiomatique. C'est la seule exception à la règle du pluriel, et elle est
 **voulue**, pas accidentelle.
 
-## Conséquence pour les archétypes
+## `props/` vs `interfaces/` — deux rôles, deux dossiers
 
-Une **forme** (interface) ne se déclare jamais _inline_ dans un fichier d'entité
-ou de service : elle vit dans `interfaces/`, exportée, et est `implements`ée.
-Cela garde « une forme = un fichier », réutilisable et repérable (cf.
+Une **forme** ne se déclare jamais _inline_ dans un fichier d'entité ou de
+service. Selon son rôle, elle vit dans l'un de **deux dossiers séparés** (il est
+**interdit** de les mélanger) :
+
+| Dossier       | Rôle                                                                                        | Nom du type  | Fichier              |
+| ------------- | ------------------------------------------------------------------------------------------- | ------------ | -------------------- |
+| `props/`      | forme **implémentée par une classe** (l'entité `implements` sa forme, ou reçoit un `props`) | `<Nom>Props` | `<nom>.props.ts`     |
+| `interfaces/` | forme de valeur **autonome**, non implémentée par une classe                                | `<Nom>`      | `<nom>.interface.ts` |
+
+Règle : dès qu'une `interface` est `implements`ée par une classe (ou sert de
+type au `props` d'une entité), c'est une **props** → `props/<nom>.props.ts`,
+type `<Nom>Props`. Les `interfaces/` ne contiennent que des formes qu'aucune
+classe n'implémente (cf.
 [`contracts/entity.contract.md`](../contracts/entity.contract.md)).

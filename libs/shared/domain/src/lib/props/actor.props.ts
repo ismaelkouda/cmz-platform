@@ -1,4 +1,4 @@
-export interface Actor {
+export interface ActorProps {
     readonly id: string;
     readonly firstName: string;
     readonly lastName: string;

@@ -1,9 +1,9 @@
 import { LocationMethod } from '../enums/location-method.enum';
 import { LocationType } from '../enums/location-type.enum';
-import { Coordinates } from './coordinates.interface';
+import { CoordinatesProps } from './coordinates.props';
 
-export interface ReportLocation {
-    coordinates: Coordinates;
+export interface ReportLocationProps {
+    coordinates: CoordinatesProps;
     method: LocationMethod;
     type: LocationType;
     name: string;

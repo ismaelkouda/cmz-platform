@@ -1,6 +1,6 @@
-import { Timestamps } from '../interfaces/timestamps.interface';
+import { TimestampsProps } from '../props/timestamps.props';
 
-export class TimestampsEntity implements Timestamps {
+export class TimestampsEntity implements TimestampsProps {
     constructor(
         public readonly createdAt: string,
         public readonly updatedAt: string

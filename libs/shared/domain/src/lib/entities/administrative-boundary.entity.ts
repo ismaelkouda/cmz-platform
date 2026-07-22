@@ -1,6 +1,6 @@
-import { AdministrativeBoundary } from '../interfaces/administrative-boundary.interface';
+import { AdministrativeBoundaryProps } from '../props/administrative-boundary.props';
 
-export class AdministrativeBoundaryEntity implements AdministrativeBoundary {
+export class AdministrativeBoundaryEntity implements AdministrativeBoundaryProps {
     constructor(
         public readonly id: string,
         public readonly name: string,

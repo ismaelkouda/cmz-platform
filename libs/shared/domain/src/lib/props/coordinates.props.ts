@@ -1,4 +1,4 @@
-export interface Coordinates {
+export interface CoordinatesProps {
     latitude: number;
     longitude: number;
     what3words?: string;

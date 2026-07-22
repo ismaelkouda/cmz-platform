@@ -1,7 +1,11 @@
-import { Coordinates, LocationMethod, LocationType } from '@cmz/shared-domain';
+import {
+    CoordinatesProps,
+    LocationMethod,
+    LocationType,
+} from '@cmz/shared-domain';
 
 export interface ReportLocationDto {
-    coordinates: Coordinates;
+    coordinates: CoordinatesProps;
     method: LocationMethod;
     type: LocationType;
     name: string;
