@@ -45,14 +45,16 @@ probable mais non vérifiée. Si elle est fausse, tout le plan change.
 
 ### Étapes
 
-**02.1 — Installer le plugin Angular**
+**02.1 — Installer le plugin Angular (sous approbation)**
 
 ```bash
-bun add -d @nx/angular@23.1.0
+bun add -d @nx/angular@latest
 ```
 
-Compatibilité déjà vérifiée : `@nx/angular` 23.1.0 déclare
-`@angular/build: ">= 20.0.0 < 23.0.0"`.
+`@latest` plutôt qu'une version épinglée : on veut la version qui connaît
+Angular 22. Compatibilité vérifiée sur 23.1.0
+(`@angular/build: ">= 20.0.0 < 23.0.0"`) ; `@latest` sera relu au moment de
+l'installation. **Installation soumise à approbation** (règle de projet).
 
 **02.2 — Compléter le catalog**
 
@@ -97,25 +99,40 @@ bun run check:versions                     # aucune violation
 node <seos>/tools/check-pattern.js ...     # 106/106
 ```
 
-### Décision à prendre — D1 : où vivent les outils SEOS
+### Cadrage IA (préalable à toute génération)
 
-Les schémas et outils vivent aujourd'hui dans le dépôt source. Trois options :
+Avant de générer quoi que ce soit, installer le cadrage IA officiel Angular + Nx
+([ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md)) — **sous réserve
+d'approbation** de chaque installation :
 
-| Option                                       | Avantage                                           | Inconvénient                                          |
-| -------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------- |
-| Package `libs/seos-tooling` dans ce monorepo | Une seule vérité, versionnée avec ce qui l'utilise | Le dépôt source perd l'outillage, ou on duplique      |
-| Dépendance vers le dépôt source              | Pas de duplication                                 | Couplage inter-dépôts, versions difficiles à aligner  |
-| Dépôt tiers publié                           | Propre, réutilisable par les deux                  | Coût de mise en place, cadence de publication à gérer |
+```bash
+npx skills add https://github.com/angular/skills   # angular-developer, angular-new-app
+npx nx configure-ai-agents                          # MCP Nx + skills agents
+# best-practices.md + llms-full.txt en instructions système
+```
 
-**À trancher avant la Phase 04**, qui modifie ces outils. Sans décision, deux
-dépôts porteront une vérité partagée et divergeront.
+Et créer le profil de convention `conventions/angular-22.profile.json`
+(`@Service`, `inject()`, Signal Forms…). Aucune convention Angular n'est codée
+en dur dans les scripts.
 
-### Si le pattern ne tient pas sur Angular 22
+### D1 — Emplacement des outils SEOS : **dépôt tiers publié** (décidé)
 
-Ce n'est pas un échec du plan mais une information. Deux issues : ajuster le
-schéma (une version v24 documentant les écarts Angular 22), ou revenir à Angular
-21 en révisant l'[ADR-0005](../adr/0005-versions-du-socle.md). La décision se
-prend sur la nature des écarts constatés, pas par avance.
+Les schémas et outils SEOS vivent dans un **dépôt tiers publié**, consommé comme
+dépendance versionnée. Ce monorepo n'en contient aucune copie — il déclare une
+dépendance sur une version. Le profil de convention, lui, reste **dans ce
+monorepo** (il est spécifique au dépôt).
+
+Conséquence à outiller : la version du dépôt SEOS est épinglée (catalog ou
+dépendance directe), et sa montée de version suit le même contrôle de relecture
+que le reste du socle.
+
+### Si le pattern ne tient pas sur Angular 22 : **adapter, jamais revenir en arrière**
+
+Règle de projet : **on ne revient jamais à Angular 21.** Si un archétype ne
+tient pas sur Angular 22, on adapte le pattern — concrètement, on met à jour le
+profil de convention et/ou le contrat d'archétype concerné, on régénère
+l'exemplaire de référence, et on revalide 106/106. L'écart Angular 22 devient
+une entrée du profil, pas un motif de recul.
 
 ---
 
@@ -151,12 +168,18 @@ done
 | Proche      | Écart mineur, réductible            | Génération + ajustement                              |
 | Hors schéma | Ne relève d'aucun des deux patterns | Extraction d'un nouveau pattern, ou reprise manuelle |
 
-**03.4 — Traiter les trois domaines sans commande**
+**03.4 — Extraire un troisième pattern `read-only-view` (décidé)**
 
 `interactive-map`, `monitoring` et `reporting` ne déclarent aucune commande : ce
-sont probablement des domaines en lecture seule. Le mineur distingue déjà ce
-sous-corpus. Deux voies : extraire un troisième pattern `read-only-view` si la
-forme se répète, ou les traiter manuellement.
+sont des domaines en lecture seule. Plutôt que de les traiter à la main — ce qui
+reviendrait à du code manuel, interdit
+([ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md)) — on **extrait
+un troisième pattern `read-only-view`** avec `extract-pattern.js`, sur le
+sous-corpus en lecture seule que le mineur isole déjà.
+
+Ce pattern a son propre schéma canonique (sans la branche commands/handlers du
+CRUD), ses propres archétypes et son propre exemplaire de référence validé. Une
+fois extrait et validé sur un domaine, les deux autres se génèrent.
 
 ### Critère de sortie
 
@@ -189,22 +212,31 @@ comme deuxième cible de validation : passer d'une structure applicative à une
 
 ### Étapes
 
-**04.1 — Décider du découpage d'un domaine en packages**
+**04.1 — Découpage : une lib par couche et par module (décidé)**
 
-Question préalable : un domaine devient-il **une** bibliothèque ou **plusieurs**
-?
+Un module donne **une bibliothèque par couche** — soit, pour un module CRUD,
+quatre à cinq packages :
 
-Les 106 fichiers canoniques se répartissent en `application` 31, `domain` 26,
-`infrastructure` 23, `presentation` 21, `di` 4. Deux options :
+```
+libs/<module>/domain          @cmz/<module>-domain        type:domain
+libs/<module>/data            @cmz/<module>-data          type:data
+libs/<module>/application      @cmz/<module>-application   type:application
+libs/<module>/ui              @cmz/<module>-ui            type:ui
+libs/<module>/feature         @cmz/<module>-feature       type:feature
+```
 
-| Option                            | Conséquence                                                |
-| --------------------------------- | ---------------------------------------------------------- |
-| Une lib par domaine               | 18 packages, frontières internes non opposables            |
-| Une lib par couche et par domaine | ~72 packages, frontières réellement imposées par le graphe |
+Les 106 fichiers canoniques se répartissent déjà en `application` 31, `domain`
+26, `infrastructure` 23, `presentation` 21, `di` 4 — le découpage suit cette
+répartition naturelle. Les frontières deviennent **réellement opposables** par
+le graphe Nx et les règles ESLint
+([ADR-0004](../adr/0004-graphe-de-dependances-declarees.md)) : `domain` ne peut
+importer personne, `feature` peut importer les couches inférieures, jamais
+l'inverse.
 
-La seconde sert l'[ADR-0004](../adr/0004-graphe-de-dependances-declarees.md)
-mais multiplie les `package.json`. **À trancher sur un domaine pilote**, pas
-dans l'abstrait.
+Contrepartie assumée : ~72 packages pour les 18 modules, plus le socle. C'est le
+prix de frontières imposées plutôt que documentées — et la structure `apps/` +
+`libs/` a été choisie pour l'absorber. Le générateur produisant les
+`package.json`, la multiplication n'est pas un coût manuel.
 
 **04.2 — Paramétrer la sortie du générateur**
 
@@ -315,12 +347,33 @@ bunx nx run-many -t build --projects=tag:scope:shared   # tout compile
 bunx nx graph                                            # aucun cycle
 ```
 
-### Piège
+### `shared/` est reconstitué, pas repris manuellement
 
-`shared/` du projet source **n'a pas été passé au crible des patterns** — les
-schémas SEOS couvrent les entités métier, pas le socle transverse. Cette phase
-est donc une **reprise manuelle**, pas une génération. C'est la principale
-différence avec la Phase 07, et elle explique son coût.
+Règle de projet : **aucun code manuel**, y compris pour le socle transverse.
+`shared/` est reconstitué **conformément aux conventions Nx et aux règles
+DDD/CQRS**, en deux catégories de contenu :
+
+1. **Le code de support des patterns** (les briques dont les archétypes CRUD /
+   read-only-view dépendent : classe d'erreur de domaine, bus commands/queries,
+   service de feedback UI, types génériques…) fait l'objet d'une **génération
+   automatique par script**, avec la même discipline que les entités : profil de
+   convention externe, contrat d'archétype, portail de validation.
+
+    La difficulté propre à `shared/` est que ce code doit être **généré ET
+    rester ouvert** aux conventions qui évoluent (`@Injectable` → `@Service`).
+    Réponse : il n'est jamais figé dans le générateur — il est régénérable à
+    partir du profil de convention courant
+    ([ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md)). Un
+    changement de convention se traite en régénérant, pas en éditant.
+
+2. **Le contenu métier transverse** que les patterns ne couvrent pas (composants
+   UI spécifiques, utilitaires) est produit par l'IA sous contrat d'archétype et
+   passe le portail de validation — comme une entité, jamais à la main.
+
+Contrairement aux entités métier (Phase 07), `shared/` n'a pas d'exemplaire de
+référence validé 106/106 : une partie du travail de la Phase 05 consiste
+justement à **extraire les patterns du socle** (`extract-pattern.js`) pour le
+rendre générable. C'est ce qui explique son coût, pas un recours au manuel.
 
 ---
 
@@ -415,26 +468,67 @@ en dernier et probablement découpé.
 
 ### Boucle par entité
 
-1. Générer les 106 fichiers dans le package cible.
-2. Reporter le contenu métier depuis le projet source — règles de gestion,
-   validations, libellés.
-3. `check-pattern.js` → 106/106.
-4. `check-semantics.js` → aucune erreur.
-5. `nx build`, `nx lint`, tests Vitest.
-6. `nx graph` : dépendances attendues, **et aucune inattendue**.
-7. Parcours principal vérifié contre l'application source.
+1. Générer les fichiers canoniques dans les packages de couche (squelette
+   déterministe, zéro IA).
+2. **Injecter le contenu métier par l'IA, sous contrat d'archétype** — jamais à
+   la main ([ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md)).
+   Chaque fichier est rempli selon son archétype : rôle DDD/CQRS + règle
+   mécanique + profil de convention Angular 22 + exemplaire de référence + les
+   données métier issues du projet source.
+3. `tsc --noEmit` → 0 erreur.
+4. ESLint + frontières → 0 erreur.
+5. `check-pattern.js` → 106/106 (structure).
+6. `check-semantics.js` → 0 erreur (bugs mécaniques).
+7. **Web Codegen Scorer** → score au-dessus du seuil retenu.
+8. `nx build`, tests Vitest.
+9. `nx graph` : dépendances attendues, **et aucune inattendue**.
+10. Revue humaine du **contenu métier uniquement** — la seule chose que les
+    outils ne peuvent pas juger.
 
-### Le piège central
+### Le piège central — et comment le traiter
 
 Le schéma `crud-entity` l'écrit lui-même : ces vérifications couvrent la
 **conformité structurelle**, pas le contenu sémantique. Il renvoie à **neuf
 expériences** où des déviations réelles ont été trouvées malgré 100 % de
-conformité.
+conformité. 106/106 signifie que les bons fichiers existent au bon endroit — pas
+que l'entité fonctionne.
 
-106/106 signifie que les bons fichiers existent au bon endroit — pas que
-l'entité fonctionne. `check-semantics.js` couvre neuf familles de bugs réels
-(defer manquant, clé i18n absente, handler d'erreur non enregistré…), ce qui est
-beaucoup, mais pas tout. **L'étape 7 n'est pas optionnelle.**
+Le problème, formulé précisément : un fichier peut être une classe, une
+fonction, un injectable ou non ; son contenu dépend de plusieurs paramètres. Il
+n'existe pas **une** structure de contenu unique. La réponse est de ne pas en
+chercher une, mais de **typer chaque fichier par son archétype** et de donner à
+chaque archétype son propre prompt contraint.
+
+**Contrats d'archétype.** Les 106 fichiers ne relèvent que d'une quinzaine
+d'archétypes. Chacun porte :
+
+| Élément du contrat      | Rôle                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| Rôle DDD/CQRS           | Ce que le fichier fait dans l'architecture (ex. un `use-case` orchestre, ne valide pas) |
+| Règle mécanique         | Invariant vérifiable (ex. tout appel repository dans `defer()`)                         |
+| Profil de convention    | Décorateurs et API de la version Angular courante (`@Service`, `inject()`…)             |
+| Exemplaire de référence | Le fichier correspondant du module validé 106/106                                       |
+| Prompt structuré        | Force l'IA à ne remplir que le **contenu métier**, dans une forme fixée                 |
+
+Le prompt n'est pas libre : c'est un gabarit qui impose les bonnes pratiques
+(niveau entreprise) et n'ouvre qu'un trou de forme connue. L'IA n'invente jamais
+le squelette — il est déterministe — elle ne fournit que la logique métier que
+seul le projet source connaît.
+
+**Élargir la couverture des bugs — par processus, pas par devinette.**
+`check-semantics.js` couvre 9 familles aujourd'hui, chacune née d'un bug réel.
+La règle est stricte :
+
+> Tout bug trouvé (revue humaine de l'étape 10, ou incident) devient un test qui
+> échoue, puis une règle mécanique ajoutée à `check-semantics.js`. On n'ajoute
+> jamais une règle sans un bug réel à son origine.
+
+La couverture croît ainsi de façon monotone et justifiée. Chaque entité migrée
+peut donc _renforcer_ le portail pour les suivantes — le système apprend de ses
+propres erreurs au lieu de les répéter.
+
+**L'étape 10 n'est pas optionnelle.** Le portail réduit le champ à vérifier
+manuellement au strict contenu métier, mais ne l'élimine pas.
 
 ### Traitement des 16 imports inter-domaines
 
@@ -468,26 +562,45 @@ constituée au fil de la Phase 07 et non à la fin.
 
 ---
 
-## Décisions bloquantes
+## Décisions
 
-| #   | Décision                                        | À prendre avant | Conséquence si reportée                      |
-| --- | ----------------------------------------------- | --------------- | -------------------------------------------- |
-| D1  | Emplacement des outils SEOS                     | Phase 04        | Deux dépôts divergent                        |
-| D2  | Une lib par domaine ou par couche               | Phase 04        | Redécoupage de tous les packages             |
-| D3  | Découpage de `shared/components` (351 fichiers) | Phase 05        | Un package obèse difficile à scinder ensuite |
-| D4  | Sort des 3 domaines en lecture seule            | Phase 03        | Volume de la Phase 07 inconnu                |
+| #   | Décision                                        | Statut                                                           |
+| --- | ----------------------------------------------- | ---------------------------------------------------------------- |
+| D1  | Emplacement des outils SEOS                     | ✅ Dépôt tiers publié                                            |
+| D2  | Une lib par domaine ou par couche               | ✅ Par couche **et** par module (~72 packages)                   |
+| D4  | Sort des 3 domaines en lecture seule            | ✅ Extraction d'un pattern `read-only-view`                      |
+| D5  | Cadrage IA officiel Angular + Nx                | ✅ [ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md) |
+| D3  | Découpage de `shared/components` (351 fichiers) | ⏳ À trancher en Phase 05, une fois son contenu inventorié       |
 
 ## Ce qui rendrait ce plan caduc
 
 Trois hypothèses le sous-tendent. Chacune est testée tôt et à faible coût —
 c'est délibéré.
 
-| Hypothèse                                   | Testée en | Si fausse                                  |
-| ------------------------------------------- | --------- | ------------------------------------------ |
-| Les patterns tiennent sur Angular 22        | Phase 02  | Ajuster le schéma, ou revenir à Angular 21 |
-| La couverture des patterns est élevée       | Phase 03  | Phase 07 largement manuelle — replanifier  |
-| Les générateurs sont adaptables au monorepo | Phase 04  | Générer puis transformer, ou refondre      |
+| Hypothèse                                   | Testée en | Si fausse                                                                                         |
+| ------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------- |
+| Les patterns tiennent sur Angular 22        | Phase 02  | **Adapter le pattern** (profil de convention + contrat d'archétype) — jamais revenir à Angular 21 |
+| La couverture des patterns est élevée       | Phase 03  | Extraire les patterns manquants (dont `read-only-view`), pas de reprise manuelle                  |
+| Les générateurs sont adaptables au monorepo | Phase 04  | Générer puis transformer, ou refondre le générateur                                               |
 
 L'ordre des phases est construit pour que **la découverte d'une hypothèse fausse
 coûte le moins cher possible** : les deux phases de mesure passent avant les
 deux phases lourdes.
+
+## Règles de projet transverses
+
+Ces règles s'appliquent à **toutes** les phases :
+
+1. **Aucun code manuel.** Le flux est : données → patterns/scripts → IA sous
+   contrat → validation. Y compris `shared/` et les correctifs.
+2. **Approbation avant toute installation de bibliothèque.** Chaque `bun add` /
+   `npx … add` est soumis à validation explicite.
+3. **Recherche documentaire officielle avant chaque nouvelle stack.** Avant
+   d'entamer Angular, React, Rust, Spring, Kotlin, Swift…, parcourir la
+   documentation officielle et les sources crédibles pour installer le cadrage
+   IA (skills, MCP, règles) de cette stack. Cf.
+   [ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md).
+4. **Conventions externalisées.** Aucune convention de framework codée en dur
+   dans un générateur — tout passe par un profil de convention versionné.
+5. **Jamais de recul de version pour contourner un pattern.** On adapte le
+   pattern.
