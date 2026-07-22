@@ -13,7 +13,10 @@
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "strict": false
+    "strict": false,
+    "paths": {
+      "@cmz/shared-data": ["./libs/shared/data/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }

@@ -13,17 +13,30 @@ primitifs, `null` explicite.
 
 ## Règle mécanique
 
-- Une **`interface` exportée**, jamais une classe : un DTO n'a pas de
-  comportement.
-- Aucun décorateur, aucun import Angular, aucune logique.
-- Les noms de champs suivent l'API (ne pas franciser ni camelCaser côté DTO).
-- `null` est explicite dans le type quand l'API peut le renvoyer.
-- Le passage DTO ↔ domaine se fait **dans le mapper**, jamais dans le DTO.
+Un DTO n'a **jamais de comportement** (pas de classe, pas de décorateur, pas de
+logique). Sa forme suit ce que **l'observation du source impose** — trois
+variantes réelles :
+
+| Variante    | Quand                                     | Forme                                                      |
+| ----------- | ----------------------------------------- | ---------------------------------------------------------- |
+| `interface` | forme d'objet renvoyée par l'API          | `export interface XDto { … }`                              |
+| `enum`      | ensemble fermé de valeurs string de l'API | `export enum XDto { … }`                                   |
+| const-map   | drapeau booléen ou table figée            | `export const XDto = { … } as const; export type XDto = …` |
+
+- Les noms de champs suivent **exactement** l'API (souvent `snake_case`) — ne
+  pas franciser ni camelCaser.
+- `null` explicite dans le type quand l'API peut le renvoyer.
+- Génériques autorisés pour les enveloppes de réponse
+  (`PaginatedResponseDto<T>`…).
+- Un DTO **peut** référencer un type du domaine (enum, interface) quand l'API
+  imbrique une valeur métier — l'import vise alors `@cmz/shared-domain`. Le
+  reste de la conversion DTO ↔ domaine appartient au mapper.
 
 ## Convention
 
-Rien de spécifique au framework — un DTO est du TypeScript pur. (Le profil de
-convention ne s'applique pas ici.)
+Un DTO est du TypeScript pur — le profil de convention Angular ne s'applique pas
+(pas de décorateur). Seule la normalisation TS générale vaut (`as const` pour
+les tables figées, pas d'`any`).
 
 ## Exemplaire de référence
 
