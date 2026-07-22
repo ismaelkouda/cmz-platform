@@ -1,0 +1,7 @@
+export enum LocationType {
+    GPS = 'COMMON.GPS',
+    NETWORK = 'COMMON.NETWORK',
+    MANUAL = 'COMMON.MANUAL',
+    WHAT3WORDS = 'COMMON.WHAT3WORDS',
+    UNKNOWN = 'COMMON.UNKNOWN',
+}
