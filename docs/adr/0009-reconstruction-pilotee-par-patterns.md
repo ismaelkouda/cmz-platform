@@ -147,7 +147,8 @@ répondre à cette question sur du code réel, et non par supposition.
 ### Points à réévaluer
 
 - Si la couverture mesurée s'avère faible, revenir à une approche mixte :
-  génération pour les entités conformes, reprise manuelle pour les autres.
+  génération pour les entités conformes, extraction de nouveaux patterns pour
+  les autres.
 - L'emplacement définitif des schémas et des outils SEOS reste à décider.
 
 ## Références

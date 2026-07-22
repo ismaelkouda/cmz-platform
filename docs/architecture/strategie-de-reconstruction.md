@@ -45,11 +45,11 @@ deux schémas.
 
 Trois issues sont possibles, et elles n'ont pas le même coût :
 
-| Couverture réelle | Conséquence                                                                                           |
-| ----------------- | ----------------------------------------------------------------------------------------------------- |
-| Élevée (> 80 %)   | La génération porte l'essentiel du travail ; le cadrage tient                                         |
-| Moyenne (40–80 %) | Approche mixte : génération pour les entités conformes, reprise manuelle pour les autres              |
-| Faible (< 40 %)   | Le cadrage doit être revu — soit en enrichissant les schémas, soit en revenant à une reprise manuelle |
+| Couverture réelle | Conséquence                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| Élevée (> 80 %)   | La génération porte l'essentiel du travail ; le cadrage tient                                              |
+| Moyenne (40–80 %) | Extraire davantage de patterns pour couvrir les entités « proches »                                        |
+| Faible (< 40 %)   | Le cadrage doit être revu — enrichir fortement les patterns, ou reconsidérer l'approche pour cette portion |
 
 **Aucun calendrier ne doit être annoncé avant cette mesure.**
 `extract-pattern.js` existe pour y répondre sur du code réel.
