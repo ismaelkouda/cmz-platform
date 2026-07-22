@@ -13,6 +13,7 @@ export * from './lib/enums/roles.enum';
 export * from './lib/enums/telecom-operator.enum';
 export * from './lib/enums/type-media.enum';
 export * from './lib/enums/type-report.enum';
+export * from './lib/functions/normalize-phone-number.function';
 export * from './lib/props/actor.props';
 export * from './lib/props/administrative-boundary.props';
 export * from './lib/props/coordinates.props';

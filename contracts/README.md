@@ -45,19 +45,24 @@ Un archétype = **une seule forme**. Quand l'observation du source montre que ce
 qu'on croyait un archétype recouvre plusieurs formes (cas `dto`), on **scinde**
 : une forme mixte dans un contrat rendrait le prompt ambigu.
 
-| Archétype       | Couche | Fichier                                                    |
-| --------------- | ------ | ---------------------------------------------------------- |
-| `dto` (famille) | data   | [`dto.contract.md`](./dto.contract.md)                     |
-| `dto-interface` | data   | [`dto-interface.contract.md`](./dto-interface.contract.md) |
-| `dto-enum`      | data   | [`dto-enum.contract.md`](./dto-enum.contract.md)           |
-| `dto-const`     | data   | [`dto-const.contract.md`](./dto-const.contract.md)         |
-| `mapper`        | data   | [`mapper.contract.md`](./mapper.contract.md)               |
-| `enum`          | domain | [`enum.contract.md`](./enum.contract.md)                   |
-| `interface`     | domain | [`interface.contract.md`](./interface.contract.md)         |
-| `error`         | domain | [`error.contract.md`](./error.contract.md)                 |
+| Archétype           | Couche      | Fichier                                                            |
+| ------------------- | ----------- | ------------------------------------------------------------------ |
+| `dto` (famille)     | data        | [`dto.contract.md`](./dto.contract.md)                             |
+| `dto-interface`     | data        | [`dto-interface.contract.md`](./dto-interface.contract.md)         |
+| `dto-enum`          | data        | [`dto-enum.contract.md`](./dto-enum.contract.md)                   |
+| `dto-const`         | data        | [`dto-const.contract.md`](./dto-const.contract.md)                 |
+| `mapper`            | data        | [`mapper.contract.md`](./mapper.contract.md)                       |
+| `enum`              | domain      | [`enum.contract.md`](./enum.contract.md)                           |
+| `interface`         | domain      | [`interface.contract.md`](./interface.contract.md)                 |
+| `entity`            | domain      | [`entity.contract.md`](./entity.contract.md)                       |
+| `function`          | domain      | [`function.contract.md`](./function.contract.md)                   |
+| `error` (famille)   | domain      | [`error.contract.md`](./error.contract.md)                         |
+| `domain-error`      | domain      | [`domain-error.contract.md`](./domain-error.contract.md)           |
+| `operational-error` | data/domain | [`operational-error.contract.md`](./operational-error.contract.md) |
+| `service`           | selon deps  | [`service.contract.md`](./service.contract.md)                     |
 
-_À compléter au fil de la Phase 05a (service, entity, facade, validator, pipe,
-function, vo, util, constant), puis réutilisés en Phase 07._
+_À compléter au fil des couches (facade, validator, pipe, vo, util, constant),
+puis réutilisés en Phase 07._
 
 ## Principe de non-reproduction
 
