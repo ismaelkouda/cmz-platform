@@ -189,11 +189,11 @@ la Phase 07 fondé dessus.
 
 ### Ce que la mesure peut révéler
 
-| Couverture | Conséquence sur le plan                                              |
-| ---------- | -------------------------------------------------------------------- |
-| > 80 %     | Le plan tient tel quel                                               |
-| 40–80 %    | Phase 07 scindée : génération puis reprise manuelle                  |
-| < 40 %     | Le cadrage est à revoir — la génération ne serait plus le bon levier |
+| Couverture | Conséquence sur le plan                                                                                                    |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------- |
+| > 80 %     | Le plan tient tel quel                                                                                                     |
+| 40–80 %    | Extraire davantage de patterns pour couvrir les entités « proches »                                                        |
+| < 40 %     | Le cadrage est à revoir — soit enrichir fortement les patterns, soit reconsidérer l'approche générative pour cette portion |
 
 ---
 
