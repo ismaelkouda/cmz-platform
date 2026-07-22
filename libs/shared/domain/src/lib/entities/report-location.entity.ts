@@ -1,14 +1,7 @@
 import { LocationMethod } from '../enums/location-method.enum';
 import { LocationType } from '../enums/location-type.enum';
 import { Coordinates } from '../interfaces/coordinates.interface';
-
-interface ReportLocation {
-    coordinates: Coordinates;
-    method: LocationMethod;
-    type: LocationType;
-    name: string;
-    description: string;
-}
+import { ReportLocation } from '../interfaces/report-location.interface';
 
 export class ReportLocationEntity implements ReportLocation {
     constructor(

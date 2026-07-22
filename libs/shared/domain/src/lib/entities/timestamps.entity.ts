@@ -1,7 +1,4 @@
-interface Timestamps {
-    readonly createdAt: string;
-    readonly updatedAt: string;
-}
+import { Timestamps } from '../interfaces/timestamps.interface';
 
 export class TimestampsEntity implements Timestamps {
     constructor(

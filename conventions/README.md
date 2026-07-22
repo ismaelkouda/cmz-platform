@@ -19,6 +19,12 @@ code : un seul endroit à modifier.
 | ------------------------------------------------------ | --------- | ------------ |
 | [`angular-22.profile.json`](./angular-22.profile.json) | Angular   | v22.0.7      |
 
+Convention transverse (indépendante de la version du framework) :
+
+| Convention                   | Portée                              |
+| ---------------------------- | ----------------------------------- |
+| [`nommage.md`](./nommage.md) | Nommage dossiers/fichiers intra-lib |
+
 ## Règle de cohérence
 
 La version majeure d'un profil doit correspondre à la version du framework dans

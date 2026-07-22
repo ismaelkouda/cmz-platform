@@ -1,7 +1,4 @@
-interface ReportMedia {
-    readonly placePhoto: string | null;
-    readonly accessPlacePhoto: string | null;
-}
+import { ReportMedia } from '../interfaces/report-media.interface';
 
 export class ReportMediaEntity implements ReportMedia {
     constructor(

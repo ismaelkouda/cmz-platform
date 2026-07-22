@@ -1,8 +1,4 @@
-interface Coordinates {
-    latitude: number;
-    longitude: number;
-    what3words: string;
-}
+import { Coordinates } from '../interfaces/coordinates.interface';
 
 export class CoordinatesEntity implements Coordinates {
     constructor(

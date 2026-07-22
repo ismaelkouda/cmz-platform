@@ -1,8 +1,4 @@
-interface AdministrativeBoundary {
-    readonly id: string;
-    readonly name: string;
-    readonly code: string;
-}
+import { AdministrativeBoundary } from '../interfaces/administrative-boundary.interface';
 
 export class AdministrativeBoundaryEntity implements AdministrativeBoundary {
     constructor(
