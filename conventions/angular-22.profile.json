@@ -1,0 +1,63 @@
+{
+  "$schema": "./profile.schema.json",
+  "framework": "angular",
+  "version": "22",
+  "description": "Profil de convention Angular 22. Source unique des choix de code qui changent d'une version majeure à l'autre. Le générateur et l'IA le LISENT ; ils ne le contiennent pas (ADR-0010). Pour Angular 23, créer angular-23.profile.json — ne pas modifier les générateurs.",
+  "source": "angular.dev/ai/develop-with-ai (best-practices.md), vérifié pour v22.0.7",
+  "conventions": {
+    "service": {
+      "decorator": "@Service",
+      "replaces": "@Injectable({ providedIn: 'root' })",
+      "since": "22",
+      "note": "@Service est la forme recommandée pour un singleton root en v22+. @Injectable reste valide pour les cas non-root."
+    },
+    "injection": {
+      "style": "inject()",
+      "forbid": "constructor injection",
+      "note": "Utiliser la fonction inject() plutôt que l'injection par constructeur."
+    },
+    "component": {
+      "standalone": "implicite",
+      "forbidExplicitStandaloneTrue": true,
+      "changeDetection": "OnPush par défaut, ne pas le déclarer explicitement",
+      "inputs": "input()",
+      "outputs": "output()",
+      "derivedState": "computed()",
+      "hostBindings": "objet host du décorateur, jamais @HostBinding/@HostListener"
+    },
+    "templates": {
+      "controlFlow": "@if / @for / @switch",
+      "forbid": ["*ngIf", "*ngFor", "*ngSwitch", "ngClass", "ngStyle"],
+      "bindings": "class et style bindings natifs",
+      "images": "NgOptimizedImage pour les images statiques"
+    },
+    "forms": {
+      "preferred": "Signal Forms (@angular/forms/signals)",
+      "since": "22",
+      "fallback": "Reactive Forms",
+      "forbid": "Template-driven Forms pour les nouveaux formulaires"
+    },
+    "state": {
+      "local": "signals",
+      "derived": "computed()",
+      "signalUpdate": "update() ou set(), jamais mutate()"
+    },
+    "lazyLoading": {
+      "featureRoutes": "obligatoire",
+      "services": "injectAsync() disponible en v22 pour le chargement de service à la demande"
+    },
+    "typescript": {
+      "strict": true,
+      "preferInference": true,
+      "forbidAny": "utiliser unknown si le type est incertain"
+    },
+    "accessibility": {
+      "axe": "doit passer tous les contrôles AXE",
+      "wcag": "minimums WCAG AA (focus, contraste, ARIA)"
+    }
+  },
+  "validation": {
+    "catalogVersionMustMatch": "22.0.x",
+    "note": "La version majeure de ce profil doit correspondre à @angular/core du catalog (ADR-0005). Un écart est un bug — à vérifier en CI (Phase 06)."
+  }
+}

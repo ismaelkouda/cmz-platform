@@ -13,15 +13,45 @@
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
-  "dependencies": {},
+  "dependencies": {
+    "@angular/common": "catalog:",
+    "@angular/compiler": "catalog:",
+    "@angular/core": "catalog:",
+    "@angular/forms": "catalog:",
+    "@angular/platform-browser": "catalog:",
+    "@angular/router": "catalog:",
+    "rxjs": "catalog:",
+    "tslib": "catalog:"
+  },
   "devDependencies": {
+    "@angular-devkit/core": "catalog:tooling",
+    "@angular-devkit/schematics": "catalog:tooling",
+    "@angular/build": "catalog:tooling",
+    "@angular/cli": "catalog:tooling",
+    "@angular/compiler-cli": "catalog:tooling",
+    "@angular/language-service": "catalog:tooling",
+    "@schematics/angular": "catalog:tooling",
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
+    "@eslint/js": "^9.8.0",
+    "@nx/angular": "23.1.0",
+    "@nx/eslint": "23.1.0",
+    "@nx/eslint-plugin": "23.1.0",
     "@nx/js": "23.1.0",
+    "@nx/web": "23.1.0",
+    "@swc/helpers": "~0.5.18",
+    "@typescript-eslint/utils": "^8.58.0",
+    "angular-eslint": "^22.0.0",
+    "eslint": "^9.8.0",
+    "eslint-config-prettier": "^10.0.0",
     "husky": "^9.1.7",
+    "jsdom": "^27.1.0",
     "lint-staged": "^17.1.0",
     "nx": "23.1.0",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "typescript": "catalog:tooling",
+    "typescript-eslint": "^8.58.0",
+    "vitest": "^4.0.8"
   },
   "workspaces": {
     "packages": [
@@ -45,9 +75,13 @@
     },
     "catalogs": {
       "tooling": {
+        "@angular-devkit/core": "22.0.7",
+        "@angular-devkit/schematics": "22.0.7",
         "@angular/build": "22.0.7",
         "@angular/cli": "22.0.7",
         "@angular/compiler-cli": "22.0.7",
+        "@angular/language-service": "22.0.7",
+        "@schematics/angular": "22.0.7",
         "typescript": "6.0.3"
       }
     }

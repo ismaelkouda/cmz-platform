@@ -94,3 +94,5 @@ Thumbs.db
 # ---------------------------------------------------------------------------
 .claude/worktrees
 .claude/settings.local.json
+
+__screenshots__/
