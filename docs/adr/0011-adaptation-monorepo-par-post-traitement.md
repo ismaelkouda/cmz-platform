@@ -102,8 +102,11 @@ monorepo** qui post-traite la sortie de n'importe quel générateur SEOS.
 | `@shared/domain/…` · `@shared/data/…` · `@shared/interface/…` · … | `@cmz/shared-domain` · `@cmz/shared-data` · … |
 | `@core/…`                                                         | `@cmz/core`                                   |
 
-La réécriture est déterministe (table + AST via ts-morph, pas de regex fragile
-sur du TypeScript).
+La réécriture ne porte que sur les **spécificateurs d'import/export** (la chaîne
+entre quotes de `from '…'`, `import '…'`, `import('…')`), jamais sur des
+expressions. Sur du code généré uniforme, une transformation ciblée sans
+dépendance (Node pur) suffit et se vérifie par `tsc` juste après. ts-morph reste
+une option de durcissement si un cas non trivial apparaît — pas un prérequis.
 
 ### Pipeline par entité
 

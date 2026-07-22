@@ -56,7 +56,7 @@
   "workspaces": {
     "packages": [
       "apps/*",
-      "libs/*"
+      "libs/*/*"
     ],
     "catalog": {
       "@angular/animations": "22.0.7",
