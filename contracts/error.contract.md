@@ -39,6 +39,28 @@ export abstract class DomainError extends Error {
 - **`Object.setPrototypeOf`** ajouté là où il manquait (robustesse
   `instanceof`).
 
+## Consommation (Phase 07) — supprimer la répétition, pas les classes
+
+Le source enregistre **33 handlers dont 31 identiques**
+(`toast.error(translate.instant(error.message))`) et admet en commentaire le bug
+récurrent « on oublie d'enregistrer un handler ». La cause n'est pas le nombre
+de classes (générées depuis les données → coût quasi nul, type-safe), mais la
+**consommation**. Règles pour la Phase 07 :
+
+- **Handler par défaut** : `ErrorHandlerRegistry.handle()` applique, pour
+  **tout** `DomainError` sans handler spécifique,
+  `toast.error(transloco.translate( error.messageKey, error.params))`. On
+  n'enregistre plus que les **exceptions** : `UnauthorizedError` (`warning` +
+  `session.clear()`) et `ValidationError` (message serveur, sans traduction). 33
+  → 2, et le bug d'oubli disparaît.
+- **`messageKey`, pas `message`** : la traduction porte sur la clé i18n, d'où sa
+  préservation stricte. `error.params` alimente l'interpolation.
+- **i18n = Transloco** (`translate(key, params)`), **pas** `@ngx-translate`. Un
+  `DomainError` porte donc un `params?` optionnel pour l'interpolation (« passer
+  des arguments ») sans casser le modèle une-clé-par-erreur.
+- **Pas de couplage shared→module** : le service de feedback partagé n'importe
+  aucune erreur de module (le source le faisait — anti-pattern non reproduit).
+
 ## Observations non corrigées (données, hors de notre contrôle)
 
 - Namespaces `messageKey` hétérogènes (`ERRORS.HTTP.*` vs `COMMON.ERROR.*` pour

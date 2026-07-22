@@ -21,6 +21,10 @@ d'affichage (`messageKey`) et un `statusCode` HTTP. Dérive de la base abstraite
 - `code`, `messageKey`, `statusCode` repris **exactement** du source (données
   i18n). Aucun décorateur, aucune dépendance UI/`data`.
 - Un fichier = une classe.
+- **Interpolation** : pour un message à variable (« {field} requis »), passer
+  `super(message, { field })` — la base porte un `params?` que le handler par
+  défaut transmet à Transloco. Ne pas inventer de clé générique : garder la clé
+  i18n du source.
 
 ## Exemplaire
 
