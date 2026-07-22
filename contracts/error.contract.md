@@ -1,50 +1,46 @@
-# Contrat d'archétype — `error` (domaine)
+# Famille `error` — index
 
-## Rôle
+L'observation du source montre **deux formes** d'erreur, réunies à tort sous un
+seul nom. Conformément à la granularité « une forme = un archétype », la famille
+est **scindée** :
 
-Représente un **échec métier typé** : une classe d'erreur portant un `code`
-stable et, optionnellement, des fabriques statiques nommées pour les cas
-courants. Permet un `catch` discriminant plutôt qu'un `Error` générique.
+| Archétype           | Forme                                                                                         | Contrat                                                            |
+| ------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `domain-error`      | erreur métier étendant la base abstraite `DomainError` (`code` + `messageKey` + `statusCode`) | [`domain-error.contract.md`](./domain-error.contract.md)           |
+| `operational-error` | erreur technique autonome (`extends Error`), fabriques statiques, `code` dynamique            | [`operational-error.contract.md`](./operational-error.contract.md) |
 
-## Couche
+## Base partagée `DomainError`
 
-`domain` → `@cmz/shared-domain` (ou `@cmz/<module>-domain`).
-
-## Règle mécanique
-
-- **Une `class` exportée** `extends Error` (ou une base d'erreur du domaine).
-- `super(message)` puis `this.name = '<Nom>'` et
-  `Object.setPrototypeOf(this, <Nom>.prototype)` (fiabilise `instanceof` après
-  transpilation).
-- Un `code` stable en lecture seule (`public readonly code: string`).
-- Fabriques statiques nommées optionnelles (`static fetchFailed(…)`) pour les
-  cas récurrents.
-- **Aucun décorateur**, aucune dépendance UI ni `data`.
-
-## Exemplaire
+Support de pattern (comme les bases de mappers) : une classe **abstraite**
+exportée dont dérivent toutes les `domain-error`. Vivante (le service
+`ErrorHandlerRegistry` dispatche sur `DomainError`).
 
 ```ts
-export class ApiError extends Error {
-    constructor(
-        message: string,
-        public readonly code: string,
-        public readonly originalError?: unknown
-    ) {
-        super(message);
-        this.name = 'ApiError';
-        Object.setPrototypeOf(this, ApiError.prototype);
-    }
+export abstract class DomainError extends Error {
+    public abstract readonly code: string;
+    public abstract readonly messageKey: string;
+    public abstract readonly statusCode?: number;
 
-    static invalidResponse(message: string, originalError?: unknown): ApiError {
-        return new ApiError(message, 'INVALID_RESPONSE', originalError);
+    protected constructor(message?: string) {
+        super(message);
+        this.name = this.constructor.name;
     }
 }
 ```
 
-## Prompt
+## Non-reproduction (incohérences du source corrigées)
 
-> Produis une classe d'erreur `<Nom> extends Error` avec `super(message)`,
-> `this.name`, `Object.setPrototypeOf`, un `readonly code`, et les fabriques
-> statiques fournies. Aucun décorateur, aucune dépendance UI/data.
+- **Un fichier = un symbole** : `date-period.error.ts` regroupait 3 classes →
+  scindé en `invalid-date-range` / `invalid-start-date` / `invalid-end-date`.
+- **`message` par défaut** : là où le source passait une **clé i18n**
+  (`ServerError`) ou le **code** (`date-period`) comme message de repli, on met
+  un message humain. `messageKey`, `statusCode`, `code` sont des **données i18n
+  préservées à l'identique** (les modifier casserait les traductions).
+- **`Object.setPrototypeOf`** ajouté là où il manquait (robustesse
+  `instanceof`).
 
-**Données** : le nom, les codes/fabriques attendus, les messages.
+## Observations non corrigées (données, hors de notre contrôle)
+
+- Namespaces `messageKey` hétérogènes (`ERRORS.HTTP.*` vs `COMMON.ERROR.*` pour
+  `UnauthorizedError`) : dépendent des fichiers de traduction — à harmoniser
+  avec l'équipe i18n, pas à deviner ici.

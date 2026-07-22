@@ -1,6 +1,6 @@
 import { Service } from '@angular/core';
 import { ReportSource } from '@cmz/shared-domain';
-import { ReportSourceDto } from '../dto/report-source.dto';
+import { ReportSourceDto } from '../dtos/report-source.dto';
 
 @Service()
 export class ReportSourceMapper {

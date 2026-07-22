@@ -1,6 +1,6 @@
 import { Service } from '@angular/core';
 import { Platform } from '@cmz/shared-domain';
-import { PlatformDto } from '../dto/platform.dto';
+import { PlatformDto } from '../dtos/platform.dto';
 
 @Service()
 export class PlatformMapper {
