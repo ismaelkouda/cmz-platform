@@ -35,8 +35,12 @@ node "$SEOS/tools/generate-reference-module.js" /tmp/$MOD       # génère (plat
 node "$SEOS/tools/check-pattern.js" /tmp/$MOD resources         # 106/106 AVANT distribution
 node tools/seos-adapter/adapt.mjs /tmp/$MOD "$MOD"             # distribue + réécrit + émet
 bun install                                                     # résout les workspace:*
-bunx nx show projects | grep "$MOD"                            # 5 libs reconnues
+bunx nx show projects --json | tr ',' '\n' | grep "$MOD"      # 5 libs reconnues
 ```
+
+> `--json` est requis : `nx show projects` sans lui plante sur ce build
+> (`isAiAgent is not a function`, Nx 23.1.0). Le `--json` évite ce chemin de
+> code.
 
 `check-pattern` s'exécute **avant** l'adaptation : il valide le pattern sur la
 sortie plate, pas la disposition monorepo.
