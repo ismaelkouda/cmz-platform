@@ -20,6 +20,5 @@ export * from './lib/dto/telecom-operator.dto';
 export * from './lib/dto/timestamps.dto';
 export * from './lib/dto/treater-info.dto';
 export * from './lib/dto/type-media.dto';
-export * from './lib/mappers/base/array-response.mapper';
 export * from './lib/mappers/platform.mapper';
 export * from './lib/mappers/report-source.mapper';

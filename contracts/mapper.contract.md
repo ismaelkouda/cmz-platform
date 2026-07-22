@@ -96,6 +96,14 @@ d'usage (par **nom de classe**, qui diffère du nom de fichier) :
 Non-reproduction appliquée : les deux bases mortes ne sont pas portées ; la
 fuite `console.log('dto: ', dto)` de `SimpleResponseMapper` est **supprimée**.
 
+**Génération à la demande, pas en avance.** Ces bases sont un support de pattern
+consommé **uniquement par les mappers de module** (les 15 sous-classes
+`ArrayResponseMapper`, etc. vivent dans `presentation/pages/*`, pas dans
+`shared`). Aucune n'a de consommateur _à l'intérieur_ de `shared-data`. On les
+génère donc quand leur **premier consommateur** apparaît (Phase 07), pas
+préventivement dans `shared-data` — sinon on committe une base abstraite sans
+sous-classe (dette « prove-then-scale »).
+
 **Option de convention ouverte (approbation requise)** : les 4 bases vivantes
 répètent le même `validateResponse` et ne diffèrent que par la forme de `data`.
 Elles pourraient fusionner en **une** base générique (template method : valider
