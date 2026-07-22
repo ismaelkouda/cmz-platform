@@ -4,20 +4,34 @@ Ce document décrit **ce qui existe aujourd'hui** dans le monorepo. Il est mis �
 jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
-- **Dernière mise à jour :** 2026-07-21
-- **État :** socle outillé, **aucun package applicatif**
+- **Dernière mise à jour :** 2026-07-22
+- **État :** socle outillé + **application Angular 22 générée et compilant**
+  (Phase 02 en cours). Aucune bibliothèque, aucun contenu métier.
 
 ## Contenu du dépôt
 
 ```
-apps/                     applications déployables — vide
+apps/backoffice-angular   application Angular 22.0.7 — squelette, build vert
 libs/                     bibliothèques réutilisables — vide
+conventions/              profils de convention par version de framework
 tools/                    scripts de vérification du socle
 docs/                     décisions, architecture, guides
 .husky/                   hooks Git
 nx.json                   configuration Nx
 package.json              catalog de versions + scripts
 ```
+
+## Application Angular
+
+`apps/backoffice-angular` (`@nx/angular` 23.1.0, Angular 22.0.7, esbuild,
+Vitest). Build vérifié vert sur environnement conforme (Node 22.22.3) :
+`bunx nx build backoffice-angular` → succès, bundle ~221 kB.
+
+Détails et notes d'intégration :
+[README de l'app](../../apps/backoffice-angular/README.md).
+
+Élément cosmétique connu : le composant de démo `nx-welcome.ts` dépasse le
+budget SCSS (+3 kB) ; il disparaîtra au câblage des vraies routes.
 
 ## Choix en vigueur
 
