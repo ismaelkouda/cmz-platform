@@ -1,9 +1,10 @@
 # Stratégie de reconstruction de cmz-backoffice-frontend
 
 - **Statut :** Cadrage — appliqué à partir de la Phase 07
-- **Dernière mise à jour :** 2026-07-21
-- **ADR associés :** [ADR-0009](../adr/0005-versions-du-socle.md),
+- **Dernière mise à jour :** 2026-07-22
+- **ADR associés :** [ADR-0005](../adr/0005-versions-du-socle.md),
   [ADR-0009](../adr/0009-reconstruction-pilotee-par-patterns.md),
+  [ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md),
   [ADR-0004](../adr/0004-graphe-de-dependances-declarees.md)
 
 ## Nature du travail
@@ -69,17 +70,12 @@ Angular 22 est probable, mais non vérifiée.
 passer `check-pattern.js`. Si le schéma tient, tout le reste s'enchaîne. Sinon,
 il vaut mieux le découvrir sur une entité que sur cinquante.
 
-### Étape 1 — Mesurer la couverture réelle
+### Étape 1 — Mesurer la couverture réelle ✅ faite (Phase 03)
 
-Exécuter `check-pattern.js` et `extract-pattern.js` sur les 53 entités du projet
-d'origine, et classer :
-
-- entités **conformes** au schéma `crud-entity` ;
-- entités **proches** — conformes à un ensemble documenté de déviations près ;
-- entités **hors schéma** — relevant d'un pattern non encore extrait, ou
-  d'aucun.
-
-Le résultat de cette étape conditionne tout le reste, y compris le chiffrage.
+Résultat ci-dessus et dans
+[l'analyse du projet source](./analyse-du-projet-source.md) : 41 % couvert par
+les 2 patterns prouvés, 2 patterns à extraire (`read-only-view`,
+`workflow-action`) pour dépasser 90 %.
 
 ### Étape 2 — Adapter les générateurs au monorepo
 
@@ -113,13 +109,24 @@ Commencer par une entité du module de référence
 (`administrative-infrastructure`), puisque c'est celle contre laquelle le schéma
 a été validé à 106/106.
 
-### Étape 5 — Entités hors schéma
+### Étape 5 — Extraire les deux patterns manquants, puis générer leurs familles
 
-Deux voies, à décider au cas par cas : extraire un nouveau pattern si la forme
-se répète suffisamment, ou reprendre manuellement s'il s'agit d'un cas isolé.
+La mesure de la Phase 03 a identifié deux familles régulières, pas des cas
+isolés :
 
-Extraire un pattern pour une seule entité coûte plus cher que de l'écrire à la
-main.
+1. **`read-only-view`** (9 entités) — extraire depuis `reporting/reports`
+   (pipeline query-only vérifié : entité + query bus/handler + use-case +
+   repository), valider, puis générer `interactive-map`, `monitoring`,
+   `reporting`.
+2. **`workflow-action`** (19 entités) — extraire depuis `report-states` (vues +
+   transitions d'état sur file de tâches), valider, puis générer `finalization`,
+   `processing`, `requests`.
+
+Les 3 « divers » (`notifications`, `access-logs`, `daily-goal`) sont tranchés en
+dernier : ils se rattacheront probablement à l'une des deux familles, ou
+justifieront une variante. Aucune reprise manuelle — la règle « aucun code
+manuel » s'applique
+([ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md)).
 
 ## Critère d'achèvement d'une entité
 
