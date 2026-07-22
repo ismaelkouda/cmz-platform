@@ -118,12 +118,16 @@ bunx nx affected -t build   # ne reconstruit que ce qui a changé depuis main
 
 ## Points ouverts
 
-| Point                                                                          | Échéance                              |
-| ------------------------------------------------------------------------------ | ------------------------------------- |
-| Nx Cloud non activé — nécessite un compte, `bunx nx connect`                   | Phase 06 (CI)                         |
-| Contrôles non rejoués en CI                                                    | Phase 06                              |
-| `Dockerfile` copiant `tools/` avant l'installation                             | Phase 06                              |
-| `CODEOWNERS` à peupler — une équipe inexistante y est ignorée sans erreur      | À la constitution des équipes         |
-| Cadrage IA (skills Angular, MCP Nx, Web Codegen Scorer) à installer localement | Phase 02, avant génération de contenu |
-| Validation du pattern SEOS sur Angular 22 (étape 02.5)                         | Phase 02                              |
-| `nx-welcome.ts` (dépasse le budget SCSS) à retirer                             | Au câblage des routes                 |
+| Point                                                                            | Échéance                              |
+| -------------------------------------------------------------------------------- | ------------------------------------- |
+| Nx Cloud non activé — nécessite un compte, `bunx nx connect`                     | Phase 06 (CI)                         |
+| Contrôles non rejoués en CI                                                      | Phase 06                              |
+| `Dockerfile` copiant `tools/` avant l'installation                               | Phase 06                              |
+| `CODEOWNERS` à peupler — une équipe inexistante y est ignorée sans erreur        | À la constitution des équipes         |
+| Cadrage IA (skills Angular, MCP Nx, Web Codegen Scorer) à installer localement   | Phase 02, avant génération de contenu |
+| `nx-welcome.ts` (dépasse le budget SCSS) à retirer                               | Au câblage des routes                 |
+| Narrowing des `catch` dans l'archétype d'erreur (app plus stricte que la source) | Phase 04 (contrats d'archétype)       |
+
+**Étape 02.5 — validée** : les patterns SEOS tiennent sur Angular 22 (structurel
+106/106, 0 erreur de syntaxe/décorateur). Détail :
+[README de l'app](../../apps/backoffice-angular/README.md).
