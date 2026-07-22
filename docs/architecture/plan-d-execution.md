@@ -162,11 +162,11 @@ done
 
 **03.3 — Classer**
 
-| Classe      | Définition                          | Traitement en Phase 07                               |
-| ----------- | ----------------------------------- | ---------------------------------------------------- |
-| Conforme    | 106/106 ou écart documenté          | Génération directe                                   |
-| Proche      | Écart mineur, réductible            | Génération + ajustement                              |
-| Hors schéma | Ne relève d'aucun des deux patterns | Extraction d'un nouveau pattern, ou reprise manuelle |
+| Classe      | Définition                         | Traitement en Phase 07                                           |
+| ----------- | ---------------------------------- | ---------------------------------------------------------------- |
+| Conforme    | 106/106 ou écart documenté         | Génération directe                                               |
+| Proche      | Écart mineur, réductible           | Génération + ajustement du profil / contrat                      |
+| Hors schéma | Ne relève d'aucun pattern existant | **Extraction d'un nouveau pattern** (jamais de reprise manuelle) |
 
 **03.4 — Extraire un troisième pattern `read-only-view` (décidé)**
 
