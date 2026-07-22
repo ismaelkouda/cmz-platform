@@ -21,15 +21,21 @@ node tools/seos-adapter/adapt.mjs <dossier-plat> <module> [--dry-run]
 
 ## Pipeline complet (une entité)
 
+⚠️ **Le dossier de génération doit porter le nom du module.** Le générateur
+nomme les fichiers de niveau module d'après le `basename` du dossier de sortie,
+et `check-pattern` en déduit le même nom : générer dans `/tmp/gen` créerait un
+module « gen » et ferait échouer la vérification (3 fichiers « manquants »).
+
 ```bash
 export SEOS=/chemin/vers/cmz-backoffice-frontend/seos
+MOD=seos-reference
 
-rm -rf /tmp/gen && mkdir -p /tmp/gen
-node "$SEOS/tools/generate-reference-module.js" /tmp/gen        # génère (plat)
-node "$SEOS/tools/check-pattern.js" /tmp/gen resources          # 106/106 AVANT distribution
-node tools/seos-adapter/adapt.mjs /tmp/gen seos-reference       # distribue + réécrit + émet
+rm -rf /tmp/$MOD
+node "$SEOS/tools/generate-reference-module.js" /tmp/$MOD       # génère (plat)
+node "$SEOS/tools/check-pattern.js" /tmp/$MOD resources         # 106/106 AVANT distribution
+node tools/seos-adapter/adapt.mjs /tmp/$MOD "$MOD"             # distribue + réécrit + émet
 bun install                                                     # résout les workspace:*
-bunx nx build seos-reference-domain                             # compile (une fois shared en place)
+bunx nx show projects | grep "$MOD"                            # 5 libs reconnues
 ```
 
 `check-pattern` s'exécute **avant** l'adaptation : il valide le pattern sur la

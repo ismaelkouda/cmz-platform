@@ -96,3 +96,5 @@ Thumbs.db
 .claude/settings.local.json
 
 __screenshots__/
+
+.nx/polygraph
