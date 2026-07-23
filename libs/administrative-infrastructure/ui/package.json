@@ -7,7 +7,6 @@
     "@cmz/administrative-infrastructure-application": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
     "@cmz/shared-application": "workspace:*",
-    "@cmz/shared-domain": "workspace:*",
     "@angular/core": "catalog:",
     "@angular/router": "catalog:",
     "@angular/forms": "catalog:",
