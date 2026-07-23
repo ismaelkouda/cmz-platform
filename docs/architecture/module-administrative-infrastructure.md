@@ -61,12 +61,28 @@ URLs/`links`/`path`/`from`/`to` jamais) :
   payload create/update est **préservé** (intention défensive, pas un défaut).
 - Lib domaine : dépend uniquement de `@cmz/shared-domain` (+ `rxjs`).
 
+## Fait — couche data (vérifié `tsc`, `@cmz/administrative-infrastructure-data`)
+
+- **DTOs** api (request + response via
+  `PaginatedResponseDto`/`SimpleResponseDto`
+    - `AdministrativeBoundaryDto` du kernel).
+- **command mappers** (fonctions `xMapper(validContract): ApiDto`, renommage
+  snake_case, `position`→`latitude/longitude`) ; **response mappers**
+  (`@Service` sur
+  `PaginatedMapper`/`SimpleResponseMapper`/`ArrayResponseMapper` +
+  `MapperUtils.validateDto` + cache/`with()`).
+- **sources** `@Service` `HttpClient` (`SETTINGS_API_URL`, `BYPASS_CACHE`,
+  `buildHttpParams`/`buildHttpPayload` du kernel).
+- **repository impls** `implements` les ports : liste→`PageResult` (via le
+  response mapper purifié) ; create/update/delete/enable/disable→`MessageEntity`
+  via `MessageResultMapper` (kernel) — qui applique aussi `assertResponseOk`
+  (rendu d'erreur serveur dans la loop).
+- **Fix d'ingénieur** : `is_active = status === Status.ACTIVE` (le source
+  faisait `!!status`, toujours vrai car `Status.INACTIVE='COMMON.INACTIVE'` est
+  truthy) ; typo `prams`→`params`.
+- Dépendances : `{domain module, shared-data, shared-domain, core, @angular}`.
+
 ## Reste — par tranche (multi-tours)
-
-### Data
-
-- `dto/`, `mappers/` (réutilisent bases + `MapperUtils` du kernel), `sources`
-  (HTTP, `buildHttpParams`), `repositories` (impl des ports).
 
 ### Application
 
@@ -82,7 +98,7 @@ URLs/`links`/`path`/`from`/`to` jamais) :
 
 1. **Domaine** complet (2 entités) — **fait** (entités, props, enums, contracts,
    validators, value-objects, ports).
-2. **Data** (dto + mappers + sources + repos) — **suivant**.
-3. **Application** (CQRS + facades).
+2. **Data** (dto + mappers + sources + repos) — **fait**.
+3. **Application** (CQRS + facades) — **suivant**.
 4. **UI/feature**.
 5. `bun install` + `nx build` du module contre le kernel.
