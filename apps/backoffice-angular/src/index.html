@@ -1,11 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
     <head>
         <meta charset="utf-8" />
-        <title>backoffice-angular</title>
+        <title>CMZ Backoffice</title>
         <base href="/" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
+        <script>
+            // Configuration runtime (dev). En prod : injectée par le déploiement.
+            window.__env = {
+                authenticationUrl: '/api/auth',
+                reportUrl: '/api/report',
+                settingUrl: '/api/settings',
+                fileUrl: '/api/file',
+                environmentDeployment: 'DEV',
+                enableDebug: true,
+            };
+        </script>
     </head>
     <body>
         <app-root></app-root>
