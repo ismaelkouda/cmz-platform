@@ -45,53 +45,54 @@
         "vitest": "^4.0.8",
       },
     },
-    "libs/seos-reference/application": {
-      "name": "@cmz/seos-reference-application",
+    "libs/shared/application": {
+      "name": "@cmz/shared-application",
       "version": "0.0.0",
       "dependencies": {
         "@angular/core": "catalog:",
-        "@cmz/seos-reference-data": "workspace:*",
-        "@cmz/seos-reference-domain": "workspace:*",
-        "rxjs": "catalog:",
+        "@cmz/shared-domain": "workspace:*",
+        "@cmz/shared-infra": "workspace:*",
       },
     },
-    "libs/seos-reference/data": {
-      "name": "@cmz/seos-reference-data",
+    "libs/shared/constants": {
+      "name": "@cmz/shared-constants",
+      "version": "0.0.0",
+    },
+    "libs/shared/data": {
+      "name": "@cmz/shared-data",
       "version": "0.0.0",
       "dependencies": {
         "@angular/core": "catalog:",
-        "@cmz/seos-reference-domain": "workspace:*",
-        "rxjs": "catalog:",
+        "@cmz/shared-domain": "workspace:*",
+        "date-fns": "catalog:",
       },
     },
-    "libs/seos-reference/domain": {
-      "name": "@cmz/seos-reference-domain",
+    "libs/shared/domain": {
+      "name": "@cmz/shared-domain",
+      "version": "0.0.0",
+    },
+    "libs/shared/infra": {
+      "name": "@cmz/shared-infra",
       "version": "0.0.0",
       "dependencies": {
         "@angular/core": "catalog:",
-        "rxjs": "catalog:",
       },
     },
-    "libs/seos-reference/feature": {
-      "name": "@cmz/seos-reference-feature",
+    "libs/shared/ui": {
+      "name": "@cmz/shared-ui",
       "version": "0.0.0",
       "dependencies": {
         "@angular/core": "catalog:",
-        "@cmz/seos-reference-application": "workspace:*",
-        "@cmz/seos-reference-data": "workspace:*",
-        "@cmz/seos-reference-domain": "workspace:*",
-        "@cmz/seos-reference-ui": "workspace:*",
+        "@angular/platform-browser": "catalog:",
+        "@angular/router": "catalog:",
+        "@cmz/shared-application": "workspace:*",
+        "@cmz/shared-domain": "workspace:*",
+        "@cmz/shared-infra": "workspace:*",
+        "date-fns": "catalog:",
+        "i18next": "catalog:",
+        "ngx-sonner": "catalog:",
         "rxjs": "catalog:",
-      },
-    },
-    "libs/seos-reference/ui": {
-      "name": "@cmz/seos-reference-ui",
-      "version": "0.0.0",
-      "dependencies": {
-        "@angular/core": "catalog:",
-        "@cmz/seos-reference-application": "workspace:*",
-        "@cmz/seos-reference-domain": "workspace:*",
-        "rxjs": "catalog:",
+        "sweetalert2": "catalog:",
       },
     },
   },
@@ -106,7 +107,11 @@
     "@angular/platform-browser": "22.0.7",
     "@angular/router": "22.0.7",
     "@angular/service-worker": "22.0.7",
+    "date-fns": "4.4.0",
+    "i18next": "26.3.6",
+    "ngx-sonner": "3.1.0",
     "rxjs": "7.8.2",
+    "sweetalert2": "11.26.25",
     "tslib": "2.8.1",
     "zone.js": "0.16.2",
   },
@@ -401,15 +406,17 @@
 
     "@bufbuild/protobuf": ["@bufbuild/protobuf@2.13.0", "", {}, "sha512-acq7c49vxfm1ggJ95P70TX7ABDM0vxr1SYD3BB0o0jnBLB4OAqeHyKuN+cD3w80gXEDQ2zxHpR6CUeA+O/aU9g=="],
 
-    "@cmz/seos-reference-application": ["@cmz/seos-reference-application@workspace:libs/seos-reference/application"],
+    "@cmz/shared-application": ["@cmz/shared-application@workspace:libs/shared/application"],
 
-    "@cmz/seos-reference-data": ["@cmz/seos-reference-data@workspace:libs/seos-reference/data"],
+    "@cmz/shared-constants": ["@cmz/shared-constants@workspace:libs/shared/constants"],
 
-    "@cmz/seos-reference-domain": ["@cmz/seos-reference-domain@workspace:libs/seos-reference/domain"],
+    "@cmz/shared-data": ["@cmz/shared-data@workspace:libs/shared/data"],
 
-    "@cmz/seos-reference-feature": ["@cmz/seos-reference-feature@workspace:libs/seos-reference/feature"],
+    "@cmz/shared-domain": ["@cmz/shared-domain@workspace:libs/shared/domain"],
 
-    "@cmz/seos-reference-ui": ["@cmz/seos-reference-ui@workspace:libs/seos-reference/ui"],
+    "@cmz/shared-infra": ["@cmz/shared-infra@workspace:libs/shared/infra"],
+
+    "@cmz/shared-ui": ["@cmz/shared-ui@workspace:libs/shared/ui"],
 
     "@colordx/core": ["@colordx/core@5.5.0", "", {}, "sha512-3PxTH8itZzltK0U9jTwVVnjLXvnDYuq3m+QXsHkENxWiPRh4WaoLcs1SQjqgZ55kS+QyirpH5BVwzP2gMVG6EQ=="],
 
@@ -1229,6 +1236,8 @@
 
     "data-urls": ["data-urls@6.0.1", "", { "dependencies": { "whatwg-mimetype": "^5.0.0", "whatwg-url": "^15.1.0" } }, "sha512-euIQENZg6x8mj3fO6o9+fOW8MimUI4PpD/fZBhJfeioZVy9TUpM4UY7KjQNVZFlqwJ0UdzRDzkycB997HEq1BQ=="],
 
+    "date-fns": ["date-fns@4.4.0", "", {}, "sha512-+1UMbeh68lH1SegH83CGWwpb6OHHbpSgr3+s5Eww5M4CAgswBpoWS0AjTOfEJ33HiYKz1hdj/KTFprzXHmq/6w=="],
+
     "debug": ["debug@4.4.3", "", { "dependencies": { "ms": "^2.1.3" }, "peerDependencies": { "supports-color": "*" }, "optionalPeers": ["supports-color"] }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
 
     "decimal.js": ["decimal.js@10.6.0", "", {}, "sha512-YpgQiITW3JXGntzdUmyUR1V812Hn8T1YVXhCu+wO3OpS4eU9l4YdD3qjyiKdV6mvV29zapkMeD390UVEf2lkUg=="],
@@ -1471,6 +1480,8 @@
 
     "hyperdyperid": ["hyperdyperid@1.2.0", "", {}, "sha512-Y93lCzHYgGWdrJ66yIktxiaGULYc6oGiABxhcO5AufBeOyoIdZF7bIfLaOrbM0iGIOXQQgxxRrFEnb+Y6w1n4A=="],
 
+    "i18next": ["i18next@26.3.6", "", { "peerDependencies": { "typescript": "^5 || ^6 || ^7" }, "optionalPeers": ["typescript"] }, "sha512-Bu5Z2nAXgfVyM8xvW3jk9EKRIuX37PudsrBViThNFx7CR7aaYTpP01cxNB/E4c4UUzTDiAZRstEhsRfPOL/8xA=="],
+
     "iconv-lite": ["iconv-lite@0.6.3", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw=="],
 
     "icss-utils": ["icss-utils@5.1.0", "", { "peerDependencies": { "postcss": "^8.1.0" } }, "sha512-soFhflCVWLfRNOPU3iv5Z9VUdT44xFRbzjLsEzSr5AQmgqPMTHdU3PMT1Cf1ssx8fLNJDA1juftYl+PUcv3MqA=="],
@@ -1684,6 +1695,8 @@
     "negotiator": ["negotiator@1.0.0", "", {}, "sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg=="],
 
     "neo-async": ["neo-async@2.6.2", "", {}, "sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw=="],
+
+    "ngx-sonner": ["ngx-sonner@3.1.0", "", { "dependencies": { "tslib": "^2.3.0" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0" } }, "sha512-hN5GolhBeVs0gzPNZi2VPnbv/sM+3+aMGCvIjH33MC8LHz+QIiOUWGw3AbnCH/hQxy08AGwkWHVYy1acvXByQQ=="],
 
     "node-abort-controller": ["node-abort-controller@3.1.1", "", {}, "sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ=="],
 
@@ -2066,6 +2079,8 @@
     "supports-preserve-symlinks-flag": ["supports-preserve-symlinks-flag@1.0.0", "", {}, "sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w=="],
 
     "svgo": ["svgo@4.0.2", "", { "dependencies": { "commander": "^11.1.0", "css-select": "^5.1.0", "css-tree": "^3.0.1", "css-what": "^6.1.0", "csso": "^5.0.5", "picocolors": "^1.1.1", "sax": "^1.5.0" }, "bin": "./bin/svgo.js" }, "sha512-ekx94z1rRc5LDi6oSUaeRnYhd0UOJxdtQCL2rF8xpWxD3TPAsISWOrxezqGovqS38GRZOdpDfvQe3ts6F7nsng=="],
+
+    "sweetalert2": ["sweetalert2@11.26.25", "", {}, "sha512-+hunCOJdJ6FLj04T9YSLvvZXRjsvIkTeTKP2e4VF8CaBias961BTnWiSFAy7F/CM5eq3QK2Rraoc5Gzftslvkg=="],
 
     "symbol-tree": ["symbol-tree@3.2.4", "", {}, "sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw=="],
 

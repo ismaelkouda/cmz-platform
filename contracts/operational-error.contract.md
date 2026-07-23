@@ -9,9 +9,13 @@ de sémantique métier ni de clé i18n. Autonome (`extends Error`), souvent dot�
 
 ## Couche
 
-Là où l'erreur est **levée** : `ApiError` (transport) est consommée par la
-couche `data` (bases de mappers) et `application` ; `InvalidFilterError` est
-levée par un VO du domaine. À placer au plus près de ses consommateurs.
+Là où l'erreur est **levée** : `ApiError` (transport) est destinée aux **sources
+de données** (`data`, ex. `ApiError.fetchFailed` sur échec réseau) — plus à la
+validation d'enveloppe, qui lève désormais des `domain-error` via
+`unwrapResponse` (cf.
+[`api-response-handling`](../docs/architecture/api-response-handling.md)) ;
+`InvalidFilterError` est levée par un VO de module. À placer au plus près de ses
+consommateurs (Phase 07).
 
 ## Règle mécanique
 

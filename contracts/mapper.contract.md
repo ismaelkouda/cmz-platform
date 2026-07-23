@@ -93,23 +93,16 @@ d'usage (par **nom de classe**, qui diffère du nom de fichier) :
 | `SimplePaginatedMapper` | custom-response    |            0 | **non reproduite** (100 % commentée) |
 | `BaseMapper`            | base-mapper        |            0 | **non reproduite** (100 % commentée) |
 
-Non-reproduction appliquée : les deux bases mortes ne sont pas portées ; la
-fuite `console.log('dto: ', dto)` de `SimpleResponseMapper` est **supprimée**.
+Non-reproduction appliquée : les deux bases mortes ne sont pas portées.
 
-**Génération à la demande, pas en avance.** Ces bases sont un support de pattern
-consommé **uniquement par les mappers de module** (les 15 sous-classes
-`ArrayResponseMapper`, etc. vivent dans `presentation/pages/*`, pas dans
-`shared`). Aucune n'a de consommateur _à l'intérieur_ de `shared-data`. On les
-génère donc quand leur **premier consommateur** apparaît (Phase 07), pas
-préventivement dans `shared-data` — sinon on committe une base abstraite sans
-sous-classe (dette « prove-then-scale »).
-
-**Option de convention ouverte (approbation requise)** : les 4 bases vivantes
-répètent le même `validateResponse` et ne diffèrent que par la forme de `data`.
-Elles pourraient fusionner en **une** base générique (template method : valider
-une fois, différer `extractAndMap`). Défaut retenu ici : **garder les 4 bases
-explicites** du source (plus débogables, plus proche du source, réversible) ; la
-consolidation reste proposable.
+**État actuel (générées + purifiées).** Les 4 bases vivantes ont été générées
+(Phase 07). La duplication du `validateResponse` (copié × 4, levait un
+`ApiError` non affichable) a été **résolue** : la validation d'enveloppe est
+extraite dans un dé-emballeur unique `unwrapResponse` / `assertResponseOk`
+([`api-response-handling`](../docs/architecture/api-response-handling.md)), qui
+lève des `domain-error` (`ServerResponseError`/`UnknownError`). Les bases sont
+donc **pures** : `mapFromDto(dto) → mapItemFromDto(unwrapResponse(dto))`. Plus
+de `console.log`, plus d'`ApiError` dans les mappers.
 
 ## Prompt
 
