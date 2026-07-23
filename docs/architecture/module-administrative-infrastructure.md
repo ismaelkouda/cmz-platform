@@ -125,14 +125,18 @@ cérémonie CQRS dégénérée du source est **supprimée** — `command` +
 
 **Composants partagés kernel (design-system, sans primeng) :**
 
-- **Faits** : `cmz-pagination`, `cmz-action-dropdown`, `cmz-table` (standalone +
-  `OnPush` + signals, a11y, i18n via `TranslationPort`, tokens `--cmz-*`,
-  logique pure `pageWindow` testable). `cmz-table` **focalisée** (pas le
-  fourre-tout primeng/`any`/sélection/export du source) ; `TableColumn` /
-  `TableRowBase` promus au kernel ; `PaginationMeta` (dont `PageResult` dérive).
-- **Reste** : `cmz-filter` (formulaire de filtres dynamiques — dernier prérequis
-  de la **liste**), composants de champ de formulaire (`cmz-field`/ select/date
-  — prérequis du **form**).
+- **Faits** : `cmz-pagination`, `cmz-action-dropdown`, `cmz-table`, `cmz-filter`
+  (standalone + `OnPush` + signals, a11y, i18n via `TranslationPort`, tokens,
+  logique pure `pageWindow` testable). `cmz-table`/`cmz-filter` **focalisés**
+  (pas le fourre-tout primeng/`any` du source) ; `TableColumn`/`TableRowBase`
+  promus au kernel ; `PaginationMeta` (dont `PageResult` dérive) ;
+  `FilterField`/`FilterOption` typés + helper `enumToFilterOptions`.
+- **Tailwind CSS v4** installé/câblé (`@tailwindcss/postcss`, `tailwind.css` :
+  `@theme` tokens + `@source` libs + pont `--cmz-*`). `cmz-filter` stylé en
+  utilitaires Tailwind ; les autres primitives en styles scopés — **les deux
+  consomment le même jeu de tokens `@theme`** (source unique). → `bun install`.
+- **Reste** : composants de **champ de formulaire** (`cmz-field`/input/select/
+  date — prérequis du **form**).
 
 **Reste — sous-tranches UI (multi-tours) :**
 
