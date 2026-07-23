@@ -164,13 +164,32 @@ validés.**
   confirmations (`ConfirmDialogPort`), i18n (`TranslationPort`). Sans
   ngx-translate/toastr/primeng. Export différé (non-cœur).
 
-**Reste — sous-tranches UI :**
+**Feature `form` `infrastructure-type` — fait (validé `ngc`) :**
 
-1. **Feature `form` `infrastructure-type`** (Signal Forms :
-   `form(model, schema)`
-    - validators + `cmz-field`) + son store.
-2. **`page` component** + `*.routes` + `di/*.providers` (wiring port→impl).
-3. **Entité `infrastructure`** (list/form) — symétrique, avec coordonnées.
+- Store Signal Forms : `form(model, schema)` typé,
+  `required(name/description)` + `disabled(() => isDetails())` ; hydratation
+  edit/details via `effect` sur la façade find-one (`rxResource`).
+- Composant : `[formField]` + `cmz-field` (erreurs) ; submit → façade
+  `create`/`update` ; **navigation retour par `effect` sur `actionSuccess`**
+  (pas de polling). Modes create/edit/details via query params.
+
+**Routes + DI `infrastructure-type` — fait (validé `ngc`, libs + app) :**
+
+- `INFRASTRUCTURE_TYPE_ROUTES` = **composition root** : wire les ports domaine →
+  impls `data` au niveau route (`providers`), list/form en `loadComponent`
+  (lazy). `app.routes` charge le feature sur `equipments/types`.
+
+> **Validation** : `ngc --strictTemplates` vert (libs + app). Le `nx build` AOT
+> complet ne tourne pas **en sandbox** (Tailwind v4 tire `lightningcss`, binaire
+> natif lié à la plateforme — installé pour macOS, sandbox = Linux) → à lancer
+> sur le poste. Ce n'est pas un problème de code.
+
+**Reste :**
+
+1. **App-shell** : fournir les adaptateurs des ports (i18next/sonner/sweetalert)
+    - tokens de config pour l'exécution runtime.
+2. **Entité `infrastructure`** (list/form) — symétrique, avec coordonnées.
+3. `page` component (onglets) optionnel.
 
 ## Séquencement proposé
 
