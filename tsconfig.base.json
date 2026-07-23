@@ -17,7 +17,8 @@
     "paths": {
       "@cmz/shared-data": ["./libs/shared/data/src/index.ts"],
       "@cmz/shared-domain": ["./libs/shared/domain/src/index.ts"],
-      "@cmz/shared-constants": ["./libs/shared/constants/src/index.ts"]
+      "@cmz/shared-constants": ["./libs/shared/constants/src/index.ts"],
+      "@cmz/shared-application": ["./libs/shared/application/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
