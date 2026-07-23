@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/shared-infra",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/infra/src",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:infra"]
+}

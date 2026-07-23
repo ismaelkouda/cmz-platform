@@ -1,30 +1,29 @@
-# Couche `shared-application` — état
+# Couches `shared-application` et `shared-infra` — état
 
 - **Dernière mise à jour :** 2026-07-22
 
-`@cmz/shared-application` orchestre le domaine. Elle dépend de `shared-domain`
-(et pourra dépendre de `shared-data`/`shared-infra`), jamais l'inverse.
+## `@cmz/shared-infra`
 
-## Généré
+Briques techniques (storage, crypto…), sans logique métier.
 
-| Service                | Dépendances     | Notes                                                                                                                                                                                                                                                              |
-| ---------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ErrorHandlerRegistry` | `shared-domain` | Dispatch générique + **handler par défaut** (`registerDefault`) — la couche UI enregistre le défaut ; seules les exceptions ont un handler propre (cf. [`error.contract`](../../contracts/error.contract.md)). Normalisé `@Injectable`→`@Service`, code simplifié. |
+| Service               | Techno                       | Notes                                                                                                                                                                                                                                                                                                             |
+| --------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EncodingDataService` | **Web Crypto API** (AES-GCM) | Remplace `crypto-js` (**natif, aucun install**). Stockage **synchrone** ; chiffrement **asynchrone** (`crypto.subtle` l'impose) → API scindée `save`/`get` (clair) vs `saveEncrypted`/`getEncrypted` (chiffré). `console.error` du source non reproduit. Caveat sécurité documenté (clé embarquée = obfuscation). |
 
-## Bloqué — en attente de `shared-infra` (et d'approbation d'install)
+## `@cmz/shared-application`
 
-Ces services `application` **injectent `EncodingDataService`** (chiffrement via
-`crypto-js` + `localStorage`) ou d'autres briques d'infra :
+Orchestration du domaine ; dépend de `shared-domain` / `shared-infra`.
 
-| Service                     | Bloqueur                                              |
-| --------------------------- | ----------------------------------------------------- |
-| `session`                   | `EncodingDataService` (crypto-js), `localStorage`     |
-| `permission-actions`        | `EncodingDataService`                                 |
-| `store-paths`               | `EncodingDataService`                                 |
-| `route-context`             | `@angular/router` + types UI (`RouteContextType`)     |
-| `notifications-initializer` | **mort** (corps entièrement commenté) — non reproduit |
+| Service                     | Dépendances                  | État                                                                                                                          |
+| --------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `ErrorHandlerRegistry`      | `shared-domain`              | ✅ dispatch + `registerDefault` (33 handlers → 2)                                                                             |
+| `SessionService`            | `shared-infra`               | ✅ n'utilise que le stockage **synchrone**                                                                                    |
+| `permission-actions`        | `shared-infra`               | ⏳ lit via `getData` (potentiellement chiffré → `getEncrypted` **async**) : à adapter (le `signal` d'init doit gérer l'async) |
+| `store-paths`               | `shared-infra`               | ⏳ idem `permission-actions`                                                                                                  |
+| `route-context`             | `@angular/router` + types UI | ➡️ couche **ui/app** (dépend du `Router`)                                                                                     |
+| `notifications-initializer` | —                            | ❌ **mort** (corps commenté) — non reproduit                                                                                  |
 
-**Prérequis** : bâtir `@cmz/shared-infra` avec `EncodingDataService`, ce qui
-exige d'installer `crypto-js` — **approbation utilisateur requise** avant tout
-`bun add` (règle projet). Tant que ce n'est pas fait, ces services restent en
-attente.
+Le passage à Web Crypto rend les lectures chiffrées **asynchrones** : les
+services qui initialisaient un `signal` depuis une lecture synchrone
+(`permission-actions`, `store-paths`) doivent être adaptés (init async /
+resolver). À traiter à leur génération.
