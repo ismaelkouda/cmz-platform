@@ -10,8 +10,6 @@
     "@cmz/shared-infra": "workspace:*",
     "i18next": "catalog:",
     "@cmz/shared-application": "workspace:*",
-    "sweetalert2": "catalog:",
-    "ngx-sonner": "catalog:",
     "@cmz/shared-domain": "workspace:*",
     "date-fns": "catalog:",
     "@angular/forms": "catalog:"

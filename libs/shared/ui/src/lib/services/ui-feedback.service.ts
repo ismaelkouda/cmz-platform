@@ -6,7 +6,7 @@ import {
 } from '@cmz/shared-domain';
 import { ErrorHandlerRegistry, SessionService } from '@cmz/shared-application';
 import { I18nextTranslationService } from './i18next-translation.service';
-import { SonnerNotificationService } from './sonner-notification.service';
+import { CmzNotificationService } from './cmz-notification.service';
 
 /**
  * Point de convergence du feedback d'erreur. Branche le **handler par défaut**
@@ -18,7 +18,7 @@ import { SonnerNotificationService } from './sonner-notification.service';
 @Service()
 export class UiFeedbackService {
     private readonly registry = inject(ErrorHandlerRegistry);
-    private readonly notification = inject(SonnerNotificationService);
+    private readonly notification = inject(CmzNotificationService);
     private readonly translation = inject(I18nextTranslationService);
     private readonly session = inject(SessionService);
 

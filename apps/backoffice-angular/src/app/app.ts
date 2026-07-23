@@ -1,13 +1,18 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { NxWelcome } from './nx-welcome';
+import {
+    DialogOutletComponent,
+    ToastOutletComponent,
+    UiFeedbackService,
+} from '@cmz/shared-ui';
 
 @Component({
-    imports: [NxWelcome, RouterModule],
+    imports: [RouterModule, ToastOutletComponent, DialogOutletComponent],
     selector: 'app-root',
     templateUrl: './app.html',
     styleUrl: './app.scss',
 })
 export class App {
-    protected title = 'backoffice-angular';
+    // Instancie le service de feedback : enregistre le handler d'erreur par défaut.
+    private readonly feedback = inject(UiFeedbackService);
 }
