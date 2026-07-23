@@ -18,6 +18,8 @@ export * from './lib/constants/infrastructure-type-paths.constant';
 export * from './lib/constants/infrastructure-type-table.constant';
 export * from './lib/constants/infrastructure-type-tabs.constant';
 export * from './lib/enums/infrastructure-type-status-style.enum';
+export * from './lib/features/infrastructure-type-list.component';
 export * from './lib/helpers/form-errors.helper';
 export * from './lib/interfaces/tab-link.interface';
 export * from './lib/mappers/infrastructure-type-status-style.mapper';
+export * from './lib/stores/infrastructure-type-filter.store';
