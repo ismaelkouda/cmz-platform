@@ -3,3 +3,7 @@ export * from './lib/props/infrastructure-type.props';
 export * from './lib/props/infrastructure-type-find-one.props';
 export * from './lib/entities/infrastructure-type.entity';
 export * from './lib/entities/infrastructure-type-find-one.entity';
+export * from './lib/props/infrastructure.props';
+export * from './lib/props/infrastructure-find-one.props';
+export * from './lib/entities/infrastructure.entity';
+export * from './lib/entities/infrastructure-find-one.entity';
