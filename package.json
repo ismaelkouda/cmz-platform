@@ -20,6 +20,8 @@
     "@angular/forms": "catalog:",
     "@angular/platform-browser": "catalog:",
     "@angular/router": "catalog:",
+    "date-fns": "catalog:",
+    "i18next": "catalog:",
     "rxjs": "catalog:",
     "tslib": "catalog:"
   },
