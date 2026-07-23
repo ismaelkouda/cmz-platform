@@ -19,3 +19,6 @@ export * from './lib/validators/date-not-in-past.validator';
 export * from './lib/constants/form-validators.constant';
 export * from './lib/interfaces/action-dropdown-item.interface';
 export * from './lib/helpers/form-errors.helper';
+export * from './lib/components/pagination/page-window.util';
+export * from './lib/components/pagination/pagination.component';
+export * from './lib/components/action-dropdown/action-dropdown.component';

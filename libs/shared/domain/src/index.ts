@@ -62,5 +62,6 @@ export * from './lib/utils/match-confirm-password.util';
 export * from './lib/utils/valid-email.util';
 export * from './lib/utils/resolve-open-ended-end-date.util';
 export * from './lib/interfaces/select-option.interface';
+export * from './lib/interfaces/pagination-meta.interface';
 export * from './lib/interfaces/page-result.interface';
 export * from './lib/interfaces/fetch-options.interface';
