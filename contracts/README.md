@@ -59,10 +59,14 @@ qu'on croyait un archétype recouvre plusieurs formes (cas `dto`), on **scinde**
 | `error` (famille)   | domain      | [`error.contract.md`](./error.contract.md)                         |
 | `domain-error`      | domain      | [`domain-error.contract.md`](./domain-error.contract.md)           |
 | `operational-error` | data/domain | [`operational-error.contract.md`](./operational-error.contract.md) |
+| `vo`                | domain      | [`vo.contract.md`](./vo.contract.md)                               |
+| `validator`         | domain      | [`validator.contract.md`](./validator.contract.md)                 |
+| `util`              | domain      | [`util.contract.md`](./util.contract.md)                           |
+| `type`              | domain      | [`type.contract.md`](./type.contract.md)                           |
 | `service`           | selon deps  | [`service.contract.md`](./service.contract.md)                     |
 
-_À compléter au fil des couches (facade, validator, pipe, vo, util, constant),
-puis réutilisés en Phase 07._
+_Domaine terminé. À compléter au fil des couches data/ui/application (facade,
+pipe, constant, bases de mappers), puis réutilisés en Phase 07._
 
 ## Principe de non-reproduction
 

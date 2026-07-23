@@ -8,18 +8,21 @@ Externalisée ici, jamais codée en dur dans un générateur.
 
 `<nom-métier>.<archétype>.ts`, tout en **kebab-case**.
 
-| Archétype    | Suffixe         | Exemple                              |
-| ------------ | --------------- | ------------------------------------ |
-| entité       | `.entity.ts`    | `report-location.entity.ts`          |
-| props        | `.props.ts`     | `actor.props.ts`                     |
-| interface    | `.interface.ts` | (forme de valeur autonome)           |
-| enum         | `.enum.ts`      | `location-method.enum.ts`            |
-| erreur       | `.error.ts`     | `api.error.ts`                       |
-| mapper       | `.mapper.ts`    | `report-source.mapper.ts`            |
-| dto          | `.dto.ts`       | `media-publish.dto.ts`               |
-| function     | `.function.ts`  | `normalize-phone-number.function.ts` |
-| service      | `.service.ts`   | `error-handler-registry.service.ts`  |
-| value-object | `.vo.ts`        | (à venir)                            |
+| Archétype    | Suffixe         | Exemple                                |
+| ------------ | --------------- | -------------------------------------- |
+| entité       | `.entity.ts`    | `report-location.entity.ts`            |
+| props        | `.props.ts`     | `actor.props.ts`                       |
+| interface    | `.interface.ts` | (forme de valeur autonome)             |
+| enum         | `.enum.ts`      | `location-method.enum.ts`              |
+| erreur       | `.error.ts`     | `api.error.ts`                         |
+| mapper       | `.mapper.ts`    | `report-source.mapper.ts`              |
+| dto          | `.dto.ts`       | `media-publish.dto.ts`                 |
+| function     | `.function.ts`  | `normalize-phone-number.function.ts`   |
+| util         | `.util.ts`      | `valid-email.util.ts`                  |
+| type         | `.type.ts`      | `permission-action.type.ts`            |
+| validator    | `.validator.ts` | `assert-valid-date-range.validator.ts` |
+| service      | `.service.ts`   | `error-handler-registry.service.ts`    |
+| value-object | `.vo.ts`        | `date-period.vo.ts`                    |
 
 Un fichier = un symbole principal exporté, du même nom que le fichier (en
 `PascalCase` pour la classe/interface/enum, avec le suffixe d'archétype pour les
