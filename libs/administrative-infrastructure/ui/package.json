@@ -10,6 +10,7 @@
     "@angular/core": "catalog:",
     "@angular/router": "catalog:",
     "@angular/forms": "catalog:",
-    "rxjs": "catalog:"
+    "rxjs": "catalog:",
+    "@cmz/administrative-infrastructure-data": "workspace:*"
   }
 }

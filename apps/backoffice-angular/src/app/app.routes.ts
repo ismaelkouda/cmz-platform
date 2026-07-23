@@ -1,3 +1,11 @@
 import { Route } from '@angular/router';
 
-export const appRoutes: Route[] = [];
+export const appRoutes: Route[] = [
+    {
+        path: 'equipments/types',
+        loadChildren: () =>
+            import('@cmz/administrative-infrastructure-ui').then(
+                (m) => m.INFRASTRUCTURE_TYPE_ROUTES
+            ),
+    },
+];
