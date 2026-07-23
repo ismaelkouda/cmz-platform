@@ -18,6 +18,7 @@ export * from './lib/constants/infrastructure-type-paths.constant';
 export * from './lib/constants/infrastructure-type-table.constant';
 export * from './lib/constants/infrastructure-type-tabs.constant';
 export * from './lib/enums/infrastructure-type-status-style.enum';
+export * from './lib/features/administrative-infrastructure.providers';
 export * from './lib/features/infrastructure-form.component';
 export * from './lib/features/infrastructure-list.component';
 export * from './lib/features/infrastructure-type-form.component';

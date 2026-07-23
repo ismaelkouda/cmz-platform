@@ -14,6 +14,7 @@ import {
     CmzNotificationService,
     I18nextTranslationService,
 } from '@cmz/shared-ui';
+import { provideAdministrativeInfrastructure } from '@cmz/administrative-infrastructure-ui';
 import { appRoutes } from './app.routes';
 import { provideI18n } from './i18n/i18n.provider';
 
@@ -27,5 +28,7 @@ export const appConfig: ApplicationConfig = {
         { provide: NotificationPort, useExisting: CmzNotificationService },
         { provide: ConfirmDialogPort, useExisting: CmzConfirmDialogService },
         { provide: TranslationPort, useExisting: I18nextTranslationService },
+        // Composition root du module (ports domaine -> impls data).
+        ...provideAdministrativeInfrastructure(),
     ],
 };
