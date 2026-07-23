@@ -20,7 +20,8 @@
       "@cmz/shared-constants": ["./libs/shared/constants/src/index.ts"],
       "@cmz/shared-application": ["./libs/shared/application/src/index.ts"],
       "@cmz/shared-infra": ["./libs/shared/infra/src/index.ts"],
-      "@cmz/shared-ui": ["./libs/shared/ui/src/index.ts"]
+      "@cmz/shared-ui": ["./libs/shared/ui/src/index.ts"],
+      "@cmz/core": ["./libs/core/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

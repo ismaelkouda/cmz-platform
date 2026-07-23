@@ -1,11 +1,9 @@
 {
-  "name": "@cmz/shared-data",
+  "name": "@cmz/core",
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@cmz/shared-domain": "workspace:*",
     "@angular/core": "catalog:",
-    "date-fns": "catalog:",
     "@angular/common": "catalog:"
   }
 }

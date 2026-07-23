@@ -16,3 +16,4 @@ export * from './lib/formatters/format-date-safe.function';
 export * from './lib/formatters/parse-french-date.function';
 export * from './lib/formatters/format-date.function';
 export * from './lib/validators/date-not-in-past.validator';
+export * from './lib/constants/form-validators.constant';
