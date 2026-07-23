@@ -8,3 +8,7 @@ export * from './lib/route-strategies/custom-route-reuse-strategy';
 export * from './lib/services/table-selection.service';
 export * from './lib/services/tab.service';
 export * from './lib/services/nav.service';
+export * from './lib/services/i18next-translation.service';
+export * from './lib/services/sonner-notification.service';
+export * from './lib/services/sweet-alert-confirm-dialog.service';
+export * from './lib/services/ui-feedback.service';

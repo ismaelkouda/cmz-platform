@@ -1,30 +1,37 @@
 # Couche `@cmz/shared-ui` — état
 
-- **Dernière mise à jour :** 2026-07-22
+- **Dernière mise à jour :** 2026-07-23
 
-Présentation partagée (pipes, services UI). Dépend de `shared-domain`/
-`shared-application`/`shared-infra` ; jamais l'inverse.
+Présentation partagée (pipes, services UI, adaptateurs). Dépend de
+`shared-domain`/ `shared-application`/`shared-infra` ; jamais l'inverse.
 
-## Généré (sans install)
+## Généré et vérifié (`tsc` vert)
 
-| Élément                                                   | Notes                                                                                                                                                |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CapitalizePipe`, `SeparatorThousandsPipe`, `SafeUrlPipe` | `@Pipe`, `standalone` implicite, `inject()`. Nom `separatorThousands` corrigé.                                                                       |
-| `CustomRouteReuseStrategy`                                | stratégie de réutilisation de route (@angular/router).                                                                                               |
-| `TableSelectionService<T>`                                | signaux ; `SelectionEvent` **externalisé** en interface UI.                                                                                          |
-| `TabService`                                              | `@Service`, **async** (persistance chiffrée Web Crypto), `signal` au lieu de BehaviorSubject, `CustomRouteReuseStrategy`.                            |
-| `NavService`                                              | **nettoyé** : typé (aucun `any`), code mort retiré, `takeUntilDestroyed` (corrige le `complete()` sans `next()`), typo `megaMenuColapse`→`Collapse`. |
-| interfaces `Tab`, `Menu`, `SelectionEvent`                | externalisées (formes UI).                                                                                                                           |
+| Élément                                                   | Notes                                                                                                                                                                                         |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CapitalizePipe`, `SeparatorThousandsPipe`, `SafeUrlPipe` | pipes, `standalone` implicite.                                                                                                                                                                |
+| `CustomRouteReuseStrategy`                                | réutilisation de route.                                                                                                                                                                       |
+| `TableSelectionService<T>`                                | signaux ; `SelectionEvent` externalisé.                                                                                                                                                       |
+| `TabService`                                              | async (persistance chiffrée Web Crypto), signal.                                                                                                                                              |
+| `NavService`                                              | nettoyé (typé, code mort retiré, `takeUntilDestroyed`).                                                                                                                                       |
+| **`I18nextTranslationService`**                           | adaptateur `TranslationPort` → **i18next**.                                                                                                                                                   |
+| **`SonnerNotificationService`**                           | adaptateur `NotificationPort` → **ngx-sonner** (Sonner).                                                                                                                                      |
+| **`SweetAlertConfirmDialog`**                             | adaptateur `ConfirmDialogPort` → **SweetAlert2**.                                                                                                                                             |
+| **`UiFeedbackService`**                                   | **ferme la boucle d'erreurs** : `registerDefault` (33 → 1 + 2), `messageKey` traduit, toast Sonner ; exceptions `Unauthorized` (warning + `session.clear`) et `Validation` (message serveur). |
 
-## Non reproduits / bloqués
+## Câblage requis côté app (adaptateurs)
 
-| Élément                                      | Raison                                                                                         |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `layout`                                     | **mort** (entièrement commenté) + dépend d'`AppCustomizationService`                           |
-| `permission-tree-node`                       | bloqué : `TreeNodeInterface extends TreeNode` de **`primeng`** (install à approuver)           |
-| `UiFeedbackService`                          | **`@jsverse/transloco`** + `ngx-toastr` (install) — point de branchement du handler par défaut |
-| `SweetAlertService`                          | `sweetalert2` (install)                                                                        |
-| `FormValidationService`                      | `primeng` (install)                                                                            |
-| fonctions de formatage `*-style`, `format-*` | présentation ; certaines `moment` (install)                                                    |
+- Initialiser **i18next** au bootstrap (`i18next.init({...})` + ressources).
+- Inclure **`<ngx-sonner-toaster />`** dans le template racine (rendu des
+  toasts).
+- Lier les ports aux adaptateurs si on injecte les abstractions :
+  `{ provide: TranslationPort, useExisting: I18nextTranslationService }`, idem
+  `NotificationPort`/`ConfirmDialogPort`.
 
-Les éléments bloqués attendent l'accord d'install des libs externes.
+## Non reproduits / restants
+
+| Élément                                         | Raison                                                                                                                                                         |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout`                                        | **mort** (commenté).                                                                                                                                           |
+| `permission-tree-node`, `FormValidationService` | dépendent de **primeng** (`TreeNode`, `MessageService`) — **exclu du partagé** (ADR-0012). À refaire sans primeng (interface `TreeNode` maison) ou dans l'app. |
+| fonctions de formatage `format-*`               | certaines `moment` → **date-fns** (install à venir).                                                                                                           |
