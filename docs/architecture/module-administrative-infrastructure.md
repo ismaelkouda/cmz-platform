@@ -42,20 +42,26 @@ URLs/`links`/`path`/`from`/`to` jamais) :
 - **`MessageResponseDto`** → **`MessageEntity`** (déjà kernel) pour
   create/update/delete.
 
-→ les ports parleront **100 % domaine** ; plus aucun import `data`.
+→ les ports parlent **100 % domaine** ; plus aucun import `data`.
+
+## Fait — machinerie CQRS + ports (vérifié `tsc`, domaine pur)
+
+- **contracts** (`*.contract` brut = tout optionnel ; `*.validate-contract` =
+  tout requis), **validators** (`validateX(c): asserts c is …ValidateContract`,
+  lèvent `GenericRequiredError` du kernel ; `filter` → `assertValidDateRange`),
+  **value-objects** (`xVo(c)` valide puis renvoie la forme validée).
+- **repository ports** (`*.repository`, `*-find-one`, `*-select`) : classes
+  abstraites **sans décorateur** (token DI, impl décorée en `data`) → le domaine
+  ne tire pas `@angular/core`. Renvoient `PageResult` / `MessageEntity` /
+  `SelectOption` + `FetchOptions` (tous du domaine).
+- **Non-reproduction (corrections d'ingénieur)** : `find-one-filter.contract`
+  `uniqId` rendu optionnel (aligné sur delete/enable/disable) ; validator
+  `filter` en `: void` (fin de l'assertion tautologique) ; méthode liste unifiée
+  `execute` (le source oscillait `execute`/`readAll`). Le whitelisting de
+  payload create/update est **préservé** (intention défensive, pas un défaut).
+- Lib domaine : dépend uniquement de `@cmz/shared-domain` (+ `rxjs`).
 
 ## Reste — par tranche (multi-tours)
-
-### Domaine (2 entités)
-
-- **repository ports** (`*.repository`, `*-find-one`, `*-select`) : classes
-  abstraites renvoyant `PageResult` / `MessageEntity` / `SelectOption` +
-  `FetchOptions` (tous du domaine). **Bloqués par la machinerie CQRS** (leurs
-  signatures référencent les `validate-contracts`).
-- **machinerie CQRS** : `contracts/` (+ `validate-contracts`), `value-objects/`
-  par commande (create/update/delete/enable/disable/filter/find-one),
-  `validators/` (utilisent `GenericRequiredError` du kernel). Nouveaux
-  archétypes à cadrer (`contract`, `validate-contract`, `command-vo`).
 
 ### Data
 
@@ -74,9 +80,9 @@ URLs/`links`/`path`/`from`/`to` jamais) :
 
 ## Séquencement proposé
 
-1. **Domaine** complet (2 entités) — en cours. Écrire au passage les contrats
-   `contract` / `validate-contract` / `command-vo` / `repository` (port).
-2. **Data** (dto + mappers + sources + repos).
+1. **Domaine** complet (2 entités) — **fait** (entités, props, enums, contracts,
+   validators, value-objects, ports).
+2. **Data** (dto + mappers + sources + repos) — **suivant**.
 3. **Application** (CQRS + facades).
 4. **UI/feature**.
 5. `bun install` + `nx build` du module contre le kernel.
