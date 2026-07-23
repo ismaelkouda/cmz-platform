@@ -10,8 +10,8 @@ import { TranslationPort } from '@cmz/shared-application';
 /**
  * Champ de formulaire — **design-system, Signal Forms (Angular 22)**. Enveloppe
  * un `Field` : libellé, marqueur requis, et messages d'erreur issus du champ
- * (`field().errors()`), affichés seulement après interaction (`touched()`).
- * Le contrôle natif est projeté (`<ng-content>`) et lié par `[control]` côté
+ * (`field()().errors()`), affichés seulement après interaction (`touched()`).
+ * Le contrôle natif est projeté (`<ng-content>`) et lié par `[formField]` côté
  * consommateur. Standalone, `OnPush`, a11y (`label for`, `role="alert"`).
  */
 @Component({
