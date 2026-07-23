@@ -25,3 +25,5 @@ export * from './lib/components/action-dropdown/action-dropdown.component';
 export * from './lib/interfaces/table-column.interface';
 export * from './lib/interfaces/table-row.interface';
 export * from './lib/components/table/table.component';
+export * from './lib/components/filter/filter.types';
+export * from './lib/components/filter/filter.component';
