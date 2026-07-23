@@ -1,0 +1,13 @@
+{
+  "name": "@cmz/administrative-infrastructure-application",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@cmz/administrative-infrastructure-domain": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "@cmz/shared-constants": "workspace:*",
+    "@angular/core": "catalog:",
+    "rxjs": "catalog:"
+  }
+}

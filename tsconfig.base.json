@@ -27,6 +27,9 @@
       ],
       "@cmz/administrative-infrastructure-data": [
         "./libs/administrative-infrastructure/data/src/index.ts"
+      ],
+      "@cmz/administrative-infrastructure-application": [
+        "./libs/administrative-infrastructure/application/src/index.ts"
       ]
     }
   },

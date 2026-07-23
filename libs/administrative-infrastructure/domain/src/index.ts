@@ -59,3 +59,5 @@ export * from './lib/value-objects/infrastructure-type-filter.vo';
 export * from './lib/value-objects/infrastructure-type-find-one-filter.vo';
 export * from './lib/value-objects/infrastructure-type-update.vo';
 export * from './lib/value-objects/infrastructure-update.vo';
+export * from './lib/entities/infrastructure-filter.entity';
+export * from './lib/entities/infrastructure-type-filter.entity';
