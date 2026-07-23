@@ -144,13 +144,33 @@ cérémonie CQRS dégénérée du source est **supprimée** — `command` +
 → **Tous les composants partagés prérequis (liste + form) sont faits et
 validés.**
 
-**Reste — sous-tranches UI (multi-tours) :**
+**Modernisation Angular 22 (signal-first, validée `ngc`) :**
 
-1. **Stores** : `*-filter.control`/`*-filter.store`, `*-form.control`/
-   `*-form.store` (reactive forms + signaux).
-2. **Features** : composants `page`/`list`/`form` (+ `.html`/`.scss`) +
-   `*-form-helper.service`.
-3. **Routing/DI** : `*.routes`, `di/*.providers` (wiring port→impl).
+- **Façades = `rxResource`** (`@angular/core/rxjs-interop`) : `ResourceFacade`/
+  `PaginatedResourceFacade`/`CollectionResourceFacade` — `value/isLoading/error`
+  en signaux, chargement par `setParams`, erreurs via `effect`, mutations
+  one-shot (`runAction`) + `reload()`. Plus aucun `.subscribe()` manuel.
+- **Formulaires = Signal Forms** (`@angular/forms/signals`) : `cmz-field`
+  (enveloppe un `Field`) et `cmz-filter` (`model()` + `form()` + `[formField]`).
+  Fini `ReactiveFormsModule`.
+
+**Feature `list` `infrastructure-type` — fait (validé `ngc`) :**
+
+- `cmz-infrastructure-type-list` compose `cmz-filter`/`cmz-table`/
+  `cmz-pagination` sur la façade `rxResource`
+  (`items()`/`isLoading()`/`value()`).
+- `store` **signal-first** (modèle `Record` deux-voies → contrat, dates typées)
+  ; presenter → `itemsVM` ; permissions (`PermissionActionsService`),
+  confirmations (`ConfirmDialogPort`), i18n (`TranslationPort`). Sans
+  ngx-translate/toastr/primeng. Export différé (non-cœur).
+
+**Reste — sous-tranches UI :**
+
+1. **Feature `form` `infrastructure-type`** (Signal Forms :
+   `form(model, schema)`
+    - validators + `cmz-field`) + son store.
+2. **`page` component** + `*.routes` + `di/*.providers` (wiring port→impl).
+3. **Entité `infrastructure`** (list/form) — symétrique, avec coordonnées.
 
 ## Séquencement proposé
 
