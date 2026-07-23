@@ -184,12 +184,29 @@ validés.**
 > natif lié à la plateforme — installé pour macOS, sandbox = Linux) → à lancer
 > sur le poste. Ce n'est pas un problème de code.
 
+**Entité `infrastructure` — fait (validé `ngc`) :**
+
+- `list` : filtre recherche / type (select via `InfrastructureTypeSelectFacade`)
+  / region-dept-commune (texte) / dates ; actions edit/delete (pas de statut).
+- `form` **Signal Forms** : name / type (select) / **position (lat,long)** /
+  description ; submit reconstruit `CoordinatesProps`. `FormMode` extrait en
+  type partagé. Routes + DI (+ `InfrastructureTypeSelectRepository`) ; app monte
+  `equipments/list` + `equipments/types`.
+- Sélecteur cartographique de position = enhancement futur (hors périmètre).
+
+**Design-system cohérent — Sonner/SweetAlert2 retirés :**
+
+- `CmzNotificationService` + `ToastOutlet` (`aria-live`) et
+  `CmzConfirmDialogService` + `DialogOutlet` (`<dialog>` natif). Ports inchangés
+  ; app-shell câblé (`useExisting`) + outlets + `UiFeedbackService`. i18next
+  gardé.
+
 **Reste :**
 
-1. **App-shell** : fournir les adaptateurs des ports (i18next/sonner/sweetalert)
-    - tokens de config pour l'exécution runtime.
-2. **Entité `infrastructure`** (list/form) — symétrique, avec coordonnées.
-3. `page` component (onglets) optionnel.
+1. **Runtime app-shell** : init i18next (resources) ; tokens de config
+   (`*_API_URL`) au bootstrap ; `nx build` sur poste (macOS).
+2. Enhancements : sélecteur carto, selects région/dept/commune en cascade
+   (module boundary), export.
 
 ## Séquencement proposé
 
