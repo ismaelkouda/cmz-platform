@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+/* Scan restreint aux libs UI réellement utilisées (évite le sur-scan monorepo). */
+@source '../../../libs/shared/ui/src';
+@source '../../../libs/administrative-infrastructure/ui/src';
+
+/* Design tokens = source unique de vérité. `@theme` génère à la fois les
+   utilitaires Tailwind (bg-primary, text-muted, …) et les variables runtime. */
+@theme {
+    --color-primary: #2563eb;
+    --color-on-primary: #ffffff;
+    --color-text: #0f172a;
+    --color-muted: #64748b;
+    --color-border: #e2e8f0;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f1f5f9;
+    --color-danger: #dc2626;
+    --color-focus: #2563eb;
+    --radius: 0.375rem;
+}
+
+/* Pont : les composants design-system (cmz-pagination/table/…) consomment
+   `--cmz-*` ; on les mappe sur les tokens `@theme` → un seul jeu de valeurs. */
+:root {
+    --cmz-color-primary: var(--color-primary);
+    --cmz-color-on-primary: var(--color-on-primary);
+    --cmz-color-text: var(--color-text);
+    --cmz-color-muted: var(--color-muted);
+    --cmz-color-border: var(--color-border);
+    --cmz-color-surface: var(--color-surface);
+    --cmz-color-surface-hover: var(--color-surface-hover);
+    --cmz-color-danger: var(--color-danger);
+    --cmz-color-focus: var(--color-focus);
+    --cmz-radius: var(--radius);
+}

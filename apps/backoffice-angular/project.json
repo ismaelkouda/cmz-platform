@@ -21,7 +21,10 @@
             "input": "apps/backoffice-angular/public"
           }
         ],
-        "styles": ["apps/backoffice-angular/src/styles.scss"]
+        "styles": [
+          "apps/backoffice-angular/src/tailwind.css",
+          "apps/backoffice-angular/src/styles.scss"
+        ]
       },
       "configurations": {
         "production": {
