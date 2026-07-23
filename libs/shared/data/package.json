@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@cmz/shared-domain": "workspace:*",
-    "@angular/core": "catalog:"
+    "@angular/core": "catalog:",
+    "date-fns": "catalog:"
   }
 }

@@ -12,6 +12,7 @@
     "@cmz/shared-application": "workspace:*",
     "sweetalert2": "catalog:",
     "ngx-sonner": "catalog:",
-    "@cmz/shared-domain": "workspace:*"
+    "@cmz/shared-domain": "workspace:*",
+    "date-fns": "catalog:"
   }
 }
