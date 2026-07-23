@@ -60,3 +60,4 @@ export * from './lib/validators/assert-valid-date-range.validator';
 export * from './lib/utils/match-confirm-password.util';
 export * from './lib/utils/valid-email.util';
 export * from './lib/utils/resolve-open-ended-end-date.util';
+export * from './lib/interfaces/select-option.interface';

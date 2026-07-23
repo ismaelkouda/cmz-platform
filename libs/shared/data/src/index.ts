@@ -44,3 +44,8 @@ export * from './lib/mappers/timestamps.mapper';
 export * from './lib/mappers/treater-info.mapper';
 export * from './lib/mappers/type-media.mapper';
 export * from './lib/utils/date-range.util';
+export * from './lib/mappers/base/simple-response.mapper';
+export * from './lib/mappers/base/paginated-response.mapper';
+export * from './lib/mappers/base/array-response.mapper';
+export * from './lib/utils/mapper-utils';
+export * from './lib/interfaces/fetch-options.interface';
