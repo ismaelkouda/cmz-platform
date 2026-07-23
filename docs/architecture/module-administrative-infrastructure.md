@@ -135,17 +135,22 @@ cérémonie CQRS dégénérée du source est **supprimée** — `command` +
   `@theme` tokens + `@source` libs + pont `--cmz-*`). `cmz-filter` stylé en
   utilitaires Tailwind ; les autres primitives en styles scopés — **les deux
   consomment le même jeu de tokens `@theme`** (source unique). → `bun install`.
-- **Reste** : composants de **champ de formulaire** (`cmz-field`/input/select/
-  date — prérequis du **form**).
+- **`cmz-field`** (champ de formulaire : label + contrôle projeté + erreur
+  `getControlError`) → prérequis du **form** couvert.
+- **Validation réelle débloquée** : après `bun install`, **toutes les libs
+  passent `ngc --strictTemplates`** (classes + templates vérifiés par le
+  compilateur Angular, pas seulement `tsc`).
+
+→ **Tous les composants partagés prérequis (liste + form) sont faits et
+validés.**
 
 **Reste — sous-tranches UI (multi-tours) :**
 
-1. **Composants partagés kernel** : `cmz-filter` + champs de formulaire.
-2. **Stores** : `*-filter.control`/`*-filter.store`, `*-form.control`/
+1. **Stores** : `*-filter.control`/`*-filter.store`, `*-form.control`/
    `*-form.store` (reactive forms + signaux).
-3. **Features** : composants `page`/`list`/`form` (+ `.html`/`.scss`) +
+2. **Features** : composants `page`/`list`/`form` (+ `.html`/`.scss`) +
    `*-form-helper.service`.
-4. **Routing/DI** : `*.routes`, `di/*.providers` (wiring port→impl).
+3. **Routing/DI** : `*.routes`, `di/*.providers` (wiring port→impl).
 
 ## Séquencement proposé
 
