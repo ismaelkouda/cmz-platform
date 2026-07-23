@@ -30,6 +30,9 @@
       ],
       "@cmz/administrative-infrastructure-application": [
         "./libs/administrative-infrastructure/application/src/index.ts"
+      ],
+      "@cmz/administrative-infrastructure-ui": [
+        "./libs/administrative-infrastructure/ui/src/index.ts"
       ]
     }
   },

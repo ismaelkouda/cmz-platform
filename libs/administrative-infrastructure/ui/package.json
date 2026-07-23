@@ -1,0 +1,9 @@
+{
+  "name": "@cmz/administrative-infrastructure-ui",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@cmz/administrative-infrastructure-domain": "workspace:*",
+    "@cmz/shared-ui": "workspace:*"
+  }
+}

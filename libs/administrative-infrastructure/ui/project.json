@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/administrative-infrastructure-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/administrative-infrastructure/ui/src",
+  "projectType": "library",
+  "tags": ["scope:administrative-infrastructure", "type:ui"]
+}
