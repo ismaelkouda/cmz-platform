@@ -13,7 +13,16 @@ import { INFRASTRUCTURE_TYPE_FILTER_KEYS } from '../constants/infrastructure-typ
  */
 @Injectable()
 export class InfrastructureTypeFilterStore {
-    readonly model = signal<Record<string, string>>({});
+    readonly model = signal<Record<string, string>>(this.empty());
+
+    private empty(): Record<string, string> {
+        return {
+            [INFRASTRUCTURE_TYPE_FILTER_KEYS.SEARCH]: '',
+            [INFRASTRUCTURE_TYPE_FILTER_KEYS.STATUS]: '',
+            [INFRASTRUCTURE_TYPE_FILTER_KEYS.START_DATE]: '',
+            [INFRASTRUCTURE_TYPE_FILTER_KEYS.END_DATE]: '',
+        };
+    }
 
     toContract(): InfrastructureTypeFilterContract {
         const m = this.model();
@@ -30,6 +39,6 @@ export class InfrastructureTypeFilterStore {
     }
 
     reset(): void {
-        this.model.set({});
+        this.model.set(this.empty());
     }
 }

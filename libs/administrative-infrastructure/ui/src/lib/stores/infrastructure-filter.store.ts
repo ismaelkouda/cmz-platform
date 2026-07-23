@@ -8,7 +8,19 @@ import { INFRASTRUCTURE_FILTER_KEYS } from '../constants/infrastructure-filter-k
  */
 @Injectable()
 export class InfrastructureFilterStore {
-    readonly model = signal<Record<string, string>>({});
+    readonly model = signal<Record<string, string>>(this.empty());
+
+    private empty(): Record<string, string> {
+        return {
+            [INFRASTRUCTURE_FILTER_KEYS.SEARCH]: '',
+            [INFRASTRUCTURE_FILTER_KEYS.TYPE]: '',
+            [INFRASTRUCTURE_FILTER_KEYS.REGION]: '',
+            [INFRASTRUCTURE_FILTER_KEYS.DEPARTMENT]: '',
+            [INFRASTRUCTURE_FILTER_KEYS.MUNICIPALITY]: '',
+            [INFRASTRUCTURE_FILTER_KEYS.START_DATE]: '',
+            [INFRASTRUCTURE_FILTER_KEYS.END_DATE]: '',
+        };
+    }
 
     toContract(): InfrastructureFilterContract {
         const m = this.model();
@@ -27,6 +39,6 @@ export class InfrastructureFilterStore {
     }
 
     reset(): void {
-        this.model.set({});
+        this.model.set(this.empty());
     }
 }

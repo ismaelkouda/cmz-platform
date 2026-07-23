@@ -17,6 +17,11 @@ import { FilterField } from './filter.types';
  * `[formField]`. Émet `apply` à la soumission, `clear` à la réinitialisation.
  * Sans primeng, sans `ReactiveFormsModule`. Standalone, `OnPush`, a11y, i18n via
  * `TranslationPort`, mise en page Tailwind + tokens.
+ *
+ * **Contrat** : le `model` fourni doit contenir une clé par `field.name`
+ * (Signal Forms construit l'arbre à partir des clés présentes) — sinon
+ * `[formField]` pointe sur un champ inexistant. Les stores de filtre pré-seedent
+ * ces clés.
  */
 @Component({
     selector: 'cmz-filter',
