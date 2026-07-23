@@ -15,6 +15,9 @@
     --color-surface: #ffffff;
     --color-surface-hover: #f1f5f9;
     --color-danger: #dc2626;
+    --color-success: #16a34a;
+    --color-warning: #d97706;
+    --color-info: #2563eb;
     --color-focus: #2563eb;
     --radius: 0.375rem;
 }
@@ -30,6 +33,14 @@
     --cmz-color-surface: var(--color-surface);
     --cmz-color-surface-hover: var(--color-surface-hover);
     --cmz-color-danger: var(--color-danger);
+    --cmz-color-success: var(--color-success);
+    --cmz-color-warning: var(--color-warning);
+    --cmz-color-info: var(--color-info);
     --cmz-color-focus: var(--color-focus);
     --cmz-radius: var(--radius);
+    --cmz-radius-lg: 0.5rem;
+    --cmz-font-size-lg: 1.125rem;
+    --cmz-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+    --cmz-z-toast: 100;
+    --cmz-z-dropdown: 50;
 }
