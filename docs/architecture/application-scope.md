@@ -14,16 +14,15 @@ Briques techniques (storage, crypto…), sans logique métier.
 
 Orchestration du domaine ; dépend de `shared-domain` / `shared-infra`.
 
-| Service                     | Dépendances                  | État                                                                                                                          |
-| --------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `ErrorHandlerRegistry`      | `shared-domain`              | ✅ dispatch + `registerDefault` (33 handlers → 2)                                                                             |
-| `SessionService`            | `shared-infra`               | ✅ n'utilise que le stockage **synchrone**                                                                                    |
-| `permission-actions`        | `shared-infra`               | ⏳ lit via `getData` (potentiellement chiffré → `getEncrypted` **async**) : à adapter (le `signal` d'init doit gérer l'async) |
-| `store-paths`               | `shared-infra`               | ⏳ idem `permission-actions`                                                                                                  |
-| `route-context`             | `@angular/router` + types UI | ➡️ couche **ui/app** (dépend du `Router`)                                                                                     |
-| `notifications-initializer` | —                            | ❌ **mort** (corps commenté) — non reproduit                                                                                  |
+| Service                     | Dépendances                  | État                                                                                                                         |
+| --------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `ErrorHandlerRegistry`      | `shared-domain`              | ✅ dispatch + `registerDefault` (33 handlers → 2)                                                                            |
+| `SessionService`            | `shared-infra`               | ✅ n'utilise que le stockage **synchrone**                                                                                   |
+| `PermissionActionsService`  | `shared-infra`               | ✅ lecture **chiffrée async** (`getEncrypted`) : signal init vide puis rempli, `can()` réactif                               |
+| `StorePathsService`         | `shared-infra`               | ✅ `signal` + async ; défauts corrigés (`OnInit`/`OnDestroy` morts sur service root supprimés, double injection dédupliquée) |
+| `route-context`             | `@angular/router` + types UI | ➡️ couche **ui/app** (dépend du `Router`)                                                                                    |
+| `notifications-initializer` | —                            | ❌ **mort** (corps commenté) — non reproduit                                                                                 |
 
-Le passage à Web Crypto rend les lectures chiffrées **asynchrones** : les
-services qui initialisaient un `signal` depuis une lecture synchrone
-(`permission-actions`, `store-paths`) doivent être adaptés (init async /
-resolver). À traiter à leur génération.
+`permissionsActions` et `paths_data` sont stockés **chiffrés**
+(`saveData(...,true)` côté login). Web Crypto rend leur lecture **asynchrone** :
+les signaux s'initialisent vides puis se remplissent après déchiffrement.
