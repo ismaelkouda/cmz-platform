@@ -24,6 +24,9 @@
       "@cmz/core": ["./libs/core/src/index.ts"],
       "@cmz/administrative-infrastructure-domain": [
         "./libs/administrative-infrastructure/domain/src/index.ts"
+      ],
+      "@cmz/administrative-infrastructure-data": [
+        "./libs/administrative-infrastructure/data/src/index.ts"
       ]
     }
   },
