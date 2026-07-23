@@ -3,28 +3,28 @@
 - **Dernière mise à jour :** 2026-07-22
 
 Présentation partagée (pipes, services UI). Dépend de `shared-domain`/
-`shared-application` ; jamais l'inverse.
+`shared-application`/`shared-infra` ; jamais l'inverse.
 
 ## Généré (sans install)
 
-| Archétype | Éléments                                                  | Notes                                                                                                                                            |
-| --------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pipe`    | `CapitalizePipe`, `SeparatorThousandsPipe`, `SafeUrlPipe` | `@Pipe` (non renommé), `standalone` implicite (jamais `standalone: true`), `inject()`. Nom `separatorThousands` corrigé (suffixe `Pipe` retiré). |
+| Élément                                                   | Notes                                                                                                                                                |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CapitalizePipe`, `SeparatorThousandsPipe`, `SafeUrlPipe` | `@Pipe`, `standalone` implicite, `inject()`. Nom `separatorThousands` corrigé.                                                                       |
+| `CustomRouteReuseStrategy`                                | stratégie de réutilisation de route (@angular/router).                                                                                               |
+| `TableSelectionService<T>`                                | signaux ; `SelectionEvent` **externalisé** en interface UI.                                                                                          |
+| `TabService`                                              | `@Service`, **async** (persistance chiffrée Web Crypto), `signal` au lieu de BehaviorSubject, `CustomRouteReuseStrategy`.                            |
+| `NavService`                                              | **nettoyé** : typé (aucun `any`), code mort retiré, `takeUntilDestroyed` (corrige le `complete()` sans `next()`), typo `megaMenuColapse`→`Collapse`. |
+| interfaces `Tab`, `Menu`, `SelectionEvent`                | externalisées (formes UI).                                                                                                                           |
 
-## Bloqué — dépendances externes à **approuver** avant `bun add`
+## Non reproduits / bloqués
 
-| Élément                                                | Lib externe                                      |
-| ------------------------------------------------------ | ------------------------------------------------ |
-| `UiFeedbackService` (branche `registerDefault` + i18n) | **`@jsverse/transloco`** + `ngx-toastr`          |
-| `SweetAlertService`                                    | `sweetalert2`                                    |
-| `FormValidationService`                                | `primeng`                                        |
-| `layout` / `nav` / `tab`                               | `@angular/router` (déjà au catalog) — buildables |
-| `permission-tree-node`, `table-selection`              | formes UI (`TreeNodeInterface`…) — buildables    |
-| fonctions de formatage (`format-*`, `*-style`)         | `moment` pour certaines                          |
+| Élément                                      | Raison                                                                                         |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `layout`                                     | **mort** (entièrement commenté) + dépend d'`AppCustomizationService`                           |
+| `permission-tree-node`                       | bloqué : `TreeNodeInterface extends TreeNode` de **`primeng`** (install à approuver)           |
+| `UiFeedbackService`                          | **`@jsverse/transloco`** + `ngx-toastr` (install) — point de branchement du handler par défaut |
+| `SweetAlertService`                          | `sweetalert2` (install)                                                                        |
+| `FormValidationService`                      | `primeng` (install)                                                                            |
+| fonctions de formatage `*-style`, `format-*` | présentation ; certaines `moment` (install)                                                    |
 
-Les services sans lib externe (`layout`, `nav`, `tab`, `permission-tree-node`,
-`table-selection`) sont générables sans approbation ; ceux à
-toast/alerte/primeng/ Transloco attendent l'accord d'install.
-`UiFeedbackService` est le point où le **handler par défaut**
-(`ErrorHandlerRegistry.registerDefault`) et **Transloco** se branchent (cf.
-[`error.contract`](../../contracts/error.contract.md)).
+Les éléments bloqués attendent l'accord d'install des libs externes.

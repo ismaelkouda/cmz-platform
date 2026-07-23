@@ -4,6 +4,9 @@
   "private": true,
   "dependencies": {
     "@angular/core": "catalog:",
-    "@angular/platform-browser": "catalog:"
+    "@angular/platform-browser": "catalog:",
+    "@angular/router": "catalog:",
+    "rxjs": "catalog:",
+    "@cmz/shared-infra": "workspace:*"
   }
 }
