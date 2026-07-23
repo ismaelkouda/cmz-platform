@@ -30,8 +30,18 @@ Présentation partagée (pipes, services UI, adaptateurs). Dépend de
 
 ## Non reproduits / restants
 
-| Élément                                         | Raison                                                                                                                                                         |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `layout`                                        | **mort** (commenté).                                                                                                                                           |
-| `permission-tree-node`, `FormValidationService` | dépendent de **primeng** (`TreeNode`, `MessageService`) — **exclu du partagé** (ADR-0012). À refaire sans primeng (interface `TreeNode` maison) ou dans l'app. |
-| fonctions de formatage `format-*`               | certaines `moment` → **date-fns** (install à venir).                                                                                                           |
+| Élément                                                                 | Raison                                                                                                                                                         |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout`                                                                | **mort** (commenté).                                                                                                                                           |
+| `permission-tree-node`, `FormValidationService`                         | dépendent de **primeng** (`TreeNode`, `MessageService`) — **exclu du partagé** (ADR-0012). À refaire sans primeng (interface `TreeNode` maison) ou dans l'app. |
+| `mapping`, `excel-export`, `sweet-alert` (service), `app-customization` | dépendances externes / HTTP restantes — au fil des besoins.                                                                                                    |
+
+## Dates (date-fns 4.4.0) — généré et vérifié
+
+- **shared-data** : `parseAndValidateDateRange` (`date-range.util`) — moment →
+  date-fns.
+- **shared-ui** : `formatDateSafe`, `parseFrenchDate`, `formatDate`
+  (formatteurs) ; `dateNotInPastValidator` (validateur de formulaire) — moment →
+  date-fns.
+- Non-reproduction : sémantique « non comparable ⇒ valide » préservée ; misnomer
+  de `dateNotInPastValidator` (teste le futur) signalé.

@@ -12,3 +12,7 @@ export * from './lib/services/i18next-translation.service';
 export * from './lib/services/sonner-notification.service';
 export * from './lib/services/sweet-alert-confirm-dialog.service';
 export * from './lib/services/ui-feedback.service';
+export * from './lib/formatters/format-date-safe.function';
+export * from './lib/formatters/parse-french-date.function';
+export * from './lib/formatters/format-date.function';
+export * from './lib/validators/date-not-in-past.validator';

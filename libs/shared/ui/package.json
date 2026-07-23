@@ -13,6 +13,7 @@
     "sweetalert2": "catalog:",
     "ngx-sonner": "catalog:",
     "@cmz/shared-domain": "workspace:*",
-    "date-fns": "catalog:"
+    "date-fns": "catalog:",
+    "@angular/forms": "catalog:"
   }
 }

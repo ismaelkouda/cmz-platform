@@ -43,3 +43,4 @@ export * from './lib/mappers/telecom-operator.mapper';
 export * from './lib/mappers/timestamps.mapper';
 export * from './lib/mappers/treater-info.mapper';
 export * from './lib/mappers/type-media.mapper';
+export * from './lib/utils/date-range.util';
