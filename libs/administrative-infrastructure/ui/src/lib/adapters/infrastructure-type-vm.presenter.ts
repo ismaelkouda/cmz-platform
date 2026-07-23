@@ -2,8 +2,8 @@ import {
     InfrastructureTypeEntity,
     Status,
 } from '@cmz/administrative-infrastructure-domain';
-import { ActionDropdownItem } from '@cmz/shared-ui';
-import { statusStyleOf } from '../enums/infrastructure-type-status-style.enum';
+import { statusStyleOf } from '../mappers/infrastructure-type-status-style.mapper';
+import { actionItem, resolveTooltip } from './action-item.factory';
 import { InfrastructureTypeVmProps } from './infrastructure-type-vm-props.interface';
 
 interface InfrastructureTypePermission {
@@ -23,10 +23,13 @@ interface InfrastructureTypePermission {
     };
 }
 
+const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE.TOOLTIP';
+
 /**
  * Presenter (UI) : `InfrastructureTypeEntity` → view-model. `statusStyle` et
  * `actionsRef` sont calculés ici (`statusStyleOf`, `item.name`) — l'entité
- * domaine reste pure. Le menu d'actions dépend du statut (enable/disable).
+ * domaine reste pure. Le menu dépend du statut (enable/disable, delete inactif
+ * quand actif).
  */
 export class InfrastructureTypePresenter {
     constructor(private readonly t: (key: string) => string) {}
@@ -35,30 +38,26 @@ export class InfrastructureTypePresenter {
         item: InfrastructureTypeEntity,
         permission: InfrastructureTypePermission
     ): InfrastructureTypeVmProps {
-        const toggle: ActionDropdownItem =
-            item.status === Status.INACTIVE
-                ? {
-                      id: 'enable',
-                      label: 'COMMON.ENABLE',
-                      icon: 'pi pi-check',
-                      disabled: !permission.authorization.canEnable,
-                      tooltip: permission.authorization.canEnable
-                          ? this.t(
-                                'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE.TOOLTIP.ENABLE'
-                            )
-                          : permission.tooltip.enable,
-                  }
-                : {
-                      id: 'disable',
-                      label: 'COMMON.DISABLE',
-                      icon: 'pi pi-times',
-                      disabled: !permission.authorization.canDisable,
-                      tooltip: permission.authorization.canDisable
-                          ? this.t(
-                                'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE.TOOLTIP.DISABLE'
-                            )
-                          : permission.tooltip.disable,
-                  };
+        const { authorization: can, tooltip } = permission;
+        const isInactive = item.status === Status.INACTIVE;
+
+        const toggle = isInactive
+            ? actionItem(this.t, {
+                  id: 'enable',
+                  label: 'COMMON.ENABLE',
+                  icon: 'pi pi-check',
+                  allowed: can.canEnable,
+                  tooltipKey: `${T}.ENABLE`,
+                  fallbackTooltip: tooltip.enable,
+              })
+            : actionItem(this.t, {
+                  id: 'disable',
+                  label: 'COMMON.DISABLE',
+                  icon: 'pi pi-times',
+                  allowed: can.canDisable,
+                  tooltipKey: `${T}.DISABLE`,
+                  fallbackTooltip: tooltip.disable,
+              });
 
         return {
             uniqId: item.uniqId,
@@ -70,40 +69,31 @@ export class InfrastructureTypePresenter {
             updatedAt: item.updatedAt,
             actionsRef: item.name,
             dropdownActions: [
-                {
+                actionItem(this.t, {
                     id: 'edit',
                     label: 'COMMON.EDIT',
                     icon: 'pi pi-pencil',
-                    disabled: !permission.authorization.canEdit,
-                    tooltip: permission.authorization.canEdit
-                        ? this.t(
-                              'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE.TOOLTIP.EDIT'
-                          )
-                        : permission.tooltip.edit,
-                },
+                    allowed: can.canEdit,
+                    tooltipKey: `${T}.EDIT`,
+                    fallbackTooltip: tooltip.edit,
+                }),
                 toggle,
-                {
+                actionItem(this.t, {
                     id: 'delete',
                     label: 'COMMON.DELETE',
                     icon: 'pi pi-trash',
-                    disabled:
-                        item.status === Status.ACTIVE ||
-                        !permission.authorization.canDelete,
-                    tooltip:
-                        permission.authorization.canDelete &&
-                        item.status !== Status.ACTIVE
-                            ? this.t(
-                                  'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE.TOOLTIP.DELETE'
-                              )
-                            : permission.tooltip.delete,
-                },
+                    allowed: can.canDelete && item.status !== Status.ACTIVE,
+                    tooltipKey: `${T}.DELETE`,
+                    fallbackTooltip: tooltip.delete,
+                }),
             ],
-            disableDropdown: !permission.authorization.canChoose,
-            tooltipDropdown: permission.authorization.canChoose
-                ? this.t(
-                      'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE.TOOLTIP.CHOOSE'
-                  )
-                : permission.tooltip.choose,
+            disableDropdown: !can.canChoose,
+            tooltipDropdown: resolveTooltip(
+                this.t,
+                can.canChoose,
+                `${T}.CHOOSE`,
+                tooltip.choose
+            ),
         };
     }
 }

@@ -1,4 +1,5 @@
 import { InfrastructureEntity } from '@cmz/administrative-infrastructure-domain';
+import { actionItem, resolveTooltip } from './action-item.factory';
 import { InfrastructureVmProps } from './infrastructure-vm-props.interface';
 
 interface InfrastructurePermission {
@@ -6,10 +7,11 @@ interface InfrastructurePermission {
     tooltip: { edit: string; delete: string; choose: string };
 }
 
+const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE.TOOLTIP';
+
 /**
- * Presenter (UI) : `InfrastructureEntity` → view-model enrichi (actions,
- * tooltips). `actionsRef` est dérivé ici (`item.name`) — l'entité domaine reste
- * pure (getter UI retiré).
+ * Presenter (UI) : `InfrastructureEntity` → view-model enrichi. `actionsRef` est
+ * dérivé ici (`item.name`) — l'entité domaine reste pure.
  */
 export class InfrastructurePresenter {
     constructor(private readonly t: (key: string) => string) {}
@@ -18,6 +20,7 @@ export class InfrastructurePresenter {
         item: InfrastructureEntity,
         permission: InfrastructurePermission
     ): InfrastructureVmProps {
+        const { authorization: can, tooltip } = permission;
         return {
             uniqId: item.uniqId,
             name: item.name,
@@ -30,35 +33,30 @@ export class InfrastructurePresenter {
             updatedAt: item.updatedAt,
             actionsRef: item.name,
             dropdownActions: [
-                {
+                actionItem(this.t, {
                     id: 'edit',
                     label: 'COMMON.EDIT',
                     icon: 'pi pi-pencil',
-                    disabled: !permission.authorization.canEdit,
-                    tooltip: permission.authorization.canEdit
-                        ? this.t(
-                              'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE.TOOLTIP.EDIT'
-                          )
-                        : permission.tooltip.edit,
-                },
-                {
+                    allowed: can.canEdit,
+                    tooltipKey: `${T}.EDIT`,
+                    fallbackTooltip: tooltip.edit,
+                }),
+                actionItem(this.t, {
                     id: 'delete',
                     label: 'COMMON.DELETE',
                     icon: 'pi pi-trash',
-                    disabled: !permission.authorization.canDelete,
-                    tooltip: permission.authorization.canDelete
-                        ? this.t(
-                              'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE.TOOLTIP.DELETE'
-                          )
-                        : permission.tooltip.delete,
-                },
+                    allowed: can.canDelete,
+                    tooltipKey: `${T}.DELETE`,
+                    fallbackTooltip: tooltip.delete,
+                }),
             ],
-            disableDropdown: !permission.authorization.canChoose,
-            tooltipDropdown: permission.authorization.canChoose
-                ? this.t(
-                      'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE.TOOLTIP.CHOOSE'
-                  )
-                : permission.tooltip.choose,
+            disableDropdown: !can.canChoose,
+            tooltipDropdown: resolveTooltip(
+                this.t,
+                can.canChoose,
+                `${T}.CHOOSE`,
+                tooltip.choose
+            ),
         };
     }
 }

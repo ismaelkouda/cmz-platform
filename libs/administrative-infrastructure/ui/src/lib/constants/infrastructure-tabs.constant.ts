@@ -1,11 +1,12 @@
-import { ADMINISTRATIVE_INFRASTRUCTURE_ROUTE } from '../constants/administrative-infrastructure-paths.constant';
+import { TabLink } from '../interfaces/tab-link.interface';
+import { ADMINISTRATIVE_INFRASTRUCTURE_ROUTE } from './administrative-infrastructure-paths.constant';
 import {
     INFRASTRUCTURE_HISTORY,
     INFRASTRUCTURE_LIST,
     INFRASTRUCTURE_ROUTE,
-} from '../constants/infrastructure-paths.constant';
+} from './infrastructure-paths.constant';
 
-export const ADMINISTRATIVE_TABS = [
+export const ADMINISTRATIVE_TABS: TabLink[] = [
     {
         value: '0',
         route: `/${ADMINISTRATIVE_INFRASTRUCTURE_ROUTE}/${INFRASTRUCTURE_ROUTE}/${INFRASTRUCTURE_LIST}`,

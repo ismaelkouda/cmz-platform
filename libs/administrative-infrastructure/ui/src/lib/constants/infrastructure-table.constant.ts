@@ -1,4 +1,9 @@
-export const INFRASTRUCTURE_TABLE = {
+import { TableColumn } from '../interfaces/table-column.interface';
+
+export const INFRASTRUCTURE_TABLE: {
+    cols: TableColumn[];
+    globalFilterFields: string[];
+} = {
     cols: [
         {
             field: '__index',
