@@ -22,3 +22,6 @@ export * from './lib/helpers/form-errors.helper';
 export * from './lib/components/pagination/page-window.util';
 export * from './lib/components/pagination/pagination.component';
 export * from './lib/components/action-dropdown/action-dropdown.component';
+export * from './lib/interfaces/table-column.interface';
+export * from './lib/interfaces/table-row.interface';
+export * from './lib/components/table/table.component';

@@ -20,5 +20,4 @@ export * from './lib/constants/infrastructure-type-tabs.constant';
 export * from './lib/enums/infrastructure-type-status-style.enum';
 export * from './lib/helpers/form-errors.helper';
 export * from './lib/interfaces/tab-link.interface';
-export * from './lib/interfaces/table-column.interface';
 export * from './lib/mappers/infrastructure-type-status-style.mapper';

@@ -1,4 +1,4 @@
-import { TableColumn } from '../interfaces/table-column.interface';
+import { TableColumn } from '@cmz/shared-ui';
 
 export const INFRASTRUCTURE_TYPE_TABLE: {
     cols: TableColumn[];
