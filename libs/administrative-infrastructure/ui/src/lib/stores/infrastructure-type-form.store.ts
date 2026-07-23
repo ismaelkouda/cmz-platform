@@ -9,7 +9,7 @@ import {
 import { disabled, form, required } from '@angular/forms/signals';
 import { InfrastructureTypeFindOneFacade } from '@cmz/administrative-infrastructure-application';
 
-export type FormMode = 'create' | 'edit' | 'details';
+import { FormMode } from './form-mode.type';
 
 interface InfrastructureTypeFormModel {
     name: string;

@@ -8,4 +8,11 @@ export const appRoutes: Route[] = [
                 (m) => m.INFRASTRUCTURE_TYPE_ROUTES
             ),
     },
+    {
+        path: 'equipments/list',
+        loadChildren: () =>
+            import('@cmz/administrative-infrastructure-ui').then(
+                (m) => m.INFRASTRUCTURE_ROUTES
+            ),
+    },
 ];

@@ -8,26 +8,26 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
-import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
+import { InfrastructureFacade } from '@cmz/administrative-infrastructure-application';
 import { TranslationPort } from '@cmz/shared-application';
 import { FieldComponent } from '@cmz/shared-ui';
-import { InfrastructureTypeFormStore } from '../stores/infrastructure-type-form.store';
+import { InfrastructureFormStore } from '../stores/infrastructure-form.store';
 import { FormMode } from '../stores/form-mode.type';
 
-const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
+const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE';
 
 /**
- * Formulaire `infrastructure-type` — **Signal Forms (Angular 22)**. Le schéma
- * typé + la validation vivent dans le store ; le composant lie les champs via
- * `[formField]`, affiche les erreurs via `cmz-field`, et soumet vers la façade
- * (`create`/`update`). Modes create/edit/details lus dans les query params.
+ * Formulaire `infrastructure` — **Signal Forms**. Champs name/type(select)/
+ * position(lat,long)/description. Le schéma typé + validation vivent dans le
+ * store ; submit → façade `create`/`update` (position reconstruite en
+ * `CoordinatesProps`). Retour au succès via `effect` sur `actionSuccess`.
  */
 @Component({
-    selector: 'cmz-infrastructure-type-form',
+    selector: 'cmz-infrastructure-form',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
-    providers: [InfrastructureTypeFormStore],
+    providers: [InfrastructureFormStore],
     template: `
         <form (submit)="onSubmit($event)" class="flex max-w-xl flex-col gap-4">
             <h1 class="text-lg font-semibold text-text">
@@ -43,9 +43,60 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
                 <input
                     id="name"
                     [formField]="store.form.name"
-                    class="w-full rounded border border-border bg-surface px-3 py-2 text-sm text-text focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
+                    [class]="inputClass"
                 />
             </cmz-field>
+
+            <cmz-field
+                [label]="ns + '.FORM.TYPE'"
+                [field]="store.form.type"
+                for="type"
+                [required]="true"
+            >
+                <select
+                    id="type"
+                    [formField]="store.form.type"
+                    [class]="inputClass"
+                >
+                    <option value="">
+                        {{ t('COMMON.SELECT_PLACEHOLDER') }}
+                    </option>
+                    @for (opt of store.typeSelect.options(); track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                </select>
+            </cmz-field>
+
+            <div class="grid grid-cols-2 gap-4">
+                <cmz-field
+                    [label]="ns + '.FORM.LATITUDE'"
+                    [field]="store.form.latitude"
+                    for="latitude"
+                    [required]="true"
+                >
+                    <input
+                        id="latitude"
+                        type="number"
+                        step="any"
+                        [formField]="store.form.latitude"
+                        [class]="inputClass"
+                    />
+                </cmz-field>
+                <cmz-field
+                    [label]="ns + '.FORM.LONGITUDE'"
+                    [field]="store.form.longitude"
+                    for="longitude"
+                    [required]="true"
+                >
+                    <input
+                        id="longitude"
+                        type="number"
+                        step="any"
+                        [formField]="store.form.longitude"
+                        [class]="inputClass"
+                    />
+                </cmz-field>
+            </div>
 
             <cmz-field
                 [label]="ns + '.FORM.DESCRIPTION'"
@@ -57,7 +108,7 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
                     id="description"
                     rows="4"
                     [formField]="store.form.description"
-                    class="w-full rounded border border-border bg-surface px-3 py-2 text-sm text-text focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
+                    [class]="inputClass"
                 ></textarea>
             </cmz-field>
 
@@ -82,9 +133,9 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
         </form>
     `,
 })
-export class InfrastructureTypeFormComponent {
-    protected readonly store = inject(InfrastructureTypeFormStore);
-    private readonly facade = inject(InfrastructureTypeFacade);
+export class InfrastructureFormComponent {
+    protected readonly store = inject(InfrastructureFormStore);
+    private readonly facade = inject(InfrastructureFacade);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
@@ -95,6 +146,8 @@ export class InfrastructureTypeFormComponent {
     protected readonly saving = computed(
         () => this.facade.actionState() === 'loading'
     );
+    protected readonly inputClass =
+        'w-full rounded border border-border bg-surface px-3 py-2 text-sm text-text focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50';
 
     private readonly params = toSignal(this.route.queryParamMap);
     private lastSeenSuccess = this.facade.actionSuccess();
@@ -105,7 +158,6 @@ export class InfrastructureTypeFormComponent {
         const ref = (params?.get('ref') as FormMode) ?? 'create';
         this.store.setMode(uniqId, ref);
 
-        // Navigation retour au succès de la mutation (signal-idiomatique).
         effect(() => {
             const success = this.facade.actionSuccess();
             if (success > this.lastSeenSuccess) {
@@ -124,12 +176,27 @@ export class InfrastructureTypeFormComponent {
         if (this.store.form().invalid()) {
             return;
         }
-        const { name, description } = this.store.model();
+        const m = this.store.model();
+        const position = {
+            latitude: Number(m.latitude),
+            longitude: Number(m.longitude),
+        };
         if (this.mode() === 'edit') {
             const uniqId = this.params()?.get('uniqId') ?? '';
-            this.facade.update({ uniqId, name, description });
+            this.facade.update({
+                uniqId,
+                name: m.name,
+                type: m.type,
+                description: m.description,
+                position,
+            });
         } else {
-            this.facade.create({ name, description });
+            this.facade.create({
+                name: m.name,
+                type: m.type,
+                description: m.description,
+                position,
+            });
         }
     }
 
