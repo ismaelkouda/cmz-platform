@@ -21,7 +21,10 @@
       "@cmz/shared-application": ["./libs/shared/application/src/index.ts"],
       "@cmz/shared-infra": ["./libs/shared/infra/src/index.ts"],
       "@cmz/shared-ui": ["./libs/shared/ui/src/index.ts"],
-      "@cmz/core": ["./libs/core/src/index.ts"]
+      "@cmz/core": ["./libs/core/src/index.ts"],
+      "@cmz/administrative-infrastructure-domain": [
+        "./libs/administrative-infrastructure/domain/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]

@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/administrative-infrastructure-domain",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/administrative-infrastructure/domain/src",
+  "projectType": "library",
+  "tags": ["scope:administrative-infrastructure", "type:domain"]
+}
