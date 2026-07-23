@@ -64,6 +64,7 @@ qu'on croyait un archétype recouvre plusieurs formes (cas `dto`), on **scinde**
 | `util`              | domain      | [`util.contract.md`](./util.contract.md)                           |
 | `type`              | domain      | [`type.contract.md`](./type.contract.md)                           |
 | `service`           | selon deps  | [`service.contract.md`](./service.contract.md)                     |
+| `pipe`              | ui          | [`pipe.contract.md`](./pipe.contract.md)                           |
 
 _Domaine terminé. À compléter au fil des couches data/ui/application (facade,
 pipe, constant, bases de mappers), puis réutilisés en Phase 07._
