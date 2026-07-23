@@ -1,18 +1,29 @@
 import { Service, computed, inject } from '@angular/core';
-import { BaseFacade } from '@cmz/shared-application';
+import { ResourceFacade } from '@cmz/shared-application';
 import { FetchOptions, SelectOption } from '@cmz/shared-domain';
 import { InfrastructureSelectUseCase } from '../use-cases/infrastructure-select.use-case';
+import { Observable } from 'rxjs';
+
+interface InfrastructureSelectParams {
+    options?: FetchOptions;
+}
 
 @Service()
-export class InfrastructureSelectFacade extends BaseFacade<
+export class InfrastructureSelectFacade extends ResourceFacade<
     SelectOption[],
-    void
+    InfrastructureSelectParams
 > {
     private readonly useCase = inject(InfrastructureSelectUseCase);
 
-    readonly options = computed(() => this.data() ?? []);
+    readonly options = computed(() => this.value() ?? []);
 
-    load(options: FetchOptions = {}): void {
-        this.fetch(null, this.useCase.readAll(options));
+    protected stream(
+        params: InfrastructureSelectParams
+    ): Observable<SelectOption[]> {
+        return this.useCase.readAll(params.options);
+    }
+
+    load(options?: FetchOptions): void {
+        this.setParams({ options });
     }
 }

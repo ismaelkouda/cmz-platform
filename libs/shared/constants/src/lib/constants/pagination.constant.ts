@@ -4,4 +4,4 @@ export const PAGINATION_CONST = {
     DEFAULT_PAGE_SIZE: 50,
 } as const;
 
-export type PageNumber = string;
+// PageNumber a été déplacé vers @cmz/shared-domain (domain/src/lib/types/page-number.type.ts)

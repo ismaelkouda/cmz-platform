@@ -1,23 +1,35 @@
 import { Service, inject } from '@angular/core';
-import { BaseFacade } from '@cmz/shared-application';
+import { ResourceFacade } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
 import {
     InfrastructureFindOneEntity,
     InfrastructureFindOneFilterContract,
 } from '@cmz/administrative-infrastructure-domain';
 import { InfrastructureFindOneUseCase } from '../use-cases/infrastructure-find-one.use-case';
+import { Observable } from 'rxjs';
+
+interface InfrastructureFindOneParams {
+    filter: InfrastructureFindOneFilterContract;
+    options?: FetchOptions;
+}
 
 @Service()
-export class InfrastructureFindOneFacade extends BaseFacade<
+export class InfrastructureFindOneFacade extends ResourceFacade<
     InfrastructureFindOneEntity,
-    InfrastructureFindOneFilterContract
+    InfrastructureFindOneParams
 > {
     private readonly useCase = inject(InfrastructureFindOneUseCase);
 
+    protected stream(
+        params: InfrastructureFindOneParams
+    ): Observable<InfrastructureFindOneEntity> {
+        return this.useCase.execute(params.filter, params.options);
+    }
+
     read(
         filter: InfrastructureFindOneFilterContract,
-        options: FetchOptions = {}
+        options?: FetchOptions
     ): void {
-        this.fetch(filter, this.useCase.execute(filter, options));
+        this.setParams({ filter, options });
     }
 }

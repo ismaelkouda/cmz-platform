@@ -1,7 +1,7 @@
 import { Service, inject } from '@angular/core';
-import { PAGINATION_CONST } from '@cmz/shared-constants';
-import { CollectionFacade } from '@cmz/shared-application';
-import { FetchOptions } from '@cmz/shared-domain';
+import { CollectionResourceFacade, PageQuery } from '@cmz/shared-application';
+import { PageResult } from '@cmz/shared-domain';
+import { Observable } from 'rxjs';
 import {
     InfrastructureCreateContract,
     InfrastructureDeleteContract,
@@ -12,41 +12,31 @@ import {
 import { InfrastructureUseCase } from '../use-cases/infrastructure.use-case';
 
 /**
- * Facade Infrastructure : liste paginée (signaux) + mutations. Étend
- * `CollectionFacade` du kernel ; ne dépend d'aucune UI (feedback via ports).
+ * Facade Infrastructure : liste paginée via `rxResource` (signal-first) + mutations.
+ * Étend `CollectionResourceFacade` ; aucune dépendance UI (feedback par ports).
  */
 @Service()
-export class InfrastructureFacade extends CollectionFacade<
+export class InfrastructureFacade extends CollectionResourceFacade<
     InfrastructureEntity,
     InfrastructureFilterContract
 > {
     private readonly useCase = inject(InfrastructureUseCase);
 
-    load(
-        filter: InfrastructureFilterContract = {},
-        page: string = PAGINATION_CONST.DEFAULT_PAGE,
-        options: FetchOptions = {}
-    ): void {
-        this.fetchPage(
-            filter,
-            page,
-            this.useCase.execute(filter, page, options)
+    protected stream(
+        params: PageQuery<InfrastructureFilterContract>
+    ): Observable<PageResult<InfrastructureEntity>> {
+        return this.useCase.execute(
+            params.filter ?? {},
+            params.page,
+            params.options
         );
-    }
-
-    refresh(): void {
-        this.load(this.filter() ?? {}, this.page(), { forceRefresh: true });
-    }
-
-    changePage(page: string): void {
-        this.load(this.filter() ?? {}, page);
     }
 
     create(contract: InfrastructureCreateContract): void {
         this.runAction(
             this.useCase.create(contract),
             'COMMON.SUCCESS.CREATE',
-            () => this.refresh()
+            () => this.reload()
         );
     }
 
@@ -54,7 +44,7 @@ export class InfrastructureFacade extends CollectionFacade<
         this.runAction(
             this.useCase.update(contract),
             'COMMON.SUCCESS.UPDATE',
-            () => this.refresh()
+            () => this.reload()
         );
     }
 
@@ -62,7 +52,7 @@ export class InfrastructureFacade extends CollectionFacade<
         this.runAction(
             this.useCase.delete(contract),
             'COMMON.SUCCESS.DELETE',
-            () => this.refresh()
+            () => this.reload()
         );
     }
 }

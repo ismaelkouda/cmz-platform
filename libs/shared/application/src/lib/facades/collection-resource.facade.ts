@@ -4,23 +4,22 @@ import { Observable } from 'rxjs';
 import { NotificationPort } from '../ports/notification.port';
 import { TranslationPort } from '../ports/translation.port';
 import { ErrorHandlerRegistry } from '../services/error-handler-registry.service';
-import { PaginatedFacade } from './paginated.facade';
+import { PaginatedResourceFacade } from './paginated-resource.facade';
 
 /**
- * Facade de collection **signal-based** : liste paginée (héritée de
- * `PaginatedFacade`) + mutations (create/update/delete/…). Les actions
- * exposent un état signal (`actionState`/`actionSuccess`/`actionError`) et
- * routent le succès vers `NotificationPort` (message traduit) et l'échec vers
- * `ErrorHandlerRegistry` (loop d'erreurs). Aucune dépendance UI : la couche
- * application ne parle qu'aux ports agnostiques.
+ * Façade de collection signal-first : liste paginée (via `rxResource`, héritée
+ * de [[PaginatedResourceFacade]]) + **mutations**. Les mutations sont des
+ * actions one-shot (pas des ressources) : succès → `NotificationPort` (message
+ * traduit) + `onSuccess` (typiquement `reload()`), échec → `ErrorHandlerRegistry`.
+ * État d'action exposé en signaux.
  */
-export abstract class CollectionFacade<
+export abstract class CollectionResourceFacade<
     TEntity,
     TFilter,
-> extends PaginatedFacade<TEntity, TFilter> {
-    private readonly mutationErrorHandler = inject(ErrorHandlerRegistry);
+> extends PaginatedResourceFacade<TEntity, TFilter> {
     private readonly notification = inject(NotificationPort);
     private readonly translation = inject(TranslationPort);
+    private readonly mutationErrorHandler = inject(ErrorHandlerRegistry);
 
     protected readonly _actionState = signal<'idle' | 'loading'>('idle');
     readonly actionState = this._actionState.asReadonly();
@@ -31,11 +30,6 @@ export abstract class CollectionFacade<
     protected readonly _actionError = signal<unknown | null>(null);
     readonly actionError = this._actionError.asReadonly();
 
-    /**
-     * Exécute une action (mutation), gère l'état et le feedback.
-     * Succès → toast traduit (`successKey`) + `onSuccess` (ex. rafraîchir la
-     * liste). Échec → `ErrorHandlerRegistry` (rendu dans la loop).
-     */
     protected runAction<T>(
         action$: Observable<T>,
         successKey: string,
