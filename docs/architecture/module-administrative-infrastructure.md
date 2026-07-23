@@ -17,16 +17,41 @@ Lib **`@cmz/administrative-infrastructure-domain`** :
 | `props/infrastructure-type.props`, `…-find-one.props`      | formes d'entités (`props/`)                                                                   |
 | `entities/infrastructure-type.entity`, `…-find-one.entity` | pattern `props` + getters + `with()` immuable ; `statusStyle()`/`actionsRef` (UI) **retirés** |
 
+## Fait — domaine core `infrastructure` (vérifié `tsc`)
+
+- `props/infrastructure.props` (liste, `position: string`),
+  `props/infrastructure-find-one.props` (`position: CoordinatesProps` **importé
+  de `@cmz/shared-domain`**) → **résolution module→kernel prouvée**.
+- `entities/infrastructure.entity`, `…-find-one.entity` : pattern `props` +
+  getters + `with()` ; `actionsRef` (UI) **retiré**.
+
+## Tranché — question domain→data (repository ports)
+
+Le source fait dépendre les ports de `shared-data` (`Paginate`,
+`MessageResponseDto`, `FetchOptions`) : **incohérence** (domaine→data). Décision
+d'ingénieur, appuyée sur l'usage réel de l'UI (seuls `current_page`,
+`last_page`, `per_page`, `total` sont consommés ;
+URLs/`links`/`path`/`from`/`to` jamais) :
+
+- **`PageResult<T>`** — modèle domaine neutre (`items`, `currentPage`,
+  `lastPage`, `perPage`, `total`) dans `@cmz/shared-domain`. `PaginatedMapper`
+  traduit l'enveloppe Laravel → `PageResult`. `PaginatedFacade` en parle :
+  l'application ne dépend plus d'aucune forme réseau.
+- **`FetchOptions`** (`{ forceRefresh? }`, intention de requête neutre) déplacé
+  vers `@cmz/shared-domain`.
+- **`MessageResponseDto`** → **`MessageEntity`** (déjà kernel) pour
+  create/update/delete.
+
+→ les ports parleront **100 % domaine** ; plus aucun import `data`.
+
 ## Reste — par tranche (multi-tours)
 
-### Domaine (≈ 64 fichiers, 2 entités)
+### Domaine (2 entités)
 
-- **entité `infrastructure`** (utilise `CoordinatesProps` du kernel → prouve la
-  résolution module↔`shared-domain`).
 - **repository ports** (`*.repository`, `*-find-one`, `*-select`) : classes
-  abstraites. ⚠️ le source les fait dépendre de `shared-data` (`Paginate`,
-  `MessageResponseDto`) → **question domain→data à trancher** (Paginate est-il
-  un type kernel neutre ?).
+  abstraites renvoyant `PageResult` / `MessageEntity` / `SelectOption` +
+  `FetchOptions` (tous du domaine). **Bloqués par la machinerie CQRS** (leurs
+  signatures référencent les `validate-contracts`).
 - **machinerie CQRS** : `contracts/` (+ `validate-contracts`), `value-objects/`
   par commande (create/update/delete/enable/disable/filter/find-one),
   `validators/` (utilisent `GenericRequiredError` du kernel). Nouveaux
