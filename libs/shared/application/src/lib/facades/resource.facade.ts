@@ -1,4 +1,4 @@
-import { effect, inject, signal } from '@angular/core';
+import { computed, effect, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DomainError } from '@cmz/shared-domain';
 import { Observable } from 'rxjs';
@@ -25,7 +25,14 @@ export abstract class ResourceFacade<TData, TParams> {
         stream: ({ params }) => this.stream(params as TParams),
     });
 
-    readonly value = this.resource.value;
+    /**
+     * Valeur **sûre** : `undefined` tant qu'il n'y a pas de valeur (repos,
+     * chargement, erreur). `resource.value()` lève en état d'erreur (contrat
+     * Angular) ; on garde avec `hasValue()` et on expose l'erreur via `error`.
+     */
+    readonly value = computed(() =>
+        this.resource.hasValue() ? this.resource.value() : undefined
+    );
     readonly isLoading = this.resource.isLoading;
     readonly error = this.resource.error;
     readonly status = this.resource.status;
