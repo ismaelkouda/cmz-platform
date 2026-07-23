@@ -109,12 +109,29 @@ cérémonie CQRS dégénérée du source est **supprimée** — `command` +
   import `ui`.
 * **Ajout domaine** oublié : `*-filter.entity` (`resolveOpenEndedEndDate`).
 
-## Reste — par tranche (multi-tours)
+## En cours — couche UI (`@cmz/administrative-infrastructure-ui`)
 
-### UI / feature
+**Fait — fondations (vérifié `tsc`, pures : domain + shared-ui) :**
 
-- `store`, `features` (composants + `.html`), `adapters`, `StatusStyle`,
-  `form-validators` composés.
+- `StatusStyle` + `statusStyleOf` (UI, exclu du domaine) ; `vm-props`,
+  **presenters** (Entity→view-model), `table`/`tabs` constants, `form-keys`,
+  `filter-keys`, `form-error-messages`, `form-validators`, `paths`, helper
+  `form-errors`.
+- **Non-reproduction** : `statusStyle` et `actionsRef` sont **calculés dans le
+  presenter** (`statusStyleOf(status)`, `actionsRef = item.name`) — le source
+  les mettait sur l'entité (fuite UI→domaine, déjà retirée).
+- **Kernel shared-ui** : ajout `ActionDropdownItem` + `getControlError`
+  (réutilisables).
+
+**Reste — sous-tranches UI (multi-tours) :**
+
+1. **Composants partagés kernel** (prérequis) : `shared-ui` n'expose pas encore
+   les composants `table`/`pagination`/`form-field` que consomment les features.
+2. **Stores** : `*-filter.control`/`*-filter.store`, `*-form.control`/
+   `*-form.store` (reactive forms + signaux).
+3. **Features** : composants `page`/`list`/`form` (+ `.html`/`.scss`) +
+   `*-form-helper.service`.
+4. **Routing/DI** : `*.routes`, `di/*.providers` (wiring port→impl).
 
 ## Séquencement proposé
 
@@ -122,5 +139,6 @@ cérémonie CQRS dégénérée du source est **supprimée** — `command` +
    validators, value-objects, ports).
 2. **Data** (dto + mappers + sources + repos) — **fait**.
 3. **Application** (use-cases + facades) — **fait** (CQRS ceremony optimisée).
-4. **UI/feature** — **suivant**.
+4. **UI/feature** — **en cours** : fondations faites ; reste stores + composants
+   partagés kernel + features + routing/DI.
 5. `bun install` + `nx build` du module contre le kernel.
