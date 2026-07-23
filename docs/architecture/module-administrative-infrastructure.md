@@ -82,12 +82,34 @@ URLs/`links`/`path`/`from`/`to` jamais) :
   truthy) ; typo `prams`→`params`.
 - Dépendances : `{domain module, shared-data, shared-domain, core, @angular}`.
 
+## Fait — couche application (vérifié `tsc`, optimisée)
+
+Lib `@cmz/administrative-infrastructure-application` (**12 fichiers** vs **~72**
+au source). **Optimisation (mandat « optimise, ne reproduis pas ») :** la
+cérémonie CQRS dégénérée du source est **supprimée** — `command` +
+`command-mapper`
+
+- `command-bus` (un bus par commande, un seul handler, `instanceof`) + `handler`
+- `query` + `query-*` + `application/dto` (identique au `Contract` domaine).
+  Chaîne réduite : **facade → use-case → repository (port)**.
+
+* **use-cases** (`@Service`) : service applicatif par entité — `execute` (liste
+  : `filterEntity ∘ filterVo` → `repository.execute`), create/update/delete
+  (+enable/disable), find-one, select. `defer()` reporte le throw de validation
+  dans le flux (rendu loop). Injectent les **ports** (domaine), pas les impls
+  data → **application ne dépend pas de `data`**.
+* **facades** (`@Service`, signal) : `<entity>` étend le nouveau
+  `CollectionFacade` (liste + mutations) ; `find-one`/`select` étendent
+  `BaseFacade`. `select` expose `options = computed(data ?? [])`.
+* **Kernel** : nouveau `CollectionFacade extends PaginatedFacade` (signaux
+  `actionState`/`actionSuccess`/`actionError` + `runAction`).
+* **Fix layering** : le feedback passe par
+  `NotificationPort`/`TranslationPort` + `ErrorHandlerRegistry` (application) —
+  **plus de `UiFeedbackService`** (le source violait application→ui). Aucun
+  import `ui`.
+* **Ajout domaine** oublié : `*-filter.entity` (`resolveOpenEndedEndDate`).
+
 ## Reste — par tranche (multi-tours)
-
-### Application
-
-- `commands`/`queries` + `bus` + `handlers` + `use-cases` (CQRS), facades
-  concrètes étendant `PaginatedFacade`/`BaseFacade`.
 
 ### UI / feature
 
@@ -99,6 +121,6 @@ URLs/`links`/`path`/`from`/`to` jamais) :
 1. **Domaine** complet (2 entités) — **fait** (entités, props, enums, contracts,
    validators, value-objects, ports).
 2. **Data** (dto + mappers + sources + repos) — **fait**.
-3. **Application** (CQRS + facades) — **suivant**.
-4. **UI/feature**.
+3. **Application** (use-cases + facades) — **fait** (CQRS ceremony optimisée).
+4. **UI/feature** — **suivant**.
 5. `bun install` + `nx build` du module contre le kernel.
