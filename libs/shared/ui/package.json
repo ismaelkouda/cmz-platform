@@ -9,6 +9,8 @@
     "rxjs": "catalog:",
     "@cmz/shared-infra": "workspace:*",
     "i18next": "catalog:",
-    "@cmz/shared-application": "workspace:*"
+    "@cmz/shared-application": "workspace:*",
+    "sweetalert2": "catalog:",
+    "ngx-sonner": "catalog:"
   }
 }

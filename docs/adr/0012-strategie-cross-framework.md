@@ -17,12 +17,13 @@ Le projet source s'appuie sur des libs **Angular-only** : `ngx-translate`/
 
 ### Libs transverses (agnostiques)
 
-| Besoin                                | Remplacé                  | Retenu (agnostique)                                               | Adaptateur par framework                         |
-| ------------------------------------- | ------------------------- | ----------------------------------------------------------------- | ------------------------------------------------ |
-| i18n                                  | Transloco / ngx-translate | **i18next** (`26.3.6`)                                            | `angular-i18next` / `react-i18next` (dans l'app) |
-| dates                                 | moment                    | **date-fns**                                                      | — (agnostique)                                   |
-| toasts + modales                      | ngx-toastr + sweetalert2  | **SweetAlert2** (`toast:true` couvre les 2) — _décision différée_ | — (agnostique)                                   |
-| composants (TreeNode, MessageService) | primeng                   | **abandonné du partagé**                                          | composants **par framework**                     |
+| Besoin                                | Remplacé                  | Retenu (agnostique)                                              | Adaptateur par framework                         |
+| ------------------------------------- | ------------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
+| i18n                                  | Transloco / ngx-translate | **i18next** (`26.3.6`)                                           | `angular-i18next` / `react-i18next` (dans l'app) |
+| dates                                 | moment                    | **date-fns**                                                     | — (agnostique)                                   |
+| toasts                                | ngx-toastr                | **Sonner** — `ngx-sonner` 3.1.0 (Angular ≥19) / `sonner` (React) | par framework (même UX)                          |
+| modales                               | sweetalert2               | **SweetAlert2** (`11.26.25`, vanilla)                            | — (agnostique)                                   |
+| composants (TreeNode, MessageService) | primeng                   | **abandonné du partagé**                                         | composants **par framework**                     |
 
 Une **component library ne se partage pas** entre Angular et React : `primeng`
 sort du kernel. Les types empruntés (`TreeNode`) deviennent des interfaces
@@ -49,8 +50,11 @@ démarrera. Non résolu ici — signalé pour ne pas le découvrir trop tard.
 
 ## Conséquences
 
-- **i18next** installé maintenant (catalog, version unique) ; adaptateur après
-  `bun install`. `date-fns` et `SweetAlert2` : décision prise, install à venir.
+- **i18next** (`26.3.6`), **SweetAlert2** (`11.26.25`) et **ngx-sonner**
+  (`3.1.0`) au catalog ; adaptateurs après `bun install`. `date-fns` : décidé,
+  install à venir.
+- **Ports** définis (agnostiques) : `TranslationPort`, `NotificationPort`
+  (toasts/Sonner), `ConfirmDialogPort` (modales/SweetAlert2).
 - `primeng`/`ngx-toastr`/`Transloco` **ne seront pas** ajoutés au partagé.
 - Le `TranslationPort` est un contrat agnostique ; l'implémentation i18next et
   le liant Angular restent des adaptateurs.
