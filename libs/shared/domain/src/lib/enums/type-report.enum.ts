@@ -1,5 +1,5 @@
 export enum TypeReport {
-    REQUESTS = 'requests',
-    PROCESSING = 'processing',
-    FINALIZATION = 'finalization',
+    REQUESTS = 'COMMON.REQUESTS',
+    PROCESSING = 'COMMON.PROCESSING',
+    FINALIZATION = 'COMMON.FINALIZATION',
 }

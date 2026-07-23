@@ -33,6 +33,7 @@ export * from './lib/errors/http/server.error';
 export * from './lib/errors/http/unauthorized.error';
 export * from './lib/errors/http/unknown.error';
 export * from './lib/errors/http/validation.error';
+export * from './lib/errors/http/server-response.error';
 export * from './lib/errors/validation/confirm-password-required.error';
 export * from './lib/errors/validation/confirm-password.error';
 export * from './lib/errors/validation/date-range-invalid.error';

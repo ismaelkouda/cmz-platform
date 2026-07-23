@@ -51,3 +51,4 @@ export * from './lib/utils/mapper-utils';
 export * from './lib/interfaces/fetch-options.interface';
 export * from './lib/utils/build-http-payload.util';
 export * from './lib/utils/build-http-params.util';
+export * from './lib/utils/unwrap-response.util';
