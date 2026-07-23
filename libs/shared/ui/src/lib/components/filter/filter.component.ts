@@ -3,32 +3,28 @@ import {
     Component,
     inject,
     input,
+    model,
     output,
 } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormField, form } from '@angular/forms/signals';
 import { TranslationPort } from '@cmz/shared-application';
 import { FilterField } from './filter.types';
 
 /**
- * Barre de filtres — **design-system**, dirigée par la donnée : rend des champs
- * (`text`/`number`/`select`/`date`) liés à un `FormGroup` fourni, émet `apply`
- * à la soumission et `clear` à la réinitialisation. Reconstruite sans primeng
- * ni `any` (le source enveloppait primeng). Reactive Forms, standalone, `OnPush`,
- * accessible (`<label for>`), libellés via `TranslationPort`. Mise en page en
- * **utilitaires Tailwind** ; couleurs via les tokens `@theme` (`border-border`,
- * `bg-primary`, …).
+ * Barre de filtres — **design-system, Signal Forms (Angular 22)**. Dirigée par
+ * la donnée : un modèle `Record` en signal deux-voies (`model()`) est enveloppé
+ * par `form()` ; chaque champ (`text`/`number`/`select`/`date`) est lié par
+ * `[formField]`. Émet `apply` à la soumission, `clear` à la réinitialisation.
+ * Sans primeng, sans `ReactiveFormsModule`. Standalone, `OnPush`, a11y, i18n via
+ * `TranslationPort`, mise en page Tailwind + tokens.
  */
 @Component({
     selector: 'cmz-filter',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ReactiveFormsModule],
+    imports: [FormField],
     template: `
-        <form
-            [formGroup]="form()"
-            (ngSubmit)="apply.emit()"
-            class="flex flex-col gap-4"
-        >
+        <form (submit)="onSubmit($event)" class="flex flex-col gap-4">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 @for (field of fields(); track field.name) {
                     <div
@@ -46,7 +42,7 @@ import { FilterField } from './filter.types';
                             @case ('select') {
                                 <select
                                     [id]="field.name"
-                                    [formControlName]="field.name"
+                                    [formField]="filterForm[field.name]"
                                     class="w-full rounded border border-border bg-surface px-3 py-2 text-sm text-text focus-visible:outline-2 focus-visible:outline-focus"
                                 >
                                     <option value="">
@@ -68,7 +64,7 @@ import { FilterField } from './filter.types';
                                 <input
                                     type="date"
                                     [id]="field.name"
-                                    [formControlName]="field.name"
+                                    [formField]="filterForm[field.name]"
                                     class="w-full rounded border border-border bg-surface px-3 py-2 text-sm text-text focus-visible:outline-2 focus-visible:outline-focus"
                                 />
                             }
@@ -80,7 +76,7 @@ import { FilterField } from './filter.types';
                                             : 'text'
                                     "
                                     [id]="field.name"
-                                    [formControlName]="field.name"
+                                    [formField]="filterForm[field.name]"
                                     [attr.placeholder]="
                                         field.placeholder
                                             ? t(field.placeholder)
@@ -116,21 +112,32 @@ import { FilterField } from './filter.types';
 export class FilterComponent {
     private readonly i18n = inject(TranslationPort);
 
-    readonly form = input.required<FormGroup>();
+    /** Modèle de filtre (deux-voies) : `{ [name]: valeur }`. */
+    readonly model = model<Record<string, string>>({});
     readonly fields = input.required<FilterField[]>();
     readonly loading = input(false);
 
-    /** Émis à la soumission (le parent lit `form.value`). */
+    /** Émis à la soumission (le parent lit le `model`). */
     readonly apply = output<void>();
-    /** Émis après réinitialisation du formulaire. */
+    /** Émis après réinitialisation. */
     readonly clear = output<void>();
+
+    protected readonly filterForm = form(this.model);
 
     protected t(key: string): string {
         return this.i18n.translate(key);
     }
 
+    protected onSubmit(event: Event): void {
+        event.preventDefault();
+        this.apply.emit();
+    }
+
     protected onClear(): void {
-        this.form().reset();
+        const cleared = Object.fromEntries(
+            this.fields().map((f) => [f.name, ''])
+        );
+        this.model.set(cleared);
         this.clear.emit();
     }
 }

@@ -4,16 +4,15 @@ import {
     inject,
     input,
 } from '@angular/core';
-import { FormControl } from '@angular/forms';
+import { Field } from '@angular/forms/signals';
 import { TranslationPort } from '@cmz/shared-application';
-import { getControlError } from '../../helpers/form-errors.helper';
 
 /**
- * Champ de formulaire — **design-system**. Enveloppe présentation d'un contrôle
- * Reactive Forms projeté (`<ng-content>`) : libellé associé, marqueur requis, et
- * message d'erreur résolu via `getControlError` (table de messages i18n).
- * Standalone, `OnPush`, accessible (`<label for>`, `role="alert"`), libellés via
- * `TranslationPort`, mise en page Tailwind + tokens.
+ * Champ de formulaire — **design-system, Signal Forms (Angular 22)**. Enveloppe
+ * un `Field` : libellé, marqueur requis, et messages d'erreur issus du champ
+ * (`field().errors()`), affichés seulement après interaction (`touched()`).
+ * Le contrôle natif est projeté (`<ng-content>`) et lié par `[control]` côté
+ * consommateur. Standalone, `OnPush`, a11y (`label for`, `role="alert"`).
  */
 @Component({
     selector: 'cmz-field',
@@ -30,8 +29,12 @@ import { getControlError } from '../../helpers/form-errors.helper';
 
             <ng-content />
 
-            @if (errorMessage(); as msg) {
-                <p class="text-sm text-danger" role="alert">{{ t(msg) }}</p>
+            @if (field()().touched()) {
+                @for (error of field()().errors(); track error.kind) {
+                    <p class="text-sm text-danger" role="alert">
+                        {{ error.message ? t(asText(error.message)) : '' }}
+                    </p>
+                }
             }
         </div>
     `,
@@ -39,22 +42,16 @@ import { getControlError } from '../../helpers/form-errors.helper';
 export class FieldComponent {
     private readonly i18n = inject(TranslationPort);
 
-    /** id du contrôle projeté (associé au `<label for>`). */
     readonly for = input('');
-    /** Clé i18n du libellé. */
     readonly label = input.required<string>();
     readonly required = input(false);
-    /** Contrôle Reactive Forms inspecté pour l'erreur. */
-    readonly control = input.required<FormControl>();
-    /** Table message par clé d'erreur Angular (`required`, `email`, …). */
-    readonly errors = input<Record<string, string>>({});
+    readonly field = input.required<Field<unknown>>();
 
     protected t(key: string): string {
         return this.i18n.translate(key);
     }
 
-    /** Message d'erreur courant (méthode : réévaluée à chaque détection). */
-    protected errorMessage(): string | null {
-        return getControlError(this.control(), this.errors());
+    protected asText(v: unknown): string {
+        return typeof v === 'string' ? v : '';
     }
 }
