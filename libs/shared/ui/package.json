@@ -7,6 +7,8 @@
     "@angular/platform-browser": "catalog:",
     "@angular/router": "catalog:",
     "rxjs": "catalog:",
-    "@cmz/shared-infra": "workspace:*"
+    "@cmz/shared-infra": "workspace:*",
+    "i18next": "catalog:",
+    "@cmz/shared-application": "workspace:*"
   }
 }
