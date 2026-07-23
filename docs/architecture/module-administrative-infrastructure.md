@@ -123,10 +123,20 @@ cérémonie CQRS dégénérée du source est **supprimée** — `command` +
 - **Kernel shared-ui** : ajout `ActionDropdownItem` + `getControlError`
   (réutilisables).
 
+**Composants partagés kernel (design-system, sans primeng) :**
+
+- **Faits** : `cmz-pagination`, `cmz-action-dropdown`, `cmz-table` (standalone +
+  `OnPush` + signals, a11y, i18n via `TranslationPort`, tokens `--cmz-*`,
+  logique pure `pageWindow` testable). `cmz-table` **focalisée** (pas le
+  fourre-tout primeng/`any`/sélection/export du source) ; `TableColumn` /
+  `TableRowBase` promus au kernel ; `PaginationMeta` (dont `PageResult` dérive).
+- **Reste** : `cmz-filter` (formulaire de filtres dynamiques — dernier prérequis
+  de la **liste**), composants de champ de formulaire (`cmz-field`/ select/date
+  — prérequis du **form**).
+
 **Reste — sous-tranches UI (multi-tours) :**
 
-1. **Composants partagés kernel** (prérequis) : `shared-ui` n'expose pas encore
-   les composants `table`/`pagination`/`form-field` que consomment les features.
+1. **Composants partagés kernel** : `cmz-filter` + champs de formulaire.
 2. **Stores** : `*-filter.control`/`*-filter.store`, `*-form.control`/
    `*-form.store` (reactive forms + signaux).
 3. **Features** : composants `page`/`list`/`form` (+ `.html`/`.scss`) +
