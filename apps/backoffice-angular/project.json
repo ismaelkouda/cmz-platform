@@ -58,7 +58,8 @@
           "buildTarget": "backoffice-angular:build:production"
         },
         "development": {
-          "buildTarget": "backoffice-angular:build:development"
+          "buildTarget": "backoffice-angular:build:development",
+          "proxyConfig": "apps/backoffice-angular/proxy.conf.json"
         }
       }
     },

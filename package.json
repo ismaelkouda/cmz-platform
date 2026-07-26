@@ -11,7 +11,8 @@
     "check:weight": "node tools/check-file-weight.mjs",
     "check:all": "bun run check:engines && bun run check:versions && bun run check:weight",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "mock": "node tools/mock-server.mjs"
   },
   "dependencies": {
     "@angular/common": "catalog:",
