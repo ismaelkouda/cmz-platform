@@ -79,13 +79,19 @@ fichiers préfixés par entité.
 ## `contract` + `validate-contract`
 
 - **Rôle DDD/CQRS** : `contract` = entrée brute (tout optionnel, ce que
-  l'appelant _pourrait_ fournir) ; `validate-contract` = même forme, tout requis
-  (ce que le domaine _garantit_ après validation).
-- **Règle mécanique** : `validate-contract` ne doit **jamais** être construit
-  autrement que via son `validator` (pas de cast direct).
-  `filter`/`find-one-filter` contracts ont tous leurs champs optionnels y
-  compris `uniqId` (aligné sur delete).
-- **Squelette** :
+  l'appelant _pourrait_ fournir) ; `validate-contract` = même forme, avec
+  **exactement les champs que la réalité métier rend obligatoires** marqués
+  requis (le reste reste optionnel).
+- **Règle mécanique — la requiredness se déduit au cas par cas, comme pour un
+  champ de formulaire, pas par catégorie de fichier.** Un `filter` de liste
+  (recherche) n'a généralement aucun champ requis ; mais un `find-one-filter` a
+  quasi toujours un identifiant requis (`uniqId`) ; une vue imbriquée (ex.
+  `departments-by-region-id`) doit être jugée pareil — si l'id du parent est
+  indispensable pour que la requête ait un sens, il est **requis**, pas
+  silencieusement optionnel. Vérifié sur le module de référence :
+  `InfrastructureTypeFindOneFilterValidateContract` a bien `uniqId: string`
+  (requis), au même titre que `create`/`update`.
+- **Squelette (cas requis, ex. create ou find-one-filter)** :
     ```ts
     export interface XCreateContract {
         champA?: T;
@@ -96,21 +102,28 @@ fichiers préfixés par entité.
         champB: T;
     }
     ```
+- **Squelette (cas sans champ requis, ex. filtre de liste pur recherche)** :
+  `XFilterContract` seul suffit (pas de `validate-contract` séparé — rien à
+  rendre requis).
 - **Référence** : `contracts/infrastructure-type-create.contract.ts` +
-  `.validate-contract.ts`, et `infrastructure-type-filter.contract.ts` /
-  `infrastructure-type-find-one-filter.contract.ts` (filtres — pas de
-  validate-contract pour `filter`, seulement une fonction `validateXFilter` en
-  `: void`, cf. `validator`).
+  `.validate-contract.ts` (requis) ;
+  `infrastructure-type-find-one-filter.contract.ts`
+    - `.validate-contract.ts` (`uniqId` requis, **même mécanisme que create**) ;
+      `infrastructure-type-filter.contract.ts` (aucun `validate-contract` :
+      aucun champ requis dans ce cas précis, pas par principe général).
 
 ## `validator`
 
 - **Rôle DDD/CQRS** : porte de garde entre `contract` et `validate-contract`.
-- **Règle mécanique** :
-  `validateXCreate(c): asserts c is XCreateValidateContract`, lève
-  `GenericRequiredError('<NS>.FORM.ERROR.CREATE.<CHAMP>_REQUIRE')` par champ
-  manquant. Pour `filter` : signature `: void` (pas d'assertion tautologique),
-  délègue à `assertValidDateRange` du kernel pour les plages de dates.
-- **Squelette** :
+- **Règle mécanique** : dès qu'**au moins un champ est requis** (create, update,
+  find-one-filter, ou un filtre imbriqué avec id parent obligatoire) :
+  `validateX(c): asserts c is XValidateContract`, lève
+  `GenericRequiredError('<NS>.FORM.ERROR.<OP>.<CHAMP>_REQUIRE')` par champ
+  manquant — **identique pour un filtre que pour un formulaire**, ce n'est pas
+  un archétype à part. Quand **aucun** champ n'est requis (filtre de liste pur
+  recherche) : signature `: void` (pas d'assertion tautologique), seulement les
+  contraintes structurelles restantes (`assertValidDateRange`).
+- **Squelette (champ requis — create ET find-one-filter suivent cette forme)** :
     ```ts
     export function validateXCreate(
         contract: XCreateContract
@@ -120,21 +133,52 @@ fichiers préfixés par entité.
                 '<NS>.FORM.ERROR.CREATE.CHAMP_A_REQUIRE'
             );
     }
+    export function validateXFindOneFilter(
+        contract: XFindOneFilterContract
+    ): asserts contract is XFindOneFilterValidateContract {
+        if (!contract.uniqId)
+            throw new GenericRequiredError(
+                '<NS>.FORM.ERROR.FIND_ONE.UNIQ_ID_REQUIRE'
+            );
+    }
+    ```
+- **Squelette (aucun champ requis — filtre de liste)** :
+    ```ts
     export function validateXFilter(contract: XFilterContract): void {
         assertValidDateRange(contract?.startDate, contract?.endDate);
     }
     ```
 - **Référence** : `validators/infrastructure-type-create.validator.ts`,
-  `validators/infrastructure-type-filter.validator.ts`.
+  `validators/infrastructure-type-find-one-filter.validator.ts` (même forme que
+  create, avec `GenericRequiredError`),
+  `validators/infrastructure-type-filter.validator.ts` (aucun champ requis dans
+  ce cas → `: void`).
 
 ## `value-object` (`*.vo.ts`)
 
 - **Rôle DDD/CQRS** : point d'entrée unique de la validation — appelle le
-  `validator` puis renvoie la forme validée, avec **whitelisting explicite**
-  (jamais un simple spread du contrat brut).
-- **Règle mécanique** : `xCreateVo(contract) → validate → { champA, champB }`
-  littéral (pas `{...contract}`) — défensif contre l'ajout silencieux de champs.
-- **Squelette** :
+  `validator` puis renvoie la forme validée au type `XValidateContract`.
+- **Règle mécanique — vérifiée sur les 11 VO du module, deux formes selon un
+  critère précis, pas une seule règle universelle :**
+    1. **Whitelisting explicite** (`return { champA: contract.champA, ... }`
+       littéral, jamais `{...contract}`) — **quand le contrat de mutation porte
+       plusieurs champs destinés à un payload serveur** (`create`, `update`).
+       Défensif : garantit que seuls les champs déclarés sortent du domaine,
+       indépendamment de ce que l'appelant a pu accumuler sur l'objet en amont ;
+       force aussi une erreur de compilation si `XValidateContract` s'enrichit
+       d'un champ qu'on oublie d'ajouter ici.
+    2. **Passthrough** (`return contract;` après l'assertion du validator) —
+       **quand le contrat n'a qu'un seul champ identifiant** (`delete`,
+       `enable`, `disable`, `find-one-filter` : juste `uniqId`) où whitelister
+       n'apporterait rien de plus que l'assertion de type déjà faite ; **ou
+       quand le validator ne rétrécit aucun type** (`filter` de liste sans champ
+       requis, validator `: void`) — il n'y a alors rien à isoler, et le mapper
+       `data` en aval retraduit de toute façon champ par champ vers le wire.
+       **Ne pas généraliser l'un ou l'autre par défaut** : whitelister un VO à
+       un seul champ est du bruit inutile ; faire un `return contract` sur un VO
+       à plusieurs champs de mutation abandonne la défense qui est le rôle même
+       du VO.
+- **Squelette (whitelisting — payload multi-champs)** :
     ```ts
     export function xCreateVo(
         contract: XCreateContract
@@ -143,7 +187,20 @@ fichiers préfixés par entité.
         return { champA: contract.champA, champB: contract.champB };
     }
     ```
-- **Référence** : `value-objects/infrastructure-type-create.vo.ts`.
+- **Squelette (passthrough — mono-champ ou filtre sans requis)** :
+    ```ts
+    export function xDeleteVo(
+        contract: XDeleteContract
+    ): XDeleteValidateContract {
+        validateXDelete(contract);
+        return contract;
+    }
+    ```
+- **Référence** : whitelisting →
+  `value-objects/infrastructure-type-create.vo.ts`, `-update.vo.ts` ;
+  passthrough → `-delete.vo.ts`, `-enable.vo.ts`, `-disable.vo.ts`,
+  `-filter.vo.ts`, `-find-one-filter.vo.ts` (vérifié : les 11 VO du module
+  suivent cette répartition sans exception).
 
 ## `filter-entity` (optionnel, seulement si logique de plage de dates)
 
