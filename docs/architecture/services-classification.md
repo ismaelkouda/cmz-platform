@@ -38,9 +38,9 @@ ce simple **bon placement**.
 - **Maintenant (kernel `shared-domain`)** : seule la logique métier pure est
   extraite — ici la fonction `normalizePhoneNumber`. Rien d'autre de `services/`
   n'entre dans le domaine.
-- **Plus tard** : les services `application` / `ui` / `data-infra` sont générés
+- **Plus tard** : les services `application` / `ui` / `browser` sont générés
   quand on bâtit `@cmz/shared-application`, `@cmz/shared-ui`,
-  `@cmz/shared-infra` comme **tranches de couche cohérentes** (une lib par
+  `@cmz/shared-browser` comme **tranches de couche cohérentes** (une lib par
   couche, ADR-0003 / Phase 4), chacune sous le contrat
   [`service`](../../contracts/service.contract.md). Cette table est la feuille
   de route de ces tranches.

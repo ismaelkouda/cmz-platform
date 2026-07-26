@@ -3,7 +3,7 @@
 - **Dernière mise à jour :** 2026-07-23
 
 Présentation partagée (pipes, services UI, adaptateurs). Dépend de
-`shared-domain`/ `shared-application`/`shared-infra` ; jamais l'inverse.
+`shared-domain`/`shared-application` ; jamais l'inverse.
 
 ## Généré et vérifié (`tsc` vert)
 

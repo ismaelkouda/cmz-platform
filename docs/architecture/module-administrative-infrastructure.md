@@ -1,6 +1,10 @@
 # Module `administrative-infrastructure` — reconstruction (Phase 07)
 
-- **Dernière mise à jour :** 2026-07-23
+- **Dernière mise à jour :** 2026-07-26
+- **Statut :** module **terminé** (2 entités, 4 couches) —
+  `ngc --strictTemplates` vert, `nx serve` OK contre le mock. Suites :
+  durcissements transverses (Status wire-first, boundaries, StoragePort)
+  intégrés ; voir « Mise à jour 2026-07-26 ».
 
 Premier module réel. **228 fichiers .ts** au source, CQRS complet, **2 entités**
 (`infrastructure`, `infrastructure-type`). Reconstruit par **tranches de
@@ -109,7 +113,7 @@ cérémonie CQRS dégénérée du source est **supprimée** — `command` +
   import `ui`.
 * **Ajout domaine** oublié : `*-filter.entity` (`resolveOpenEndedEndDate`).
 
-## En cours — couche UI (`@cmz/administrative-infrastructure-ui`)
+## Fait — couche UI (`@cmz/administrative-infrastructure-ui`)
 
 **Fait — fondations (vérifié `tsc`, pures : domain + shared-ui) :**
 
@@ -130,7 +134,9 @@ cérémonie CQRS dégénérée du source est **supprimée** — `command` +
   logique pure `pageWindow` testable). `cmz-table`/`cmz-filter` **focalisés**
   (pas le fourre-tout primeng/`any` du source) ; `TableColumn`/`TableRowBase`
   promus au kernel ; `PaginationMeta` (dont `PageResult` dérive) ;
-  `FilterField`/`FilterOption` typés + helper `enumToFilterOptions`.
+  `FilterField`/`FilterOption` typés + helper `labelsToFilterOptions` (map
+  code→clé i18n ; l'ancien `enumToFilterOptions` label-first a été remplacé lors
+  du passage wire-first).
 - **Tailwind CSS v4** installé/câblé (`@tailwindcss/postcss`, `tailwind.css` :
   `@theme` tokens + `@source` libs + pont `--cmz-*`). `cmz-filter` stylé en
   utilitaires Tailwind ; les autres primitives en styles scopés — **les deux
@@ -201,12 +207,31 @@ validés.**
   ; app-shell câblé (`useExisting`) + outlets + `UiFeedbackService`. i18next
   gardé.
 
-**Reste :**
+**Reste (enhancements, hors périmètre du module) :**
 
-1. **Runtime app-shell** : init i18next (resources) ; tokens de config
-   (`*_API_URL`) au bootstrap ; `nx build` sur poste (macOS).
-2. Enhancements : sélecteur carto, selects région/dept/commune en cascade
-   (module boundary), export.
+1. Sélecteur cartographique de position (`infrastructure`).
+2. Selects région/dept/commune en cascade — livrés avec le **module
+   `administrative-boundary`** (Phase 08).
+3. Export CSV/PDF des listes.
+
+## Mise à jour 2026-07-26 — durcissements transverses
+
+Intégrés après la clôture du module (validés `ngc` + audit boundaries) :
+
+- **`Status` wire-first** : `enum` →
+  `const Status {ACTIVE:'active',INACTIVE:'inactive'}`
+    - `type` + garde `isStatus` ; libellés déplacés en UI (`STATUS_LABEL`),
+      filtre via `labelsToFilterOptions`, filter-store via `isStatus` (fin du
+      cast `as`).
+- **Boundaries durcies** : isolation par `type:*` **et** `scope:*` ; `type:app`
+  = seul composition root ; `type:constants` feuille universelle.
+- **`StoragePort`** (`shared-domain`) + `BrowserStorageAdapter`
+  (`shared-browser`, ex-`shared-infra` supprimée) câblés au root.
+- **Runtime app-shell** (i18next resources, tokens `*_API_URL`) + **mock
+  backend** (`tools/mock-server.mjs` + proxy) : l'app tourne de bout en bout en
+  dev.
+- **DEV ONLY** : `provideDevPermissions()` (toutes permissions) — **gardé par
+  `isDevMode()`**, à retirer/remplacer par l'auth réelle en production.
 
 ## Séquencement proposé
 
