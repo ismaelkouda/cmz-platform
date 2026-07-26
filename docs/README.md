@@ -48,6 +48,9 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
   comment le code sera produit
 - [Phase 05a — Kernel transverse](./architecture/kernel-05a.md) — catalogue
   d'archétypes et génération du noyau `shared/`
+- [Contrats d'archétype](./architecture/archetypes/README.md) — extraits du
+  module `administrative-infrastructure`, testés sur `administrative-boundary`
+  avant d'investir dans la Phase 04 (outillage SEOS)
 
 ## Guides
 

@@ -4,6 +4,11 @@
 - **Statut :** à faire (plan)
 - **Gabarit de référence :** `module-administrative-infrastructure.md`
   (Phase 07)
+- **Contrats d'archétype :** [`archetypes/`](./archetypes/README.md) — extraits
+  formellement du module de référence ; ce module sert de **premier test** de
+  l'hypothèse « génération outillée sous contrat » avant d'investir dans la
+  Phase 04 (outillage SEOS). Chaque fichier produit doit être coché contre son
+  contrat, pas construit par analogie libre.
 
 ## Périmètre (source : `presentation/pages/administrative-boundary`, 374 fichiers)
 
