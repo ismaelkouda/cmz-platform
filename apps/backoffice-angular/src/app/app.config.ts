@@ -34,7 +34,7 @@ export const appConfig: ApplicationConfig = {
         { provide: TranslationPort, useExisting: I18nextTranslationService },
         // Composition root du module (ports domaine -> impls data).
         ...provideAdministrativeInfrastructure(),
-        // DEV ONLY : accorde toutes les permissions.
-        provideDevPermissions(),
+        // DEV ONLY : accorde toutes les permissions (no-op hors isDevMode()).
+        ...provideDevPermissions(),
     ],
 };
