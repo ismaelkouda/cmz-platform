@@ -1,0 +1,15 @@
+import { DEPARTMENT_FORM_KEYS } from './department-form-keys.constant';
+
+export const DEPARTMENT_FORM_ERROR_MESSAGES = {
+    [DEPARTMENT_FORM_KEYS.CODE]: { required: 'COMMON.VALIDATION.REQUIRED' },
+    [DEPARTMENT_FORM_KEYS.NAME]: { required: 'COMMON.VALIDATION.REQUIRED' },
+    [DEPARTMENT_FORM_KEYS.POPULATION_SIZE]: {
+        required: 'COMMON.VALIDATION.REQUIRED',
+    },
+    [DEPARTMENT_FORM_KEYS.INFRASTRUCTURE_COUNT]: {
+        required: 'COMMON.VALIDATION.REQUIRED',
+    },
+    [DEPARTMENT_FORM_KEYS.REGION_ID]: {
+        required: 'COMMON.VALIDATION.REQUIRED',
+    },
+} as const;
