@@ -105,6 +105,20 @@ Standalone + `ChangeDetectionStrategy.OnPush` partout. Signal Forms
 - **Variante à instruire** : filtre **cascade** (ex. filtrer les communes par
   région ET département) — clé de filtre supplémentaire dont les options
   dépendent d'une autre valeur du modèle (à documenter une fois rencontré).
+- **Champ de filtre requis (ne pas présumer l'inverse par défaut)** : quand un
+  champ de filtre est requis (cf.
+  [`domain.md`](./domain.md#contract--validate-contract), même jugement métier
+  qu'un champ de formulaire), la validation reste **du ressort du domaine** —
+  `toContract()` continue de renvoyer un contrat brut ; c'est
+  `xFilterVo`/`validateXFilter` (appelés dans le use-case) qui lèvent
+  `GenericRequiredError` si absent, rendu par la même loop d'erreurs qu'un
+  formulaire. **Vérifié : `FilterField` (`@cmz/shared-ui`, `filter.types.ts`)
+  n'expose aujourd'hui aucun indicateur `required`** — contrairement à
+  `cmz-field` (formulaire), `cmz-filter` n'affiche donc pas d'astérisque/état
+  requis inline. Tant que ce n'est pas ajouté au design-system, un champ de
+  filtre requis est validé correctement (l'erreur serveur-side/domaine remonte)
+  mais sans indice visuel préventif — à garder en tête comme limite UX connue,
+  pas un bug de cet archétype.
 
 ## `form-store` (`@Injectable()` non-root, Signal Forms)
 

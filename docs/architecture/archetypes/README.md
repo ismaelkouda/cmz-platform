@@ -41,6 +41,32 @@ de production (domaine → data → application → ui). Pour chaque archétype 
 | **Référence**         | Fichier exact du module `administrative-infrastructure` dont c'est issu |
 | **Variantes connues** | Cas où le contrat a déjà dû être adapté (documentées, pas des bugs)     |
 
+## Principe transversal — la requiredness d'un champ de filtre n'est jamais présumée
+
+Point corrigé le 2026-07-26 après relecture : un **filtre** (liste, find-one, ou
+vue imbriquée) n'est pas _par catégorie_ un contrat entièrement optionnel.
+Chaque champ — de filtre comme de formulaire — se juge individuellement contre
+la réalité métier de l'entité. Ce principe traverse les 4 couches :
+
+- **domain** ([`domain.md`](./domain.md#contract--validate-contract)) : un champ
+  de filtre requis suit **exactement** le mécanisme create/update (`contract`
+  optionnel + `validate-contract` requis + `validator` avec
+  `GenericRequiredError`) — ce n'est pas un archétype à part.
+- **application** ([`application.md`](./application.md)) : le use-case
+  `execute()` appelle `xFilterVo(contract)` sans présumer l'absence de champ
+  requis ; l'erreur, s'il y en a une, remonte par la même `defer()` + loop
+  d'erreurs que n'importe quelle mutation.
+- **ui** ([`ui.md`](./ui.md#filter-store-injectable-non-root-signal)) : la
+  validation reste domaine ; `FilterField` (`@cmz/shared-ui`) n'a **pas
+  aujourd'hui** d'indicateur `required` visuel (vérifié dans le code), à la
+  différence de `cmz-field` pour les formulaires — limite UX connue, pas un
+  défaut de cet archétype.
+
+Directement applicable à `administrative-boundary` : les filtres des vues
+imbriquées (`departments-by-region-id`, `municipalities-by-department-id`)
+doivent être jugés champ par champ — si l'id du parent est indispensable à la
+requête, il est requis, pas silencieusement optionnel par défaut.
+
 ## Fichiers
 
 - [`domain.md`](./domain.md) — props, entity, contract/validate-contract,

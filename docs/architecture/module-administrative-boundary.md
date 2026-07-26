@@ -64,8 +64,13 @@ Endpoints (constante data) : `territorial-structures/regions`,
 6. **Ports 100 % domaine.** Repos renvoient `PageResult` / `MessageEntity` /
    `SelectOption` + `FetchOptions` (kernel), zéro import `data` (cf.
    ADR/kernel).
-7. **`find-one-filter.uniqId` optionnel**, méthode liste unifiée `execute`,
+7. **`find-one-filter.uniqId` optionnel au niveau `.contract.ts`, requis au
+   niveau `.validate-contract.ts`** (comme en Phase 07 : le contrat brut est
+   optionnel, la forme validée ne l'est pas). Méthode liste unifiée `execute`,
    whitelisting create/update préservé — mêmes corrections qu'en Phase 07.
+   **Aucun filtre (liste ou vue imbriquée) n'est présumé sans champ requis par
+   défaut** — chaque champ se juge contre la réalité de l'entité, cf.
+   [`archetypes/README.md`](./archetypes/README.md#principe-transversal--la-requiredness-dun-champ-de-filtre-nest-jamais-présumée).
 8. **Réutilisation kernel maximale** : `cmz-table`, `cmz-filter`, `cmz-field`,
    `cmz-pagination`, `cmz-action-dropdown`, facades `rxResource`,
    `labelsToFilterOptions`, `form-errors.helper`, `MessageResultMapper`,
@@ -131,10 +136,16 @@ Par entité **E ∈ {region, department, municipality}** (+ 2 vues imbriquées) 
 - [ ] `entities/departments-by-region-id.entity.ts`,
       `municipalities-by-department-id.entity.ts`.
 - [ ] `contracts/<E>-{create,update,delete,filter,find-one-filter}.contract.ts` +
-      `.validate-contract.ts` (create/update/find-one-filter).
-- [ ] `contracts/{departments-by-region-id,municipalities-by-department-id}-filter.contract.ts`.
+      `.validate-contract.ts` (create/update/find-one-filter **et tout champ de
+      `filter` qui s'avère requis après examen** — pas de présomption
+      d'optionalité par défaut).
+- [ ] `contracts/{departments-by-region-id,municipalities-by-department-id}-filter.contract.ts`
+      — **juger explicitement si l'id du parent (région/département) est
+      requis** dans ce contrat ; si oui, `.validate-contract.ts` +
+      `GenericRequiredError` comme n'importe quel champ requis.
 - [ ] `validators/<E>-{create,update,filter,find-one-filter}.validator.ts` +
-      validators des 2 filtres imbriqués (`assertValidDateRange`).
+      validators des 2 filtres imbriqués (`assertValidDateRange` + champs requis
+      le cas échéant, via `GenericRequiredError`).
 - [ ] `value-objects/<E>-{create,update,delete,filter,find-one-filter}.vo.ts` +
       VO des filtres imbriqués.
 - [ ] `repositories/<E>.repository.ts`, `<E>-find-one.repository.ts`,

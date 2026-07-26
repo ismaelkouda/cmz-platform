@@ -15,7 +15,13 @@ le feedback passe par les ports `NotificationPort`/`TranslationPort`, jamais
 - **Règle mécanique** : injecte le **port** (`XRepository`), jamais l'impl data.
   Chaque méthode enveloppe l'appel dans `defer(() => …)` — reporte le `throw` du
   VO dans le flux Observable, pour qu'il soit rendu par la loop d'erreurs plutôt
-  que de lever de façon synchrone.
+  que de lever de façon synchrone. **`execute(contract, page, options)` appelle
+  `xFilterVo(contract)` sans présumer que le filtre est sans champ requis** — si
+  un ou plusieurs champs du filtre sont requis (cf.
+  [`domain.md`](./domain.md#contract--validate-contract), même mécanisme qu'un
+  champ de formulaire), `xFilterVo` lève `GenericRequiredError` comme n'importe
+  quel autre VO ; le use-case n'a rien de spécial à faire, le `defer()` reporte
+  déjà ce throw dans la loop d'erreurs.
 - **Squelette** :
     ```ts
     @Service()
