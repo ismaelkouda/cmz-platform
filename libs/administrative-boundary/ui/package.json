@@ -1,0 +1,15 @@
+{
+  "name": "@cmz/administrative-boundary-ui",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@cmz/administrative-boundary-domain": "workspace:*",
+    "@cmz/administrative-boundary-application": "workspace:*",
+    "@cmz/shared-ui": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
+    "@angular/core": "catalog:",
+    "@angular/router": "catalog:",
+    "@angular/forms": "catalog:",
+    "rxjs": "catalog:"
+  }
+}

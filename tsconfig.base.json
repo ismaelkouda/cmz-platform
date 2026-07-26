@@ -33,7 +33,19 @@
       "@cmz/administrative-infrastructure-ui": [
         "./libs/administrative-infrastructure/ui/src/index.ts"
       ],
-      "@cmz/shared-browser": ["./libs/shared/browser/src/index.ts"]
+      "@cmz/shared-browser": ["./libs/shared/browser/src/index.ts"],
+      "@cmz/administrative-boundary-domain": [
+        "./libs/administrative-boundary/domain/src/index.ts"
+      ],
+      "@cmz/administrative-boundary-data": [
+        "./libs/administrative-boundary/data/src/index.ts"
+      ],
+      "@cmz/administrative-boundary-application": [
+        "./libs/administrative-boundary/application/src/index.ts"
+      ],
+      "@cmz/administrative-boundary-ui": [
+        "./libs/administrative-boundary/ui/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]

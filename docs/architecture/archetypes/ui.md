@@ -1,7 +1,9 @@
 # Archétypes — couche `ui`
 
 Dépend de
-`{domain module, application module, @cmz/shared-application, @cmz/shared-ui, @cmz/shared-domain}`.
+`{domain module, application module, @cmz/shared-application, @cmz/shared-ui}` —
+**pas** `@cmz/shared-domain` directement (vérifié : le module de référence n'y
+importe rien depuis `shared-domain`, tout transite par le module domain).
 Standalone + `ChangeDetectionStrategy.OnPush` partout. Signal Forms
 (`@angular/forms/signals`), jamais `ReactiveFormsModule`.
 

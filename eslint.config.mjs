@@ -92,6 +92,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:administrative-boundary',
+                            onlyDependOnLibsWithTags: [
+                                'scope:administrative-boundary',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },

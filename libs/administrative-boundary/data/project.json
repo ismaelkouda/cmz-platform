@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/administrative-boundary-data",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/administrative-boundary/data/src",
+  "projectType": "library",
+  "tags": ["scope:administrative-boundary", "type:data"]
+}
