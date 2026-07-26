@@ -3,6 +3,7 @@ import {
     Status,
 } from '@cmz/administrative-infrastructure-domain';
 import { ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import { STATUS_LABEL } from '../constants/infrastructure-type-status-label.constant';
 import { statusStyleOf } from '../mappers/infrastructure-type-status-style.mapper';
 import { actionItem, resolveTooltip } from './action-item.factory';
 import { InfrastructureTypeVmProps } from './infrastructure-type-vm-props.interface';
@@ -65,7 +66,7 @@ export class InfrastructureTypePresenter {
             name: item.name,
             description: item.description,
             status: item.status,
-            statusLabel: this.t(item.status),
+            statusLabel: this.t(STATUS_LABEL[item.status]),
             statusStyle: statusStyleOf(item.status),
             updatedAt: item.updatedAt,
             actionsRef: item.name,

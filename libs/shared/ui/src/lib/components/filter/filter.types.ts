@@ -21,15 +21,16 @@ export interface FilterField {
 }
 
 /**
- * Construit des options de filtre à partir d'un enum i18n
- * (`{ CLE: 'I18N.KEY' }`) : `value` = valeur d'enum, `label` = traduction.
+ * Construit des options de filtre à partir d'une table de libellés
+ * `{ [code]: 'I18N.KEY' }` : `value` = code wire (clé), `label` = traduction.
+ * Convient aux enums wire-first (valeur = code stable ≠ clé i18n).
  */
-export function enumToFilterOptions<T extends Record<string, string>>(
-    e: T,
+export function labelsToFilterOptions(
+    labels: Record<string, string>,
     translate: (key: string) => string
 ): FilterOption[] {
-    return Object.values(e).map((value) => ({
-        label: translate(value),
+    return Object.entries(labels).map(([value, key]) => ({
+        label: translate(key),
         value,
     }));
 }

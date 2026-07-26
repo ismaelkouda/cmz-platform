@@ -7,7 +7,6 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
-import { Status } from '@cmz/administrative-infrastructure-domain';
 import {
     ConfirmDialogPort,
     NotificationPort,
@@ -19,9 +18,10 @@ import {
     FilterField,
     PaginationComponent,
     TableComponent,
-    enumToFilterOptions,
+    labelsToFilterOptions,
 } from '@cmz/shared-ui';
 import { INFRASTRUCTURE_TYPE_FILTER_KEYS } from '../constants/infrastructure-type-filter-keys.constant';
+import { STATUS_LABEL } from '../constants/infrastructure-type-status-label.constant';
 import { INFRASTRUCTURE_TYPE_FORM } from '../constants/infrastructure-type-paths.constant';
 import { INFRASTRUCTURE_TYPE_TABLE } from '../constants/infrastructure-type-table.constant';
 import { InfrastructureTypeVmProps } from '../adapters/infrastructure-type-vm-props.interface';
@@ -171,7 +171,9 @@ export class InfrastructureTypeListComponent {
             name: INFRASTRUCTURE_TYPE_FILTER_KEYS.STATUS,
             label: T + '.FILTER.STATUS',
             placeholder: 'COMMON.SELECT_PLACEHOLDER',
-            options: enumToFilterOptions(Status, (k) => this.i18n.translate(k)),
+            options: labelsToFilterOptions(STATUS_LABEL, (k) =>
+                this.i18n.translate(k)
+            ),
         },
         {
             type: 'date',

@@ -12,6 +12,7 @@ export * from './lib/constants/infrastructure-paths.constant';
 export * from './lib/constants/infrastructure-table.constant';
 export * from './lib/constants/infrastructure-tabs.constant';
 export * from './lib/constants/infrastructure-type-filter-keys.constant';
+export * from './lib/constants/infrastructure-type-status-label.constant';
 export * from './lib/constants/infrastructure-type-form-error-messages.constant';
 export * from './lib/constants/infrastructure-type-form-keys.constant';
 export * from './lib/constants/infrastructure-type-paths.constant';

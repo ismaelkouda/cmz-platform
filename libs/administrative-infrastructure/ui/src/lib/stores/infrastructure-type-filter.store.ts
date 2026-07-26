@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import {
     InfrastructureTypeFilterContract,
-    Status,
+    isStatus,
 } from '@cmz/administrative-infrastructure-domain';
 import { INFRASTRUCTURE_TYPE_FILTER_KEYS } from '../constants/infrastructure-type-filter-keys.constant';
 
@@ -28,11 +28,10 @@ export class InfrastructureTypeFilterStore {
         const m = this.model();
         const start = m[INFRASTRUCTURE_TYPE_FILTER_KEYS.START_DATE];
         const end = m[INFRASTRUCTURE_TYPE_FILTER_KEYS.END_DATE];
+        const status = m[INFRASTRUCTURE_TYPE_FILTER_KEYS.STATUS];
         return {
             search: m[INFRASTRUCTURE_TYPE_FILTER_KEYS.SEARCH] || undefined,
-            status:
-                (m[INFRASTRUCTURE_TYPE_FILTER_KEYS.STATUS] as Status) ||
-                undefined,
+            status: isStatus(status) ? status : undefined,
             startDate: start ? new Date(start) : undefined,
             endDate: end ? new Date(end) : undefined,
         };
