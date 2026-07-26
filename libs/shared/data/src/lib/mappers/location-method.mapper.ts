@@ -1,30 +1,35 @@
 import { Service } from '@angular/core';
-import { LocationMethod } from '@cmz/shared-domain';
+import { isLocationMethod, LocationMethod } from '@cmz/shared-domain';
 import { LocationMethodDto } from '../dtos/location-method.dto';
+import { ApiError } from '../errors/api.error';
 
 @Service()
 export class LocationMethodMapper {
-    mapToEnum(dtoValue: LocationMethodDto): LocationMethod {
-        if (dtoValue === null || dtoValue === undefined) {
+    mapFromDto(dto: LocationMethodDto | null | undefined): LocationMethod {
+        if (dto == null) {
             return LocationMethod.UNKNOWN;
         }
-        const methodMap: Record<LocationMethodDto, LocationMethod> = {
-            [LocationMethodDto.AUTO]: LocationMethod.AUTO,
-            [LocationMethodDto.MANUAL]: LocationMethod.MANUAL,
-            [LocationMethodDto.UNKNOWN]: LocationMethod.UNKNOWN,
-        };
-        return methodMap[dtoValue] ?? LocationMethod.UNKNOWN;
+        if (!isLocationMethod(dto)) {
+            throw ApiError.invalidResponse(
+                `LocationMethod wire inconnue: ${String(dto)}`
+            );
+        }
+        return dto;
     }
 
-    mapToDto(enumValue: LocationMethod): LocationMethodDto {
-        if (enumValue === null || enumValue === undefined) {
+    mapToDto(value: LocationMethod | null | undefined): LocationMethodDto {
+        if (value == null) {
             return LocationMethodDto.UNKNOWN;
         }
-        const mapping: Record<LocationMethod, LocationMethodDto> = {
-            [LocationMethod.AUTO]: LocationMethodDto.AUTO,
-            [LocationMethod.MANUAL]: LocationMethodDto.MANUAL,
-            [LocationMethod.UNKNOWN]: LocationMethodDto.UNKNOWN,
-        };
-        return mapping[enumValue] ?? LocationMethodDto.UNKNOWN;
+        return value as LocationMethodDto;
+    }
+
+    parse(raw: string): LocationMethod {
+        if (!isLocationMethod(raw)) {
+            throw ApiError.invalidResponse(
+                `LocationMethod wire inconnue: ${raw}`
+            );
+        }
+        return raw;
     }
 }

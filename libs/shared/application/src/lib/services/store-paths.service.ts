@@ -1,16 +1,9 @@
 import { Service, inject, signal } from '@angular/core';
-import { EncodingDataService } from '@cmz/shared-infra';
+import { StoragePort } from '@cmz/shared-domain';
 
-/**
- * Stocke la liste des chemins autorisés (persistée chiffrée).
- *
- * Modernisé : `signal` (au lieu de BehaviorSubject) + chargement **async**
- * (Web Crypto). Défauts source non reproduits : `OnInit`/`OnDestroy` sur un
- * service root (jamais déclenchés) supprimés ; double injection dédupliquée.
- */
 @Service()
 export class StorePathsService {
-    private readonly encoding = inject(EncodingDataService);
+    private readonly storage = inject(StoragePort);
     private readonly STORAGE_KEY = 'paths_data';
 
     private readonly _paths = signal<string[] | null>(null);
@@ -22,12 +15,12 @@ export class StorePathsService {
 
     private async load(): Promise<void> {
         this._paths.set(
-            await this.encoding.getEncrypted<string[]>(this.STORAGE_KEY)
+            await this.storage.getEncrypted<string[]>(this.STORAGE_KEY)
         );
     }
 
     async setPaths(paths: string[]): Promise<void> {
-        await this.encoding.saveEncrypted(this.STORAGE_KEY, paths);
+        await this.storage.saveEncrypted(this.STORAGE_KEY, paths);
         this._paths.set(paths);
     }
 }

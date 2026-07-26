@@ -1,22 +1,27 @@
 import { Service } from '@angular/core';
-import { TypeMedia } from '@cmz/shared-domain';
+import { isTypeMedia, TypeMedia } from '@cmz/shared-domain';
 import { TypeMediaDto } from '../dtos/type-media.dto';
+import { ApiError } from '../errors/api.error';
 
 @Service()
 export class TypeMediaMapper {
     mapFromDto(dto: TypeMediaDto): TypeMedia {
-        const methodMap: Record<TypeMediaDto, TypeMedia> = {
-            [TypeMediaDto.IMAGE]: TypeMedia.IMAGE,
-            [TypeMediaDto.VIDEO]: TypeMedia.VIDEO,
-        };
-        return methodMap[dto];
+        if (!isTypeMedia(dto)) {
+            throw ApiError.invalidResponse(
+                `TypeMedia wire inconnue: ${String(dto)}`
+            );
+        }
+        return dto;
     }
 
     mapToDto(value: TypeMedia): TypeMediaDto {
-        const methodMap: Record<TypeMedia, TypeMediaDto> = {
-            [TypeMedia.IMAGE]: TypeMediaDto.IMAGE,
-            [TypeMedia.VIDEO]: TypeMediaDto.VIDEO,
-        };
-        return methodMap[value];
+        return value as TypeMediaDto;
+    }
+
+    parse(raw: string): TypeMedia {
+        if (!isTypeMedia(raw)) {
+            throw ApiError.invalidResponse(`TypeMedia wire inconnue: ${raw}`);
+        }
+        return raw;
     }
 }

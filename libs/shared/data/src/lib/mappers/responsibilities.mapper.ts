@@ -1,15 +1,21 @@
 import { Service } from '@angular/core';
-import { Responsibilities } from '@cmz/shared-domain';
+import { isRole, Role } from '@cmz/shared-domain';
 import { ResponsibilitiesDto } from '../dtos/responsibilities.dto';
+import { ApiError } from '../errors/api.error';
 
+/** Wire `responsibilities` : leader = `leader`. */
 @Service()
 export class ResponsibilitiesMapper {
-    mapFromDto(dtoValue: ResponsibilitiesDto): Responsibilities {
-        const methodMap: Record<ResponsibilitiesDto, Responsibilities> = {
-            [ResponsibilitiesDto.SUPERVISOR]: Responsibilities.SUPERVISOR,
-            [ResponsibilitiesDto.LEADER]: Responsibilities.LEADER,
-            [ResponsibilitiesDto.AGENT]: Responsibilities.AGENT,
-        };
-        return methodMap[dtoValue] ?? Responsibilities.AGENT;
+    mapFromDto(dto: ResponsibilitiesDto): Role {
+        if (!isRole(dto)) {
+            throw ApiError.invalidResponse(
+                `ResponsibilitiesDto wire inconnue: ${String(dto)}`
+            );
+        }
+        return dto;
+    }
+
+    mapToDto(value: Role): ResponsibilitiesDto {
+        return value as ResponsibilitiesDto;
     }
 }

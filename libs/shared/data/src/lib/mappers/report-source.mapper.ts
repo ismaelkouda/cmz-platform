@@ -1,20 +1,29 @@
 import { Service } from '@angular/core';
-import { ReportSource } from '@cmz/shared-domain';
+import { isReportSource, ReportSource } from '@cmz/shared-domain';
 import { ReportSourceDto } from '../dtos/report-source.dto';
+import { ApiError } from '../errors/api.error';
 
 @Service()
 export class ReportSourceMapper {
-    private static readonly MAP = new Map<ReportSourceDto, ReportSource>([
-        [ReportSourceDto.APP, ReportSource.APP],
-        [ReportSourceDto.USSD, ReportSource.USSD],
-        [ReportSourceDto.SMS, ReportSource.SMS],
-        [ReportSourceDto.IVR, ReportSource.IVR],
-    ]);
-
-    mapToEnum(dtoValue: ReportSourceDto): ReportSource {
-        if (dtoValue === null || dtoValue === undefined) {
-            return ReportSource.APP;
+    mapFromDto(dto: ReportSourceDto): ReportSource {
+        if (!isReportSource(dto)) {
+            throw ApiError.invalidResponse(
+                `ReportSource wire inconnue: ${String(dto)}`
+            );
         }
-        return ReportSourceMapper.MAP.get(dtoValue) ?? ReportSource.APP;
+        return dto;
+    }
+
+    mapToDto(value: ReportSource): ReportSourceDto {
+        return value as ReportSourceDto;
+    }
+
+    parse(raw: string): ReportSource {
+        if (!isReportSource(raw)) {
+            throw ApiError.invalidResponse(
+                `ReportSource wire inconnue: ${raw}`
+            );
+        }
+        return raw;
     }
 }

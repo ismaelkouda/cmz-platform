@@ -2,6 +2,7 @@ import {
     InfrastructureTypeEntity,
     Status,
 } from '@cmz/administrative-infrastructure-domain';
+import { ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
 import { statusStyleOf } from '../mappers/infrastructure-type-status-style.mapper';
 import { actionItem, resolveTooltip } from './action-item.factory';
 import { InfrastructureTypeVmProps } from './infrastructure-type-vm-props.interface';
@@ -43,16 +44,16 @@ export class InfrastructureTypePresenter {
 
         const toggle = isInactive
             ? actionItem(this.t, {
-                  id: 'enable',
-                  label: 'COMMON.ENABLE',
+                  id: RowAction.ENABLE,
+                  label: ROW_ACTION_LABEL[RowAction.ENABLE],
                   icon: 'pi pi-check',
                   allowed: can.canEnable,
                   tooltipKey: `${T}.ENABLE`,
                   fallbackTooltip: tooltip.enable,
               })
             : actionItem(this.t, {
-                  id: 'disable',
-                  label: 'COMMON.DISABLE',
+                  id: RowAction.DISABLE,
+                  label: ROW_ACTION_LABEL[RowAction.DISABLE],
                   icon: 'pi pi-times',
                   allowed: can.canDisable,
                   tooltipKey: `${T}.DISABLE`,
@@ -70,8 +71,8 @@ export class InfrastructureTypePresenter {
             actionsRef: item.name,
             dropdownActions: [
                 actionItem(this.t, {
-                    id: 'edit',
-                    label: 'COMMON.EDIT',
+                    id: RowAction.EDIT,
+                    label: ROW_ACTION_LABEL[RowAction.EDIT],
                     icon: 'pi pi-pencil',
                     allowed: can.canEdit,
                     tooltipKey: `${T}.EDIT`,
@@ -79,8 +80,8 @@ export class InfrastructureTypePresenter {
                 }),
                 toggle,
                 actionItem(this.t, {
-                    id: 'delete',
-                    label: 'COMMON.DELETE',
+                    id: RowAction.DELETE,
+                    label: ROW_ACTION_LABEL[RowAction.DELETE],
                     icon: 'pi pi-trash',
                     allowed: can.canDelete && item.status !== Status.ACTIVE,
                     tooltipKey: `${T}.DELETE`,

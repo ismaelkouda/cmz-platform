@@ -9,15 +9,17 @@ import {
     NotificationPort,
     TranslationPort,
 } from '@cmz/shared-application';
+import { StoragePort } from '@cmz/shared-domain';
+import { BrowserStorageAdapter } from '@cmz/shared-browser';
 import {
     CmzConfirmDialogService,
     CmzNotificationService,
     I18nextTranslationService,
 } from '@cmz/shared-ui';
-import { provideAdministrativeInfrastructure } from '@cmz/administrative-infrastructure-ui';
 import { appRoutes } from './app.routes';
 import { provideI18n } from './i18n/i18n.provider';
 import { provideDevPermissions } from './dev/dev-permissions.provider';
+import { provideAdministrativeInfrastructure } from './providers/administrative-infrastructure.providers';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -25,7 +27,8 @@ export const appConfig: ApplicationConfig = {
         provideHttpClient(),
         provideRouter(appRoutes),
         provideI18n(),
-        // Adaptateurs design-system des ports (remplacent Sonner/SweetAlert2).
+        // Adaptateurs des ports (design-system + moteurs agnostiques).
+        { provide: StoragePort, useExisting: BrowserStorageAdapter },
         { provide: NotificationPort, useExisting: CmzNotificationService },
         { provide: ConfirmDialogPort, useExisting: CmzConfirmDialogService },
         { provide: TranslationPort, useExisting: I18nextTranslationService },

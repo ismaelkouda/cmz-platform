@@ -1,24 +1,28 @@
 import { Service } from '@angular/core';
-import { Platform } from '@cmz/shared-domain';
+import { isPlatform, Platform } from '@cmz/shared-domain';
 import { PlatformDto } from '../dtos/platform.dto';
+import { ApiError } from '../errors/api.error';
 
 @Service()
 export class PlatformMapper {
     mapFromDto(dto: PlatformDto): Platform {
-        const methodMap: Record<PlatformDto, Platform> = {
-            [PlatformDto.MOBILE]: Platform.MOBILE,
-            [PlatformDto.WEB]: Platform.WEB,
-            [PlatformDto.PWA]: Platform.PWA,
-        };
-        return methodMap[dto];
+        if (!isPlatform(dto)) {
+            throw ApiError.invalidResponse(
+                `Platform wire inconnue: ${String(dto)}`
+            );
+        }
+        return dto;
     }
 
     mapToDto(value: Platform): PlatformDto {
-        const methodMap: Record<Platform, PlatformDto> = {
-            [Platform.MOBILE]: PlatformDto.MOBILE,
-            [Platform.WEB]: PlatformDto.WEB,
-            [Platform.PWA]: PlatformDto.PWA,
-        };
-        return methodMap[value];
+        return value as PlatformDto;
+    }
+
+    /** Narrowing d'une string API brute (forms, query params). */
+    parse(raw: string): Platform {
+        if (!isPlatform(raw)) {
+            throw ApiError.invalidResponse(`Platform wire inconnue: ${raw}`);
+        }
+        return raw;
     }
 }

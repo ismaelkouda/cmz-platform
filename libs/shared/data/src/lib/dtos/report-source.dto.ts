@@ -4,5 +4,4 @@ export enum ReportSourceDto {
     USSD = 'ussd',
     SMS = 'sms',
     IVR = 'ivr',
-    UNKNOWN = 'unknown',
 }

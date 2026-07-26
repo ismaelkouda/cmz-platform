@@ -1,0 +1,9 @@
+{
+  "name": "@cmz/shared-browser",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@angular/core": "catalog:",
+    "@cmz/shared-domain": "workspace:*"
+  }
+}

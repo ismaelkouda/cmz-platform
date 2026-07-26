@@ -1,16 +1,29 @@
 import { Service } from '@angular/core';
-import { TelecomOperator } from '@cmz/shared-domain';
+import { isTelecomOperator, TelecomOperator } from '@cmz/shared-domain';
 import { TelecomOperatorDto } from '../dtos/telecom-operator.dto';
+import { ApiError } from '../errors/api.error';
 
 @Service()
 export class TelecomOperatorMapper {
-    private static readonly MAP = new Map<TelecomOperatorDto, TelecomOperator>([
-        [TelecomOperatorDto.MTN, TelecomOperator.MTN],
-        [TelecomOperatorDto.ORANGE, TelecomOperator.ORANGE],
-        [TelecomOperatorDto.MOOV, TelecomOperator.MOOV],
-    ]);
-
     mapFromDto(dto: TelecomOperatorDto): TelecomOperator {
-        return TelecomOperatorMapper.MAP.get(dto) ?? TelecomOperator.ORANGE;
+        if (!isTelecomOperator(dto)) {
+            throw ApiError.invalidResponse(
+                `TelecomOperator wire inconnue: ${String(dto)}`
+            );
+        }
+        return dto;
+    }
+
+    mapToDto(value: TelecomOperator): TelecomOperatorDto {
+        return value as TelecomOperatorDto;
+    }
+
+    parse(raw: string): TelecomOperator {
+        if (!isTelecomOperator(raw)) {
+            throw ApiError.invalidResponse(
+                `TelecomOperator wire inconnue: ${raw}`
+            );
+        }
+        return raw;
     }
 }

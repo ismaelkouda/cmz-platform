@@ -1,26 +1,27 @@
 import { Service } from '@angular/core';
-import { ReportType } from '@cmz/shared-domain';
+import { isReportType, ReportType } from '@cmz/shared-domain';
 import { ReportTypeDto } from '../dtos/report-type.dto';
+import { ApiError } from '../errors/api.error';
 
 @Service()
 export class ReportTypeMapper {
-    mapToEnum(dtoValue: ReportTypeDto): ReportType {
-        const methodMap: Record<ReportTypeDto, ReportType> = {
-            [ReportTypeDto.ABI]: ReportType.ABI,
-            [ReportTypeDto.ZOB]: ReportType.ZOB,
-            [ReportTypeDto.CPS]: ReportType.CPS,
-            [ReportTypeDto.CPO]: ReportType.CPO,
-        };
-        return methodMap[dtoValue];
+    mapFromDto(dto: ReportTypeDto): ReportType {
+        if (!isReportType(dto)) {
+            throw ApiError.invalidResponse(
+                `ReportType wire inconnue: ${String(dto)}`
+            );
+        }
+        return dto;
     }
 
-    mapToDto(enumValue: ReportType): ReportTypeDto {
-        const mapping: Record<ReportType, ReportTypeDto> = {
-            [ReportType.ABI]: ReportTypeDto.ABI,
-            [ReportType.ZOB]: ReportTypeDto.ZOB,
-            [ReportType.CPS]: ReportTypeDto.CPS,
-            [ReportType.CPO]: ReportTypeDto.CPO,
-        };
-        return mapping[enumValue];
+    mapToDto(value: ReportType): ReportTypeDto {
+        return value as ReportTypeDto;
+    }
+
+    parse(raw: string): ReportType {
+        if (!isReportType(raw)) {
+            throw ApiError.invalidResponse(`ReportType wire inconnue: ${raw}`);
+        }
+        return raw;
     }
 }

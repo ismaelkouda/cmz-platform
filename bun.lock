@@ -11,6 +11,8 @@
         "@angular/forms": "catalog:",
         "@angular/platform-browser": "catalog:",
         "@angular/router": "catalog:",
+        "date-fns": "catalog:",
+        "i18next": "catalog:",
         "rxjs": "catalog:",
         "tslib": "catalog:",
       },
@@ -85,8 +87,15 @@
       "name": "@cmz/administrative-infrastructure-ui",
       "version": "0.0.0",
       "dependencies": {
+        "@angular/core": "catalog:",
+        "@angular/forms": "catalog:",
+        "@angular/router": "catalog:",
+        "@cmz/administrative-infrastructure-application": "workspace:*",
+        "@cmz/administrative-infrastructure-data": "workspace:*",
         "@cmz/administrative-infrastructure-domain": "workspace:*",
+        "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
+        "rxjs": "catalog:",
       },
     },
     "libs/core": {
@@ -146,9 +155,7 @@
         "@cmz/shared-infra": "workspace:*",
         "date-fns": "catalog:",
         "i18next": "catalog:",
-        "ngx-sonner": "catalog:",
         "rxjs": "catalog:",
-        "sweetalert2": "catalog:",
       },
     },
   },
@@ -166,10 +173,8 @@
     "@tailwindcss/postcss": "4.1.13",
     "date-fns": "4.4.0",
     "i18next": "26.3.6",
-    "ngx-sonner": "3.1.0",
     "postcss": "8.5.6",
     "rxjs": "7.8.2",
-    "sweetalert2": "11.26.25",
     "tailwindcss": "4.1.13",
     "tslib": "2.8.1",
     "zone.js": "0.16.2",
@@ -1819,8 +1824,6 @@
 
     "neo-async": ["neo-async@2.6.2", "", {}, "sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw=="],
 
-    "ngx-sonner": ["ngx-sonner@3.1.0", "", { "dependencies": { "tslib": "^2.3.0" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0" } }, "sha512-hN5GolhBeVs0gzPNZi2VPnbv/sM+3+aMGCvIjH33MC8LHz+QIiOUWGw3AbnCH/hQxy08AGwkWHVYy1acvXByQQ=="],
-
     "node-abort-controller": ["node-abort-controller@3.1.1", "", {}, "sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ=="],
 
     "node-addon-api": ["node-addon-api@6.1.0", "", {}, "sha512-+eawOlIgy680F0kBzPUNFhMZGtJ1YmqM6l4+Crf4IkImjYrO/mqPwRMh352g23uIaQKFItcQ64I7KMaJxHgAVA=="],
@@ -2202,8 +2205,6 @@
     "supports-preserve-symlinks-flag": ["supports-preserve-symlinks-flag@1.0.0", "", {}, "sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w=="],
 
     "svgo": ["svgo@4.0.2", "", { "dependencies": { "commander": "^11.1.0", "css-select": "^5.1.0", "css-tree": "^3.0.1", "css-what": "^6.1.0", "csso": "^5.0.5", "picocolors": "^1.1.1", "sax": "^1.5.0" }, "bin": "./bin/svgo.js" }, "sha512-ekx94z1rRc5LDi6oSUaeRnYhd0UOJxdtQCL2rF8xpWxD3TPAsISWOrxezqGovqS38GRZOdpDfvQe3ts6F7nsng=="],
-
-    "sweetalert2": ["sweetalert2@11.26.25", "", {}, "sha512-+hunCOJdJ6FLj04T9YSLvvZXRjsvIkTeTKP2e4VF8CaBias961BTnWiSFAy7F/CM5eq3QK2Rraoc5Gzftslvkg=="],
 
     "symbol-tree": ["symbol-tree@3.2.4", "", {}, "sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw=="],
 

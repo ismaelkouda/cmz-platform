@@ -1,15 +1,21 @@
 import { Service } from '@angular/core';
-import { Profiles } from '@cmz/shared-domain';
+import { isRole, Role } from '@cmz/shared-domain';
 import { ProfilesDto } from '../dtos/profiles.dto';
+import { ApiError } from '../errors/api.error';
 
+/** Wire `profiles` : leader = `leader`. */
 @Service()
 export class ProfilesMapper {
-    mapFromDto(dtoValue: ProfilesDto): Profiles {
-        const methodMap: Record<ProfilesDto, Profiles> = {
-            [ProfilesDto.SUPERVISOR]: Profiles.SUPERVISOR,
-            [ProfilesDto.LEADER]: Profiles.LEADER,
-            [ProfilesDto.AGENT]: Profiles.AGENT,
-        };
-        return methodMap[dtoValue] ?? Profiles.AGENT;
+    mapFromDto(dto: ProfilesDto): Role {
+        if (!isRole(dto)) {
+            throw ApiError.invalidResponse(
+                `ProfilesDto wire inconnue: ${String(dto)}`
+            );
+        }
+        return dto;
+    }
+
+    mapToDto(value: Role): ProfilesDto {
+        return value as ProfilesDto;
     }
 }

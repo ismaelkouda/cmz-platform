@@ -1,17 +1,11 @@
 import { Service, computed, inject, signal, type Signal } from '@angular/core';
-import { EncodingDataService } from '@cmz/shared-infra';
+import { StoragePort } from '@cmz/shared-domain';
 
 type PermissionMap = Record<string, string[]>;
 
-/**
- * Permissions d'action par route, lues depuis le stockage chiffré.
- *
- * La lecture est **asynchrone** (Web Crypto) : le signal s'initialise vide puis
- * se remplit après déchiffrement — `can()` réagit automatiquement.
- */
 @Service()
 export class PermissionActionsService {
-    private readonly encoding = inject(EncodingDataService);
+    private readonly storage = inject(StoragePort);
     private readonly _permissions = signal<PermissionMap>({});
     readonly permissions = this._permissions.asReadonly();
 
@@ -21,7 +15,7 @@ export class PermissionActionsService {
 
     private async load(): Promise<void> {
         const data =
-            await this.encoding.getEncrypted<PermissionMap>(
+            await this.storage.getEncrypted<PermissionMap>(
                 'permissionsActions'
             );
         this._permissions.set(data ?? {});

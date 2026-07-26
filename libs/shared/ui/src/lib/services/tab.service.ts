@@ -1,18 +1,14 @@
 import { Service, inject, signal } from '@angular/core';
 import { Router, RouteReuseStrategy } from '@angular/router';
-import { EncodingDataService } from '@cmz/shared-infra';
+import { StoragePort } from '@cmz/shared-domain';
 import { CustomRouteReuseStrategy } from '../route-strategies/custom-route-reuse-strategy';
 import { Tab } from '../interfaces/tab.interface';
 
-/**
- * Onglets de navigation persistés (chiffrés). Lecture/écriture **asynchrones**
- * (Web Crypto). `signal` au lieu de BehaviorSubject (Angular 22).
- */
 @Service()
 export class TabService {
     private readonly router = inject(Router);
     private readonly routeReuseStrategy = inject(RouteReuseStrategy);
-    private readonly encoding = inject(EncodingDataService);
+    private readonly storage = inject(StoragePort);
 
     private readonly STORAGE_KEY = 'tabs';
     private readonly _tabs = signal<Tab[]>([]);
@@ -23,7 +19,7 @@ export class TabService {
     }
 
     private async restore(): Promise<void> {
-        const saved = await this.encoding.getEncrypted<Tab[]>(this.STORAGE_KEY);
+        const saved = await this.storage.getEncrypted<Tab[]>(this.STORAGE_KEY);
         if (saved && saved.length > 0) {
             this._tabs.set(saved);
         } else {
@@ -34,10 +30,10 @@ export class TabService {
     private setTabs(tabs: Tab[]): void {
         this._tabs.set(tabs);
         if (tabs.length === 0) {
-            this.encoding.remove(this.STORAGE_KEY);
-            this.encoding.remove(`${this.STORAGE_KEY}_children_component`);
+            this.storage.remove(this.STORAGE_KEY);
+            this.storage.remove(`${this.STORAGE_KEY}_children_component`);
         } else {
-            void this.encoding.saveEncrypted(this.STORAGE_KEY, tabs);
+            void this.storage.saveEncrypted(this.STORAGE_KEY, tabs);
         }
     }
 
@@ -73,8 +69,8 @@ export class TabService {
             return;
         }
         const closedPath = tabs[index].path;
-        this.encoding.remove(closedPath);
-        this.encoding.remove(`${closedPath}_children_component`);
+        this.storage.remove(closedPath);
+        this.storage.remove(`${closedPath}_children_component`);
 
         const wasActive = tabs[index].active;
         const remaining = tabs.filter((tab) => tab.id !== id);
@@ -93,8 +89,8 @@ export class TabService {
     closeAllTabsExceptDashboard(): void {
         const dashboardId = this.generateId('/dashboard');
         this._tabs().forEach((tab) => {
-            this.encoding.remove(tab.path);
-            this.encoding.remove(`${tab.path}_children_component`);
+            this.storage.remove(tab.path);
+            this.storage.remove(`${tab.path}_children_component`);
         });
         const kept = this._tabs().filter((tab) => tab.id === dashboardId);
         if (kept.length === 0) {

@@ -1,14 +1,14 @@
 import { Service, inject } from '@angular/core';
-import { EncodingDataService } from '@cmz/shared-infra';
+import { StoragePort } from '@cmz/shared-domain';
 
 @Service()
 export class SessionService {
-    private readonly encoding = inject(EncodingDataService);
+    private readonly storage = inject(StoragePort);
 
-    clear(): void {
-        this.encoding.removeKeysWithPrefix('token_data');
-        this.encoding.removeKeysWithPrefix('user_data');
-        this.encoding.clearEncryptedData();
+    async clear(): Promise<void> {
+        await this.storage.removeKeysWithPrefix('token_data');
+        await this.storage.removeKeysWithPrefix('user_data');
+        await this.storage.clearEncrypted();
         localStorage.clear();
         sessionStorage.clear();
         globalThis.location.reload();

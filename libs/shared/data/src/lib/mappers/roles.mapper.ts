@@ -1,29 +1,39 @@
 import { Service } from '@angular/core';
-import { Roles } from '@cmz/shared-domain';
+import { Role } from '@cmz/shared-domain';
 import { RolesDto } from '../dtos/roles.dto';
+import { ApiError } from '../errors/api.error';
 
+/**
+ * Wire `roles` : leader = `team-leader` (≠ profiles/responsibilities: `leader`).
+ */
 @Service()
 export class RolesMapper {
-    private readonly dtoToEnum: Record<RolesDto, Roles> = {
-        [RolesDto.SUPERVISOR]: Roles.SUPERVISOR,
-        [RolesDto['TEAM-LEADER']]: Roles['TEAM-LEADER'],
-        [RolesDto.AGENT]: Roles.AGENT,
+    private static readonly FROM_DTO: Record<RolesDto, Role> = {
+        [RolesDto.SUPERVISOR]: Role.SUPERVISOR,
+        [RolesDto['TEAM-LEADER']]: Role.LEADER,
+        [RolesDto.AGENT]: Role.AGENT,
     };
 
-    private readonly enumToDto: Record<Roles, RolesDto> = {
-        [Roles.SUPERVISOR]: RolesDto.SUPERVISOR,
-        [Roles['TEAM-LEADER']]: RolesDto['TEAM-LEADER'],
-        [Roles.AGENT]: RolesDto.AGENT,
+    private static readonly TO_DTO: Record<Role, RolesDto> = {
+        [Role.SUPERVISOR]: RolesDto.SUPERVISOR,
+        [Role.LEADER]: RolesDto['TEAM-LEADER'],
+        [Role.AGENT]: RolesDto.AGENT,
     };
 
-    mapFromDto(dtoValue: RolesDto | null): Roles | null {
-        if (!dtoValue) {
+    mapFromDto(dto: RolesDto | null): Role | null {
+        if (dto == null) {
             return null;
         }
-        return this.dtoToEnum[dtoValue];
+        const role = RolesMapper.FROM_DTO[dto];
+        if (!role) {
+            throw ApiError.invalidResponse(
+                `RolesDto wire inconnue: ${String(dto)}`
+            );
+        }
+        return role;
     }
 
-    mapToDto(enumValue: Roles): RolesDto {
-        return this.enumToDto[enumValue] ?? RolesDto.AGENT;
+    mapToDto(value: Role): RolesDto {
+        return RolesMapper.TO_DTO[value];
     }
 }

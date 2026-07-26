@@ -16,8 +16,83 @@ export default [
                     enforceBuildableLibDependency: true,
                     allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
                     depConstraints: [
+                        // ---- Contraintes par COUCHE (type:*) ----
+                        // `constants` = feuille : dépendable par toutes les couches.
                         {
-                            sourceTag: '*',
+                            sourceTag: 'type:constants',
+                            onlyDependOnLibsWithTags: ['type:constants'],
+                        },
+                        {
+                            sourceTag: 'type:domain',
+                            onlyDependOnLibsWithTags: [
+                                'type:domain',
+                                'type:constants',
+                            ],
+                        },
+                        // `core` = config runtime + interceptors (feuille kernel).
+                        {
+                            sourceTag: 'type:core',
+                            onlyDependOnLibsWithTags: [
+                                'type:core',
+                                'type:domain',
+                                'type:constants',
+                            ],
+                        },
+                        {
+                            sourceTag: 'type:browser',
+                            onlyDependOnLibsWithTags: [
+                                'type:domain',
+                                'type:browser',
+                                'type:constants',
+                            ],
+                        },
+                        {
+                            sourceTag: 'type:data',
+                            onlyDependOnLibsWithTags: [
+                                'type:domain',
+                                'type:data',
+                                'type:core',
+                                'type:constants',
+                            ],
+                        },
+                        {
+                            sourceTag: 'type:application',
+                            onlyDependOnLibsWithTags: [
+                                'type:domain',
+                                'type:application',
+                                'type:constants',
+                            ],
+                        },
+                        {
+                            sourceTag: 'type:ui',
+                            onlyDependOnLibsWithTags: [
+                                'type:domain',
+                                'type:application',
+                                'type:ui',
+                                'type:constants',
+                            ],
+                        },
+                        // `app` = composition root : peut tout brancher.
+                        {
+                            sourceTag: 'type:app',
+                            onlyDependOnLibsWithTags: ['*'],
+                        },
+                        // ---- Contraintes par SCOPE (isolation des modules) ----
+                        // Le kernel ne dépend que de lui-même.
+                        {
+                            sourceTag: 'scope:shared',
+                            onlyDependOnLibsWithTags: ['scope:shared'],
+                        },
+                        // Un module ne voit que ses propres libs + le kernel.
+                        {
+                            sourceTag: 'scope:administrative-infrastructure',
+                            onlyDependOnLibsWithTags: [
+                                'scope:administrative-infrastructure',
+                                'scope:shared',
+                            ],
+                        },
+                        {
+                            sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },
                     ],
@@ -36,7 +111,6 @@ export default [
             '**/*.cjs',
             '**/*.mjs',
         ],
-        // Override or add rules here
         rules: {},
     },
 ];

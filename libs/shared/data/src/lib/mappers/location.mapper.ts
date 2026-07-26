@@ -27,8 +27,8 @@ export class LocationMapper {
                 longitude: this.parseCoordinate(dto.long),
                 what3words: dto.what3words,
             },
-            this.locationMethodMapper.mapToEnum(dto.location_method),
-            this.locationTypeMapper.mapToEnum(dto.location_type),
+            this.locationMethodMapper.mapFromDto(dto.location_method),
+            this.locationTypeMapper.mapFromDto(dto.location_type),
             dto.location_name,
             dto.place_description
         );

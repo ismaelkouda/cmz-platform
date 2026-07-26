@@ -1,4 +1,5 @@
 import { InfrastructureEntity } from '@cmz/administrative-infrastructure-domain';
+import { ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
 import { actionItem, resolveTooltip } from './action-item.factory';
 import { InfrastructureVmProps } from './infrastructure-vm-props.interface';
 
@@ -34,16 +35,16 @@ export class InfrastructurePresenter {
             actionsRef: item.name,
             dropdownActions: [
                 actionItem(this.t, {
-                    id: 'edit',
-                    label: 'COMMON.EDIT',
+                    id: RowAction.EDIT,
+                    label: ROW_ACTION_LABEL[RowAction.EDIT],
                     icon: 'pi pi-pencil',
                     allowed: can.canEdit,
                     tooltipKey: `${T}.EDIT`,
                     fallbackTooltip: tooltip.edit,
                 }),
                 actionItem(this.t, {
-                    id: 'delete',
-                    label: 'COMMON.DELETE',
+                    id: RowAction.DELETE,
+                    label: ROW_ACTION_LABEL[RowAction.DELETE],
                     icon: 'pi pi-trash',
                     allowed: can.canDelete,
                     tooltipKey: `${T}.DELETE`,
