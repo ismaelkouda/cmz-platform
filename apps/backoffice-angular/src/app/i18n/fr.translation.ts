@@ -439,6 +439,63 @@ export const FR = {
                 },
             },
         },
+        OPTICAL_FIBER_NETWORK: {
+            TITLE: 'Réseaux fibre optique',
+            FORM: {
+                TITLE: {
+                    CREATE: 'Nouveau réseau fibre optique',
+                    EDIT: 'Modifier le réseau fibre optique',
+                    DETAILS: 'Détails du réseau fibre optique',
+                },
+                NAME: 'Nom',
+                OPERATOR: 'Opérateur',
+                CONSTRUCTOR: 'Constructeur',
+                TYPE: 'Type',
+                GEOM_FILE: 'Tracé (GeoJSON)',
+                GEOM_EXISTING: 'Un fichier de tracé existe déjà.',
+            },
+            FILTER: {
+                SEARCH: 'Recherche',
+                SEARCH_PLACEHOLDER: 'Rechercher…',
+                OPERATOR: 'Opérateur',
+                DATE: { FROM: 'Du', TO: 'Au' },
+            },
+            TABLE: {
+                NAME: 'Nom',
+                OPERATOR: 'Opérateur',
+                CONSTRUCTOR: 'Constructeur',
+                TYPE: 'Type',
+                STATUS: 'Statut',
+                UPDATED_AT: 'Modifié le',
+                ACTION: 'Actions',
+            },
+            TOOLTIP: {
+                CREATE: 'Créer un réseau fibre optique',
+                EDIT: 'Modifier',
+                DELETE: 'Supprimer',
+                ENABLE: 'Activer',
+                DISABLE: 'Désactiver',
+                CHOOSE: 'Actions',
+                NO_PERMISSION_CREATE: 'Permission manquante pour créer',
+                NO_PERMISSION_EDIT: 'Permission manquante pour modifier',
+                NO_PERMISSION_DELETE: 'Permission manquante pour supprimer',
+                NO_PERMISSION_ACTIVE: 'Permission manquante pour activer',
+                NO_PERMISSION_DISABLE: 'Permission manquante pour désactiver',
+                NO_PERMISSION_CHOOSE: 'Aucune action disponible',
+            },
+            SWEET_ALERT: {
+                TITLE: {
+                    DELETE: 'Supprimer',
+                    ENABLE: 'Activer',
+                    DISABLE: 'Désactiver',
+                },
+                MESSAGE: {
+                    DELETE: 'Supprimer « {{uniqId}} » ?',
+                    ENABLE: 'Activer « {{uniqId}} » ?',
+                    DISABLE: 'Désactiver « {{uniqId}} » ?',
+                },
+            },
+        },
     },
     AUTHENTICATION: {
         LOGIN: {

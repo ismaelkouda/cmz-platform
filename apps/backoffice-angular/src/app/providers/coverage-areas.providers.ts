@@ -1,15 +1,21 @@
 import { Provider } from '@angular/core';
 import {
+    FiberConstructorSelectRepository,
     MobileNetworkFindOneRepository,
     MobileNetworkRepository,
+    OpticalFiberNetworkFindOneRepository,
+    OpticalFiberNetworkRepository,
     SiteGroupFindOneRepository,
     SiteGroupRepository,
     SiteGroupSelectRepository,
     TowerTypeSelectRepository,
 } from '@cmz/coverage-areas-domain';
 import {
+    FiberConstructorSelectRepositoryImpl,
     MobileNetworkFindOneRepositoryImpl,
     MobileNetworkRepositoryImpl,
+    OpticalFiberNetworkFindOneRepositoryImpl,
+    OpticalFiberNetworkRepositoryImpl,
     SiteGroupFindOneRepositoryImpl,
     SiteGroupRepositoryImpl,
     SiteGroupSelectRepositoryImpl,
@@ -43,6 +49,18 @@ export function provideCoverageAreas(): Provider[] {
         {
             provide: TowerTypeSelectRepository,
             useClass: TowerTypeSelectRepositoryImpl,
+        },
+        {
+            provide: OpticalFiberNetworkRepository,
+            useClass: OpticalFiberNetworkRepositoryImpl,
+        },
+        {
+            provide: OpticalFiberNetworkFindOneRepository,
+            useClass: OpticalFiberNetworkFindOneRepositoryImpl,
+        },
+        {
+            provide: FiberConstructorSelectRepository,
+            useClass: FiberConstructorSelectRepositoryImpl,
         },
     ];
 }

@@ -72,4 +72,11 @@ export const appRoutes: Route[] = [
                 (m) => m.MOBILE_NETWORK_ROUTES
             ),
     },
+    {
+        path: 'coverage-areas/optical-fiber-networks',
+        loadChildren: () =>
+            import('@cmz/coverage-areas-ui').then(
+                (m) => m.OPTICAL_FIBER_NETWORK_ROUTES
+            ),
+    },
 ];
