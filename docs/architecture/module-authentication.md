@@ -3,10 +3,9 @@
 - **Créé :** 2026-07-27
 - **Statut :** **fait** (2026-07-27) — 4 libs + câblage app + mock backend,
   validés `ngc --strictTemplates` + `eslint`/boundaries + smoke test mock (curl,
-  5 scénarios). `nx build`/`nx lint`/`nx serve` non rejouables depuis ce sandbox
-  Linux (binaires natifs `darwin-arm64`, limite déjà documentée en Phase 08
-  d'`administrative-boundary`) — à confirmer par l'utilisateur sur le poste
-  macOS. Écarts réels vs plan : voir [§ Bilan réel](#bilan-réel-2026-07-27) en
+  5 scénarios) + **confirmé par l'utilisateur sur poste macOS** : `nx lint`
+  (cache hit) et `nx serve` + login réel navigateur (`POST /api/auth/login` →
+  200 OK). Écarts réels vs plan : voir [§ Bilan réel](#bilan-réel-2026-07-27) en
   fin de document.
 - **Gabarit de référence :** `module-administrative-boundary.md` (Phase 08) pour
   la méthode ; **mais un archétype différent** — cf. § Pourquoi ce module est un
@@ -273,15 +272,14 @@ Puis par opération :
 
 - [x] `ngc --strictTemplates` vert (4 libs + app).
 - [x] Boundaries 0 violation, `deps = imports`.
-- [ ] `npx nx lint` + `npx nx serve` (poste macOS, cf. limite sandbox Linux
-      documentée en Phase 08 d'`administrative-boundary`) — **en attente de
-      confirmation utilisateur**, non rejouable depuis ce sandbox.
+- [x] `npx nx lint` + `npx nx serve` — **confirmé par l'utilisateur sur poste
+      macOS** : lint vert (cache hit), build dev servi, login réel
+      (`admin@cmz.tg`/`Password123!`) → `POST /api/auth/login` 200 OK.
 - [x] Smoke test **API** (mock backend, curl direct) : login OK, login
       identifiants invalides, forgot-password, reset-password OK, reset-password
       token invalide — 5/5 scénarios renvoient la forme attendue. Smoke test
-      **navigateur** (session réellement écrite, `PermissionActionsService` non
-      vide, toast affiché) non fait depuis ce sandbox — à couvrir par la
-      confirmation `nx serve` ci-dessus.
+      **navigateur** : login confirmé par l'utilisateur (200 OK réel, hors
+      sandbox).
 - [x] Commits conventionnels par couche.
 - [x] Mettre ce document à jour (statut fait + écarts réels).
 
@@ -317,10 +315,12 @@ Puis par opération :
    par défaut ; cette route n'existe pas dans `app.routes.ts` à ce jour.
    Redirection vers `/` (racine), à corriger le jour où une vraie page d'accueil
    post-connexion existe.
-5. **`nx build`/`nx lint`/`nx serve` non rejoués depuis ce sandbox.** Même
-   limite que documentée en Phase 08 d'`administrative-boundary` (binaires
-   `@nx/nx-*` natifs `darwin-arm64`, `WorkspaceContext is not a constructor` sur
-   ce Linux arm64). Validation faite par `tsc`/`eslint`/`ngc --strictTemplates`
-   (tous verts, 4 libs + app) + smoke test API direct (curl sur le mock backend,
-   5/5 scénarios). Le smoke test navigateur reste à confirmer par l'utilisateur
-   sur son poste macOS.
+5. **`nx build`/`nx lint`/`nx serve` non rejouables depuis ce sandbox**
+   (binaires `@nx/nx-*` natifs `darwin-arm64`,
+   `WorkspaceContext is not a constructor` sur ce Linux arm64 — même limite
+   documentée en Phase 08 d'`administrative-boundary`). Validation faite ici par
+   `tsc`/`eslint`/`ngc --strictTemplates` (tous verts, 4 libs + app) + smoke
+   test API direct (curl sur le mock backend, 5/5 scénarios) ; **confirmé par
+   l'utilisateur sur poste macOS** : `nx lint` vert, `nx serve` + login réel
+   navigateur (`POST /api/auth/login` → 200 OK, après redémarrage du process
+   mock qui servait encore l'ancien code sans les routes `/auth/*`).
