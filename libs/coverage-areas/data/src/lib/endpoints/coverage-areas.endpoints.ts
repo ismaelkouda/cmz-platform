@@ -4,4 +4,5 @@ export const COVERAGE_AREAS_ENDPOINTS = {
     TOWER_TYPE: 'infrastructures/tower-types',
     OPTICAL_FIBER_NETWORK: 'infrastructures/optical-fibers',
     FIBER_CONSTRUCTOR: 'infrastructures/fiber-constructors',
+    RADIO_RELAY_LINKS: 'infrastructures/radio-relay-links',
 } as const;
