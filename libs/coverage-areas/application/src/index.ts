@@ -11,3 +11,10 @@ export * from './lib/facades/tower-type-select.facade';
 export * from './lib/use-cases/mobile-network-find-one.use-case';
 export * from './lib/use-cases/mobile-network.use-case';
 export * from './lib/use-cases/tower-type-select.use-case';
+
+export * from './lib/facades/optical-fiber-network-find-one.facade';
+export * from './lib/facades/optical-fiber-network.facade';
+export * from './lib/facades/fiber-constructor-select.facade';
+export * from './lib/use-cases/optical-fiber-network-find-one.use-case';
+export * from './lib/use-cases/optical-fiber-network.use-case';
+export * from './lib/use-cases/fiber-constructor-select.use-case';
