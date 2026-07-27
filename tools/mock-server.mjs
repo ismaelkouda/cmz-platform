@@ -4,7 +4,8 @@
  *
  * Sert les endpoints des modules `administrative-infrastructure`,
  * `administrative-boundary`, `authentication` et `coverage-areas`
- * (`site-group`, entité plate — même forme que `infrastructure-types`) avec
+ * (`site-group` et `mobile-network`, entités plates — même forme que
+ * `infrastructure-types` ; `tower-type`, select seul) avec
  * l'enveloppe attendue par le kernel (`{ error, message, data }`) et la forme
  * de pagination Laravel
  * (`current_page`, `data`, `last_page`, `per_page`, `total`, …). Données en
@@ -130,6 +131,64 @@ const siteGroups = [
         code: 'SG-MAR',
         name: 'Groupe Maritime',
         description: 'Sites de la région Maritime',
+        is_active: true,
+        created_at: now(),
+        updated_at: now(),
+    },
+];
+
+// ---- COVERAGE-AREAS : tower-type (select seul, pas de CRUD) -------------
+const towerTypes = [
+    { id: 'tt-1', name: 'Pylône treillis' },
+    { id: 'tt-2', name: 'Pylône monopode' },
+    { id: 'tt-3', name: 'Pylône haubané' },
+];
+
+// ---- COVERAGE-AREAS : mobile-network -------------------------------------
+// `infrastructure_type` référence l'uniqId d'un `site-group` (nom trompeur
+// mais fidèle au wire du source, cf. plan module-coverage-areas.md Phase 2).
+const mobileNetworks = [
+    {
+        id: 'mn-1',
+        site_id: 'SITE-001',
+        site_name: 'Site Lomé Centre',
+        infrastructure_type: 'sg-1',
+        tower_type_id: 'tt-1',
+        tower_type_name: 'Pylône treillis',
+        tower_size: 30,
+        technology: ['2G', '3G', '4G'],
+        operator: 'MTN',
+        radius: 5,
+        is_active: true,
+        created_at: now(),
+        updated_at: now(),
+    },
+    {
+        id: 'mn-2',
+        site_id: 'SITE-002',
+        site_name: 'Site Kara Nord',
+        infrastructure_type: 'sg-2',
+        tower_type_id: 'tt-2',
+        tower_type_name: 'Pylône monopode',
+        tower_size: 24,
+        technology: ['3G', '4G'],
+        operator: 'Orange',
+        radius: 3,
+        is_active: false,
+        created_at: now(),
+        updated_at: now(),
+    },
+    {
+        id: 'mn-3',
+        site_id: 'SITE-003',
+        site_name: 'Site Maritime Sud',
+        infrastructure_type: 'sg-3',
+        tower_type_id: 'tt-3',
+        tower_type_name: 'Pylône haubané',
+        tower_size: 40,
+        technology: ['4G', '5G'],
+        operator: 'Moov',
+        radius: 8,
         is_active: true,
         created_at: now(),
         updated_at: now(),
@@ -622,6 +681,92 @@ async function handle(req, res, url) {
             updated_at: now(),
         });
         return send(res, 201, ok(null, 'Groupe de sites créé.'));
+    }
+
+    // ---- COVERAGE-AREAS : TOWER-TYPE (select seul) ----
+    if (
+        path === 'infrastructures/tower-types/select-field' &&
+        method === 'GET'
+    ) {
+        return send(
+            res,
+            200,
+            ok(towerTypes.map((t) => ({ id: t.id, name: t.name })))
+        );
+    }
+
+    // ---- COVERAGE-AREAS : MOBILE-NETWORK ----
+    // même base URL pour la liste paginée (?page) et le find-one (/id) —
+    // fidèle à `MobileNetworkApi.readAll`/`MobileNetworkFindOneApi.execute`.
+    if (path === 'infrastructures/coverage-areas' && method === 'GET') {
+        return page !== null
+            ? send(res, 200, ok(paginate(mobileNetworks, page)))
+            : send(res, 200, ok(paginate(mobileNetworks, '1')));
+    }
+    m = path.match(/^infrastructures\/coverage-areas\/(.+)$/);
+    if (m) {
+        const seg = m[1];
+        const id = seg.split('/')[0];
+        const item = mobileNetworks.find((mn) => mn.id === id);
+        if (seg === `${id}/update` && method === 'POST') {
+            const b = await readBody(req);
+            if (item) {
+                const towerType = towerTypes.find(
+                    (t) => t.id === b.tower_type_id
+                );
+                Object.assign(item, {
+                    site_id: b.site_id,
+                    site_name: b.site_name,
+                    infrastructure_type: b.infrastructure_type,
+                    tower_type_id: b.tower_type_id,
+                    tower_type_name: towerType?.name ?? item.tower_type_name,
+                    tower_size: b.tower_size,
+                    technology: b.technology,
+                    operator: b.operator,
+                    radius: b.radius,
+                    updated_at: now(),
+                });
+            }
+            return send(res, 200, ok(null, 'Réseau mobile mis à jour.'));
+        }
+        if (seg === `${id}/delete` && method === 'DELETE') {
+            const i = mobileNetworks.findIndex((mn) => mn.id === id);
+            if (i >= 0) mobileNetworks.splice(i, 1);
+            return send(res, 200, ok(null, 'Réseau mobile supprimé.'));
+        }
+        if (seg === `${id}/enable` && method === 'PUT') {
+            if (item) item.is_active = true;
+            return send(res, 200, ok(null, 'Réseau mobile activé.'));
+        }
+        if (seg === `${id}/disable` && method === 'PUT') {
+            if (item) item.is_active = false;
+            return send(res, 200, ok(null, 'Réseau mobile désactivé.'));
+        }
+        if (method === 'GET') {
+            return item
+                ? send(res, 200, ok(item))
+                : send(res, 404, fail('Réseau mobile introuvable.'));
+        }
+    }
+    if (path === 'infrastructures/coverage-areas/store' && method === 'POST') {
+        const b = await readBody(req);
+        const towerType = towerTypes.find((t) => t.id === b.tower_type_id);
+        mobileNetworks.unshift({
+            id: nextId(),
+            site_id: b.site_id,
+            site_name: b.site_name,
+            infrastructure_type: b.infrastructure_type,
+            tower_type_id: b.tower_type_id,
+            tower_type_name: towerType?.name ?? '',
+            tower_size: b.tower_size,
+            technology: b.technology ?? [],
+            operator: b.operator,
+            radius: b.radius,
+            is_active: false,
+            created_at: now(),
+            updated_at: now(),
+        });
+        return send(res, 201, ok(null, 'Réseau mobile créé.'));
     }
 
     // ---- ADMINISTRATIVE-BOUNDARY : REGIONS ----

@@ -449,3 +449,26 @@ port renvoie directement `SelectOption[]`, comme `SiteGroupSelectRepository`.
       consommatrice.
 - [x] `ngc --strictTemplates` (tsconfig app) + `eslint` sur les fichiers touchés
       : propres après le correctif ci-dessus.
+
+## Phase 7 — Mock backend (mobile-network + tower-type)
+
+- [x] Seed `towerTypes` (3 entrées, select seul) et `mobileNetworks` (3 entrées,
+      référençant `site-groups`/`tower-types` seedés via
+      `infrastructure_type`/`tower_type_id`).
+- [x] Route `infrastructures/tower-types/select-field` (GET) — select pur, pas
+      de CRUD (cohérent avec le port `TowerTypeSelectRepository`, pas de
+      `Repository` plein).
+- [x] Route `infrastructures/coverage-areas` — **particularité** : cette base
+      URL sert à la fois la liste paginée (`?page=`,
+      `MobileNetworkApi.     readAll`) et le find-one (`/id`,
+      `MobileNetworkFindOneApi.execute`), contrairement à `site-groups` qui n'a
+      pas de find-one séparé sur la même base. CRUD complet :
+      `store`/`{id}/update`/`{id}/delete` (méthode
+      `DELETE`)/`{id}/enable`/`{id}/disable` (méthode `PUT`), même pattern que
+      `site-groups`. `update`/`store` recalculent `tower_type_name` depuis
+      `tower_type_id` (petite dérivation, comme `region`/`department` dans
+      `administrative-boundary`).
+- [x] Vérifié via curl (port 3499) : liste paginée, select tower-type, find-one,
+      store, update (avec recalcul `tower_type_name`), enable, disable, delete —
+      tous corrects, y compris la relecture de la liste après delete (3 → 2
+      seed + 1 créé = 3 items restants, id supprimé absent).
