@@ -550,3 +550,189 @@ en marge (pas silencieusement) :
 `optical-fiber-network`, `radio-relay-links` (CRUD complets) et
 `fiber-constructor` (select seul, même famille que `tower-type`) — à construire
 **dans les mêmes 4 libs** (scope Nx `coverage-areas` inchangé).
+
+---
+
+# `optical-fiber-network` — 3ᵉ entité du domaine (2026-07-27)
+
+- **Statut :** livré, Phases 1 à 7 complètes ; Phase 8 (validation finale) en
+  cours. Validation statique (`tsc` par lib, `ngc --strictTemplates` app,
+  `eslint`, smoke test mock) faite au fil des phases ; `nx lint`/`nx serve`
+  réels restent à confirmer par l'utilisateur sur son poste macOS.
+- **Gabarit de référence :** archétype CRUD standard, mais avec une **première**
+  dans ce socle : un champ fichier (`geomFile`, upload `multipart/form-data`).
+
+## Forme métier réelle (source lu, pas supposé)
+
+`optical-fiber-network` (`name`, `operator`, `fiberConstructorId`/
+`fiberConstructorName`, `type`, `status`) ressemble à `mobile-network` pour la
+structure CRUD, mais introduit deux nouveautés :
+
+1. **Upload de fichier** — `geomFile: File` (tracé GeoJSON de la fibre), requis
+   en création, optionnel en modification (fidèle au source : ne pas forcer un
+   ré-upload). Le wire envoie un `FormData`
+   (`Content-Type: multipart/form-data`), pas du JSON — premier endpoit du socle
+   dans ce cas. `buildFormData` (`@cmz/shared-data`) a été ajouté pour ça,
+   portage direct de `formDataBuilder` (source,
+   `src/shared/constants/formDataBuilder.constant.ts`) : `undefined`/`null`/
+   `''` ignorés, `File` ajouté tel quel, tableaux/objets sérialisés en JSON,
+   reste en `String(value)`.
+2. **Aperçu cartographique interactif** — le formulaire source affiche le tracé
+   du fichier uploadé via `GeojsonLineMapComponent` (dépendance Leaflet dédiée,
+   ~kernel `shared/components/geojson-line-map`). **Décision : hors périmètre de
+   cette reconstruction** — pas de brique carto dans ce socle à ce stade,
+   remplacé par une simple mention textuelle « fichier existant » en mode
+   édition/détails. Même logique que la tab Historique écartée pour `site-group`
+   : un chantier `shared/map` à part entière si le besoin redevient prioritaire,
+   pas une variation de ce module.
+3. **Export Excel** — présent côté source (liste), non reconstruit ici, comme
+   pour `site-group`/`mobile-network` (jamais construit dans ce socle, décision
+   implicite constante depuis le début).
+
+## Découverte : `Operator` réutilisé de `mobile-network`, pas redupliqué
+
+Le source déclare un `optical-fiber-network-operator.enum.ts` **identique**
+(`MTN`/`Orange`/`Moov`) à celui de `mobile-network` — même règle que
+`Status`/`StatusStyle` : un opérateur télécom n'est pas un concept propre à
+l'entité. Décision : importer `Operator` depuis
+`../enums/mobile-network-operator.enum` plutôt que le redupliquer — dette de
+nommage déjà documentée pour `Status`, même traitement ici.
+
+## Découverte : `fiber-constructor`, 2ᵉ concept select-only du domaine
+
+`fiberConstructorId` est bindé à `FiberConstructorSelectFacade` — même forme
+exacte que `TowerTypeSelectRepository`/`TowerTypeSelectFacade` (8 fichiers, pas
+de CRUD, `SelectOption[]` direct). Construit dans les mêmes phases que l'entité
+principale (précédent : `tower-type` construit avec `mobile-network`).
+
+## Décisions d'ingénieur
+
+1. **`geomFile` requis conditionnellement au mode** — `required()` seul ne sait
+   pas être conditionnel ; utilisé `validate()` avec un test sur `isCreate()`,
+   même pattern que `technology` (mobile-network) qui utilisait déjà
+   `validate()` pour une contrainte non standard.
+2. **Pas de `[formField]` pour `geomFile`** — un `<input type="file">` natif ne
+   se binde pas via Signal Forms (la valeur DOM d'un input file n'est pas
+   assignable programmatiquement). Le composant appelle
+   `store.setGeomFile(file)` sur `(change)`, même logique que
+   `toggleTechnology()` pour la case à cocher `technology`.
+3. **Aperçu cartographique explicitement hors périmètre** (cf. section
+   Découverte ci-dessus) — décision documentée, pas un oubli.
+4. **`buildFormData` ajouté à `@cmz/shared-data`**, pas dans
+   `coverage-areas-data` — utilitaire générique réutilisable par tout futur
+   endpoint à upload, même logique que `buildHttpPayload`/`buildHttpParams` déjà
+   dans ce lib partagé.
+5. **Mock backend : parseur `multipart/form-data` minimal ajouté**
+   (`readFormData`) — le mock ne stocke pas le contenu binaire du fichier,
+   seulement son nom (suffisant pour tester « un fichier a bien été envoyé »).
+
+## Phase 2 — Domaine
+
+- [x] `enums/optical-fiber-network-type.enum.ts` (`FiberType`, pattern
+      const-object + `isFiberType()`, même forme que `Technology`).
+- [x] `props/optical-fiber-network.props.ts` (+ `find-one`, avec `geomUrl`/
+      `geom`), réutilisant `Operator` (mobile-network) et `Status` (partagé).
+- [x] `entities/optical-fiber-network{,-find-one,-filter}.entity.ts`.
+- [x] `contracts/optical-fiber-network-{create,update,delete,enable,disable,     filter,find-one-filter}.contract.ts` +
+      `.validate-contract.ts` — `update.validate-contract` garde `geomFile`
+      optionnel (fidèle source).
+- [x] `validators/` — `create` : tous les champs requis dont `geomFile` ;
+      `update` : idem sauf `geomFile` (pas requis, cf. décision).
+- [x] `value-objects/` — VO filter écrit dès cette phase (leçon `site-group`
+      appliquée, comme pour `mobile-network`).
+- [x] `repositories/optical-fiber-network{,-find-one}.repository.ts` +
+      `fiber-constructor-select.repository.ts` (port select-only).
+- [x] Barrel ; `tsc` propre.
+
+## Phase 3 — Data
+
+- [x] `endpoints/coverage-areas.endpoints.ts` —
+      `OPTICAL_FIBER_NETWORK:     'infrastructures/optical-fibers'`,
+      `FIBER_CONSTRUCTOR:     'infrastructures/fiber-constructors'`.
+- [x] `dtos/optical-fiber-network-*-api.dto.ts` (9 fichiers) +
+      `fiber-constructor-select-response-api.dto.ts`.
+- [x] `mappers/` (9 + 1 select) — mêmes bases (`PaginatedMapper`,
+      `SimpleResponseMapper`, `ArrayResponseMapper`) que `site-group`/
+      `mobile-network`.
+- [x] `sources/optical-fiber-network.api.ts` — `create`/`update` construisent un
+      `FormData` via `buildFormData` (nouveau) au lieu d'un payload JSON ; seule
+      différence structurelle avec les sources précédentes.
+- [x] `repositories/*.repository.impl.ts` (3 fichiers).
+- [x] `@cmz/shared-data` : `buildFormData` ajouté (`build-form-data.util.ts`) +
+      export barrel.
+- [x] Barrel ; `tsc` propre (lib + `shared-data`).
+
+## Phase 4 — Application
+
+- [x] `use-cases/optical-fiber-network{,-find-one}.use-case.ts` +
+      `fiber-constructor-select.use-case.ts`.
+- [x] `facades/optical-fiber-network.facade.ts` (`CollectionResourceFacade`),
+      `optical-fiber-network-find-one.facade.ts` (`ResourceFacade`),
+      `fiber-constructor-select.facade.ts` (`ResourceFacade`, même forme que
+      `TowerTypeSelectFacade`).
+- [x] Barrel ; `tsc` + `eslint` propres.
+
+## Phase 5 — UI
+
+- [x] `constants/optical-fiber-network-{paths,filter-keys,table}.constant.ts`.
+- [x] `adapters/optical-fiber-network-vm-props.interface.ts` + `.presenter.ts` —
+      réutilise `STATUS_LABEL`/`statusStyleOf` de `site-group` (même règle que
+      `mobile-network`).
+- [x] `stores/optical-fiber-network-filter.store.ts`,
+      `optical-fiber-network-form.store.ts` — `geomFile` validé
+      conditionnellement (`validate()` + `isCreate()`), `setGeomFile()` hors
+      `[formField]`.
+- [x] `features/optical-fiber-network-list.component.ts` (filtres `search`/
+      `operator`/dates, pas de filtre `type` — fidèle au filtre source),
+      `optical-fiber-network-form.component.ts` (`fiberConstructorId` en
+      `<select>` alimenté par `FiberConstructorSelectFacade` ; `geomFile` en
+      `<input type="file">` natif + mention texte du fichier existant en
+      détails, pas d'aperçu carto — cf. décision).
+- [x] `optical-fiber-network.routes.ts` — liste + form, pas de route historique.
+- [x] Barrel ; `tsc` + `eslint` propres.
+
+## Phase 6 — Câblage app + i18n
+
+- [x] `coverage-areas.providers.ts` étendu : `OpticalFiberNetworkRepository`,
+      `OpticalFiberNetworkFindOneRepository`, `FiberConstructorSelectRepository`
+      → leurs impls.
+- [x] `app.routes.ts` : route `coverage-areas/optical-fiber-networks` →
+      `OPTICAL_FIBER_NETWORK_ROUTES`.
+- [x] `fr.translation.ts` : namespace `COVERAGE_AREAS.OPTICAL_FIBER_NETWORK`
+      ajouté.
+- [x] `ngc --strictTemplates` (tsconfig app, timeout sandbox élevé — la
+      compilation app complète prend plus de 40s, relancée en arrière-plan pour
+      confirmer le succès) + `eslint` sur les fichiers touchés : propres, aucun
+      écart cette fois (leçon Phase 6 `mobile-network` appliquée :
+      `operator`/`type` du form store typés `X | ''` dès le départ, pas
+      `X | null`).
+
+## Phase 7 — Mock backend (optical-fiber-network + fiber-constructor)
+
+- [x] Seed `fiberConstructors` (3, select seul) et `opticalFiberNetworks` (3,
+      référençant les constructeurs seedés).
+- [x] Route `infrastructures/fiber-constructors/select-field` (GET).
+- [x] Route `infrastructures/optical-fibers` — liste paginée + find-one sur la
+      même base (même particularité que `mobile-network`). CRUD complet ;
+      `store`/`update` recalculent `fiber_constructor_name`.
+- [x] **Nouveau côté mock : parseur `multipart/form-data`** (`readFormData`) —
+      le `readBody` existant (`JSON.parse`) échoue silencieusement sur un body
+      multipart (résout `{}`), donc `store`/`update` d' `optical-fiber-network`
+      utilisent `readFormData` à la place. Ne stocke que le nom du fichier
+      (`geom_url` simulé), pas le contenu binaire.
+- [x] Vérifié via curl (port 3599) : select fiber-constructor, liste, find-one,
+      **store avec upload réel d'un fichier**
+      (`curl -F     geom_file=@trace.geojson`, `geom_url` généré correctement
+      côté mock), update sans fichier (géométrie existante préservée), enable,
+      disable, delete — tous corrects.
+
+## Phase 8 — Validation & livraison (à finaliser)
+
+- [ ] `tsc --noEmit` sur les 4 libs individuellement.
+- [ ] `ngc --strictTemplates` sur l'app complète.
+- [ ] `eslint` sur les 4 libs + fichiers app modifiés.
+- [ ] Smoke test backend (déjà fait Phase 7, à re-confirmer après Phase 8 si du
+      code a changé entre-temps).
+- [ ] Mettre à jour le statut de ce document (Bilan réel + Suite).
+- [ ] `npx nx lint` + `npx nx serve` — à confirmer par l'utilisateur (poste
+      macOS), même limitation sandbox.

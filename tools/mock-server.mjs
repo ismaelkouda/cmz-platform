@@ -4,8 +4,9 @@
  *
  * Sert les endpoints des modules `administrative-infrastructure`,
  * `administrative-boundary`, `authentication` et `coverage-areas`
- * (`site-group` et `mobile-network`, entités plates — même forme que
- * `infrastructure-types` ; `tower-type`, select seul) avec
+ * (`site-group`, `mobile-network`, `optical-fiber-network`, entités plates —
+ * même forme que `infrastructure-types` ; `tower-type`/`fiber-constructor`,
+ * select seul) avec
  * l'enveloppe attendue par le kernel (`{ error, message, data }`) et la forme
  * de pagination Laravel
  * (`current_page`, `data`, `last_page`, `per_page`, `total`, …). Données en
@@ -189,6 +190,55 @@ const mobileNetworks = [
         technology: ['4G', '5G'],
         operator: 'Moov',
         radius: 8,
+        is_active: true,
+        created_at: now(),
+        updated_at: now(),
+    },
+];
+
+// ---- COVERAGE-AREAS : fiber-constructor (select seul, pas de CRUD) ------
+const fiberConstructors = [
+    { id: 'fc-1', name: 'Huawei' },
+    { id: 'fc-2', name: 'Nokia' },
+    { id: 'fc-3', name: 'ZTE' },
+];
+
+// ---- COVERAGE-AREAS : optical-fiber-network ------------------------------
+// `geom_url` simule un fichier déjà stocké (jamais le binaire lui-même,
+// cf. `readFormData`).
+const opticalFiberNetworks = [
+    {
+        id: 'ofn-1',
+        name: 'Backbone Lomé-Kara',
+        operator: 'MTN',
+        fiber_constructor_id: 'fc-1',
+        fiber_constructor_name: 'Huawei',
+        type: 'single-mode',
+        geom_url: '/mock/geo/ofn-1.geojson',
+        is_active: true,
+        created_at: now(),
+        updated_at: now(),
+    },
+    {
+        id: 'ofn-2',
+        name: 'Boucle Maritime',
+        operator: 'Orange',
+        fiber_constructor_id: 'fc-2',
+        fiber_constructor_name: 'Nokia',
+        type: 'multi-mode',
+        geom_url: '/mock/geo/ofn-2.geojson',
+        is_active: false,
+        created_at: now(),
+        updated_at: now(),
+    },
+    {
+        id: 'ofn-3',
+        name: 'Liaison Plateaux',
+        operator: 'Moov',
+        fiber_constructor_id: 'fc-3',
+        fiber_constructor_name: 'ZTE',
+        type: 'single-mode',
+        geom_url: '/mock/geo/ofn-3.geojson',
         is_active: true,
         created_at: now(),
         updated_at: now(),
@@ -447,6 +497,45 @@ const readBody = (req) =>
             } catch {
                 resolve({});
             }
+        });
+    });
+
+/**
+ * Parseur `multipart/form-data` minimal — nécessaire pour `optical-fiber-network`
+ * (`create`/`update` envoient un `FormData` via `buildFormData`, cf.
+ * `@cmz/shared-data`, à cause de l'upload `geom_file`). Ne stocke pas le
+ * contenu binaire du fichier : seul le nom du fichier est capturé (suffisant
+ * pour un mock — le contrat testé est « un fichier a bien été envoyé », pas
+ * son contenu).
+ */
+const readFormData = (req) =>
+    new Promise((resolve) => {
+        const contentType = req.headers['content-type'] ?? '';
+        const boundaryMatch = contentType.match(/boundary=(.+)$/);
+        if (!boundaryMatch) {
+            resolve({});
+            return;
+        }
+        const boundary = `--${boundaryMatch[1]}`;
+        const chunks = [];
+        req.on('data', (c) => chunks.push(c));
+        req.on('end', () => {
+            const raw = Buffer.concat(chunks).toString('binary');
+            const result = {};
+            raw.split(boundary).forEach((part) => {
+                const nameMatch = part.match(/name="([^"]+)"/);
+                if (!nameMatch) return;
+                const key = nameMatch[1];
+                const filenameMatch = part.match(/filename="([^"]*)"/);
+                const headerEnd = part.indexOf('\r\n\r\n');
+                if (headerEnd < 0) return;
+                const value = part
+                    .slice(headerEnd + 4)
+                    .replace(/\r\n--$/, '')
+                    .replace(/\r\n$/, '');
+                result[key] = filenameMatch ? filenameMatch[1] : value;
+            });
+            resolve(result);
         });
     });
 
@@ -767,6 +856,94 @@ async function handle(req, res, url) {
             updated_at: now(),
         });
         return send(res, 201, ok(null, 'Réseau mobile créé.'));
+    }
+
+    // ---- COVERAGE-AREAS : FIBER-CONSTRUCTOR (select seul) ----
+    if (
+        path === 'infrastructures/fiber-constructors/select-field' &&
+        method === 'GET'
+    ) {
+        return send(
+            res,
+            200,
+            ok(fiberConstructors.map((c) => ({ id: c.id, name: c.name })))
+        );
+    }
+
+    // ---- COVERAGE-AREAS : OPTICAL-FIBER-NETWORK ----
+    // `store`/`update` reçoivent un `multipart/form-data` (upload `geom_file`)
+    // — cf. `readFormData`, seul endpoint du mock à en avoir besoin.
+    if (path === 'infrastructures/optical-fibers' && method === 'GET') {
+        return page !== null
+            ? send(res, 200, ok(paginate(opticalFiberNetworks, page)))
+            : send(res, 200, ok(paginate(opticalFiberNetworks, '1')));
+    }
+    m = path.match(/^infrastructures\/optical-fibers\/(.+)$/);
+    if (m) {
+        const seg = m[1];
+        const id = seg.split('/')[0];
+        const item = opticalFiberNetworks.find((ofn) => ofn.id === id);
+        if (seg === `${id}/update` && method === 'POST') {
+            const b = await readFormData(req);
+            if (item) {
+                const constructor = fiberConstructors.find(
+                    (c) => c.id === b.fiber_constructor_id
+                );
+                Object.assign(item, {
+                    name: b.name,
+                    operator: b.operator,
+                    fiber_constructor_id: b.fiber_constructor_id,
+                    fiber_constructor_name:
+                        constructor?.name ?? item.fiber_constructor_name,
+                    type: b.type,
+                    ...(b.geom_file
+                        ? { geom_url: `/mock/geo/${id}-${b.geom_file}` }
+                        : {}),
+                    updated_at: now(),
+                });
+            }
+            return send(res, 200, ok(null, 'Réseau fibre optique mis à jour.'));
+        }
+        if (seg === `${id}/delete` && method === 'DELETE') {
+            const i = opticalFiberNetworks.findIndex((ofn) => ofn.id === id);
+            if (i >= 0) opticalFiberNetworks.splice(i, 1);
+            return send(res, 200, ok(null, 'Réseau fibre optique supprimé.'));
+        }
+        if (seg === `${id}/enable` && method === 'PUT') {
+            if (item) item.is_active = true;
+            return send(res, 200, ok(null, 'Réseau fibre optique activé.'));
+        }
+        if (seg === `${id}/disable` && method === 'PUT') {
+            if (item) item.is_active = false;
+            return send(res, 200, ok(null, 'Réseau fibre optique désactivé.'));
+        }
+        if (method === 'GET') {
+            return item
+                ? send(res, 200, ok(item))
+                : send(res, 404, fail('Réseau fibre optique introuvable.'));
+        }
+    }
+    if (path === 'infrastructures/optical-fibers/store' && method === 'POST') {
+        const b = await readFormData(req);
+        const constructor = fiberConstructors.find(
+            (c) => c.id === b.fiber_constructor_id
+        );
+        const id = nextId();
+        opticalFiberNetworks.unshift({
+            id,
+            name: b.name,
+            operator: b.operator,
+            fiber_constructor_id: b.fiber_constructor_id,
+            fiber_constructor_name: constructor?.name ?? '',
+            type: b.type,
+            geom_url: b.geom_file
+                ? `/mock/geo/${id}-${b.geom_file}`
+                : undefined,
+            is_active: false,
+            created_at: now(),
+            updated_at: now(),
+        });
+        return send(res, 201, ok(null, 'Réseau fibre optique créé.'));
     }
 
     // ---- ADMINISTRATIVE-BOUNDARY : REGIONS ----
