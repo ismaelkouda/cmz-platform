@@ -79,4 +79,11 @@ export const appRoutes: Route[] = [
                 (m) => m.OPTICAL_FIBER_NETWORK_ROUTES
             ),
     },
+    {
+        path: 'coverage-areas/radio-relay-links',
+        loadChildren: () =>
+            import('@cmz/coverage-areas-ui').then(
+                (m) => m.RADIO_RELAY_LINKS_ROUTES
+            ),
+    },
 ];

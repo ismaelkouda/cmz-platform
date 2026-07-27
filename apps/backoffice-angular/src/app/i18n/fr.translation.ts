@@ -496,6 +496,63 @@ export const FR = {
                 },
             },
         },
+        RADIO_RELAY_LINKS: {
+            TITLE: 'Faisceaux hertziens',
+            FORM: {
+                TITLE: {
+                    CREATE: 'Nouveau faisceau hertzien',
+                    EDIT: 'Modifier le faisceau hertzien',
+                    DETAILS: 'Détails du faisceau hertzien',
+                },
+                NAME: 'Nom',
+                OPERATOR: 'Opérateur',
+                FREQUENCY: 'Fréquence',
+                START_DATE: 'Date de début',
+                END_DATE: 'Date de fin',
+            },
+            FILTER: {
+                SEARCH: 'Recherche',
+                SEARCH_PLACEHOLDER: 'Rechercher…',
+                OPERATOR: 'Opérateur',
+                DATE: { FROM: 'Du', TO: 'Au' },
+            },
+            TABLE: {
+                NAME: 'Nom',
+                OPERATOR: 'Opérateur',
+                FREQUENCY: 'Fréquence',
+                START_DATE: 'Date de début',
+                END_DATE: 'Date de fin',
+                STATUS: 'Statut',
+                UPDATED_AT: 'Modifié le',
+                ACTION: 'Actions',
+            },
+            TOOLTIP: {
+                CREATE: 'Créer un faisceau hertzien',
+                EDIT: 'Modifier',
+                DELETE: 'Supprimer',
+                ENABLE: 'Activer',
+                DISABLE: 'Désactiver',
+                CHOOSE: 'Actions',
+                NO_PERMISSION_CREATE: 'Permission manquante pour créer',
+                NO_PERMISSION_EDIT: 'Permission manquante pour modifier',
+                NO_PERMISSION_DELETE: 'Permission manquante pour supprimer',
+                NO_PERMISSION_ACTIVE: 'Permission manquante pour activer',
+                NO_PERMISSION_DISABLE: 'Permission manquante pour désactiver',
+                NO_PERMISSION_CHOOSE: 'Aucune action disponible',
+            },
+            SWEET_ALERT: {
+                TITLE: {
+                    DELETE: 'Supprimer',
+                    ENABLE: 'Activer',
+                    DISABLE: 'Désactiver',
+                },
+                MESSAGE: {
+                    DELETE: 'Supprimer « {{uniqId}} » ?',
+                    ENABLE: 'Activer « {{uniqId}} » ?',
+                    DISABLE: 'Désactiver « {{uniqId}} » ?',
+                },
+            },
+        },
     },
     AUTHENTICATION: {
         LOGIN: {
