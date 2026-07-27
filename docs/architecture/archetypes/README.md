@@ -92,13 +92,54 @@ requête, il est requis, pas silencieusement optionnel par défaut.
    l'entité suivante.
 5. Valider : `ngc --strictTemplates` + audit boundaries + `deps = imports`.
 
-## Verdict à documenter après `administrative-boundary`
+## Verdict — `administrative-boundary` (2026-07-27)
 
-Une fois le module construit sous ces contrats, noter ici si l'hypothèse tient :
-les contrats ont-ils survécu sans modification substantielle au cas plus dur
-(hiérarchie, relations, vues imbriquées) ? Si oui → argument fort pour étendre
-l'approche aux domaines suivants avant d'investir dans la Phase 04. Si non → les
-points de rupture précis deviennent les premières entrées du futur profil de
-convention / des futurs contrats d'archétype officiels.
+**Statut : hypothèse validée.** Les contrats extraits
+d'`administrative-infrastructure` ont tenu sur un cas nettement plus dur (3
+entités hiérarchiques, relations `{id,name}`, 2 vues imbriquées, select cascade
+sur 3 niveaux) **sans réécriture substantielle** — 256 fichiers produits,
+`ngc --strictTemplates` + `eslint`/boundaries + `nx lint`/`nx serve` verts,
+smoke-testés contre un mock hiérarchique. Les écarts prévus par les décisions
+préalables (`code` requis, relations `{id,name}`, cascade
+region→department→municipality côté select) sont sortis exactement comme
+anticipé, sans improvisation.
 
-**Statut : en attente de test (module `administrative-boundary`).**
+**Argument fort pour étendre l'approche aux domaines suivants avant d'investir
+dans la Phase 04** (mineur/adaptateur SEOS) : deux modules consécutifs, dont un
+délibérément choisi plus dur, ont validé le squelette déterministe + contenu
+métier injecté sous contrat, vérifié par les mêmes moyens (`ngc`, boundaries,
+`deps = imports`) sans score automatisé.
+
+**Deux points de rupture réels, non prévus par les contrats existants — à
+retenir comme entrées pour les futurs contrats officiels :**
+
+1. **Aucun archétype pour une vue en lecture seule (facade + vm-props).** Le
+   module de référence n'a que des entités avec CRUD complet ; les 2 vues
+   imbriquées (`departments-by-region-id`, `municipalities-by-department-id`)
+   n'ont ni mutation ni action. Résolu par jugement au fil de l'eau :
+    - **Facade** : `PaginatedResourceFacade` (pas `CollectionResourceFacade`) —
+      pas de `runAction()` à brancher sur un port qui n'a que `execute()`.
+    - **Navigation drill-down** : pas de `rowClicked` sur `cmz-table`
+      (`actionClicked` seul existe) → modélisée en action de dropdown
+      (`'view-departments'`/`'view-municipalities'`), pas en clic de ligne.
+    - **`vm-props` d'une vue lecture seule ne satisfait pas structurellement
+      `TableRowBase`** (`TableRowBase` n'a que des propriétés optionnelles ;
+      TypeScript rejette une assignation sans **aucune** propriété en commun —
+      `error TS2322: has no properties in common`, trouvé par
+      `ngc --strictTemplates`, pas par `tsc` seul). Corrigé en déclarant
+      `dropdownActions?: ActionDropdownItem[]` optionnel, jamais renseigné, dans
+      le `*-vm-props.interface.ts` de la vue — sans effet runtime (`cmz-table`
+      ne le lit que si la colonne `__actionDropdown` figure dans `columns()`,
+      absente ici). **À ajouter comme variante officielle du contrat
+      `vm-props`** ([`ui.md`](./ui.md)) le jour où un archétype `read-only-view`
+      est formalisé (cf. Phase 03 du plan d'exécution, pattern
+      `read-only-view`).
+2. **`ngc --strictTemplates` est indispensable, `tsc --noEmit` seul ne suffit
+   pas.** Le bug ci-dessus n'existe que dans le template Angular (binding
+   `[rows]`) ; un `tsc` classique ne type-check pas les templates et serait
+   passé vert à tort. Tout contrat de validation futur doit exiger `ngc`/le
+   compilateur Angular réel, pas une simple compilation TypeScript.
+
+Aucun autre écart : les 4 couches (domaine → data → application → ui) ont suivi
+les contrats existants fichier par fichier, y compris pour les 2 vues imbriquées
+une fois les 2 points ci-dessus tranchés.
