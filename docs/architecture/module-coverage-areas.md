@@ -1,15 +1,14 @@
 # Module `coverage-areas` — plan de reconstruction
 
 - **Créé :** 2026-07-27
-- **Statut :** livré — les **4 entités CRUD** du domaine (`site-group` +
-  `mobile-network` + `optical-fiber-network` + `radio-relay-links`,
-  2026-07-27) + les 2 concepts select (`tower-type`/`fiber-constructor`). Phases
-  1 à 8 complètes pour les quatre entités. `site-group` : `nx lint`/ `nx serve`
-  confirmés conformes par l'utilisateur (poste macOS). Les trois autres entités
-  : validation statique (`tsc` par lib, `ngc --strictTemplates` app, `eslint`,
-  smoke test mock) faite en sandbox, `nx lint`/`nx serve` réels **restent à
-  confirmer par l'utilisateur** sur son poste macOS. Cf. « Bilan réel » de
-  chaque entité en fin de document.
+- **Statut :** livré et **confirmé** — les **4 entités CRUD** du domaine
+  (`site-group` + `mobile-network` + `optical-fiber-network` +
+  `radio-relay-links`, 2026-07-27) + les 2 concepts select
+  (`tower-type`/`fiber-constructor`). Phases 1 à 8 complètes pour les quatre
+  entités. `nx lint`/`nx serve` confirmés conformes par l'utilisateur sur son
+  poste macOS pour l'ensemble du module (dernière confirmation : 2026-07-27,
+  après `radio-relay-links`). Module `coverage-areas` **terminé**. Cf. « Bilan
+  réel » de chaque entité en fin de document.
 - **Gabarit de référence :** `module-administrative-boundary.md` — même
   archétype **CRUD** déjà validé 2 fois (`administrative-infrastructure`,
   `administrative-boundary`). Aucun nouveau pattern à valider ici, contrairement
@@ -925,8 +924,10 @@ vérifiée avant l'appel à `assertValidDateRange`, dans les deux validateurs.
 - [x] Smoke test backend (readAll, findOne, create, enable, delete) — vert.
 - [x] Commits conventionnels par couche (6 commits, Phase 2 à 7).
 - [x] Mettre ce document à jour (statut fait + écarts réels).
-- [ ] `npx nx lint` + `npx nx serve` (poste macOS) — **à confirmer par
-      l'utilisateur**, même limitation sandbox que les entités précédentes.
+- [x] `npx nx lint` + `npx nx serve` (poste macOS) — **confirmés par
+      l'utilisateur** (2026-07-27) : lint propre, build/serve OK. Les erreurs
+      `ECONNREFUSED` observées dans le proxy Vite au démarrage étaient dues au
+      mock backend non lancé, pas à un problème de code — non-bloquant.
 
 ## Bilan réel `radio-relay-links` (2026-07-27)
 
@@ -945,12 +946,12 @@ vérifiée avant l'appel à `assertValidDateRange`, dans les deux validateurs.
 5. **Dates modélisées en chaînes ISO dans le store de formulaire** — décision
    préventive pour éviter de reproduire le bug de binding déjà rencontré et
    corrigé sur `mobile-network`.
-6. `ngc`/`nx lint`/`nx serve` : même limitation sandbox que les entités
-   précédentes — validation statique complète faite ici ; `nx lint`/ `nx serve`
-   réels restent à confirmer par l'utilisateur sur son poste macOS.
+6. `nx lint`/`nx serve` confirmés par l'utilisateur sur son poste macOS
+   (2026-07-27) — dernière étape après la validation statique complète en
+   sandbox.
 
-**Suite** : le domaine `coverage-areas` est **terminé** — 4 entités CRUD
-(`site-group`, `mobile-network`, `optical-fiber-network`, `radio-relay-links`) +
-2 concepts select (`tower-type`, `fiber-constructor`), toutes validées
-statiquement en sandbox. Reste la confirmation utilisateur (`nx lint`/`nx serve`
-réels, poste macOS) pour les trois dernières entités.
+**Suite** : le domaine `coverage-areas` est **terminé et confirmé** — 4 entités
+CRUD (`site-group`, `mobile-network`, `optical-fiber-network`,
+`radio-relay-links`) + 2 concepts select (`tower-type`, `fiber-constructor`),
+toutes validées statiquement en sandbox **et** confirmées par `nx lint`/
+`nx serve` réels sur le poste macOS de l'utilisateur.
