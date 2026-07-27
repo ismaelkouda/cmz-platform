@@ -201,9 +201,12 @@ il se traite une fois pour toutes au niveau kernel, pas dupliqué par entité.
 
 ## Phase 7 — Mock backend
 
-- [ ] Étendre `tools/mock-server.mjs` : CRUD `site-group` (liste paginée,
+- [x] Étendre `tools/mock-server.mjs` : CRUD `site-group` (liste paginée,
       find-one, create/update/delete/enable/disable, select) — même forme que
       `infrastructure-types` (entité plate, pas de hiérarchie).
+- [x] Smoke test direct (curl contre le mock lancé en local, port 3399) : liste
+      paginée, select, find-one, create, enable, disable, update, delete — tous
+      200/201 avec la bonne enveloppe `{error,message,data}`.
 
 ## Phase 8 — Validation & livraison
 

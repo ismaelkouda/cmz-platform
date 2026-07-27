@@ -3,8 +3,10 @@
  * Mock backend **léger, zéro-dépendance** (Node http) pour le dev.
  *
  * Sert les endpoints des modules `administrative-infrastructure`,
- * `administrative-boundary` et `authentication` avec l'enveloppe attendue par
- * le kernel (`{ error, message, data }`) et la forme de pagination Laravel
+ * `administrative-boundary`, `authentication` et `coverage-areas`
+ * (`site-group`, entité plate — même forme que `infrastructure-types`) avec
+ * l'enveloppe attendue par le kernel (`{ error, message, data }`) et la forme
+ * de pagination Laravel
  * (`current_page`, `data`, `last_page`, `per_page`, `total`, …). Données en
  * mémoire → create/update/delete/enable/disable persistent le temps du run.
  *
@@ -98,6 +100,37 @@ const equipments = [
         position: '9.55,1.19',
         lat: '9.55',
         long: '1.19',
+        created_at: now(),
+        updated_at: now(),
+    },
+];
+
+// ---- COVERAGE-AREAS : site-group (entité plate, pas de hiérarchie) ------
+const siteGroups = [
+    {
+        id: 'sg-1',
+        code: 'SG-LOM',
+        name: 'Groupe Lomé',
+        description: 'Sites du centre-ville de Lomé',
+        is_active: true,
+        created_at: now(),
+        updated_at: now(),
+    },
+    {
+        id: 'sg-2',
+        code: 'SG-KAR',
+        name: 'Groupe Kara',
+        description: 'Sites de la région de Kara',
+        is_active: false,
+        created_at: now(),
+        updated_at: now(),
+    },
+    {
+        id: 'sg-3',
+        code: 'SG-MAR',
+        name: 'Groupe Maritime',
+        description: 'Sites de la région Maritime',
+        is_active: true,
         created_at: now(),
         updated_at: now(),
     },
@@ -523,6 +556,72 @@ async function handle(req, res, url) {
             updated_at: now(),
         });
         return send(res, 201, ok(null, 'Infrastructure créée.'));
+    }
+
+    // ---- COVERAGE-AREAS : SITE-GROUP ----
+    // liste paginée (avec ?page) vs select (sans page) sur la base
+    if (path === 'infrastructures/site-groups' && method === 'GET') {
+        return page !== null
+            ? send(res, 200, ok(paginate(siteGroups, page)))
+            : send(
+                  res,
+                  200,
+                  ok(
+                      siteGroups.map((sg) => ({
+                          id: sg.id,
+                          name: sg.name,
+                          description: sg.description,
+                      }))
+                  )
+              );
+    }
+    m = path.match(/^infrastructures\/site-groups\/(.+)$/);
+    if (m) {
+        const seg = m[1];
+        const id = seg.split('/')[0];
+        const item = siteGroups.find((sg) => sg.id === id);
+        if (seg === `${id}/update` && method === 'POST') {
+            const b = await readBody(req);
+            if (item)
+                Object.assign(item, {
+                    code: b.code,
+                    name: b.name,
+                    description: b.description,
+                    updated_at: now(),
+                });
+            return send(res, 200, ok(null, 'Groupe de sites mis à jour.'));
+        }
+        if (seg === `${id}/delete` && method === 'DELETE') {
+            const i = siteGroups.findIndex((sg) => sg.id === id);
+            if (i >= 0) siteGroups.splice(i, 1);
+            return send(res, 200, ok(null, 'Groupe de sites supprimé.'));
+        }
+        if (seg === `${id}/enable` && method === 'PUT') {
+            if (item) item.is_active = true;
+            return send(res, 200, ok(null, 'Groupe de sites activé.'));
+        }
+        if (seg === `${id}/disable` && method === 'PUT') {
+            if (item) item.is_active = false;
+            return send(res, 200, ok(null, 'Groupe de sites désactivé.'));
+        }
+        if (method === 'GET') {
+            return item
+                ? send(res, 200, ok(item))
+                : send(res, 404, fail('Groupe de sites introuvable.'));
+        }
+    }
+    if (path === 'infrastructures/site-groups/store' && method === 'POST') {
+        const b = await readBody(req);
+        siteGroups.unshift({
+            id: nextId(),
+            code: b.code,
+            name: b.name,
+            description: b.description ?? '',
+            is_active: false,
+            created_at: now(),
+            updated_at: now(),
+        });
+        return send(res, 201, ok(null, 'Groupe de sites créé.'));
     }
 
     // ---- ADMINISTRATIVE-BOUNDARY : REGIONS ----
