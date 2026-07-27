@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/coverage-areas-application",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/coverage-areas/application/src",
+  "projectType": "library",
+  "tags": ["scope:coverage-areas", "type:application"]
+}

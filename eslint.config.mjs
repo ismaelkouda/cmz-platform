@@ -106,6 +106,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:coverage-areas',
+                            onlyDependOnLibsWithTags: [
+                                'scope:coverage-areas',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },

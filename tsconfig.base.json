@@ -53,7 +53,15 @@
       "@cmz/authentication-application": [
         "./libs/authentication/application/src/index.ts"
       ],
-      "@cmz/authentication-ui": ["./libs/authentication/ui/src/index.ts"]
+      "@cmz/authentication-ui": ["./libs/authentication/ui/src/index.ts"],
+      "@cmz/coverage-areas-domain": [
+        "./libs/coverage-areas/domain/src/index.ts"
+      ],
+      "@cmz/coverage-areas-data": ["./libs/coverage-areas/data/src/index.ts"],
+      "@cmz/coverage-areas-application": [
+        "./libs/coverage-areas/application/src/index.ts"
+      ],
+      "@cmz/coverage-areas-ui": ["./libs/coverage-areas/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
