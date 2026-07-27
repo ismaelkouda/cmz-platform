@@ -165,18 +165,24 @@ il se traite une fois pour toutes au niveau kernel, pas dupliqué par entité.
 
 ## Phase 5 — UI (`-ui`)
 
-- [ ] `constants/site-group-{paths,filter-keys,table}.constant.ts`,
+- [x] `constants/site-group-{paths,filter-keys,table}.constant.ts`,
       `status-label.constant.ts`.
-- [ ] `adapters/site-group-vm-props.interface.ts` + `.presenter.ts`,
+- [x] `adapters/site-group-vm-props.interface.ts` + `.presenter.ts`,
       `mappers/status-style.mapper.ts`.
-- [ ] `stores/site-group-filter.store.ts`, `site-group-form.store.ts` (Signal
+- [x] `stores/site-group-filter.store.ts`, `site-group-form.store.ts` (Signal
       Forms — **pas** de `*-form-keys`/`*-form-error-messages`, confirmé mort
-      par l'audit workspace sur les 2 modules précédents).
-- [ ] `features/site-group-list.component.ts`, `site-group-form.component.ts`
-      (`cmz-table`/`cmz-filter`/`cmz-field`, comme `region-*`).
-- [ ] `site-group.routes.ts` — liste + form, **pas** de route historique
+      par l'audit workspace sur les 2 modules précédents). `code` ajouté au
+      modèle/schéma (différence avec `infrastructure-type`, présent chez
+      `region`).
+- [x] `features/site-group-list.component.ts`, `site-group-form.component.ts`
+      (`cmz-table`/`cmz-filter`/`cmz-field`, comme `infrastructure-type-*`).
+- [x] `site-group.routes.ts` — liste + form, **pas** de route historique
       (décision ci-dessus).
-- [ ] Barrel ; `ngc --strictTemplates`.
+- [x] Barrel ; `tsc` propre. `ngc --strictTemplates` (contre
+      `apps/backoffice-angular/tsconfig.app.json`) vert, mais les fichiers ne
+      sont pas encore importés par l'app (câblage en Phase 6) — vérification
+      complète des templates différée à la Phase 8, comme pour les modules
+      précédents.
 
 ## Phase 6 — Câblage app + i18n
 
