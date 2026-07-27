@@ -2,9 +2,9 @@
 /**
  * Mock backend **léger, zéro-dépendance** (Node http) pour le dev.
  *
- * Sert les endpoints des modules `administrative-infrastructure` et
- * `administrative-boundary` avec l'enveloppe attendue par le kernel
- * (`{ error, message, data }`) et la forme de pagination Laravel
+ * Sert les endpoints des modules `administrative-infrastructure`,
+ * `administrative-boundary` et `authentication` avec l'enveloppe attendue par
+ * le kernel (`{ error, message, data }`) et la forme de pagination Laravel
  * (`current_page`, `data`, `last_page`, `per_page`, `total`, …). Données en
  * mémoire → create/update/delete/enable/disable persistent le temps du run.
  *
@@ -15,6 +15,17 @@
  * test « hiérarchique »). Les filtres `search`/dates restent ignorés — comme
  * pour `administrative-infrastructure` — le mock n'implémente que ce qui est
  * structurellement nécessaire.
+ *
+ * `authentication` : les échecs métier (identifiants invalides, lien de
+ * réinitialisation invalide) renvoient **HTTP 200 + `{error:true, message}`**,
+ * jamais un vrai code HTTP d'erreur — c'est le contrat que `unwrapResponse`
+ * (`@cmz/shared-data`) sait dé-emballer en `ServerResponseError`. Un vrai
+ * statut non-2xx court-circuiterait `HttpClient` avant même d'atteindre le
+ * mapper (aucun intercepteur ne traduit `HttpErrorResponse` dans ce socle
+ * pour l'instant), donc ne serait jamais vu comme une erreur domaine par
+ * l'UI. `forgot-password` ne révèle jamais si l'email existe (message
+ * générique dans tous les cas) — anti-enumeration, pas une simplification du
+ * mock.
  *
  * Lancer : `node tools/mock-server.mjs` (port 3333). Le dev-server Angular y
  * route `/api/*` via `apps/backoffice-angular/proxy.conf.json`.
@@ -185,6 +196,43 @@ const municipalities = departments.flatMap((department) =>
     }))
 );
 
+// ---- AUTHENTICATION : utilisateur + identifiants seedés -----------------
+const MOCK_CREDENTIALS = { email: 'admin@cmz.tg', password: 'Password123!' };
+const MOCK_RESET_TOKEN = 'valid-token';
+
+const mockUser = {
+    id: 1,
+    last_name: 'Admin',
+    first_name: 'CMZ',
+    email: MOCK_CREDENTIALS.email,
+    profile: 'Administrateur',
+    phone: '+228 90 00 00 00',
+    is_admin: true,
+    enable2fa: false,
+    status: 'active',
+    photo: '',
+    permissions: [
+        {
+            id: 1,
+            level: 1,
+            title: 'Infrastructures',
+            label: 'Infrastructures',
+            code: 'INFRASTRUCTURE',
+            head_code: 'INFRASTRUCTURE',
+            icon: 'building',
+            type: 'menu',
+            active: true,
+        },
+    ],
+    paths: ['equipments/types', 'territorial-structures/regions'],
+    actions: { INFRASTRUCTURE: ['create', 'edit', 'delete'] },
+};
+
+const mockToken = () => ({
+    value: `mock-token-${nextId()}`,
+    expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+});
+
 const boundaryRef = (item) => ({
     id: item.id,
     name: item.name,
@@ -312,7 +360,11 @@ const readBody = (req) =>
 
 // Normalise : on ignore le préfixe (/api/settings/…) et on matche la ressource.
 const rel = (pathname) => {
-    for (const marker of ['infrastructures/', 'territorial-structures/']) {
+    for (const marker of [
+        'infrastructures/',
+        'territorial-structures/',
+        'auth/',
+    ]) {
         const i = pathname.indexOf(marker);
         if (i >= 0) return pathname.slice(i);
     }
@@ -734,6 +786,52 @@ async function handle(req, res, url) {
                 ? send(res, 200, ok(toMunicipalityItem(municipality)))
                 : send(res, 404, fail('Commune introuvable.'));
         }
+    }
+
+    // ---- AUTHENTICATION ----
+    if (path === 'auth/login' && method === 'POST') {
+        const b = await readBody(req);
+        const valid =
+            b.email === MOCK_CREDENTIALS.email &&
+            b.password === MOCK_CREDENTIALS.password;
+        if (!valid) {
+            return send(res, 200, fail('Email ou mot de passe incorrect.'));
+        }
+        return send(
+            res,
+            200,
+            ok({
+                user: mockUser,
+                token: mockToken(),
+                message: 'Connexion réussie.',
+            })
+        );
+    }
+    if (path === 'auth/forgot-password' && method === 'POST') {
+        // Anti-enumeration : message générique, que l'email existe ou non.
+        return send(
+            res,
+            200,
+            ok({
+                message:
+                    'Si un compte existe pour cet email, un lien de réinitialisation vient de lui être envoyé.',
+            })
+        );
+    }
+    if (path === 'auth/reset-password' && method === 'POST') {
+        const b = await readBody(req);
+        if (b.token !== MOCK_RESET_TOKEN) {
+            return send(
+                res,
+                200,
+                fail('Lien de réinitialisation invalide ou expiré.')
+            );
+        }
+        return send(
+            res,
+            200,
+            ok({ message: 'Mot de passe réinitialisé avec succès.' })
+        );
     }
 
     return send(res, 404, fail(`Mock: route non gérée (${method} ${path}).`));
