@@ -52,5 +52,6 @@ export * from './lib/mappers/base/array-response.mapper';
 export * from './lib/utils/mapper-utils';
 export * from './lib/utils/build-http-payload.util';
 export * from './lib/utils/build-http-params.util';
+export * from './lib/utils/build-form-data.util';
 export * from './lib/utils/unwrap-response.util';
 export type { FetchOptions } from '@cmz/shared-domain';
