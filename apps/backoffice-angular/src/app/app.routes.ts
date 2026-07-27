@@ -60,4 +60,9 @@ export const appRoutes: Route[] = [
                 (m) => m.MUNICIPALITY_ROUTES
             ),
     },
+    {
+        path: 'coverage-areas/site-groups',
+        loadChildren: () =>
+            import('@cmz/coverage-areas-ui').then((m) => m.SITE_GROUP_ROUTES),
+    },
 ];

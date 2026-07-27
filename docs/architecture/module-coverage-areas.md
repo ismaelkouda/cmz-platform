@@ -186,11 +186,18 @@ il se traite une fois pour toutes au niveau kernel, pas dupliqué par entité.
 
 ## Phase 6 — Câblage app + i18n
 
-- [ ] `providers/coverage-areas.providers.ts` (composition root).
-- [ ] `app.config.ts` : `...provideCoverageAreas()`.
-- [ ] `app.routes.ts` : route `coverage-areas/site-groups` (à nommer exactement
-      d'après `SITE_GROUP_ROUTE` du source).
-- [ ] i18n : namespace `COVERAGE_AREAS.SITE_GROUP.*`.
+- [x] `providers/coverage-areas.providers.ts` (composition root).
+- [x] `app.config.ts` : `...provideCoverageAreas()`.
+- [x] `app.routes.ts` : route `coverage-areas/site-groups` (préfixe
+      `coverage-areas` choisi pour cohérence avec le nom de domaine/scope Nx,
+      plutôt que `infrastructures/site-groups` — l'URL wire de l'API — qui
+      resterait un détail de source non repris côté routing app).
+- [x] i18n : namespace `COVERAGE_AREAS.SITE_GROUP.*` (TITLE/FORM/FILTER/TABLE/
+      TOOLTIP/SWEET_ALERT — modelé sur `ADMINISTRATIVE_BOUNDARY.REGION`, plus
+      complet que `INFRASTRUCTURE_TYPE` qui manque un bloc `TOOLTIP` alors que
+      son composant l'utilise, un gap pré-existant non corrigé ici, hors
+      périmètre de ce module).
+- [x] `ngc --strictTemplates` (app complète) + `eslint` (app + 4 libs) propres.
 
 ## Phase 7 — Mock backend
 

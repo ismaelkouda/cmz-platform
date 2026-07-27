@@ -322,6 +322,61 @@ export const FR = {
             BREADCRUMB: 'Communes',
         },
     },
+    COVERAGE_AREAS: {
+        SITE_GROUP: {
+            TITLE: 'Groupes de sites',
+            FORM: {
+                TITLE: {
+                    CREATE: 'Nouveau groupe de sites',
+                    EDIT: 'Modifier le groupe de sites',
+                    DETAILS: 'Détails du groupe de sites',
+                },
+                CODE: 'Code',
+                NAME: 'Nom',
+                DESCRIPTION: 'Description',
+            },
+            FILTER: {
+                SEARCH: 'Recherche',
+                SEARCH_PLACEHOLDER: 'Rechercher…',
+                STATUS: 'Statut',
+                DATE: { FROM: 'Du', TO: 'Au' },
+            },
+            TABLE: {
+                CODE: 'Code',
+                NAME: 'Nom',
+                DESCRIPTION: 'Description',
+                STATUS: 'Statut',
+                UPDATED_AT: 'Modifié le',
+                ACTION: 'Actions',
+            },
+            TOOLTIP: {
+                CREATE: 'Créer un groupe de sites',
+                EDIT: 'Modifier',
+                DELETE: 'Supprimer',
+                ENABLE: 'Activer',
+                DISABLE: 'Désactiver',
+                CHOOSE: 'Actions',
+                NO_PERMISSION_CREATE: 'Permission manquante pour créer',
+                NO_PERMISSION_EDIT: 'Permission manquante pour modifier',
+                NO_PERMISSION_DELETE: 'Permission manquante pour supprimer',
+                NO_PERMISSION_ACTIVE: 'Permission manquante pour activer',
+                NO_PERMISSION_DISABLE: 'Permission manquante pour désactiver',
+                NO_PERMISSION_CHOOSE: 'Aucune action disponible',
+            },
+            SWEET_ALERT: {
+                TITLE: {
+                    DELETE: 'Supprimer',
+                    ENABLE: 'Activer',
+                    DISABLE: 'Désactiver',
+                },
+                MESSAGE: {
+                    DELETE: 'Supprimer « {{uniqId}} » ?',
+                    ENABLE: 'Activer « {{uniqId}} » ?',
+                    DISABLE: 'Désactiver « {{uniqId}} » ?',
+                },
+            },
+        },
+    },
     AUTHENTICATION: {
         LOGIN: {
             TITLE: 'Connexion',
