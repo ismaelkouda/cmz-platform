@@ -1,13 +1,19 @@
 import { Provider } from '@angular/core';
 import {
+    MobileNetworkFindOneRepository,
+    MobileNetworkRepository,
     SiteGroupFindOneRepository,
     SiteGroupRepository,
     SiteGroupSelectRepository,
+    TowerTypeSelectRepository,
 } from '@cmz/coverage-areas-domain';
 import {
+    MobileNetworkFindOneRepositoryImpl,
+    MobileNetworkRepositoryImpl,
     SiteGroupFindOneRepositoryImpl,
     SiteGroupRepositoryImpl,
     SiteGroupSelectRepositoryImpl,
+    TowerTypeSelectRepositoryImpl,
 } from '@cmz/coverage-areas-data';
 
 /**
@@ -25,6 +31,18 @@ export function provideCoverageAreas(): Provider[] {
         {
             provide: SiteGroupSelectRepository,
             useClass: SiteGroupSelectRepositoryImpl,
+        },
+        {
+            provide: MobileNetworkRepository,
+            useClass: MobileNetworkRepositoryImpl,
+        },
+        {
+            provide: MobileNetworkFindOneRepository,
+            useClass: MobileNetworkFindOneRepositoryImpl,
+        },
+        {
+            provide: TowerTypeSelectRepository,
+            useClass: TowerTypeSelectRepositoryImpl,
         },
     ];
 }

@@ -65,4 +65,11 @@ export const appRoutes: Route[] = [
         loadChildren: () =>
             import('@cmz/coverage-areas-ui').then((m) => m.SITE_GROUP_ROUTES),
     },
+    {
+        path: 'coverage-areas/mobile-networks',
+        loadChildren: () =>
+            import('@cmz/coverage-areas-ui').then(
+                (m) => m.MOBILE_NETWORK_ROUTES
+            ),
+    },
 ];

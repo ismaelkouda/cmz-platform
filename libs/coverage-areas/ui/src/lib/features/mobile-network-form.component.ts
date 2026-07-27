@@ -275,7 +275,7 @@ export class MobileNetworkFormComponent {
             towerTypeId,
             towerSize: towerSize ?? undefined,
             technology,
-            operator: operator ?? undefined,
+            operator: operator || undefined,
             radius: radius ?? undefined,
         };
         if (this.mode() === 'edit') {

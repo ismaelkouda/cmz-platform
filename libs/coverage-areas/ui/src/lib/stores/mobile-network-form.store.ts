@@ -18,7 +18,7 @@ interface MobileNetworkFormModel {
     towerTypeId: string;
     towerSize: number | null;
     technology: Technology[];
-    operator: Operator | null;
+    operator: Operator | '';
     radius: number | null;
 }
 
@@ -45,7 +45,7 @@ export class MobileNetworkFormStore {
         towerTypeId: '',
         towerSize: null,
         technology: [],
-        operator: null,
+        operator: '',
         radius: null,
     });
 
@@ -125,7 +125,7 @@ export class MobileNetworkFormStore {
             towerTypeId: '',
             towerSize: null,
             technology: [],
-            operator: null,
+            operator: '',
             radius: null,
         });
         this.mode.set('create');

@@ -419,3 +419,33 @@ port renvoie directement `SelectOption[]`, comme `SiteGroupSelectRepository`.
 - [x] Barrel ; `tsc` + `eslint` propres (2 imports inutilisés retirés après
       premier passage eslint : `labelsToFilterOptions`/`STATUS_LABEL`,
       finalement pas nécessaires côté filtre `mobile-network`).
+
+## Phase 6 — Câblage app + i18n
+
+- [x] `coverage-areas.providers.ts` étendu : `MobileNetworkRepository`,
+      `MobileNetworkFindOneRepository`, `TowerTypeSelectRepository` → leurs
+      impls (`@cmz/coverage-areas-data`), à côté des bindings `site-group` déjà
+      en place.
+- [x] `app.routes.ts` : route `coverage-areas/mobile-networks` →
+      `MOBILE_NETWORK_ROUTES` (lazy), même pattern que `site-groups`.
+- [x] `fr.translation.ts` : namespace `COVERAGE_AREAS.MOBILE_NETWORK`
+      (`FORM`/`FILTER`/`TABLE`/`TOOLTIP`/`SWEET_ALERT`) ajouté à côté de
+      `SITE_GROUP`, clés alignées sur celles déjà référencées par les composants
+      Phase 5.
+- [x] **Bug trouvé par `ngc --strictTemplates` app-level** (absent du
+      `tsc`/`eslint` lib-par-lib de la Phase 5) : `mobile-network-form.store.ts`
+      typait `operator: Operator | null`, mais `[formField]` sur un `<select>`
+      natif exige une valeur `string`-compatible non nullable (même contrainte
+      que `infrastructureType`/`towerTypeId`, déjà en `string` avec défaut
+      `''`). Corrigé en alignant `operator` sur le même pattern :
+      `Operator | ''` avec défaut `''` (dans `model`, et dans `reset()`).
+      Répercussion dans `mobile-network-form.component.ts#onSubmit` :
+      `operator ?? undefined` devient `operator || undefined` (`??` ne convertit
+      pas `''` en `undefined`, seul `||` le fait ici puisque toutes les valeurs
+      d'`Operator` sont des chaînes non vides). **Leçon** : valider au niveau
+      app (`ngc -p apps/.../tsconfig.app.json`) et pas seulement lib par lib
+      avant de considérer une UI phase close — ce type d'erreur de binding de
+      formulaire n'apparaît qu'à la compilation des templates de l'app
+      consommatrice.
+- [x] `ngc --strictTemplates` (tsconfig app) + `eslint` sur les fichiers touchés
+      : propres après le correctif ci-dessus.
