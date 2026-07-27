@@ -4,9 +4,9 @@
  *
  * Sert les endpoints des modules `administrative-infrastructure`,
  * `administrative-boundary`, `authentication` et `coverage-areas`
- * (`site-group`, `mobile-network`, `optical-fiber-network`, entités plates —
- * même forme que `infrastructure-types` ; `tower-type`/`fiber-constructor`,
- * select seul) avec
+ * (`site-group`, `mobile-network`, `optical-fiber-network`,
+ * `radio-relay-links`, entités plates — même forme que
+ * `infrastructure-types` ; `tower-type`/`fiber-constructor`, select seul) avec
  * l'enveloppe attendue par le kernel (`{ error, message, data }`) et la forme
  * de pagination Laravel
  * (`current_page`, `data`, `last_page`, `per_page`, `total`, …). Données en
@@ -242,6 +242,48 @@ const opticalFiberNetworks = [
         is_active: true,
         created_at: now(),
         updated_at: now(),
+    },
+];
+
+// ---- COVERAGE-AREAS : radio-relay-links ----------------------------------
+// JSON simple (pas de multipart) : aucun champ fichier sur cette entité,
+// contrairement à `optical-fiber-network` (cf. décision d'ingénieur, Phase 3).
+const radioRelayLinks = [
+    {
+        id: 'rrl-1',
+        name: 'Liaison Lomé-Aného',
+        operator: 'MTN',
+        frequency: '900MHZ',
+        start_date: '2024-01-15T00:00:00.000Z',
+        end_date: '2029-01-15T00:00:00.000Z',
+        is_active: true,
+        created_at: now(),
+        updated_at: now(),
+        geom_url: '/mock/geo/rrl-1.geojson',
+    },
+    {
+        id: 'rrl-2',
+        name: 'Liaison Kara-Sokodé',
+        operator: 'ORANGE',
+        frequency: '1800MHZ',
+        start_date: '2023-06-01T00:00:00.000Z',
+        end_date: '2028-06-01T00:00:00.000Z',
+        is_active: false,
+        created_at: now(),
+        updated_at: now(),
+        geom_url: '/mock/geo/rrl-2.geojson',
+    },
+    {
+        id: 'rrl-3',
+        name: 'Liaison Atakpamé-Kpalimé',
+        operator: 'MOOV',
+        frequency: '2300MHZ',
+        start_date: '2022-09-10T00:00:00.000Z',
+        end_date: '2027-09-10T00:00:00.000Z',
+        is_active: true,
+        created_at: now(),
+        updated_at: now(),
+        geom_url: '/mock/geo/rrl-3.geojson',
     },
 ];
 
@@ -944,6 +986,71 @@ async function handle(req, res, url) {
             updated_at: now(),
         });
         return send(res, 201, ok(null, 'Réseau fibre optique créé.'));
+    }
+
+    // ---- COVERAGE-AREAS : RADIO-RELAY-LINKS ----
+    // même base URL pour la liste paginée (?page) et le find-one (/id) —
+    // fidèle à `RadioRelayLinksApi.readAll`/`RadioRelayLinksFindOneApi.execute`.
+    if (path === 'infrastructures/radio-relay-links' && method === 'GET') {
+        return page !== null
+            ? send(res, 200, ok(paginate(radioRelayLinks, page)))
+            : send(res, 200, ok(paginate(radioRelayLinks, '1')));
+    }
+    m = path.match(/^infrastructures\/radio-relay-links\/(.+)$/);
+    if (m) {
+        const seg = m[1];
+        const id = seg.split('/')[0];
+        const item = radioRelayLinks.find((rrl) => rrl.id === id);
+        if (seg === `${id}/update` && method === 'POST') {
+            const b = await readBody(req);
+            if (item) {
+                Object.assign(item, {
+                    name: b.name,
+                    operator: b.operator,
+                    frequency: b.frequency,
+                    start_date: b.start_date,
+                    end_date: b.end_date,
+                    updated_at: now(),
+                });
+            }
+            return send(res, 200, ok(null, 'Faisceau hertzien mis à jour.'));
+        }
+        if (seg === `${id}/delete` && method === 'DELETE') {
+            const i = radioRelayLinks.findIndex((rrl) => rrl.id === id);
+            if (i >= 0) radioRelayLinks.splice(i, 1);
+            return send(res, 200, ok(null, 'Faisceau hertzien supprimé.'));
+        }
+        if (seg === `${id}/enable` && method === 'PUT') {
+            if (item) item.is_active = true;
+            return send(res, 200, ok(null, 'Faisceau hertzien activé.'));
+        }
+        if (seg === `${id}/disable` && method === 'PUT') {
+            if (item) item.is_active = false;
+            return send(res, 200, ok(null, 'Faisceau hertzien désactivé.'));
+        }
+        if (method === 'GET') {
+            return item
+                ? send(res, 200, ok(item))
+                : send(res, 404, fail('Faisceau hertzien introuvable.'));
+        }
+    }
+    if (
+        path === 'infrastructures/radio-relay-links/store' &&
+        method === 'POST'
+    ) {
+        const b = await readBody(req);
+        radioRelayLinks.unshift({
+            id: nextId(),
+            name: b.name,
+            operator: b.operator,
+            frequency: b.frequency,
+            start_date: b.start_date,
+            end_date: b.end_date,
+            is_active: false,
+            created_at: now(),
+            updated_at: now(),
+        });
+        return send(res, 201, ok(null, 'Faisceau hertzien créé.'));
     }
 
     // ---- ADMINISTRATIVE-BOUNDARY : REGIONS ----
