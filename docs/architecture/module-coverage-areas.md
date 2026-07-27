@@ -268,3 +268,122 @@ reconstruit. `mobile-network`, `optical-fiber-network`, `radio-relay-links`
 (CRUD complets) et `fiber-constructor`, `tower-type` (select seul) restent à
 construire **dans les mêmes 4 libs** (même scope Nx, cf. décision 5) — pas de
 nouvelles libs par entité.
+
+---
+
+# `mobile-network` — 2ᵉ entité du domaine (2026-07-27)
+
+- **Statut :** en cours (Phase 3/8 terminée).
+- **Gabarit de référence :** archétype CRUD standard (`site-group`), mais avec
+  relations externes — plus proche d'`administrative-boundary` (région/
+  département avec référence `{id,name}`) que de `site-group` sur ce point
+  précis.
+
+## Forme métier réelle (source lu, pas supposé)
+
+`mobile-network` (classée « Proche » 89 % côté source, pas « Conforme ») a deux
+champs qui rompent avec le CRUD plat de `site-group` :
+
+- `technology: Technology[]` (multi-select `2G/3G/4G/5G`) et `operator`
+  (`MTN`/`Orange`/`Moov`) — deux enums **propres à `mobile-network`**, pas
+  partagés avec `site-group`.
+- **`status`** : le source déclare un `mobile-network-status.enum.ts` dupliqué
+  (identique à celui de `site-group`). Décision : **réutiliser l'enum `Status`
+  déjà présent dans `coverage-areas-domain`** au lieu de le redupliquer —
+  cohérent avec le précédent intra-module d'`administrative-boundary`
+  (région/département/commune partagent un seul `Status` dans la même lib), pas
+  avec la règle _inter-module_ (chaque domaine a son propre `Status`). Les deux
+  règles coexistent : un `Status` par lib, pas par entité.
+
+## Découverte : la vraie relation cachée derrière un nom trompeur
+
+Le contrat (`create`/`update`/wire) porte trois champs `siteId`, `siteName`,
+`infrastructureType`. Rien dans leur nom n'indique une dépendance vers
+`site-group`. Lecture du composant formulaire source
+(`mobile-network-form.component.ts`) :
+
+- `siteId` et `siteName` sont des **champs texte libres** (aucun binding vers un
+  select) — malgré leur nom, ce ne sont pas des références résolues.
+- `infrastructureType` est en réalité bindé à **`SiteGroupSelectFacade`** (le
+  port select construit mais non branché à la fin du plan `site-group`,
+  décision 4) : le libellé UI et le nom de champ suggèrent un concept « type
+  d'infrastructure », mais la valeur stockée est l'uniqId d'un `site-group`.
+
+C'est une incohérence de nommage du source, pas une supposition de ce plan.
+Décision : **conserver le nom `infrastructureType` tel quel** (fidélité au
+contrat wire `infrastructure_type`, déjà répliqué dans toutes les couches Phase
+2/3), mais documenter la réalité en commentaire directement dans
+`MobileNetworkFindOneProps` (`props/mobile-network-find-one.props.ts`) plutôt
+que de renommer silencieusement ou de laisser l'incohérence sans trace.
+
+## Découverte : `tower-type`, le 2ᵉ concept select-only, doit être construit maintenant
+
+`towerTypeId` est bindé à `TowerTypeSelectFacade` — un port select **réel** (pas
+une confusion de nommage), sur un concept `tower-type` jusqu'ici seulement
+recensé (décision du plan `site-group`, jamais construit). Contrairement à
+`infrastructureType`, celui-ci n'a **aucun** détour : le domaine source
+`tower-type` ne contient que 8 fichiers, tous select
+(`TowerTypeSelectRepository → ...Mapper → ...Api`, endpoint
+`infrastructures/tower-types/select-field`). Construit ici en Phase 2/3, dans
+les mêmes libs `coverage-areas` (pas de nouvelle lib), sans props/entité — le
+port renvoie directement `SelectOption[]`, comme `SiteGroupSelectRepository`.
+
+## Décisions d'ingénieur
+
+1. **Pas de nouveau pattern archétype** — CRUD standard + 2 select externes
+   consommés en Phase 5 (UI), déjà vu conceptuellement avec les relations
+   `{id,name}` d'`administrative-boundary`.
+2. **`Status` partagé avec `site-group`** dans la même lib domaine — pas de
+   dupliqué `mobile-network-status.enum.ts` (cf. section forme métier).
+3. **`Operator`/`Technology`** : deux enums locaux à `mobile-network`, format
+   const-object + guard `isOperator`/`isTechnology`, comme `Status`.
+4. **`infrastructureType` conservé tel quel**, incohérence de nommage source
+   documentée en commentaire de code, pas corrigée silencieusement ni renommée
+   (cf. découverte ci-dessus).
+5. **`tower-type` select construit maintenant** (Phase 2/3), branché dès la
+   Phase 5 (seul consommateur connu : le formulaire `mobile-network`) —
+   contrairement au select `site-group` qui reste non branché.
+6. **Historique** toujours hors périmètre (route `history` présente dans le
+   source, jamais construite, décision constante depuis `site-group`).
+
+## Phase 1 — Scaffolding
+
+- [x] Aucune nouvelle lib : `mobile-network`/`tower-type` s'ajoutent dans
+      `libs/coverage-areas/{domain,data,application,ui}` déjà scaffoldées.
+
+## Phase 2 — Domaine
+
+- [x] `enums/mobile-network-{operator,technology}.enum.ts`.
+- [x] `props/mobile-network.props.ts`, `props/mobile-network-find-one.props.ts`
+      (avec le commentaire sur `infrastructureType`).
+- [x] `entities/mobile-network.entity.ts`, `-find-one.entity.ts`,
+      `-filter.entity.ts`.
+- [x] `contracts/mobile-network-{create,update,delete,enable,disable,filter,     find-one-filter}.contract.ts` +
+      `.validate-contract.ts`.
+- [x] `validators/` (7 fichiers, `GenericRequiredError` sauf filter).
+- [x] `value-objects/` (7 fichiers, **filter inclus dès le départ** — leçon
+      retenue de l'écart Phase 2→4 sur `site-group`).
+- [x] `repositories/mobile-network.repository.ts`,
+      `mobile-network-find-one.repository.ts`,
+      `tower-type-select.repository.ts`.
+- [x] Barrel ; `tsc` + `eslint` propres.
+
+## Phase 3 — Data
+
+- [x] `endpoints/coverage-areas.endpoints.ts` — ajout
+      `MOBILE_NETWORK:     'infrastructures/coverage-areas'` et
+      `TOWER_TYPE:     'infrastructures/tower-types'` (les 2 clés restantes du
+      source, `OPTICAL_FIBER_NETWORK`/`RADIO_RELAY_LINKS`/`FIBER_CONSTRUCTOR`,
+      toujours hors périmètre).
+- [x] `dtos/mobile-network-*-api.dto.ts` (9 fichiers,
+      `technology: string[] |     string` conservé fidèlement — le wire source
+      renvoie parfois une chaîne simple),
+      `dtos/tower-type-select-response-api.dto.ts`.
+- [x] `mappers/mobile-network*.mapper.ts` (normalisation
+      `string[] | string → Technology[]` reproduite telle quelle dans
+      `mapItemFromDto`), `mappers/tower-type-select.mapper.ts`.
+- [x] `sources/mobile-network*.api.ts`, `sources/tower-type-select.api.ts` —
+      `HttpClient` + `SETTINGS_API_URL`, `tower-type` sur `/select-field`
+      (confirmé par lecture du source).
+- [x] `repositories/*.repository.impl.ts` (3 fichiers).
+- [x] Barrel ; `tsc` + `eslint` propres.
