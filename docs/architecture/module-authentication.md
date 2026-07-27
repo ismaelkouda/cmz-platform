@@ -1,7 +1,13 @@
 # Module `authentication` — plan de reconstruction
 
 - **Créé :** 2026-07-27
-- **Statut :** plan (avant Phase 1)
+- **Statut :** **fait** (2026-07-27) — 4 libs + câblage app + mock backend,
+  validés `ngc --strictTemplates` + `eslint`/boundaries + smoke test mock (curl,
+  5 scénarios). `nx build`/`nx lint`/`nx serve` non rejouables depuis ce sandbox
+  Linux (binaires natifs `darwin-arm64`, limite déjà documentée en Phase 08
+  d'`administrative-boundary`) — à confirmer par l'utilisateur sur le poste
+  macOS. Écarts réels vs plan : voir [§ Bilan réel](#bilan-réel-2026-07-27) en
+  fin de document.
 - **Gabarit de référence :** `module-administrative-boundary.md` (Phase 08) pour
   la méthode ; **mais un archétype différent** — cf. § Pourquoi ce module est un
   test différent.
@@ -161,93 +167,93 @@ par `StoragePort`) ne sont pas dans le kernel actuel — décision 6.
 
 ## Phase 1 — Scaffolding Nx (4 libs)
 
-- [ ] Générer `libs/authentication/{domain,data,application,ui}`
+- [x] Générer `libs/authentication/{domain,data,application,ui}`
       (`@cmz/authentication-{domain,data,application,ui}`).
-- [ ] `project.json` tags : `scope:authentication` +
+- [x] `project.json` tags : `scope:authentication` +
       `type:{domain,data,application,ui}`.
-- [ ] `tsconfig.base.json` : 4 paths `@cmz/authentication-*`.
-- [ ] Barrels vides.
-- [ ] `eslint.config.mjs` : ajouter le bloc
+- [x] `tsconfig.base.json` : 4 paths `@cmz/authentication-*`.
+- [x] Barrels vides.
+- [x] `eslint.config.mjs` : ajouter le bloc
       `scope:authentication → [self,     scope:shared]`.
 
 ## Phase 2 — Domaine (`-domain`)
 
 D'abord, **ajout kernel** (`@cmz/shared-domain`, pas dans le module) :
 
-- [ ] `interfaces/current-user.interface.ts` — `CurrentUser`, `AuthToken`,
+- [x] `interfaces/current-user.interface.ts` — `CurrentUser`, `AuthToken`,
       `UserPermissions` (fidèles au source, cf. § Périmètre).
 
 Puis par opération **O ∈ {login, forgot-password, reset-password}** :
 
-- [ ] `props/<O>.props.ts` — `{ user, token, message? }` pour `login` seulement
+- [x] `props/<O>.props.ts` — `{ user, token, message? }` pour `login` seulement
       ; `{ message: string }` pour `forgot-password`/ `reset-password` (décision
       1).
-- [ ] `entities/<O>-response.entity.ts` — pattern props + getters.
-- [ ] `contracts/<O>-request.contract.ts` + `.validate-contract.ts` : `login`
+- [x] `entities/<O>-response.entity.ts` — pattern props + getters.
+- [x] `contracts/<O>-request.contract.ts` + `.validate-contract.ts` : `login`
       (`email?/password?`), `forgot-password` (`email?`), `reset-password`
       (`token?/email?/password?/confirmPassword?`).
-- [ ] `validators/<O>-request.validator.ts` — réutilise les types kernel
+- [x] `validators/<O>-request.validator.ts` — réutilise les types kernel
       (décision 6) : email/password/confirmPassword typés,
       `GenericRequiredError` pour `token` seul.
-- [ ] `value-objects/<O>-request.vo.ts` — point d'entrée validation, comme
+- [x] `value-objects/<O>-request.vo.ts` — point d'entrée validation, comme
       l'archétype CRUD.
-- [ ] `repositories/<O>.repository.ts` — port abstrait,
+- [x] `repositories/<O>.repository.ts` — port abstrait,
       `execute(validContract):     Observable<XResponseEntity>`.
-- [ ] Barrel + `ngc` domaine pur.
+- [x] Barrel + `ngc` domaine pur.
 
 ## Phase 3 — Data (`-data`)
 
-- [ ] `endpoints/authentication.endpoints.ts` (`login`, `forgot-password`,
+- [x] `endpoints/authentication.endpoints.ts` (`login`, `forgot-password`,
       `reset-password`).
-- [ ] `dtos/<O>-request-api.dto.ts` + `<O>-response-api.dto.ts`
+- [x] `dtos/<O>-request-api.dto.ts` + `<O>-response-api.dto.ts`
       (`SimpleResponseDto`).
-- [ ] `mappers/<O>-request.mapper.ts` (contrat validé → DTO wire) +
+- [x] `mappers/<O>-request.mapper.ts` (contrat validé → DTO wire) +
       `<O>-response.mapper.ts` (`SimpleResponseMapper`).
-- [ ] `sources/<O>.api.ts` — `HttpClient` + `AUTH_API_URL` (pas
+- [x] `sources/<O>.api.ts` — `HttpClient` + `AUTH_API_URL` (pas
       `SETTINGS_API_URL`).
-- [ ] `repositories/<O>.repository.impl.ts`.
-- [ ] `package.json` deps = imports réels ; barrel ; `ngc`.
+- [x] `repositories/<O>.repository.impl.ts`.
+- [x] `package.json` deps = imports réels ; barrel ; `ngc`.
 
 ## Phase 4 — Application (`-application`)
 
 D'abord, **ajout kernel** (`@cmz/shared-application`, pas dans le module) :
 
-- [ ] `SessionService.save(user, token, permissions)` — symétrique à `clear()`
+- [x] `SessionService.save(user, token, permissions)` — symétrique à `clear()`
       existant, écrit via `StoragePort.saveEncrypted` (clés `user_data`,
       `token_data`, `permissionsActions` — mêmes clés que
       `PermissionActionsService`/`clear()` lisent déjà).
 
 Puis par opération :
 
-- [ ] `use-cases/<O>.use-case.ts` —
+- [x] `use-cases/<O>.use-case.ts` —
       `defer(() => repository.execute(xVo(contract)))`.
-- [ ] `facades/<O>.facade.ts` — étend
+- [x] `facades/<O>.facade.ts` — étend
       `ResourceFacade<XResponseEntity,     XRequestValidateContract>`
       (décision 3) ; **seule `LoginFacade`** ajoute un `effect()` appelant
       `sessionService.save(...)` sur succès.
-- [ ] Barrel ; `ngc`.
+- [x] Barrel ; `ngc`.
 
 ## Phase 5 — UI (`-ui`)
 
-- [ ] `constants/<O>-form-keys.constant.ts`,
+- [x] `constants/<O>-form-keys.constant.ts`,
       `<O>-form-error-messages.constant.ts`.
-- [ ] `stores/<O>-form.store.ts` — Signal Forms (décision 7), mêmes règles que
+- [x] `stores/<O>-form.store.ts` — Signal Forms (décision 7), mêmes règles que
       le source (email pattern, password minlength 8, required).
-- [ ] `features/<O>.component.ts` (+ template) — soumission → `facade`,
+- [x] `features/<O>.component.ts` (+ template) — soumission → `facade`,
       redirection sur succès (`login` → dashboard, `forgot-password` → écran «
       email envoyé », `reset-password` → `/login`).
-- [ ] `authentication.routes.ts` — 3 routes publiques + redirect par défaut vers
+- [x] `authentication.routes.ts` — 3 routes publiques + redirect par défaut vers
       `login` (pas de guard, décision 9).
-- [ ] `providers/` composition-root : `provideAuthentication()` (1 seul, pas 1
+- [x] `providers/` composition-root : `provideAuthentication()` (1 seul, pas 1
       par opération — décision 2).
-- [ ] Barrel ; `ngc --strictTemplates`.
+- [x] Barrel ; `ngc --strictTemplates`.
 
 ## Phase 6 — Câblage app + i18n
 
-- [ ] `app.config.ts` : `...provideAuthentication()`.
-- [ ] `app.routes.ts` : route `login`/`forgot-password`/`reset-password` (lazy,
+- [x] `app.config.ts` : `...provideAuthentication()`.
+- [x] `app.routes.ts` : route `login`/`forgot-password`/`reset-password` (lazy,
       sans garde).
-- [ ] i18n : namespace `AUTHENTICATION.{LOGIN,FORGOT_PASSWORD,RESET_PASSWORD}.*`
+- [x] i18n : namespace `AUTHENTICATION.{LOGIN,FORGOT_PASSWORD,RESET_PASSWORD}.*`
       **et** ajouter les clés `COMMON.EMAIL.REQUIRED`,
       `COMMON.EMAIL.INVALID_FORMAT`, `COMMON.PASSWORD.REQUIRED`,
       `COMMON.CONFIRM_PASSWORD.REQUIRED`, `COMMON.CONFIRM_PASSWORD.NO_MATCH`,
@@ -257,7 +263,7 @@ Puis par opération :
 
 ## Phase 7 — Mock backend
 
-- [ ] Étendre `tools/mock-server.mjs` : `POST login` (email/password fixes de
+- [x] Étendre `tools/mock-server.mjs` : `POST login` (email/password fixes de
       test → `{user, token, message}` ; mauvais identifiants →
       `{error:true, message:"..."}`), `POST forgot-password` (→ `{message}`),
       `POST reset-password` (token/email attendus → `{message}` ou erreur si
@@ -265,12 +271,56 @@ Puis par opération :
 
 ## Phase 8 — Validation & livraison
 
-- [ ] `ngc --strictTemplates` vert (4 libs + app).
-- [ ] Boundaries 0 violation, `deps = imports`.
+- [x] `ngc --strictTemplates` vert (4 libs + app).
+- [x] Boundaries 0 violation, `deps = imports`.
 - [ ] `npx nx lint` + `npx nx serve` (poste macOS, cf. limite sandbox Linux
-      documentée en Phase 08 d'`administrative-boundary`).
-- [ ] Smoke test : login (succès → session écrite, `PermissionActionsService`
-      non vide ; échec → toast) + forgot-password (→ écran succès) +
-      reset-password (→ redirect login).
-- [ ] Commits conventionnels par couche.
-- [ ] Mettre ce document à jour (statut fait + écarts réels).
+      documentée en Phase 08 d'`administrative-boundary`) — **en attente de
+      confirmation utilisateur**, non rejouable depuis ce sandbox.
+- [x] Smoke test **API** (mock backend, curl direct) : login OK, login
+      identifiants invalides, forgot-password, reset-password OK, reset-password
+      token invalide — 5/5 scénarios renvoient la forme attendue. Smoke test
+      **navigateur** (session réellement écrite, `PermissionActionsService` non
+      vide, toast affiché) non fait depuis ce sandbox — à couvrir par la
+      confirmation `nx serve` ci-dessus.
+- [x] Commits conventionnels par couche.
+- [x] Mettre ce document à jour (statut fait + écarts réels).
+
+## Bilan réel (2026-07-27)
+
+Écarts constatés entre ce plan et ce qui a réellement été construit :
+
+1. **`LoginFacade` n'utilise pas `effect()` (Phase 4/plan initial).** Le plan
+   prévoyait un `effect()` dans le constructeur appelant
+   `sessionService.save(...)` sur succès. Revue critique explicite (demandée par
+   l'utilisateur avant la Phase 5, "comporte-toi comme un ingénieur senior qui
+   analyse le code d'un junior") : cette version avait une vraie race condition
+   — `session.save()` est async, `void`-é dans l'`effect()`, donc
+   silencieusement swallowed en cas d'échec, et l'UI pouvait rediriger avant la
+   fin de l'écriture. **Corrigé** en déplaçant `session.save()` **dans** le
+   pipeline `stream()` (`switchMap`) : `value()` ne résout qu'après persistance
+   réussie, un échec devient une vraie erreur de flux routée par
+   `ErrorHandlerRegistry`. Commit dédié (`bfa9103`), avant tout fichier UI.
+2. **`SessionService.save()` prend 2 arguments, pas 3.** Le plan annonçait
+   `save(user, token, permissions)`. `permissions` n'existe pas séparément :
+   `user.permissions` (déjà porté par `CurrentUser`) suffit — signature réelle
+   `save(user: CurrentUser, token: AuthToken)`.
+3. **`*-form-keys.constant.ts`/`*-form-error-messages.constant.ts` jamais créés
+   (Phase 5).** Le plan les listait par réflexe (gabarit CRUD). Lecture de
+   `cmz-field`/`region-form.store.ts` avant d'écrire quoi que ce soit : ces
+   fichiers sont un reliquat Reactive Forms, incompatibles avec Signal Forms
+   (`cmz-field` lit `field().errors()` directement, aucune table de messages par
+   clé). Confirmé a posteriori par l'audit workspace (2026-07-27) : ces mêmes
+   fichiers, présents dans `administrative-infrastructure` et
+   `administrative-boundary`, s'y sont révélés **morts** (0 consommateur) — ne
+   pas les avoir créés ici a évité d'ajouter un troisième cas.
+4. **Redirection `login` → `/`, pas `/dashboard`.** Le plan citait `/dashboard`
+   par défaut ; cette route n'existe pas dans `app.routes.ts` à ce jour.
+   Redirection vers `/` (racine), à corriger le jour où une vraie page d'accueil
+   post-connexion existe.
+5. **`nx build`/`nx lint`/`nx serve` non rejoués depuis ce sandbox.** Même
+   limite que documentée en Phase 08 d'`administrative-boundary` (binaires
+   `@nx/nx-*` natifs `darwin-arm64`, `WorkspaceContext is not a constructor` sur
+   ce Linux arm64). Validation faite par `tsc`/`eslint`/`ngc --strictTemplates`
+   (tous verts, 4 libs + app) + smoke test API direct (curl sur le mock backend,
+   5/5 scénarios). Le smoke test navigateur reste à confirmer par l'utilisateur
+   sur son poste macOS.
