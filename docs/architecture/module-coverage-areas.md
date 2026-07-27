@@ -1,13 +1,14 @@
 # Module `coverage-areas` — plan de reconstruction
 
 - **Créé :** 2026-07-27
-- **Statut :** livré (`site-group` + `mobile-network`, 2026-07-27) — Phases 1 à
-  8 complètes pour les deux entités. `site-group` : `nx lint`/`nx serve`
-  confirmés conformes par l'utilisateur (poste macOS). `mobile-network` :
-  validation statique (`tsc`, `ngc --strictTemplates` app, `eslint`, smoke test
-  mock) faite en sandbox, `nx lint`/`nx serve` réels **restent à confirmer par
-  l'utilisateur** sur son poste macOS. Cf. « Bilan réel » de chaque entité en
-  fin de document.
+- **Statut :** livré (`site-group` + `mobile-network` + `optical-fiber-network`,
+  2026-07-27) — Phases 1 à 8 complètes pour les trois entités (+ les 2 concepts
+  select `tower-type`/`fiber-constructor`). `site-group` : `nx lint`/`nx serve`
+  confirmés conformes par l'utilisateur (poste macOS). `mobile-network` et
+  `optical-fiber-network` : validation statique (`tsc` par lib,
+  `ngc --strictTemplates` app, `eslint`, smoke test mock) faite en sandbox,
+  `nx lint`/`nx serve` réels **restent à confirmer par l'utilisateur** sur son
+  poste macOS. Cf. « Bilan réel » de chaque entité en fin de document.
 - **Gabarit de référence :** `module-administrative-boundary.md` — même
   archétype **CRUD** déjà validé 2 fois (`administrative-infrastructure`,
   `administrative-boundary`). Aucun nouveau pattern à valider ici, contrairement
@@ -555,10 +556,11 @@ en marge (pas silencieusement) :
 
 # `optical-fiber-network` — 3ᵉ entité du domaine (2026-07-27)
 
-- **Statut :** livré, Phases 1 à 7 complètes ; Phase 8 (validation finale) en
-  cours. Validation statique (`tsc` par lib, `ngc --strictTemplates` app,
-  `eslint`, smoke test mock) faite au fil des phases ; `nx lint`/`nx serve`
-  réels restent à confirmer par l'utilisateur sur son poste macOS.
+- **Statut :** livré, Phases 1 à 8 complètes (2026-07-27). Validation statique
+  (`tsc` par lib, `ngc --strictTemplates` app, `eslint`, smoke test mock) faite
+  au fil des phases et reconfirmée en Phase 8 après le passage prettier ;
+  `nx lint`/`nx serve` réels restent à confirmer par l'utilisateur sur son poste
+  macOS.
 - **Gabarit de référence :** archétype CRUD standard, mais avec une **première**
   dans ce socle : un champ fichier (`geomFile`, upload `multipart/form-data`).
 
@@ -726,13 +728,52 @@ principale (précédent : `tower-type` construit avec `mobile-network`).
       côté mock), update sans fichier (géométrie existante préservée), enable,
       disable, delete — tous corrects.
 
-## Phase 8 — Validation & livraison (à finaliser)
+## Phase 8 — Validation & livraison
 
-- [ ] `tsc --noEmit` sur les 4 libs individuellement.
-- [ ] `ngc --strictTemplates` sur l'app complète.
-- [ ] `eslint` sur les 4 libs + fichiers app modifiés.
-- [ ] Smoke test backend (déjà fait Phase 7, à re-confirmer après Phase 8 si du
-      code a changé entre-temps).
-- [ ] Mettre à jour le statut de ce document (Bilan réel + Suite).
-- [ ] `npx nx lint` + `npx nx serve` — à confirmer par l'utilisateur (poste
-      macOS), même limitation sandbox.
+- [x] `tsc --noEmit` sur les 4 libs `coverage-areas` + `shared-data`
+      individuellement — propres.
+- [x] `ngc --strictTemplates` sur `apps/backoffice-angular` (tsconfig app
+      complet) — propre.
+- [x] `eslint` sur les 4 libs `coverage-areas`, `shared-data`,
+      `tools/mock-server.mjs` et les 3 fichiers app modifiés — propre.
+- [x] Smoke test backend re-confirmé après le passage prettier du commit Phase 7
+      (liste, select `fiber-constructor`) — toujours vert, aucune régression de
+      formatage n'a cassé le mock.
+- [x] Commits conventionnels par couche (7 commits, Phase 2 à 7 — Phase 1 déjà
+      faite avec `site-group`, libs réutilisées).
+- [x] Mettre ce document à jour (statut fait + écarts réels + noter la suite).
+- [ ] `npx nx lint` + `npx nx serve` (poste macOS) — **à confirmer par
+      l'utilisateur**, même limitation sandbox que `site-group`/
+      `mobile-network`.
+
+## Bilan réel `optical-fiber-network` (2026-07-27)
+
+Écarts entre le plan initial et l'exécution réelle :
+
+1. **Aperçu cartographique (`GeojsonLineMapComponent`) explicitement hors
+   périmètre** — dépendance Leaflet dédiée, aucune brique carto dans ce socle à
+   ce stade. Remplacé par une mention textuelle du fichier existant. Même
+   logique que la tab Historique écartée pour `site-group` : documenté, pas
+   silencieusement oublié.
+2. **`buildFormData` ajouté à `@cmz/shared-data`** — première apparition d'un
+   endpoint à upload de fichier dans ce socle ; utilitaire générique, pas
+   spécifique à `coverage-areas`, pour rester réutilisable par de futurs
+   modules.
+3. **Mock backend : parseur `multipart/form-data` ajouté** (`readFormData`) — le
+   `readBody` existant (`JSON.parse`) ne pouvait pas gérer un body multipart ;
+   vérifié par un test curl avec upload réel d'un fichier
+   (`-F geom_file=@trace.geojson`), le nom de fichier apparaît correctement dans
+   le `geom_url` simulé retourné par le mock.
+4. **`Operator` réutilisé de `mobile-network`** (pas de nouvel enum) — même
+   valeurs, même règle que `Status`/`StatusStyle` partagés par lib.
+5. **`geomFile` requis conditionnellement au mode** (`validate()` +
+   `isCreate()`, pas `required()` seul) — cohérent avec le pattern déjà utilisé
+   pour `technology` (`mobile-network`).
+6. `ngc`/`nx lint`/`nx serve` : même limitation sandbox que les entités
+   précédentes — validation statique complète faite ici ; `nx lint`/ `nx serve`
+   réels restent à confirmer par l'utilisateur sur son poste macOS.
+
+**Suite** : `site-group`, `mobile-network`, `optical-fiber-network` sont livrés
+(3 entités CRUD + 2 concepts select `tower-type`/`fiber-constructor`). Reste
+`radio-relay-links` (dernière entité CRUD du domaine) — à construire **dans les
+mêmes 4 libs** (scope Nx `coverage-areas` inchangé).
