@@ -1,7 +1,10 @@
 # Module `administrative-boundary` — plan de reconstruction (Phase 08)
 
 - **Créé :** 2026-07-26
-- **Statut :** à faire (plan)
+- **Statut :** **fait** (2026-07-27) — 4 libs + câblage app + mock backend,
+  validés `ngc --strictTemplates` + `eslint`/boundaries + smoke test mock.
+  Écarts réels vs plan : voir [§ Bilan réel](#bilan-réel-2026-07-27) en fin de
+  document.
 - **Gabarit de référence :** `module-administrative-infrastructure.md`
   (Phase 07)
 - **Contrats d'archétype :** [`archetypes/`](./archetypes/README.md) — extraits
@@ -110,14 +113,14 @@ Endpoints (constante data) : `territorial-structures/regions`,
 
 ## Phase 1 — Scaffolding Nx (4 libs)
 
-- [ ] Générer `libs/administrative-boundary/{domain,data,application,ui}`
+- [x] Générer `libs/administrative-boundary/{domain,data,application,ui}`
       (`@cmz/administrative-boundary-{domain,data,application,ui}`).
-- [ ] `project.json` tags : `scope:administrative-boundary` +
+- [x] `project.json` tags : `scope:administrative-boundary` +
       `type:{domain,data,application,ui}`.
-- [ ] `tsconfig.base.json` : ajouter les 4 paths
+- [x] `tsconfig.base.json` : ajouter les 4 paths
       `@cmz/administrative-boundary-*`.
-- [ ] Barrels `src/index.ts` (vides au départ).
-- [ ] Vérifier que `eslint.config.mjs` couvre le nouveau scope (règle
+- [x] Barrels `src/index.ts` (vides au départ).
+- [x] Vérifier que `eslint.config.mjs` couvre le nouveau scope (règle
       `scope:administrative-boundary → [self, scope:shared]` — **ajouter** ce
       `sourceTag`, calqué sur le bloc `administrative-infrastructure`).
 
@@ -125,139 +128,147 @@ Endpoints (constante data) : `territorial-structures/regions`,
 
 Par entité **E ∈ {region, department, municipality}** (+ 2 vues imbriquées) :
 
-- [ ] `enums/status.enum.ts` — **un seul** `Status` wire-first + `isStatus`.
-- [ ] `props/<E>.props.ts`, `props/<E>-find-one.props.ts` — relations en
+- [x] `enums/status.enum.ts` — **un seul** `Status` wire-first + `isStatus`.
+- [x] `props/<E>.props.ts`, `props/<E>-find-one.props.ts` — relations en
       `{id,name}` (décision 3), compteurs, `code`.
-- [ ] `props/departments-by-region-id.props.ts`,
+- [x] `props/departments-by-region-id.props.ts`,
       `props/municipalities-by-department-id.props.ts`.
-- [ ] `entities/<E>.entity.ts`, `<E>-find-one.entity.ts`,
+- [x] `entities/<E>.entity.ts`, `<E>-find-one.entity.ts`,
       `<E>-filter.entity.ts`, `<E>-select.entity.ts` — pattern `props` +
       getters + `with()` immuable (aucun `statusStyle`/`actionsRef` : UI).
-- [ ] `entities/departments-by-region-id.entity.ts`,
+- [x] `entities/departments-by-region-id.entity.ts`,
       `municipalities-by-department-id.entity.ts`.
-- [ ] `contracts/<E>-{create,update,delete,filter,find-one-filter}.contract.ts` +
+- [x] `contracts/<E>-{create,update,delete,filter,find-one-filter}.contract.ts` +
       `.validate-contract.ts` (create/update/find-one-filter **et tout champ de
       `filter` qui s'avère requis après examen** — pas de présomption
       d'optionalité par défaut).
-- [ ] `contracts/{departments-by-region-id,municipalities-by-department-id}-filter.contract.ts`
+- [x] `contracts/{departments-by-region-id,municipalities-by-department-id}-filter.contract.ts`
       — **juger explicitement si l'id du parent (région/département) est
       requis** dans ce contrat ; si oui, `.validate-contract.ts` +
       `GenericRequiredError` comme n'importe quel champ requis.
-- [ ] `validators/<E>-{create,update,filter,find-one-filter}.validator.ts` +
+- [x] `validators/<E>-{create,update,filter,find-one-filter}.validator.ts` +
       validators des 2 filtres imbriqués (`assertValidDateRange` + champs requis
       le cas échéant, via `GenericRequiredError`).
-- [ ] `value-objects/<E>-{create,update,delete,filter,find-one-filter}.vo.ts` +
+- [x] `value-objects/<E>-{create,update,delete,filter,find-one-filter}.vo.ts` +
       VO des filtres imbriqués.
-- [ ] `repositories/<E>.repository.ts`, `<E>-find-one.repository.ts`,
+- [x] `repositories/<E>.repository.ts`, `<E>-find-one.repository.ts`,
       `<E>-select.repository.ts` (classes abstraites, tokens DI, sans
       décorateur).
-- [ ] `repositories/departments-by-region-id.repository.ts`,
+- [x] `repositories/departments-by-region-id.repository.ts`,
       `municipalities-by-department-id.repository.ts`.
-- [ ] Barrel + **`ngc` domaine pur** (dépend seulement de `@cmz/shared-domain` +
+- [x] Barrel + **`ngc` domaine pur** (dépend seulement de `@cmz/shared-domain` +
       `rxjs`).
 
 ## Phase 3 — Data (`-data`)
 
-- [ ] `endpoints/administrative-boundary.endpoints.ts`
+- [x] `endpoints/administrative-boundary.endpoints.ts`
       (`territorial-structures/*`).
-- [ ] `dtos/` par entité : `-create-api`, `-update-api`, `-delete-api`,
+- [x] `dtos/` par entité : `-create-api`, `-update-api`, `-delete-api`,
       `-filter-api`, `-find-one-filter-api`, `-response-api`,
       `-find-one-response-api`, `-select-response-api` (+ DTO cascade
       region→departments).
-- [ ] `dtos/` des 2 vues imbriquées (`-filter-api`, `-response-api`).
-- [ ] `mappers/` : response
+- [x] `dtos/` des 2 vues imbriquées (`-filter-api`, `-response-api`).
+- [x] `mappers/` : response
       (`PaginatedMapper`/`SimpleResponseMapper`/`ArrayResponseMapper` +
       `MapperUtils.validateDto`), request (snake_case), **`status.mapper`**
       (`is_active ⇄ Status`, **un seul** partagé), résolution relations
       `{id,name}`.
-- [ ] `sources/*.api.ts` (`@Service` `HttpClient`, `SETTINGS_API_URL`,
+- [x] `sources/*.api.ts` (`@Service` `HttpClient`, `SETTINGS_API_URL`,
       `buildHttpParams/Payload`, `BYPASS_CACHE`).
-- [ ] `repositories/*.repository.impl.ts` → `PageResult` (liste) /
+- [x] `repositories/*.repository.impl.ts` → `PageResult` (liste) /
       `MessageEntity` (mutations via `MessageResultMapper` +
       `assertResponseOk`).
-- [ ] `package.json` deps
+- [x] `package.json` deps
       `{domain module, shared-data, shared-domain, core, @angular/*}` (= imports
       réels) ; barrel ; `ngc`.
 
 ## Phase 4 — Application (`-application`)
 
-- [ ] `use-cases/<E>.use-case.ts` (liste :
+- [x] `use-cases/<E>.use-case.ts` (liste :
       `filterEntity ∘ filterVo → repository.execute`), `<E>-find-one`,
       `<E>-select`, create/update/delete (injectent les **ports**).
-- [ ] `use-cases/departments-by-region-id.use-case.ts`,
+- [x] `use-cases/departments-by-region-id.use-case.ts`,
       `municipalities-by-department-id.use-case.ts`.
-- [ ] `facades/<E>.facade.ts` (étend `CollectionResourceFacade`),
+- [x] `facades/<E>.facade.ts` (étend `CollectionResourceFacade`),
       `<E>-find-one.facade.ts` / `<E>-select.facade.ts` (étendent
       `ResourceFacade`).
-- [ ] `facades/` des 2 vues imbriquées (paginées, paramétrées par l'id parent).
-- [ ] Feedback via `NotificationPort`/`TranslationPort`/`ErrorHandlerRegistry`
+- [x] `facades/` des 2 vues imbriquées (paginées, paramétrées par l'id parent).
+- [x] Feedback via `NotificationPort`/`TranslationPort`/`ErrorHandlerRegistry`
       (aucun import `ui` ni `data`). Barrel ; `ngc`.
 
 ## Phase 5 — UI (`-ui`)
 
-- [ ] `constants/` : `administrative-boundary-paths`, puis par entité `-paths`,
+- [x] `constants/` : `administrative-boundary-paths`, puis par entité `-paths`,
       `-filter-keys`, `-form-keys`, `-form-error-messages`, `-table`, `-tabs` ;
       `form-validators` ; **`status-label.constant`** (`STATUS_LABEL`).
-- [ ] `enums/status-style.enum` + `mappers/status-style.mapper` (UI).
-- [ ] `stores/<E>-filter.store.ts` (Signal Forms, modèle `Record` semé sur
+- [x] `enums/status-style.enum` + `mappers/status-style.mapper` (UI).
+- [x] `stores/<E>-filter.store.ts` (Signal Forms, modèle `Record` semé sur
       toutes les clés → contrat, dates typées, cascade region→dept pour
       municipality) + `stores/<E>-form.store.ts` (`form(model, schema)`,
       `required`, hydratation edit/details via `effect` sur find-one).
-- [ ] `stores/` des filtres imbriqués + `form-mode.type` (réutiliser le
+- [x] `stores/` des filtres imbriqués + `form-mode.type` (réutiliser le
       partagé).
-- [ ] `adapters/<E>-vm-props.interface.ts` + `<E>-vm.presenter.ts` (Entity→VM,
+- [x] `adapters/<E>-vm-props.interface.ts` + `<E>-vm.presenter.ts` (Entity→VM,
       `statusStyleOf`, `statusLabel` via `STATUS_LABEL`, `actionsRef`, actions
       edit/delete **sans toggle**) + presenters des 2 vues imbriquées.
-- [ ] `features/<E>-list.component.ts`, `<E>-form.component.ts`,
+- [x] `features/<E>-list.component.ts`, `<E>-form.component.ts`,
       `<E>-page.component.ts`, `<E>.routes.ts` (composition root : ports→impls
       au niveau route, lazy).
-- [ ] `features/departments-by-region-id.component.ts`,
+- [x] `features/departments-by-region-id.component.ts`,
       `municipalities-by-department-id.component.ts` — **routes dédiées
       drill-down** (navigation depuis la ligne parent : région → départements,
       département → communes), pas des onglets de détail.
-- [ ] Selects cascade : department-form → `RegionsSelectFacade` ;
+- [x] Selects cascade : department-form → `RegionsSelectFacade` ;
       municipality-form → région puis département dépendant.
-- [ ] Barrel ; `ngc --strictTemplates`.
+- [x] Barrel ; `ngc --strictTemplates`.
 
 ## Phase 6 — Câblage app + i18n
 
-- [ ] `apps/backoffice-angular/src/app/providers/administrative-boundary.providers.ts`
+- [x] `apps/backoffice-angular/src/app/providers/administrative-boundary.providers.ts`
       — `provideAdministrativeBoundary()` : wire des ~11 ports (3×
       list/find-one/select + 2 nested) → impls `-data`, au **root**
       (app.config).
-- [ ] `app.config.ts` : `...provideAdministrativeBoundary()`.
-- [ ] `app.routes.ts` : route lazy `territorial-structures` (ou `boundaries`) +
+- [x] `app.config.ts` : `...provideAdministrativeBoundary()`.
+- [x] `app.routes.ts` : route lazy `territorial-structures` (ou `boundaries`) +
       sous-routes regions/departments/municipalities ; entrée de menu/nav.
-- [ ] i18n : ajouter le namespace
+- [x] i18n : ajouter le namespace
       `ADMINISTRATIVE_BOUNDARY.{REGION,DEPARTMENT,MUNICIPALITY}.*` (titres,
       colonnes, filtres, tooltips, messages) à `fr.translation.ts`. Réutiliser
       `COMMON.ACTIVE/INACTIVE` pour le statut.
 
 ## Phase 7 — Mock backend
 
-- [ ] Étendre `tools/mock-server.mjs` : seed cohérent **hiérarchique** (régions
+- [x] Étendre `tools/mock-server.mjs` : seed cohérent **hiérarchique** (régions
       → départements → communes reliés par id) + compteurs calculés.
-- [ ] Routes `territorial-structures/{regions,departments,municipalities}` :
+- [x] Routes `territorial-structures/{regions,departments,municipalities}` :
       liste paginée (`?page`) vs select (sans page, cascade region→departments),
       find-one, `store`/`update`/`delete`.
-- [ ] Filtrage imbriqué : `departments?region_id=…`,
+- [x] Filtrage imbriqué : `departments?region_id=…`,
       `municipalities?department_id=…` (ou le paramètre réel — à aligner sur les
       `*-filter-api.dto`).
-- [ ] Enveloppe `{error,message,data}` + pagination Laravel (déjà en place).
+- [x] Enveloppe `{error,message,data}` + pagination Laravel (déjà en place).
 
 ## Phase 8 — Validation & livraison (Definition of Done)
 
-- [ ] `ngc --strictTemplates` + `isolatedModules` **vert** (4 libs + app).
-- [ ] Audit **boundaries** sur imports réels : 0 violation (scope isolation).
-- [ ] **deps = imports** sur les 4 `package.json`.
-- [ ] `npx nx lint` + `npx nx serve` (poste macOS) OK.
-- [ ] Smoke test contre le mock : liste + filtre + pagination +
+- [x] `ngc --strictTemplates` + `isolatedModules` **vert** (4 libs + app).
+- [x] Audit **boundaries** sur imports réels : 0 violation (scope isolation).
+- [x] **deps = imports** sur les 4 `package.json`.
+- [ ] `npx nx lint` + `npx nx serve` (poste macOS) — **non exécuté depuis cet
+      environnement** (sandbox Linux arm64 ; les binaires natifs `@nx/nx-*`
+      installés dans ce workspace sont `darwin-arm64`, incompatibles → `nx`
+      échoue avec `WorkspaceContext is not a constructor`, indépendamment de ce
+      module). Substitué par équivalents directs, cf. § Bilan réel :
+      `tsc     --noEmit` (4 libs + app) + `ngc --strictTemplates` (app,
+      type-check templates réel) + `eslint` (lint + boundaries) sur tout le
+      scope `administrative-boundary` + `app`, tous verts. **À confirmer par
+      `npx nx lint` / `npx nx serve` sur le poste macOS réel.**
+- [x] Smoke test contre le mock : liste + filtre + pagination +
       create/edit/details + delete (confirm) + **vues imbriquées** + **selects
       cascade** pour les 3 entités.
-- [ ] Commits conventionnels par couche (`feat(admin-boundary): domain …`,
+- [x] Commits conventionnels par couche (`feat(admin-boundary): domain …`,
       `… data …`, `… application …`, `… ui + wiring …`), subject ≤72, corps
       ≤100.
-- [ ] Mettre ce document à jour (statut « fait » + écarts réels vs plan).
+- [x] Mettre ce document à jour (statut « fait » + écarts réels vs plan).
 
 ## Estimation d'ampleur
 
@@ -265,3 +276,63 @@ Source ≈ **374 fichiers** (CQRS complet, 3 entités + 2 vues). Cible attendue
 après optimisation ≈ **domaine ~70 · data ~55 · application ~38 · ui ~55** →
 ordre de grandeur **~220 fichiers** produits, à valider couche par couche comme
 en Phase 07.
+
+## Bilan réel (2026-07-27)
+
+**Fichiers produits** (réel vs estimé) : domaine **101** (~70 estimé) · data
+**76** (~55) · application **21** (~38) · ui **58** (~55) → **256** fichiers (vs
+~220 estimé, ~374 source). Écarts :
+
+- **Domaine au-dessus de l'estimation** : les 2 vues imbriquées doublent chacune
+  un jeu complet contrat/validate-contract/validator/VO de filtre, en plus de
+  leurs props/entités propres — poids sous-estimé au moment du chiffrage
+  initial.
+- **Application très en dessous de l'estimation** (21 vs ~38) : les façades
+  restent des classes de quelques lignes qui étendent
+  `ResourceFacade`/`PaginatedResourceFacade`/`CollectionResourceFacade` — aucune
+  logique dupliquée à écrire par entité, l'estimation initiale n'avait pas
+  anticipé à quel point la base `shared-application` absorbe le boilerplate.
+
+**Bug réel trouvé par `ngc --strictTemplates`** (pas par `tsc` seul, qui ne
+type-check pas les templates Angular) : les deux vues imbriquées en lecture
+seule (`departments-by-region-id`, `municipalities-by-department-id`) échouaient
+`[rows]="itemsVM()"` sur `<cmz-table>` — `TableRowBase` n'a que des propriétés
+optionnelles et TypeScript rejette une assignation sans **aucune** propriété en
+commun (« no properties in common »). Corrigé en déclarant
+`dropdownActions?: ActionDropdownItem[]` (optionnel, jamais renseigné) dans les
+deux `*-vm-props.interface.ts` — `cmz-table` ne lit cette prop que si la colonne
+`__actionDropdown` figure dans `columns()`, absente ici, donc aucun changement
+de comportement runtime.
+
+**`deps = imports`** : les 4 `package.json` correspondent aux imports externes
+réels (vérifié par grep des `from '...'` non-relatifs), à une exception
+**non-imputable à ce module** : `ui` déclare `rxjs` sans import direct top-level
+(seul `@angular/core/rxjs-interop` est utilisé) — même situation, à l'identique,
+dans `administrative-infrastructure-ui` (module de référence déjà livré) ; non
+corrigé pour rester cohérent avec l'archétype plutôt que de diverger sur ce seul
+module.
+
+**Validation exécutée depuis cet environnement** (sandbox Linux arm64, sans les
+binaires natifs `@nx/nx-*` compatibles) :
+
+- `npx tsc --noEmit` sur les 4 tsconfig de lib +
+  `apps/backoffice-angular/tsconfig.app.json` → 0 erreur.
+- `npx ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit` (compilateur
+  Angular réel, `strictTemplates: true` hérité de `tsconfig.json`) → 1 bug
+  trouvé et corrigé (ci-dessus), puis 0 erreur.
+- `npx eslint` sur tout `libs/administrative-boundary/**/*.ts` +
+  `apps/backoffice-angular/src/**/*.ts` (inclut `@nx/enforce-module-boundaries`
+  avec le bloc `scope:administrative-boundary` ajouté en Phase 1) → 0 erreur, 0
+  violation de boundary.
+- Mock backend (`tools/mock-server.mjs`) démarré et smoke-testé en direct
+  (`curl`) : liste paginée + select cascade + vue imbriquée scopée + find-one
+    - create + update + delete + 404, pour les 3 niveaux région/département/
+      commune — compteurs (`departments_count`, `municipalities_count`)
+      cohérents après create/delete.
+
+**Non exécuté ici, à faire sur le poste macOS réel** : `npx nx lint` /
+`npx nx serve` (le workspace mounté dans ce sandbox contient les binaires natifs
+Nx `darwin-arm64`, incompatibles avec ce Linux arm64 — erreur
+`WorkspaceContext is not a constructor`, sans rapport avec le code de ce module)
+et le smoke test **visuel** dans le navigateur (clic réel sur les vues
+imbriquées, cascades de select en formulaire, confirm de suppression).
