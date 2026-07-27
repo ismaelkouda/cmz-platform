@@ -20,6 +20,7 @@ import { appRoutes } from './app.routes';
 import { provideI18n } from './i18n/i18n.provider';
 import { provideDevPermissions } from './dev/dev-permissions.provider';
 import { provideAdministrativeInfrastructure } from './providers/administrative-infrastructure.providers';
+import { provideAdministrativeBoundary } from './providers/administrative-boundary.providers';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -32,8 +33,9 @@ export const appConfig: ApplicationConfig = {
         { provide: NotificationPort, useExisting: CmzNotificationService },
         { provide: ConfirmDialogPort, useExisting: CmzConfirmDialogService },
         { provide: TranslationPort, useExisting: I18nextTranslationService },
-        // Composition root du module (ports domaine -> impls data).
+        // Composition root des modules (ports domaine -> impls data).
         ...provideAdministrativeInfrastructure(),
+        ...provideAdministrativeBoundary(),
         // DEV ONLY : accorde toutes les permissions (no-op hors isDevMode()).
         ...provideDevPermissions(),
     ],

@@ -16,4 +16,41 @@ export const appRoutes: Route[] = [
                 (m) => m.INFRASTRUCTURE_ROUTES
             ),
     },
+    {
+        path: 'territorial-structures/regions',
+        loadChildren: () =>
+            import('@cmz/administrative-boundary-ui').then((m) => [
+                ...m.REGION_ROUTES,
+                {
+                    path: 'departments',
+                    data: {
+                        breadcrumb:
+                            'ADMINISTRATIVE_BOUNDARY.DEPARTMENTS_BY_REGION_ID.BREADCRUMB',
+                    },
+                    children: m.DEPARTMENTS_BY_REGION_ID_ROUTES,
+                },
+            ]),
+    },
+    {
+        path: 'territorial-structures/departments',
+        loadChildren: () =>
+            import('@cmz/administrative-boundary-ui').then((m) => [
+                ...m.DEPARTMENT_ROUTES,
+                {
+                    path: 'municipalities',
+                    data: {
+                        breadcrumb:
+                            'ADMINISTRATIVE_BOUNDARY.MUNICIPALITIES_BY_DEPARTMENT_ID.BREADCRUMB',
+                    },
+                    children: m.MUNICIPALITIES_BY_DEPARTMENT_ID_ROUTES,
+                },
+            ]),
+    },
+    {
+        path: 'territorial-structures/municipalities',
+        loadChildren: () =>
+            import('@cmz/administrative-boundary-ui').then(
+                (m) => m.MUNICIPALITY_ROUTES
+            ),
+    },
 ];
