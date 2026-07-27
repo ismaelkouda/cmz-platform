@@ -134,15 +134,19 @@ il se traite une fois pour toutes au niveau kernel, pas dupliqué par entité.
 
 ## Phase 3 — Data (`-data`)
 
-- [ ] `endpoints/coverage-areas.endpoints.ts`.
-- [ ] `dtos/site-group-*-api.dto.ts` (wire snake_case, fidèle au source).
-- [ ] `mappers/site-group*.mapper.ts` (`PaginatedMapper`/`SimpleResponseMapper`,
-      cache d'identité `.with()` comme `RegionMapper`).
-- [ ] `sources/site-group*.api.ts` — `HttpClient` + `SETTINGS_API_URL` (confirmé
+- [x] `endpoints/coverage-areas.endpoints.ts` —
+      `SITE_GROUP:     'infrastructures/site-groups'` (les 5 autres clés du
+      source — `MOBILE_NETWORK`/`TOWER_TYPE`/`OPTICAL_FIBER_NETWORK`/
+      `RADIO_RELAY_LINKS`/`FIBER_CONSTRUCTOR` — non recopiées : hors périmètre
+      tant que ces entités ne sont pas reconstruites).
+- [x] `dtos/site-group-*-api.dto.ts` (wire snake_case, fidèle au source).
+- [x] `mappers/site-group*.mapper.ts` (`PaginatedMapper`/`SimpleResponseMapper`,
+      cache d'identité `.with()` comme `InfrastructureTypeMapper`).
+- [x] `sources/site-group*.api.ts` — `HttpClient` + `SETTINGS_API_URL` (confirmé
       par lecture du source, même token que
       `administrative-infrastructure`/`administrative-boundary`).
-- [ ] `repositories/*.repository.impl.ts`.
-- [ ] Barrel ; `tsc`.
+- [x] `repositories/*.repository.impl.ts`.
+- [x] Barrel ; `tsc` + `eslint` propres.
 
 ## Phase 4 — Application (`-application`)
 
