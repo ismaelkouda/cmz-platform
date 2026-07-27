@@ -36,5 +36,14 @@
       "style": "scss",
       "unitTestRunner": "vitest-angular"
     }
-  }
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": {
+        "targetName": "lint"
+      },
+      "include": ["apps/backoffice-angular/**/*"]
+    }
+  ]
 }
