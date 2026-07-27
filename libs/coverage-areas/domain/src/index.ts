@@ -34,6 +34,7 @@ export * from './lib/value-objects/site-group-update.vo';
 export * from './lib/value-objects/site-group-delete.vo';
 export * from './lib/value-objects/site-group-enable.vo';
 export * from './lib/value-objects/site-group-disable.vo';
+export * from './lib/value-objects/site-group-filter.vo';
 export * from './lib/value-objects/site-group-find-one-filter.vo';
 
 export * from './lib/repositories/site-group.repository';

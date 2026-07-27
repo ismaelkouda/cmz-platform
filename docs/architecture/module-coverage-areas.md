@@ -150,11 +150,18 @@ il se traite une fois pour toutes au niveau kernel, pas dupliqué par entité.
 
 ## Phase 4 — Application (`-application`)
 
-- [ ] `use-cases/site-group*.use-case.ts`.
-- [ ] `facades/site-group.facade.ts` (`PaginatedResourceFacade`),
+- [x] `use-cases/site-group*.use-case.ts`.
+- [x] `facades/site-group.facade.ts` (`CollectionResourceFacade` — pas
+      `PaginatedResourceFacade` : correction du plan initial, la facade liste de
+      `infrastructure-type` — le gabarit choisi — étend en réalité
+      `CollectionResourceFacade`, vérifié par lecture directe avant d'écrire),
       `site-group-find-one.facade.ts` (`ResourceFacade`),
-      `site-group-select.facade.ts` (`CollectionResourceFacade`).
-- [ ] Barrel ; `tsc`.
+      `site-group-select.facade.ts` (`ResourceFacade`).
+- [x] Barrel ; `tsc` + `eslint` propres.
+- [x] **Écart Phase 2 corrigé en marge** :
+      `value-objects/site-group-filter.vo.ts` manquait (validateur présent, VO
+      oublié) — détecté par `tsc` en Phase 4, ajouté + exporté avant de
+      continuer.
 
 ## Phase 5 — UI (`-ui`)
 
