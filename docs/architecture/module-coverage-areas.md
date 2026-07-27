@@ -387,3 +387,13 @@ port renvoie directement `SelectOption[]`, comme `SiteGroupSelectRepository`.
       (confirmé par lecture du source).
 - [x] `repositories/*.repository.impl.ts` (3 fichiers).
 - [x] Barrel ; `tsc` + `eslint` propres.
+
+## Phase 4 — Application
+
+- [x] `use-cases/mobile-network*.use-case.ts`, `tower-type-select.use-case.ts`.
+- [x] `facades/mobile-network.facade.ts` (`CollectionResourceFacade`, même base
+      que `SiteGroupFacade`), `mobile-network-find-one.facade.ts`
+      (`ResourceFacade`), `tower-type-select.facade.ts` (`ResourceFacade`, même
+      forme que `SiteGroupSelectFacade`).
+- [x] Barrel ; `tsc` + `eslint` propres — aucun écart cette fois (leçon Phase
+      2/4 de `site-group` appliquée : VO filter écrit dès la Phase 2).
