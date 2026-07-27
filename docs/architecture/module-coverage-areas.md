@@ -397,3 +397,25 @@ port renvoie directement `SelectOption[]`, comme `SiteGroupSelectRepository`.
       forme que `SiteGroupSelectFacade`).
 - [x] Barrel ; `tsc` + `eslint` propres — aucun écart cette fois (leçon Phase
       2/4 de `site-group` appliquée : VO filter écrit dès la Phase 2).
+
+## Phase 5 — UI
+
+- [x] `constants/mobile-network-{paths,filter-keys,table}.constant.ts`.
+- [x] `adapters/mobile-network-vm-props.interface.ts` + `.presenter.ts` —
+      **réutilise** `STATUS_LABEL`/`statusStyleOf` de `site-group`
+      (`Status`/`StatusStyle` partagés au niveau lib, décision Phase 2) ; dette
+      de nommage documentée en commentaire plutôt que masquée.
+- [x] `stores/mobile-network-filter.store.ts`, `mobile-network-form.store.ts` —
+      `technology` (multi-valeur) validé par `validate()` (longueur > 0), pas
+      par `required()` seul (un tableau vide reste "présent" pour `required()`).
+- [x] `features/mobile-network-list.component.ts` (filtres `technology`/
+      `operator` en `select` avec options = valeurs brutes de l'enum, pas de
+      table de libellés — ces enums sont déjà des chaînes d'affichage, pas des
+      clés i18n, contrairement à `Status`), `mobile-network-form.component.ts`
+      (`infrastructureType`/`towerTypeId` en `<select>` alimentés par
+      `SiteGroupSelectFacade`/`TowerTypeSelectFacade` ; `technology` en cases à
+      cocher, hors `[formField]`, pilotées par `store.toggleTechnology()`).
+- [x] `mobile-network.routes.ts` — liste + form, pas de route historique.
+- [x] Barrel ; `tsc` + `eslint` propres (2 imports inutilisés retirés après
+      premier passage eslint : `labelsToFilterOptions`/`STATUS_LABEL`,
+      finalement pas nécessaires côté filtre `mobile-network`).
