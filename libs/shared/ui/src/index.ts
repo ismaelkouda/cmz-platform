@@ -29,7 +29,6 @@ export * from './lib/constants/location-type-label.constant';
 export * from './lib/constants/type-report-label.constant';
 export * from './lib/constants/role-label.constant';
 export * from './lib/constants/location-name-label.constant';
-export * from './lib/helpers/form-errors.helper';
 export * from './lib/components/pagination/page-window.util';
 export * from './lib/components/pagination/pagination.component';
 export * from './lib/components/action-dropdown/action-dropdown.component';

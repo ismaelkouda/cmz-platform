@@ -36,6 +36,10 @@ export class InfrastructureFindOneEntity {
         return this.props.position;
     }
 
+    get createdAt(): string {
+        return this.props.createdAt;
+    }
+
     get updatedAt(): string {
         return this.props.updatedAt;
     }

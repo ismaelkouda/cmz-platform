@@ -4,7 +4,7 @@ export abstract class DomainError extends Error {
     public abstract readonly statusCode?: number;
 
     /**
-     * Paramètres d'interpolation i18n (Transloco : translate(messageKey, params)).
+     * Paramètres d'interpolation i18n (i18next : translate(messageKey, params)).
      * Optionnel : la plupart des erreurs ont une clé complète sans variable.
      */
     public readonly params?: Readonly<Record<string, unknown>>;
