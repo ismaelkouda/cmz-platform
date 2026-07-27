@@ -63,4 +63,4 @@ export * from './lib/interfaces/select-option.interface';
 export * from './lib/interfaces/pagination-meta.interface';
 export * from './lib/interfaces/page-result.interface';
 export * from './lib/interfaces/fetch-options.interface';
-export * from './lib/types/page-number.type';
+export * from './lib/interfaces/current-user.interface';
