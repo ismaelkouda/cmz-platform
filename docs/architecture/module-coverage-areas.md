@@ -1,14 +1,15 @@
 # Module `coverage-areas` — plan de reconstruction
 
 - **Créé :** 2026-07-27
-- **Statut :** livré (`site-group` + `mobile-network` + `optical-fiber-network`,
-  2026-07-27) — Phases 1 à 8 complètes pour les trois entités (+ les 2 concepts
-  select `tower-type`/`fiber-constructor`). `site-group` : `nx lint`/`nx serve`
-  confirmés conformes par l'utilisateur (poste macOS). `mobile-network` et
-  `optical-fiber-network` : validation statique (`tsc` par lib,
-  `ngc --strictTemplates` app, `eslint`, smoke test mock) faite en sandbox,
-  `nx lint`/`nx serve` réels **restent à confirmer par l'utilisateur** sur son
-  poste macOS. Cf. « Bilan réel » de chaque entité en fin de document.
+- **Statut :** livré — les **4 entités CRUD** du domaine (`site-group` +
+  `mobile-network` + `optical-fiber-network` + `radio-relay-links`,
+  2026-07-27) + les 2 concepts select (`tower-type`/`fiber-constructor`). Phases
+  1 à 8 complètes pour les quatre entités. `site-group` : `nx lint`/ `nx serve`
+  confirmés conformes par l'utilisateur (poste macOS). Les trois autres entités
+  : validation statique (`tsc` par lib, `ngc --strictTemplates` app, `eslint`,
+  smoke test mock) faite en sandbox, `nx lint`/`nx serve` réels **restent à
+  confirmer par l'utilisateur** sur son poste macOS. Cf. « Bilan réel » de
+  chaque entité en fin de document.
 - **Gabarit de référence :** `module-administrative-boundary.md` — même
   archétype **CRUD** déjà validé 2 fois (`administrative-infrastructure`,
   `administrative-boundary`). Aucun nouveau pattern à valider ici, contrairement
@@ -773,7 +774,183 @@ principale (précédent : `tower-type` construit avec `mobile-network`).
    précédentes — validation statique complète faite ici ; `nx lint`/ `nx serve`
    réels restent à confirmer par l'utilisateur sur son poste macOS.
 
-**Suite** : `site-group`, `mobile-network`, `optical-fiber-network` sont livrés
-(3 entités CRUD + 2 concepts select `tower-type`/`fiber-constructor`). Reste
-`radio-relay-links` (dernière entité CRUD du domaine) — à construire **dans les
-mêmes 4 libs** (scope Nx `coverage-areas` inchangé).
+**Suite** : les 4 entités CRUD du domaine sont livrées
+(`site-group`/`mobile-network`/`optical-fiber-network`/`radio-relay-links` + 2
+concepts select `tower-type`/`fiber-constructor`). Domaine `coverage-areas`
+terminé.
+
+# `radio-relay-links` — 4ᵉ et dernière entité du domaine (2026-07-27)
+
+## Forme métier réelle (source lu, pas supposé)
+
+CRUD standard (`name`/`operator`/`frequency`/`startDate`/`endDate`/`status`)
+avec find-one enrichi d'une géométrie en lecture seule (`geom_url`/`geom`) —
+**pas d'upload de fichier** côté formulaire, contrairement à
+`optical-fiber-network` : la géométrie est fournie côté backend, jamais poussée
+par l'UI. Filtre : `search`/`operator`/plage de dates.
+
+## Découverte : `RadioRelayLinksOperator` n'est pas l'`Operator` partagé
+
+Contrairement à `optical-fiber-network` (qui réutilise l'`Operator` de
+`mobile-network` sans modification), le source définit un
+`RadioRelayLinksOperator` aux valeurs différentes (`MTN`/`MOOV`/`ORANGE` en
+majuscules, contre `MTN`/`Moov`/`Orange` ailleurs). Vérifié en lisant le fichier
+source avant de décider — pas de fusion silencieuse de deux enums aux valeurs
+incompatibles. Nouvel enum dédié créé, avec le même pattern const-object + garde
+de type (`isRadioRelayLinksOperator`) que les précédents.
+
+## Découverte : incohérence UI/contrat sur le champ `frequency` du filtre
+
+Le formulaire de filtre du source affiche un champ `frequency`, mais le contrat
+wire réellement envoyé (`RadioRelayLinksFilterContract`) ne le contient pas.
+Décision : fidélité au contrat effectivement transmis à l'API, pas au formulaire
+— pas de champ `frequency` dans le filtre reconstruit (documenté par commentaire
+à la fois dans le contrat domaine et la constante de clés UI).
+
+## Découverte : lacune de validation dans le source (corrigée, pas reproduite)
+
+Les validateurs `create`/`update` du source appellent `assertValidDateRange`
+mais ne vérifient jamais explicitement que `startDate`/`endDate` sont présents
+avant cet appel (`assertValidDateRange` ne contrôle que l'ordre, pas la
+présence). Écart corrigé dans la reconstruction : présence explicitement
+vérifiée avant l'appel à `assertValidDateRange`, dans les deux validateurs.
+
+## Décisions d'ingénieur
+
+1. **Pas de réutilisation de l'`Operator` partagé** — valeurs incompatibles,
+   confirmé par lecture directe du source (cf. Découverte ci-dessus).
+2. **`startDate`/`endDate` modélisées en chaînes ISO (`YYYY-MM-DD`) dans le
+   store de formulaire**, converties en `Date` uniquement au submit — évite par
+   construction de reproduire le bug de binding `Operator | null` déjà trouvé et
+   corrigé sur `mobile-network` (`ngc --strictTemplates` rejette `string | null`
+   sur un `<input>` non nullable).
+3. **JSON simple (`buildHttpPayload`), pas de `multipart/form-data`** — le
+   source construit un `FormData` pour `create`/`update` via `formDataBuilder`
+   alors qu'aucun champ fichier n'existe sur cette entité (contrairement à
+   `optical-fiber-network`). Écart délibéré : le multipart n'apporte rien ici,
+   JSON aligné sur le pattern `mobile-network`.
+4. **Validateurs fonctionnels (`asserts contract is X`), pas la classe
+   `XxxValidator.assert()` du source** — normalisé sur le pattern déjà utilisé
+   partout ailleurs dans ce socle.
+5. **Réponse paginée normalisée à la forme `PaginatedResponseDto<T>` partagée**
+   — le DTO du source (`{data, meta:{current_page,…}}`) diffère de la forme
+   Laravel plate utilisée ailleurs ; normalisé pour rester cohérent avec
+   `PaginatedMapper` et le mock.
+6. **Gap de validation `startDate`/`endDate` corrigé**, pas reproduit (cf.
+   Découverte ci-dessus).
+7. **Pas de champ `frequency` dans le filtre reconstruit** — fidélité au contrat
+   wire, pas au formulaire du source (cf. Découverte ci-dessus).
+
+## Phase 2 — Domaine
+
+- [x] `enums/radio-relay-links-operator.enum.ts` (nouvel enum, pas de
+      réutilisation), `enums/radio-relay-links-frequency.enum.ts`.
+- [x] `props/radio-relay-links.props.ts` (+ `find-one`, avec `geomUrl`/`geom` en
+      lecture seule), réutilisant `Status` (partagé).
+- [x] `entities/radio-relay-links{,-find-one,-filter}.entity.ts`.
+- [x] `contracts/radio-relay-links-{create,update,delete,enable,disable,     filter,find-one-filter}.contract.ts` +
+      `.validate-contract.ts` — filtre sans `frequency` (cf. décision).
+- [x] `validators/` — `create`/`update` : présence de `startDate`/`endDate`
+      explicitement vérifiée avant `assertValidDateRange` (gap corrigé).
+- [x] `value-objects/` (7 fichiers).
+- [x] `repositories/radio-relay-links{,-find-one}.repository.ts` — pas de
+      concept select externe pour cette entité (contrairement aux 3
+      précédentes).
+- [x] Barrel ; `tsc` + `eslint` propres.
+
+## Phase 3 — Data
+
+- [x] `endpoints/coverage-areas.endpoints.ts` —
+      `RADIO_RELAY_LINKS: 'infrastructures/radio-relay-links'`.
+- [x] `dtos/radio-relay-links-*-api.dto.ts` (9 fichiers).
+- [x] `mappers/` (9 fichiers) — mêmes bases (`PaginatedMapper`,
+      `SimpleResponseMapper`) que les entités précédentes.
+- [x] `sources/radio-relay-links{,-find-one}.api.ts` — `create`/`update` en JSON
+      (`buildHttpPayload`), pas de `FormData` (cf. décision).
+- [x] `repositories/*.repository.impl.ts` (2 fichiers).
+- [x] Barrel ; `tsc` + `eslint` propres.
+
+## Phase 4 — Application
+
+- [x] `use-cases/radio-relay-links{,-find-one}.use-case.ts`.
+- [x] `facades/radio-relay-links.facade.ts` (`CollectionResourceFacade`),
+      `radio-relay-links-find-one.facade.ts` (`ResourceFacade`).
+- [x] Barrel ; `tsc` + `eslint` propres.
+
+## Phase 5 — UI
+
+- [x] `constants/radio-relay-links-{paths,filter-keys,table}.constant.ts` — pas
+      de clé `frequency` dans le filtre (cf. décision).
+- [x] `adapters/radio-relay-links-vm-props.interface.ts` + `.presenter.ts` —
+      réutilise `STATUS_LABEL`/`statusStyleOf` de `site-group` ; `startDate`/
+      `endDate` formatées `YYYY-MM-DD` pour l'affichage tableau.
+- [x] `stores/radio-relay-links-filter.store.ts`,
+      `radio-relay-links-form.store.ts` — `startDate`/`endDate` en chaînes ISO
+      dans le modèle (cf. décision), converties en `Date` au submit du
+      composant.
+- [x] `features/radio-relay-links-list.component.ts` (filtres `search`/
+      `operator`/dates), `radio-relay-links-form.component.ts`
+      (`<input     type="date">` natif pour les dates, `<select>` pour
+      opérateur/fréquence).
+- [x] `radio-relay-links.routes.ts` — liste + form, pas de route historique.
+- [x] Barrel ; `tsc` + `eslint` propres.
+
+## Phase 6 — Câblage app + i18n
+
+- [x] `coverage-areas.providers.ts` étendu : `RadioRelayLinksRepository`,
+      `RadioRelayLinksFindOneRepository` → leurs impls.
+- [x] `app.routes.ts` : route `coverage-areas/radio-relay-links` →
+      `RADIO_RELAY_LINKS_ROUTES`.
+- [x] `fr.translation.ts` : namespace `COVERAGE_AREAS.RADIO_RELAY_LINKS` ajouté.
+- [x] `ngc --strictTemplates` (tsconfig app) + `eslint` sur les fichiers touchés
+      : propres, aucun problème de binding (leçon `mobile-network` appliquée dès
+      la conception du store, cf. décision).
+
+## Phase 7 — Mock backend (radio-relay-links)
+
+- [x] Seed `radioRelayLinks` (3 entrées, `geom_url` simulé).
+- [x] Route `infrastructures/radio-relay-links` — liste paginée + find-one sur
+      la même base (même particularité que `mobile-network`/
+      `optical-fiber-network`). CRUD complet (JSON simple, pas de multipart).
+- [x] Vérifié via curl (port 3399) : liste, find-one, create, enable, delete —
+      tous corrects.
+
+## Phase 8 — Validation & livraison
+
+- [x] `tsc --noEmit` sur les 4 libs `coverage-areas` — propres.
+- [x] `ngc --strictTemplates` sur `apps/backoffice-angular` (tsconfig app
+      complet) — propre, exit 0.
+- [x] `eslint` sur les 4 libs `coverage-areas`, `tools/mock-server.mjs` et les 3
+      fichiers app modifiés — propre.
+- [x] Smoke test backend (readAll, findOne, create, enable, delete) — vert.
+- [x] Commits conventionnels par couche (6 commits, Phase 2 à 7).
+- [x] Mettre ce document à jour (statut fait + écarts réels).
+- [ ] `npx nx lint` + `npx nx serve` (poste macOS) — **à confirmer par
+      l'utilisateur**, même limitation sandbox que les entités précédentes.
+
+## Bilan réel `radio-relay-links` (2026-07-27)
+
+Écarts entre le plan initial et l'exécution réelle :
+
+1. **`RadioRelayLinksOperator` non réutilisé** — enum dédié créé car les valeurs
+   diffèrent de l'`Operator` partagé (confirmé par lecture du source avant
+   décision).
+2. **Gap de validation `startDate`/`endDate` corrigé** dans les validateurs
+   `create`/`update` — le source ne vérifiait que l'ordre des dates, pas leur
+   présence.
+3. **Filtre reconstruit sans champ `frequency`** — fidélité au contrat wire
+   réel, pas au formulaire du source qui en expose un.
+4. **JSON simple au lieu du `multipart/form-data` du source** — aucun champ
+   fichier sur cette entité, le multipart du source n'apportait rien.
+5. **Dates modélisées en chaînes ISO dans le store de formulaire** — décision
+   préventive pour éviter de reproduire le bug de binding déjà rencontré et
+   corrigé sur `mobile-network`.
+6. `ngc`/`nx lint`/`nx serve` : même limitation sandbox que les entités
+   précédentes — validation statique complète faite ici ; `nx lint`/ `nx serve`
+   réels restent à confirmer par l'utilisateur sur son poste macOS.
+
+**Suite** : le domaine `coverage-areas` est **terminé** — 4 entités CRUD
+(`site-group`, `mobile-network`, `optical-fiber-network`, `radio-relay-links`) +
+2 concepts select (`tower-type`, `fiber-constructor`), toutes validées
+statiquement en sandbox. Reste la confirmation utilisateur (`nx lint`/`nx serve`
+réels, poste macOS) pour les trois dernières entités.
