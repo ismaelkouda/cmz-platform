@@ -20,7 +20,7 @@ export class ResetPasswordFacade extends ResourceFacade<
         return this.useCase.execute(params);
     }
 
-    submit(contract: ResetPasswordRequestContract): void {
+    resetPassword(contract: ResetPasswordRequestContract): void {
         this.setParams(contract);
     }
 }
