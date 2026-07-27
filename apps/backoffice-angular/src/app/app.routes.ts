@@ -3,6 +3,13 @@ import { Route } from '@angular/router';
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'equipments/types' },
     {
+        path: 'auth',
+        loadChildren: () =>
+            import('@cmz/authentication-ui').then(
+                (m) => m.AUTHENTICATION_ROUTES
+            ),
+    },
+    {
         path: 'equipments/types',
         loadChildren: () =>
             import('@cmz/administrative-infrastructure-ui').then(

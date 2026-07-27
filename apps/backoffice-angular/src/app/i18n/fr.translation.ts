@@ -34,6 +34,35 @@ export const FR = {
             UPDATE: 'Mise à jour réussie.',
             DELETE: 'Suppression réussie.',
         },
+        ERROR: {
+            REQUIRED: 'Ce champ est requis.',
+            UNAUTHORIZED: 'Session expirée, veuillez vous reconnecter.',
+        },
+        EMAIL: {
+            REQUIRED: "L'email est requis.",
+            INVALID_FORMAT: 'Format email invalide.',
+        },
+        PASSWORD: {
+            REQUIRED: 'Le mot de passe est requis.',
+            MIN_LENGTH: 'Le mot de passe doit contenir au moins 8 caractères.',
+        },
+        CONFIRM_PASSWORD: {
+            REQUIRED: 'La confirmation du mot de passe est requise.',
+            NO_MATCH: 'Les mots de passe ne correspondent pas.',
+        },
+    },
+    ERRORS: {
+        HTTP: {
+            SERVER_ERROR: 'Erreur serveur, veuillez réessayer.',
+            VALIDATION: 'Certaines données envoyées sont invalides.',
+            UNKNOWN: 'Une erreur inattendue est survenue.',
+            NOT_FOUND: 'Ressource introuvable.',
+            FORBIDDEN: 'Accès refusé.',
+        },
+        AUTH: {
+            ACCOUNT_LOCKED:
+                'Compte verrouillé après plusieurs tentatives infructueuses.',
+        },
     },
     ADMINISTRATIVE_INFRASTRUCTURE: {
         INFRASTRUCTURE_TYPE: {
@@ -291,6 +320,36 @@ export const FR = {
                 CREATED_AT: 'Créé le',
             },
             BREADCRUMB: 'Communes',
+        },
+    },
+    AUTHENTICATION: {
+        LOGIN: {
+            TITLE: 'Connexion',
+            FORM: { EMAIL: 'Email', PASSWORD: 'Mot de passe' },
+            ACTION: {
+                SUBMIT: 'Se connecter',
+                FORGOT_PASSWORD: 'Mot de passe oublié ?',
+            },
+        },
+        FORGOT_PASSWORD: {
+            TITLE: 'Mot de passe oublié',
+            FORM: { EMAIL: 'Email' },
+            ACTION: {
+                SUBMIT: 'Envoyer',
+                BACK_TO_LOGIN: 'Retour à la connexion',
+            },
+            MESSAGE: {
+                EMAIL_SENT:
+                    'Si un compte existe pour cet email, un lien de réinitialisation vient de lui être envoyé.',
+            },
+        },
+        RESET_PASSWORD: {
+            TITLE: 'Réinitialiser le mot de passe',
+            FORM: {
+                PASSWORD: 'Nouveau mot de passe',
+                CONFIRM_PASSWORD: 'Confirmer le mot de passe',
+            },
+            ACTION: { SUBMIT: 'Réinitialiser' },
         },
     },
 } as const;

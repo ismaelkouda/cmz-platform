@@ -21,6 +21,7 @@ import { provideI18n } from './i18n/i18n.provider';
 import { provideDevPermissions } from './dev/dev-permissions.provider';
 import { provideAdministrativeInfrastructure } from './providers/administrative-infrastructure.providers';
 import { provideAdministrativeBoundary } from './providers/administrative-boundary.providers';
+import { provideAuthentication } from './providers/authentication.providers';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -36,6 +37,7 @@ export const appConfig: ApplicationConfig = {
         // Composition root des modules (ports domaine -> impls data).
         ...provideAdministrativeInfrastructure(),
         ...provideAdministrativeBoundary(),
+        ...provideAuthentication(),
         // DEV ONLY : accorde toutes les permissions (no-op hors isDevMode()).
         ...provideDevPermissions(),
     ],
