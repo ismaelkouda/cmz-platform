@@ -1,7 +1,9 @@
 # Module `coverage-areas` — plan de reconstruction
 
 - **Créé :** 2026-07-27
-- **Statut :** plan (avant Phase 1)
+- **Statut :** livré (pilote `site-group`, 2026-07-27) — Phases 1 à 8 complètes
+  ; `nx lint`/`nx serve` réels à confirmer par l'utilisateur (poste macOS). Cf.
+  « Bilan réel » en fin de document.
 - **Gabarit de référence :** `module-administrative-boundary.md` — même
   archétype **CRUD** déjà validé 2 fois (`administrative-infrastructure`,
   `administrative-boundary`). Aucun nouveau pattern à valider ici, contrairement
@@ -210,12 +212,62 @@ il se traite une fois pour toutes au niveau kernel, pas dupliqué par entité.
 
 ## Phase 8 — Validation & livraison
 
-- [ ] `ngc --strictTemplates` vert (4 libs + app).
-- [ ] Boundaries 0 violation (grep direct, pas seulement la config).
-- [ ] `npx nx lint` + `npx nx serve` (poste macOS).
-- [ ] Smoke test : liste, création, édition, activation/désactivation,
-      suppression.
-- [ ] Commits conventionnels par couche.
-- [ ] Mettre ce document à jour (statut fait + écarts réels + noter la suite :
-      `mobile-network`/`optical-fiber-network`/`radio-relay-links`/
-      `fiber-constructor`/`tower-type` restent à construire dans le même scope).
+- [x] `ngc --strictTemplates` vert (4 libs + app) — revérifié en fin de Phase 8
+      après câblage complet (Phase 6), pas seulement lib par lib.
+- [x] `tsc --noEmit` vert lib par lib (`domain`/`data`/`application`/`ui`).
+- [x] Boundaries 0 violation (grep direct des imports `@cmz/*` par lib, pas
+      seulement la config eslint) : `domain` → `shared-domain` seul ; `data` →
+      `core`/`coverage-areas-domain`/`shared-data`/`shared-domain` ;
+      `application` →
+      `coverage-areas-domain`/`shared-application`/`shared-domain` ; `ui` →
+      `coverage-areas-{domain,application}`/`shared-{application,ui}`. Aucune
+      lib ne saute de couche (ex. `ui` n'importe jamais `-data` directement).
+- [x] `eslint` sur l'app + les 4 libs propre (les ~3.4k erreurs remontées par
+      `eslint .` sur tout le repo viennent uniquement de fichiers hors périmètre
+      — vendor bundlé `.angular/cache/**` et `tools/seos-adapter/adapt.mjs`
+      préexistant — aucune ne touche `coverage-areas` ni les fichiers modifiés
+      ici).
+- [x] Smoke test backend direct (curl contre le mock, cf. Phase 7) : liste,
+      select, find-one, création, activation, désactivation, mise à jour,
+      suppression — tous verts.
+- [ ] `npx nx lint` + `npx nx serve` (poste macOS) — **à confirmer par
+      l'utilisateur**, comme pour les modules précédents : le sandbox Linux
+      arm64 ne peut pas exécuter les binaires natifs `@nx/nx-*`
+      (`darwin-arm64`), cf. limitation documentée dans les modules précédents.
+- [ ] Smoke test navigateur réel (liste, création, édition,
+      activation/désactivation, suppression via l'UI) — à confirmer une fois
+      `nx serve` + `bun run mock` lancés sur le poste macOS.
+- [x] Commits conventionnels par couche (7 commits, un par phase 1 à 7).
+- [x] Mettre ce document à jour (statut fait + écarts réels + noter la suite).
+
+## Bilan réel (2026-07-27)
+
+Écarts entre le plan initial et l'exécution réelle, tous découverts et corrigés
+en marge (pas silencieusement) :
+
+1. **`value-objects/site-group-filter.vo.ts` manquant en Phase 2** — le
+   validateur (`validateSiteGroupFilter`) avait été écrit, pas le VO qui
+   l'appelle. Détecté par `tsc` en Phase 4 (le use-case l'importait), corrigé
+   immédiatement + exporté dans le barrel domaine avant de continuer.
+2. **`SiteGroupFacade` étend `CollectionResourceFacade`, pas
+   `PaginatedResourceFacade`** comme prévu dans le plan initial (Phase 4) — le
+   gabarit choisi (`InfrastructureTypeFacade`) étend en réalité
+   `CollectionResourceFacade` ; vérifié par lecture directe du fichier source
+   avant d'écrire, plutôt que de suivre l'intitulé du plan à l'aveugle.
+3. **Namespace i18n `COVERAGE_AREAS.SITE_GROUP` modelé sur `REGION`, pas sur
+   `INFRASTRUCTURE_TYPE`** — ce dernier s'est avéré manquer un bloc `TOOLTIP`
+   utilisé par son propre composant (gap pré-existant, non corrigé ici, hors
+   périmètre de ce module).
+4. **Route app `coverage-areas/site-groups`** choisie par cohérence avec le nom
+   du domaine/scope Nx plutôt que de recopier `infrastructures/site-groups`
+   (l'URL wire de l'API source) — décision documentée en Phase 6, pas un oubli.
+5. `ngc`/`nx lint`/`nx serve` : mêmes limitations sandbox que les modules
+   précédents — validation statique (`tsc`, `ngc --strictTemplates` contre
+   l'app, `eslint`, grep de boundaries) faite ici ; `nx lint`/`nx serve` réels
+   restent à confirmer par l'utilisateur sur son poste macOS.
+
+**Suite** : `site-group` est le seul des 6 concepts du domaine `coverage-areas`
+reconstruit. `mobile-network`, `optical-fiber-network`, `radio-relay-links`
+(CRUD complets) et `fiber-constructor`, `tower-type` (select seul) restent à
+construire **dans les mêmes 4 libs** (même scope Nx, cf. décision 5) — pas de
+nouvelles libs par entité.
