@@ -111,28 +111,29 @@ il se traite une fois pour toutes au niveau kernel, pas dupliqué par entité.
 
 ## Phase 1 — Scaffolding Nx (4 libs)
 
-- [ ] Générer `libs/coverage-areas/{domain,data,application,ui}`
+- [x] Générer `libs/coverage-areas/{domain,data,application,ui}`
       (`@cmz/coverage-areas-{domain,data,application,ui}`).
-- [ ] `project.json` tags : `scope:coverage-areas` +
+- [x] `project.json` tags : `scope:coverage-areas` +
       `type:{domain,data,application,ui}`.
-- [ ] `tsconfig.base.json` : 4 paths `@cmz/coverage-areas-*`.
-- [ ] Barrels vides.
-- [ ] `eslint.config.mjs` : bloc `scope:coverage-areas → [self, scope:shared]`.
+- [x] `tsconfig.base.json` : 4 paths `@cmz/coverage-areas-*`.
+- [x] Barrels vides.
+- [x] `eslint.config.mjs` : bloc `scope:coverage-areas → [self, scope:shared]`.
 
 ## Phase 2 — Domaine (`site-group`)
 
-- [ ] `enums/status.enum.ts` (`Status`, `StatusStyle`).
-- [ ] `props/site-group.props.ts`, `props/site-group-find-one.props.ts`.
-- [ ] `entities/site-group.entity.ts` (+ `.with()`),
+- [x] `enums/status.enum.ts` (`Status`).
+- [x] `props/site-group.props.ts`, `props/site-group-find-one.props.ts`.
+- [x] `entities/site-group.entity.ts` (+ `.with()`),
       `site-group-find-one.entity.ts`, `site-group-filter.entity.ts`.
-- [ ] `contracts/site-group-{create,update,delete,enable,disable,filter,     find-one-filter}.contract.ts` +
+- [x] `contracts/site-group-{create,update,delete,enable,disable,filter,     find-one-filter}.contract.ts` +
       `.validate-contract.ts`.
-- [ ] `validators/` — `create`/`update` : `code`+`name` requis
+- [x] `validators/` — `create`/`update` : `code`+`name` requis
       (`GenericRequiredError`), rien d'autre.
-- [ ] `value-objects/`.
-- [ ] `repositories/site-group.repository.ts` +
+- [x] `value-objects/` (`site-group-filter.vo.ts` manquait ici — écart détecté
+      et corrigé en Phase 4, cf. « Bilan réel »).
+- [x] `repositories/site-group.repository.ts` +
       `site-group-{find-one,select}.repository.ts` (ports abstraits).
-- [ ] Barrel ; `tsc` domaine pur.
+- [x] Barrel ; `tsc` domaine pur.
 
 ## Phase 3 — Data (`-data`)
 
