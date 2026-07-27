@@ -1,9 +1,13 @@
 # Module `coverage-areas` — plan de reconstruction
 
 - **Créé :** 2026-07-27
-- **Statut :** livré (pilote `site-group`, 2026-07-27) — Phases 1 à 8 complètes,
-  `nx lint`/`nx serve` confirmés conformes par l'utilisateur (poste macOS). Cf.
-  « Bilan réel » en fin de document.
+- **Statut :** livré (`site-group` + `mobile-network`, 2026-07-27) — Phases 1 à
+  8 complètes pour les deux entités. `site-group` : `nx lint`/`nx serve`
+  confirmés conformes par l'utilisateur (poste macOS). `mobile-network` :
+  validation statique (`tsc`, `ngc --strictTemplates` app, `eslint`, smoke test
+  mock) faite en sandbox, `nx lint`/`nx serve` réels **restent à confirmer par
+  l'utilisateur** sur son poste macOS. Cf. « Bilan réel » de chaque entité en
+  fin de document.
 - **Gabarit de référence :** `module-administrative-boundary.md` — même
   archétype **CRUD** déjà validé 2 fois (`administrative-infrastructure`,
   `administrative-boundary`). Aucun nouveau pattern à valider ici, contrairement
@@ -273,7 +277,10 @@ nouvelles libs par entité.
 
 # `mobile-network` — 2ᵉ entité du domaine (2026-07-27)
 
-- **Statut :** en cours (Phase 3/8 terminée).
+- **Statut :** livré, Phases 1 à 8 complètes (2026-07-27). Validation statique
+  (`tsc` par lib, `ngc --strictTemplates` sur l'app, `eslint`, smoke test mock)
+  faite en sandbox ; `nx lint`/`nx serve` réels restent à confirmer par
+  l'utilisateur sur son poste macOS (même limitation sandbox que `site-group`).
 - **Gabarit de référence :** archétype CRUD standard (`site-group`), mais avec
   relations externes — plus proche d'`administrative-boundary` (région/
   département avec référence `{id,name}`) que de `site-group` sur ce point
@@ -472,3 +479,74 @@ port renvoie directement `SelectOption[]`, comme `SiteGroupSelectRepository`.
       store, update (avec recalcul `tower_type_name`), enable, disable, delete —
       tous corrects, y compris la relecture de la liste après delete (3 → 2
       seed + 1 créé = 3 items restants, id supprimé absent).
+
+## Phase 8 — Validation & livraison
+
+- [x] `tsc --noEmit` sur les 4 libs `coverage-areas` (domain/data/application/
+      ui) individuellement — propres.
+- [x] `ngc --strictTemplates` sur `apps/backoffice-angular` (tsconfig app
+      complet, pas seulement les libs) — propre **après correctif** (cf. écart 1
+      ci-dessous, seule erreur trouvée à ce niveau).
+- [x] `eslint` sur les 4 libs `coverage-areas` + les 3 fichiers app modifiés
+      (`coverage-areas.providers.ts`, `app.routes.ts`, `fr.translation.ts`) —
+      propre.
+- [x] Smoke test backend direct (curl contre le mock, cf. Phase 7) : liste,
+      find-one, select tower-type, création, mise à jour, activation,
+      désactivation, suppression — tous verts.
+- [x] Commits conventionnels par couche (7 commits, un par phase 2 à 7 — Phase 1
+      déjà faite lors du scaffolding `site-group`, libs réutilisées).
+- [x] Mettre ce document à jour (statut fait + écarts réels + noter la suite).
+- [ ] `npx nx lint` + `npx nx serve` (poste macOS) — **à confirmer par
+      l'utilisateur**, comme pour `site-group` : le sandbox Linux arm64 ne peut
+      pas exécuter les binaires natifs `@nx/nx-*` (`darwin-arm64`).
+
+## Bilan réel `mobile-network` (2026-07-27)
+
+Écarts entre le plan initial et l'exécution réelle, tous découverts et corrigés
+en marge (pas silencieusement) :
+
+1. **Bug de binding Signal Forms trouvé seulement à la compilation app-level**,
+   pas pendant la Phase 5 (UI) elle-même : `mobile-network-form.store.ts` typait
+   `operator: Operator | null`, incompatible avec `[formField]` sur un
+   `<select>` natif (qui exige une valeur `string`-compatible non nullable, même
+   contrainte que `infrastructureType`/`towerTypeId`). `tsc`/`eslint`
+   lib-par-lib (Phase 5) ne l'ont pas détecté — seul `ngc --strictTemplates`
+   contre le `tsconfig.app.json` de l'app (Phase 6) l'a révélé, car c'est la
+   compilation des templates de l'app **consommatrice** qui vérifie la
+   compatibilité de type du binding, pas celle de la lib isolée. Corrigé en
+   Phase 6 : `operator: Operator | ''` avec défaut `''` (même pattern que les
+   autres champs select), et `operator ?? undefined` → `operator || undefined`
+   dans `onSubmit`. **Leçon retenue pour les entités suivantes** : toujours
+   valider avec `ngc` contre le tsconfig de l'app avant de considérer une phase
+   UI/câblage close.
+2. **`tower-type` (select seul) construit en Phase 2-3-4**, alors qu'il n'était
+   que recensé dans le plan `site-group` (jamais construit à l'époque) —
+   nécessaire ici car `mobile-network-form` en dépend réellement (`towerTypeId`
+   bindé à `TowerTypeSelectFacade`). Confirme la prédiction initiale : 8
+   fichiers, aucun CRUD, pur select.
+3. **`infrastructureType` documenté, pas renommé** — le champ porte en réalité
+   l'uniqId d'un `site-group` sélectionné (incohérence de nommage du source, cf.
+   section « Découverte » plus haut). Fidélité au contrat wire conservée ;
+   réalité documentée en commentaire JSDoc sur `MobileNetworkFindOneProps`
+   plutôt que masquée ou silencieusement corrigée.
+4. **Réutilisation des fichiers `site-group-status-{label,style}` par
+   `mobile-network`** (pas de duplication) — cohérent avec la règle « un
+   `Status`/`StatusStyle` par lib, pas par entité » déjà établie ; dette de
+   nommage (fichiers préfixés `site-group` mais consommés par `mobile-network`)
+   documentée en commentaire plutôt que corrigée par un renommage disruptif des
+   fichiers déjà livrés.
+5. **Aucune multi-sélection native fournie par le design-system** pour
+   `technology` (`Technology[]`) — résolu par cases à cocher natives + méthode
+   `store.toggleTechnology()`, hors `[formField]`, plutôt que de forcer un
+   `<select multiple>` (binding de tableau peu fiable côté Angular value
+   accessors). Décision d'ingénieur pragmatique, pas un contournement caché.
+6. `ngc`/`nx lint`/`nx serve` : même limitation sandbox que `site-group` —
+   validation statique complète faite ici (`tsc` × 4 libs,
+   `ngc --strictTemplates` app, `eslint`, smoke test mock) ;
+   `nx lint`/`nx serve` réels restent à confirmer par l'utilisateur sur son
+   poste macOS.
+
+**Suite** : `site-group` et `mobile-network` sont livrés. Restent
+`optical-fiber-network`, `radio-relay-links` (CRUD complets) et
+`fiber-constructor` (select seul, même famille que `tower-type`) — à construire
+**dans les mêmes 4 libs** (scope Nx `coverage-areas` inchangé).
