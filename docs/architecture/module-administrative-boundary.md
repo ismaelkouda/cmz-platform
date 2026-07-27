@@ -2,8 +2,9 @@
 
 - **Créé :** 2026-07-26
 - **Statut :** **fait** (2026-07-27) — 4 libs + câblage app + mock backend,
-  validés `ngc --strictTemplates` + `eslint`/boundaries + smoke test mock.
-  Écarts réels vs plan : voir [§ Bilan réel](#bilan-réel-2026-07-27) en fin de
+  validés `ngc --strictTemplates` + `eslint`/boundaries + smoke test mock +
+  `nx lint`/`nx serve` (confirmé par l'utilisateur sur le poste macOS). Écarts
+  réels vs plan : voir [§ Bilan réel](#bilan-réel-2026-07-27) en fin de
   document.
 - **Gabarit de référence :** `module-administrative-infrastructure.md`
   (Phase 07)
@@ -253,15 +254,15 @@ Par entité **E ∈ {region, department, municipality}** (+ 2 vues imbriquées) 
 - [x] `ngc --strictTemplates` + `isolatedModules` **vert** (4 libs + app).
 - [x] Audit **boundaries** sur imports réels : 0 violation (scope isolation).
 - [x] **deps = imports** sur les 4 `package.json`.
-- [ ] `npx nx lint` + `npx nx serve` (poste macOS) — **non exécuté depuis cet
-      environnement** (sandbox Linux arm64 ; les binaires natifs `@nx/nx-*`
-      installés dans ce workspace sont `darwin-arm64`, incompatibles → `nx`
-      échoue avec `WorkspaceContext is not a constructor`, indépendamment de ce
-      module). Substitué par équivalents directs, cf. § Bilan réel :
-      `tsc     --noEmit` (4 libs + app) + `ngc --strictTemplates` (app,
-      type-check templates réel) + `eslint` (lint + boundaries) sur tout le
-      scope `administrative-boundary` + `app`, tous verts. **À confirmer par
-      `npx nx lint` / `npx nx serve` sur le poste macOS réel.**
+- [x] `npx nx lint` + `npx nx serve` (poste macOS) — confirmé par l'utilisateur
+      le 2026-07-27 : `nx lint backoffice-angular` vert,
+      `nx serve     backoffice-angular` build + dev-server OK
+      (`localhost:4200`). Non exécutable depuis le sandbox Linux arm64 utilisé
+      pendant le développement (binaires natifs `@nx/nx-*` du workspace en
+      `darwin-arm64` → `WorkspaceContext is not a constructor`, indépendant de
+      ce module) ; substitué à l'époque par `tsc --noEmit` (4 libs + app) +
+      `ngc --strictTemplates` (app) + `eslint` (lint + boundaries), tous verts —
+      cf. § Bilan réel.
 - [x] Smoke test contre le mock : liste + filtre + pagination +
       create/edit/details + delete (confirm) + **vues imbriquées** + **selects
       cascade** pour les 3 entités.
@@ -330,9 +331,15 @@ binaires natifs `@nx/nx-*` compatibles) :
       commune — compteurs (`departments_count`, `municipalities_count`)
       cohérents après create/delete.
 
-**Non exécuté ici, à faire sur le poste macOS réel** : `npx nx lint` /
-`npx nx serve` (le workspace mounté dans ce sandbox contient les binaires natifs
-Nx `darwin-arm64`, incompatibles avec ce Linux arm64 — erreur
-`WorkspaceContext is not a constructor`, sans rapport avec le code de ce module)
-et le smoke test **visuel** dans le navigateur (clic réel sur les vues
-imbriquées, cascades de select en formulaire, confirm de suppression).
+**Confirmé ensuite sur le poste macOS réel (2026-07-27)** par l'utilisateur :
+`npx nx lint backoffice-angular` vert, `npx nx serve backoffice-angular` build
+
+- dev-server OK (`localhost:4200`) — non exécutable depuis ce sandbox Linux
+  arm64 (binaires natifs Nx `darwin-arm64` du workspace → erreur
+  `WorkspaceContext is not a constructor`, sans rapport avec le code de ce
+  module).
+
+**Reste à faire, hors portée de cette validation outillée** : smoke test
+**visuel** dans le navigateur (clic réel sur les vues imbriquées, cascades de
+select en formulaire, confirm de suppression) — recommandé avant mise en
+production, non bloquant pour ce module.
