@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/authentication-application",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/authentication/application/src",
+  "projectType": "library",
+  "tags": ["scope:authentication", "type:application"]
+}

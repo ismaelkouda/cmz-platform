@@ -99,6 +99,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:authentication',
+                            onlyDependOnLibsWithTags: [
+                                'scope:authentication',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },

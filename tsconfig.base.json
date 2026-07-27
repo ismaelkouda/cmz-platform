@@ -45,7 +45,15 @@
       ],
       "@cmz/administrative-boundary-ui": [
         "./libs/administrative-boundary/ui/src/index.ts"
-      ]
+      ],
+      "@cmz/authentication-domain": [
+        "./libs/authentication/domain/src/index.ts"
+      ],
+      "@cmz/authentication-data": ["./libs/authentication/data/src/index.ts"],
+      "@cmz/authentication-application": [
+        "./libs/authentication/application/src/index.ts"
+      ],
+      "@cmz/authentication-ui": ["./libs/authentication/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

@@ -1,0 +1,14 @@
+{
+  "name": "@cmz/authentication-data",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@cmz/authentication-domain": "workspace:*",
+    "@cmz/shared-data": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "@cmz/core": "workspace:*",
+    "@angular/core": "catalog:",
+    "@angular/common": "catalog:",
+    "rxjs": "catalog:"
+  }
+}
