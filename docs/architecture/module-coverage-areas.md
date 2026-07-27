@@ -1,8 +1,8 @@
 # Module `coverage-areas` — plan de reconstruction
 
 - **Créé :** 2026-07-27
-- **Statut :** livré (pilote `site-group`, 2026-07-27) — Phases 1 à 8 complètes
-  ; `nx lint`/`nx serve` réels à confirmer par l'utilisateur (poste macOS). Cf.
+- **Statut :** livré (pilote `site-group`, 2026-07-27) — Phases 1 à 8 complètes,
+  `nx lint`/`nx serve` confirmés conformes par l'utilisateur (poste macOS). Cf.
   « Bilan réel » en fin de document.
 - **Gabarit de référence :** `module-administrative-boundary.md` — même
   archétype **CRUD** déjà validé 2 fois (`administrative-infrastructure`,
@@ -231,13 +231,9 @@ il se traite une fois pour toutes au niveau kernel, pas dupliqué par entité.
 - [x] Smoke test backend direct (curl contre le mock, cf. Phase 7) : liste,
       select, find-one, création, activation, désactivation, mise à jour,
       suppression — tous verts.
-- [ ] `npx nx lint` + `npx nx serve` (poste macOS) — **à confirmer par
-      l'utilisateur**, comme pour les modules précédents : le sandbox Linux
-      arm64 ne peut pas exécuter les binaires natifs `@nx/nx-*`
-      (`darwin-arm64`), cf. limitation documentée dans les modules précédents.
-- [ ] Smoke test navigateur réel (liste, création, édition,
-      activation/désactivation, suppression via l'UI) — à confirmer une fois
-      `nx serve` + `bun run mock` lancés sur le poste macOS.
+- [x] `npx nx lint` + `npx nx serve` (poste macOS) — **confirmés conformes par
+      l'utilisateur** (2026-07-27), le sandbox Linux arm64 ne pouvant pas
+      exécuter les binaires natifs `@nx/nx-*` (`darwin-arm64`).
 - [x] Commits conventionnels par couche (7 commits, un par phase 1 à 7).
 - [x] Mettre ce document à jour (statut fait + écarts réels + noter la suite).
 
@@ -265,7 +261,7 @@ en marge (pas silencieusement) :
 5. `ngc`/`nx lint`/`nx serve` : mêmes limitations sandbox que les modules
    précédents — validation statique (`tsc`, `ngc --strictTemplates` contre
    l'app, `eslint`, grep de boundaries) faite ici ; `nx lint`/`nx serve` réels
-   restent à confirmer par l'utilisateur sur son poste macOS.
+   confirmés conformes par l'utilisateur sur son poste macOS (2026-07-27).
 
 **Suite** : `site-group` est le seul des 6 concepts du domaine `coverage-areas`
 reconstruit. `mobile-network`, `optical-fiber-network`, `radio-relay-links`
