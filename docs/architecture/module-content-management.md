@@ -1,14 +1,19 @@
 # Module `content-management` — plan de reconstruction
 
 - **Créé :** 2026-07-28
-- **Statut :** livré — **6 entités CRUD** (`home`, `slide`, `news`,
-  `legal-notice`, `privacy-policy`, `terms-use`) + 1 concept annexe
+- **Statut :** livré et **confirmé** — **6 entités CRUD** (`home`, `slide`,
+  `news`, `legal-notice`, `privacy-policy`, `terms-use`) + 1 concept annexe
   (`news-categories-select`). Phases 1 à 8 complètes. `tsc --noEmit` +
   `eslint --max-warnings=0` clean sur les 4 libs et sur l'app ; mock backend
   testé de bout en bout (list/find-one/create/update/delete/enable/disable/
   publish/unpublish/select-catégories) via `curl` en session. `ngc
-  --strictTemplates` et `nx lint`/`nx serve` restent à confirmer côté
-  utilisateur (bun indisponible dans ce bac à sable).
+  --strictTemplates` (bun indisponible dans ce bac à sable) a remonté **une**
+  erreur réelle non détectable par `tsc` seul — **NG8022** (`[disabled]`
+  manuel sur un nœud `[formField]`, sur `news-form.component.ts` /
+  `subCategory`) — corrigée en déplaçant la condition dans `disabled()` du
+  schema (cf. mémoire `cmz-platform-signal-forms-formfield-disabled`).
+  Confirmé conforme par l'utilisateur après correction (2026-07-28). Module
+  `content-management` **terminé**.
 - **Gabarit de référence :** `module-team-organization.md` — même archétype
   CRUD (props → entités → contrats/vo → repositories → data → application →
   UI Signal Forms), même discipline de normalisation CQRS-lite pour toutes
