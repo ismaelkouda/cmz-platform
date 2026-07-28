@@ -3088,6 +3088,46 @@ async function handle(req, res, url) {
         return send(res, 200, ok(monitoringVariables()));
     }
 
+    // ---- REPORT-STATES ----
+    if (
+        (path.includes('approved') ||
+            path.includes('evaluated') ||
+            path.includes('finalizations') ||
+            path.includes('rejected') ||
+            path.includes('exports')) &&
+        method === 'GET'
+    ) {
+        return send(
+            res,
+            200,
+            ok(
+                paginate(
+                    [
+                        {
+                            id: 'rs-1',
+                            uniq_id: 'RS-001',
+                            report_type: "Absence d'Internet",
+                            operator: 'MTN',
+                            source: 'SMS [9001]',
+                            created_at: now(),
+                            status: 'approved',
+                        },
+                        {
+                            id: 'rs-2',
+                            uniq_id: 'RS-002',
+                            report_type: 'Mauvais Signal',
+                            operator: 'Moov',
+                            source: 'Web',
+                            created_at: now(),
+                            status: 'approved',
+                        },
+                    ],
+                    query.get('page')
+                )
+            )
+        );
+    }
+
     // ---- AUTHENTICATION ----
     if (path === 'auth/login' && method === 'POST') {
         const b = await readBody(req);

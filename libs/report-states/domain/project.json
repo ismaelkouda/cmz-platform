@@ -1,0 +1,7 @@
+{
+  "name": "report-states-domain",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/report-states/domain/src",
+  "projectType": "library",
+  "tags": ["scope:report-states", "type:domain"]
+}

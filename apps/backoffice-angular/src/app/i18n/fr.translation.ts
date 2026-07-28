@@ -1433,6 +1433,49 @@ export const FR = {
                 'Une erreur est survenue lors du chargement du tableau de bord interactif.',
         },
     },
+    REPORT_STATES: {
+        BREADCRUMB: {
+            LABEL: 'État des signalements',
+            ROUTE: 'report-status',
+            ICON: 'pi-list-check',
+        },
+        LABEL: 'Qualifications',
+        APPROVE: {
+            TITLE: 'Demandes recevables',
+            LABEL: 'Demandes recevables',
+            BREADCRUMB: {
+                LABEL: 'Demandes recevables',
+            },
+        },
+        EVALUATE: {
+            TITLE: 'Signalements évalués',
+            LABEL: 'Signalements évalués',
+            BREADCRUMB: {
+                LABEL: 'Signalements évalués',
+            },
+        },
+        CLOSE: {
+            TITLE: 'Signalements clôturés',
+            LABEL: 'Signalements clôturés',
+            BREADCRUMB: {
+                LABEL: 'Signalements clôturés',
+            },
+        },
+        REJECT: {
+            TITLE: 'Demandes non recevables',
+            LABEL: 'Demandes non recevables',
+            BREADCRUMB: {
+                LABEL: 'Demandes non recevables',
+            },
+        },
+        DOWNLOAD: {
+            TITLE: 'Exports et téléchargements',
+            LABEL: 'Exports et téléchargements',
+            BREADCRUMB: {
+                LABEL: 'Exports et téléchargements',
+            },
+        },
+    },
     AUTHENTICATION: {
         LOGIN: {
             TITLE: 'Connexion',

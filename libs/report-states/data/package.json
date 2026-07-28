@@ -1,0 +1,21 @@
+{
+  "name": "@cmz/report-states-data",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@angular/common": "catalog:",
+    "@angular/core": "catalog:",
+    "@cmz/core": "workspace:*",
+    "@cmz/report-states-domain": "workspace:*",
+    "@cmz/shared-data": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:tooling"
+  }
+}

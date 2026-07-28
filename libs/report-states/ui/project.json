@@ -1,0 +1,7 @@
+{
+  "name": "report-states-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/report-states/ui/src",
+  "projectType": "library",
+  "tags": ["scope:report-states", "type:ui"]
+}

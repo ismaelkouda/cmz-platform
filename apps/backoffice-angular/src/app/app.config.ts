@@ -31,6 +31,7 @@ import { provideDashboard } from './providers/dashboard.providers';
 import { provideMonitoring } from './providers/monitoring.providers';
 import { provideReporting } from './providers/reporting.providers';
 import { provideInteractiveMap } from './providers/interactive-map.providers';
+import { provideReportStates } from './providers/report-states.providers';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -56,6 +57,7 @@ export const appConfig: ApplicationConfig = {
         ...provideMonitoring(),
         ...provideReporting(),
         ...provideInteractiveMap(),
+        ...provideReportStates(),
         // DEV ONLY : accorde toutes les permissions (no-op hors isDevMode()).
         ...provideDevPermissions(),
     ],

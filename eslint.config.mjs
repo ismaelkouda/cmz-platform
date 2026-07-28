@@ -180,6 +180,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:report-states',
+                            onlyDependOnLibsWithTags: [
+                                'scope:report-states',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },

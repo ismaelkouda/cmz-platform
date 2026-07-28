@@ -28,6 +28,11 @@ export const appRoutes: Route[] = [
             ),
     },
     {
+        path: 'report-states',
+        loadChildren: () =>
+            import('@cmz/report-states-ui').then((m) => m.REPORT_STATES_ROUTES),
+    },
+    {
         path: 'auth',
         loadChildren: () =>
             import('@cmz/authentication-ui').then(

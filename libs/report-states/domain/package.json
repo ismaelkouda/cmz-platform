@@ -1,0 +1,16 @@
+{
+  "name": "@cmz/report-states-domain",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cmz/shared-domain": "workspace:*",
+    "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:tooling"
+  }
+}
