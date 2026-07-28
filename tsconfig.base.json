@@ -61,7 +61,17 @@
       "@cmz/coverage-areas-application": [
         "./libs/coverage-areas/application/src/index.ts"
       ],
-      "@cmz/coverage-areas-ui": ["./libs/coverage-areas/ui/src/index.ts"]
+      "@cmz/coverage-areas-ui": ["./libs/coverage-areas/ui/src/index.ts"],
+      "@cmz/team-organization-domain": [
+        "./libs/team-organization/domain/src/index.ts"
+      ],
+      "@cmz/team-organization-data": [
+        "./libs/team-organization/data/src/index.ts"
+      ],
+      "@cmz/team-organization-application": [
+        "./libs/team-organization/application/src/index.ts"
+      ],
+      "@cmz/team-organization-ui": ["./libs/team-organization/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

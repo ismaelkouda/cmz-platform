@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/team-organization-domain",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/team-organization/domain/src",
+  "projectType": "library",
+  "tags": ["scope:team-organization", "type:domain"]
+}

@@ -113,6 +113,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:team-organization',
+                            onlyDependOnLibsWithTags: [
+                                'scope:team-organization',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },
