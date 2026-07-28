@@ -166,6 +166,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:reporting',
+                            onlyDependOnLibsWithTags: [
+                                'scope:reporting',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },

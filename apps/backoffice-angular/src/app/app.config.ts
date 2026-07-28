@@ -29,6 +29,7 @@ import { provideSettingsSecurity } from './providers/settings-security.providers
 import { provideCommunication } from './providers/communication.providers';
 import { provideDashboard } from './providers/dashboard.providers';
 import { provideMonitoring } from './providers/monitoring.providers';
+import { provideReporting } from './providers/reporting.providers';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -52,6 +53,7 @@ export const appConfig: ApplicationConfig = {
         ...provideCommunication(),
         ...provideDashboard(),
         ...provideMonitoring(),
+        ...provideReporting(),
         // DEV ONLY : accorde toutes les permissions (no-op hors isDevMode()).
         ...provideDevPermissions(),
     ],

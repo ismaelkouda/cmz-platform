@@ -1,0 +1,14 @@
+{
+  "name": "@cmz/reporting-data",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@cmz/reporting-domain": "workspace:*",
+    "@cmz/shared-data": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "@cmz/core": "workspace:*",
+    "@angular/core": "catalog:",
+    "@angular/common": "catalog:",
+    "rxjs": "catalog:"
+  }
+}

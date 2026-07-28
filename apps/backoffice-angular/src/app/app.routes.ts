@@ -16,6 +16,11 @@ export const appRoutes: Route[] = [
             import('@cmz/monitoring-ui').then((m) => m.MONITORING_ROUTES),
     },
     {
+        path: 'reporting',
+        loadChildren: () =>
+            import('@cmz/reporting-ui').then((m) => m.REPORTING_ROUTES),
+    },
+    {
         path: 'auth',
         loadChildren: () =>
             import('@cmz/authentication-ui').then(

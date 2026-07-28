@@ -1346,6 +1346,14 @@ function monitoringVariables() {
             'https://grafana.cmz.internal/d/resources/utilisation-des-ressources?orgId=1&kiosk',
         impactJobs:
             'https://grafana.cmz.internal/d/jobs-impact/impact-des-jobs?orgId=1&kiosk',
+        reportReportingLink:
+            'https://grafana.cmz.internal/d/reports/suivi-des-signalements?orgId=1&kiosk',
+        requestReportReportingLink:
+            'https://grafana.cmz.internal/d/requests/suivi-des-demandes?orgId=1&kiosk',
+        reportByChannel:
+            'https://grafana.cmz.internal/d/report-by-channel/signalements-par-canal?orgId=1&kiosk',
+        reportByOperator:
+            'https://grafana.cmz.internal/d/report-by-operator/signalements-par-operateurs?orgId=1&kiosk',
     };
 }
 
@@ -2978,10 +2986,7 @@ async function handle(req, res, url) {
     }
 
     // ---- COMMUNICATION : MESSAGING ----
-    if (
-        path === 'auth/communication/message-diffusions' &&
-        method === 'GET'
-    ) {
+    if (path === 'auth/communication/message-diffusions' && method === 'GET') {
         return send(
             res,
             200,
@@ -3009,9 +3014,7 @@ async function handle(req, res, url) {
         });
         return send(res, 201, ok(null, 'Message créé.'));
     }
-    m = path.match(
-        /^auth\/communication\/message-diffusions\/(.+)$/
-    );
+    m = path.match(/^auth\/communication\/message-diffusions\/(.+)$/);
     if (m) {
         const seg = m[1];
         const id = seg.split('/')[0];

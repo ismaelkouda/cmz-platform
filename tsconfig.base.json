@@ -111,7 +111,13 @@
       "@cmz/monitoring-application": [
         "./libs/monitoring/application/src/index.ts"
       ],
-      "@cmz/monitoring-ui": ["./libs/monitoring/ui/src/index.ts"]
+      "@cmz/monitoring-ui": ["./libs/monitoring/ui/src/index.ts"],
+      "@cmz/reporting-domain": ["./libs/reporting/domain/src/index.ts"],
+      "@cmz/reporting-data": ["./libs/reporting/data/src/index.ts"],
+      "@cmz/reporting-application": [
+        "./libs/reporting/application/src/index.ts"
+      ],
+      "@cmz/reporting-ui": ["./libs/reporting/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
