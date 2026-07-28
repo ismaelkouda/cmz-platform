@@ -87,4 +87,5 @@ export * from './lib/repositories/users-find-one.repository';
 export * from './lib/repositories/profiles-permissions.repository';
 export * from './lib/repositories/profiles-permissions-find-one.repository';
 export * from './lib/repositories/profiles-permissions-select.repository';
+export * from './lib/repositories/profiles-permissions-permissions.repository';
 export * from './lib/repositories/access-logs.repository';
