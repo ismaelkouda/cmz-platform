@@ -1369,6 +1369,40 @@ export const FR = {
                 'Impossible de charger le tableau de bord Grafana des jobs.',
         },
     },
+    REPORTING: {
+        REPORT: {
+            TITLE: 'Suivi des signalements',
+            BREADCRUMB: 'Suivi des signalements',
+            LOADING_DESCRIPTION:
+                'Chargement du tableau de bord Grafana des signalements…',
+            ERROR_DESCRIPTION:
+                'Impossible de charger le tableau de bord Grafana des signalements.',
+        },
+        REQUESTS: {
+            TITLE: 'Suivi des demandes',
+            BREADCRUMB: 'Suivi des demandes',
+            LOADING_DESCRIPTION:
+                'Chargement du tableau de bord Grafana des demandes…',
+            ERROR_DESCRIPTION:
+                'Impossible de charger le tableau de bord Grafana des demandes.',
+        },
+        REPORT_BY_CHANNEL: {
+            TITLE: 'Signalements par canal',
+            BREADCRUMB: 'Signalements par canal',
+            LOADING_DESCRIPTION:
+                'Chargement du tableau de bord Grafana des signalements par canal…',
+            ERROR_DESCRIPTION:
+                'Impossible de charger le tableau de bord Grafana des signalements par canal.',
+        },
+        REPORT_BY_OPERATOR: {
+            TITLE: 'Signalements par opérateur',
+            BREADCRUMB: 'Signalements par opérateur',
+            LOADING_DESCRIPTION:
+                'Chargement du tableau de bord Grafana des signalements par opérateur…',
+            ERROR_DESCRIPTION:
+                'Impossible de charger le tableau de bord Grafana des signalements par opérateur.',
+        },
+    },
     AUTHENTICATION: {
         LOGIN: {
             TITLE: 'Connexion',
