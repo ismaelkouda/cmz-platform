@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/monitoring-domain",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/monitoring/domain/src",
+  "projectType": "library",
+  "tags": ["scope:monitoring", "type:domain"]
+}

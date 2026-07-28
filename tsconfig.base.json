@@ -105,7 +105,13 @@
       "@cmz/dashboard-application": [
         "./libs/dashboard/application/src/index.ts"
       ],
-      "@cmz/dashboard-ui": ["./libs/dashboard/ui/src/index.ts"]
+      "@cmz/dashboard-ui": ["./libs/dashboard/ui/src/index.ts"],
+      "@cmz/monitoring-domain": ["./libs/monitoring/domain/src/index.ts"],
+      "@cmz/monitoring-data": ["./libs/monitoring/data/src/index.ts"],
+      "@cmz/monitoring-application": [
+        "./libs/monitoring/application/src/index.ts"
+      ],
+      "@cmz/monitoring-ui": ["./libs/monitoring/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

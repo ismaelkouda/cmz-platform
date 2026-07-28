@@ -1332,6 +1332,23 @@ function dashboardStats() {
     };
 }
 
+// ---- MONITORING : liens Grafana (objet unique, lecture seule) ----------
+// Une seule ressource `variables` sert les 4 sous-pages `monitoring`
+// (`node`/`services` lisent `useOfServersResourcesLink`, `resources` lit
+// `useOfResourcesLink`, `jobs` lit `impactJobs`) — cf. doc module. Le champ
+// wire est déjà en camelCase dans le contrat source (pas de snake_case ici,
+// à la différence du reste du fichier).
+function monitoringVariables() {
+    return {
+        useOfServersResourcesLink:
+            'https://grafana.cmz.internal/d/servers-resources/utilisation-des-serveurs?orgId=1&kiosk',
+        useOfResourcesLink:
+            'https://grafana.cmz.internal/d/resources/utilisation-des-ressources?orgId=1&kiosk',
+        impactJobs:
+            'https://grafana.cmz.internal/d/jobs-impact/impact-des-jobs?orgId=1&kiosk',
+    };
+}
+
 // ---- AUTHENTICATION : utilisateur + identifiants seedés -----------------
 const MOCK_CREDENTIALS = { email: 'admin@cmz.tg', password: 'Password123!' };
 const MOCK_RESET_TOKEN = 'valid-token';
@@ -1629,6 +1646,7 @@ const rel = (pathname) => {
         'auth/',
         'cms/',
         'report/',
+        'variables',
     ]) {
         const i = pathname.indexOf(marker);
         if (i >= 0) return pathname.slice(i);
@@ -3058,6 +3076,11 @@ async function handle(req, res, url) {
     // ---- DASHBOARD ----
     if (path === 'report/statistics' && method === 'GET') {
         return send(res, 200, ok(dashboardStats()));
+    }
+
+    // ---- MONITORING ----
+    if (path === 'variables' && method === 'GET') {
+        return send(res, 200, ok(monitoringVariables()));
     }
 
     // ---- AUTHENTICATION ----

@@ -159,6 +159,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:monitoring',
+                            onlyDependOnLibsWithTags: [
+                                'scope:monitoring',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },

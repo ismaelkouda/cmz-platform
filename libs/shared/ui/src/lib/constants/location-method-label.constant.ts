@@ -4,7 +4,6 @@ import { LocationMethod } from '@cmz/shared-domain';
 export const LOCATION_METHOD_LABEL: Record<LocationMethod, string> = {
     [LocationMethod.AUTO]: 'COMMON.AUTO',
     [LocationMethod.MANUAL]: 'COMMON.MANUAL',
-    [LocationMethod.UNKNOWN]: 'COMMON.UNKNOWN',
 };
 
 /** Options filtre / select (sans unknown). */

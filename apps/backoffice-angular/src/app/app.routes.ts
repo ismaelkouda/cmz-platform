@@ -11,6 +11,11 @@ export const appRoutes: Route[] = [
             import('@cmz/dashboard-ui').then((m) => m.DASHBOARD_ROUTES),
     },
     {
+        path: 'monitoring',
+        loadChildren: () =>
+            import('@cmz/monitoring-ui').then((m) => m.MONITORING_ROUTES),
+    },
+    {
         path: 'auth',
         loadChildren: () =>
             import('@cmz/authentication-ui').then(

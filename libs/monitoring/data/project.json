@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/monitoring-data",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/monitoring/data/src",
+  "projectType": "library",
+  "tags": ["scope:monitoring", "type:data"]
+}

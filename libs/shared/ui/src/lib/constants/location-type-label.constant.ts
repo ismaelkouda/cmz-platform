@@ -6,7 +6,6 @@ export const LOCATION_TYPE_LABEL: Record<LocationType, string> = {
     [LocationType.NETWORK]: 'COMMON.NETWORK',
     [LocationType.MANUAL]: 'COMMON.MANUAL',
     [LocationType.WHAT3WORDS]: 'COMMON.WHAT3WORDS',
-    [LocationType.UNKNOWN]: 'COMMON.UNKNOWN',
 };
 
 /** Options filtre / select (sans unknown). */

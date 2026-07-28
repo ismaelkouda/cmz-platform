@@ -1,0 +1,29 @@
+import { Service, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ResourceFacade } from '@cmz/shared-application';
+import { FetchOptions } from '@cmz/shared-domain';
+import { GrafanaDashboardEntity, MonitoringSection } from '@cmz/monitoring-domain';
+import { MonitoringUseCase } from '../use-cases/monitoring.use-case';
+
+/**
+ * Une façade par page (comme le source) plutôt qu'une façade générique
+ * partagée : chaque page reste un singleton `providedIn: 'root'` distinct,
+ * donc pas d'état partagé entre sections en cas de navigation croisée. Seule
+ * la section lue (`MonitoringSection.NODE`) diffère de `ServicesFacade` /
+ * `ResourcesFacade` / `JobsFacade` — domaine/data, eux, sont consolidés.
+ */
+@Service()
+export class NodeFacade extends ResourceFacade<
+    GrafanaDashboardEntity,
+    FetchOptions
+> {
+    private readonly useCase = inject(MonitoringUseCase);
+
+    protected stream(params: FetchOptions): Observable<GrafanaDashboardEntity> {
+        return this.useCase.execute(MonitoringSection.NODE, params);
+    }
+
+    load(options?: FetchOptions): void {
+        this.setParams(options ?? {});
+    }
+}

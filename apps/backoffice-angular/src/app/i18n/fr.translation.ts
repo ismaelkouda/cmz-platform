@@ -3,6 +3,9 @@ export const FR = {
     COMMON: {
         CREATE: 'Créer',
         REFRESH: 'Actualiser',
+        RETRY: 'Réessayer',
+        ENTER_FULLSCREEN: 'Plein écran',
+        EXIT_FULLSCREEN: 'Quitter le plein écran',
         SAVE: 'Enregistrer',
         CANCEL: 'Annuler',
         CONFIRM: 'Confirmer',
@@ -1330,6 +1333,40 @@ export const FR = {
                 },
                 RESPONSE_TIME: { LABEL: 'Temps de réponse' },
             },
+        },
+    },
+    MONITORING: {
+        NODE: {
+            TITLE: 'État des traitements',
+            BREADCRUMB: 'État des traitements',
+            LOADING_DESCRIPTION:
+                'Chargement du tableau de bord Grafana des traitements…',
+            ERROR_DESCRIPTION:
+                'Impossible de charger le tableau de bord Grafana des traitements.',
+        },
+        SERVICES: {
+            TITLE: 'État des services',
+            BREADCRUMB: 'État des services',
+            LOADING_DESCRIPTION:
+                'Chargement du tableau de bord Grafana des services…',
+            ERROR_DESCRIPTION:
+                'Impossible de charger le tableau de bord Grafana des services.',
+        },
+        RESOURCES: {
+            TITLE: 'Utilisation des ressources',
+            BREADCRUMB: 'Utilisation des ressources',
+            LOADING_DESCRIPTION:
+                'Chargement du tableau de bord Grafana des ressources…',
+            ERROR_DESCRIPTION:
+                'Impossible de charger le tableau de bord Grafana des ressources.',
+        },
+        JOBS: {
+            TITLE: 'Impact des jobs',
+            BREADCRUMB: 'Impact des jobs',
+            LOADING_DESCRIPTION:
+                'Chargement du tableau de bord Grafana des jobs…',
+            ERROR_DESCRIPTION:
+                'Impossible de charger le tableau de bord Grafana des jobs.',
         },
     },
     AUTHENTICATION: {

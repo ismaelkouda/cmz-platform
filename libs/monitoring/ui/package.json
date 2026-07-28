@@ -1,0 +1,14 @@
+{
+  "name": "@cmz/monitoring-ui",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@cmz/monitoring-domain": "workspace:*",
+    "@cmz/monitoring-application": "workspace:*",
+    "@cmz/shared-ui": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
+    "@angular/core": "catalog:",
+    "@angular/router": "catalog:",
+    "rxjs": "catalog:"
+  }
+}
