@@ -117,7 +117,10 @@ const T = 'COMMUNICATION.MESSAGING';
                         <option value="">
                             {{ t('COMMON.SELECT_PLACEHOLDER') }}
                         </option>
-                        @for (region of store.regionOptions(); track region.id) {
+                        @for (
+                            region of store.regionOptions();
+                            track region.id
+                        ) {
                             <option [value]="region.id">
                                 {{ region.name }}
                             </option>
@@ -183,7 +186,9 @@ const T = 'COMMUNICATION.MESSAGING';
             >
                 <div class="flex flex-wrap gap-4">
                     @for (option of channelOptions; track option.value) {
-                        <label class="flex items-center gap-2 text-sm text-text">
+                        <label
+                            class="flex items-center gap-2 text-sm text-text"
+                        >
                             <input
                                 type="checkbox"
                                 [checked]="isChannelChecked(option.value)"

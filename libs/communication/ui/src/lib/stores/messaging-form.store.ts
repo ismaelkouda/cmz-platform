@@ -87,8 +87,7 @@ export class MessagingFormStore {
             return [];
         }
         return (
-            this.regionOptions().find((r) => r.id === region)?.departments ??
-            []
+            this.regionOptions().find((r) => r.id === region)?.departments ?? []
         );
     });
 

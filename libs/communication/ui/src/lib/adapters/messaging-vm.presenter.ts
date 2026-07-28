@@ -39,7 +39,10 @@ const T = 'COMMUNICATION.MESSAGING.TOOLTIP';
 export class MessagingPresenter {
     constructor(private readonly t: (key: string) => string) {}
 
-    map(item: MessagingEntity, permission: MessagingPermission): MessagingVmProps {
+    map(
+        item: MessagingEntity,
+        permission: MessagingPermission
+    ): MessagingVmProps {
         const { authorization: can, tooltip } = permission;
 
         return {

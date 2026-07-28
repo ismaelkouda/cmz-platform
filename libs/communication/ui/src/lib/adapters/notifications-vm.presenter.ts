@@ -1,4 +1,7 @@
-import { NotificationsEntity, NotificationsStatus } from '@cmz/communication-domain';
+import {
+    NotificationsEntity,
+    NotificationsStatus,
+} from '@cmz/communication-domain';
 import { TYPE_REPORT_LABEL } from '@cmz/shared-ui';
 import { NOTIFICATIONS_STATUS_LABEL } from '../constants/notifications-status-label.constant';
 import { notificationsStatusStyleOf } from '../mappers/notifications-status-style.mapper';
@@ -59,7 +62,12 @@ export class NotificationsPresenter {
             disableDropdown: !can.canRead || !isUnread,
             tooltipDropdown: !isUnread
                 ? this.t(`${T}.ALREADY_READ`)
-                : resolveTooltip(this.t, can.canRead, `${T}.CHOOSE`, tooltip.read),
+                : resolveTooltip(
+                      this.t,
+                      can.canRead,
+                      `${T}.CHOOSE`,
+                      tooltip.read
+                  ),
         };
     }
 }

@@ -153,4 +153,14 @@ export const appRoutes: Route[] = [
                 (m) => m.ACCESS_LOGS_ROUTES
             ),
     },
+    {
+        path: 'communication/messaging',
+        loadChildren: () =>
+            import('@cmz/communication-ui').then((m) => m.MESSAGING_ROUTES),
+    },
+    {
+        path: 'communication/notifications',
+        loadChildren: () =>
+            import('@cmz/communication-ui').then((m) => m.NOTIFICATIONS_ROUTES),
+    },
 ];

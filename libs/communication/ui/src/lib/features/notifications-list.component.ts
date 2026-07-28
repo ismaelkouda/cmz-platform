@@ -127,7 +127,9 @@ export class NotificationsListComponent {
         const tooltip = { read: this.t(T + '.TOOLTIP.NO_PERMISSION_READ') };
         return this.facade
             .items()
-            .map((item) => this.presenter.map(item, { authorization, tooltip }));
+            .map((item) =>
+                this.presenter.map(item, { authorization, tooltip })
+            );
     });
 
     protected readonly indexOffset = computed(() => {
