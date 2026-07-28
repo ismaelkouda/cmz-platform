@@ -1307,6 +1307,31 @@ const notifications = [
     },
 ];
 
+// ---- DASHBOARD : statistiques agrégées (lecture seule) -------------------
+// Objet unique, pas de liste — `period` (query param) ignoré, même
+// précédent que tout le reste du fichier (aucune route ne filtre
+// réellement sur ses query params, cf. `users`/`access-logs`/`messaging`).
+// Champs déjà au format wire (`DashboardItemApiDto`), pas de mapper dédié.
+function dashboardStats() {
+    return {
+        total_reports: 4820,
+        total_cpo_reports: 640,
+        total_zob_reports: 210,
+        total_cps_reports: 380,
+        total_abi_reports: 95,
+        total_request_report_pending: 312,
+        total_request_report_rejected: 148,
+        total_reports_in_processing: 96,
+        total_reports_finalized: 4160,
+        total_reports_evaluated: 3890,
+        treatmentRate: 86,
+        completionRate: 93,
+        averageTreatmentTime: 4,
+        responseTime: 12,
+        last_refresh_at: now(),
+    };
+}
+
 // ---- AUTHENTICATION : utilisateur + identifiants seedés -----------------
 const MOCK_CREDENTIALS = { email: 'admin@cmz.tg', password: 'Password123!' };
 const MOCK_RESET_TOKEN = 'valid-token';
@@ -1603,6 +1628,7 @@ const rel = (pathname) => {
         'settings-and-security/',
         'auth/',
         'cms/',
+        'report/',
     ]) {
         const i = pathname.indexOf(marker);
         if (i >= 0) return pathname.slice(i);
@@ -3027,6 +3053,11 @@ async function handle(req, res, url) {
             if (notification) notification.status = 'read';
             return send(res, 200, ok(null, 'Notification marquée comme lue.'));
         }
+    }
+
+    // ---- DASHBOARD ----
+    if (path === 'report/statistics' && method === 'GET') {
+        return send(res, 200, ok(dashboardStats()));
     }
 
     // ---- AUTHENTICATION ----
