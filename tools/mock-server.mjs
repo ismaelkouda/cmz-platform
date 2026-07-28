@@ -3122,7 +3122,7 @@ async function handle(req, res, url) {
                             status: 'approved',
                         },
                     ],
-                    query.get('page')
+                    page
                 )
             )
         );
