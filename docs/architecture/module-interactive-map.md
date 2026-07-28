@@ -1,7 +1,11 @@
 # Module `interactive-map` — Plan de reconstruction Big Tech (META / Google Rigor)
 
 - **Créé :** 2026-07-28
-- **Statut :** Phase 1 en cours (Spécification d'architecture & Planification).
+- **Statut :** **Livré & Validé (Phases 1 à 8 terminées)**. 2 sous-volets
+  (`/interactive-map/interactive` & `/interactive-map/visualization`).
+  Compilation TypeScript (`tsc`), linting (`eslint --max-warnings=0`),
+  compilation strict templates Angular (`ngc --strictTemplates`) 100% verts sur
+  les 4 libs `@cmz/interactive-map-*` et l'application.
 - **Objectif :** Reconstruire le module `interactive-map` (Carte interactive SIG
   & Tableau de bord interactif) selon les patterns SEOS du monorepo, sans aucun
   écart ni omission.
@@ -102,23 +106,23 @@ Isolation complète sous le namespace `INTERACTIVE_MAP` dans
    `visualization`), définition des DTOs, Mappers et Façades. ✅
 2. **Phase 2 : Scaffolding Nx & Configuration** — Création des 4 packages Nx
    `@cmz/interactive-map-*`, mise à jour de `tsconfig.base.json` et
-   `eslint.config.mjs` avec le tag `scope:interactive-map`. ⏳
+   `eslint.config.mjs` avec le tag `scope:interactive-map`. ✅
 3. **Phase 3 : Domaine (`@cmz/interactive-map-domain`)** — Déclaration de
    `MapEntity`, `InteractiveMapReportEntity`, `Bounds`, `ReportFilters` et
-   `InteractiveMapRepository`. ⏳
+   `InteractiveMapRepository`. ✅
 4. **Phase 4 : Data (`@cmz/interactive-map-data`)** —
    `interactive-map.endpoints.ts`, `MapResponseDto`, `MapMapper`, `MapApi`,
-   `InteractiveMapReportsApi`, `InteractiveMapRepositoryImpl`. ⏳
+   `InteractiveMapReportsApi`, `InteractiveMapRepositoryImpl`. ✅
 5. **Phase 5 : Application (`@cmz/interactive-map-application`)** —
    `MapUseCase`, `MapFacade`, `InteractiveMapStore` (Gestion d'état Signal du
-   viewport et des filtres). ⏳
+   viewport et des filtres). ✅
 6. **Phase 6 : UI (`@cmz/interactive-map-ui`)** — `MapPageComponent` (embed
    Grafana), `InteractiveMapComponent` (vue SIG), et `INTERACTIVE_MAP_ROUTES`.
-   ⏳
+   ✅
 7. **Phase 7 : Câblage App, i18n & Mock Server** — Composition Root dans
    `apps/backoffice-angular/src/app/providers/interactive-map.providers.ts`,
    `app.routes.ts`, dictionnaire i18n `fr.translation.ts`, et mock endpoints
-   dans `tools/mock-server.mjs`. ⏳
+   dans `tools/mock-server.mjs`. ✅
 8. **Phase 8 : Oracle de Vérification Stricte & Livraison** — Verification
    `tsc --noEmit`, `eslint --max-warnings=0`, `ngc --strictTemplates`, Smoke
-   test `curl` & Commit Git. ⏳
+   test `curl` & Commit Git. ✅
