@@ -86,4 +86,16 @@ export const appRoutes: Route[] = [
                 (m) => m.RADIO_RELAY_LINKS_ROUTES
             ),
     },
+    {
+        path: 'team-organization/participants',
+        loadChildren: () =>
+            import('@cmz/team-organization-ui').then(
+                (m) => m.PARTICIPANTS_ROUTES
+            ),
+    },
+    {
+        path: 'team-organization/teams',
+        loadChildren: () =>
+            import('@cmz/team-organization-ui').then((m) => m.TEAMS_ROUTES),
+    },
 ];
