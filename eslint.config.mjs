@@ -133,6 +133,24 @@ export default [
                                 'scope:shared',
                             ],
                         },
+                        // Exception délibérée (décision utilisateur,
+                        // 2026-07-28) : le formulaire `messaging` réutilise
+                        // le cascade région→département→commune déjà
+                        // construit dans `administrative-boundary`
+                        // (`RegionSelectFacade`) plutôt que de dupliquer une
+                        // hiérarchie géographique entière — même dépendance
+                        // que le source réel (`MessagingFormStore` y importe
+                        // `RegionsSelectFacade` directement). Premier
+                        // couplage inter-domaines du monorepo (les 17 autres
+                        // scopes restent isolés à eux-mêmes + `scope:shared`).
+                        {
+                            sourceTag: 'scope:communication',
+                            onlyDependOnLibsWithTags: [
+                                'scope:communication',
+                                'scope:administrative-boundary',
+                                'scope:shared',
+                            ],
+                        },
                         {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],

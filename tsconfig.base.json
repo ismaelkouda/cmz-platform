@@ -93,9 +93,13 @@
       "@cmz/settings-security-application": [
         "./libs/settings-security/application/src/index.ts"
       ],
-      "@cmz/settings-security-ui": [
-        "./libs/settings-security/ui/src/index.ts"
-      ]
+      "@cmz/settings-security-ui": ["./libs/settings-security/ui/src/index.ts"],
+      "@cmz/communication-domain": ["./libs/communication/domain/src/index.ts"],
+      "@cmz/communication-data": ["./libs/communication/data/src/index.ts"],
+      "@cmz/communication-application": [
+        "./libs/communication/application/src/index.ts"
+      ],
+      "@cmz/communication-ui": ["./libs/communication/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

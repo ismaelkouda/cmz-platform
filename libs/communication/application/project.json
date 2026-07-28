@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/communication-application",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/communication/application/src",
+  "projectType": "library",
+  "tags": ["scope:communication", "type:application"]
+}

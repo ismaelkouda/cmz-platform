@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/communication-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/communication/ui/src",
+  "projectType": "library",
+  "tags": ["scope:communication", "type:ui"]
+}

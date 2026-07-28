@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/communication-data",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/communication/data/src",
+  "projectType": "library",
+  "tags": ["scope:communication", "type:data"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@cmz/communication-ui",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@cmz/communication-domain": "workspace:*",
+    "@cmz/communication-application": "workspace:*",
+    "@cmz/administrative-boundary-application": "workspace:*",
+    "@cmz/shared-ui": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
+    "@angular/core": "catalog:",
+    "@angular/router": "catalog:",
+    "@angular/forms": "catalog:",
+    "rxjs": "catalog:"
+  }
+}
