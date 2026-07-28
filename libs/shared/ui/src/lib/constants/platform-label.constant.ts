@@ -16,3 +16,11 @@ export const PLATFORM_STYLE: Record<Platform, string> = {
     [Platform.WEB]: 'COMMON.WEB_STYLE',
     [Platform.PWA]: 'COMMON.PWA_STYLE',
 };
+
+/** Options filtre / select — même précédent que REPORT_TYPE_OPTIONS. */
+export const PLATFORM_OPTIONS = (Object.values(Platform) as Platform[]).map(
+    (value) => ({
+        value,
+        label: PLATFORM_LABEL[value],
+    })
+);
