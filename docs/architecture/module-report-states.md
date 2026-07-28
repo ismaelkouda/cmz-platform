@@ -1,10 +1,13 @@
 # Module `report-states` — Plan de reconstruction Big Tech (META / Google Rigor)
 
 - **Créé :** 2026-07-28
-- **Statut :** Phase 1 en cours (Spécification d'architecture & Planification).
-- **Objectif :** Reconstruire le module `report-states` (États des signalements
-  : Approuvés, Évalués, Clôturés, Rejetés, Téléchargements) selon la norme
-  d'ingénierie et les patterns du monorepo.
+- **Statut :** **Livré & Validé (Phases 1 à 8 terminées)**. 5 sous-volets
+  (`/report-states/approved`, `/report-states/evaluated`,
+  `/report-states/closed`, `/report-states/rejected`,
+  `/report-states/downloads`). Compilation TypeScript (`tsc`), linting
+  (`eslint --max-warnings=0`), compilation strict templates Angular
+  (`ngc --strictTemplates`) 100% verts sur les 4 libs `@cmz/report-states-*` et
+  l'application.
 
 ---
 
@@ -72,21 +75,21 @@ sous-pages (`APPROVE`, `EVALUATE`, `CLOSE`, `REJECT`, `DOWNLOAD`).
    des DTOs, Mappers et Façades. ✅
 2. **Phase 2 : Scaffolding Nx & Configuration** — Création des 4 packages Nx
    `@cmz/report-states-*`, mise à jour de `tsconfig.base.json` et
-   `eslint.config.mjs` avec le tag `scope:report-states`. ⏳
+   `eslint.config.mjs` avec le tag `scope:report-states`. ✅
 3. **Phase 3 : Domaine (`@cmz/report-states-domain`)** — Enum
    `ReportStateSection`, entités et contrats de repositories
-   `ReportStatesRepository`. ⏳
+   `ReportStatesRepository`. ✅
 4. **Phase 4 : Data (`@cmz/report-states-data`)** —
    `report-states.endpoints.ts`, DTOs, Mappers, APIs et
-   `ReportStatesRepositoryImpl`. ⏳
+   `ReportStatesRepositoryImpl`. ✅
 5. **Phase 5 : Application (`@cmz/report-states-application`)** — Use-cases et
    façades concrètes (`ApproveFacade`, `EvaluateFacade`, `CloseFacade`,
-   `RejectFacade`, `DownloadFacade`). ⏳
+   `RejectFacade`, `DownloadFacade`). ✅
 6. **Phase 6 : UI (`@cmz/report-states-ui`)** — 5 PageComponents et
-   `REPORT_STATES_ROUTES`. ⏳
+   `REPORT_STATES_ROUTES`. ✅
 7. **Phase 7 : Câblage App, i18n & Mock Server** — Composition Root
    `provideReportStates()`, `app.routes.ts`, dictionnaire i18n
-   `fr.translation.ts`, et mock server. ⏳
+   `fr.translation.ts`, et mock server. ✅
 8. **Phase 8 : Oracle de Vérification Stricte & Livraison** — Verification
    `tsc --noEmit`, `eslint --max-warnings=0`, `ngc --strictTemplates`, Smoke
-   test `curl` & Commit Git. ⏳
+   test `curl` & Commit Git. ✅
