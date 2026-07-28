@@ -5,7 +5,10 @@ import {
     input,
     output,
 } from '@angular/core';
-import { PermissionTreeNode } from '@cmz/settings-security-domain';
+import {
+    PermissionActions,
+    PermissionTreeNode,
+} from '@cmz/settings-security-domain';
 import { TranslationPort } from '@cmz/shared-application';
 import { permissionActionLabel } from '../constants/permission-action-label.constant';
 
@@ -44,7 +47,7 @@ import { permissionActionLabel } from '../constants/permission-action-label.cons
                         >
                             <input
                                 type="checkbox"
-                                [checked]="!!node().actions[action]"
+                                [checked]="isActionChecked(action)"
                                 [disabled]="disabled()"
                                 (change)="
                                     actionChange.emit({
@@ -87,6 +90,18 @@ export class PermissionTreeNodeComponent {
 
     protected actionKeys(): string[] {
         return Object.keys(this.node().actions);
+    }
+
+    /**
+     * `PermissionActions` est un type fermé (6 clés `PermissionAction`), pas
+     * un `Record<string, boolean>` — l'indexation directe par une `string`
+     * de boucle (`actionKeys()`) échoue sous `strictTemplates` (TS7053,
+     * remonté par `ngc`, pas par `tsc` seul qui ne type-check pas les
+     * templates). Recasté ici, au seul point de jonction entre la boucle
+     * générique et le type fermé.
+     */
+    protected isActionChecked(action: string): boolean {
+        return !!this.node().actions[action as keyof PermissionActions];
     }
 
     protected actionLabel(action: string): string {
