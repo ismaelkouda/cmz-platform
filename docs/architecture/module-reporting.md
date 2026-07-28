@@ -1,10 +1,12 @@
 # Module `reporting` — plan de reconstruction
 
 - **Créé :** 2026-07-28
-- **Statut :** Phase 1 terminée (Analyse source & consolidation de niveau Big
-  Tech). 4 sous-pages
+- **Statut :** **Livré & Validé (Phases 1 à 8 terminées)**. 4 sous-pages
   (`reports`/`requests`/`report-by-channel`/`report-by-operator`), toutes des
-  embeds Grafana en lecture seule.
+  embeds Grafana en lecture seule. Compilation TypeScript (`tsc`), linting
+  (`eslint --max-warnings=0`), compilation strict templates Angular
+  (`ngc --strictTemplates`) 100% verts sur les 4 libs `@cmz/reporting-*` et
+  l'application.
 - **Gabarit de référence :** `module-monitoring.md` pour l'archétype général
   (`ResourceFacade`, objet unique, embeds Grafana).
 
@@ -60,8 +62,8 @@ Domaine/data consolidés en conséquence :
   `reportByOperator`).
 - 1 API (`ReportingApi.getVariables()`).
 - 1 repository (`ReportingRepository.execute(section, options)`).
-- 1 mapper paramétré par section (`ReportingMapper`, pluckant le bon champ selon
-  la `ReportingSection`).
+- 1 mapper paramétré par section (`ReportingDashboardMapper`, pluckant le bon
+  champ selon la `ReportingSection`).
 
 **Application** : 4 façades distinctes (`ReportFacade`, `RequestsFacade`,
 `ReportByChannelFacade`, `ReportByOperatorFacade`), chacune étant un singleton
@@ -121,24 +123,24 @@ nécessaire.
 2. **Scaffolding Nx** — Création des 4 packages Nx sous `libs/reporting/`
    (`domain`, `data`, `application`, `ui`) avec leurs tags `scope:reporting` et
    `type:*` respectant les règles d'isolation Nx et les règles de dépendances
-   dans `tsconfig.base.json` et `eslint.config.mjs`. ⏳
+   dans `tsconfig.base.json` et `eslint.config.mjs`. ✅
 3. **Domaine (`@cmz/reporting-domain`)** — Déclaration de `ReportingSection`
    (enum), réutilisation de `GrafanaDashboardEntity` ou export local, et contrat
-   de repository `ReportingRepository`. ⏳
+   de repository `ReportingRepository`. ✅
 4. **Data (`@cmz/reporting-data`)** — `ReportingVariablesItemDto`,
-   `ReportingApi.getVariables()`, `ReportingMapper` (paramétré par section), et
-   `ReportingRepositoryImpl`. ⏳
+   `ReportingApi.getVariables()`, `ReportingDashboardMapper` (paramétré par
+   section), et `ReportingRepositoryImpl`. ✅
 5. **Application (`@cmz/reporting-application`)** — `ReportingUseCase`
    (déferré), et les 4 façades concrètes (`ReportFacade`, `RequestsFacade`,
-   `ReportByChannelFacade`, `ReportByOperatorFacade`). ⏳
+   `ReportByChannelFacade`, `ReportByOperatorFacade`). ✅
 6. **UI (`@cmz/reporting-ui`)** — 4 PageComponents minces
    (`ReportPageComponent`, `RequestsPageComponent`,
    `ReportByChannelPageComponent`, `ReportByOperatorPageComponent`),
-   `REPORTING_ROUTES`. ⏳
+   `REPORTING_ROUTES`. ✅
 7. **Câblage App + i18n + Mock backend** — Configuration des routes dans
    `app.routes.ts`, `provideReporting()`, enrichissement i18n `REPORTING.*`, et
    mise à jour du mock-server avec les clés wire `reportReportingLink`,
-   `requestReportReportingLink`, `reportByChannel`, `reportByOperator`. ⏳
+   `requestReportReportingLink`, `reportByChannel`, `reportByOperator`. ✅
 8. **Validation & Livraison** — Audit de compilation et de linting sur
    l'application et les 4 libs, vérification de non-regression, documentation et
-   commit. ⏳
+   commit. ✅
