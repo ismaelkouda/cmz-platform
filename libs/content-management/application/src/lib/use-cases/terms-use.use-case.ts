@@ -1,0 +1,58 @@
+import { Service, inject } from '@angular/core';
+import { FetchOptions, MessageEntity, PageResult } from '@cmz/shared-domain';
+import {
+    TermsUseCreateContract,
+    TermsUseDeleteContract,
+    TermsUseUnpublishContract,
+    TermsUseEntity,
+    TermsUsePublishContract,
+    TermsUseFilterContract,
+    TermsUseRepository,
+    TermsUseUpdateContract,
+    termsUseCreateVo,
+    termsUseDeleteVo,
+    termsUseUnpublishVo,
+    termsUsePublishVo,
+    termsUseFilterVo,
+    termsUseUpdateVo,
+} from '@cmz/content-management-domain';
+import { Observable, defer } from 'rxjs';
+
+@Service()
+export class TermsUseUseCase {
+    private readonly repository = inject(TermsUseRepository);
+
+    execute(
+        contract: TermsUseFilterContract,
+        page: string,
+        options?: FetchOptions
+    ): Observable<PageResult<TermsUseEntity>> {
+        return defer(() =>
+            this.repository.execute(termsUseFilterVo(contract), page, options)
+        );
+    }
+
+    create(contract: TermsUseCreateContract): Observable<MessageEntity> {
+        return defer(() => this.repository.create(termsUseCreateVo(contract)));
+    }
+
+    update(contract: TermsUseUpdateContract): Observable<MessageEntity> {
+        return defer(() => this.repository.update(termsUseUpdateVo(contract)));
+    }
+
+    delete(contract: TermsUseDeleteContract): Observable<MessageEntity> {
+        return defer(() => this.repository.delete(termsUseDeleteVo(contract)));
+    }
+
+    publish(contract: TermsUsePublishContract): Observable<MessageEntity> {
+        return defer(() =>
+            this.repository.publish(termsUsePublishVo(contract))
+        );
+    }
+
+    unpublish(contract: TermsUseUnpublishContract): Observable<MessageEntity> {
+        return defer(() =>
+            this.repository.unpublish(termsUseUnpublishVo(contract))
+        );
+    }
+}
