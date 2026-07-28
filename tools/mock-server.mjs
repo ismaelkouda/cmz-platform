@@ -1354,6 +1354,8 @@ function monitoringVariables() {
             'https://grafana.cmz.internal/d/report-by-channel/signalements-par-canal?orgId=1&kiosk',
         reportByOperator:
             'https://grafana.cmz.internal/d/report-by-operator/signalements-par-operateurs?orgId=1&kiosk',
+        mapLink:
+            'https://grafana.cmz.internal/d/interactive-map/carte-interactive?orgId=1&kiosk',
     };
 }
 

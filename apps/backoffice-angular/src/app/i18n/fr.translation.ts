@@ -1403,6 +1403,36 @@ export const FR = {
                 'Impossible de charger le tableau de bord Grafana des signalements par opérateur.',
         },
     },
+    INTERACTIVE_MAP: {
+        BREADCRUMB: {
+            LABEL: 'Vue Interactive',
+            ROUTE: 'map',
+            ICON: 'pi pi-map',
+        },
+        LABEL: 'Vue Interactive',
+        MAP: {
+            BREADCRUMB: {
+                LABEL: 'Carte interactive',
+                ROUTE: 'interactive',
+            },
+            TITLE: 'Carte interactive',
+            LABEL: 'Carte interactive',
+            LOADING_DESCRIPTION: 'Suivi des performances en cours…',
+            ERROR_DESCRIPTION:
+                'Une erreur est survenue lors du chargement de la carte interactive.',
+        },
+        DASHBOARD: {
+            BREADCRUMB: {
+                LABEL: 'Tableau de bord interactif',
+                ROUTE: 'visualization',
+            },
+            TITLE: 'Tableau de bord interactif',
+            LABEL: 'Tableau de bord interactif',
+            LOADING_DESCRIPTION: 'Suivi des performances en cours…',
+            ERROR_DESCRIPTION:
+                'Une erreur est survenue lors du chargement du tableau de bord interactif.',
+        },
+    },
     AUTHENTICATION: {
         LOGIN: {
             TITLE: 'Connexion',

@@ -1,0 +1,7 @@
+{
+  "name": "interactive-map-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/interactive-map/ui/src",
+  "projectType": "library",
+  "tags": ["scope:interactive-map", "type:ui"]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@cmz/interactive-map-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@angular/common": "catalog:",
+    "@angular/core": "catalog:",
+    "@angular/router": "catalog:",
+    "@cmz/interactive-map-application": "workspace:*",
+    "@cmz/interactive-map-domain": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "@cmz/shared-ui": "workspace:*",
+    "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:tooling"
+  }
+}

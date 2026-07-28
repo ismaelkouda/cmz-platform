@@ -117,7 +117,15 @@
       "@cmz/reporting-application": [
         "./libs/reporting/application/src/index.ts"
       ],
-      "@cmz/reporting-ui": ["./libs/reporting/ui/src/index.ts"]
+      "@cmz/reporting-ui": ["./libs/reporting/ui/src/index.ts"],
+      "@cmz/interactive-map-domain": [
+        "./libs/interactive-map/domain/src/index.ts"
+      ],
+      "@cmz/interactive-map-data": ["./libs/interactive-map/data/src/index.ts"],
+      "@cmz/interactive-map-application": [
+        "./libs/interactive-map/application/src/index.ts"
+      ],
+      "@cmz/interactive-map-ui": ["./libs/interactive-map/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

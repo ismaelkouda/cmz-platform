@@ -21,6 +21,13 @@ export const appRoutes: Route[] = [
             import('@cmz/reporting-ui').then((m) => m.REPORTING_ROUTES),
     },
     {
+        path: 'interactive-map',
+        loadChildren: () =>
+            import('@cmz/interactive-map-ui').then(
+                (m) => m.INTERACTIVE_MAP_ROUTES
+            ),
+    },
+    {
         path: 'auth',
         loadChildren: () =>
             import('@cmz/authentication-ui').then(

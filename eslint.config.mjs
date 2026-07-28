@@ -173,6 +173,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:interactive-map',
+                            onlyDependOnLibsWithTags: [
+                                'scope:interactive-map',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },
