@@ -152,6 +152,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:dashboard',
+                            onlyDependOnLibsWithTags: [
+                                'scope:dashboard',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },

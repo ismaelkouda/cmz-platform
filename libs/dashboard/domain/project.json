@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/dashboard-domain",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/dashboard/domain/src",
+  "projectType": "library",
+  "tags": ["scope:dashboard", "type:domain"]
+}

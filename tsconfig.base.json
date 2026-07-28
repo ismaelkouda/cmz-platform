@@ -99,7 +99,13 @@
       "@cmz/communication-application": [
         "./libs/communication/application/src/index.ts"
       ],
-      "@cmz/communication-ui": ["./libs/communication/ui/src/index.ts"]
+      "@cmz/communication-ui": ["./libs/communication/ui/src/index.ts"],
+      "@cmz/dashboard-domain": ["./libs/dashboard/domain/src/index.ts"],
+      "@cmz/dashboard-data": ["./libs/dashboard/data/src/index.ts"],
+      "@cmz/dashboard-application": [
+        "./libs/dashboard/application/src/index.ts"
+      ],
+      "@cmz/dashboard-ui": ["./libs/dashboard/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

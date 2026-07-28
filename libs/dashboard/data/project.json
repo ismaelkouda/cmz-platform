@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/dashboard-data",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/dashboard/data/src",
+  "projectType": "library",
+  "tags": ["scope:dashboard", "type:data"]
+}
