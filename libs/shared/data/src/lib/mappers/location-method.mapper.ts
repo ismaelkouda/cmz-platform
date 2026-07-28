@@ -5,10 +5,7 @@ import { ApiError } from '../errors/api.error';
 
 @Service()
 export class LocationMethodMapper {
-    mapFromDto(dto: LocationMethodDto | null | undefined): LocationMethod {
-        if (dto == null) {
-            return LocationMethod.UNKNOWN;
-        }
+    mapFromDto(dto: LocationMethodDto): LocationMethod {
         if (!isLocationMethod(dto)) {
             throw ApiError.invalidResponse(
                 `LocationMethod wire inconnue: ${String(dto)}`
@@ -17,10 +14,7 @@ export class LocationMethodMapper {
         return dto;
     }
 
-    mapToDto(value: LocationMethod | null | undefined): LocationMethodDto {
-        if (value == null) {
-            return LocationMethodDto.UNKNOWN;
-        }
+    mapToDto(value: LocationMethod): LocationMethodDto {
         return value as LocationMethodDto;
     }
 

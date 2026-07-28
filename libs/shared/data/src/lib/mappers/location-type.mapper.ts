@@ -5,10 +5,7 @@ import { ApiError } from '../errors/api.error';
 
 @Service()
 export class LocationTypeMapper {
-    mapFromDto(dto: LocationTypeDto | null | undefined): LocationType {
-        if (dto == null) {
-            return LocationType.UNKNOWN;
-        }
+    mapFromDto(dto: LocationTypeDto): LocationType {
         if (!isLocationType(dto)) {
             throw ApiError.invalidResponse(
                 `LocationType wire inconnue: ${String(dto)}`
@@ -17,10 +14,7 @@ export class LocationTypeMapper {
         return dto;
     }
 
-    mapToDto(value: LocationType | null | undefined): LocationTypeDto {
-        if (value == null) {
-            return LocationTypeDto.UNKNOWN;
-        }
+    mapToDto(value: LocationType): LocationTypeDto {
         return value as LocationTypeDto;
     }
 

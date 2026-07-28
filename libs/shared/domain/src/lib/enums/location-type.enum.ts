@@ -7,7 +7,6 @@ export const LocationType = {
     NETWORK: 'network',
     MANUAL: 'manual',
     WHAT3WORDS: 'what3words',
-    UNKNOWN: 'unknown',
 } as const;
 
 export type LocationType = (typeof LocationType)[keyof typeof LocationType];

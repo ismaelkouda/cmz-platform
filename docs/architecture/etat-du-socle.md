@@ -4,22 +4,24 @@ Ce document décrit **ce qui existe aujourd'hui** dans le monorepo. Il est mis �
 jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
-- **Dernière mise à jour :** 2026-07-22
-- **État :** socle outillé + **application Angular 22 compilant** + **adaptateur
-  monorepo validé** (Phases 02–04 faites). Aucune bibliothèque générée, aucun
-  contenu métier. Reste : socle transverse `shared/` (Phase 05), puis
-  reconstruction (Phase 07).
+- **Dernière mise à jour :** 2026-07-28
+- **État :** **Phase 07 en cours** (socle outillé + Kernel transverse `shared/`
+  et `@cmz/core` opérationnels + modules métier `administrative-infrastructure`,
+  `administrative-boundary`, `authentication`, `monitoring` livrés/compilants ;
+  module `reporting` en cours d'instanciation).
 
 ## Contenu du dépôt
 
 ```
-apps/backoffice-angular   application Angular 22.0.7 — squelette, build vert
-libs/                     bibliothèques réutilisables — vide (à générer)
+apps/backoffice-angular   application Angular 22.0.7 — compilante, routes câblées
+libs/core                 configuration runtime & tokens d'injection (@cmz/core)
+libs/shared               Kernel transverse (@cmz/shared-{domain,data,application,ui,constants})
+libs/<module>             packages découplés (@cmz/<module>-{domain,data,application,ui})
 conventions/              profils de convention par version de framework
 tools/seos-adapter/       adaptateur monorepo (sortie générateur → libs de couche)
-tools/                    scripts de vérification du socle
-docs/                     décisions, architecture, guides
-.husky/                   hooks Git
+tools/                    scripts de vérification du socle & mock-server
+docs/                     décisions, architecture, guides, plans de modules
+LLM_CONTEXT.md            guide maître d'architecture et de cadrage IA
 nx.json                   configuration Nx
 package.json              catalog de versions + scripts (workspaces libs/*/*)
 ```

@@ -9,7 +9,7 @@
   running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`)
   instead of using the underlying tooling directly
 - Prefix nx commands with the workspace's package manager (e.g.,
-  `pnpm nx build`, `npm exec nx test`) - avoids using globally installed CLI
+  `bunx nx build`, `bunx nx test`) - avoids using globally installed CLI
 - You have access to the Nx MCP server and its tools, use them to help the user
 - For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not
   all plugins have this file - proceed without it if unavailable.
@@ -30,3 +30,30 @@
   nx_docs just to look up generator syntax
 
 <!-- nx configuration end-->
+
+---
+
+# AI & LLM Execution Guidelines — Big Tech Standards
+
+> 🤖 **IMPORTANT FOR ALL LLM AGENTS**: Always read
+> [`LLM_CONTEXT.md`](./LLM_CONTEXT.md) at the beginning of your session.
+
+### Core Mindset & Execution Principles:
+
+1. **Architect Posture**: Do not act as a naive ticket-doer. Understand the
+   system end-to-end (SEOS paradigm, MDE + LLM Generate-Verify-Repair loop, Nx
+   package-based invariants).
+2. **Deterministic Contract Compliance**: The source of truth for business logic
+   is `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend`. Never guess DTO
+   shapes, endpoints, or field names.
+3. **Multi-Level Verification Oracle**: Every module implementation must
+   strictly pass the verification oracle:
+    - `bunx nx run-many -t build` (or `tsc --noEmit`)
+    - `bunx eslint --max-warnings=0`
+    - `ngc --strictTemplates` (Zero template errors)
+4. **Nx Layer Isolation Invariants**:
+    - `@cmz/<module>-domain`: 0 framework/data/ui imports.
+    - `@cmz/<module>-data`: depends only on domain, core, shared-data.
+    - `@cmz/<module>-application`: depends only on domain, shared-application.
+    - `@cmz/<module>-ui`: depends only on application, domain, shared-ui.
+    - 0 cross-domain imports between functional modules.

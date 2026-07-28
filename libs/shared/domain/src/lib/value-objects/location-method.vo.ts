@@ -5,7 +5,6 @@ export class LocationMethodVO {
 
     static readonly auto = new LocationMethodVO(LocationMethod.AUTO);
     static readonly manual = new LocationMethodVO(LocationMethod.MANUAL);
-    static readonly unknown = new LocationMethodVO(LocationMethod.UNKNOWN);
 
     static fromEnum(method: LocationMethod): LocationMethodVO {
         switch (method) {
@@ -13,8 +12,6 @@ export class LocationMethodVO {
                 return LocationMethodVO.auto;
             case LocationMethod.MANUAL:
                 return LocationMethodVO.manual;
-            default:
-                return LocationMethodVO.unknown;
         }
     }
 
@@ -24,10 +21,6 @@ export class LocationMethodVO {
 
     isManual(): boolean {
         return this.value === LocationMethod.MANUAL;
-    }
-
-    isValid(): boolean {
-        return this.value !== LocationMethod.UNKNOWN;
     }
 
     toEnum(): LocationMethod {

@@ -5,7 +5,6 @@
 export const LocationMethod = {
     AUTO: 'auto',
     MANUAL: 'manual',
-    UNKNOWN: 'unknown',
 } as const;
 
 export type LocationMethod =
