@@ -1,7 +1,10 @@
 import { Service, inject } from '@angular/core';
 import { ResourceFacade } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
-import { DashboardEntity, DashboardFilterContract } from '@cmz/dashboard-domain';
+import {
+    DashboardEntity,
+    DashboardFilterContract,
+} from '@cmz/dashboard-domain';
 import { Observable } from 'rxjs';
 import { DashboardUseCase } from '../use-cases/dashboard.use-case';
 

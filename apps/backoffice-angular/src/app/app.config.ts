@@ -27,6 +27,7 @@ import { provideTeamOrganization } from './providers/team-organization.providers
 import { provideContentManagement } from './providers/content-management.providers';
 import { provideSettingsSecurity } from './providers/settings-security.providers';
 import { provideCommunication } from './providers/communication.providers';
+import { provideDashboard } from './providers/dashboard.providers';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -48,6 +49,7 @@ export const appConfig: ApplicationConfig = {
         ...provideContentManagement(),
         ...provideSettingsSecurity(),
         ...provideCommunication(),
+        ...provideDashboard(),
         // DEV ONLY : accorde toutes les permissions (no-op hors isDevMode()).
         ...provideDevPermissions(),
     ],

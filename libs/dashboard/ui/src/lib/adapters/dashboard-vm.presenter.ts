@@ -41,15 +41,15 @@ export class DashboardPresenter {
     }
 
     private typeCards(entity: DashboardEntity): StatCardVm[] {
-        const reportTypeCards = (
-            Object.values(ReportType) as ReportType[]
-        ).map((type) => ({
-            key: `reportsByType.${type}`,
-            value: this.thousands.transform(entity.reportsByType[type]),
-            label: this.t(REPORT_TYPE_LABEL[type]),
-            icon: REPORT_TYPE_CARD_META[type].icon,
-            color: REPORT_TYPE_CARD_META[type].color,
-        }));
+        const reportTypeCards = (Object.values(ReportType) as ReportType[]).map(
+            (type) => ({
+                key: `reportsByType.${type}`,
+                value: this.thousands.transform(entity.reportsByType[type]),
+                label: this.t(REPORT_TYPE_LABEL[type]),
+                icon: REPORT_TYPE_CARD_META[type].icon,
+                color: REPORT_TYPE_CARD_META[type].color,
+            })
+        );
 
         return [
             {

@@ -1,7 +1,15 @@
 import { Route } from '@angular/router';
 
 export const appRoutes: Route[] = [
-    { path: '', pathMatch: 'full', redirectTo: 'equipments/types' },
+    // Redirige vers `dashboard` maintenant que le module existe — c'était
+    // `equipments/types` par défaut faute d'accueil reconstruit ; un
+    // tableau de bord est le point d'entrée naturel d'un back-office.
+    { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+    {
+        path: 'dashboard',
+        loadChildren: () =>
+            import('@cmz/dashboard-ui').then((m) => m.DASHBOARD_ROUTES),
+    },
     {
         path: 'auth',
         loadChildren: () =>

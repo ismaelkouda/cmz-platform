@@ -1292,6 +1292,46 @@ export const FR = {
             },
         },
     },
+    DASHBOARD: {
+        TITLE: 'Tableau de bord',
+        UPDATED_DATE: 'Dernière mise à jour',
+        NO_DATE: 'Aucune date',
+        REFRESH: 'Actualiser',
+        NO_DATA: 'Aucune donnée disponible',
+        FILTER: {
+            PERIOD_LABEL: 'Période',
+            PERIOD: {
+                SEVEN_DAYS: '7 derniers jours',
+                THIRTY_DAYS: '30 derniers jours',
+                SIXTY_DAYS: '60 derniers jours',
+                NINETY_DAYS: '90 derniers jours',
+                INVALID: 'Période invalide.',
+            },
+        },
+        SECTIONS: {
+            TYPE: {
+                TITLE: 'Signalements par type',
+                TOTAL: { LABEL: 'Total des signalements' },
+            },
+            TASK_STATUS: {
+                TITLE: 'Statut de traitement',
+                PENDING: { LABEL: 'En attente' },
+                IN_PROGRESS: { LABEL: 'En cours de traitement' },
+                REJECTED: { LABEL: 'Rejetés' },
+                FINALIZED: { LABEL: 'Finalisés' },
+                EVALUATED: { LABEL: 'Évalués' },
+            },
+            PERFORMANCE: {
+                TITLE: 'Performance',
+                TREATMENT_RATE: { LABEL: 'Taux de traitement' },
+                COMPLETION_RATE: { LABEL: 'Taux de complétion' },
+                AVERAGE_TREATMENT_TIME: {
+                    LABEL: 'Temps de traitement moyen',
+                },
+                RESPONSE_TIME: { LABEL: 'Temps de réponse' },
+            },
+        },
+    },
     AUTHENTICATION: {
         LOGIN: {
             TITLE: 'Connexion',

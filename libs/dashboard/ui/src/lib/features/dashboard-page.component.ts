@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    inject,
+} from '@angular/core';
 import { DashboardFacade } from '@cmz/dashboard-application';
 import { Period } from '@cmz/dashboard-domain';
 import { TranslationPort } from '@cmz/shared-application';
@@ -26,9 +31,7 @@ const T = 'DASHBOARD';
     providers: [DashboardFilterStore],
     template: `
         <section class="flex flex-col gap-6">
-            <header
-                class="flex flex-wrap items-center justify-between gap-4"
-            >
+            <header class="flex flex-wrap items-center justify-between gap-4">
                 <h1 class="text-lg font-semibold text-text">
                     {{ t(ns + '.TITLE') }}
                 </h1>
@@ -38,12 +41,16 @@ const T = 'DASHBOARD';
                         <span class="text-sm text-text-muted">
                             {{ t(ns + '.FILTER.PERIOD_LABEL') }}
                         </span>
-                        <div class="flex overflow-hidden rounded border border-border">
+                        <div
+                            class="flex overflow-hidden rounded border border-border"
+                        >
                             @for (option of periodOptions; track option.value) {
                                 <button
                                     type="button"
                                     [disabled]="loading()"
-                                    [class.bg-primary]="isSelected(option.value)"
+                                    [class.bg-primary]="
+                                        isSelected(option.value)
+                                    "
                                     [class.text-on-primary]="
                                         isSelected(option.value)
                                     "

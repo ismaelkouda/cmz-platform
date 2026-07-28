@@ -1,9 +1,5 @@
 export type StatCardColor =
-    | 'primary'
-    | 'success'
-    | 'warning'
-    | 'danger'
-    | 'info';
+    'primary' | 'success' | 'warning' | 'danger' | 'info';
 
 export interface StatCardVm {
     readonly key: string;
