@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { BYPASS_CACHE, SETTINGS_API_URL } from '@cmz/core';
 import { FetchOptions } from '@cmz/shared-domain';
 import { ReportingVariablesResponseDto } from '../dtos/reporting-variables-response.dto';
+import { REPORTING_ENDPOINTS } from '../endpoints/reporting.endpoints';
 
 @Injectable({ providedIn: 'root' })
 export class ReportingApi {
@@ -13,7 +14,7 @@ export class ReportingApi {
     getVariables(
         options?: FetchOptions
     ): Observable<ReportingVariablesResponseDto> {
-        const url = `${this.baseUrl}/variables`;
+        const url = `${this.baseUrl}/${REPORTING_ENDPOINTS.VARIABLES}`;
         const context = new HttpContext().set(
             BYPASS_CACHE,
             options?.forceRefresh ?? false

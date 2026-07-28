@@ -1,3 +1,4 @@
+export * from './lib/endpoints/reporting.endpoints';
 export * from './lib/dtos/reporting-variables-response.dto';
 export * from './lib/mappers/reporting-dashboard.mapper';
 export * from './lib/sources/reporting.api';
