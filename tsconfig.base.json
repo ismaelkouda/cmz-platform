@@ -83,6 +83,18 @@
       ],
       "@cmz/content-management-ui": [
         "./libs/content-management/ui/src/index.ts"
+      ],
+      "@cmz/settings-security-domain": [
+        "./libs/settings-security/domain/src/index.ts"
+      ],
+      "@cmz/settings-security-data": [
+        "./libs/settings-security/data/src/index.ts"
+      ],
+      "@cmz/settings-security-application": [
+        "./libs/settings-security/application/src/index.ts"
+      ],
+      "@cmz/settings-security-ui": [
+        "./libs/settings-security/ui/src/index.ts"
       ]
     }
   },

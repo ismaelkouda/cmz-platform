@@ -127,6 +127,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:settings-security',
+                            onlyDependOnLibsWithTags: [
+                                'scope:settings-security',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },

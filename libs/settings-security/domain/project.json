@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/settings-security-domain",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/settings-security/domain/src",
+  "projectType": "library",
+  "tags": ["scope:settings-security", "type:domain"]
+}

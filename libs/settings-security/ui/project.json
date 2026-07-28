@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/settings-security-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/settings-security/ui/src",
+  "projectType": "library",
+  "tags": ["scope:settings-security", "type:ui"]
+}
