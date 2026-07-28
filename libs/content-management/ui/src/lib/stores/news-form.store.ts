@@ -8,7 +8,10 @@ import {
 } from '@angular/core';
 import { disabled, form, required, validate } from '@angular/forms/signals';
 import { TypeMedia } from '@cmz/shared-domain';
-import { NewsFindOneFacade } from '@cmz/content-management-application';
+import {
+    NewsCategoriesSelectFacade,
+    NewsFindOneFacade,
+} from '@cmz/content-management-application';
 import { FormMode } from './form-mode.type';
 
 interface NewsFormModel {
@@ -28,12 +31,18 @@ interface NewsFormModel {
  * en exclusif (validate() croisé, même règle que le domaine
  * `assertValidMediaPair`, dupliquée ici côté formulaire pour un retour
  * immédiat à l'utilisateur). `category`/`subCategory` : select en cascade
- * (résolu par le composant via `NewsCategoriesSelectFacade`). `content`
+ * (options résolues ici via `NewsCategoriesSelectFacade` pour que la règle
+ * `disabled()` de `subCategory` — qui doit désactiver le champ à la fois en
+ * mode détails ET quand aucune sous-catégorie n'est disponible — reste dans
+ * le schema Signal Forms plutôt qu'un `[disabled]` manuel sur l'élément :
+ * `ngc --strictTemplates` (NG8022) interdit `[disabled]` sur un nœud portant
+ * `[formField]`, tout le disabled doit transiter par `disabled()`). `content`
  * en textarea simple (pas d'éditeur riche, cf. décision documentée).
  */
 @Injectable()
 export class NewsFormStore {
     private readonly findOne = inject(NewsFindOneFacade);
+    private readonly categoriesFacade = inject(NewsCategoriesSelectFacade);
 
     readonly mode = signal<FormMode>('create');
     readonly isDetails = computed(() => this.mode() === 'details');
@@ -50,6 +59,15 @@ export class NewsFormStore {
         title: '',
         resume: '',
         content: '',
+    });
+
+    readonly categoryOptions = this.categoriesFacade.categories;
+    readonly subCategoryOptions = computed(() => {
+        const selected = this.model().category;
+        return (
+            this.categoriesFacade.categories().find((c) => c.value === selected)
+                ?.subCategories ?? []
+        );
     });
 
     readonly form = form(this.model, (schema) => {
@@ -72,7 +90,10 @@ export class NewsFormStore {
         disabled(schema.image, () => this.isDetails());
         disabled(schema.video, () => this.isDetails());
         disabled(schema.category, () => this.isDetails());
-        disabled(schema.subCategory, () => this.isDetails());
+        disabled(
+            schema.subCategory,
+            () => this.isDetails() || !this.subCategoryOptions().length
+        );
         disabled(schema.hashtags, () => this.isDetails());
         disabled(schema.title, () => this.isDetails());
         disabled(schema.resume, () => this.isDetails());

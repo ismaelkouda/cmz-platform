@@ -26,7 +26,11 @@ const T = 'CONTENT_MANAGEMENT.NEWS';
  * `optical-fiber-network.geomFile` (input file natif hors `[formField]`).
  * `category`/`subCategory` : sélection en cascade, alimentée par
  * `NewsCategoriesSelectFacade` (concept select-only, pas de CRUD catégories
- * dans ce module). `hashtags` : saisie libre + liste de puces (pas de
+ * dans ce module) — options exposées via `store.categoryOptions`/
+ * `store.subCategoryOptions` (pas de computed local ici) car le store en a
+ * aussi besoin pour désactiver `subCategory` via `disabled()` : `ngc
+ * --strictTemplates` (NG8022) interdit un `[disabled]` manuel sur un nœud
+ * portant `[formField]`. `hashtags` : saisie libre + liste de puces (pas de
  * composant DS dédié — simplification assumée, même esprit que `content` en
  * textarea). `content`/`resume` en champs texte simples.
  */
@@ -112,7 +116,10 @@ const T = 'CONTENT_MANAGEMENT.NEWS';
                     <option value="" disabled>
                         {{ t('COMMON.SELECT_PLACEHOLDER') }}
                     </option>
-                    @for (option of categoryOptions(); track option.value) {
+                    @for (
+                        option of store.categoryOptions();
+                        track option.value
+                    ) {
                         <option [value]="option.value">
                             {{ option.label }}
                         </option>
@@ -128,13 +135,15 @@ const T = 'CONTENT_MANAGEMENT.NEWS';
                 <select
                     id="subCategory"
                     [formField]="store.form.subCategory"
-                    [disabled]="isDetails() || !subCategoryOptions().length"
                     class="w-full rounded border border-border bg-surface px-3 py-2 text-sm text-text focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
                 >
                     <option value="">
                         {{ t('COMMON.SELECT_PLACEHOLDER') }}
                     </option>
-                    @for (option of subCategoryOptions(); track option.value) {
+                    @for (
+                        option of store.subCategoryOptions();
+                        track option.value
+                    ) {
                         <option [value]="option.value">
                             {{ option.label }}
                         </option>
@@ -257,15 +266,6 @@ export class NewsFormComponent {
     protected readonly typeMediaOptions = TYPE_MEDIA_OPTIONS;
     protected readonly typeImage = TypeMedia.IMAGE;
     protected readonly typeVideo = TypeMedia.VIDEO;
-
-    protected readonly categoryOptions = this.categoriesFacade.categories;
-    protected readonly subCategoryOptions = computed(() => {
-        const selected = this.store.model().category;
-        return (
-            this.categoriesFacade.categories().find((c) => c.value === selected)
-                ?.subCategories ?? []
-        );
-    });
 
     private readonly params = toSignal(this.route.queryParamMap);
     private lastSeenSuccess = this.facade.actionSuccess();
