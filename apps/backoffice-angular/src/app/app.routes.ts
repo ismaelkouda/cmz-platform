@@ -134,4 +134,23 @@ export const appRoutes: Route[] = [
                 (m) => m.TERMS_USE_ROUTES
             ),
     },
+    {
+        path: 'settings-security/users',
+        loadChildren: () =>
+            import('@cmz/settings-security-ui').then((m) => m.USERS_ROUTES),
+    },
+    {
+        path: 'settings-security/profiles-permissions',
+        loadChildren: () =>
+            import('@cmz/settings-security-ui').then(
+                (m) => m.PROFILES_PERMISSIONS_ROUTES
+            ),
+    },
+    {
+        path: 'settings-security/access-logs',
+        loadChildren: () =>
+            import('@cmz/settings-security-ui').then(
+                (m) => m.ACCESS_LOGS_ROUTES
+            ),
+    },
 ];

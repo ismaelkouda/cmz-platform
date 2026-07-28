@@ -25,6 +25,7 @@ import { provideAuthentication } from './providers/authentication.providers';
 import { provideCoverageAreas } from './providers/coverage-areas.providers';
 import { provideTeamOrganization } from './providers/team-organization.providers';
 import { provideContentManagement } from './providers/content-management.providers';
+import { provideSettingsSecurity } from './providers/settings-security.providers';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -44,6 +45,7 @@ export const appConfig: ApplicationConfig = {
         ...provideCoverageAreas(),
         ...provideTeamOrganization(),
         ...provideContentManagement(),
+        ...provideSettingsSecurity(),
         // DEV ONLY : accorde toutes les permissions (no-op hors isDevMode()).
         ...provideDevPermissions(),
     ],
