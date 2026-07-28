@@ -98,4 +98,40 @@ export const appRoutes: Route[] = [
         loadChildren: () =>
             import('@cmz/team-organization-ui').then((m) => m.TEAMS_ROUTES),
     },
+    {
+        path: 'content-management/home',
+        loadChildren: () =>
+            import('@cmz/content-management-ui').then((m) => m.HOME_ROUTES),
+    },
+    {
+        path: 'content-management/slide',
+        loadChildren: () =>
+            import('@cmz/content-management-ui').then((m) => m.SLIDE_ROUTES),
+    },
+    {
+        path: 'content-management/news',
+        loadChildren: () =>
+            import('@cmz/content-management-ui').then((m) => m.NEWS_ROUTES),
+    },
+    {
+        path: 'content-management/legal-notice',
+        loadChildren: () =>
+            import('@cmz/content-management-ui').then(
+                (m) => m.LEGAL_NOTICE_ROUTES
+            ),
+    },
+    {
+        path: 'content-management/privacy-policy',
+        loadChildren: () =>
+            import('@cmz/content-management-ui').then(
+                (m) => m.PRIVACY_POLICY_ROUTES
+            ),
+    },
+    {
+        path: 'content-management/terms-use',
+        loadChildren: () =>
+            import('@cmz/content-management-ui').then(
+                (m) => m.TERMS_USE_ROUTES
+            ),
+    },
 ];
