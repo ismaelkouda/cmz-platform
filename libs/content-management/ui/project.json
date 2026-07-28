@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/content-management-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/content-management/ui/src",
+  "projectType": "library",
+  "tags": ["scope:content-management", "type:ui"]
+}

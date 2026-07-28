@@ -1,0 +1,7 @@
+{
+  "name": "@cmz/content-management-data",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/content-management/data/src",
+  "projectType": "library",
+  "tags": ["scope:content-management", "type:data"]
+}

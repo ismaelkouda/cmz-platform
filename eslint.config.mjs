@@ -120,6 +120,13 @@ export default [
                             ],
                         },
                         {
+                            sourceTag: 'scope:content-management',
+                            onlyDependOnLibsWithTags: [
+                                'scope:content-management',
+                                'scope:shared',
+                            ],
+                        },
+                        {
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },

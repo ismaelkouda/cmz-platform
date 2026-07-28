@@ -71,7 +71,19 @@
       "@cmz/team-organization-application": [
         "./libs/team-organization/application/src/index.ts"
       ],
-      "@cmz/team-organization-ui": ["./libs/team-organization/ui/src/index.ts"]
+      "@cmz/team-organization-ui": ["./libs/team-organization/ui/src/index.ts"],
+      "@cmz/content-management-domain": [
+        "./libs/content-management/domain/src/index.ts"
+      ],
+      "@cmz/content-management-data": [
+        "./libs/content-management/data/src/index.ts"
+      ],
+      "@cmz/content-management-application": [
+        "./libs/content-management/application/src/index.ts"
+      ],
+      "@cmz/content-management-ui": [
+        "./libs/content-management/ui/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]
