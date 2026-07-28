@@ -1,13 +1,13 @@
 # Module `team-organization` — plan de reconstruction
 
 - **Créé :** 2026-07-28
-- **Statut :** livré — **2 entités CRUD** (`participants` + `teams`) + 2
-  concepts annexes (`teams-select`, `teams-permissions`). Phases 1 à 8
-  complètes. Validation locale (`tsc` + `eslint` + `ngc --strictTemplates`)
+- **Statut :** livré et **confirmé** — **2 entités CRUD** (`participants` +
+  `teams`) + 2 concepts annexes (`teams-select`, `teams-permissions`). Phases 1
+  à 8 complètes. Validation locale (`tsc` + `eslint` + `ngc --strictTemplates`)
   clean sur les 4 libs et sur l'app ; mock backend testé de bout en bout
   (list/find-one/select/permissions/create/update/enable/disable/delete) via
-  `curl` en session. `nx lint`/`nx serve` restent à confirmer par l'utilisateur
-  sur son poste macOS (même discipline que `coverage-areas`).
+  `curl` en session. `nx lint`/`nx serve` confirmés conformes par l'utilisateur
+  sur son poste macOS (2026-07-28). Module `team-organization` **terminé**.
 - **Gabarit de référence :** `module-coverage-areas.md` — même archétype CRUD
   (props → entités → contrats/vo → repositories → data → application → UI Signal
   Forms), déjà validé sur 4 entités.
