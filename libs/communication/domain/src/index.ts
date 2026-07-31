@@ -16,6 +16,7 @@ export * from './lib/entities/notifications.entity';
 
 // errors
 export * from './lib/errors/messaging-sms-content-too-long.error';
+export * from './lib/errors/type-required.error';
 
 // contracts
 export * from './lib/contracts/messaging-create.contract';

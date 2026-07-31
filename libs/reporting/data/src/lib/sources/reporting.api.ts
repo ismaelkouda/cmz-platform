@@ -1,12 +1,12 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BYPASS_CACHE, SETTINGS_API_URL } from '@cmz/core';
 import { FetchOptions } from '@cmz/shared-domain';
 import { ReportingVariablesResponseDto } from '../dtos/reporting-variables-response.dto';
 import { REPORTING_ENDPOINTS } from '../endpoints/reporting.endpoints';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ReportingApi {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = inject(SETTINGS_API_URL);

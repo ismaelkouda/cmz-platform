@@ -1,13 +1,10 @@
 # Module `report-states` — Plan de reconstruction Big Tech (META / Google Rigor)
 
 - **Créé :** 2026-07-28
-- **Statut :** **Livré & Validé (Phases 1 à 8 terminées)**. 5 sous-volets
-  (`/report-states/approved`, `/report-states/evaluated`,
-  `/report-states/closed`, `/report-states/rejected`,
-  `/report-states/downloads`). Compilation TypeScript (`tsc`), linting
-  (`eslint --max-warnings=0`), compilation strict templates Angular
-  (`ngc --strictTemplates`) 100% verts sur les 4 libs `@cmz/report-states-*` et
-  l'application.
+- **Statut :** **Module IR clôturé** (2026-07-31) — corpus 187 paires, 8
+  chaînes, Meta 12/12. Oracle Tier 1 vert (build, test, lint, corpus). Voir
+  [`report-states-meta-verification.md`](./audits/report-states-meta-verification.md)
+  et assumption [A-2026-07-31-04](../seos/Assumptions-Register.md).
 
 ---
 

@@ -9,8 +9,16 @@ import {
     NotificationPort,
     TranslationPort,
 } from '@cmz/shared-application';
-import { StoragePort } from '@cmz/shared-domain';
-import { BrowserStorageAdapter } from '@cmz/shared-browser';
+import {
+    ExcelExportPort,
+    NavigationPort,
+    StoragePort,
+} from '@cmz/shared-domain';
+import {
+    BrowserExcelExportAdapter,
+    BrowserNavigationAdapter,
+    BrowserStorageAdapter,
+} from '@cmz/shared-browser';
 import {
     CmzConfirmDialogService,
     CmzNotificationService,
@@ -32,6 +40,9 @@ import { provideMonitoring } from './providers/monitoring.providers';
 import { provideReporting } from './providers/reporting.providers';
 import { provideInteractiveMap } from './providers/interactive-map.providers';
 import { provideReportStates } from './providers/report-states.providers';
+import { provideProcessing } from './providers/processing.providers';
+import { provideRequests } from './providers/requests.providers';
+import { provideFinalization } from './providers/finalization.providers';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -41,6 +52,9 @@ export const appConfig: ApplicationConfig = {
         provideI18n(),
         // Adaptateurs des ports (design-system + moteurs agnostiques).
         { provide: StoragePort, useExisting: BrowserStorageAdapter },
+        { provide: NavigationPort, useExisting: BrowserNavigationAdapter },
+        { provide: ExcelExportPort, useExisting: BrowserExcelExportAdapter },
+        BrowserExcelExportAdapter,
         { provide: NotificationPort, useExisting: CmzNotificationService },
         { provide: ConfirmDialogPort, useExisting: CmzConfirmDialogService },
         { provide: TranslationPort, useExisting: I18nextTranslationService },
@@ -58,6 +72,9 @@ export const appConfig: ApplicationConfig = {
         ...provideReporting(),
         ...provideInteractiveMap(),
         ...provideReportStates(),
+        ...provideProcessing(),
+        ...provideRequests(),
+        ...provideFinalization(),
         // DEV ONLY : accorde toutes les permissions (no-op hors isDevMode()).
         ...provideDevPermissions(),
     ],

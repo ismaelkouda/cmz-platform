@@ -1,6 +1,12 @@
-export * from './lib/use-cases/report-states.use-case';
-export * from './lib/facades/approve.facade';
-export * from './lib/facades/evaluate.facade';
-export * from './lib/facades/close.facade';
-export * from './lib/facades/reject.facade';
-export * from './lib/facades/download.facade';
+export { ReportStatesDetailsUseCase } from './lib/use-cases/report-states-details.use-case';
+export { ApproveReportStatesUseCase } from './lib/use-cases/approve-report-states.use-case';
+export { EvaluateReportStatesUseCase } from './lib/use-cases/evaluate-report-states.use-case';
+export { CloseReportStatesUseCase } from './lib/use-cases/close-report-states.use-case';
+export { RejectReportStatesUseCase } from './lib/use-cases/reject-report-states.use-case';
+export { DownloadReportStatesUseCase } from './lib/use-cases/download-report-states.use-case';
+export { ReportStatesDetailsFacade } from './lib/facades/report-states-details.facade';
+export { ApproveReportStatesFacade } from './lib/facades/approve-report-states.facade';
+export { EvaluateReportStatesFacade } from './lib/facades/evaluate-report-states.facade';
+export { CloseReportStatesFacade } from './lib/facades/close-report-states.facade';
+export { RejectReportStatesFacade } from './lib/facades/reject-report-states.facade';
+export { DownloadReportStatesFacade } from './lib/facades/download-report-states.facade';

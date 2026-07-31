@@ -12,38 +12,40 @@ export const REPORT_STATES_ROUTES: Routes = [
         path: APPROVE_ROUTE,
         data: { breadcrumb: 'REPORT_STATES.APPROVE.BREADCRUMB.LABEL' },
         loadComponent: () =>
-            import('./approve-page.component').then(
-                (m) => m.ApprovePageComponent
+            import('./approve-report-states-page.component').then(
+                (m) => m.ApproveReportStatesPageComponent
             ),
     },
     {
         path: EVALUATE_ROUTE,
         data: { breadcrumb: 'REPORT_STATES.EVALUATE.BREADCRUMB.LABEL' },
         loadComponent: () =>
-            import('./evaluate-page.component').then(
-                (m) => m.EvaluatePageComponent
+            import('./evaluate-report-states-page.component').then(
+                (m) => m.EvaluateReportStatesPageComponent
             ),
     },
     {
         path: CLOSE_ROUTE,
         data: { breadcrumb: 'REPORT_STATES.CLOSE.BREADCRUMB.LABEL' },
         loadComponent: () =>
-            import('./close-page.component').then((m) => m.ClosePageComponent),
+            import('./close-report-states-page.component').then(
+                (m) => m.CloseReportStatesPageComponent
+            ),
     },
     {
         path: REJECT_ROUTE,
         data: { breadcrumb: 'REPORT_STATES.REJECT.BREADCRUMB.LABEL' },
         loadComponent: () =>
-            import('./reject-page.component').then(
-                (m) => m.RejectPageComponent
+            import('./reject-report-states-page.component').then(
+                (m) => m.RejectReportStatesPageComponent
             ),
     },
     {
         path: DOWNLOAD_ROUTE,
         data: { breadcrumb: 'REPORT_STATES.DOWNLOAD.BREADCRUMB.LABEL' },
         loadComponent: () =>
-            import('./download-page.component').then(
-                (m) => m.DownloadPageComponent
+            import('./download-report-states-page.component').then(
+                (m) => m.DownloadReportStatesPageComponent
             ),
     },
     { path: '**', redirectTo: APPROVE_ROUTE },

@@ -1,7 +1,16 @@
 {
-  "name": "report-states-ui",
+  "name": "@cmz/report-states-ui",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/report-states/ui/src",
   "projectType": "library",
-  "tags": ["scope:report-states", "type:ui"]
+  "tags": ["scope:report-states", "type:ui"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/report-states/ui/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

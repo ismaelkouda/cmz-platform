@@ -131,7 +131,23 @@
       "@cmz/report-states-application": [
         "./libs/report-states/application/src/index.ts"
       ],
-      "@cmz/report-states-ui": ["./libs/report-states/ui/src/index.ts"]
+      "@cmz/report-states-ui": ["./libs/report-states/ui/src/index.ts"],
+      "@cmz/processing-domain": ["./libs/processing/domain/src/index.ts"],
+      "@cmz/processing-ui": ["./libs/processing/ui/src/index.ts"],
+      "@cmz/processing-data": ["./libs/processing/data/src/index.ts"],
+      "@cmz/processing-application": [
+        "./libs/processing/application/src/index.ts"
+      ],
+      "@cmz/requests-domain": ["./libs/requests/domain/src/index.ts"],
+      "@cmz/requests-ui": ["./libs/requests/ui/src/index.ts"],
+      "@cmz/requests-data": ["./libs/requests/data/src/index.ts"],
+      "@cmz/requests-application": ["./libs/requests/application/src/index.ts"],
+      "@cmz/finalization-domain": ["./libs/finalization/domain/src/index.ts"],
+      "@cmz/finalization-ui": ["./libs/finalization/ui/src/index.ts"],
+      "@cmz/finalization-data": ["./libs/finalization/data/src/index.ts"],
+      "@cmz/finalization-application": [
+        "./libs/finalization/application/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]

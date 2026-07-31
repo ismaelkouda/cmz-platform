@@ -1,0 +1,14 @@
+{
+  "name": "@cmz/finalization-data",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@angular/common": "catalog:",
+    "@angular/core": "catalog:",
+    "@cmz/core": "workspace:*",
+    "@cmz/finalization-domain": "workspace:*",
+    "@cmz/shared-data": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "rxjs": "catalog:"
+  }
+}

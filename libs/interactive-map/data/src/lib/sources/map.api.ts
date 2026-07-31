@@ -1,12 +1,12 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BYPASS_CACHE, SETTINGS_API_URL } from '@cmz/core';
 import { FetchOptions } from '@cmz/shared-domain';
 import { INTERACTIVE_MAP_ENDPOINTS } from '../endpoints/interactive-map.endpoints';
 import { MapResponseDto } from '../dtos/map-response.dto';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class MapApi {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = inject(SETTINGS_API_URL);

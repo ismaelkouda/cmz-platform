@@ -77,6 +77,8 @@ requête, il est requis, pas silencieusement optionnel par défaut.
 - [`ui.md`](./ui.md) — constants (form-keys/filter-keys/table/status-label),
   vm-props + presenter, filter-store, form-store, feature component, routes,
   composition-root providers.
+- [`workflow-action.md`](./workflow-action.md) — famille workflow (files
+  d'attente, take/treat, actions CRUD) — **module de référence : `processing`**.
 
 ## Boucle d'application (par fichier, par entité)
 

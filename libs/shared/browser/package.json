@@ -4,6 +4,8 @@
   "private": true,
   "dependencies": {
     "@angular/core": "catalog:",
-    "@cmz/shared-domain": "workspace:*"
+    "@cmz/shared-domain": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
+    "exceljs": "catalog:"
   }
 }

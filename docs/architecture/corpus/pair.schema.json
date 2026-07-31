@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz-platform.local/schemas/corpus-pair.schema.json",
+  "title": "SEOS Corpus Pair",
+  "description": "Une paire annotée legacy → Nx pour la Méthode 2 (synthèse neurosymbolique)",
+  "type": "object",
+  "required": [
+    "id",
+    "legacy",
+    "nx",
+    "chain_id",
+    "node",
+    "pattern",
+    "module",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Identifiant stable — ex. processing.queues.list-item-entity",
+      "pattern": "^[a-z0-9][a-z0-9.-]*$"
+    },
+    "legacy": {
+      "type": "string",
+      "description": "Chemin relatif depuis la racine cmz-backoffice-frontend"
+    },
+    "nx": {
+      "type": "string",
+      "description": "Chemin relatif depuis la racine cmz-platform (ou null si n/a)"
+    },
+    "chain_id": {
+      "type": "string",
+      "description": "Groupe vertical — ex. processing.queues.list"
+    },
+    "node": {
+      "type": "string",
+      "description": "Nœud IR / archétype — ex. list-item-entity, filter-mapper"
+    },
+    "pattern": {
+      "type": "string",
+      "enum": [
+        "crud-entity",
+        "action-request",
+        "read-only-view",
+        "workflow-action"
+      ]
+    },
+    "module": {
+      "type": "string",
+      "description": "Module fonctionnel — ex. processing"
+    },
+    "volet": {
+      "type": "string",
+      "description": "Sous-entité volet — ex. queues, tasks, all"
+    },
+    "layer": {
+      "type": "string",
+      "enum": ["domain", "data", "application", "ui", "app", "legacy-only"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "emitted", "verified", "blocked", "n/a"]
+    },
+    "oracle": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Cibles nx — ex. @cmz/processing-domain:build"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Date ISO de dernière vérification oracle réussie"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Écarts, assumptions register, blocages"
+    },
+    "assumption_ref": {
+      "type": "string",
+      "description": "Référence docs/seos/Assumptions-Register.md — ex. A-2026-07-30-05"
+    },
+    "oracle_tier": {
+      "type": "string",
+      "enum": ["module", "integration"],
+      "description": "Tier 1 module (corpus) ou Tier 2 intégration app — cf. A-2026-07-30-08"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@cmz/finalization-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/finalization/ui/src",
+  "projectType": "library",
+  "tags": ["scope:finalization", "type:ui"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/finalization/ui/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

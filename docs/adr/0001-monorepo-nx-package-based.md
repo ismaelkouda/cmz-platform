@@ -19,7 +19,7 @@ Nx propose trois styles de workspace :
 | Style           | Principe                                                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `standalone`    | Une seule application à la racine                                                                                              |
-| `integrated`    | Nx pilote la configuration : dépendances centralisées à la racine, projets sans `package.json` propre                          |
+| `integrated`    | Nx pilote la configuration : dépendances centralisées à la racine, projets sans `package.json propre                           |
 | `package-based` | Chaque projet est un package autonome avec son propre `package.json` ; Nx se limite à orchestrer et mettre en cache les tâches |
 
 ## Options envisagées

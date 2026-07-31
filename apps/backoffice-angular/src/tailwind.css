@@ -2,7 +2,8 @@
 
 /* Scan restreint aux libs UI réellement utilisées (évite le sur-scan monorepo). */
 @source '../../../libs/shared/ui/src';
-@source '../../../libs/administrative-infrastructure/ui/src';
+@source '../../../libs/*/ui/src';
+@source '../../../apps/backoffice-angular/src';
 
 /* Design tokens = source unique de vérité. `@theme` génère à la fois les
    utilitaires Tailwind (bg-primary, text-muted, …) et les variables runtime. */
@@ -14,6 +15,7 @@
     --color-border: #e2e8f0;
     --color-surface: #ffffff;
     --color-surface-hover: #f1f5f9;
+    --color-surface-alt: #f8fafc;
     --color-danger: #dc2626;
     --color-success: #16a34a;
     --color-warning: #d97706;

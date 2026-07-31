@@ -70,46 +70,32 @@ libs/<module>/
 L'ensemble des 53 entités du projet legacy (18 domaines) se répartit en 4
 grandes familles d'archétypes :
 
-| Archétype         | Périmètre / Famille                       | Modules Cibles                                                               | Modèle / Structure IR                                                             |
-| :---------------- | :---------------------------------------- | :--------------------------------------------------------------------------- | :-------------------------------------------------------------------------------- |
-| `crud-entity`     | CRUD Complet (106 fichiers/entité)        | `administrative-infrastructure`, `administrative-boundary`, `coverage-areas` | Entity + Props + Value Objects + Mappers + Facades + Components                   |
-| `action-request`  | Commandes & Mutations (34 fichiers/op)    | `authentication`, `seos-reference-action`                                    | Command DTOs + Handlers + Action Facades                                          |
-| `read-only-view`  | Vues analytiques Query-only (17%)         | `monitoring`, `reporting`, `interactive-map`                                 | Consolidated Entity/DTO + Section Mapper + ResourceFacade + GrafanaEmbedComponent |
-| `workflow-action` | Files de traitement & State Machine (36%) | `requests`, `processing`, `finalization`, `report-states`                    | Workflow Task Queue + Status Transitions + Detail Views                           |
+| Archétype  
+| Périmètre / Famille  
+| Modules Cibles
+
+| Modèle / Structure IR                                                             |
+| --------------------------------------------------------------------------------- |
+| `crud-entity`                                                                     |
+| CRUD Complet (106 fichiers/entité)                                                |
+| `administrative-infrastructure`, `administrative-boundary`, `coverage-area`       |
+| Entity + Props + Value Objects + Mappers + Facades + Components                   |
+| `action-request`                                                                  |
+| Commandes & Mutations (34 fichiers/op)                                            |
+| `authentication`, `seos-reference-action`                                         |
+| Command DTOs + Handlers + Action Facades                                          |
+| `read-only-view`                                                                  |
+| Vues analytiques Query-only (17%)                                                 |
+| `monitoring`, `reporting`, `interactive-map`                                      |
+| Consolidated Entity/DTO + Section Mapper + ResourceFacade + GrafanaEmbedComponent |
+| `workflow-action`                                                                 |
+| Files de traitement & State Machine (36%)                                         |
+| `requests`, `processing`, `finalization`, `report-states`                         |
+| Workflow Task Queue + Status Transitions + Detail Views                           |
 
 ---
 
-## 4. État Réel du Monorepo & Feuille de Route (Mise à jour : 2026-07-28)
-
-**Phase Actuelle : Phase 07 — Reconstruction Progressive des Modules Métier**
-
-### Statut des Composants du Monorepo :
-
-- **Socle & Tooling (Phases 01–04)** : ✅ **Validé** (Nx 23, Bun 1.3, Angular
-  22, esbuild, Playwright, Vitest, Adaptateur SEOS).
-- **Kernel Transverse (`shared/` + `core`) (Phases 05–06)** : ✅
-  **Opérationnel** :
-    - `@cmz/core` (Tokens d'URL `SETTINGS_API_URL`, Intercepteurs/Tokens
-      `BYPASS_CACHE`).
-    - `@cmz/shared-domain` (Interfaces communes, `SelectOption`, `DomainError`).
-    - `@cmz/shared-data` (DTOs enveloppes, `unwrapResponse`,
-      `SimpleResponseMapper`, `buildHttpParams`).
-    - `@cmz/shared-application` (`ResourceFacade`, `PaginatedFacade`,
-      `BaseFacade`).
-    - `@cmz/shared-ui` (`GrafanaEmbedComponent`, `PaginationComponent`,
-      validators de formulaires).
-- **Modules Métier Livrés / En Cours (Phase 07)** :
-    - `administrative-infrastructure` : ✅ Reconstruit & compilé.
-    - `administrative-boundary` : ✅ Reconstruit & compilé.
-    - `authentication` : ✅ Reconstruit & compilé.
-    - `monitoring` : ✅ **Livré & Validé (4 sous-pages Grafana embeds, Phase 8
-      complete)**.
-    - `reporting` : ⏳ **En cours d'instanciation (Phase 1 d'analyse Big Tech
-      complète dans `docs/architecture/module-reporting.md`)**.
-
----
-
-## 5. Directives & Garde-Fous pour l'Agent LLM
+## 4. Directives & Garde-Fous pour l'Agent LLM
 
 Lorsque vous exécutez une tâche dans ce workspace, vous devez respecter les
 directives suivantes :
@@ -133,3 +119,11 @@ directives suivantes :
    fichier de suivi détaillé dans `docs/architecture/module-<nom>.md` (voir
    exemple type :
    [`docs/architecture/module-monitoring.md`](file:///Users/macbookair/deepswift/dev/cmz/cmz-platform/docs/architecture/module-monitoring.md)).
+
+5. **Corpus SEOS (Méthode 2)** : chaque paire legacy → Nx validée est émise dans
+   `corpus/{module}.pairs.jsonl` via
+   `node tools/corpus/emit-pairs.mjs <module>`. Spec :
+   [`docs/architecture/corpus/README.md`](./docs/architecture/corpus/README.md).
+   Pattern `workflow-action` v0 :
+   [`docs/architecture/patterns/workflow-action.pattern.json`](./docs/architecture/patterns/workflow-action.pattern.json).
+   Module de référence : **`processing`**.

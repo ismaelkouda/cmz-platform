@@ -1,0 +1,12 @@
+{
+  "name": "@cmz/requests-application",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@angular/core": "catalog:",
+    "@cmz/requests-domain": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "rxjs": "catalog:"
+  }
+}

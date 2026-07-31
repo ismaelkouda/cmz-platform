@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "apps/backoffice-angular/src/main.ts",
+    "apps/backoffice-angular/src/app/app.config.ts",
+    "apps/backoffice-angular/src/app/app.routes.ts",
+    "libs/*/src/index.ts",
+    "libs/*/*/src/index.ts",
+    "tools/**/*.mjs"
+  ],
+  "project": ["apps/**/*.ts", "libs/**/*.ts", "tools/**/*.mjs"],
+  "ignore": [
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/node_modules/**",
+    "**/dist/**"
+  ],
+  "ignoreDependencies": [
+    "zone.js",
+    "@angular/localize",
+    "@angular/service-worker",
+    "tslib"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": ["tools/**/*.mjs"]
+    }
+  }
+}

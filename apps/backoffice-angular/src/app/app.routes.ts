@@ -1,4 +1,5 @@
 import { Route } from '@angular/router';
+import { permissionGuard } from './providers/permission.guard';
 
 export const appRoutes: Route[] = [
     // Redirige vers `dashboard` maintenant que le module existe — c'était
@@ -29,8 +30,31 @@ export const appRoutes: Route[] = [
     },
     {
         path: 'report-states',
+        // canActivate sur le segment parent : toutes les sous-routes héritent
+        // de la permission 'report-states' / 'VIEW'. Les actions granulaires
+        // (APPROVE, REJECT, EVALUATE, CLOSE) sont vérifiées dans les
+        // composants via PermissionActionsService.can() directement.
+        canActivate: [permissionGuard('report-states', 'VIEW')],
         loadChildren: () =>
             import('@cmz/report-states-ui').then((m) => m.REPORT_STATES_ROUTES),
+    },
+    {
+        path: 'processing',
+        canActivate: [permissionGuard('processing', 'VIEW')],
+        loadChildren: () =>
+            import('@cmz/processing-ui').then((m) => m.PROCESSING_ROUTES),
+    },
+    {
+        path: 'requests',
+        canActivate: [permissionGuard('requests', 'VIEW')],
+        loadChildren: () =>
+            import('@cmz/requests-ui').then((m) => m.REQUESTS_ROUTES),
+    },
+    {
+        path: 'finalization',
+        canActivate: [permissionGuard('finalization', 'VIEW')],
+        loadChildren: () =>
+            import('@cmz/finalization-ui').then((m) => m.FINALIZATION_ROUTES),
     },
     {
         path: 'auth',

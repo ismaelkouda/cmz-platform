@@ -1,3 +1,4 @@
+export * from './lib/utils/export-table-to-excel.util';
 export * from './lib/pipes/capitalize.pipe';
 export * from './lib/pipes/thousands-separator.pipe';
 export * from './lib/pipes/safe-url.pipe';
@@ -34,6 +35,7 @@ export * from './lib/components/pagination/pagination.component';
 export * from './lib/components/action-dropdown/action-dropdown.component';
 export * from './lib/interfaces/table-column.interface';
 export * from './lib/interfaces/table-row.interface';
+export * from './lib/interfaces/table-row-action.interface';
 export * from './lib/components/table/table.component';
 export * from './lib/components/filter/filter.types';
 export * from './lib/components/filter/filter.component';

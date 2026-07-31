@@ -1,8 +1,6 @@
-import {
-    EmailRequiredError,
-    InvalidEmailError,
-    isValidEmail,
-} from '@cmz/shared-domain';
+import { EmailRequiredError } from '../errors/email-required.error';
+import { InvalidEmailError } from '../errors/invalid-email.error';
+import { isValidEmail } from '../utils/valid-email.util';
 import { ForgotPasswordRequestContract } from '../contracts/forgot-password-request.contract';
 import { ForgotPasswordRequestValidateContract } from '../contracts/forgot-password-request.validate-contract';
 

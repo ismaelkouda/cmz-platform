@@ -1,0 +1,12 @@
+{
+  "name": "@cmz/finalization-ui",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@angular/core": "catalog:",
+    "@cmz/finalization-application": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "@cmz/shared-ui": "workspace:*"
+  }
+}

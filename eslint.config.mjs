@@ -7,13 +7,32 @@ export default [
     {
         ignores: ['**/dist', '**/out-tsc'],
     },
+    // Fichiers d'outillage de test — exclus de enforce-module-boundaries.
+    // vite.config.ts / vitest.config.ts référencent légitimement des
+    // ressources hors du boundary de la lib (ex. tools/vitest-lib.config.ts).
+    // Ils ne font pas partie du code applicatif : les frontières de couche
+    // ne s'appliquent pas à l'infrastructure de build.
+    // Pattern Nx standard : les fichiers de config sont traités séparément.
+    {
+        ignores: [
+            '**/vite.config.ts',
+            '**/vite.config.js',
+            '**/vitest.config.ts',
+            '**/vitest.config.js',
+        ],
+    },
     {
         files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
         rules: {
             '@nx/enforce-module-boundaries': [
                 'error',
                 {
-                    enforceBuildableLibDependency: true,
+                    // false : les libs cmz-platform sont applicatives (non publiées npm).
+                    // `enforceBuildableLibDependency: true` est réservé aux monorepos
+                    // publicateurs (ng-packagr, changesets). Ici il produirait des
+                    // faux-positifs dès qu'un target `build: tsc --noEmit` est déclaré
+                    // pour le pipeline Oracle de vérification.
+                    enforceBuildableLibDependency: false,
                     allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
                     depConstraints: [
                         // ---- Contraintes par COUCHE (type:*) ----
@@ -183,6 +202,29 @@ export default [
                             sourceTag: 'scope:report-states',
                             onlyDependOnLibsWithTags: [
                                 'scope:report-states',
+                                'scope:shared',
+                            ],
+                        },
+                        // processing, requests, finalization — famille
+                        // workflow-action (ADR-0003 §Règle de tenue à jour).
+                        {
+                            sourceTag: 'scope:processing',
+                            onlyDependOnLibsWithTags: [
+                                'scope:processing',
+                                'scope:shared',
+                            ],
+                        },
+                        {
+                            sourceTag: 'scope:requests',
+                            onlyDependOnLibsWithTags: [
+                                'scope:requests',
+                                'scope:shared',
+                            ],
+                        },
+                        {
+                            sourceTag: 'scope:finalization',
+                            onlyDependOnLibsWithTags: [
+                                'scope:finalization',
                                 'scope:shared',
                             ],
                         },

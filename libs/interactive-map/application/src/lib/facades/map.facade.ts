@@ -1,11 +1,11 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ResourceFacade } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
 import { MapEntity } from '@cmz/interactive-map-domain';
 import { MapUseCase } from '../use-cases/map.use-case';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class MapFacade extends ResourceFacade<MapEntity, FetchOptions> {
     private readonly useCase = inject(MapUseCase);
 

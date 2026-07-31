@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { FetchOptions } from '@cmz/shared-domain';
 import {
@@ -8,7 +8,7 @@ import {
 import { MapApi } from '../sources/map.api';
 import { MapMapper } from '../mappers/map.mapper';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InteractiveMapRepositoryImpl implements InteractiveMapRepository {
     private readonly api = inject(MapApi);
     private readonly mapper = new MapMapper();

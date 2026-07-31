@@ -1,10 +1,10 @@
 import { SimpleResponseDto } from '@cmz/shared-data';
 
 export interface ReportingVariablesItemDto {
-    reportReportingLink: string;
-    requestReportReportingLink: string;
-    reportByChannel: string;
-    reportByOperator: string;
+    readonly reportReportingLink: string;
+    readonly requestReportReportingLink: string;
+    readonly reportByChannel: string;
+    readonly reportByOperator: string;
 }
 
 export type ReportingVariablesResponseDto =

@@ -186,59 +186,60 @@ conformité au schéma `action-request` (34 fichiers). Classe = meilleur
 ajustement (voir la lecture ci-dessus). Regénérable par :
 `node seos/tools/check-pattern.js <module> <entité> [--schema …]`.
 
-| Entité                                   | crud % | action % | Classe |
-| ---------------------------------------- | -----: | -------: | ------ |
-| `administrative-boundary/departments`    |     72 |       29 | Proche |
-| `administrative-boundary/municipalities` |     72 |       29 | Proche |
-| `administrative-boundary/regions`        |     74 |       29 | Proche |
-
-| `content-management/home` | 76 | 29 | Proche | |
-`content-management/legal-notice` | 74 | 29 | Proche | |
-`content-management/news` | 76 | 29 | Proche | |
-`content-management/privacy-policy` | 74 | 29 | Proche | |
-`content-management/slide` | 76 | 29 | Proche | | `content-management/terms-use`
-| 74 | 29 | Proche |
-
-| `coverage-areas/mobile-network` | 89 | 38 | Proche | |
-`coverage-areas/site-group` | 96 | 38 | Conforme |
-
-| `team-organization/participants` | 80 | 26 | Proche | |
-`team-organization/teams` | 78 | 24 | Proche |
-
-| `settings-security/profiles-permissions` | 72 | 29 | Proche | |
-`settings-security/users` | 68 | 29 | Proche |
-
-| `administrative-infrastructure/infrastructure` | 100 | 47 | Conforme | |
-`administrative-infrastructure/infrastructure-type` | 100 | 47 | Conforme |
-
-| `team-organization/agents-performances` | 41 | 26 | Workflow | |
-`team-organization/daily-goal` | 26 | 26 | Divers |
-
-| `settings-security/access-logs` | 20 | 29 | Divers |
-
-| `authentication/forgot-password` | 15 | 100 | Conforme | |
-`authentication/login` | 15 | 100 | Conforme | | `authentication/reset-password`
-| 15 | 100 | Conforme |
-
-| `communication/messaging` | 69 | 29 | Proche | | `communication/notifications`
-| 39 | 29 | Divers | | `finalization/all` | 22 | 41 | Workflow | |
-`finalization/details` | 18 | 26 | Workflow (détail) | | `finalization/queues` |
-22 | 41 | Workflow | | `finalization/tasks` | 22 | 41 | Workflow | |
-`interactive-map/map` | 7 | 12 | Lecture seule | | `monitoring/jobs` | 7 | 12 |
-Lecture seule | | `monitoring/node` | 7 | 12 | Lecture seule | |
-`monitoring/resources` | 7 | 12 | Lecture seule | | `monitoring/services` | 7 |
-12 | Lecture seule | | `processing/all` | 23 | 41 | Workflow | |
-`processing/details` | 18 | 26 | Workflow (détail) | | `processing/queues` | 23
-| 41 | Workflow | | `processing/tasks` | 23 | 41 | Workflow | |
-`report-states/approve` | 24 | 41 | Workflow | | `report-states/close` | 24 | 41
-| Workflow | | `report-states/details` | 18 | 26 | Workflow (détail) | |
-`report-states/download` | 24 | 41 | Workflow | | `report-states/evaluate` | 24
-| 41 | Workflow | | `report-states/reject` | 24 | 41 | Workflow | |
-`reporting/report-by-channel` | 6 | 9 | Lecture seule | |
-`reporting/report-by-operator` | 6 | 9 | Lecture seule | | `reporting/reports` |
-6 | 9 | Lecture seule | | `reporting/requests` | 6 | 9 | Lecture seule | |
-`requests/all` | 23 | 41 | Workflow | | `requests/details` | 18 | 26 | Workflow
-(détail) | | `requests/queues` | 23 | 41 | Workflow | | `requests/tasks` | 23 |
-41 | Workflow | | `seos-reference-action/sample-action` | 15 | 100 | Conforme |
+| Entité                                              | crud % | action % | Classe            |
+| --------------------------------------------------- | -----: | -------: | ----------------- |
+| `administrative-boundary/departments`               |     72 |       29 | Proche            |
+| `administrative-boundary/municipalities`            |     72 |       29 | Proche            |
+| `administrative-boundary/regions`                   |     74 |       29 | Proche            |
+| `content-management/home`                           |     76 |       29 | Proche            |
+| `content-management/legal-notice`                   |     74 |       29 | Proche            |
+| `content-management/news`                           |     76 |       29 | Proche            |
+| `content-management/privacy-policy`                 |     74 |       29 | Proche            |
+| `content-management/slide`                          |     76 |       29 | Proche            |
+| `content-management/terms-use`                      |     74 |       29 | Proche            |
+| `coverage-areas/mobile-network`                     |     89 |       38 | Proche            |
+| `coverage-areas/site-group`                         |     96 |       38 | Conforme          |
+| `team-organization/participants`                    |     80 |       26 | Proche            |
+| `team-organization/teams`                           |     78 |       24 | Proche            |
+| `settings-security/profiles-permissions`            |     72 |       29 | Proche            |
+| `settings-security/users`                           |     68 |       29 | Proche            |
+| `administrative-infrastructure/infrastructure`      |    100 |       47 | Conforme          |
+| `administrative-infrastructure/infrastructure-type` |    100 |       47 | Conforme          |
+| `team-organization/agents-performances`             |     41 |       26 | Workflow          |
+| `team-organization/daily-goal`                      |     26 |       26 | Divers            |
+| `settings-security/access-logs`                     |     20 |       29 | Divers            |
+| `authentication/forgot-password`                    |     15 |      100 | Conforme          |
+| `authentication/login`                              |     15 |      100 | Conforme          |
+| `authentication/reset-password`                     |     15 |      100 | Conforme          |
+| `communication/messaging`                           |     69 |       29 | Proche            |
+| `communication/notifications`                       |     39 |       29 | Divers            |
+| `finalization/all`                                  |     22 |       41 | Workflow          |
+| `finalization/details`                              |     18 |       26 | Workflow (détail) |
+| `finalization/queues`                               |     22 |       41 | Workflow          |
+| `finalization/tasks`                                |     22 |       41 | Workflow          |
+| `interactive-map/map`                               |      7 |       12 | Lecture seule     |
+| `monitoring/jobs`                                   |      7 |       12 | Lecture seule     |
+| `monitoring/node`                                   |      7 |       12 | Lecture seule     |
+| `monitoring/resources`                              |      7 |       12 | Lecture seule     |
+| `monitoring/services`                               |      7 |       12 | Lecture seule     |
+| `processing/all`                                    |     23 |       41 | Workflow          |
+| `processing/details`                                |     18 |       26 | Workflow (détail) |
+| `processing/queues`                                 |     23 |       41 | Workflow          |
+| `processing/tasks`                                  |     23 |       41 | Workflow          |
+| `report-states/approve`                             |     24 |       41 | Workflow          |
+| `report-states/close`                               |     24 |       41 | Workflow          |
+| `report-states/details`                             |     18 |       26 | Workflow (détail) |
+| `report-states/download`                            |     24 |       41 | Workflow          |
+| `report-states/evaluate`                            |     24 |       41 | Workflow          |
+| `report-states/reject`                              |     24 |       41 | Workflow          |
+| `reporting/report-by-channel`                       |      6 |        9 | Lecture seule     |
+| `reporting/report-by-operator`                      |      6 |        9 | Lecture seule     |
+| `reporting/reports`                                 |      6 |        9 | Lecture seule     |
+| `reporting/requests`                                |      6 |        9 | Lecture seule     |
+| `requests/all`                                      |     23 |       41 | Workflow          |
+| `requests/details`                                  |     18 |       26 | Workflow (détail) |
+| `requests/queues`                                   |     23 |       41 | Workflow          |
+| `requests/tasks`                                    |     23 |       41 | Workflow          |
+| `seos-reference-action/sample-action`               |     15 |      100 | Conforme          |
 
 Les `details` sont rattachés à la famille workflow (vues de détail d'une tâche).

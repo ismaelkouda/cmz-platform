@@ -1,23 +1,14 @@
-import {
-    ConfirmPasswordNoMatchError,
-    ConfirmPasswordRequiredError,
-    EmailRequiredError,
-    GenericRequiredError,
-    InvalidEmailError,
-    PasswordRequiredError,
-    isMatchConfirmPassword,
-    isValidEmail,
-} from '@cmz/shared-domain';
+import { GenericRequiredError } from '@cmz/shared-domain';
+import { ConfirmPasswordNoMatchError } from '../errors/confirm-password.error';
+import { ConfirmPasswordRequiredError } from '../errors/confirm-password-required.error';
+import { EmailRequiredError } from '../errors/email-required.error';
+import { InvalidEmailError } from '../errors/invalid-email.error';
+import { PasswordRequiredError } from '../errors/password-required.error';
+import { isMatchConfirmPassword } from '../utils/match-confirm-password.util';
+import { isValidEmail } from '../utils/valid-email.util';
 import { ResetPasswordRequestContract } from '../contracts/reset-password-request.contract';
 import { ResetPasswordRequestValidateContract } from '../contracts/reset-password-request.validate-contract';
 
-/**
- * `token` n'a pas de type kernel dédié (propre à ce flux) → `GenericRequiredError`,
- * seul champ dans ce cas (décision 6 du plan). `email`/`password`/
- * `confirmPassword` réutilisent les types kernel déjà posés — appliqués ici de
- * façon uniforme même si le source n'utilisait `EmailRequiredError` que pour
- * `login` (incohérence mineure du source, pas reproduite).
- */
 export function validateResetPasswordRequest(
     contract: ResetPasswordRequestContract
 ): asserts contract is ResetPasswordRequestValidateContract {

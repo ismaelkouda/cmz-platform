@@ -1,0 +1,106 @@
+import { inject, Service, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
+import { finalize } from 'rxjs/operators';
+import {
+    NotificationPort,
+    PermissionActionsService,
+    ResourceFacade,
+    TranslationPort,
+} from '@cmz/shared-application';
+import { FetchOptions } from '@cmz/shared-domain';
+import {
+    FinalizationDetailsEntity,
+    FinalizationDetailsFilterContract,
+    FinalizationDetailsFinalizeContract,
+    FinalizationDetailsTakeContract,
+    FINALIZATION_QUEUES_ROUTE,
+    FINALIZATION_TASKS_ROUTE,
+} from '@cmz/finalization-domain';
+import {
+    FinalizationDetailsQuery,
+    FinalizationDetailsUseCase,
+} from '../use-cases/finalization-details.use-case';
+import { AllFinalizationFacade } from './all-finalization.facade';
+import { QueuesFinalizationFacade } from './queues-finalization.facade';
+import { TasksFinalizationFacade } from './tasks-finalization.facade';
+
+export interface FinalizationDetailsLoadParams {
+    filter: FinalizationDetailsFilterContract;
+    options?: FetchOptions;
+}
+
+@Service()
+export class FinalizationDetailsFacade extends ResourceFacade<
+    FinalizationDetailsEntity,
+    FinalizationDetailsLoadParams
+> {
+    private readonly useCase = inject(FinalizationDetailsUseCase);
+    private readonly permissions = inject(PermissionActionsService);
+    private readonly notification = inject(NotificationPort);
+    private readonly i18n = inject(TranslationPort);
+    private readonly queuesFacade = inject(QueuesFinalizationFacade);
+    private readonly tasksFacade = inject(TasksFinalizationFacade);
+    private readonly allFacade = inject(AllFinalizationFacade);
+
+    private readonly _actionLoading = signal(false);
+    readonly actionLoading = this._actionLoading.asReadonly();
+
+    protected stream(
+        params: FinalizationDetailsLoadParams
+    ): Observable<FinalizationDetailsEntity> {
+        const query: FinalizationDetailsQuery = {
+            filter: params.filter,
+            permissions: this.resolvePermissions(),
+            options: params.options,
+        };
+        return this.useCase.execute(query);
+    }
+
+    loadDetails(uniqId: string, options?: FetchOptions): void {
+        this.setParams({ filter: { uniqId }, options });
+    }
+
+    take(contract: FinalizationDetailsTakeContract): void {
+        this._actionLoading.set(true);
+        this.useCase
+            .take(contract)
+            .pipe(
+                tap(() => {
+                    this.notification.success(
+                        this.i18n.translate('COMMON.SUCCESS.TAKE')
+                    );
+                    this.queuesFacade.reload();
+                    this.tasksFacade.reload();
+                }),
+                finalize(() => this._actionLoading.set(false))
+            )
+            .subscribe();
+    }
+
+    finalize(contract: FinalizationDetailsFinalizeContract): void {
+        this._actionLoading.set(true);
+        this.useCase
+            .finalize(contract)
+            .pipe(
+                tap(() => {
+                    this.notification.success(
+                        this.i18n.translate('COMMON.SUCCESS.FINALIZE')
+                    );
+                    this.tasksFacade.reload();
+                    this.allFacade.reload();
+                }),
+                finalize(() => this._actionLoading.set(false))
+            )
+            .subscribe();
+    }
+
+    private resolvePermissions() {
+        return {
+            canTake: this.permissions.can(FINALIZATION_QUEUES_ROUTE, 'take')(),
+            canFinalize: this.permissions.can(
+                FINALIZATION_TASKS_ROUTE,
+                'finalize'
+            )(),
+        };
+    }
+}

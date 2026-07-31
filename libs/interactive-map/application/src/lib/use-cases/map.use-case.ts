@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { defer, Observable } from 'rxjs';
 import { FetchOptions } from '@cmz/shared-domain';
 import {
@@ -6,7 +6,7 @@ import {
     MapEntity,
 } from '@cmz/interactive-map-domain';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class MapUseCase {
     private readonly repository = inject(InteractiveMapRepository);
 

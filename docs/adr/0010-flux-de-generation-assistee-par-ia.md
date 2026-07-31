@@ -37,13 +37,19 @@ Avant de démarrer chaque stack, on installe le cadrage IA **officiel** de cette
 stack (règle de projet : recherche documentaire préalable obligatoire). Pour
 Angular :
 
-| Ressource officielle                                | Rôle                                                                                                            | Source                               |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `best-practices.md`                                 | Instructions système : signals, `@Service`, `input()`/`output()`, control flow natif, `inject()`, a11y AXE/WCAG | angular.dev/ai/develop-with-ai       |
-| Agent Skills `angular-developer`, `angular-new-app` | Compétences maintenues, synchronisées avec le framework                                                         | angular.dev/ai/agent-skills          |
-| MCP CLI Angular                                     | Contexte outillage en temps réel                                                                                | angular.dev/ai/mcp                   |
-| `llms-full.txt`                                     | Corpus de référence                                                                                             | angular.dev/context/llm-files        |
-| Nx AI integration (`nx configure-ai-agents`)        | MCP Nx : structure du workspace, générateurs, graphe                                                            | nx.dev/docs/getting-started/ai-setup |
+| Ressource officielle | Rôle                            | Source |
+| -------------------- | ------------------------------- | ------ |
+| `best-practices.md`  | Instructions système : signals, |
+
+                                            `@Service`, `input()`/`output()`, control
+                                            flow natif, `inject()`, a11y AXE/WCAG   | angular.dev/ai/develop-with-ai      |
+
+| Agent Skills `angular-developer`, `angular-new-app` | Compétences maintenues,
+synchronisées avec le framework | angular.dev/ai/agent-skills | | MCP CLI
+Angular | Contexte outillage entemps | angular.dev/ai/mcp | | `llms-full.txt` |
+Corpus de référence | angular.dev/context/llm-files | | Nx AI integration
+(`nx configure-ai-agents`) | MCP Nx : structure du workspace, générateurs,
+graphe | nx.dev/docs/getting-started/ai-setup|
 
 Écrire nos propres règles Angular reviendrait à réinventer, en moins bien et
 sans maintenance, ce que l'équipe Angular publie et met à jour à chaque version.

@@ -1,1 +1,25 @@
 /* You can add global styles to this file, and also import other style files */
+
+/** Shell plein écran — `<dialog>` natif (requests/processing details). */
+dialog.cmz-fullscreen-dialog:not([open]) {
+    display: none !important;
+}
+
+dialog.cmz-fullscreen-dialog {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+dialog.cmz-fullscreen-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+dialog.cmz-fullscreen-dialog::backdrop {
+    background: rgb(0 0 0 / 50%);
+}

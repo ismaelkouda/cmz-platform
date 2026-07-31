@@ -1,0 +1,151 @@
+# CI Pipeline — cmz-platform
+# ADR-0006 : les garde-fous locaux (hooks Husky) sont reproduits ici pour qu'ils
+# soient incontournables. --no-verify local ne passe pas en CI.
+#
+# Stratégie : nx affected pour ne reconstruire que ce qui a changé.
+# Prérequis Phase 06 : Nx Cloud à connecter via `bunx nx connect` pour
+# partager le cache entre les runs (cf. etat-du-socle.md §Points ouverts).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '22.22.3'
+  BUN_VERSION: '1.3.14'
+
+jobs:
+  # ─── Job 1 : Garde-fous socle (rapide, bloquant) ─────────────────────────
+  guardrails:
+    name: Garde-fous socle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # nécessaire pour nx affected --base=origin/main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Rejoue les contrôles des hooks locaux (ADR-0006)
+      - name: check:engines
+        run: node tools/check-engines.mjs
+
+      - name: check:versions (catalog sans dérive)
+        run: node tools/check-catalog-usage.mjs
+
+      - name: check:weight (aucun binaire versionné)
+        run: node tools/check-file-weight.mjs
+
+      - name: check:project-names (ADR-0003 nommage @cmz/)
+        run: node tools/check-project-names.mjs
+
+      - name: Format check (Prettier)
+        run: bun run format:check
+
+  # ─── Job 2 : Oracle de vérification (nx affected) ────────────────────────
+  oracle:
+    name: Oracle — lint + build + test
+    runs-on: ubuntu-latest
+    needs: guardrails
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Set NX base branch
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "NX_BASE=origin/${{ github.base_ref }}" >> $GITHUB_ENV
+          else
+            echo "NX_BASE=HEAD~1" >> $GITHUB_ENV
+          fi
+
+      # ESLint — boundaries Nx + règles Angular (ADR-0010 portail niveau Lint)
+      - name: Lint (nx affected)
+        run: bunx nx affected -t lint --base=${{ env.NX_BASE }} --max-warnings=0
+
+      # Build — tsc + ngc --strictTemplates (ADR-0010 portail niveau Compilation)
+      - name: Build (nx affected)
+        run: bunx nx affected -t build --base=${{ env.NX_BASE }}
+
+      # Tests Vitest — ADR-0008 (actif dès qu'I-01 est amorcé)
+      # Conditionnel : ne plante pas si aucun test n'existe encore
+      - name: Test (nx affected)
+        run: bunx nx affected -t test --base=${{ env.NX_BASE }} --passWithNoTests
+
+  # ─── Job 4 : Corpus SEOS Tier 1 (oracle module, sans checkout legacy) ─────
+  corpus:
+    name: Corpus SEOS — Tier 1
+    runs-on: ubuntu-latest
+    needs: guardrails
+    env:
+      CORPUS_ORACLE_ONLY: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Corpus processing (emit + oracle Tier 1)
+        run: node tools/corpus/emit-pairs.mjs processing --verify --oracle-only
+
+      - name: Corpus requests (emit + oracle Tier 1, tranche A)
+        run: node tools/corpus/emit-pairs.mjs requests --verify --oracle-only --tranche A
+
+      - name: Corpus finalization (emit + oracle Tier 1)
+        run: node tools/corpus/emit-pairs.mjs finalization --verify --oracle-only
+
+      - name: Corpus report-states (emit + oracle Tier 1)
+        run: node tools/corpus/emit-pairs.mjs report-states --verify --oracle-only
+  dead-code:
+    name: Dead-code (knip)
+    runs-on: ubuntu-latest
+    needs: guardrails
+    # Non bloquant tant que I-04 n'est pas pleinement instrumenté
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: check:dead-code (knip)
+        run: bun run check:dead-code

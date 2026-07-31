@@ -1,0 +1,16 @@
+{
+  "name": "@cmz/processing-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/processing/ui/src",
+  "projectType": "library",
+  "tags": ["scope:processing", "type:ui"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/processing/ui/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

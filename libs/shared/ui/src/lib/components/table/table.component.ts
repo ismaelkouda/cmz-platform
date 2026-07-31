@@ -7,11 +7,13 @@ import {
 } from '@angular/core';
 import { TranslationPort } from '@cmz/shared-application';
 import { TableColumn } from '../../interfaces/table-column.interface';
+import { TableRowActionDefinition } from '../../interfaces/table-row-action.interface';
 import { TableRowBase } from '../../interfaces/table-row.interface';
 import { ActionDropdownComponent } from '../action-dropdown/action-dropdown.component';
 
 /** Champs de colonne spéciaux (rendus par le composant, pas par une donnée). */
 const INDEX_FIELD = '__index';
+const ACTION_BUTTONS_FIELD = '__action';
 const ACTIONS_FIELD = '__actionDropdown';
 
 /**
@@ -84,6 +86,47 @@ const ACTIONS_FIELD = '__actionDropdown';
                                             @case (INDEX_FIELD) {
                                                 {{ indexOffset() + i + 1 }}
                                             }
+                                            @case (ACTION_BUTTONS_FIELD) {
+                                                <div
+                                                    class="cmz-table__row-actions"
+                                                >
+                                                    @for (
+                                                        action of rowActionDefinitions();
+                                                        track action.id
+                                                    ) {
+                                                        <button
+                                                            type="button"
+                                                            class="cmz-table__row-action"
+                                                            [title]="
+                                                                rowActionTooltip(
+                                                                    row,
+                                                                    action.id
+                                                                )
+                                                            "
+                                                            [disabled]="
+                                                                loading() ||
+                                                                rowActionDisabled(
+                                                                    row,
+                                                                    action.id
+                                                                )
+                                                            "
+                                                            (click)="
+                                                                onAction(
+                                                                    row,
+                                                                    action.id
+                                                                )
+                                                            "
+                                                        >
+                                                            <i
+                                                                [class]="
+                                                                    action.icon
+                                                                "
+                                                                aria-hidden="true"
+                                                            ></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            }
                                             @case (ACTIONS_FIELD) {
                                                 <cmz-action-dropdown
                                                     [actions]="
@@ -153,18 +196,40 @@ const ACTIONS_FIELD = '__actionDropdown';
             overflow: hidden;
             clip: rect(0 0 0 0);
         }
+        .cmz-table__row-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--cmz-space-1, 0.25rem);
+        }
+        .cmz-table__row-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--cmz-space-1, 0.25rem);
+            border: 1px solid var(--cmz-color-border, #e2e8f0);
+            border-radius: var(--cmz-radius-sm, 0.25rem);
+            background: var(--cmz-color-surface, #fff);
+            color: var(--cmz-color-primary, #4f46e5);
+            cursor: pointer;
+        }
+        .cmz-table__row-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     `,
 })
 export class TableComponent<T extends TableRowBase> {
     private readonly i18n = inject(TranslationPort);
 
     protected readonly INDEX_FIELD = INDEX_FIELD;
+    protected readonly ACTION_BUTTONS_FIELD = ACTION_BUTTONS_FIELD;
     protected readonly ACTIONS_FIELD = ACTIONS_FIELD;
 
     readonly columns = input.required<TableColumn[]>();
     readonly rows = input.required<T[]>();
     readonly loading = input(false);
     readonly dataKey = input('uniqId');
+    readonly rowActionDefinitions = input<TableRowActionDefinition[]>([]);
     /** Décalage d'index (numérotation continue sur pages : `(page-1)*perPage`). */
     readonly indexOffset = input(0);
 
@@ -176,7 +241,19 @@ export class TableComponent<T extends TableRowBase> {
     }
 
     protected isSpecial(field: string): boolean {
-        return field === INDEX_FIELD || field === ACTIONS_FIELD;
+        return (
+            field === INDEX_FIELD ||
+            field === ACTION_BUTTONS_FIELD ||
+            field === ACTIONS_FIELD
+        );
+    }
+
+    protected rowActionTooltip(row: T, actionId: string): string {
+        return row.actionButtons?.[actionId]?.tooltip ?? '';
+    }
+
+    protected rowActionDisabled(row: T, actionId: string): boolean {
+        return row.actionButtons?.[actionId]?.disabled ?? false;
     }
 
     protected cellText(row: T, field: string): string {

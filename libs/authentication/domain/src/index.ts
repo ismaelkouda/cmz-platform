@@ -1,3 +1,12 @@
+// ---- Shared auth errors / utils ---------------------------------------
+export * from './lib/errors/email-required.error';
+export * from './lib/errors/invalid-email.error';
+export * from './lib/errors/password-required.error';
+export * from './lib/errors/confirm-password-required.error';
+export * from './lib/errors/confirm-password.error';
+export * from './lib/utils/valid-email.util';
+export * from './lib/utils/match-confirm-password.util';
+
 // ---- Login -----------------------------------------------------------
 export * from './lib/props/login.props';
 export * from './lib/entities/login-response.entity';

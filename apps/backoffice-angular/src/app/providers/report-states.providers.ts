@@ -1,16 +1,47 @@
 import { Provider } from '@angular/core';
-import { ReportStatesRepository } from '@cmz/report-states-domain';
-import { ReportStatesRepositoryImpl } from '@cmz/report-states-data';
+import {
+    ApproveReportStatesRepository,
+    CloseReportStatesRepository,
+    DownloadReportStatesRepository,
+    EvaluateReportStatesRepository,
+    RejectReportStatesRepository,
+    ReportStatesDetailsRepository,
+} from '@cmz/report-states-domain';
+import {
+    ApproveReportStatesRepositoryImpl,
+    CloseReportStatesRepositoryImpl,
+    DownloadReportStatesRepositoryImpl,
+    EvaluateReportStatesRepositoryImpl,
+    RejectReportStatesRepositoryImpl,
+    ReportStatesDetailsRepositoryImpl,
+} from '@cmz/report-states-data';
 
-/**
- * Composition root du module `report-states` : bind le port domaine `ReportStatesRepository`
- * vers l'implémentation data `ReportStatesRepositoryImpl`.
- */
+/** Composition root du module `report-states`. */
 export function provideReportStates(): Provider[] {
     return [
         {
-            provide: ReportStatesRepository,
-            useClass: ReportStatesRepositoryImpl,
+            provide: ApproveReportStatesRepository,
+            useClass: ApproveReportStatesRepositoryImpl,
+        },
+        {
+            provide: EvaluateReportStatesRepository,
+            useClass: EvaluateReportStatesRepositoryImpl,
+        },
+        {
+            provide: CloseReportStatesRepository,
+            useClass: CloseReportStatesRepositoryImpl,
+        },
+        {
+            provide: RejectReportStatesRepository,
+            useClass: RejectReportStatesRepositoryImpl,
+        },
+        {
+            provide: DownloadReportStatesRepository,
+            useClass: DownloadReportStatesRepositoryImpl,
+        },
+        {
+            provide: ReportStatesDetailsRepository,
+            useClass: ReportStatesDetailsRepositoryImpl,
         },
     ];
 }

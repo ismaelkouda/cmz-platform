@@ -1,5 +1,5 @@
 {
-  "name": "interactive-map-application",
+  "name": "@cmz/interactive-map-application",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/interactive-map/application/src",
   "projectType": "library",

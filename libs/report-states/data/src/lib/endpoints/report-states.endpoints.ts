@@ -7,5 +7,9 @@ export const REPORT_STATES_ENDPOINTS = {
     CLOSE: 'finalizations',
     REJECT: 'requests/rejected',
     DOWNLOAD: 'exports',
+    APPROVE_EXPORT: 'requests/approved/export',
+    EVALUATE_EXPORT: 'finalizations/evaluated/export',
+    CLOSE_EXPORT: 'finalizations/export',
+    REJECT_EXPORT: 'requests/rejected/export',
     DETAILS_REPORT_STATES: 'requests',
 } as const;

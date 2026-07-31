@@ -1,0 +1,16 @@
+{
+  "name": "@cmz/requests-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/requests/ui/src",
+  "projectType": "library",
+  "tags": ["scope:requests", "type:ui"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/requests/ui/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

@@ -58,6 +58,11 @@ export class BrowserStorageAdapter implements StoragePort {
             .forEach((k) => localStorage.removeItem(k));
     }
 
+    clearAll(): void {
+        localStorage.clear();
+        sessionStorage.clear();
+    }
+
     // ---- Internals ----
     private serialize(value: unknown): string {
         return typeof value === 'string' ? value : JSON.stringify(value);

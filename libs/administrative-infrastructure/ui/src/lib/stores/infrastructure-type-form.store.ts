@@ -39,8 +39,14 @@ export class InfrastructureTypeFormStore {
     readonly form = form(this.model, (schema) => {
         required(schema.name, { message: 'COMMON.VALIDATION.REQUIRED' });
         required(schema.description, { message: 'COMMON.VALIDATION.REQUIRED' });
-        disabled(schema.name, () => this.isDetails());
-        disabled(schema.description, () => this.isDetails());
+
+        disabled(schema.name, {
+            when: () => this.isDetails(),
+        });
+
+        disabled(schema.description, {
+            when: () => this.isDetails(),
+        });
     });
 
     readonly isValid = computed(() => this.form().valid());

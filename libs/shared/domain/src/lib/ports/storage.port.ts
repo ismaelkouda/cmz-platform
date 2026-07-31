@@ -18,4 +18,7 @@ export abstract class StoragePort {
     abstract removeKeysWithPrefix(prefix: string): Promise<void>;
 
     abstract clearEncrypted(): Promise<void>;
+
+    /** Purge totale du stockage local (session incluse). */
+    abstract clearAll(): void;
 }

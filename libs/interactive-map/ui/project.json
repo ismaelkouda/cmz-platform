@@ -1,5 +1,5 @@
 {
-  "name": "interactive-map-ui",
+  "name": "@cmz/interactive-map-ui",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/interactive-map/ui/src",
   "projectType": "library",

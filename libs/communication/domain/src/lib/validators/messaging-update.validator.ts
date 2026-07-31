@@ -1,9 +1,10 @@
-import { GenericRequiredError, TypeRequiredError } from '@cmz/shared-domain';
+import { GenericRequiredError } from '@cmz/shared-domain';
 import { MessagingUpdateContract } from '../contracts/messaging-update.contract';
 import { MessagingUpdateValidateContract } from '../contracts/messaging-update.validate-contract';
 import { MessagingChannel } from '../enums/messaging-channel.enum';
 import { MessagingTarget } from '../enums/messaging-target.enum';
 import { MessagingSmsContentTooLongError } from '../errors/messaging-sms-content-too-long.error';
+import { TypeRequiredError } from '../errors/type-required.error';
 
 const SMS_MAX_LENGTH = 160;
 

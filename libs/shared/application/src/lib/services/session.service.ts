@@ -1,16 +1,15 @@
 import { Service, inject } from '@angular/core';
-import { AuthToken, CurrentUser, StoragePort } from '@cmz/shared-domain';
+import {
+    AuthToken,
+    CurrentUser,
+    NavigationPort,
+    StoragePort,
+} from '@cmz/shared-domain';
 
-/**
- * Écriture/effacement de la session — port symétrique. `save()` complète
- * `clear()` (posé en Phase 05, consommé par `UiFeedbackService` sur
- * `UnauthorizedError`) : seul `login` l'appelle, sur succès. Mêmes clés que
- * `clear()` efface et que `PermissionActionsService` lit déjà
- * (`permissionsActions`) — pas de nouvelle convention de clé introduite.
- */
 @Service()
 export class SessionService {
     private readonly storage = inject(StoragePort);
+    private readonly navigation = inject(NavigationPort);
 
     async save(user: CurrentUser, token: AuthToken): Promise<void> {
         await this.storage.saveEncrypted('user_data', user);
@@ -20,11 +19,7 @@ export class SessionService {
     }
 
     async clear(): Promise<void> {
-        await this.storage.removeKeysWithPrefix('token_data');
-        await this.storage.removeKeysWithPrefix('user_data');
-        await this.storage.clearEncrypted();
-        localStorage.clear();
-        sessionStorage.clear();
-        globalThis.location.reload();
+        this.storage.clearAll();
+        this.navigation.reload();
     }
 }

@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ResourceFacade } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
@@ -8,7 +8,7 @@ import {
 } from '@cmz/reporting-domain';
 import { ReportingUseCase } from '../use-cases/reporting.use-case';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ReportByOperatorFacade extends ResourceFacade<
     GrafanaDashboardEntity,
     FetchOptions

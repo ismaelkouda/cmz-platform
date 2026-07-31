@@ -1,0 +1,258 @@
+{
+  "$schema": "./workflow-action.pattern.schema.json",
+  "pattern": "workflow-action",
+  "version": 0,
+  "lineage": "Enterprise OOP (Angular + DDD/CQRS) — famille workflow : files d'attente, tâches agent, vue consolidée, détail signalement, mutations take/treat, actions CRUD",
+  "description": "Module opérationnel de traitement de signalements. Chaque VOLET (queues, tasks, all) possède une chaîne liste complète (entity, filter, repository, use-case, presenter, filter-store). Sous-graphes transverses : DETAILS (take/treat) et TASKS-ACTIONS (CRUD actions sur une tâche). Ni crud-entity pur (pas de create/update/delete sur l'entité liste) ni action-request pur (lectures paginées + filtres + workflow multi-étapes).",
+  "validated_on": ["processing", "requests"],
+  "reference_module": "processing",
+  "reference_implementation": {
+    "legacy_path": "src/presentation/pages/processing",
+    "nx_path": "libs/processing",
+    "description": "Module de référence workflow-action — corpus/processing.pairs.jsonl"
+  },
+  "second_validation": {
+    "module": "requests",
+    "legacy_path": "src/presentation/pages/requests",
+    "nx_path": "libs/requests",
+    "corpus": "corpus/requests.pairs.jsonl",
+    "corpus_pairs": 157,
+    "corpus_chains": 8,
+    "pattern_schema_unchanged": true,
+    "validated_at": "2026-07-31",
+    "enriched_chains": [
+      "requests.export.list",
+      "requests.details.permissions",
+      "requests.details.qualification"
+    ]
+  },
+  "limite_methodologique_independance": "Rule 0 satisfaite (processing 113 paires + requests 157 paires, 100 % corpus verified). Requests enrichi export/permissions/qualification (2026-07-31). Audit référence processing details NON terminé (A-2026-07-30-12).",
+  "subgraphs": {
+    "list_volet": {
+      "description": "Slice paginée par volet — répété pour queues, tasks, all",
+      "placeholder": "{VOLET}",
+      "volets": ["queues", "tasks", "all"]
+    },
+    "list_export": {
+      "description": "Export Excel — capacité métier distincte (filtres/RBAC, sans page UI)",
+      "placeholder": "export",
+      "requests_only": true
+    },
+    "details": {
+      "description": "Fiche signalement + take/treat — transversal aux volets liste",
+      "placeholder": "details"
+    },
+    "details_permissions": {
+      "description": "RBAC + permissions edge cases (take/qualify/reject/export)",
+      "placeholder": "permissions",
+      "requests_only": true
+    },
+    "details_qualification": {
+      "description": "Qualification approve/reject — approvalType edit|callback",
+      "placeholder": "qualification",
+      "requests_only": true
+    },
+    "tasks_actions": {
+      "description": "CRUD actions de traitement — sous-route tasks/actions uniquement",
+      "placeholder": "tasks-actions",
+      "presentation_alias": "actions-treatment"
+    }
+  },
+  "chains": {
+    "processing.queues.list": {
+      "module": "processing",
+      "volet": "queues",
+      "subgraph": "list_volet",
+      "description": "Bac à pioche — signalements en attente"
+    },
+    "processing.tasks.list": {
+      "module": "processing",
+      "volet": "tasks",
+      "subgraph": "list_volet",
+      "description": "Mes tâches — prises en charge agent"
+    },
+    "processing.all.list": {
+      "module": "processing",
+      "volet": "all",
+      "subgraph": "list_volet",
+      "description": "Tous les traitements — vue consolidée"
+    },
+    "processing.details": {
+      "module": "processing",
+      "subgraph": "details",
+      "description": "Détail signalement + mutations take/treat"
+    },
+    "processing.tasks.actions": {
+      "module": "processing",
+      "subgraph": "tasks_actions",
+      "description": "CRUD actions de traitement"
+    },
+    "processing.module.shell": {
+      "module": "processing",
+      "description": "Routes, endpoints, composition root"
+    },
+    "requests.queues.list": {
+      "module": "requests",
+      "volet": "queues",
+      "subgraph": "list_volet",
+      "description": "Files d'attente — demandes à qualifier"
+    },
+    "requests.tasks.list": {
+      "module": "requests",
+      "volet": "tasks",
+      "subgraph": "list_volet",
+      "description": "Paniers de tâches — demandes prises en charge"
+    },
+    "requests.all.list": {
+      "module": "requests",
+      "volet": "all",
+      "subgraph": "list_volet",
+      "description": "Demandes qualifiées — vue consolidée"
+    },
+    "requests.details": {
+      "module": "requests",
+      "subgraph": "details",
+      "description": "Fiche demande + take/approve/reject — dialog qualification Nx"
+    },
+    "requests.export.list": {
+      "module": "requests",
+      "subgraph": "list_export",
+      "description": "Export Excel — legacy page courante → GET …/export + ExcelExportPort"
+    },
+    "requests.details.permissions": {
+      "module": "requests",
+      "subgraph": "details_permissions",
+      "description": "RBAC + permissions take/qualify/reject/export"
+    },
+    "requests.details.qualification": {
+      "module": "requests",
+      "subgraph": "details_qualification",
+      "description": "Qualification approve/reject — approvalType edit|callback"
+    },
+    "requests.module.shell": {
+      "module": "requests",
+      "description": "Routes, endpoints, composition root"
+    }
+  },
+  "list_volet_core_files_legacy": [
+    "domain/entities/{VOLET}/{VOLET}.entity.ts",
+    "domain/entities/{VOLET}/{VOLET}-filter.entity.ts",
+    "domain/interfaces/{VOLET}/{VOLET}-props.interface.ts",
+    "domain/interfaces/{VOLET}/{VOLET}-filter-props.interface.ts",
+    "domain/value-objects/{VOLET}/{VOLET}-filter.vo.ts",
+    "domain/repositories/{VOLET}/{VOLET}.repository.ts",
+    "application/dto/{VOLET}/{VOLET}-filter.dto.ts",
+    "application/use-cases/{VOLET}/{VOLET}.use-case.ts",
+    "application/services/{VOLET}/{VOLET}.facade.ts",
+    "application/queries/{VOLET}/{VOLET}.query.ts",
+    "application/queries-mappers/{VOLET}/{VOLET}.mapper.ts",
+    "application/queries-handlers/{VOLET}/{VOLET}.handler.ts",
+    "application/queries-bus/{VOLET}/{VOLET}.bus.ts",
+    "infrastructure/api/dto/{VOLET}/{VOLET}-response-api.dto.ts",
+    "infrastructure/api/dto/{VOLET}/{VOLET}-filter-api.dto.ts",
+    "infrastructure/data/sources/{VOLET}/{VOLET}.api.ts",
+    "infrastructure/data/repositories/{VOLET}/{VOLET}.repository.impl.ts",
+    "infrastructure/data/mappers/{VOLET}/{VOLET}.mapper.ts",
+    "infrastructure/data/mappers/{VOLET}/{VOLET}-filter.mapper.ts",
+    "presentation/features/{VOLET}/{VOLET}.component.ts",
+    "presentation/adapters/{VOLET}/{VOLET}-vm.presenter.ts",
+    "presentation/adapters/{VOLET}/{VOLET}-vm-props.interface.ts",
+    "presentation/adapters/{VOLET}/{VOLET}-table.constant.ts",
+    "presentation/store/{VOLET}/{VOLET}-filter.store.ts",
+    "di/{VOLET}/{VOLET}.providers.ts"
+  ],
+  "list_volet_core_files_nx": [
+    "libs/{MODULE}/domain/src/lib/props/{volet}-{module}.props.ts",
+    "libs/{MODULE}/domain/src/lib/entities/{volet}-{module}.entity.ts",
+    "libs/{MODULE}/domain/src/lib/contracts/{volet}-{module}-filter.contract.ts",
+    "libs/{MODULE}/domain/src/lib/entities/{volet}-{module}-filter.entity.ts",
+    "libs/{MODULE}/domain/src/lib/value-objects/{volet}-{module}-filter.vo.ts",
+    "libs/{MODULE}/domain/src/lib/validators/{volet}-{module}-filter.validator.ts",
+    "libs/{MODULE}/domain/src/lib/repositories/{volet}-{module}.repository.ts",
+    "libs/{MODULE}/data/src/lib/dtos/{volet}-{module}-response-api.dto.ts",
+    "libs/{MODULE}/data/src/lib/dtos/{volet}-{module}-filter-api.dto.ts",
+    "libs/{MODULE}/data/src/lib/mappers/{volet}-{module}-item.mapper.ts",
+    "libs/{MODULE}/data/src/lib/mappers/{volet}-{module}-filter.mapper.ts",
+    "libs/{MODULE}/data/src/lib/sources/{volet}-{module}.api.ts",
+    "libs/{MODULE}/data/src/lib/repositories/{volet}-{module}.repository.impl.ts",
+    "libs/{MODULE}/application/src/lib/use-cases/{volet}-{module}.use-case.ts",
+    "libs/{MODULE}/application/src/lib/facades/{volet}-{module}.facade.ts",
+    "libs/{MODULE}/ui/src/lib/features/{volet}-{module}-page.component.ts",
+    "libs/{MODULE}/ui/src/lib/adapters/{volet}-{module}-vm.presenter.ts",
+    "libs/{MODULE}/ui/src/lib/adapters/{volet}-{module}-vm-props.interface.ts",
+    "libs/{MODULE}/ui/src/lib/constants/{volet}-{module}-table.constant.ts",
+    "libs/{MODULE}/ui/src/lib/constants/{volet}-{module}-filter-keys.constant.ts",
+    "libs/{MODULE}/ui/src/lib/stores/{volet}-{module}-filter.store.ts",
+    "libs/{MODULE}/ui/src/lib/utils/{module}-filter-wire.util.ts",
+    "apps/backoffice-angular/src/app/providers/{module}.providers.ts"
+  ],
+  "nx_mapping": {
+    "module_placeholder": "{MODULE}",
+    "volet_placeholder": "{VOLET}",
+    "volet_kebab": "{volet}",
+    "naming": {
+      "entity_class": "{VoletPascal}{ModulePascal}Entity",
+      "props_interface": "{VoletPascal}{ModulePascal}Props",
+      "filter_entity_fn": "{volet}{ModulePascal}FilterEntity",
+      "use_case_class": "{VoletPascal}{ModulePascal}UseCase",
+      "facade_class": "{VoletPascal}{ModulePascal}Facade",
+      "repository_port": "{VoletPascal}{ModulePascal}Repository",
+      "repository_impl": "{VoletPascal}{ModulePascal}RepositoryImpl"
+    },
+    "layer_map": {
+      "domain": "libs/{MODULE}/domain/src/lib",
+      "infrastructure": "libs/{MODULE}/data/src/lib",
+      "application": "libs/{MODULE}/application/src/lib",
+      "presentation": "libs/{MODULE}/ui/src/lib",
+      "di": "apps/backoffice-angular/src/app/providers"
+    },
+    "legacy_layers_dropped_in_nx": [
+      "application/queries-bus/{VOLET}/{VOLET}.bus.ts",
+      "application/queries-handlers/{VOLET}/{VOLET}.handler.ts",
+      "application/queries/{VOLET}/{VOLET}.query.ts",
+      "application/queries-mappers/{VOLET}/{VOLET}.mapper.ts"
+    ],
+    "legacy_layers_dropped_rationale": "A-2026-07-30-05 — use-case direct remplace CQRS ceremony pour listes workflow en cible Nx"
+  },
+  "module_shell_files": {
+    "legacy": [
+      "processing.routes.ts",
+      "di/processing.providers.ts",
+      "infrastructure/api/processing.endpoints.ts"
+    ],
+    "nx": [
+      "libs/processing/ui/src/lib/features/processing.routes.ts",
+      "apps/backoffice-angular/src/app/providers/processing.providers.ts",
+      "libs/processing/data/src/lib/endpoints/processing.endpoints.ts"
+    ]
+  },
+  "differences_vs_crud_entity": {
+    "pas_de_crud_entite_liste": "L'entité liste est en lecture seule — pas de create/update/delete/enable/disable sur {VOLET}Entity",
+    "multi_volet": "Trois volets (queues/tasks/all) partagent la forme mais pas les ports ni filtres",
+    "workflow_mutations": "take/treat/details et tasks-actions sont des sous-graphes séparés, pas des verbes CRUD sur l'entité liste",
+    "ui_action_column": "Colonne __action (bouton unique take/treat/view) — pas __actionDropdown CRUD"
+  },
+  "differences_vs_action_request": {
+    "lectures_paginees": "Chaque volet expose execute(filter, page) → PageResult — action-request n'a pas de liste",
+    "filtres_riches": "FilterEntity + DatePeriod + operators[] — action-request n'a qu'un Contract unique"
+  },
+  "design_decisions_v0": {
+    "contexte": "Première formalisation workflow-action pour corpus Méthode 2 — monorepo cmz-platform, module processing.",
+    "reference_module": "processing choisi car le plus riche (211 fichiers, details + tasks-actions + 3 volets)",
+    "corpus_first": "Priorité infra SEOS (pattern + manifest) avant complétion UI/workflow — objectif = paires annotées oracle-verte, pas déploiement prod",
+    "oracle_minimum": [
+      "tsc --noEmit",
+      "eslint --max-warnings=0",
+      "nx test (module)",
+      "emit-pairs --verify"
+    ]
+  },
+  "core_files_count_estimate": {
+    "list_volet_per_volet_legacy": 25,
+    "list_volet_per_volet_nx": 18,
+    "module_shell": 3,
+    "details_subgraph_legacy": "~45",
+    "tasks_actions_subgraph_legacy": "~55",
+    "note": "Comptes indicatifs — source de vérité = corpus/processing.pairs.jsonl émis par tools/corpus/emit-pairs.mjs"
+  }
+}
