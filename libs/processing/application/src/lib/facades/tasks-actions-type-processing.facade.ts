@@ -3,28 +3,28 @@ import { ResourceFacade } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
 import { Observable } from 'rxjs';
 import {
-    TasksActionsTypeEntity,
-    TasksActionsTypeFilterContract,
+    TasksActionsTypeProcessingEntity,
+    TasksActionsTypeProcessingFilterContract,
 } from '@cmz/processing-domain';
-import { TasksActionsTypeUseCase } from '../use-cases/tasks-actions-type.use-case';
+import { TasksActionsTypeProcessingUseCase } from '../use-cases/tasks-actions-type-processing.use-case';
 
 interface TasksActionsTypeParams {
-    filter: TasksActionsTypeFilterContract;
+    filter: TasksActionsTypeProcessingFilterContract;
     options?: FetchOptions;
 }
 
 @Service()
-export class TasksActionsTypeFacade extends ResourceFacade<
-    TasksActionsTypeEntity[],
+export class TasksActionsTypeProcessingFacade extends ResourceFacade<
+    TasksActionsTypeProcessingEntity[],
     TasksActionsTypeParams
 > {
-    private readonly useCase = inject(TasksActionsTypeUseCase);
+    private readonly useCase = inject(TasksActionsTypeProcessingUseCase);
 
     readonly options = computed(() => this.value() ?? []);
 
     protected stream(
         params: TasksActionsTypeParams
-    ): Observable<TasksActionsTypeEntity[]> {
+    ): Observable<TasksActionsTypeProcessingEntity[]> {
         return this.useCase.readAll(params.filter, params.options);
     }
 

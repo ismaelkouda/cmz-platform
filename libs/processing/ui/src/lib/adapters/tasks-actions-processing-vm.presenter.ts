@@ -1,4 +1,4 @@
-import { TasksActionsEntity } from '@cmz/processing-domain';
+import { TasksActionsProcessingEntity } from '@cmz/processing-domain';
 import { TELECOM_OPERATOR_LABEL } from '@cmz/shared-ui';
 import { TasksActionsProcessingVmProps } from './tasks-actions-processing-vm-props.interface';
 
@@ -8,7 +8,7 @@ export class TasksActionsProcessingPresenter {
     constructor(private readonly t: (key: string) => string) {}
 
     map(
-        item: TasksActionsEntity,
+        item: TasksActionsProcessingEntity,
         permission: {
             canTreat: boolean;
             isOpenForTreatment: boolean;

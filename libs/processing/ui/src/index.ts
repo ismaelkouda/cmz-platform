@@ -15,7 +15,7 @@ export * from './lib/constants/tasks-actions-processing-table.constant';
 export * from './lib/adapters/tasks-actions-processing-vm-props.interface';
 export * from './lib/adapters/tasks-actions-processing-vm.presenter';
 export * from './lib/features/processing-details-dialog.component';
-export * from './lib/features/tasks-actions-form-dialog.component';
+export * from './lib/features/tasks-actions-processing-form-dialog.component';
 export * from './lib/features/tasks-actions-processing-page.component';
 export * from './lib/features/all-processing-page.component';
 export * from './lib/features/processing.routes';

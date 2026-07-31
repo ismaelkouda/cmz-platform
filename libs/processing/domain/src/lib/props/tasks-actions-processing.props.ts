@@ -1,7 +1,7 @@
 import { TelecomOperator } from '@cmz/shared-domain';
-import { TasksActionsConformity } from '../enums/tasks-actions-conformity.enum';
+import { TasksActionsProcessingConformity } from '../enums/tasks-actions-processing-conformity.enum';
 
-export interface TasksActionsProps {
+export interface TasksActionsProcessingProps {
     uniqId: string;
     date: Date;
     type: string;
@@ -10,7 +10,7 @@ export interface TasksActionsProps {
     description: string;
     shouldNotifyUser: boolean;
     autoChecked: boolean;
-    isConform: TasksActionsConformity;
+    isConform: TasksActionsProcessingConformity;
     createdBy: string;
     updatedBy: string;
     createdAt: string;

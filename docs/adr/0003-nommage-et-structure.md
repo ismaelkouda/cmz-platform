@@ -215,17 +215,10 @@ commit, les trois mises à jour suivantes :
    déclaré dans `workspaces.packages` ; vérifier que le glob couvre bien le
    nouveau chemin.
 
-**Modules attendus** pour lesquels ces trois mises à jour sont **encore
-manquantes** au 2026-07-29 :
-
-| Module         | `eslint.config.mjs` | `tsconfig.base.json` |
-| -------------- | :-----------------: | :------------------: |
-| `processing`   |         ❌          |          ❌          |
-| `requests`     |         ❌          |          ❌          |
-| `finalization` |         ❌          |          ❌          |
-
-Ces modules existent dans `libs/` mais leurs scopes ne sont pas encore enforced.
-Corriger avant tout travail de code dans ces modules.
+**Modules `processing`, `requests`, `finalization`, `report-states`** — scopes
+`eslint.config.mjs` + chemins `tsconfig.base.json` **✅ corrigés 2026-07-30+**.
+Vérifier le même triplet (eslint + tsconfig + workspaces) pour tout **nouveau**
+module avant travail de code.
 
 ## Références
 

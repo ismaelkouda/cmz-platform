@@ -1,8 +1,9 @@
 # Module `finalization` — IR, contrats, oracle & corpus
 
 - **Dernière mise à jour :** 2026-07-31
-- **Statut :** **tranche A clôturée** — build ✅ · test ✅ · eslint ✅ · corpus
-  6/6 tranche-closed ✅
+- **Statut :** **✅ module clôturé (IR)** — oracle Tier 1 + corpus 100 % ; audit
+  Meta signé
+  ([`finalization-meta-verification.md`](./audits/finalization-meta-verification.md))
 - **Archétype :**
   [`workflow-action` v0](./patterns/workflow-action.pattern.json) — promu depuis
   `requests`

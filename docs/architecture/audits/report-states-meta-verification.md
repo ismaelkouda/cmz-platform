@@ -11,20 +11,20 @@
 
 ## Scorecard final
 
-| #   | Critère Meta                                                           | Résultat                           |
-| --- | ---------------------------------------------------------------------- | ---------------------------------- |
-| 1   | DTO filtre sortant = primitives wire                                   | ✅                                 |
-| 2   | Pipeline filtre contract → vo → entity → repo → mapper                 | ✅                                 |
-| 3   | Application `defer()`, sans CQRS bus/handler                           | ✅                                 |
-| 4   | UI projection wire via `report-states-filter-wire.util.ts`             | ✅                                 |
-| 5   | Isolation cross-module (0 import inter-domaine)                        | ✅                                 |
-| 6   | VO vs filterEntity (`endDate` dans entity)                             | ✅                                 |
-| 7   | Pattern action `__action` (workflow-action)                            | ✅                                 |
-| 8   | `Repository.export` sur les 4 ports liste exportables                  | ✅ (approve/evaluate/close/reject) |
-| 9   | Contrats mutation distincts (take/approve/reject — pattern `requests`) | ✅                                 |
-| 10  | i18n `REPORT_STATES.*` (+ export tooltips)                             | ✅                                 |
-| 11  | `provideReportStates()` + guard RBAC                                   | ✅                                 |
-| 12  | Corpus 100 % applicable (`verified` / `n/a`)                           | ✅ 187 paires, 8 chaînes           |
+| #   | Critère Meta                                                           | Résultat                                                                                                                                 |
+| --- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | DTO filtre sortant = primitives wire                                   | ✅                                                                                                                                       |
+| 2   | Pipeline filtre contract → vo → entity → repo → mapper                 | ✅                                                                                                                                       |
+| 3   | Application `defer()`, sans CQRS bus/handler                           | ✅                                                                                                                                       |
+| 4   | UI projection wire via `report-states-filter-wire.util.ts`             | ✅                                                                                                                                       |
+| 5   | Isolation cross-module (0 import inter-domaine)                        | ✅                                                                                                                                       |
+| 6   | VO vs filterEntity (`endDate` dans entity)                             | ✅                                                                                                                                       |
+| 7   | Pattern action `__action` (workflow-action)                            | ✅                                                                                                                                       |
+| 8   | `Repository.export` sur les 4 ports liste exportables                  | ✅ (approve/evaluate/close/reject — **export Excel ×4**) ; volet `download` = centre de fichiers Shapefile, **sans** `Repository.export` |
+| 9   | Contrats mutation distincts (take/approve/reject — pattern `requests`) | ✅                                                                                                                                       |
+| 10  | i18n `REPORT_STATES.*` (+ export tooltips)                             | ✅                                                                                                                                       |
+| 11  | `provideReportStates()` + guard RBAC                                   | ✅                                                                                                                                       |
+| 12  | Corpus 100 % applicable (`verified` / `n/a`)                           | ✅ 187 paires, 8 chaînes                                                                                                                 |
 
 **Verdict Meta : ✅ conforme — module clôturé IR**
 

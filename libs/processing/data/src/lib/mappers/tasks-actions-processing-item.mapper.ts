@@ -1,25 +1,30 @@
 import { inject, Service } from '@angular/core';
 import { MapperUtils, PaginatedMapper } from '@cmz/shared-data';
 import { TelecomOperatorMapper } from '@cmz/shared-data';
-import { TasksActionsEntity } from '@cmz/processing-domain';
-import type { TasksActionsProps } from '@cmz/processing-domain';
-import { TasksActionsItemApiDto } from '../dtos/tasks-actions-api.dto';
-import { TasksActionsConformityMapper } from './tasks-actions-conformity.mapper';
+import { TasksActionsProcessingEntity } from '@cmz/processing-domain';
+import type { TasksActionsProcessingProps } from '@cmz/processing-domain';
+import { TasksActionsItemApiDto } from '../dtos/tasks-actions-processing-api.dto';
+import { TasksActionsProcessingConformityMapper } from './tasks-actions-processing-conformity.mapper';
 
 @Service()
-export class TasksActionsItemMapper extends PaginatedMapper<
-    TasksActionsEntity,
+export class TasksActionsProcessingItemMapper extends PaginatedMapper<
+    TasksActionsProcessingEntity,
     TasksActionsItemApiDto
 > {
     private readonly telecomOperatorMapper = inject(TelecomOperatorMapper);
-    private readonly conformityMapper = inject(TasksActionsConformityMapper);
-    private readonly entityCache = new Map<string, TasksActionsEntity>();
+    private readonly conformityMapper = inject(
+        TasksActionsProcessingConformityMapper
+    );
+    private readonly entityCache = new Map<
+        string,
+        TasksActionsProcessingEntity
+    >();
 
     protected override mapItemFromDto(
         dto: TasksActionsItemApiDto
-    ): TasksActionsEntity {
+    ): TasksActionsProcessingEntity {
         MapperUtils.validateDto(dto, { required: ['id'] });
-        const props: TasksActionsProps = {
+        const props: TasksActionsProcessingProps = {
             uniqId: dto.id,
             date: dto.date ? new Date(dto.date) : new Date(),
             type: dto.type,
@@ -38,7 +43,7 @@ export class TasksActionsItemMapper extends PaginatedMapper<
         const cached = this.entityCache.get(cacheKey);
         const entity = cached
             ? cached.with(props)
-            : new TasksActionsEntity(props);
+            : new TasksActionsProcessingEntity(props);
         this.entityCache.set(cacheKey, entity);
         return entity;
     }

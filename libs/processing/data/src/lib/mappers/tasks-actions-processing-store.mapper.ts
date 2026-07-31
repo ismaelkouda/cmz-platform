@@ -1,16 +1,17 @@
 import {
-    TasksActionsCreateValidateContract,
-    TasksActionsUpdateValidateContract,
+    TasksActionsProcessingCreateValidateContract,
+    TasksActionsProcessingUpdateValidateContract,
 } from '@cmz/processing-domain';
-import { TasksActionsStoreApiDto } from '../dtos/tasks-actions-api.dto';
-import { TasksActionsConformityMapper } from './tasks-actions-conformity.mapper';
+import { TasksActionsStoreApiDto } from '../dtos/tasks-actions-processing-api.dto';
+import { TasksActionsProcessingConformityMapper } from './tasks-actions-processing-conformity.mapper';
 
 type StoreProps =
-    TasksActionsCreateValidateContract | TasksActionsUpdateValidateContract;
+    | TasksActionsProcessingCreateValidateContract
+    | TasksActionsProcessingUpdateValidateContract;
 
 export function mapTasksActionsStoreDto(
     props: StoreProps,
-    conformityMapper: TasksActionsConformityMapper
+    conformityMapper: TasksActionsProcessingConformityMapper
 ): TasksActionsStoreApiDto {
     return {
         report_uniq_id: props.reportUniqId,

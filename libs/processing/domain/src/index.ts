@@ -51,31 +51,31 @@ export { queuesProcessingFilterEntity } from './lib/entities/queues-processing-f
 export { tasksProcessingFilterEntity } from './lib/entities/tasks-processing-filter.entity';
 export { allProcessingFilterEntity } from './lib/entities/all-processing-filter.entity';
 export {
-    TasksActionsConformity,
-    TasksActionsConformityStyle,
-} from './lib/enums/tasks-actions-conformity.enum';
-export { TasksActionsEntity } from './lib/entities/tasks-actions.entity';
-export { TasksActionsTypeEntity } from './lib/entities/tasks-actions-type.entity';
-export type { TasksActionsProps } from './lib/props/tasks-actions.props';
-export type { TasksActionsTypeProps } from './lib/props/tasks-actions-type.props';
+    TasksActionsProcessingConformity,
+    TasksActionsProcessingConformityStyle,
+} from './lib/enums/tasks-actions-processing-conformity.enum';
+export { TasksActionsProcessingEntity } from './lib/entities/tasks-actions-processing.entity';
+export { TasksActionsTypeProcessingEntity } from './lib/entities/tasks-actions-type-processing.entity';
+export type { TasksActionsProcessingProps } from './lib/props/tasks-actions-processing.props';
+export type { TasksActionsTypeProcessingProps } from './lib/props/tasks-actions-type-processing.props';
 export type {
-    TasksActionsCreateContract,
-    TasksActionsCreateValidateContract,
-    TasksActionsDeleteContract,
-    TasksActionsDeleteValidateContract,
-    TasksActionsFilterContract,
-    TasksActionsFilterValidateContract,
-    TasksActionsTypeFilterContract,
-    TasksActionsTypeFilterValidateContract,
-    TasksActionsUpdateContract,
-    TasksActionsUpdateValidateContract,
-} from './lib/contracts/tasks-actions.contract';
-export { TasksActionsRepository } from './lib/repositories/tasks-actions.repository';
-export { TasksActionsTypeRepository } from './lib/repositories/tasks-actions-type.repository';
+    TasksActionsProcessingCreateContract,
+    TasksActionsProcessingCreateValidateContract,
+    TasksActionsProcessingDeleteContract,
+    TasksActionsProcessingDeleteValidateContract,
+    TasksActionsProcessingFilterContract,
+    TasksActionsProcessingFilterValidateContract,
+    TasksActionsTypeProcessingFilterContract,
+    TasksActionsTypeProcessingFilterValidateContract,
+    TasksActionsProcessingUpdateContract,
+    TasksActionsProcessingUpdateValidateContract,
+} from './lib/contracts/tasks-actions-processing.contract';
+export { TasksActionsProcessingRepository } from './lib/repositories/tasks-actions-processing.repository';
+export { TasksActionsTypeProcessingRepository } from './lib/repositories/tasks-actions-type-processing.repository';
 export {
-    tasksActionsCreateVo,
-    tasksActionsDeleteVo,
-    tasksActionsFilterVo,
-    tasksActionsTypeFilterVo,
-    tasksActionsUpdateVo,
-} from './lib/value-objects/tasks-actions.vo';
+    tasksActionsProcessingCreateVo,
+    tasksActionsProcessingDeleteVo,
+    tasksActionsProcessingFilterVo,
+    tasksActionsTypeProcessingFilterVo,
+    tasksActionsProcessingUpdateVo,
+} from './lib/value-objects/tasks-actions-processing.vo';

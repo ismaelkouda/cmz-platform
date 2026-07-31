@@ -1521,7 +1521,7 @@ export const NODE_MAPPINGS = {
                 'domain/interfaces/tasks/tasks-actions/tasks-actions-props.interface.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/props/tasks-actions.props.ts`,
+            `libs/${module}/domain/src/lib/props/tasks-actions-processing.props.ts`,
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -1529,7 +1529,7 @@ export const NODE_MAPPINGS = {
         legacy: ({ module }) =>
             legacyPage(module, 'domain/entities/tasks/tasks-actions.entity.ts'),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/tasks-actions.entity.ts`,
+            `libs/${module}/domain/src/lib/entities/tasks-actions-processing.entity.ts`,
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -1540,7 +1540,7 @@ export const NODE_MAPPINGS = {
                 'domain/contracts/tasks/tasks-actions-create.contract.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/contracts/tasks-actions.contract.ts`,
+            `libs/${module}/domain/src/lib/contracts/tasks-actions-processing.contract.ts`,
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
         notes: 'Contrats CRUD unifiés (create/update/delete/filter)',
@@ -1552,7 +1552,7 @@ export const NODE_MAPPINGS = {
                 'domain/value-objects/tasks/tasks-actions-filter.vo.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/value-objects/tasks-actions.vo.ts`,
+            `libs/${module}/domain/src/lib/value-objects/tasks-actions-processing.vo.ts`,
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build', '@cmz/processing-domain:test'],
     },
@@ -1563,7 +1563,7 @@ export const NODE_MAPPINGS = {
                 'domain/validators/tasks/tasks-actions-create.validator.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/validators/tasks-actions.validator.ts`,
+            `libs/${module}/domain/src/lib/validators/tasks-actions-processing.validator.ts`,
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -1574,7 +1574,7 @@ export const NODE_MAPPINGS = {
                 'domain/enums/tasks/tasks-actions-conformity.enum.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/enums/tasks-actions-conformity.enum.ts`,
+            `libs/${module}/domain/src/lib/enums/tasks-actions-processing-conformity.enum.ts`,
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -1585,7 +1585,7 @@ export const NODE_MAPPINGS = {
                 'domain/repositories/tasks/tasks-actions.repository.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/repositories/tasks-actions.repository.ts`,
+            `libs/${module}/domain/src/lib/repositories/tasks-actions-processing.repository.ts`,
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -1596,7 +1596,7 @@ export const NODE_MAPPINGS = {
                 'infrastructure/api/dto/tasks/tasks-actions-response-api.dto.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/data/src/lib/dtos/tasks-actions-api.dto.ts`,
+            `libs/${module}/data/src/lib/dtos/tasks-actions-processing-api.dto.ts`,
         layer: 'data',
         oracle: ['@cmz/processing-data:build'],
     },
@@ -1607,7 +1607,7 @@ export const NODE_MAPPINGS = {
                 'infrastructure/data/mappers/tasks/tasks-actions.mapper.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/data/src/lib/mappers/tasks-actions-item.mapper.ts`,
+            `libs/${module}/data/src/lib/mappers/tasks-actions-processing-item.mapper.ts`,
         layer: 'data',
         oracle: ['@cmz/processing-data:build'],
     },
@@ -1618,7 +1618,7 @@ export const NODE_MAPPINGS = {
                 'infrastructure/data/mappers/tasks/tasks-actions-filter.mapper.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/data/src/lib/mappers/tasks-actions-filter.mapper.ts`,
+            `libs/${module}/data/src/lib/mappers/tasks-actions-processing-filter.mapper.ts`,
         layer: 'data',
         oracle: ['@cmz/processing-data:build'],
     },
@@ -1629,7 +1629,7 @@ export const NODE_MAPPINGS = {
                 'infrastructure/data/mappers/tasks/tasks-actions-create.mapper.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/data/src/lib/mappers/tasks-actions-mutation.mapper.ts`,
+            `libs/${module}/data/src/lib/mappers/tasks-actions-processing-mutation.mapper.ts`,
         layer: 'data',
         oracle: ['@cmz/processing-data:build'],
         notes: 'Create/update unifiés (legacy create + update mappers)',
@@ -1641,7 +1641,7 @@ export const NODE_MAPPINGS = {
                 'infrastructure/data/mappers/tasks/tasks-actions-conformity.mapper.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/data/src/lib/mappers/tasks-actions-conformity.mapper.ts`,
+            `libs/${module}/data/src/lib/mappers/tasks-actions-processing-conformity.mapper.ts`,
         layer: 'data',
         oracle: ['@cmz/processing-data:build'],
     },
@@ -1652,7 +1652,7 @@ export const NODE_MAPPINGS = {
                 'infrastructure/data/mappers/tasks/tasks-actions-store.mapper.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/data/src/lib/mappers/tasks-actions-store.mapper.ts`,
+            `libs/${module}/data/src/lib/mappers/tasks-actions-processing-store.mapper.ts`,
         layer: 'data',
         oracle: ['@cmz/processing-data:build'],
     },
@@ -1663,7 +1663,7 @@ export const NODE_MAPPINGS = {
                 'infrastructure/data/sources/tasks/tasks-actions.api.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/data/src/lib/sources/tasks-actions.api.ts`,
+            `libs/${module}/data/src/lib/sources/tasks-actions-processing.api.ts`,
         layer: 'data',
         oracle: ['@cmz/processing-data:build'],
     },
@@ -1674,7 +1674,7 @@ export const NODE_MAPPINGS = {
                 'infrastructure/data/repositories/tasks/tasks-actions.repository.impl.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/data/src/lib/repositories/tasks-actions.repository.impl.ts`,
+            `libs/${module}/data/src/lib/repositories/tasks-actions-processing.repository.impl.ts`,
         layer: 'data',
         oracle: ['@cmz/processing-data:build'],
     },
@@ -1685,7 +1685,7 @@ export const NODE_MAPPINGS = {
                 'application/use-cases/tasks/tasks-actions.use-case.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/application/src/lib/use-cases/tasks-actions.use-case.ts`,
+            `libs/${module}/application/src/lib/use-cases/tasks-actions-processing.use-case.ts`,
         layer: 'application',
         oracle: [
             '@cmz/processing-application:build',
@@ -1699,7 +1699,7 @@ export const NODE_MAPPINGS = {
                 'application/use-cases/tasks/tasks-actions.use-case.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/application/src/lib/use-cases/tasks-actions.use-case.spec.ts`,
+            `libs/${module}/application/src/lib/use-cases/tasks-actions-processing.use-case.spec.ts`,
         layer: 'application',
         oracle: ['@cmz/processing-application:test'],
     },
@@ -1710,7 +1710,7 @@ export const NODE_MAPPINGS = {
                 'application/services/tasks/tasks-actions.facade.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/application/src/lib/facades/tasks-actions.facade.ts`,
+            `libs/${module}/application/src/lib/facades/tasks-actions-processing.facade.ts`,
         layer: 'application',
         oracle: ['@cmz/processing-application:build'],
     },
@@ -1732,7 +1732,7 @@ export const NODE_MAPPINGS = {
                 'presentation/actions-treatment/actions-treatment.component.html'
             ),
         nx: ({ module }) =>
-            `libs/${module}/ui/src/lib/features/tasks-actions-form-dialog.component.ts`,
+            `libs/${module}/ui/src/lib/features/tasks-actions-processing-form-dialog.component.ts`,
         layer: 'ui',
         oracle: ['@cmz/processing-ui:build'],
         notes: 'Formulaire create/edit extrait en dialog standalone Nx',
@@ -1766,7 +1766,7 @@ export const NODE_MAPPINGS = {
                 'domain/entities/tasks/tasks-actions-type.entity.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/tasks-actions-type.entity.ts`,
+            `libs/${module}/domain/src/lib/entities/tasks-actions-type-processing.entity.ts`,
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -1777,7 +1777,7 @@ export const NODE_MAPPINGS = {
                 'domain/repositories/tasks/tasks-actions-type-repository.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/repositories/tasks-actions-type.repository.ts`,
+            `libs/${module}/domain/src/lib/repositories/tasks-actions-type-processing.repository.ts`,
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -1788,7 +1788,7 @@ export const NODE_MAPPINGS = {
                 'application/use-cases/tasks/tasks-actions-type.use-case.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/application/src/lib/use-cases/tasks-actions-type.use-case.ts`,
+            `libs/${module}/application/src/lib/use-cases/tasks-actions-type-processing.use-case.ts`,
         layer: 'application',
         oracle: ['@cmz/processing-application:build'],
     },
@@ -1799,7 +1799,7 @@ export const NODE_MAPPINGS = {
                 'application/services/tasks/tasks-actions-type.facade.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/application/src/lib/facades/tasks-actions-type.facade.ts`,
+            `libs/${module}/application/src/lib/facades/tasks-actions-type-processing.facade.ts`,
         layer: 'application',
         oracle: ['@cmz/processing-application:build'],
     },

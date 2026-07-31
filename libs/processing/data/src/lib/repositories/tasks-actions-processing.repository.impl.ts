@@ -3,37 +3,39 @@ import { map, Observable } from 'rxjs';
 import { MessageResultMapper } from '@cmz/shared-data';
 import { FetchOptions, MessageEntity, PageResult } from '@cmz/shared-domain';
 import {
-    TasksActionsCreateValidateContract,
-    TasksActionsDeleteValidateContract,
-    TasksActionsEntity,
-    TasksActionsFilterValidateContract,
-    TasksActionsRepository,
-    TasksActionsUpdateValidateContract,
+    TasksActionsProcessingCreateValidateContract,
+    TasksActionsProcessingDeleteValidateContract,
+    TasksActionsProcessingEntity,
+    TasksActionsProcessingFilterValidateContract,
+    TasksActionsProcessingRepository,
+    TasksActionsProcessingUpdateValidateContract,
 } from '@cmz/processing-domain';
-import { tasksActionsFilterMapper } from '../mappers/tasks-actions-filter.mapper';
-import { TasksActionsItemMapper } from '../mappers/tasks-actions-item.mapper';
-import { TasksActionsMutationMapper } from '../mappers/tasks-actions-mutation.mapper';
-import { TasksActionsApi } from '../sources/tasks-actions.api';
+import { tasksActionsFilterMapper } from '../mappers/tasks-actions-processing-filter.mapper';
+import { TasksActionsProcessingItemMapper } from '../mappers/tasks-actions-processing-item.mapper';
+import { TasksActionsProcessingMutationMapper } from '../mappers/tasks-actions-processing-mutation.mapper';
+import { TasksActionsProcessingApi } from '../sources/tasks-actions-processing.api';
 
 @Service()
-export class TasksActionsRepositoryImpl implements TasksActionsRepository {
-    private readonly api = inject(TasksActionsApi);
-    private readonly mapper = inject(TasksActionsItemMapper);
-    private readonly mutationMapper = inject(TasksActionsMutationMapper);
+export class TasksActionsProcessingRepositoryImpl implements TasksActionsProcessingRepository {
+    private readonly api = inject(TasksActionsProcessingApi);
+    private readonly mapper = inject(TasksActionsProcessingItemMapper);
+    private readonly mutationMapper = inject(
+        TasksActionsProcessingMutationMapper
+    );
     private readonly messageMapper = inject(MessageResultMapper);
 
     execute(
-        validContract: TasksActionsFilterValidateContract,
+        validContract: TasksActionsProcessingFilterValidateContract,
         page: string,
         options?: FetchOptions
-    ): Observable<PageResult<TasksActionsEntity>> {
+    ): Observable<PageResult<TasksActionsProcessingEntity>> {
         return this.api
             .execute(tasksActionsFilterMapper(validContract), page, options)
             .pipe(map((response) => this.mapper.mapFromDto(response)));
     }
 
     create(
-        validContract: TasksActionsCreateValidateContract
+        validContract: TasksActionsProcessingCreateValidateContract
     ): Observable<MessageEntity> {
         return this.api
             .create(this.mutationMapper.toCreateDto(validContract))
@@ -43,7 +45,7 @@ export class TasksActionsRepositoryImpl implements TasksActionsRepository {
     }
 
     update(
-        validContract: TasksActionsUpdateValidateContract
+        validContract: TasksActionsProcessingUpdateValidateContract
     ): Observable<MessageEntity> {
         return this.api
             .update(this.mutationMapper.toUpdateDto(validContract))
@@ -53,7 +55,7 @@ export class TasksActionsRepositoryImpl implements TasksActionsRepository {
     }
 
     delete(
-        validContract: TasksActionsDeleteValidateContract
+        validContract: TasksActionsProcessingDeleteValidateContract
     ): Observable<MessageEntity> {
         return this.api
             .delete(this.mutationMapper.toDeleteDto(validContract))

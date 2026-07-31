@@ -258,18 +258,18 @@ sur `REPORT_API_URL` + `uniq_id` (pas segment `PROCESSING_ENDPOINTS`).
 
 ### Tranche C — Actions de traitement (`tasks/actions`) ✅ IR + corpus
 
-| #   | Livrable                                                     | Statut       |
-| --- | ------------------------------------------------------------ | ------------ |
-| 1   | Domain — `TasksActions*`, conformité, ports CRUD + types     | ✅           |
-| 2   | Data — DTO/mappers/API/repos                                 | ✅           |
-| 3   | Application — `TasksActionsUseCase` + facades                | ✅           |
-| 4   | UI — page `/processing/tasks/actions` + dialog formulaire    | ✅ (minimal) |
-| 5   | Navigation tasks → actions (query params)                    | ✅           |
-| 6   | Mock CRUD + types                                            | ✅           |
-| 7   | Export Excel listes (queues/tasks/all)                       | ✅           |
-| 8   | Specs use-case tasks/actions + export ×3                     | ✅           |
-| 9   | Corpus `processing.tasks.actions` + `processing.export.list` | ✅           |
-| 10  | Sweet-alert create/edit, radio-card opérateur                | ⬜ P2        |
+| #   | Livrable                                                           | Statut       |
+| --- | ------------------------------------------------------------------ | ------------ |
+| 1   | Domain — `TasksActionsProcessing*`, conformité, ports CRUD + types | ✅           |
+| 2   | Data — DTO/mappers/API/repos                                       | ✅           |
+| 3   | Application — `TasksActionsProcessingUseCase` + facades            | ✅           |
+| 4   | UI — page `/processing/tasks/actions` + dialog formulaire          | ✅ (minimal) |
+| 5   | Navigation tasks → actions (query params)                          | ✅           |
+| 6   | Mock CRUD + types                                                  | ✅           |
+| 7   | Export Excel listes (queues/tasks/all)                             | ✅           |
+| 8   | Specs use-case tasks/actions + export ×3                           | ✅           |
+| 9   | Corpus `processing.tasks.actions` + `processing.export.list`       | ✅           |
+| 10  | Sweet-alert create/edit, radio-card opérateur                      | ⬜ P2        |
 
 ### Tranche D — Durcissements
 

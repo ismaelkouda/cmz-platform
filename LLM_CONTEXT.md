@@ -86,10 +86,10 @@ grandes familles d'archétypes :
 | Command DTOs + Handlers + Action Facades                                          |
 | `read-only-view`                                                                  |
 | Vues analytiques Query-only (17%)                                                 |
-| `monitoring`, `reporting`, `interactive-map`                                      |
+| `monitoring`, `reporting`, `interactive-map` (⚠️ SIG non reconstruit)             |
 | Consolidated Entity/DTO + Section Mapper + ResourceFacade + GrafanaEmbedComponent |
 | `workflow-action`                                                                 |
-| Files de traitement & State Machine (36%)                                         |
+| Files de traitement & State Machine (36%) — **4/4 IR clôturés (2026-07-31)**      |
 | `requests`, `processing`, `finalization`, `report-states`                         |
 | Workflow Task Queue + Status Transitions + Detail Views                           |
 
@@ -126,4 +126,21 @@ directives suivantes :
    [`docs/architecture/corpus/README.md`](./docs/architecture/corpus/README.md).
    Pattern `workflow-action` v0 :
    [`docs/architecture/patterns/workflow-action.pattern.json`](./docs/architecture/patterns/workflow-action.pattern.json).
-   Module de référence : **`processing`**.
+   Module de référence : **`processing`**. Famille **clôturée 4/4** :
+   `processing`, `requests`, `finalization`, `report-states` (2026-07-31).
+
+---
+
+## 5. État courant du monorepo (2026-07-31)
+
+| Indicateur                | Valeur                                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| Modules livrés            | **18** (voir [`STATUS.md`](./STATUS.md))                                                            |
+| Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                                |
+| Famille `read-only-view`  | **3 modules** (`monitoring`, `reporting`, `interactive-map` ⚠️) — schéma JSON **encore à extraire** |
+| Phase active              | **07** — reconstruction par patterns ; **08** non démarrée                                          |
+| Oracle obligatoire        | build + eslint + strictTemplates + corpus `--verify` pour clôture module                            |
+
+Documents de référence mis à jour en continu : `docs/architecture/module-*.md`,
+`docs/architecture/audits/*-meta-verification.md`,
+`docs/seos/Assumptions-Register.md`.

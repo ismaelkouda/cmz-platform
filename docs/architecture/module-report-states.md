@@ -74,14 +74,16 @@ sous-pages (`APPROVE`, `EVALUATE`, `CLOSE`, `REJECT`, `DOWNLOAD`).
    `@cmz/report-states-*`, mise à jour de `tsconfig.base.json` et
    `eslint.config.mjs` avec le tag `scope:report-states`. ✅
 3. **Phase 3 : Domaine (`@cmz/report-states-domain`)** — Enum
-   `ReportStateSection`, entités et contrats de repositories
-   `ReportStatesRepository`. ✅
+   `ReportStateSection`, entités par volet et contrats de repositories
+   `{Volet}ReportStatesRepository` (ex. `ApproveReportStatesRepository`,
+   `EvaluateReportStatesRepository`, …). ✅
 4. **Phase 4 : Data (`@cmz/report-states-data`)** —
    `report-states.endpoints.ts`, DTOs, Mappers, APIs et
-   `ReportStatesRepositoryImpl`. ✅
+   `{Volet}ReportStatesRepositoryImpl`. ✅
 5. **Phase 5 : Application (`@cmz/report-states-application`)** — Use-cases et
-   façades concrètes (`ApproveFacade`, `EvaluateFacade`, `CloseFacade`,
-   `RejectFacade`, `DownloadFacade`). ✅
+   façades par volet (`ApproveReportStatesUseCase` /
+   `ApproveReportStatesFacade`, `EvaluateReportStates*`, `CloseReportStates*`,
+   `RejectReportStates*`, `DownloadReportStates*`). ✅
 6. **Phase 6 : UI (`@cmz/report-states-ui`)** — 5 PageComponents et
    `REPORT_STATES_ROUTES`. ✅
 7. **Phase 7 : Câblage App, i18n & Mock Server** — Composition Root

@@ -6,11 +6,11 @@ import { FetchOptions } from '@cmz/shared-domain';
 import {
     TasksActionsTypeFilterApiDto,
     TasksActionsTypeResponseDto,
-} from '../dtos/tasks-actions-api.dto';
+} from '../dtos/tasks-actions-processing-api.dto';
 import { PROCESSING_ENDPOINTS } from '../endpoints/processing.endpoints';
 
 @Service()
-export class TasksActionsTypeApi {
+export class TasksActionsTypeProcessingApi {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = inject(REPORT_API_URL);
 

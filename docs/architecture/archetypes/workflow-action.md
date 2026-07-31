@@ -82,7 +82,16 @@ pas fermé l'audit global workflow.
 ### C — `tasks_actions`
 
 CRUD actions sur une tâche — route `tasks/actions`, alias presentation
-`actions-treatment`.
+`actions-treatment`. Nommage Nx : **`TasksActionsProcessing*`** (volet composé +
+module, cf. A-04).
+
+| Nœud IR          | Nx (ex.)                                     |
+| ---------------- | -------------------------------------------- |
+| list-item-entity | `tasks-actions-processing.entity.ts`         |
+| use-case         | `tasks-actions-processing.use-case.ts`       |
+| facade           | `tasks-actions-processing.facade.ts`         |
+| page             | `tasks-actions-processing-page.component.ts` |
+| type-entity      | `tasks-actions-type-processing.entity.ts`    |
 
 _Formalisation détaillée : tranche C du plan processing._
 
@@ -102,11 +111,15 @@ Une slice n'est **corpus-ready** que si `emit-pairs` marque la chaîne
 
 Même pattern, modules différents :
 
-| Module         | Préfixe rôle           |
-| -------------- | ---------------------- |
-| `processing`   | `{Volet}Processing*`   |
-| `requests`     | `{Volet}Requests*`     |
-| `finalization` | `{Volet}Finalization*` |
+| Module          | Préfixe rôle           |
+| --------------- | ---------------------- |
+| `processing`    | `{Volet}Processing*`   |
+| `requests`      | `{Volet}Requests*`     |
+| `finalization`  | `{Volet}Finalization*` |
+| `report-states` | `{Volet}ReportStates*` |
+
+Voir [`module-report-states.md`](../module-report-states.md) pour le 5ᵉ volet
+(`download` = centre de fichiers, hors export Excel liste).
 
 ## Références
 
@@ -116,3 +129,5 @@ Même pattern, modules différents :
 - [Contrats couche ui](./ui.md) — presenter, filter-store
 - [Module processing](../module-processing.md)
 - [Module requests](../module-requests.md)
+- [Module finalization](../module-finalization.md)
+- [Module report-states](../module-report-states.md)

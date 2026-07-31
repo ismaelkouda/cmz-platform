@@ -239,6 +239,5 @@ Intégrés après la clôture du module (validés `ngc` + audit boundaries) :
    validators, value-objects, ports).
 2. **Data** (dto + mappers + sources + repos) — **fait**.
 3. **Application** (use-cases + facades) — **fait** (CQRS ceremony optimisée).
-4. **UI/feature** — **en cours** : fondations faites ; reste stores + composants
-   partagés kernel + features + routing/DI.
-5. `bun install` + `nx build` du module contre le kernel.
+4. **UI/feature** — **fait** (stores, composants kernel, features, routing/DI).
+5. `bun install` + `nx build` du module contre le kernel — **fait** ✅.

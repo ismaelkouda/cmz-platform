@@ -124,42 +124,52 @@ modules de référence) + 15 « proches ». Les proches sont de vraies entités 
 convention « point » (déviation v10 documentée du schéma). Elles atteindront la
 conformité après la même normalisation que le module de référence a reçue.
 
-**Les 59 % restants ne sont pas du chaos : ce sont deux familles régulières,**
-non encore extraites en patterns :
+**Les 59 % restants se décomposent en deux familles régulières :**
 
 - **Famille workflow-action (19, 36 %)** — `finalization`, `processing`,
-  `requests`, `report-states` : des vues (`all`/`queues`/`tasks`/`details`) et
-  des transitions d'état (`approve`/`close`/`reject`/`evaluate`/`download`) sur
-  une file de tâches partagée. Elles partagent une chaîne de commandes partielle
-  (~41 % `action-request`) mais ni le CRUD complet ni l'`action-request` pur. →
-  **un nouveau pattern à extraire**.
+  `requests`, `report-states` : vues (`all`/`queues`/`tasks`/`details`) et
+  transitions d'état
+  (`approve`/`close`/`reject`/`evaluate`/`download`/`take`/`treat`/`finalize`)
+  sur une file de tâches partagée. → **pattern `workflow-action` extrait (v0,
+  2026-07-31)** ; **4 modules IR clôturés** (`processing`, `requests`,
+  `finalization`, `report-states`). Voir
+  [`workflow-action.pattern.json`](./patterns/workflow-action.pattern.json) et
+  [`STATUS.md`](../../STATUS.md).
 - **Lecture seule (9, 17 %)** — `interactive-map` (1), `monitoring` (4),
-  `reporting` (4). Pipeline minimal query-only vérifié : entité + query
-  (bus/handler) + use-case + repository, ~4 fichiers, aucune commande. → pattern
-  **`read-only-view`** à extraire (décision D4, [plan](./plan-d-execution.md)).
+  `reporting` (4). Pipeline minimal query-only : entité + query + use-case +
+  repository, ~4 fichiers, aucune commande. → pattern **`read-only-view`**
+  **partiellement instancié** (`monitoring`, `reporting` ✅ ; `interactive-map`
+  ⚠️ vue statique) ; **extraction canonique du schéma JSON reste une tâche
+  planifiée**, volet par volet (comme pour `workflow-action`).
 
 **Divers (3)** — `communication/notifications`, `settings-security/access-logs`,
-`team-organization/daily-goal` : à traiter au cas par cas une fois les deux
-familles ci-dessus extraites (elles s'y rattacheront probablement).
+`team-organization/daily-goal` : à traiter au cas par cas une fois
+`read-only-view` formalisé.
 
 ### Conséquence sur le chiffrage
 
-Contre les **deux patterns existants**, la couverture est de **41 %** — dans la
-bande « 40–80 % » du [plan](./plan-d-execution.md), dont la conséquence prévue
-est : **extraire davantage de patterns**, pas de reprise manuelle.
+Contre les **deux patterns historiques** (`crud-entity`, `action-request`), la
+couverture mesurée restait de **41 %** — dans la bande « 40–80 % » du
+[plan](./plan-d-execution.md).
 
-L'approche générative tient donc, mais elle demande d'**extraire 2 patterns
-supplémentaires** (`read-only-view`, `workflow-action`) avant la Phase 07. C'est
-un travail borné et régulier — exactement la méthode SEOS (extraire un pattern
-depuis du code réel qui se répète) — et non une dérive. Une fois ces deux
-patterns extraits et validés, la couverture générable dépasse **90 %**, les 3 «
-divers » restant à trancher individuellement.
+**État au 2026-07-31 :**
 
-**Ce que ça change dans le plan :** la Phase 04 (adaptation des générateurs)
-doit produire, en plus du CRUD et de l'action-request, les générateurs des deux
-nouveaux patterns. L'ordre de la Phase 07 suit la maturité des patterns :
-d'abord les 22 conformes/proches (patterns prouvés), puis les familles au fur et
-à mesure de leur extraction.
+- **`workflow-action`** : extrait et validé sur **4/4 modules** — couverture
+  générable de cette famille **100 %**.
+- **`read-only-view`** : **3 modules** compilants (`monitoring`, `reporting`,
+  `interactive-map` partiel) ; schéma JSON et générateur **encore à extraire**
+  (tâche planifiée, pas bloquante pour les modules déjà livrés).
+- Les **3 « divers »** restent à trancher individuellement.
+
+L'approche générative tient ; le prochain levier de couverture est
+**l'extraction step-by-step de `read-only-view`**, pas une reprise manuelle des
+modules workflow déjà clôturés.
+
+**Ce que ça change dans le plan :** la Phase 04 doit encore produire le
+générateur `read-only-view`. La Phase 07 suit la maturité des patterns : les 22
+conformes/proches (CRUD + action-request) et la famille workflow-action sont en
+reconstruction ; les vues lecture seule suivent au fur et à mesure de
+l'extraction du schéma.
 
 ## Ce qu'il ne faut pas reprendre
 

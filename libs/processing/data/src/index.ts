@@ -17,18 +17,18 @@ export { ProcessingDetailsRepositoryImpl } from './lib/repositories/processing-d
 export { QueuesProcessingRepositoryImpl } from './lib/repositories/queues-processing.repository.impl';
 export { TasksProcessingRepositoryImpl } from './lib/repositories/tasks-processing.repository.impl';
 export { AllProcessingRepositoryImpl } from './lib/repositories/all-processing.repository.impl';
-export { TasksActionsRepositoryImpl } from './lib/repositories/tasks-actions.repository.impl';
-export { TasksActionsTypeRepositoryImpl } from './lib/repositories/tasks-actions-type.repository.impl';
-export { TasksActionsApi } from './lib/sources/tasks-actions.api';
-export { TasksActionsTypeApi } from './lib/sources/tasks-actions-type.api';
-export { TasksActionsItemMapper } from './lib/mappers/tasks-actions-item.mapper';
-export { TasksActionsTypeMapper } from './lib/mappers/tasks-actions-type.mapper';
-export { TasksActionsConformityMapper } from './lib/mappers/tasks-actions-conformity.mapper';
+export { TasksActionsProcessingRepositoryImpl } from './lib/repositories/tasks-actions-processing.repository.impl';
+export { TasksActionsTypeProcessingRepositoryImpl } from './lib/repositories/tasks-actions-type-processing.repository.impl';
+export { TasksActionsProcessingApi } from './lib/sources/tasks-actions-processing.api';
+export { TasksActionsTypeProcessingApi } from './lib/sources/tasks-actions-processing-type.api';
+export { TasksActionsProcessingItemMapper } from './lib/mappers/tasks-actions-processing-item.mapper';
+export { TasksActionsTypeProcessingMapper } from './lib/mappers/tasks-actions-processing-type.mapper';
+export { TasksActionsProcessingConformityMapper } from './lib/mappers/tasks-actions-processing-conformity.mapper';
 export type {
     TasksActionsItemApiDto,
     TasksActionsResponseDto,
     TasksActionsTypeItemApiDto,
-} from './lib/dtos/tasks-actions-api.dto';
+} from './lib/dtos/tasks-actions-processing-api.dto';
 export type {
     ProcessingDetailsItemApiDto,
     ProcessingDetailsResponseDto,

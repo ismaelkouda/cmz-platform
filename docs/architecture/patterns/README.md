@@ -17,12 +17,12 @@ famille d'entités. Ils servent à :
 
 ## Schémas disponibles
 
-| Pattern               | Fichier                                                          | Module de référence                 | Statut                         |
-| --------------------- | ---------------------------------------------------------------- | ----------------------------------- | ------------------------------ |
-| `crud-entity`         | legacy `seos/patterns/crud-entity.pattern.json`                  | `administrative-infrastructure`     | ✅ v23 — référence historique  |
-| `action-request`      | legacy `seos/patterns/action-request.pattern.json`               | `authentication`                    | ✅ v6                          |
-| `read-only-view`      | _à extraire_                                                     | `monitoring`, `reporting`           | 🔧 contrats markdown seulement |
-| **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`** (+ **`requests`**) | ✅ **v0 — Rule 0 tranche A**   |
+| Pattern               | Fichier                                                          | Module de référence                                                       | Statut                                                      |
+| --------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `crud-entity`         | legacy `seos/patterns/crud-entity.pattern.json`                  | `administrative-infrastructure`                                           | ✅ v23 — référence historique                               |
+| `action-request`      | legacy `seos/patterns/action-request.pattern.json`               | `authentication`                                                          | ✅ v6                                                       |
+| `read-only-view`      | _à extraire (tâche planifiée, volet par volet)_                  | `monitoring`, `reporting`, `interactive-map` (⚠️)                         | 🔧 3 modules compilants ; schéma JSON + générateur restants |
+| **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`**, **`requests`**, **`finalization`**, **`report-states`** | ✅ **v0 — 4/4 modules IR clôturés**                         |
 
 ## Différence legacy vs monorepo
 

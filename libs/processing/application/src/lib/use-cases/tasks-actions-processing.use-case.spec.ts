@@ -4,15 +4,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import type { PageResult } from '@cmz/shared-domain';
 import {
-    TasksActionsConformity,
-    TasksActionsEntity,
-    TasksActionsRepository,
+    TasksActionsProcessingConformity,
+    TasksActionsProcessingEntity,
+    TasksActionsProcessingRepository,
 } from '@cmz/processing-domain';
 import { TelecomOperator } from '@cmz/shared-domain';
-import { TasksActionsUseCase } from './tasks-actions.use-case';
+import { TasksActionsProcessingUseCase } from './tasks-actions-processing.use-case';
 
-function makeEntity(id: string): TasksActionsEntity {
-    return new TasksActionsEntity({
+function makeEntity(id: string): TasksActionsProcessingEntity {
+    return new TasksActionsProcessingEntity({
         uniqId: id,
         date: new Date('2026-01-01T00:00:00Z'),
         type: 'Inspection',
@@ -21,7 +21,7 @@ function makeEntity(id: string): TasksActionsEntity {
         description: 'Action test',
         shouldNotifyUser: false,
         autoChecked: false,
-        isConform: TasksActionsConformity.CONFORM,
+        isConform: TasksActionsProcessingConformity.CONFORM,
         createdBy: 'Agent Test',
         updatedBy: 'Agent Test',
         createdAt: '2026-01-01T00:00:00Z',
@@ -29,16 +29,16 @@ function makeEntity(id: string): TasksActionsEntity {
     });
 }
 
-describe('TasksActionsUseCase', () => {
+describe('TasksActionsProcessingUseCase', () => {
     it('délègue execute au repository avec filtre validé', async () => {
-        const pageResult: PageResult<TasksActionsEntity> = {
+        const pageResult: PageResult<TasksActionsProcessingEntity> = {
             items: [makeEntity('ACT-001')],
             currentPage: 1,
             lastPage: 1,
             total: 1,
             perPage: 10,
         };
-        const repo: TasksActionsRepository = {
+        const repo: TasksActionsProcessingRepository = {
             execute: vi.fn().mockReturnValue(of(pageResult)),
             create: vi.fn(),
             update: vi.fn(),
@@ -46,12 +46,12 @@ describe('TasksActionsUseCase', () => {
         };
         const injector = createEnvironmentInjector(
             [
-                { provide: TasksActionsRepository, useValue: repo },
-                TasksActionsUseCase,
+                { provide: TasksActionsProcessingRepository, useValue: repo },
+                TasksActionsProcessingUseCase,
             ],
             null as never
         );
-        const useCase = injector.get(TasksActionsUseCase);
+        const useCase = injector.get(TasksActionsProcessingUseCase);
 
         const result = await firstValueFrom(
             useCase.execute({ reportUniqId: 'REP-001' }, '1')
@@ -66,7 +66,7 @@ describe('TasksActionsUseCase', () => {
     });
 
     it('délègue create au repository', async () => {
-        const repo: TasksActionsRepository = {
+        const repo: TasksActionsProcessingRepository = {
             execute: vi.fn(),
             create: vi
                 .fn()
@@ -76,12 +76,12 @@ describe('TasksActionsUseCase', () => {
         };
         const injector = createEnvironmentInjector(
             [
-                { provide: TasksActionsRepository, useValue: repo },
-                TasksActionsUseCase,
+                { provide: TasksActionsProcessingRepository, useValue: repo },
+                TasksActionsProcessingUseCase,
             ],
             null as never
         );
-        const useCase = injector.get(TasksActionsUseCase);
+        const useCase = injector.get(TasksActionsProcessingUseCase);
 
         await firstValueFrom(
             useCase.create({
@@ -91,7 +91,7 @@ describe('TasksActionsUseCase', () => {
                 operator: TelecomOperator.MTN,
                 description: 'Desc',
                 shouldNotifyUser: false,
-                isConform: TasksActionsConformity.CONFORM,
+                isConform: TasksActionsProcessingConformity.CONFORM,
             })
         );
 
@@ -99,7 +99,7 @@ describe('TasksActionsUseCase', () => {
     });
 
     it('propage les erreurs repository via defer', async () => {
-        const repo: TasksActionsRepository = {
+        const repo: TasksActionsProcessingRepository = {
             execute: vi
                 .fn()
                 .mockReturnValue(throwError(() => new Error('Network error'))),
@@ -109,12 +109,12 @@ describe('TasksActionsUseCase', () => {
         };
         const injector = createEnvironmentInjector(
             [
-                { provide: TasksActionsRepository, useValue: repo },
-                TasksActionsUseCase,
+                { provide: TasksActionsProcessingRepository, useValue: repo },
+                TasksActionsProcessingUseCase,
             ],
             null as never
         );
-        const useCase = injector.get(TasksActionsUseCase);
+        const useCase = injector.get(TasksActionsProcessingUseCase);
 
         await expect(
             firstValueFrom(useCase.execute({ reportUniqId: 'REP-001' }, '1'))

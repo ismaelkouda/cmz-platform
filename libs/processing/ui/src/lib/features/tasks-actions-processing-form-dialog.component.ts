@@ -17,12 +17,12 @@ import {
     Validators,
 } from '@angular/forms';
 import {
-    TasksActionsFacade,
-    TasksActionsTypeFacade,
+    TasksActionsProcessingFacade,
+    TasksActionsTypeProcessingFacade,
 } from '@cmz/processing-application';
 import {
-    TasksActionsConformity,
-    TasksActionsEntity,
+    TasksActionsProcessingConformity,
+    TasksActionsProcessingEntity,
 } from '@cmz/processing-domain';
 import { TranslationPort } from '@cmz/shared-application';
 import { TelecomOperator } from '@cmz/shared-domain';
@@ -31,7 +31,7 @@ import { TELECOM_OPERATOR_OPTIONS } from '@cmz/shared-ui';
 export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
 
 @Component({
-    selector: 'cmz-tasks-actions-form-dialog',
+    selector: 'cmz-tasks-actions-processing-form-dialog',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ReactiveFormsModule],
@@ -164,19 +164,19 @@ export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
         </dialog>
     `,
 })
-export class TasksActionsFormDialogComponent {
+export class TasksActionsProcessingFormDialogComponent {
     protected readonly T = 'PROCESSING.TASKS.ACTIONS';
-    protected readonly conformity = TasksActionsConformity;
+    protected readonly conformity = TasksActionsProcessingConformity;
 
     readonly visible = input(false);
     readonly mode = input<TasksActionsDialogMode>('create');
     readonly reportUniqId = input.required<string>();
-    readonly editingItem = input<TasksActionsEntity | null>(null);
+    readonly editingItem = input<TasksActionsProcessingEntity | null>(null);
     readonly closed = output<void>();
     readonly saved = output<void>();
 
-    protected readonly actionsFacade = inject(TasksActionsFacade);
-    private readonly typesFacade = inject(TasksActionsTypeFacade);
+    protected readonly actionsFacade = inject(TasksActionsProcessingFacade);
+    private readonly typesFacade = inject(TasksActionsTypeProcessingFacade);
     private readonly i18n = inject(TranslationPort);
 
     private readonly dialogRef =
@@ -202,7 +202,7 @@ export class TasksActionsFormDialogComponent {
             validators: [Validators.required],
         }),
         shouldNotifyUser: new FormControl(false, { nonNullable: true }),
-        isConform: new FormControl<TasksActionsConformity | ''>('', {
+        isConform: new FormControl<TasksActionsProcessingConformity | ''>('', {
             nonNullable: true,
             validators: [Validators.required],
         }),
@@ -290,7 +290,7 @@ export class TasksActionsFormDialogComponent {
             operator: value.operator,
             description: value.description,
             shouldNotifyUser: value.shouldNotifyUser,
-            isConform: value.isConform as TasksActionsConformity,
+            isConform: value.isConform as TasksActionsProcessingConformity,
         };
 
         if (this.mode() === 'edit') {

@@ -10,11 +10,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
     ProcessingDetailsFacade,
-    TasksActionsFacade,
+    TasksActionsProcessingFacade,
 } from '@cmz/processing-application';
 import {
     ProcessingDetailsState,
-    TasksActionsEntity,
+    TasksActionsProcessingEntity,
 } from '@cmz/processing-domain';
 import {
     ConfirmDialogPort,
@@ -30,8 +30,8 @@ import { PROCESSING_TASKS_ROUTE } from '../constants/processing-paths.constant';
 import { TASKS_ACTIONS_PROCESSING_TABLE } from '../constants/tasks-actions-processing-table.constant';
 import {
     TasksActionsDialogMode,
-    TasksActionsFormDialogComponent,
-} from './tasks-actions-form-dialog.component';
+    TasksActionsProcessingFormDialogComponent,
+} from './tasks-actions-processing-form-dialog.component';
 
 const T = 'PROCESSING.TASKS.ACTIONS';
 
@@ -42,7 +42,7 @@ const T = 'PROCESSING.TASKS.ACTIONS';
     imports: [
         TableComponent,
         PaginationComponent,
-        TasksActionsFormDialogComponent,
+        TasksActionsProcessingFormDialogComponent,
     ],
     template: `
         <section class="flex flex-col gap-4">
@@ -113,7 +113,7 @@ const T = 'PROCESSING.TASKS.ACTIONS';
             }
         </section>
 
-        <cmz-tasks-actions-form-dialog
+        <cmz-tasks-actions-processing-form-dialog
             [visible]="dialogVisible()"
             [mode]="dialogMode()"
             [reportUniqId]="reportUniqId() ?? ''"
@@ -123,7 +123,7 @@ const T = 'PROCESSING.TASKS.ACTIONS';
     `,
 })
 export class TasksActionsProcessingPageComponent {
-    protected readonly facade = inject(TasksActionsFacade);
+    protected readonly facade = inject(TasksActionsProcessingFacade);
     private readonly detailsFacade = inject(ProcessingDetailsFacade);
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(ConfirmDialogPort);
@@ -191,7 +191,8 @@ export class TasksActionsProcessingPageComponent {
 
     protected readonly dialogVisible = signal(false);
     protected readonly dialogMode = signal<TasksActionsDialogMode>('create');
-    protected readonly editingItem = signal<TasksActionsEntity | null>(null);
+    protected readonly editingItem =
+        signal<TasksActionsProcessingEntity | null>(null);
 
     private readonly presenter = new TasksActionsProcessingPresenter((key) =>
         this.i18n.translate(key)

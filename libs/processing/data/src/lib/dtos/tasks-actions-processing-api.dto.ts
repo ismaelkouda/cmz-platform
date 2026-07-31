@@ -5,7 +5,7 @@ import {
 } from '@cmz/shared-data';
 import { ActorDto } from '@cmz/shared-data';
 
-export type TasksActionsConformityApiDto =
+export type TasksActionsProcessingConformityApiDto =
     'conform' | 'non-conform' | 'in-progress' | 'unknown';
 
 export interface TasksActionsItemApiDto {
@@ -17,7 +17,7 @@ export interface TasksActionsItemApiDto {
     description: string;
     should_notify_user: boolean;
     auto_check: boolean;
-    result: TasksActionsConformityApiDto;
+    result: TasksActionsProcessingConformityApiDto;
     created_by: ActorDto;
     updated_by: ActorDto;
     created_at: string;
@@ -38,7 +38,7 @@ export interface TasksActionsStoreApiDto {
     operator: string;
     description: string;
     should_notify_user: boolean;
-    result: TasksActionsConformityApiDto;
+    result: TasksActionsProcessingConformityApiDto;
 }
 
 export type TasksActionsCreateApiDto = TasksActionsStoreApiDto;

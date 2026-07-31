@@ -1,30 +1,30 @@
 import { GenericRequiredError } from '@cmz/shared-domain';
 import {
-    TasksActionsCreateContract,
-    TasksActionsCreateValidateContract,
-    TasksActionsDeleteContract,
-    TasksActionsDeleteValidateContract,
-    TasksActionsFilterContract,
-    TasksActionsFilterValidateContract,
-    TasksActionsTypeFilterContract,
-    TasksActionsTypeFilterValidateContract,
-    TasksActionsUpdateContract,
-    TasksActionsUpdateValidateContract,
-} from '../contracts/tasks-actions.contract';
+    TasksActionsProcessingCreateContract,
+    TasksActionsProcessingCreateValidateContract,
+    TasksActionsProcessingDeleteContract,
+    TasksActionsProcessingDeleteValidateContract,
+    TasksActionsProcessingFilterContract,
+    TasksActionsProcessingFilterValidateContract,
+    TasksActionsTypeProcessingFilterContract,
+    TasksActionsTypeProcessingFilterValidateContract,
+    TasksActionsProcessingUpdateContract,
+    TasksActionsProcessingUpdateValidateContract,
+} from '../contracts/tasks-actions-processing.contract';
 
 const E = 'PROCESSING.TASKS.ACTIONS.FORM.ERROR';
 
 export function validateTasksActionsFilter(
-    contract: TasksActionsFilterContract
-): asserts contract is TasksActionsFilterValidateContract {
+    contract: TasksActionsProcessingFilterContract
+): asserts contract is TasksActionsProcessingFilterValidateContract {
     if (!contract.reportUniqId) {
         throw new GenericRequiredError(`${E}.CREATE.REPORT_UNIQ_ID_REQUIRE`);
     }
 }
 
 export function validateTasksActionsCreate(
-    contract: TasksActionsCreateContract
-): asserts contract is TasksActionsCreateValidateContract {
+    contract: TasksActionsProcessingCreateContract
+): asserts contract is TasksActionsProcessingCreateValidateContract {
     if (!contract.reportUniqId) {
         throw new GenericRequiredError(`${E}.CREATE.REPORT_UNIQ_ID_REQUIRE`);
     }
@@ -46,8 +46,8 @@ export function validateTasksActionsCreate(
 }
 
 export function validateTasksActionsUpdate(
-    contract: TasksActionsUpdateContract
-): asserts contract is TasksActionsUpdateValidateContract {
+    contract: TasksActionsProcessingUpdateContract
+): asserts contract is TasksActionsProcessingUpdateValidateContract {
     if (!contract.uniqId) {
         throw new GenericRequiredError(`${E}.UPDATE.UNIQ_ID_REQUIRE`);
     }
@@ -72,16 +72,16 @@ export function validateTasksActionsUpdate(
 }
 
 export function validateTasksActionsDelete(
-    contract: TasksActionsDeleteContract
-): asserts contract is TasksActionsDeleteValidateContract {
+    contract: TasksActionsProcessingDeleteContract
+): asserts contract is TasksActionsProcessingDeleteValidateContract {
     if (!contract.uniqId) {
         throw new GenericRequiredError(`${E}.UPDATE.UNIQ_ID_REQUIRE`);
     }
 }
 
 export function validateTasksActionsTypeFilter(
-    contract: TasksActionsTypeFilterContract
-): asserts contract is TasksActionsTypeFilterValidateContract {
+    contract: TasksActionsTypeProcessingFilterContract
+): asserts contract is TasksActionsTypeProcessingFilterValidateContract {
     if (!contract.reportUniqId) {
         throw new GenericRequiredError(`${E}.CREATE.REPORT_UNIQ_ID_REQUIRE`);
     }

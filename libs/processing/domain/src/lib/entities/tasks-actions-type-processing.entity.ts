@@ -1,9 +1,9 @@
 import { TelecomOperator } from '@cmz/shared-domain';
-import { TasksActionsTypeProps } from '../props/tasks-actions-type.props';
+import { TasksActionsTypeProcessingProps } from '../props/tasks-actions-type-processing.props';
 
 /** Option type d'action (dropdown formulaire). */
-export class TasksActionsTypeEntity {
-    constructor(private readonly props: TasksActionsTypeProps) {}
+export class TasksActionsTypeProcessingEntity {
+    constructor(private readonly props: TasksActionsTypeProcessingProps) {}
 
     get label(): string {
         return this.props.label;

@@ -3,24 +3,24 @@ import { CollectionResourceFacade, PageQuery } from '@cmz/shared-application';
 import { PageResult } from '@cmz/shared-domain';
 import { Observable } from 'rxjs';
 import {
-    TasksActionsCreateContract,
-    TasksActionsDeleteContract,
-    TasksActionsEntity,
-    TasksActionsFilterContract,
-    TasksActionsUpdateContract,
+    TasksActionsProcessingCreateContract,
+    TasksActionsProcessingDeleteContract,
+    TasksActionsProcessingEntity,
+    TasksActionsProcessingFilterContract,
+    TasksActionsProcessingUpdateContract,
 } from '@cmz/processing-domain';
-import { TasksActionsUseCase } from '../use-cases/tasks-actions.use-case';
+import { TasksActionsProcessingUseCase } from '../use-cases/tasks-actions-processing.use-case';
 
 @Service()
-export class TasksActionsFacade extends CollectionResourceFacade<
-    TasksActionsEntity,
-    TasksActionsFilterContract
+export class TasksActionsProcessingFacade extends CollectionResourceFacade<
+    TasksActionsProcessingEntity,
+    TasksActionsProcessingFilterContract
 > {
-    private readonly useCase = inject(TasksActionsUseCase);
+    private readonly useCase = inject(TasksActionsProcessingUseCase);
 
     protected stream(
-        params: PageQuery<TasksActionsFilterContract>
-    ): Observable<PageResult<TasksActionsEntity>> {
+        params: PageQuery<TasksActionsProcessingFilterContract>
+    ): Observable<PageResult<TasksActionsProcessingEntity>> {
         return this.useCase.execute(
             params.filter ?? {},
             params.page,
@@ -28,7 +28,7 @@ export class TasksActionsFacade extends CollectionResourceFacade<
         );
     }
 
-    create(contract: TasksActionsCreateContract): void {
+    create(contract: TasksActionsProcessingCreateContract): void {
         this.runAction(
             this.useCase.create(contract),
             'COMMON.SUCCESS.CREATE',
@@ -36,7 +36,7 @@ export class TasksActionsFacade extends CollectionResourceFacade<
         );
     }
 
-    update(contract: TasksActionsUpdateContract): void {
+    update(contract: TasksActionsProcessingUpdateContract): void {
         this.runAction(
             this.useCase.update(contract),
             'COMMON.SUCCESS.UPDATE',
@@ -44,7 +44,7 @@ export class TasksActionsFacade extends CollectionResourceFacade<
         );
     }
 
-    delete(contract: TasksActionsDeleteContract): void {
+    delete(contract: TasksActionsProcessingDeleteContract): void {
         this.runAction(
             this.useCase.delete(contract),
             'COMMON.SUCCESS.DELETE',

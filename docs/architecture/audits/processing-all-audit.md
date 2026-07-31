@@ -1,9 +1,10 @@
 # Audit référence — volet `all` (`processing`)
 
 - **Date :** 2026-07-30
-- **Dernière mise à jour :** 2026-07-30
+- **Dernière mise à jour :** 2026-07-31
 - **Périmètre :** tranche A complète (domain → data → application → UI).
-- **Hors scope :** navigation details, export.
+- **Hors scope :** parité shell legacy `ManagementDialog` fullscreen (P2 — hors
+  IR).
 - **Source legacy :**
   `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend/src/presentation/pages/processing`
 - **Cible Nx :** `libs/processing/{domain,data,application,ui}` — préfixe
@@ -67,14 +68,14 @@
 
 ## 5. Presenter VM + UI
 
-| Élément         | Legacy             | Nx                         | Statut |
-| --------------- | ------------------ | -------------------------- | ------ |
-| Colonnes liste  | idem               | idem                       | ✅     |
-| Action ligne    | `view` — SEE_MORE  | `actionButtons.view`       | ✅     |
-| Permission      | aucune             | idem                       | ✅     |
-| Handler clic    | ouvre details      | stub — tranche B           | 🔧     |
-| Filtre state UI | select             | `cmz-filter` select + i18n | ✅     |
-| i18n            | `PROCESSING.ALL.*` | ✅ `fr.translation.ts`     | ✅     |
+| Élément         | Legacy             | Nx                                 | Statut |
+| --------------- | ------------------ | ---------------------------------- | ------ |
+| Colonnes liste  | idem               | idem                               | ✅     |
+| Action ligne    | `view` — SEE_MORE  | `actionButtons.view`               | ✅     |
+| Permission      | aucune             | idem                               | ✅     |
+| Handler clic    | ouvre details      | `ProcessingDetailsDialogComponent` | ✅     |
+| Filtre state UI | select             | `cmz-filter` select + i18n         | ✅     |
+| i18n            | `PROCESSING.ALL.*` | ✅ `fr.translation.ts`             | ✅     |
 
 Fichiers UI :
 
@@ -106,11 +107,10 @@ bunx nx run-many -t test -p processing-domain processing-data --skip-nx-cache
 
 ## 7. Écarts ouverts
 
-| #   | Écart                    | Sévérité       |
-| --- | ------------------------ | -------------- |
-| 1   | Handler `view` → details | P0 — tranche B |
-| 2   | Export Excel             | P1             |
-| 3   | Mock filtre `state`      | P2             |
+| #   | Écart               | Sévérité           |
+| --- | ------------------- | ------------------ |
+| 1   | Export Excel        | ✅ livré tranche C |
+| 2   | Mock filtre `state` | P2                 |
 
 ---
 
@@ -122,4 +122,5 @@ bunx nx run-many -t test -p processing-domain processing-data --skip-nx-cache
 | tasks  | ✅ [tasks](./processing-tasks-audit.md)   |
 | all    | ✅ (ce document)                          |
 
-**Prochaine étape :** tranche B `processing.details`.
+**Prochaine étape :** module IR clôturé — voir
+[`processing-meta-verification.md`](./processing-meta-verification.md).

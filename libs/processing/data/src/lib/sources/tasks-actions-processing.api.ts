@@ -10,12 +10,12 @@ import {
     TasksActionsFilterApiDto,
     TasksActionsResponseDto,
     TasksActionsUpdateApiDto,
-} from '../dtos/tasks-actions-api.dto';
+} from '../dtos/tasks-actions-processing-api.dto';
 import { PROCESSING_ENDPOINTS } from '../endpoints/processing.endpoints';
 
-/** Source HTTP actions de traitement — legacy `TasksActionsApi`. */
+/** Source HTTP actions de traitement — legacy `TasksActionsProcessingApi`. */
 @Service()
-export class TasksActionsApi {
+export class TasksActionsProcessingApi {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = inject(REPORT_API_URL);
 

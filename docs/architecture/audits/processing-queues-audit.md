@@ -1,10 +1,10 @@
 # Audit référence — volet `queues` (`processing`)
 
 - **Date :** 2026-07-30
-- **Dernière mise à jour :** 2026-07-30
+- **Dernière mise à jour :** 2026-07-31
 - **Périmètre :** tranche A complète (domain → data → application → UI).
-- **Hors scope :** navigation details (`ManagementDialog`), export Excel —
-  tranche B+.
+- **Hors scope :** parité shell legacy `ManagementDialog` fullscreen (P2 — hors
+  IR).
 - **Source legacy :**
   `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend/src/presentation/pages/processing`
 - **Cible Nx :** `libs/processing/{domain,data,application,ui}` — préfixe
@@ -76,18 +76,18 @@ ligne.
 
 ## 5. Presenter VM + UI
 
-| Élément               | Legacy                                            | Nx                                       | Statut           |
-| --------------------- | ------------------------------------------------- | ---------------------------------------- | ---------------- |
-| Labels colonnes       | i18n `PROCESSING.QUEUES.*`                        | idem via `TranslationPort`               | ✅               |
-| `operators` affichage | enum[] brut                                       | `operatorsLabel` pré-traduit             | ✅ équivalent UX |
-| `actionsRef`          | getter entity                                     | `item.uniqId`                            | ✅               |
-| Action ligne          | `tooltipButtonTake` + `disableButtonTake: false`  | `actionButtons.take` + `disabled: false` | ✅               |
-| Tooltip permission    | TAKE / SEE_MORE                                   | idem                                     | ✅               |
-| Colonne table         | `__action`                                        | `__action` + `rowActionDefinitions`      | ✅               |
-| Permission page       | `canTake` — `/reports-processing/queues` + `take` | idem                                     | ✅               |
-| Handler clic          | ouvre `ManagementDialog`                          | stub — tranche B                         | 🔧               |
-| Export                | `ExcelExportService` + `export`                   | absent                                   | ❌ P1            |
-| Page                  | `cmz-filter` + `cmz-table` + pagination           | idem                                     | ✅               |
+| Élément               | Legacy                                            | Nx                                                        | Statut           |
+| --------------------- | ------------------------------------------------- | --------------------------------------------------------- | ---------------- |
+| Labels colonnes       | i18n `PROCESSING.QUEUES.*`                        | idem via `TranslationPort`                                | ✅               |
+| `operators` affichage | enum[] brut                                       | `operatorsLabel` pré-traduit                              | ✅ équivalent UX |
+| `actionsRef`          | getter entity                                     | `item.uniqId`                                             | ✅               |
+| Action ligne          | `tooltipButtonTake` + `disableButtonTake: false`  | `actionButtons.take` + `disabled: false`                  | ✅               |
+| Tooltip permission    | TAKE / SEE_MORE                                   | idem                                                      | ✅               |
+| Colonne table         | `__action`                                        | `__action` + `rowActionDefinitions`                       | ✅               |
+| Permission page       | `canTake` — `/reports-processing/queues` + `take` | idem                                                      | ✅               |
+| Handler clic          | ouvre `ManagementDialog`                          | `ProcessingDetailsDialogComponent` (substitut minimal IR) | ✅               |
+| Export                | `ExcelExportService` + `export`                   | `exportProcessingList` + `Repository.export` ×3 volets    | ✅               |
+| Page                  | `cmz-filter` + `cmz-table` + pagination           | idem                                                      | ✅               |
 
 Fichiers UI :
 
@@ -120,12 +120,11 @@ bunx eslint --max-warnings=0 "libs/processing/**/*.ts"
 
 ## 7. Écarts ouverts
 
-| #   | Écart                               | Sévérité       |
-| --- | ----------------------------------- | -------------- |
-| 1   | Handler `take` → `ManagementDialog` | P0 — tranche B |
-| 2   | Export Excel                        | P1             |
-| 3   | Filtre operators multi-select       | P1             |
-| 4   | Defaults `''` vs `undefined` legacy | P2 accepté     |
+| #   | Écart                                      | Sévérité     |
+| --- | ------------------------------------------ | ------------ |
+| 1   | Filtre operators multi-select              | P2           |
+| 2   | Defaults `''` vs `undefined` legacy        | P2 accepté   |
+| 3   | Parité shell `ManagementDialog` fullscreen | P2 — hors IR |
 
 ---
 

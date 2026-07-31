@@ -1,14 +1,16 @@
 # Module `interactive-map` — Plan de reconstruction Big Tech (META / Google Rigor)
 
 - **Créé :** 2026-07-28
-- **Statut :** **Livré & Validé (Phases 1 à 8 terminées)**. 2 sous-volets
-  (`/interactive-map/interactive` & `/interactive-map/visualization`).
-  Compilation TypeScript (`tsc`), linting (`eslint --max-warnings=0`),
-  compilation strict templates Angular (`ngc --strictTemplates`) 100% verts sur
-  les 4 libs `@cmz/interactive-map-*` et l'application.
-- **Objectif :** Reconstruire le module `interactive-map` (Carte interactive SIG
-  & Tableau de bord interactif) selon les patterns SEOS du monorepo, sans aucun
-  écart ni omission.
+- **Dernière mise à jour :** 2026-07-31
+- **Statut :** **⚠️ partiel** — alignement archétype `read-only-view` + câblage
+  app/mock **✅** ; **SIG OpenLayers non reconstruit** (hors périmètre IR). Voir
+  [`STATUS.md`](../../STATUS.md).
+- **Objectif :** Aligner le module `interactive-map` sur le pattern SEOS
+  `read-only-view` du monorepo (2 volets `/interactive-map/interactive` et
+  `/interactive-map/visualization`), garantir le câblage end-to-end (domain →
+  data → application → UI → providers → routes → i18n → mock). **Ne pas**
+  reconstruire la carte SIG dynamique OpenLayers du legacy — la vue
+  `interactive` reste une coquille statique jusqu'à décision produit explicite.
 
 ---
 

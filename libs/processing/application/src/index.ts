@@ -6,7 +6,7 @@ export { ProcessingDetailsFacade } from './lib/facades/processing-details.facade
 export { QueuesProcessingFacade } from './lib/facades/queues-processing.facade';
 export { TasksProcessingFacade } from './lib/facades/tasks-processing.facade';
 export { AllProcessingFacade } from './lib/facades/all-processing.facade';
-export { TasksActionsUseCase } from './lib/use-cases/tasks-actions.use-case';
-export { TasksActionsTypeUseCase } from './lib/use-cases/tasks-actions-type.use-case';
-export { TasksActionsFacade } from './lib/facades/tasks-actions.facade';
-export { TasksActionsTypeFacade } from './lib/facades/tasks-actions-type.facade';
+export { TasksActionsProcessingUseCase } from './lib/use-cases/tasks-actions-processing.use-case';
+export { TasksActionsTypeProcessingUseCase } from './lib/use-cases/tasks-actions-type-processing.use-case';
+export { TasksActionsProcessingFacade } from './lib/facades/tasks-actions-processing.facade';
+export { TasksActionsTypeProcessingFacade } from './lib/facades/tasks-actions-type-processing.facade';

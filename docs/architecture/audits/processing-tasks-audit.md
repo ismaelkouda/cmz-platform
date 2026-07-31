@@ -1,9 +1,10 @@
 # Audit référence — volet `tasks` (`processing`)
 
 - **Date :** 2026-07-30
-- **Dernière mise à jour :** 2026-07-30
+- **Dernière mise à jour :** 2026-07-31
 - **Périmètre :** tranche A complète (domain → data → application → UI).
-- **Hors scope :** sous-graphe `tasks/actions` (tranche C), navigation details.
+- **Hors scope :** parité shell legacy `ManagementDialog` fullscreen (P2 — hors
+  IR).
 - **Source legacy :**
   `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend/src/presentation/pages/processing`
 - **Cible Nx :** `libs/processing/{domain,data,application,ui}` — préfixe
@@ -62,16 +63,16 @@
 
 ## 5. Presenter VM + UI
 
-| Élément              | Legacy                             | Nx                                                                 | Statut |
-| -------------------- | ---------------------------------- | ------------------------------------------------------------------ | ------ |
-| Action ligne         | `treat` — tooltip TREAT / SEE_MORE | `actionButtons.treat`                                              | ✅     |
-| `disableButtonTreat` | `false`                            | `disabled: false`                                                  | ✅     |
-| Permission           | `canTreat`                         | `PermissionActionsService` — `/reports-processing/tasks` + `treat` | ✅     |
-| Refus permission     | toast                              | `NotificationPort.error`                                           | ✅     |
-| Handler clic         | navigation actions-treatment       | stub — tranche B/C                                                 | 🔧     |
-| Colonne              | `__action`                         | `__action`                                                         | ✅     |
-| Page kernel          | `cmz-filter` + table + pagination  | idem                                                               | ✅     |
-| i18n                 | `PROCESSING.TASKS.*`               | ✅ `fr.translation.ts`                                             | ✅     |
+| Élément              | Legacy                             | Nx                                                                                                                                                             | Statut |
+| -------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Action ligne         | `treat` — tooltip TREAT / SEE_MORE | `actionButtons.treat`                                                                                                                                          | ✅     |
+| `disableButtonTreat` | `false`                            | `disabled: false`                                                                                                                                              | ✅     |
+| Permission           | `canTreat`                         | `PermissionActionsService` — `/reports-processing/tasks` + `treat`                                                                                             | ✅     |
+| Refus permission     | toast                              | `NotificationPort.error`                                                                                                                                       | ✅     |
+| Handler clic         | navigation actions-treatment       | `router.navigate(['actions'], …)` → [`tasks-actions-processing-page`](../../../libs/processing/ui/src/lib/features/tasks-actions-processing-page.component.ts) | ✅     |
+| Colonne              | `__action`                         | `__action`                                                                                                                                                     | ✅     |
+| Page kernel          | `cmz-filter` + table + pagination  | idem                                                                                                                                                           | ✅     |
+| i18n                 | `PROCESSING.TASKS.*`               | ✅ `fr.translation.ts`                                                                                                                                         | ✅     |
 
 Fichiers UI :
 
@@ -101,12 +102,11 @@ bunx nx test processing-data --skip-nx-cache
 
 ## 7. Écarts ouverts
 
-| #   | Écart                                 | Sévérité       |
-| --- | ------------------------------------- | -------------- |
-| 1   | Handler `treat` → navigation / dialog | P0 — tranche B |
-| 2   | Export Excel                          | P1             |
-| 3   | Tranche C `tasks/actions`             | P0             |
-| 4   | VO trim vs legacy tasks               | P2 accepté     |
+| #   | Écart                     | Sévérité           |
+| --- | ------------------------- | ------------------ |
+| 1   | Export Excel              | ✅ livré tranche C |
+| 2   | VO trim vs legacy tasks   | P2 accepté         |
+| 3   | Use-case spec dédié tasks | P1 — à ajouter     |
 
 ---
 

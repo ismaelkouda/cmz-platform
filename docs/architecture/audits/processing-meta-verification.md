@@ -12,20 +12,20 @@
 
 ## Scorecard final
 
-| #   | Critère Meta                                                    | Résultat                                        |
-| --- | --------------------------------------------------------------- | ----------------------------------------------- |
-| 1   | DTO filtre sortant = primitives wire                            | ✅ (`AllProcessingFilterApiDto.state?: string`) |
-| 2   | Pipeline filtre contract → vo → entity → repo → mapper          | ✅                                              |
-| 3   | Application `defer()`, sans CQRS bus/handler                    | ✅                                              |
-| 4   | UI projection wire via `processing-filter-wire.util.ts`         | ✅                                              |
-| 5   | Isolation cross-module (0 import inter-domaine)                 | ✅                                              |
-| 6   | VO vs filterEntity (`endDate` dans entity)                      | ✅                                              |
-| 7   | Pattern action `__action` (workflow-action)                     | ✅                                              |
-| 8   | `Repository.export` sur les 3 ports liste                       | ✅                                              |
-| 9   | Contrats mutation distincts (take/treat + `TasksActions*` CRUD) | ✅                                              |
-| 10  | i18n `PROCESSING.*` (+ export tooltips)                         | ✅                                              |
-| 11  | `provideProcessing()` + guard RBAC                              | ✅                                              |
-| 12  | Corpus 100 % applicable (`verified` / `n/a`)                    | ✅ 156 paires, 7 chaînes                        |
+| #   | Critère Meta                                                              | Résultat                                        |
+| --- | ------------------------------------------------------------------------- | ----------------------------------------------- |
+| 1   | DTO filtre sortant = primitives wire                                      | ✅ (`AllProcessingFilterApiDto.state?: string`) |
+| 2   | Pipeline filtre contract → vo → entity → repo → mapper                    | ✅                                              |
+| 3   | Application `defer()`, sans CQRS bus/handler                              | ✅                                              |
+| 4   | UI projection wire via `processing-filter-wire.util.ts`                   | ✅                                              |
+| 5   | Isolation cross-module (0 import inter-domaine)                           | ✅                                              |
+| 6   | VO vs filterEntity (`endDate` dans entity)                                | ✅                                              |
+| 7   | Pattern action `__action` (workflow-action)                               | ✅                                              |
+| 8   | `Repository.export` sur les 3 ports liste                                 | ✅                                              |
+| 9   | Contrats mutation distincts (take/treat + `TasksActionsProcessing*` CRUD) | ✅                                              |
+| 10  | i18n `PROCESSING.*` (+ export tooltips)                                   | ✅                                              |
+| 11  | `provideProcessing()` + guard RBAC                                        | ✅                                              |
+| 12  | Corpus 100 % applicable (`verified` / `n/a`)                              | ✅ 156 paires, 7 chaînes                        |
 
 **Verdict Meta : ✅ conforme — module clôturé IR**
 
@@ -78,8 +78,8 @@ Chaînes : `queues.list`, `tasks.list`, `all.list`, `details`, `tasks.actions`,
    VO/permissions/mappers.
 7. **Export Excel** — `GET …/export` ×3 volets +
    `processing-list-export.util.ts` + permission `export`.
-8. **Tasks/actions** — CRUD `TasksActions*` + page `/processing/tasks/actions` +
-   corpus 31 nœuds.
+8. **Tasks/actions** — CRUD `TasksActionsProcessing*` + page
+   `/processing/tasks/actions` + corpus 31 nœuds.
 9. **Corpus mapping** — `tasks-actions-*` + `list_export` ; CI processing full
    (plus tranche A seule).
 

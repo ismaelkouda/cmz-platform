@@ -3,22 +3,22 @@ import {
     AllProcessingRepository,
     ProcessingDetailsRepository,
     QueuesProcessingRepository,
-    TasksActionsRepository,
-    TasksActionsTypeRepository,
+    TasksActionsProcessingRepository,
+    TasksActionsTypeProcessingRepository,
     TasksProcessingRepository,
 } from '@cmz/processing-domain';
 import {
     AllProcessingRepositoryImpl,
     ProcessingDetailsRepositoryImpl,
     QueuesProcessingRepositoryImpl,
-    TasksActionsRepositoryImpl,
-    TasksActionsTypeRepositoryImpl,
+    TasksActionsProcessingRepositoryImpl,
+    TasksActionsTypeProcessingRepositoryImpl,
     TasksProcessingRepositoryImpl,
 } from '@cmz/processing-data';
 
 /**
  * Composition root du module `processing` : bind les ports domaine vers leurs
- * implémentations data (une par volet liste, nommage `{Volet}Processing*`).
+ * implémentations data (une par volet liste + details + tasks/actions, nommage `{Volet}Processing*` / `TasksActionsProcessing*`).
  */
 export function provideProcessing(): Provider[] {
     return [
@@ -39,12 +39,12 @@ export function provideProcessing(): Provider[] {
             useClass: ProcessingDetailsRepositoryImpl,
         },
         {
-            provide: TasksActionsRepository,
-            useClass: TasksActionsRepositoryImpl,
+            provide: TasksActionsProcessingRepository,
+            useClass: TasksActionsProcessingRepositoryImpl,
         },
         {
-            provide: TasksActionsTypeRepository,
-            useClass: TasksActionsTypeRepositoryImpl,
+            provide: TasksActionsTypeProcessingRepository,
+            useClass: TasksActionsTypeProcessingRepositoryImpl,
         },
     ];
 }

@@ -71,7 +71,7 @@ _Aucun P0 ouvert — corpus 7 chaînes clôturé (156 paires)._
 
 1. Parité shell UI legacy (`ManagementDialog` fullscreen) — tabs/carte/photos.
 2. Sweet-alert create/edit + radio-card opérateur sur
-   `tasks-actions-form-dialog`.
+   `tasks-actions-processing-form-dialog`.
 
 ---
 

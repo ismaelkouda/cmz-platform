@@ -276,6 +276,9 @@ Format d'entrée :
   `requests`, `finalization`). P2 restants : parité UX shell legacy
   (`ManagementDialog`) sur `processing`
   ([A-12](../architecture/processing-reference-audit.md)).
+- **Note :** **supersédé partiellement par
+  [A-2026-07-31-04](#a-2026-07-31-04--clôture-module-report-states-ir--corpus)**
+  — la famille est désormais **4/4** avec `report-states`.
 - **Statut :** **accepted**
 
 ---
