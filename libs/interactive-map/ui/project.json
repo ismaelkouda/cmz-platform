@@ -3,5 +3,14 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/interactive-map/ui/src",
   "projectType": "library",
-  "tags": ["scope:interactive-map", "type:ui"]
+  "tags": ["scope:interactive-map", "type:ui"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/interactive-map/ui/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

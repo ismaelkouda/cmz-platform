@@ -118,6 +118,7 @@ bun run corpus:report-states:full    # idem — verify complet
 bun run corpus:report-states:export  # chaîne export.list seule
 bun run corpus:monitoring            # 5 chaînes read-only-view (4 vues + shell)
 bun run corpus:reporting             # 5 chaînes read-only-view (4 vues + shell)
+bun run corpus:interactive-map       # 3 chaînes partielles (visualization + SIG stub + shell)
 bun run corpus:requests            # tranche A — listes + shell (gate rapide)
 bun run corpus:requests:full       # 8 chaînes (listes + details + export + permissions + qualification)
 bun run corpus:ci                  # Tier 1 CI — processing + requests (full) + finalization + report-states
@@ -143,3 +144,6 @@ bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
     validés ; corpus monitoring/reporting émis (51 + 51 paires)
 12. ✅ CI Tier 2 intégration — nightly + `check:tier2` (ExcelJS lazy ~948 kB ;
     initial ~856 kB, budgets 900 kB / 1 MB)
+13. ✅ Corpus `interactive-map` partiel — 28 paires, 3 chaînes (visualization
+    ✅, SIG stub, shell)
+14. ✅ Sync legacy `seos/patterns/read-only-view.pattern.json`

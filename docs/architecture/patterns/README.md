@@ -21,7 +21,7 @@ famille d'entités. Ils servent à :
 | --------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------- |
 | `crud-entity`         | legacy `seos/patterns/crud-entity.pattern.json`                  | `administrative-infrastructure`                                           | ✅ v23 — référence historique       |
 | `action-request`      | legacy `seos/patterns/action-request.pattern.json`               | `authentication`                                                          | ✅ v6                               |
-| `read-only-view`      | [`read-only-view.pattern.json`](./read-only-view.pattern.json)   | **`monitoring`**, **`reporting`**, `interactive-map` (⚠️)                 | ✅ **v0 — 2/3 modules validés**     |
+| `read-only-view`      | [`read-only-view.pattern.json`](./read-only-view.pattern.json)   | **`monitoring`**, **`reporting`**, `interactive-map` (⚠️ partiel)         | ✅ **v0 — 2/3 modules validés**     |
 | **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`**, **`requests`**, **`finalization`**, **`report-states`** | ✅ **v0 — 4/4 modules IR clôturés** |
 
 ## Différence legacy vs monorepo

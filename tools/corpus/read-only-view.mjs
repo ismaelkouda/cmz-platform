@@ -113,19 +113,91 @@ function mapperNxPath(module) {
     if (module === 'monitoring') {
         return 'libs/monitoring/data/src/lib/mappers/grafana-dashboard.mapper.ts';
     }
+    if (module === 'interactive-map') {
+        return 'libs/interactive-map/data/src/lib/mappers/map.mapper.ts';
+    }
     return 'libs/reporting/data/src/lib/mappers/reporting-dashboard.mapper.ts';
 }
+
+/** @param {string} module */
+function viewEntityNxPath(module) {
+    if (module === 'interactive-map') {
+        return 'libs/interactive-map/domain/src/lib/entities/map.entity.ts';
+    }
+    return `libs/${module}/domain/src/lib/entities/grafana-dashboard.entity.ts`;
+}
+
+/** @param {string} module */
+function variablesDtoNxPath(module) {
+    if (module === 'interactive-map') {
+        return 'libs/interactive-map/data/src/lib/dtos/map-response.dto.ts';
+    }
+    return `libs/${module}/data/src/lib/dtos/${module}-variables-response.dto.ts`;
+}
+
+/** @param {string} module */
+function apiSourceNxPath(module) {
+    if (module === 'interactive-map') {
+        return 'libs/interactive-map/data/src/lib/sources/map.api.ts';
+    }
+    return `libs/${module}/data/src/lib/sources/${module}.api.ts`;
+}
+
+/** @param {string} module */
+function useCaseNxPath(module) {
+    if (module === 'interactive-map') {
+        return 'libs/interactive-map/application/src/lib/use-cases/map.use-case.ts';
+    }
+    return `libs/${module}/application/src/lib/use-cases/${module}.use-case.ts`;
+}
+
+export const INTERACTIVE_MAP_SHELL_NODES = [
+    'rov-view-entity',
+    'rov-repository-port',
+    'rov-variables-dto',
+    'rov-mapper',
+    'rov-api-source',
+    'rov-repository-impl',
+    'rov-use-case',
+    ...MODULE_SHELL_NODES,
+    'rov-shared-grafana-embed',
+    'rov-shared-resource-facade',
+];
+
+export const ROV_MAP_VIEW_NODES = [
+    'rov-map-legacy-entity',
+    'rov-map-legacy-repository',
+    'rov-map-legacy-dto',
+    'rov-map-legacy-mapper',
+    'rov-map-legacy-api',
+    'rov-map-legacy-use-case',
+    'rov-map-legacy-facade',
+    'rov-map-legacy-page',
+    'rov-map-query-legacy',
+    'rov-map-query-handler-legacy',
+];
+
+export const ROV_GIS_STUB_NODES = [
+    'rov-gis-legacy-page',
+    'rov-gis-legacy-facade',
+    'rov-gis-legacy-store',
+    'rov-gis-legacy-adapter',
+];
 
 /** @type {Record<string, import('./mapping.mjs').NodeMapping>} */
 export const ROV_NODE_MAPPINGS = {
     'rov-view-entity': {
         legacy: ({ module }) =>
-            legacyPage(module, 'domain/entities/node/node.entity.ts'),
-        nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/grafana-dashboard.entity.ts`,
+            module === 'interactive-map'
+                ? legacyPage(module, 'domain/entities/map/map.entity.ts')
+                : legacyPage(module, 'domain/entities/node/node.entity.ts'),
+        nx: ({ module }) => viewEntityNxPath(module),
         layer: 'domain',
         oracle: (ctx) => modOracle(ctx.module, 'domain'),
-        notes: 'Legacy node entity représentatif — consolidation → GrafanaDashboardEntity',
+        notes: ({ module }) =>
+            module === 'interactive-map'
+                ? 'MapEntity(grafanaLink) — sous-graphe grafana_single_view'
+                : 'Legacy node entity représentatif — consolidation → GrafanaDashboardEntity',
     },
     'rov-section-enum': {
         legacy: ({ module }) =>
@@ -138,7 +210,15 @@ export const ROV_NODE_MAPPINGS = {
     },
     'rov-repository-port': {
         legacy: ({ module }) =>
-            legacyPage(module, 'domain/repositories/node/node.repository.ts'),
+            module === 'interactive-map'
+                ? legacyPage(
+                      module,
+                      'domain/repositories/map-repository.interface.ts'
+                  )
+                : legacyPage(
+                      module,
+                      'domain/repositories/node/node.repository.ts'
+                  ),
         nx: ({ module }) =>
             `libs/${module}/domain/src/lib/repositories/${module}.repository.ts`,
         layer: 'domain',
@@ -146,40 +226,58 @@ export const ROV_NODE_MAPPINGS = {
     },
     'rov-variables-dto': {
         legacy: ({ module }) =>
-            legacyPage(
-                module,
-                'infrastructure/api/dto/node/node-response-api.dto.ts'
-            ),
-        nx: ({ module }) =>
-            `libs/${module}/data/src/lib/dtos/${module}-variables-response.dto.ts`,
+            module === 'interactive-map'
+                ? legacyPage(
+                      module,
+                      'infrastructure/api/dto/map/map-response.dto.ts'
+                  )
+                : legacyPage(
+                      module,
+                      'infrastructure/api/dto/node/node-response-api.dto.ts'
+                  ),
+        nx: ({ module }) => variablesDtoNxPath(module),
         layer: 'data',
         oracle: (ctx) => modOracle(ctx.module, 'data'),
         notes: 'DTO wire unique regroupant tous les champs variables',
     },
     'rov-mapper': {
         legacy: ({ module }) =>
-            legacyPage(
-                module,
-                'infrastructure/data/mappers/node/node.mapper.ts'
-            ),
+            module === 'interactive-map'
+                ? legacyPage(
+                      module,
+                      'infrastructure/data/mappers/map.mapper.ts'
+                  )
+                : legacyPage(
+                      module,
+                      'infrastructure/data/mappers/node/node.mapper.ts'
+                  ),
         nx: ({ module }) => mapperNxPath(module),
         layer: 'data',
         oracle: (ctx) => modOracle(ctx.module, 'data'),
     },
     'rov-api-source': {
         legacy: ({ module }) =>
-            legacyPage(module, 'infrastructure/data/sources/node/node.api.ts'),
-        nx: ({ module }) =>
-            `libs/${module}/data/src/lib/sources/${module}.api.ts`,
+            module === 'interactive-map'
+                ? legacyPage(module, 'infrastructure/data/sources/map.api.ts')
+                : legacyPage(
+                      module,
+                      'infrastructure/data/sources/node/node.api.ts'
+                  ),
+        nx: ({ module }) => apiSourceNxPath(module),
         layer: 'data',
         oracle: (ctx) => modOracle(ctx.module, 'data'),
     },
     'rov-repository-impl': {
         legacy: ({ module }) =>
-            legacyPage(
-                module,
-                'infrastructure/data/repositories/node/node.repository.impl.ts'
-            ),
+            module === 'interactive-map'
+                ? legacyPage(
+                      module,
+                      'infrastructure/repositories/map.repository.impl.ts'
+                  )
+                : legacyPage(
+                      module,
+                      'infrastructure/data/repositories/node/node.repository.impl.ts'
+                  ),
         nx: ({ module }) =>
             `libs/${module}/data/src/lib/repositories/${module}.repository.impl.ts`,
         layer: 'data',
@@ -187,9 +285,16 @@ export const ROV_NODE_MAPPINGS = {
     },
     'rov-use-case': {
         legacy: ({ module }) =>
-            legacyPage(module, 'application/use-cases/node/node.use-case.ts'),
-        nx: ({ module }) =>
-            `libs/${module}/application/src/lib/use-cases/${module}.use-case.ts`,
+            module === 'interactive-map'
+                ? legacyPage(
+                      module,
+                      'application/use-cases/map/map.use-case.ts'
+                  )
+                : legacyPage(
+                      module,
+                      'application/use-cases/node/node.use-case.ts'
+                  ),
+        nx: ({ module }) => useCaseNxPath(module),
         layer: 'application',
         oracle: (ctx) => modOracle(ctx.module, 'application'),
     },
@@ -246,7 +351,12 @@ export const ROV_NODE_MAPPINGS = {
     },
     'rov-shared-resource-facade': {
         legacy: ({ module }) =>
-            legacyPage(module, 'application/services/node/node.facade.ts'),
+            module === 'interactive-map'
+                ? legacyPage(module, 'application/services/map.facade.ts')
+                : legacyPage(
+                      module,
+                      'application/services/node/node.facade.ts'
+                  ),
         nx: () => 'libs/shared/application/src/lib/facades/resource.facade.ts',
         layer: 'application',
         oracle: (ctx) => modOracle(ctx.module, 'application'),
@@ -353,6 +463,149 @@ export const ROV_NODE_MAPPINGS = {
         statusOverride: 'n/a',
         assumption_ref: 'A-2026-07-30-05',
     },
+    'rov-map-legacy-entity': {
+        legacy: () =>
+            legacyPage('interactive-map', 'domain/entities/map/map.entity.ts'),
+        nx: () => 'libs/interactive-map/domain/src/lib/entities/map.entity.ts',
+        layer: 'domain',
+        oracle: () => modOracle('interactive-map', 'domain'),
+    },
+    'rov-map-legacy-repository': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'domain/repositories/map-repository.interface.ts'
+            ),
+        nx: () =>
+            'libs/interactive-map/domain/src/lib/repositories/interactive-map.repository.ts',
+        layer: 'domain',
+        oracle: () => modOracle('interactive-map', 'domain'),
+    },
+    'rov-map-legacy-dto': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'infrastructure/api/dto/map/map-response.dto.ts'
+            ),
+        nx: () => 'libs/interactive-map/data/src/lib/dtos/map-response.dto.ts',
+        layer: 'data',
+        oracle: () => modOracle('interactive-map', 'data'),
+    },
+    'rov-map-legacy-mapper': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'infrastructure/data/mappers/map.mapper.ts'
+            ),
+        nx: () => 'libs/interactive-map/data/src/lib/mappers/map.mapper.ts',
+        layer: 'data',
+        oracle: () => modOracle('interactive-map', 'data'),
+    },
+    'rov-map-legacy-api': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'infrastructure/data/sources/map.api.ts'
+            ),
+        nx: () => 'libs/interactive-map/data/src/lib/sources/map.api.ts',
+        layer: 'data',
+        oracle: () => modOracle('interactive-map', 'data'),
+    },
+    'rov-map-legacy-use-case': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'application/use-cases/map/map.use-case.ts'
+            ),
+        nx: () =>
+            'libs/interactive-map/application/src/lib/use-cases/map.use-case.ts',
+        layer: 'application',
+        oracle: () => modOracle('interactive-map', 'application'),
+    },
+    'rov-map-legacy-facade': {
+        legacy: () =>
+            legacyPage('interactive-map', 'application/services/map.facade.ts'),
+        nx: () =>
+            'libs/interactive-map/application/src/lib/facades/map.facade.ts',
+        layer: 'application',
+        oracle: () => modOracle('interactive-map', 'application'),
+    },
+    'rov-map-legacy-page': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'presentation/features/dashboard-map/map-page.component.ts'
+            ),
+        nx: () =>
+            'libs/interactive-map/ui/src/lib/features/map-page.component.ts',
+        layer: 'ui',
+        oracle: () => modOracle('interactive-map', 'ui'),
+        notes: 'Volet visualization — embed Grafana mapLink',
+    },
+    'rov-map-query-legacy': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'application/queries-bus/map/map.bus.ts'
+            ),
+        nx: () => null,
+        layer: 'legacy-only',
+        statusOverride: 'n/a',
+        assumption_ref: 'A-2026-07-30-05',
+    },
+    'rov-map-query-handler-legacy': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'application/queries-handlers/map/map.handler.ts'
+            ),
+        nx: () => null,
+        layer: 'legacy-only',
+        statusOverride: 'n/a',
+        assumption_ref: 'A-2026-07-30-05',
+    },
+    'rov-gis-legacy-page': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'presentation/features/interactive-map/pages/interactive-map.component.ts'
+            ),
+        nx: () =>
+            'libs/interactive-map/ui/src/lib/features/interactive-map-page.component.ts',
+        layer: 'ui',
+        oracle: () => modOracle('interactive-map', 'ui'),
+        notes: 'Coquille statique v0 — SIG OpenLayers hors périmètre IR',
+    },
+    'rov-gis-legacy-facade': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'presentation/facades/intercative-map.facade.ts'
+            ),
+        nx: () => null,
+        layer: 'legacy-only',
+        statusOverride: 'n/a',
+        notes: 'Legacy SIG facade — non porté Nx v0',
+    },
+    'rov-gis-legacy-store': {
+        legacy: () =>
+            legacyPage('interactive-map', 'presentation/store/map.store.ts'),
+        nx: () => null,
+        layer: 'legacy-only',
+        statusOverride: 'n/a',
+        notes: 'Legacy OpenLayers store — hors périmètre IR',
+    },
+    'rov-gis-legacy-adapter': {
+        legacy: () =>
+            legacyPage(
+                'interactive-map',
+                'presentation/adapters/map.adapter.ts'
+            ),
+        nx: () => null,
+        layer: 'legacy-only',
+        statusOverride: 'n/a',
+        notes: 'Legacy map adapter — hors périmètre IR',
+    },
 };
 
 /** @param {string} module @param {string} section @param {string} description @param {Record<string, { legacyFolder: string; Section: string; facadeKebab: string }>} table @returns {RovChainDef} */
@@ -433,6 +686,30 @@ export const READ_ONLY_VIEW_CHAINS = {
         threshold_emit: 0.8,
         threshold_close: 1.0,
     },
+    'interactive-map.visualization.view': {
+        id: 'interactive-map.visualization.view',
+        description: 'Tableau de bord interactif — embed Grafana (mapLink)',
+        subgraph: 'grafana_single_view',
+        nodes: ROV_MAP_VIEW_NODES,
+        threshold_emit: 0.8,
+        threshold_close: 1.0,
+    },
+    'interactive-map.interactive.view': {
+        id: 'interactive-map.interactive.view',
+        description:
+            'Carte SIG — legacy OpenLayers ; Nx = coquille statique v0',
+        subgraph: 'gis_map_view',
+        nodes: ROV_GIS_STUB_NODES,
+        threshold_emit: 0.8,
+        threshold_close: 1.0,
+    },
+    'interactive-map.module.shell': {
+        id: 'interactive-map.module.shell',
+        description: 'Routes, endpoints, composition root — stack MapEntity',
+        nodes: INTERACTIVE_MAP_SHELL_NODES,
+        threshold_emit: 0.8,
+        threshold_close: 1.0,
+    },
 };
 
 export const READ_ONLY_VIEW_MODULES = {
@@ -453,6 +730,14 @@ export const READ_ONLY_VIEW_MODULES = {
         reference_module: false,
         promoted_from: 'monitoring',
     },
+    'interactive-map': {
+        pattern: 'read-only-view',
+        legacyBase: 'src/presentation/pages/interactive-map',
+        chains: Object.keys(READ_ONLY_VIEW_CHAINS).filter((id) =>
+            id.startsWith('interactive-map.')
+        ),
+        partial: true,
+    },
 };
 
 /**
@@ -466,7 +751,11 @@ export function expandReadOnlyViewChain(module, chain) {
     const segment = rovChainSegment(chain);
     const sectionTable =
         chain._sectionTable ??
-        (module === 'monitoring' ? MONITORING_SECTIONS : REPORTING_SECTIONS);
+        (module === 'monitoring'
+            ? MONITORING_SECTIONS
+            : module === 'reporting'
+              ? REPORTING_SECTIONS
+              : undefined);
 
     for (const node of chain.nodes) {
         const mapping = ROV_NODE_MAPPINGS[node];

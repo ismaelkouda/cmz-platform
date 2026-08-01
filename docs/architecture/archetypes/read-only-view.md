@@ -153,12 +153,12 @@ bunx eslint libs/monitoring --max-warnings=0
 bunx nx build backoffice-angular   # Tier 2 — pages compilées strictTemplates
 ```
 
-Corpus (prochaine étape) :
+Corpus :
 
 ```bash
-# À implémenter — chains déclarées dans read-only-view.pattern.json
-node tools/corpus/emit-pairs.mjs monitoring --verify
-node tools/corpus/emit-pairs.mjs reporting --verify
+node tools/corpus/emit-pairs.mjs monitoring --verify    # ✅ 51 paires
+node tools/corpus/emit-pairs.mjs reporting --verify     # ✅ 51 paires
+node tools/corpus/emit-pairs.mjs interactive-map --verify  # ⚠️ 28 paires (partiel)
 ```
 
 ---
