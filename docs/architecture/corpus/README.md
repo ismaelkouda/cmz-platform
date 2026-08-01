@@ -116,8 +116,9 @@ bun run corpus:processing:export   # chaîne export.list seule
 bun run corpus:report-states       # 8 chaînes (listes + details + export)
 bun run corpus:report-states:full    # idem — verify complet
 bun run corpus:report-states:export  # chaîne export.list seule
-bun run corpus:requests            # tranche A requests
-bun run corpus:ci                  # Tier 1 CI — processing + requests + finalization + report-states
+bun run corpus:requests            # tranche A — listes + shell (gate rapide)
+bun run corpus:requests:full       # 8 chaînes (listes + details + export + permissions + qualification)
+bun run corpus:ci                  # Tier 1 CI — processing + requests (full) + finalization + report-states
 bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
 ```
 

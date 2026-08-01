@@ -1,6 +1,6 @@
 # STATUS — cmz-platform
 
-> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-07-31. Ne
+> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-01. Ne
 > pas éditer manuellement — lancer `node tools/generate-status.mjs` pour
 > régénérer.
 

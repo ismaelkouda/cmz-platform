@@ -38,7 +38,7 @@
 | 1 build       | `bunx nx run-many -t build --projects=tag:scope:requests` | ✅                                                                             |
 | 1 test        | `bunx nx run-many -t test --projects=tag:scope:requests`  | ✅ 54 tests                                                                    |
 | 1 lint        | `bunx eslint libs/requests --max-warnings=0`              | ✅                                                                             |
-| 1 corpus      | `bun run corpus:requests`                                 | ✅ 8/8 tranche-closed                                                          |
+| 1 corpus      | `bun run corpus:requests:full:full`                       | ✅ 8/8 tranche-closed                                                          |
 | 2 intégration | `bunx nx run backoffice-angular:build:production`         | ⚠️ compile OK — **budget bundle** dépassé (1.76 MB > 1 MB) ; 0 erreur template |
 
 Le dépassement budget est **monorepo-wide** (ExcelJS CommonJS) — hors périmètre
@@ -98,5 +98,5 @@ Chaînes : `queues.list`, `tasks.list`, `all.list`, `details`, `module.shell`,
 ```bash
 bunx nx run-many -t build,test --projects=tag:scope:requests
 bunx eslint libs/requests --max-warnings=0
-bun run corpus:requests
+bun run corpus:requests:full
 ```

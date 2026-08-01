@@ -22,12 +22,12 @@ de conformité — pas la parité visuelle du shell UI.
 
 ## 1. Rôle dans SEOS
 
-| Niveau    | Objet                                | Ce module                                    |
-| --------- | ------------------------------------ | -------------------------------------------- |
-| Thèse     | Synthèse neurosymbolique (Méthode 2) | 157 paires annotées `legacy → Nx`            |
-| Archétype | Famille `workflow-action`            | 2ᵉ module validé après `processing`          |
-| IR        | 4 couches isolées + contrats         | `@cmz/requests-{domain,data,application,ui}` |
-| Oracle    | Generate-Verify-Repair               | build + test + eslint + `corpus:requests`    |
+| Niveau    | Objet                                | Ce module                                      |
+| --------- | ------------------------------------ | ---------------------------------------------- |
+| Thèse     | Synthèse neurosymbolique (Méthode 2) | 157 paires annotées `legacy → Nx`              |
+| Archétype | Famille `workflow-action`            | 2ᵉ module validé après `processing`            |
+| IR        | 4 couches isolées + contrats         | `@cmz/requests-{domain,data,application,ui}`   |
+| Oracle    | Generate-Verify-Repair               | build + test + eslint + `corpus:requests:full` |
 
 **Invariant :** l’IA n’invente pas les champs, endpoints ni règles métier — elle
 instancie l’IR à partir du legacy et du pattern JSON.
@@ -255,7 +255,8 @@ Seuils : **corpus-ready** ≥ 80 % · **tranche-closed** = 100 % applicable
 
 ```bash
 bun run corpus:requests:report   # rapport dry-run (stdout)
-bun run corpus:requests          # emit + oracle nx → écrit jsonl
+bun run corpus:requests:full     # emit + oracle nx → écrit jsonl (8 chaînes)
+bun run corpus:requests          # tranche A — gate rapide listes + shell
 bun run corpus:sync-pattern      # push pattern → legacy seos/patterns/
 ```
 
@@ -274,7 +275,7 @@ Aucune slice IR n’est « terminée » sans passage oracle
 ```bash
 bunx nx run-many -t build,test --projects=tag:scope:requests
 bunx eslint libs/requests --max-warnings=0
-bun run corpus:requests
+bun run corpus:requests:full
 ```
 
 Oracles par couche (attachés aux paires corpus) :
@@ -346,7 +347,7 @@ Gate **obligatoire** avant tout nouveau module `workflow-action`
 | Build        | `bunx nx run-many -t build --projects=tag:scope:requests`                        | ✅                    |
 | Test         | `bunx nx run-many -t test --projects=tag:scope:requests`                         | ✅ 54                 |
 | Lint         | `bunx eslint libs/requests --max-warnings=0`                                     | ✅                    |
-| Corpus       | `bun run corpus:requests`                                                        | ✅ 8/8 tranche-closed |
+| Corpus       | `bun run corpus:requests:full`                                                   | ✅ 8/8 tranche-closed |
 | Meta audit   | [`audits/requests-meta-verification.md`](./audits/requests-meta-verification.md) | ✅ 12/12              |
 | Pattern sync | `bun run corpus:sync-pattern`                                                    | ✅ legacy 2026-07-31  |
 

@@ -123,8 +123,8 @@ jobs:
       - name: Corpus processing (emit + oracle Tier 1)
         run: node tools/corpus/emit-pairs.mjs processing --verify --oracle-only
 
-      - name: Corpus requests (emit + oracle Tier 1, tranche A)
-        run: node tools/corpus/emit-pairs.mjs requests --verify --oracle-only --tranche A
+      - name: Corpus requests (emit + oracle Tier 1, 8 chaînes)
+        run: node tools/corpus/emit-pairs.mjs requests --verify --oracle-only
 
       - name: Corpus finalization (emit + oracle Tier 1)
         run: node tools/corpus/emit-pairs.mjs finalization --verify --oracle-only
