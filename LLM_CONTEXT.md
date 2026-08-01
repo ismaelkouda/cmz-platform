@@ -85,8 +85,8 @@ grandes familles d'archétypes :
 | `authentication`, `seos-reference-action`                                         |
 | Command DTOs + Handlers + Action Facades                                          |
 | `read-only-view`                                                                  |
-| Vues analytiques Query-only (17%)                                                 |
-| `monitoring`, `reporting`, `interactive-map` (⚠️ SIG non reconstruit)             |
+| Vues analytiques Query-only (17%) — **v0 extrait 2026-08-01**                     |
+| `monitoring`, `reporting` ✅ ; `interactive-map` ⚠️ (SIG hors IR)                 |
 | Consolidated Entity/DTO + Section Mapper + ResourceFacade + GrafanaEmbedComponent |
 | `workflow-action`                                                                 |
 | Files de traitement & State Machine (36%) — **4/4 IR clôturés (2026-07-31)**      |
@@ -129,17 +129,21 @@ directives suivantes :
    Module de référence : **`processing`**. Famille **clôturée 4/4** :
    `processing`, `requests`, `finalization`, `report-states` (2026-07-31).
 
+    Pattern `read-only-view` v0 :
+    [`docs/architecture/patterns/read-only-view.pattern.json`](./docs/architecture/patterns/read-only-view.pattern.json).
+    Module de référence : **`monitoring`**.
+
 ---
 
-## 5. État courant du monorepo (2026-07-31)
+## 5. État courant du monorepo (2026-08-01)
 
-| Indicateur                | Valeur                                                                                              |
-| ------------------------- | --------------------------------------------------------------------------------------------------- |
-| Modules livrés            | **18** (voir [`STATUS.md`](./STATUS.md))                                                            |
-| Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                                |
-| Famille `read-only-view`  | **3 modules** (`monitoring`, `reporting`, `interactive-map` ⚠️) — schéma JSON **encore à extraire** |
-| Phase active              | **07** — reconstruction par patterns ; **08** non démarrée                                          |
-| Oracle obligatoire        | build + eslint + strictTemplates + corpus `--verify` pour clôture module                            |
+| Indicateur                | Valeur                                                                                   |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| Modules livrés            | **18** (voir [`STATUS.md`](./STATUS.md))                                                 |
+| Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                     |
+| Famille `read-only-view`  | **v0 extrait** — `monitoring` + `reporting` ✅ ; corpus à émettre ; `interactive-map` ⚠️ |
+| Phase active              | **07** — reconstruction par patterns ; **08** non démarrée                               |
+| Oracle obligatoire        | build + eslint + strictTemplates + corpus `--verify` pour clôture module                 |
 
 Documents de référence mis à jour en continu : `docs/architecture/module-*.md`,
 `docs/architecture/audits/*-meta-verification.md`,

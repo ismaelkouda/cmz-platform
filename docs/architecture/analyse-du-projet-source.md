@@ -156,14 +156,15 @@ couverture mesurée restait de **41 %** — dans la bande « 40–80 % » du
 
 - **`workflow-action`** : extrait et validé sur **4/4 modules** — couverture
   générable de cette famille **100 %**.
-- **`read-only-view`** : **3 modules** compilants (`monitoring`, `reporting`,
-  `interactive-map` partiel) ; schéma JSON et générateur **encore à extraire**
-  (tâche planifiée, pas bloquante pour les modules déjà livrés).
+- **`read-only-view`** : **extrait (v0, 2026-08-01)** sur `monitoring` +
+  `reporting` ; `interactive-map` ⚠️ partiel (Grafana OK, SIG hors IR). Schéma :
+  [`read-only-view.pattern.json`](./patterns/read-only-view.pattern.json).
+  **Corpus à émettre** (chains déclarées, outillage `emit-pairs` à brancher).
 - Les **3 « divers »** restent à trancher individuellement.
 
-L'approche générative tient ; le prochain levier de couverture est
-**l'extraction step-by-step de `read-only-view`**, pas une reprise manuelle des
-modules workflow déjà clôturés.
+L'approche générative tient ; le prochain levier de couverture est **l'émission
+corpus read-only-view** (pattern v0 extrait 2026-08-01) puis générateur dédié —
+pas une reprise manuelle des modules déjà livrés.
 
 **Ce que ça change dans le plan :** la Phase 04 doit encore produire le
 générateur `read-only-view`. La Phase 07 suit la maturité des patterns : les 22

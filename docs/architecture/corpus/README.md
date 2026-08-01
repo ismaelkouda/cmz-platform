@@ -136,3 +136,5 @@ bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
 9. ✅ Module `processing` clôturé IR (A-2026-07-31-03) — Meta 12/12
 10. ✅ Module `report-states` clôturé IR (A-2026-07-31-04) — Meta 12/12 —
     famille `workflow-action` 4/4
+11. ✅ Pattern `read-only-view` v0 extrait (2026-08-01) — monitoring + reporting
+    validés ; corpus monitoring/reporting à émettre

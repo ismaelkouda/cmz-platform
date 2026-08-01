@@ -1,0 +1,261 @@
+{
+  "pattern": "read-only-view",
+  "version": 0,
+  "lineage": "Enterprise OOP (Angular + DDD) — famille lecture seule : vues analytiques query-only, embeds Grafana, cartes SIG (optionnel)",
+  "description": "Module ou page en lecture seule sans mutation métier. Pipeline minimal : entité lien (Grafana ou carte) + section paramétrée + use-case defer + ResourceFacade par page + composant page mince. Ni crud-entity (pas de liste paginée CRUD) ni workflow-action (pas de take/treat). Consolidation domaine/data : N pages legacy identiques → 1 entité, 1 DTO variables, 1 repository paramétré par section, 1 mapper pluck ; application/UI restent N façades + N pages.",
+  "validated_on": ["monitoring", "reporting"],
+  "partial_modules": ["interactive-map"],
+  "reference_module": "monitoring",
+  "reference_implementation": {
+    "legacy_path": "src/presentation/pages/monitoring",
+    "nx_path": "libs/monitoring",
+    "description": "4 embeds Grafana — consolidation 4× vertical → 1 stack domain/data"
+  },
+  "second_validation": {
+    "module": "reporting",
+    "legacy_path": "src/presentation/pages/reporting",
+    "nx_path": "libs/reporting",
+    "pattern_schema_unchanged": true,
+    "validated_at": "2026-08-01",
+    "notes": "Réplication stricte du schéma monitoring — 4 sections, même endpoint variables"
+  },
+  "partial_validation": {
+    "module": "interactive-map",
+    "legacy_path": "src/presentation/pages/interactive-map",
+    "nx_path": "libs/interactive-map",
+    "status": "partial",
+    "validated_at": "2026-08-01",
+    "notes": "Volet visualization (Grafana) ✅ — volet interactive (SIG OpenLayers) ⚠️ coquille statique hors périmètre IR ; endpoints SIG déclarés non câblés"
+  },
+  "subgraphs": {
+    "grafana_multi_section": {
+      "description": "N pages Grafana partageant GET variables — 1 stack consolidé domain/data",
+      "placeholder": "{SECTION}",
+      "modules": ["monitoring", "reporting"],
+      "shared_endpoint": "SETTINGS_API_URL/variables",
+      "entity_shape": "GrafanaDashboardEntity(grafanaLink: string)"
+    },
+    "grafana_single_view": {
+      "description": "1 page Grafana — repository getMap() sans enum section",
+      "modules": ["interactive-map"],
+      "route": "visualization",
+      "entity_shape": "MapEntity(grafanaLink: string)"
+    },
+    "gis_map_view": {
+      "description": "Carte SIG dynamique (legacy OpenLayers) — hors périmètre IR v0",
+      "modules": ["interactive-map"],
+      "route": "interactive",
+      "status": "declared-not-implemented",
+      "current_nx": "InteractiveMapPageComponent — coquille statique sans facade"
+    }
+  },
+  "chains": {
+    "monitoring.node.view": {
+      "module": "monitoring",
+      "section": "node",
+      "subgraph": "grafana_multi_section",
+      "description": "État traitement — embed Grafana"
+    },
+    "monitoring.services.view": {
+      "module": "monitoring",
+      "section": "services",
+      "subgraph": "grafana_multi_section",
+      "description": "État services — embed Grafana"
+    },
+    "monitoring.resources.view": {
+      "module": "monitoring",
+      "section": "resources",
+      "subgraph": "grafana_multi_section",
+      "description": "État ressources — embed Grafana"
+    },
+    "monitoring.jobs.view": {
+      "module": "monitoring",
+      "section": "jobs",
+      "subgraph": "grafana_multi_section",
+      "description": "Impact jobs — embed Grafana"
+    },
+    "monitoring.module.shell": {
+      "module": "monitoring",
+      "description": "Routes, endpoints, composition root"
+    },
+    "reporting.report.view": {
+      "module": "reporting",
+      "section": "report",
+      "subgraph": "grafana_multi_section",
+      "description": "Rapports — embed Grafana"
+    },
+    "reporting.requests.view": {
+      "module": "reporting",
+      "section": "requests",
+      "subgraph": "grafana_multi_section",
+      "description": "Demandes — embed Grafana"
+    },
+    "reporting.report-by-channel.view": {
+      "module": "reporting",
+      "section": "report-by-channel",
+      "subgraph": "grafana_multi_section",
+      "description": "Rapport par canal — embed Grafana"
+    },
+    "reporting.report-by-operator.view": {
+      "module": "reporting",
+      "section": "report-by-operator",
+      "subgraph": "grafana_multi_section",
+      "description": "Rapport par opérateur — embed Grafana"
+    },
+    "reporting.module.shell": {
+      "module": "reporting",
+      "description": "Routes, endpoints, composition root"
+    },
+    "interactive-map.visualization.view": {
+      "module": "interactive-map",
+      "subgraph": "grafana_single_view",
+      "description": "Tableau de bord interactif — embed Grafana (mapLink)"
+    },
+    "interactive-map.interactive.view": {
+      "module": "interactive-map",
+      "subgraph": "gis_map_view",
+      "description": "Carte SIG — legacy OpenLayers ; Nx = coquille statique v0"
+    },
+    "interactive-map.module.shell": {
+      "module": "interactive-map",
+      "description": "Routes, endpoints, composition root"
+    }
+  },
+  "grafana_multi_section_core_files_legacy": [
+    "domain/entities/{SECTION}/{SECTION}.entity.ts",
+    "domain/repositories/{SECTION}/{SECTION}.repository.ts",
+    "application/use-cases/{SECTION}/{SECTION}.use-case.ts",
+    "application/services/{SECTION}/{SECTION}.facade.ts",
+    "application/queries/{SECTION}/{SECTION}.query.ts",
+    "application/queries-handlers/{SECTION}/{SECTION}.handler.ts",
+    "application/queries-mappers/{SECTION}/{SECTION}.mapper.ts",
+    "infrastructure/api/dto/{SECTION}/{SECTION}-response-api.dto.ts",
+    "infrastructure/data/sources/{SECTION}/{SECTION}.api.ts",
+    "infrastructure/data/repositories/{SECTION}/{SECTION}.repository.impl.ts",
+    "infrastructure/data/mappers/{SECTION}/{SECTION}.mapper.ts",
+    "presentation/features/{SECTION}/{SECTION}.component.ts"
+  ],
+  "grafana_multi_section_core_files_nx": {
+    "consolidated_domain_data": [
+      "libs/{MODULE}/domain/src/lib/entities/grafana-dashboard.entity.ts",
+      "libs/{MODULE}/domain/src/lib/enums/{module}-section.enum.ts",
+      "libs/{MODULE}/domain/src/lib/repositories/{module}.repository.ts",
+      "libs/{MODULE}/data/src/lib/dtos/{module}-variables-response.dto.ts",
+      "libs/{MODULE}/data/src/lib/endpoints/{module}.endpoints.ts",
+      "libs/{MODULE}/data/src/lib/mappers/grafana-dashboard.mapper.ts",
+      "libs/{MODULE}/data/src/lib/sources/{module}.api.ts",
+      "libs/{MODULE}/data/src/lib/repositories/{module}.repository.impl.ts"
+    ],
+    "per_section_application": [
+      "libs/{MODULE}/application/src/lib/use-cases/{module}.use-case.ts",
+      "libs/{MODULE}/application/src/lib/facades/{section-kebab}.facade.ts"
+    ],
+    "per_section_ui": [
+      "libs/{MODULE}/ui/src/lib/features/{section-kebab}-page.component.ts"
+    ],
+    "module_shell": [
+      "libs/{MODULE}/ui/src/lib/features/{module}.routes.ts",
+      "apps/backoffice-angular/src/app/providers/{module}.providers.ts"
+    ],
+    "shared_kernel": [
+      "libs/shared/application/src/lib/facades/resource.facade.ts",
+      "libs/shared/ui/src/lib/components/grafana-embed/grafana-embed.component.ts"
+    ]
+  },
+  "grafana_single_view_core_files_nx": [
+    "libs/{MODULE}/domain/src/lib/entities/map.entity.ts",
+    "libs/{MODULE}/domain/src/lib/repositories/{module}.repository.ts",
+    "libs/{MODULE}/data/src/lib/dtos/map-response.dto.ts",
+    "libs/{MODULE}/data/src/lib/mappers/map.mapper.ts",
+    "libs/{MODULE}/data/src/lib/sources/map.api.ts",
+    "libs/{MODULE}/data/src/lib/repositories/{module}.repository.impl.ts",
+    "libs/{MODULE}/application/src/lib/use-cases/map.use-case.ts",
+    "libs/{MODULE}/application/src/lib/facades/map.facade.ts",
+    "libs/{MODULE}/ui/src/lib/features/map-page.component.ts"
+  ],
+  "nx_mapping": {
+    "module_placeholder": "{MODULE}",
+    "section_placeholder": "{SECTION}",
+    "section_kebab": "{section-kebab}",
+    "naming": {
+      "entity_class_multi": "GrafanaDashboardEntity",
+      "entity_class_single": "MapEntity",
+      "section_enum": "{ModulePascal}Section",
+      "repository_port": "{ModulePascal}Repository",
+      "repository_impl": "{ModulePascal}RepositoryImpl",
+      "use_case_class": "{ModulePascal}UseCase",
+      "facade_class": "{SectionPascal}Facade",
+      "page_component": "{SectionPascal}PageComponent",
+      "section_field_map": "{MODULE}_SECTION_FIELD"
+    },
+    "layer_map": {
+      "domain": "libs/{MODULE}/domain/src/lib",
+      "data": "libs/{MODULE}/data/src/lib",
+      "application": "libs/{MODULE}/application/src/lib",
+      "ui": "libs/{MODULE}/ui/src/lib",
+      "di": "apps/backoffice-angular/src/app/providers"
+    },
+    "legacy_layers_dropped_in_nx": [
+      "application/queries/{SECTION}/{SECTION}.query.ts",
+      "application/queries-handlers/{SECTION}/{SECTION}.handler.ts",
+      "application/queries-mappers/{SECTION}/{SECTION}.mapper.ts",
+      "application/queries-bus/{SECTION}/{SECTION}.bus.ts"
+    ],
+    "legacy_layers_dropped_rationale": "Use-case direct + ResourceFacade remplace CQRS ceremony pour lectures query-only en cible Nx"
+  },
+  "forbidden_in_nx": [
+    "commands",
+    "mutations",
+    "CollectionFacade runAction",
+    "PaginatedResourceFacade",
+    "filter-store",
+    "vm-props",
+    "vm-presenter",
+    "cmz-table",
+    "cmz-filter",
+    "__action",
+    "__actionDropdown"
+  ],
+  "required_shared": {
+    "ResourceFacade": "libs/shared/application/src/lib/facades/resource.facade.ts",
+    "GrafanaEmbedComponent": "libs/shared/ui/src/lib/components/grafana-embed/grafana-embed.component.ts",
+    "FetchOptions": "@cmz/shared-domain"
+  },
+  "consolidation_rule": {
+    "trigger": "N pages legacy avec même forme (1 champ grafanaLink, même endpoint variables)",
+    "domain": "1 GrafanaDashboardEntity + 1 {Module}Repository.execute(section, options?)",
+    "data": "1 DTO variables (tous champs wire) + 1 mapper paramétré {MODULE}_SECTION_FIELD",
+    "application_ui": "N façades distinctes (1 singleton par page, section hardcodée dans stream())"
+  },
+  "differences_vs_crud_entity": {
+    "pas_de_liste_paginee": "Pas de FilterEntity, PageResult, ni table liste",
+    "pas_de_mutations": "Aucun create/update/delete/enable/disable",
+    "pas_de_vm_props": "Page lie directement facade.value() au composant embed"
+  },
+  "differences_vs_workflow_action": {
+    "pas_de_workflow": "Pas de take/treat/approve, pas de details dialog, pas d'export Excel liste",
+    "pas_de_section_volet": "Section = clé de pluck DTO, pas volet queues/tasks/all"
+  },
+  "differences_vs_action_request": {
+    "lecture_seule": "execute/getMap retourne Observable<Entity> — pas de Command DTO ni handler mutation"
+  },
+  "design_decisions_v0": {
+    "contexte": "Première formalisation read-only-view — monorepo cmz-platform, modules monitoring + reporting livrés.",
+    "reference_module": "monitoring choisi car premier livré avec décision de consolidation documentée (module-monitoring.md)",
+    "corpus_next": "Émission corpus monitoring.pairs.jsonl + reporting.pairs.jsonl — tâche planifiée post-v0",
+    "interactive_map_scope": "Alignement pattern + câblage Grafana OK ; rebuild SIG OpenLayers explicitement hors périmètre IR",
+    "oracle_minimum": [
+      "bunx nx run-many -t build --projects=tag:scope:{module}",
+      "bunx eslint libs/{module} --max-warnings=0",
+      "ngc --strictTemplates"
+    ]
+  },
+  "core_files_count_estimate": {
+    "grafana_multi_section_consolidated_nx": 8,
+    "grafana_multi_section_per_page_nx": 2,
+    "grafana_multi_section_module_shell": 2,
+    "monitoring_pages": 4,
+    "reporting_pages": 4,
+    "note": "Comptes indicatifs — source de vérité = impl libs/monitoring et libs/reporting"
+  }
+}

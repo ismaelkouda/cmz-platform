@@ -79,6 +79,8 @@ requête, il est requis, pas silencieusement optionnel par défaut.
   composition-root providers.
 - [`workflow-action.md`](./workflow-action.md) — famille workflow (files
   d'attente, take/treat, actions CRUD) — **module de référence : `processing`**.
+- [`read-only-view.md`](./read-only-view.md) — vues analytiques query-only,
+  embeds Grafana — **module de référence : `monitoring`**.
 
 ## Boucle d'application (par fichier, par entité)
 

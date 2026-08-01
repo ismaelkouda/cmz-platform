@@ -17,12 +17,12 @@ famille d'entités. Ils servent à :
 
 ## Schémas disponibles
 
-| Pattern               | Fichier                                                          | Module de référence                                                       | Statut                                                      |
-| --------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `crud-entity`         | legacy `seos/patterns/crud-entity.pattern.json`                  | `administrative-infrastructure`                                           | ✅ v23 — référence historique                               |
-| `action-request`      | legacy `seos/patterns/action-request.pattern.json`               | `authentication`                                                          | ✅ v6                                                       |
-| `read-only-view`      | _à extraire (tâche planifiée, volet par volet)_                  | `monitoring`, `reporting`, `interactive-map` (⚠️)                         | 🔧 3 modules compilants ; schéma JSON + générateur restants |
-| **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`**, **`requests`**, **`finalization`**, **`report-states`** | ✅ **v0 — 4/4 modules IR clôturés**                         |
+| Pattern               | Fichier                                                          | Module de référence                                                       | Statut                              |
+| --------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------- |
+| `crud-entity`         | legacy `seos/patterns/crud-entity.pattern.json`                  | `administrative-infrastructure`                                           | ✅ v23 — référence historique       |
+| `action-request`      | legacy `seos/patterns/action-request.pattern.json`               | `authentication`                                                          | ✅ v6                               |
+| `read-only-view`      | [`read-only-view.pattern.json`](./read-only-view.pattern.json)   | **`monitoring`**, **`reporting`**, `interactive-map` (⚠️)                 | ✅ **v0 — 2/3 modules validés**     |
+| **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`**, **`requests`**, **`finalization`**, **`report-states`** | ✅ **v0 — 4/4 modules IR clôturés** |
 
 ## Différence legacy vs monorepo
 
@@ -52,5 +52,7 @@ Legacy source (vérité métier)
 
 - [Corpus — spec](../corpus/README.md)
 - [Archétype workflow-action](../archetypes/workflow-action.md)
-- [Module processing (référence)](../module-processing.md)
+- [Archétype read-only-view](../archetypes/read-only-view.md)
+- [Module processing (référence workflow)](../module-processing.md)
+- [Module monitoring (référence read-only-view)](../module-monitoring.md)
 - [ADR-0010 — Flux IA](../adr/0010-flux-de-generation-assistee-par-ia.md)
