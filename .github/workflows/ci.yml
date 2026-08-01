@@ -131,6 +131,12 @@ jobs:
 
       - name: Corpus report-states (emit + oracle Tier 1)
         run: node tools/corpus/emit-pairs.mjs report-states --verify --oracle-only
+
+      - name: Corpus monitoring (emit + oracle Tier 1, read-only-view)
+        run: node tools/corpus/emit-pairs.mjs monitoring --verify --oracle-only
+
+      - name: Corpus reporting (emit + oracle Tier 1, read-only-view)
+        run: node tools/corpus/emit-pairs.mjs reporting --verify --oracle-only
   dead-code:
     name: Dead-code (knip)
     runs-on: ubuntu-latest

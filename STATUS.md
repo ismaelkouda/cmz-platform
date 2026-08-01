@@ -36,10 +36,10 @@
 | `dashboard`                     |   ✅   | read-only-view  | application, data, domain, ui                     |           29 | Compilant                                                    |
 | `finalization`                  |   ✅   | workflow-action | application, data, domain, ui                     |          111 | Module IR clôturé — corpus 126 paires, 6 chaînes, Meta 12/12 |
 | `interactive-map`               |   ⚠️   | read-only-view  | application, data, domain, ui                     |           17 | Vue statique — SIG OpenLayers non reconstruit                |
-| `monitoring`                    |   ✅   | read-only-view  | application, data, domain, ui                     |           22 | Compilant — 4 embeds Grafana                                 |
+| `monitoring`                    |   ✅   | read-only-view  | application, data, domain, ui                     |           22 | Compilant — 4 embeds Grafana ; corpus 51 paires, 5 chaînes   |
 | `processing`                    |   ✅   | workflow-action | application, data, domain, ui                     |          140 | Module IR clôturé — corpus 156 paires, 7 chaînes, Meta 12/12 |
 | `report-states`                 |   ✅   | workflow-action | application, data, domain, ui                     |          172 | Module IR clôturé — corpus 187 paires, 8 chaînes, Meta 12/12 |
-| `reporting`                     |   ✅   | read-only-view  | application, data, domain, ui                     |           22 | Compilant — 4 vues analytiques                               |
+| `reporting`                     |   ✅   | read-only-view  | application, data, domain, ui                     |           22 | Compilant — 4 vues analytiques ; corpus 51 paires, 5 chaînes |
 | `requests`                      |   ✅   | workflow-action | application, data, domain, ui                     |          128 | Module IR clôturé — corpus 157 paires, 8 chaînes, Meta 12/12 |
 | `settings-security`             |   ✅   | crud-entity     | application, data, domain, ui                     |          197 | Compilant — 3 entités                                        |
 | `shared`                        |   ✅   | kernel          | application, browser, constants, data, domain, ui |          182 | Kernel transverse opérationnel                               |

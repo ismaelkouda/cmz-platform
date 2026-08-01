@@ -3,5 +3,14 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/monitoring/application/src",
   "projectType": "library",
-  "tags": ["scope:monitoring", "type:application"]
+  "tags": ["scope:monitoring", "type:application"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/monitoring/application/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

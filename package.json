@@ -26,8 +26,12 @@
     "corpus:report-states": "node tools/corpus/emit-pairs.mjs report-states --verify",
     "corpus:report-states:full": "node tools/corpus/emit-pairs.mjs report-states --verify",
     "corpus:report-states:export": "node tools/corpus/emit-pairs.mjs report-states --verify --chain report-states.export.list",
+    "corpus:monitoring": "node tools/corpus/emit-pairs.mjs monitoring --verify",
+    "corpus:monitoring:report": "node tools/corpus/emit-pairs.mjs monitoring --report --dry-run",
+    "corpus:reporting": "node tools/corpus/emit-pairs.mjs reporting --verify",
+    "corpus:reporting:report": "node tools/corpus/emit-pairs.mjs reporting --report --dry-run",
     "corpus:sync-pattern": "node tools/corpus/sync-workflow-action-pattern.mjs",
-    "corpus:ci": "CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs processing --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs requests --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs finalization --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs report-states --verify --oracle-only",
+    "corpus:ci": "CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs processing --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs requests --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs finalization --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs report-states --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs monitoring --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs reporting --verify --oracle-only",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "mock": "node tools/mock-server.mjs"

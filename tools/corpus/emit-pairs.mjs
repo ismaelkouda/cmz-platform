@@ -14,8 +14,28 @@ import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CHAINS, MODULES } from './chains.mjs';
-import { expandChain } from './mapping.mjs';
+import {
+    CHAINS as WORKFLOW_CHAINS,
+    MODULES as WORKFLOW_MODULES,
+} from './chains.mjs';
+import { expandChain as expandWorkflowChain } from './mapping.mjs';
+import {
+    READ_ONLY_VIEW_CHAINS,
+    READ_ONLY_VIEW_MODULES,
+    expandReadOnlyViewChain,
+} from './read-only-view.mjs';
+
+const CHAINS = { ...WORKFLOW_CHAINS, ...READ_ONLY_VIEW_CHAINS };
+const MODULES = { ...WORKFLOW_MODULES, ...READ_ONLY_VIEW_MODULES };
+
+/** @param {string} mod @param {object} chain */
+function expandForModule(mod, chain) {
+    const def = MODULES[mod];
+    if (def?.pattern === 'read-only-view') {
+        return expandReadOnlyViewChain(mod, chain);
+    }
+    return expandWorkflowChain(mod, chain);
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');
@@ -231,7 +251,7 @@ if (chainFilter && chainIds.length === 0) {
 /** @type {CorpusPair[]} */
 const allPairs = [];
 for (const chainId of chainIds) {
-    allPairs.push(...expandChain(moduleName, CHAINS[chainId]));
+    allPairs.push(...expandForModule(moduleName, CHAINS[chainId]));
 }
 
 const resolved = emitPairs(allPairs);

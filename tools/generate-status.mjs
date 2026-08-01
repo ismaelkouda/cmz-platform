@@ -103,12 +103,12 @@ const META = {
     monitoring: {
         status: '✅',
         family: 'read-only-view',
-        notes: 'Compilant — 4 embeds Grafana',
+        notes: 'Compilant — 4 embeds Grafana ; corpus 51 paires, 5 chaînes',
     },
     reporting: {
         status: '✅',
         family: 'read-only-view',
-        notes: 'Compilant — 4 vues analytiques',
+        notes: 'Compilant — 4 vues analytiques ; corpus 51 paires, 5 chaînes',
     },
     'interactive-map': {
         status: '⚠️',

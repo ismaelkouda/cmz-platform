@@ -116,6 +116,8 @@ bun run corpus:processing:export   # chaîne export.list seule
 bun run corpus:report-states       # 8 chaînes (listes + details + export)
 bun run corpus:report-states:full    # idem — verify complet
 bun run corpus:report-states:export  # chaîne export.list seule
+bun run corpus:monitoring            # 5 chaînes read-only-view (4 vues + shell)
+bun run corpus:reporting             # 5 chaînes read-only-view (4 vues + shell)
 bun run corpus:requests            # tranche A — listes + shell (gate rapide)
 bun run corpus:requests:full       # 8 chaînes (listes + details + export + permissions + qualification)
 bun run corpus:ci                  # Tier 1 CI — processing + requests (full) + finalization + report-states
@@ -137,4 +139,5 @@ bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
 10. ✅ Module `report-states` clôturé IR (A-2026-07-31-04) — Meta 12/12 —
     famille `workflow-action` 4/4
 11. ✅ Pattern `read-only-view` v0 extrait (2026-08-01) — monitoring + reporting
-    validés ; corpus monitoring/reporting à émettre
+    validés ; corpus monitoring/reporting émis (51 + 51 paires)
+12. 🔧 CI Tier 2 intégration (nightly ou PR `apps/**`)
