@@ -3,7 +3,7 @@
 - **Créé :** 2026-08-01
 - **Pattern JSON :**
   [`read-only-view.pattern.json`](../patterns/read-only-view.pattern.json) v0
-- **Modules validés :** `monitoring`, `reporting` ✅
+- **Modules validés :** `monitoring`, `reporting`, `dashboard` ✅
 - **Module partiel :** `interactive-map` ⚠️ (Grafana OK ; SIG hors périmètre IR)
 - **Référence :** [`module-monitoring.md`](../module-monitoring.md)
 
@@ -64,6 +64,15 @@ Même pipeline sans enum section : `MapEntity` + `getMap()` + `MapFacade` +
 Legacy : OpenLayers (`ol`), clusters, tuiles couverture. **Nx v0 :** coquille
 statique (`InteractiveMapPageComponent`) — **pas de rebuild SIG** ; endpoints
 SIG déclarés dans `interactive-map.endpoints.ts` non câblés.
+
+### `aggregated_stats_view` — dashboard
+
+Objet agrégé unique (`DashboardProps`) — **pas d'embed Grafana**. Pipeline :
+`DashboardFilterVo` + `DashboardRepository.execute()` + `DashboardFacade`
+(`ResourceFacade`) + cartes statistiques.
+
+**Exceptions autorisées** au `forbidden_in_nx` read-only-view : `filter-store`,
+`vm-presenter` (sélecteur période + projection cartes).
 
 ---
 
@@ -158,6 +167,7 @@ Corpus :
 ```bash
 node tools/corpus/emit-pairs.mjs monitoring --verify    # ✅ 51 paires
 node tools/corpus/emit-pairs.mjs reporting --verify     # ✅ 51 paires
+node tools/corpus/emit-pairs.mjs dashboard --verify       # ✅ 25 paires (aggregated_stats_view)
 node tools/corpus/emit-pairs.mjs interactive-map --verify  # ⚠️ 28 paires (partiel)
 ```
 

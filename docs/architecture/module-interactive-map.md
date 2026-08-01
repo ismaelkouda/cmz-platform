@@ -2,9 +2,10 @@
 
 - **Créé :** 2026-07-28
 - **Dernière mise à jour :** 2026-07-31
-- **Statut :** **⚠️ partiel** — alignement archétype `read-only-view` + câblage
-  app/mock **✅** ; **SIG OpenLayers non reconstruit** (hors périmètre IR). Voir
-  [`STATUS.md`](../../STATUS.md).
+- **Statut :** **⚠️ partiel IR** — visualization ✅ (Meta documenté) ; **SIG
+  OpenLayers non reconstruit** (hors périmètre IR). Corpus 28 paires, 3 chaînes.
+  Voir
+  [`audits/interactive-map-meta-verification.md`](audits/interactive-map-meta-verification.md).
 - **Objectif :** Aligner le module `interactive-map` sur le pattern SEOS
   `read-only-view` du monorepo (2 volets `/interactive-map/interactive` et
   `/interactive-map/visualization`), garantir le câblage end-to-end (domain →

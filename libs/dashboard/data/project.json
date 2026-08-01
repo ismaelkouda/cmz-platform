@@ -3,5 +3,14 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/dashboard/data/src",
   "projectType": "library",
-  "tags": ["scope:dashboard", "type:data"]
+  "tags": ["scope:dashboard", "type:data"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/dashboard/data/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

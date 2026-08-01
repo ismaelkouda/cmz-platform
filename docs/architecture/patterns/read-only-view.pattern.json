@@ -3,7 +3,7 @@
   "version": 0,
   "lineage": "Enterprise OOP (Angular + DDD) — famille lecture seule : vues analytiques query-only, embeds Grafana, cartes SIG (optionnel)",
   "description": "Module ou page en lecture seule sans mutation métier. Pipeline minimal : entité lien (Grafana ou carte) + section paramétrée + use-case defer + ResourceFacade par page + composant page mince. Ni crud-entity (pas de liste paginée CRUD) ni workflow-action (pas de take/treat). Consolidation domaine/data : N pages legacy identiques → 1 entité, 1 DTO variables, 1 repository paramétré par section, 1 mapper pluck ; application/UI restent N façades + N pages.",
-  "validated_on": ["monitoring", "reporting"],
+  "validated_on": ["monitoring", "reporting", "dashboard"],
   "partial_modules": ["interactive-map"],
   "reference_module": "monitoring",
   "reference_implementation": {
@@ -18,6 +18,14 @@
     "pattern_schema_unchanged": true,
     "validated_at": "2026-08-01",
     "notes": "Réplication stricte du schéma monitoring — 4 sections, même endpoint variables"
+  },
+  "third_validation": {
+    "module": "dashboard",
+    "legacy_path": "src/presentation/pages/dashboard",
+    "nx_path": "libs/dashboard",
+    "subgraph": "aggregated_stats_view",
+    "validated_at": "2026-08-01",
+    "notes": "Objet agrégé unique + filtre période — exceptions filter-store / vm-presenter autorisées"
   },
   "partial_validation": {
     "module": "interactive-map",
@@ -47,6 +55,14 @@
       "route": "interactive",
       "status": "declared-not-implemented",
       "current_nx": "InteractiveMapPageComponent — coquille statique sans facade"
+    },
+    "aggregated_stats_view": {
+      "description": "Objet agrégé unique (statistiques) + filtre période — ResourceFacade, sans embed Grafana",
+      "modules": ["dashboard"],
+      "route": "dashboard",
+      "entity_shape": "DashboardEntity(props: DashboardProps)",
+      "exceptions_to_forbidden": ["filter-store", "vm-presenter"],
+      "notes": "Cartes statistiques — GET report/statistics ; pas de consolidation multi-section"
     }
   },
   "chains": {
@@ -118,6 +134,15 @@
     },
     "interactive-map.module.shell": {
       "module": "interactive-map",
+      "description": "Routes, endpoints, composition root"
+    },
+    "dashboard.view": {
+      "module": "dashboard",
+      "subgraph": "aggregated_stats_view",
+      "description": "Tableau de bord — statistiques agrégées + filtre période"
+    },
+    "dashboard.module.shell": {
+      "module": "dashboard",
       "description": "Routes, endpoints, composition root"
     }
   },

@@ -24,15 +24,31 @@ import {
     READ_ONLY_VIEW_MODULES,
     expandReadOnlyViewChain,
 } from './read-only-view.mjs';
+import {
+    DASHBOARD_CHAINS,
+    DASHBOARD_MODULES,
+    expandDashboardChain,
+} from './dashboard.mjs';
 
-const CHAINS = { ...WORKFLOW_CHAINS, ...READ_ONLY_VIEW_CHAINS };
-const MODULES = { ...WORKFLOW_MODULES, ...READ_ONLY_VIEW_MODULES };
+const CHAINS = {
+    ...WORKFLOW_CHAINS,
+    ...READ_ONLY_VIEW_CHAINS,
+    ...DASHBOARD_CHAINS,
+};
+const MODULES = {
+    ...WORKFLOW_MODULES,
+    ...READ_ONLY_VIEW_MODULES,
+    ...DASHBOARD_MODULES,
+};
 
 /** @param {string} mod @param {object} chain */
 function expandForModule(mod, chain) {
     const def = MODULES[mod];
     if (def?.pattern === 'read-only-view') {
         return expandReadOnlyViewChain(mod, chain);
+    }
+    if (def?.pattern === 'aggregated-stats-view') {
+        return expandDashboardChain(mod, chain);
     }
     return expandWorkflowChain(mod, chain);
 }

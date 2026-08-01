@@ -17,12 +17,12 @@ famille d'entités. Ils servent à :
 
 ## Schémas disponibles
 
-| Pattern               | Fichier                                                          | Module de référence                                                       | Statut                              |
-| --------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------- |
-| `crud-entity`         | legacy `seos/patterns/crud-entity.pattern.json`                  | `administrative-infrastructure`                                           | ✅ v23 — référence historique       |
-| `action-request`      | legacy `seos/patterns/action-request.pattern.json`               | `authentication`                                                          | ✅ v6                               |
-| `read-only-view`      | [`read-only-view.pattern.json`](./read-only-view.pattern.json)   | **`monitoring`**, **`reporting`**, `interactive-map` (⚠️ partiel)         | ✅ **v0 — 2/3 modules validés**     |
-| **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`**, **`requests`**, **`finalization`**, **`report-states`** | ✅ **v0 — 4/4 modules IR clôturés** |
+| Pattern               | Fichier                                                          | Module de référence                                                        | Statut                              |
+| --------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------- |
+| `crud-entity`         | legacy `seos/patterns/crud-entity.pattern.json`                  | `administrative-infrastructure`                                            | ✅ v23 — référence historique       |
+| `action-request`      | legacy `seos/patterns/action-request.pattern.json`               | `authentication`                                                           | ✅ v6                               |
+| `read-only-view`      | [`read-only-view.pattern.json`](./read-only-view.pattern.json)   | **`monitoring`**, **`reporting`**, **`dashboard`**, `interactive-map` (⚠️) | ✅ **v0 — 3/4 modules validés**     |
+| **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`**, **`requests`**, **`finalization`**, **`report-states`**  | ✅ **v0 — 4/4 modules IR clôturés** |
 
 ## Différence legacy vs monorepo
 

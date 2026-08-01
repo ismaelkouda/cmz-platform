@@ -99,7 +99,11 @@ const META = {
         family: 'crud-entity',
         notes: 'Compilant — messagerie + notifications',
     },
-    dashboard: { status: '✅', family: 'read-only-view', notes: 'Compilant' },
+    dashboard: {
+        status: '✅',
+        family: 'read-only-view',
+        notes: 'Module IR clôturé — corpus 25 paires, Meta 12/12 ; aggregated_stats_view',
+    },
     monitoring: {
         status: '✅',
         family: 'read-only-view',
@@ -113,7 +117,7 @@ const META = {
     'interactive-map': {
         status: '⚠️',
         family: 'read-only-view',
-        notes: 'Vue statique — SIG OpenLayers non reconstruit',
+        notes: 'IR partielle — visualization ✅, SIG hors scope ; corpus 28 paires, Meta documenté',
     },
     'report-states': {
         status: '✅',

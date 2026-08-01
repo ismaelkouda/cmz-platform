@@ -33,10 +33,12 @@
     "corpus:reporting:report": "node tools/corpus/emit-pairs.mjs reporting --report --dry-run",
     "corpus:interactive-map": "node tools/corpus/emit-pairs.mjs interactive-map --verify",
     "corpus:interactive-map:report": "node tools/corpus/emit-pairs.mjs interactive-map --report --dry-run",
+    "corpus:dashboard": "node tools/corpus/emit-pairs.mjs dashboard --verify",
+    "corpus:dashboard:report": "node tools/corpus/emit-pairs.mjs dashboard --report --dry-run",
     "corpus:sync-pattern": "node tools/corpus/sync-workflow-action-pattern.mjs && node tools/corpus/sync-read-only-view-pattern.mjs",
     "corpus:sync-workflow-action-pattern": "node tools/corpus/sync-workflow-action-pattern.mjs",
     "corpus:sync-read-only-view-pattern": "node tools/corpus/sync-read-only-view-pattern.mjs",
-    "corpus:ci": "CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs processing --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs requests --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs finalization --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs report-states --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs monitoring --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs reporting --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs interactive-map --verify --oracle-only",
+    "corpus:ci": "CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs processing --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs requests --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs finalization --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs report-states --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs monitoring --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs reporting --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs dashboard --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs interactive-map --verify --oracle-only",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "mock": "node tools/mock-server.mjs"

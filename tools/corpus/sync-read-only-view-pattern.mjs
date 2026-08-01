@@ -43,6 +43,7 @@ const legacyPattern = {
     modules_validated: {
         monitoring: source.reference_implementation,
         reporting: source.second_validation,
+        dashboard: source.third_validation,
         'interactive-map': source.partial_validation,
     },
     nx_sync: {
@@ -52,6 +53,7 @@ const legacyPattern = {
         corpus: [
             'corpus/monitoring.pairs.jsonl',
             'corpus/reporting.pairs.jsonl',
+            'corpus/dashboard.pairs.jsonl',
             'corpus/interactive-map.pairs.jsonl',
         ],
         nx_mapping: source.nx_mapping,
