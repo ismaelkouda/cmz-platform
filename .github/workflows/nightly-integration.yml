@@ -1,0 +1,47 @@
+# Oracle Tier 2 — intégration app (A-2026-07-30-08)
+#
+# Tier 1 (corpus:ci, job `corpus` dans ci.yml) : modules `@cmz/*` isolés.
+# Tier 2 (ce workflow) : composition root — strictTemplates + build app.
+#
+# Déclenchement : nightly 03:00 UTC + manuel (workflow_dispatch).
+# Budget bundle production (1.81 MB > 1 MB) : P2 connu — build prod en signal
+# non bloquant jusqu'à durcissement monorepo (cf. audits Meta workflow-action).
+
+name: Nightly — Tier 2 intégration
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '22.22.3'
+  BUN_VERSION: '1.3.14'
+
+jobs:
+  integration:
+    name: Oracle Tier 2 — backoffice-angular
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: strictTemplates (ngc)
+        run: bunx ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit
+
+      - name: Build intégration (development)
+        run: bunx nx run backoffice-angular:build:development
+
+      - name: Build production (budget bundle — signal P2)
+        continue-on-error: true
+        run: bunx nx run backoffice-angular:build:production

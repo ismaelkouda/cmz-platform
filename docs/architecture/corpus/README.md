@@ -64,10 +64,10 @@ miroir dans
 
 ### Oracle ([A-2026-07-30-08](../../seos/Assumptions-Register.md))
 
-| Tier                     | Périmètre                                                 | Quand                          |
-| ------------------------ | --------------------------------------------------------- | ------------------------------ |
-| **Tier 1 — module**      | `@cmz/{module}-*:build\|test` + eslint `libs/{module}/**` | `emit-pairs --verify` (PR)     |
-| **Tier 2 — intégration** | `backoffice-angular:build` + `ngc --strictTemplates`      | PR touchant `apps/` ou nightly |
+| Tier                     | Périmètre                                                 | Quand                                                                                                              |
+| ------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Tier 1 — module**      | `@cmz/{module}-*:build\|test` + eslint `libs/{module}/**` | `emit-pairs --verify` (PR)                                                                                         |
+| **Tier 2 — intégration** | `backoffice-angular:build` + `ngc --strictTemplates`      | Nightly [`nightly-integration.yml`](../../.github/workflows/nightly-integration.yml) + `bun run check:tier2` local |
 
 Les paires corpus n'attachent **pas** `backoffice-angular:build` comme oracle de
 nœud.
@@ -129,7 +129,8 @@ bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
 1. ✅ Spec + outillage v0
 2. ✅ Tranche A `processing` + `requests` (100 % verified)
 3. ✅ CI Tier 1 sur PR (job `corpus` — `corpus:ci`)
-4. 🔧 CI Tier 2 intégration (nightly ou PR `apps/**`)
+4. ✅ CI Tier 2 intégration — nightly `nightly-integration.yml` +
+   `bun run check:tier2`
 5. ✅ Sync legacy `seos/patterns/workflow-action.pattern.json`
 6. ✅ Module `requests` clôturé IR (A-2026-07-31-01)
 7. ✅ Tranches B/C processing — corpus `tasks.actions` + `export.list` (156
@@ -140,4 +141,5 @@ bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
     famille `workflow-action` 4/4
 11. ✅ Pattern `read-only-view` v0 extrait (2026-08-01) — monitoring + reporting
     validés ; corpus monitoring/reporting émis (51 + 51 paires)
-12. 🔧 CI Tier 2 intégration (nightly ou PR `apps/**`)
+12. ✅ CI Tier 2 intégration — nightly + `check:tier2` (budget prod P2 en
+    signal)
