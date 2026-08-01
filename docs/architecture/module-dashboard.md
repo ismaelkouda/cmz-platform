@@ -91,13 +91,8 @@ Corrigé : la valeur reste numérique jusqu'à l'UI, qui applique
   (`%`/`j`/`h`) déjà écrite — traité comme une fonctionnalité oubliée à
   l'intégration plutôt qu'une section désactivée volontairement, donc complétée
   (le template la rend désormais).
-- **Cartes non cliquables (pour l'instant)** — le source liait chaque carte
-  `taskStatusStatistics` à une route absolue (`/report/queue`,
-  `/report/approval`, `/report/processing`, `/report/finalize`) appartenant aux
-  modules `requests`/`processing`/`finalization`, non encore reconstruits dans
-  ce monorepo. Plutôt que de pointer vers des routes inexistantes, le clic est
-  omis — à rebrancher quand ces modules existeront (les clés `key` des cartes
-  sont conservées pour faciliter ce rebranchement futur).
+- **Cartes task-status cliquables** — navigation vers les modules workflow /
+  `report-states` reconstruits ; sémantique corrigée vs legacy.
 - **Redirection par défaut de l'app changée** (`'' → 'dashboard'`, remplace
   `'equipments/types'`) — ce dernier n'était qu'un choix par défaut faute
   d'accueil reconstruit ; un tableau de bord est le point d'entrée naturel d'un

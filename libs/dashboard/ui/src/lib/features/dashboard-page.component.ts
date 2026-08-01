@@ -4,6 +4,7 @@ import {
     computed,
     inject,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { DashboardFacade } from '@cmz/dashboard-application';
 import { Period } from '@cmz/dashboard-domain';
 import { TranslationPort } from '@cmz/shared-application';
@@ -16,12 +17,8 @@ const T = 'DASHBOARD';
 
 /**
  * Page `dashboard` — lecture seule, pas de garde de permission (le source
- * n'en avait aucune sur cette page). Les cartes du source étaient
- * cliquables vers des routes absolues (`/report/queue`, `/report/
- * approval`, …) appartenant aux modules `requests`/`processing`/
- * `finalization`, non encore reconstruits dans ce monorepo — le clic est
- * omis pour l'instant plutôt que de pointer vers des routes inexistantes ;
- * à rebrancher quand ces modules existeront (cf. doc module).
+ * n'en avait aucune sur cette page). Les cartes task-status naviguent vers
+ * les modules workflow / report-states reconstruits.
  */
 @Component({
     selector: 'cmz-dashboard-page',
@@ -150,6 +147,12 @@ const T = 'DASHBOARD';
                             ) {
                                 <div
                                     class="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4"
+                                    [class.cursor-pointer]="card.route"
+                                    [class.hover:bg-surface-hover]="card.route"
+                                    [attr.role]="card.route ? 'link' : null"
+                                    [attr.tabindex]="card.route ? 0 : null"
+                                    (click)="navigateCard(card.route)"
+                                    (keyup.enter)="navigateCard(card.route)"
                                 >
                                     <div
                                         class="flex items-center justify-between"
@@ -252,6 +255,7 @@ export class DashboardPageComponent {
     private readonly facade = inject(DashboardFacade);
     private readonly store = inject(DashboardFilterStore);
     private readonly i18n = inject(TranslationPort);
+    private readonly router = inject(Router);
 
     protected readonly ns = T;
     protected readonly periodOptions = PERIOD_OPTIONS;
@@ -288,5 +292,12 @@ export class DashboardPageComponent {
 
     protected onRefresh(): void {
         this.facade.reload();
+    }
+
+    protected navigateCard(route: readonly string[] | undefined): void {
+        if (!route?.length) {
+            return;
+        }
+        void this.router.navigate(route);
     }
 }

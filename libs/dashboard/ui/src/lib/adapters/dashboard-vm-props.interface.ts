@@ -7,6 +7,8 @@ export interface StatCardVm {
     readonly label: string;
     readonly icon: string;
     readonly color: StatCardColor;
+    /** Route absolue Nx (ex. `requests/queues`) — cartes task-status uniquement. */
+    readonly route?: readonly string[];
 }
 
 /**

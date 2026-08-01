@@ -14,6 +14,7 @@
     "@cmz/interactive-map-domain": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
+    "ol": "catalog:",
     "rxjs": "catalog:"
   },
   "devDependencies": {

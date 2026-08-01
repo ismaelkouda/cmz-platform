@@ -1,6 +1,7 @@
 import { DashboardEntity } from '@cmz/dashboard-domain';
 import { ReportType } from '@cmz/shared-domain';
 import { REPORT_TYPE_LABEL, ThousandsSeparatorPipe } from '@cmz/shared-ui';
+import { DASHBOARD_TASK_STATUS_ROUTES } from '../constants/dashboard-task-status-routes.constant';
 import { DashboardVm, StatCardVm } from './dashboard-vm-props.interface';
 
 const T = 'DASHBOARD.SECTIONS';
@@ -64,7 +65,7 @@ export class DashboardPresenter {
     }
 
     private taskStatusCards(entity: DashboardEntity): StatCardVm[] {
-        return [
+        const cards: StatCardVm[] = [
             {
                 key: 'totalReportsPending',
                 value: this.thousands.transform(entity.totalReportsPending),
@@ -103,6 +104,11 @@ export class DashboardPresenter {
                 color: 'primary',
             },
         ];
+
+        return cards.map((card) => ({
+            ...card,
+            route: DASHBOARD_TASK_STATUS_ROUTES[card.key],
+        }));
     }
 
     private performanceCards(entity: DashboardEntity): StatCardVm[] {

@@ -2,16 +2,16 @@
 
 - **Créé :** 2026-07-28
 - **Dernière mise à jour :** 2026-07-31
-- **Statut :** **⚠️ partiel IR** — visualization ✅ (Meta documenté) ; **SIG
-  OpenLayers non reconstruit** (hors périmètre IR). Corpus 28 paires, 3 chaînes.
-  Voir
+- **Statut :** **⚠️ IR partielle avancée** — visualization ✅ ; **SIG v1** ✅
+  (OpenLayers lazy + signalements `GET report/all`) ; couverture réseau /
+  clusters / filtres legacy **P2**. Corpus 28 paires. Voir
   [`audits/interactive-map-meta-verification.md`](audits/interactive-map-meta-verification.md).
 - **Objectif :** Aligner le module `interactive-map` sur le pattern SEOS
   `read-only-view` du monorepo (2 volets `/interactive-map/interactive` et
   `/interactive-map/visualization`), garantir le câblage end-to-end (domain →
-  data → application → UI → providers → routes → i18n → mock). **Ne pas**
-  reconstruire la carte SIG dynamique OpenLayers du legacy — la vue
-  `interactive` reste une coquille statique jusqu'à décision produit explicite.
+  data → application → UI → providers → routes → i18n → mock). SIG v1 : carte
+  OSM + marqueurs signalements ; parité legacy complète (filtres, tuiles,
+  heatmap) en tranches ultérieures.
 
 ---
 

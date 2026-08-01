@@ -23,9 +23,10 @@
         ],
         "styles": [
           "apps/backoffice-angular/src/tailwind.css",
-          "apps/backoffice-angular/src/styles.scss"
+          "apps/backoffice-angular/src/styles.scss",
+          "node_modules/ol/ol.css"
         ],
-        "allowedCommonJsDependencies": ["exceljs"]
+        "allowedCommonJsDependencies": ["exceljs", "ol"]
       },
       "configurations": {
         "production": {

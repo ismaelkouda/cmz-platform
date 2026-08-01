@@ -53,6 +53,7 @@
     "date-fns": "catalog:",
     "exceljs": "^4.4.0",
     "i18next": "catalog:",
+    "ol": "catalog:",
     "rxjs": "catalog:",
     "tslib": "catalog:"
   },
@@ -112,6 +113,7 @@
       "i18next": "26.3.6",
       "date-fns": "4.4.0",
       "exceljs": "4.4.0",
+      "ol": "^10.9.0",
       "tailwindcss": "4.1.13",
       "@tailwindcss/postcss": "4.1.13",
       "postcss": "8.5.6"

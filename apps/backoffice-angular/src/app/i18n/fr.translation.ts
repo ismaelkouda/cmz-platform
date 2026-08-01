@@ -1449,9 +1449,11 @@ export const FR = {
             },
             TITLE: 'Carte interactive',
             LABEL: 'Carte interactive',
-            LOADING_DESCRIPTION: 'Suivi des performances en cours…',
+            LOADING_DESCRIPTION: 'Chargement de la carte et des signalements…',
             ERROR_DESCRIPTION:
                 'Une erreur est survenue lors du chargement de la carte interactive.',
+            REPORTS_ON_MAP: 'signalements affichés',
+            REFRESH: 'Actualiser la carte',
         },
         DASHBOARD: {
             BREADCRUMB: {
