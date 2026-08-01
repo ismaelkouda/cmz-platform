@@ -1,10 +1,13 @@
 import { Service } from '@angular/core';
-import * as ExcelJS from 'exceljs';
 import { ExcelExportPort, ExportOptions } from '@cmz/shared-domain';
+
+type ExcelJsModule = typeof import('exceljs');
 
 /** Adaptateur navigateur — export `.xlsx` via ExcelJS (legacy `ExcelExportService`). */
 @Service()
 export class BrowserExcelExportAdapter extends ExcelExportPort {
+    private excelJsModule?: Promise<ExcelJsModule>;
+
     async exportToExcel(options: ExportOptions): Promise<void> {
         const {
             fileName,
@@ -18,6 +21,7 @@ export class BrowserExcelExportAdapter extends ExcelExportPort {
             return;
         }
 
+        const ExcelJS = await this.loadExcelJs();
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet(sheetName);
 
@@ -108,6 +112,11 @@ export class BrowserExcelExportAdapter extends ExcelExportPort {
         this.downloadBlob(buffer, `${fileName}_${Date.now()}.xlsx`);
     }
 
+    private loadExcelJs(): Promise<ExcelJsModule> {
+        this.excelJsModule ??= import('exceljs');
+        return this.excelJsModule;
+    }
+
     private getNestedValue(
         obj: Record<string, unknown>,
         path: string
@@ -120,7 +129,7 @@ export class BrowserExcelExportAdapter extends ExcelExportPort {
         }, obj);
     }
 
-    private downloadBlob(buffer: ExcelJS.Buffer, filename: string): void {
+    private downloadBlob(buffer: BlobPart, filename: string): void {
         const blob = new Blob([buffer], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         });

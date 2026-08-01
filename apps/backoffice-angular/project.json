@@ -24,15 +24,16 @@
         "styles": [
           "apps/backoffice-angular/src/tailwind.css",
           "apps/backoffice-angular/src/styles.scss"
-        ]
+        ],
+        "allowedCommonJsDependencies": ["exceljs"]
       },
       "configurations": {
         "production": {
           "budgets": [
             {
               "type": "initial",
-              "maximumWarning": "1.5mb",
-              "maximumError": "2mb"
+              "maximumWarning": "900kb",
+              "maximumError": "1mb"
             },
             {
               "type": "anyComponentStyle",

@@ -4,7 +4,7 @@
 # Tier 2 (ce workflow) : composition root — strictTemplates + build app.
 #
 # Déclenchement : nightly 03:00 UTC + manuel (workflow_dispatch).
-# Budget initial production : 2 MB (baseline ~1.81 MB — ExcelJS CommonJS transverse).
+# Budget initial production : ~856 kB (ExcelJS lazy ~948 kB au premier export).
 
 name: Nightly — Tier 2 intégration
 
