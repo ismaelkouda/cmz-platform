@@ -141,5 +141,5 @@ bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
     famille `workflow-action` 4/4
 11. ✅ Pattern `read-only-view` v0 extrait (2026-08-01) — monitoring + reporting
     validés ; corpus monitoring/reporting émis (51 + 51 paires)
-12. ✅ CI Tier 2 intégration — nightly + `check:tier2` (budget prod P2 en
-    signal)
+12. ✅ CI Tier 2 intégration — nightly + `check:tier2` (build prod bloquant,
+    budget initial 2 MB)

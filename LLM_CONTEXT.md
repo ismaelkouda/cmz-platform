@@ -144,7 +144,7 @@ directives suivantes :
 | Famille `read-only-view`  | **v0 + corpus** — `monitoring` + `reporting` ✅ (51 paires ×2) ; `interactive-map` ⚠️ |
 | Phase active              | **07** — reconstruction par patterns ; **08** non démarrée                            |
 | Oracle obligatoire        | build + eslint + strictTemplates + corpus `--verify` pour clôture module              |
-| Oracle Tier 2 (nightly)   | `bun run check:tier2` — ngc + `backoffice-angular:build:development`                  |
+| Oracle Tier 2 (nightly)   | `bun run check:tier2` — ngc + build development + build production (budget 2 MB)      |
 
 Documents de référence mis à jour en continu : `docs/architecture/module-*.md`,
 `docs/architecture/audits/*-meta-verification.md`,

@@ -11,7 +11,7 @@
     "check:weight": "node tools/check-file-weight.mjs",
     "check:names": "node tools/check-project-names.mjs",
     "check:dead-code": "bunx knip",
-    "check:tier2": "bunx ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit && bunx nx run backoffice-angular:build:development",
+    "check:tier2": "bunx ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit && bunx nx run backoffice-angular:build:development && bunx nx run backoffice-angular:build:production",
     "check:all": "bun run check:engines && bun run check:versions && bun run check:weight && bun run check:names",
     "generate:status": "node tools/generate-status.mjs",
     "corpus:processing": "node tools/corpus/emit-pairs.mjs processing --verify --tranche A",

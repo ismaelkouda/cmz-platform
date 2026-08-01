@@ -4,8 +4,7 @@
 # Tier 2 (ce workflow) : composition root — strictTemplates + build app.
 #
 # Déclenchement : nightly 03:00 UTC + manuel (workflow_dispatch).
-# Budget bundle production (1.81 MB > 1 MB) : P2 connu — build prod en signal
-# non bloquant jusqu'à durcissement monorepo (cf. audits Meta workflow-action).
+# Budget initial production : 2 MB (baseline ~1.81 MB — ExcelJS CommonJS transverse).
 
 name: Nightly — Tier 2 intégration
 
@@ -42,6 +41,5 @@ jobs:
       - name: Build intégration (development)
         run: bunx nx run backoffice-angular:build:development
 
-      - name: Build production (budget bundle — signal P2)
-        continue-on-error: true
+      - name: Build production
         run: bunx nx run backoffice-angular:build:production
