@@ -4,12 +4,12 @@ Ce document décrit **ce qui existe aujourd'hui** dans le monorepo. Il est mis �
 jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
-- **Dernière mise à jour :** 2026-07-31
-- **État :** **Phase 07 avancée** — socle outillé + Kernel transverse `shared/`
-  et `@cmz/core` opérationnels + **18 modules métier** livrés/compilants (voir
-  [`STATUS.md`](../../STATUS.md)). Famille `workflow-action` **clôturée IR**
-  (4/4 : `processing`, `requests`, `finalization`, `report-states`). Corpus
-  annoté + CI corpus (`corpus:ci`) opérationnels.
+- **Dernière mise à jour :** 2026-08-01
+- **État :** **Phase 07 clôturée — Phase 08 ouverte** — socle outillé + Kernel
+  transverse `shared/` et `@cmz/core` opérationnels + **18 modules métier**
+  livrés/compilants (voir [`STATUS.md`](../../STATUS.md)). Familles
+  `workflow-action` **4/4** et `read-only-view` **4/4** clôturées IR. Corpus
+  annoté + CI corpus (`corpus:ci`) + Tier 2 nightly opérationnels.
 
 ## Contenu du dépôt
 

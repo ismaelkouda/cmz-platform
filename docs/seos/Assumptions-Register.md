@@ -311,3 +311,33 @@ Format d'entrée :
 - **Implication :** famille `workflow-action` **complète IR** (4/4). P2 restants
   : centre d'export Shapefile volet `download`, parité UX shell legacy.
 - **Statut :** **accepted**
+
+---
+
+## A-2026-08-01-01 — Clôture famille `read-only-view` 4/4 + fin Phase 07
+
+- **Décision :** la famille `read-only-view` est **clôturée IR** (4/4) :
+  `monitoring`, `reporting`, `dashboard`, `interactive-map`. La **Phase 07**
+  (reconstruction assistée par patterns) est terminée ; la **Phase 08**
+  (génération depuis patterns sans code métier manuel) est ouverte.
+- **Contexte :** `interactive-map` livré avec Grafana + SIG v1 (OpenLayers lazy,
+  marqueurs `GET report/all`) ; Meta 12/12 signé
+  (`docs/architecture/audits/interactive-map-meta-verification.md`).
+- **Implication corpus :** pattern `read-only-view.pattern.json` —
+  `fourth_validation` ; sync legacy via `corpus:sync-read-only-view-pattern`.
+  Spec Phase 08 : `docs/architecture/generation-from-patterns.md`.
+- **Statut :** **accepted**
+
+---
+
+## A-2026-08-01-02 — SIG `interactive-map` P2 hors génération v0
+
+- **Décision :** clusters (`map/clusters`), tuiles couverture, geojson avancé,
+  filtres legacy multi-critères et parité UX SIG (~1100 lignes legacy) restent
+  **P2** — non requis pour clôture IR ni pour le premier pilote de génération
+  Phase 08.
+- **Contexte :** SIG v1 couvre le flux nominal (carte + marqueurs report/all) ;
+  endpoints déclarés mais non câblés documentés dans le corpus (`n/a`).
+- **Implication corpus :** paires SIG legacy restent `n/a` ; génération v0 ne
+  doit pas bloquer sur ces écarts.
+- **Statut :** **accepted**

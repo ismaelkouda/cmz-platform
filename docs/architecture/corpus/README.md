@@ -119,7 +119,7 @@ bun run corpus:report-states:export  # chaîne export.list seule
 bun run corpus:monitoring            # 5 chaînes read-only-view (4 vues + shell)
 bun run corpus:reporting             # 5 chaînes read-only-view (4 vues + shell)
 bun run corpus:dashboard             # 2 chaînes aggregated_stats_view
-bun run corpus:interactive-map       # 3 chaînes partielles (visualization + SIG stub + shell)
+bun run corpus:interactive-map       # 3 chaînes (visualization + SIG v1 + shell)
 bun run corpus:requests            # tranche A — listes + shell (gate rapide)
 bun run corpus:requests:full       # 8 chaînes (listes + details + export + permissions + qualification)
 bun run corpus:ci                  # Tier 1 CI — processing + requests (full) + finalization + report-states
@@ -150,5 +150,9 @@ bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
 14. ✅ Sync legacy `seos/patterns/read-only-view.pattern.json`
 15. ✅ Corpus `dashboard` — 25 paires, Meta 12/12 IR clôturé
     (`aggregated_stats_view`)
-16. ✅ Meta `interactive-map` — IR partielle documentée (visualization ✅, SIG
-    différé)
+16. ✅ Meta `interactive-map` — IR clôturée (Grafana + SIG v1 ; P2
+    clusters/tiles)
+17. ✅ **Phase 07 clôturée** — familles `workflow-action` 4/4 + `read-only-view`
+    4/4 (2026-08-01, A-2026-08-01-01)
+18. ⬜ **Phase 08** — génération depuis patterns
+    ([`generation-from-patterns.md`](../generation-from-patterns.md))

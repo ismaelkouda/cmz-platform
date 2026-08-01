@@ -131,20 +131,24 @@ directives suivantes :
 
     Pattern `read-only-view` v0 :
     [`docs/architecture/patterns/read-only-view.pattern.json`](./docs/architecture/patterns/read-only-view.pattern.json).
-    Module de référence : **`monitoring`**.
+    Module de référence : **`monitoring`**. Famille **clôturée 4/4** :
+    `monitoring`, `reporting`, `dashboard`, `interactive-map` (2026-08-01).
+
+    Phase **08 — génération depuis patterns** :
+    [`docs/architecture/generation-from-patterns.md`](./docs/architecture/generation-from-patterns.md).
 
 ---
 
 ## 5. État courant du monorepo (2026-08-01)
 
-| Indicateur                | Valeur                                                                                                                         |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Modules livrés            | **18** (voir [`STATUS.md`](./STATUS.md))                                                                                       |
-| Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                                                           |
-| Famille `read-only-view`  | **3/4 IR** — `monitoring`, `reporting`, `dashboard` ✅ ; `interactive-map` ⚠️ partiel (Meta 12/12 dashboard, IR partielle map) |
-| Phase active              | **07** — reconstruction par patterns ; **08** non démarrée                                                                     |
-| Oracle obligatoire        | build + eslint + strictTemplates + corpus `--verify` pour clôture module                                                       |
-| Oracle Tier 2 (nightly)   | `bun run check:tier2` — ngc + build development + build production (initial ~856 kB)                                           |
+| Indicateur                | Valeur                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Modules livrés            | **18** (voir [`STATUS.md`](./STATUS.md))                                                                     |
+| Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                                         |
+| Famille `read-only-view`  | **4/4 IR clôturés** — `monitoring`, `reporting`, `dashboard`, `interactive-map` (SIG v1 ; P2 clusters/tiles) |
+| Phase active              | **08** — génération depuis patterns (Phase 07 clôturée 2026-08-01)                                           |
+| Oracle obligatoire        | build + eslint + strictTemplates + corpus `--verify` pour clôture module                                     |
+| Oracle Tier 2 (nightly)   | `bun run check:tier2` — ngc + build development + build production (initial ~861 kB)                         |
 
 Documents de référence mis à jour en continu : `docs/architecture/module-*.md`,
 `docs/architecture/audits/*-meta-verification.md`,

@@ -51,6 +51,8 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 - [Contrats d'archétype](./architecture/archetypes/README.md) — extraits du
   module `administrative-infrastructure`, testés sur `administrative-boundary`
   avant d'investir dans la Phase 04 (outillage SEOS)
+- [Génération depuis patterns](./architecture/generation-from-patterns.md) —
+  Phase 08 — workflow zéro code métier manuel (G-V-R)
 
 ## Guides
 

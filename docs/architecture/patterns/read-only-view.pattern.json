@@ -3,8 +3,7 @@
   "version": 0,
   "lineage": "Enterprise OOP (Angular + DDD) — famille lecture seule : vues analytiques query-only, embeds Grafana, cartes SIG (optionnel)",
   "description": "Module ou page en lecture seule sans mutation métier. Pipeline minimal : entité lien (Grafana ou carte) + section paramétrée + use-case defer + ResourceFacade par page + composant page mince. Ni crud-entity (pas de liste paginée CRUD) ni workflow-action (pas de take/treat). Consolidation domaine/data : N pages legacy identiques → 1 entité, 1 DTO variables, 1 repository paramétré par section, 1 mapper pluck ; application/UI restent N façades + N pages.",
-  "validated_on": ["monitoring", "reporting", "dashboard"],
-  "partial_modules": ["interactive-map"],
+  "validated_on": ["monitoring", "reporting", "dashboard", "interactive-map"],
   "reference_module": "monitoring",
   "reference_implementation": {
     "legacy_path": "src/presentation/pages/monitoring",
@@ -27,13 +26,14 @@
     "validated_at": "2026-08-01",
     "notes": "Objet agrégé unique + filtre période — exceptions filter-store / vm-presenter autorisées"
   },
-  "partial_validation": {
+  "fourth_validation": {
     "module": "interactive-map",
     "legacy_path": "src/presentation/pages/interactive-map",
     "nx_path": "libs/interactive-map",
-    "status": "partial",
+    "subgraphs": ["grafana_single_view", "gis_map_view"],
     "validated_at": "2026-08-01",
-    "notes": "Volet visualization (Grafana) ✅ — volet interactive (SIG OpenLayers) ⚠️ coquille statique hors périmètre IR ; endpoints SIG déclarés non câblés"
+    "status": "closed_with_documented_gaps",
+    "notes": "Visualization ✅ ; SIG v1 (OL lazy + report/all) ✅ — clusters/tiles/geojson P2 (A-2026-08-01-02)"
   },
   "subgraphs": {
     "grafana_multi_section": {
@@ -50,11 +50,11 @@
       "entity_shape": "MapEntity(grafanaLink: string)"
     },
     "gis_map_view": {
-      "description": "Carte SIG dynamique (legacy OpenLayers) — hors périmètre IR v0",
+      "description": "Carte SIG dynamique (OpenLayers) — v1 marqueurs report/all ; parité legacy P2",
       "modules": ["interactive-map"],
       "route": "interactive",
-      "status": "declared-not-implemented",
-      "current_nx": "InteractiveMapPageComponent — coquille statique sans facade"
+      "status": "v1-implemented",
+      "current_nx": "InteractiveMapSigFacade + InteractiveMapOlViewComponent — marqueurs GET report/all ; clusters/tiles P2"
     },
     "aggregated_stats_view": {
       "description": "Objet agrégé unique (statistiques) + filtre période — ResourceFacade, sans embed Grafana",
@@ -130,7 +130,7 @@
     "interactive-map.interactive.view": {
       "module": "interactive-map",
       "subgraph": "gis_map_view",
-      "description": "Carte SIG — legacy OpenLayers ; Nx = coquille statique v0"
+      "description": "Carte SIG — OpenLayers lazy + marqueurs report/all (v1)"
     },
     "interactive-map.module.shell": {
       "module": "interactive-map",
@@ -268,7 +268,7 @@
     "contexte": "Première formalisation read-only-view — monorepo cmz-platform, modules monitoring + reporting livrés.",
     "reference_module": "monitoring choisi car premier livré avec décision de consolidation documentée (module-monitoring.md)",
     "corpus_next": "Émission corpus monitoring.pairs.jsonl + reporting.pairs.jsonl — tâche planifiée post-v0",
-    "interactive_map_scope": "Alignement pattern + câblage Grafana OK ; rebuild SIG OpenLayers explicitement hors périmètre IR",
+    "interactive_map_scope": "Grafana + SIG v1 clôturés IR ; parité legacy SIG (clusters, tuiles, filtres) P2 — A-2026-08-01-02",
     "oracle_minimum": [
       "bunx nx run-many -t build --projects=tag:scope:{module}",
       "bunx eslint libs/{module} --max-warnings=0",

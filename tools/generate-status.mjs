@@ -115,9 +115,9 @@ const META = {
         notes: 'Compilant — 4 vues analytiques ; corpus 51 paires, 5 chaînes',
     },
     'interactive-map': {
-        status: '⚠️',
+        status: '✅',
         family: 'read-only-view',
-        notes: 'IR partielle — visualization ✅, SIG hors scope ; corpus 28 paires, Meta documenté',
+        notes: 'Module IR clôturé — SIG v1 + Grafana ; corpus 28 paires, Meta 12/12 ; P2 clusters/tiles',
     },
     'report-states': {
         status: '✅',

@@ -37,14 +37,14 @@ const legacyPattern = {
     description: source.description,
     validated_on: source.validated_on,
     partial_modules: source.partial_modules,
-    source: 'cmz-platform docs/architecture/patterns/read-only-view.pattern.json — sync Rule 0 (monitoring + reporting corpus 51 paires, interactive-map partial, 2026-08-01)',
+    source: 'cmz-platform docs/architecture/patterns/read-only-view.pattern.json — sync Rule 0 (famille 4/4 clôturée 2026-08-01)',
     subgraphs: source.subgraphs,
     chains: source.chains,
     modules_validated: {
         monitoring: source.reference_implementation,
         reporting: source.second_validation,
         dashboard: source.third_validation,
-        'interactive-map': source.partial_validation,
+        'interactive-map': source.fourth_validation,
     },
     nx_sync: {
         monorepo_path: 'cmz-platform',
