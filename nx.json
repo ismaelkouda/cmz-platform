@@ -10,8 +10,13 @@
   "targetDefaults": {
     "@angular/build:application": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["default", "^default"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "default",
+        "^default"
+      ]
     },
     "@nx/eslint:lint": {
       "cache": true,
@@ -26,7 +31,10 @@
     },
     "@angular/build:unit-test": {
       "cache": true,
-      "inputs": ["default", "^default"]
+      "inputs": [
+        "default",
+        "^default"
+      ]
     }
   },
   "generators": {
@@ -43,7 +51,10 @@
       "options": {
         "targetName": "lint"
       },
-      "include": ["apps/backoffice-angular/**/*"]
+      "include": [
+        "apps/backoffice-angular/**/*"
+      ]
     }
-  ]
+  ],
+  "nxCloudId": "6a6fc43fcf076738a1d8db2e"
 }
