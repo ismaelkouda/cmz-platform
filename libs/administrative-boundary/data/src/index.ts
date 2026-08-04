@@ -77,6 +77,7 @@ export * from './lib/dtos/municipality-update-api.dto';
 export * from './lib/dtos/municipality-delete-api.dto';
 export * from './lib/dtos/municipality-filter-api.dto';
 export * from './lib/dtos/municipality-find-one-filter-api.dto';
+export * from './lib/dtos/municipality-select-response-api.dto';
 
 export * from './lib/mappers/municipality.mapper';
 export * from './lib/mappers/municipality-find-one.mapper';
@@ -85,12 +86,15 @@ export * from './lib/mappers/municipality-update.mapper';
 export * from './lib/mappers/municipality-delete.mapper';
 export * from './lib/mappers/municipality-filter.mapper';
 export * from './lib/mappers/municipality-find-one-filter.mapper';
+export * from './lib/mappers/municipality-select.mapper';
 
 export * from './lib/sources/municipality.api';
 export * from './lib/sources/municipality-find-one.api';
+export * from './lib/sources/municipality-select.api';
 
 export * from './lib/repositories/municipality.repository.impl';
 export * from './lib/repositories/municipality-find-one.repository.impl';
+export * from './lib/repositories/municipality-select.repository.impl';
 
 // ---- Municipalities by department id (vue imbriquée) --------------------
 
