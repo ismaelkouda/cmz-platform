@@ -147,9 +147,9 @@ est une contradiction directe entre la règle écrite et le processus réel.
 | # | Action | Effort | Statut (2026-08-04) |
 | --- | --- | :---: | :---: |
 | N1-1 | Découper le diff en commits atomiques Conventional Commits (socle/oracle, ADR, infra déploiement, gouvernance, corpus) | M | 🔧 partiel |
-| N1-2 | Ouvrir une PR par lot, laisser tourner `ci.yml` + `nightly-integration.yml` avant merge — en particulier sur `strict: true` | S | ☐ bloqué |
-| N1-3 | Appliquer réellement `bun run protect:main` sur la forge (le fichier existe, son application sur GitHub n'est pas confirmée) | S | ☐ bloqué |
-| N1-4 | Valider le claim Nx Cloud (`nxCloudId` présent, rattachement du compte non confirmé) | S | ☐ bloqué |
+| N1-2 | Ouvrir une PR par lot, laisser tourner `ci.yml` + `nightly-integration.yml` avant merge — en particulier sur `strict: true` | S | 🔧 en cours |
+| N1-3 | Appliquer réellement `bun run protect:main` sur la forge (le fichier existe, son application sur GitHub n'est pas confirmée) | S | ✅ fait (porteur du projet) |
+| N1-4 | Valider le claim Nx Cloud (`nxCloudId` présent, rattachement du compte non confirmé) | S | 🔧 partiel (porteur du projet) |
 | N1-5 | Ajouter à `docs/guides/contribuer.md` une règle explicite : **aucun changement au socle (`tsconfig.base.json`, `nx.json`, `eslint.config.mjs`) ne reste plus de 24 h hors d'une PR** | S | ✅ fait |
 
 **Recomptage réel du 2026-08-04, action par action :**
@@ -174,14 +174,36 @@ est une contradiction directe entre la règle écrite et le processus réel.
   `curl https://api.github.com` renvoie **403 depuis le proxy réseau** —
   aucune ouverture de PR ni déclenchement CI possible depuis cet
   environnement, quel que soit l'état des commits locaux.
-- **N1-3 (☐ bloqué)** : `tools/apply-branch-protection.mjs` exige
-  `gh auth login` (identifiants) **et** que les checks listés aient déjà
-  tourné au moins une fois sur le vrai dépôt GitHub — les deux prérequis
-  sont hors d'atteinte de ce sandbox (même blocage réseau que N1-2).
-- **N1-4 (☐ bloqué)** : `nxCloudId` confirmé présent dans `nx.json`, mais
-  aucun fichier d'authentification Nx Cloud local trouvé
-  (`find . -iname "*nxcloud*"` vide) — valider le rattachement du compte
-  exige le dashboard Nx Cloud, hors d'atteinte sans accès réseau/identifiants.
+- **N1-3 (✅ fait, par le porteur du projet — pas par moi)** : bloqué
+  depuis ce sandbox (même raison que N1-2), mais réalisé en direct sur sa
+  machine : `gh auth login` (device flow, compte `ismaelkouda`), puis
+  `bun run protect:main` → protection appliquée avec succès sur `main`
+  (1 approbation + CODEOWNERS, 4 status checks requis, force-push interdit,
+  `enforce_admins: true`). Confirmé fonctionnel dès la tentative de `git
+  push origin main` suivante : rejetée par GitHub (`GH006: Protected
+  branch update failed`) — preuve directe que la règle est active, pas
+  seulement déclarée. **Conséquence découverte au passage, non anticipée
+  par l'audit initial** : avec 1 approbation requise et
+  `enforce_admins: true`, un mainteneur seul ne peut merger aucune PR —
+  ni auto-approuver, ni passer en admin. Décision explicitement reportée
+  par le porteur du projet (« plus tard, quand j'aurai créé un autre
+  participant ») plutôt que traitée dans l'urgence — les options
+  proposées (approbations à 0, désactivation temporaire d'`enforce_admins`,
+  second compte) restent ouvertes, aucune choisie pour l'instant.
+- **N1-4 (🔧 partiel, par le porteur du projet)** : `bunx nx login` puis
+  `bunx nx connect` exécutés avec succès sur sa machine — mais **le
+  rattachement a créé un nouveau workspace Nx Cloud, pas confirmé
+  l'ancien** : l'ID présent dans `nx.json` avant cette passe
+  (`6a6fc4dc5d5a3d6e2134a9b7`) diffère de celui du workspace nouvellement
+  connecté (`6a6fc43fcf076738a1d8db2e`, visible dans l'URL du dashboard
+  fournie par la PR de setup) — confirmant l'hypothèse : l'ancien ID
+  était orphelin, jamais réellement lié à un compte. La PR générée par
+  `nx connect` (`nx-cloud-setup` → `main`, GitHub PR #1) reste ouverte,
+  non mergée — bloquée par le même mur de solo-approbation que N1-3, et
+  1 check (« Garde-fous socle ») en échec sans diagnostic mené (reporté
+  par le porteur du projet, même motif que ci-dessus). `nx.json` du dépôt
+  committé par cet audit référence donc encore l'**ancien** ID orphelin
+  tant que cette PR n'est pas mergée — à corriger dans le même mouvement.
 - **N1-5 (✅ fait)** : section « Fraîcheur du socle — 24 h maximum hors PR »
   ajoutée à `docs/guides/contribuer.md`, committée dans le lot
   `docs(architecture)`. Règle explicite, avec sa justification (constat
