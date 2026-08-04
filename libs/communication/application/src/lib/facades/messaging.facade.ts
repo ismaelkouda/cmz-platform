@@ -4,7 +4,7 @@ import { PageResult } from '@cmz/shared-domain';
 import { Observable } from 'rxjs';
 import {
     MessagingCreateContract,
-    MessagingDeleteValidateContract,
+    MessagingDeleteContract,
     MessagingDisableValidateContract,
     MessagingEnableValidateContract,
     MessagingEntity,
@@ -46,7 +46,7 @@ export class MessagingFacade extends CollectionResourceFacade<
         );
     }
 
-    delete(contract: Partial<MessagingDeleteValidateContract>): void {
+    delete(contract: MessagingDeleteContract): void {
         this.runAction(
             this.useCase.delete(contract),
             'COMMON.SUCCESS.DELETE',

@@ -11,6 +11,7 @@ export * from './lib/interfaces/notifications-props.interface';
 
 // entities
 export * from './lib/entities/messaging.entity';
+export * from './lib/entities/messaging-filter.entity';
 export * from './lib/entities/messaging-find-one.entity';
 export * from './lib/entities/notifications.entity';
 
@@ -24,7 +25,9 @@ export * from './lib/contracts/messaging-create.validate-contract';
 export * from './lib/contracts/messaging-update.contract';
 export * from './lib/contracts/messaging-update.validate-contract';
 export * from './lib/contracts/messaging-filter.contract';
+export * from './lib/contracts/messaging-find-one-filter.contract';
 export * from './lib/contracts/messaging-find-one-filter.validate-contract';
+export * from './lib/contracts/messaging-delete.contract';
 export * from './lib/contracts/messaging-delete.validate-contract';
 export * from './lib/contracts/messaging-enable.validate-contract';
 export * from './lib/contracts/messaging-disable.validate-contract';

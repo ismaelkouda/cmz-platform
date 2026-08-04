@@ -2,7 +2,7 @@ import { Service, inject } from '@angular/core';
 import { FetchOptions, MessageEntity, PageResult } from '@cmz/shared-domain';
 import {
     MessagingCreateContract,
-    MessagingDeleteValidateContract,
+    MessagingDeleteContract,
     MessagingDisableValidateContract,
     MessagingEnableValidateContract,
     MessagingEntity,
@@ -13,6 +13,7 @@ import {
     messagingDeleteVo,
     messagingDisableVo,
     messagingEnableVo,
+    messagingFilterEntity,
     messagingFilterVo,
     messagingUpdateVo,
 } from '@cmz/communication-domain';
@@ -28,7 +29,11 @@ export class MessagingUseCase {
         options?: FetchOptions
     ): Observable<PageResult<MessagingEntity>> {
         return defer(() =>
-            this.repository.execute(messagingFilterVo(contract), page, options)
+            this.repository.execute(
+                messagingFilterEntity(messagingFilterVo(contract)),
+                page,
+                options
+            )
         );
     }
 
@@ -40,9 +45,7 @@ export class MessagingUseCase {
         return defer(() => this.repository.update(messagingUpdateVo(contract)));
     }
 
-    delete(
-        contract: Partial<MessagingDeleteValidateContract>
-    ): Observable<MessageEntity> {
+    delete(contract: MessagingDeleteContract): Observable<MessageEntity> {
         return defer(() => this.repository.delete(messagingDeleteVo(contract)));
     }
 

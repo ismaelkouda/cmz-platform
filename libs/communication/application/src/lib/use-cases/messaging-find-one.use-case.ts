@@ -2,7 +2,7 @@ import { Service, inject } from '@angular/core';
 import { FetchOptions } from '@cmz/shared-domain';
 import {
     MessagingFindOneEntity,
-    MessagingFindOneFilterValidateContract,
+    MessagingFindOneFilterContract,
     MessagingFindOneRepository,
     messagingFindOneFilterVo,
 } from '@cmz/communication-domain';
@@ -13,7 +13,7 @@ export class MessagingFindOneUseCase {
     private readonly repository = inject(MessagingFindOneRepository);
 
     execute(
-        contract: Partial<MessagingFindOneFilterValidateContract>,
+        contract: MessagingFindOneFilterContract,
         options?: FetchOptions
     ): Observable<MessagingFindOneEntity> {
         return defer(() =>

@@ -3,13 +3,13 @@ import { ResourceFacade } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
 import {
     MessagingFindOneEntity,
-    MessagingFindOneFilterValidateContract,
+    MessagingFindOneFilterContract,
 } from '@cmz/communication-domain';
 import { Observable } from 'rxjs';
 import { MessagingFindOneUseCase } from '../use-cases/messaging-find-one.use-case';
 
 interface MessagingFindOneParams {
-    filter: Partial<MessagingFindOneFilterValidateContract>;
+    filter: MessagingFindOneFilterContract;
     options?: FetchOptions;
 }
 
@@ -26,10 +26,7 @@ export class MessagingFindOneFacade extends ResourceFacade<
         return this.useCase.execute(params.filter, params.options);
     }
 
-    read(
-        filter: Partial<MessagingFindOneFilterValidateContract>,
-        options?: FetchOptions
-    ): void {
+    read(filter: MessagingFindOneFilterContract, options?: FetchOptions): void {
         this.setParams({ filter, options });
     }
 }

@@ -3021,6 +3021,105 @@ compléter.
 
 ---
 
+### Backlog #3 — deuxieme candidat (communication/messaging, 2026-08-04) — ameliore, PAS clos a 100%
+
+Suite immediate de la cloture team-organization/teams ci-dessus, meme
+instruction (« enchaine dessus meme rigueur »). communication/messaging
+etait le candidat suivant par ecart mesure (81.8%, 12 fichiers
+manquants) — traite en second, avec la meme discipline de verification
+avant generalisation.
+
+**Triage des 12 fichiers manquants, un par un, avant d'ecrire quoi que ce
+soit :**
+
+1. domain/props/messaging.props.ts et
+   domain/props/messaging-find-one.props.ts — verifie par listing du
+   dossier : domain/interfaces/messaging-props.interface.ts et
+   messaging-find-one-props.interface.ts existent deja, portant le meme
+   role sous un autre nom de fichier/dossier. Variante legitime, pas
+   un manque — non traite.
+2. domain/entities/messaging-filter.entity.ts — verifie : absent
+   partout, mais messaging-filter.vo.ts contenait deja l'appel
+   resolveOpenEndedEndDate(contract.startDate, contract.endDate) que ce
+   fichier est cense porter dans les 4 modules deja valides. Vrai
+   manque structurel avec une complication reelle : la responsabilite
+   existait deja, mais dans la mauvaise couche. Dupliquer l'appel dans un
+   nouveau fichier entity aurait produit une double resolution — inerte
+   (fonction idempotente, verifie en lisant
+   resolve-open-ended-end-date.util.ts : startDate && !endDate ? new
+   Date() : endDate, donc un second appel sur un endDate deja resolu
+   est un no-op) mais malhonnete : deux fichiers pretendant chacun faire
+   ce travail. Corrige a la source : resolveOpenEndedEndDate retire de
+   messagingFilterVo (qui ne fait plus que validateMessagingFilter,
+   comme infrastructureFilterVo/regionFilterVo), deplace dans la
+   nouvelle messagingFilterEntity, cablee dans
+   MessagingUseCase.execute() (messagingFilterEntity(messagingFilterVo(contract)),
+   meme composition que les 4 modules de reference). Equivalence
+   comportementale verifiee avant le deplacement, pas supposee : lu
+   assertValidDateRange (startDate.getTime() > endDate.getTime(), ne
+   leve que si les deux bornes sont deja definies) — valider le contrat
+   brut avant resolution (nouvel ordre) produit exactement les memes
+   rejets et la meme plage finale que resoudre puis valider (ancien
+   ordre), parce que la resolution ne touche endDate que quand il est
+   undefined, cas ou la validation ne peut de toute facon rien rejeter.
+3. domain/contracts/messaging-delete.contract.ts et
+   messaging-find-one-filter.contract.ts — verifie : messaging-create
+   et messaging-update ont chacun leur paire bare-Contract+
+   ValidateContract (confirme en lisant messaging-create.validator.ts
+   : contract: MessagingCreateContract en entree), mais delete et
+   find-one-filter n'avaient que le ValidateContract, consomme partout
+   via Partial<...ValidateContract> en ligne. Incoherence interne au
+   module lui-meme (2 des 4 paires mutation suivent un motif, 2 ne le
+   suivent pas), pas une variante de conception deliberee et uniforme —
+   confirme un vrai manque, pas une lecture en confiance. Crees puis
+   cables jusqu'au bout de chaque chaine reelle : messaging-delete.validator.ts,
+   messaging-delete.vo.ts, MessagingFacade.delete(),
+   MessagingUseCase.delete() (idem find-one-filter sur
+   messaging-find-one-filter.validator.ts/.vo.ts,
+   MessagingFindOneFacade, MessagingFindOneUseCase) — pas de fichier
+   present mais mort, meme discipline que team-organization/teams
+   ci-dessus.
+4. Les 7 fichiers de la chaine -select (repository/dto/mapper/
+   repository.impl/api/use-case/facade) — verifie : aucun module du
+   depot ne selectionne messaging en dropdown (grep confirme, aucun
+   consommateur UI d'un MessagingSelectFacade nulle part). Construire
+   toute cette chaine — 7 fichiers, DI, endpoint HTTP — sans un seul
+   consommateur reel aurait ete de la fonctionnalite fabriquee pour faire
+   passer un check de presence, pas une correction. Variante legitime
+   documentee, non traitee.
+
+**Resultat mesure :** check-pattern-nx.mjs libs/communication messaging
+→ 57/66 (86.4%), contre 54/66 (81.8%) au depart — 3 des 12 manques
+combles pour de vrai, 9 confirmes comme des variantes legitimes plutot
+que des manques. **Decision explicite de ne PAS ajouter
+communication a validated_on** : 57/66 n'est pas 100%, et le principe
+meme de cette formalisation (rappele par le porteur dans ce chantier :
+« le livrable n'est pas l'application, c'est le corpus et la severite,
+uniformisation maximale, de l'oracle qui l'a valide ») interdit de
+fabriquer les 7 fichiers -select juste pour franchir la barre — un
+oracle qui valide une fonctionnalite inventee n'est pas severe, il est
+complaisant.
+
+**Verifications reelles :**
+
+- bunx nx run @cmz/communication-domain:build,
+  @cmz/communication-application:build, @cmz/communication-data:build,
+  @cmz/communication-ui:build → les 4 succes.
+- bunx eslint libs/communication --max-warnings=0 → exit 0, 0 warning.
+- bunx nx run @cmz/communication-data:test → les 3 fichiers .spec.ts
+  deja existants sur ce module (17 tests, mappers notifications/
+  messaging/messaging-find-one) → tous verts, y compris apres le
+  refactor de messagingFilterVo — aucune regression, alors que ces
+  tests ne couvrent pas directement le VO modifie (ils testent les
+  mappers en aval), preuve indirecte mais reelle de non-regression sur
+  la chaine complete.
+- node tools/check-duplicate-files.mjs et --family → OK, aucun
+  nouveau doublon, 29.4% ≤ baseline.
+- node tools/check-declared-deps.mjs → OK, 0 arete fantome.
+- node tools/check-project-targets.mjs → OK, 71 libs.
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**

@@ -39,7 +39,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `administrative-boundary` | crud-entity | 0 | — | ✅ 66/66 (N-7, 2e validation) | 0 | 10 | ✅ N-7 + backlog #4 |
 | `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 6 | ✅ N-7 + backlog #4 |
 | `authentication` | action-request | 0 | — | — | 0 | 2 | ✅ I-7 + backlog #4 |
-| `communication` | crud-entity | 0 | — | — | 0 | 3 | ✅ backlog #4 |
+| `communication` | crud-entity | 0 | — | 🔶 `messaging` 57/66 (86.4%, backlog #3, 2026-08-04) — 9 manquants restants sont des variantes légitimes | 0 | 3 | ✅ backlog #4 + #3 |
 | `content-management` | crud-entity | 0 | — | — | 0 | 12 | ✅ backlog #4 |
 | `core` (kernel) | kernel | 0 | — | — | 4 | 0 | ✅ chantier I |
 | `coverage-areas` | crud-entity | 0 | — | — | 0 | 11 | ✅ backlog #4 |
@@ -392,7 +392,8 @@ décision de périmètre produit, pas par une incapacité technique
   `JSON.stringify(dto.region?.id)`, cassant le matching de select cascade en
   édition) — les deux corrections sont maintenant vérifiées par un test, pas
   seulement relues dans un commentaire.
-- **Reste à faire :** 0 corpus, 0 pattern Nx-shaped pour ce module.
+- **Reste à faire :** 0 corpus ; pattern Nx-shaped partiellement étendu à
+  ce module le 2026-08-04 (backlog #3, voir sous-section ci-dessous).
 - **Amélioration apportée :** target `test` ajouté à
   `communication/data/project.json` (absent avant cette passe — voir
   découverte `authentication` ci-dessus, 8 modules concernés d'un coup).
@@ -406,6 +407,54 @@ décision de périmètre produit, pas par une incapacité technique
   diagnostiqués (le premier test de chaque fichier passait, prouvant que le
   mapper lui-même était correct) puis corrigés en instanciant un mapper
   neuf par test.
+
+#### `communication/messaging` — backlog #3 (extension `crud-entity.pattern.json`, 2026-08-04, pas clos à 100%)
+
+- **Mesure de départ :** `check-pattern-nx.mjs libs/communication
+  messaging` → 54/66 (81.8%), 12 fichiers manquants.
+- **3 vrais manques comblés :**
+  - `domain/entities/messaging-filter.entity.ts` créé. Divergence trouvée
+    avant d'écrire le fichier : `messagingFilterVo` avait déjà absorbé
+    `resolveOpenEndedEndDate` (résolution de plage ouverte) EN PLUS de sa
+    validation — contrairement aux 4 modules déjà validés où le VO ne
+    fait QUE valider et la filter-entity fait QUE résoudre. Recréer
+    l'entity en dupliquant l'appel aurait été inoffensif (fonction
+    idempotente) mais malhonnête (deux couches prétendant faire le même
+    travail). Corrigé à la source : résolution retirée de
+    `messagingFilterVo`, déplacée dans la nouvelle entity. Équivalence
+    comportementale vérifiée avant le déplacement en lisant les 2
+    fonctions kernel concernées (`resolveOpenEndedEndDate`,
+    `assertValidDateRange`) — pas supposée.
+  - `domain/contracts/messaging-delete.contract.ts` et
+    `messaging-find-one-filter.contract.ts` créés. Messaging utilisait
+    déjà le motif bare-`Contract`+`ValidateContract` sur `create`/
+    `update` (confirmé par lecture) mais pas sur `delete`/
+    `find-one-filter`, qui prenaient `Partial<...ValidateContract>` en
+    ligne — incohérence interne au module lui-même, pas une convention
+    alternative délibérée. Câblés jusqu'au bout de la chaîne réelle
+    (validator, vo, facade, use-case), pas seulement créés.
+- **9 fichiers restants, tous des variantes légitimes documentées, pas
+  des manques :** chaîne `-select` entièrement absente (7 fichiers —
+  repository/dto/mapper/repository.impl/api/use-case/facade) car aucun
+  autre module ne sélectionne `messaging` en dropdown (confirmé, aucun
+  consommateur UI) ; `props/messaging.props.ts` et
+  `props/messaging-find-one.props.ts` remplacés par
+  `interfaces/messaging-props.interface.ts` et
+  `interfaces/messaging-find-one-props.interface.ts` (confirmé par
+  listing du dossier — aucun `props/` dans ce module).
+- **Résultat mesuré :** `check-pattern-nx.mjs` → 57/66 (86.4%). **Pas
+  ajouté à `validated_on`** de `crud-entity.pattern.json` : 57/66 n'est
+  pas 100%, et fabriquer la chaîne `-select` sans consommateur réel juste
+  pour faire passer le check aurait été le contraire du principe
+  « corpus + sévérité de l'oracle » — un oracle qui valide une
+  fonctionnalité fabriquée n'est pas sévère.
+- **Vérifié réellement :** build des 4 layers
+  (`@cmz/communication-{domain,application,data,ui}`) → succès ; `eslint
+  libs/communication --max-warnings=0` → 0 warning ; les 3 fichiers
+  `.spec.ts` déjà existants sur `communication/data` (17 tests,
+  mappers) → tous verts, aucune régression du refactor `messagingFilterVo`
+  ; `check:duplicates`, `check:duplicates:family`, `check:declared-deps`,
+  `check:project-targets` → tous OK.
 
 ### `team-organization` — backlog #4 (3/12 modules du chantier « mappers concrets »)
 
@@ -601,7 +650,7 @@ question de couverture de test ou de conformité de pattern.
 | --- | --- | --- | --- |
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
-| 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) — 🔶 **en cours** : `team-organization/teams` **clos (2026-08-04)**, 65/66 → 66/66 (100.0%), `teams-filter.entity.ts` ajouté et câblé dans `TeamsUseCase.execute()` ; ajouté à `validated_on` de `crud-entity.pattern.json` (`fourth_validation`). Restent : `communication/messaging` (81.8%, 12 fichiers manquants — plus gros écart), `content-management/home` (87.9%, 8 manquants), `coverage-areas/mobile-network` (89.4%, 7 manquants), `team-organization/participants` (87.9%, 8 manquants — entité distincte de `teams`, non traitée par cette clôture) |
+| 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) — 🔶 **en cours** : `team-organization/teams` **clos (2026-08-04)**, 65/66 → 66/66 (100.0%), `teams-filter.entity.ts` ajouté et câblé dans `TeamsUseCase.execute()` ; ajouté à `validated_on` (`fourth_validation`). `communication/messaging` **traité (2026-08-04), pas clos à 100%** : 54/66 → 57/66 (86.4%) — 3 vrais manques comblés (`messaging-filter.entity.ts` créé, résolution de plage déplacée hors du VO ; `messaging-delete.contract.ts`/`messaging-find-one-filter.contract.ts` créés et câblés jusqu'au facade/use-case), les 9 fichiers restants (chaîne `-select` entière + 2 `props.ts`) sont des variantes légitimes documentées, pas ajouté à `validated_on` car <100%. Restent non traités : `content-management/home` (87.9%, 8 manquants), `coverage-areas/mobile-network` (89.4%, 7 manquants), `team-organization/participants` (87.9%, 8 manquants — entité distincte de `teams`) |
 | 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | ✅ **clos (2026-08-04)** — **8/8 modules `crud-entity`/`action-request` du chantier manuel faits** (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security` + `administrative-boundary` + `coverage-areas` + `content-management`), **73/73 fichiers réels testés** sur le périmètre corrigé (12 modules au total en comptant les 4 `workflow-action` déjà couverts par corpus — `processing`/`requests`/`finalization` intégralement, `report-states` partiellement, suivi séparément en #11) ; **correction de compte** (passe intermédiaire) : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO, pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels**, confirmé sans nouvel écart sur les 3 derniers modules (`administrative-boundary` 10/10, `coverage-areas` 11/11, `content-management` 12/12) |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |
