@@ -144,13 +144,49 @@ est une contradiction directe entre la règle écrite et le processus réel.
 
 **Action immédiate (avant tout autre chantier) :**
 
-| # | Action | Effort |
-| --- | --- | :---: |
-| N1-1 | Découper le diff en commits atomiques Conventional Commits (socle/oracle, ADR, infra déploiement, gouvernance, corpus) | M |
-| N1-2 | Ouvrir une PR par lot, laisser tourner `ci.yml` + `nightly-integration.yml` avant merge — en particulier sur `strict: true` | S |
-| N1-3 | Appliquer réellement `bun run protect:main` sur la forge (le fichier existe, son application sur GitHub n'est pas confirmée) | S |
-| N1-4 | Valider le claim Nx Cloud (`nxCloudId` présent, rattachement du compte non confirmé) | S |
-| N1-5 | Ajouter à `docs/guides/contribuer.md` une règle explicite : **aucun changement au socle (`tsconfig.base.json`, `nx.json`, `eslint.config.mjs`) ne reste plus de 24 h hors d'une PR** | S |
+| # | Action | Effort | Statut (2026-08-04) |
+| --- | --- | :---: | :---: |
+| N1-1 | Découper le diff en commits atomiques Conventional Commits (socle/oracle, ADR, infra déploiement, gouvernance, corpus) | M | 🔧 partiel |
+| N1-2 | Ouvrir une PR par lot, laisser tourner `ci.yml` + `nightly-integration.yml` avant merge — en particulier sur `strict: true` | S | ☐ bloqué |
+| N1-3 | Appliquer réellement `bun run protect:main` sur la forge (le fichier existe, son application sur GitHub n'est pas confirmée) | S | ☐ bloqué |
+| N1-4 | Valider le claim Nx Cloud (`nxCloudId` présent, rattachement du compte non confirmé) | S | ☐ bloqué |
+| N1-5 | Ajouter à `docs/guides/contribuer.md` une règle explicite : **aucun changement au socle (`tsconfig.base.json`, `nx.json`, `eslint.config.mjs`) ne reste plus de 24 h hors d'une PR** | S | ✅ fait |
+
+**Recomptage réel du 2026-08-04, action par action :**
+
+- **N1-1 (🔧 partiel, pas ✅)** : le sprint (495 fichiers) a été commité en un
+  seul commit (`a3305c5`) sur demande explicite (« commit »), puis
+  **redécoupé** en 6 commits Conventional Commits organisés par catégorie —
+  `ci(gouvernance)`, `build(deploy)`, `build(socle)`, `feat(corpus)`,
+  `docs(architecture)`, `feat(app)` (`git reset --soft` + recommit ordonné,
+  vérifié via `git diff --cached --stat` à chaque étape, `git status`
+  propre à la fin, `check:targets`/`check:duplicates` toujours OK après le
+  découpage). **Pas coché entièrement** : le dernier commit (`feat(app)`,
+  353 fichiers) reste un bloc non subdivisé — en le composant, le diff
+  s'est révélé couvrir un refactor UI transverse à tous les modules
+  (retrait de `action-item.factory.ts`/`form-mode.type.ts` dupliqués,
+  consolidés dans `libs/shared/ui/`) dont cet audit n'a pas le détail
+  narratif étape par étape. Le subdiviser à l'aveugle aurait risqué de
+  casser une dépendance croisée entre deux commits — refusé, documenté
+  plutôt que forcé. Reste un chantier réel pour qui a le contexte complet
+  de ce refactor (revue humaine ou session dédiée).
+- **N1-2 (☐ bloqué)** : `gh` non installé dans ce sandbox, et
+  `curl https://api.github.com` renvoie **403 depuis le proxy réseau** —
+  aucune ouverture de PR ni déclenchement CI possible depuis cet
+  environnement, quel que soit l'état des commits locaux.
+- **N1-3 (☐ bloqué)** : `tools/apply-branch-protection.mjs` exige
+  `gh auth login` (identifiants) **et** que les checks listés aient déjà
+  tourné au moins une fois sur le vrai dépôt GitHub — les deux prérequis
+  sont hors d'atteinte de ce sandbox (même blocage réseau que N1-2).
+- **N1-4 (☐ bloqué)** : `nxCloudId` confirmé présent dans `nx.json`, mais
+  aucun fichier d'authentification Nx Cloud local trouvé
+  (`find . -iname "*nxcloud*"` vide) — valider le rattachement du compte
+  exige le dashboard Nx Cloud, hors d'atteinte sans accès réseau/identifiants.
+- **N1-5 (✅ fait)** : section « Fraîcheur du socle — 24 h maximum hors PR »
+  ajoutée à `docs/guides/contribuer.md`, committée dans le lot
+  `docs(architecture)`. Règle explicite, avec sa justification (constat
+  P0-N1 lui-même) et son application pratique (PR le jour même, même en
+  brouillon).
 
 ---
 
@@ -1145,6 +1181,45 @@ déjà cette remontée avant cet audit, ou que le constat du 08-02 mesurait un
 vérifié** est 0 doublon — F-1/F-2 n'ont donc plus de duplication existante à
 traiter, seule la prévention (H-3, déjà en place) reste pertinente pour
 l'avenir.
+
+**Confirmation complète — 2026-08-04**, en composant le commit
+`feat(app)` (§3, N1-1) : le mécanisme exact de F-1/F-2 est maintenant
+vérifié, pas seulement son résultat (0 doublon). Les deux fichiers ont un
+unique emplacement canonique : `libs/shared/ui/src/lib/utils/
+action-item.factory.ts` et `libs/shared/ui/src/lib/types/
+form-mode.type.ts`, tous deux réexportés par `libs/shared/ui/src/index.ts`.
+**67 fichiers consommateurs**, sur les 8 modules concernés
+(`administrative-boundary`, `administrative-infrastructure`,
+`authentication`, `communication`, `content-management`, `coverage-areas`,
+`settings-security`, `team-organization`), importent désormais
+`actionItem`/`FormMode` depuis `@cmz/shared-ui` — **aucun** import relatif
+résiduel vers un ancien chemin par module (`grep` exhaustif, 0 résultat).
+Revérifié par exécution réelle, pas par lecture de code seule :
+
+```bash
+node node_modules/.bin/tsc --noEmit --project libs/shared/ui/tsconfig.json
+# + les 8 tsconfig.json des modules consommateurs, un par un
+# → 0 erreur sur les 9 (shared/ui + 8 consommateurs)
+node node_modules/.bin/eslint --max-warnings=0 <les 2 fichiers canoniques + index.ts>
+# → exit 0
+node tools/check-boundary-negative.mjs
+# → OK, la règle de frontière @nx/enforce-module-boundaries n'est pas
+#   affaiblie par ce refactor
+```
+
+**Pourquoi ce refactor reste dans le commit `feat(app)` et n'a pas été
+extrait dans son propre `refactor(shared-ui)`** : en inspectant le diff
+fichier par fichier pour préparer une extraction propre, au moins un
+consommateur (`libs/content-management/ui/src/lib/features/
+home-form.component.ts`) s'est révélé **entremêlé, dans le même fichier,
+avec un autre chantier sans rapport** — le retrait de `standalone: true`/
+`changeDetection: ChangeDetectionStrategy.OnPush` (chantier J-3/J-4,
+`tools/codemod-strip-redundant-component-flags.mjs`, ADR-0010, déjà
+documenté §7 « Chantier J »). Séparer les deux exigerait une découpe ligne
+par ligne (`git add -p`) sur chacun des 67 fichiers, pas un simple
+regroupement par répertoire — risque réel de mélanger ou de perdre une
+partie d'un hunk sans le voir. Refusé plutôt que tenté à l'aveugle,
+cohérent avec la décision déjà prise pour le reste de `feat(app)` (§3).
 
 ### P1-N2 — Licences tierces, volet manquant comblé
 
