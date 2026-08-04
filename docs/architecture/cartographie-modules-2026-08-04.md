@@ -37,7 +37,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | Module | Famille | Paires corpus | Meta-vérif. | Pattern Nx-shaped | Fichiers `.spec.ts` (corpus-générés) | Fichiers `.spec.ts` (manuels, chantier L) | Touché cette session |
 | --- | --- | ---: | :---: | :---: | ---: | ---: | :---: |
 | `administrative-boundary` | crud-entity | 0 | — | ✅ 66/66 (N-7, 2e validation) | 0 | 0 | ✅ N-7 |
-| `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 0 | ✅ N-7 |
+| `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 6 | ✅ N-7 + backlog #4 |
 | `authentication` | action-request | 0 | — | — | 0 | 2 | ✅ I-7 + backlog #4 |
 | `communication` | crud-entity | 0 | — | — | 0 | 3 | ✅ backlog #4 |
 | `content-management` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
@@ -152,19 +152,51 @@ décision de périmètre produit, pas par une incapacité technique
 - **Reste à faire :** 6/10 fichiers source encore sans test direct.
 - **Découverte (cette passe) :** aucune nouvelle.
 
-### `administrative-infrastructure` / `administrative-boundary` — N-7
+### `administrative-infrastructure` — N-7 + backlog #4 (4/12 modules du chantier « mappers concrets »)
 
-- **Effectué :** `crud-entity.pattern.json` (Nx-shaped) rédigé et
-  validé à 66/66 sur les deux modules (référence + 2e validation
-  indépendante) ; câblé dans `check:all` et en CI.
-- **Reste à faire :** 0 test unitaire sur les deux modules (0 corpus,
-  0 manuel) — la seule garantie est structurelle (conformité au pattern)
-  et socle (tsc/eslint).
+- **Effectué (N-7, passe précédente) :** `crud-entity.pattern.json`
+  (Nx-shaped) rédigé et validé à 66/66 (module de référence du pattern) ;
+  câblé dans `check:all` et en CI.
+- **Effectué (backlog #4, 2026-08-04) :** module complet — 6/6 fichiers
+  testés (`infrastructure.mapper.ts`, `infrastructure-find-one.mapper.ts`,
+  `infrastructure-select.mapper.ts`, `infrastructure-type.mapper.ts`,
+  `infrastructure-type-find-one.mapper.ts`,
+  `infrastructure-type-select.mapper.ts`), 20 tests neufs, tous verts au
+  premier passage (aucun piège de test cette fois), `tsc`/`eslint
+  --max-warnings=0` à 0 erreur. Deux comportements réels vérifiés plutôt que
+  supposés : `InfrastructureMapper` (liste) accède à `dto.region?.name` en
+  chaînage optionnel bien que le DTO type `region` comme non-optionnel —
+  testé le cas où le wire enverrait quand même `null` (contrat violé en
+  pratique) : l'entité récupère `undefined`, pas un crash ;
+  `InfrastructureTypeFindOneProps` n'a **aucun** champ `status` —
+  `is_active` est présent au DTO `find-one` mais jamais lu par son mapper
+  (seule la liste porte un statut), vérifié via absence du getter sur
+  l'entité (`'status' in entity === false`), pas juste relu dans le code.
+- **Reste à faire :** 0 corpus (structurel uniquement, cf. pattern
+  `crud-entity`).
+- **Amélioration apportée :** aucune régression trouvée — les 2 bugs
+  historiques du schéma `pattern.json` restent ceux déjà documentés (coquille
+  `{module}`/`{MODULE}`, sur-généralisation de
+  `form-validators.constant.ts`), sans lien avec ce chantier.
+- **Tâche découverte :** aucune cette passe sur ce module précis (le
+  premier module du chantier « mappers concrets » sans détail source
+  documenté en commentaire — contrairement à `communication`/
+  `team-organization` — les tests ont donc dû être écrits en lisant
+  directement le code des 6 mappers plutôt qu'en s'appuyant sur des
+  commentaires explicatifs).
+
+### `administrative-boundary` — N-7
+
+- **Effectué :** `crud-entity.pattern.json` (Nx-shaped) validé à 66/66
+  (2e validation indépendante du pattern, après `administrative-infrastructure`) ;
+  câblé dans `check:all` et en CI.
+- **Reste à faire :** 0 test unitaire (0 corpus, 0 manuel) — la seule
+  garantie est structurelle (conformité au pattern) et socle (tsc/eslint) ;
+  chantier « mappers concrets » (backlog #4) pas encore étendu à ce module.
 - **Amélioration apportée :** 2 bugs réels trouvés et corrigés dans le
-  schéma pendant sa rédaction (coquille `{module}`/`{MODULE}`,
-  sur-généralisation de `form-validators.constant.ts`).
-- **Tâche découverte :** aucune cette passe (déjà documentée passe
-  précédente).
+  schéma `pattern.json` pendant sa rédaction (coquille `{module}`/
+  `{MODULE}`, sur-généralisation de `form-validators.constant.ts`).
+- **Tâche découverte :** aucune cette passe.
 
 ### `authentication` / `settings-security` — I-7 + backlog #4 (`authentication`)
 
@@ -378,7 +410,7 @@ question de couverture de test ou de conformité de pattern.
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
 | 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
-| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **3/12 modules faits (`authentication` + `communication` + `team-organization`, 2026-08-04)** ; recompté précisément : 74 fichiers réels sur 12 modules (pas « 60+ sur 13 »), dont **8/12 modules découverts sans aucun target `test`** (même trou de câblage CI que `shared/domain`, corrigé pour les 8 avant d'écrire un seul test — voir détail §4 `authentication`) ; 9 modules / 65 fichiers restants |
+| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **4/12 modules faits (`authentication` + `communication` + `team-organization` + `administrative-infrastructure`, 2026-08-04)** ; recompté précisément : 74 fichiers réels sur 12 modules (pas « 60+ sur 13 »), dont **8/12 modules découverts sans aucun target `test`** (même trou de câblage CI que `shared/domain`, corrigé pour les 8 avant d'écrire un seul test — voir détail §4 `authentication`) ; 8 modules / 59 fichiers restants |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |
 | 7 | `security-audit`/`i18n-check` rendus bloquants | Résorption Dependabot / revue humaine du diff 320 clés | Faible une fois débloqué |

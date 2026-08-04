@@ -2414,6 +2414,49 @@ notifi moi quand tu as besoin de precision ou autre ») — chantier mené en
 continu, module par module, sans repasser par un point de contrôle
 utilisateur à chaque étape tant qu'aucune ambiguïté ne se présente.
 
+### Backlog cartographie #4 — quatrième module (`administrative-infrastructure`, 2026-08-04)
+
+Quatrième module traité, en entier : `administrative-infrastructure` —
+6/6 fichiers appelant `MapperUtils.validateDto` testés
+(`infrastructure.mapper.ts`, `infrastructure-find-one.mapper.ts`,
+`infrastructure-select.mapper.ts`, `infrastructure-type.mapper.ts`,
+`infrastructure-type-find-one.mapper.ts`,
+`infrastructure-type-select.mapper.ts`), 20 tests neufs, tous verts au
+premier passage — contrairement aux deux modules précédents, ni piège de
+test (cache `.with()`) ni piège de typage (enum nominal) ici, sans que ce
+soit anticipé à l'avance : les tests ont juste été écrits en observant
+attentivement le comportement réel du code avant chaque assertion.
+
+Ce module (référence du pattern `crud-entity`, N-7) n'a aucun commentaire
+narratif dans son code source expliquant ses choix (contrairement à
+`communication`/`team-organization`, dont les mappers documentaient
+explicitement leurs bugs corrigés ou leurs divergences assumées) — deux
+comportements réels ont donc été trouvés en lisant le code plutôt qu'en
+suivant un commentaire, et vérifiés par un test :
+
+- `InfrastructureMapper` (liste) lit `dto.region?.name` en chaînage
+  optionnel bien que `InfrastructureItemApiDto.region` soit typé
+  `AdministrativeBoundaryDto` (non-optionnel) — défense contre un contrat
+  wire violé en pratique, pas une précaution théorique inutile. Testé : si
+  le wire envoie quand même `null`, l'entité récupère `region: undefined`
+  (silencieusement, sans exception) plutôt qu'un crash. `TypeScript` ne
+  signale pas cette incohérence potentielle à la compilation car
+  `dto.region?.name` reste typé `string` tant que `dto.region` est déclaré
+  non-optionnel — la garde ne protège donc que l'exécution, jamais la
+  compilation.
+- `InfrastructureTypeFindOneProps` (détail) n'a **aucun** champ `status` —
+  `is_active` est bien présent sur `InfrastructureTypeFindOneItemApiDto`
+  (le DTO), mais son mapper ne le lit jamais ; seul `InfrastructureTypeMapper`
+  (la liste) dérive un statut. Vérifié en confirmant qu'aucun getter
+  `status` n'existe sur `InfrastructureTypeFindOneEntity` (`'status' in
+  entity === false`), pas juste en relisant le mapper — l'absence de getter
+  est la garantie structurelle réelle, pas une supposition sur le code du
+  mapper qui pourrait changer sans que l'entité suive.
+
+`tsc --noEmit` et `eslint --max-warnings=0` à 0 erreur dès le premier
+essai. 8 modules / 59 fichiers restent sur le périmètre initial (12
+modules/74 fichiers) du chantier « mappers concrets ».
+
 ---
 
 ## 8. Verdict d'architecte
