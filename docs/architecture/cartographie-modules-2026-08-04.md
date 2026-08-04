@@ -42,7 +42,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `communication` | crud-entity | 0 | — | 🔶 `messaging` 57/66 (86.4%, backlog #3, 2026-08-04) — 9 manquants restants sont des variantes légitimes | 0 | 3 | ✅ backlog #4 + #3 |
 | `content-management` | crud-entity | 0 | — | — | 0 | 12 | ✅ backlog #4 |
 | `core` (kernel) | kernel | 0 | — | — | 4 | 0 | ✅ chantier I |
-| `coverage-areas` | crud-entity | 0 | — | — | 0 | 11 | ✅ backlog #4 |
+| `coverage-areas` | crud-entity | 0 | — | ✅ `site-group` 66/66 (N-7, 3e validation) ; `mobile-network` 59/66 (89.4%) re-vérifié 2026-08-04, plafond réel — 0 vrai manque | 0 | 11 | ✅ backlog #4 + #3 |
 | `dashboard` | read-only-view | 25 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ (touché indirectement, P-5/P-6) |
 | `finalization` | workflow-action | 126 (6 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 16 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `interactive-map` | read-only-view | 28 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
@@ -605,6 +605,27 @@ décision de périmètre produit, pas par une incapacité technique
     sur le DTO, absent du `SelectOption`) — vérifié explicitement pour
     distinguer un choix volontaire d'un oubli.
 
+#### `coverage-areas/mobile-network` — backlog #3 (re-vérification, 2026-08-04, 0 code écrit)
+
+- **Mesure :** `check-pattern-nx.mjs libs/coverage-areas mobile-network`
+  → 59/66 (89.4%), 7 fichiers manquants, tous la chaîne `-select`
+  (repository/dto/mapper/repository.impl/api/use-case/facade).
+- **Vérifié avant de conclure :** `grep -rn "MobileNetworkSelect"
+  libs/ apps/` → aucune occurrence nulle part dans le dépôt. Comparé à
+  `SiteGroupSelect*` (même module, entité déjà validée à 66/66) :
+  consommé réellement par
+  `libs/coverage-areas/ui/src/lib/features/mobile-network-form.component.ts`
+  — preuve directe que c'est le formulaire `mobile-network` qui
+  sélectionne un `site-group` en dropdown, jamais l'inverse. Même motif
+  exact que la chaîne `-select` absente de `communication/messaging` ce
+  même jour.
+- **Conclusion :** 0 vrai manque, plafond réel du module à 59/66 sans
+  aucun changement de code possible — construire cette chaîne aurait été
+  la même fonctionnalité fabriquée que pour messaging. Aucun fichier
+  créé ni modifié pour ce sous-item ; seule `crud-entity.pattern.json`
+  (section `gaps_reels_mesures_2026-08-04`) mise à jour pour documenter
+  ce plafond et retirer le module des candidats actionnables.
+
 ## 5. Chantier L — cartographie fine de la couverture test manuelle
 
 16/189 fichiers `shared/` couverts par des tests écrits cette session (pas
@@ -650,7 +671,7 @@ question de couverture de test ou de conformité de pattern.
 | --- | --- | --- | --- |
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
-| 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) — 🔶 **en cours** : `team-organization/teams` **clos (2026-08-04)**, 65/66 → 66/66 (100.0%), `teams-filter.entity.ts` ajouté et câblé dans `TeamsUseCase.execute()` ; ajouté à `validated_on` (`fourth_validation`). `communication/messaging` **traité (2026-08-04), pas clos à 100%** : 54/66 → 57/66 (86.4%) — 3 vrais manques comblés (`messaging-filter.entity.ts` créé, résolution de plage déplacée hors du VO ; `messaging-delete.contract.ts`/`messaging-find-one-filter.contract.ts` créés et câblés jusqu'au facade/use-case), les 9 fichiers restants (chaîne `-select` entière + 2 `props.ts`) sont des variantes légitimes documentées, pas ajouté à `validated_on` car <100%. Restent non traités : `content-management/home` (87.9%, 8 manquants), `coverage-areas/mobile-network` (89.4%, 7 manquants), `team-organization/participants` (87.9%, 8 manquants — entité distincte de `teams`) |
+| 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) — 🔶 **en cours** : `team-organization/teams` **clos (2026-08-04)**, 65/66 → 66/66 (100.0%), `teams-filter.entity.ts` ajouté et câblé dans `TeamsUseCase.execute()` ; ajouté à `validated_on` (`fourth_validation`). `communication/messaging` **traité (2026-08-04), pas clos à 100%** : 54/66 → 57/66 (86.4%) — 3 vrais manques comblés (`messaging-filter.entity.ts` créé, résolution de plage déplacée hors du VO ; `messaging-delete.contract.ts`/`messaging-find-one-filter.contract.ts` créés et câblés jusqu'au facade/use-case), les 9 fichiers restants (chaîne `-select` entière + 2 `props.ts`) sont des variantes légitimes documentées, pas ajouté à `validated_on` car <100%. `coverage-areas/mobile-network` **re-vérifié (2026-08-04), 0 vrai manque** : les 7 fichiers manquants sont tous la chaîne `-select`, confirmé sans consommateur (`SiteGroupSelect*`, même module, EST consommé par `mobile-network-form.component.ts` — preuve que c'est mobile-network qui sélectionne site-group, jamais l'inverse) ; plafond réel à 59/66 (89.4%), aucun code à écrire, retiré des candidats actionnables. Restent non traités : `content-management/home` (87.9%, 8 manquants), `team-organization/participants` (87.9%, 8 manquants — entité distincte de `teams`) |
 | 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | ✅ **clos (2026-08-04)** — **8/8 modules `crud-entity`/`action-request` du chantier manuel faits** (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security` + `administrative-boundary` + `coverage-areas` + `content-management`), **73/73 fichiers réels testés** sur le périmètre corrigé (12 modules au total en comptant les 4 `workflow-action` déjà couverts par corpus — `processing`/`requests`/`finalization` intégralement, `report-states` partiellement, suivi séparément en #11) ; **correction de compte** (passe intermédiaire) : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO, pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels**, confirmé sans nouvel écart sur les 3 derniers modules (`administrative-boundary` 10/10, `coverage-areas` 11/11, `content-management` 12/12) |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |

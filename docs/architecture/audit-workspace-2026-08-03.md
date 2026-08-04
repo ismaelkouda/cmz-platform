@@ -3120,6 +3120,38 @@ complaisant.
 
 ---
 
+### Backlog #3 — troisieme candidat (coverage-areas/mobile-network, 2026-08-04) — 0 code ecrit, plafond reel confirme
+
+Troisieme candidat traite le meme jour, meme instruction. Mesure de
+depart : 59/66 (89.4%), 7 fichiers manquants — tous la chaine -select
+(repository/dto/mapper/repository.impl/api/use-case/facade), le meme
+motif exact que communication/messaging quelques minutes plus tot.
+
+Verifie avant de conclure, pas suppose par analogie avec messaging :
+grep -rn "MobileNetworkSelect" libs/ apps/ → zero occurrence dans tout
+le depot. Compare a SiteGroupSelect* (meme module, entite deja validee
+a 66/66 lors de la 3e validation) : consomme reellement par
+libs/coverage-areas/ui/src/lib/features/mobile-network-form.component.ts
+— preuve directe, pas une supposition, que c'est le formulaire
+mobile-network qui selectionne un site-group en dropdown, jamais
+l'inverse. Ce grep confirme que le motif observe sur messaging n'etait
+pas un cas isole : deux modules distincts, meme jour, meme categorie de
+« variante legitime plutot que manque », chacun verifie independamment
+avant conclusion.
+
+**Resultat : 0 vrai manque.** Plafond reel du module a 59/66 (89.4%)
+sans aucun changement de code possible sans fabriquer une fonctionnalite
+sans consommateur — exactement l'ecueil deja evite sur messaging. Aucun
+fichier de code cree ni modifie pour ce sous-item ; seule
+crud-entity.pattern.json (gaps_reels_mesures_2026-08-04) mise a jour
+pour documenter ce plafond et retirer coverage-areas/mobile-network des
+candidats actionnables du backlog #3. Une iteration « sans travail
+mais avec verification et documentation » a la meme valeur, dans la
+philosophie de ce chantier, qu'une iteration qui produit du code : le
+livrable est la severite de l'oracle, pas le nombre de fichiers ecrits.
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**
