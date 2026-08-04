@@ -3260,6 +3260,96 @@ settings-security et optical-fiber-network/radio-relay-links de
 coverage-areas, jamais mesurees fichier par fichier (observation de
 structure seulement), hors perimetre de cette clotture.
 
+**Extension du backlog #3 (backlog #12)** : relecture complete de
+scope.json apres la cloture ci-dessus a revele que le perimetre reel
+crud-entity etait plus large que les 5 candidats mesures. Quatre zones
+supplementaires identifiees : settings-security (2 entites, jamais
+mesurees fichier par fichier — seulement observees en structure) ;
+administrative-boundary (2 entites en plus de region, deja valide) ;
+content-management (5 entites en plus de home, deja clos) ;
+administrative-infrastructure (1 entite en plus de infrastructure,
+deja reference). coverage-areas/optical-fiber-network et
+radio-relay-links confirmes hors perimetre — absents de scope.json,
+pas seulement non mesures.
+
+settings-security/profiles-permissions : check-pattern-nx.mjs →
+65/66 (98.5%), 1 manquant. ProfilesPermissionsFilterContract n'a aucun
+champ de plage de dates — fonction identite ecrite
+(profilesPermissionsFilterEntity), cablee dans
+ProfilesPermissionsUseCase.execute(). Resultat : 66/66 (100.0%).
+
+settings-security/users : check-pattern-nx.mjs → 58/66 (87.9%), 8
+manquants. Meme manque de filter-entity (fonction identite,
+UsersFilterContract sans plage de dates) + chaine -select complete (7
+fichiers). DTO {id, first_name, last_name} fidele au wire reel, label
+`${last_name} ${first_name}` — meme convention que participants
+(verifiee contre l'unique autre precedent du depot combinant ces 2
+champs, tasks-actions-processing-item.mapper.ts). Resultat : 66/66
+(100.0%). settings-security ajoute a validated_on
+(seventh_validation) — premiere mesure fichier par fichier du module,
+jamais fait auparavant.
+
+administrative-boundary/department : mesure au passage, deja a 66/66
+(100.0%) — decouverte, aucune action requise, jamais documentee
+jusqu'ici.
+
+administrative-boundary/municipality : check-pattern-nx.mjs → 59/66
+(89.4%), chaine -select entiere manquante. Deux divergences verifiees
+avant ecriture, pas supposees : (1) type de retour MunicipalityOption
+({id, name, code}), pas le SelectOption generique utilise par tous les
+autres modules — convention propre a administrative-boundary (cascade
+region→departement→municipalite, RegionOption/DepartmentOption/
+MunicipalityOption), interface MunicipalityOption deja existante mais
+inutilisee, reutilisee plutot que dupliquee ; (2) endpoint
+municipality-select.api.ts pointe sur la liste simple
+territorial-structures/municipalities, PAS sur le suffixe
+/selected-field qu'utilisent region-select/department-select — verifie
+par grep contre tools/mock-server/domains/administrative-boundary.mjs :
+la route /selected-field existe pour regions/departments mais pas pour
+municipalities. Resultat : 66/66 (100.0%). second_validation mise a
+jour (municipality resolu, department documente).
+
+administrative-infrastructure/infrastructure-type : mesure au passage,
+deja a 66/66 (100.0%) — decouverte, aucune action requise.
+
+content-management (5 entites restantes) : legal-notice, news,
+privacy-policy, slide, terms-use mesures — chacun a 58/66 (87.9%),
+meme paire de manques que home sur chacun (filter-entity + chaine
+-select entiere). Convention de label verifiee par DTO reel, pas
+supposee uniforme : news/slide ont un champ title unifie (label =
+dto.title, meme convention que home) ; legal-notice/privacy-policy/
+terms-use sont des documents legaux versionnes sans champ title,
+seulement version (label = dto.version, DTO {id, version}). Les 5
+filter-entity suivent le meme calcul que home
+(resolveOpenEndedEndDate(contract.startDate, contract.endDate)),
+chaque contrat verifie individuellement avant reproduction. Les 5
+chaines -select (35 fichiers) toutes sur SETTINGS_API_URL, endpoints
+reels verifies contre content-management.endpoints.ts existant — aucun
+endpoint invente. Resultat : les 5 entites a 66/66 (100.0%). Module
+content-management desormais a 100% sur ses 6 entites crud-entity,
+sixth_validation mise a jour.
+
+Verifie reellement pour l'ensemble de cette extension : build des 4
+layers pour chaque module touche (settings-security,
+administrative-boundary, content-management) → succes ; eslint
+--max-warnings=0 sur chaque module → 0 warning ; check:duplicates,
+check:duplicates:family, check:declared-deps, check:project-targets →
+tous OK, aucune regression ; tests existants tous verts sans
+modification (settings-security-data 29 tests/6 fichiers,
+administrative-boundary-data 37 tests/10 fichiers,
+content-management-data 49 tests/12 fichiers).
+
+**Cloture du backlog #12** : 18 couples module/entite crud-entity
+desormais tous mesures fichier par fichier et a 100%
+(administrative-infrastructure×2, administrative-boundary×3,
+coverage-areas×2, team-organization×2, communication×1,
+content-management×6, settings-security×2). validated_on de
+crud-entity.pattern.json couvre 7 modules. package.json,
+check:pattern-nx:crud-entity etendu a 18 couples module/entite,
+verifie un par un a 66/66 (100.0%) chacun. Seule zone confirmee hors
+perimetre (pas un gap non mesure) : optical-fiber-network/
+radio-relay-links de coverage-areas, absents de scope.json.
+
 ---
 
 ## 8. Verdict d'architecte

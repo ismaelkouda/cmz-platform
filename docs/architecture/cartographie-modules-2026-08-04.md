@@ -36,11 +36,11 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 
 | Module | Famille | Paires corpus | Meta-vérif. | Pattern Nx-shaped | Fichiers `.spec.ts` (corpus-générés) | Fichiers `.spec.ts` (manuels, chantier L) | Touché cette session |
 | --- | --- | ---: | :---: | :---: | ---: | ---: | :---: |
-| `administrative-boundary` | crud-entity | 0 | — | ✅ 66/66 (N-7, 2e validation) | 0 | 10 | ✅ N-7 + backlog #4 |
-| `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 6 | ✅ N-7 + backlog #4 |
+| `administrative-boundary` | crud-entity | 0 | — | ✅ `region`/`department`/`municipality` 66/66 (100.0%, N-7 2e validation, `department` déjà conforme découvert 2026-08-04, `municipality` clos 2026-08-04 sur demande explicite) | 0 | 10 | ✅ N-7 + backlog #4 + #3 |
+| `administrative-infrastructure` | crud-entity | 0 | — | ✅ `infrastructure`/`infrastructure-type` 66/66 (100.0%, N-7 référence, `infrastructure-type` déjà conforme découvert 2026-08-04) | 0 | 6 | ✅ N-7 + backlog #4 |
 | `authentication` | action-request | 0 | — | — | 0 | 2 | ✅ I-7 + backlog #4 |
 | `communication` | crud-entity | 0 | — | ✅ `messaging` 66/66 (100.0%, backlog #3, 2026-08-04, 5e validation — chaîne `-select` construite sur demande explicite) | 0 | 3 | ✅ backlog #4 + #3 |
-| `content-management` | crud-entity | 0 | — | ✅ `home` 66/66 (100.0%, backlog #3, 2026-08-04, 6e validation — chaîne `-select` construite sur demande explicite) | 0 | 12 | ✅ backlog #4 + #3 |
+| `content-management` | crud-entity | 0 | — | ✅ 6/6 entités 66/66 (100.0% — `home`, `slide`, `news`, `legal-notice`, `privacy-policy`, `terms-use`, backlog #3, 2026-08-04, 6e validation — chaînes `-select` construites sur demande explicite) | 0 | 12 | ✅ backlog #4 + #3 |
 | `core` (kernel) | kernel | 0 | — | — | 4 | 0 | ✅ chantier I |
 | `coverage-areas` | crud-entity | 0 | — | ✅ `site-group` 66/66 (N-7, 3e validation) ; `mobile-network` 66/66 (100.0%, backlog #3, 2026-08-04 — chaîne `-select` construite sur demande explicite) | 0 | 11 | ✅ backlog #4 + #3 |
 | `dashboard` | read-only-view | 25 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ (touché indirectement, P-5/P-6) |
@@ -51,7 +51,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `report-states` | workflow-action | 187 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 9 | 6 | ✅ backlog #11 |
 | `reporting` | read-only-view | 51 (5 chaînes) | **12/12, a posteriori 2026-08-04** | (`read-only-view.pattern.json`, `second_validation`) | 0 | 0 | ✅ backlog #2 |
 | `requests` | workflow-action | 157 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 17 | 0 | ⚠️ H-4 (contrainte), pas le code |
-| `settings-security` | crud-entity | 0 | — | — | 0 | 6 | ✅ I-7 + backlog #4 |
+| `settings-security` | crud-entity | 0 | — | ✅ `profiles-permissions`/`users` 66/66 (100.0%, backlog #3, 2026-08-04, 7e validation — première mesure fichier par fichier du module) | 0 | 6 | ✅ I-7 + backlog #4 + #3 |
 | `shared` (kernel) | kernel | ≥1 (via `libs/shared/...`) | — | — | 4 (chantier I, hors chantier L) | **16** | ✅✅ chantier I + chantier L |
 | `team-organization` | crud-entity | 0 | — | ✅ `teams` 66/66 (N-7, 4e validation) ; `participants` 66/66 (100.0%, backlog #3, 2026-08-04 — chaîne `-select` construite sur demande explicite) ; 2 autres entités (`agents-performances`/`daily-goal`) hors périmètre, bloquées par ADR-0018 | 0 | 5 | ✅ backlog #4 + #3 |
 
@@ -719,6 +719,91 @@ décision de périmètre produit, pas par une incapacité technique
   toujours verts, aucune régression ; `check:duplicates(:family)`,
   `check:declared-deps`, `check:project-targets` → tous OK.
 
+#### `content-management` (5 entités restantes) — backlog #3 (2026-08-04, extension après relecture de `scope.json`)
+
+- **Découverte :** relecture de `docs/architecture/scope.json` après la
+  clôture de `home` a révélé que les 5 autres entités du module
+  (`legal-notice`, `news`, `privacy-policy`, `slide`, `terms-use`) sont
+  elles aussi classées `crud-entity` — pas hors périmètre comme
+  implicitement supposé quand seule `home` avait été mesurée.
+- **Mesure :** chacune à 58/66 (87.9%), même paire de manques que `home`
+  sur les 5 : `{entity}-filter.entity.ts` + chaîne `-select` entière (7
+  fichiers).
+- **Convention de label vérifiée par DTO, pas supposée uniforme :**
+  `news`/`slide` ont un champ `title` unifié → label `dto.title`, même
+  convention que `home`. `legal-notice`/`privacy-policy`/`terms-use` sont
+  des documents légaux versionnés, aucun champ `title`, seulement
+  `version` → label `dto.version`, DTO `{id, version}`.
+- **5 `{entity}-filter.entity.ts` :** chaque contrat vérifié
+  individuellement pour confirmer `startDate?`/`endDate?` avant
+  reproduction du calcul `resolveOpenEndedEndDate(...)` (même schéma que
+  `home`) ; câblés dans les 5 `{entity}.use-case.ts` respectifs.
+- **5 chaînes `-select` (35 fichiers) :** toutes sur `SETTINGS_API_URL`,
+  endpoints réels vérifiés contre `content-management.endpoints.ts`
+  existant (`CONTENT_MANAGEMENT_ENDPOINTS.NEWS`/`LEGAL_NOTICE`/
+  `PRIVACY_POLICY`/`SLIDE`/`TERMS_USE`) — aucun endpoint inventé.
+- **Résultat :** les 5 entités à 66/66 (100.0%). Module
+  `content-management` désormais à 100% sur ses 6 entités crud-entity
+  (`sixth_validation` de `crud-entity.pattern.json` mise à jour).
+- **Vérifié réellement :** build des 4 layers → succès ; `eslint
+  libs/content-management --max-warnings=0` → 0 warning ; `bunx nx run
+  @cmz/content-management-data:test` → 49 tests existants (mêmes specs
+  qu'avant), toujours tous verts ; `check:duplicates(:family)`,
+  `check:declared-deps`, `check:project-targets` → tous OK.
+
+#### `administrative-boundary/municipality` — backlog #3 (2026-08-04, extension)
+
+- **Mesure :** `department` (jamais mesuré jusqu'ici) déjà à 66/66
+  (100.0%) au moment de la mesure — découverte, aucune action requise.
+  `municipality` à 59/66 (89.4%), chaîne `-select` entière manquante.
+- **2 divergences vérifiées avant écriture, pas supposées :**
+  - Type de retour `MunicipalityOption` (`{id, name, code}`), pas le
+    `SelectOption` générique utilisé par tous les autres modules —
+    convention propre à `administrative-boundary` (cascade
+    région→département→municipalité, `RegionOption`/`DepartmentOption`/
+    `MunicipalityOption`) ; interface `MunicipalityOption` déjà
+    existante mais inutilisée, réutilisée plutôt que dupliquée.
+  - Endpoint `municipality-select.api.ts` pointe sur la liste simple
+    `territorial-structures/municipalities`, **pas** sur le suffixe
+    `/selected-field` qu'utilisent `region-select`/`department-select` —
+    vérifié par `grep` contre
+    `tools/mock-server/domains/administrative-boundary.mjs` : la route
+    `/selected-field` existe pour `regions`/`departments` mais pas pour
+    `municipalities`.
+- **Résultat :** `municipality` à 66/66 (100.0%). `second_validation` de
+  `crud-entity.pattern.json` mise à jour (municipality résolu, department
+  documenté comme déjà conforme).
+- **Vérifié réellement :** build des 4 layers → succès ; eslint 0
+  warning ; `bunx nx run @cmz/administrative-boundary-data:test` → 37
+  tests existants toujours verts ; `check:duplicates(:family)`,
+  `check:declared-deps`, `check:project-targets` → tous OK.
+
+#### `settings-security` — backlog #3 (2026-08-04, première mesure fichier par fichier)
+
+- **Contexte :** module jamais mesuré via `check-pattern-nx.mjs`
+  jusqu'ici — seulement observé en structure de dossiers
+  (`autres_modules_crud_entity_observes_non_valides_ligne_a_ligne`).
+- **Mesure :** `profiles-permissions` à 65/66 (98.5%), 1 seul manque
+  (`profiles-permissions-filter.entity.ts`). `users` à 58/66 (87.9%),
+  même manque de filter-entity + chaîne `-select` complète (7 fichiers).
+- **`profiles-permissions-filter.entity.ts` et `users-filter.entity.ts` :**
+  `ProfilesPermissionsFilterContract` et `UsersFilterContract` n'ont
+  aucun champ de plage de dates (même cas que `teams`/`participants`) —
+  fonction identité écrite pour chacune, câblées dans
+  `ProfilesPermissionsUseCase.execute()` et `UsersUseCase.execute()`.
+- **Chaîne `-select` de `users` :** DTO `{id, first_name, last_name}`
+  fidèle au wire réel, label `${last_name} ${first_name}` — même
+  convention que `participants` (vérifiée contre l'unique précédent du
+  dépôt combinant ces 2 champs,
+  `tasks-actions-processing-item.mapper.ts`).
+- **Résultat :** les 2 entités à 66/66 (100.0%). `settings-security`
+  ajouté à `validated_on` de `crud-entity.pattern.json`
+  (`seventh_validation`).
+- **Vérifié réellement :** build des 4 layers → succès ; eslint 0
+  warning ; `bunx nx run @cmz/settings-security-data:test` → 29 tests
+  existants (6 fichiers) toujours verts ; `check:duplicates(:family)`,
+  `check:declared-deps`, `check:project-targets` → tous OK.
+
 ## 5. Chantier L — cartographie fine de la couverture test manuelle
 
 16/189 fichiers `shared/` couverts par des tests écrits cette session (pas
@@ -773,6 +858,7 @@ question de couverture de test ou de conformité de pattern.
 | 9 | P-6/P-7 — découpage bundle + gate régression | Même blocage que M-9 | Bloqué techniquement ici |
 | 10 | `team-organization` — 2 entités manquantes | ADR-0018 (décision produit) | Bloqué par décision |
 | 11 | `report-states` — fichiers `MapperUtils.validateDto` sans `*.mapper.spec.ts` dédié, découvert le 2026-08-04 en vérifiant l'état réel des 4 modules `workflow-action` avant de les exclure du chantier « mappers concrets » | Rien — budget | ✅ **clos (2026-08-04)** — **6/6 fichiers testés** (pas 5 : le 6e, `report-states-details.mapper.ts`, était présumé couvert par un oracle corpus `@cmz/report-states-data:test` « verified », mais ce test-projet passait déjà avant grâce à `report-states-details-mappers.spec.ts` qui ne teste que 4 mappers *request-side* du même dossier — le mapper *response* principal, 9 dépendances DI, n'avait jamais été exercé ; corrigé par une découverte, pas par le plan initial). 44 tests neufs, tous verts au premier passage, `tsc`/`eslint --max-warnings=0` à 0 erreur |
+| 12 | Mesurer et clore `settings-security` + le reste du périmètre `crud-entity` (`administrative-boundary`/`administrative-infrastructure` restants, `content-management` restant) | Rien — même méthode que #3 | ✅ **clos (2026-08-04)** — relecture complète de `scope.json` a révélé un périmètre `crud-entity` plus large que les 5 candidats initiaux du backlog #3 : `settings-security` (2 entités, jamais mesurées), `administrative-boundary` (2 entités en plus de `region`), `content-management` (5 entités en plus de `home`), `administrative-infrastructure` (1 entité en plus de `infrastructure`). Mesuré et clos un par un, même override explicite (« reecris le code pour atteindre les 100% ») : `settings-security/profiles-permissions` 65/66→66/66 (filter-entity identité) ; `settings-security/users` 58/66→66/66 (filter-entity + chaîne `-select`) ; `administrative-boundary/department` déjà 66/66 (découverte) ; `administrative-boundary/municipality` 59/66→66/66 (chaîne `-select`, `MunicipalityOption` + endpoint sans `/selected-field`, 2 divergences vérifiées avant écriture) ; `administrative-infrastructure/infrastructure-type` déjà 66/66 (découverte) ; `content-management/{legal-notice,news,privacy-policy,slide,terms-use}` chacun 58/66→66/66 (filter-entity + chaîne `-select`, label `title` ou `version` selon DTO vérifié). **18 couples module/entité crud-entity désormais tous à 100%** ; `validated_on` de `crud-entity.pattern.json` passe à 7 modules ; `check:pattern-nx:crud-entity` étendu à 18 entrées. Seule exclusion confirmée (pas un gap) : `optical-fiber-network`/`radio-relay-links` de `coverage-areas`, absents de `scope.json`. |
 
 ## 8. Comment maintenir cette cartographie
 

@@ -8,10 +8,10 @@
 | Indicateur | Valeur |
 |:---|---:|
 | Packages Nx | **71 libs + 1 app** (72 `project.json`) |
-| Fichiers TypeScript (`libs/`) | **2 591 fichiers hors tests** (2 734 au total, dont 143 specs) |
+| Fichiers TypeScript (`libs/`) | **2 647 fichiers hors tests** (2 790 au total, dont 143 specs) |
 | Modules détectés | **18** |
 | Périmètre applicatif (`scope.json`, M-7) | **50 / 52 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
-| Corpus SEOS — couverture fichiers (N-4) | **476 / 2 591 fichiers libs/ hors tests → 18.4 %** — 9 modules sans aucune paire (7 `crud-entity`, 1 `action-request`, 1 `kernel`) |
+| Corpus SEOS — couverture fichiers (N-4) | **476 / 2 647 fichiers libs/ hors tests → 18.0 %** — 9 modules sans aucune paire (7 `crud-entity`, 1 `action-request`, 1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **587 correspondances** + **194 décisions d'architecture** (`status: n/a`) — pas 781 paires d'apprentissage |
 
 ## Légende
@@ -28,11 +28,11 @@
 
 | Module | Statut | Famille | Couches | Fichiers .ts | Notes |
 |:---|:---:|:---|:---|---:|:---|
-| `administrative-boundary` | ✅ | crud-entity | application, data, domain, ui | 247 | Compilant — 3 entités + hiérarchie géo |
+| `administrative-boundary` | ✅ | crud-entity | application, data, domain, ui | 254 | Compilant — 3 entités + hiérarchie géo |
 | `administrative-infrastructure` | ✅ | crud-entity | application, data, domain, ui | 155 | Compilant — 2 entités |
 | `authentication` | ✅ | action-request | application, data, domain, ui | 67 | Compilant — login/forgot/reset |
 | `communication` | ✅ | crud-entity | application, data, domain, ui | 129 | Compilant — messagerie + notifications |
-| `content-management` | ✅ | crud-entity | application, data, domain, ui | 465 | Compilant — 6 entités |
+| `content-management` | ✅ | crud-entity | application, data, domain, ui | 505 | Compilant — 6 entités |
 | `core` | ✅ | kernel |  | 10 | Tokens d'injection + intercepteurs |
 | `coverage-areas` | ✅ | crud-entity | application, data, domain, ui | 321 | Compilant — 4 entités |
 | `dashboard` | ✅ | read-only-view | application, data, domain, ui | 30 | Module IR clôturé — corpus 25 paires, Meta 12/12 ; aggregated_stats_view |
@@ -43,7 +43,7 @@
 | `report-states` | ✅ | workflow-action | application, data, domain, ui | 169 | Module IR clôturé — corpus 187 paires, 8 chaînes, Meta 12/12 |
 | `reporting` | ✅ | read-only-view | application, data, domain, ui | 22 | Module IR clôturé (a posteriori 2026-08-04) — 4 vues analytiques ; corpus 51 paires, 5 chaînes, Meta 12/12 |
 | `requests` | ✅ | workflow-action | application, data, domain, ui | 125 | Module IR clôturé — corpus 157 paires, 8 chaînes, Meta 12/12 |
-| `settings-security` | ✅ | crud-entity | application, data, domain, ui | 195 | Compilant — 3 entités |
+| `settings-security` | ✅ | crud-entity | application, data, domain, ui | 204 | Compilant — 3 entités |
 | `shared` | ✅ | kernel | application, browser, constants, data, domain, ui | 189 | Kernel transverse opérationnel |
 | `team-organization` | ✅ | crud-entity | application, data, domain, ui | 177 | Compilant — 2 entités |
 
