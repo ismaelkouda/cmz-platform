@@ -2345,6 +2345,75 @@ cachée : `nx run @cmz/communication-data:build`, `eslint
 libs/communication/data --max-warnings=0` et `check:duplicates` tous verts
 après correction.
 
+### Backlog cartographie #4 — troisième module, module complet (`team-organization`, 2026-08-04)
+
+Troisième module traité, en entier : `team-organization` — 5/5 fichiers
+appelant `MapperUtils.validateDto` testés (`teams.mapper.ts`,
+`teams-find-one.mapper.ts`, `teams-select.mapper.ts`,
+`participants.mapper.ts`, `participants-find-one.mapper.ts`), 30 tests
+neufs, `tsc`/`eslint --max-warnings=0` à 0 erreur.
+
+Deux divergences métier réelles, documentées dans le code source lui-même
+(pas des suppositions), verrouillées par un test dédié plutôt que relues en
+confiance :
+
+- `ParticipantsProps.team` porte le **nom** de l'équipe côté liste
+  (`ParticipantsMapper` : `dto.team?.uniq_id ? dto.team.name : null`) mais
+  l'**uniqId** côté détail (`ParticipantsFindOneMapper` :
+  `dto.team?.uniq_id ?? null`) — les deux mappers du source font ce choix
+  différemment selon l'usage réel (affichage en liste vs pré-remplissage
+  d'un `p-select` en édition), documenté comme un choix assumé et non une
+  incohérence à corriger. Les deux comportements sont maintenant chacun
+  couverts par un test qui échouerait si l'un des deux mappers se mettait
+  par erreur à imiter l'autre.
+- `flattenPermissionTree` (utilitaire récursif dans
+  `libs/team-organization/data/src/lib/utils/`, consommé par
+  `teams-find-one.mapper.ts`) aplatit un arbre PrimeNG en liste de cases à
+  cocher — perte assumée de la hiérarchie parent/enfant. Testé directement
+  à travers le mapper (reste dans le périmètre du chantier : le fichier
+  appelant `MapperUtils.validateDto` est le mapper) sur un arbre à 2
+  niveaux, vérifiant l'aplatissement et le défaut `checked: false` quand
+  absent du wire.
+
+Un piège de build trouvé et corrigé, distinct de celui du module
+`communication` : `ParticipantsItemApiDto.role`/
+`ParticipantsFindOneItemApiDto.role` sont typés `RolesDto | null` — un
+**enum TypeScript nominal** (`enum RolesDto { SUPERVISOR = 'supervisor',
+'TEAM-LEADER' = 'team-leader', AGENT = 'agent' }`), pas une union de
+littéraux de chaîne. Écrire `role: 'team-leader'` dans un DTO de test
+compile en apparence (valeur runtime identique) mais `tsc --noEmit` rejette
+la valeur (TS2322 — un enum TS n'accepte pas une chaîne littérale
+correspondante sans passer par le membre de l'enum). Corrigé en utilisant
+`RolesDto['TEAM-LEADER']` dans les deux fichiers de test concernés
+(`participants.mapper.spec.ts`, `participants-find-one.mapper.spec.ts`),
+4 erreurs `tsc` au total, aucune régression logique — juste un typage plus
+strict que je ne l'avais anticipé en écrivant les DTOs de test.
+
+9 modules / 65 fichiers restent sur les 12 modules/74 fichiers du périmètre
+initial du chantier « mappers concrets » (`content-management`,
+`coverage-areas`, `administrative-boundary`, `settings-security`,
+`administrative-infrastructure`, plus les 4 modules `workflow-action`).
+Vérification faite en préparant ce module sur l'état réel de ces 4
+derniers (`processing`/`requests`/`finalization`/`report-states`, corpus +
+Meta 12/12) : `processing` (5/5 fichiers `validateDto` ont un
+`*.mapper.spec.ts` corpus-généré), `requests` (4/4) et `finalization` (4/4)
+sont bien couverts — mais `report-states` ne l'est **pas** entièrement :
+6 fichiers appellent `MapperUtils.validateDto`
+(`approve`/`close`/`download`/`evaluate`/`reject-report-states-item.mapper.ts`
++ `report-states-details.mapper.ts`), un seul a un spec
+(`report-states-details-mappers.spec.ts`) — 5 fichiers sans test direct
+malgré le statut « Module IR clôturé » du module. Écart réel, découvert en
+vérifiant plutôt qu'en supposant l'uniformité de la famille
+`workflow-action` ; noté ici, pas encore traité (hors périmètre immédiat de
+ce backlog, qui ciblait à l'origine les modules `crud-entity`/
+`action-request` sans corpus).
+
+Poursuite confirmée par le porteur du projet (« continu avec le module
+suivant, soit strict meme rigueur peu importe le temps que ca prendra,
+notifi moi quand tu as besoin de precision ou autre ») — chantier mené en
+continu, module par module, sans repasser par un point de contrôle
+utilisateur à chaque étape tant qu'aucune ambiguïté ne se présente.
+
 ---
 
 ## 8. Verdict d'architecte
