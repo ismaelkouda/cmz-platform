@@ -39,7 +39,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `administrative-boundary` | crud-entity | 0 | — | ✅ 66/66 (N-7, 2e validation) | 0 | 0 | ✅ N-7 |
 | `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 0 | ✅ N-7 |
 | `authentication` | action-request | 0 | — | — | 0 | 2 | ✅ I-7 + backlog #4 |
-| `communication` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
+| `communication` | crud-entity | 0 | — | — | 0 | 3 | ✅ backlog #4 |
 | `content-management` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
 | `core` (kernel) | kernel | 0 | — | — | 4 | 0 | ✅ chantier I |
 | `coverage-areas` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
@@ -265,15 +265,45 @@ décision de périmètre produit, pas par une incapacité technique
 - **Statut désormais aligné sur les 6 autres modules corpus :** « Module IR
   clôturé » documenté, plus seulement « Compilant » dans `STATUS.md`.
 
-### `communication` / `content-management` / `coverage-areas` / `team-organization` — non touchés
+### `communication` — backlog #4 (2/12 modules du chantier « mappers concrets »)
+
+- **Effectué (2026-08-04) :** 3 fichiers testés
+  (`notifications.mapper.ts`, `messaging.mapper.ts`,
+  `messaging-find-one.mapper.ts`), 17 tests neufs, `tsc`/`eslint
+  --max-warnings=0` à 0 erreur. Les 2 mappers `messaging` portaient chacun
+  un commentaire documentant un bug déjà corrigé lors de leur construction
+  (liste : `type`/`targetType` jamais passés dans leurs mappers dédiés ;
+  détail : `region`/`department`/`municipality` dérivés via
+  `JSON.stringify(dto.region?.id)`, cassant le matching de select cascade en
+  édition) — les deux corrections sont maintenant vérifiées par un test, pas
+  seulement relues dans un commentaire.
+- **Reste à faire :** 0 corpus, 0 pattern Nx-shaped pour ce module.
+- **Amélioration apportée :** target `test` ajouté à
+  `communication/data/project.json` (absent avant cette passe — voir
+  découverte `authentication` ci-dessus, 8 modules concernés d'un coup).
+- **Tâche découverte :** en écrivant le premier test à réutiliser la
+  méthode `.with()` (réconciliation d'identité par `uniqId`+`updatedAt`,
+  même mécanisme que `QueuesProcessingItemMapper`), un piège de test a été
+  trouvé et corrigé **dans les tests, pas dans le mapper** : une instance de
+  mapper partagée entre plusieurs `it()` utilisant les mêmes valeurs de
+  DTO par défaut renvoie l'entité mise en cache du test précédent au lieu
+  du nouveau mapping — 8 tests d'abord rouges pour cette raison,
+  diagnostiqués (le premier test de chaque fichier passait, prouvant que le
+  mapper lui-même était correct) puis corrigés en instanciant un mapper
+  neuf par test.
+
+### `content-management` / `coverage-areas` / `team-organization` — non touchés
 
 - **Effectué :** rien cette session, ni les précédentes au niveau du
   code applicatif — seulement compilants (tsc/eslint/ngc), 0 corpus,
-  0 test.
+  0 test unitaire (le target `test` de leur `data/project.json` a été câblé
+  cette passe, voir découverte `authentication` — mais aucun fichier de
+  test n'y a encore été écrit).
 - **Reste à faire :** l'intégralité — corpus, tests, pattern
   Nx-shaped (candidats crud-entity comme
   `administrative-infrastructure`/`administrative-boundary`, jamais
-  étendus à ces 4 modules).
+  étendus à ces modules) ; chantier « mappers concrets » (backlog #4, 2/12
+  modules faits : `authentication`, `communication`).
 - **Cas particulier `team-organization`** : 2 entités manquantes
   (`agents-performances`, `daily-goal`) — bloquées par
   [ADR-0018](../adr/0018-perimetre-team-organization.md), décision
@@ -325,7 +355,7 @@ question de couverture de test ou de conformité de pattern.
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
 | 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
-| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **1/12 modules fait (`authentication`, 2026-08-04)** ; recompté précisément : 74 fichiers réels sur 12 modules (pas « 60+ sur 13 »), dont **8/12 modules découverts sans aucun target `test`** (même trou de câblage CI que `shared/domain`, corrigé pour les 8 avant d'écrire un seul test — voir détail §4 `authentication`) ; 11 modules / 73 fichiers restants |
+| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **2/12 modules faits (`authentication` + `communication`, 2026-08-04)** ; recompté précisément : 74 fichiers réels sur 12 modules (pas « 60+ sur 13 »), dont **8/12 modules découverts sans aucun target `test`** (même trou de câblage CI que `shared/domain`, corrigé pour les 8 avant d'écrire un seul test — voir détail §4 `authentication`) ; 10 modules / 70 fichiers restants |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |
 | 7 | `security-audit`/`i18n-check` rendus bloquants | Résorption Dependabot / revue humaine du diff 320 clés | Faible une fois débloqué |

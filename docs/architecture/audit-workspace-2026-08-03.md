@@ -2313,6 +2313,38 @@ avancé module par module, avec vérification à chaque étape (`vas'y en
 ordre, avec des check afin que je verifie chaque etape d'implementation`),
 pas en un seul lot non vérifiable.
 
+### Backlog cartographie #4 — deuxième module (`communication`, 2026-08-04)
+
+Deuxième module traité : `communication` — 3 fichiers testés
+(`notifications.mapper.ts`, `messaging.mapper.ts`,
+`messaging-find-one.mapper.ts`), 17 tests neufs, `tsc`/`eslint
+--max-warnings=0` à 0 erreur. Les deux mappers `messaging` portaient chacun
+un commentaire de code documentant un bug déjà corrigé lors de leur
+construction (liste : `type`/`targetType` jamais passés dans
+`MessagingTypeMapper`/`MessagingTargetMapper` par le mapper source, laissés
+en wire brut ; détail : `region`/`department`/`municipality` dérivés via
+`JSON.stringify(dto.region?.id)`, qui entoure une string de guillemets
+littéraux et casse le matching du select cascade en édition) — les deux
+corrections sont désormais vérifiées par un test qui échouerait si la
+régression revenait, pas seulement documentées en commentaire.
+
+Piège de test trouvé et corrigé pendant l'écriture (pas un bug du mapper) :
+`MessagingMapper`/`MessagingFindOneMapper`/`NotificationsMapper` mettent en
+cache leur résultat par `uniqId`+`updatedAt` (méthode `.with()` — même
+mécanisme de réconciliation d'identité que `QueuesProcessingItemMapper`,
+déjà rencontré dans le corpus `workflow-action`) : `with()` retourne l'objet
+existant tel quel dès que ces deux clés sont identiques à l'appel
+précédent, sans regarder les autres champs. Premier jet des 3 fichiers de
+test : 8 tests rouges sur 17, tous avec la même signature (résultat de
+l'entité mise en cache d'un test précédent, pas du DTO du test en cours) —
+diagnostiqué en observant que le premier test de chaque fichier passait
+toujours (preuve que le mapper lui-même mappait correctement), corrigé en
+remplaçant l'instance de mapper partagée au niveau `describe` par une
+instance neuve (`createMapper()`) à chaque `it()`. Aucune régression
+cachée : `nx run @cmz/communication-data:build`, `eslint
+libs/communication/data --max-warnings=0` et `check:duplicates` tous verts
+après correction.
+
 ---
 
 ## 8. Verdict d'architecte
