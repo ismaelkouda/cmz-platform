@@ -1,56 +1,103 @@
-# CODEOWNERS — relecture obligatoire par zone du monorepo
+# CODEOWNERS — relecture obligatoire par zone (audit G-1 / P1-13)
 #
-# Objectif : sur un monorepo multi-stack, empêcher qu'une modification du socle
-# ou d'un domaine partagé passe sans relecture de l'équipe qui en est
-# responsable. La dernière règle qui correspond à un fichier l'emporte : les
-# règles vont donc du plus général au plus spécifique.
+# Objectif : sur un monorepo multi-stack, empêcher qu'une modification du socle,
+# du kernel, d'un module, de la doc ou du corpus passe sans relecture de la
+# zone responsable. La **dernière** règle qui correspond à un fichier l'emporte :
+# ordre = général → spécifique.
 #
 # Format : <motif>  <propriétaires>
-# Les propriétaires sont des comptes (@utilisateur) ou des équipes
-# (@organisation/equipe) de la forge.
+# Comptes (@utilisateur) ou équipes (@organisation/equipe) GitHub.
 #
-# ⚠️ À COMPLÉTER — un seul propriétaire est déclaré aujourd'hui. Remplacez les
-# lignes ci-dessous par les équipes réelles au fur et à mesure qu'elles sont
-# constituées. Une équipe inexistante ne provoque pas d'erreur : la règle est
-# simplement ignorée, sans avertissement. Vérifiez chaque handle.
+# État 2026-08-02 : un seul relecteur humain (@ismaelkouda) — peuplé **par zone**
+# quand même (équipes de 1). Remplacer progressivement chaque zone par une
+# équipe GitHub dédiée (@cmz/socle, @cmz/kernel, @cmz/module-…, @cmz/docs,
+# @cmz/corpus) dès qu'elle existe. Une équipe inexistante est **ignorée sans
+# erreur** : ne jamais laisser une zone sans handle valide.
 #
-# GitLab : ce fichier doit se trouver à la racine, dans .gitlab/ ou dans .github/.
-# GitHub : à la racine, dans .github/ ou dans docs/.
+# Propriétaire courant (équipe de 1) — alias local pour lisibilité des diffs.
+# OWNER = @ismaelkouda
 
 # ---------------------------------------------------------------------------
-# Défaut — tout ce qui n'est pas couvert par une règle plus spécifique
+# Défaut — tout ce qui n'est pas couvert plus bas
 # ---------------------------------------------------------------------------
-*                           @ismaelkouda
+*                                           @ismaelkouda
 
 # ---------------------------------------------------------------------------
-# Socle du monorepo — les modifications ici affectent tous les packages
+# Socle du monorepo — impacte tous les packages (ADR-0003 / ADR-0005 / ADR-0006)
 # ---------------------------------------------------------------------------
-/package.json               @ismaelkouda
-/bun.lock                   @ismaelkouda
-/nx.json                    @ismaelkouda
-/tools/                     @ismaelkouda
-/.husky/                    @ismaelkouda
-/commitlint.config.mjs      @ismaelkouda
-/.github/CODEOWNERS         @ismaelkouda
+/package.json                               @ismaelkouda
+/bun.lock                                   @ismaelkouda
+/nx.json                                    @ismaelkouda
+/tsconfig.base.json                         @ismaelkouda
+/eslint.config.mjs                          @ismaelkouda
+/commitlint.config.mjs                      @ismaelkouda
+/knip.json                                  @ismaelkouda
+/legacy.lock.json                           @ismaelkouda
+/Dockerfile                                 @ismaelkouda
+/.dockerignore                              @ismaelkouda
+/deploy/                                    @ismaelkouda
+/apps/backoffice-angular/public/env.js      @ismaelkouda
+/.husky/                                    @ismaelkouda
+/.github/                                   @ismaelkouda
+/tools/                                     @ismaelkouda
+/tools/check-*.mjs                          @ismaelkouda
+/tools/vitest-lib.config.ts                 @ismaelkouda
+/tools/mock-server.mjs                      @ismaelkouda
+/tools/mock-server/                         @ismaelkouda
 
-# Le catalog de versions (ADR-0005) vit dans package.json : toute montée de
-# version du socle Angular passe donc par une relecture.
+# ---------------------------------------------------------------------------
+# Kernel SEOS — libs transverses (0 couplage métier)
+# ---------------------------------------------------------------------------
+/libs/core/                                 @ismaelkouda
+/libs/shared/                               @ismaelkouda
 
 # ---------------------------------------------------------------------------
-# Documentation — ADR et journal des phases
+# Modules fonctionnels — un propriétaire de zone par module (équipe de 1 OK)
 # ---------------------------------------------------------------------------
-/docs/                      @ismaelkouda
-/docs/adr/                  @ismaelkouda
+/libs/authentication/                       @ismaelkouda
+/libs/administrative-boundary/              @ismaelkouda
+/libs/administrative-infrastructure/        @ismaelkouda
+/libs/communication/                        @ismaelkouda
+/libs/content-management/                   @ismaelkouda
+/libs/coverage-areas/                       @ismaelkouda
+/libs/dashboard/                            @ismaelkouda
+/libs/finalization/                         @ismaelkouda
+/libs/interactive-map/                      @ismaelkouda
+/libs/monitoring/                           @ismaelkouda
+/libs/processing/                           @ismaelkouda
+/libs/report-states/                        @ismaelkouda
+/libs/reporting/                            @ismaelkouda
+/libs/requests/                             @ismaelkouda
+/libs/settings-security/                    @ismaelkouda
+/libs/team-organization/                    @ismaelkouda
 
 # ---------------------------------------------------------------------------
-# Applications et bibliothèques
+# Applications hôtes
 # ---------------------------------------------------------------------------
-# À décliner au fur et à mesure de leur création, par exemple :
-#
-#   /apps/backoffice-angular/    @cmz/equipe-frontend
-#   /libs/shared-domain/         @cmz/equipe-domaine
-#   /libs/shared-ui/             @cmz/equipe-design-system
-#   /apps/api-spring/            @cmz/equipe-backend
-#
-# Les bibliothèques de domaine méritent une attention particulière : elles sont
-# consommées par plusieurs packages, et une modification s'y propage largement.
+/apps/                                      @ismaelkouda
+/apps/backoffice-angular/                   @ismaelkouda
+
+# ---------------------------------------------------------------------------
+# Documentation, contrats, conventions — validité scientifique & ADR
+# ---------------------------------------------------------------------------
+/docs/                                      @ismaelkouda
+/docs/adr/                                  @ismaelkouda
+/docs/architecture/                         @ismaelkouda
+/docs/guides/                               @ismaelkouda
+/contracts/                                 @ismaelkouda
+/conventions/                               @ismaelkouda
+# best-practices.md déplacé vers conventions/ le 2026-08-03 (J-11) — déjà
+# couvert par la règle /conventions/ ci-dessus, plus de ligne dédiée.
+/LLM_CONTEXT.md                             @ismaelkouda
+/CLAUDE.md                                  @ismaelkouda
+/STATUS.md                                  @ismaelkouda
+/README.md                                  @ismaelkouda
+
+# ---------------------------------------------------------------------------
+# Outillage corpus SEOS — émission / vérif des paires (livrable scientifique)
+# Plus spécifique que /tools/ : dernier match = relecture corpus
+# ---------------------------------------------------------------------------
+/tools/corpus/                              @ismaelkouda
+/tools/seos-adapter/                        @ismaelkouda
+/tools/smoke/                               @ismaelkouda
+/corpus/                                    @ismaelkouda

@@ -1,0 +1,30 @@
+Propriétaire — Tous droits réservés / Proprietary — All Rights Reserved
+
+Copyright (c) 2026, les détenteurs des droits sur `cmz-platform`.
+
+Ce dépôt est privé (`"private": true`, `"license": "UNLICENSED"` dans
+`package.json`). Aucune licence d'utilisation, de reproduction, de
+modification ou de distribution n'est accordée à des tiers en dehors des
+autorisations explicites du détenteur des droits.
+
+---
+
+**Ce fichier est un point de départ, pas un avis juridique.** Il a été ajouté
+pour combler l'absence de fichier `LICENSE` explicite constatée en audit
+(`audit-workspace-2026-08-03.md`, N5), pas pour trancher à la place du
+porteur métier/juridique du projet des questions qu'il n'a pas encore
+tranchées :
+
+- Le **corpus de recherche** (`corpus/*.pairs.jsonl`, méthode SEOS de
+  synthèse neurosymbolique, cf. `LLM_CONTEXT.md` §5) peut relever d'un régime
+  de partage différent du code source (ex. publication scientifique,
+  licence de jeu de données spécifique) — à qualifier explicitement, pas à
+  déduire de ce fichier.
+- Le **code du back-end legacy** (`cmz-backoffice-frontend`,
+  `$SEOS_LEGACY_ROOT`) et les **outils SEOS** tiers ont leurs propres termes,
+  non couverts par ce fichier.
+
+À faire trancher par le détenteur des droits (porteur métier/juridique),
+puis à documenter dans un ADR si le régime de licence devient une décision
+structurante (ex. avant toute publication du corpus ou des outils SEOS) :
+voir `docs/architecture/audit-workspace-2026-08-03.md`, constat P1-N5.

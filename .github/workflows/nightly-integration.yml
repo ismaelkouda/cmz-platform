@@ -1,10 +1,11 @@
 # Oracle Tier 2 — intégration app (A-2026-07-30-08)
 #
-# Tier 1 (corpus:ci, job `corpus` dans ci.yml) : modules `@cmz/*` isolés.
-# Tier 2 (ce workflow) : composition root — strictTemplates + build app.
+# Tier 1 (corpus:ci, job `corpus` / --structural-only — ADR-0015) : modules isolés.
+# Tier 2 (ce workflow) : builds app development + production (coûteux).
+# strictTemplates (ngc) est bloquant en PR — job `oracle` de ci.yml (A-10).
 #
 # Déclenchement : nightly 03:00 UTC + manuel (workflow_dispatch).
-# Budget initial production : ~856 kB (ExcelJS lazy ~948 kB au premier export).
+# Bundle initial : apps/backoffice-angular/bundle-metrics.json (audit E-8).
 
 name: Nightly — Tier 2 intégration
 
@@ -12,6 +13,11 @@ on:
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
+
+# Audit G-8 : ne pas empiler nightly + dispatch concurrents.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '22.22.3'
@@ -35,11 +41,54 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: strictTemplates (ngc)
-        run: bunx ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit
-
       - name: Build intégration (development)
         run: bunx nx run backoffice-angular:build:development
 
       - name: Build production
         run: bunx nx run backoffice-angular:build:production
+
+      # Audit P-5 (audit-workspace-2026-08-02-revue-finale.md) : composition
+      # réelle du bundle initial (main-*.js, 882,18 kB au 2026-08-03, marge
+      # de 17,82 kB avant le seuil d'avertissement 900 kB — P1-27). Rebuild
+      # dédié avec sourcemaps (jamais dans la config `production` par défaut
+      # — on ne veut pas les livrer en production) ; informationnel,
+      # `continue-on-error` — ne bloque jamais la CI sur la composition,
+      # seulement sur le budget absolu (déjà couvert par `budgets` dans
+      # `project.json`, ADR-0016) et la régression déclarée (bundle-metrics.json).
+      - name: Analyse de composition du bundle (source-map-explorer)
+        continue-on-error: true
+        run: |
+          bunx nx run backoffice-angular:build:production --source-map=true
+          bunx source-map-explorer \
+            dist/apps/backoffice-angular/browser/main-*.js \
+            --html > bundle-composition-report.html
+          echo "Rapport généré : bundle-composition-report.html"
+
+      - name: Publier le rapport de composition du bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-composition-report
+          path: bundle-composition-report.html
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # Audit E-8 — métrique commitée = vérité ; dérive = CI rouge
+      - name: Record + verify bundle-metrics.json
+        run: |
+          bun run bundle:record
+          bun run generate:status
+          git diff --exit-code -- \
+            apps/backoffice-angular/bundle-metrics.json \
+            docs/architecture/etat-du-socle.md \
+            LLM_CONTEXT.md \
+            STATUS.md \
+            README.md \
+            docs/adr/README.md \
+            docs/README.md \
+            || {
+              echo "::error::Bundle ou docs dérivés périmés — relancer localement :"
+              echo "  bun run bundle:metrics && bun run generate:status"
+              echo "  puis committer bundle-metrics.json + docs générés"
+              exit 1
+            }

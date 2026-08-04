@@ -1,0 +1,47 @@
+version: 2
+updates:
+  # Écosystème JS/TS — catalog bun centralisé (ADR-0005). Dependabot ouvre
+  # une PR de mise à jour du lockfile racine ; le catalog reste la source
+  # unique de version (aucun package ne redéclare une version en dur,
+  # vérifié par `check:versions`).
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 10
+    groups:
+      angular:
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+      nx:
+        patterns:
+          - 'nx'
+          - '@nx/*'
+      lint-format:
+        patterns:
+          - 'eslint*'
+          - '@typescript-eslint/*'
+          - 'angular-eslint'
+          - 'prettier*'
+    commit-message:
+      prefix: 'build(deps)'
+
+  # Actions GitHub utilisées par les workflows CI.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    commit-message:
+      prefix: 'ci(deps)'
+
+  # Image de base du Dockerfile (audit G-4).
+  - package-ecosystem: 'docker'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    commit-message:
+      prefix: 'build(docker)'
