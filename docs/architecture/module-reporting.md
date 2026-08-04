@@ -23,7 +23,7 @@ export class GrafanaDashboardEntity {
 ### Consolidation actée : 4 verticals identiques → 1
 
 L'analyse minutieuse du code source
-(`/Users/macbookair/Dev/Angular/cmz-backoffice-frontend/src/presentation/pages/reporting`)
+(`$SEOS_LEGACY_ROOT/src/presentation/pages/reporting`)
 révèle la même duplication structurelle que sur le module `monitoring` :
 
 Le source déclarait 4 entités (`ReportsEntity`, `RequestsEntity`,

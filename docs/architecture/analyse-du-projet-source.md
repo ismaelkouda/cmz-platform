@@ -5,7 +5,7 @@ supposées. Elles fondent la
 [stratégie de reconstruction](./strategie-de-reconstruction.md).
 
 - **Dernière mise à jour :** 2026-07-22
-- **Source analysée :** `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend`,
+- **Source analysée :** `$SEOS_LEGACY_ROOT`,
   branche `feature/CMZ-feat-module-infrastructures`
 
 ## Volume

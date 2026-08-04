@@ -3,7 +3,7 @@
   "framework": "angular",
   "version": "22",
   "description": "Profil de convention Angular 22. Source unique des choix de code qui changent d'une version majeure à l'autre. Le générateur et l'IA le LISENT ; ils ne le contiennent pas (ADR-0010). Pour Angular 23, créer angular-23.profile.json — ne pas modifier les générateurs.",
-  "source": "angular.dev/ai/develop-with-ai (best-practices.md), vérifié pour v22.0.7",
+  "source": "angular.dev/ai/develop-with-ai — copie de travail : conventions/best-practices.md, vérifié pour v22.0.7. Extrait mécaniquement vérifiable uniquement (audit 2026-08-02-addendum, J-12) : ce fichier fait foi pour tout ce que tools/check-convention-profile.mjs vérifie en CI ; best-practices.md reste la référence pour le reste (a11y qualitative, forms, organisation des composants).",
   "conventions": {
     "service": {
       "decorator": "@Service",

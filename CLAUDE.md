@@ -44,8 +44,8 @@
    system end-to-end (SEOS paradigm, MDE + LLM Generate-Verify-Repair loop, Nx
    package-based invariants).
 2. **Deterministic Contract Compliance**: The source of truth for business logic
-   is `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend`. Never guess DTO
-   shapes, endpoints, or field names.
+   is `$SEOS_LEGACY_ROOT` (required env var; no machine-path fallback). Never
+   guess DTO shapes, endpoints, or field names.
 3. **Multi-Level Verification Oracle**: Every module implementation must
    strictly pass the verification oracle:
     - `bunx nx run-many -t build` (or `tsc --noEmit`)

@@ -60,8 +60,8 @@ confirmé, pas une supposition) :
 | `EmailRequiredError`, `PasswordRequiredError`, `InvalidEmailError`, `ConfirmPasswordRequiredError`, `ConfirmPasswordNoMatchError`, `GenericRequiredError` | `shared-domain`                  | **Prêtes**, mêmes classes que dans le source (import identique)                                                                                         |
 | `isValidEmail`, `isMatchConfirmPassword`                                                                                                                  | `shared-domain`                  | **Prêts**                                                                                                                                               |
 | `AccountLockedError`, `UnauthorizedError`, `ServerResponseError`, `UnknownError`                                                                          | `shared-domain`                  | **Prêtes** — erreurs HTTP/serveur déjà typées                                                                                                           |
-| `StoragePort` (`save`, `saveEncrypted`, `getEncrypted`, `removeKeysWithPrefix`, `clearEncrypted`)                                                         | `shared-domain`/`shared-browser` | **Prêt**, déjà consommé par `PermissionActionsService`                                                                                                  |
-| `PermissionActionsService`                                                                                                                                | `shared-application`             | **Prêt**, lit déjà `getEncrypted('permissionsActions')` — **vide aujourd'hui**, en attente que `login` l'alimente                                       |
+| `StoragePort` (`save`, `saveObfuscated`, `getObfuscated`, `removeKeysWithPrefix`, `clearObfuscated`) — renommé le 2026-08-03, ex-`*Encrypted` (audit P1-18) | `shared-domain`/`shared-browser` | **Prêt**, déjà consommé par `PermissionActionsService`                                                                                                  |
+| `PermissionActionsService`                                                                                                                                | `shared-application`             | **Prêt**, lit déjà `getObfuscated('permissionsActions')` — **vide aujourd'hui**, en attente que `login` l'alimente                                       |
 | `SessionService`                                                                                                                                          | `shared-application`             | **Partiel** : `clear()` existe (déclenché par `UnauthorizedError` dans `UiFeedbackService`), **`save()` manque** — à ajouter, pas à réinventer ailleurs |
 | `UiFeedbackService`                                                                                                                                       | `shared-ui`                      | **Prêt** : handler par défaut (toast `messageKey` traduit) + handler `UnauthorizedError` (toast + `session.clear()`) déjà branchés                      |
 | `ResourceFacade<TData, TParams>`                                                                                                                          | `shared-application`             | **Réutilisable tel quel** pour les 3 opérations (cf. décision 4) — **pas de nouvelle façade à créer**                                                   |
@@ -123,7 +123,7 @@ par `StoragePort`) ne sont pas dans le kernel actuel — décision 6.
    pré-positionné). Le module `login` (facade, via un `effect()` sur `value()`)
    appelle `sessionService.save(user, token, permissions)` au succès —
    symétrique à `clear()`, dans le même service kernel, pas un service dupliqué
-   dans `authentication-application`. Écrit via `StoragePort.saveEncrypted` avec
+   dans `authentication-application`. Écrit via `StoragePort.saveObfuscated` avec
    les clés déjà lues par `PermissionActionsService` (`permissionsActions`) et
    par `clear()` (`token_data`, `user_data`).
 5. **`CurrentUser`/`AuthToken`/`UserPermissions` manquent dans le kernel — à
@@ -218,7 +218,7 @@ Puis par opération **O ∈ {login, forgot-password, reset-password}** :
 D'abord, **ajout kernel** (`@cmz/shared-application`, pas dans le module) :
 
 - [x] `SessionService.save(user, token, permissions)` — symétrique à `clear()`
-      existant, écrit via `StoragePort.saveEncrypted` (clés `user_data`,
+      existant, écrit via `StoragePort.saveObfuscated` (clés `user_data`,
       `token_data`, `permissionsActions` — mêmes clés que
       `PermissionActionsService`/`clear()` lisent déjà).
 

@@ -4,12 +4,11 @@ Ce document décrit **ce qui existe aujourd'hui** dans le monorepo. Il est mis �
 jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
-- **Dernière mise à jour :** 2026-08-01
-- **État :** **Phase 07 clôturée — Phase 08 ouverte** — socle outillé + Kernel
-  transverse `shared/` et `@cmz/core` opérationnels + **18 modules métier**
-  livrés/compilants (voir [`STATUS.md`](../../STATUS.md)). Familles
-  `workflow-action` **4/4** et `read-only-view` **4/4** clôturées IR. Corpus
-  annoté + CI corpus (`corpus:ci`) + Tier 2 nightly opérationnels.
+<!-- BEGIN:GENERATED:monorepo-status -->
+- **Dernière mise à jour :** 2026-08-04 (généré par `tools/generate-status.mjs`)
+- **État :** **Phase 08** — génération depuis patterns ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle outillé + Kernel `shared/` / `@cmz/core` + **18** modules livrés/compilants (**71** libs + **1** app ; **2 557** `.ts` hors tests). Voir [`STATUS.md`](../../STATUS.md).
+- **Familles IR :** `workflow-action` **4/4**, `read-only-view` **4/4**. Corpus **781** paires. CI `corpus:ci` (structural-only) + `corpus-full` (main) + Tier 2 nightly.
+<!-- END:GENERATED:monorepo-status -->
 
 ## Contenu du dépôt
 
@@ -36,14 +35,16 @@ d'imports, `package.json`/`project.json`/paths TS. Voir son
 ## Application Angular
 
 `apps/backoffice-angular` (`@nx/angular` 23.1.0, Angular 22.0.7, esbuild,
-Vitest). Build vérifié vert sur environnement conforme (Node 22.22.3) :
-`bunx nx build backoffice-angular` → succès, bundle ~221 kB.
+Vitest). Build production : `bunx nx run backoffice-angular:build:production`.
+
+<!-- BEGIN:GENERATED:bundle-metrics -->
+- **Bundle initial (production, raw)** : **882.18 kB** — source [`bundle-metrics.json`](../../apps/backoffice-angular/bundle-metrics.json) (mesuré 2026-08-03 via `bun run bundle:record` après build).
+- **ExcelJS (lazy)** : **948.32 kB** raw — hors budget initial.
+- **Budgets** (`project.json`) : warning `900kb` / error `1mb` — politique [ADR-0016](../adr/0016-politique-budget-bundle.md) (hausse interdite sans ADR).
+<!-- END:GENERATED:bundle-metrics -->
 
 Détails et notes d'intégration :
 [README de l'app](../../apps/backoffice-angular/README.md).
-
-Élément cosmétique connu : le composant de démo `nx-welcome.ts` dépasse le
-budget SCSS (+3 kB) ; il disparaîtra au câblage des vraies routes.
 
 ## Choix en vigueur
 
@@ -111,11 +112,11 @@ Chacun a été validé sur un cas nominal **et sur un cas d'échec délibéré**
 
 Deux limites connues :
 
-- **Les hooks ne s'exécutent que localement.** Tant que la CI ne rejoue pas les
-  mêmes contrôles, `--no-verify` suffit à les contourner.
-- **Le `preinstall` contraint le `Dockerfile`** : `tools/` doit être copié avant
-  `bun install`, sinon le schéma habituel `COPY package.json` →
-  `RUN bun install` échoue.
+- **Les hooks ne s'exécutent que localement** ; la CI les rejoue (`ci.yml`).
+  `--no-verify` ne contourne pas la forge — voir
+  [`docs/guides/contribuer.md`](../guides/contribuer.md) (G-3).
+- **Le `preinstall` contraint le `Dockerfile`** : `tools/` est copié **avant**
+  `bun install` (voir [`Dockerfile`](../../Dockerfile) à la racine, G-4).
 
 ## Commandes
 
@@ -130,15 +131,62 @@ bunx nx affected -t build   # ne reconstruit que ce qui a changé depuis main
 
 ## Points ouverts
 
-| Point                                                                            | Échéance                                                     |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Nx Cloud non activé — nécessite un compte, `bunx nx connect`                     | Phase 06 (CI)                                                |
-| Contrôles non rejoués en CI                                                      | Phase 06 — garde-fous + corpus Tier 1 en PR ; Tier 2 nightly |
-| `Dockerfile` copiant `tools/` avant l'installation                               | Phase 06                                                     |
-| `CODEOWNERS` à peupler — une équipe inexistante y est ignorée sans erreur        | À la constitution des équipes                                |
-| Cadrage IA (skills Angular, MCP Nx, Web Codegen Scorer) à installer localement   | Phase 02, avant génération de contenu                        |
-| `nx-welcome.ts` (dépasse le budget SCSS) à retirer                               | Au câblage des routes                                        |
-| Narrowing des `catch` dans l'archétype d'erreur (app plus stricte que la source) | Phase 04 (contrats d'archétype)                              |
+> Audit E-7 / P1-10 (2026-08-02) : retirés « Contrôles non rejoués en CI »
+> (`ci.yml` les rejoue) et « `nx-welcome.ts` à retirer » (fichier déjà
+> supprimé). Colonne **Vérifié** = dernière confirmation que le point est
+> encore ouvert.
+
+| Point | Vérifié | Suite |
+| ----- | ------- | ----- |
+| Cadrage IA local (skills Angular, MCP Nx, Web Codegen Scorer) | **2026-08-02** | outillage agent |
+| Narrowing des `catch` dans l'archétype d'erreur (app plus stricte que la source) | **2026-08-02** | contrats Phase 04 |
+
+**Remédiation G-1 (2026-08-02) :** `.github/CODEOWNERS` peuplé par zone
+(socle / kernel / modules / apps / docs / corpus), handles `@ismaelkouda`
+(équipes de 1) — prêt à substituer des équipes GitHub `@cmz/…` sans refactor.
+
+**Remédiation G-2 (2026-08-02) :** protection `main` versionnée dans
+[`.github/branch-protection.main.json`](../../.github/branch-protection.main.json)
+(1 approval, checks CI bloquants, no force-push, `enforce_admins`). Appliquer
+sur la forge : `gh auth login && bun run protect:main`.
+
+**Remédiation G-4 (2026-08-02) :** [`Dockerfile`](../../Dockerfile) multi-stage
+(`oven/bun` → nginx) : `COPY tools/` avant `bun install` (contrainte
+`preinstall`), build `backoffice-angular:production`, écoute `:8080`.
+
+**Remédiation G-5 (2026-08-02) :** `window.__env` extrait de `index.html` vers
+[`public/env.js`](../../apps/backoffice-angular/public/env.js) ; template
+[`deploy/env.template.js`](../../deploy/env.template.js) substitué par
+[`deploy/docker-entrypoint.sh`](../../deploy/docker-entrypoint.sh) (`CMZ_*`).
+
+**Remédiation G-6 (2026-08-02) :** `assertAppConfig` dans `@cmz/core` —
+validation de forme au bootstrap (`APP_CONFIG`) avec diagnostic exploitable.
+
+**Remédiation G-7 (2026-08-02) :** Nx Cloud **activé** — `nxCloudId` dans
+`nx.json` via `bunx nx connect --generateToken` (remote GitHub
+`ismaelkouda/cmz-platform`). Claim compte : ouvrir l’URL affichée par
+`bunx nx connect` (ou [cloud.nx.app](https://cloud.nx.app)) et rattacher le
+workspace ; pas de refus ADR.
+
+**Remédiation G-8 (2026-08-02) :** `concurrency: cancel-in-progress` sur
+`ci.yml` (par PR/ref), `nightly-integration.yml` (workflow),
+`corpus-full.yml` (par ref) — un seul run actif, pas d’empilement.
+
+**Remédiation H-1 (2026-08-02) :** oracle G-V-R à deux niveaux structurels —
+`:build` + `:test` (Vitest / chantier C) via
+[`tools/corpus/oracle-levels.mjs`](../../tools/corpus/oracle-levels.mjs) ;
+attaché auto dès qu’un `project.json` déclare `targets.test`.
+
+**Remédiation H-2 (2026-08-02) :** gate module
+[`module-gate.mjs`](../../tools/corpus/module-gate.mjs) — `build` + `lint` (+
+`test` si target) verts sur `tag:scope:<module>` avant écriture JSONL /
+`--verify` ; sinon exit 1, pas d’émission.
+
+**Remédiation H-3 (2026-08-02) :** contrainte
+`constraints.no_cross_module_byte_identical_files` dans
+`workflow-action` + `read-only-view` pattern.json ; enforcement
+`check:duplicates` (bloquant CI + `check:all`) et gate corpus
+`--module=<m>`.
 
 **Étape 02.5 — validée** : les patterns SEOS tiennent sur Angular 22 (structurel
 106/106, 0 erreur de syntaxe/décorateur). Détail :

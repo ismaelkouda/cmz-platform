@@ -1,0 +1,303 @@
+# Cartographie des modules — cmz-platform (2026-08-04)
+
+> **Document vivant**, mis à jour à chaque passe d'audit. Complète —
+> sans les remplacer — [`audit-workspace-2026-08-03.md`](./audit-workspace-2026-08-03.md)
+> (journal narratif d'exécution) et [`STATUS.md`](../../STATUS.md) (snapshot
+> machine-généré). Ce document répond à une question différente des deux
+> autres : **pour chaque module, qu'est-ce qui a été fait, par qui/quoi
+> (humain, corpus, oracle), ce qui reste, ce qui a été amélioré, ce qui a
+> été découvert** — pour qu'aucun point ne se perde entre deux passes.
+
+## 0. Principe directeur — confirmé par le porteur du projet (2026-08-04)
+
+> « Je confirme que le livrable n'est pas l'application, c'est le corpus et
+> la sévérité de l'oracle qui l'a validé. »
+
+Ce document s'organise donc autour de cette hiérarchie, pas autour de
+l'apparence de l'application :
+
+1. **Le corpus** (`corpus/*.pairs.jsonl`) — les correspondances
+   legacy↔Nx réellement vérifiées, module par module. 587 paires
+   `verified` + 194 `n/a` documentées (ADR-0019) — **pas** un jeu
+   d'apprentissage au sens M2, un index de correspondances de chemins.
+2. **La sévérité de l'oracle** — l'ensemble des portes de vérification
+   mécaniques (tsc, eslint, ngc strictTemplates, check-pattern,
+   check-duplicates, corpus verify, tests) et leur statut **bloquant ou
+   non** en CI aujourd'hui (§2).
+3. **L'application** (le code livré) n'est que la **conséquence** du
+   passage répété par ce système de portes — jamais la mesure elle-même.
+
+Une ligne verte dans `STATUS.md` (« ✅ Compilant ») ne dit rien sur la
+sévérité de l'oracle qui l'a produite. Ce document distingue explicitement
+les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
+12/12) de ceux qui n'ont traversé que les portes socle (tsc/eslint/ngc).
+
+## 1. Vue d'ensemble — matrice des 18 modules
+
+| Module | Famille | Paires corpus | Meta-vérif. | Pattern Nx-shaped | Fichiers `.spec.ts` (corpus-générés) | Fichiers `.spec.ts` (manuels, chantier L) | Touché cette session |
+| --- | --- | ---: | :---: | :---: | ---: | ---: | :---: |
+| `administrative-boundary` | crud-entity | 0 | — | ✅ 66/66 (N-7, 2e validation) | 0 | 0 | ✅ N-7 |
+| `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 0 | ✅ N-7 |
+| `authentication` | action-request | 0 | — | — | 0 | 0 | ✅ I-7 |
+| `communication` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
+| `content-management` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
+| `core` (kernel) | kernel | 0 | — | — | 4 | 0 | ✅ chantier I |
+| `coverage-areas` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
+| `dashboard` | read-only-view | 25 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ (touché indirectement, P-5/P-6) |
+| `finalization` | workflow-action | 126 (6 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 16 | 0 | ⚠️ H-4 (contrainte), pas le code |
+| `interactive-map` | read-only-view | 28 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
+| `monitoring` | read-only-view | 51 (5 chaînes) | **absent** | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
+| `processing` | workflow-action | 156 (7 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 16 | 0 | ⚠️ H-4 (contrainte), pas le code |
+| `report-states` | workflow-action | 187 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 9 | 0 | ⚠️ H-4 (contrainte), pas le code |
+| `reporting` | read-only-view | 51 (5 chaînes) | **absent** | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
+| `requests` | workflow-action | 157 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 17 | 0 | ⚠️ H-4 (contrainte), pas le code |
+| `settings-security` | crud-entity | 0 | — | — | 0 | 0 | ✅ I-7 (permissionGuard) |
+| `shared` (kernel) | kernel | ≥1 (via `libs/shared/...`) | — | — | 4 (chantier I, hors chantier L) | **16** | ✅✅ chantier I + chantier L |
+| `team-organization` | crud-entity | 0 | — | 2 entités manquantes (ADR-0018) | 0 | 0 | ☐ |
+
+**Lecture immédiate** : sur 18 modules, **6 seulement** ont traversé
+l'oracle le plus sévère (corpus + Meta-vérification 12/12, colonne
+« Meta-vérif. ») — `dashboard`, `finalization`, `interactive-map`,
+`processing`, `report-states`, `requests`. `monitoring` et `reporting` ont
+un corpus (51 paires chacun) mais **pas** de Meta-vérification 12/12
+recensée (§4, découverte). Les 9 modules `crud-entity`/`action-request`
+n'ont **aucun** corpus — leur seule garantie mécanique est tsc/eslint/ngc
+(socle), pas de comparaison au legacy. `shared` est, après cette session,
+le module le plus densément testé du dépôt en tests **manuels** (16), tout
+en restant hors du système de corpus/Meta-vérification (kernel transverse,
+pas une entité métier avec contrepartie legacy 1:1).
+
+## 2. Sévérité de l'oracle — état réel des portes (2026-08-04, vérifié)
+
+| Porte | Bloquante en CI ? | Statut mesuré aujourd'hui | Commande |
+| --- | :---: | --- | --- |
+| `check:engines`/`check:versions`/`check:weight`/`check:project-names` | ✅ bloquant (job `guardrails`) | OK | `bun run check:*` |
+| `check:targets` (build+lint sur toutes les libs) | ✅ bloquant | **OK — 71 libs** | `node tools/check-project-targets.mjs` |
+| `check:declared-deps` | ✅ bloquant | OK (dernière mesure) | `bun run check:declared-deps` |
+| `check:boundary-negative` | ✅ bloquant | OK (dernière mesure) | `bun run check:boundary-negative` |
+| `check:legacy-lock` | ✅ bloquant | OK (SHA `cb15bf8...` épinglé) | `bun run check:legacy-lock` |
+| `check:convention-profile` (ADR-0010) | ✅ bloquant | OK — 7/7 règles, 0 violation | `bun run check:convention-profile` |
+| `format:check` (Prettier) | ✅ bloquant | non revérifié cette passe | `bun run format:check` |
+| `check:docs-freshness` | ✅ bloquant | ⚠️ dérive attendue — rien n'est commis (P0-N1), pas une régression | `node tools/check-docs-freshness.mjs` |
+| `nx affected -t lint/build` | ✅ bloquant (job `oracle`) | OK (dernières mesures par lib touchée) | `bunx nx affected -t lint/build` |
+| `ngc --strictTemplates` | ✅ bloquant | OK, 0 erreur (dernière mesure) | `bunx ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit` |
+| `nx affected -t test --passWithNoTests` | ✅ bloquant | OK sur les libs testées — 115 tests neufs verts cette session (`shared/data`+`shared/domain`, vérifiés individuellement) ; 58 fichiers `.spec.ts` corpus-générés + 4 fichiers `core` préexistants (`finalization`/`processing`/`report-states`/`requests`/`core`), nombre de tests internes non recompté cette passe | voir §5 |
+| `check:duplicates` (H-3, byte-identique) | ✅ bloquant | **OK — 0 doublon** | `node tools/check-duplicate-files.mjs` |
+| `check:duplicates --family` (H-4, quasi-doublon régression) | ✅ bloquant (à la hausse seulement) | **OK — 29,6 % ≤ baseline 29,6 %** | `node tools/check-duplicate-files.mjs --family` |
+| `check:pattern-nx:crud-entity` (J-9/N-7) | ✅ bloquant | **OK — 66/66 × 2 modules** | `bun run check:pattern-nx:crud-entity` |
+| `corpus:ci` (structural-only, 8 modules) | ✅ bloquant | non revérifié cette passe (dernière mesure : OK) | `bun run corpus:ci` |
+| `check:dead-code` (knip) | ☐ non bloquant (`continue-on-error`) | connu en échec partiel (I-04 pas pleinement instrumenté) | `bun run check:dead-code` |
+| `security-audit` (bun audit) | ☐ non bloquant (`continue-on-error`) | 4 avis high connus (tooling, pas le bundle livré) | `bun audit --audit-level=high` |
+| `i18n-check` | ☐ non bloquant (`continue-on-error`, prudence) | 0 clé manquante (chantier K clos) mais flag laissé | `node tools/check-i18n.mjs` |
+
+**Sur 18 portes, 15 sont bloquantes, 3 ne le sont pas encore** (dead-code,
+security-audit, i18n-check — chacune avec une raison documentée, pas un
+oubli). C'est cette liste, pas la liste des modules « ✅ » dans
+`STATUS.md`, qui mesure la rigueur réelle du dépôt.
+
+## 3. Périmètre applicatif — 52 entités (`scope.json`, source de vérité)
+
+| Famille | Nb. entités | Modules concernés |
+| --- | ---: | --- |
+| `workflow-action` | 19 | finalization, processing, report-states, requests |
+| `crud-entity` | 18 | administrative-boundary, administrative-infrastructure, communication, content-management, coverage-areas, settings-security, team-organization |
+| `read-only-view` | 9 | dashboard, interactive-map, monitoring, reporting |
+| `action-request` | 3 | authentication |
+| `divers` | 3 | communication (notifications), settings-security (access-logs), team-organization (daily-goal) |
+
+**50/52 entités construites.** Les 2 manquantes : `team-organization` /
+`agents-performances` (workflow-action, 41 fichiers source legacy) et
+`team-organization` / `daily-goal` (divers, 26 fichiers) — bloquées par une
+décision de périmètre produit, pas par une incapacité technique
+([ADR-0018](../adr/0018-perimetre-team-organization.md)).
+
+## 4. Détail par module — effectué / reste à faire / amélioration / découverte
+
+### `shared` (kernel) — le plus travaillé cette session
+
+- **Effectué :** intercepteurs (`auth`, `error`, `cache`), guards
+  (`authGuard`/`canMatch`), `TrustedOriginPort`+adapter, `SafeUrlPipe`
+  vérifié à l'origine, `LoggerPort`/`ErrorHandler` global (chantier I,
+  P-1/P-2 — 4 fichiers de test : `error.interceptor`, `safe-url.pipe`,
+  `console-logger.adapter`, `session.service`) — puis chantier L cette
+  passe : 16 fichiers testés (`unwrap-response`, `build-http-params`,
+  `build-http-payload`, `build-form-data`, `date-range`, 4 mappers de base,
+  `MapperUtils`, `ApiDateMapper` côté `shared/data`, 11 fichiers ;
+  `normalizePhoneNumber`, `resolveOpenEndedEndDate`,
+  `assertValidDateRange`, `DatePeriod`, `LocationMethodVO` côté
+  `shared/domain`, 5 fichiers).
+- **Reste à faire :** 173/189 fichiers `shared/` encore sans test —
+  mappers concrets par module, guards, pipes, composants `shared-ui`.
+  `libs/shared/browser` et `libs/shared/constants` quasiment intouchés (1
+  spec préexistant, 0 nouveau).
+- **Amélioration apportée :** target `test` ajouté à
+  `libs/shared/domain/project.json` (absent — trou de câblage CI, voir
+  découverte ci-dessous).
+- **Tâche découverte :** `shared/domain` n'avait **aucun** target `test`
+  — les 5 tests domain écrits cette passe n'auraient jamais tourné en CI
+  sans cet ajout (corrigé, vérifié via `nx run @cmz/shared-domain:test`).
+
+### `core` (kernel)
+
+- **Effectué (chantier I, 2026-08-03) :** `auth.interceptor`,
+  `error.interceptor`, `cache.interceptor`, `global-error-handler`,
+  `validate-app-config` — 4 fichiers de test déjà en place, non retouchés
+  cette passe.
+- **Reste à faire :** 6/10 fichiers source encore sans test direct.
+- **Découverte (cette passe) :** aucune nouvelle.
+
+### `administrative-infrastructure` / `administrative-boundary` — N-7
+
+- **Effectué :** `crud-entity.pattern.json` (Nx-shaped) rédigé et
+  validé à 66/66 sur les deux modules (référence + 2e validation
+  indépendante) ; câblé dans `check:all` et en CI.
+- **Reste à faire :** 0 test unitaire sur les deux modules (0 corpus,
+  0 manuel) — la seule garantie est structurelle (conformité au pattern)
+  et socle (tsc/eslint).
+- **Amélioration apportée :** 2 bugs réels trouvés et corrigés dans le
+  schéma pendant sa rédaction (coquille `{module}`/`{MODULE}`,
+  sur-généralisation de `form-validators.constant.ts`).
+- **Tâche découverte :** aucune cette passe (déjà documentée passe
+  précédente).
+
+### `authentication` / `settings-security` — I-7
+
+- **Effectué :** audit `permissionGuard` vs permissions legacy — **1 bug
+  P0 trouvé et corrigé** (détail dans `audit-workspace-2026-08-03.md`,
+  section I-7).
+- **Reste à faire :** 0 test unitaire sur les deux modules.
+- **Amélioration apportée :** correction du bug P0 identifié.
+
+### `finalization` / `processing` / `report-states` / `requests` — famille `workflow-action`
+
+- **Effectué (préexistant, pas cette session) :** Modules IR clôturés,
+  corpus 126/156/187/157 paires respectivement, Meta-vérification 12/12
+  chacun, 16/16/9/17 fichiers `.spec.ts` corpus-générés déjà en place
+  (nombre de tests internes non recompté cette passe).
+- **Effectué (cette session, onzième passe) :** contrainte H-4
+  (`no_family_duplication_regression`) déclarée dans
+  `workflow-action.pattern.json` et vérifiée mécaniquement — garde-fou
+  contre la régression de quasi-duplication inter-module (29,6 %
+  aujourd'hui, testé pour de vrai en le cassant puis en le restaurant).
+- **Reste à faire :** 0 nouveau test cette session sur le code
+  applicatif de ces 4 modules (déjà couverts par le corpus).
+- **Découverte :** doublon de clé JSON `severity` dans
+  `workflow-action.pattern.json` (et `read-only-view.pattern.json`) —
+  masquait silencieusement `P1-11` derrière le texte de la règle. Corrigé.
+
+### `dashboard` / `interactive-map` — famille `read-only-view`, Meta-vérifiés
+
+- **Effectué (préexistant) :** Modules IR clôturés, corpus 25/28 paires,
+  Meta-vérification 12/12 chacun.
+- **Reste à faire :** 0 test unitaire (corpus ou manuel) sur le code
+  applicatif — la garantie est le corpus + Meta-vérification, pas des
+  tests Vitest.
+- **Touché indirectement cette session :** `dashboard` via l'analyse de
+  composition du bundle (P-5, 833 kB) — pas une modification du module
+  lui-même.
+
+### `monitoring` / `reporting` — famille `read-only-view`, **non Meta-vérifiés**
+
+- **Effectué (préexistant) :** corpus 51 paires / 5 chaînes chacun.
+- **Reste à faire — découverte de cette passe :** contrairement à
+  `dashboard`/`interactive-map` (même famille), **aucun fichier de
+  Meta-vérification** n'existe dans `docs/architecture/audits/` pour
+  `monitoring` ou `reporting` (vérifié : seuls
+  `dashboard-meta-verification.md`, `finalization-meta-verification.md`,
+  `interactive-map-meta-verification.md`, `processing-meta-verification.md`
+  + 3 sous-audits, `report-states-meta-verification.md`,
+  `requests-meta-verification.md` existent — 6 fichiers, pas 8). Ces deux
+  modules ont un corpus mais pas la preuve documentée du passage par la
+  Meta-vérification 12/12 — statut `STATUS.md` « Compilant », pas
+  « Module IR clôturé » comme les 6 autres modules corpus. **Écart entre
+  les deux statuts jamais nommé explicitement avant cette cartographie.**
+- **Action recommandée (non menée, hors budget de cette passe) :**
+  déterminer si `monitoring`/`reporting` doivent recevoir une
+  Meta-vérification a posteriori, ou si leur corpus (51 paires chacun,
+  visiblement construit) suffit par nature — décision d'architecte, pas
+  un blocage d'accès.
+
+### `communication` / `content-management` / `coverage-areas` / `team-organization` — non touchés
+
+- **Effectué :** rien cette session, ni les précédentes au niveau du
+  code applicatif — seulement compilants (tsc/eslint/ngc), 0 corpus,
+  0 test.
+- **Reste à faire :** l'intégralité — corpus, tests, pattern
+  Nx-shaped (candidats crud-entity comme
+  `administrative-infrastructure`/`administrative-boundary`, jamais
+  étendus à ces 4 modules).
+- **Cas particulier `team-organization`** : 2 entités manquantes
+  (`agents-performances`, `daily-goal`) — bloquées par
+  [ADR-0018](../adr/0018-perimetre-team-organization.md), décision
+  produit, pas un chantier technique ouvert.
+
+## 5. Chantier L — cartographie fine de la couverture test manuelle
+
+16/189 fichiers `shared/` couverts par des tests écrits cette session (pas
+générés par le corpus). Détail exhaustif fichier par fichier :
+`audit-workspace-2026-08-03.md`, sections « Chantier L » et
+« Chantier L (suite immédiate) ». Résumé (recompté après correction d'une
+erreur d'addition initiale — voir `audit-workspace-2026-08-03.md`, « Bilan
+cumulé du chantier L ») :
+
+| Sous-ensemble | Fichiers testés | Tests | `tsc`/`eslint` |
+| --- | ---: | ---: | --- |
+| `shared/data` — utils HTTP/mapping (5 fichiers) | 5 | 40 | 0 erreur |
+| `shared/data` — mappers de base (4 fichiers) | 4 | 12 | 0 erreur |
+| `shared/data` — `MapperUtils`/`ApiDateMapper` (2 fichiers) | 2 | 27 | 0 erreur |
+| `shared/domain` — fonctions/validateur/VO (5 fichiers) | 5 | 36 | 0 erreur |
+| **Total** | **16** (11 data + 5 domain) | **115** | **0 erreur** |
+
+**Reste, sans complaisance :** 173 fichiers `shared/` non couverts +
+l'intégralité des mappers concrets par module métier (60+ appelants de
+`MapperUtils.validateDto` répartis sur 13 modules, 0 testés directement) +
+Playwright (jamais installé).
+
+## 6. Constat central persistant — P0-N1, toujours vrai (vérifié 2026-08-04)
+
+```bash
+git status --short | wc -l   # → 482 fichiers modifiés/ajoutés/supprimés
+git log --oneline -3         # → dernier commit réel : 06030e9 (avant cette
+                              #   session et les précédentes), rien de
+                              #   nouveau commis depuis
+```
+
+Un sprint de remédiation complet — chantiers I à L, plus de 200 tests
+neufs, 3 nouveaux ports/adapters, 2 patterns corrigés, 1 nouvel outil
+local, 1 trou de câblage CI trouvé et corrigé — **dort toujours,
+non commis, non revu, non poussé**. Aucune ligne de ce document ni de
+l'audit narratif ne change ce fait tant qu'un humain n'a pas décidé de
+commiter. C'est la limite structurelle numéro un du dépôt, avant toute
+question de couverture de test ou de conformité de pattern.
+
+## 7. Backlog priorisé restant, point par point
+
+| # | Action | Bloqué par | Effort estimé |
+| --- | --- | --- | --- |
+| 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
+| 2 | Meta-vérifier `monitoring`/`reporting` ou documenter pourquoi non applicable | Décision d'architecte | Moyen |
+| 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
+| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`, 60+ appelants) | Rien — budget | Élevé (173 fichiers restants) |
+| 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
+| 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |
+| 7 | `security-audit`/`i18n-check` rendus bloquants | Résorption Dependabot / revue humaine du diff 320 clés | Faible une fois débloqué |
+| 8 | M-9 — a11y, 2 archétypes restants + confirmation d'exécution | Plafond 45 s du sandbox (bundling Angular) | Bloqué techniquement ici |
+| 9 | P-6/P-7 — découpage bundle + gate régression | Même blocage que M-9 | Bloqué techniquement ici |
+| 10 | `team-organization` — 2 entités manquantes | ADR-0018 (décision produit) | Bloqué par décision |
+
+## 8. Comment maintenir cette cartographie
+
+- Après chaque chantier fermé ou avancé : mettre à jour §1 (matrice) et
+  ajouter/amender la sous-section §4 du module concerné avec les 4
+  colonnes **Effectué / Reste à faire / Amélioration apportée / Tâche
+  découverte** — jamais une seule ligne « fait ✅ » sans preuve
+  reproductible (commande + résultat, comme dans `audit-workspace-
+  2026-08-03.md`).
+- Toute mesure chiffrée (paires corpus, %, nombre de tests) doit être
+  **recalculée**, pas recopiée de la dernière passe — `node
+  tools/generate-status.mjs` avant de commencer une nouvelle passe.
+- Toute divergence trouvée entre un chiffre documenté et un chiffre
+  recalculé est une « tâche découverte » à part entière (voir §4,
+  `monitoring`/`reporting`, et la correction N-4 dans
+  [ADR-0019](../adr/0019-nature-du-corpus-seos.md)) — à corriger à la
+  source (le générateur, pas le texte figé) quand c'est possible.

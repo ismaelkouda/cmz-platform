@@ -107,11 +107,16 @@ Chaque package est taggué avec **exactement un** type :
 | `type:data`        | `type:data`, `type:domain`, `type:core`, `type:constants`      |
 | `type:application` | `type:application`, `type:domain`, `type:constants`            |
 | `type:ui`          | `type:ui`, `type:application`, `type:domain`, `type:constants` |
-| `type:app`         | `*` (composition root — peut tout brancher)                    |
+| `type:app`         | `type:constants`, `type:domain`, `type:core`, **`type:browser`**, `type:data`, `type:application`, `type:ui`, `type:app` (composition root — liste explicite, pas de `*`) |
 
 **Règle inviolable** : `type:ui` ne peut jamais importer depuis `type:data`.
 `type:domain` ne dépend d'aucun framework. Ces règles sont exécutées à chaque
 `eslint` ; une violation est une erreur bloquante (`'error'`).
+
+**`type:browser` / `@cmz/shared-browser`** : réservé au composition root
+(`type:app`). Aucune autre couche ne liste `type:browser` dans ses
+`onlyDependOnLibsWithTags` — un import depuis `ui` / `application` / `data` /
+etc. échoue ESLint. Voir §5c.
 
 #### Axe `scope:*` — l'isolation du module
 
@@ -162,6 +167,22 @@ C'est l'unique exception au pattern à quatre couches. Elle est délibérée :
 **Règle de périmètre** : si un besoin `core` ne peut pas être classé comme token
 d'injection ou configuration runtime, il appartient à `shared-domain` ou
 `shared-application`, pas à `core`.
+
+#### 5c. `@cmz/shared-browser` — réservé au composition root
+
+`libs/shared/browser/` (`type:browser`) contient les **adaptateurs navigateur**
+(Web Crypto / `localStorage`, navigation, export Excel côté browser) qui
+implémentent des ports du domaine. Ils ne portent aucune logique métier.
+
+**Qui peut importer `@cmz/shared-browser` :** uniquement le composition root
+(`apps/*`, tag `type:app`) — typiquement `app.config.ts` / providers (`useClass`
+/ `useExisting` vers `StoragePort`, etc.).
+
+**Qui ne peut pas :** toute lib (`type:ui`, `type:application`, `type:data`,
+`type:domain`, …). Ces couches dépendent des **ports** (`@cmz/shared-domain`),
+jamais de l'adaptateur concret. Enforceable : seule la contrainte `type:app`
+liste `type:browser` ([`eslint.config.mjs`](../../eslint.config.mjs), audit D-5 /
+P2-18).
 
 ## Justification
 

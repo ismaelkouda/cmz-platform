@@ -54,8 +54,47 @@ docs: clarifie la politique de versions
 | `refactor/<description>`      | Refonte sans changement de comportement             |
 | `reconstruction/<domaine>`    | Reconstruction d'un domaine depuis le projet source |
 
-Cette convention n'est pas vérifiée par un hook : une règle de protection de
-branche côté forge est le bon endroit pour l'imposer.
+Cette convention n'est pas vérifiée par un hook : elle est imposée par la
+**protection de branche `main`** (audit G-2 / P1-13) :
+
+| Règle | Valeur |
+| ----- | ------ |
+| Pull request obligatoire | oui |
+| Approbations | **1** (+ relecture CODEOWNERS) |
+| Status checks requis | jobs bloquants de `.github/workflows/ci.yml` (`Garde-fous socle`, `Docs freshness`, `Oracle — …`, `Corpus SEOS — …`) |
+| Force-push / suppression de `main` | **interdit** |
+| Applique aux admins | oui (`enforce_admins`) |
+
+Source de vérité versionnée : [`.github/branch-protection.main.json`](../../.github/branch-protection.main.json).
+Application / resynchronisation forge :
+
+```bash
+gh auth login
+# remote GitHub requis, ou : export CMZ_GITHUB_REPO=owner/cmz-platform
+bun run protect:main          # applique
+bun run protect:main -- --dry-run
+```
+
+### Fraîcheur du socle — 24 h maximum hors PR (N1-5)
+
+Un changement touchant le **socle** — `tsconfig.base.json`, `nx.json`,
+`eslint.config.mjs` — ne reste **jamais plus de 24 h** hors d'une pull
+request ouverte. Ces trois fichiers gouvernent la compilation, le graphe
+Nx et le linting de **l'ensemble** du monorepo : un écart local prolongé
+(commit non poussé, branche non ouverte en PR) masque une dérive du socle
+à tous les autres contributeurs jusqu'au merge, à l'inverse d'un
+changement de package isolé.
+
+**Règle pratique** : dès qu'un de ces trois fichiers est modifié,
+committer et ouvrir la PR **le jour même** — même en brouillon
+(`draft`) si le travail n'est pas terminé. Ne pas attendre la fin d'un
+chantier plus large pour pousser un changement de socle qu'il contient.
+
+*Origine de cette règle* : constat P0-N1 (audits successifs,
+2026-08-02 → 2026-08-04) — un sprint de plusieurs jours modifiant entre
+autres `tsconfig.base.json` et `tools/vitest-lib.config.ts` est resté
+non commis pendant toute sa durée, rendant impossible toute revue
+incrémentale ou tout `nx affected` fiable entre-temps.
 
 ## Ajouter une dépendance
 
@@ -96,12 +135,26 @@ sans aucune erreur visible. Voir
 | Déclencheur  | Contrôle                                    |
 | ------------ | ------------------------------------------- |
 | `preinstall` | Node et bun conformes à `engines`           |
-| `pre-commit` | Aucun fichier volumineux ajouté ; formatage |
+| `pre-commit` | Aucun fichier volumineux / hors plafond de lignes ; formatage |
 | `commit-msg` | Message conforme à la convention            |
 | `pre-push`   | Politique de version unique                 |
 
-`--no-verify` reste disponible pour les cas légitimes — par exemple l'ajout
-justifié d'un fichier volumineux. Le message d'erreur le rappelle.
+### `--no-verify` et la CI (ADR-0006 / audit G-3)
+
+`git commit --no-verify` / `git push --no-verify` **contournent uniquement les
+hooks locaux** (Husky). Ce n'est pas un laissez-passer pour merger.
+
+1. **La CI rejoue les mêmes contrôles** (et d'autres) via
+   [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — garde-fous
+   socle, format, oracle lint/build/ngc/test, corpus, fraîcheur doc, etc.
+2. **La CI fait foi.** Un commit passé en local avec `--no-verify` qui fait
+   échouer un job bloquant **bloque la PR** : `main` exige ces status checks
+   (voir [protection de branche](#branches)). Le vert CI est la condition de
+   merge, pas le vert des hooks.
+3. `--no-verify` reste réservé aux cas **légitimes et temporaires** (ex. gros
+   fichier justifié le temps d'ajuster l'allowlist) — jamais pour masquer une
+   violation durable. Si le contrôle local est faux positif, corrigez le script
+   ou documentez l'exception ; ne « sautez » pas la forge.
 
 ### Si un hook échoue sur « bun: not found »
 
@@ -110,6 +163,33 @@ rétablissent `$HOME/.bun/bin`, ce qui couvre l'installation standard de bun.
 Pour un emplacement non standard, créer un
 [`~/.config/husky/init.sh`](https://typicode.github.io/husky/how-to.html)
 exportant le bon PATH.
+
+## Outils SEOS (`tools/seos/`)
+
+`check-pattern.mjs`/`check-semantics.mjs`/`generate-reference-module.mjs`
+vivent dans ce dépôt (vendorés le 2026-08-03, J-8/M-5 — voir
+[`tools/seos/README.md`](../../tools/seos/README.md) pour la provenance
+complète) mais **ne sont pas réécrits ici** : toute correction doit être
+portée dans le dépôt legacy (`cmz-backoffice-frontend/seos/tools/`) puis
+re-vendorée par copie octet pour octet, jamais éditée directement dans
+`tools/seos/`, pour ne jamais diverger silencieusement de la source de
+vérité de la recherche SEOS.
+
+**Prérequis pour re-vendorer** (contributeur qui a besoin de mettre à jour
+ces outils, pas pour un usage courant — le vendoring actuel fonctionne sans
+prérequis supplémentaire) : accès en lecture au dépôt
+`cmz-backoffice-frontend` au commit épinglé par
+[`legacy.lock.json`](../../legacy.lock.json). Sans cet accès, `tools/seos/`
+reste utilisable tel quel (auto-testé, voir son README) mais ne peut pas
+être mis à jour.
+
+```bash
+rm -rf /tmp/seos-reference
+node tools/seos/generate-reference-module.mjs /tmp/seos-reference
+node tools/seos/check-pattern.mjs /tmp/seos-reference resources \
+  --schema tools/seos/patterns/crud-entity.pattern.json
+# → Conformite : 106/106 fichiers du coeur presents (100.0%)
+```
 
 ## Documentation
 

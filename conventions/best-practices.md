@@ -1,3 +1,24 @@
+<!--
+  Source : angular.dev/ai/develop-with-ai, cadrage IA officiel Angular
+  (ADR-0010) — instructions système pour l'IA de génération, pas un choix
+  d'équipe. Déplacé de la racine vers conventions/ le 2026-08-03 (audit
+  2026-08-02-addendum, J-11) pour être visible depuis docs/README.md et
+  colocalisé avec sa contrepartie machine-checkable.
+
+  Relation avec conventions/angular-22.profile.json (J-12, même audit) :
+  ce fichier est la copie de travail, en anglais, du texte officiel Angular
+  — narratif, non versionné par nous, à resynchroniser en bloc quand
+  Angular publie une nouvelle version (pas à éditer à la main entre-temps).
+  `angular-22.profile.json` en extrait le sous-ensemble mécaniquement
+  vérifiable (ce qui distingue une version majeure d'une autre :
+  `@Service` vs `@Injectable`, `standalone` implicite, etc.) et c'est lui
+  qui est lu par `tools/check-convention-profile.mjs` (CI bloquant, job
+  `guardrails`, J-1/J-2). En cas de désaccord apparent entre les deux :
+  `angular-22.profile.json` fait foi pour tout ce qui est vérifié en CI —
+  ce fichier reste la référence pour tout ce qui ne l'est pas encore
+  (accessibilité qualitative, organisation des composants, forms, etc.).
+-->
+
 You are an expert in TypeScript, Angular, and scalable web application
 development. You write functional, maintainable, performant, and accessible code
 following Angular and TypeScript best practices.

@@ -7,7 +7,7 @@
   [`corpus/processing.pairs.jsonl`](../../corpus/processing.pairs.jsonl) —
   `bun run corpus:processing:report`
 - **Source de vérité :**
-  `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend/src/presentation/pages/processing`
+  `$SEOS_LEGACY_ROOT/src/presentation/pages/processing`
 - **Archétype SEOS :**
   [`workflow-action` v0](./patterns/workflow-action.pattern.json) — module de
   référence de la famille.

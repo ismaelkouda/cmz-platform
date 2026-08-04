@@ -5,8 +5,9 @@ reconstruction industrielle de `cmz-backoffice-frontend` en **Angular 22** avec
 **Bun 1.3** et **Nx 23.1**, puis progressivement les autres composants de la
 plateforme.
 
-**État au 2026-07-28 : Phase 07 (Reconstruction des modules métier en cours — 4+
-modules métier & Kernel transverse livrés).**
+<!-- BEGIN:GENERATED:monorepo-status -->
+**État au 2026-08-04 :** Phase **08** (génération depuis patterns) — **18** modules, **71** libs + **1** app, **2 557** fichiers `.ts` hors tests. Bundle initial prod **882.18 kB**. Voir [`STATUS.md`](./STATUS.md).
+<!-- END:GENERATED:monorepo-status -->
 
 > 🤖 **Note pour les LLM / Agents IA** : Consulter le document maître
 > d'architecture [`LLM_CONTEXT.md`](./LLM_CONTEXT.md) pour comprendre le cadrage

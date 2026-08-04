@@ -2,6 +2,8 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
+- **Amendement :** 2026-08-02 — Protection de branche `main` (G-2) + CODEOWNERS
+  par zone (G-1)
 
 ## Contexte
 
@@ -50,9 +52,9 @@ La portée reste facultative : certains commits sont légitimement transverses.
 | `refactor/<description>`      | Refonte sans changement de comportement             |
 | `reconstruction/<domaine>`    | Reconstruction d'un domaine depuis le projet source |
 
-Cette convention est documentée et non vérifiée automatiquement : une règle de
-protection de branche côté forge est le bon endroit pour l'imposer, pas un hook
-local.
+Cette convention est imposée côté forge par la protection de `main`
+(`.github/branch-protection.main.json`, appliquée via `bun run protect:main`) :
+PR obligatoire, 1 approbation, status checks CI, pas de force-push.
 
 ### Garde-fous automatisés
 
@@ -71,10 +73,16 @@ un échec de build incompréhensible une demi-heure plus tard.
 
 ### Relecture — `CODEOWNERS`
 
-`.github/CODEOWNERS` impose une relecture par zone. Le socle (`package.json` —
-qui contient le catalog de versions —, `nx.json`, `tools/`, `.husky/`) est
-explicitement couvert. Les règles par package seront ajoutées à mesure que les
-packages et les équipes existeront.
+`.github/CODEOWNERS` impose une relecture par zone (socle / kernel / modules /
+apps / docs / corpus). Peuplé en équipes de 1 (`@ismaelkouda`) ; substituer des
+équipes GitHub `@cmz/…` sans changer la structure. Couplé à
+`require_code_owner_reviews` sur `main`.
+
+### Protection de branche `main`
+
+En plus des hooks locaux (contournables via `--no-verify`), `main` exige les
+jobs bloquants de `.github/workflows/ci.yml`, une approbation, et refuse le
+force-push — y compris pour les admins (`enforce_admins`).
 
 ## Justification
 
@@ -110,15 +118,16 @@ garde-fou vérifié.
   `$HOME/.bun/bin` en tête de PATH. Une installation de bun à un emplacement non
   standard nécessitera un
   [`~/.config/husky/init.sh`](https://typicode.github.io/husky/how-to.html).
-- **Le `preinstall` contraint le `Dockerfile`.** Le schéma habituel
-  `COPY package.json` puis `RUN bun install` échoue, `tools/` n'étant pas encore
-  copié. Le `Dockerfile` doit copier `tools/` avant l'installation — contrainte
-  à appliquer en Phase 06.
-- Les hooks ne s'exécutent que localement : la CI devra rejouer les mêmes
-  contrôles, sans quoi ils restent contournables (Phase 06).
-- `CODEOWNERS` ne désigne qu'un propriétaire aujourd'hui. **Une équipe
-  inexistante ne provoque aucune erreur** : la règle est ignorée en silence — le
-  fichier doit donc être relu à chaque constitution d'équipe.
+- **Le `preinstall` contraint le `Dockerfile`.** Satisfait : le
+  [`Dockerfile`](../../Dockerfile) racine copie `tools/` avant
+  `bun install --frozen-lockfile` (G-4).
+- Les hooks ne s'exécutent que localement : la CI rejoue les mêmes contrôles
+  (`ci.yml`) ; `--no-verify` local ne passe pas la forge.
+- **Une équipe CODEOWNERS inexistante ne provoque aucune erreur** : la règle
+  est ignorée en silence — ne jamais retirer le handle valide d'une zone avant
+  d'avoir substitué une équipe GitHub réelle.
+- Solo : 1 approbation requise empêche d'approuver sa propre PR — prévoir un
+  second regard ou, à titre temporaire seulement, assouplir `enforce_admins`.
 
 ### Points à réévaluer
 
