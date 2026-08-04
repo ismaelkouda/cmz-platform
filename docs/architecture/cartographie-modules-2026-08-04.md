@@ -84,7 +84,7 @@ pas une entité métier avec contrepartie legacy 1:1).
 | `nx affected -t test --passWithNoTests` | ✅ bloquant | OK sur les libs testées — 115 tests neufs verts cette session (`shared/data`+`shared/domain`, vérifiés individuellement) ; 58 fichiers `.spec.ts` corpus-générés + 4 fichiers `core` préexistants (`finalization`/`processing`/`report-states`/`requests`/`core`), nombre de tests internes non recompté cette passe | voir §5 |
 | `check:duplicates` (H-3, byte-identique) | ✅ bloquant | **OK — 0 doublon** | `node tools/check-duplicate-files.mjs` |
 | `check:duplicates --family` (H-4, quasi-doublon régression) | ✅ bloquant (à la hausse seulement) | **OK — 29,6 % ≤ baseline 29,6 %** | `node tools/check-duplicate-files.mjs --family` |
-| `check:pattern-nx:crud-entity` (J-9/N-7) | ✅ bloquant | **OK — 66/66 × 2 modules** | `bun run check:pattern-nx:crud-entity` |
+| `check:pattern-nx:crud-entity` (J-9/N-7) | ✅ bloquant | **OK — 66/66 × 3 modules** (3e ajouté le 2026-08-04 : `coverage-areas`/site-group) | `bun run check:pattern-nx:crud-entity` |
 | `corpus:ci` (structural-only, 8 modules) | ✅ bloquant | non revérifié cette passe (dernière mesure : OK) | `bun run corpus:ci` |
 | `check:dead-code` (knip) | ☐ non bloquant (`continue-on-error`) | connu en échec partiel (I-04 pas pleinement instrumenté) | `bun run check:dead-code` |
 | `security-audit` (bun audit) | ☐ non bloquant (`continue-on-error`) | 4 avis high connus (tooling, pas le bundle livré) | `bun audit --audit-level=high` |

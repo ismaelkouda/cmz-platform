@@ -24,7 +24,7 @@
     "check:duplicates:family:record": "node tools/check-duplicate-files.mjs --family --record",
     "check:i18n": "node tools/check-i18n.mjs --warn-only",
     "check:convention-profile": "node tools/check-convention-profile.mjs",
-    "check:pattern-nx:crud-entity": "node tools/check-pattern-nx.mjs libs/administrative-infrastructure infrastructure --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/administrative-boundary region --schema docs/architecture/patterns/crud-entity.pattern.json",
+    "check:pattern-nx:crud-entity": "node tools/check-pattern-nx.mjs libs/administrative-infrastructure infrastructure --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/administrative-boundary region --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/coverage-areas site-group --schema docs/architecture/patterns/crud-entity.pattern.json",
     "protect:main": "node tools/apply-branch-protection.mjs",
 
 

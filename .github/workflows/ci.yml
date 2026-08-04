@@ -287,8 +287,11 @@ jobs:
 
       # Audit J-9 (onzième passe, 2026-08-04) : conformité structurelle au
       # pattern crud-entity Nx-shaped (N-7, docs/architecture/patterns/
-      # crud-entity.pattern.json), contre les 2 modules déjà validés
-      # fichier par fichier. Script local (tools/check-pattern-nx.mjs, pas
-      # un des outils vendorés tools/seos/ — cf. son propre docstring).
+      # crud-entity.pattern.json), contre les 3 modules déjà validés
+      # fichier par fichier (administrative-infrastructure/infrastructure,
+      # administrative-boundary/region, coverage-areas/site-group — 3e
+      # validation ajoutée le 2026-08-04). Script local
+      # (tools/check-pattern-nx.mjs, pas un des outils vendorés
+      # tools/seos/ — cf. son propre docstring).
       - name: check:pattern-nx (J-9, crud-entity Nx-shaped)
         run: bun run check:pattern-nx:crud-entity
