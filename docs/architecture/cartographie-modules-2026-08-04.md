@@ -36,7 +36,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 
 | Module | Famille | Paires corpus | Meta-vérif. | Pattern Nx-shaped | Fichiers `.spec.ts` (corpus-générés) | Fichiers `.spec.ts` (manuels, chantier L) | Touché cette session |
 | --- | --- | ---: | :---: | :---: | ---: | ---: | :---: |
-| `administrative-boundary` | crud-entity | 0 | — | ✅ 66/66 (N-7, 2e validation) | 0 | 0 | ✅ N-7 |
+| `administrative-boundary` | crud-entity | 0 | — | ✅ 66/66 (N-7, 2e validation) | 0 | 10 | ✅ N-7 + backlog #4 |
 | `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 6 | ✅ N-7 + backlog #4 |
 | `authentication` | action-request | 0 | — | — | 0 | 2 | ✅ I-7 + backlog #4 |
 | `communication` | crud-entity | 0 | — | — | 0 | 3 | ✅ backlog #4 |
@@ -185,18 +185,38 @@ décision de périmètre produit, pas par une incapacité technique
   directement le code des 6 mappers plutôt qu'en s'appuyant sur des
   commentaires explicatifs).
 
-### `administrative-boundary` — N-7
+### `administrative-boundary` — N-7 + backlog #4 (6/12 modules du chantier « mappers concrets »)
 
 - **Effectué :** `crud-entity.pattern.json` (Nx-shaped) validé à 66/66
   (2e validation indépendante du pattern, après `administrative-infrastructure`) ;
   câblé dans `check:all` et en CI.
-- **Reste à faire :** 0 test unitaire (0 corpus, 0 manuel) — la seule
-  garantie est structurelle (conformité au pattern) et socle (tsc/eslint) ;
-  chantier « mappers concrets » (backlog #4) pas encore étendu à ce module.
+- **Effectué (backlog #4, 2026-08-04) :** module complet — 10/10 fichiers
+  testés (`region`, `region-find-one`, `region-select`, `department`,
+  `department-find-one`, `department-select`, `departments-by-region-id`,
+  `municipality`, `municipality-find-one`,
+  `municipalities-by-department-id`), 37 tests neufs, **tous verts au
+  premier passage** (aucun piège de test ni de typage cette fois, comme
+  `administrative-infrastructure`).
+- **Reste à faire :** rien sur ce module précis pour ce chantier (module
+  complet).
 - **Amélioration apportée :** 2 bugs réels trouvés et corrigés dans le
   schéma `pattern.json` pendant sa rédaction (coquille `{module}`/
   `{MODULE}`, sur-généralisation de `form-validators.constant.ts`).
-- **Tâche découverte :** aucune cette passe.
+- **Tâche découverte (backlog #4, 2026-08-04) :** `DepartmentMapper`,
+  `DepartmentFindOneMapper` et `MunicipalityMapper` lisent
+  `dto.region.id`/`.name` (et `dto.department.id`/`.name` pour
+  `MunicipalityMapper`) **sans** chaînage optionnel, alors que
+  `administrative-infrastructure/InfrastructureMapper` se défend avec
+  `dto.region?.name` sur le même type `AdministrativeBoundaryDto`. Si le
+  wire viole son contrat (`region`/`department` absent), ces 3 mappers
+  lèvent une `TypeError` native au lieu d'une erreur métier lisible —
+  divergence assumée entre mappers du même module, verrouillée par un test
+  explicite (`toThrow(TypeError)`) plutôt que découverte en prod. Les 2
+  mappers relationnels (`departments-by-region-id`,
+  `municipalities-by-department-id`) ont des shapes réduites (pas de
+  `region`/`department`/`infrastructureCount`) — vérifié par absence de
+  getter (`'region' in entity === false`), même méthode que
+  `administrative-infrastructure`.
 
 ### `authentication` — I-7 + backlog #4 (1er module)
 
@@ -436,7 +456,7 @@ question de couverture de test ou de conformité de pattern.
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
 | 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
-| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **5/12 modules faits (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security`, 2026-08-04)** ; **correction de compte** : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO (`profiles-permissions-find-one-response-api.dto.ts`), pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels sur 12 modules**. 3 modules `crud-entity` genuinement non traités restent : `content-management`(12), `coverage-areas`(11), `administrative-boundary`(10) — 33 fichiers ; `processing`/`requests`/`finalization` déjà couverts par corpus, `report-states` partiellement (voir #11) |
+| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **6/12 modules faits (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security` + `administrative-boundary`, 2026-08-04)** ; **correction de compte** (passe précédente) : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO, pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels sur 12 modules**. `administrative-boundary` confirme le compte à 10/10 sans écart. 2 modules `crud-entity` restent : `content-management`(12), `coverage-areas`(11) — 23 fichiers ; `processing`/`requests`/`finalization` déjà couverts par corpus, `report-states` partiellement (voir #11) |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |
 | 7 | `security-audit`/`i18n-check` rendus bloquants | Résorption Dependabot / revue humaine du diff 320 clés | Faible une fois débloqué |

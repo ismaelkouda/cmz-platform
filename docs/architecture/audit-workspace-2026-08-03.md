@@ -2530,6 +2530,63 @@ séparément en §7, item #11 — hors périmètre immédiat de ce chantier.
 
 ---
 
+### Backlog cartographie #4 — sixième module, module complet (`administrative-boundary`, 2026-08-04)
+
+Sixième module traité, en entier : `administrative-boundary` — 10/10
+fichiers appelant `MapperUtils.validateDto` testés (`region.mapper.ts`,
+`region-find-one.mapper.ts`, `region-select.mapper.ts`,
+`department.mapper.ts`, `department-find-one.mapper.ts`,
+`department-select.mapper.ts`, `departments-by-region-id.mapper.ts`,
+`municipality.mapper.ts`, `municipality-find-one.mapper.ts`,
+`municipalities-by-department-id.mapper.ts`), 37 tests neufs, tous verts au
+premier passage — comme `administrative-infrastructure`, ni piège de test
+(cache `.with()`) ni piège de typage (enum nominal) ici. Le compte de 10
+fichiers annoncé au périmètre initial est confirmé exact, sans écart (pas
+de faux positif comme sur `settings-security`).
+
+Comme `administrative-infrastructure`, ce module (référence `crud-entity`)
+n'a aucun commentaire narratif dans son code source — une divergence réelle
+a été trouvée en comparant méthodiquement les 10 mappers entre eux plutôt
+qu'en suivant un commentaire, et verrouillée par un test sur chacun des 3
+fichiers concernés :
+
+- `DepartmentMapper`, `DepartmentFindOneMapper` et `MunicipalityMapper`
+  lisent `dto.region.id`/`.name` (et `dto.department.id`/`.name` pour
+  `MunicipalityMapper`) **sans** chaînage optionnel, sur le même type wire
+  `AdministrativeBoundaryDto` que celui pour lequel
+  `administrative-infrastructure/InfrastructureMapper` se défend avec
+  `dto.region?.name`. Si le wire viole son contrat (`region`/`department`
+  absent malgré le typage non-optionnel), ces 3 mappers lèvent une
+  `TypeError` **native** au lieu d'une erreur métier lisible — divergence
+  assumée entre mappers d'un même module (pas seulement entre modules
+  différents), verrouillée par un test explicite (`toThrow(TypeError)`)
+  plutôt que découverte en prod par un stack trace opaque.
+- Les 2 mappers relationnels (`departments-by-region-id.mapper.ts`,
+  `municipalities-by-department-id.mapper.ts`) exposent des shapes
+  volontairement réduites par rapport à leurs équivalents « liste globale »
+  (`department.mapper.ts`, `municipality.mapper.ts`) : ni `region`/
+  `department` imbriqués, ni `infrastructureCount` — le scope parent
+  (région ou département) est déjà porté par le filtre de la requête, pas
+  besoin de le redupliquer dans chaque item. Vérifié par absence de getter
+  sur l'entité (`'region' in entity === false`), pas juste par relecture du
+  mapper — même méthode de preuve que pour
+  `InfrastructureTypeFindOneProps` (module précédent).
+- `RegionSelectMapper` reconstruit un cascade complet à 3 niveaux
+  (region → department → municipality) en une seule réponse, alors que
+  `DepartmentSelectMapper` n'en a que 2 (department → municipality) — les
+  deux réutilisent le même type `MunicipalitySelectNestedApiDto` en feuille
+  de cascade (pas de duplication de shape). Testé sur les 3 niveaux pour le
+  premier, avec un cas explicite « région sans départements » (tableau vide,
+  pas une exception).
+
+`tsc --noEmit` et `eslint --max-warnings=0` à 0 erreur dès le premier
+essai. `check:duplicate-files.mjs` et `check:project-targets.mjs` : OK.
+2 modules / 23 fichiers restent sur le périmètre corrigé (12 modules/73
+fichiers) du chantier « mappers concrets » : `content-management` (12),
+`coverage-areas` (11).
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**
