@@ -3118,6 +3118,38 @@ complaisant.
 - node tools/check-declared-deps.mjs → OK, 0 arete fantome.
 - node tools/check-project-targets.mjs → OK, 71 libs.
 
+**Addendum (meme jour, 2e passe) — sur demande explicite du porteur :
+« reecris le code pour atteindre les 100% ».** Instruction directe
+override le jugement d'architecture ci-dessus. Les 9 fichiers qualifies
+de variantes legitimes ont ete construits :
+
+- props/messaging.props.ts et props/messaging-find-one.props.ts crees
+  par deplacement physique des fichiers interfaces/*.interface.ts
+  existants (meme nom exporte MessagingProps/MessagingFindOneProps, seul
+  le chemin/dossier change) — 3 fichiers consommateurs mis a jour
+  (domain/index.ts, messaging.entity.ts, messaging-find-one.entity.ts).
+- Chaine -select (7 fichiers) construite en mirroring exact de
+  SiteGroupSelectRepository/-Mapper/-Api/-RepositoryImpl/-UseCase/
+  -Facade (module coverage-areas, entite deja validee) :
+  MessagingSelectRepository (port), MessagingSelectItemApiDto
+  {uniq_id, subject} — verifie fidele au wire reel via
+  tools/mock-server/domains/communication.mjs avant d'ecrire le DTO,
+  pas invente — MessagingSelectMapper, MessagingSelectApi (sur
+  AUTH_API_URL, pas SETTINGS_API_URL, confirme dans le commentaire de
+  communication.endpoints.ts), MessagingSelectRepositoryImpl,
+  MessagingSelectUseCase, MessagingSelectFacade.
+
+Resultat : check-pattern-nx.mjs libs/communication messaging → 66/66
+(100.0%). Ajoute a validated_on de crud-entity.pattern.json
+(fifth_validation). Re-verifie apres construction : build des 4 layers
+(domain/application/data/ui) → succes ; eslint
+libs/communication --max-warnings=0 → 0 warning ; bunx nx run
+@cmz/communication-data:test → 17 tests toujours verts, aucune
+regression ; check:duplicates (aucun doublon byte-identique malgre la
+proximite structurelle avec SiteGroupSelect*) et check:duplicates:family
+(29.4% ≤ baseline, inchange — ce check ne scanne que les familles
+workflow-action) ; check:declared-deps et check:project-targets → OK.
+
 ---
 
 ### Backlog #3 — troisieme candidat (coverage-areas/mobile-network, 2026-08-04) — 0 code ecrit, plafond reel confirme
@@ -3149,6 +3181,29 @@ candidats actionnables du backlog #3. Une iteration « sans travail
 mais avec verification et documentation » a la meme valeur, dans la
 philosophie de ce chantier, qu'une iteration qui produit du code : le
 livrable est la severite de l'oracle, pas le nombre de fichiers ecrits.
+
+**Addendum (meme jour, 2e passe) — sur demande explicite du porteur :
+« reecris le code pour atteindre les 100% ».** Chaine -select (7
+fichiers) construite en mirroring exact de SiteGroupSelectRepository/
+-Mapper/-Api/-RepositoryImpl/-UseCase/-Facade (meme module, entite deja
+validee) : MobileNetworkSelectRepository (port),
+MobileNetworkSelectItemApiDto {id, site_name} — verifie fidele au wire
+reel via tools/mock-server/domains/coverage-areas.mjs avant d'ecrire le
+DTO (pas de champ name generique sur ce DTO, contrairement a
+site-group), MobileNetworkSelectMapper, MobileNetworkSelectApi (meme
+endpoint que la liste, COVERAGE_AREAS_ENDPOINTS.MOBILE_NETWORK),
+MobileNetworkSelectRepositoryImpl, MobileNetworkSelectUseCase,
+MobileNetworkSelectFacade.
+
+Resultat : check-pattern-nx.mjs libs/coverage-areas mobile-network →
+66/66 (100.0%). coverage-areas etait deja dans validated_on depuis
+site-group (third_validation) — mobile-network rejoint desormais le
+meme module a 100%, third_validation mis a jour en consequence (pas de
+nouveau bloc, le module y figurait deja). Re-verifie : build des 4
+layers, eslint libs/coverage-areas --max-warnings=0 → 0 warning, bunx nx
+run @cmz/coverage-areas-data:test → 44 tests toujours verts, aucune
+regression, check:duplicates/check:duplicates:family/
+check:declared-deps/check:project-targets → tous OK.
 
 ---
 

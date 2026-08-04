@@ -10,6 +10,12 @@ import { MessagingType } from '../enums/messaging-type.enum';
  * string entoure la valeur de guillemets littéraux (`"\"abc\""` au lieu de
  * `"abc"`), cassant tout matching ultérieur contre les options du select.
  * Corrigé côté mapper (`dto.region?.id ?? ''`, pas de `JSON.stringify`).
+ *
+ * Déplacé de `interfaces/messaging-find-one-props.interface.ts` vers
+ * `props/messaging-find-one.props.ts` le 2026-08-04 (backlog #3,
+ * uniformisation maximale sur `crud-entity.pattern.json`) — seul le
+ * chemin/dossier change, le nom exporté (`MessagingFindOneProps`) suivait
+ * déjà la convention `{EntityPascal}FindOneProps` des 4 modules validés.
  */
 export interface MessagingFindOneProps {
     uniqId: string;

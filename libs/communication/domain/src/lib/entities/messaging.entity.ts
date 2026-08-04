@@ -1,5 +1,5 @@
 import { MessagingChannel } from '../enums/messaging-channel.enum';
-import { MessagingProps } from '../interfaces/messaging-props.interface';
+import { MessagingProps } from '../props/messaging.props';
 import { MessagingTarget } from '../enums/messaging-target.enum';
 import { MessagingType } from '../enums/messaging-type.enum';
 

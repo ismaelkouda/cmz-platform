@@ -6,7 +6,7 @@ reconstruction industrielle de `cmz-backoffice-frontend` en **Angular 22** avec
 plateforme.
 
 <!-- BEGIN:GENERATED:monorepo-status -->
-**État au 2026-08-04 :** Phase **08** (génération depuis patterns) — **18** modules, **71** libs + **1** app, **2 561** fichiers `.ts` hors tests. Bundle initial prod **882.18 kB**. Voir [`STATUS.md`](./STATUS.md).
+**État au 2026-08-04 :** Phase **08** (génération depuis patterns) — **18** modules, **71** libs + **1** app, **2 575** fichiers `.ts` hors tests. Bundle initial prod **882.18 kB**. Voir [`STATUS.md`](./STATUS.md).
 <!-- END:GENERATED:monorepo-status -->
 
 > 🤖 **Note pour les LLM / Agents IA** : Consulter le document maître

@@ -8,10 +8,10 @@
 | Indicateur | Valeur |
 |:---|---:|
 | Packages Nx | **71 libs + 1 app** (72 `project.json`) |
-| Fichiers TypeScript (`libs/`) | **2 561 fichiers hors tests** (2 704 au total, dont 143 specs) |
+| Fichiers TypeScript (`libs/`) | **2 575 fichiers hors tests** (2 718 au total, dont 143 specs) |
 | Modules détectés | **18** |
 | Périmètre applicatif (`scope.json`, M-7) | **50 / 52 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
-| Corpus SEOS — couverture fichiers (N-4) | **476 / 2 561 fichiers libs/ hors tests → 18.6 %** — 9 modules sans aucune paire (7 `crud-entity`, 1 `action-request`, 1 `kernel`) |
+| Corpus SEOS — couverture fichiers (N-4) | **476 / 2 575 fichiers libs/ hors tests → 18.5 %** — 9 modules sans aucune paire (7 `crud-entity`, 1 `action-request`, 1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **587 correspondances** + **194 décisions d'architecture** (`status: n/a`) — pas 781 paires d'apprentissage |
 
 ## Légende
@@ -31,10 +31,10 @@
 | `administrative-boundary` | ✅ | crud-entity | application, data, domain, ui | 247 | Compilant — 3 entités + hiérarchie géo |
 | `administrative-infrastructure` | ✅ | crud-entity | application, data, domain, ui | 155 | Compilant — 2 entités |
 | `authentication` | ✅ | action-request | application, data, domain, ui | 67 | Compilant — login/forgot/reset |
-| `communication` | ✅ | crud-entity | application, data, domain, ui | 122 | Compilant — messagerie + notifications |
+| `communication` | ✅ | crud-entity | application, data, domain, ui | 129 | Compilant — messagerie + notifications |
 | `content-management` | ✅ | crud-entity | application, data, domain, ui | 457 | Compilant — 6 entités |
 | `core` | ✅ | kernel |  | 10 | Tokens d'injection + intercepteurs |
-| `coverage-areas` | ✅ | crud-entity | application, data, domain, ui | 314 | Compilant — 4 entités |
+| `coverage-areas` | ✅ | crud-entity | application, data, domain, ui | 321 | Compilant — 4 entités |
 | `dashboard` | ✅ | read-only-view | application, data, domain, ui | 30 | Module IR clôturé — corpus 25 paires, Meta 12/12 ; aggregated_stats_view |
 | `finalization` | ✅ | workflow-action | application, data, domain, ui | 108 | Module IR clôturé — corpus 126 paires, 6 chaînes, Meta 12/12 |
 | `interactive-map` | ✅ | read-only-view | application, data, domain, ui | 23 | Module IR clôturé — SIG v1 + Grafana ; corpus 28 paires, Meta 12/12 ; P2 clusters/tiles |

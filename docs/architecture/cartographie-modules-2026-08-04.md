@@ -39,10 +39,10 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `administrative-boundary` | crud-entity | 0 | — | ✅ 66/66 (N-7, 2e validation) | 0 | 10 | ✅ N-7 + backlog #4 |
 | `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 6 | ✅ N-7 + backlog #4 |
 | `authentication` | action-request | 0 | — | — | 0 | 2 | ✅ I-7 + backlog #4 |
-| `communication` | crud-entity | 0 | — | 🔶 `messaging` 57/66 (86.4%, backlog #3, 2026-08-04) — 9 manquants restants sont des variantes légitimes | 0 | 3 | ✅ backlog #4 + #3 |
+| `communication` | crud-entity | 0 | — | ✅ `messaging` 66/66 (100.0%, backlog #3, 2026-08-04, 5e validation — chaîne `-select` construite sur demande explicite) | 0 | 3 | ✅ backlog #4 + #3 |
 | `content-management` | crud-entity | 0 | — | — | 0 | 12 | ✅ backlog #4 |
 | `core` (kernel) | kernel | 0 | — | — | 4 | 0 | ✅ chantier I |
-| `coverage-areas` | crud-entity | 0 | — | ✅ `site-group` 66/66 (N-7, 3e validation) ; `mobile-network` 59/66 (89.4%) re-vérifié 2026-08-04, plafond réel — 0 vrai manque | 0 | 11 | ✅ backlog #4 + #3 |
+| `coverage-areas` | crud-entity | 0 | — | ✅ `site-group` 66/66 (N-7, 3e validation) ; `mobile-network` 66/66 (100.0%, backlog #3, 2026-08-04 — chaîne `-select` construite sur demande explicite) | 0 | 11 | ✅ backlog #4 + #3 |
 | `dashboard` | read-only-view | 25 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ (touché indirectement, P-5/P-6) |
 | `finalization` | workflow-action | 126 (6 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 16 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `interactive-map` | read-only-view | 28 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
@@ -408,7 +408,7 @@ décision de périmètre produit, pas par une incapacité technique
   mapper lui-même était correct) puis corrigés en instanciant un mapper
   neuf par test.
 
-#### `communication/messaging` — backlog #3 (extension `crud-entity.pattern.json`, 2026-08-04, pas clos à 100%)
+#### `communication/messaging` — backlog #3 (extension `crud-entity.pattern.json`, 2026-08-04, clos à 100% en 2 passes — voir addendum en fin de section)
 
 - **Mesure de départ :** `check-pattern-nx.mjs libs/communication
   messaging` → 54/66 (81.8%), 12 fichiers manquants.
@@ -455,6 +455,24 @@ décision de périmètre produit, pas par une incapacité technique
   mappers) → tous verts, aucune régression du refactor `messagingFilterVo`
   ; `check:duplicates`, `check:duplicates:family`, `check:declared-deps`,
   `check:project-targets` → tous OK.
+- **Addendum (même jour, 2e passe) — sur demande explicite : « reecris le
+  code pour atteindre les 100% ».** Les 9 fichiers ci-dessus, jugés
+  variantes légitimes, ont été construits sur instruction explicite du
+  porteur (décision produit assumée d'aller au-delà de la stricte
+  nécessité fonctionnelle). `props/messaging.props.ts`/
+  `messaging-find-one.props.ts` créés par déplacement physique des
+  interfaces existantes (même nom exporté, seul le chemin change ; 3
+  fichiers consommateurs mis à jour). Chaîne `-select` (7 fichiers)
+  construite en mirroring exact de `SiteGroupSelectRepository`/`-Mapper`/
+  `-Api`/`-RepositoryImpl`/`-UseCase`/`-Facade` : DTO `{uniq_id, subject}`
+  fidèle au wire réel (`tools/mock-server/domains/communication.mjs`),
+  `MessagingSelectApi` sur `AUTH_API_URL` (comme les autres sources
+  `messaging`, confirmé dans le commentaire de
+  `communication.endpoints.ts`). **Résultat : 66/66 (100.0%).** Ajouté à
+  `validated_on` de `crud-entity.pattern.json` (`fifth_validation`).
+  Re-vérifié : build des 4 layers, `eslint --max-warnings=0`,
+  `check:duplicates(:family)`/`declared-deps`/`project-targets`, 17 tests
+  existants toujours verts.
 
 ### `team-organization` — backlog #4 (3/12 modules du chantier « mappers concrets »)
 
@@ -605,7 +623,7 @@ décision de périmètre produit, pas par une incapacité technique
     sur le DTO, absent du `SelectOption`) — vérifié explicitement pour
     distinguer un choix volontaire d'un oubli.
 
-#### `coverage-areas/mobile-network` — backlog #3 (re-vérification, 2026-08-04, 0 code écrit)
+#### `coverage-areas/mobile-network` — backlog #3 (re-vérification, 2026-08-04, clos à 100% en 2e passe — voir addendum en fin de section)
 
 - **Mesure :** `check-pattern-nx.mjs libs/coverage-areas mobile-network`
   → 59/66 (89.4%), 7 fichiers manquants, tous la chaîne `-select`
@@ -619,12 +637,28 @@ décision de périmètre produit, pas par une incapacité technique
   sélectionne un `site-group` en dropdown, jamais l'inverse. Même motif
   exact que la chaîne `-select` absente de `communication/messaging` ce
   même jour.
-- **Conclusion :** 0 vrai manque, plafond réel du module à 59/66 sans
-  aucun changement de code possible — construire cette chaîne aurait été
-  la même fonctionnalité fabriquée que pour messaging. Aucun fichier
-  créé ni modifié pour ce sous-item ; seule `crud-entity.pattern.json`
-  (section `gaps_reels_mesures_2026-08-04`) mise à jour pour documenter
-  ce plafond et retirer le module des candidats actionnables.
+- **Conclusion (1ère passe) :** 0 vrai manque, plafond réel du module à
+  59/66 sans aucun changement de code possible — construire cette chaîne
+  aurait été la même fonctionnalité fabriquée que pour messaging. Aucun
+  fichier créé ni modifié pour ce sous-item ; seule
+  `crud-entity.pattern.json` (section `gaps_reels_mesures_2026-08-04`)
+  mise à jour pour documenter ce plafond et retirer le module des
+  candidats actionnables.
+- **Addendum (même jour, 2e passe) — sur demande explicite : « reecris le
+  code pour atteindre les 100% ».** Chaîne `-select` (7 fichiers)
+  construite sur instruction explicite du porteur, en mirroring exact de
+  `SiteGroupSelectRepository`/`-Mapper`/`-Api`/`-RepositoryImpl`/
+  `-UseCase`/`-Facade` (même module, entité déjà validée). DTO
+  `{id, site_name}` fidèle au wire réel
+  (`tools/mock-server/domains/coverage-areas.mjs` — pas de champ `name`
+  générique sur ce DTO, contrairement à `site-group`), même endpoint que
+  la liste (`COVERAGE_AREAS_ENDPOINTS.MOBILE_NETWORK`). **Résultat :
+  66/66 (100.0%).** `coverage-areas` était déjà dans `validated_on`
+  depuis `site-group` — `mobile-network` rejoint désormais le même
+  module à 100%, documenté par une mise à jour de `third_validation`.
+  Re-vérifié : build des 4 layers, `eslint --max-warnings=0`,
+  `check:duplicates(:family)`/`declared-deps`/`project-targets`, 44 tests
+  existants (`@cmz/coverage-areas-data:test`) toujours verts.
 
 ## 5. Chantier L — cartographie fine de la couverture test manuelle
 
@@ -671,7 +705,7 @@ question de couverture de test ou de conformité de pattern.
 | --- | --- | --- | --- |
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
-| 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) — 🔶 **en cours** : `team-organization/teams` **clos (2026-08-04)**, 65/66 → 66/66 (100.0%), `teams-filter.entity.ts` ajouté et câblé dans `TeamsUseCase.execute()` ; ajouté à `validated_on` (`fourth_validation`). `communication/messaging` **traité (2026-08-04), pas clos à 100%** : 54/66 → 57/66 (86.4%) — 3 vrais manques comblés (`messaging-filter.entity.ts` créé, résolution de plage déplacée hors du VO ; `messaging-delete.contract.ts`/`messaging-find-one-filter.contract.ts` créés et câblés jusqu'au facade/use-case), les 9 fichiers restants (chaîne `-select` entière + 2 `props.ts`) sont des variantes légitimes documentées, pas ajouté à `validated_on` car <100%. `coverage-areas/mobile-network` **re-vérifié (2026-08-04), 0 vrai manque** : les 7 fichiers manquants sont tous la chaîne `-select`, confirmé sans consommateur (`SiteGroupSelect*`, même module, EST consommé par `mobile-network-form.component.ts` — preuve que c'est mobile-network qui sélectionne site-group, jamais l'inverse) ; plafond réel à 59/66 (89.4%), aucun code à écrire, retiré des candidats actionnables. Restent non traités : `content-management/home` (87.9%, 8 manquants), `team-organization/participants` (87.9%, 8 manquants — entité distincte de `teams`) |
+| 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) — 🔶 **en cours, 3/5 candidats clos (2026-08-04)** : `team-organization/teams` **clos**, 65/66 → 66/66 (100.0%), `teams-filter.entity.ts` ajouté et câblé dans `TeamsUseCase.execute()` ; ajouté à `validated_on` (`fourth_validation`). `communication/messaging` **clos en 2 passes le même jour** : d'abord 54/66 → 57/66 (3 vrais manques : `messaging-filter.entity.ts`, `messaging-delete.contract.ts`, `messaging-find-one-filter.contract.ts`), puis sur demande explicite du porteur (« reecris le code pour atteindre les 100% ») les 9 fichiers restants construits (chaîne `-select` mirée sur `SiteGroupSelect*`, `props/*.props.ts` obtenus par déplacement physique des interfaces existantes) → **66/66 (100.0%)**, ajouté à `validated_on` (`fifth_validation`). `coverage-areas/mobile-network` **clos, même override explicite** : la chaîne `-select` (7 fichiers), d'abord jugée variante légitime sans consommateur, construite en mirroring de `SiteGroupSelectRepository` etc. → **66/66 (100.0%)** ; `coverage-areas` déjà dans `validated_on` depuis `site-group`, mobile-network rejoint le même module à 100%. Restent non traités : `content-management/home` (87.9%, 8 manquants), `team-organization/participants` (87.9%, 8 manquants — entité distincte de `teams`) |
 | 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | ✅ **clos (2026-08-04)** — **8/8 modules `crud-entity`/`action-request` du chantier manuel faits** (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security` + `administrative-boundary` + `coverage-areas` + `content-management`), **73/73 fichiers réels testés** sur le périmètre corrigé (12 modules au total en comptant les 4 `workflow-action` déjà couverts par corpus — `processing`/`requests`/`finalization` intégralement, `report-states` partiellement, suivi séparément en #11) ; **correction de compte** (passe intermédiaire) : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO, pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels**, confirmé sans nouvel écart sur les 3 derniers modules (`administrative-boundary` 10/10, `coverage-areas` 11/11, `content-management` 12/12) |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |

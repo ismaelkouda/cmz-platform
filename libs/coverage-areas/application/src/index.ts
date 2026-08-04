@@ -6,9 +6,11 @@ export * from './lib/use-cases/site-group-select.use-case';
 export * from './lib/use-cases/site-group.use-case';
 
 export * from './lib/facades/mobile-network-find-one.facade';
+export * from './lib/facades/mobile-network-select.facade';
 export * from './lib/facades/mobile-network.facade';
 export * from './lib/facades/tower-type-select.facade';
 export * from './lib/use-cases/mobile-network-find-one.use-case';
+export * from './lib/use-cases/mobile-network-select.use-case';
 export * from './lib/use-cases/mobile-network.use-case';
 export * from './lib/use-cases/tower-type-select.use-case';
 

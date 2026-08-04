@@ -39,6 +39,7 @@ export * from './lib/dtos/mobile-network-disable-api.dto';
 export * from './lib/dtos/mobile-network-filter-api.dto';
 export * from './lib/dtos/mobile-network-find-one-filter-api.dto';
 export * from './lib/dtos/mobile-network-find-one-response-api.dto';
+export * from './lib/dtos/mobile-network-select-response-api.dto';
 export * from './lib/dtos/tower-type-select-response-api.dto';
 
 export * from './lib/mappers/mobile-network.mapper';
@@ -50,14 +51,17 @@ export * from './lib/mappers/mobile-network-disable.mapper';
 export * from './lib/mappers/mobile-network-filter.mapper';
 export * from './lib/mappers/mobile-network-find-one-filter.mapper';
 export * from './lib/mappers/mobile-network-find-one.mapper';
+export * from './lib/mappers/mobile-network-select.mapper';
 export * from './lib/mappers/tower-type-select.mapper';
 
 export * from './lib/sources/mobile-network.api';
 export * from './lib/sources/mobile-network-find-one.api';
+export * from './lib/sources/mobile-network-select.api';
 export * from './lib/sources/tower-type-select.api';
 
 export * from './lib/repositories/mobile-network.repository.impl';
 export * from './lib/repositories/mobile-network-find-one.repository.impl';
+export * from './lib/repositories/mobile-network-select.repository.impl';
 export * from './lib/repositories/tower-type-select.repository.impl';
 
 export * from './lib/dtos/optical-fiber-network-response-api.dto';

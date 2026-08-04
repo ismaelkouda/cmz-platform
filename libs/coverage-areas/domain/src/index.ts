@@ -83,6 +83,7 @@ export * from './lib/value-objects/mobile-network-find-one-filter.vo';
 
 export * from './lib/repositories/mobile-network.repository';
 export * from './lib/repositories/mobile-network-find-one.repository';
+export * from './lib/repositories/mobile-network-select.repository';
 export * from './lib/repositories/tower-type-select.repository';
 
 export * from './lib/enums/optical-fiber-network-type.enum';

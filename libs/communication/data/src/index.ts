@@ -13,6 +13,7 @@ export * from './lib/dtos/messaging-find-one-filter-api.dto';
 export * from './lib/dtos/messaging-delete-api.dto';
 export * from './lib/dtos/messaging-enable-api.dto';
 export * from './lib/dtos/messaging-disable-api.dto';
+export * from './lib/dtos/messaging-select-response-api.dto';
 export * from './lib/dtos/notifications-type-report-api.dto';
 export * from './lib/dtos/notifications-status-api.dto';
 export * from './lib/dtos/notifications-response-api.dto';
@@ -32,6 +33,7 @@ export * from './lib/mappers/messaging-find-one-filter.mapper';
 export * from './lib/mappers/messaging-delete.mapper';
 export * from './lib/mappers/messaging-enable.mapper';
 export * from './lib/mappers/messaging-disable.mapper';
+export * from './lib/mappers/messaging-select.mapper';
 export * from './lib/mappers/notifications-type-report.mapper';
 export * from './lib/mappers/notifications-status.mapper';
 export * from './lib/mappers/notifications.mapper';
@@ -41,9 +43,11 @@ export * from './lib/mappers/notifications-read-one.mapper';
 // sources
 export * from './lib/sources/messaging.api';
 export * from './lib/sources/messaging-find-one.api';
+export * from './lib/sources/messaging-select.api';
 export * from './lib/sources/notifications.api';
 
 // repositories (impls)
 export * from './lib/repositories/messaging.repository.impl';
 export * from './lib/repositories/messaging-find-one.repository.impl';
+export * from './lib/repositories/messaging-select.repository.impl';
 export * from './lib/repositories/notifications.repository.impl';
