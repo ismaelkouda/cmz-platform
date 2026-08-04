@@ -1,0 +1,33 @@
+# Contexte Docker — garder l'image légère ; ne jamais exclure `tools/`
+# (requis par `preinstall` → `tools/check-engines.mjs`, audit G-4).
+
+**/node_modules
+**/dist
+**/out-tsc
+**/.angular
+**/.nx
+**/coverage
+**/.git
+**/.husky/_
+**/*.md
+!README.md
+
+# Corpus / artefacts locaux — hors runtime backoffice
+/corpus
+/legacy.lock.json
+**/*.pairs.jsonl
+**/bundle-metrics.json
+
+# IDE / agent
+.cursor
+.claude
+.vscode
+.idea
+*.log
+.DS_Store
+
+# CI / forge (inutile dans l'image)
+.github
+Dockerfile*
+docker-compose*.yml
+.dockerignore
