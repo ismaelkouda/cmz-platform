@@ -1,6 +1,11 @@
 /**
  * Configuration Vitest partagée pour les libs pures (domain, data, application).
- * Importée par les vite.config.ts de chaque lib en mode package-based Nx.
+ *
+ * Usage Nx (`project.json`) :
+ * ```
+ * bunx vitest run --config tools/vitest-lib.config.ts
+ * env: { CMZ_VITEST_LIB_ROOT: "libs/<module>/<layer>" }
+ * ```
  *
  * Le builder `@angular/build:unit-test` cible les apps Angular complètes
  * (avec angular.json). Pour les libs isolées en mode package-based, on utilise
@@ -10,6 +15,8 @@
  */
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'node:path';
+
+const workspaceRoot = resolve(import.meta.dirname, '..');
 
 export function defineLibTestConfig(libRoot: string) {
     return defineConfig({
@@ -34,18 +41,17 @@ export function defineLibTestConfig(libRoot: string) {
             },
         },
         resolve: {
-            alias: buildAliases(libRoot),
+            alias: buildAliases(),
         },
     });
 }
 
 /**
- * Construit les alias de résolution de modules depuis tsconfig.base.json
- * pour que `import from '@cmz/...'` fonctionne dans les tests sans build préalable.
+ * Alias `@cmz/*` → sources TypeScript, pour que les tests résolvent sans
+ * build préalable des libs dépendantes.
  */
-function buildAliases(libRoot: string): Record<string, string> {
-    const root = resolve(libRoot, '../../..'); // remonte à la racine du monorepo
-    // Noyau partagé — les libs de test en ont presque toutes besoin
+function buildAliases(): Record<string, string> {
+    const root = workspaceRoot;
     return {
         '@cmz/shared-domain': resolve(root, 'libs/shared/domain/src/index.ts'),
         '@cmz/shared-data': resolve(root, 'libs/shared/data/src/index.ts'),
@@ -106,3 +112,15 @@ function buildAliases(libRoot: string): Record<string, string> {
         ),
     };
 }
+
+/** Config Vitest — exige `CMZ_VITEST_LIB_ROOT` (chemin relatif au workspace). */
+export default () => {
+    const libRootEnv = process.env.CMZ_VITEST_LIB_ROOT;
+    if (!libRootEnv) {
+        throw new Error(
+            'CMZ_VITEST_LIB_ROOT manquant — définir le chemin de la lib ' +
+                '(ex. libs/report-states/domain) via project.json options.env.'
+        );
+    }
+    return defineLibTestConfig(resolve(workspaceRoot, libRootEnv));
+};

@@ -95,7 +95,6 @@
         "@cmz/administrative-boundary-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/administrative-infrastructure/application": {
@@ -141,7 +140,6 @@
         "@cmz/administrative-infrastructure-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/authentication/application": {
@@ -151,7 +149,6 @@
         "@angular/core": "catalog:",
         "@cmz/authentication-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
-        "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
       },
     },
@@ -184,10 +181,8 @@
         "@angular/forms": "catalog:",
         "@angular/router": "catalog:",
         "@cmz/authentication-application": "workspace:*",
-        "@cmz/authentication-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/communication/application": {
@@ -230,11 +225,12 @@
         "@angular/forms": "catalog:",
         "@angular/router": "catalog:",
         "@cmz/administrative-boundary-application": "workspace:*",
+        "@cmz/administrative-boundary-domain": "workspace:*",
         "@cmz/communication-application": "workspace:*",
         "@cmz/communication-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
+        "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/content-management/application": {
@@ -279,8 +275,8 @@
         "@cmz/content-management-application": "workspace:*",
         "@cmz/content-management-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
+        "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/core": {
@@ -289,6 +285,10 @@
       "dependencies": {
         "@angular/common": "catalog:",
         "@angular/core": "catalog:",
+      },
+      "devDependencies": {
+        "typescript": "catalog:tooling",
+        "vitest": "^4.0.8",
       },
     },
     "libs/coverage-areas/application": {
@@ -334,7 +334,6 @@
         "@cmz/coverage-areas-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/dashboard/application": {
@@ -378,19 +377,23 @@
         "@cmz/dashboard-application": "workspace:*",
         "@cmz/dashboard-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
+        "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/finalization/application": {
       "name": "@cmz/finalization-application",
       "version": "0.0.0",
       "dependencies": {
+        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/finalization-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/finalization/data": {
@@ -398,12 +401,16 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
+        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/core": "workspace:*",
         "@cmz/finalization-domain": "workspace:*",
         "@cmz/shared-data": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/finalization/domain": {
@@ -413,16 +420,23 @@
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
       },
+      "devDependencies": {
+        "vitest": "^4.0.8",
+      },
     },
     "libs/finalization/ui": {
       "name": "@cmz/finalization-ui",
       "version": "0.0.0",
       "dependencies": {
         "@angular/core": "catalog:",
+        "@angular/forms": "catalog:",
+        "@angular/router": "catalog:",
         "@cmz/finalization-application": "workspace:*",
+        "@cmz/finalization-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
+        "rxjs": "catalog:",
       },
     },
     "libs/interactive-map/application": {
@@ -470,15 +484,13 @@
       "name": "@cmz/interactive-map-ui",
       "version": "1.0.0",
       "dependencies": {
-        "@angular/common": "catalog:",
         "@angular/core": "catalog:",
         "@angular/router": "catalog:",
         "@cmz/interactive-map-application": "workspace:*",
         "@cmz/interactive-map-domain": "workspace:*",
-        "@cmz/shared-domain": "workspace:*",
+        "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
         "ol": "catalog:",
-        "rxjs": "catalog:",
       },
       "devDependencies": {
         "typescript": "catalog:tooling",
@@ -523,21 +535,22 @@
         "@angular/core": "catalog:",
         "@angular/router": "catalog:",
         "@cmz/monitoring-application": "workspace:*",
-        "@cmz/monitoring-domain": "workspace:*",
-        "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/processing/application": {
       "name": "@cmz/processing-application",
       "version": "0.0.0",
       "dependencies": {
+        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/processing-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/processing/data": {
@@ -545,12 +558,16 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
+        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/core": "workspace:*",
         "@cmz/processing-domain": "workspace:*",
         "@cmz/shared-data": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/processing/domain": {
@@ -560,24 +577,30 @@
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
       },
+      "devDependencies": {
+        "vitest": "^4.0.8",
+      },
     },
     "libs/processing/ui": {
       "name": "@cmz/processing-ui",
       "version": "0.0.0",
       "dependencies": {
         "@angular/core": "catalog:",
+        "@angular/forms": "catalog:",
         "@angular/router": "catalog:",
         "@cmz/processing-application": "workspace:*",
         "@cmz/processing-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
+        "rxjs": "catalog:",
       },
     },
     "libs/report-states/application": {
       "name": "@cmz/report-states-application",
       "version": "1.0.0",
       "dependencies": {
+        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/report-states-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
@@ -586,6 +609,7 @@
       },
       "devDependencies": {
         "typescript": "catalog:tooling",
+        "vitest": "^4.0.8",
       },
     },
     "libs/report-states/data": {
@@ -602,6 +626,7 @@
       },
       "devDependencies": {
         "typescript": "catalog:tooling",
+        "vitest": "^4.0.8",
       },
     },
     "libs/report-states/domain": {
@@ -613,6 +638,7 @@
       },
       "devDependencies": {
         "typescript": "catalog:tooling",
+        "vitest": "^4.0.8",
       },
     },
     "libs/report-states/ui": {
@@ -621,9 +647,11 @@
       "dependencies": {
         "@angular/common": "catalog:",
         "@angular/core": "catalog:",
+        "@angular/forms": "catalog:",
         "@angular/router": "catalog:",
         "@cmz/report-states-application": "workspace:*",
         "@cmz/report-states-domain": "workspace:*",
+        "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
         "rxjs": "catalog:",
@@ -671,21 +699,22 @@
         "@angular/core": "catalog:",
         "@angular/router": "catalog:",
         "@cmz/reporting-application": "workspace:*",
-        "@cmz/reporting-domain": "workspace:*",
-        "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/requests/application": {
       "name": "@cmz/requests-application",
       "version": "0.0.0",
       "dependencies": {
+        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/requests-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/requests/data": {
@@ -693,12 +722,16 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
+        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/core": "workspace:*",
         "@cmz/requests-domain": "workspace:*",
         "@cmz/shared-data": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/requests/domain": {
@@ -708,16 +741,24 @@
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
       },
+      "devDependencies": {
+        "vitest": "^4.0.8",
+      },
     },
     "libs/requests/ui": {
       "name": "@cmz/requests-ui",
       "version": "0.0.0",
       "dependencies": {
+        "@angular/common": "catalog:",
         "@angular/core": "catalog:",
+        "@angular/forms": "catalog:",
+        "@angular/router": "catalog:",
         "@cmz/requests-application": "workspace:*",
+        "@cmz/requests-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
+        "rxjs": "catalog:",
       },
     },
     "libs/settings-security/application": {
@@ -762,8 +803,8 @@
         "@cmz/settings-security-application": "workspace:*",
         "@cmz/settings-security-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
+        "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
     "libs/shared/application": {
@@ -781,7 +822,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/core": "catalog:",
-        "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "exceljs": "catalog:",
       },
@@ -859,10 +899,10 @@
         "@angular/forms": "catalog:",
         "@angular/router": "catalog:",
         "@cmz/shared-application": "workspace:*",
+        "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
         "@cmz/team-organization-application": "workspace:*",
         "@cmz/team-organization-domain": "workspace:*",
-        "rxjs": "catalog:",
       },
     },
   },
@@ -882,7 +922,7 @@
     "exceljs": "4.4.0",
     "i18next": "26.3.6",
     "ol": "^10.9.0",
-    "postcss": "8.5.6",
+    "postcss": "8.5.22",
     "rxjs": "7.8.2",
     "tailwindcss": "4.1.13",
     "tslib": "2.8.1",
@@ -2867,7 +2907,7 @@
 
     "portfinder": ["portfinder@1.0.38", "", { "dependencies": { "async": "^3.2.6", "debug": "^4.3.6" } }, "sha512-rEwq/ZHlJIKw++XtLAO8PPuOQA/zaPJOZJ37BVuN97nLpMJeuDVLVGRwbFoBgLudgdTMP2hdRJP++H+8QOA3vg=="],
 
-    "postcss": ["postcss@8.5.6", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg=="],
+    "postcss": ["postcss@8.5.22", "", { "dependencies": { "nanoid": "^3.3.16", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-KBDEIpLrvpv16pp3K0Fw+UCoZfopFjjgeB+0tA/aaThfEE74kKDLrgg603YvOWJyg3+WYtyq3xYsQWsIyZlPqQ=="],
 
     "postcss-calc": ["postcss-calc@10.1.1", "", { "dependencies": { "postcss-selector-parser": "^7.0.0", "postcss-value-parser": "^4.2.0" }, "peerDependencies": { "postcss": "^8.4.38" } }, "sha512-NYEsLHh8DgG/PRH2+G9BTuUdtf9ViS+vdoQ0YA5OQdGsfN4ztiwtDWNtBl9EKeqNMFnIu8IKZ0cLxEQ5r5KVMw=="],
 
