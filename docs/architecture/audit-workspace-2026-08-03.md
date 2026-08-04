@@ -2212,6 +2212,69 @@ priorité perçue.
 
 ---
 
+### Backlog cartographie #2 — Meta-vérification a posteriori `monitoring`/`reporting` (2026-08-04, douzième passe, « vas'y en ordre, avec des check »)
+
+La cartographie ([`cartographie-modules-2026-08-04.md`](./cartographie-modules-2026-08-04.md),
+§4) avait nommé un écart : sur les 8 modules à corpus, seuls 6 avaient un
+fichier `*-meta-verification.md` dans `docs/architecture/audits/` ;
+`monitoring` et `reporting` n'en avaient aucun, bien que leur corpus (51
+paires chacun) soit déjà `verified` depuis le 2026-08-02 (`legacy_ref.commit`
+pinné `cb15bf80fa072e12e9d4fce4b9236abe6ac78058`, même SHA que
+`check:legacy-lock`) et que `monitoring` soit le `reference_module` du
+pattern `read-only-view`. Vérifié en base avant d'écrire quoi que ce soit
+(`python3` sur les `.jsonl`) : 41 `verified` + 10 `n/a` par module, les 10
+`n/a` structurels au pattern (CQRS `query`/`query-handler` legacy exclus,
+shell routes/providers consolidés en composition root Nx) — même nature que
+les `n/a` de `dashboard`.
+
+Revérification **réelle** faite avant d'écrire les documents (pas une
+recopie du statut 2026-07-28) :
+
+- `node node_modules/.bin/nx run @cmz/{monitoring,reporting}-{domain,data,application,ui}:build`
+  — 8/8 ✅
+- `node node_modules/.bin/nx run @cmz/{monitoring,reporting}-{domain,data,application,ui}:lint`
+  (`eslint . --max-warnings=0`) — 8/8 ✅
+- `node tools/check-boundary-negative.mjs` — ✅ (le test négatif de ce
+  dépôt cible précisément `scope:monitoring → scope:reporting`, donc
+  directement pertinent pour ces deux modules)
+- `node tools/check-duplicate-files.mjs` — ✅ 0 doublon
+
+Tentative de rejouer le corpus complet (`node tools/corpus/emit-pairs.mjs
+monitoring --verify`, avec `SEOS_LEGACY_ROOT` pointé vers le dossier
+`cmz-backoffice-frontend` connecté cette session) — **bloquée par le
+sandbox, pas par le code** : le gate H-2/H-3 passe, puis le script exécute
+un oracle `nx run <cible>:build` par paire (jusqu'à 51 invocations),
+1,5–6 s chacune, cache Nx local à 0 % de hit d'un appel à l'autre dans ce
+bac à sable — dépasse la limite de 45 s par commande shell. Vérifié
+explicitement qu'aucun contournement par arrière-plan n'est possible : un
+job `sleep 20 && touch marker` lancé via `setsid nohup … &` puis `disown`
+n'a laissé aucune trace au second appel — les processus d'arrière-plan ne
+survivent pas à la fin d'un appel dans ce sandbox. Même catégorie que I-8
+(test d'intégration backend réel) et `nginx -t` (pas de root) déjà
+documentés : blocage d'exécution, pas un doute sur le résultat mesuré en
+base. Commande de reproduction donnée telle quelle dans les deux documents
+de clôture pour exécution en CI (`corpus:ci` y fait déjà tourner la
+variante `--structural-only` de façon routinière, bloquante, sur ces deux
+modules) ou en local sans cette contrainte.
+
+Écrit : [`monitoring-meta-verification.md`](./audits/monitoring-meta-verification.md)
+et [`reporting-meta-verification.md`](./audits/reporting-meta-verification.md)
+— scorecard 12/12 sur chaque module, un seul critère (mock backend
+`provideMonitoring()`/`provideReporting()`) resté sur preuve datée
+(2026-07-28) explicitement signalée comme non rejouée cette passe, plutôt
+que présentée comme fraîche. `tools/generate-status.mjs` mis à jour (les 2
+entrées `monitoring`/`reporting` passent de `notes: 'Compilant — …'` à
+`notes: 'Module IR clôturé (a posteriori 2026-08-04) — …, Meta 12/12'` —
+`familyClosed('read-only-view')` comptait déjà les 2 modules comme fermés
+avant ce changement, seul le texte humain était en retard sur le calcul),
+`STATUS.md`/`README.md`/`LLM_CONTEXT.md`/`docs/architecture/etat-du-socle.md`
+régénérés via `node tools/generate-status.mjs` — seul `STATUS.md` a
+effectivement changé (les blocs générés des 3 autres fichiers ne
+référençaient pas ce texte). Cartographie mise à jour en conséquence (§1
+matrice, §4, §7 backlog #2 coché).
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**

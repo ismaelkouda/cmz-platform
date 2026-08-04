@@ -38,10 +38,10 @@
 | `dashboard` | ✅ | read-only-view | application, data, domain, ui | 30 | Module IR clôturé — corpus 25 paires, Meta 12/12 ; aggregated_stats_view |
 | `finalization` | ✅ | workflow-action | application, data, domain, ui | 108 | Module IR clôturé — corpus 126 paires, 6 chaînes, Meta 12/12 |
 | `interactive-map` | ✅ | read-only-view | application, data, domain, ui | 23 | Module IR clôturé — SIG v1 + Grafana ; corpus 28 paires, Meta 12/12 ; P2 clusters/tiles |
-| `monitoring` | ✅ | read-only-view | application, data, domain, ui | 22 | Compilant — 4 embeds Grafana ; corpus 51 paires, 5 chaînes |
+| `monitoring` | ✅ | read-only-view | application, data, domain, ui | 22 | Module IR clôturé (a posteriori 2026-08-04) — 4 embeds Grafana ; corpus 51 paires, 5 chaînes, Meta 12/12 |
 | `processing` | ✅ | workflow-action | application, data, domain, ui | 137 | Module IR clôturé — corpus 156 paires, 7 chaînes, Meta 12/12 |
 | `report-states` | ✅ | workflow-action | application, data, domain, ui | 169 | Module IR clôturé — corpus 187 paires, 8 chaînes, Meta 12/12 |
-| `reporting` | ✅ | read-only-view | application, data, domain, ui | 22 | Compilant — 4 vues analytiques ; corpus 51 paires, 5 chaînes |
+| `reporting` | ✅ | read-only-view | application, data, domain, ui | 22 | Module IR clôturé (a posteriori 2026-08-04) — 4 vues analytiques ; corpus 51 paires, 5 chaînes, Meta 12/12 |
 | `requests` | ✅ | workflow-action | application, data, domain, ui | 125 | Module IR clôturé — corpus 157 paires, 8 chaînes, Meta 12/12 |
 | `settings-security` | ✅ | crud-entity | application, data, domain, ui | 195 | Compilant — 3 entités |
 | `shared` | ✅ | kernel | application, browser, constants, data, domain, ui | 189 | Kernel transverse opérationnel |

@@ -46,21 +46,27 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `dashboard` | read-only-view | 25 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ (touché indirectement, P-5/P-6) |
 | `finalization` | workflow-action | 126 (6 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 16 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `interactive-map` | read-only-view | 28 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
-| `monitoring` | read-only-view | 51 (5 chaînes) | **absent** | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
+| `monitoring` | read-only-view | 51 (5 chaînes) | **12/12, a posteriori 2026-08-04** | (`read-only-view.pattern.json`, module de référence) | 0 | 0 | ✅ backlog #2 |
 | `processing` | workflow-action | 156 (7 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 16 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `report-states` | workflow-action | 187 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 9 | 0 | ⚠️ H-4 (contrainte), pas le code |
-| `reporting` | read-only-view | 51 (5 chaînes) | **absent** | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
+| `reporting` | read-only-view | 51 (5 chaînes) | **12/12, a posteriori 2026-08-04** | (`read-only-view.pattern.json`, `second_validation`) | 0 | 0 | ✅ backlog #2 |
 | `requests` | workflow-action | 157 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 17 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `settings-security` | crud-entity | 0 | — | — | 0 | 0 | ✅ I-7 (permissionGuard) |
 | `shared` (kernel) | kernel | ≥1 (via `libs/shared/...`) | — | — | 4 (chantier I, hors chantier L) | **16** | ✅✅ chantier I + chantier L |
 | `team-organization` | crud-entity | 0 | — | 2 entités manquantes (ADR-0018) | 0 | 0 | ☐ |
 
-**Lecture immédiate** : sur 18 modules, **6 seulement** ont traversé
+**Lecture immédiate** : sur 18 modules, **8** ont désormais traversé
 l'oracle le plus sévère (corpus + Meta-vérification 12/12, colonne
 « Meta-vérif. ») — `dashboard`, `finalization`, `interactive-map`,
-`processing`, `report-states`, `requests`. `monitoring` et `reporting` ont
-un corpus (51 paires chacun) mais **pas** de Meta-vérification 12/12
-recensée (§4, découverte). Les 9 modules `crud-entity`/`action-request`
+`monitoring`, `processing`, `report-states`, `reporting`, `requests`.
+`monitoring` et `reporting` ont reçu leur document de clôture le 2026-08-04
+(backlog #2, a posteriori — leur corpus était déjà `verified` depuis
+2026-08-02, seul le document de synthèse manquait ; voir
+[`monitoring-meta-verification.md`](audits/monitoring-meta-verification.md)
+et
+[`reporting-meta-verification.md`](audits/reporting-meta-verification.md),
+qui documentent aussi une limite de sandbox rencontrée en tentant de
+rejouer le corpus complet). Les 9 modules `crud-entity`/`action-request`
 n'ont **aucun** corpus — leur seule garantie mécanique est tsc/eslint/ngc
 (socle), pas de comparaison au legacy. `shared` est, après cette session,
 le module le plus densément testé du dépôt en tests **manuels** (16), tout
@@ -196,26 +202,42 @@ décision de périmètre produit, pas par une incapacité technique
   composition du bundle (P-5, 833 kB) — pas une modification du module
   lui-même.
 
-### `monitoring` / `reporting` — famille `read-only-view`, **non Meta-vérifiés**
+### `monitoring` / `reporting` — famille `read-only-view`, Meta-vérifiés a posteriori (2026-08-04)
 
-- **Effectué (préexistant) :** corpus 51 paires / 5 chaînes chacun.
-- **Reste à faire — découverte de cette passe :** contrairement à
-  `dashboard`/`interactive-map` (même famille), **aucun fichier de
-  Meta-vérification** n'existe dans `docs/architecture/audits/` pour
-  `monitoring` ou `reporting` (vérifié : seuls
-  `dashboard-meta-verification.md`, `finalization-meta-verification.md`,
-  `interactive-map-meta-verification.md`, `processing-meta-verification.md`
-  + 3 sous-audits, `report-states-meta-verification.md`,
-  `requests-meta-verification.md` existent — 6 fichiers, pas 8). Ces deux
-  modules ont un corpus mais pas la preuve documentée du passage par la
-  Meta-vérification 12/12 — statut `STATUS.md` « Compilant », pas
-  « Module IR clôturé » comme les 6 autres modules corpus. **Écart entre
-  les deux statuts jamais nommé explicitement avant cette cartographie.**
-- **Action recommandée (non menée, hors budget de cette passe) :**
-  déterminer si `monitoring`/`reporting` doivent recevoir une
-  Meta-vérification a posteriori, ou si leur corpus (51 paires chacun,
-  visiblement construit) suffit par nature — décision d'architecte, pas
-  un blocage d'accès.
+- **Effectué (préexistant) :** corpus 51 paires / 5 chaînes chacun,
+  `verified_at: 2026-08-02`, `legacy_ref.commit` pinné
+  (`cb15bf80fa072e12e9d4fce4b9236abe6ac78058`, même SHA que
+  `check:legacy-lock`). `monitoring` = `reference_module` du pattern
+  `read-only-view` ; `reporting` = `second_validation`.
+- **Effectué (cette passe, backlog #2) :** écriture des 2 documents de
+  clôture manquants —
+  [`monitoring-meta-verification.md`](audits/monitoring-meta-verification.md)
+  et
+  [`reporting-meta-verification.md`](audits/reporting-meta-verification.md).
+  Revérification **réelle** faite aujourd'hui : build 4/4 + lint 4/4
+  (`--max-warnings=0`) sur les 8 libs des deux modules,
+  `check:boundary-negative` (test négatif ciblant précisément
+  `scope:monitoring → scope:reporting`), `check:duplicates` (0 doublon).
+  Le reste du scorecard 12/12 s'appuie sur les preuves déjà enregistrées
+  (`module-monitoring.md`/`module-reporting.md`, corpus `verified`) —
+  signalé explicitement dans chaque document, pas présenté comme rejoué à
+  l'identique.
+- **Tâche découverte (cette passe) :** tentative de rejouer le corpus
+  complet (`--verify`, avec ou sans `--structural-only`) contre le vrai
+  legacy (`SEOS_LEGACY_ROOT` = dossier `cmz-backoffice-frontend` connecté
+  cette session) — **bloquée par le sandbox**, pas par le code : le script
+  émet jusqu'à 51 invocations séquentielles `nx run <target>:build`
+  (1,5–6 s chacune, cache Nx local à 0 % de hit d'un appel à l'autre dans
+  ce bac à sable), dépassant la limite de 45 s par commande shell ; un
+  processus lancé en arrière-plan (`nohup`/`setsid`) ne survit pas non plus
+  à la fin d'un appel (testé explicitement, confirmé). Même catégorie que
+  I-8/`nginx -t` déjà documentés — blocage d'exécution, pas un doute sur le
+  résultat (le corpus reste `verified`, pinné à un commit legacy vérifiable
+  indépendamment). Commande de reproduction exacte donnée dans les deux
+  documents de clôture, pour exécution en CI ou en local sans cette
+  contrainte.
+- **Statut désormais aligné sur les 6 autres modules corpus :** « Module IR
+  clôturé » documenté, plus seulement « Compilant » dans `STATUS.md`.
 
 ### `communication` / `content-management` / `coverage-areas` / `team-organization` — non touchés
 
@@ -275,7 +297,7 @@ question de couverture de test ou de conformité de pattern.
 | # | Action | Bloqué par | Effort estimé |
 | --- | --- | --- | --- |
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
-| 2 | Meta-vérifier `monitoring`/`reporting` ou documenter pourquoi non applicable | Décision d'architecte | Moyen |
+| 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
 | 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
 | 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`, 60+ appelants) | Rien — budget | Élevé (173 fichiers restants) |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |

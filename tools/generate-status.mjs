@@ -145,12 +145,12 @@ const META = {
     monitoring: {
         status: '✅',
         family: 'read-only-view',
-        notes: 'Compilant — 4 embeds Grafana ; corpus 51 paires, 5 chaînes',
+        notes: 'Module IR clôturé (a posteriori 2026-08-04) — 4 embeds Grafana ; corpus 51 paires, 5 chaînes, Meta 12/12',
     },
     reporting: {
         status: '✅',
         family: 'read-only-view',
-        notes: 'Compilant — 4 vues analytiques ; corpus 51 paires, 5 chaînes',
+        notes: 'Module IR clôturé (a posteriori 2026-08-04) — 4 vues analytiques ; corpus 51 paires, 5 chaînes, Meta 12/12',
     },
     'interactive-map': {
         status: '✅',
