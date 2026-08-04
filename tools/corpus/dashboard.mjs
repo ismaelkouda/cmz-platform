@@ -7,6 +7,11 @@
  * @see docs/architecture/module-dashboard.md
  */
 
+import {
+    ensureBehavioralLevel,
+    layerOracles,
+} from './oracle-levels.mjs';
+
 const MODULE = 'dashboard';
 
 const MODULE_SHELL_NODES = [
@@ -51,7 +56,7 @@ function legacyPage(rel) {
 
 /** @param {string} layer */
 function modOracle(layer) {
-    return [`@cmz/${MODULE}-${layer}:build`];
+    return layerOracles(MODULE, layer);
 }
 
 /** @type {Record<string, import('./mapping.mjs').NodeMapping>} */
@@ -310,10 +315,11 @@ export function expandDashboardChain(module, chain) {
             typeof mapping.nx === 'function'
                 ? mapping.nx({ module })
                 : mapping.nx;
-        const oracle =
+        const oracle = ensureBehavioralLevel(
             typeof mapping.oracle === 'function'
                 ? mapping.oracle({ module })
-                : mapping.oracle;
+                : mapping.oracle
+        );
         const notes =
             typeof mapping.notes === 'function'
                 ? mapping.notes({ module })

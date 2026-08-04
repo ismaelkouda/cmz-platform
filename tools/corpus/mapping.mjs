@@ -3,7 +3,12 @@
  *
  * Placeholders ctx : { module, volet, Volet }
  * {volet} = queues | tasks | all
+ *
+ * Oracle : `ensureBehavioralLevel` (audit H-1) ajoute `:test` dès que le
+ * projet Nx déclare un target Vitest (chantier C).
  */
+
+import { ensureBehavioralLevel } from './oracle-levels.mjs';
 
 /** @typedef {{ legacy: (ctx: Ctx) => string; nx: (ctx: Ctx) => string | null; layer: string; oracle?: string[] | ((ctx: Ctx) => string[]); statusOverride?: string; notes?: string | ((ctx: Ctx) => string); assumption_ref?: string }} NodeMapping */
 
@@ -1906,7 +1911,7 @@ export function expandChain(module, chain) {
             volet: chain.volet ?? undefined,
             layer: mapping.layer,
             status: mapping.statusOverride ?? 'pending',
-            oracle: resolveOracle(ctx, mapping.oracle),
+            oracle: ensureBehavioralLevel(resolveOracle(ctx, mapping.oracle)),
             notes,
             assumption_ref: mapping.assumption_ref,
         });

@@ -1,0 +1,209 @@
+{
+  "pattern": "crud-entity",
+  "version": 0,
+  "lineage": "Enterprise OOP (Angular + DDD/CQRS + Clean Architecture) — famille CRUD : liste paginée + create/update/delete + find-one + select, sur une entité administrative/référentielle unique par module (une ou plusieurs entités CRUD indépendantes peuvent cohabiter dans le même module, ex. infrastructure + infrastructure-type)",
+  "description": "Formalisation Nx-shaped du pattern crud-entity déjà décrit côté legacy par `tools/seos/patterns/crud-entity.pattern.json` (extrait de administrative-boundary — departments/municipalities/regions, v23, 97 core_files legacy). Ce fichier fait le pont vers la forme réelle que ce même pattern prend une fois porté dans le monorepo Nx cible (`libs/{MODULE}/{domain,data,application,ui}`), au même titre que `workflow-action.pattern.json` et `read-only-view.pattern.json` — action N-7 de la revue finale du 2026-08-02, jusqu'ici seul pattern des trois listés dans le corpus SEOS à n'avoir aucune contrepartie Nx-shaped écrite.",
+  "validated_on": ["administrative-infrastructure", "administrative-boundary"],
+  "reference_module": "administrative-infrastructure",
+  "reference_implementation": {
+    "entity_used": "infrastructure",
+    "nx_path": "libs/administrative-infrastructure",
+    "description": "Choisi car c'est le même module que le schéma legacy cite comme sa propre référence la plus aboutie (`tools/seos/patterns/crud-entity.pattern.json`, design_decisions_v23 : \"depuis v23, le module réel administrative-infrastructure atteint lui aussi 106/106\") — continuité de traçabilité entre les deux fichiers plutôt qu'un choix arbitraire. Module Nx complet : 2 entités CRUD indépendantes (infrastructure, infrastructure-type), 167 fichiers au total sous libs/administrative-infrastructure (`find libs/administrative-infrastructure -type f | wc -l`, 2026-08-04)."
+  },
+  "second_validation": {
+    "module": "administrative-boundary",
+    "entity_used": "region",
+    "nx_path": "libs/administrative-boundary",
+    "validated_at": "2026-08-04",
+    "notes": "Module Nx distinct (259 fichiers au total sous libs/administrative-boundary, `find` reexécuté le 2026-08-04 ; 3 entités CRUD indépendantes : regions/departments/municipalities — les 3 entités mêmes que `validated_on` du schéma legacy). Convergence indépendante confirmée fichier par fichier sur region : mêmes classes/fonctions à la forme du nom près (`RegionFacade extends CollectionResourceFacade`, `RegionRepository`/`RegionRepositoryImpl`, `regionCreateVo`/`regionFilterMapper` en fonctions, `validateInfrastructureCreate`-style côté domain/validators) — seuls les champs métier diffèrent (`populationSize`/`infrastructureCount` pour region vs `type`/`position: CoordinatesProps` pour infrastructure). Différence réelle notée : `RegionRepository` n'a pas de toggle enable/disable (docstring du fichier lui-même : \"port region — CRUD seul, pas de toggle\") — confirme que `status_enum_mapper` reste, comme documenté côté legacy (extension_candidates.status_enum_mapper), une extension optionnelle et non une brique structurelle obligatoire du cœur crud-entity, y compris côté Nx.",
+    "pattern_schema_unchanged": true
+  },
+  "autres_modules_crud_entity_observes_non_valides_ligne_a_ligne": {
+    "avertissement": "Observation de structure de dossiers seulement (noms de fichiers), PAS une validation fichier par fichier comme reference_implementation/second_validation ci-dessus — ne pas citer comme preuve Rule 0 sans revérification.",
+    "settings-security": "user (74 fichiers), profil (87 fichiers) — mêmes suffixes .contract/.validate-contract/.vo/.mapper/.repository observés par `find`",
+    "coverage-areas": "mobile-network, optical-fiber-network, radio-relay-link (326 fichiers au total, 3 entités) — mêmes 404 fail() nommés dans tools/mock-server/domains/coverage-areas.mjs (I-8/P-9, §7)",
+    "usage_recommande": "Candidats naturels pour une future extension du corpus scope:crud-entity au-delà de administrative-infrastructure/administrative-boundary — décision de priorisation du porteur (N-5, hors mandat d'un audit seul, ADR-0019)"
+  },
+  "core_files_legacy_reference": "tools/seos/patterns/crud-entity.pattern.json (v23, 97 core_files, source administrative-boundary) — ne pas dupliquer ici, ce fichier ne documente que le delta et la forme Nx",
+  "core_files_nx": {
+    "domain": [
+      "libs/{MODULE}/domain/src/lib/props/{entity}.props.ts",
+      "libs/{MODULE}/domain/src/lib/props/{entity}-find-one.props.ts",
+      "libs/{MODULE}/domain/src/lib/entities/{entity}.entity.ts",
+      "libs/{MODULE}/domain/src/lib/entities/{entity}-filter.entity.ts",
+      "libs/{MODULE}/domain/src/lib/entities/{entity}-find-one.entity.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{entity}-create.contract.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{entity}-create.validate-contract.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{entity}-update.contract.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{entity}-update.validate-contract.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{entity}-delete.contract.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{entity}-delete.validate-contract.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{entity}-filter.contract.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{entity}-find-one-filter.contract.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{entity}-find-one-filter.validate-contract.ts",
+      "libs/{MODULE}/domain/src/lib/validators/{entity}-create.validator.ts",
+      "libs/{MODULE}/domain/src/lib/validators/{entity}-update.validator.ts",
+      "libs/{MODULE}/domain/src/lib/validators/{entity}-delete.validator.ts",
+      "libs/{MODULE}/domain/src/lib/validators/{entity}-filter.validator.ts",
+      "libs/{MODULE}/domain/src/lib/validators/{entity}-find-one-filter.validator.ts",
+      "libs/{MODULE}/domain/src/lib/value-objects/{entity}-create.vo.ts",
+      "libs/{MODULE}/domain/src/lib/value-objects/{entity}-update.vo.ts",
+      "libs/{MODULE}/domain/src/lib/value-objects/{entity}-delete.vo.ts",
+      "libs/{MODULE}/domain/src/lib/value-objects/{entity}-filter.vo.ts",
+      "libs/{MODULE}/domain/src/lib/value-objects/{entity}-find-one-filter.vo.ts",
+      "libs/{MODULE}/domain/src/lib/repositories/{entity}.repository.ts",
+      "libs/{MODULE}/domain/src/lib/repositories/{entity}-find-one.repository.ts",
+      "libs/{MODULE}/domain/src/lib/repositories/{entity}-select.repository.ts"
+    ],
+    "data": [
+      "libs/{MODULE}/data/src/lib/dtos/{entity}-create-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/dtos/{entity}-update-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/dtos/{entity}-delete-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/dtos/{entity}-filter-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/dtos/{entity}-find-one-filter-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/dtos/{entity}-find-one-response-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/dtos/{entity}-response-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/dtos/{entity}-select-response-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/endpoints/{MODULE}.endpoints.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{entity}-create.mapper.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{entity}-update.mapper.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{entity}-delete.mapper.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{entity}-filter.mapper.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{entity}-find-one-filter.mapper.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{entity}-find-one.mapper.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{entity}-select.mapper.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{entity}.mapper.ts",
+      "libs/{MODULE}/data/src/lib/repositories/{entity}.repository.impl.ts",
+      "libs/{MODULE}/data/src/lib/repositories/{entity}-find-one.repository.impl.ts",
+      "libs/{MODULE}/data/src/lib/repositories/{entity}-select.repository.impl.ts",
+      "libs/{MODULE}/data/src/lib/sources/{entity}.api.ts",
+      "libs/{MODULE}/data/src/lib/sources/{entity}-find-one.api.ts",
+      "libs/{MODULE}/data/src/lib/sources/{entity}-select.api.ts"
+    ],
+    "application": [
+      "libs/{MODULE}/application/src/lib/use-cases/{entity}.use-case.ts",
+      "libs/{MODULE}/application/src/lib/use-cases/{entity}-find-one.use-case.ts",
+      "libs/{MODULE}/application/src/lib/use-cases/{entity}-select.use-case.ts",
+      "libs/{MODULE}/application/src/lib/facades/{entity}.facade.ts",
+      "libs/{MODULE}/application/src/lib/facades/{entity}-find-one.facade.ts",
+      "libs/{MODULE}/application/src/lib/facades/{entity}-select.facade.ts"
+    ],
+    "ui": [
+      "libs/{MODULE}/ui/src/lib/adapters/{entity}-vm-props.interface.ts",
+      "libs/{MODULE}/ui/src/lib/adapters/{entity}-vm.presenter.ts",
+      "libs/{MODULE}/ui/src/lib/constants/{entity}-filter-keys.constant.ts",
+      "libs/{MODULE}/ui/src/lib/constants/{entity}-paths.constant.ts",
+      "libs/{MODULE}/ui/src/lib/constants/{entity}-table.constant.ts",
+      "libs/{MODULE}/ui/src/lib/features/{entity}-form.component.ts",
+      "libs/{MODULE}/ui/src/lib/features/{entity}-list.component.ts",
+      "libs/{MODULE}/ui/src/lib/features/{entity}.routes.ts",
+      "libs/{MODULE}/ui/src/lib/stores/{entity}-filter.store.ts",
+      "libs/{MODULE}/ui/src/lib/stores/{entity}-form.store.ts"
+    ]
+  },
+  "extension_candidates": {
+    "module_level_form_validators_constant": {
+      "description": "libs/{MODULE}/ui/src/lib/constants/form-validators.constant.ts — constantes de validation de formulaire partagées entre toutes les entités CRUD d'un même module (ex. infrastructure + infrastructure-type).",
+      "statut": "NON PROMU au cœur canonique — trouvé et corrigé le 2026-08-04, en exécutant `check-pattern.mjs` pour de vrai contre les 2 modules validés (première exécution réelle de cet outil sur du Nx, J-9)",
+      "preuve": "Présent dans `libs/administrative-infrastructure/ui/src/lib/constants/form-validators.constant.ts`, absent de `libs/administrative-boundary` (grep confirmé, aucune occurrence) — 1 module sur 2 validés, pas une convergence. Initialement classé à tort dans `core_files_nx` (erreur de généralisation à partir d'un seul module observé), révélée par la première exécution réelle de `check-pattern.mjs --schema` contre ce fichier — exactement le rôle que cet outil est censé jouer.",
+      "precedent": "Même statut que `status_enum_mapper`/`form_helper_service` du schéma legacy (`tools/seos/patterns/crud-entity.pattern.json`, extension_candidates) : fonctionnalité optionnelle réelle (toute entité n'a pas forcément besoin de validateurs de formulaire au-delà de `required`), pas une brique structurelle obligatoire du CRUD lui-même."
+    }
+  },
+  "module_shell_files": {
+    "legacy": [
+      "{MODULE}.routes.ts",
+      "di/{MODULE}.providers.ts",
+      "infrastructure/api/{MODULE}.endpoints.ts"
+    ],
+    "nx": [
+      "apps/backoffice-angular/src/app/providers/{module}.providers.ts",
+      "apps/backoffice-angular/src/app/app.routes.ts (import('@cmz/{module}-ui') — lazy, un point d'entrée par module, pas par entité)"
+    ]
+  },
+  "nx_mapping": {
+    "module_placeholder": "{MODULE}",
+    "entity_placeholder": "{ENTITY}",
+    "entity_kebab": "{entity}",
+    "naming": {
+      "props_interface": "{EntityPascal}Props",
+      "entity_class": "{EntityPascal}Entity — wrap immuable de Props, getters + méthode with(props) qui ne réalloue que si updatedAt/uniqId changent",
+      "find_one_entity_class": "{EntityPascal}FindOneEntity",
+      "filter_entity_fn": "{entity}FilterEntity(vo) — fonction, pas de classe (diffère du entity_class principal)",
+      "contract_interface": "{EntityPascal}{Verb}Contract / {EntityPascal}{Verb}ValidateContract",
+      "validator_fn": "validate{EntityPascal}{Verb}(contract): asserts contract is {EntityPascal}{Verb}ValidateContract",
+      "vo_fn": "{entity}{Verb}Vo(contract) — fonction pure, pas de classe VO (cohérent avec action-request.pattern.json et la forme fonction déjà actée pour crud-entity legacy v4)",
+      "use_case_class": "{EntityPascal}UseCase / {EntityPascal}FindOneUseCase / {EntityPascal}SelectUseCase",
+      "facade_class_list": "{EntityPascal}Facade extends CollectionResourceFacade<{EntityPascal}Entity, {EntityPascal}FilterContract>",
+      "facade_class_singular": "{EntityPascal}FindOneFacade / {EntityPascal}SelectFacade extends ResourceFacade<...>",
+      "repository_port": "{EntityPascal}Repository (abstract class, pas interface — cohérent avec le socle @cmz/shared-domain)",
+      "repository_impl": "{EntityPascal}RepositoryImpl — @Service(), implements {EntityPascal}Repository",
+      "mapper_class_list": "{EntityPascal}Mapper extends PaginatedMapper<{EntityPascal}ItemApiDto, {EntityPascal}Entity>",
+      "mapper_class_find_one": "{EntityPascal}FindOneMapper extends SimpleResponseMapper<...>",
+      "mapper_fn_mutation": "{entity}{Verb}Mapper(voResult) — fonction, pour create/update/delete/filter/find-one-filter/select (seuls les mappers liste et find-one sont des classes, héritant d'un mapper générique partagé)",
+      "api_class": "{EntityPascal}Api / {EntityPascal}FindOneApi / {EntityPascal}SelectApi — @Service(), un seul HttpClient injecté",
+      "presenter_class": "{EntityPascal}Presenter",
+      "store_class": "{EntityPascal}FilterStore / {EntityPascal}FormStore",
+      "list_component": "{EntityPascal}ListComponent",
+      "form_component": "{EntityPascal}FormComponent",
+      "routes_const": "{ENTITY_UPPER}_ROUTES",
+      "providers_fn": "provide{ModulePascal}() — un seul point de composition racine par MODULE, pas par entité : administrative-infrastructure.providers.ts fournit à la fois infrastructure et infrastructure-type"
+    },
+    "layer_map": {
+      "domain": "libs/{MODULE}/domain/src/lib",
+      "data": "libs/{MODULE}/data/src/lib",
+      "application": "libs/{MODULE}/application/src/lib",
+      "ui": "libs/{MODULE}/ui/src/lib",
+      "di": "apps/backoffice-angular/src/app/providers"
+    },
+    "legacy_layers_dropped_in_nx": [
+      "application/commands/{ENTITY}/{ENTITY}-{verb}.command.ts",
+      "application/commands-bus/{ENTITY}/{ENTITY}-{verb}.bus.ts",
+      "application/commands-handlers/{ENTITY}/{ENTITY}-{verb}.handler.ts",
+      "application/commands-mappers/{ENTITY}/{ENTITY}-{verb}.mapper.ts",
+      "application/queries/{ENTITY}/{ENTITY}.query.ts",
+      "application/queries-bus/{ENTITY}/{ENTITY}.bus.ts",
+      "application/queries-handlers/{ENTITY}/{ENTITY}.handler.ts",
+      "application/queries-mappers/{ENTITY}/{ENTITY}.mapper.ts"
+    ],
+    "legacy_layers_dropped_rationale": "Même décision que workflow-action/read-only-view (A-2026-07-30-05) : use-case direct (`{EntityPascal}UseCase.execute/create/update/delete`, chacun un simple defer() vers le repository) remplace la ceremonie CQRS command/query-bus-handler-mapper. Vérifié par lecture complète de `InfrastructureUseCase` (28 lignes, 4 méthodes, chacune defer()+repository, zéro indirection command/query) — pas une supposition.",
+    "dto_naming_deviation_from_legacy": "Le DTO liste legacy ({ENTITY}-response-api.dto.ts) exporte directement le type de réponse paginée. Côté Nx, {entity}-response-api.dto.ts exporte en réalité `{EntityPascal}ItemApiDto` (forme d'un item, wire snake_case) PLUS un alias `{EntityPascal}ResponseApiDto = PaginatedResponseDto<{EntityPascal}ItemApiDto>` (générique partagé, @cmz/shared-data) — même nom de fichier et même nom final exporté que le legacy, mais construit par composition d'un type générique plutôt que déclaré à plat. Différence de méthode, pas de contrat observable pour l'appelant."
+  },
+  "constraints": {
+    "no_cross_module_byte_identical_files": {
+      "id": "H-3",
+      "severity": "P1-11",
+      "rule": "libs/{MODULE}/** — aucun fichier source (.ts/.html/.scss/.css, ≥40 o) byte-identique (MD5) à un fichier d'un autre module sous libs/",
+      "rationale": "Prévention F-1/F-2 : helpers transverses (FormMode, actionItem, StatusStyle, vite.config) doivent vivre dans @cmz/shared-* ou tools/, jamais être recopiés par génération G-V-R",
+      "enforcement": {
+        "tool": "tools/check-duplicate-files.mjs",
+        "script": "bun run check:duplicates",
+        "module_scoped": "bun run check:duplicates -- --module={MODULE}",
+        "family_mode": "bun run check:duplicates:family — détecte aussi les quasi-doublons modulo nom de module (O-1/O-2, §7), pertinent ici car administrative-infrastructure et administrative-boundary partagent une forme quasi identique par construction (2 validations indépendantes du même pattern)"
+      },
+      "remediation": "Remonter dans @cmz/shared-ui (ou shared-*) / tools/ et supprimer les copies",
+      "exceptions": []
+    }
+  },
+  "differences_vs_workflow_action": {
+    "mutations_sur_entite_liste": "create/update/delete opèrent directement sur {ENTITY}Entity (la liste elle-même) — workflow-action n'a aucune mutation sur son entité liste, seulement des sous-graphes séparés (details, tasks-actions)",
+    "pas_de_volet": "Une seule liste par entité, pas de partition queues/tasks/all"
+  },
+  "differences_vs_read_only_view": {
+    "mutations": "create/update/delete/find-one/select — read-only-view n'a aucune mutation, aucun find-one/select",
+    "pas_de_consolidation_multi_section": "Chaque entité CRUD est indépendante (infrastructure ≠ infrastructure-type), pas de stack domain/data consolidée partagée entre plusieurs entités du même module comme grafana_multi_section"
+  },
+  "differences_vs_action_request": {
+    "liste_paginee_et_plusieurs_verbes": "PageResult<Entity> + create/update/delete/find-one/select cohabitent sous le même {ENTITY} — action-request n'a qu'un seul verbe par {OPERATION}, jamais de liste"
+  },
+  "design_decisions_v0": {
+    "contexte": "Première formalisation Nx-shaped de crud-entity pour ce dépôt (N-7, revue finale 2026-08-02, chantier M/N/O/P) — le pattern existait déjà côté SEOS/legacy (`tools/seos/patterns/crud-entity.pattern.json`, v23) mais n'avait, contrairement à workflow-action et read-only-view, jamais eu sa contrepartie `docs/architecture/patterns/`.",
+    "pourquoi_maintenant": "Débloqué par la même exploration qui a produit `scope.json` (M-7/M-8) : administrative-infrastructure et administrative-boundary sont déjà entièrement construits en Nx dans ce dépôt (167 + 259 fichiers), donc ce fichier documente une réalité déjà vérifiable — ce n'est pas une anticipation spéculative comme aurait pu l'être un pattern écrit avant toute implémentation Nx.",
+    "portee_explicitement_exclue": "Ne couvre PAS l'extension du corpus scope:crud-entity aux 10 modules candidats (N-5) — décision de priorisation hors mandat d'un audit seul (ADR-0019). Ne couvre PAS non plus O-6 (contraindre workflow-action.pattern.json contre les quasi-doublons détectés par --family) — traité séparément.",
+    "oracle_minimum": [
+      "tsc --noEmit (tsconfig du module)",
+      "eslint libs/{module} --max-warnings=0",
+      "bun run check:duplicates -- --module={MODULE}",
+      "nx test {module}-* (quand des .spec.ts existent — aucun sur administrative-infrastructure/administrative-boundary au moment de cette formalisation, cf. §7 chantier L)"
+    ]
+  }
+}

@@ -3,15 +3,26 @@
  * Émet le manifest corpus JSONL — paires legacy → Nx (hybride file-level + chain_id).
  *
  * Usage:
- *   node tools/corpus/emit-pairs.mjs processing [--verify] [--oracle-only] [--tranche A|B] [--report] [--dry-run]
+ *   node tools/corpus/emit-pairs.mjs processing [--verify] [--structural-only] [--tranche A|B] [--report] [--dry-run]
  *
- * --oracle-only : Tier 1 CI — ignore legacy path (A-2026-07-30-08), oracle nx seulement.
+ * --structural-only : vérification structurelle Nx Tier 1 — ignore chemins legacy
+ *   (ADR-0015 / audit B-6). Alias déprécié : --oracle-only / CORPUS_ORACLE_ONLY=1.
+ * Hors --structural-only : SEOS_LEGACY_ROOT obligatoire (pas de fallback, audit B-1).
+ *
+ * Oracle empilé (audit H-1) : `:build` (structural) + `:test` (behavioral /
+ * chantier C) dès que le projet déclare un target Vitest — voir
+ * tools/corpus/oracle-levels.mjs.
+ *
+ * Gate module (audit H-2 / H-3) : avant écriture JSONL (et sous `--verify`),
+ * `build` + `lint` (+ `test` si target) verts + aucun fichier byte-identique
+ * cross-module — sinon exit 1, fichier non écrit. Voir module-gate.mjs.
  *
  * @see docs/architecture/corpus/README.md
+ * @see docs/adr/0015-mode-structural-only-pas-de-correspondance-legacy.md
  */
 
 import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -29,6 +40,9 @@ import {
     DASHBOARD_MODULES,
     expandDashboardChain,
 } from './dashboard.mjs';
+import { requireLegacyRoot } from './legacy-root.mjs';
+import { assertModuleGate } from './module-gate.mjs';
+import { oracleLevel } from './oracle-levels.mjs';
 
 const CHAINS = {
     ...WORKFLOW_CHAINS,
@@ -55,18 +69,21 @@ function expandForModule(mod, chain) {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');
-const DEFAULT_LEGACY_ROOT = resolve(
-    process.env.SEOS_LEGACY_ROOT ??
-        '/Users/macbookair/Dev/Angular/cmz-backoffice-frontend'
-);
 
-/** @typedef {{ id: string; legacy: string; nx: string | null; chain_id: string; node: string; pattern: string; module: string; volet?: string; layer: string; status: string; oracle?: string[]; verified_at?: string; notes?: string; assumption_ref?: string }} CorpusPair */
+/**
+ * @typedef {{ commit: string; repo?: string; date?: string }} LegacyRef
+ * @typedef {{ id: string; legacy: string; nx: string | null; chain_id: string; node: string; pattern: string; module: string; volet?: string; layer: string; status: string; oracle?: string[]; verified_at?: string; notes?: string; assumption_ref?: string; legacy_ref?: LegacyRef }} CorpusPair
+ */
 
 const args = process.argv.slice(2);
 const moduleName = args[0];
 const verify = args.includes('--verify');
-const oracleOnly =
-    args.includes('--oracle-only') || process.env.CORPUS_ORACLE_ONLY === '1';
+/** ADR-0015 — structural-only = oracles Nx, pas de correspondance legacy. */
+const structuralOnly =
+    args.includes('--structural-only') ||
+    args.includes('--oracle-only') || // alias déprécié
+    process.env.CORPUS_STRUCTURAL_ONLY === '1' ||
+    process.env.CORPUS_ORACLE_ONLY === '1'; // alias déprécié
 const trancheIdx = args.indexOf('--tranche');
 const tranche =
     trancheIdx !== -1 ? args[trancheIdx + 1]?.toUpperCase() : undefined;
@@ -81,6 +98,32 @@ if (!moduleName || moduleName.startsWith('--')) {
     );
     process.exit(1);
 }
+
+/** Requis hors --structural-only (audit B-1 / P0-6). */
+const LEGACY_ROOT = requireLegacyRoot({ optional: structuralOnly });
+
+/** Pin legacy — audit B-4 / ADR-0014. Toujours depuis legacy.lock.json. */
+function loadLegacyRef() {
+    const lockPath = join(ROOT, 'legacy.lock.json');
+    if (!existsSync(lockPath)) {
+        console.error(
+            'legacy.lock.json absent — requis pour tamponner legacy_ref (audit B-4).'
+        );
+        process.exit(1);
+    }
+    const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+    if (!lock.commit || !/^[0-9a-f]{40}$/i.test(lock.commit)) {
+        console.error('legacy.lock.json#commit invalide (SHA40 attendu).');
+        process.exit(1);
+    }
+    /** @type {LegacyRef} */
+    const ref = { commit: String(lock.commit).toLowerCase() };
+    if (lock.repo) ref.repo = lock.repo;
+    if (lock.date) ref.date = lock.date;
+    return ref;
+}
+
+const LEGACY_REF = loadLegacyRef();
 
 const moduleDef = MODULES[moduleName];
 if (!moduleDef) {
@@ -112,8 +155,8 @@ function resolveStatus(pair, verifiedOracles) {
         return 'n/a';
     }
 
-    if (!oracleOnly) {
-        const legacyOk = existsAt(DEFAULT_LEGACY_ROOT, pair.legacy);
+    if (!structuralOnly) {
+        const legacyOk = existsAt(LEGACY_ROOT, pair.legacy);
         if (!legacyOk) {
             return 'blocked';
         }
@@ -144,15 +187,22 @@ function emitPairs(pairs) {
         const uniqueOracles = [
             ...new Set(pairs.flatMap((p) => p.oracle ?? [])),
         ];
+        const byLevel = { structural: 0, behavioral: 0, other: 0 };
         for (const oracle of uniqueOracles) {
+            const level = oracleLevel(oracle);
+            byLevel[level] += 1;
             try {
                 runOracle(oracle);
                 verifiedOracles.add(oracle);
-                console.error(`[oracle] ✓ ${oracle}`);
-            } catch (err) {
-                console.error(`[oracle] ✗ ${oracle}`);
+                console.error(`[oracle:${level}] ✓ ${oracle}`);
+            } catch {
+                console.error(`[oracle:${level}] ✗ ${oracle}`);
             }
         }
+        console.error(
+            `[oracle] niveaux — structural=${byLevel.structural} behavioral=${byLevel.behavioral}` +
+                (byLevel.other ? ` other=${byLevel.other}` : '')
+        );
     }
 
     const today = new Date().toISOString().slice(0, 10);
@@ -163,6 +213,7 @@ function emitPairs(pairs) {
             ...pair,
             status,
             nx: pair.nx ?? null,
+            legacy_ref: LEGACY_REF,
         };
         if (status === 'verified') {
             out.verified_at = today;
@@ -184,7 +235,10 @@ function printReport(pairs) {
 
     console.log(`\n# Corpus report — ${moduleName}`);
     console.log(
-        `Legacy root: ${DEFAULT_LEGACY_ROOT}${oracleOnly ? ' (oracle-only, legacy ignoré)' : ''}`
+        `Legacy root: ${LEGACY_ROOT ?? '(non requis — structural-only)'}${structuralOnly ? ' (legacy ignoré — ADR-0015)' : ''}`
+    );
+    console.log(
+        `Legacy ref: ${LEGACY_REF.commit.slice(0, 12)} (${LEGACY_REF.date ?? '?'})`
     );
     console.log(`Nx root: ${ROOT}\n`);
 
@@ -262,6 +316,14 @@ const chainIds = filterChainsByTranche(moduleDef.chains).filter((id) =>
 if (chainFilter && chainIds.length === 0) {
     console.error(`Chaîne inconnue pour ${moduleName}: ${chainFilter}`);
     process.exit(1);
+}
+
+/** Écriture du manifest principal (hors report / dry-run / --chain). */
+const willWrite = !reportOnly && !dryRun && !chainFilter;
+
+// Audit H-2 — pas d'émission (ni verify) si build/lint/test module non verts.
+if (verify || willWrite) {
+    assertModuleGate(moduleName);
 }
 
 /** @type {CorpusPair[]} */

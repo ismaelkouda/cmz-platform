@@ -42,7 +42,8 @@
         "crud-entity",
         "action-request",
         "read-only-view",
-        "workflow-action"
+        "workflow-action",
+        "aggregated-stats-view"
       ]
     },
     "module": {
@@ -83,6 +84,27 @@
       "type": "string",
       "enum": ["module", "integration"],
       "description": "Tier 1 module (corpus) ou Tier 2 intégration app — cf. A-2026-07-30-08"
+    },
+    "legacy_ref": {
+      "type": "object",
+      "description": "Pin du dépôt legacy au moment de l'émission — cf. legacy.lock.json / ADR-0014 / audit B-4",
+      "required": ["commit"],
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "SHA40 du legacy (legacy.lock.json#commit)"
+        },
+        "repo": {
+          "type": "string",
+          "description": "URL canonique du dépôt legacy"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date du commit legacy (YYYY-MM-DD)"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

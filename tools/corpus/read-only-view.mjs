@@ -5,6 +5,11 @@
  * @see docs/architecture/archetypes/read-only-view.md
  */
 
+import {
+    ensureBehavioralLevel,
+    layerOracles,
+} from './oracle-levels.mjs';
+
 /** @typedef {{ id: string; description: string; subgraph?: string; section?: string; nodes: string[]; threshold_emit?: number; threshold_close?: number }} RovChainDef */
 
 /** @typedef {{ module: string; section: string; Section: string; legacyFolder: string; facadeKebab: string }} RovCtx */
@@ -90,7 +95,7 @@ function legacyPage(module, rel) {
 
 /** @param {string} module @param {string} layer */
 function modOracle(module, layer) {
-    return [`@cmz/${module}-${layer}:build`];
+    return layerOracles(module, layer);
 }
 
 /** @param {string} module @param {string} section @param {Record<string, { legacyFolder: string; Section: string; facadeKebab: string }>} table @returns {RovCtx} */
@@ -779,12 +784,13 @@ export function expandReadOnlyViewChain(module, chain) {
                 : mapping.legacy;
         const nxPath =
             typeof mapping.nx === 'function' ? mapping.nx(ctx) : mapping.nx;
-        const oracle =
+        const rawOracle =
             typeof mapping.oracle === 'function'
                 ? mapping.oracle(ctx)
                 : mapping.oracle?.map((t) =>
                       t.replace(/@cmz\/monitoring-/g, `@cmz/${module}-`)
                   );
+        const oracle = ensureBehavioralLevel(rawOracle);
         const notes =
             typeof mapping.notes === 'function'
                 ? mapping.notes(ctx)

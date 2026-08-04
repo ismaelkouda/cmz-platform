@@ -8,19 +8,19 @@
  *   $SEOS_LEGACY_ROOT/seos/patterns/read-only-view.pattern.json
  *
  * Usage:
- *   node tools/corpus/sync-read-only-view-pattern.mjs [--dry-run]
+ *   SEOS_LEGACY_ROOT=/chemin/legacy node tools/corpus/sync-read-only-view-pattern.mjs [--dry-run]
+ *
+ * SEOS_LEGACY_ROOT obligatoire (pas de fallback, audit B-1).
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { requireLegacyRoot } from './legacy-root.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');
-const LEGACY_ROOT = resolve(
-    process.env.SEOS_LEGACY_ROOT ??
-        '/Users/macbookair/Dev/Angular/cmz-backoffice-frontend'
-);
+const LEGACY_ROOT = requireLegacyRoot();
 const dryRun = process.argv.includes('--dry-run');
 
 const sourcePath = join(
@@ -68,6 +68,7 @@ const legacyPattern = {
     },
     consolidation_rule: source.consolidation_rule,
     forbidden_in_nx: source.forbidden_in_nx,
+    constraints: source.constraints,
     required_shared: source.required_shared,
     differences_vs_crud_entity: source.differences_vs_crud_entity,
     differences_vs_workflow_action: source.differences_vs_workflow_action,
