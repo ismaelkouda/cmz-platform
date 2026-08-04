@@ -14,6 +14,16 @@
         "command": "tsc --noEmit --project libs/communication/data/tsconfig.json",
         "cwd": "{workspaceRoot}"
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bunx vitest run --config tools/vitest-lib.config.ts",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "CMZ_VITEST_LIB_ROOT": "libs/communication/data"
+        }
+      }
     }
   }
 }

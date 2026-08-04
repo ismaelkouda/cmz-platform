@@ -38,7 +38,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | --- | --- | ---: | :---: | :---: | ---: | ---: | :---: |
 | `administrative-boundary` | crud-entity | 0 | — | ✅ 66/66 (N-7, 2e validation) | 0 | 0 | ✅ N-7 |
 | `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 0 | ✅ N-7 |
-| `authentication` | action-request | 0 | — | — | 0 | 0 | ✅ I-7 |
+| `authentication` | action-request | 0 | — | — | 0 | 2 | ✅ I-7 + backlog #4 |
 | `communication` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
 | `content-management` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
 | `core` (kernel) | kernel | 0 | — | — | 4 | 0 | ✅ chantier I |
@@ -166,13 +166,39 @@ décision de périmètre produit, pas par une incapacité technique
 - **Tâche découverte :** aucune cette passe (déjà documentée passe
   précédente).
 
-### `authentication` / `settings-security` — I-7
+### `authentication` / `settings-security` — I-7 + backlog #4 (`authentication`)
 
-- **Effectué :** audit `permissionGuard` vs permissions legacy — **1 bug
-  P0 trouvé et corrigé** (détail dans `audit-workspace-2026-08-03.md`,
+- **Effectué (I-7) :** audit `permissionGuard` vs permissions legacy — **1
+  bug P0 trouvé et corrigé** (détail dans `audit-workspace-2026-08-03.md`,
   section I-7).
-- **Reste à faire :** 0 test unitaire sur les deux modules.
-- **Amélioration apportée :** correction du bug P0 identifié.
+- **Effectué (backlog #4, 2026-08-04) :** `authentication` = 1er module
+  traité du chantier « mappers concrets » (`MapperUtils.validateDto`) — 2
+  fichiers testés (`current-user.mapper.ts` — 3 fonctions pures wire→domaine
+  dont une récursive sur `children`, `login-response.mapper.ts` — la classe
+  mapper elle-même), 16 tests neufs, `tsc`/`eslint --max-warnings=0` à 0
+  erreur.
+- **Reste à faire :** 0 test unitaire sur `settings-security` ; 11 modules /
+  73 fichiers restants pour le chantier « mappers concrets » (voir §7,
+  backlog #4).
+- **Amélioration apportée :** correction du bug P0 identifié (I-7).
+- **Tâche découverte (backlog #4, 2026-08-04) :** en préparant ce chantier,
+  grep exhaustif recompté sur `MapperUtils.validateDto` : **74 fichiers
+  réels sur 12 modules** (le texte de `mapper-utils.spec.ts`, écrit de
+  mémoire lors du chantier L précédent, annonçait « 60+ sur 13 » — imprécis,
+  pas corrigé ici pour ne pas rouvrir un fichier déjà commis, mais signalé).
+  Plus important : **8 des 12 modules** (`content-management`,
+  `coverage-areas`, `administrative-boundary`, `settings-security`,
+  `administrative-infrastructure`, `team-organization`, `communication`,
+  `authentication`) n'avaient **aucun** target `test` dans leur
+  `data/project.json` — même trou de câblage CI que `shared/domain` (chantier
+  L, passe précédente), mais 8 fois plus large. Corrigé pour les 8 avant
+  d'écrire le premier test (`nx run @cmz/<module>-data:test
+  --passWithNoTests` vérifié vert sur les 8). `tools/vitest-lib.config.ts`
+  également étendu : ses alias `@cmz/*` (résolution sans build préalable)
+  ne couvraient que `shared-*`, `core` et les 4 modules `workflow-action` —
+  les 8 modules `crud-entity`/`action-request` concernés en ont été ajoutés
+  (domain/data/application), sans quoi `@cmz/authentication-domain` (et les
+  7 autres) ne se serait jamais résolu sous Vitest.
 
 ### `finalization` / `processing` / `report-states` / `requests` — famille `workflow-action`
 
@@ -299,7 +325,7 @@ question de couverture de test ou de conformité de pattern.
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
 | 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
-| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`, 60+ appelants) | Rien — budget | Élevé (173 fichiers restants) |
+| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **1/12 modules fait (`authentication`, 2026-08-04)** ; recompté précisément : 74 fichiers réels sur 12 modules (pas « 60+ sur 13 »), dont **8/12 modules découverts sans aucun target `test`** (même trou de câblage CI que `shared/domain`, corrigé pour les 8 avant d'écrire un seul test — voir détail §4 `authentication`) ; 11 modules / 73 fichiers restants |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |
 | 7 | `security-audit`/`i18n-check` rendus bloquants | Résorption Dependabot / revue humaine du diff 320 clés | Faible une fois débloqué |

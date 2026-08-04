@@ -2273,6 +2273,46 @@ effectivement changé (les blocs générés des 3 autres fichiers ne
 référençaient pas ce texte). Cartographie mise à jour en conséquence (§1
 matrice, §4, §7 backlog #2 coché).
 
+### Backlog cartographie #4 — chantier « mappers concrets », premier module (`authentication`, 2026-08-04)
+
+Poursuite du chantier L sur les 74 appelants de `MapperUtils.validateDto`
+(recompté par grep exhaustif — le texte de `mapper-utils.spec.ts` annonçait
+« 60+ sur 13 modules », une estimation écrite de mémoire, pas un compte ;
+74 fichiers réels sur 12 modules). Avant d'écrire un seul test, vérification
+du câblage CI : **8 des 12 modules concernés
+(`content-management`/`coverage-areas`/`administrative-boundary`/
+`settings-security`/`administrative-infrastructure`/`team-organization`/
+`communication`/`authentication`) n'avaient aucun target `test`** dans leur
+`data/project.json` — même trou que `shared/domain` (chantier L, passe
+précédente), mais touchant 8 modules d'un coup. Corrigé pour les 8 (même
+motif `nx:run-commands` + `bunx vitest run --config
+tools/vitest-lib.config.ts`), vérifié vert individuellement (`nx run
+@cmz/<module>-data:test --passWithNoTests`) avant d'écrire le premier test.
+
+Deuxième trouvaille en écrivant le premier test réel
+(`login-response.mapper.spec.ts`, module `authentication`) :
+`tools/vitest-lib.config.ts` résout les imports `@cmz/*` sans build
+préalable via une liste d'alias codée en dur — qui ne couvrait que
+`shared-*`, `core` et les 4 modules `workflow-action` (ceux qui avaient déjà
+un target `test`, corpus-généré). `@cmz/authentication-domain` échouait donc
+à se résoudre (`Failed to resolve entry for package`) — corrigé en ajoutant
+les alias `domain`/`data`/`application` des 8 modules concernés.
+
+Premier module traité intégralement : `authentication` — 2 fichiers testés
+(`current-user.mapper.ts`, 3 fonctions pures wire→domaine dont une
+récursive sur `permissions[].children`, zone du bug P0 corrigé en I-7 sur
+`permissionGuard` ; `login-response.mapper.ts`, la classe mapper, y compris
+le chemin d'erreur `MapperUtils.validateDto` sur `user`/`token` manquants),
+16 tests neufs, tous verts (`vitest run`), `tsc --noEmit` et `eslint
+--max-warnings=0` à 0 erreur sur `@cmz/authentication-data` (1 correction en
+écrivant les tests : 3 warnings ESLint `no-unused-vars` sur un pattern de
+déstructuration `const { x, ...rest } = dto` où `x` n'était jamais utilisé
+— réécrit en construction d'objet explicite, sans déstructuration inutile).
+11 modules / 73 fichiers restent à traiter — chantier volontairement
+avancé module par module, avec vérification à chaque étape (`vas'y en
+ordre, avec des check afin que je verifie chaque etape d'implementation`),
+pas en un seul lot non vérifiable.
+
 ---
 
 ## 8. Verdict d'architecte

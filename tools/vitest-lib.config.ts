@@ -110,6 +110,106 @@ function buildAliases(): Record<string, string> {
             root,
             'libs/finalization/application/src/index.ts'
         ),
+        // Backlog cartographie #4 (2026-08-04) — mêmes 3 couches ajoutées
+        // pour les 8 modules crud-entity/action-request qui n'avaient
+        // encore aucun test (donc jamais eu besoin de résoudre leurs
+        // propres imports @cmz/* sous Vitest).
+        '@cmz/authentication-domain': resolve(
+            root,
+            'libs/authentication/domain/src/index.ts'
+        ),
+        '@cmz/authentication-data': resolve(
+            root,
+            'libs/authentication/data/src/index.ts'
+        ),
+        '@cmz/authentication-application': resolve(
+            root,
+            'libs/authentication/application/src/index.ts'
+        ),
+        '@cmz/content-management-domain': resolve(
+            root,
+            'libs/content-management/domain/src/index.ts'
+        ),
+        '@cmz/content-management-data': resolve(
+            root,
+            'libs/content-management/data/src/index.ts'
+        ),
+        '@cmz/content-management-application': resolve(
+            root,
+            'libs/content-management/application/src/index.ts'
+        ),
+        '@cmz/coverage-areas-domain': resolve(
+            root,
+            'libs/coverage-areas/domain/src/index.ts'
+        ),
+        '@cmz/coverage-areas-data': resolve(
+            root,
+            'libs/coverage-areas/data/src/index.ts'
+        ),
+        '@cmz/coverage-areas-application': resolve(
+            root,
+            'libs/coverage-areas/application/src/index.ts'
+        ),
+        '@cmz/administrative-boundary-domain': resolve(
+            root,
+            'libs/administrative-boundary/domain/src/index.ts'
+        ),
+        '@cmz/administrative-boundary-data': resolve(
+            root,
+            'libs/administrative-boundary/data/src/index.ts'
+        ),
+        '@cmz/administrative-boundary-application': resolve(
+            root,
+            'libs/administrative-boundary/application/src/index.ts'
+        ),
+        '@cmz/settings-security-domain': resolve(
+            root,
+            'libs/settings-security/domain/src/index.ts'
+        ),
+        '@cmz/settings-security-data': resolve(
+            root,
+            'libs/settings-security/data/src/index.ts'
+        ),
+        '@cmz/settings-security-application': resolve(
+            root,
+            'libs/settings-security/application/src/index.ts'
+        ),
+        '@cmz/administrative-infrastructure-domain': resolve(
+            root,
+            'libs/administrative-infrastructure/domain/src/index.ts'
+        ),
+        '@cmz/administrative-infrastructure-data': resolve(
+            root,
+            'libs/administrative-infrastructure/data/src/index.ts'
+        ),
+        '@cmz/administrative-infrastructure-application': resolve(
+            root,
+            'libs/administrative-infrastructure/application/src/index.ts'
+        ),
+        '@cmz/team-organization-domain': resolve(
+            root,
+            'libs/team-organization/domain/src/index.ts'
+        ),
+        '@cmz/team-organization-data': resolve(
+            root,
+            'libs/team-organization/data/src/index.ts'
+        ),
+        '@cmz/team-organization-application': resolve(
+            root,
+            'libs/team-organization/application/src/index.ts'
+        ),
+        '@cmz/communication-domain': resolve(
+            root,
+            'libs/communication/domain/src/index.ts'
+        ),
+        '@cmz/communication-data': resolve(
+            root,
+            'libs/communication/data/src/index.ts'
+        ),
+        '@cmz/communication-application': resolve(
+            root,
+            'libs/communication/application/src/index.ts'
+        ),
     };
 }
 
