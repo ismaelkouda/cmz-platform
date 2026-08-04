@@ -2587,6 +2587,83 @@ fichiers) du chantier « mappers concrets » : `content-management` (12),
 
 ---
 
+### Backlog cartographie #4 — septième module, module complet (`coverage-areas`, 2026-08-04)
+
+Septième module traité, en entier : `coverage-areas` — 11/11 fichiers
+appelant `MapperUtils.validateDto` testés (`mobile-network.mapper.ts`,
+`mobile-network-find-one.mapper.ts`, `optical-fiber-network.mapper.ts`,
+`optical-fiber-network-find-one.mapper.ts`, `radio-relay-links.mapper.ts`,
+`radio-relay-links-find-one.mapper.ts`, `site-group.mapper.ts`,
+`site-group-find-one.mapper.ts`, `site-group-select.mapper.ts`,
+`fiber-constructor-select.mapper.ts`, `tower-type-select.mapper.ts`), 44
+tests neufs, tous verts au premier passage — comme
+`administrative-infrastructure` et `administrative-boundary`, ni piège de
+test (cache `.with()`) ni piège de typage. Le compte de 11 fichiers annoncé
+au périmètre initial est confirmé exact.
+
+Module le plus dense en divergences internes découvertes du chantier à ce
+stade — 4 familles d'entités (`mobile-network`, `optical-fiber-network`,
+`radio-relay-links`, `site-group`) partageant un même pattern global mais
+divergeant chacune sur au moins un point, tous verrouillés par test :
+
+- `MobileNetworkMapper`/`-FindOne` normalisent `technology` (typé
+  `string[] | string` au wire — un champ qui peut arriver comme scalaire OU
+  comme tableau selon les cas) vers un tableau systématique :
+  `Array.isArray(dto.technology) ? dto.technology : dto.technology ? [dto.technology] : []`.
+  Testé sur les 3 formes réelles : tableau passé tel quel, scalaire
+  enveloppé dans un tableau à 1 élément, valeur falsy → tableau vide (pas
+  d'exception).
+- `OpticalFiberNetworkMapper`/`-FindOne` : `fiber_constructor_id` est typé
+  `string | number` sur le DTO liste (bug de typage réel de l'API, pas une
+  fantaisie du mapper) — défendu par `String(dto.fiber_constructor_id ??
+  '')`. Testé avec une valeur numérique (`42` → `'42'`) et avec `null`
+  (→ `''`, pas `'null'`).
+- `RadioRelayLinksMapper`/`-FindOne` sont les seuls du module à convertir
+  des champs date (`start_date`/`end_date`) en objets `Date` **natifs**
+  plutôt que de laisser passer la string ISO — testé par
+  `toBeInstanceOf(Date)` et par `.toISOString()` exact, pas seulement par
+  égalité de string. Le module utilise aussi un enum
+  `RadioRelayLinksOperator` propre (`MTN`/`MOOV`/`ORANGE`, tout en
+  majuscules), explicitement documenté dans le source comme **non**
+  fusionné avec l'`Operator` partagé de `mobile-network`/
+  `optical-fiber-network` (`MTN`/`Moov`/`Orange`, casse mixte) — décision
+  déjà actée par un commentaire source, revérifiée ici en confirmant qu'un
+  test qui utiliserait par erreur l'un à la place de l'autre échouerait
+  (valeurs incompatibles, pas juste une casse différente sur les mêmes
+  lettres).
+- Sur les 4 mappers find-one du module, 3 (`mobile-network`,
+  `optical-fiber-network`, `radio-relay-links`) **n'ont aucun champ
+  `status`** dans leurs `Props` — `radio-relay-links-find-one` va plus
+  loin : son DTO porte bien `is_active`, mais le mapper ne le lit jamais
+  (champ mort, même précédent que `InfrastructureTypeFindOneProps` du
+  module `administrative-infrastructure`). Seul `site-group-find-one`
+  conserve `status`. Vérifié par présence/absence de getter sur chacune des
+  4 entités — une divergence interne au module, pas seulement entre
+  modules différents comme observé jusqu'ici.
+- `OpticalFiberNetworkFindOneMapper` dérive `geomUrl` via une chaîne de
+  repli `dto.geom_url || dto.geom_file_url`, alors que
+  `RadioRelayLinksFindOneMapper` lit `dto.geom_url` seul sans repli — les
+  deux DTOs exposent pourtant la même paire de champs wire
+  (`geom_url`/`geom_file_url`). Testé sur les 2 mappers, avec les 3
+  combinaisons pertinentes pour le premier (les deux présents, seul le
+  second, aucun des deux).
+- `SiteGroupSelectMapper` ignore silencieusement `description` (présent
+  sur `SiteGroupSelectItemApiDto`, absent du `SelectOption` en sortie) —
+  vérifié explicitement (`'description' in result[0] === false`) pour
+  distinguer ce choix volontaire (un select n'a besoin que d'un
+  label/value) d'un oubli qu'un futur refactor pourrait « corriger » à
+  tort.
+
+`tsc --noEmit` et `eslint --max-warnings=0` à 0 erreur dès le premier
+essai — aucun des enums du module n'est un enum TS nominal (tous des objets
+`as const`), donc aucun des pièges de typage rencontrés sur
+`team-organization`/`settings-security` (`RolesDto`) ne s'est reproduit ici.
+`check:duplicate-files.mjs` et `check:project-targets.mjs` : OK. 1 seul
+module / 12 fichiers reste sur le périmètre corrigé (12 modules/73
+fichiers) du chantier « mappers concrets » : `content-management`.
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**

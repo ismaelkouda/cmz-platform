@@ -42,7 +42,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `communication` | crud-entity | 0 | — | — | 0 | 3 | ✅ backlog #4 |
 | `content-management` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
 | `core` (kernel) | kernel | 0 | — | — | 4 | 0 | ✅ chantier I |
-| `coverage-areas` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
+| `coverage-areas` | crud-entity | 0 | — | — | 0 | 11 | ✅ backlog #4 |
 | `dashboard` | read-only-view | 25 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ (touché indirectement, P-5/P-6) |
 | `finalization` | workflow-action | 126 (6 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 16 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `interactive-map` | read-only-view | 28 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
@@ -397,18 +397,65 @@ décision de périmètre produit, pas par une incapacité technique
   « mappers concrets » (portée sur les 5 fichiers existants, pas les
   entités absentes).
 
-### `content-management` / `coverage-areas` — non touchés
+### `content-management` — non touché
 
 - **Effectué :** rien cette session, ni les précédentes au niveau du
-  code applicatif — seulement compilants (tsc/eslint/ngc), 0 corpus,
-  0 test unitaire (le target `test` de leur `data/project.json` a été câblé
+  code applicatif — seulement compilant (tsc/eslint/ngc), 0 corpus,
+  0 test unitaire (le target `test` de son `data/project.json` a été câblé
   cette passe, voir découverte `authentication` — mais aucun fichier de
   test n'y a encore été écrit).
 - **Reste à faire :** l'intégralité — corpus, tests, pattern
-  Nx-shaped (candidats crud-entity comme
+  Nx-shaped (candidat crud-entity comme
   `administrative-infrastructure`/`administrative-boundary`, jamais
-  étendus à ces modules) ; chantier « mappers concrets » (backlog #4, 3/12
-  modules faits : `authentication`, `communication`, `team-organization`).
+  étendu à ce module) ; chantier « mappers concrets » (backlog #4) — dernier
+  module restant après `coverage-areas` (12 fichiers).
+
+### `coverage-areas` — backlog #4 (7/12 modules du chantier « mappers concrets », module complet)
+
+- **Effectué (2026-08-04) :** module complet — 11/11 fichiers testés
+  (`mobile-network`, `mobile-network-find-one`, `optical-fiber-network`,
+  `optical-fiber-network-find-one`, `radio-relay-links`,
+  `radio-relay-links-find-one`, `site-group`, `site-group-find-one`,
+  `site-group-select`, `fiber-constructor-select`, `tower-type-select`),
+  44 tests neufs, tous verts au premier passage (aucun fix de typage ni de
+  test-isolation — les enums du module sont tous des objets `as const`,
+  pas des enums TS nominaux comme `RolesDto` dans `settings-security`).
+- **Reste à faire :** rien sur ce module précis pour ce chantier (module
+  complet).
+- **Amélioration apportée :** aucune — les 5 divergences suivantes sont
+  des comportements déjà en place, verrouillés par test, pas des bugs
+  corrigés cette passe.
+- **Tâche découverte (backlog #4, 2026-08-04) :** module le plus dense en
+  divergences internes de tout le chantier à ce stade :
+  - `MobileNetworkMapper` normalise `technology` (`string[] | string` au
+    wire) en tableau systématique — testé sur les 3 formes (tableau,
+    scalaire, absent/falsy).
+  - `OpticalFiberNetworkMapper`/`-FindOne` défendent
+    `fiber_constructor_id` (`string | number` au wire, bug de typage réel
+    de l'API) avec `String(... ?? '')` — testé y compris le cas numérique
+    et le cas `null`.
+  - `RadioRelayLinksMapper`/`-FindOne` convertissent `start_date`/
+    `end_date` en objets `Date` natifs — seul mapper du module à le faire ;
+    utilisent un enum `RadioRelayLinksOperator` **propre** au module
+    (`MTN`/`MOOV`/`ORANGE` en majuscules), documenté dans le source comme
+    volontairement distinct de l'`Operator` partagé
+    (`mobile-network`/`optical-fiber-network`, `Moov`/`Orange` en casse
+    mixte) — vérifié qu'aucune confusion de valeur n'est possible.
+  - 3 des 4 mappers find-one du module (`mobile-network`,
+    `optical-fiber-network`, `radio-relay-links`) **n'ont aucun champ
+    `status`** ; `radio-relay-links-find-one` porte même `is_active` sur
+    son DTO sans jamais le lire (champ mort, même précédent que
+    `InfrastructureTypeFindOneProps`). Seul `site-group-find-one` conserve
+    `status` — divergence interne au module, pas seulement entre modules,
+    vérifiée par présence/absence de getter sur les 4 entités.
+  - `OpticalFiberNetworkFindOneMapper` dérive `geomUrl` via
+    `dto.geom_url || dto.geom_file_url` (repli), alors que
+    `RadioRelayLinksFindOneMapper` lit `dto.geom_url` seul, sans repli —
+    même paire de champs wire (`geom_url`/`geom_file_url` disponible sur
+    les deux DTOs), traitement différent, testé sur les 2 mappers.
+  - `SiteGroupSelectMapper` ignore silencieusement `description` (présent
+    sur le DTO, absent du `SelectOption`) — vérifié explicitement pour
+    distinguer un choix volontaire d'un oubli.
 
 ## 5. Chantier L — cartographie fine de la couverture test manuelle
 
@@ -456,7 +503,7 @@ question de couverture de test ou de conformité de pattern.
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
 | 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
-| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **6/12 modules faits (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security` + `administrative-boundary`, 2026-08-04)** ; **correction de compte** (passe précédente) : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO, pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels sur 12 modules**. `administrative-boundary` confirme le compte à 10/10 sans écart. 2 modules `crud-entity` restent : `content-management`(12), `coverage-areas`(11) — 23 fichiers ; `processing`/`requests`/`finalization` déjà couverts par corpus, `report-states` partiellement (voir #11) |
+| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **7/12 modules faits (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security` + `administrative-boundary` + `coverage-areas`, 2026-08-04)** ; **correction de compte** (passe précédente) : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO, pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels sur 12 modules**. `administrative-boundary`(10/10) et `coverage-areas`(11/11) confirment le compte sans écart. 1 seul module `crud-entity` reste : `content-management`(12 fichiers) ; `processing`/`requests`/`finalization` déjà couverts par corpus, `report-states` partiellement (voir #11) |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |
 | 7 | `security-audit`/`i18n-check` rendus bloquants | Résorption Dependabot / revue humaine du diff 320 clés | Faible une fois débloqué |
