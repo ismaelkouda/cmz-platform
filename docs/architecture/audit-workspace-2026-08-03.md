@@ -2853,6 +2853,77 @@ pour l'état courant sans le revérifier.
 
 ---
 
+### Backlog #11 — `report-states`, combler les mappers sans spec (2026-08-04)
+
+Item découvert pendant le chantier « mappers concrets » (backlog #4, module
+`content-management`) : en vérifiant l'état réel des 4 modules
+`workflow-action` avant de les exclure du chantier (déjà corpus-couverts,
+donc hors périmètre initial), `report-states` s'est révélé avoir 5 des 6
+fichiers `MapperUtils.validateDto` sans `*.mapper.spec.ts` dédié. Traité
+séparément ici plutôt qu'absorbé dans le chantier #4, pour garder les deux
+comptages distincts et vérifiables indépendamment.
+
+**Recomptage avant d'écrire quoi que ce soit** (même discipline que la
+correction `settings-security`/`administrative-boundary` du chantier #4) :
+le 6e fichier, `report-states-details.mapper.ts`, était présumé déjà couvert
+(d'où le compte initial « 5/6 »). Vérification : `corpus/report-states.
+pairs.jsonl` marque son entrée `report-states.details.details-mapper`
+`"status":"verified"` avec `"oracle":["@cmz/report-states-data:build",
+"@cmz/report-states-data:test"]`. Mais le seul fichier de spec existant du
+dossier (`report-states-details-mappers.spec.ts`) ne teste que 4 fonctions
+*request-side* du même dossier (`reportStatesDetailsFilterMapper`/
+`-TakeMapper`/`-ApproveMapper`/`-RejectMapper`, qui mappent le domaine VERS
+le wire) — jamais la classe `ReportStatesDetailsMapper` elle-même (qui
+mappe le wire VERS le domaine, 9 dépendances DI injectées : `ActorMapper`,
+`ReportSourceMapper`, `ReportTypeMapper`, `LocationMapper`,
+`TelecomOperatorMapper`, `ReportMediaMapper`, `TreaterInfoMapper`,
+`AdministrativeBoundaryMapper`, `TimestampsMapper`). L'oracle `test` du
+corpus était donc vrai **au niveau du run vitest du projet** (qui passe dès
+qu'un seul fichier de spec existe et réussit) sans jamais avoir exercé ce
+fichier précis — la même classe de risque que celle qui a motivé tout le
+chantier #4, mais découverte ici sur un module classé « corpus-couvert »,
+pas « manuel ». Le périmètre réel de ce backlog est donc **6/6 fichiers**,
+pas 5/6.
+
+Les 4 mappers-item de la famille approve/close/evaluate/reject
+(`ApproveReportStatesItemMapper` etc.) partagent une shape quasi-identique
+— seul `type: TypeReport.X` diffère (`REQUESTS` pour approve/reject,
+`PROCESSING` pour close/evaluate), chacun avec son propre DTO et sa propre
+classe malgré la similarité, cohérent avec le pattern « chacun le sien »
+déjà observé sur les enums de statut d'autres modules cette session.
+`DownloadReportStatesItemMapper` diverge nettement plus : requiert `id`
+(pas `uniq_id`), utilise 2 mappers **locaux** au module
+(`DownloadReportStatesStatusMapper`/`-TypeMapper`, pas partagés), et
+renomme `filters[].key_label`/`value_label` en `name`/`value`. Vérifié
+explicitement : ces 2 mappers locaux font un lookup par `Record` qui
+renvoie `undefined` silencieusement sur une clé inconnue, contrairement aux
+mappers partagés (`ReportTypeMapper`/`TelecomOperatorMapper`/
+`ReportSourceMapper`) qui lèvent `ApiError.invalidResponse` — divergence
+réelle au sein du même module, testée sur les deux familles pour ne pas
+supposer à tort la même garde partout.
+
+`report-states-details.mapper.ts` reproduit ce même écart de garde en
+interne : `STATUS_MAP.get(dto.status) ?? ReportStatesDetailsStatus.PENDING`
+et `dto.qualification_state ? (QUALIFICATION_STATE_MAP.get(...) ?? null) :
+null` retombent tous deux silencieusement sur une valeur par défaut au lieu
+de lever une erreur sur une valeur wire inconnue — testé explicitement sur
+les 7 valeurs `status` connues, une valeur inconnue (`archived`), et les 3
+combinaisons de `qualification_state` (`null`, `'completed'`, valeur
+truthy inconnue → `null` via le double `??` imbriqué, un piège de lecture
+réel qu'on pourrait croire résolu par le premier `??` seul).
+
+`tsc --noEmit` et `eslint --max-warnings=0` à 0 erreur dès le premier
+essai sur les 6 fichiers, 44 tests neufs. `check:duplicate-files.mjs` et
+`check:project-targets.mjs` : OK. `LocationMethodDto`/`LocationTypeDto`
+(`@cmz/shared-data`) sont des enums TS nominaux (pas des objets `as
+const`) — repérés avant d'écrire le fixture DTO, valeurs accédées via
+`LocationMethodDto.AUTO`/`LocationTypeDto.GPS`, pas de piège de typage
+rencontré cette fois (contrairement à `RolesDto` dans `settings-security`)
+car le mapper ne les caste jamais directement, il délègue à
+`LocationMethodMapper`/`LocationTypeMapper`.
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**

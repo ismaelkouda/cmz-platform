@@ -48,7 +48,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `interactive-map` | read-only-view | 28 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ |
 | `monitoring` | read-only-view | 51 (5 chaînes) | **12/12, a posteriori 2026-08-04** | (`read-only-view.pattern.json`, module de référence) | 0 | 0 | ✅ backlog #2 |
 | `processing` | workflow-action | 156 (7 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 16 | 0 | ⚠️ H-4 (contrainte), pas le code |
-| `report-states` | workflow-action | 187 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 9 | 0 | ⚠️ H-4 (contrainte), pas le code |
+| `report-states` | workflow-action | 187 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 9 | 6 | ✅ backlog #11 |
 | `reporting` | read-only-view | 51 (5 chaînes) | **12/12, a posteriori 2026-08-04** | (`read-only-view.pattern.json`, `second_validation`) | 0 | 0 | ✅ backlog #2 |
 | `requests` | workflow-action | 157 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 17 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `settings-security` | crud-entity | 0 | — | — | 0 | 6 | ✅ I-7 + backlog #4 |
@@ -295,6 +295,43 @@ décision de périmètre produit, pas par une incapacité technique
   `workflow-action.pattern.json` (et `read-only-view.pattern.json`) —
   masquait silencieusement `P1-11` derrière le texte de la règle. Corrigé.
 
+### `report-states` — backlog #11 (2026-08-04, module complet pour les mappers manuels)
+
+- **Effectué (2026-08-04) :** 6/6 fichiers `MapperUtils.validateDto`
+  testés manuellement (`approve`/`close`/`evaluate`/
+  `reject-report-states-item.mapper.ts`, `download-report-states-item.
+  mapper.ts`, `report-states-details.mapper.ts`), 44 tests neufs, tous
+  verts au premier passage — en plus de la couverture corpus déjà en
+  place (16/16 `.spec.ts` corpus-générés, Meta 12/12, non touchés).
+- **Reste à faire :** rien sur ce module précis pour ce backlog.
+- **Amélioration apportée :** aucune régression — 3 comportements réels
+  verrouillés par test qui n'étaient documentés nulle part avant :
+  `STATUS_MAP`/`QUALIFICATION_STATE_MAP` de `report-states-details.
+  mapper.ts` retombent silencieusement sur une valeur par défaut
+  (`PENDING`/`null`) plutôt que de lever une erreur sur une valeur wire
+  inconnue — divergence assumée avec `ReportTypeMapper`/
+  `TelecomOperatorMapper`/`ReportSourceMapper` (les mappers partagés du
+  même fichier, qui eux lèvent `ApiError.invalidResponse`) ; même
+  divergence trouvée sur `DownloadReportStatesStatusMapper`/
+  `-TypeMapper` (lookup `Record`, `undefined` silencieux).
+- **Tâche découverte (2026-08-04) :** `report-states-details.mapper.ts`
+  était marqué `"status":"verified"` dans le corpus
+  (`corpus/report-states.pairs.jsonl`) avec un oracle
+  `["@cmz/report-states-data:test"]` — donnant l'impression d'une
+  couverture comportementale réelle. En pratique, le seul fichier de
+  spec du dossier (`report-states-details-mappers.spec.ts`) ne teste que
+  4 fonctions *request-side* (approve/filter/reject/take, qui mappent le
+  domaine VERS le wire), jamais la classe `ReportStatesDetailsMapper`
+  elle-même (qui mappe le wire VERS le domaine, 9 dépendances DI). Le
+  target `test` du projet passait donc déjà avant tout ajout — l'oracle
+  « test » du corpus était vrai au niveau projet sans jamais exercer ce
+  fichier précis. Même classe de risque que celle qui a motivé tout le
+  chantier « mappers concrets » (backlog #4), mais découverte ici sur un
+  module classé « corpus-couvert », pas « manuel » — signal qu'un statut
+  `verified` avec oracle `test` devrait, à terme, être vérifié fichier
+  par fichier (couverture de lignes/fonctions), pas seulement au niveau
+  du run de la commande.
+
 ### `dashboard` / `interactive-map` — famille `read-only-view`, Meta-vérifiés
 
 - **Effectué (préexistant) :** Modules IR clôturés, corpus 25/28 paires,
@@ -532,7 +569,7 @@ question de couverture de test ou de conformité de pattern.
 | 8 | M-9 — a11y, 2 archétypes restants + confirmation d'exécution | Plafond 45 s du sandbox (bundling Angular) | Bloqué techniquement ici |
 | 9 | P-6/P-7 — découpage bundle + gate régression | Même blocage que M-9 | Bloqué techniquement ici |
 | 10 | `team-organization` — 2 entités manquantes | ADR-0018 (décision produit) | Bloqué par décision |
-| 11 | `report-states` — 5/6 fichiers `MapperUtils.validateDto` sans `*.mapper.spec.ts` dédié (`approve`/`close`/`download`/`evaluate`/`reject-report-states-item.mapper.ts`), découvert le 2026-08-04 en vérifiant l'état réel des 4 modules `workflow-action` avant de les exclure du chantier « mappers concrets » | Rien — budget | Faible-Moyen (5 fichiers, module déjà Meta 12/12) |
+| 11 | `report-states` — fichiers `MapperUtils.validateDto` sans `*.mapper.spec.ts` dédié, découvert le 2026-08-04 en vérifiant l'état réel des 4 modules `workflow-action` avant de les exclure du chantier « mappers concrets » | Rien — budget | ✅ **clos (2026-08-04)** — **6/6 fichiers testés** (pas 5 : le 6e, `report-states-details.mapper.ts`, était présumé couvert par un oracle corpus `@cmz/report-states-data:test` « verified », mais ce test-projet passait déjà avant grâce à `report-states-details-mappers.spec.ts` qui ne teste que 4 mappers *request-side* du même dossier — le mapper *response* principal, 9 dépendances DI, n'avait jamais été exercé ; corrigé par une découverte, pas par le plan initial). 44 tests neufs, tous verts au premier passage, `tsc`/`eslint --max-warnings=0` à 0 erreur |
 
 ## 8. Comment maintenir cette cartographie
 

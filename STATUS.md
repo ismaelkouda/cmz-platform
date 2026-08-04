@@ -8,7 +8,7 @@
 | Indicateur | Valeur |
 |:---|---:|
 | Packages Nx | **71 libs + 1 app** (72 `project.json`) |
-| Fichiers TypeScript (`libs/`) | **2 557 fichiers hors tests** (2 694 au total, dont 137 specs) |
+| Fichiers TypeScript (`libs/`) | **2 557 fichiers hors tests** (2 700 au total, dont 143 specs) |
 | Modules détectés | **18** |
 | Périmètre applicatif (`scope.json`, M-7) | **50 / 52 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
 | Corpus SEOS — couverture fichiers (N-4) | **476 / 2 557 fichiers libs/ hors tests → 18.6 %** — 9 modules sans aucune paire (7 `crud-entity`, 1 `action-request`, 1 `kernel`) |
