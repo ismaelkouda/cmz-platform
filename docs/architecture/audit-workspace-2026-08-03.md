@@ -34,13 +34,22 @@
 > Ce dépôt a produit, en douze jours, un référentiel d'ingénierie que la
 > plupart des équipes Big Tech mettent des années à écrire (ADR vivants,
 > contrats d'archétype, budgets versionnés, audits qui se vérifient
-> eux-mêmes) — et un **sprint de remédiation entier de cette qualité dort,
-> au moment de cet audit, non commis, non revu, non poussé**, dans l'arbre
-> de travail. Le problème n'est plus « le projet manque de rigueur » : c'est
-> « la rigueur écrite n'a pas encore de canal pour devenir un fait
-> d'équipe ». C'est le même motif que celui identifié par l'audit du
+> eux-mêmes) — et un **sprint de remédiation entier de cette qualité a
+> dormi**, à l'ouverture de cet audit, non commis, non revu, non poussé,
+> dans l'arbre de travail. Le problème n'était plus « le projet manque de
+> rigueur » : c'était « la rigueur écrite n'a pas encore de canal pour
+> devenir un fait d'équipe ». Même motif que celui identifié par l'audit du
 > 2026-08-02 (« la règle existe, rien ne l'exécute ») — appliqué cette fois
 > au processus Git lui-même, pas au code.
+>
+> **MISE À JOUR 2026-08-04 :** ce constat n'est plus l'état actuel. Le
+> canal a fini par exister — le sprint a été découpé en commits
+> Conventional Commits, `main` a reçu une protection de branche réelle
+> (confirmée par un rejet de push direct), et chaque chantier mené depuis
+> (crud-entity, chantier L, backlogs #1 à #12) a été commité au fil de
+> l'eau, un par un, plutôt qu'accumulé. `git status` est propre à la date
+> de cette mise à jour (0 fichier non commis, `git log` : 261 commits).
+> Voir §3 (recomptage N1-1 à N1-5) pour le détail action par action.
 
 ---
 
@@ -97,9 +106,9 @@ mesurable entre le 2026-08-02 et aujourd'hui.
 
 ---
 
-## 3. Constat central de cet audit — le canal de changement n'existe pas
+## 3. Constat central de cet audit — le canal de changement n'existe pas (résolu depuis, voir mise à jour 2026-08-04 en fin de section)
 
-### P0-N1 · Un sprint de remédiation complet dort, non commis, non revu, non poussé
+### P0-N1 · Un sprint de remédiation complet dort, non commis, non revu, non poussé (état à l'ouverture de l'audit, 2026-08-03)
 
 `git log -1` : dernier commit `06030e9`, daté du **2026-08-01**.
 `git status` : **plus de 45 fichiers modifiés/ajoutés**, non indexés en
@@ -209,6 +218,26 @@ est une contradiction directe entre la règle écrite et le processus réel.
   `docs(architecture)`. Règle explicite, avec sa justification (constat
   P0-N1 lui-même) et son application pratique (PR le jour même, même en
   brouillon).
+
+**MISE À JOUR 2026-08-04 (fin de journée) — le canal de changement tient
+depuis.** Le doute resté ouvert sur `feat(app)` (353 fichiers non
+subdivisés, faute de contexte narratif complet sur le refactor UI
+transverse) n'a pas été retraité rétroactivement — mais tout le travail
+mené depuis cette clôture (chantier L complet, backlogs #1, #2, #4, #7,
+#11, #3, #12 — soit des dizaines de fichiers créés/modifiés par chantier)
+a été commité **au fil de l'eau, un chantier à la fois**, jamais accumulé
+en bloc comme l'avait été le sprint P0-N1 initial. Vérifié à l'instant :
+`git status --short` → 0 fichier non commis ; `git log --oneline | wc -l`
+→ 261 commits. Le risque décrit en §3 (perte de travail, absence de revue,
+absence de preuve CI par lot) ne s'est pas reproduit sur cette session —
+la discipline de commit immédiat après chaque clôture vérifiée est
+devenue la pratique par défaut, pas une exception. Reste vrai et non
+retraité : N1-2 (ouverture de PR) demeure bloqué techniquement depuis ce
+sandbox (réseau), donc aucun de ces commits n'a encore traversé
+`ci.yml`/`nightly-integration.yml` avant fusion sur `main` — seul le
+canal *local* (commits atomiques, messages Conventional Commits,
+`--no-verify` documenté comme contournement de hooks Husky absents du
+sandbox, pas de la CI elle-même) est confirmé sain.
 
 ---
 
