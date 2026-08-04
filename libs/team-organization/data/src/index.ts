@@ -9,6 +9,7 @@ export * from './lib/dtos/participants-enable-api.dto';
 export * from './lib/dtos/participants-disable-api.dto';
 export * from './lib/dtos/participants-filter-api.dto';
 export * from './lib/dtos/participants-find-one-filter-api.dto';
+export * from './lib/dtos/participants-select-response-api.dto';
 
 export * from './lib/dtos/teams-permission-node-api.dto';
 export * from './lib/dtos/teams-response-api.dto';
@@ -34,6 +35,7 @@ export * from './lib/mappers/participants-enable.mapper';
 export * from './lib/mappers/participants-disable.mapper';
 export * from './lib/mappers/participants-filter.mapper';
 export * from './lib/mappers/participants-find-one-filter.mapper';
+export * from './lib/mappers/participants-select.mapper';
 
 export * from './lib/mappers/teams.mapper';
 export * from './lib/mappers/teams-find-one.mapper';
@@ -49,6 +51,7 @@ export * from './lib/mappers/teams-permissions.mapper';
 
 export * from './lib/sources/participants.api';
 export * from './lib/sources/participants-find-one.api';
+export * from './lib/sources/participants-select.api';
 export * from './lib/sources/teams.api';
 export * from './lib/sources/teams-find-one.api';
 export * from './lib/sources/teams-select.api';
@@ -56,6 +59,7 @@ export * from './lib/sources/teams-permissions.api';
 
 export * from './lib/repositories/participants.repository.impl';
 export * from './lib/repositories/participants-find-one.repository.impl';
+export * from './lib/repositories/participants-select.repository.impl';
 export * from './lib/repositories/teams.repository.impl';
 export * from './lib/repositories/teams-find-one.repository.impl';
 export * from './lib/repositories/teams-select.repository.impl';

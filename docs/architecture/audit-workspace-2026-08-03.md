@@ -3205,6 +3205,61 @@ run @cmz/coverage-areas-data:test → 44 tests toujours verts, aucune
 regression, check:duplicates/check:duplicates:family/
 check:declared-deps/check:project-targets → tous OK.
 
+### Backlog #3 — quatrieme et cinquieme candidat (content-management/home et team-organization/participants, 2026-08-04) — sur demande explicite, clos a 100% directement
+
+Suite du meme override explicite (« reecris le code pour atteindre les
+100% »), applique cette fois directement sans passe intermediaire
+(l'instruction etait deja donnee) sur les 2 derniers candidats mesures
+ce jour-la.
+
+**content-management/home** : check-pattern-nx.mjs libs/content-management
+home → 58/66 (87.9%), 8 manquants. Triage : HomeFilterContract a bien
+startDate/endDate, et homeFilterVo ne faisait deja que valider
+(contrairement a messaging avant sa propre correction) — cas le plus
+simple des 5 candidats de ce backlog, home-filter.entity.ts ecrit en
+reproduction directe du pattern de reference (resolveOpenEndedEndDate),
+cable dans HomeUseCase.execute(). Chaine -select (7 fichiers) construite
+en mirroring de SiteGroupSelectRepository etc., DTO {id, title} fidele
+au wire reel (HomeItemApiDto, tools/mock-server/domains/content-management.mjs).
+Resultat : 66/66 (100.0%). content-management ajoute a validated_on
+(sixth_validation). Verifie : build des 4 layers, eslint
+libs/content-management --max-warnings=0 → 0 warning, bunx nx run
+@cmz/content-management-data:test → 49 tests toujours verts,
+check:duplicates/check:duplicates:family/check:declared-deps/
+check:project-targets → tous OK.
+
+**team-organization/participants** : check-pattern-nx.mjs
+libs/team-organization participants → 58/66 (87.9%), 8 manquants.
+Triage : ParticipantsFilterContract n'a aucun champ de plage de dates
+(search?/role?/team?/status? seulement) — meme situation que
+teams-filter.entity.ts, ecrit plus tot le meme jour dans ce meme
+module : fonction identite, cablee dans ParticipantsUseCase.execute().
+Chaine -select (7 fichiers) construite en mirroring de
+TeamsSelectRepository etc., DTO {id, first_name, last_name} fidele au
+wire reel (ParticipantsItemApiDto n'a pas de champ name unique) ; label
+`${last_name} ${first_name}` — verifie avant d'inventer une convention :
+grep sur tout le depot a trouve un seul autre precedent combinant ces 2
+champs (tasks-actions-processing-item.mapper.ts, createdBy/updatedBy),
+meme ordre repris ici plutot que suppose. Resultat : 66/66 (100.0%).
+team-organization etait deja dans validated_on depuis teams —
+participants rejoint desormais le meme module a 100%, fourth_validation
+mis a jour. Verifie : build des 4 layers, eslint libs/team-organization
+--max-warnings=0 → 0 warning, bunx nx run @cmz/team-organization-data:test
+→ 30 tests toujours verts, check:duplicates/check:duplicates:family/
+check:declared-deps/check:project-targets → tous OK.
+
+**Cloture du backlog #3** : les 5 candidats mesures le 2026-08-04
+(team-organization/teams, communication/messaging,
+coverage-areas/mobile-network, team-organization/participants,
+content-management/home) sont desormais tous a 100%. validated_on de
+crud-entity.pattern.json couvre 6 modules. package.json,
+check:pattern-nx:crud-entity etendu a 8 couples module/entite, verifie
+un par un a 66/66 (100.0%) chacun. Aucun candidat mesure ne reste
+ouvert dans ce backlog — les seules zones non chiffrees restent
+settings-security et optical-fiber-network/radio-relay-links de
+coverage-areas, jamais mesurees fichier par fichier (observation de
+structure seulement), hors perimetre de cette clotture.
+
 ---
 
 ## 8. Verdict d'architecte

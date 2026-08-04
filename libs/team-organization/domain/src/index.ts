@@ -10,6 +10,7 @@ export * from './lib/props/teams-permission-option.props';
 export * from './lib/props/teams-find-one.props';
 
 export * from './lib/entities/participants.entity';
+export * from './lib/entities/participants-filter.entity';
 export * from './lib/entities/participants-find-one.entity';
 export * from './lib/entities/teams.entity';
 export * from './lib/entities/teams-find-one.entity';
@@ -77,6 +78,7 @@ export * from './lib/value-objects/teams-find-one-filter.vo';
 
 export * from './lib/repositories/participants.repository';
 export * from './lib/repositories/participants-find-one.repository';
+export * from './lib/repositories/participants-select.repository';
 export * from './lib/repositories/teams.repository';
 export * from './lib/repositories/teams-find-one.repository';
 export * from './lib/repositories/teams-select.repository';

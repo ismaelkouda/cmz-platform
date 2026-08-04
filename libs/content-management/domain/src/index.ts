@@ -27,6 +27,7 @@ export * from './lib/props/news-category-option.props';
 
 // entities
 export * from './lib/entities/home.entity';
+export * from './lib/entities/home-filter.entity';
 export * from './lib/entities/home-find-one.entity';
 export * from './lib/entities/slide.entity';
 export * from './lib/entities/slide-find-one.entity';
@@ -212,6 +213,7 @@ export * from './lib/value-objects/terms-use-find-one-filter.vo';
 // repositories
 export * from './lib/repositories/home.repository';
 export * from './lib/repositories/home-find-one.repository';
+export * from './lib/repositories/home-select.repository';
 export * from './lib/repositories/slide.repository';
 export * from './lib/repositories/slide-find-one.repository';
 export * from './lib/repositories/news.repository';

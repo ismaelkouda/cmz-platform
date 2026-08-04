@@ -1,6 +1,7 @@
 // use-cases
 export * from './lib/use-cases/home.use-case';
 export * from './lib/use-cases/home-find-one.use-case';
+export * from './lib/use-cases/home-select.use-case';
 export * from './lib/use-cases/slide.use-case';
 export * from './lib/use-cases/slide-find-one.use-case';
 export * from './lib/use-cases/news.use-case';
@@ -16,6 +17,7 @@ export * from './lib/use-cases/news-categories-select.use-case';
 // facades
 export * from './lib/facades/home.facade';
 export * from './lib/facades/home-find-one.facade';
+export * from './lib/facades/home-select.facade';
 export * from './lib/facades/slide.facade';
 export * from './lib/facades/slide-find-one.facade';
 export * from './lib/facades/news.facade';
