@@ -202,19 +202,31 @@ jobs:
   # `--audit-level=high` : ne remonte que high/critical (moderate/low restent
   # visibles via Dependabot, pas bloquants ici — cf. audit-workspace-
   # 2026-08-03.md, analyse par chemin de code réel avant ce commit).
-  # `continue-on-error: true` **temporaire** (même motif que dead-code
-  # ci-dessous) : au moment où ce job est écrit, `bun audit --audit-level=high`
-  # échoue déjà sur 2 avisos high (axios, brace-expansion) réels dans l'outillage
-  # de build (nx/eslint), pas dans le bundle livré au navigateur (vérifié : ni
-  # l'un ni l'autre n'est importé par du code applicatif ou par le champ
-  # `browser` d'exceljs). Bloquant dès que ces deux-là sont résorbés par
-  # Dependabot — sinon ce job casserait toute PR pour un problème préexistant
-  # sans lien avec le changement proposé.
+  #
+  # Bloquant depuis le 2026-08-04 (backlog #7, cartographie). Historique : au
+  # moment où ce job a été écrit, seuls 2 avisos (axios, brace-expansion)
+  # avaient été identifiés manuellement. Un vrai `bun audit --audit-level=high`
+  # (bun installé localement pour l'occasion, absent jusque-là de
+  # l'environnement d'audit) en a trouvé **8** (axios, brace-expansion — 3
+  # CVE distincts, fast-uri, ip-address), tous dans l'outillage de build
+  # (nx/eslint/@angular-devkit/@angular/cli/commitlint) sauf brace-expansion
+  # dont une chaîne remonte réellement jusqu'à `exceljs` (dépendance
+  # applicative de `@cmz/shared-browser`, via
+  # `unzipper → fstream → rimraf@2 → glob@7 → minimatch@3` — la vérification
+  # d'origine, limitée au seul champ `browser` d'exceljs, n'avait pas vu cette
+  # chaîne Node-only). Les 8 corrigés par un bloc `overrides` racine
+  # (`package.json`) forçant `axios@1.19.0`/`brace-expansion@5.0.9`/
+  # `fast-uri@4.1.2`/`ip-address@10.4.0` dans tout l'arbre — sans les ajouter
+  # en dépendance directe (`bun update <pkg>` seul les ajoute à tort en
+  # dépendance directe de l'app, testé et annulé avant ce commit). `bun audit
+  # --audit-level=high` : 0 vulnérabilité après. Vérifié aussi : aucun import
+  # direct d'`axios` dans `apps/`/`libs/` (grep, 0 résultat — usage nx interne
+  # uniquement) ; build/lint/`check:boundary-negative` rejoués après le bump,
+  # 0 régression.
   security-audit:
     name: Dependency audit (bun audit)
     runs-on: ubuntu-latest
     needs: guardrails
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -232,22 +244,19 @@ jobs:
   # Audit-workspace-2026-08-03.md, chantier K. `tools/check-i18n.mjs` compare
   # les clés réellement définies dans `fr.translation.ts` (transpilé et
   # importé, pas parsé à l'œil) aux clés référencées dans `apps/`+`libs/`.
-  # État mesuré au moment où ce job est écrit : 313 clés référencées sans
-  # définition (voir audit, §7, chantier K) — chaque formulaire concerné
-  # affiche aujourd'hui une clé technique brute en cas d'erreur de
-  # validation, comportement pré-existant, pas introduit par la PR qui
-  # ajoute ce job.
-  # `continue-on-error: true` **temporaire**, même motif que `security-audit`
-  # ci-dessus : bloquer maintenant casserait toute PR pour un stock de 313
-  # clés pré-existant. K-3 (trier les faux positifs résiduels de la regex sur
-  # les usages) et K-4 (rédiger les traductions manquantes) doivent réduire
-  # ce chiffre avant de retirer `continue-on-error` et de rendre ce job
-  # bloquant.
+  #
+  # Bloquant depuis le 2026-08-04 (backlog #7, cartographie). État mesuré à
+  # l'écriture de ce job : 313 clés référencées sans définition. K-3 (triage
+  # des faux positifs de la regex — 5 correctifs successifs documentés dans
+  # `tools/check-i18n.mjs`) et K-4 (rédaction des traductions manquantes) ont
+  # réduit ce chiffre à **0** (`node tools/check-i18n.mjs`, sans
+  # `--warn-only` : 0 clé référencée sans définition, 251 clés définies mais
+  # jamais référencées — avertissement seulement, pas bloquant). Plus de
+  # dette pré-existante à tolérer : `continue-on-error` retiré.
   i18n-check:
     name: i18n keys (check:i18n)
     runs-on: ubuntu-latest
     needs: guardrails
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

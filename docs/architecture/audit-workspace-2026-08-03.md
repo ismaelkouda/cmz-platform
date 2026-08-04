@@ -2744,6 +2744,115 @@ sans spec dédiée) est tracké séparément en §7 item #11.
 
 ---
 
+### Backlog #7 — `security-audit`/`i18n-check` rendus bloquants (2026-08-04)
+
+**`i18n-check`** : `node tools/check-i18n.mjs` (sans `--warn-only`, l'invocation
+exacte du job CI) donne **0 clé référencée sans définition** — le stock de
+313 clés manquantes qui justifiait `continue-on-error: true` à l'écriture du
+job (chantier K, K-3/K-4) est intégralement résorbé. 251 clés définies mais
+jamais référencées restent (avertissement, pas un échec — traduction morte,
+hors périmètre de ce job). `continue-on-error` retiré du job
+`.github/workflows/ci.yml` sans autre changement — la seule condition posée
+par le commentaire d'origine (« K-3 et K-4 doivent réduire ce chiffre avant
+de rendre ce job bloquant ») est remplie, vérifiée par exécution réelle du
+script, pas par confiance dans un chiffre daté.
+
+**`security-audit`** : le commentaire CI d'origine documentait 2 avisos high
+connus (axios, brace-expansion), jugés non bloquants le temps que Dependabot
+les résorbe. Aucun `bun audit` réel n'avait pu être rejoué depuis dans ce
+sandbox — `bun` était absent de l'environnement d'audit (limitation déjà
+documentée pour d'autres commandes bun/nx tout au long de cette session).
+Résolu cette fois : `npm install bun --prefix ~/bun-local` installe une
+copie portable du binaire `bun@1.3.14` (package npm publié par l'éditeur,
+contournant l'absence de droits root nécessaires à l'installateur officiel
+`curl | bash`, bloqué par l'allowlist réseau du sandbox) — nouvelle capacité
+pour les sessions futures, à documenter dans `LLM_CONTEXT.md` si elle doit
+être réutilisée.
+
+`bun audit --audit-level=high` réel (pas une supposition) a trouvé **8**
+vulnérabilités high, pas 2 :
+- `fast-uri` (host confusion via backslash) — chaîne `ajv` dans
+  `@angular-devkit/core`/`eslint`/`@angular/cli`/`@nx/angular`/`@nx/web`/
+  `@commitlint/cli` — GHSA-7p8r-x3mc-p8w7.
+- `axios` (proxy hérité après clonage de config d'intercepteur) — chaîne
+  `nx › axios` — GHSA-gcfj-64vw-6mp9. **Différent** de l'avis identifié dans
+  le commentaire d'origine (recherche web préalable à cette vérification :
+  GHSA-fvcv-3m26-pcqx, SSRF par injection d'en-tête, déjà corrigé sur
+  `axios@1.16.1` — confirmé un faux négatif de cette recherche web, la seule
+  vérification fiable était `bun audit` lui-même).
+- `brace-expansion` (3 CVE distincts, DoS) — GHSA-mh99-v99m-4gvg,
+  GHSA-rgw5-rvv9-x895, GHSA-3jxr-9vmj-r5cp. Chaînes : outillage
+  (`nx`/`eslint`/`@nx/*`/`typescript-eslint`) **et** une chaîne réellement
+  applicative — `workspace:@cmz/shared-browser › exceljs` — remontée via
+  `unzipper → fstream → rimraf@2 → glob@7 → minimatch@3 →
+  brace-expansion@<1.1.17`. C'est un écart réel par rapport au commentaire
+  d'origine, qui affirmait avoir vérifié que « ni l'un ni l'autre n'est
+  importé par du code applicatif ou par le champ `browser` d'exceljs » — la
+  vérification d'origine avait inspecté le champ `browser` d'exceljs
+  (bundle navigateur), mais pas sa chaîne de dépendances Node complète, qui
+  contient bien un chemin jusqu'à `brace-expansion` (même si `unzipper`/
+  `fstream`/`rimraf` sont eux-mêmes des utilitaires Node non exécutés dans
+  le bundle navigateur final — la distinction entre « présent dans l'arbre
+  de dépendances » et « exécuté dans le bundle livré » reste réelle, mais
+  n'était pas celle que `bun audit` teste : il signale l'arbre entier, pas
+  le bundle).
+- `ip-address` (parsing octal/décimal incohérent, SSRF) — chaîne
+  `@angular/cli › @modelcontextprotocol/sdk › express-rate-limit ›
+  ip-address` — GHSA-mwp4-54f8-5fhr. Non mentionné du tout dans le
+  commentaire d'origine (2026-08-02) — probablement introduit par une mise à
+  jour de `@angular/cli`/`@modelcontextprotocol/sdk` depuis.
+
+**Correction** : `bun update axios brace-expansion fast-uri ip-address`
+(testé en premier) résout bien les 4 paquets en versions patchées
+(`axios@1.19.0`, `brace-expansion@5.0.9`, `fast-uri@4.1.2`,
+`ip-address@10.4.0`) mais les ajoute à tort en **dépendance directe** de
+`package.json` racine (`"dependencies"`, celle du bundle applicatif) — testé,
+diff vérifié (`git diff package.json`), et **annulé** (`git checkout --
+package.json bun.lock`) avant tout commit : ce n'était pas la correction
+voulue, seulement une observation utile sur le comportement de
+`bun update <pkg>` quand `<pkg>` n'est pas déjà une dépendance directe.
+Corrigé via un bloc `"overrides"` (mécanisme npm/bun standard, force une
+version dans tout l'arbre sans l'ajouter en dépendance directe) ajouté à la
+racine de `package.json` :
+```json
+"overrides": {
+  "axios": "1.19.0",
+  "brace-expansion": "5.0.9",
+  "fast-uri": "4.1.2",
+  "ip-address": "10.4.0"
+}
+```
+`bun install` confirme la résolution unique dans `bun.lock` (`grep -o
+'"axios@[^"]*"' bun.lock` → une seule entrée, `axios@1.19.0`, même
+vérification faite sur les 3 autres paquets). `bun audit --audit-level=high`
+après : **0 vulnérabilité**.
+
+**Vérification de non-régression** avant de committer (bump de 4 paquets
+utilisés par l'outillage de build tout entier — le risque réel n'est pas le
+bundle applicatif mais que `nx`/`eslint` eux-mêmes cessent de fonctionner) :
+- `grep -rln "from 'axios'" apps/ libs/` → 0 résultat : aucun code
+  applicatif n'importe `axios` directement, seul `nx` l'utilise en interne
+  (télémétrie/cloud) — le bump ne change rien au bundle livré au navigateur.
+- `nx run @cmz/content-management-data:build` : OK (prouve que `nx` lui-même
+  fonctionne toujours après le bump de ses propres dépendances internes).
+- `eslint libs/content-management/data --max-warnings=0` : 0 erreur (prouve
+  qu'ESLint — donc `ajv`/`fast-uri` — fonctionne toujours).
+- `check:boundary-negative` : OK (le test négatif ESLint intégré passe
+  toujours — autre confirmation qu'ESLint résout correctement ses propres
+  dépendances après le bump).
+- `check:weight`, `check:names`, `check:engines`, `check:versions`,
+  `check:legacy-lock`, `check:docs-freshness` : tous OK, aucun n'est affecté
+  par `bun.lock` de façon inattendue.
+
+`.github/workflows/ci.yml` : `continue-on-error: true` retiré des deux jobs
+(`security-audit`, `i18n-check`), commentaires réécrits pour refléter l'état
+réel vérifié ce jour plutôt que l'état supposé à l'écriture initiale du job
+(2026-08-02) — même discipline que la correction de compte du chantier
+« mappers concrets » : ne jamais laisser un chiffre daté se faire passer
+pour l'état courant sans le revérifier.
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**
