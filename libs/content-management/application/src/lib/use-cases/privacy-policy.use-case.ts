@@ -13,6 +13,7 @@ import {
     privacyPolicyDeleteVo,
     privacyPolicyUnpublishVo,
     privacyPolicyPublishVo,
+    privacyPolicyFilterEntity,
     privacyPolicyFilterVo,
     privacyPolicyUpdateVo,
 } from '@cmz/content-management-domain';
@@ -29,7 +30,7 @@ export class PrivacyPolicyUseCase {
     ): Observable<PageResult<PrivacyPolicyEntity>> {
         return defer(() =>
             this.repository.execute(
-                privacyPolicyFilterVo(contract),
+                privacyPolicyFilterEntity(privacyPolicyFilterVo(contract)),
                 page,
                 options
             )
