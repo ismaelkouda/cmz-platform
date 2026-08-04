@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RequestsFacade } from '@cmz/reporting-application';
 import { GrafanaEmbedComponent } from '@cmz/shared-ui';
 
@@ -11,8 +6,6 @@ const T = 'REPORTING.REQUESTS';
 
 @Component({
     selector: 'cmz-requests-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [GrafanaEmbedComponent],
     template: `
         <cmz-grafana-embed

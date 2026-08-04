@@ -1,22 +1,15 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessagingTarget, MessagingChannel } from '@cmz/communication-domain';
 import { MessagingFacade } from '@cmz/communication-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { MESSAGING_TYPE_OPTIONS } from '../constants/messaging-type-label.constant';
 import { MESSAGING_TARGET_OPTIONS } from '../constants/messaging-target-label.constant';
 import { MESSAGING_CHANNEL_OPTIONS } from '../constants/messaging-channel-label.constant';
 import { MessagingFormStore } from '../stores/messaging-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'COMMUNICATION.MESSAGING';
 
@@ -31,8 +24,6 @@ const T = 'COMMUNICATION.MESSAGING';
  */
 @Component({
     selector: 'cmz-messaging-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [MessagingFormStore],
     template: `

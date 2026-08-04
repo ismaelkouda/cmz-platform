@@ -9,7 +9,7 @@ import {
 import { disabled, form, required } from '@angular/forms/signals';
 import { ParticipantsFindOneFacade } from '@cmz/team-organization-application';
 import { Role } from '@cmz/shared-domain';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface ParticipantsFormModel {
     firstName: string;

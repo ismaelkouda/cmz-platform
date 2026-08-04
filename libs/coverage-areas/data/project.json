@@ -3,5 +3,17 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/coverage-areas/data/src",
   "projectType": "library",
-  "tags": ["scope:coverage-areas", "type:data"]
+  "tags": [
+    "scope:coverage-areas",
+    "type:data"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/coverage-areas/data/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

@@ -1,17 +1,9 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    input,
-    output,
-    inject,
-} from '@angular/core';
+import { Component, input, output, inject } from '@angular/core';
 import { RequestsDetailsEntity } from '@cmz/requests-domain';
 import { TranslationPort } from '@cmz/shared-application';
 
 @Component({
     selector: 'cmz-requests-details-sidebar',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <aside
             class="flex w-72 shrink-0 flex-col gap-4 self-stretch overflow-y-auto border-r border-border bg-surface-alt p-4"

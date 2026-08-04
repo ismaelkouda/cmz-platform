@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { disabled, form, required } from '@angular/forms/signals';
 import { SiteGroupFindOneFacade } from '@cmz/coverage-areas-application';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface SiteGroupFormModel {
     code: string;

@@ -1,11 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-    signal,
-} from '@angular/core';
+import { Component, Signal, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CloseReportStatesFacade } from '@cmz/report-states-application';
 import {
@@ -39,8 +32,6 @@ const T = 'REPORT_STATES.CLOSE';
 
 @Component({
     selector: 'cmz-close-report-states-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         FilterComponent,
         TableComponent,

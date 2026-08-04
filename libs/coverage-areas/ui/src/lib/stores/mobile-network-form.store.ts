@@ -9,7 +9,7 @@ import {
 import { disabled, form, required, validate } from '@angular/forms/signals';
 import { MobileNetworkFindOneFacade } from '@cmz/coverage-areas-application';
 import { Operator, Technology } from '@cmz/coverage-areas-domain';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface MobileNetworkFormModel {
     siteId: string;

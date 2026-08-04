@@ -3,5 +3,17 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/team-organization/data/src",
   "projectType": "library",
-  "tags": ["scope:team-organization", "type:data"]
+  "tags": [
+    "scope:team-organization",
+    "type:data"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/team-organization/data/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

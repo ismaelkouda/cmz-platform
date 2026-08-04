@@ -1,8 +1,7 @@
 import { TermsUseStatus, TermsUseEntity } from '@cmz/content-management-domain';
-import { ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
 import { TERMS_USE_STATUS_LABEL } from '../constants/terms-use-status-label.constant';
 import { termsUseStatusStyleOf } from '../mappers/terms-use-status-style.mapper';
-import { actionItem, resolveTooltip } from './action-item.factory';
 import { TermsUseVmProps } from './terms-use-vm-props.interface';
 
 interface TermsUsePermission {

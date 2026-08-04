@@ -1,8 +1,7 @@
 import { TeamsEntity, TeamsStatus } from '@cmz/team-organization-domain';
-import { ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
 import { TEAMS_STATUS_LABEL } from '../constants/teams-status-label.constant';
 import { teamsStatusStyleOf } from '../mappers/teams-status-style.mapper';
-import { actionItem, resolveTooltip } from './action-item.factory';
 import { TeamsVmProps } from './teams-vm-props.interface';
 
 interface TeamsPermission {

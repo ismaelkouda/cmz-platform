@@ -3,12 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@cmz/dashboard-domain": "workspace:*",
-    "@cmz/dashboard-application": "workspace:*",
-    "@cmz/shared-ui": "workspace:*",
-    "@cmz/shared-application": "workspace:*",
     "@angular/core": "catalog:",
     "@angular/router": "catalog:",
-    "rxjs": "catalog:"
+    "@cmz/dashboard-application": "workspace:*",
+    "@cmz/dashboard-domain": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "@cmz/shared-ui": "workspace:*"
   }
 }

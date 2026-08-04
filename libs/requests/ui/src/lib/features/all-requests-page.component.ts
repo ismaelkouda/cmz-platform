@@ -1,11 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-    signal,
-} from '@angular/core';
+import { Component, Signal, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AllRequestsFacade } from '@cmz/requests-application';
 import {
@@ -40,8 +33,6 @@ const T = 'REQUESTS.ALL';
 
 @Component({
     selector: 'cmz-all-requests-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         FilterComponent,
         TableComponent,

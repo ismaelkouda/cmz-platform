@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
 import {
@@ -40,8 +34,6 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
  */
 @Component({
     selector: 'cmz-infrastructure-type-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [InfrastructureTypeFilterStore],
     template: `

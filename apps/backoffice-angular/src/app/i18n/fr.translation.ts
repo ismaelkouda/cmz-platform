@@ -94,7 +94,9 @@ export const FR = {
             NEXT: 'Page suivante',
             RANGE: 'Affichage {{from}}–{{to}} sur {{total}}',
         },
-        VALIDATION: { REQUIRED: 'Ce champ est requis.' },
+        VALIDATION: {
+            REQUIRED: 'Ce champ est requis.',
+        },
         SUCCESS: {
             CREATE: 'Création réussie.',
             UPDATE: 'Mise à jour réussie.',
@@ -103,6 +105,7 @@ export const FR = {
             TREAT: 'Traitement réussi.',
             APPROVE: 'Qualification réussie.',
             REJECT: 'Rejet effectué.',
+            FINALIZE: 'Finalisation réussie.',
         },
         ERROR: {
             REQUIRED: 'Ce champ est requis.',
@@ -120,6 +123,33 @@ export const FR = {
             REQUIRED: 'La confirmation du mot de passe est requise.',
             NO_MATCH: 'Les mots de passe ne correspondent pas.',
         },
+        ACTIVITY_PLACE: "Lieu d'activité",
+        AFFECTED: 'Affecté',
+        APP: 'Application',
+        AUTO: 'Automatique',
+        CRITICAL: 'Critique',
+        DATE_RANGE: {
+            INVALID: 'Plage de dates invalide',
+        },
+        GPS: 'GPS',
+        HIGH: 'Élevée',
+        INVALID_DATE_RANGE: 'Plage de dates invalide',
+        INVALID_END_DATE: 'Date de fin invalide',
+        INVALID_START_DATE: 'Date de début invalide',
+        IVR: 'SVI',
+        LOW: 'Faible',
+        MANUAL: 'Manuel',
+        MEDIUM: 'Moyenne',
+        NETWORK: 'Réseau',
+        PLACE_NOT_PROVIDED: 'Lieu non renseigné',
+        RESIDENCE_PLACE: 'Lieu de résidence',
+        SMS: 'SMS',
+        TRANSIT_PLACE: 'Lieu de transit',
+        TYPE: {
+            REQUIRED: 'Le type est requis',
+        },
+        USSD: 'USSD',
+        WHAT3WORDS: 'What3Words',
     },
     EXPORT: {
         NO_DATA: 'Aucune donnée à exporter',
@@ -149,12 +179,38 @@ export const FR = {
                 },
                 NAME: 'Nom',
                 DESCRIPTION: 'Description',
+                ERROR: {
+                    CREATE: {
+                        DESCRIPTION_REQUIRE: 'La description est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    DISABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    ENABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        DESCRIPTION_REQUIRE: 'La description est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 STATUS: 'Statut',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 NAME: 'Nom',
@@ -175,6 +231,28 @@ export const FR = {
                     DISABLE: 'Désactiver « {{uniqId}} » ?',
                 },
             },
+            TABS: {
+                HISTORY: {
+                    LABEL: 'Historique',
+                },
+                INFRASTRUCTURE_TYPE: {
+                    LABEL: "Type d'infrastructure",
+                },
+            },
+            TOOLTIP: {
+                CHOOSE: 'Actions',
+                CREATE: "Créer un type d'infrastructure",
+                DELETE: 'Supprimer',
+                DISABLE: 'Désactiver',
+                EDIT: 'Modifier',
+                ENABLE: 'Activer',
+                NO_PERMISSION_ACTIVE: 'Permission manquante pour activer',
+                NO_PERMISSION_CHOOSE: 'Aucune action disponible',
+                NO_PERMISSION_CREATE: 'Permission manquante pour créer',
+                NO_PERMISSION_DELETE: 'Permission manquante pour supprimer',
+                NO_PERMISSION_DISABLE: 'Permission manquante pour désactiver',
+                NO_PERMISSION_EDIT: 'Permission manquante pour modifier',
+            },
         },
         INFRASTRUCTURE: {
             TITLE: 'Infrastructures',
@@ -189,6 +267,27 @@ export const FR = {
                 DESCRIPTION: 'Description',
                 LATITUDE: 'Latitude',
                 LONGITUDE: 'Longitude',
+                ERROR: {
+                    CREATE: {
+                        DESCRIPTION_REQUIRE: 'La description est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        POSITION_REQUIRE: 'La position est requise',
+                        TYPE_REQUIRE: 'Le type est requis',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        DESCRIPTION_REQUIRE: 'La description est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        POSITION_REQUIRE: 'La position est requise',
+                        TYPE_REQUIRE: 'Le type est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
@@ -197,7 +296,10 @@ export const FR = {
                 REGION: 'Région',
                 DEPARTMENT: 'Département',
                 MUNICIPALITY: 'Commune',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 NAME: 'Nom',
@@ -210,8 +312,29 @@ export const FR = {
                 ACTION: 'Actions',
             },
             SWEET_ALERT: {
-                TITLE: { DELETE: 'Supprimer' },
-                MESSAGE: { DELETE: 'Supprimer « {{uniqId}} » ?' },
+                TITLE: {
+                    DELETE: 'Supprimer',
+                },
+                MESSAGE: {
+                    DELETE: 'Supprimer « {{uniqId}} » ?',
+                },
+            },
+            TABS: {
+                HISTORY: {
+                    LABEL: 'Historique',
+                },
+                INFRASTRUCTURE: {
+                    LABEL: 'Infrastructure',
+                },
+            },
+            TOOLTIP: {
+                CHOOSE: 'Actions',
+                DELETE: 'Supprimer',
+                EDIT: 'Modifier',
+                NO_PERMISSION_CHOOSE: 'Aucune action disponible',
+                NO_PERMISSION_CREATE: 'Permission manquante pour créer',
+                NO_PERMISSION_DELETE: 'Permission manquante pour supprimer',
+                NO_PERMISSION_EDIT: 'Permission manquante pour modifier',
             },
         },
     },
@@ -229,11 +352,37 @@ export const FR = {
                 DESCRIPTION: 'Description',
                 POPULATION_SIZE: 'Population',
                 INFRASTRUCTURE_COUNT: "Nombre d'infrastructures",
+                ERROR: {
+                    CREATE: {
+                        CODE_REQUIRE: 'Le code est requis',
+                        INFRASTRUCTURE_COUNT_REQUIRE:
+                            "Le nombre d'infrastructures est requis",
+                        NAME_REQUIRE: 'Le nom est requis',
+                        POPULATION_SIZE_REQUIRE: 'La population est requise',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        CODE_REQUIRE: 'Le code est requis',
+                        INFRASTRUCTURE_COUNT_REQUIRE:
+                            "Le nombre d'infrastructures est requis",
+                        NAME_REQUIRE: 'Le nom est requis',
+                        POPULATION_SIZE_REQUIRE: 'La population est requise',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 CODE: 'Code',
@@ -261,8 +410,12 @@ export const FR = {
                 NO_PERMISSION_CHOOSE: 'Aucune action disponible',
             },
             SWEET_ALERT: {
-                TITLE: { DELETE: 'Supprimer' },
-                MESSAGE: { DELETE: 'Supprimer « {{uniqId}} » ?' },
+                TITLE: {
+                    DELETE: 'Supprimer',
+                },
+                MESSAGE: {
+                    DELETE: 'Supprimer « {{uniqId}} » ?',
+                },
             },
         },
         DEPARTMENT: {
@@ -279,12 +432,43 @@ export const FR = {
                 DESCRIPTION: 'Description',
                 POPULATION_SIZE: 'Population',
                 INFRASTRUCTURE_COUNT: "Nombre d'infrastructures",
+                ERROR: {
+                    CREATE: {
+                        CODE_REQUIRE: 'Le code est requis',
+                        INFRASTRUCTURE_COUNT_REQUIRE:
+                            "Le nombre d'infrastructures est requis",
+                        NAME_REQUIRE: 'Le nom est requis',
+                        POPULATION_SIZE_REQUIRE: 'La population est requise',
+                        REGION_ID_REQUIRE: 'La région est requise',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FILTER: {
+                        REGION_ID_REQUIRE: 'La région est requise',
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        CODE_REQUIRE: 'Le code est requis',
+                        INFRASTRUCTURE_COUNT_REQUIRE:
+                            "Le nombre d'infrastructures est requis",
+                        NAME_REQUIRE: 'Le nom est requis',
+                        POPULATION_SIZE_REQUIRE: 'La population est requise',
+                        REGION_ID_REQUIRE: 'La région est requise',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 REGION: 'Région',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 CODE: 'Code',
@@ -312,8 +496,12 @@ export const FR = {
                 NO_PERMISSION_CHOOSE: 'Aucune action disponible',
             },
             SWEET_ALERT: {
-                TITLE: { DELETE: 'Supprimer' },
-                MESSAGE: { DELETE: 'Supprimer « {{uniqId}} » ?' },
+                TITLE: {
+                    DELETE: 'Supprimer',
+                },
+                MESSAGE: {
+                    DELETE: 'Supprimer « {{uniqId}} » ?',
+                },
             },
         },
         DEPARTMENTS_BY_REGION_ID: {
@@ -321,7 +509,10 @@ export const FR = {
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 CODE: 'Code',
@@ -347,13 +538,46 @@ export const FR = {
                 DESCRIPTION: 'Description',
                 POPULATION_SIZE: 'Population',
                 INFRASTRUCTURE_COUNT: "Nombre d'infrastructures",
+                ERROR: {
+                    CREATE: {
+                        CODE_REQUIRE: 'Le code est requis',
+                        DEPARTMENT_ID_REQUIRE: 'Le département est requis',
+                        INFRASTRUCTURE_COUNT_REQUIRE:
+                            "Le nombre d'infrastructures est requis",
+                        NAME_REQUIRE: 'Le nom est requis',
+                        POPULATION_SIZE_REQUIRE: 'La population est requise',
+                        REGION_ID_REQUIRE: 'La région est requise',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FILTER: {
+                        DEPARTMENT_ID_REQUIRE: 'Le département est requis',
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        CODE_REQUIRE: 'Le code est requis',
+                        DEPARTMENT_ID_REQUIRE: 'Le département est requis',
+                        INFRASTRUCTURE_COUNT_REQUIRE:
+                            "Le nombre d'infrastructures est requis",
+                        NAME_REQUIRE: 'Le nom est requis',
+                        POPULATION_SIZE_REQUIRE: 'La population est requise',
+                        REGION_ID_REQUIRE: 'La région est requise',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 REGION: 'Région',
                 DEPARTMENT: 'Département',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 CODE: 'Code',
@@ -375,8 +599,12 @@ export const FR = {
                 NO_PERMISSION_CHOOSE: 'Aucune action disponible',
             },
             SWEET_ALERT: {
-                TITLE: { DELETE: 'Supprimer' },
-                MESSAGE: { DELETE: 'Supprimer « {{uniqId}} » ?' },
+                TITLE: {
+                    DELETE: 'Supprimer',
+                },
+                MESSAGE: {
+                    DELETE: 'Supprimer « {{uniqId}} » ?',
+                },
             },
         },
         MUNICIPALITIES_BY_DEPARTMENT_ID: {
@@ -384,7 +612,10 @@ export const FR = {
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 CODE: 'Code',
@@ -408,12 +639,38 @@ export const FR = {
                 CODE: 'Code',
                 NAME: 'Nom',
                 DESCRIPTION: 'Description',
+                ERROR: {
+                    CREATE: {
+                        CODE_REQUIRE: 'Le code est requis',
+                        NAME_REQUIRE: 'Le nom est requis',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    DISABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    ENABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        CODE_REQUIRE: 'Le code est requis',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 STATUS: 'Statut',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 CODE: 'Code',
@@ -466,13 +723,51 @@ export const FR = {
                 TECHNOLOGY: 'Technologie',
                 OPERATOR: 'Opérateur',
                 RADIUS: 'Rayon',
+                ERROR: {
+                    CREATE: {
+                        INFRASTRUCTURE_TYPE_REQUIRE:
+                            "Le type d'infrastructure est requis",
+                        OPERATOR_REQUIRE: "L'opérateur est requis",
+                        SITE_ID_REQUIRE: "L'identifiant du site est requis",
+                        SITE_NAME_REQUIRE: 'Le nom du site est requis',
+                        TECHNOLOGY_REQUIRE: 'La technologie est requise',
+                        TOWER_SIZE_REQUIRE: 'La taille du pylône est requise',
+                        TOWER_TYPE_REQUIRE: 'Le type de pylône est requis',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    DISABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    ENABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        INFRASTRUCTURE_TYPE_REQUIRE:
+                            "Le type d'infrastructure est requis",
+                        OPERATOR_REQUIRE: "L'opérateur est requis",
+                        SITE_ID_REQUIRE: "L'identifiant du site est requis",
+                        SITE_NAME_REQUIRE: 'Le nom du site est requis',
+                        TECHNOLOGY_REQUIRE: 'La technologie est requise',
+                        TOWER_SIZE_REQUIRE: 'La taille du pylône est requise',
+                        TOWER_TYPE_REQUIRE: 'Le type de pylône est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 TECHNOLOGY: 'Technologie',
                 OPERATOR: 'Opérateur',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 SITE_ID: 'ID du site',
@@ -527,12 +822,45 @@ export const FR = {
                 TYPE: 'Type',
                 GEOM_FILE: 'Tracé (GeoJSON)',
                 GEOM_EXISTING: 'Un fichier de tracé existe déjà.',
+                ERROR: {
+                    CREATE: {
+                        FIBER_CONSTRUCTOR_REQUIRE:
+                            'Le constructeur fibre est requis',
+                        GEOM_FILE_REQUIRE: 'Le fichier géométrique est requis',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        OPERATOR_REQUIRE: "L'opérateur est requis",
+                        TYPE_REQUIRE: 'Le type est requis',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    DISABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    ENABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        FIBER_CONSTRUCTOR_REQUIRE:
+                            'Le constructeur fibre est requis',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        OPERATOR_REQUIRE: "L'opérateur est requis",
+                        TYPE_REQUIRE: 'Le type est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 OPERATOR: 'Opérateur',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 NAME: 'Nom',
@@ -583,12 +911,44 @@ export const FR = {
                 FREQUENCY: 'Fréquence',
                 START_DATE: 'Date de début',
                 END_DATE: 'Date de fin',
+                ERROR: {
+                    CREATE: {
+                        END_DATE_REQUIRE: 'La date de fin est requise',
+                        FREQUENCY_REQUIRE: 'La fréquence est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        OPERATOR_REQUIRE: "L'opérateur est requis",
+                        START_DATE_REQUIRE: 'La date de début est requise',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    DISABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    ENABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        END_DATE_REQUIRE: 'La date de fin est requise',
+                        FREQUENCY_REQUIRE: 'La fréquence est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        OPERATOR_REQUIRE: "L'opérateur est requis",
+                        START_DATE_REQUIRE: 'La date de début est requise',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 OPERATOR: 'Opérateur',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 NAME: 'Nom',
@@ -643,6 +1003,33 @@ export const FR = {
                 PHONE: 'Téléphone',
                 ROLE: 'Rôle',
                 TEAM: 'Équipe',
+                ERROR: {
+                    CREATE: {
+                        EMAIL_REQUIRE: "L'email est requis",
+                        FIRST_NAME_REQUIRE: 'Le prénom est requis',
+                        LAST_NAME_REQUIRE: 'Le nom est requis',
+                        PHONE_REQUIRE: 'Le téléphone est requis',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    DISABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    ENABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        EMAIL_REQUIRE: "L'email est requis",
+                        FIRST_NAME_REQUIRE: 'Le prénom est requis',
+                        LAST_NAME_REQUIRE: 'Le nom est requis',
+                        PHONE_REQUIRE: 'Le téléphone est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
@@ -702,6 +1089,35 @@ export const FR = {
                 REPORT_TYPES: 'Types de signalement',
                 OPERATORS: 'Opérateurs',
                 PERMISSIONS: 'Permissions',
+                ERROR: {
+                    CREATE: {
+                        DESCRIPTION_REQUIRE: 'La description est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        OPERATORS_REQUIRE: 'Les opérateurs sont requis',
+                        REPORT_TYPES_REQUIRE:
+                            'Les types de signalement sont requis',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    DISABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    ENABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        DESCRIPTION_REQUIRE: 'La description est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        OPERATORS_REQUIRE: 'Les opérateurs sont requis',
+                        REPORT_TYPES_REQUIRE:
+                            'Les types de signalement sont requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
@@ -764,12 +1180,52 @@ export const FR = {
                 END_DATE: 'Date de fin',
                 BUTTON_LABEL: 'Libellé du bouton',
                 BUTTON_URL: 'URL du bouton',
+                ERROR: {
+                    CREATE: {
+                        BUTTON_LABEL_REQUIRE: 'Le libellé du bouton est requis',
+                        BUTTON_URL_REQUIRE: "L'URL du bouton est requise",
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        END_DATE_REQUIRE: 'La date de fin est requise',
+                        IMAGE_REQUIRE: "L'image est requise",
+                        PLATFORMS_REQUIRE: 'Les plateformes sont requises',
+                        RESUME_REQUIRE: 'Le résumé est requis',
+                        START_DATE_REQUIRE: 'La date de début est requise',
+                        TITLE_REQUIRE: 'Le titre est requis',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    DISABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    ENABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        BUTTON_LABEL_REQUIRE: 'Le libellé du bouton est requis',
+                        BUTTON_URL_REQUIRE: "L'URL du bouton est requise",
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        END_DATE_REQUIRE: 'La date de fin est requise',
+                        IMAGE_REQUIRE: "L'image est requise",
+                        PLATFORMS_REQUIRE: 'Les plateformes sont requises',
+                        RESUME_REQUIRE: 'Le résumé est requis',
+                        START_DATE_REQUIRE: 'La date de début est requise',
+                        TITLE_REQUIRE: 'Le titre est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 STATUS: 'Statut',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 TITLE: 'Titre',
@@ -825,12 +1281,54 @@ export const FR = {
                 END_DATE: 'Date de fin',
                 BUTTON_LABEL: 'Libellé du bouton',
                 BUTTON_URL: 'URL du bouton',
+                ERROR: {
+                    CREATE: {
+                        BUTTON_LABEL_REQUIRE: 'Le libellé du bouton est requis',
+                        BUTTON_URL_REQUIRE: "L'URL du bouton est requise",
+                        END_DATE_REQUIRE: 'La date de fin est requise',
+                        IMAGE_REQUIRE: "L'image est requise",
+                        PLATFORMS_REQUIRE: 'Les plateformes sont requises',
+                        START_DATE_REQUIRE: 'La date de début est requise',
+                        TIME_DURATION_REQUIRE: 'La durée est requise',
+                        TITLE_REQUIRE: 'Le titre est requis',
+                        TYPE_REQUIRE: 'Le type est requis',
+                        VIDEO_REQUIRE: 'La vidéo est requise',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    DISABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    ENABLE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        BUTTON_LABEL_REQUIRE: 'Le libellé du bouton est requis',
+                        BUTTON_URL_REQUIRE: "L'URL du bouton est requise",
+                        END_DATE_REQUIRE: 'La date de fin est requise',
+                        IMAGE_REQUIRE: "L'image est requise",
+                        PLATFORMS_REQUIRE: 'Les plateformes sont requises',
+                        START_DATE_REQUIRE: 'La date de début est requise',
+                        TIME_DURATION_REQUIRE: 'La durée est requise',
+                        TITLE_REQUIRE: 'Le titre est requis',
+                        TYPE_REQUIRE: 'Le type est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                        VIDEO_REQUIRE: 'La vidéo est requise',
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 STATUS: 'Statut',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 TITLE: 'Titre',
@@ -884,12 +1382,48 @@ export const FR = {
                 CONTENT: 'Contenu',
                 HASHTAGS: 'Hashtags',
                 HASHTAGS_PLACEHOLDER: 'Ajouter un hashtag puis Entrée…',
+                ERROR: {
+                    CREATE: {
+                        CATEGORY_REQUIRE: 'La catégorie est requise',
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        IMAGE_REQUIRE: "L'image est requise",
+                        RESUME_REQUIRE: 'Le résumé est requis',
+                        TITLE_REQUIRE: 'Le titre est requis',
+                        TYPE_REQUIRE: 'Le type est requis',
+                        VIDEO_REQUIRE: 'La vidéo est requise',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    PUBLISH: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UNPUBLISH: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        CATEGORY_REQUIRE: 'La catégorie est requise',
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        IMAGE_REQUIRE: "L'image est requise",
+                        RESUME_REQUIRE: 'Le résumé est requis',
+                        TITLE_REQUIRE: 'Le titre est requis',
+                        TYPE_REQUIRE: 'Le type est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                        VIDEO_REQUIRE: 'La vidéo est requise',
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 STATUS: 'Statut',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 TITLE: 'Titre',
@@ -936,13 +1470,39 @@ export const FR = {
                 },
                 VERSION: 'Version',
                 CONTENT: 'Contenu',
+                ERROR: {
+                    CREATE: {
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        VERSION_REQUIRE: 'La version est requise',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    PUBLISH: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UNPUBLISH: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                        VERSION_REQUIRE: 'La version est requise',
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 VERSION: 'Version',
                 STATUS: 'Statut',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 VERSION: 'Version',
@@ -987,13 +1547,39 @@ export const FR = {
                 },
                 VERSION: 'Version',
                 CONTENT: 'Contenu',
+                ERROR: {
+                    CREATE: {
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        VERSION_REQUIRE: 'La version est requise',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    PUBLISH: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UNPUBLISH: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                        VERSION_REQUIRE: 'La version est requise',
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 VERSION: 'Version',
                 STATUS: 'Statut',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 VERSION: 'Version',
@@ -1038,13 +1624,39 @@ export const FR = {
                 },
                 VERSION: 'Version',
                 CONTENT: 'Contenu',
+                ERROR: {
+                    CREATE: {
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        VERSION_REQUIRE: 'La version est requise',
+                    },
+                    DELETE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    FIND_ONE: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    PUBLISH: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UNPUBLISH: {
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                    UPDATE: {
+                        CONTENT_REQUIRE: 'Le contenu est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                        VERSION_REQUIRE: 'La version est requise',
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 VERSION: 'Version',
                 STATUS: 'Statut',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 VERSION: 'Version',
@@ -1095,6 +1707,23 @@ export const FR = {
                 PHONE: 'Téléphone',
                 PROFILE: 'Profil',
                 ROLE: 'Rôle',
+                ERROR: {
+                    CREATE: {
+                        EMAIL_REQUIRE: "L'email est requis",
+                        FIRST_NAME_REQUIRE: 'Le prénom est requis',
+                        LAST_NAME_REQUIRE: 'Le nom est requis',
+                        PHONE_REQUIRE: 'Le téléphone est requis',
+                        PROFILE_REQUIRE: 'Le profil est requis',
+                    },
+                    UPDATE: {
+                        EMAIL_REQUIRE: "L'email est requis",
+                        FIRST_NAME_REQUIRE: 'Le prénom est requis',
+                        LAST_NAME_REQUIRE: 'Le nom est requis',
+                        PHONE_REQUIRE: 'Le téléphone est requis',
+                        PROFILE_REQUIRE: 'Le profil est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
@@ -1141,6 +1770,20 @@ export const FR = {
                     DISABLE: 'Désactiver « {{uniqId}} » ?',
                 },
             },
+            ERROR: {
+                DELETE: {
+                    UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                },
+                DISABLE: {
+                    UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                },
+                ENABLE: {
+                    UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                },
+                FIND_ONE: {
+                    UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                },
+            },
         },
         PROFILES_PERMISSIONS: {
             TITLE: 'Profils & permissions',
@@ -1153,6 +1796,17 @@ export const FR = {
                 NAME: 'Nom',
                 DESCRIPTION: 'Description',
                 PERMISSIONS: 'Permissions',
+                ERROR: {
+                    CREATE: {
+                        DESCRIPTION_REQUIRE: 'La description est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                    },
+                    UPDATE: {
+                        DESCRIPTION_REQUIRE: 'La description est requise',
+                        NAME_REQUIRE: 'Le nom est requis',
+                        UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                    },
+                },
             },
             FILTER: {
                 SEARCH: 'Recherche',
@@ -1201,6 +1855,20 @@ export const FR = {
                     DISABLE: 'Désactiver « {{uniqId}} » ?',
                 },
             },
+            ERROR: {
+                DELETE: {
+                    UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                },
+                DISABLE: {
+                    UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                },
+                ENABLE: {
+                    UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                },
+                FIND_ONE: {
+                    UNIQ_ID_REQUIRE: "L'identifiant est requis",
+                },
+            },
         },
         ACCESS_LOGS: {
             TITLE: 'Journal de connexions',
@@ -1208,7 +1876,10 @@ export const FR = {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 ACTION: 'Action',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 ACTION: 'Action',
@@ -1289,8 +1960,15 @@ export const FR = {
                 NO_PERMISSION_CHOOSE: 'Aucune action disponible',
             },
             SWEET_ALERT: {
-                TITLE: { DELETE: 'Supprimer' },
-                MESSAGE: { DELETE: 'Supprimer « {{uniqId}} » ?' },
+                TITLE: {
+                    DELETE: 'Supprimer',
+                },
+                MESSAGE: {
+                    DELETE: 'Supprimer « {{uniqId}} » ?',
+                },
+            },
+            ERROR: {
+                SMS_CONTENT_TOO_LONG: 'Le contenu du SMS est trop long',
             },
         },
         NOTIFICATIONS: {
@@ -1299,7 +1977,10 @@ export const FR = {
                 SEARCH: 'Recherche',
                 SEARCH_PLACEHOLDER: 'Rechercher…',
                 TYPE: 'Type',
-                DATE: { FROM: 'Du', TO: 'Au' },
+                DATE: {
+                    FROM: 'Du',
+                    TO: 'Au',
+                },
             },
             TABLE: {
                 REFERENCE: 'Référence',
@@ -1320,7 +2001,9 @@ export const FR = {
                     'Permission manquante pour marquer comme lu',
             },
             SWEET_ALERT: {
-                TITLE: { READ_ALL: 'Tout marquer comme lu' },
+                TITLE: {
+                    READ_ALL: 'Tout marquer comme lu',
+                },
                 MESSAGE: {
                     READ_ALL: 'Marquer toutes les notifications comme lues ?',
                 },
@@ -1346,24 +2029,42 @@ export const FR = {
         SECTIONS: {
             TYPE: {
                 TITLE: 'Signalements par type',
-                TOTAL: { LABEL: 'Total des signalements' },
+                TOTAL: {
+                    LABEL: 'Total des signalements',
+                },
             },
             TASK_STATUS: {
                 TITLE: 'Statut de traitement',
-                PENDING: { LABEL: 'En attente' },
-                IN_PROGRESS: { LABEL: 'En cours de traitement' },
-                REJECTED: { LABEL: 'Rejetés' },
-                FINALIZED: { LABEL: 'Finalisés' },
-                EVALUATED: { LABEL: 'Évalués' },
+                PENDING: {
+                    LABEL: 'En attente',
+                },
+                IN_PROGRESS: {
+                    LABEL: 'En cours de traitement',
+                },
+                REJECTED: {
+                    LABEL: 'Rejetés',
+                },
+                FINALIZED: {
+                    LABEL: 'Finalisés',
+                },
+                EVALUATED: {
+                    LABEL: 'Évalués',
+                },
             },
             PERFORMANCE: {
                 TITLE: 'Performance',
-                TREATMENT_RATE: { LABEL: 'Taux de traitement' },
-                COMPLETION_RATE: { LABEL: 'Taux de complétion' },
+                TREATMENT_RATE: {
+                    LABEL: 'Taux de traitement',
+                },
+                COMPLETION_RATE: {
+                    LABEL: 'Taux de complétion',
+                },
                 AVERAGE_TREATMENT_TIME: {
                     LABEL: 'Temps de traitement moyen',
                 },
-                RESPONSE_TIME: { LABEL: 'Temps de réponse' },
+                RESPONSE_TIME: {
+                    LABEL: 'Temps de réponse',
+                },
             },
         },
     },
@@ -1850,6 +2551,15 @@ export const FR = {
                     MESSAGE: 'Traiter ce signalement ?',
                 },
             },
+            FILTER: {
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
+            },
+            TAKE: {
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
+            },
+            TREAT: {
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
+            },
         },
     },
     REQUESTS: {
@@ -2036,6 +2746,12 @@ export const FR = {
                     AUT: '[AUT] Autre raison',
                 },
             },
+            FILTER: {
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
+            },
+            TAKE: {
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
+            },
         },
     },
     FINALIZATION: {
@@ -2044,7 +2760,9 @@ export const FR = {
         },
         QUEUES: {
             TITLE: 'Signalements en attente de finalisation',
-            BREADCRUMB: { LABEL: 'Bac à pioche' },
+            BREADCRUMB: {
+                LABEL: 'Bac à pioche',
+            },
             TABLE: {
                 UNIQ_ID: 'Identifiant',
                 REPORT_TYPE: 'Types de signalements',
@@ -2072,7 +2790,9 @@ export const FR = {
         },
         TASKS: {
             TITLE: 'Signalements en cours de finalisation',
-            BREADCRUMB: { LABEL: 'Panier de tâches' },
+            BREADCRUMB: {
+                LABEL: 'Panier de tâches',
+            },
             TABLE: {
                 UNIQ_ID: 'Identifiant',
                 REPORT_TYPE: 'Types de signalements',
@@ -2100,7 +2820,9 @@ export const FR = {
         },
         ALL: {
             TITLE: 'Signalements finalisés',
-            BREADCRUMB: { LABEL: 'Finalisés' },
+            BREADCRUMB: {
+                LABEL: 'Finalisés',
+            },
             TABLE: {
                 UNIQ_ID: 'Identifiant',
                 REPORT_TYPE: 'Types de signalements',
@@ -2144,6 +2866,16 @@ export const FR = {
                     TITLE: 'Confirmer la finalisation',
                     MESSAGE: 'Finaliser ce signalement ?',
                 },
+            },
+            FILTER: {
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
+            },
+            FINALIZE: {
+                COMMENT_REQUIRED: 'Le commentaire est requis',
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
+            },
+            TAKE: {
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
             },
         },
     },
@@ -2198,9 +2930,15 @@ export const FR = {
                 TITLE: 'Mode de qualification',
                 CALLBACK_TYPE: 'Type de rappel',
                 OPTIONS: {
-                    DETAILS: { LABEL: 'Visualisation' },
-                    EDIT: { LABEL: 'Modifier' },
-                    CALLBACK: { LABEL: 'Callback' },
+                    DETAILS: {
+                        LABEL: 'Visualisation',
+                    },
+                    EDIT: {
+                        LABEL: 'Modifier',
+                    },
+                    CALLBACK: {
+                        LABEL: 'Callback',
+                    },
                 },
             },
         },
@@ -2208,7 +2946,10 @@ export const FR = {
     AUTHENTICATION: {
         LOGIN: {
             TITLE: 'Connexion',
-            FORM: { EMAIL: 'Email', PASSWORD: 'Mot de passe' },
+            FORM: {
+                EMAIL: 'Email',
+                PASSWORD: 'Mot de passe',
+            },
             ACTION: {
                 SUBMIT: 'Se connecter',
                 FORGOT_PASSWORD: 'Mot de passe oublié ?',
@@ -2216,7 +2957,9 @@ export const FR = {
         },
         FORGOT_PASSWORD: {
             TITLE: 'Mot de passe oublié',
-            FORM: { EMAIL: 'Email' },
+            FORM: {
+                EMAIL: 'Email',
+            },
             ACTION: {
                 SUBMIT: 'Envoyer',
                 BACK_TO_LOGIN: 'Retour à la connexion',
@@ -2231,8 +2974,13 @@ export const FR = {
             FORM: {
                 PASSWORD: 'Nouveau mot de passe',
                 CONFIRM_PASSWORD: 'Confirmer le mot de passe',
+                ERROR: {
+                    TOKEN_REQUIRE: 'Le jeton est requis',
+                },
             },
-            ACTION: { SUBMIT: 'Réinitialiser' },
+            ACTION: {
+                SUBMIT: 'Réinitialiser',
+            },
         },
     },
 } as const;

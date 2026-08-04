@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,9 +8,8 @@ import {
     RadioRelayLinksOperator,
 } from '@cmz/coverage-areas-domain';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { RadioRelayLinksFormStore } from '../stores/radio-relay-links-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'COVERAGE_AREAS.RADIO_RELAY_LINKS';
 
@@ -27,8 +20,6 @@ const T = 'COVERAGE_AREAS.RADIO_RELAY_LINKS';
  */
 @Component({
     selector: 'cmz-radio-relay-links-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [RadioRelayLinksFormStore],
     template: `

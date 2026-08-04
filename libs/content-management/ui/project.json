@@ -3,5 +3,17 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/content-management/ui/src",
   "projectType": "library",
-  "tags": ["scope:content-management", "type:ui"]
+  "tags": [
+    "scope:content-management",
+    "type:ui"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/content-management/ui/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

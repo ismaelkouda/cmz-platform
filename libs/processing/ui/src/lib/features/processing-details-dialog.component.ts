@@ -1,5 +1,4 @@
 import {
-    ChangeDetectionStrategy,
     Component,
     effect,
     inject,
@@ -23,8 +22,6 @@ import { ProcessingDetailsEntity } from '@cmz/processing-domain';
  */
 @Component({
     selector: 'cmz-processing-details-dialog',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <dialog
             #dlg

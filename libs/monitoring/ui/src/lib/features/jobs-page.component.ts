@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { JobsFacade } from '@cmz/monitoring-application';
 import { GrafanaEmbedComponent } from '@cmz/shared-ui';
 
@@ -13,8 +13,6 @@ const T = 'MONITORING.JOBS';
  */
 @Component({
     selector: 'cmz-jobs-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [GrafanaEmbedComponent],
     template: `
         <cmz-grafana-embed

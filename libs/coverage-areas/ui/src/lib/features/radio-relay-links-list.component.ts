@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RadioRelayLinksFacade } from '@cmz/coverage-areas-application';
 import { RadioRelayLinksOperator } from '@cmz/coverage-areas-domain';
@@ -37,8 +31,6 @@ const T = 'COVERAGE_AREAS.RADIO_RELAY_LINKS';
  */
 @Component({
     selector: 'cmz-radio-relay-links-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [RadioRelayLinksFilterStore],
     template: `

@@ -1,9 +1,7 @@
-export * from './lib/adapters/action-item.factory';
 export * from './lib/constants/administrative-boundary-paths.constant';
 export * from './lib/constants/status-label.constant';
 export * from './lib/enums/status-style.enum';
 export * from './lib/mappers/status-style.mapper';
-export * from './lib/stores/form-mode.type';
 
 // ---- Region ----------------------------------------------------------
 

@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@cmz/settings-security-domain": "workspace:*",
-    "@cmz/settings-security-application": "workspace:*",
-    "@cmz/shared-ui": "workspace:*",
-    "@cmz/shared-application": "workspace:*",
     "@angular/core": "catalog:",
-    "@angular/router": "catalog:",
     "@angular/forms": "catalog:",
-    "rxjs": "catalog:"
+    "@angular/router": "catalog:",
+    "@cmz/settings-security-application": "workspace:*",
+    "@cmz/settings-security-domain": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "@cmz/shared-ui": "workspace:*"
   }
 }

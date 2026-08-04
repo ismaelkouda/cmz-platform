@@ -1,5 +1,4 @@
 import {
-    ChangeDetectionStrategy,
     Component,
     ElementRef,
     effect,
@@ -17,8 +16,6 @@ import { CmzConfirmDialogService } from '../../services/cmz-confirm-dialog.servi
  */
 @Component({
     selector: 'cmz-dialog-outlet',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <dialog
             #dlg

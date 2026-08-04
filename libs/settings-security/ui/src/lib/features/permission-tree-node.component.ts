@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    inject,
-    input,
-    output,
-} from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import {
     PermissionActions,
     PermissionTreeNode,
@@ -22,8 +16,6 @@ import { permissionActionLabel } from '../constants/permission-action-label.cons
  */
 @Component({
     selector: 'cmz-permission-tree-node',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [PermissionTreeNodeComponent],
     template: `
         <li class="flex flex-col gap-1">

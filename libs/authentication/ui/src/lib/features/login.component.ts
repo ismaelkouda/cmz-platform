@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { LoginFacade } from '@cmz/authentication-application';
@@ -16,8 +11,6 @@ const T = 'AUTHENTICATION.LOGIN';
 
 @Component({
     selector: 'cmz-login',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent, RouterLink],
     providers: [LoginFormStore],
     template: `

@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@cmz/team-organization-domain": "workspace:*",
-    "@cmz/team-organization-application": "workspace:*",
-    "@cmz/shared-ui": "workspace:*",
-    "@cmz/shared-application": "workspace:*",
     "@angular/core": "catalog:",
-    "@angular/router": "catalog:",
     "@angular/forms": "catalog:",
-    "rxjs": "catalog:"
+    "@angular/router": "catalog:",
+    "@cmz/shared-application": "workspace:*",
+    "@cmz/shared-domain": "workspace:*",
+    "@cmz/shared-ui": "workspace:*",
+    "@cmz/team-organization-application": "workspace:*",
+    "@cmz/team-organization-domain": "workspace:*"
   }
 }

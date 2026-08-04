@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OpticalFiberNetworkFacade } from '@cmz/coverage-areas-application';
 import { Operator } from '@cmz/coverage-areas-domain';
@@ -37,8 +31,6 @@ const T = 'COVERAGE_AREAS.OPTICAL_FIBER_NETWORK';
  */
 @Component({
     selector: 'cmz-optical-fiber-network-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [OpticalFiberNetworkFilterStore],
     template: `

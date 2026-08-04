@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -16,11 +10,11 @@ import { ReportType, TelecomOperator } from '@cmz/shared-domain';
 import { TranslationPort } from '@cmz/shared-application';
 import {
     FieldComponent,
+    FormMode,
     REPORT_TYPE_OPTIONS,
     TELECOM_OPERATOR_OPTIONS,
 } from '@cmz/shared-ui';
 import { TeamsFormStore } from '../stores/teams-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'TEAM_ORGANIZATION.TEAMS';
 
@@ -35,8 +29,6 @@ const T = 'TEAM_ORGANIZATION.TEAMS';
  */
 @Component({
     selector: 'cmz-teams-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [TeamsFormStore],
     template: `

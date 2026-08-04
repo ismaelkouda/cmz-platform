@@ -1,12 +1,40 @@
 import { Service } from '@angular/core';
 import { StoragePort } from '@cmz/shared-domain';
 
+/**
+ * Adaptateur `localStorage` + Web Crypto (AES-GCM/PBKDF2).
+ *
+ * **Portée réelle, à ne jamais confondre avec de la confidentialité :** la
+ * clé de dérivation vit dans ce fichier, donc dans le bundle client — tout
+ * navigateur qui exécute l'application peut lire ce code et reconstruire la
+ * clé. C'est de l'**obfuscation** (masque un `localStorage.getItem` occasionnel
+ * dans les devtools) et non un chiffrement opposable à un attaquant qui
+ * inspecte le bundle JS. Corrigé après audit
+ * (`audit-workspace-2026-08-02-addendum.md`, P1-18) :
+ * - méthodes renommées `*Obfuscated` (`StoragePort`) — plus de promesse de
+ *   confidentialité dans le nom ;
+ * - dérivation renforcée : PBKDF2 (100 000 itérations, SHA-256) au lieu d'un
+ *   simple hash SHA-256 non salé — toujours de l'obfuscation, mais qui ne
+ *   cède plus au premier essai naïf ;
+ * - préfixe `obf:` (neutre) au lieu de `'0715517685:'`, qui ressemblait à un
+ *   numéro de téléphone et pouvait induire en erreur quiconque inspecte le
+ *   stockage.
+ *
+ * La protection réelle d'une session (jeton, permissions) reste une
+ * responsabilité **serveur** : durée de vie courte + refresh, `HttpOnly` si
+ * l'architecture le permet. Ce composant n'a pas vocation à la remplacer —
+ * volontairement pas de changement d'architecture ici (hors périmètre de ce
+ * correctif), seulement l'alignement du nom sur ce que le mécanisme fait
+ * réellement.
+ */
 @Service()
 export class BrowserStorageAdapter implements StoragePort {
-    private readonly DEFAULT_ENCRYPTION_KEY = 'K0ud@';
-    private readonly ENCRYPTION_PREFIX = '0715517685:';
+    private readonly OBFUSCATION_PASSPHRASE = 'cmz-platform-local-storage-v1';
+    private readonly OBFUSCATION_SALT = 'cmz-platform-static-salt-v1';
+    private readonly OBFUSCATION_PREFIX = 'obf:';
+    private readonly PBKDF2_ITERATIONS = 100_000;
 
-    // ---- Sync (non chiffré) ----
+    // ---- Sync (non obfusqué) ----
     save(key: string, value: unknown): void {
         localStorage.setItem(key, this.serialize(value));
     }
@@ -24,22 +52,22 @@ export class BrowserStorageAdapter implements StoragePort {
         return localStorage.getItem(key) !== null;
     }
 
-    // ---- Async chiffré ----
-    async saveEncrypted(key: string, value: unknown): Promise<void> {
-        const cipher = await this.encrypt(this.serialize(value));
-        localStorage.setItem(key, `${this.ENCRYPTION_PREFIX}${cipher}`);
+    // ---- Async obfusqué ----
+    async saveObfuscated(key: string, value: unknown): Promise<void> {
+        const cipher = await this.obfuscate(this.serialize(value));
+        localStorage.setItem(key, `${this.OBFUSCATION_PREFIX}${cipher}`);
     }
 
-    async getEncrypted<T>(key: string): Promise<T | null> {
+    async getObfuscated<T>(key: string): Promise<T | null> {
         const data = localStorage.getItem(key);
         if (data === null) {
             return null;
         }
-        if (!data.startsWith(this.ENCRYPTION_PREFIX)) {
+        if (!data.startsWith(this.OBFUSCATION_PREFIX)) {
             return this.tryParse<T>(data);
         }
-        const plain = await this.decrypt(
-            data.slice(this.ENCRYPTION_PREFIX.length)
+        const plain = await this.deobfuscate(
+            data.slice(this.OBFUSCATION_PREFIX.length)
         );
         return this.tryParse<T>(plain);
     }
@@ -50,10 +78,10 @@ export class BrowserStorageAdapter implements StoragePort {
             .forEach((k) => localStorage.removeItem(k));
     }
 
-    async clearEncrypted(): Promise<void> {
+    async clearObfuscated(): Promise<void> {
         Object.keys(localStorage)
             .filter((k) =>
-                localStorage.getItem(k)?.startsWith(this.ENCRYPTION_PREFIX)
+                localStorage.getItem(k)?.startsWith(this.OBFUSCATION_PREFIX)
             )
             .forEach((k) => localStorage.removeItem(k));
     }
@@ -77,22 +105,33 @@ export class BrowserStorageAdapter implements StoragePort {
     }
 
     private async deriveKey(passphrase: string): Promise<CryptoKey> {
-        const hash = await crypto.subtle.digest(
-            'SHA-256',
-            new TextEncoder().encode(passphrase)
-        );
-        return crypto.subtle.importKey(
+        const material = await crypto.subtle.importKey(
             'raw',
-            hash,
-            { name: 'AES-GCM' },
+            new TextEncoder().encode(passphrase),
+            'PBKDF2',
+            false,
+            ['deriveKey']
+        );
+        return crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt: new TextEncoder().encode(this.OBFUSCATION_SALT),
+                iterations: this.PBKDF2_ITERATIONS,
+                hash: 'SHA-256',
+            },
+            material,
+            { name: 'AES-GCM', length: 256 },
             false,
             ['encrypt', 'decrypt']
         );
     }
 
-    private async encrypt(value: string, customKey?: string): Promise<string> {
+    private async obfuscate(
+        value: string,
+        customPassphrase?: string
+    ): Promise<string> {
         const key = await this.deriveKey(
-            customKey ?? this.DEFAULT_ENCRYPTION_KEY
+            customPassphrase ?? this.OBFUSCATION_PASSPHRASE
         );
         const iv = crypto.getRandomValues(new Uint8Array(12));
         const ciphertext = await crypto.subtle.encrypt(
@@ -103,15 +142,15 @@ export class BrowserStorageAdapter implements StoragePort {
         return this.toBase64(this.concat(iv, new Uint8Array(ciphertext)));
     }
 
-    private async decrypt(
+    private async deobfuscate(
         payload: string,
-        customKey?: string
+        customPassphrase?: string
     ): Promise<string> {
         const bytes = this.fromBase64(payload);
         const iv = bytes.slice(0, 12);
         const ciphertext = bytes.slice(12);
         const key = await this.deriveKey(
-            customKey ?? this.DEFAULT_ENCRYPTION_KEY
+            customPassphrase ?? this.OBFUSCATION_PASSPHRASE
         );
         const plain = await crypto.subtle.decrypt(
             { name: 'AES-GCM', iv },

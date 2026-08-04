@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { DashboardFacade } from '@cmz/dashboard-application';
 import { Period } from '@cmz/dashboard-domain';
@@ -22,8 +17,6 @@ const T = 'DASHBOARD';
  */
 @Component({
     selector: 'cmz-dashboard-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [DashboardSkeletonComponent],
     providers: [DashboardFilterStore],
     template: `

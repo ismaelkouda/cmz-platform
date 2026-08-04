@@ -1,11 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-    signal,
-} from '@angular/core';
+import { Component, Signal, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { QueuesFinalizationFacade } from '@cmz/finalization-application';
 import {
@@ -39,8 +32,6 @@ const T = 'FINALIZATION.QUEUES';
 
 @Component({
     selector: 'cmz-queues-finalization-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         FilterComponent,
         TableComponent,

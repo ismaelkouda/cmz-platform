@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TeamsFacade } from '@cmz/team-organization-application';
 import {
@@ -33,8 +27,6 @@ const T = 'TEAM_ORGANIZATION.TEAMS';
 
 @Component({
     selector: 'cmz-teams-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [TeamsFilterStore],
     template: `

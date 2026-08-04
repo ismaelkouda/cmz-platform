@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { ResourcesFacade } from '@cmz/monitoring-application';
 import { GrafanaEmbedComponent } from '@cmz/shared-ui';
 
@@ -6,8 +6,6 @@ const T = 'MONITORING.RESOURCES';
 
 @Component({
     selector: 'cmz-resources-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [GrafanaEmbedComponent],
     template: `
         <cmz-grafana-embed

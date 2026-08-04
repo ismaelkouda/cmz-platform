@@ -1,11 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    input,
-    output,
-    inject,
-    effect,
-} from '@angular/core';
+import { Component, input, output, inject, effect } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
     ReportStatesDetailsEntity,
@@ -22,8 +15,6 @@ const Q = 'REQUESTS.DETAILS.QUALIFICATION';
 
 @Component({
     selector: 'cmz-report-states-details-qualification-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ReactiveFormsModule, ReportStatesDetailsEditFieldsComponent],
     template: `
         <form

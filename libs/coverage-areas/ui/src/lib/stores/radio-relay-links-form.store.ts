@@ -12,7 +12,7 @@ import {
     RadioRelayLinksFrequency,
     RadioRelayLinksOperator,
 } from '@cmz/coverage-areas-domain';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface RadioRelayLinksFormModel {
     name: string;

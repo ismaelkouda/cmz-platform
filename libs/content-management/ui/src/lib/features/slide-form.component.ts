@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -13,11 +7,11 @@ import { SlideFacade } from '@cmz/content-management-application';
 import { TranslationPort } from '@cmz/shared-application';
 import {
     FieldComponent,
+    FormMode,
     PLATFORM_OPTIONS,
     TYPE_MEDIA_OPTIONS,
 } from '@cmz/shared-ui';
 import { SlideFormStore } from '../stores/slide-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'CONTENT_MANAGEMENT.SLIDE';
 
@@ -30,8 +24,6 @@ const T = 'CONTENT_MANAGEMENT.SLIDE';
  */
 @Component({
     selector: 'cmz-slide-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [SlideFormStore],
     template: `

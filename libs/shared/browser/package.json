@@ -5,7 +5,10 @@
   "dependencies": {
     "@angular/core": "catalog:",
     "@cmz/shared-domain": "workspace:*",
-    "@cmz/shared-application": "workspace:*",
     "exceljs": "catalog:"
+  },
+  "devDependencies": {
+    "@angular/compiler": "catalog:",
+    "vitest": "^4.0.8"
   }
 }

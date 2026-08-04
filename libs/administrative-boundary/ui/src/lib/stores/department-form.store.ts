@@ -11,7 +11,7 @@ import {
     DepartmentFindOneFacade,
     RegionSelectFacade,
 } from '@cmz/administrative-boundary-application';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface DepartmentFormModel {
     code: string;

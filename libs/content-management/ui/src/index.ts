@@ -1,5 +1,3 @@
-export * from './lib/stores/form-mode.type';
-export * from './lib/adapters/action-item.factory';
 
 export * from './lib/enums/home-status-style.enum';
 export * from './lib/constants/home-status-label.constant';

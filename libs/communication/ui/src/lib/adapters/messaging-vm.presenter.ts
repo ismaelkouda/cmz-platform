@@ -1,9 +1,8 @@
 import { MessagingEntity } from '@cmz/communication-domain';
-import { ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
 import { MESSAGING_CHANNEL_LABEL } from '../constants/messaging-channel-label.constant';
 import { MESSAGING_TARGET_LABEL } from '../constants/messaging-target-label.constant';
 import { MESSAGING_TYPE_LABEL } from '../constants/messaging-type-label.constant';
-import { actionItem, resolveTooltip } from './action-item.factory';
 import { MessagingVmProps } from './messaging-vm-props.interface';
 
 interface MessagingPermission {

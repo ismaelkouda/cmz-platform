@@ -11,10 +11,7 @@ import { MapApi } from '../sources/map.api';
 import { InteractiveMapReportsApi } from '../sources/interactive-map-reports.api';
 import { InteractiveMapReportMapper } from '../mappers/interactive-map-report.mapper';
 import { MapMapper } from '../mappers/map.mapper';
-import {
-    InteractiveMapReportApiDto,
-    InteractiveMapReportsResponseApiDto,
-} from '../dtos/interactive-map-report-api.dto';
+import { InteractiveMapReportsResponseApiDto } from '../dtos/interactive-map-report-api.dto';
 
 @Service()
 export class InteractiveMapRepositoryImpl implements InteractiveMapRepository {

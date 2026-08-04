@@ -3,5 +3,17 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/settings-security/application/src",
   "projectType": "library",
-  "tags": ["scope:settings-security", "type:application"]
+  "tags": [
+    "scope:settings-security",
+    "type:application"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/settings-security/application/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

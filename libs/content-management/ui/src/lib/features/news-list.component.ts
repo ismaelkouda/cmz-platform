@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NewsFacade } from '@cmz/content-management-application';
 import {
@@ -33,8 +27,6 @@ const T = 'CONTENT_MANAGEMENT.NEWS';
 
 @Component({
     selector: 'cmz-news-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [NewsFilterStore],
     template: `

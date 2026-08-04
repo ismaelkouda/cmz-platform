@@ -14,7 +14,7 @@ import {
     toggleNodeChecked,
     treeToPermissionsPayload,
 } from '../utils/permission-tree.util';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface ProfilesPermissionsFormModel {
     name: string;

@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RegionFacade } from '@cmz/administrative-boundary-application';
 import {
@@ -31,8 +25,6 @@ const T = 'ADMINISTRATIVE_BOUNDARY.REGION';
 
 @Component({
     selector: 'cmz-region-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [RegionFilterStore],
     template: `

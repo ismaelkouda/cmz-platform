@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { disabled, form, required } from '@angular/forms/signals';
 import { PrivacyPolicyFindOneFacade } from '@cmz/content-management-application';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface PrivacyPolicyFormModel {
     version: string;

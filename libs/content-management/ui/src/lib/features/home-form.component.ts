@@ -1,19 +1,12 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Platform } from '@cmz/shared-domain';
 import { HomeFacade } from '@cmz/content-management-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent, PLATFORM_OPTIONS } from '@cmz/shared-ui';
+import { FieldComponent, FormMode, PLATFORM_OPTIONS } from '@cmz/shared-ui';
 import { HomeFormStore } from '../stores/home-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'CONTENT_MANAGEMENT.HOME';
 
@@ -28,8 +21,6 @@ const T = 'CONTENT_MANAGEMENT.HOME';
  */
 @Component({
     selector: 'cmz-home-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [HomeFormStore],
     template: `

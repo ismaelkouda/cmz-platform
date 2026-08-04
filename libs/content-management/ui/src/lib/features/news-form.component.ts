@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,9 +8,8 @@ import {
     NewsFacade,
 } from '@cmz/content-management-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent, TYPE_MEDIA_OPTIONS } from '@cmz/shared-ui';
+import { FieldComponent, FormMode, TYPE_MEDIA_OPTIONS } from '@cmz/shared-ui';
 import { NewsFormStore } from '../stores/news-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'CONTENT_MANAGEMENT.NEWS';
 
@@ -36,8 +29,6 @@ const T = 'CONTENT_MANAGEMENT.NEWS';
  */
 @Component({
     selector: 'cmz-news-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [NewsFormStore],
     template: `

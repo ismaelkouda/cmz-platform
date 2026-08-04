@@ -1,12 +1,13 @@
 import {
-    ChangeDetectionStrategy,
     Component,
+    computed,
     inject,
     input,
     output,
     signal,
 } from '@angular/core';
 import { TranslationPort } from '@cmz/shared-application';
+import { TrustedOriginPort } from '@cmz/shared-domain';
 import { SafeUrlPipe } from '../../pipes/safe-url.pipe';
 
 /**
@@ -26,8 +27,6 @@ import { SafeUrlPipe } from '../../pipes/safe-url.pipe';
  */
 @Component({
     selector: 'cmz-grafana-embed',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [SafeUrlPipe],
     template: `
         <section
@@ -106,7 +105,7 @@ import { SafeUrlPipe } from '../../pipes/safe-url.pipe';
                             {{ t(loadingLabelKey()) }}
                         </p>
                     </div>
-                } @else if (error()) {
+                } @else if (error() || isBlocked()) {
                     <div class="cmz-grafana-embed__state">
                         <svg
                             class="cmz-grafana-embed__icon cmz-grafana-embed__icon--error"
@@ -271,8 +270,23 @@ export class GrafanaEmbedComponent {
     readonly refresh = output<void>();
 
     private readonly i18n = inject(TranslationPort);
+    private readonly trustedOrigin = inject(TrustedOriginPort);
 
     protected readonly isFullscreen = signal(false);
+
+    /**
+     * Audit I-14/I-15 : `grafanaLink` vient de la réponse backend, jamais
+     * d'une constante de code — `SafeUrlPipe` bloque déjà le rendu de
+     * l'iframe si l'origine n'est pas dans `APP_CONFIG.trustedFrameOrigins`
+     * (c'est la barrière de sécurité réelle). Ce computed ne fait que piloter
+     * l'affichage : montrer l'état d'erreur existant (réutilise
+     * `errorLabelKey()`, pas de nouvelle clé i18n) plutôt qu'une iframe vide
+     * sans `src` si le lien est bloqué.
+     */
+    protected readonly isBlocked = computed(() => {
+        const link = this.grafanaLink();
+        return !!link && !this.trustedOrigin.isTrustedFrameOrigin(link);
+    });
 
     protected t(key: string): string {
         return this.i18n.translate(key);

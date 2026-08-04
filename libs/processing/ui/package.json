@@ -4,11 +4,13 @@
   "private": true,
   "dependencies": {
     "@angular/core": "catalog:",
+    "@angular/forms": "catalog:",
     "@angular/router": "catalog:",
     "@cmz/processing-application": "workspace:*",
     "@cmz/processing-domain": "workspace:*",
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
-    "@cmz/shared-ui": "workspace:*"
+    "@cmz/shared-ui": "workspace:*",
+    "rxjs": "catalog:"
   }
 }

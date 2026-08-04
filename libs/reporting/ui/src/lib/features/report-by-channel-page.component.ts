@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { ReportByChannelFacade } from '@cmz/reporting-application';
 import { GrafanaEmbedComponent } from '@cmz/shared-ui';
 
@@ -11,8 +6,6 @@ const T = 'REPORTING.REPORT_BY_CHANNEL';
 
 @Component({
     selector: 'cmz-report-by-channel-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [GrafanaEmbedComponent],
     template: `
         <cmz-grafana-embed

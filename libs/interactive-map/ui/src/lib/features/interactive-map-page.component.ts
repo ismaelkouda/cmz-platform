@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { InteractiveMapSigFacade } from '@cmz/interactive-map-application';
 import { TranslationPort } from '@cmz/shared-application';
 import { InteractiveMapOlViewComponent } from './interactive-map-ol-view.component';
@@ -12,8 +7,6 @@ const T = 'INTERACTIVE_MAP.MAP';
 
 @Component({
     selector: 'cmz-interactive-map-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [InteractiveMapOlViewComponent],
     template: `
         <section class="flex flex-col gap-4">

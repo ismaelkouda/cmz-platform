@@ -12,7 +12,7 @@ import {
     NewsCategoriesSelectFacade,
     NewsFindOneFacade,
 } from '@cmz/content-management-application';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface NewsFormModel {
     type: TypeMedia | '';

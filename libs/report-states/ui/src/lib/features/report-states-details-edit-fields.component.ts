@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    input,
-    inject,
-} from '@angular/core';
+import { Component, input, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslationPort } from '@cmz/shared-application';
 import {
@@ -28,8 +23,6 @@ export interface ReportStatesDetailsEditFieldsForm {
 
 @Component({
     selector: 'cmz-report-states-details-edit-fields',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ReactiveFormsModule],
     template: `
         <fieldset

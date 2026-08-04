@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MobileNetworkFacade } from '@cmz/coverage-areas-application';
 import { Operator, Technology } from '@cmz/coverage-areas-domain';
@@ -36,8 +30,6 @@ const T = 'COVERAGE_AREAS.MOBILE_NETWORK';
  */
 @Component({
     selector: 'cmz-mobile-network-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [MobileNetworkFilterStore],
     template: `

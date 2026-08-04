@@ -7,5 +7,9 @@
     "@angular/core": "catalog:",
     "@cmz/shared-constants": "workspace:*",
     "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "@angular/compiler": "catalog:",
+    "vitest": "^4.0.8"
   }
 }

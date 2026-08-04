@@ -4,11 +4,15 @@
   "private": true,
   "dependencies": {
     "@angular/common": "catalog:",
+    "@angular/compiler": "catalog:",
     "@angular/core": "catalog:",
     "@cmz/core": "workspace:*",
     "@cmz/requests-domain": "workspace:*",
     "@cmz/shared-data": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
     "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.8"
   }
 }

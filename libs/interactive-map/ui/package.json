@@ -7,15 +7,13 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@angular/common": "catalog:",
     "@angular/core": "catalog:",
     "@angular/router": "catalog:",
     "@cmz/interactive-map-application": "workspace:*",
     "@cmz/interactive-map-domain": "workspace:*",
-    "@cmz/shared-domain": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
-    "ol": "catalog:",
-    "rxjs": "catalog:"
+    "ol": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:tooling"

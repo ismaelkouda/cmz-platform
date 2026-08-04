@@ -3,5 +3,17 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/authentication/application/src",
   "projectType": "library",
-  "tags": ["scope:authentication", "type:application"]
+  "tags": [
+    "scope:authentication",
+    "type:application"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/authentication/application/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

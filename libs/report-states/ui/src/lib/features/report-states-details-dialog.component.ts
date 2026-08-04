@@ -1,5 +1,4 @@
 import {
-    ChangeDetectionStrategy,
     Component,
     effect,
     inject,
@@ -37,8 +36,6 @@ import { ReportStatesDetailsStepBarComponent } from './report-states-details-ste
  */
 @Component({
     selector: 'cmz-report-states-details-dialog',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         ReportStatesDetailsHeaderComponent,
         ReportStatesDetailsSidebarComponent,

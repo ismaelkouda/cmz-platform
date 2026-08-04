@@ -1,9 +1,15 @@
 import {
     ApplicationConfig,
+    ErrorHandler,
     provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
+import {
+    GlobalErrorHandler,
+    TrustedOriginAdapter,
+    cacheInterceptor,
+} from '@cmz/core';
 import {
     ConfirmDialogPort,
     NotificationPort,
@@ -11,13 +17,17 @@ import {
 } from '@cmz/shared-application';
 import {
     ExcelExportPort,
+    LoggerPort,
     NavigationPort,
     StoragePort,
+    TrustedOriginPort,
 } from '@cmz/shared-domain';
+import { errorInterceptor } from '@cmz/shared-data';
 import {
     BrowserExcelExportAdapter,
     BrowserNavigationAdapter,
     BrowserStorageAdapter,
+    ConsoleLoggerAdapter,
 } from '@cmz/shared-browser';
 import {
     CmzConfirmDialogService,
@@ -25,6 +35,7 @@ import {
     I18nextTranslationService,
 } from '@cmz/shared-ui';
 import { appRoutes } from './app.routes';
+import { authInterceptor } from './interceptors/auth.interceptor';
 import { provideI18n } from './i18n/i18n.provider';
 import { provideDevPermissions } from './dev/dev-permissions.provider';
 import { provideAdministrativeInfrastructure } from './providers/administrative-infrastructure.providers';
@@ -47,7 +58,19 @@ import { provideFinalization } from './providers/finalization.providers';
 export const appConfig: ApplicationConfig = {
     providers: [
         provideBrowserGlobalErrorListeners(),
-        provideHttpClient(),
+        // Ordre = ordre de traversée requête (le dernier est le plus proche
+        // du réseau) : auth (attache le jeton) → error (normalise les
+        // échecs de transport en DomainError) → cache (court-circuite vers
+        // le réseau seulement si nécessaire — doit voir la requête déjà
+        // authentifiée, et ses erreurs doivent être normalisées comme
+        // toutes les autres).
+        provideHttpClient(
+            withInterceptors([
+                authInterceptor,
+                errorInterceptor,
+                cacheInterceptor,
+            ])
+        ),
         provideRouter(appRoutes),
         provideI18n(),
         // Adaptateurs des ports (design-system + moteurs agnostiques).
@@ -58,6 +81,15 @@ export const appConfig: ApplicationConfig = {
         { provide: NotificationPort, useExisting: CmzNotificationService },
         { provide: ConfirmDialogPort, useExisting: CmzConfirmDialogService },
         { provide: TranslationPort, useExisting: I18nextTranslationService },
+        // Audit I-14/I-15 : origine du lien Grafana embarqué (SafeUrlPipe).
+        { provide: TrustedOriginPort, useExisting: TrustedOriginAdapter },
+        TrustedOriginAdapter,
+        // Audit P-1/P-2 : journalisation + ErrorHandler global. Adaptateur
+        // console par défaut (P-3, collecteur externe, non décidé) — voir
+        // le docstring de LoggerPort.
+        { provide: LoggerPort, useExisting: ConsoleLoggerAdapter },
+        ConsoleLoggerAdapter,
+        { provide: ErrorHandler, useClass: GlobalErrorHandler },
         // Composition root des modules (ports domaine -> impls data).
         ...provideAdministrativeInfrastructure(),
         ...provideAdministrativeBoundary(),

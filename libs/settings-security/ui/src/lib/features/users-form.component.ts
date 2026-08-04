@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -13,9 +7,8 @@ import {
     UsersFacade,
 } from '@cmz/settings-security-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { ROLE_LABEL, FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode, ROLE_LABEL } from '@cmz/shared-ui';
 import { UsersFormStore } from '../stores/users-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'SETTINGS_SECURITY.USERS';
 
@@ -27,8 +20,6 @@ const T = 'SETTINGS_SECURITY.USERS';
  */
 @Component({
     selector: 'cmz-users-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [UsersFormStore],
     template: `

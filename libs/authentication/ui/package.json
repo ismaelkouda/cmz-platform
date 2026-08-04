@@ -3,13 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@cmz/authentication-domain": "workspace:*",
     "@cmz/authentication-application": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
     "@cmz/shared-application": "workspace:*",
     "@angular/core": "catalog:",
     "@angular/router": "catalog:",
-    "@angular/forms": "catalog:",
-    "rxjs": "catalog:"
+    "@angular/forms": "catalog:"
   }
 }

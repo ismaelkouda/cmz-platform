@@ -1,11 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-    input,
-    output,
-} from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { TranslationPort } from '@cmz/shared-application';
 import { PaginationMeta } from '@cmz/shared-domain';
 import { pageWindow } from './page-window.util';
@@ -19,8 +12,6 @@ import { pageWindow } from './page-window.util';
  */
 @Component({
     selector: 'cmz-pagination',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         @if (meta(); as m) {
             <nav

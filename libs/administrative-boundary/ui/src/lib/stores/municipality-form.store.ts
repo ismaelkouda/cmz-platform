@@ -12,7 +12,7 @@ import {
     RegionSelectFacade,
 } from '@cmz/administrative-boundary-application';
 import { DepartmentOption } from '@cmz/administrative-boundary-domain';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface MunicipalityFormModel {
     code: string;
