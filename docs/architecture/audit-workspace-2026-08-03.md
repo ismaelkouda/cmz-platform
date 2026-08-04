@@ -2664,6 +2664,86 @@ fichiers) du chantier « mappers concrets » : `content-management`.
 
 ---
 
+### Backlog cartographie #4 — huitième et dernier module (`content-management`, 2026-08-04) — chantier clos
+
+Huitième et dernier module traité, en entier : `content-management` —
+12/12 fichiers appelant `MapperUtils.validateDto` testés (`home.mapper.ts`,
+`home-find-one.mapper.ts`, `legal-notice.mapper.ts`,
+`legal-notice-find-one.mapper.ts`, `news.mapper.ts`,
+`news-find-one.mapper.ts`, `privacy-policy.mapper.ts`,
+`privacy-policy-find-one.mapper.ts`, `slide.mapper.ts`,
+`slide-find-one.mapper.ts`, `terms-use.mapper.ts`,
+`terms-use-find-one.mapper.ts`), 49 tests neufs, tous verts au premier
+passage. **Ce module clôt le chantier « mappers concrets » (backlog #4)** :
+8/8 modules `crud-entity`/`action-request` retenus pour couverture manuelle
+sont désormais testés, 73/73 fichiers réels du périmètre corrigé (recompté
+sur `settings-security`, cf. section précédente).
+
+Module organisé en 2 familles de comportement, chacune déjà rencontrée
+séparément ailleurs dans le chantier mais jamais combinées jusqu'ici dans
+un même module :
+
+- 3 entités « document publiable » quasi-identiques
+  (`legal-notice`/`privacy-policy`/`terms-use`) : statut dérivé de
+  `is_published` (vocabulaire `PUBLISH`/`UNPUBLISH`, pas
+  `ACTIVE`/`INACTIVE`), chacune son propre enum (même précédent « chacun le
+  sien » déjà observé sur `coverage-areas`), et un écart structurel
+  liste/détail **répété à l'identique 3 fois** : `published_at` présent sur
+  le DTO liste, absent du DTO find-one — déjà documenté dans les 3 fichiers
+  DTO source par le même commentaire copié-collé, revérifié ici par
+  l'absence de getter sur les 3 entités find-one plutôt que par confiance
+  dans le commentaire.
+- 3 entités « média » (`home`/`news`/`slide`) : `platforms` (`string[]`
+  libre au wire) filtré via `isPlatform` sur `home`/`slide` — testé sur les
+  3 cas réels (valeurs valides, valeur invalide silencieusement écartée,
+  champ absent) ; `type` (média) validé via `TypeMediaMapper`
+  **injecté** — 1er cas du chantier où un mapper dépend d'un service
+  *partagé* (`@cmz/shared-data`) plutôt que d'un mapper propre au module
+  (`RolesMapper` dans `settings-security` était local au module) ; testé
+  avec `createEnvironmentInjector([TypeMediaMapper, XMapper], null as
+  never)`, même pattern DI que `settings-security/UsersMapper`. `home` et
+  `slide` divergent sur `buttonLabel`/`buttonUrl` en find-one : requis sans
+  fallback chez `home` (le DTO les type non-optionnels), défendus par
+  `?? ''` chez `slide` (le DTO les type optionnels) — même paire de champs
+  fonctionnels, traitement cohérent avec le typage DTO de chacun, pas une
+  incohérence.
+- `NewsFindOneMapper` documente dans son propre commentaire source un vrai
+  fix de null-safety par rapport au legacy : chaînage optionnel ajouté sur
+  `dto.category?.id`/`dto.sub_category?.id` (le source faisait
+  `dto.category.id` sans garde) — vérifié par test avec un item sans
+  catégorie plutôt que pris pour acquis sur la foi du commentaire.
+
+`tsc --noEmit` et `eslint --max-warnings=0` à 0 erreur dès le premier essai
+— comme `coverage-areas`, tous les enums du module sont des objets
+`as const`, aucun piège de typage nominal. `check:duplicate-files.mjs` et
+`check:project-targets.mjs` : OK. `check:docs-freshness` régénéré
+(`tools/generate-status.mjs`) : `STATUS.md`/`LLM_CONTEXT.md` recomptent
+137 specs (`.spec.ts`) sur 2 694 fichiers TypeScript totaux, contre 82
+specs avant ce chantier — delta de **+55 fichiers `.spec.ts`**, exactement
+la somme des fichiers testés sur les 8 modules du chantier (2 + 3 + 5 + 6 +
+6 + 10 + 11 + 12 = 55 : `authentication`, `communication`,
+`team-organization`, `administrative-infrastructure`,
+`settings-security`, `administrative-boundary`, `coverage-areas`,
+`content-management`) — recoupement chiffré exact, pas approximatif, entre
+le décompte module par module tenu dans ce document et le compteur
+mécanique de `generate-status.mjs`.
+
+**Bilan chantier « mappers concrets » (backlog #4), clos le 2026-08-04** :
+8 modules traités (`authentication`, `communication`, `team-organization`,
+`administrative-infrastructure`, `settings-security`,
+`administrative-boundary`, `coverage-areas`, `content-management`), 73
+fichiers réels couverts, 0 régression introduite, 3 bugs/comportements
+legacy réels corrigés et verrouillés par test au passage
+(`settings-security/UsersFindOneMapper.role` via `RolesMapper`,
+`settings-security/AccessLogsMapper` validation `isAccessLogsAction`
+effective, `content-management/NewsFindOneMapper` null-safety
+`category`/`sub_category`), et un découpage clair du restant hors
+périmètre : les modules `workflow-action` (`processing`/`requests`/
+`finalization`) restent corpus-couverts, `report-states` (5/6 fichiers
+sans spec dédiée) est tracké séparément en §7 item #11.
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**

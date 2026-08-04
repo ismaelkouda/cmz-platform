@@ -40,7 +40,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `administrative-infrastructure` | crud-entity | 0 | — | ✅ 66/66 (N-7, référence) | 0 | 6 | ✅ N-7 + backlog #4 |
 | `authentication` | action-request | 0 | — | — | 0 | 2 | ✅ I-7 + backlog #4 |
 | `communication` | crud-entity | 0 | — | — | 0 | 3 | ✅ backlog #4 |
-| `content-management` | crud-entity | 0 | — | — | 0 | 0 | ☐ |
+| `content-management` | crud-entity | 0 | — | — | 0 | 12 | ✅ backlog #4 |
 | `core` (kernel) | kernel | 0 | — | — | 4 | 0 | ✅ chantier I |
 | `coverage-areas` | crud-entity | 0 | — | — | 0 | 11 | ✅ backlog #4 |
 | `dashboard` | read-only-view | 25 | 12/12 | (`read-only-view.pattern.json`) | 0 | 0 | ☐ (touché indirectement, P-5/P-6) |
@@ -397,18 +397,40 @@ décision de périmètre produit, pas par une incapacité technique
   « mappers concrets » (portée sur les 5 fichiers existants, pas les
   entités absentes).
 
-### `content-management` — non touché
+### `content-management` — backlog #4 (8/12 modules, chantier « mappers concrets » terminé)
 
-- **Effectué :** rien cette session, ni les précédentes au niveau du
-  code applicatif — seulement compilant (tsc/eslint/ngc), 0 corpus,
-  0 test unitaire (le target `test` de son `data/project.json` a été câblé
-  cette passe, voir découverte `authentication` — mais aucun fichier de
-  test n'y a encore été écrit).
-- **Reste à faire :** l'intégralité — corpus, tests, pattern
-  Nx-shaped (candidat crud-entity comme
-  `administrative-infrastructure`/`administrative-boundary`, jamais
-  étendu à ce module) ; chantier « mappers concrets » (backlog #4) — dernier
-  module restant après `coverage-areas` (12 fichiers).
+- **Effectué (2026-08-04) :** module complet — 12/12 fichiers testés
+  (`home`, `home-find-one`, `legal-notice`, `legal-notice-find-one`,
+  `news`, `news-find-one`, `privacy-policy`, `privacy-policy-find-one`,
+  `slide`, `slide-find-one`, `terms-use`, `terms-use-find-one`), 49 tests
+  neufs, tous verts au premier passage. **Dernier module du chantier** :
+  8/12 modules et 73/73 fichiers réels du périmètre corrigé désormais
+  couverts par un test manuel.
+- **Reste à faire :** rien sur ce module précis ; chantier « mappers
+  concrets » clos (voir §7, item #4, statut final).
+- **Amélioration apportée :** aucune régression — le mapper `news-find-one`
+  documentait déjà dans son propre commentaire source un fix de
+  null-safety (chaînage optionnel sur `category`/`sub_category`, absent du
+  code legacy) ; vérifié par test, pas juste relu.
+- **Tâche découverte (backlog #4, 2026-08-04) :** module organisé en 2
+  familles de comportement distinctes, toutes deux déjà rencontrées
+  séparément ailleurs dans le chantier mais jamais combinées jusqu'ici :
+  - 3 entités « document publiable » quasi-identiques (`legal-notice`,
+    `privacy-policy`, `terms-use`) : statut dérivé de `is_published` (pas
+    `is_active`), chacune son propre enum `PUBLISH`/`UNPUBLISH` (même
+    précédent « chacun le sien » que `coverage-areas`), et le même écart
+    structurel liste/détail répété 3 fois à l'identique : `published_at`
+    présent sur la liste, absent du DTO find-one — documenté dans les 3
+    DTOs source, vérifié par absence de getter sur les 3 entités find-one.
+  - 3 entités « média » (`home`, `news`, `slide`) : `platforms` (wire
+    `string[]` libre) filtré via `isPlatform` (`home`/`slide`) ; `type`
+    (média) validé via `TypeMediaMapper` injecté — 1er cas du chantier où
+    un mapper (`news`, `slide` et leurs `-find-one`) dépend d'un service
+    **partagé** (`@cmz/shared-data`) plutôt que d'un mapper propre au
+    module (`RolesMapper` dans `settings-security` était local). `home` et
+    `slide` divergent sur `buttonLabel`/`buttonUrl` en find-one : requis
+    (sans fallback) chez `home`, optionnels (`?? ''`) chez `slide` — même
+    paire de champs, DTOs différents.
 
 ### `coverage-areas` — backlog #4 (7/12 modules du chantier « mappers concrets », module complet)
 
@@ -503,7 +525,7 @@ question de couverture de test ou de conformité de pattern.
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
 | 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
-| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **7/12 modules faits (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security` + `administrative-boundary` + `coverage-areas`, 2026-08-04)** ; **correction de compte** (passe précédente) : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO, pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels sur 12 modules**. `administrative-boundary`(10/10) et `coverage-areas`(11/11) confirment le compte sans écart. 1 seul module `crud-entity` reste : `content-management`(12 fichiers) ; `processing`/`requests`/`finalization` déjà couverts par corpus, `report-states` partiellement (voir #11) |
+| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | ✅ **clos (2026-08-04)** — **8/8 modules `crud-entity`/`action-request` du chantier manuel faits** (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security` + `administrative-boundary` + `coverage-areas` + `content-management`), **73/73 fichiers réels testés** sur le périmètre corrigé (12 modules au total en comptant les 4 `workflow-action` déjà couverts par corpus — `processing`/`requests`/`finalization` intégralement, `report-states` partiellement, suivi séparément en #11) ; **correction de compte** (passe intermédiaire) : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO, pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels**, confirmé sans nouvel écart sur les 3 derniers modules (`administrative-boundary` 10/10, `coverage-areas` 11/11, `content-management` 12/12) |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |
 | 7 | `security-audit`/`i18n-check` rendus bloquants | Résorption Dependabot / revue humaine du diff 320 clés | Faible une fois débloqué |
