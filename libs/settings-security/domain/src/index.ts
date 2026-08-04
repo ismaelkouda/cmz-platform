@@ -13,8 +13,10 @@ export * from './lib/props/access-logs.props';
 
 // entities
 export * from './lib/entities/users.entity';
+export * from './lib/entities/users-filter.entity';
 export * from './lib/entities/users-find-one.entity';
 export * from './lib/entities/profiles-permissions.entity';
+export * from './lib/entities/profiles-permissions-filter.entity';
 export * from './lib/entities/profiles-permissions-find-one.entity';
 export * from './lib/entities/access-logs.entity';
 
@@ -84,6 +86,7 @@ export * from './lib/value-objects/access-logs-filter.vo';
 // repositories
 export * from './lib/repositories/users.repository';
 export * from './lib/repositories/users-find-one.repository';
+export * from './lib/repositories/users-select.repository';
 export * from './lib/repositories/profiles-permissions.repository';
 export * from './lib/repositories/profiles-permissions-find-one.repository';
 export * from './lib/repositories/profiles-permissions-select.repository';

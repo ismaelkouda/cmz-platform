@@ -13,6 +13,7 @@ import {
     usersDeleteVo,
     usersDisableVo,
     usersEnableVo,
+    usersFilterEntity,
     usersFilterVo,
     usersUpdateVo,
 } from '@cmz/settings-security-domain';
@@ -28,7 +29,11 @@ export class UsersUseCase {
         options?: FetchOptions
     ): Observable<PageResult<UsersEntity>> {
         return defer(() =>
-            this.repository.execute(usersFilterVo(contract), page, options)
+            this.repository.execute(
+                usersFilterEntity(usersFilterVo(contract)),
+                page,
+                options
+            )
         );
     }
 
