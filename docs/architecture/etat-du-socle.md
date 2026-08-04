@@ -6,7 +6,7 @@ consulter, l'historique Git fait foi.
 
 <!-- BEGIN:GENERATED:monorepo-status -->
 - **Dernière mise à jour :** 2026-08-04 (généré par `tools/generate-status.mjs`)
-- **État :** **Phase 08** — génération depuis patterns ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle outillé + Kernel `shared/` / `@cmz/core` + **18** modules livrés/compilants (**71** libs + **1** app ; **2 557** `.ts` hors tests). Voir [`STATUS.md`](../../STATUS.md).
+- **État :** **Phase 08** — génération depuis patterns ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle outillé + Kernel `shared/` / `@cmz/core` + **18** modules livrés/compilants (**71** libs + **1** app ; **2 558** `.ts` hors tests). Voir [`STATUS.md`](../../STATUS.md).
 - **Familles IR :** `workflow-action` **4/4**, `read-only-view` **4/4**. Corpus **781** paires. CI `corpus:ci` (structural-only) + `corpus-full` (main) + Tier 2 nightly.
 <!-- END:GENERATED:monorepo-status -->
 

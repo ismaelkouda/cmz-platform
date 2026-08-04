@@ -13,6 +13,7 @@ export * from './lib/entities/participants.entity';
 export * from './lib/entities/participants-find-one.entity';
 export * from './lib/entities/teams.entity';
 export * from './lib/entities/teams-find-one.entity';
+export * from './lib/entities/teams-filter.entity';
 
 export * from './lib/contracts/participants-create.contract';
 export * from './lib/contracts/participants-create.validate-contract';

@@ -3,7 +3,7 @@
   "version": 0,
   "lineage": "Enterprise OOP (Angular + DDD/CQRS + Clean Architecture) — famille CRUD : liste paginée + create/update/delete + find-one + select, sur une entité administrative/référentielle unique par module (une ou plusieurs entités CRUD indépendantes peuvent cohabiter dans le même module, ex. infrastructure + infrastructure-type)",
   "description": "Formalisation Nx-shaped du pattern crud-entity déjà décrit côté legacy par `tools/seos/patterns/crud-entity.pattern.json` (extrait de administrative-boundary — departments/municipalities/regions, v23, 97 core_files legacy). Ce fichier fait le pont vers la forme réelle que ce même pattern prend une fois porté dans le monorepo Nx cible (`libs/{MODULE}/{domain,data,application,ui}`), au même titre que `workflow-action.pattern.json` et `read-only-view.pattern.json` — action N-7 de la revue finale du 2026-08-02, jusqu'ici seul pattern des trois listés dans le corpus SEOS à n'avoir aucune contrepartie Nx-shaped écrite.",
-  "validated_on": ["administrative-infrastructure", "administrative-boundary", "coverage-areas"],
+  "validated_on": ["administrative-infrastructure", "administrative-boundary", "coverage-areas", "team-organization"],
   "reference_module": "administrative-infrastructure",
   "reference_implementation": {
     "entity_used": "infrastructure",
@@ -26,6 +26,14 @@
     "notes": "Module Nx à 4 entités (mobile-network, site-group, optical-fiber-network, radio-relay-links — 326 fichiers au total, `find libs/coverage-areas -type f | wc -l`), dont 2 seulement classées crud-entity par `scope.json` (mobile-network, site-group) ; les 2 autres non vérifiées ici, cf. `autres_modules_crud_entity_observes_non_valides_ligne_a_ligne`. `site-group` conforme 66/66 (100.0%) via `tools/check-pattern-nx.mjs` — 3e convergence indépendante après administrative-infrastructure (référence) et administrative-boundary (2e validation). A un toggle enable/disable (`SiteGroupEnableValidateContract`/`SiteGroupDisableValidateContract` sur `SiteGroupRepository`), comme infrastructure — confirme que ce sous-ensemble n'est pas propre à un seul module.",
     "pattern_schema_unchanged": true
   },
+  "fourth_validation": {
+    "module": "team-organization",
+    "entity_used": "teams",
+    "nx_path": "libs/team-organization",
+    "validated_at": "2026-08-04",
+    "notes": "Module Nx à 2 entités (teams, participants — 66 fichiers du cœur crud-entity mesurés côté teams, `tools/check-pattern-nx.mjs`). Contrairement aux 3 validations précédentes (module déjà 100% conforme au moment de la mesure), team-organization/teams était à 65/66 (98.5%) — il manquait `domain/entities/teams-filter.entity.ts`. Écrit le 2026-08-04 : vérification préalable de `TeamsFilterContract` (aucun champ `startDate`/`endDate`, contrairement aux 3 modules déjà validés) a évité une reproduction aveugle de l'appel de référence `resolveOpenEndedEndDate(contract.startDate, contract.endDate)`, qui aurait été une erreur de compilation. Fonction identité écrite à la place (`teamsFilterEntity(contract) => contract`), documentée en commentaire, et câblée dans `TeamsUseCase.execute()` (comme les 3 modules de référence l'appellent réellement) plutôt que laissée comme fichier présent mais mort. Vérifié : `tools/check-pattern-nx.mjs libs/team-organization teams` → 66/66 (100.0%) ; `nx run @cmz/team-organization-domain:build` et `@cmz/team-organization-application:build` → succès ; `eslint libs/team-organization/domain libs/team-organization/application --max-warnings=0` → 0 warning ; `check:duplicates`/`check:duplicates:family`/`check:declared-deps`/`check:project-targets` → tous OK, aucune régression.",
+    "pattern_schema_unchanged": true
+  },
   "autres_modules_crud_entity_observes_non_valides_ligne_a_ligne": {
     "avertissement": "Observation de structure de dossiers seulement (noms de fichiers), PAS une validation fichier par fichier comme reference_implementation/second_validation/third_validation ci-dessus — ne pas citer comme preuve Rule 0 sans revérification.",
     "settings-security": "user (74 fichiers), profil (87 fichiers) — mêmes suffixes .contract/.validate-contract/.vo/.mapper/.repository observés par `find`",
@@ -36,9 +44,9 @@
       "content-management/home": "58/66 (87.9%)",
       "coverage-areas/mobile-network": "59/66 (89.4%)",
       "team-organization/participants": "58/66 (87.9%)",
-      "team-organization/teams": "65/66 (98.5%) — il manque uniquement domain/entities/teams-filter.entity.ts (le VO teams-filter.vo.ts existe, pas l'entity ; les 2 modules validés ont bien les deux fichiers côte à côte, donc c'est un vrai manque, pas une convention alternative)"
+      "team-organization/teams": "RÉSOLU 2026-08-04 — voir fourth_validation ci-dessus (65/66 → 66/66, teams-filter.entity.ts ajouté et câblé dans TeamsUseCase). Retiré de cette liste de gaps, ajouté à validated_on."
     },
-    "usage_recommande": "communication/messaging et team-organization/teams sont les candidats les plus proches d'une 4e validation (81.8% et 98.5%) — mais aucun n'atteint 100% aujourd'hui, donc aucun n'est ajouté à validated_on par ce correctif. Décision de priorisation du porteur (N-5, hors mandat d'un audit seul, ADR-0019) : combler ces écarts d'abord, ou étendre le pattern lui-même si certains (ex. l'absence de -select sur messaging) sont des variantes légitimes plutôt que des manques."
+    "usage_recommande": "team-organization/teams est passé à 100% le 2026-08-04 (fourth_validation) — retiré des candidats. communication/messaging reste le candidat le plus proche restant (81.8%, 12 fichiers manquants), suivi de coverage-areas/mobile-network (89.4%, 7 manquants) et team-organization/participants (87.9%, 8 manquants) et content-management/home (87.9%, 8 manquants). Décision de priorisation du porteur (N-5, hors mandat d'un audit seul, ADR-0019) : combler ces écarts en continuant module par module, ou étendre le pattern lui-même si certains (ex. l'absence de -select sur messaging) sont des variantes légitimes plutôt que des manques."
   },
   "core_files_legacy_reference": "tools/seos/patterns/crud-entity.pattern.json (v23, 97 core_files, source administrative-boundary) — ne pas dupliquer ici, ce fichier ne documente que le delta et la forme Nx",
   "core_files_nx": {

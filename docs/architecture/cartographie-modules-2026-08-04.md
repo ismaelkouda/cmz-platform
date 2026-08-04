@@ -53,7 +53,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `requests` | workflow-action | 157 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 17 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `settings-security` | crud-entity | 0 | — | — | 0 | 6 | ✅ I-7 + backlog #4 |
 | `shared` (kernel) | kernel | ≥1 (via `libs/shared/...`) | — | — | 4 (chantier I, hors chantier L) | **16** | ✅✅ chantier I + chantier L |
-| `team-organization` | crud-entity | 0 | — | 2 entités manquantes (ADR-0018) | 0 | 5 | ✅ backlog #4 |
+| `team-organization` | crud-entity | 0 | — | ✅ `teams` 66/66 (N-7, 4e validation, backlog #3, 2026-08-04) ; `participants` non validé, 2 entités manquantes (ADR-0018) | 0 | 5 | ✅ backlog #4 + #3 |
 
 **Lecture immédiate** : sur 18 modules, **8** ont désormais traversé
 l'oracle le plus sévère (corpus + Meta-vérification 12/12, colonne
@@ -421,9 +421,10 @@ décision de périmètre produit, pas par une incapacité technique
   (utilitaire récursif consommé par `teams-find-one.mapper.ts`) aplatit
   l'arbre PrimeNG en liste de cases à cocher, hiérarchie parent/enfant
   perdue par design — vérifié sur un arbre à 2 niveaux.
-- **Reste à faire :** 0 corpus, pattern Nx-shaped non étendu à ce module ;
-  2 entités hors périmètre du chantier « mappers concrets » (voir cas
-  particulier ci-dessous).
+- **Reste à faire :** 0 corpus ; pattern Nx-shaped étendu à `teams` le
+  2026-08-04 (backlog #3, voir sous-section ci-dessous), pas encore à
+  `participants` ; 2 entités hors périmètre du chantier « mappers
+  concrets » (voir cas particulier ci-dessous).
 - **Amélioration apportée :** aucune régression — `isReportType`/
   `isTelecomOperator` (filtrage silencieux des valeurs wire inconnues) et
   `RolesMapper` (wire `team-leader` → domaine `LEADER`) vérifiés corrects.
@@ -433,6 +434,45 @@ décision de périmètre produit, pas par une incapacité technique
   produit, pas un chantier technique ouvert ; sans lien avec le chantier
   « mappers concrets » (portée sur les 5 fichiers existants, pas les
   entités absentes).
+
+#### `team-organization/teams` — backlog #3 (extension `crud-entity.pattern.json`, 2026-08-04)
+
+- **Effectué :** `tools/check-pattern-nx.mjs libs/team-organization teams
+  --schema crud-entity.pattern.json` mesurait 65/66 (98.5%) — seul
+  `domain/entities/teams-filter.entity.ts` manquait (le VO
+  `teams-filter.vo.ts` existait déjà seul, sans l'entity qui l'accompagne
+  dans les 3 modules déjà validés). Vérification préalable de
+  `TeamsFilterContract` avant d'écrire le fichier : contrairement aux
+  3 modules de référence, ce contrat n'a **aucun champ de plage de dates**
+  (`search?`/`status?` seulement) — reproduire l'appel de référence
+  `resolveOpenEndedEndDate(contract.startDate, contract.endDate)` tel quel
+  aurait été une erreur de compilation, pas une question de style. Écrit
+  comme fonction identité (`teamsFilterEntity(contract) => contract`),
+  documentée en commentaire, câblée dans `TeamsUseCase.execute()`
+  (`teamsFilterEntity(teamsFilterVo(contract))`) pour ne pas laisser un
+  fichier présent mais mort — architecturalement malhonnête au regard du
+  principe « le livrable est le corpus et la sévérité de l'oracle ».
+- **Vérifié réellement :** `check-pattern-nx.mjs` → 66/66 (100.0%) ;
+  `nx run @cmz/team-organization-domain:build` et
+  `@cmz/team-organization-application:build` → succès ; `eslint
+  libs/team-organization/domain libs/team-organization/application
+  --max-warnings=0` → 0 warning ; `bun run check:pattern-nx:crud-entity`
+  (script étendu à un 4e module) → les 4 modules validés à 66/66 ;
+  `check:duplicates`, `check:duplicates:family`, `check:declared-deps`,
+  `check:project-targets` → tous OK, aucune régression. Pas de nouveau
+  fichier `.spec.ts` (cohérent avec l'absence de specs préexistantes sur
+  `team-organization/domain`, aucune convention brisée).
+- **Résultat :** `team-organization` ajouté à `validated_on` de
+  `crud-entity.pattern.json` (`fourth_validation`) — 4e validation
+  indépendante du pattern crud-entity Nx-shaped, après
+  `administrative-infrastructure` (référence), `administrative-boundary`
+  (2e) et `coverage-areas` (3e).
+- **Reste à faire (backlog #3, ordre de priorité par écart mesuré) :**
+  `communication/messaging` (81.8%, 12 fichiers manquants — le plus gros
+  écart), `content-management/home` (87.9%, 8 manquants),
+  `coverage-areas/mobile-network` (89.4%, 7 manquants),
+  `team-organization/participants` (87.9%, 8 manquants — entité distincte
+  de `teams`, non traitée par cette clôture).
 
 ### `content-management` — backlog #4 (8/12 modules, chantier « mappers concrets » terminé)
 
@@ -561,7 +601,7 @@ question de couverture de test ou de conformité de pattern.
 | --- | --- | --- | --- |
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
-| 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
+| 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) — 🔶 **en cours** : `team-organization/teams` **clos (2026-08-04)**, 65/66 → 66/66 (100.0%), `teams-filter.entity.ts` ajouté et câblé dans `TeamsUseCase.execute()` ; ajouté à `validated_on` de `crud-entity.pattern.json` (`fourth_validation`). Restent : `communication/messaging` (81.8%, 12 fichiers manquants — plus gros écart), `content-management/home` (87.9%, 8 manquants), `coverage-areas/mobile-network` (89.4%, 7 manquants), `team-organization/participants` (87.9%, 8 manquants — entité distincte de `teams`, non traitée par cette clôture) |
 | 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | ✅ **clos (2026-08-04)** — **8/8 modules `crud-entity`/`action-request` du chantier manuel faits** (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security` + `administrative-boundary` + `coverage-areas` + `content-management`), **73/73 fichiers réels testés** sur le périmètre corrigé (12 modules au total en comptant les 4 `workflow-action` déjà couverts par corpus — `processing`/`requests`/`finalization` intégralement, `report-states` partiellement, suivi séparément en #11) ; **correction de compte** (passe intermédiaire) : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO, pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels**, confirmé sans nouvel écart sur les 3 derniers modules (`administrative-boundary` 10/10, `coverage-areas` 11/11, `content-management` 12/12) |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |

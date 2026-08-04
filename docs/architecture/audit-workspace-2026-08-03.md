@@ -2924,6 +2924,103 @@ car le mapper ne les caste jamais directement, il délègue à
 
 ---
 
+### Backlog #3 — extension `crud-entity.pattern.json`, premier module (`team-organization/teams`, 2026-08-04)
+
+Suite directe de l'instruction « enchaine dessus meme rigueur » après la
+clôture du backlog #11. Objectif du backlog #3 : étendre la validation
+fichier-par-fichier de `crud-entity.pattern.json` (jusque-là
+`administrative-infrastructure`/`administrative-boundary`/
+`coverage-areas`, 3 validations indépendantes) aux modules les plus
+proches de 100% de conformité mesurée. `team-organization/teams` était le
+plus proche à 98.5% (65/66) — traité en premier, module par module, sans
+mélanger plusieurs candidats dans un même lot.
+
+**Mesure de départ, réelle, pas déclarative :**
+`node tools/check-pattern-nx.mjs libs/team-organization teams --schema
+docs/architecture/patterns/crud-entity.pattern.json` → 65/66 (98.5%),
+un seul fichier manquant : `domain/entities/teams-filter.entity.ts`. Le
+VO correspondant (`teams-filter.vo.ts`) existait déjà seul — dans les 3
+modules déjà validés, VO et entity de filtre coexistent toujours côte à
+côte, donc c'était un vrai manque structurel, pas une variante légitime
+du pattern.
+
+**Vérification avant généralisation, pas après :** avant d'écrire le
+fichier, lecture de `TeamsFilterContract` — contrairement aux 3 contrats
+de filtre des modules déjà validés, celui-ci n'a **aucun champ de plage
+de dates** (`search?`/`status?` seulement). Reproduire tel quel l'appel
+de référence (`resolveOpenEndedEndDate(contract.startDate,
+contract.endDate)`) aurait produit une erreur de compilation
+(`contract.startDate` n'existe pas sur ce type) — pas une question de
+style, une impossibilité mécanique. Écrit à la place comme fonction
+identité (`teamsFilterEntity(contract) => contract`), avec un
+commentaire de fichier documentant explicitement cette divergence et sa
+justification (couche présente pour cohérence architecturale et point
+d'extension futur, comportement honnête vis-à-vis de la forme réelle du
+contrat plutôt qu'un mimétisme aveugle).
+
+**Choix d'aller plus loin que le minimum requis par le check de
+présence :** `check-pattern-nx.mjs` ne vérifie que l'existence du
+fichier, pas son usage réel (documenté explicitement dans sa propre
+description comme un outil de présence, pas de comportement). Un fichier
+présent mais jamais appelé aurait fait passer le check tout en étant
+architecturalement mort — incohérent avec le principe rappelé par le
+porteur du projet dans ce même chantier : « le livrable n'est pas
+l'application, c'est le corpus et la sévérité, uniformisation maximale,
+de l'oracle qui l'a validé ». Un oracle qui valide un fichier mort n'est
+pas sévère, il est complaisant. `teamsFilterEntity` a donc été câblé
+dans `TeamsUseCase.execute()`
+(`teamsFilterEntity(teamsFilterVo(contract))`), reproduisant l'ordre
+d'appel réel des 3 modules de référence.
+
+**Vérifications réelles, exécutées, pas supposées :**
+
+- `node tools/check-pattern-nx.mjs libs/team-organization teams --schema
+  docs/architecture/patterns/crud-entity.pattern.json` → « Conformité :
+  66/66 fichiers du cœur présents (100.0%)... Aucun fichier du cœur
+  manquant. »
+- `bunx nx run @cmz/team-organization-domain:build` → succès.
+- `bunx nx run @cmz/team-organization-application:build` → succès.
+- `bunx eslint libs/team-organization/domain
+  libs/team-organization/application --max-warnings=0` → exit 0, 0
+  warning.
+- `package.json`, script `check:pattern-nx:crud-entity` étendu à un 4e
+  appel (`libs/team-organization teams`) ; `bun run
+  check:pattern-nx:crud-entity` (script composite complet) → les 4
+  modules validés rapportent chacun 66/66 (100.0%).
+- `node tools/check-duplicate-files.mjs` → OK, aucun nouveau doublon
+  byte-identique introduit par `teams-filter.entity.ts`.
+- `node tools/check-duplicate-files.mjs --family` → OK, 29.4% ≤ baseline
+  29.6% (2026-08-03), pas de régression de quasi-doublon.
+- `node tools/check-declared-deps.mjs` → OK, 0 arête fantôme (les
+  avertissements préexistants sur `@angular/compiler`/`vitest` dans des
+  specs sont sans lien avec ce changement).
+- `node tools/check-project-targets.mjs` → OK, 71 libs, décompte
+  inchangé.
+- Aucun nouveau fichier `.spec.ts` — cohérent avec l'absence de specs
+  préexistantes sous `libs/team-organization/domain`, aucune convention
+  brisée par cette omission.
+
+**Résultat :** `team-organization` ajouté à `validated_on` de
+`crud-entity.pattern.json`, nouveau bloc `fourth_validation` documentant
+la 4e validation indépendante du pattern (après
+`administrative-infrastructure` référence, `administrative-boundary` 2e,
+`coverage-areas` 3e). Retiré de la liste `gaps_reels_mesures_2026-08-04`.
+
+**Reste du backlog #3, mesuré et priorisé par écart réel (candidats
+distincts de `team-organization/teams`, non traités ici) :**
+`communication/messaging` (81.8%, 12 fichiers manquants — le plus gros
+écart mesuré, aucune variante `-select`, `props/*.props.ts` remplacés
+par `interfaces/*.interface.ts`), `content-management/home` (87.9%, 8
+manquants), `coverage-areas/mobile-network` (89.4%, 7 manquants),
+`team-organization/participants` (87.9%, 8 manquants — entité distincte
+de `teams` au sein du même module, non résolue par cette clôture). Ces 4
+candidats représentent un travail sensiblement plus lourd que la
+clôture ci-dessus : des couches structurelles entièrement absentes à
+écrire (pas une seule fonction), pas un simple fichier manquant à
+compléter.
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**

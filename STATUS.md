@@ -8,10 +8,10 @@
 | Indicateur | Valeur |
 |:---|---:|
 | Packages Nx | **71 libs + 1 app** (72 `project.json`) |
-| Fichiers TypeScript (`libs/`) | **2 557 fichiers hors tests** (2 700 au total, dont 143 specs) |
+| Fichiers TypeScript (`libs/`) | **2 558 fichiers hors tests** (2 701 au total, dont 143 specs) |
 | Modules détectés | **18** |
 | Périmètre applicatif (`scope.json`, M-7) | **50 / 52 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
-| Corpus SEOS — couverture fichiers (N-4) | **476 / 2 557 fichiers libs/ hors tests → 18.6 %** — 9 modules sans aucune paire (7 `crud-entity`, 1 `action-request`, 1 `kernel`) |
+| Corpus SEOS — couverture fichiers (N-4) | **476 / 2 558 fichiers libs/ hors tests → 18.6 %** — 9 modules sans aucune paire (7 `crud-entity`, 1 `action-request`, 1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **587 correspondances** + **194 décisions d'architecture** (`status: n/a`) — pas 781 paires d'apprentissage |
 
 ## Légende
@@ -45,7 +45,7 @@
 | `requests` | ✅ | workflow-action | application, data, domain, ui | 125 | Module IR clôturé — corpus 157 paires, 8 chaînes, Meta 12/12 |
 | `settings-security` | ✅ | crud-entity | application, data, domain, ui | 195 | Compilant — 3 entités |
 | `shared` | ✅ | kernel | application, browser, constants, data, domain, ui | 189 | Kernel transverse opérationnel |
-| `team-organization` | ✅ | crud-entity | application, data, domain, ui | 168 | Compilant — 2 entités |
+| `team-organization` | ✅ | crud-entity | application, data, domain, ui | 169 | Compilant — 2 entités |
 
 ## Modules non commencés (attendus)
 
