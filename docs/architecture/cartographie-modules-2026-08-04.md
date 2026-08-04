@@ -51,7 +51,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `report-states` | workflow-action | 187 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 9 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `reporting` | read-only-view | 51 (5 chaînes) | **12/12, a posteriori 2026-08-04** | (`read-only-view.pattern.json`, `second_validation`) | 0 | 0 | ✅ backlog #2 |
 | `requests` | workflow-action | 157 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 17 | 0 | ⚠️ H-4 (contrainte), pas le code |
-| `settings-security` | crud-entity | 0 | — | — | 0 | 0 | ✅ I-7 (permissionGuard) |
+| `settings-security` | crud-entity | 0 | — | — | 0 | 6 | ✅ I-7 + backlog #4 |
 | `shared` (kernel) | kernel | ≥1 (via `libs/shared/...`) | — | — | 4 (chantier I, hors chantier L) | **16** | ✅✅ chantier I + chantier L |
 | `team-organization` | crud-entity | 0 | — | 2 entités manquantes (ADR-0018) | 0 | 5 | ✅ backlog #4 |
 
@@ -198,39 +198,65 @@ décision de périmètre produit, pas par une incapacité technique
   `{MODULE}`, sur-généralisation de `form-validators.constant.ts`).
 - **Tâche découverte :** aucune cette passe.
 
-### `authentication` / `settings-security` — I-7 + backlog #4 (`authentication`)
+### `authentication` — I-7 + backlog #4 (1er module)
 
 - **Effectué (I-7) :** audit `permissionGuard` vs permissions legacy — **1
   bug P0 trouvé et corrigé** (détail dans `audit-workspace-2026-08-03.md`,
   section I-7).
-- **Effectué (backlog #4, 2026-08-04) :** `authentication` = 1er module
-  traité du chantier « mappers concrets » (`MapperUtils.validateDto`) — 2
-  fichiers testés (`current-user.mapper.ts` — 3 fonctions pures wire→domaine
-  dont une récursive sur `children`, `login-response.mapper.ts` — la classe
-  mapper elle-même), 16 tests neufs, `tsc`/`eslint --max-warnings=0` à 0
-  erreur.
-- **Reste à faire :** 0 test unitaire sur `settings-security` ; 11 modules /
-  73 fichiers restants pour le chantier « mappers concrets » (voir §7,
-  backlog #4).
+- **Effectué (backlog #4, 2026-08-04) :** 1er module traité du chantier
+  « mappers concrets » (`MapperUtils.validateDto`) — 2 fichiers testés
+  (`current-user.mapper.ts` — 3 fonctions pures wire→domaine dont une
+  récursive sur `children`, `login-response.mapper.ts` — la classe mapper
+  elle-même), 16 tests neufs, `tsc`/`eslint --max-warnings=0` à 0 erreur.
+- **Reste à faire :** rien sur ce module précis pour ce chantier (module
+  complet).
 - **Amélioration apportée :** correction du bug P0 identifié (I-7).
 - **Tâche découverte (backlog #4, 2026-08-04) :** en préparant ce chantier,
-  grep exhaustif recompté sur `MapperUtils.validateDto` : **74 fichiers
-  réels sur 12 modules** (le texte de `mapper-utils.spec.ts`, écrit de
-  mémoire lors du chantier L précédent, annonçait « 60+ sur 13 » — imprécis,
-  pas corrigé ici pour ne pas rouvrir un fichier déjà commis, mais signalé).
-  Plus important : **8 des 12 modules** (`content-management`,
-  `coverage-areas`, `administrative-boundary`, `settings-security`,
+  grep exhaustif recompté sur `MapperUtils.validateDto` : **8 des 12
+  modules concernés** (`content-management`, `coverage-areas`,
+  `administrative-boundary`, `settings-security`,
   `administrative-infrastructure`, `team-organization`, `communication`,
   `authentication`) n'avaient **aucun** target `test` dans leur
-  `data/project.json` — même trou de câblage CI que `shared/domain` (chantier
-  L, passe précédente), mais 8 fois plus large. Corrigé pour les 8 avant
-  d'écrire le premier test (`nx run @cmz/<module>-data:test
+  `data/project.json` — même trou de câblage CI que `shared/domain`
+  (chantier L, passe précédente), mais 8 fois plus large. Corrigé pour les
+  8 avant d'écrire le premier test (`nx run @cmz/<module>-data:test
   --passWithNoTests` vérifié vert sur les 8). `tools/vitest-lib.config.ts`
   également étendu : ses alias `@cmz/*` (résolution sans build préalable)
   ne couvraient que `shared-*`, `core` et les 4 modules `workflow-action` —
   les 8 modules `crud-entity`/`action-request` concernés en ont été ajoutés
   (domain/data/application), sans quoi `@cmz/authentication-domain` (et les
   7 autres) ne se serait jamais résolu sous Vitest.
+
+### `settings-security` — backlog #4 (5/12 modules, module complet)
+
+- **Effectué (2026-08-04) :** module complet — 6/6 fichiers testés
+  (`users.mapper.ts`, `users-find-one.mapper.ts`, `access-logs.mapper.ts`,
+  `profiles-permissions.mapper.ts`, `profiles-permissions-find-one.mapper.ts`,
+  `profiles-permissions-select.mapper.ts`), 29 tests neufs, `tsc`/`eslint
+  --max-warnings=0` à 0 erreur. 3 vrais fixes documentés dans le code source
+  et vérifiés par un test dédié plutôt que relus en confiance :
+  `UsersFindOneMapper` traduit désormais `role` via `RolesMapper` (le
+  source laissait ce champ non traduit sur le détail, contrairement à la
+  liste) ; `AccessLogsMapper` valide `action` via `isAccessLogsAction`
+  (le source avait un mapper de validation jamais appelé — code mort
+  corrigé) ; `ProfilesPermissionsMapper` convertit `users_count` (string
+  au wire, bug de typage source) en `number`. Comportement non trivial de
+  `mapPermissionApiNode` (arbre de permissions récursif, **non aplati** —
+  décision inverse de `team-organization`) vérifié précisément : quand un
+  nœud n'a pas ses propres actions, les **clés** d'action remontent de ses
+  enfants mais la **valeur** de chaque action reprend le `checked` du nœud
+  lui-même, pas celle des enfants — piège de lecture réel, testé
+  explicitement pour ne pas le laisser supposé.
+- **Reste à faire :** rien sur ce module précis pour ce chantier (module
+  complet).
+- **Amélioration apportée :** aucune régression trouvée sur les 3 fixes
+  déjà en place ; tous vérifiés corrects.
+- **Tâche découverte :** le compte initial de 7 fichiers pour ce module
+  incluait un faux positif — `MapperUtils.validateDto` apparaissait dans un
+  **commentaire** de `profiles-permissions-find-one-response-api.dto.ts`
+  (DTO, pas un mapper), pas dans un appel réel. Recompté avec `grep
+  "MapperUtils\.validateDto("` (parenthèse incluse) : 6 fichiers réels, pas
+  7 — corrigé à la source (voir §7, backlog #4).
 
 ### `finalization` / `processing` / `report-states` / `requests` — famille `workflow-action`
 
@@ -410,7 +436,7 @@ question de couverture de test ou de conformité de pattern.
 | 1 | Commiter/pousser le sprint P0-N1 | Décision humaine | — |
 | 2 | ~~Meta-vérifier `monitoring`/`reporting`~~ | ✅ fait 2026-08-04 — `monitoring-meta-verification.md` + `reporting-meta-verification.md`, corpus déjà `verified` (2026-08-02), 12/12 avec 1 critère (mock backend) sur preuve datée non rejouée + limite sandbox documentée pour le diff legacy complet | Moyen |
 | 3 | Étendre `crud-entity.pattern.json` à `communication`/`content-management`/`coverage-areas`/`team-organization` | Rien — même méthode que N-7 | Élevé (4 modules × pattern) |
-| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **4/12 modules faits (`authentication` + `communication` + `team-organization` + `administrative-infrastructure`, 2026-08-04)** ; recompté précisément : 74 fichiers réels sur 12 modules (pas « 60+ sur 13 »), dont **8/12 modules découverts sans aucun target `test`** (même trou de câblage CI que `shared/domain`, corrigé pour les 8 avant d'écrire un seul test — voir détail §4 `authentication`) ; 8 modules / 59 fichiers restants |
+| 4 | Chantier L — poursuivre sur les mappers concrets (`MapperUtils.validateDto`) | Rien — budget | 🔧 en cours — **5/12 modules faits (`authentication` + `communication` + `team-organization` + `administrative-infrastructure` + `settings-security`, 2026-08-04)** ; **correction de compte** : le total « 74 fichiers/12 modules » (déjà corrigé une fois depuis « 60+ sur 13 ») était encore imprécis — `settings-security` en comptait 7 par un grep sur le texte `MapperUtils.validateDto`, mais l'une des occurrences était dans un **commentaire** de DTO (`profiles-permissions-find-one-response-api.dto.ts`), pas un appel réel ; recompté avec `grep "MapperUtils\.validateDto("` (parenthèse incluse, exclut les commentaires) : **73 fichiers réels sur 12 modules**. 3 modules `crud-entity` genuinement non traités restent : `content-management`(12), `coverage-areas`(11), `administrative-boundary`(10) — 33 fichiers ; `processing`/`requests`/`finalization` déjà couverts par corpus, `report-states` partiellement (voir #11) |
 | 5 | I-8 — test d'intégration contre un vrai backend | Réseau/identifiants (sandbox) | Bloqué techniquement ici |
 | 6 | `nginx -t` réel | Pas de root dans le sandbox | Bloqué techniquement ici |
 | 7 | `security-audit`/`i18n-check` rendus bloquants | Résorption Dependabot / revue humaine du diff 320 clés | Faible une fois débloqué |

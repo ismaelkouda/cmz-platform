@@ -2459,6 +2459,77 @@ modules/74 fichiers) du chantier « mappers concrets ».
 
 ---
 
+### Backlog cartographie #4 — cinquième module, module complet (`settings-security`, 2026-08-04)
+
+Cinquième module traité, en entier : `settings-security` — 6/6 fichiers
+appelant `MapperUtils.validateDto` testés (`users.mapper.ts`,
+`users-find-one.mapper.ts`, `access-logs.mapper.ts`,
+`profiles-permissions.mapper.ts`, `profiles-permissions-find-one.mapper.ts`,
+`profiles-permissions-select.mapper.ts`), 29 tests neufs, tous verts après
+une seule correction de typage (`status: 'archived' as never` — union
+littérale `UsersStatusApiDto`, pas une chaîne libre).
+
+**Correction de comptage** : le grep initial du périmètre comptait 7
+fichiers pour ce module ; un des matches était en réalité une occurrence de
+`MapperUtils.validateDto` à l'intérieur d'un **commentaire** de
+`profiles-permissions-find-one-response-api.dto.ts` (référence descriptive,
+pas un appel réel). Recompté avec `grep "MapperUtils\.validateDto("`
+(parenthèse incluse) → 6 fichiers réels. Le total courant du chantier passe
+donc de « 74 fichiers / 12 modules » à **73 fichiers / 12 modules** — erreur
+corrigée explicitement plutôt que silencieusement, conformément à la
+pratique du dépôt de ne jamais republier un chiffre imprécis sans le
+signaler.
+
+Comme pour `communication`/`team-organization`, plusieurs mappers de ce
+module documentent leurs propres divergences ou bugs corrigés dans leurs
+commentaires — chacun vérifié par un test, pas seulement relu :
+
+- `UsersMapper` (liste) : `profile` porte le **nom** ; `UsersFindOneMapper`
+  (détail) fait diverger le même champ vers l'**id** — même précédent que
+  `ParticipantsProps.team` dans `team-organization`. Testé séparément dans
+  les deux fichiers.
+- `UsersFindOneMapper` : `role` est désormais traduit via `RolesMapper`
+  (comme sur la liste), alors que le mapper source le laissait brut —
+  correction réelle par rapport au comportement legacy, verrouillée par un
+  test qui vérifie `entity.role === Role.AGENT` (pas la valeur wire brute).
+- `AccessLogsMapper` : `userAgent` est lu depuis `used_agent` côté wire (coquille
+  de nommage de l'API, pas une erreur du mapper) — fidélité au contrat
+  préservée volontairement plutôt que « corrigée » silencieusement ; testé
+  explicitement pour que toute future « correction » de la coquille sur le
+  wire casse le test au lieu de passer inaperçue.
+- `AccessLogsMapper` : `isAccessLogsAction` sert réellement à la validation
+  (le mapper source l'appelait mais ignorait le résultat — code mort
+  fonctionnel) ; ici la validation lève bien une erreur sur une action
+  wire inconnue, testé.
+- `ProfilesPermissionsMapper` : `users_count` est une **chaîne** au wire
+  (bug de typage de l'API) convertie via `Number(dto.users_count)` — testé
+  y compris le cas d'une chaîne non numérique (`Number('douze')` →
+  `NaN`, propagé tel quel, pas masqué par un fallback à 0 inventé).
+
+Le fichier le plus complexe des 6, `profiles-permissions-find-one.mapper.ts`,
+consomme l'utilitaire récursif `mapPermissionApiNode`
+(`permission-tree-node.mapper.util.ts`) qui reconstruit fidèlement un arbre
+nœud × action — décision actée de **ne pas** aplatir l'arbre, contrairement
+à `flattenPermissionTree` de `team-organization`. Comportement non trivial
+vérifié explicitement à 3 niveaux de profondeur : quand un nœud n'a pas ses
+propres `actions`, les **clés** d'action disponibles remontent de ses
+enfants (union des clés), mais la **valeur** de chaque action du nœud parent
+est son propre `checked`, jamais celle héritée des enfants — un piège de
+lecture réel (on pourrait supposer à tort que les valeurs des enfants
+remontent aussi).
+
+`tsc --noEmit` et `eslint --max-warnings=0` à 0 erreur après le fix de
+typage. `check:duplicate-files.mjs` et `check:project-targets.mjs` : OK.
+7 modules / 33 fichiers restent sur le périmètre initial (12 modules/73
+fichiers, périmètre corrigé) du chantier « mappers concrets » — les 3
+modules crud-entity réellement restants sont `content-management` (12),
+`coverage-areas` (11), `administrative-boundary` (10) ; les modules
+workflow-action (`processing`, `requests`, `finalization`) restent
+corpus-couverts, et `report-states` (5/6 fichiers sans spec dédié) est suivi
+séparément en §7, item #11 — hors périmètre immédiat de ce chantier.
+
+---
+
 ## 8. Verdict d'architecte
 
 **Ce qui est acquis, sans réserve :**
