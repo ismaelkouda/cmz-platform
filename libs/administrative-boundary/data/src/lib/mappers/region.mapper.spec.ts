@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { PaginatedResponseDto } from '@cmz/shared-data';
 import { Status } from '@cmz/administrative-boundary-domain';
@@ -33,7 +32,9 @@ function makePaginatedResponse(
     };
 }
 
-function makeItemDto(partial: Partial<RegionItemApiDto> = {}): RegionItemApiDto {
+function makeItemDto(
+    partial: Partial<RegionItemApiDto> = {}
+): RegionItemApiDto {
     return {
         id: 'REGION-001',
         name: 'Dakar',

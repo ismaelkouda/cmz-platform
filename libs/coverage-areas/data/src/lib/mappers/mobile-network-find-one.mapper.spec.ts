@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { Operator, Technology } from '@cmz/coverage-areas-domain';
 import { MobileNetworkFindOneMapper } from './mobile-network-find-one.mapper';

@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { ProfilesPermissionsFindOneMapper } from './profiles-permissions-find-one.mapper';
 import type {
@@ -86,9 +85,15 @@ describe('ProfilesPermissionsFindOneMapper', () => {
         ]);
     });
 
-    it("un nœud feuille sans actions ni enfants a des actions vides ({}), pas un objet par défaut inventé", () => {
+    it('un nœud feuille sans actions ni enfants a des actions vides ({}), pas un objet par défaut inventé', () => {
         const permissions: PermissionApiDto[] = [
-            { data: { value: 'perm-b', title: 'Permission B', checked: false } },
+            {
+                data: {
+                    value: 'perm-b',
+                    title: 'Permission B',
+                    checked: false,
+                },
+            },
         ];
         const entity = new ProfilesPermissionsFindOneMapper().mapFromDto({
             error: false,
@@ -136,7 +141,7 @@ describe('ProfilesPermissionsFindOneMapper', () => {
         expect(group.children[0].actions).toEqual({ read: true, write: false });
     });
 
-    it("un nœud parent sans actions propres et checked=false dérive des actions toutes à false", () => {
+    it('un nœud parent sans actions propres et checked=false dérive des actions toutes à false', () => {
         const permissions: PermissionApiDto[] = [
             {
                 data: { value: 'group-2', title: 'Groupe 2', checked: false },
@@ -166,7 +171,11 @@ describe('ProfilesPermissionsFindOneMapper', () => {
                 data: { value: 'l1', title: 'Niveau 1', checked: false },
                 children: [
                     {
-                        data: { value: 'l2', title: 'Niveau 2', checked: false },
+                        data: {
+                            value: 'l2',
+                            title: 'Niveau 2',
+                            checked: false,
+                        },
                         children: [
                             {
                                 data: {

@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleLoggerAdapter } from './console-logger.adapter';
@@ -13,7 +12,10 @@ import { ConsoleLoggerAdapter } from './console-logger.adapter';
  */
 describe('ConsoleLoggerAdapter', () => {
     let logger: ConsoleLoggerAdapter;
-    let spies: Record<'debug' | 'info' | 'warn' | 'error', ReturnType<typeof vi.spyOn>>;
+    let spies: Record<
+        'debug' | 'info' | 'warn' | 'error',
+        ReturnType<typeof vi.spyOn>
+    >;
 
     beforeEach(() => {
         const injector = createEnvironmentInjector(
@@ -22,10 +24,14 @@ describe('ConsoleLoggerAdapter', () => {
         );
         logger = injector.get(ConsoleLoggerAdapter);
         spies = {
-            debug: vi.spyOn(console, 'debug').mockImplementation(() => undefined),
+            debug: vi
+                .spyOn(console, 'debug')
+                .mockImplementation(() => undefined),
             info: vi.spyOn(console, 'info').mockImplementation(() => undefined),
             warn: vi.spyOn(console, 'warn').mockImplementation(() => undefined),
-            error: vi.spyOn(console, 'error').mockImplementation(() => undefined),
+            error: vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => undefined),
         };
     });
 

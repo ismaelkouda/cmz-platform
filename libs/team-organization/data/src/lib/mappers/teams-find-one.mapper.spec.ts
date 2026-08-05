@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { SimpleResponseDto } from '@cmz/shared-data';
 import { ReportType, TelecomOperator } from '@cmz/shared-domain';
@@ -90,10 +89,17 @@ describe('TeamsFindOneMapper', () => {
             data: makeItemDto({
                 permissions_json: [
                     {
-                        data: { value: 'admin', title: 'Administration', checked: true },
+                        data: {
+                            value: 'admin',
+                            title: 'Administration',
+                            checked: true,
+                        },
                         children: [
                             {
-                                data: { value: 'admin.users', title: 'Utilisateurs' },
+                                data: {
+                                    value: 'admin.users',
+                                    title: 'Utilisateurs',
+                                },
                             },
                         ],
                     },

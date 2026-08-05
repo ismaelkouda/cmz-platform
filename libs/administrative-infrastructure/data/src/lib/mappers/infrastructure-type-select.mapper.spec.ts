@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { InfrastructureTypeSelectMapper } from './infrastructure-type-select.mapper';
 import type { InfrastructureTypeSelectItemApiDto } from '../dtos/infrastructure-type-select-response-api.dto';
@@ -36,7 +35,11 @@ describe('InfrastructureTypeSelectMapper', () => {
                 error: false,
                 message: '',
                 data: [
-                    { id: undefined as never, name: 'Antenne', description: 'desc' },
+                    {
+                        id: undefined as never,
+                        name: 'Antenne',
+                        description: 'desc',
+                    },
                 ],
             })
         ).toThrow('Missing required fields: id');

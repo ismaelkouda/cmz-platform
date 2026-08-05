@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it, vi } from 'vitest';
 import { Injector, runInInjectionContext } from '@angular/core';
 import {
@@ -42,7 +41,9 @@ describe('cacheInterceptor', () => {
         const store = new HttpCacheStore();
         const setSpy = vi.spyOn(store, 'set');
         const postReq = new HttpRequest('POST', '/api/regions', {});
-        const handler = vi.fn(next(of({ type: 4 } as unknown as HttpEvent<unknown>)));
+        const handler = vi.fn(
+            next(of({ type: 4 } as unknown as HttpEvent<unknown>))
+        );
 
         await run(postReq, handler, store);
 
@@ -55,7 +56,9 @@ describe('cacheInterceptor', () => {
         const req = new HttpRequest('GET', '/api/regions');
         const cached = new HttpResponse({ body: { id: 1 }, status: 200 });
         store.set(req.urlWithParams, cached);
-        const handler = vi.fn(next(of({ type: 4 } as unknown as HttpEvent<unknown>)));
+        const handler = vi.fn(
+            next(of({ type: 4 } as unknown as HttpEvent<unknown>))
+        );
 
         const result = await run(req, handler, store);
 
@@ -68,7 +71,9 @@ describe('cacheInterceptor', () => {
         const req = new HttpRequest('GET', '/api/regions');
         const cached = new HttpResponse({ body: { id: 1 }, status: 200 });
         store.set(req.urlWithParams, cached);
-        const handler = vi.fn(next(of({ type: 4 } as unknown as HttpEvent<unknown>)));
+        const handler = vi.fn(
+            next(of({ type: 4 } as unknown as HttpEvent<unknown>))
+        );
 
         const result = await run(req, handler, store);
 

@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { PrivacyPolicyStatus } from '@cmz/content-management-domain';
 import { PrivacyPolicyFindOneMapper } from './privacy-policy-find-one.mapper';

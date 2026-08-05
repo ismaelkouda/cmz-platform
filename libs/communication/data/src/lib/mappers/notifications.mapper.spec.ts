@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import { PaginatedResponseDto } from '@cmz/shared-data';
@@ -60,7 +59,11 @@ function makeItemDto(
 
 function createMapper(): NotificationsMapper {
     const injector = createEnvironmentInjector(
-        [NotificationsStatusMapper, NotificationsTypeReportMapper, NotificationsMapper],
+        [
+            NotificationsStatusMapper,
+            NotificationsTypeReportMapper,
+            NotificationsMapper,
+        ],
         null as never
     );
     return injector.get(NotificationsMapper);
@@ -74,7 +77,9 @@ describe('NotificationsMapper', () => {
     // test précédent, pas le résultat du nouveau mapping.
     it('mappe le wire vers NotificationsEntity', () => {
         const mapper = createMapper();
-        const result = mapper.mapFromDto(makePaginatedResponse([makeItemDto()]));
+        const result = mapper.mapFromDto(
+            makePaginatedResponse([makeItemDto()])
+        );
         const entity = result.items[0];
 
         expect(entity.uniqId).toBe('NOTIF-001');

@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { PaginatedResponseDto } from '@cmz/shared-data';
 import { Operator, Status, Technology } from '@cmz/coverage-areas-domain';
@@ -75,7 +74,9 @@ describe('MobileNetworkMapper', () => {
     it('technology: passe le tableau wire tel quel quand déjà un tableau', () => {
         const entity = createMapper().mapFromDto(
             makePaginatedResponse([
-                makeItemDto({ technology: [Technology.FOUR_G, Technology.FIVE_G] }),
+                makeItemDto({
+                    technology: [Technology.FOUR_G, Technology.FIVE_G],
+                }),
             ])
         ).items[0];
         expect(entity.technology).toEqual(['4G', '5G']);
@@ -92,9 +93,7 @@ describe('MobileNetworkMapper', () => {
 
     it("technology: tableau vide si la valeur wire est absente/falsy (pas d'exception)", () => {
         const entity = createMapper().mapFromDto(
-            makePaginatedResponse([
-                makeItemDto({ technology: '' as never }),
-            ])
+            makePaginatedResponse([makeItemDto({ technology: '' as never })])
         ).items[0];
         expect(entity.technology).toEqual([]);
     });

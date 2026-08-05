@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthToken, CurrentUser } from '@cmz/shared-domain';

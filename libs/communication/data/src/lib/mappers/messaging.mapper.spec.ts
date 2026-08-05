@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import { PaginatedResponseDto } from '@cmz/shared-data';
@@ -138,7 +137,9 @@ describe('MessagingMapper', () => {
     it('lève ApiError.invalidResponse si type est absent (garde explicite, distincte de validateDto)', () => {
         expect(() =>
             createMapper().mapFromDto(
-                makePaginatedResponse([makeItemDto({ type: undefined as never })])
+                makePaginatedResponse([
+                    makeItemDto({ type: undefined as never }),
+                ])
             )
         ).toThrow(/type\/target_type manquant/);
     });

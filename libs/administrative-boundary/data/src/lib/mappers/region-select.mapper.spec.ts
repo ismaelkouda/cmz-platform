@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { RegionSelectMapper } from './region-select.mapper';
 import type { RegionSelectItemApiDto } from '../dtos/region-select-response-api.dto';

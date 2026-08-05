@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import { RolesDto, RolesMapper, SimpleResponseDto } from '@cmz/shared-data';
@@ -41,7 +40,7 @@ function createMapper(): UsersFindOneMapper {
 }
 
 describe('UsersFindOneMapper', () => {
-    it('mappe le wire vers UsersFindOneEntity, profile porte l\'ID (vue détail)', () => {
+    it("mappe le wire vers UsersFindOneEntity, profile porte l'ID (vue détail)", () => {
         const dto: SimpleResponseDto<UsersFindOneItemApiDto> = {
             error: false,
             message: '',

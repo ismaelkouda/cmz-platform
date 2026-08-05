@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { Status } from '@cmz/administrative-boundary-domain';
 import { RegionFindOneMapper } from './region-find-one.mapper';

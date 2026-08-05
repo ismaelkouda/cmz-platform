@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { DepartmentSelectMapper } from './department-select.mapper';
 import type { DepartmentSelectItemApiDto } from '../dtos/department-select-response-api.dto';

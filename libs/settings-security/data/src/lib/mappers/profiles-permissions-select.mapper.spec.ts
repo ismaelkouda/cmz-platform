@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { ProfilesPermissionsSelectMapper } from './profiles-permissions-select.mapper';
 import type { ProfilesPermissionsSelectItemApiDto } from '../dtos/profiles-permissions-select-response-api.dto';

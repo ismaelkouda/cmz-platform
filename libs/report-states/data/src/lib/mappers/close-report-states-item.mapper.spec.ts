@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import {
@@ -7,7 +6,12 @@ import {
     ReportTypeMapper,
     TelecomOperatorMapper,
 } from '@cmz/shared-data';
-import { ReportSource, ReportType, TelecomOperator, TypeReport } from '@cmz/shared-domain';
+import {
+    ReportSource,
+    ReportType,
+    TelecomOperator,
+    TypeReport,
+} from '@cmz/shared-domain';
 import { CloseReportStatesItemMapper } from './close-report-states-item.mapper';
 import type { CloseReportStatesItemApiDto } from '../dtos/close-report-states-response-api.dto';
 

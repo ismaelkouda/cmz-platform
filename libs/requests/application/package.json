@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@angular/compiler": "catalog:",
     "@angular/core": "catalog:",
     "@cmz/requests-domain": "workspace:*",
     "@cmz/shared-application": "workspace:*",

@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { FiberConstructorSelectMapper } from './fiber-constructor-select.mapper';
 import type { FiberConstructorSelectItemApiDto } from '../dtos/fiber-constructor-select-response-api.dto';

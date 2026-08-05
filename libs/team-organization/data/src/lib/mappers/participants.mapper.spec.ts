@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import { PaginatedResponseDto, RolesDto, RolesMapper } from '@cmz/shared-data';
@@ -79,7 +78,7 @@ describe('ParticipantsMapper', () => {
         expect(entity.updatedAt).toBe('2026-07-02T10:00:00Z');
     });
 
-    it('team porte le NOM de l\'équipe (pas l\'uniqId — diverge du find-one)', () => {
+    it("team porte le NOM de l'équipe (pas l'uniqId — diverge du find-one)", () => {
         const entity = createMapper().mapFromDto(
             makePaginatedResponse([makeItemDto()])
         ).items[0];

@@ -14,8 +14,6 @@
   },
   "devDependencies": {
     "typescript": "catalog:tooling",
-    "@angular/compiler": "catalog:",
     "vitest": "^4.0.8"
   }
 }
-

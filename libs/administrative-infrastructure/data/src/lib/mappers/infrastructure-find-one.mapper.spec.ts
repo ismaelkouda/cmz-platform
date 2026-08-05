@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { InfrastructureFindOneMapper } from './infrastructure-find-one.mapper';
 import type { InfrastructureFindOneItemApiDto } from '../dtos/infrastructure-find-one-response-api.dto';

@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { PaginatedResponseDto } from '@cmz/shared-data';
 import { Status } from '@cmz/coverage-areas-domain';

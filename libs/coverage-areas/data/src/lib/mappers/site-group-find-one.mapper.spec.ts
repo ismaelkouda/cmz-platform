@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { Status } from '@cmz/coverage-areas-domain';
 import { SiteGroupFindOneMapper } from './site-group-find-one.mapper';

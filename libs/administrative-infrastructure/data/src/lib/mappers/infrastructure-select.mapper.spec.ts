@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { InfrastructureSelectMapper } from './infrastructure-select.mapper';
 import type { InfrastructureSelectItemApiDto } from '../dtos/infrastructure-select-response-api.dto';
@@ -24,7 +23,9 @@ describe('InfrastructureSelectMapper', () => {
         const result = new InfrastructureSelectMapper().mapFromDto({
             error: false,
             message: '',
-            data: [{ id: 'INFRA-001', name: 'Antenne Akwa', description: 'desc' }],
+            data: [
+                { id: 'INFRA-001', name: 'Antenne Akwa', description: 'desc' },
+            ],
         });
         expect('description' in result[0]).toBe(false);
     });

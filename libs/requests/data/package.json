@@ -4,7 +4,6 @@
   "private": true,
   "dependencies": {
     "@angular/common": "catalog:",
-    "@angular/compiler": "catalog:",
     "@angular/core": "catalog:",
     "@cmz/core": "workspace:*",
     "@cmz/requests-domain": "workspace:*",

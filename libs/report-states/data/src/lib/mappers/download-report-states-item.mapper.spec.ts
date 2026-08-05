@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import { PaginatedResponseDto } from '@cmz/shared-data';
@@ -97,9 +96,7 @@ describe('DownloadReportStatesItemMapper', () => {
 
     it("format wire inconnu renvoie undefined SILENCIEUSEMENT (lookup Record, pas d'exception, contrairement aux mappers partagés ReportTypeMapper/TelecomOperatorMapper)", () => {
         const entity = createMapper().mapFromDto(
-            makePaginatedResponse([
-                makeItemDto({ format: 'pdf' as never }),
-            ])
+            makePaginatedResponse([makeItemDto({ format: 'pdf' as never })])
         ).items[0];
         expect(entity.type).toBeUndefined();
     });

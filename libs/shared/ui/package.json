@@ -11,8 +11,7 @@
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
     "date-fns": "catalog:",
-    "@angular/forms": "catalog:",
-    "@angular/compiler": "catalog:"
+    "@angular/forms": "catalog:"
   },
   "devDependencies": {
     "vitest": "^4.0.8"

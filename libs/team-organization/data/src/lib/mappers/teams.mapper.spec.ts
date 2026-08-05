@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { PaginatedResponseDto } from '@cmz/shared-data';
 import { TeamsStatus } from '@cmz/team-organization-domain';
@@ -64,7 +63,7 @@ describe('TeamsMapper', () => {
         expect(entity.updatedAt).toBe('2026-07-02T10:00:00Z');
     });
 
-    it("ignore slug — présent au wire, aucun getter côté entité (fidèle au source)", () => {
+    it('ignore slug — présent au wire, aucun getter côté entité (fidèle au source)', () => {
         const entity = new TeamsMapper().mapFromDto(
             makePaginatedResponse([makeItemDto({ slug: 'autre-slug' })])
         ).items[0];

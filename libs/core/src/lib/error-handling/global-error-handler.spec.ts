@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { Injector } from '@angular/core';
 import { describe, expect, it, vi } from 'vitest';
 import { LoggerPort } from '@cmz/shared-domain';
@@ -11,7 +10,10 @@ import { GlobalErrorHandler } from './global-error-handler';
  * implicitement l'absence de tout `ErrorHandler` custom avant ce correctif).
  */
 describe('GlobalErrorHandler', () => {
-    function makeHandler(): { handler: GlobalErrorHandler; logger: LoggerPort } {
+    function makeHandler(): {
+        handler: GlobalErrorHandler;
+        logger: LoggerPort;
+    } {
         const logger: LoggerPort = {
             debug: vi.fn(),
             info: vi.fn(),

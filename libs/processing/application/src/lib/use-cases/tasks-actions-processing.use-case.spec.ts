@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it, vi } from 'vitest';
 import { firstValueFrom, of, throwError } from 'rxjs';

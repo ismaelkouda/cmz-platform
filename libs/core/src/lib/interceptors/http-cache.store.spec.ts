@@ -1,10 +1,9 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { HttpResponse } from '@angular/common/http';
 import { HttpCacheStore } from './http-cache.store';
 
 describe('HttpCacheStore', () => {
-    it("retourne undefined pour une clé jamais posée", () => {
+    it('retourne undefined pour une clé jamais posée', () => {
         const store = new HttpCacheStore();
         expect(store.get('/api/regions')).toBeUndefined();
     });

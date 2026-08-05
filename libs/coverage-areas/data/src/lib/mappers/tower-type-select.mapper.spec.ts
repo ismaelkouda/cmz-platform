@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { TowerTypeSelectMapper } from './tower-type-select.mapper';
 import type { TowerTypeSelectItemApiDto } from '../dtos/tower-type-select-response-api.dto';

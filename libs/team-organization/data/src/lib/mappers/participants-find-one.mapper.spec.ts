@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import { RolesDto, RolesMapper, SimpleResponseDto } from '@cmz/shared-data';

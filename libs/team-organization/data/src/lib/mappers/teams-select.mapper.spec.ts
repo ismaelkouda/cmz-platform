@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { TeamsSelectMapper } from './teams-select.mapper';
 import type { TeamsSelectItemApiDto } from '../dtos/teams-select-response-api.dto';
@@ -29,7 +28,9 @@ describe('TeamsSelectMapper', () => {
         const result = new TeamsSelectMapper().mapFromDto({
             error: false,
             message: '',
-            data: [{ uniq_id: 'TEAM-001', name: 'Équipe Littoral', code: 'T01' }],
+            data: [
+                { uniq_id: 'TEAM-001', name: 'Équipe Littoral', code: 'T01' },
+            ],
         });
         expect('code' in result[0]).toBe(false);
     });

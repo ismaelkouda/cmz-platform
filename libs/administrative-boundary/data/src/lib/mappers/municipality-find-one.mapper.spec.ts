@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { Status } from '@cmz/administrative-boundary-domain';
 import { MunicipalityFindOneMapper } from './municipality-find-one.mapper';
@@ -17,7 +16,11 @@ function makeItemDto(
         code: 'DK-M1',
         description: 'Commune du Plateau',
         region: { id: 'REGION-001', name: 'Dakar', code: 'DK' },
-        department: { id: 'DEPT-001', name: 'Dakar Département', code: 'DK-D1' },
+        department: {
+            id: 'DEPT-001',
+            name: 'Dakar Département',
+            code: 'DK-D1',
+        },
         population_size: 30000,
         infrastructure_size: 8,
         is_active: true,

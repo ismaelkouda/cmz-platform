@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import { TypeMediaMapper } from '@cmz/shared-data';
@@ -61,7 +60,10 @@ describe('SlideFindOneMapper', () => {
         const entity = createMapper().mapFromDto({
             error: false,
             message: '',
-            data: makeItemDto({ button_label: undefined, button_url: undefined }),
+            data: makeItemDto({
+                button_label: undefined,
+                button_url: undefined,
+            }),
         });
         expect(entity.buttonLabel).toBe('');
         expect(entity.buttonUrl).toBe('');

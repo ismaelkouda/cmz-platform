@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { TermsUseStatus } from '@cmz/content-management-domain';
 import { TermsUseFindOneMapper } from './terms-use-find-one.mapper';

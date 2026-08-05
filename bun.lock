@@ -78,6 +78,9 @@
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
       },
+      "devDependencies": {
+        "vitest": "^4.0.8",
+      },
     },
     "libs/administrative-boundary/domain": {
       "name": "@cmz/administrative-boundary-domain",
@@ -123,6 +126,9 @@
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
       },
+      "devDependencies": {
+        "vitest": "^4.0.8",
+      },
     },
     "libs/administrative-infrastructure/domain": {
       "name": "@cmz/administrative-infrastructure-domain",
@@ -167,6 +173,9 @@
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
       },
+      "devDependencies": {
+        "vitest": "^4.0.8",
+      },
     },
     "libs/authentication/domain": {
       "name": "@cmz/authentication-domain",
@@ -210,6 +219,9 @@
         "@cmz/shared-data": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/communication/domain": {
@@ -258,6 +270,9 @@
         "@cmz/shared-data": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/content-management/domain": {
@@ -319,6 +334,9 @@
         "@cmz/shared-data": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/coverage-areas/domain": {
@@ -790,6 +808,9 @@
         "@cmz/shared-domain": "workspace:*",
         "rxjs": "catalog:",
       },
+      "devDependencies": {
+        "vitest": "^4.0.8",
+      },
     },
     "libs/settings-security/domain": {
       "name": "@cmz/settings-security-domain",
@@ -862,6 +883,9 @@
     "libs/shared/domain": {
       "name": "@cmz/shared-domain",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^4.0.8",
+      },
     },
     "libs/shared/ui": {
       "name": "@cmz/shared-ui",
@@ -904,6 +928,9 @@
         "@cmz/shared-domain": "workspace:*",
         "@cmz/team-organization-domain": "workspace:*",
         "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "vitest": "^4.0.8",
       },
     },
     "libs/team-organization/domain": {

@@ -7,7 +7,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@angular/compiler": "catalog:",
     "@angular/core": "catalog:",
     "@cmz/report-states-domain": "workspace:*",
     "@cmz/shared-application": "workspace:*",

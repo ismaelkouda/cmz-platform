@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import {
     HttpErrorResponse,
@@ -22,7 +21,7 @@ function next(response$: Observable<HttpEvent<unknown>>): HttpHandlerFn {
 }
 
 describe('errorInterceptor', () => {
-    it("laisse passer une réponse réussie sans y toucher", async () => {
+    it('laisse passer une réponse réussie sans y toucher', async () => {
         const ok = { type: 4 } as unknown as HttpEvent<unknown>;
         const result = await firstValueFrom(
             errorInterceptor(req, next(of(ok)))
@@ -33,25 +32,29 @@ describe('errorInterceptor', () => {
     it('convertit un 401 en UnauthorizedError — réutilise le handler existant de UiFeedbackService plutôt que d’en créer un nouveau', async () => {
         const httpError = new HttpErrorResponse({ status: 401 });
         await expect(
-            firstValueFrom(errorInterceptor(req, next(throwError(() => httpError))))
+            firstValueFrom(
+                errorInterceptor(req, next(throwError(() => httpError)))
+            )
         ).rejects.toBeInstanceOf(UnauthorizedError);
     });
 
     it('convertit un statut 0 (réseau inatteignable/CORS) en UnknownError', async () => {
         const httpError = new HttpErrorResponse({ status: 0 });
         await expect(
-            firstValueFrom(errorInterceptor(req, next(throwError(() => httpError))))
+            firstValueFrom(
+                errorInterceptor(req, next(throwError(() => httpError)))
+            )
         ).rejects.toBeInstanceOf(UnknownError);
     });
 
     it(
         'convertit tout autre statut HTTP en ServerResponseError, en ' +
             'préservant le message serveur — forme réelle : corps JSON ' +
-            "objet ({ message }), pas une chaîne brute. Régression " +
+            'objet ({ message }), pas une chaîne brute. Régression ' +
             'verrouillée le 2026-08-03 (I-8/P-8/P-9) : comparé au vrai ' +
             'mapper legacy (`error.error.message`), confirmé que la forme ' +
             "réelle d'un corps d'erreur JSON auto-parsé par HttpClient est " +
-            'toujours un objet, jamais une chaîne — l\'ancienne version de ' +
+            "toujours un objet, jamais une chaîne — l'ancienne version de " +
             'ce test (`error: "..."`, une chaîne) ne pouvait pas détecter ' +
             'que `serverMessage` retombait sur le résumé technique ' +
             "générique d'Angular au lieu du message métier.",
@@ -77,7 +80,9 @@ describe('errorInterceptor', () => {
             errorInterceptor(req, next(throwError(() => httpError)))
         ).catch((e) => e);
         expect(error).toBeInstanceOf(ServerResponseError);
-        expect(error.messageKey).toBe('Erreur interne côté serveur (texte brut)');
+        expect(error.messageKey).toBe(
+            'Erreur interne côté serveur (texte brut)'
+        );
     });
 
     it(

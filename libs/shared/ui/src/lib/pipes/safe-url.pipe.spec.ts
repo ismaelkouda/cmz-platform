@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it, vi } from 'vitest';
 import { Injector, runInInjectionContext } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';

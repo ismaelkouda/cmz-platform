@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { LegalNoticeStatus } from '@cmz/content-management-domain';
 import { LegalNoticeFindOneMapper } from './legal-notice-find-one.mapper';

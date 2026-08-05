@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { FiberType, Operator } from '@cmz/coverage-areas-domain';
 import { OpticalFiberNetworkFindOneMapper } from './optical-fiber-network-find-one.mapper';
@@ -67,7 +66,10 @@ describe('OpticalFiberNetworkFindOneMapper', () => {
         const entity = createMapper().mapFromDto({
             error: false,
             message: '',
-            data: makeItemDto({ geom_url: undefined, geom_file_url: undefined }),
+            data: makeItemDto({
+                geom_url: undefined,
+                geom_file_url: undefined,
+            }),
         });
         expect(entity.geomUrl).toBeUndefined();
     });

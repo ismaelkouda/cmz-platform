@@ -7,7 +7,6 @@
     "@angular/core": "catalog:",
     "date-fns": "catalog:",
     "@angular/common": "catalog:",
-    "@angular/compiler": "catalog:",
     "rxjs": "catalog:"
   },
   "devDependencies": {

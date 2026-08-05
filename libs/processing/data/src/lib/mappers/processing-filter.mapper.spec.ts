@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { ProcessingAllState } from '@cmz/processing-domain';
 import { ReportType, TelecomOperator } from '@cmz/shared-domain';

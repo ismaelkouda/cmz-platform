@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { buildHttpParams } from './build-http-params.util';
 
@@ -23,7 +22,7 @@ describe('buildHttpParams', () => {
         expect(params.get('page')).toBe('2');
     });
 
-    it("exclut par défaut undefined, null et chaîne vide — comportement legacy (buildHttpPayload) répliqué côté params", () => {
+    it('exclut par défaut undefined, null et chaîne vide — comportement legacy (buildHttpPayload) répliqué côté params', () => {
         const params = buildHttpParams({
             a: undefined,
             b: null,
@@ -76,7 +75,7 @@ describe('buildHttpParams', () => {
         expect(params.has('tags')).toBe(false);
     });
 
-    it("aplatit un objet imbriqué en clés pointées (key.nestedKey), récursivement", () => {
+    it('aplatit un objet imbriqué en clés pointées (key.nestedKey), récursivement', () => {
         const params = buildHttpParams({
             period: { start: '2026-01-01', end: '2026-01-31' },
         });

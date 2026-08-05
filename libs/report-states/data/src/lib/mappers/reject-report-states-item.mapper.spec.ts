@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import {
@@ -7,7 +6,12 @@ import {
     ReportTypeMapper,
     TelecomOperatorMapper,
 } from '@cmz/shared-data';
-import { ReportSource, ReportType, TelecomOperator, TypeReport } from '@cmz/shared-domain';
+import {
+    ReportSource,
+    ReportType,
+    TelecomOperator,
+    TypeReport,
+} from '@cmz/shared-domain';
 import { RejectReportStatesItemMapper } from './reject-report-states-item.mapper';
 import type { RejectReportStatesItemApiDto } from '../dtos/reject-report-states-response-api.dto';
 
@@ -79,7 +83,10 @@ describe('RejectReportStatesItemMapper', () => {
 
         expect(entity.type).toBe(TypeReport.REQUESTS);
         expect(entity.uniqId).toBe('REQ-004');
-        expect(entity.operators).toEqual([TelecomOperator.MTN, TelecomOperator.ORANGE]);
+        expect(entity.operators).toEqual([
+            TelecomOperator.MTN,
+            TelecomOperator.ORANGE,
+        ]);
         expect(entity.source).toBe(ReportSource.IVR);
     });
 

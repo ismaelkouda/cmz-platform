@@ -23,6 +23,7 @@ export function defineLibTestConfig(libRoot: string) {
         test: {
             globals: true,
             environment: 'node',
+            setupFiles: [resolve(workspaceRoot, 'tools/vitest-setup.ts')],
             // Chemins absolus — Vitest est lancé depuis la racine du monorepo
             include: [
                 resolve(libRoot, 'src/**/*.spec.ts'),

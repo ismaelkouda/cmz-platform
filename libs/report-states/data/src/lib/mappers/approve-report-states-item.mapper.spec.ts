@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import {
@@ -7,7 +6,12 @@ import {
     ReportTypeMapper,
     TelecomOperatorMapper,
 } from '@cmz/shared-data';
-import { ReportSource, ReportType, TelecomOperator, TypeReport } from '@cmz/shared-domain';
+import {
+    ReportSource,
+    ReportType,
+    TelecomOperator,
+    TypeReport,
+} from '@cmz/shared-domain';
 import { ApproveReportStatesItemMapper } from './approve-report-states-item.mapper';
 import type { ApproveReportStatesItemApiDto } from '../dtos/approve-report-states-response-api.dto';
 

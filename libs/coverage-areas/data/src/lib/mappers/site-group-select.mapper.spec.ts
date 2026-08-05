@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { SiteGroupSelectMapper } from './site-group-select.mapper';
 import type { SiteGroupSelectItemApiDto } from '../dtos/site-group-select-response-api.dto';

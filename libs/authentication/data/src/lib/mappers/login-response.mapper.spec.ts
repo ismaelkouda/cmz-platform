@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { LoginResponseMapper } from './login-response.mapper';
 import { LoginItemApiDto } from '../dtos/login-response-api.dto';

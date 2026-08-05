@@ -1,4 +1,3 @@
-import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 import { PaginatedResponseDto } from '@cmz/shared-data';
 import { AccessLogsAction } from '@cmz/settings-security-domain';
@@ -82,7 +81,9 @@ describe('AccessLogsMapper', () => {
     it('lève ApiError.invalidResponse si action est une valeur wire inconnue (fix vs code mort du source)', () => {
         expect(() =>
             new AccessLogsMapper().mapFromDto(
-                makePaginatedResponse([makeItemDto({ action: 'unknown_event' })])
+                makePaginatedResponse([
+                    makeItemDto({ action: 'unknown_event' }),
+                ])
             )
         ).toThrow(/AccessLogsAction wire inconnue/);
     });
