@@ -92,15 +92,60 @@ pas une entité métier avec contrepartie legacy 1:1).
 | `check:duplicates --family` (H-4, quasi-doublon régression) | ✅ bloquant (à la hausse seulement) | **OK — 29,6 % ≤ baseline 29,6 %** | `node tools/check-duplicate-files.mjs --family` |
 | `check:pattern-nx:crud-entity` (J-9/N-7) | ✅ bloquant | **OK — 66/66 × 3 modules** (3e ajouté le 2026-08-04 : `coverage-areas`/site-group) | `bun run check:pattern-nx:crud-entity` |
 | `corpus:ci` (structural-only, 8 modules) | ✅ bloquant | non revérifié cette passe (dernière mesure : OK) | `bun run corpus:ci` |
-| `check:dead-code` (knip) | ☐ non bloquant (`continue-on-error`) | connu en échec partiel (I-04 pas pleinement instrumenté) | `bun run check:dead-code` |
+| `check:dead-code` (knip) | ☐ non bloquant (`continue-on-error`) | ⚠️ non mesurable depuis ce sandbox — voir note 2026-08-05 ci-dessous | `bun run check:dead-code` |
 | `security-audit` (bun audit) | ✅ bloquant depuis le 2026-08-04 (backlog #7) | OK — 0 vulnérabilité high après correctif `overrides` | `bun audit --audit-level=high` |
 | `i18n-check` | ✅ bloquant depuis le 2026-08-04 (backlog #7) | OK — 0/313 clé manquante | `node tools/check-i18n.mjs` |
 
 **Sur 18 portes, 17 sont bloquantes, 1 ne l'est pas encore** (`check:dead-code`
-— échec partiel connu, I-04 pas pleinement instrumenté ; `security-audit`
-et `i18n-check` sont passées bloquantes le 2026-08-04, voir §7 item #7).
-C'est cette liste, pas la liste des modules « ✅ » dans `STATUS.md`, qui
-mesure la rigueur réelle du dépôt.
+— voir note ci-dessous ; `security-audit` et `i18n-check` sont passées
+bloquantes le 2026-08-04, voir §7 item #7). C'est cette liste, pas la liste
+des modules « ✅ » dans `STATUS.md`, qui mesure la rigueur réelle du dépôt.
+
+**Note 2026-08-05 — diagnostic réel de `check:dead-code` (knip), correction
+d'une attribution erronée.** Ce tableau citait « I-04 pas pleinement
+instrumenté » comme cause de l'échec partiel — recherché dans l'ensemble des
+audits narratifs (`audit-workspace-2026-0*.md`), aucun chantier « I-04 » n'y
+est défini ; c'était une référence orpheline, pas une cause vérifiée.
+
+Investigation menée le 2026-08-05 : `knip` n'était **pas épinglé** dans
+`package.json` (`bunx knip` en CI comme en local) — corrigé, `knip@6.31.0`
+ajouté aux `devDependencies`, script `check:dead-code` pointé sur le
+binaire local plutôt que `bunx`. Une fois épinglé, `knip` **crashe
+systématiquement** dans ce sandbox de développement — `RangeError: Array
+buffer allocation failed` dans `oxc-parser` (le parseur Rust/NAPI que
+knip 6.x utilise en mode `raw transfer`), reproduit à l'identique avec
+`bunx`, `npx` et le binaire local, sur plusieurs versions de knip 6.x
+(6.0.0 à 6.31.0 — toute la branche 6.x utilise ce mode de parsing).
+`knip@5.63.1` échoue différemment (`ts.getDefaultLibFilePath is not a
+function`, incompatible avec la version de TypeScript du projet — pas
+une option de repli valable).
+
+Cause racine identifiée : `uname -a` confirme que ce sandbox tourne en
+**aarch64/ARM64** (`Linux ... 6.8.0-124-generic ... aarch64`). Le module
+`oxc-parser` en mode `raw transfer` alloue un `ArrayBuffer` de taille
+fixe pré-calculée pour la plateforme (`common.js`, `BLOCK_SIZE` +
+`BLOCK_ALIGN`) — l'allocation échoue sur cette architecture précise,
+alors que Node lui-même alloue sans problème un `ArrayBuffer` de 2 Gio
+en dehors de knip (`node -e "new ArrayBuffer(2147483647)"` → OK), ce qui
+écarte une vraie contrainte mémoire du sandbox (2,8 Gio libres sur
+3,8 Gio au moment du test). C'est un bug d'incompatibilité binaire
+natif/architecture dans `oxc-parser`, en amont de ce dépôt — rien dans
+`cmz-platform` ne peut le corriger depuis ce sandbox.
+
+**Ce que ça change et ce que ça ne change pas :** le job CI
+`dead-code` de `.github/workflows/ci.yml` tourne sur `runs-on:
+ubuntu-latest` — un runner **x86_64**, pas ARM64. Rien n'indique que la
+CI réelle souffre du même crash ; ce diagnostic ne permet donc pas de
+conclure que `check:dead-code` échouerait aussi en CI, seulement qu'il
+est **impossible à exécuter et à vérifier depuis ce sandbox de
+développement**. Retirer `continue-on-error` du job CI sur la seule foi
+de ce diagnostic serait prématuré — il faudrait d'abord confirmer sur
+un runner x86_64 (ou équivalent à la CI réelle) que knip s'exécute
+correctement et mesurer le signal réel (faux positifs, dette de code
+mort réelle) avant de le rendre bloquant. Ce point reste donc ouvert,
+mais sa nature a changé : ce n'est plus « instrumentation incomplète »
+(affirmation sans source), c'est « non vérifiable depuis cet
+environnement, à re-tester sur un runner x86_64 ».
 
 ## 3. Périmètre applicatif — 52 entités (`scope.json`, source de vérité)
 
@@ -975,6 +1020,7 @@ humaine en attente.
 | 10 | `team-organization` — 2 entités manquantes | ~~ADR-0018 (décision produit)~~ | ✅ **partiellement clos (2026-08-05)** — ADR-0018 rouvert sur besoin métier exprimé, Option C retenue : `agents-performances` construite (pattern `workflow-action`, 2 chains — liste + `-history`, 55 fichiers), corrigée après une première passe non conforme (statut et personne liée alignés sur les précédents `participants`/`teams` du même module plutôt que sur des types importés d'ailleurs). `daily-goal` reste hors périmètre (aucun pattern Nx ne le couvre naturellement) — voir cartographie §4, `team-organization/agents-performances`, et ADR-0018 « Révision — 2026-08-05 » |
 | 11 | `report-states` — fichiers `MapperUtils.validateDto` sans `*.mapper.spec.ts` dédié, découvert le 2026-08-04 en vérifiant l'état réel des 4 modules `workflow-action` avant de les exclure du chantier « mappers concrets » | Rien — budget | ✅ **clos (2026-08-04)** — **6/6 fichiers testés** (pas 5 : le 6e, `report-states-details.mapper.ts`, était présumé couvert par un oracle corpus `@cmz/report-states-data:test` « verified », mais ce test-projet passait déjà avant grâce à `report-states-details-mappers.spec.ts` qui ne teste que 4 mappers *request-side* du même dossier — le mapper *response* principal, 9 dépendances DI, n'avait jamais été exercé ; corrigé par une découverte, pas par le plan initial). 44 tests neufs, tous verts au premier passage, `tsc`/`eslint --max-warnings=0` à 0 erreur |
 | 12 | Mesurer et clore `settings-security` + le reste du périmètre `crud-entity` (`administrative-boundary`/`administrative-infrastructure` restants, `content-management` restant) | Rien — même méthode que #3 | ✅ **clos (2026-08-04)** — relecture complète de `scope.json` a révélé un périmètre `crud-entity` plus large que les 5 candidats initiaux du backlog #3 : `settings-security` (2 entités, jamais mesurées), `administrative-boundary` (2 entités en plus de `region`), `content-management` (5 entités en plus de `home`), `administrative-infrastructure` (1 entité en plus de `infrastructure`). Mesuré et clos un par un, même override explicite (« reecris le code pour atteindre les 100% ») : `settings-security/profiles-permissions` 65/66→66/66 (filter-entity identité) ; `settings-security/users` 58/66→66/66 (filter-entity + chaîne `-select`) ; `administrative-boundary/department` déjà 66/66 (découverte) ; `administrative-boundary/municipality` 59/66→66/66 (chaîne `-select`, `MunicipalityOption` + endpoint sans `/selected-field`, 2 divergences vérifiées avant écriture) ; `administrative-infrastructure/infrastructure-type` déjà 66/66 (découverte) ; `content-management/{legal-notice,news,privacy-policy,slide,terms-use}` chacun 58/66→66/66 (filter-entity + chaîne `-select`, label `title` ou `version` selon DTO vérifié). **18 couples module/entité crud-entity désormais tous à 100%** ; `validated_on` de `crud-entity.pattern.json` passe à 7 modules ; `check:pattern-nx:crud-entity` étendu à 18 entrées. Seule exclusion confirmée (pas un gap) : `optical-fiber-network`/`radio-relay-links` de `coverage-areas`, absents de `scope.json`. |
+| 13 | `check:dead-code` (knip) — rendre bloquant, dernière des 18 portes non bloquantes | Bloqué techniquement ici (sandbox ARM64) | ⚠️ **investigué, non clos (2026-08-05)** — cause précédemment documentée (« I-04 pas pleinement instrumenté ») était une référence orpheline, introuvable dans les audits narratifs. Vraie cause trouvée : `knip` non épinglé (corrigé — `knip@6.31.0` ajouté aux `devDependencies`, script pointé sur le binaire local) puis crash systématique `oxc-parser` (`RangeError: Array buffer allocation failed`) reproduit avec `bunx`/`npx`/binaire local, sur toute la branche knip 6.x — bug d'incompatibilité binaire natif/architecture **ARM64** (`uname -a` → `aarch64`), pas une limite mémoire réelle (Node alloue 2 Gio d'`ArrayBuffer` hors knip sans erreur). Le job CI `dead-code` tourne sur `runs-on: ubuntu-latest` (x86_64) — non affecté a priori par ce bug précis, mais non vérifié faute d'accès à un runner x86_64 depuis ce sandbox. **Reste à faire :** exécuter `bun run check:dead-code` sur un runner x86_64 (CI réelle ou poste x86_64), lire le rapport de code mort produit, puis décider au cas par cas retrait/faux-positif avant de retirer `continue-on-error` du job — impossible à mener plus loin depuis cet environnement. |
 
 ## 8. Comment maintenir cette cartographie
 
