@@ -93,13 +93,14 @@ pas une entité métier avec contrepartie legacy 1:1).
 | `check:pattern-nx:crud-entity` (J-9/N-7) | ✅ bloquant | **OK — 66/66 × 3 modules** (3e ajouté le 2026-08-04 : `coverage-areas`/site-group) | `bun run check:pattern-nx:crud-entity` |
 | `corpus:ci` (structural-only, 8 modules) | ✅ bloquant | non revérifié cette passe (dernière mesure : OK) | `bun run corpus:ci` |
 | `check:dead-code` (knip) | ☐ non bloquant (`continue-on-error`) | connu en échec partiel (I-04 pas pleinement instrumenté) | `bun run check:dead-code` |
-| `security-audit` (bun audit) | ☐ non bloquant (`continue-on-error`) | 4 avis high connus (tooling, pas le bundle livré) | `bun audit --audit-level=high` |
-| `i18n-check` | ☐ non bloquant (`continue-on-error`, prudence) | 0 clé manquante (chantier K clos) mais flag laissé | `node tools/check-i18n.mjs` |
+| `security-audit` (bun audit) | ✅ bloquant depuis le 2026-08-04 (backlog #7) | OK — 0 vulnérabilité high après correctif `overrides` | `bun audit --audit-level=high` |
+| `i18n-check` | ✅ bloquant depuis le 2026-08-04 (backlog #7) | OK — 0/313 clé manquante | `node tools/check-i18n.mjs` |
 
-**Sur 18 portes, 15 sont bloquantes, 3 ne le sont pas encore** (dead-code,
-security-audit, i18n-check — chacune avec une raison documentée, pas un
-oubli). C'est cette liste, pas la liste des modules « ✅ » dans
-`STATUS.md`, qui mesure la rigueur réelle du dépôt.
+**Sur 18 portes, 17 sont bloquantes, 1 ne l'est pas encore** (`check:dead-code`
+— échec partiel connu, I-04 pas pleinement instrumenté ; `security-audit`
+et `i18n-check` sont passées bloquantes le 2026-08-04, voir §7 item #7).
+C'est cette liste, pas la liste des modules « ✅ » dans `STATUS.md`, qui
+mesure la rigueur réelle du dépôt.
 
 ## 3. Périmètre applicatif — 52 entités (`scope.json`, source de vérité)
 
@@ -933,22 +934,30 @@ l'intégralité des mappers concrets par module métier (60+ appelants de
 `MapperUtils.validateDto` répartis sur 13 modules, 0 testés directement) +
 Playwright (jamais installé).
 
-## 6. Constat central persistant — P0-N1, toujours vrai (vérifié 2026-08-04)
+## 6. Constat P0-N1 — clos depuis le 2026-08-04 (périmé, conservé pour mémoire)
+
+Cette section documentait un état réel au moment de sa rédaction (avant
+que le sprint I-L ne soit commité au fil de l'eau) — **elle ne décrit
+plus l'état actuel du dépôt** et son maintien ici a créé une
+incohérence avec le §7 item #1 (marqué clos juste en dessous). Corrigé
+le 2026-08-05 après qu'une citation erronée du chiffre « 482 fichiers »
+dans une réponse d'agent a révélé que cette section n'avait jamais été
+mise à jour après la clôture du backlog #1.
+
+État réel vérifié le 2026-08-05 :
 
 ```bash
-git status --short | wc -l   # → 482 fichiers modifiés/ajoutés/supprimés
-git log --oneline -3         # → dernier commit réel : 06030e9 (avant cette
-                              #   session et les précédentes), rien de
-                              #   nouveau commis depuis
+git status --short | wc -l   # → 0 fichier — arbre propre
+git log --oneline -1         # → 2e29f9a (dernier commit : daily-goal,
+                              #   team-organization complet, ADR-0018)
 ```
 
-Un sprint de remédiation complet — chantiers I à L, plus de 200 tests
-neufs, 3 nouveaux ports/adapters, 2 patterns corrigés, 1 nouvel outil
-local, 1 trou de câblage CI trouvé et corrigé — **dort toujours,
-non commis, non revu, non poussé**. Aucune ligne de ce document ni de
-l'audit narratif ne change ce fait tant qu'un humain n'a pas décidé de
-commiter. C'est la limite structurelle numéro un du dépôt, avant toute
-question de couverture de test ou de conformité de pattern.
+Le canal de commit est tenu depuis le 2026-08-04 : chaque chantier est
+commité au fil de l'eau, `git status --short` est vérifié à 0 avant
+chaque clôture de tâche documentée dans ce fichier. Seul N1-2
+(ouverture de PR/CI distante) reste bloqué techniquement par le sandbox
+(pas d'accès réseau sortant vers un remote Git), pas par une décision
+humaine en attente.
 
 ## 7. Backlog priorisé restant, point par point
 
