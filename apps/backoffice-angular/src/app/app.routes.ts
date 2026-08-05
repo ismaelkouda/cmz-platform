@@ -197,6 +197,13 @@ export const appRoutes: Route[] = [
                     ),
             },
             {
+                path: 'team-organization/daily-goal',
+                loadChildren: () =>
+                    import('@cmz/team-organization-ui').then(
+                        (m) => m.DAILY_GOAL_ROUTES
+                    ),
+            },
+            {
                 path: 'content-management/home',
                 loadChildren: () =>
                     import('@cmz/content-management-ui').then(

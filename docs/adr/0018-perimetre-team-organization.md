@@ -191,6 +191,72 @@ Vérifié après correction : build des 4 layers
 OK ; `bunx nx run @cmz/team-organization-data:test` → 30 tests
 existants toujours verts, aucune régression.
 
+## Révision — 2026-08-05, `daily-goal` construite (Option A désormais
+exécutée dans les faits)
+
+Immédiatement après `agents-performances`, le porteur du projet demande
+de construire `daily-goal` (« attaque daily-goal ») — la Décision
+initiale (Option B) est donc entièrement rouverte : les deux entités
+sont désormais construites, ce qui correspond de fait à l'Option A,
+bien qu'atteinte en deux temps (Option C le 2026-08-05 matin, puis
+complément le même jour) plutôt que d'un bloc.
+
+**Cartographie legacy (préalable, avant tout code) :** lecture intégrale
+des 26 fichiers source
+(`src/presentation/pages/team-organization/{domain,application,
+infrastructure,presentation,di}/*/daily-goal/`). Constat : `daily-goal`
+est structurellement quasi identique à `agents-performances` — même DTO
+wire (`id`, `user{id,first_name,last_name}`, `task_target`,
+`tasks_completed`, `percentage`, `status`, `created_at`), même filtre
+par période (`startDate`/`endDate` uniquement — pas de `search`/
+`member`/`isAchieved`, contrairement à `agents-performances`), même
+`readAll` seul (pas de create/update/delete/enable/disable, pas
+d'export serveur). Seules différences réelles : l'enum de statut
+(`ACTIVE`/`INACTIVE` au lieu de `COMPLETED`/`NOT_COMPLETED`) et
+l'absence totale de tout mapper/chain `find-one` côté legacy (le tab
+« history » du legacy redirige vers le même composant générique
+partagé que `agents-performances`, mais sans même le mapper mort que ce
+dernier avait — donc rien à reconstruire côté history pour parité,
+contrairement à `agents-performances-history`).
+
+**Le classement « Divers » (26 %/26 %) de `check-pattern.js` provenait
+donc d'une heuristique automatique legacy insensible à cette quasi-
+identité structurelle, pas d'une vraie divergence de forme.** Le
+pattern appliqué est le même que pour `agents-performances` :
+`workflow-action`, volet unique, sans `export()` serveur, sans second
+chain (contrairement à `agents-performances` qui avait reconstruit
+`agents-performances-history` sur demande explicite malgré son
+caractère de code mort legacy — ici la demande explicite portait
+seulement sur `daily-goal`, pas sur un équivalent history, donc pas de
+reconstruction d'un chain qui n'a même pas de mapper legacy).
+
+**Conventions appliquées dès la première passe (pas de correctif
+nécessaire cette fois — précédent cherché avant d'écrire, conformément
+au principe retenu dans la révision précédente) :** statut via
+`isDailyGoalStatus()` (garde de type, pas de `Record` de conversion) ;
+`user` legacy aplati en `firstName`/`lastName` sur `DailyGoalProps`
+(jamais `ActorEntity`/`ActorDto`) ; fichiers `constants/
+daily-goal-status-label.constant.ts` + `enums/daily-goal-status-style.
+enum.ts` + `mappers/daily-goal-status-style.mapper.ts` créés dès le
+départ (même triptyque que `participants`/`agents-performances`).
+Écart volontaire par rapport au patron `agents-performances` : pas de
+`TableRowActionDefinition`/action `view` dans `DAILY_GOAL_TABLE` — une
+action de navigation sans destination réelle (aucun chain `find-one`/
+`history` construit) aurait été une convention inventée sans
+justification fonctionnelle, pas un précédent reproduit.
+
+Vérifié : build des 4 layers
+(`@cmz/team-organization-{domain,data,application,ui}`) → succès ;
+`eslint libs/team-organization --max-warnings=0` → 0 warning ;
+`check:duplicates`/`check:duplicates --family` (29.4 % ≤ baseline
+29.6 %) / `check-declared-deps` / `check-project-targets` → tous OK ;
+`bunx nx run @cmz/team-organization-data:test` → 30 tests existants
+toujours verts, aucune régression. `scope.json` : `daily-goal` n'a plus
+d'`expected_status` — classée `workflow-action`, comme
+`agents-performances`. Périmètre `team-organization` désormais complet
+vis-à-vis des 4 entités du legacy (`participants`, `teams`,
+`agents-performances`, `daily-goal`).
+
 ## Références
 
 - `docs/architecture/analyse-du-projet-source.md` (annexe, classification

@@ -53,7 +53,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `requests` | workflow-action | 157 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 17 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `settings-security` | crud-entity | 0 | — | ✅ `profiles-permissions`/`users` 66/66 (100.0%, backlog #3, 2026-08-04, 7e validation — première mesure fichier par fichier du module) | 0 | 6 | ✅ I-7 + backlog #4 + #3 |
 | `shared` (kernel) | kernel | ≥1 (via `libs/shared/...`) | — | — | 4 (chantier I, hors chantier L) | **16** | ✅✅ chantier I + chantier L |
-| `team-organization` | crud-entity + workflow-action | 0 | — | ✅ `teams` 66/66 (N-7, 4e validation) ; `participants` 66/66 (100.0%, backlog #3, 2026-08-04 — chaîne `-select` construite sur demande explicite) ; `agents-performances` construite le 2026-08-05 (ADR-0018 rouvert, Option C, pattern `workflow-action`) ; `daily-goal` reste hors périmètre (ADR-0018, aucun pattern Nx ne le couvre naturellement) | 0 | 5 | ✅ backlog #4 + #3 + ADR-0018 Option C |
+| `team-organization` | crud-entity + workflow-action | 0 | — | ✅ `teams` 66/66 (N-7, 4e validation) ; `participants` 66/66 (100.0%, backlog #3, 2026-08-04 — chaîne `-select` construite sur demande explicite) ; `agents-performances` et `daily-goal` construites le 2026-08-05 (ADR-0018 rouvert, pattern `workflow-action` pour les deux — périmètre `team-organization` désormais complet, 4/4 entités legacy) | 0 | 5 | ✅ backlog #4 + #3 + ADR-0018 |
 
 **Lecture immédiate** : sur 18 modules, **8** ont désormais traversé
 l'oracle le plus sévère (corpus + Meta-vérification 12/12, colonne
@@ -105,17 +105,22 @@ oubli). C'est cette liste, pas la liste des modules « ✅ » dans
 
 | Famille | Nb. entités | Modules concernés |
 | --- | ---: | --- |
-| `workflow-action` | 19 | finalization, processing, report-states, requests |
+| `workflow-action` | 21 | finalization, processing, report-states, requests, team-organization (agents-performances, daily-goal) |
 | `crud-entity` | 18 | administrative-boundary, administrative-infrastructure, communication, content-management, coverage-areas, settings-security, team-organization |
 | `read-only-view` | 9 | dashboard, interactive-map, monitoring, reporting |
 | `action-request` | 3 | authentication |
-| `divers` | 3 | communication (notifications), settings-security (access-logs), team-organization (daily-goal) |
+| `divers` | 1 | communication (notifications), settings-security (access-logs) |
 
-**50/52 entités construites.** Les 2 manquantes : `team-organization` /
-`agents-performances` (workflow-action, 41 fichiers source legacy) et
-`team-organization` / `daily-goal` (divers, 26 fichiers) — bloquées par une
-décision de périmètre produit, pas par une incapacité technique
-([ADR-0018](../adr/0018-perimetre-team-organization.md)).
+**52/52 entités construites (2026-08-05).** Les 2 dernières manquantes,
+`team-organization` / `agents-performances` (41 fichiers source legacy)
+et `team-organization` / `daily-goal` (26 fichiers), ont été construites
+le 2026-08-05 — ADR-0018 rouvert sur besoin métier explicite, pattern
+`workflow-action` appliqué aux deux (le classement legacy `divers` de
+`daily-goal` par `check-pattern.js`, 26 %/26 %, s'est révélé être une
+heuristique automatique insensible à sa quasi-identité structurelle avec
+`agents-performances` — même DTO, même filtre period-only, même
+`readAll` seul ; voir [ADR-0018](../adr/0018-perimetre-team-organization.md)
+pour le détail des deux révisions).
 
 ## 4. Détail par module — effectué / reste à faire / amélioration / découverte
 
@@ -572,6 +577,50 @@ décision de périmètre produit, pas par une incapacité technique
   nx run @cmz/team-organization-data:test` → 30 tests existants
   toujours verts, aucune régression ; `check:duplicates(:family)`,
   `check:declared-deps`, `check:project-targets` → tous OK.
+
+#### `team-organization/agents-performances` et `daily-goal` — ADR-0018 rouvert (2026-08-05)
+
+- **Contexte :** les 2 entités déclarées hors périmètre par ADR-0018
+  (Option B initiale) sont construites le même jour, sur besoin métier
+  explicite du porteur — `agents-performances` en Option C d'abord, puis
+  `daily-goal` sur demande directe (« attaque daily-goal »), amenant le
+  périmètre réel à l'équivalent de l'Option A (les deux) sans jamais la
+  sélectionner d'un bloc.
+- **`agents-performances`** (41 fichiers source legacy, pattern
+  `workflow-action`, volet unique + `agents-performances-history`
+  reconstruit malgré son statut de code mort côté legacy, sur demande
+  explicite de parité structurelle). **Première passe non conforme,
+  corrigée le même jour** : statut d'abord traité via un `Record`
+  de conversion séparé et `user` via `ActorEntity`/`ActorDto` (jamais
+  utilisés ailleurs dans `team-organization`) — corrigé pour suivre
+  `ParticipantsMapper` (garde de type `isXStatus`, `user` aplati
+  `firstName`/`lastName`). Voir
+  [ADR-0018](../adr/0018-perimetre-team-organization.md) pour le détail
+  complet de la correction et le principe retenu (chercher le précédent
+  avant d'écrire, jamais après).
+- **`daily-goal`** (26 fichiers source legacy). Cartographie legacy
+  intégrale préalable : structure quasi identique à
+  `agents-performances` (même DTO wire, même filtre period-only, même
+  `readAll` seul) — le classement legacy « divers » (26 %/26 %,
+  `check-pattern.js`) était une heuristique automatique insensible à
+  cette quasi-identité, pas une vraie divergence de forme. Pattern
+  `workflow-action` appliqué, conventions déjà validées (garde de type
+  `isDailyGoalStatus`, `user` aplati) appliquées dès la première passe
+  — pas de correctif nécessaire cette fois. Écart volontaire : pas de
+  chain `history`/`find-one` (le legacy n'a pas de mapper dédié pour ce
+  volet, contrairement à `agents-performances`) ni d'action `view` dans
+  la table (aucune destination réelle à naviguer).
+- **Vérifié pour les deux :** build des 4 layers
+  (`@cmz/team-organization-{domain,data,application,ui}`) → succès ;
+  `eslint libs/team-organization --max-warnings=0` → 0 warning ;
+  `check:duplicates`/`check:duplicates --family` (29.4% ≤ baseline
+  29.6%)/`check-declared-deps`/`check-project-targets` → tous OK ;
+  `bunx nx run @cmz/team-organization-data:test` → 30 tests existants
+  toujours verts, aucune régression.
+- **Résultat :** `scope.json` — les deux entités n'ont plus
+  d'`expected_status`, classées `workflow-action`. Périmètre
+  `team-organization` complet : 4/4 entités legacy construites.
+  Périmètre applicatif global désormais 52/52 entités.
 
 ### `content-management` — backlog #4 (8/12 modules, chantier « mappers concrets » terminé)
 

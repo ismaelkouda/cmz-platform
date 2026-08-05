@@ -29,6 +29,9 @@ export * from './lib/dtos/agents-performances-response-api.dto';
 export * from './lib/dtos/agents-performances-filter-api.dto';
 export * from './lib/dtos/agents-performances-history-response-api.dto';
 export * from './lib/dtos/agents-performances-history-filter-api.dto';
+export * from './lib/dtos/daily-goal-status-api.dto';
+export * from './lib/dtos/daily-goal-response-api.dto';
+export * from './lib/dtos/daily-goal-filter-api.dto';
 
 export * from './lib/utils/flatten-permission-tree.util';
 
@@ -59,6 +62,8 @@ export * from './lib/mappers/agents-performances.mapper';
 export * from './lib/mappers/agents-performances-filter.mapper';
 export * from './lib/mappers/agents-performances-history.mapper';
 export * from './lib/mappers/agents-performances-history-filter.mapper';
+export * from './lib/mappers/daily-goal.mapper';
+export * from './lib/mappers/daily-goal-filter.mapper';
 
 export * from './lib/sources/participants.api';
 export * from './lib/sources/participants-find-one.api';
@@ -70,6 +75,7 @@ export * from './lib/sources/teams-permissions.api';
 
 export * from './lib/sources/agents-performances.api';
 export * from './lib/sources/agents-performances-history.api';
+export * from './lib/sources/daily-goal.api';
 
 export * from './lib/repositories/participants.repository.impl';
 export * from './lib/repositories/participants-find-one.repository.impl';
@@ -80,3 +86,4 @@ export * from './lib/repositories/teams-select.repository.impl';
 export * from './lib/repositories/teams-permissions.repository.impl';
 export * from './lib/repositories/agents-performances.repository.impl';
 export * from './lib/repositories/agents-performances-history.repository.impl';
+export * from './lib/repositories/daily-goal.repository.impl';

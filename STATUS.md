@@ -8,10 +8,10 @@
 | Indicateur | Valeur |
 |:---|---:|
 | Packages Nx | **71 libs + 1 app** (72 `project.json`) |
-| Fichiers TypeScript (`libs/`) | **2 696 fichiers hors tests** (2 839 au total, dont 143 specs) |
+| Fichiers TypeScript (`libs/`) | **2 724 fichiers hors tests** (2 867 au total, dont 143 specs) |
 | Modules détectés | **18** |
-| Périmètre applicatif (`scope.json`, M-7) | **51 / 52 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
-| Corpus SEOS — couverture fichiers (N-4) | **476 / 2 696 fichiers libs/ hors tests → 17.7 %** — 9 modules sans aucune paire (7 `crud-entity`, 1 `action-request`, 1 `kernel`) |
+| Périmètre applicatif (`scope.json`, M-7) | **52 / 52 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
+| Corpus SEOS — couverture fichiers (N-4) | **476 / 2 724 fichiers libs/ hors tests → 17.5 %** — 9 modules sans aucune paire (7 `crud-entity`, 1 `action-request`, 1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **587 correspondances** + **194 décisions d'architecture** (`status: n/a`) — pas 781 paires d'apprentissage |
 
 ## Légende
@@ -45,7 +45,7 @@
 | `requests` | ✅ | workflow-action | application, data, domain, ui | 125 | Module IR clôturé — corpus 157 paires, 8 chaînes, Meta 12/12 |
 | `settings-security` | ✅ | crud-entity | application, data, domain, ui | 204 | Compilant — 3 entités |
 | `shared` | ✅ | kernel | application, browser, constants, data, domain, ui | 189 | Kernel transverse opérationnel |
-| `team-organization` | ✅ | crud-entity | application, data, domain, ui | 226 | Compilant — 2 entités |
+| `team-organization` | ✅ | crud-entity | application, data, domain, ui | 254 | Compilant — 2 entités |
 
 ## Modules non commencés (attendus)
 
@@ -55,7 +55,7 @@ la main (M-7/L-2/L-3, `audit-workspace-2026-08-02-addendum.md` P1-19).
 
 | Module | Entité | Famille | Fichiers source (legacy) | Statut |
 |:---|:---|:---|---:|:---|
-| `team-organization` | `daily-goal` | divers | 26 | manquant — voir ADR-0018 |
+| — | — | — | — | Aucun écart — les 52 entités du périmètre (hors fixture SEOS) ont une trace dans libs/ |
 
 ---
 *[LLM_CONTEXT.md](./LLM_CONTEXT.md) — source de vérité architecture et directives agents IA*

@@ -8,6 +8,7 @@ export * from './lib/use-cases/teams-permissions.use-case';
 
 export * from './lib/use-cases/agents-performances.use-case';
 export * from './lib/use-cases/agents-performances-history.use-case';
+export * from './lib/use-cases/daily-goal.use-case';
 
 export * from './lib/facades/participants.facade';
 export * from './lib/facades/participants-find-one.facade';
@@ -19,3 +20,4 @@ export * from './lib/facades/teams-permissions.facade';
 
 export * from './lib/facades/agents-performances.facade';
 export * from './lib/facades/agents-performances-history.facade';
+export * from './lib/facades/daily-goal.facade';

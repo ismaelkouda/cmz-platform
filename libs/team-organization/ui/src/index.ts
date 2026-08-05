@@ -46,3 +46,15 @@ export * from './lib/stores/agents-performances-history-filter.store';
 export * from './lib/features/agents-performances-history-list.component';
 
 export * from './lib/features/agents-performances.routes';
+
+export * from './lib/enums/daily-goal-status-style.enum';
+export * from './lib/constants/daily-goal-status-label.constant';
+export * from './lib/mappers/daily-goal-status-style.mapper';
+export * from './lib/constants/daily-goal-filter-keys.constant';
+export * from './lib/constants/daily-goal-paths.constant';
+export * from './lib/constants/daily-goal-table.constant';
+export * from './lib/adapters/daily-goal-vm-props.interface';
+export * from './lib/adapters/daily-goal-vm.presenter';
+export * from './lib/stores/daily-goal-filter.store';
+export * from './lib/features/daily-goal-list.component';
+export * from './lib/features/daily-goal.routes';

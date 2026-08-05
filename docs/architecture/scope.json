@@ -25,7 +25,7 @@
     { "module": "administrative-infrastructure", "entity": "infrastructure", "class": "crud-entity" },
     { "module": "administrative-infrastructure", "entity": "infrastructure-type", "class": "crud-entity" },
     { "module": "team-organization", "entity": "agents-performances", "class": "workflow-action" },
-    { "module": "team-organization", "entity": "daily-goal", "class": "divers", "expected_status": "manquant — voir ADR-0018", "source_files": 26 },
+    { "module": "team-organization", "entity": "daily-goal", "class": "workflow-action" },
     { "module": "settings-security", "entity": "access-logs", "class": "divers" },
     { "module": "authentication", "entity": "forgot-password", "class": "action-request" },
     { "module": "authentication", "entity": "login", "class": "action-request" },
