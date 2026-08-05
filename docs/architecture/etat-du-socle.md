@@ -5,9 +5,17 @@ jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
 <!-- BEGIN:GENERATED:monorepo-status -->
+
 - **Dernière mise à jour :** 2026-08-05 (généré par `tools/generate-status.mjs`)
-- **État :** **Phase 08** — génération depuis patterns ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle outillé + Kernel `shared/` / `@cmz/core` + **18** modules livrés/compilants (**71** libs + **1** app ; **2 724** `.ts` hors tests). Voir [`STATUS.md`](../../STATUS.md).
-- **Familles IR :** `workflow-action` **4/4**, `read-only-view` **4/4**. Corpus **781** paires. CI `corpus:ci` (structural-only) + `corpus-full` (main) + Tier 2 nightly.
+- **État :** **Phase 08** — génération depuis patterns
+  ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle
+  outillé + Kernel `shared/` / `@cmz/core` + **18** modules livrés/compilants
+  (**71** libs + **1** app ; **2 724** `.ts` hors tests). Voir
+  [`STATUS.md`](../../STATUS.md).
+- **Familles IR :** `workflow-action` **4/4**, `read-only-view` **4/4**. Corpus
+  **1 507** paires. CI `corpus:ci` (structural-only) + `corpus-full` (main) +
+  Tier 2 nightly.
+
 <!-- END:GENERATED:monorepo-status -->
 
 ## Contenu du dépôt
@@ -38,9 +46,15 @@ d'imports, `package.json`/`project.json`/paths TS. Voir son
 Vitest). Build production : `bunx nx run backoffice-angular:build:production`.
 
 <!-- BEGIN:GENERATED:bundle-metrics -->
-- **Bundle initial (production, raw)** : **882.18 kB** — source [`bundle-metrics.json`](../../apps/backoffice-angular/bundle-metrics.json) (mesuré 2026-08-03 via `bun run bundle:record` après build).
+
+- **Bundle initial (production, raw)** : **882.18 kB** — source
+  [`bundle-metrics.json`](../../apps/backoffice-angular/bundle-metrics.json)
+  (mesuré 2026-08-03 via `bun run bundle:record` après build).
 - **ExcelJS (lazy)** : **948.32 kB** raw — hors budget initial.
-- **Budgets** (`project.json`) : warning `900kb` / error `1mb` — politique [ADR-0016](../adr/0016-politique-budget-bundle.md) (hausse interdite sans ADR).
+- **Budgets** (`project.json`) : warning `900kb` / error `1mb` — politique
+  [ADR-0016](../adr/0016-politique-budget-bundle.md) (hausse interdite sans
+  ADR).
+
 <!-- END:GENERATED:bundle-metrics -->
 
 Détails et notes d'intégration :
@@ -133,17 +147,17 @@ bunx nx affected -t build   # ne reconstruit que ce qui a changé depuis main
 
 > Audit E-7 / P1-10 (2026-08-02) : retirés « Contrôles non rejoués en CI »
 > (`ci.yml` les rejoue) et « `nx-welcome.ts` à retirer » (fichier déjà
-> supprimé). Colonne **Vérifié** = dernière confirmation que le point est
-> encore ouvert.
+> supprimé). Colonne **Vérifié** = dernière confirmation que le point est encore
+> ouvert.
 
-| Point | Vérifié | Suite |
-| ----- | ------- | ----- |
-| Cadrage IA local (skills Angular, MCP Nx, Web Codegen Scorer) | **2026-08-02** | outillage agent |
+| Point                                                                            | Vérifié        | Suite             |
+| -------------------------------------------------------------------------------- | -------------- | ----------------- |
+| Cadrage IA local (skills Angular, MCP Nx, Web Codegen Scorer)                    | **2026-08-02** | outillage agent   |
 | Narrowing des `catch` dans l'archétype d'erreur (app plus stricte que la source) | **2026-08-02** | contrats Phase 04 |
 
-**Remédiation G-1 (2026-08-02) :** `.github/CODEOWNERS` peuplé par zone
-(socle / kernel / modules / apps / docs / corpus), handles `@ismaelkouda`
-(équipes de 1) — prêt à substituer des équipes GitHub `@cmz/…` sans refactor.
+**Remédiation G-1 (2026-08-02) :** `.github/CODEOWNERS` peuplé par zone (socle /
+kernel / modules / apps / docs / corpus), handles `@ismaelkouda` (équipes de 1)
+— prêt à substituer des équipes GitHub `@cmz/…` sans refactor.
 
 **Remédiation G-2 (2026-08-02) :** protection `main` versionnée dans
 [`.github/branch-protection.main.json`](../../.github/branch-protection.main.json)
@@ -169,8 +183,8 @@ validation de forme au bootstrap (`APP_CONFIG`) avec diagnostic exploitable.
 workspace ; pas de refus ADR.
 
 **Remédiation G-8 (2026-08-02) :** `concurrency: cancel-in-progress` sur
-`ci.yml` (par PR/ref), `nightly-integration.yml` (workflow),
-`corpus-full.yml` (par ref) — un seul run actif, pas d’empilement.
+`ci.yml` (par PR/ref), `nightly-integration.yml` (workflow), `corpus-full.yml`
+(par ref) — un seul run actif, pas d’empilement.
 
 **Remédiation H-1 (2026-08-02) :** oracle G-V-R à deux niveaux structurels —
 `:build` + `:test` (Vitest / chantier C) via
@@ -183,10 +197,9 @@ attaché auto dès qu’un `project.json` déclare `targets.test`.
 `--verify` ; sinon exit 1, pas d’émission.
 
 **Remédiation H-3 (2026-08-02) :** contrainte
-`constraints.no_cross_module_byte_identical_files` dans
-`workflow-action` + `read-only-view` pattern.json ; enforcement
-`check:duplicates` (bloquant CI + `check:all`) et gate corpus
-`--module=<m>`.
+`constraints.no_cross_module_byte_identical_files` dans `workflow-action` +
+`read-only-view` pattern.json ; enforcement `check:duplicates` (bloquant CI +
+`check:all`) et gate corpus `--module=<m>`.
 
 **Étape 02.5 — validée** : les patterns SEOS tiennent sur Angular 22 (structurel
 106/106, 0 erreur de syntaxe/décorateur). Détail :

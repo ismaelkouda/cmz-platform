@@ -1,7 +1,10 @@
 import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgentsPerformancesFacade } from '@cmz/team-organization-application';
-import { PermissionActionsService, TranslationPort } from '@cmz/shared-application';
+import {
+    PermissionActionsService,
+    TranslationPort,
+} from '@cmz/shared-application';
 import {
     FilterComponent,
     FilterField,
@@ -15,7 +18,7 @@ import { AgentsPerformancesVmProps } from '../adapters/agents-performances-vm-pr
 import { AgentsPerformancesPresenter } from '../adapters/agents-performances-vm.presenter';
 import { AgentsPerformancesFilterStore } from '../stores/agents-performances-filter.store';
 
-const ROUTE = '/organization/agent-performances';
+const ROUTE = '/team-organization/agents-performances';
 const T = 'TEAM_ORGANIZATION.AGENTS_PERFORMANCES';
 
 @Component({

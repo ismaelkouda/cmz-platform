@@ -23,7 +23,7 @@ import { InfrastructureVmProps } from '../adapters/infrastructure-vm-props.inter
 import { InfrastructurePresenter } from '../adapters/infrastructure-vm.presenter';
 import { InfrastructureFilterStore } from '../stores/infrastructure-filter.store';
 
-const ROUTE = '/equipments/equipments';
+const ROUTE = '/equipments/list';
 const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE';
 
 /**
