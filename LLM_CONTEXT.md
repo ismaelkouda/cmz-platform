@@ -150,24 +150,22 @@ directives suivantes :
 ## 5. État courant du monorepo
 
 <!-- BEGIN:GENERATED:monorepo-status -->
-
-| Indicateur                     | Valeur                                                                                                                                               |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dernière génération            | **2026-08-05** (`bun run generate:status`)                                                                                                           |
-| Modules livrés                 | **18** (voir [`STATUS.md`](./STATUS.md))                                                                                                             |
-| Packages Nx                    | **72** (71 libs + 1 app)                                                                                                                             |
-| Fichiers TypeScript            | **2 724** hors tests / **2 875** total (151 specs)                                                                                                   |
-| Corpus SEOS                    | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                                                                                           |
-| Corpus SEOS — nature (N-6)     | **1041 correspondances** + **466 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12)                                        |
-| Corpus SEOS — couverture (N-4) | **930 / 2 724 fichiers libs/ hors tests → 34.1 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12)                        |
-| Périmètre applicatif (M-7)     | **52 / 52 entités** construites (`docs/architecture/scope.json`, 0 manquantes — voir [ADR-0018](./docs/adr/0018-perimetre-team-organization.md))     |
-| Bundle initial (prod, raw)     | **882.18 kB** ([`bundle-metrics.json`](./apps/backoffice-angular/bundle-metrics.json), 2026-08-03)                                                   |
-| Famille `workflow-action`      | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                                                                                 |
-| Famille `read-only-view`       | **4/4 IR clôturés** — `monitoring`, `reporting`, `dashboard`, `interactive-map`                                                                      |
-| Phase active                   | **08** — génération depuis patterns ([ADR-0013](./docs/adr/0013-phases-08-generation-et-09-verification.md) ; Phase 09 = vérification fonctionnelle) |
-| Oracle obligatoire             | build + eslint + strictTemplates + corpus `--verify` pour clôture module                                                                             |
-| Oracle Tier 2 (nightly)        | `bun run check:tier2` — ngc + build development + build production                                                                                   |
-
+| Indicateur                | Valeur                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Dernière génération       | **2026-08-05** (`bun run generate:status`)                                                                      |
+| Modules livrés            | **18** (voir [`STATUS.md`](./STATUS.md))                                                         |
+| Packages Nx               | **72** (71 libs + 1 app)                                              |
+| Fichiers TypeScript       | **2 724** hors tests / **2 875** total (151 specs)                 |
+| Corpus SEOS               | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                       |
+| Corpus SEOS — nature (N-6)| **1041 correspondances** + **466 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |
+| Corpus SEOS — couverture (N-4) | **930 / 2 724 fichiers libs/ hors tests → 34.1 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
+| Périmètre applicatif (M-7)| **52 / 52 entités** construites (`docs/architecture/scope.json`, 0 manquantes — voir [ADR-0018](./docs/adr/0018-perimetre-team-organization.md)) |
+| Bundle initial (prod, raw)| **882.18 kB** ([`bundle-metrics.json`](./apps/backoffice-angular/bundle-metrics.json), 2026-08-03) |
+| Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                         |
+| Famille `read-only-view`  | **4/4 IR clôturés** — `monitoring`, `reporting`, `dashboard`, `interactive-map`              |
+| Phase active              | **08** — génération depuis patterns ([ADR-0013](./docs/adr/0013-phases-08-generation-et-09-verification.md) ; Phase 09 = vérification fonctionnelle) |
+| Oracle obligatoire        | build + eslint + strictTemplates + corpus `--verify` pour clôture module                                     |
+| Oracle Tier 2 (nightly)   | `bun run check:tier2` — ngc + build development + build production                                           |
 <!-- END:GENERATED:monorepo-status -->
 
 Documents de référence mis à jour en continu : `docs/architecture/module-*.md`,

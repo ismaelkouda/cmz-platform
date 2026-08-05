@@ -595,29 +595,3 @@ try {
     console.error('FAIL  generate-adr-index.mjs a échoué');
     process.exit(1);
 }
-
-// Alignement Prettier : le pre-commit reformate les .md ; sans cette
-// étape, check:docs-freshness (CI) regénère un rendu « brut » et échoue
-// sur un simple réalignement de colonnes de table (E-5 / P1-9).
-const PRETTY_TARGETS = [
-    'STATUS.md',
-    'README.md',
-    'LLM_CONTEXT.md',
-    'docs/architecture/etat-du-socle.md',
-    'docs/adr/README.md',
-    'docs/README.md',
-];
-try {
-    const prettierBin = join(ROOT, 'node_modules/prettier/bin/prettier.cjs');
-    execFileSync(
-        process.execPath,
-        [prettierBin, '--write', ...PRETTY_TARGETS],
-        {
-            cwd: ROOT,
-            stdio: 'inherit',
-        }
-    );
-} catch {
-    console.error('FAIL  prettier --write sur les docs générés a échoué');
-    process.exit(1);
-}

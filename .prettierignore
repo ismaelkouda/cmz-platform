@@ -8,3 +8,14 @@ coverage
 bun.lock
 *.min.js
 *.min.css
+
+# Sortie de `generate:status` / `generate-adr-index` — source de vérité du
+# générateur (audit E-5 / check:docs-freshness). Exclure de Prettier pour que
+# le pre-commit ne reformate pas les blocs BEGIN:GENERATED (colonnes de tables)
+# et ne crée pas un faux rouge de fraîcheur en CI.
+STATUS.md
+README.md
+LLM_CONTEXT.md
+docs/architecture/etat-du-socle.md
+docs/adr/README.md
+docs/README.md
