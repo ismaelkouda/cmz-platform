@@ -132,6 +132,11 @@ Deux limites connues :
 - **Le `preinstall` contraint le `Dockerfile`** : `tools/` est copié **avant**
   `bun install` (voir [`Dockerfile`](../../Dockerfile) à la racine, G-4).
 
+> Liste **exhaustive** des tâches encore à faire, classée par les **13 audits
+> Big Tech** (architecture, sécu, SRE, code health) + audits workspace :
+> [`taches-restantes.md`](./taches-restantes.md) (2026-08-05). Ci-dessous :
+> uniquement les 2 points du tableau de suivi historique (E-7 / P1-10).
+
 ## Commandes
 
 ```bash
