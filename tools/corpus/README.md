@@ -49,7 +49,8 @@ Pin SHA : [`legacy.lock.json`](../../legacy.lock.json) — `bun run check:legacy
 | Fichier             | Rôle                                                         |
 | ------------------- | ------------------------------------------------------------ |
 | `chains.mjs`        | Définition `chain_id` + liste de nœuds IR                    |
-| `mapping.mjs`       | Règles legacy path → nx path par nœud                        |
+| `mapping.mjs` + `mapping-helpers.mjs` + `mapping-nodes-*.mjs` | Règles legacy→Nx par nœud (façade + packs ≤800 l.) |
+| `read-only-view.mjs` + `read-only-view-shared.mjs` + `read-only-view-nodes.mjs` | Famille ROV (chaînes / sections / nœuds) |
 | `oracle-levels.mjs` | H-1 — empile `:test` (behavioral) sur `:build` si target Vitest |
 | `module-gate.mjs`   | H-2/H-3 — build/lint/test + no byte-identical cross-module   |
 | `emit-pairs.mjs`    | Générateur + vérificateur                                    |

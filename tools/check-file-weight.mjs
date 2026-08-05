@@ -62,22 +62,10 @@ const EXTENSIONS_SOURCE = new Set([
 
 /**
  * Exceptions justifiées au plafond de lignes (chemin repo-relatif).
- * Toute entrée doit rester rare et commentée — pas un échappatoire.
+ * Vide par défaut — découper plutôt qu'exempter (F-5 / F-6).
+ * Toute entrée future doit rester rare et commentée.
  */
-const ALLOWLIST_LIGNES = new Map([
-    [
-        'apps/backoffice-angular/src/app/i18n/fr.translation.ts',
-        'dictionnaire i18n (données, pas de logique)',
-    ],
-    [
-        'tools/corpus/mapping.mjs',
-        'table de mapping corpus SEOS (données structurées)',
-    ],
-    [
-        'tools/corpus/read-only-view.mjs',
-        'générateur corpus read-only-view — découpage ultérieur',
-    ],
-]);
+const ALLOWLIST_LIGNES = new Map([]);
 
 const analyserTout = process.argv.includes('--all');
 
