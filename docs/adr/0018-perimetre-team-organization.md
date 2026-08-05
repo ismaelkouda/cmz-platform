@@ -138,6 +138,59 @@ qu'implicite.
   de conformité aux deux schémas legacy actuels — aucun des deux n'est un
   bon ajustement), reconsidérer son coût de construction à la baisse.
 
+## Révision — 2026-08-05, Option C exécutée
+
+Besoin métier exprimé par le porteur du projet le 2026-08-05 : rouvrir
+cette décision et construire `agents-performances`. **Option C retenue**
+(`agents-performances` seule — `daily-goal` reste hors périmètre, aucun
+pattern Nx ne le couvre naturellement, cf. « Points à réévaluer »
+ci-dessus, toujours vrai).
+
+**Pattern appliqué :** `workflow-action` (validé par relecture de
+`docs/architecture/scope.json`, où `agents-performances` est déjà classée
+`"class": "workflow-action"` — cohérence confirmée, pas une supposition).
+Volet unique (pas de `details`/`tasks-actions` comme `processing`/
+`requests`), sans `export()` serveur (l'export Excel legacy est fait
+100% côté client sur les données déjà chargées, pas un second appel
+réseau). Un second chain `agents-performances-history` construit pour le
+volet legacy nommé à tort `find-one` — c'est en réalité une 2e liste
+paginée filtrée par `uniqId`, jamais câblée à un composant côté legacy
+(code mort dans le legacy lui-même), reconstruite quand même sur demande
+explicite du porteur (parité structurelle complète).
+
+**Correctif de conception appliqué après une première passe non
+conforme (même jour) :** la première implémentation avait improvisé 2
+conventions au lieu de chercher leurs précédents dans les modules déjà
+validés du même module `team-organization` :
+- Statut (`COMPLETED`/`NOT_COMPLETED`) — traité d'abord via un
+  `Record<StatusDto, Status>` de conversion séparé. Corrigé pour suivre
+  exactement le schéma de `ParticipantsMapper` (seul précédent status
+  du module) : garde de type `isXStatus(dto.status)` puis assignation
+  directe du wire validé, aucun mapping intermédiaire.
+- Personne liée (`user` du legacy) — traité d'abord via
+  `ActorEntity`/`ActorDto`/`ActorMapper` (`@cmz/shared-domain`/
+  `@cmz/shared-data`). Or ces types ne sont utilisés **nulle part**
+  ailleurs dans `team-organization` — seulement dans les modules
+  `workflow-action` (`processing`/`requests`/`finalization`/
+  `report-states`) pour leurs champs `initiator`/`acknowledgedBy`/etc.
+  Le seul précédent réel pour une « personne » dans `team-organization`
+  est `participants` lui-même, qui aplatit en `firstName`/`lastName` à
+  plat sur ses props. Corrigé pour suivre cette même convention plutôt
+  que d'introduire un type importé d'ailleurs dans le dépôt.
+
+Principe retenu pour la suite : quand une propriété d'un nouveau
+sous-module partage sa nature avec une propriété d'un module déjà
+validé, le traitement du module déjà validé est prioritaire sur toute
+convention nouvelle inventée pour l'occasion — chercher le précédent
+avant d'écrire, pas après.
+
+Vérifié après correction : build des 4 layers
+(`@cmz/team-organization-{domain,data,application,ui}`) → succès ;
+`eslint libs/team-organization --max-warnings=0` → 0 warning ;
+`check:duplicates(:family)`/`declared-deps`/`project-targets` → tous
+OK ; `bunx nx run @cmz/team-organization-data:test` → 30 tests
+existants toujours verts, aucune régression.
+
 ## Références
 
 - `docs/architecture/analyse-du-projet-source.md` (annexe, classification

@@ -190,6 +190,13 @@ export const appRoutes: Route[] = [
                     ),
             },
             {
+                path: 'team-organization/agents-performances',
+                loadChildren: () =>
+                    import('@cmz/team-organization-ui').then(
+                        (m) => m.AGENTS_PERFORMANCES_ROUTES
+                    ),
+            },
+            {
                 path: 'content-management/home',
                 loadChildren: () =>
                     import('@cmz/content-management-ui').then(

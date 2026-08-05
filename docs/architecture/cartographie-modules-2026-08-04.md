@@ -53,7 +53,7 @@ les modules passés par l'oracle le plus sévère (corpus + Meta-vérification
 | `requests` | workflow-action | 157 (8 chaînes) | 12/12 | (`workflow-action.pattern.json`, H-4) | 17 | 0 | ⚠️ H-4 (contrainte), pas le code |
 | `settings-security` | crud-entity | 0 | — | ✅ `profiles-permissions`/`users` 66/66 (100.0%, backlog #3, 2026-08-04, 7e validation — première mesure fichier par fichier du module) | 0 | 6 | ✅ I-7 + backlog #4 + #3 |
 | `shared` (kernel) | kernel | ≥1 (via `libs/shared/...`) | — | — | 4 (chantier I, hors chantier L) | **16** | ✅✅ chantier I + chantier L |
-| `team-organization` | crud-entity | 0 | — | ✅ `teams` 66/66 (N-7, 4e validation) ; `participants` 66/66 (100.0%, backlog #3, 2026-08-04 — chaîne `-select` construite sur demande explicite) ; 2 autres entités (`agents-performances`/`daily-goal`) hors périmètre, bloquées par ADR-0018 | 0 | 5 | ✅ backlog #4 + #3 |
+| `team-organization` | crud-entity + workflow-action | 0 | — | ✅ `teams` 66/66 (N-7, 4e validation) ; `participants` 66/66 (100.0%, backlog #3, 2026-08-04 — chaîne `-select` construite sur demande explicite) ; `agents-performances` construite le 2026-08-05 (ADR-0018 rouvert, Option C, pattern `workflow-action`) ; `daily-goal` reste hors périmètre (ADR-0018, aucun pattern Nx ne le couvre naturellement) | 0 | 5 | ✅ backlog #4 + #3 + ADR-0018 Option C |
 
 **Lecture immédiate** : sur 18 modules, **8** ont désormais traversé
 l'oracle le plus sévère (corpus + Meta-vérification 12/12, colonne
@@ -804,6 +804,64 @@ décision de périmètre produit, pas par une incapacité technique
   existants (6 fichiers) toujours verts ; `check:duplicates(:family)`,
   `check:declared-deps`, `check:project-targets` → tous OK.
 
+#### `team-organization/agents-performances` — ADR-0018 rouvert, Option C (2026-08-05)
+
+- **Contexte :** ADR-0018 déclarait `agents-performances`/`daily-goal`
+  hors périmètre (« manquant — voir ADR-0018 » dans `scope.json`),
+  réversible sur besoin métier exprimé. Besoin exprimé le 2026-08-05 —
+  décision rouverte, Option C retenue (`agents-performances` seule,
+  `daily-goal` reste hors périmètre : aucun pattern Nx ne le couvre
+  naturellement, 26% de conformité aux deux schémas legacy connus).
+- **Pattern :** `workflow-action`, confirmé par `scope.json`
+  (`"class": "workflow-action"`, déjà déclaré avant cette clôture — pas
+  une supposition). Volet unique (pas de `details`/`tasks-actions`
+  comme `processing`/`requests`), gabarit de référence
+  `queues-processing` (`processing`, module de référence
+  `workflow-action`). Pas d'`export()` serveur sur le repository —
+  l'export Excel legacy est fait 100% côté client sur les données déjà
+  chargées, pas un second appel réseau.
+- **2 flux legacy cartographiés avant écriture :** la liste principale
+  (`AgentsPerformancesRepository.readAll`, réellement consommée par le
+  composant liste) et un second flux nommé à tort `find-one`
+  (`AgentsPerformancesFindOneRepository.execute(filter, page, options):
+  Observable<Paginate<...>>` — en réalité une 2e liste paginée filtrée
+  par `uniqId`, jamais câblée à un composant côté legacy : sa route
+  pointe vers `HistoryPageComponent`, un composant **partagé**
+  générique sans rapport avec ce flux). Renommé `agents-performances-history`
+  côté Nx pour refléter sa vraie nature. Reconstruit quand même (les 2
+  flux) sur demande explicite du porteur — parité structurelle complète
+  y compris le code mort du legacy.
+- **Correctif de conception appliqué après une première passe non
+  conforme (même jour, signalé explicitement par le porteur : « la
+  manière de coder dans agents-performances n'est pas la bonne »)** :
+  - **Statut** (`COMPLETED`/`NOT_COMPLETED`) — traité d'abord via un
+    `Record<StatusDto, Status>` de conversion séparé. Corrigé pour
+    suivre exactement `ParticipantsMapper` (seul précédent status du
+    module `team-organization`) : garde de type
+    `isAgentsPerformancesStatus(dto.status)` puis assignation directe
+    du wire validé, aucun mapping intermédiaire.
+  - **Personne liée** (`user` du legacy) — traité d'abord via
+    `ActorEntity`/`ActorDto`/`ActorMapper` (`@cmz/shared-domain`/
+    `@cmz/shared-data`). Vérifié par `grep` : ces types ne sont
+    utilisés **nulle part** ailleurs dans `team-organization` —
+    réservés aux modules `workflow-action` (`processing`/`requests`/
+    `finalization`/`report-states`) pour leurs champs `initiator`/
+    `acknowledgedBy`/etc. Le seul précédent réel pour une « personne »
+    dans `team-organization` est `participants` lui-même, qui aplatit
+    en `firstName`/`lastName` à plat sur ses props. Corrigé pour suivre
+    cette même convention.
+  - Détail complet de la révision dans `docs/adr/0018-perimetre-team-organization.md`,
+    section « Révision — 2026-08-05, Option C exécutée ».
+- **Résultat :** module `agents-performances` (2 chains, 55 fichiers)
+  construit et corrigé. `scope.json` mis à jour (retrait de
+  `expected_status`/`source_files`, entité désormais construite).
+- **Vérifié réellement :** build des 4 layers
+  (`@cmz/team-organization-{domain,data,application,ui}`) → succès ;
+  `eslint libs/team-organization --max-warnings=0` → 0 warning ;
+  `check:duplicates(:family)`/`declared-deps`/`project-targets` → tous
+  OK ; `bunx nx run @cmz/team-organization-data:test` → 30 tests
+  existants toujours verts, aucune régression.
+
 ## 5. Chantier L — cartographie fine de la couverture test manuelle
 
 16/189 fichiers `shared/` couverts par des tests écrits cette session (pas
@@ -856,7 +914,7 @@ question de couverture de test ou de conformité de pattern.
 | 7 | `security-audit`/`i18n-check` rendus bloquants | ~~Résorption Dependabot / revue humaine du diff 320 clés~~ | ✅ **clos (2026-08-04)** — `i18n-check` : 0/313 clé manquante (K-3/K-4 déjà résorbés, `continue-on-error` retiré). `security-audit` : ré-audit réel (`bun audit --audit-level=high`, bun installé pour l'occasion — absent de l'environnement d'audit jusqu'ici) a trouvé **8** vulnérabilités high (pas 2 comme documenté à l'écriture du job — axios/brace-expansion/fast-uri/ip-address), dont une chaîne `brace-expansion` réellement applicative via `exceljs→unzipper→fstream→rimraf→glob→minimatch` (angle mort de la vérification d'origine, limitée au champ `browser` d'exceljs) ; corrigées par `overrides` racine (`package.json`), 0 vulnérabilité après, 0 régression build/lint/`check:boundary-negative`, `continue-on-error` retiré |
 | 8 | M-9 — a11y, 2 archétypes restants + confirmation d'exécution | Plafond 45 s du sandbox (bundling Angular) | Bloqué techniquement ici |
 | 9 | P-6/P-7 — découpage bundle + gate régression | Même blocage que M-9 | Bloqué techniquement ici |
-| 10 | `team-organization` — 2 entités manquantes | ADR-0018 (décision produit) | Bloqué par décision |
+| 10 | `team-organization` — 2 entités manquantes | ~~ADR-0018 (décision produit)~~ | ✅ **partiellement clos (2026-08-05)** — ADR-0018 rouvert sur besoin métier exprimé, Option C retenue : `agents-performances` construite (pattern `workflow-action`, 2 chains — liste + `-history`, 55 fichiers), corrigée après une première passe non conforme (statut et personne liée alignés sur les précédents `participants`/`teams` du même module plutôt que sur des types importés d'ailleurs). `daily-goal` reste hors périmètre (aucun pattern Nx ne le couvre naturellement) — voir cartographie §4, `team-organization/agents-performances`, et ADR-0018 « Révision — 2026-08-05 » |
 | 11 | `report-states` — fichiers `MapperUtils.validateDto` sans `*.mapper.spec.ts` dédié, découvert le 2026-08-04 en vérifiant l'état réel des 4 modules `workflow-action` avant de les exclure du chantier « mappers concrets » | Rien — budget | ✅ **clos (2026-08-04)** — **6/6 fichiers testés** (pas 5 : le 6e, `report-states-details.mapper.ts`, était présumé couvert par un oracle corpus `@cmz/report-states-data:test` « verified », mais ce test-projet passait déjà avant grâce à `report-states-details-mappers.spec.ts` qui ne teste que 4 mappers *request-side* du même dossier — le mapper *response* principal, 9 dépendances DI, n'avait jamais été exercé ; corrigé par une découverte, pas par le plan initial). 44 tests neufs, tous verts au premier passage, `tsc`/`eslint --max-warnings=0` à 0 erreur |
 | 12 | Mesurer et clore `settings-security` + le reste du périmètre `crud-entity` (`administrative-boundary`/`administrative-infrastructure` restants, `content-management` restant) | Rien — même méthode que #3 | ✅ **clos (2026-08-04)** — relecture complète de `scope.json` a révélé un périmètre `crud-entity` plus large que les 5 candidats initiaux du backlog #3 : `settings-security` (2 entités, jamais mesurées), `administrative-boundary` (2 entités en plus de `region`), `content-management` (5 entités en plus de `home`), `administrative-infrastructure` (1 entité en plus de `infrastructure`). Mesuré et clos un par un, même override explicite (« reecris le code pour atteindre les 100% ») : `settings-security/profiles-permissions` 65/66→66/66 (filter-entity identité) ; `settings-security/users` 58/66→66/66 (filter-entity + chaîne `-select`) ; `administrative-boundary/department` déjà 66/66 (découverte) ; `administrative-boundary/municipality` 59/66→66/66 (chaîne `-select`, `MunicipalityOption` + endpoint sans `/selected-field`, 2 divergences vérifiées avant écriture) ; `administrative-infrastructure/infrastructure-type` déjà 66/66 (découverte) ; `content-management/{legal-notice,news,privacy-policy,slide,terms-use}` chacun 58/66→66/66 (filter-entity + chaîne `-select`, label `title` ou `version` selon DTO vérifié). **18 couples module/entité crud-entity désormais tous à 100%** ; `validated_on` de `crud-entity.pattern.json` passe à 7 modules ; `check:pattern-nx:crud-entity` étendu à 18 entrées. Seule exclusion confirmée (pas un gap) : `optical-fiber-network`/`radio-relay-links` de `coverage-areas`, absents de `scope.json`. |
 
