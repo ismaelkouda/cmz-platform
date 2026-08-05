@@ -40,6 +40,11 @@ import {
     DASHBOARD_MODULES,
     expandDashboardChain,
 } from './dashboard.mjs';
+import {
+    CRUD_ENTITY_CHAINS,
+    CRUD_ENTITY_MODULES,
+    expandCrudEntityChain,
+} from './crud-entity.mjs';
 import { requireLegacyRoot } from './legacy-root.mjs';
 import { assertModuleGate } from './module-gate.mjs';
 import { oracleLevel } from './oracle-levels.mjs';
@@ -48,16 +53,21 @@ const CHAINS = {
     ...WORKFLOW_CHAINS,
     ...READ_ONLY_VIEW_CHAINS,
     ...DASHBOARD_CHAINS,
+    ...CRUD_ENTITY_CHAINS,
 };
 const MODULES = {
     ...WORKFLOW_MODULES,
     ...READ_ONLY_VIEW_MODULES,
     ...DASHBOARD_MODULES,
+    ...CRUD_ENTITY_MODULES,
 };
 
 /** @param {string} mod @param {object} chain */
 function expandForModule(mod, chain) {
     const def = MODULES[mod];
+    if (def?.pattern === 'crud-entity') {
+        return expandCrudEntityChain(mod, chain);
+    }
     if (def?.pattern === 'read-only-view') {
         return expandReadOnlyViewChain(mod, chain);
     }
