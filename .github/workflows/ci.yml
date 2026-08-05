@@ -302,5 +302,6 @@ jobs:
       # validation ajoutée le 2026-08-04). Script local
       # (tools/check-pattern-nx.mjs, pas un des outils vendorés
       # tools/seos/ — cf. son propre docstring).
+      # Node pur (comme les steps MD5 ci-dessus) — pas de setup-bun sur ce job.
       - name: check:pattern-nx (J-9, crud-entity Nx-shaped)
-        run: bun run check:pattern-nx:crud-entity
+        run: npm run check:pattern-nx:crud-entity
