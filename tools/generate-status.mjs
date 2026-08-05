@@ -312,9 +312,7 @@ function corpusCoverage() {
         /* corpus absent */
     }
     const modulesCovered = new Set(
-        [...nxPaths]
-            .map((p) => p.split('/')[1])
-            .filter(Boolean)
+        [...nxPaths].map((p) => p.split('/')[1]).filter(Boolean)
     );
     return {
         total: verified + notApplicable,
@@ -338,9 +336,7 @@ function corpusCoverage() {
 // ci-dessous plutôt que réécrit à la main, pour ne plus pouvoir dériver du
 // réel silencieusement.
 function modulesWithoutCorpus(modulesCovered) {
-    const without = [...moduleMap.keys()].filter(
-        (m) => !modulesCovered.has(m)
-    );
+    const without = [...moduleMap.keys()].filter((m) => !modulesCovered.has(m));
     const byFamily = {};
     for (const m of without) {
         const fam = META[m]?.family ?? 'inconnue';
@@ -366,11 +362,11 @@ function fmt(n) {
 
 // STATUS_DATE : fige la date (CI freshness E-5). Défaut = jour UTC courant.
 const now =
-    process.env.STATUS_DATE?.trim() ||
-    new Date().toISOString().slice(0, 10);
+    process.env.STATUS_DATE?.trim() || new Date().toISOString().slice(0, 10);
 if (!/^\d{4}-\d{2}-\d{2}$/.test(now)) {
     console.error(
-        'FAIL  STATUS_DATE invalide (attendu YYYY-MM-DD) : ' + process.env.STATUS_DATE
+        'FAIL  STATUS_DATE invalide (attendu YYYY-MM-DD) : ' +
+            process.env.STATUS_DATE
     );
     process.exit(1);
 }
@@ -386,9 +382,10 @@ const readOnlyClosed = familyClosed('read-only-view');
 const corpus = countCorpusPairs();
 const scope = loadScope();
 const corpusDetail = corpusCoverage();
-const corpusCoveragePct = totalTs > 0
-    ? ((corpusDetail.filesCovered / totalTs) * 100).toFixed(1)
-    : '0.0';
+const corpusCoveragePct =
+    totalTs > 0
+        ? ((corpusDetail.filesCovered / totalTs) * 100).toFixed(1)
+        : '0.0';
 const withoutCorpus = modulesWithoutCorpus(corpusDetail.modulesCovered);
 
 const stats = {
@@ -551,11 +548,7 @@ const bundleBlock = [
     .join('\n');
 
 upsertGeneratedBlock(join(ROOT, 'README.md'), 'monorepo-status', readmeBlock);
-upsertGeneratedBlock(
-    join(ROOT, 'LLM_CONTEXT.md'),
-    'monorepo-status',
-    llmBlock
-);
+upsertGeneratedBlock(join(ROOT, 'LLM_CONTEXT.md'), 'monorepo-status', llmBlock);
 upsertGeneratedBlock(
     join(ROOT, 'docs/architecture/etat-du-socle.md'),
     'monorepo-status',
@@ -590,11 +583,41 @@ console.log(
 
 // Audit E-6 — index ADR (docs/adr/README.md + docs/README.md)
 try {
-    execFileSync(process.execPath, [join(ROOT, 'tools/generate-adr-index.mjs')], {
-        cwd: ROOT,
-        stdio: 'inherit',
-    });
+    execFileSync(
+        process.execPath,
+        [join(ROOT, 'tools/generate-adr-index.mjs')],
+        {
+            cwd: ROOT,
+            stdio: 'inherit',
+        }
+    );
 } catch {
     console.error('FAIL  generate-adr-index.mjs a échoué');
+    process.exit(1);
+}
+
+// Alignement Prettier : le pre-commit reformate les .md ; sans cette
+// étape, check:docs-freshness (CI) regénère un rendu « brut » et échoue
+// sur un simple réalignement de colonnes de table (E-5 / P1-9).
+const PRETTY_TARGETS = [
+    'STATUS.md',
+    'README.md',
+    'LLM_CONTEXT.md',
+    'docs/architecture/etat-du-socle.md',
+    'docs/adr/README.md',
+    'docs/README.md',
+];
+try {
+    const prettierBin = join(ROOT, 'node_modules/prettier/bin/prettier.cjs');
+    execFileSync(
+        process.execPath,
+        [prettierBin, '--write', ...PRETTY_TARGETS],
+        {
+            cwd: ROOT,
+            stdio: 'inherit',
+        }
+    );
+} catch {
+    console.error('FAIL  prettier --write sur les docs générés a échoué');
     process.exit(1);
 }

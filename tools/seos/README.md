@@ -11,24 +11,26 @@
 
 ## Provenance — copie exacte, pas une réécriture
 
-Copiés **octet pour octet** depuis `cmz-backoffice-frontend/seos/tools/` au
-commit épinglé par [`legacy.lock.json`](../../legacy.lock.json)
+Copiés depuis `cmz-backoffice-frontend/seos/tools/` au commit épinglé par
+[`legacy.lock.json`](../../legacy.lock.json)
 (`cb15bf80fa072e12e9d4fce4b9236abe6ac78058`, 2026-07-31) — le même SHA que celui
-déjà figé pour la reproductibilité du corpus (ADR-0014). Seule adaptation :
-extension `.js` → `.mjs` (pour que Node les traite en ESM sans ajouter de
-`package.json` local, qui ferait apparaître `tools/seos` comme un projet Nx
-fantôme — vérifié, corrigé). Le **contenu** est identique (vérifié par `diff` au
-moment du vendoring) ; ne pas les éditer ici — toute correction doit être portée
-dans le dépôt legacy puis re-vendorée, pour ne jamais diverger silencieusement
-de la source de vérité de la recherche SEOS.
+déjà figé pour la reproductibilité du corpus (ADR-0014). Adaptation initiale :
+extension `.js` → `.mjs` (ESM sans `package.json` local / projet Nx fantôme).
 
-| Fichier vendoré                        | Rôle                                                                                                                                                                                                                                                                                                                             |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `check-pattern.mjs`                    | Vérifie la **présence** des fichiers du cœur canonique d'un pattern (fait structurel, jamais le contenu)                                                                                                                                                                                                                         |
-| `check-semantics.mjs`                  | Vérifie le **contenu** de certains fichiers contre 9 règles mécaniques issues de bugs réels observés (`defer()`, clés i18n, handlers `UiFeedbackService`, `Validators.required` vs validateur domaine, artefacts orphelins, cérémonie VO/Entity, nommage `-select-response-api.dto.ts`, chaînage VO→Entity, résidus `console.*`) |
-| `generate-reference-module.mjs`        | Génère le module de référence "resources" (pattern `crud-entity`) à plat — utilisé ici pour l'auto-test de bout en bout ci-dessous                                                                                                                                                                                               |
-| `patterns/crud-entity.pattern.json`    | Schéma canonique (106 `core_files`, 23 versions de corrections documentées) — schéma **legacy**, chemins `presentation/pages/...`                                                                                                                                                                                                |
-| `patterns/action-request.pattern.json` | Schéma canonique de la famille `action-request` (legacy)                                                                                                                                                                                                                                                                         |
+**Évolution monorepo (OPS-1 / CI weight)** : `generate-reference-module` a été
+découpé en modules par couche sous `generate-reference-module/` pour tenir le
+plafond de 800 lignes (`tools/check-file-weight.mjs --all`). Contrat : **sortie
+du générateur inchangée** (oracle golden) — toute évolution sémantique du
+générateur reste à porter d’abord dans le dépôt legacy puis re-vendorée ; le
+découpage ici est structurel pour le monorepo, pas un fork de logique.
+
+| Fichier vendoré                                                     | Rôle                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check-pattern.mjs`                                                 | Vérifie la **présence** des fichiers du cœur canonique d'un pattern (fait structurel, jamais le contenu)                                                                                                                                                                                                                         |
+| `check-semantics.mjs`                                               | Vérifie le **contenu** de certains fichiers contre 9 règles mécaniques issues de bugs réels observés (`defer()`, clés i18n, handlers `UiFeedbackService`, `Validators.required` vs validateur domaine, artefacts orphelins, cérémonie VO/Entity, nommage `-select-response-api.dto.ts`, chaînage VO→Entity, résidus `console.*`) |
+| `generate-reference-module.mjs` + `generate-reference-module/*.mjs` | Génère le module de référence "resources" (pattern `crud-entity`) à plat — CLI d’entrée + écritures par couche (domain / application / presentation / di+infra). Découpé **sans changer la sortie** (vérifié par golden `diff -rq` vs monolithe 2051 l.) pour le plafond CI `check:weight --all` (800 l.)                        |
+| `patterns/crud-entity.pattern.json`                                 | Schéma canonique (106 `core_files`, 23 versions de corrections documentées) — schéma **legacy**, chemins `presentation/pages/...`                                                                                                                                                                                                |
+| `patterns/action-request.pattern.json`                              | Schéma canonique de la famille `action-request` (legacy)                                                                                                                                                                                                                                                                         |
 
 **Non vendoré, volontairement** : le compilateur DSL (`compile-dsl.js`,
 `extract-pattern.js`, `dsl/`) — hors périmètre de P0-11, qui ne cite que

@@ -25,12 +25,12 @@ Un effectif (modules, packages, fichiers, paires corpus), une taille de bundle,
 une date de mesure ou un plafond budgétaire **n'est pas une prose** : c'est une
 affirmation falsifiable. Elle doit avoir une source machine.
 
-| Affirmation | Source | Gate CI |
-| ----------- | ------ | ------- |
-| Modules / libs / specs / corpus / phase | `bun run generate:status` (marqueurs `<!-- BEGIN:GENERATED:… -->`) | job `docs-freshness` |
-| Index ADR | `bun run generate:adr-index` (enchaîné par `generate:status`) | idem |
-| Bundle initial production | `apps/backoffice-angular/bundle-metrics.json` (`bun run bundle:record`) | nightly Tier 2 + `docs-freshness` |
-| Plafonds budget | `project.json` + [ADR-0016](./adr/0016-politique-budget-bundle.md) | build production |
+| Affirmation                             | Source                                                                  | Gate CI                           |
+| --------------------------------------- | ----------------------------------------------------------------------- | --------------------------------- |
+| Modules / libs / specs / corpus / phase | `bun run generate:status` (marqueurs `<!-- BEGIN:GENERATED:… -->`)      | job `docs-freshness`              |
+| Index ADR                               | `bun run generate:adr-index` (enchaîné par `generate:status`)           | idem                              |
+| Bundle initial production               | `apps/backoffice-angular/bundle-metrics.json` (`bun run bundle:record`) | nightly Tier 2 + `docs-freshness` |
+| Plafonds budget                         | `project.json` + [ADR-0016](./adr/0016-politique-budget-bundle.md)      | build production                  |
 
 **Interdit :** recopier un chiffre « à la main » dans un README / LLM_CONTEXT /
 état du socle. **Autorisé :** citer un artefact généré, ou un bloc
@@ -39,28 +39,30 @@ affirmation falsifiable. Elle doit avoir une source machine.
 ## Décisions
 
 <!-- BEGIN:GENERATED:adr-index -->
-| N°                                                            | Titre                                                      |
-| ------------------------------------------------------------- | ---------------------------------------------------------- |
-| [0001](./adr/0001-monorepo-nx-package-based.md)             | Monorepo Nx en mode package-based                        |
-| [0002](./adr/0002-bun-package-manager.md)                   | bun comme gestionnaire de paquets                        |
-| [0003](./adr/0003-nommage-et-structure.md)                  | Nommage et structure du monorepo                         |
-| [0004](./adr/0004-graphe-de-dependances-declarees.md)       | Graphe de dépendances par déclaration explicite          |
-| [0005](./adr/0005-versions-du-socle.md)                     | Versions du socle : Angular 22 et catalog centralisé     |
-| [0006](./adr/0006-conventions-de-collaboration.md)          | Conventions de collaboration et garde-fous automatisés   |
-| [0007](./adr/0007-configuration-runtime.md)                 | Configuration injectée à l'exécution                     |
-| [0008](./adr/0008-outillage-de-tests.md)                    | Outillage de tests                                       |
-| [0009](./adr/0009-reconstruction-pilotee-par-patterns.md)   | Reconstruction pilotée par les patterns SEOS             |
-| [0010](./adr/0010-flux-de-generation-assistee-par-ia.md)    | Flux de génération assistée par IA : cadrage, conventions externalisées, garde-fous |
-| [0011](./adr/0011-adaptation-monorepo-par-post-traitement.md) | Adaptation au monorepo par post-traitement, pas par fork des générateurs |
-| [0012](./adr/0012-strategie-cross-framework.md)             | Stratégie cross-framework (Angular + React)              |
-| [0013](./adr/0013-phases-08-generation-et-09-verification.md) | Phase 08 = génération depuis patterns ; Phase 09 = vérification fonctionnelle |
-| [0014](./adr/0014-figer-le-legacy-via-lock-json.md)         | Figer le legacy via `legacy.lock.json` (pas de sous-module Git) |
+
+| N°                                                                      | Titre                                                                                         |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [0001](./adr/0001-monorepo-nx-package-based.md)                         | Monorepo Nx en mode package-based                                                             |
+| [0002](./adr/0002-bun-package-manager.md)                               | bun comme gestionnaire de paquets                                                             |
+| [0003](./adr/0003-nommage-et-structure.md)                              | Nommage et structure du monorepo                                                              |
+| [0004](./adr/0004-graphe-de-dependances-declarees.md)                   | Graphe de dépendances par déclaration explicite                                               |
+| [0005](./adr/0005-versions-du-socle.md)                                 | Versions du socle : Angular 22 et catalog centralisé                                          |
+| [0006](./adr/0006-conventions-de-collaboration.md)                      | Conventions de collaboration et garde-fous automatisés                                        |
+| [0007](./adr/0007-configuration-runtime.md)                             | Configuration injectée à l'exécution                                                          |
+| [0008](./adr/0008-outillage-de-tests.md)                                | Outillage de tests                                                                            |
+| [0009](./adr/0009-reconstruction-pilotee-par-patterns.md)               | Reconstruction pilotée par les patterns SEOS                                                  |
+| [0010](./adr/0010-flux-de-generation-assistee-par-ia.md)                | Flux de génération assistée par IA : cadrage, conventions externalisées, garde-fous           |
+| [0011](./adr/0011-adaptation-monorepo-par-post-traitement.md)           | Adaptation au monorepo par post-traitement, pas par fork des générateurs                      |
+| [0012](./adr/0012-strategie-cross-framework.md)                         | Stratégie cross-framework (Angular + React)                                                   |
+| [0013](./adr/0013-phases-08-generation-et-09-verification.md)           | Phase 08 = génération depuis patterns ; Phase 09 = vérification fonctionnelle                 |
+| [0014](./adr/0014-figer-le-legacy-via-lock-json.md)                     | Figer le legacy via `legacy.lock.json` (pas de sous-module Git)                               |
 | [0015](./adr/0015-mode-structural-only-pas-de-correspondance-legacy.md) | Mode `--structural-only` : vérification structurelle du corpus (pas de correspondance legacy) |
-| [0016](./adr/0016-politique-budget-bundle.md)               | Politique de budget de bundle (rehaussement interdit sans justification écrite) |
-| [0017](./adr/0017-stockage-et-cycle-de-vie-du-jeton.md)     | Stockage et cycle de vie du jeton de session             |
-| [0018](./adr/0018-perimetre-team-organization.md)           | Périmètre de `team-organization` : `agents-performances` et `daily-goal` |
-| [0019](./adr/0019-nature-du-corpus-seos.md)                 | Nature du corpus SEOS : index de correspondances, pas jeu d'apprentissage |
-| [0020](./adr/0020-isolation-vs-factorisation-workflow-action.md) | Famille `workflow-action` : isolation `scope:*` vs factorisation |
+| [0016](./adr/0016-politique-budget-bundle.md)                           | Politique de budget de bundle (rehaussement interdit sans justification écrite)               |
+| [0017](./adr/0017-stockage-et-cycle-de-vie-du-jeton.md)                 | Stockage et cycle de vie du jeton de session                                                  |
+| [0018](./adr/0018-perimetre-team-organization.md)                       | Périmètre de `team-organization` : `agents-performances` et `daily-goal`                      |
+| [0019](./adr/0019-nature-du-corpus-seos.md)                             | Nature du corpus SEOS : index de correspondances, pas jeu d'apprentissage                     |
+| [0020](./adr/0020-isolation-vs-factorisation-workflow-action.md)        | Famille `workflow-action` : isolation `scope:*` vs factorisation                              |
+
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
@@ -83,8 +85,8 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
   avant d'investir dans la Phase 04 (outillage SEOS)
 - [Génération depuis patterns](./architecture/generation-from-patterns.md) —
   Phase 08 — workflow zéro code métier manuel (G-V-R)
-- [Licences tierces](./architecture/licences-tierces.md) — inventaire
-  factuel des licences des dépendances (pas un avis juridique)
+- [Licences tierces](./architecture/licences-tierces.md) — inventaire factuel
+  des licences des dépendances (pas un avis juridique)
 
 ## Conventions
 
@@ -93,8 +95,8 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
   main ([ADR-0010](./adr/0010-flux-de-generation-assistee-par-ia.md))
 - [`angular-22.profile.json`](../conventions/angular-22.profile.json) — sous-
   ensemble mécaniquement vérifiable de `best-practices.md`, versionné par
-  version majeure d'Angular, vérifié en CI bloquant (`tools/check-convention-
-  profile.mjs`, job `guardrails`)
+  version majeure d'Angular, vérifié en CI bloquant
+  (`tools/check-convention- profile.mjs`, job `guardrails`)
 
 ## Guides
 
