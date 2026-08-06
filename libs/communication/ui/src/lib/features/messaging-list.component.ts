@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessagingFacade } from '@cmz/communication-application';
 import {
@@ -16,9 +10,10 @@ import {
 import {
     FilterComponent,
     FilterField,
+    FormMode,
+    labelsToFilterOptions,
     PaginationComponent,
     TableComponent,
-    labelsToFilterOptions,
 } from '@cmz/shared-ui';
 import { MESSAGING_TABLE } from '../constants/messaging-table.constant';
 import { MESSAGING_FORM } from '../constants/messaging-paths.constant';
@@ -27,15 +22,12 @@ import { MESSAGING_TARGET_LABEL } from '../constants/messaging-target-label.cons
 import { MessagingVmProps } from '../adapters/messaging-vm-props.interface';
 import { MessagingPresenter } from '../adapters/messaging-vm.presenter';
 import { MessagingFilterStore } from '../stores/messaging-filter.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const ROUTE = '/communication/messaging';
 const T = 'COMMUNICATION.MESSAGING';
 
 @Component({
     selector: 'cmz-messaging-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [MessagingFilterStore],
     template: `

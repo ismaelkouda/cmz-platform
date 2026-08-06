@@ -15,6 +15,8 @@ export * from './lib/enums/type-report.enum';
 export * from './lib/ports/excel-export.port';
 export * from './lib/ports/storage.port';
 export * from './lib/ports/navigation.port';
+export * from './lib/ports/trusted-origin.port';
+export * from './lib/ports/logger.port';
 export * from './lib/functions/normalize-phone-number.function';
 export * from './lib/types/permission-action.type';
 export * from './lib/types/media.type';

@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
     ParticipantsFacade,
@@ -42,8 +36,6 @@ const T = 'TEAM_ORGANIZATION.PARTICIPANTS';
  */
 @Component({
     selector: 'cmz-participants-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [ParticipantsFilterStore],
     template: `

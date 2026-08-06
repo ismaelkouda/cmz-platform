@@ -1,6 +1,3 @@
-export * from './lib/stores/form-mode.type';
-export * from './lib/adapters/action-item.factory';
-
 export * from './lib/enums/participants-status-style.enum';
 export * from './lib/constants/participants-status-label.constant';
 export * from './lib/mappers/participants-status-style.mapper';
@@ -28,3 +25,35 @@ export * from './lib/stores/teams-form.store';
 export * from './lib/features/teams-list.component';
 export * from './lib/features/teams-form.component';
 export * from './lib/features/teams.routes';
+
+export * from './lib/enums/agents-performances-status-style.enum';
+export * from './lib/constants/agents-performances-status-label.constant';
+export * from './lib/mappers/agents-performances-status-style.mapper';
+export * from './lib/constants/agents-performances-filter-keys.constant';
+export * from './lib/constants/agents-performances-paths.constant';
+export * from './lib/constants/agents-performances-table.constant';
+export * from './lib/adapters/agents-performances-vm-props.interface';
+export * from './lib/adapters/agents-performances-vm.presenter';
+export * from './lib/stores/agents-performances-filter.store';
+export * from './lib/features/agents-performances-list.component';
+
+export * from './lib/constants/agents-performances-history-filter-keys.constant';
+export * from './lib/constants/agents-performances-history-table.constant';
+export * from './lib/adapters/agents-performances-history-vm-props.interface';
+export * from './lib/adapters/agents-performances-history-vm.presenter';
+export * from './lib/stores/agents-performances-history-filter.store';
+export * from './lib/features/agents-performances-history-list.component';
+
+export * from './lib/features/agents-performances.routes';
+
+export * from './lib/enums/daily-goal-status-style.enum';
+export * from './lib/constants/daily-goal-status-label.constant';
+export * from './lib/mappers/daily-goal-status-style.mapper';
+export * from './lib/constants/daily-goal-filter-keys.constant';
+export * from './lib/constants/daily-goal-paths.constant';
+export * from './lib/constants/daily-goal-table.constant';
+export * from './lib/adapters/daily-goal-vm-props.interface';
+export * from './lib/adapters/daily-goal-vm.presenter';
+export * from './lib/stores/daily-goal-filter.store';
+export * from './lib/features/daily-goal-list.component';
+export * from './lib/features/daily-goal.routes';

@@ -9,7 +9,7 @@ import {
 import { disabled, form, required, validate } from '@angular/forms/signals';
 import { Platform } from '@cmz/shared-domain';
 import { HomeFindOneFacade } from '@cmz/content-management-application';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface HomeFormModel {
     title: string;

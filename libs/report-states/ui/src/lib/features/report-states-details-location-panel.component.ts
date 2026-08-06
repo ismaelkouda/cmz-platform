@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    input,
-    inject,
-} from '@angular/core';
+import { Component, input, inject } from '@angular/core';
 import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
 import { TranslationPort } from '@cmz/shared-application';
 
@@ -11,8 +6,6 @@ const T = 'REQUESTS.DETAILS';
 
 @Component({
     selector: 'cmz-report-states-details-location-panel',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
             <dt class="text-muted">{{ t(T + '.LATITUDE') }}</dt>

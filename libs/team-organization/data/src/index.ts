@@ -9,6 +9,7 @@ export * from './lib/dtos/participants-enable-api.dto';
 export * from './lib/dtos/participants-disable-api.dto';
 export * from './lib/dtos/participants-filter-api.dto';
 export * from './lib/dtos/participants-find-one-filter-api.dto';
+export * from './lib/dtos/participants-select-response-api.dto';
 
 export * from './lib/dtos/teams-permission-node-api.dto';
 export * from './lib/dtos/teams-response-api.dto';
@@ -23,6 +24,15 @@ export * from './lib/dtos/teams-find-one-filter-api.dto';
 export * from './lib/dtos/teams-select-response-api.dto';
 export * from './lib/dtos/teams-permissions-response-api.dto';
 
+export * from './lib/dtos/agents-performances-status-api.dto';
+export * from './lib/dtos/agents-performances-response-api.dto';
+export * from './lib/dtos/agents-performances-filter-api.dto';
+export * from './lib/dtos/agents-performances-history-response-api.dto';
+export * from './lib/dtos/agents-performances-history-filter-api.dto';
+export * from './lib/dtos/daily-goal-status-api.dto';
+export * from './lib/dtos/daily-goal-response-api.dto';
+export * from './lib/dtos/daily-goal-filter-api.dto';
+
 export * from './lib/utils/flatten-permission-tree.util';
 
 export * from './lib/mappers/participants.mapper';
@@ -34,6 +44,7 @@ export * from './lib/mappers/participants-enable.mapper';
 export * from './lib/mappers/participants-disable.mapper';
 export * from './lib/mappers/participants-filter.mapper';
 export * from './lib/mappers/participants-find-one-filter.mapper';
+export * from './lib/mappers/participants-select.mapper';
 
 export * from './lib/mappers/teams.mapper';
 export * from './lib/mappers/teams-find-one.mapper';
@@ -47,16 +58,32 @@ export * from './lib/mappers/teams-find-one-filter.mapper';
 export * from './lib/mappers/teams-select.mapper';
 export * from './lib/mappers/teams-permissions.mapper';
 
+export * from './lib/mappers/agents-performances.mapper';
+export * from './lib/mappers/agents-performances-filter.mapper';
+export * from './lib/mappers/agents-performances-history.mapper';
+export * from './lib/mappers/agents-performances-history-filter.mapper';
+export * from './lib/mappers/daily-goal.mapper';
+export * from './lib/mappers/daily-goal-filter.mapper';
+
 export * from './lib/sources/participants.api';
 export * from './lib/sources/participants-find-one.api';
+export * from './lib/sources/participants-select.api';
 export * from './lib/sources/teams.api';
 export * from './lib/sources/teams-find-one.api';
 export * from './lib/sources/teams-select.api';
 export * from './lib/sources/teams-permissions.api';
 
+export * from './lib/sources/agents-performances.api';
+export * from './lib/sources/agents-performances-history.api';
+export * from './lib/sources/daily-goal.api';
+
 export * from './lib/repositories/participants.repository.impl';
 export * from './lib/repositories/participants-find-one.repository.impl';
+export * from './lib/repositories/participants-select.repository.impl';
 export * from './lib/repositories/teams.repository.impl';
 export * from './lib/repositories/teams-find-one.repository.impl';
 export * from './lib/repositories/teams-select.repository.impl';
 export * from './lib/repositories/teams-permissions.repository.impl';
+export * from './lib/repositories/agents-performances.repository.impl';
+export * from './lib/repositories/agents-performances-history.repository.impl';
+export * from './lib/repositories/daily-goal.repository.impl';

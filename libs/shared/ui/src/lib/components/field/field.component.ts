@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    inject,
-    input,
-} from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { Field } from '@angular/forms/signals';
 import { TranslationPort } from '@cmz/shared-application';
 
@@ -16,8 +11,6 @@ import { TranslationPort } from '@cmz/shared-application';
  */
 @Component({
     selector: 'cmz-field',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="flex flex-col gap-1">
             <label [attr.for]="for()" class="text-sm font-medium text-text">

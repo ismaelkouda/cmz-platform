@@ -9,7 +9,7 @@ import {
 import { disabled, form, required, validate } from '@angular/forms/signals';
 import { ReportType, TelecomOperator } from '@cmz/shared-domain';
 import { TeamsFindOneFacade } from '@cmz/team-organization-application';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface TeamsFormModel {
     name: string;

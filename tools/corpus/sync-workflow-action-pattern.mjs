@@ -8,7 +8,9 @@
  *   $SEOS_LEGACY_ROOT/seos/patterns/workflow-action.pattern.json
  *
  * Usage:
- *   node tools/corpus/sync-workflow-action-pattern.mjs [--dry-run]
+ *   SEOS_LEGACY_ROOT=/chemin/legacy node tools/corpus/sync-workflow-action-pattern.mjs [--dry-run]
+ *
+ * SEOS_LEGACY_ROOT obligatoire (pas de fallback, audit B-1).
  *
  * @see A-2026-07-30-07 step 3 — Rule 0 satisfaite (processing + requests)
  */
@@ -16,13 +18,11 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { requireLegacyRoot } from './legacy-root.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');
-const LEGACY_ROOT = resolve(
-    process.env.SEOS_LEGACY_ROOT ??
-        '/Users/macbookair/Dev/Angular/cmz-backoffice-frontend'
-);
+const LEGACY_ROOT = requireLegacyRoot();
 const dryRun = process.argv.includes('--dry-run');
 
 const sourcePath = join(
@@ -69,6 +69,7 @@ const legacyPattern = {
         legacy_layers_dropped_rationale:
             source.nx_mapping.legacy_layers_dropped_rationale,
     },
+    constraints: source.constraints,
     design_decisions_v0: source.design_decisions_v0,
     differences_vs_crud_entity: source.differences_vs_crud_entity,
     differences_vs_action_request: source.differences_vs_action_request,

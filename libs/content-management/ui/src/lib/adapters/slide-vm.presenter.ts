@@ -1,8 +1,12 @@
 import { SlideStatus, SlideEntity } from '@cmz/content-management-domain';
-import { ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { SLIDE_STATUS_LABEL } from '../constants/slide-status-label.constant';
 import { slideStatusStyleOf } from '../mappers/slide-status-style.mapper';
-import { actionItem, resolveTooltip } from './action-item.factory';
 import { SlideVmProps } from './slide-vm-props.interface';
 
 interface SlidePermission {

@@ -1,6 +1,6 @@
 # Plan d'exécution
 
-- **Dernière mise à jour :** 2026-07-21
+- **Dernière mise à jour :** 2026-08-02
 - **Objectif :** reconstruire `cmz-backoffice-frontend` en Angular 22 dans le
   monorepo, par génération à partir des patterns SEOS
   ([ADR-0009](../adr/0009-reconstruction-pilotee-par-patterns.md))
@@ -594,23 +594,46 @@ mécaniquement.
 
 ---
 
-## Phase 08 — Vérification fonctionnelle
+## Phase 08 — Génération depuis patterns
+
+> Arbitrage : [ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md).
+> Spec opérationnelle :
+> [`generation-from-patterns.md`](./generation-from-patterns.md).
+
+### Objet
+
+Concevoir et livrer modules / applications en instanciant un pattern SEOS +
+chaînes corpus, via la boucle **Generate → Verify → Repair**, **sans saisie
+manuelle du TypeScript métier**.
+
+### Critères de sortie (pilote)
+
+- Oracle Tier 1 vert (`build` + `lint` + corpus `--verify`) sur le module généré.
+- `ngc --strictTemplates` vert (job `oracle` CI).
+- Meta scorecard + entrée Assumptions-Register.
+- Aucune édition TS métier humaine hors glue app documentée.
+
+---
+
+## Phase 09 — Vérification fonctionnelle
+
+> Ancien contenu de la Phase 08 du plan (2026-07-21), renuméroté par ADR-0013.
 
 ### Trois niveaux, du moins coûteux au plus coûteux
 
-**08.1 — Structurel.** `nx graph` sur l'ensemble : aucune dépendance imprévue,
+**09.1 — Structurel.** `nx graph` sur l'ensemble : aucune dépendance imprévue,
 aucun cycle, frontières ESLint respectées.
 
-**08.2 — Fonctionnel.** Parcours principal de chaque domaine rejoué à
+**09.2 — Fonctionnel.** Parcours principal de chaque domaine rejoué à
 l'identique sur les deux applications, avec les mêmes données. C'est le seul
 niveau qui détecte une règle de gestion mal reportée.
 
-**08.3 — Non-régression.** Suite Playwright sur les parcours critiques,
-constituée au fil de la Phase 07 et non à la fin.
+**09.3 — Non-régression.** Suite Playwright sur les parcours critiques,
+constituée au fil des phases 07–08 et non à la fin.
 
 ### Critère de sortie du projet
 
-- Tous les domaines migrés selon les critères de la Phase 07.
+- Tous les domaines migrés selon les critères des Phases 07–08.
 - `bunx nx run-many -t lint test build` passe sur l'intégralité du monorepo.
 - Suite Playwright verte sur les parcours critiques.
 - Aucun écart fonctionnel non documenté par rapport à l'application source.

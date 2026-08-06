@@ -13,6 +13,7 @@ import {
     termsUseDeleteVo,
     termsUseUnpublishVo,
     termsUsePublishVo,
+    termsUseFilterEntity,
     termsUseFilterVo,
     termsUseUpdateVo,
 } from '@cmz/content-management-domain';
@@ -28,7 +29,11 @@ export class TermsUseUseCase {
         options?: FetchOptions
     ): Observable<PageResult<TermsUseEntity>> {
         return defer(() =>
-            this.repository.execute(termsUseFilterVo(contract), page, options)
+            this.repository.execute(
+                termsUseFilterEntity(termsUseFilterVo(contract)),
+                page,
+                options
+            )
         );
     }
 

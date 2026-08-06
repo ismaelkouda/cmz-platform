@@ -1,12 +1,5 @@
 import { firstValueFrom } from 'rxjs';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-    signal,
-} from '@angular/core';
+import { Component, Signal, computed, inject, signal } from '@angular/core';
 import { DownloadReportStatesFacade } from '@cmz/report-states-application';
 import { DownloadReportStatesStatus } from '@cmz/report-states-domain';
 import {
@@ -56,8 +49,6 @@ const STATUS_OPTIONS = [
 
 @Component({
     selector: 'cmz-download-report-states-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [DownloadReportStatesFilterStore],
     template: `

@@ -1,7 +1,9 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import {
+    ReportSourceDto,
+    ReportTypeDto,
+    PaginatedResponseDto,
     ReportSourceMapper,
     ReportTypeMapper,
     TelecomOperatorDto,
@@ -16,7 +18,9 @@ import {
 import { AllProcessingItemMapper } from './all-processing-item.mapper';
 import type { AllProcessingItemApiDto } from '../dtos/all-processing-response-api.dto';
 
-function makePaginatedResponse(items: AllProcessingItemApiDto[]) {
+function makePaginatedResponse(
+    items: AllProcessingItemApiDto[]
+): PaginatedResponseDto<AllProcessingItemApiDto> {
     return {
         error: false,
         message: 'OK',
@@ -29,8 +33,8 @@ function makePaginatedResponse(items: AllProcessingItemApiDto[]) {
             to: items.length,
             first_page_url: '',
             last_page_url: '',
-            next_page_url: null,
-            prev_page_url: null,
+            next_page_url: '',
+            prev_page_url: '',
             path: '',
             links: [],
             data: items,
@@ -43,9 +47,9 @@ function makeItemDto(
 ): AllProcessingItemApiDto {
     return {
         uniq_id: 'PROC-A-001',
-        report_type: ReportType.CPO,
+        report_type: ReportTypeDto.CPO,
         operators: [TelecomOperatorDto.MTN, TelecomOperatorDto.MOOV],
-        source: ReportSource.APP,
+        source: ReportSourceDto.APP,
         initiator_phone_number: '690000003',
         reported_at: '2026-07-05T10:00:00Z',
         updated_at: '2026-07-06T10:00:00Z',

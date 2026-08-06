@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    input,
-    inject,
-} from '@angular/core';
+import { Component, computed, input, inject } from '@angular/core';
 import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
 import { TranslationPort } from '@cmz/shared-application';
 
@@ -12,8 +6,6 @@ const T = 'REQUESTS.DETAILS';
 
 @Component({
     selector: 'cmz-report-states-details-photos-panel',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         @if (photoUrls().length === 0) {
             <p class="text-sm text-muted">{{ t(T + '.PHOTOS.EMPTY') }}</p>

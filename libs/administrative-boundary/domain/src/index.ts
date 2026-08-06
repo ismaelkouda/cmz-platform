@@ -119,6 +119,7 @@ export * from './lib/value-objects/municipality-find-one-filter.vo';
 
 export * from './lib/repositories/municipality.repository';
 export * from './lib/repositories/municipality-find-one.repository';
+export * from './lib/repositories/municipality-select.repository';
 
 // ---- Municipalities by department id (vue imbriquée) --------------------
 

@@ -2,10 +2,9 @@ import {
     NotificationsEntity,
     NotificationsStatus,
 } from '@cmz/communication-domain';
-import { TYPE_REPORT_LABEL } from '@cmz/shared-ui';
+import { actionItem, resolveTooltip, TYPE_REPORT_LABEL } from '@cmz/shared-ui';
 import { NOTIFICATIONS_STATUS_LABEL } from '../constants/notifications-status-label.constant';
 import { notificationsStatusStyleOf } from '../mappers/notifications-status-style.mapper';
-import { actionItem, resolveTooltip } from './action-item.factory';
 import { NotificationsVmProps } from './notifications-vm-props.interface';
 
 interface NotificationsPermission {

@@ -15,7 +15,7 @@ export class PermissionActionsService {
 
     private async load(): Promise<void> {
         const data =
-            await this.storage.getEncrypted<PermissionMap>(
+            await this.storage.getObfuscated<PermissionMap>(
                 'permissionsActions'
             );
         this._permissions.set(data ?? {});

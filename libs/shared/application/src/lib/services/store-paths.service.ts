@@ -15,12 +15,12 @@ export class StorePathsService {
 
     private async load(): Promise<void> {
         this._paths.set(
-            await this.storage.getEncrypted<string[]>(this.STORAGE_KEY)
+            await this.storage.getObfuscated<string[]>(this.STORAGE_KEY)
         );
     }
 
     async setPaths(paths: string[]): Promise<void> {
-        await this.storage.saveEncrypted(this.STORAGE_KEY, paths);
+        await this.storage.saveObfuscated(this.STORAGE_KEY, paths);
         this._paths.set(paths);
     }
 }

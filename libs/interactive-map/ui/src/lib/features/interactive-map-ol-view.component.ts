@@ -1,6 +1,5 @@
 import {
     AfterViewInit,
-    ChangeDetectionStrategy,
     Component,
     DestroyRef,
     ElementRef,
@@ -14,8 +13,6 @@ import { InteractiveMapReportEntity } from '@cmz/interactive-map-domain';
 /** Carte OpenLayers lazy-loadée — signalements géolocalisés (SIG v1). */
 @Component({
     selector: 'cmz-interactive-map-ol-view',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     styles: `
         :host {
             display: block;
@@ -108,7 +105,8 @@ export class InteractiveMapOlViewComponent implements AfterViewInit {
         PointCtor?: typeof import('ol/geom/Point').default,
         fromLonLatFn?: typeof import('ol/proj').fromLonLat
     ): void {
-        if (!this.vectorSource) {
+        const vectorSource = this.vectorSource;
+        if (!vectorSource) {
             return;
         }
 
@@ -120,7 +118,7 @@ export class InteractiveMapOlViewComponent implements AfterViewInit {
             const fromLonLat =
                 fromLonLatFn ?? (await import('ol/proj')).fromLonLat;
 
-            this.vectorSource!.clear();
+            vectorSource.clear();
             for (const report of reports) {
                 if (
                     !Number.isFinite(report.latitude) ||
@@ -134,7 +132,7 @@ export class InteractiveMapOlViewComponent implements AfterViewInit {
                     ),
                 });
                 feature.set('report', report);
-                this.vectorSource!.addFeature(feature);
+                vectorSource.addFeature(feature);
             }
         })();
     }

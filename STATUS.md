@@ -1,56 +1,61 @@
 # STATUS — cmz-platform
 
-> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-01. Ne
-> pas éditer manuellement — lancer `node tools/generate-status.mjs` pour
-> régénérer.
+> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-05.
+> Ne pas éditer manuellement — lancer `node tools/generate-status.mjs` pour régénérer.
 
 ## Résumé
 
-| Indicateur                     |   Valeur |
-| :----------------------------- | -------: |
-| Packages Nx (project.json)     |   **71** |
-| Fichiers TypeScript dans libs/ | **2572** |
-| Modules détectés               |   **18** |
+| Indicateur | Valeur |
+|:---|---:|
+| Packages Nx | **71 libs + 1 app** (72 `project.json`) |
+| Fichiers TypeScript (`libs/`) | **2 724 fichiers hors tests** (2 875 au total, dont 151 specs) |
+| Modules détectés | **18** |
+| Périmètre applicatif (`scope.json`, M-7) | **52 / 52 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
+| Corpus SEOS — couverture fichiers (N-4) | **930 / 2 724 fichiers libs/ hors tests → 34.1 %** — 1 modules sans aucune paire (1 `kernel`) |
+| Corpus SEOS — nature des paires (N-6) | **1041 correspondances** + **466 décisions d'architecture** (`status: n/a`) — pas 1507 paires d'apprentissage |
 
 ## Légende
 
-| Symbole | Signification              |
-| :-----: | :------------------------- |
-|   ✅    | Compilant, livré           |
-|   ⚠️    | Partiel ou incomplet       |
-|   🔧    | En cours de reconstruction |
-|   ❌    | Non commencé               |
-|   ❓    | Statut inconnu             |
+| Symbole | Signification |
+|:---:|:---|
+| ✅ | Compilant, livré |
+| ⚠️ | Partiel ou incomplet |
+| 🔧 | En cours de reconstruction |
+| ❌ | Non commencé |
+| ❓ | Statut inconnu |
 
 ## Détail par module
 
-| Module                          | Statut | Famille         | Couches                                           | Fichiers .ts | Notes                                                                                   |
-| :------------------------------ | :----: | :-------------- | :------------------------------------------------ | -----------: | :-------------------------------------------------------------------------------------- |
-| `administrative-boundary`       |   ✅   | crud-entity     | application, data, domain, ui                     |          249 | Compilant — 3 entités + hiérarchie géo                                                  |
-| `administrative-infrastructure` |   ✅   | crud-entity     | application, data, domain, ui                     |          158 | Compilant — 2 entités                                                                   |
-| `authentication`                |   ✅   | action-request  | application, data, domain, ui                     |           67 | Compilant — login/forgot/reset                                                          |
-| `communication`                 |   ✅   | crud-entity     | application, data, domain, ui                     |          121 | Compilant — messagerie + notifications                                                  |
-| `content-management`            |   ✅   | crud-entity     | application, data, domain, ui                     |          459 | Compilant — 6 entités                                                                   |
-| `core`                          |   ✅   | kernel          |                                                   |            4 | Tokens d'injection + intercepteurs                                                      |
-| `coverage-areas`                |   ✅   | crud-entity     | application, data, domain, ui                     |          317 | Compilant — 4 entités                                                                   |
-| `dashboard`                     |   ✅   | read-only-view  | application, data, domain, ui                     |           30 | Module IR clôturé — corpus 25 paires, Meta 12/12 ; aggregated_stats_view                |
-| `finalization`                  |   ✅   | workflow-action | application, data, domain, ui                     |          111 | Module IR clôturé — corpus 126 paires, 6 chaînes, Meta 12/12                            |
-| `interactive-map`               |   ✅   | read-only-view  | application, data, domain, ui                     |           23 | Module IR clôturé — SIG v1 + Grafana ; corpus 28 paires, Meta 12/12 ; P2 clusters/tiles |
-| `monitoring`                    |   ✅   | read-only-view  | application, data, domain, ui                     |           22 | Compilant — 4 embeds Grafana ; corpus 51 paires, 5 chaînes                              |
-| `processing`                    |   ✅   | workflow-action | application, data, domain, ui                     |          140 | Module IR clôturé — corpus 156 paires, 7 chaînes, Meta 12/12                            |
-| `report-states`                 |   ✅   | workflow-action | application, data, domain, ui                     |          172 | Module IR clôturé — corpus 187 paires, 8 chaînes, Meta 12/12                            |
-| `reporting`                     |   ✅   | read-only-view  | application, data, domain, ui                     |           22 | Compilant — 4 vues analytiques ; corpus 51 paires, 5 chaînes                            |
-| `requests`                      |   ✅   | workflow-action | application, data, domain, ui                     |          128 | Module IR clôturé — corpus 157 paires, 8 chaînes, Meta 12/12                            |
-| `settings-security`             |   ✅   | crud-entity     | application, data, domain, ui                     |          197 | Compilant — 3 entités                                                                   |
-| `shared`                        |   ✅   | kernel          | application, browser, constants, data, domain, ui |          182 | Kernel transverse opérationnel                                                          |
-| `team-organization`             |   ✅   | crud-entity     | application, data, domain, ui                     |          170 | Compilant — 2 entités                                                                   |
+| Module | Statut | Famille | Couches | Fichiers .ts | Notes |
+|:---|:---:|:---|:---|---:|:---|
+| `administrative-boundary` | ✅ | crud-entity | application, data, domain, ui | 254 | Compilant — 3 entités + hiérarchie géo |
+| `administrative-infrastructure` | ✅ | crud-entity | application, data, domain, ui | 155 | Compilant — 2 entités |
+| `authentication` | ✅ | action-request | application, data, domain, ui | 67 | Compilant — login/forgot/reset |
+| `communication` | ✅ | crud-entity | application, data, domain, ui | 129 | Compilant — messagerie + notifications |
+| `content-management` | ✅ | crud-entity | application, data, domain, ui | 505 | Compilant — 6 entités |
+| `core` | ✅ | kernel |  | 10 | Tokens d'injection + intercepteurs |
+| `coverage-areas` | ✅ | crud-entity | application, data, domain, ui | 321 | Compilant — 4 entités |
+| `dashboard` | ✅ | read-only-view | application, data, domain, ui | 30 | Module IR clôturé — corpus 25 paires, Meta 12/12 ; aggregated_stats_view |
+| `finalization` | ✅ | workflow-action | application, data, domain, ui | 108 | Module IR clôturé — corpus 126 paires, 6 chaînes, Meta 12/12 |
+| `interactive-map` | ✅ | read-only-view | application, data, domain, ui | 23 | Module IR clôturé — SIG v1 + Grafana ; corpus 28 paires, Meta 12/12 ; P2 clusters/tiles |
+| `monitoring` | ✅ | read-only-view | application, data, domain, ui | 22 | Module IR clôturé (a posteriori 2026-08-04) — 4 embeds Grafana ; corpus 51 paires, 5 chaînes, Meta 12/12 |
+| `processing` | ✅ | workflow-action | application, data, domain, ui | 137 | Module IR clôturé — corpus 156 paires, 7 chaînes, Meta 12/12 |
+| `report-states` | ✅ | workflow-action | application, data, domain, ui | 169 | Module IR clôturé — corpus 187 paires, 8 chaînes, Meta 12/12 |
+| `reporting` | ✅ | read-only-view | application, data, domain, ui | 22 | Module IR clôturé (a posteriori 2026-08-04) — 4 vues analytiques ; corpus 51 paires, 5 chaînes, Meta 12/12 |
+| `requests` | ✅ | workflow-action | application, data, domain, ui | 125 | Module IR clôturé — corpus 157 paires, 8 chaînes, Meta 12/12 |
+| `settings-security` | ✅ | crud-entity | application, data, domain, ui | 204 | Compilant — 3 entités |
+| `shared` | ✅ | kernel | application, browser, constants, data, domain, ui | 189 | Kernel transverse opérationnel |
+| `team-organization` | ✅ | crud-entity | application, data, domain, ui | 254 | Compilant — 2 entités |
 
 ## Modules non commencés (attendus)
 
-| Module | Famille |
-| :----- | :------ |
+Calculé depuis l'écart entre `docs/architecture/scope.json` (périmètre
+déclaré, 53 entités) et une trace réelle dans `libs/` — pas une liste tenue à
+la main (M-7/L-2/L-3, `audit-workspace-2026-08-02-addendum.md` P1-19).
+
+| Module | Entité | Famille | Fichiers source (legacy) | Statut |
+|:---|:---|:---|---:|:---|
+| — | — | — | — | Aucun écart — les 52 entités du périmètre (hors fixture SEOS) ont une trace dans libs/ |
 
 ---
-
-_[LLM_CONTEXT.md](./LLM_CONTEXT.md) — source de vérité architecture et
-directives agents IA_
+*[LLM_CONTEXT.md](./LLM_CONTEXT.md) — source de vérité architecture et directives agents IA*

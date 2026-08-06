@@ -1,23 +1,27 @@
 # Feuille de route
 
-- **Dernière mise à jour :** 2026-07-31
+- **Dernière mise à jour :** 2026-08-02
 
 Le monorepo se construit **stack par stack**, chaque stack étant découpée en
 phases validées une à une. Angular d'abord ; les autres ne démarreront qu'une
 fois celle-ci stabilisée.
 
+Découpage Phase 08 / 09 :
+[ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md).
+
 ## Angular — en cours
 
-| Phase | Objet                                                                                   | Statut                                                                                                                        |
-| ----- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 01    | Socle du monorepo : Nx package-based, bun, structure, versions, conventions, garde-fous | ✅ Terminée                                                                                                                   |
-| 02    | Application Angular 22 + **validation du pattern sur une entité**                       | ✅ Validée (étape 02.5 — 106/106 patterns structurels sur Angular 22)                                                         |
-| 03    | **Mesure de couverture** des patterns sur les 53 entités                                | ✅ Mesure documentée ([analyse du projet source](./analyse-du-projet-source.md))                                              |
-| 04    | Adaptation des générateurs SEOS au monorepo (sortie en packages)                        | ✅ Adaptateur `tools/seos-adapter/` validé                                                                                    |
-| 05    | Socle transverse `shared/` + `core/` (584 fichiers) et dépendances métier               | ✅ Kernel transverse opérationnel                                                                                             |
-| 06    | Qualité, tests, configuration, Docker, CI, Nx Cloud                                     | 🔧 Partielle — corpus CI + workflow GitHub ; Nx Cloud et hooks CI restants                                                    |
-| 07    | Reconstruction des 53 entités par génération                                            | 🔧 **En cours** — **18 modules** livrés ; famille `workflow-action` **4/4 IR clôturée** ; voir [`STATUS.md`](../../STATUS.md) |
-| 08    | Vérification fonctionnelle par rapport à l'application source                           | ⏳ Non démarrée                                                                                                               |
+| Phase | Objet                                                                                   | Statut                                                                                                                                 |
+| ----- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 01    | Socle du monorepo : Nx package-based, bun, structure, versions, conventions, garde-fous | ✅ Terminée                                                                                                                            |
+| 02    | Application Angular 22 + **validation du pattern sur une entité**                       | ✅ Validée (étape 02.5 — 106/106 patterns structurels sur Angular 22)                                                                  |
+| 03    | **Mesure de couverture** des patterns sur les 53 entités                                | ✅ Mesure documentée ([analyse du projet source](./analyse-du-projet-source.md))                                                       |
+| 04    | Adaptation des générateurs SEOS au monorepo (sortie en packages)                        | ✅ Adaptateur `tools/seos-adapter/` validé                                                                                             |
+| 05    | Socle transverse `shared/` + `core/` (584 fichiers) et dépendances métier               | ✅ Kernel transverse opérationnel                                                                                                      |
+| 06    | Qualité, tests, configuration, Docker, CI, Nx Cloud                                     | 🔧 Partielle — oracle CI durci (chantier A) ; Nx Cloud / Docker restants                                                               |
+| 07    | Reconstruction assistée des 53 entités (IR + corpus)                                    | ✅ **Clôturée** (2026-08-01) — **18 modules** ; familles `workflow-action` + `read-only-view` **4/4** ; [`STATUS.md`](../../STATUS.md) |
+| 08    | **Génération depuis patterns** — zéro code métier manuel (G-V-R)                        | 🔧 **Active** — spec [`generation-from-patterns.md`](./generation-from-patterns.md)                                                    |
+| 09    | Vérification fonctionnelle vs l'application source                                      | ⏳ Non démarrée — ex-contenu Phase 08 historique ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md))                  |
 
 L'état détaillé du socle est décrit dans
 [`etat-du-socle.md`](./etat-du-socle.md). Les étapes, commandes et critères de

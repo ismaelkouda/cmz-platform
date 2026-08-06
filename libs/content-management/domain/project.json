@@ -3,5 +3,14 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/content-management/domain/src",
   "projectType": "library",
-  "tags": ["scope:content-management", "type:domain"]
+  "tags": ["scope:content-management", "type:domain"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/content-management/domain/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

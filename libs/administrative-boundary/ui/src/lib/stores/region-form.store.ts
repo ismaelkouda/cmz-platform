@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { disabled, form, required } from '@angular/forms/signals';
 import { RegionFindOneFacade } from '@cmz/administrative-boundary-application';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface RegionFormModel {
     code: string;

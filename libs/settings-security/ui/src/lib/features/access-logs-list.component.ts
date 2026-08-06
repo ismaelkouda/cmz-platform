@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { AccessLogsFacade } from '@cmz/settings-security-application';
 import { TranslationPort } from '@cmz/shared-application';
 import {
@@ -31,8 +25,6 @@ const T = 'SETTINGS_SECURITY.ACCESS_LOGS';
  */
 @Component({
     selector: 'cmz-access-logs-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [AccessLogsFilterStore],
     template: `

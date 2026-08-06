@@ -13,6 +13,7 @@ import {
     slideDeleteVo,
     slideDisableVo,
     slideEnableVo,
+    slideFilterEntity,
     slideFilterVo,
     slideUpdateVo,
 } from '@cmz/content-management-domain';
@@ -28,7 +29,11 @@ export class SlideUseCase {
         options?: FetchOptions
     ): Observable<PageResult<SlideEntity>> {
         return defer(() =>
-            this.repository.execute(slideFilterVo(contract), page, options)
+            this.repository.execute(
+                slideFilterEntity(slideFilterVo(contract)),
+                page,
+                options
+            )
         );
     }
 

@@ -3,5 +3,14 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/administrative-boundary/domain/src",
   "projectType": "library",
-  "tags": ["scope:administrative-boundary", "type:domain"]
+  "tags": ["scope:administrative-boundary", "type:domain"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/administrative-boundary/domain/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

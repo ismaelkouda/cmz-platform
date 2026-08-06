@@ -13,6 +13,7 @@ import {
     participantsDeleteVo,
     participantsDisableVo,
     participantsEnableVo,
+    participantsFilterEntity,
     participantsFilterVo,
     participantsUpdateVo,
 } from '@cmz/team-organization-domain';
@@ -29,7 +30,7 @@ export class ParticipantsUseCase {
     ): Observable<PageResult<ParticipantsEntity>> {
         return defer(() =>
             this.repository.execute(
-                participantsFilterVo(contract),
+                participantsFilterEntity(participantsFilterVo(contract)),
                 page,
                 options
             )

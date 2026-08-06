@@ -1,5 +1,4 @@
 import {
-    ChangeDetectionStrategy,
     Component,
     computed,
     effect,
@@ -32,8 +31,6 @@ export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
 
 @Component({
     selector: 'cmz-tasks-actions-processing-form-dialog',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ReactiveFormsModule],
     template: `
         <dialog

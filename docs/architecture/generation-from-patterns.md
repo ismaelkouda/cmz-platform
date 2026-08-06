@@ -7,6 +7,9 @@
   [A-2026-08-01-01](../seos/Assumptions-Register.md#a-2026-08-01-01--clôture-famille-read-only-view-4-4--fin-phase-07))
 - **Cadre :**
   [ADR-0010 — Flux de génération assistée par IA](../adr/0010-flux-de-generation-assistee-par-ia.md)
+- **Arbitrage de phase :**
+  [ADR-0013 — Phase 08 génération / Phase 09 vérification](../adr/0013-phases-08-generation-et-09-verification.md)
+  (la vérification fonctionnelle vs legacy est **Phase 09**, pas 08)
 
 ---
 
@@ -31,7 +34,7 @@ l'IR et le code sous contrat.
 | **Pattern JSON**   | `docs/architecture/patterns/<pattern>.pattern.json` | Schéma des sous-graphes, chaînes, `nx_mapping`, interdits   |
 | **Module spec**    | `docs/architecture/module-<name>.md`                | Endpoints wire, entités, sections/volets, écarts documentés |
 | **Chaînes corpus** | `tools/corpus/*.mjs` + pattern `chains`             | Nœuds expandables → paires JSONL                            |
-| **Legacy oracle**  | `$SEOS_LEGACY_ROOT` (optionnel Tier 1 PR)           | Paths legacy pour `--verify` complet                        |
+| **Legacy oracle**  | `$SEOS_LEGACY_ROOT` (hors `--structural-only`)      | Paths legacy pour `--verify` complet (ADR-0015)             |
 | **Archétypes**     | `docs/architecture/archetypes/*.md`                 | Règles par couche (facade, use-case, page…)                 |
 | **Assumption ref** | `docs/seos/Assumptions-Register.md`                 | Décisions non négociables (CQRS drop, naming…)              |
 
@@ -86,7 +89,29 @@ Un module généré n'est **pas livré** tant que :
 | **2 intégration** | `bun run check:tier2`                                             | ✅ nightly ; recommandé avant clôture |
 | **Templates**     | `ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit`       | ✅ si pages câblées app               |
 
-Tier 1 CI PR : `bun run corpus:ci` (oracle-only) pour les modules déjà dans la
+### 4.1 Niveaux d'oracle corpus (audit H-1)
+
+`emit-pairs --verify` exécute les cibles déclarées sur chaque paire, empilées
+par [`tools/corpus/oracle-levels.mjs`](../../tools/corpus/oracle-levels.mjs) :
+
+| Niveau | Cible Nx | Contenu | Attache |
+| ------ | -------- | ------- | ------- |
+| **structural** | `:build` | Compile / types | toujours |
+| **behavioral** | `:test` | Vitest (chantier C) | auto si `project.json` déclare `targets.test` |
+| **functional** | Phase 09 | Équivalence legacy | hors emit-pairs ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)) |
+
+Les modules sans suite Vitest restent en build-only jusqu'à C-2/C-4 ; dès qu'un
+target `test` existe, le niveau comportemental entre dans le G-V-R sans éditer
+chaque nœud à la main.
+
+### 4.2 Gate module avant émission (audit H-2)
+
+[`module-gate.mjs`](../../tools/corpus/module-gate.mjs) bloque l'écriture du
+JSONL (et tout `--verify`) si `build` ou `lint` (ou `test` lorsqu'un target
+existe) échoue sur `tag:scope:<module>`. Un corpus ne peut plus être émis « au
+vert » alors que le module est rouge.
+
+Tier 1 CI PR : `bun run corpus:ci` (`--structural-only`, ADR-0015) pour les modules déjà dans la
 chaîne CI.
 
 ---
@@ -174,6 +199,9 @@ Exemples acceptés Phase 07→08 : `ManagementDialog` shell, SIG clusters/tiles
 
 | Item                                               | Priorité | Statut |
 | -------------------------------------------------- | -------- | ------ |
+| Oracle comportemental (`:test` / chantier C) — H-1 | P0       | ✅     |
+| Gate émission build+lint+test verts — H-2          | P0       | ✅     |
+| Contrainte no byte-identical cross-module — H-3    | P1       | ✅     |
 | Générateur chaînes depuis pattern JSON seul        | P1       | ⬜     |
 | `conventions/angular-22.profile.json` (ADR-0010)   | P1       | ⬜     |
 | Contrats archétype machine-readable (`contracts/`) | P1       | ⬜     |

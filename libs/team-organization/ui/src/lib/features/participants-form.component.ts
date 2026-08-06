@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,9 +8,8 @@ import {
 } from '@cmz/team-organization-application';
 import { Role } from '@cmz/shared-domain';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent, ROLE_OPTIONS } from '@cmz/shared-ui';
+import { FieldComponent, FormMode, ROLE_OPTIONS } from '@cmz/shared-ui';
 import { ParticipantsFormStore } from '../stores/participants-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'TEAM_ORGANIZATION.PARTICIPANTS';
 
@@ -27,8 +20,6 @@ const T = 'TEAM_ORGANIZATION.PARTICIPANTS';
  */
 @Component({
     selector: 'cmz-participants-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [ParticipantsFormStore],
     template: `

@@ -19,7 +19,7 @@ export class TabService {
     }
 
     private async restore(): Promise<void> {
-        const saved = await this.storage.getEncrypted<Tab[]>(this.STORAGE_KEY);
+        const saved = await this.storage.getObfuscated<Tab[]>(this.STORAGE_KEY);
         if (saved && saved.length > 0) {
             this._tabs.set(saved);
         } else {
@@ -33,7 +33,7 @@ export class TabService {
             this.storage.remove(this.STORAGE_KEY);
             this.storage.remove(`${this.STORAGE_KEY}_children_component`);
         } else {
-            void this.storage.saveEncrypted(this.STORAGE_KEY, tabs);
+            void this.storage.saveObfuscated(this.STORAGE_KEY, tabs);
         }
     }
 

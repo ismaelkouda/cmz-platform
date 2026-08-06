@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MunicipalitiesByDepartmentIdFacade } from '@cmz/administrative-boundary-application';
@@ -29,8 +23,6 @@ const T = 'ADMINISTRATIVE_BOUNDARY.MUNICIPALITIES_BY_DEPARTMENT_ID';
  */
 @Component({
     selector: 'cmz-municipalities-by-department-id',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [MunicipalitiesByDepartmentIdFilterStore],
     template: `

@@ -54,4 +54,5 @@ export * from './lib/utils/build-http-payload.util';
 export * from './lib/utils/build-http-params.util';
 export * from './lib/utils/build-form-data.util';
 export * from './lib/utils/unwrap-response.util';
+export * from './lib/interceptors/error.interceptor';
 export type { FetchOptions } from '@cmz/shared-domain';

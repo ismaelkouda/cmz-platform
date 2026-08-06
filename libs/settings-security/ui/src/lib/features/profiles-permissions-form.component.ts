@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -13,9 +7,8 @@ import {
     ProfilesPermissionsPermissionsFacade,
 } from '@cmz/settings-security-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { ProfilesPermissionsFormStore } from '../stores/profiles-permissions-form.store';
-import { FormMode } from '../stores/form-mode.type';
 import { PermissionTreeNodeComponent } from './permission-tree-node.component';
 
 const T = 'SETTINGS_SECURITY.PROFILES_PERMISSIONS';
@@ -30,8 +23,6 @@ const T = 'SETTINGS_SECURITY.PROFILES_PERMISSIONS';
  */
 @Component({
     selector: 'cmz-profiles-permissions-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent, PermissionTreeNodeComponent],
     providers: [ProfilesPermissionsFormStore],
     template: `

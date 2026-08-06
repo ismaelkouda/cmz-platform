@@ -8,11 +8,8 @@ export default [
         ignores: ['**/dist', '**/out-tsc'],
     },
     // Fichiers d'outillage de test — exclus de enforce-module-boundaries.
-    // vite.config.ts / vitest.config.ts référencent légitimement des
-    // ressources hors du boundary de la lib (ex. tools/vitest-lib.config.ts).
-    // Ils ne font pas partie du code applicatif : les frontières de couche
-    // ne s'appliquent pas à l'infrastructure de build.
-    // Pattern Nx standard : les fichiers de config sont traités séparément.
+    // Configs Vitest locales (s'il en reste) et tools/vitest-lib.config.ts :
+    // hors code applicatif, frontières de couche non applicables.
     {
         ignores: [
             '**/vite.config.ts',
@@ -91,10 +88,23 @@ export default [
                                 'type:constants',
                             ],
                         },
-                        // `app` = composition root : peut tout brancher.
+                        // `app` = composition root — liste explicite (pas de joker `*`).
+                        // `type:browser` (@cmz/shared-browser) n'est autorisé QUE depuis
+                        // type:app : adaptateurs navigateur réservés au wiring root
+                        // (audit D-5 / P2-18). Aucune couche lib (ui/application/data/…)
+                        // ne liste type:browser → import interdit ailleurs.
                         {
                             sourceTag: 'type:app',
-                            onlyDependOnLibsWithTags: ['*'],
+                            onlyDependOnLibsWithTags: [
+                                'type:constants',
+                                'type:domain',
+                                'type:core',
+                                'type:browser',
+                                'type:data',
+                                'type:application',
+                                'type:ui',
+                                'type:app',
+                            ],
                         },
                         // ---- Contraintes par SCOPE (isolation des modules) ----
                         // Le kernel ne dépend que de lui-même.

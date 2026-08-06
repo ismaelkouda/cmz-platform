@@ -2,10 +2,14 @@ import {
     InfrastructureTypeEntity,
     Status,
 } from '@cmz/administrative-infrastructure-domain';
-import { ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { STATUS_LABEL } from '../constants/infrastructure-type-status-label.constant';
 import { statusStyleOf } from '../mappers/infrastructure-type-status-style.mapper';
-import { actionItem, resolveTooltip } from './action-item.factory';
 import { InfrastructureTypeVmProps } from './infrastructure-type-vm-props.interface';
 
 interface InfrastructureTypePermission {

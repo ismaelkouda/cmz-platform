@@ -15,8 +15,11 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "bunx vitest run --config libs/report-states/data/vite.config.ts",
-        "cwd": "{workspaceRoot}"
+        "command": "bunx vitest run --config tools/vitest-lib.config.ts",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "CMZ_VITEST_LIB_ROOT": "libs/report-states/data"
+        }
       }
     }
   }

@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
     InfrastructureFacade,
@@ -29,7 +23,7 @@ import { InfrastructureVmProps } from '../adapters/infrastructure-vm-props.inter
 import { InfrastructurePresenter } from '../adapters/infrastructure-vm.presenter';
 import { InfrastructureFilterStore } from '../stores/infrastructure-filter.store';
 
-const ROUTE = '/equipments/equipments';
+const ROUTE = '/equipments/list';
 const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE';
 
 /**
@@ -40,8 +34,6 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE';
  */
 @Component({
     selector: 'cmz-infrastructure-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [InfrastructureFilterStore],
     template: `

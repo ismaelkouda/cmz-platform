@@ -40,6 +40,15 @@ post-traitement pour la sortie **plate** des générateurs legacy ; le corpus et
 la **génération depuis patterns** (Phase 08 — cf.
 [`generation-from-patterns.md`](../generation-from-patterns.md)).
 
+### Contraintes machine (`constraints`)
+
+| Clé | Id | Enforcement |
+| --- | -- | ----------- |
+| `no_cross_module_byte_identical_files` | **H-3** / P1-11 | `bun run check:duplicates` (+ `--module=<m>` dans le gate corpus) |
+
+Prévention F-1/F-2 : la génération ne doit **jamais** recopier un helper
+transverse — le remonter dans `@cmz/shared-*`.
+
 ## Boucle G-V-R (Generate — Verify — Repair)
 
 ```

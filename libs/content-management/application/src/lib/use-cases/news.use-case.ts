@@ -13,6 +13,7 @@ import {
     newsDeleteVo,
     newsUnpublishVo,
     newsPublishVo,
+    newsFilterEntity,
     newsFilterVo,
     newsUpdateVo,
 } from '@cmz/content-management-domain';
@@ -28,7 +29,11 @@ export class NewsUseCase {
         options?: FetchOptions
     ): Observable<PageResult<NewsEntity>> {
         return defer(() =>
-            this.repository.execute(newsFilterVo(contract), page, options)
+            this.repository.execute(
+                newsFilterEntity(newsFilterVo(contract)),
+                page,
+                options
+            )
         );
     }
 

@@ -12,7 +12,7 @@
 - **Corpus :**
   [`corpus/requests.pairs.jsonl`](../../corpus/requests.pairs.jsonl)
 - **Source de vérité métier :**
-  `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend/src/presentation/pages/requests`
+  `$SEOS_LEGACY_ROOT/src/presentation/pages/requests`
 
 Ce document décrit la **Représentation Intermédiaire (IR)** du module `requests`
 telle qu’instanciée dans le monorepo Nx. L’oracle et le corpus en sont la preuve

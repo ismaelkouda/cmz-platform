@@ -241,6 +241,23 @@
     "__action",
     "__actionDropdown"
   ],
+  "constraints": {
+    "no_cross_module_byte_identical_files": {
+      "id": "H-3",
+      "severity": "P1-11",
+      "rule": "libs/{MODULE}/** — aucun fichier source (.ts/.html/.scss/.css, ≥40 o) byte-identique (MD5) à un fichier d'un autre module sous libs/",
+      "rationale": "Prévention F-1/F-2 : helpers transverses (FormMode, actionItem, StatusStyle, vite.config) doivent vivre dans @cmz/shared-* ou tools/, jamais être recopiés par génération G-V-R",
+      "enforcement": {
+        "tool": "tools/check-duplicate-files.mjs",
+        "script": "bun run check:duplicates",
+        "module_scoped": "bun run check:duplicates -- --module={MODULE}",
+        "gate": "tools/corpus/module-gate.mjs (H-2) appelle le check scopé avant émission corpus"
+      },
+      "remediation": "Remonter dans @cmz/shared-ui (ou shared-*) / tools/ et supprimer les copies",
+      "exceptions": [],
+      "correction_2026_08_04": "Ce bloc portait deux clés JSON `severity` (la seconde écrasait silencieusement la première — `JSON.parse` ne signale jamais un doublon de clé). Même défaut que workflow-action.pattern.json, corrigé au même moment (O-6, revue finale). Aucun outil actuel ne lit ce champ (vérifié par grep sur tools/**) — donnée dormante fausse, pas une régression de comportement."
+    }
+  },
   "required_shared": {
     "ResourceFacade": "libs/shared/application/src/lib/facades/resource.facade.ts",
     "GrafanaEmbedComponent": "libs/shared/ui/src/lib/components/grafana-embed/grafana-embed.component.ts",

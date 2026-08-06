@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { ReportByOperatorFacade } from '@cmz/reporting-application';
 import { GrafanaEmbedComponent } from '@cmz/shared-ui';
 
@@ -11,8 +6,6 @@ const T = 'REPORTING.REPORT_BY_OPERATOR';
 
 @Component({
     selector: 'cmz-report-by-operator-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [GrafanaEmbedComponent],
     template: `
         <cmz-grafana-embed

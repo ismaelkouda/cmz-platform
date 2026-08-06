@@ -35,7 +35,7 @@
 | 1 build       | `bunx nx run-many -t build --projects=tag:scope:dashboard` | ✅                    |
 | 1 lint        | `bunx eslint libs/dashboard --max-warnings=0`              | ✅                    |
 | 1 corpus      | `bun run corpus:dashboard`                                 | ✅ 2/2 tranche-closed |
-| 2 intégration | `bun run check:tier2`                                      | ✅ initial ~856 kB    |
+| 2 intégration | `bun run check:tier2`                                      | ✅ voir `bundle-metrics.json` |
 
 ---
 

@@ -214,6 +214,38 @@
     ],
     "legacy_layers_dropped_rationale": "A-2026-07-30-05 — use-case direct remplace CQRS ceremony pour listes workflow en cible Nx"
   },
+  "constraints": {
+    "no_cross_module_byte_identical_files": {
+      "id": "H-3",
+      "severity": "P1-11",
+      "rule": "libs/{MODULE}/** — aucun fichier source (.ts/.html/.scss/.css, ≥40 o) byte-identique (MD5) à un fichier d'un autre module sous libs/",
+      "rationale": "Prévention F-1/F-2 : helpers transverses (FormMode, actionItem, StatusStyle, vite.config) doivent vivre dans @cmz/shared-* ou tools/, jamais être recopiés par génération G-V-R",
+      "enforcement": {
+        "tool": "tools/check-duplicate-files.mjs",
+        "script": "bun run check:duplicates",
+        "module_scoped": "bun run check:duplicates -- --module={MODULE}",
+        "gate": "tools/corpus/module-gate.mjs (H-2) appelle le check scopé avant émission corpus"
+      },
+      "remediation": "Remonter dans @cmz/shared-ui (ou shared-*) / tools/ et supprimer les copies",
+      "exceptions": [],
+      "correction_2026_08_04": "Ce bloc portait deux clés JSON `severity` (la seconde, positionnée par erreur, écrasait silencieusement la première à la lecture — `JSON.parse` ne signale jamais un doublon de clé). La vraie sévérité (`P1-11`) était donc illisible par tout outil qui aurait un jour lu `constraints.no_cross_module_byte_identical_files.severity` : il aurait reçu le texte de la règle à la place. Trouvé incidemment en rédigeant O-6 (revue finale 2026-08-02) — aucun outil actuel ne lit ce champ (vérifié par grep sur tools/**), donc aucune régression corrigée, seulement une donnée dormante fausse. Même défaut trouvé et corrigé dans read-only-view.pattern.json."
+    },
+    "no_family_duplication_regression": {
+      "id": "H-4",
+      "severity": "P1-25",
+      "rule": "La famille workflow-action (`processing`, `requests`, `finalization`, `report-states` — cf. `validated_on` de ce fichier) ne doit jamais faire remonter son taux de quasi-duplication inter-module au-delà de la dernière mesure enregistrée dans `docs/architecture/family-duplication-metrics.json` (29,6 % au 2026-08-03, 177/597 fichiers). Contrairement à H-3 (byte-identique, tolérance zéro), ce n'est PAS un objectif de zéro doublon : l'isolation `scope:*` de ces 4 modules est un choix assumé (ADR-0020), la dette existante n'est pas exigée d'être résorbée par ce contrôle — seulement de ne pas s'aggraver silencieusement à chaque nouvelle génération G-V-R sur ce pattern.",
+      "rationale": "O-1/O-2 (revue finale 2026-08-02) : le mode byte-identique de check-duplicate-files.mjs ne voit jamais les 159 (puis 177, mesure O-1) fichiers quasi-identiques de cette famille — un nom de module différent dans le fichier suffit à casser le hash MD5. --family compare modulo substitution du nom de module. O-6 (même revue) : ce pattern est le seul concerné par cette forme de duplication (aucun autre pattern.json n'a de `validated_on` recoupant `FAMILY_MODULES`) — la contrainte est donc déclarée ici, pas dans un pattern générique.",
+      "enforcement": {
+        "tool": "tools/check-duplicate-files.mjs --family",
+        "script": "bun run check:duplicates:family",
+        "record_baseline": "bun run check:duplicates:family:record",
+        "gate": "CI (.github/workflows/ci.yml, job duplicates) — bloquant sur toute hausse > baseline + 0,1 point (tolérance d'arrondi), jamais sur la valeur absolue",
+        "declaration_check": "tools/check-duplicate-files.mjs (assertFamilyPatternDeclaresConstraint) — refuse d'exécuter --family si aucun pattern.json dont le validated_on recoupe FAMILY_MODULES ne déclare cette contrainte, même logique que H-3/assertPatternsDeclareConstraint mais scopée à la famille"
+      },
+      "remediation": "Si la hausse vient d'une vraie nouvelle copie non factorisée : facturer O-3/O-4 (extraire vers @cmz/shared-workflow ou un générique). Si c'est un choix assumé (nouveau module rejoignant sciemment la famille) : ré-enregistrer la mesure (--record) avec une justification dans le message de commit.",
+      "exceptions": []
+    }
+  },
   "module_shell_files": {
     "legacy": [
       "processing.routes.ts",

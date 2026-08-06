@@ -10,5 +10,8 @@
     "@angular/core": "catalog:",
     "@angular/common": "catalog:",
     "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.8"
   }
 }

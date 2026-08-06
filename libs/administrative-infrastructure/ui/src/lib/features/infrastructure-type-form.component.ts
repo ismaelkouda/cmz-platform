@@ -1,18 +1,11 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { InfrastructureTypeFormStore } from '../stores/infrastructure-type-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
 
@@ -24,8 +17,6 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
  */
 @Component({
     selector: 'cmz-infrastructure-type-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [InfrastructureTypeFormStore],
     template: `

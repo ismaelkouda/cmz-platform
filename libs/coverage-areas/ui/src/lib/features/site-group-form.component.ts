@@ -1,18 +1,11 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SiteGroupFacade } from '@cmz/coverage-areas-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { SiteGroupFormStore } from '../stores/site-group-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'COVERAGE_AREAS.SITE_GROUP';
 
@@ -24,8 +17,6 @@ const T = 'COVERAGE_AREAS.SITE_GROUP';
  */
 @Component({
     selector: 'cmz-site-group-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [SiteGroupFormStore],
     template: `

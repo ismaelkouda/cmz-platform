@@ -1,6 +1,19 @@
 /**
- * Port stockage local chiffré — abstraction agnostique.
+ * Port stockage local — abstraction agnostique.
  * Adaptateur : @cmz/shared-browser (Web Crypto + localStorage).
+ *
+ * **`*Obfuscated` — nom délibéré, pas `*Encrypted`.** Un chiffrement dont la
+ * clé est livrée dans le bundle client ne peut être qu'une obfuscation :
+ * n'importe qui peut extraire la clé du code source et déchiffrer. L'ancien
+ * nom (`saveEncrypted`/`getEncrypted`/`clearEncrypted`) promettait une
+ * confidentialité que le navigateur ne peut pas fournir — corrigé après
+ * audit (`audit-workspace-2026-08-02-addendum.md`, P1-18/I-9). Ceci
+ * **relève** la barre d'inspection occasionnelle (un `localStorage.getItem`
+ * dans les devtools ne montre pas la valeur en clair) ; ce n'est **pas** une
+ * protection contre un attaquant qui lit le bundle JS. La vraie protection
+ * d'un jeton de session reste côté serveur : durée de vie courte + refresh,
+ * `HttpOnly` si l'architecture le permet un jour (cf. commentaire de
+ * `BrowserStorageAdapter`).
  */
 export abstract class StoragePort {
     abstract save(key: string, value: unknown): void;
@@ -11,13 +24,13 @@ export abstract class StoragePort {
 
     abstract hasKey(key: string): boolean;
 
-    abstract saveEncrypted(key: string, value: unknown): Promise<void>;
+    abstract saveObfuscated(key: string, value: unknown): Promise<void>;
 
-    abstract getEncrypted<T>(key: string): Promise<T | null>;
+    abstract getObfuscated<T>(key: string): Promise<T | null>;
 
     abstract removeKeysWithPrefix(prefix: string): Promise<void>;
 
-    abstract clearEncrypted(): Promise<void>;
+    abstract clearObfuscated(): Promise<void>;
 
     /** Purge totale du stockage local (session incluse). */
     abstract clearAll(): void;

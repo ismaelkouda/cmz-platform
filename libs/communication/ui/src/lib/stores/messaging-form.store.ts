@@ -18,7 +18,7 @@ import {
     DepartmentOption,
     MunicipalityOption,
 } from '@cmz/administrative-boundary-domain';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 /** Miroir UI de `SMS_MAX_LENGTH` (domaine, `messaging-create.validator.ts`) — retour immédiat avant l'aller-retour serveur. */
 const SMS_MAX_LENGTH = 160;

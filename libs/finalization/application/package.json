@@ -8,5 +8,8 @@
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
     "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.8"
   }
 }

@@ -9,7 +9,7 @@ import {
 import { disabled, form, required, validate } from '@angular/forms/signals';
 import { OpticalFiberNetworkFindOneFacade } from '@cmz/coverage-areas-application';
 import { FiberType, Operator } from '@cmz/coverage-areas-domain';
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface OpticalFiberNetworkFormModel {
     name: string;

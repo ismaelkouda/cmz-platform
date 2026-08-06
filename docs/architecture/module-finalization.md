@@ -10,7 +10,7 @@
 - **Corpus :**
   [`corpus/finalization.pairs.jsonl`](../../corpus/finalization.pairs.jsonl)
 - **Source de vérité :**
-  `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend/src/presentation/pages/finalization`
+  `$SEOS_LEGACY_ROOT/src/presentation/pages/finalization`
 
 Module de **finalisation des signalements**. Quatre entités : `queues`, `tasks`,
 `all`, `details`. Mutations : **take** (queues) + **finalize** avec commentaire

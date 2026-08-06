@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CmzNotificationService } from '../../services/cmz-notification.service';
 
 /**
@@ -9,8 +9,6 @@ import { CmzNotificationService } from '../../services/cmz-notification.service'
  */
 @Component({
     selector: 'cmz-toast-outlet',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="cmz-toast-region" role="region" aria-label="Notifications">
             @for (toast of service.toasts(); track toast.id) {

@@ -1,11 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    inject,
-    input,
-    model,
-    output,
-} from '@angular/core';
+import { Component, inject, input, model, output } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { TranslationPort } from '@cmz/shared-application';
 import { FilterField } from './filter.types';
@@ -25,8 +18,6 @@ import { FilterField } from './filter.types';
  */
 @Component({
     selector: 'cmz-filter',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField],
     template: `
         <form (submit)="onSubmit($event)" class="flex flex-col gap-4">

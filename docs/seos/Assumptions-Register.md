@@ -169,8 +169,12 @@ Format d'entrée :
     - **Sync :** `bun run corpus:sync-pattern` pousse
       `workflow-action.pattern.json` vers legacy `seos/patterns/` (format
       `core_files` + section `nx_sync`).
-    - **CI Tier 1 :** job `corpus` exécute `emit-pairs --verify --oracle-only`
-      (`CORPUS_ORACLE_ONLY=1`) — oracle module nx sans checkout legacy.
+    - **CI Tier 1 :** job `corpus` appelle `bun run corpus:ci`
+      (`--structural-only` / `CORPUS_STRUCTURAL_ONLY=1`) — oracles Nx **sans**
+      correspondance legacy
+      ([ADR-0015](../adr/0015-mode-structural-only-pas-de-correspondance-legacy.md) ;
+      alias déprécié `--oracle-only`). Une seule source de vérité modules
+      (`package.json#scripts.corpus:ci`) — audit B-7 / P1-14.
     - **Exit code :** `--verify` échoue (exit 1) si une chaîne n'est pas
       tranche-closed (100 % verified, 0 pending/blocked).
 - **Contexte :** step 3 lifecycle pattern + garde-fou PR (A-2026-07-30-08).
@@ -340,4 +344,47 @@ Format d'entrée :
   endpoints déclarés mais non câblés documentés dans le corpus (`n/a`).
 - **Implication corpus :** paires SIG legacy restent `n/a` ; génération v0 ne
   doit pas bloquer sur ces écarts.
+- **Statut :** **accepted**
+
+---
+
+## A-2026-08-02-01 — Phase 08 génération / Phase 09 vérification (ADR-0013)
+
+- **Décision :** la Phase 08 est la **génération depuis patterns** ; la
+  vérification fonctionnelle vs legacy est la **Phase 09**. Voir
+  [ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md).
+- **Contexte :** audit P0-4 — deux définitions incompatibles de « Phase 08 »
+  dans quatre documents.
+- **Implication :** `feuille-de-route.md`, `plan-d-execution.md`,
+  `LLM_CONTEXT.md` et `generation-from-patterns.md` alignés sur ADR-0013.
+- **Statut :** **accepted**
+
+---
+
+## A-2026-08-02-02 — Legacy figé via `legacy.lock.json` (ADR-0014)
+
+- **Décision :** le dépôt legacy est piné par `legacy.lock.json`
+  (`repo` + `commit` + `date`), **pas** par sous-module Git. Voir
+  [ADR-0014](../adr/0014-figer-le-legacy-via-lock-json.md).
+- **Contexte :** audit B-3 / P0-6 — legacy ~858 Mo, origin privé ; sous-module
+  trop coûteux pour chaque clone.
+- **Implication corpus :** `check:legacy-lock` en CI ; `--verify` complet
+  exige `SEOS_LEGACY_ROOT` au SHA piné ; B-4 tamponne `legacy_ref` ; B-5
+  (`corpus-full` sur `main`) checkout le pin via `legacy:checkout` puis
+  `bun run corpus:full` **sans** `--structural-only`.
+- **Statut :** **accepted**
+
+---
+
+## A-2026-08-02-03 — Mode `--structural-only` ≠ correspondance legacy (ADR-0015)
+
+- **Décision :** le mode CI PR du corpus s'appelle **`--structural-only`**
+  (`CORPUS_STRUCTURAL_ONLY=1`). Il exécute les oracles Nx Tier 1 et ignore
+  les chemins legacy. Ce n'est **pas** une preuve d'équivalence legacy → Nx.
+  Alias déprécié : `--oracle-only` / `CORPUS_ORACLE_ONLY`. Voir
+  [ADR-0015](../adr/0015-mode-structural-only-pas-de-correspondance-legacy.md).
+- **Contexte :** audit B-6 / P0-6 — le nom `--oracle-only` laissait croire
+  qu'un `verified` structurel valait une validation legacy.
+- **Implication :** job PR = structurel ; job `corpus-full` (main) = chemins
+  legacy + oracles ; Phase 09 reste le gate comportemental.
 - **Statut :** **accepted**

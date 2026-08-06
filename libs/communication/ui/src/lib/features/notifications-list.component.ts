@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { NotificationsFacade } from '@cmz/communication-application';
 import {
     ConfirmDialogPort,
@@ -40,8 +34,6 @@ const T = 'COMMUNICATION.NOTIFICATIONS';
  */
 @Component({
     selector: 'cmz-notifications-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [NotificationsFilterStore],
     template: `

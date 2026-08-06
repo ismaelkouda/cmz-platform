@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 
 /**
  * Squelette de chargement — reconstruit sans PrimeNG (`p-skeleton` côté
@@ -9,8 +9,6 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
  */
 @Component({
     selector: 'cmz-dashboard-skeleton',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="flex flex-col gap-6">
             @for (section of sections; track section) {

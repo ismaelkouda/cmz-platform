@@ -6,7 +6,7 @@
 - **Hors scope :** parité shell legacy `ManagementDialog` fullscreen (P2 — hors
   IR).
 - **Source legacy :**
-  `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend/src/presentation/pages/processing`
+  `$SEOS_LEGACY_ROOT/src/presentation/pages/processing`
 - **Cible Nx :** `libs/processing/{domain,data,application,ui}` — préfixe
   `QueuesProcessing*`.
 

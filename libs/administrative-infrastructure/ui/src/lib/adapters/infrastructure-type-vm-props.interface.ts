@@ -1,6 +1,5 @@
 import { Status } from '@cmz/administrative-infrastructure-domain';
-import { ActionDropdownItem } from '@cmz/shared-ui';
-import { StatusStyle } from '../enums/infrastructure-type-status-style.enum';
+import { ActionDropdownItem, StatusStyle } from '@cmz/shared-ui';
 
 export interface InfrastructureTypeVmProps {
     uniqId: string;

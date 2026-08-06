@@ -1,5 +1,4 @@
 import {
-    ChangeDetectionStrategy,
     Component,
     effect,
     inject,
@@ -20,8 +19,6 @@ import { FinalizationDetailsEntity } from '@cmz/finalization-domain';
 
 @Component({
     selector: 'cmz-finalization-details-dialog',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule],
     template: `
         <dialog

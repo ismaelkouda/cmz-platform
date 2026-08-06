@@ -9,9 +9,11 @@
   "dependencies": {
     "@angular/common": "catalog:",
     "@angular/core": "catalog:",
+    "@angular/forms": "catalog:",
     "@angular/router": "catalog:",
     "@cmz/report-states-application": "workspace:*",
     "@cmz/report-states-domain": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
     "rxjs": "catalog:"

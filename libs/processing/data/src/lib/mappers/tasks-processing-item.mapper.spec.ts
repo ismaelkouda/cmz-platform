@@ -1,7 +1,9 @@
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import {
+    ReportSourceDto,
+    ReportTypeDto,
+    PaginatedResponseDto,
     ReportSourceMapper,
     ReportTypeMapper,
     TelecomOperatorDto,
@@ -16,7 +18,9 @@ import {
 import { TasksProcessingItemMapper } from './tasks-processing-item.mapper';
 import type { TasksProcessingItemApiDto } from '../dtos/tasks-processing-response-api.dto';
 
-function makePaginatedResponse(items: TasksProcessingItemApiDto[]) {
+function makePaginatedResponse(
+    items: TasksProcessingItemApiDto[]
+): PaginatedResponseDto<TasksProcessingItemApiDto> {
     return {
         error: false,
         message: 'OK',
@@ -29,8 +33,8 @@ function makePaginatedResponse(items: TasksProcessingItemApiDto[]) {
             to: items.length,
             first_page_url: '',
             last_page_url: '',
-            next_page_url: null,
-            prev_page_url: null,
+            next_page_url: '',
+            prev_page_url: '',
             path: '',
             links: [],
             data: items,
@@ -43,9 +47,9 @@ function makeItemDto(
 ): TasksProcessingItemApiDto {
     return {
         uniq_id: 'PROC-T-001',
-        report_type: ReportType.ZOB,
+        report_type: ReportTypeDto.ZOB,
         operators: [TelecomOperatorDto.ORANGE],
-        source: ReportSource.IVR,
+        source: ReportSourceDto.IVR,
         initiator_phone_number: '690000002',
         reported_at: '2026-07-03T10:00:00Z',
         updated_at: '2026-07-04T10:00:00Z',

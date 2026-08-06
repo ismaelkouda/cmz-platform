@@ -13,6 +13,7 @@ import {
     homeDeleteVo,
     homeDisableVo,
     homeEnableVo,
+    homeFilterEntity,
     homeFilterVo,
     homeUpdateVo,
 } from '@cmz/content-management-domain';
@@ -28,7 +29,11 @@ export class HomeUseCase {
         options?: FetchOptions
     ): Observable<PageResult<HomeEntity>> {
         return defer(() =>
-            this.repository.execute(homeFilterVo(contract), page, options)
+            this.repository.execute(
+                homeFilterEntity(homeFilterVo(contract)),
+                page,
+                options
+            )
         );
     }
 

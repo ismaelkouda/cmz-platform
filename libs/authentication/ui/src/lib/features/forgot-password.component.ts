@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    effect,
-    inject,
-    signal,
-} from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 import { ForgotPasswordFacade } from '@cmz/authentication-application';
@@ -17,8 +11,6 @@ const T = 'AUTHENTICATION.FORGOT_PASSWORD';
 
 @Component({
     selector: 'cmz-forgot-password',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent, RouterLink],
     providers: [ForgotPasswordFormStore],
     template: `

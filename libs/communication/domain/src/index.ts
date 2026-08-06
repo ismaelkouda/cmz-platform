@@ -4,13 +4,16 @@ export * from './lib/enums/messaging-target.enum';
 export * from './lib/enums/messaging-channel.enum';
 export * from './lib/enums/notifications-status.enum';
 
-// interfaces (props)
-export * from './lib/interfaces/messaging-props.interface';
-export * from './lib/interfaces/messaging-find-one-props.interface';
+// props
+export * from './lib/props/messaging.props';
+export * from './lib/props/messaging-find-one.props';
+
+// interfaces (props hors crud-entity — notifications n'est pas cette famille)
 export * from './lib/interfaces/notifications-props.interface';
 
 // entities
 export * from './lib/entities/messaging.entity';
+export * from './lib/entities/messaging-filter.entity';
 export * from './lib/entities/messaging-find-one.entity';
 export * from './lib/entities/notifications.entity';
 
@@ -24,7 +27,9 @@ export * from './lib/contracts/messaging-create.validate-contract';
 export * from './lib/contracts/messaging-update.contract';
 export * from './lib/contracts/messaging-update.validate-contract';
 export * from './lib/contracts/messaging-filter.contract';
+export * from './lib/contracts/messaging-find-one-filter.contract';
 export * from './lib/contracts/messaging-find-one-filter.validate-contract';
+export * from './lib/contracts/messaging-delete.contract';
 export * from './lib/contracts/messaging-delete.validate-contract';
 export * from './lib/contracts/messaging-enable.validate-contract';
 export * from './lib/contracts/messaging-disable.validate-contract';
@@ -56,4 +61,5 @@ export * from './lib/value-objects/notifications-read-one.vo';
 // repositories (ports)
 export * from './lib/repositories/messaging.repository';
 export * from './lib/repositories/messaging-find-one.repository';
+export * from './lib/repositories/messaging-select.repository';
 export * from './lib/repositories/notifications.repository';

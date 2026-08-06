@@ -8,3 +8,26 @@ coverage
 bun.lock
 *.min.js
 *.min.css
+
+# Sortie de `generate:status` / `generate-adr-index` — source de vérité du
+# générateur (audit E-5 / check:docs-freshness). Exclure de Prettier pour que
+# le pre-commit ne reformate pas les blocs BEGIN:GENERATED (colonnes de tables)
+# et ne crée pas un faux rouge de fraîcheur en CI.
+STATUS.md
+README.md
+LLM_CONTEXT.md
+docs/architecture/etat-du-socle.md
+docs/adr/README.md
+docs/README.md
+
+# Périmètre format produit (B5) : `format` / `format:check` ne portent que sur
+# apps/, libs/, tools/, deploy/ + configs racine listées dans package.json.
+# `docs/**` reste hors gate (audits figés, prose narrative) — formater à la main
+# si besoin, hors CI.
+
+# Patterns SEOS vendored (tools/seos/README.md) — stabilités octet-pour-octet
+# avec le dépôt legacy ; ne pas reformat localement sans re-vendor.
+tools/seos/patterns/**
+
+# Templates envsubst — extension .in hors parse JS ; filet de sûreté.
+*.in

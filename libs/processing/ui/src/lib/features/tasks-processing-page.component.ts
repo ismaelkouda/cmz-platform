@@ -1,11 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-    signal,
-} from '@angular/core';
+import { Component, Signal, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { TasksProcessingFacade } from '@cmz/processing-application';
@@ -39,8 +32,6 @@ const T = 'PROCESSING.TASKS';
 
 @Component({
     selector: 'cmz-tasks-processing-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [TasksProcessingFilterStore],
     template: `

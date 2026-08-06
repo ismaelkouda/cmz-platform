@@ -5,7 +5,6 @@
   "dependencies": {
     "@cmz/authentication-domain": "workspace:*",
     "@cmz/shared-application": "workspace:*",
-    "@cmz/shared-domain": "workspace:*",
     "@angular/core": "catalog:",
     "rxjs": "catalog:"
   }

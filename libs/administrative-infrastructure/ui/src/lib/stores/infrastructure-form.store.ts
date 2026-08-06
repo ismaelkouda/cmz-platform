@@ -12,7 +12,7 @@ import {
     InfrastructureTypeSelectFacade,
 } from '@cmz/administrative-infrastructure-application';
 
-import { FormMode } from './form-mode.type';
+import { FormMode } from '@cmz/shared-ui';
 
 interface InfrastructureFormModel {
     name: string;

@@ -1,0 +1,14 @@
+{
+  "measured_at": "2026-08-03",
+  "modules": [
+    "processing",
+    "requests",
+    "finalization",
+    "report-states"
+  ],
+  "files_analyzed": 597,
+  "cross_module_groups": 109,
+  "redundant_files": 177,
+  "redundancy_rate": 29.6,
+  "method": "MD5 du contenu normalisé (nom du module propre substitué par __MODULE__ dans les 4 casses kebab/camel/Pascal/SNAKE, commentaires retirés, espaces normalisés) — audit O-1, P1-25."
+}

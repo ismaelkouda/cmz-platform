@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ResetPasswordFacade } from '@cmz/authentication-application';
@@ -22,8 +17,6 @@ const T = 'AUTHENTICATION.RESET_PASSWORD';
  */
 @Component({
     selector: 'cmz-reset-password',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [ResetPasswordFormStore],
     template: `

@@ -3,5 +3,14 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/content-management/application/src",
   "projectType": "library",
-  "tags": ["scope:content-management", "type:application"]
+  "tags": ["scope:content-management", "type:application"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/content-management/application/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

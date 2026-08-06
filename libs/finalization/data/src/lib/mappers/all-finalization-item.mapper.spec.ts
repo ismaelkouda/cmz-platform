@@ -1,9 +1,11 @@
 // Angular JIT compiler — requis quand les tests importent des modules Angular
 // partiellement compilés (ex: @angular/common via @cmz/shared-data).
-import '@angular/compiler';
 import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 import {
+    ReportSourceDto,
+    ReportTypeDto,
+    PaginatedResponseDto,
     ReportSourceMapper,
     ReportTypeMapper,
     TelecomOperatorDto,
@@ -18,7 +20,9 @@ import {
 import { AllFinalizationItemMapper } from './all-finalization-item.mapper';
 import type { AllFinalizationItemApiDto } from '../dtos/all-finalization-response-api.dto';
 
-function makePaginatedResponse(items: AllFinalizationItemApiDto[]) {
+function makePaginatedResponse(
+    items: AllFinalizationItemApiDto[]
+): PaginatedResponseDto<AllFinalizationItemApiDto> {
     return {
         error: false,
         message: 'OK',
@@ -31,8 +35,8 @@ function makePaginatedResponse(items: AllFinalizationItemApiDto[]) {
             to: items.length,
             first_page_url: '',
             last_page_url: '',
-            next_page_url: null,
-            prev_page_url: null,
+            next_page_url: '',
+            prev_page_url: '',
             path: '',
             links: [],
             data: items,
@@ -45,9 +49,9 @@ function makeItemDto(
 ): AllFinalizationItemApiDto {
     return {
         uniq_id: 'ALL-001',
-        report_type: ReportType.ABI,
+        report_type: ReportTypeDto.ABI,
         operators: [TelecomOperatorDto.MTN],
-        source: ReportSource.SMS,
+        source: ReportSourceDto.SMS,
         initiator_phone_number: '690000001',
         reported_at: '2026-07-01T10:00:00Z',
         updated_at: '2026-07-02T10:00:00Z',

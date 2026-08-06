@@ -27,9 +27,11 @@ export * from './lib/facades/departments-by-region-id.facade';
 
 export * from './lib/use-cases/municipality.use-case';
 export * from './lib/use-cases/municipality-find-one.use-case';
+export * from './lib/use-cases/municipality-select.use-case';
 
 export * from './lib/facades/municipality.facade';
 export * from './lib/facades/municipality-find-one.facade';
+export * from './lib/facades/municipality-select.facade';
 
 // ---- Municipalities by department id (vue imbriquée) --------------------
 

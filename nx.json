@@ -13,6 +13,18 @@
       "dependsOn": ["^build"],
       "inputs": ["default", "^default"]
     },
+    "lint": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/eslint.config.mjs",
+        "{workspaceRoot}/tools/eslint-rules/**/*"
+      ],
+      "options": {
+        "max-warnings": 0
+      }
+    },
     "@nx/eslint:lint": {
       "cache": true,
       "inputs": [
@@ -22,7 +34,10 @@
         "{workspaceRoot}/.eslintignore",
         "{workspaceRoot}/eslint.config.mjs",
         "{workspaceRoot}/tools/eslint-rules/**/*"
-      ]
+      ],
+      "options": {
+        "maxWarnings": 0
+      }
     },
     "@angular/build:unit-test": {
       "cache": true,
@@ -42,8 +57,8 @@
       "plugin": "@nx/eslint/plugin",
       "options": {
         "targetName": "lint"
-      },
-      "include": ["apps/backoffice-angular/**/*"]
+      }
     }
-  ]
+  ],
+  "nxCloudId": "6a6fc4dc5d5a3d6e2134a9b7"
 }

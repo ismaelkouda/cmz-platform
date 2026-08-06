@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    input,
-    output,
-    inject,
-} from '@angular/core';
+import { Component, input, output, inject } from '@angular/core';
 import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
 import { TranslationPort } from '@cmz/shared-application';
 import { REPORT_SOURCE_LABEL } from '@cmz/shared-ui';
@@ -13,8 +7,6 @@ import { REPORT_STATES_DETAILS_STATUS_LABEL } from '../constants/report-states-d
 
 @Component({
     selector: 'cmz-report-states-details-header',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
             @if (loading()) {

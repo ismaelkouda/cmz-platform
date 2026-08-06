@@ -3,5 +3,31 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/core/src",
   "projectType": "library",
-  "tags": ["scope:shared", "type:core"]
+  "tags": ["scope:shared", "type:core"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project libs/core/tsconfig.json",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bunx vitest run --config tools/vitest-lib.config.ts",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "CMZ_VITEST_LIB_ROOT": "libs/core"
+        }
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint libs/core --max-warnings=0",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
 }

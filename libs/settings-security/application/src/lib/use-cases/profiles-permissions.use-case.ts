@@ -13,6 +13,7 @@ import {
     profilesPermissionsDeleteVo,
     profilesPermissionsDisableVo,
     profilesPermissionsEnableVo,
+    profilesPermissionsFilterEntity,
     profilesPermissionsFilterVo,
     profilesPermissionsUpdateVo,
 } from '@cmz/settings-security-domain';
@@ -29,7 +30,9 @@ export class ProfilesPermissionsUseCase {
     ): Observable<PageResult<ProfilesPermissionsEntity>> {
         return defer(() =>
             this.repository.execute(
-                profilesPermissionsFilterVo(contract),
+                profilesPermissionsFilterEntity(
+                    profilesPermissionsFilterVo(contract)
+                ),
                 page,
                 options
             )

@@ -6,6 +6,10 @@
     "@cmz/shared-domain": "workspace:*",
     "@angular/core": "catalog:",
     "date-fns": "catalog:",
-    "@angular/common": "catalog:"
+    "@angular/common": "catalog:",
+    "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.8"
   }
 }

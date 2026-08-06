@@ -1,17 +1,10 @@
 import { DatePipe } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    input,
-    inject,
-} from '@angular/core';
+import { Component, input, inject } from '@angular/core';
 import { ReportStatesDetailsWorkflowTimestamp } from '@cmz/report-states-domain';
 import { TranslationPort } from '@cmz/shared-application';
 
 @Component({
     selector: 'cmz-report-states-details-step-bar',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [DatePipe],
     template: `
         <div

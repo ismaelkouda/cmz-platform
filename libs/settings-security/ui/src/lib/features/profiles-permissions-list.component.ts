@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProfilesPermissionsFacade } from '@cmz/settings-security-application';
 import {
@@ -33,8 +27,6 @@ const T = 'SETTINGS_SECURITY.PROFILES_PERMISSIONS';
 
 @Component({
     selector: 'cmz-profiles-permissions-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [ProfilesPermissionsFilterStore],
     template: `

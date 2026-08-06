@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
-import { AUTH_API_URL } from '@cmz/core';
+import { AUTH_API_URL, SKIP_AUTH } from '@cmz/core';
 import { Observable } from 'rxjs';
 import { AUTHENTICATION_ENDPOINTS } from '../endpoints/authentication.endpoints';
 import { ForgotPasswordRequestApiDto } from '../dtos/forgot-password-request-api.dto';
@@ -15,6 +15,10 @@ export class ForgotPasswordApi {
         dto: ForgotPasswordRequestApiDto
     ): Observable<ForgotPasswordResponseApiDto> {
         const url = `${this.baseUrl}${AUTHENTICATION_ENDPOINTS.FORGOT_PASSWORD}`;
-        return this.http.post<ForgotPasswordResponseApiDto>(url, dto);
+        // Endpoint public : aucun jeton (potentiellement d'une session
+        // précédente périmée) ne doit être attaché par `authInterceptor`.
+        return this.http.post<ForgotPasswordResponseApiDto>(url, dto, {
+            context: new HttpContext().set(SKIP_AUTH, true),
+        });
     }
 }

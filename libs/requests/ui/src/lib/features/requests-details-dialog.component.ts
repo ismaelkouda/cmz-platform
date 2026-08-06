@@ -1,5 +1,4 @@
 import {
-    ChangeDetectionStrategy,
     Component,
     effect,
     inject,
@@ -37,8 +36,6 @@ import { RequestsDetailsStepBarComponent } from './requests-details-step-bar.com
  */
 @Component({
     selector: 'cmz-requests-details-dialog',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         RequestsDetailsHeaderComponent,
         RequestsDetailsSidebarComponent,

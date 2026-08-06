@@ -13,6 +13,7 @@ import {
     teamsDeleteVo,
     teamsDisableVo,
     teamsEnableVo,
+    teamsFilterEntity,
     teamsFilterVo,
     teamsUpdateVo,
 } from '@cmz/team-organization-domain';
@@ -28,7 +29,11 @@ export class TeamsUseCase {
         options?: FetchOptions
     ): Observable<PageResult<TeamsEntity>> {
         return defer(() =>
-            this.repository.execute(teamsFilterVo(contract), page, options)
+            this.repository.execute(
+                teamsFilterEntity(teamsFilterVo(contract)),
+                page,
+                options
+            )
         );
     }
 

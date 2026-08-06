@@ -1,18 +1,11 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LegalNoticeFacade } from '@cmz/content-management-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { LegalNoticeFormStore } from '../stores/legal-notice-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'CONTENT_MANAGEMENT.LEGAL_NOTICE';
 
@@ -25,8 +18,6 @@ const T = 'CONTENT_MANAGEMENT.LEGAL_NOTICE';
  */
 @Component({
     selector: 'cmz-legal-notice-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [LegalNoticeFormStore],
     template: `

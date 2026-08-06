@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    inject,
-    input,
-    output,
-} from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { TranslationPort } from '@cmz/shared-application';
 import { TableColumn } from '../../interfaces/table-column.interface';
 import { TableRowActionDefinition } from '../../interfaces/table-row-action.interface';
@@ -28,8 +22,6 @@ const ACTIONS_FIELD = '__actionDropdown';
  */
 @Component({
     selector: 'cmz-table',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ActionDropdownComponent],
     template: `
         <div class="cmz-table" [attr.aria-busy]="loading()">

@@ -1,8 +1,12 @@
 import { RegionEntity } from '@cmz/administrative-boundary-domain';
-import { ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { STATUS_LABEL } from '../constants/status-label.constant';
 import { statusStyleOf } from '../mappers/status-style.mapper';
-import { actionItem, resolveTooltip } from './action-item.factory';
 import { RegionVmProps } from './region-vm-props.interface';
 
 interface RegionPermission {

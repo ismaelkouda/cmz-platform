@@ -2,6 +2,10 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
+- **Amendement :** 2026-08-02 — `public/env.js` + `deploy/env.template.js`
+  (entrypoint conteneur, audit G-5)
+- **Amendement :** 2026-08-06 — rename `env.template.js` → `env.template.js.in`
+  (template envsubst hors parsing Prettier ; contrat substitution inchangé)
 
 ## Contexte
 
@@ -62,19 +66,22 @@ conteneur.
 
 ## Décision
 
-**Option B**, en conservant le principe du projet d'origine, avec trois
+**Option B**, en conservant le principe du projet d'origine, avec ces
 corrections :
 
-1. Les **valeurs par environnement sortent du dépôt**. Le dépôt ne contient
-   qu'un `env.example.js` documentant les clés attendues, jamais les valeurs
-   réelles.
-2. Le fichier généré (`assets/config/env.js`) est ignoré par Git — et
-   effectivement, pas seulement inscrit au `.gitignore` : `git check-ignore -v`
-   fait foi.
-3. L'application **valide sa configuration au démarrage** et échoue
-   explicitement si une clé requise manque, plutôt que de partir avec une URL
-   `undefined`. Le projet d'origine avait déjà cette intuition avec son
-   `config-validator.js` — à conserver.
+1. **Dev local** : `apps/backoffice-angular/public/env.js` (valeurs proxy
+   `/api/…`) est versionné et chargé par `index.html` via
+   `<script src="env.js">` — hors du bundle Angular.
+2. **Conteneur** : `deploy/env.template.js.in` est substitué à l'entrypoint
+   (`deploy/docker-entrypoint.sh` + `envsubst`) vers `env.js` servi par nginx.
+   Les valeurs d'exploitation viennent des variables `CMZ_*`, pas du dépôt.
+   Suffixe `.in` : artefact template (bool/JSON non quotés pour envsubst) —
+   hors périmètre Prettier (pas du JS source).
+3. L'application **valide sa configuration au démarrage** via
+   `assertAppConfig` (`@cmz/core`) : clés requises, types, enum
+   `environmentDeployment`, détection des placeholders `${CMZ_*}` non
+   substitués — diagnostic multi-lignes pointant `public/env.js` /
+   `deploy/env.template.js.in`.
 
 ## Justification
 

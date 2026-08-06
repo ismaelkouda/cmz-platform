@@ -3,8 +3,9 @@
 # soient incontournables. --no-verify local ne passe pas en CI.
 #
 # Stratégie : nx affected pour ne reconstruire que ce qui a changé.
-# Prérequis Phase 06 : Nx Cloud à connecter via `bunx nx connect` pour
-# partager le cache entre les runs (cf. etat-du-socle.md §Points ouverts).
+# Nx Cloud : nxCloudId dans nx.json (audit G-7) — remote cache / distribution
+# optionnels ; claim compte via bunx nx connect si le workspace n'est pas encore
+# rattaché à une org Nx Cloud.
 
 name: CI
 
@@ -13,6 +14,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+
+# Audit G-8 : un seul run actif par PR / branche — annule le précédent.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '22.22.3'
@@ -46,18 +52,59 @@ jobs:
       - name: check:versions (catalog sans dérive)
         run: node tools/check-catalog-usage.mjs
 
-      - name: check:weight (aucun binaire versionné)
-        run: node tools/check-file-weight.mjs
+      - name: check:weight (poids + plafond lignes, tools/ inclus)
+        run: node tools/check-file-weight.mjs --all
 
       - name: check:project-names (ADR-0003 nommage @cmz/)
         run: node tools/check-project-names.mjs
 
+      # Audit A-5 — chaque lib doit exposer build + lint (oracle package-based)
+      - name: check:targets (build + lint sur toutes les libs)
+        run: bun run check:targets
+
+      # Audit D-1 / P1-7 / ADR-0004 — imports externes déclarés dans package.json
+      - name: check:declared-deps (graphe déclaré complet)
+        run: bun run check:declared-deps
+
+      # Audit A-12 — une violation scope: doit faire échouer ESLint (barrière machine)
+      - name: check:boundary-negative (scope cross-module interdit)
+        run: bun run check:boundary-negative
+
+      # Audit B-3 / ADR-0014 — pin SHA legacy versionné (concordance si SEOS_LEGACY_ROOT)
+      - name: check:legacy-lock
+        run: bun run check:legacy-lock
+
+      # J-2 (audit-workspace-2026-08-03.md, chantier J) — ADR-0010 fait de
+      # conventions/angular-22.profile.json la source unique lisible par
+      # machine des conventions de code ; J-1 l'a rendu vérifiable
+      # (tools/check-convention-profile.mjs). Bloquant dès l'ajout : 7/7
+      # règles déjà à 0 violation sur tout le dépôt (105 fichiers codemodés
+      # le 2026-08-03) — pas de dette pré-existante à tolérer comme pour
+      # security-audit/i18n-check.
+      - name: check:convention-profile (ADR-0010)
+        run: bun run check:convention-profile
+
       - name: Format check (Prettier)
         run: bun run format:check
 
+  # ─── Job docs : fraîcheur des blocs générés (audit E-5 / P1-9) ───────────
+  # Node pur — pas de bun install (generate-status lit project.json / corpus).
+  docs-freshness:
+    name: Docs freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: check:docs-freshness (generate:status + git diff)
+        run: node tools/check-docs-freshness.mjs
+
   # ─── Job 2 : Oracle de vérification (nx affected) ────────────────────────
   oracle:
-    name: Oracle — lint + build + test
+    name: Oracle — lint + build + ngc + test
     runs-on: ubuntu-latest
     needs: guardrails
     steps:
@@ -85,25 +132,35 @@ jobs:
           fi
 
       # ESLint — boundaries Nx + règles Angular (ADR-0010 portail niveau Lint)
+      # --max-warnings=0 est porté par targetDefaults.lint (nx.json), pas par nx CLI
       - name: Lint (nx affected)
-        run: bunx nx affected -t lint --base=${{ env.NX_BASE }} --max-warnings=0
+        run: bunx nx affected -t lint --base=${{ env.NX_BASE }}
 
-      # Build — tsc + ngc --strictTemplates (ADR-0010 portail niveau Compilation)
+      # Build package-based — tsc --noEmit par lib (audit A-4)
       - name: Build (nx affected)
         run: bunx nx affected -t build --base=${{ env.NX_BASE }}
 
-      # Tests Vitest — ADR-0008 (actif dès qu'I-01 est amorcé)
-      # Conditionnel : ne plante pas si aucun test n'existe encore
-      - name: Test (nx affected)
-        run: bunx nx affected -t test --base=${{ env.NX_BASE }} --passWithNoTests
+      # Audit A-10 / P1-8 — strictTemplates bloquant en PR (shift-left)
+      - name: strictTemplates (ngc)
+        run: bunx ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit
 
-  # ─── Job 4 : Corpus SEOS Tier 1 (oracle module, sans checkout legacy) ─────
+      # Tests Vitest — ADR-0008. Ne pas passer `--passWithNoTests` ici : Nx
+      # le forward à tous les targets ; `@angular/build:unit-test` (app) a un
+      # schéma strict et échoue. Les libs ont `passWithNoTests: true` dans
+      # tools/vitest-lib.config.ts (SSoT).
+      - name: Test (nx affected)
+        run: bunx nx affected -t test --base=${{ env.NX_BASE }}
+
+  # ─── Job 4 : Corpus SEOS — structural-only (ADR-0015 / B-6) ───────────────
+  # Vérif. structurelle Nx Tier 1 — PAS de correspondance legacy.
+  # Source de vérité modules : package.json → corpus:ci (audit B-7 / P1-14).
+  # Full verify + legacy : workflow corpus-full.yml (audit B-5), sur main uniquement.
   corpus:
-    name: Corpus SEOS — Tier 1
+    name: Corpus SEOS — structural-only
     runs-on: ubuntu-latest
     needs: guardrails
     env:
-      CORPUS_ORACLE_ONLY: '1'
+      CORPUS_STRUCTURAL_ONLY: '1'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -120,23 +177,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Corpus processing (emit + oracle Tier 1)
-        run: node tools/corpus/emit-pairs.mjs processing --verify --oracle-only
-
-      - name: Corpus requests (emit + oracle Tier 1, 8 chaînes)
-        run: node tools/corpus/emit-pairs.mjs requests --verify --oracle-only
-
-      - name: Corpus finalization (emit + oracle Tier 1)
-        run: node tools/corpus/emit-pairs.mjs finalization --verify --oracle-only
-
-      - name: Corpus report-states (emit + oracle Tier 1)
-        run: node tools/corpus/emit-pairs.mjs report-states --verify --oracle-only
-
-      - name: Corpus monitoring (emit + oracle Tier 1, read-only-view)
-        run: node tools/corpus/emit-pairs.mjs monitoring --verify --oracle-only
-
-      - name: Corpus reporting (emit + oracle Tier 1, read-only-view)
-        run: node tools/corpus/emit-pairs.mjs reporting --verify --oracle-only
+      - name: Corpus structural-only (bun run corpus:ci)
+        run: bun run corpus:ci
   dead-code:
     name: Dead-code (knip)
     runs-on: ubuntu-latest
@@ -155,3 +197,116 @@ jobs:
 
       - name: check:dead-code (knip)
         run: bun run check:dead-code
+
+  # ─── Job I-12/I-13 : audit des dépendances (bun audit) ───────────────────
+  # Complète Dependabot (N2, PR hebdo) par une porte en CI — Dependabot ouvre
+  # des PR mais ne bloque rien tant qu'elles ne sont pas mergées.
+  # `--audit-level=high` : ne remonte que high/critical (moderate/low restent
+  # visibles via Dependabot, pas bloquants ici — cf. audit-workspace-
+  # 2026-08-03.md, analyse par chemin de code réel avant ce commit).
+  #
+  # Bloquant depuis le 2026-08-04 (backlog #7, cartographie). Historique : au
+  # moment où ce job a été écrit, seuls 2 avisos (axios, brace-expansion)
+  # avaient été identifiés manuellement. Un vrai `bun audit --audit-level=high`
+  # (bun installé localement pour l'occasion, absent jusque-là de
+  # l'environnement d'audit) en a trouvé **8** (axios, brace-expansion — 3
+  # CVE distincts, fast-uri, ip-address), tous dans l'outillage de build
+  # (nx/eslint/@angular-devkit/@angular/cli/commitlint) sauf brace-expansion
+  # dont une chaîne remonte réellement jusqu'à `exceljs` (dépendance
+  # applicative de `@cmz/shared-browser`, via
+  # `unzipper → fstream → rimraf@2 → glob@7 → minimatch@3` — la vérification
+  # d'origine, limitée au seul champ `browser` d'exceljs, n'avait pas vu cette
+  # chaîne Node-only). Les 8 corrigés par un bloc `overrides` racine
+  # (`package.json`) forçant `axios@1.19.0`/`brace-expansion@5.0.9`/
+  # `fast-uri@4.1.2`/`ip-address@10.4.0` dans tout l'arbre — sans les ajouter
+  # en dépendance directe (`bun update <pkg>` seul les ajoute à tort en
+  # dépendance directe de l'app, testé et annulé avant ce commit). `bun audit
+  # --audit-level=high` : 0 vulnérabilité après. Vérifié aussi : aucun import
+  # direct d'`axios` dans `apps/`/`libs/` (grep, 0 résultat — usage nx interne
+  # uniquement) ; build/lint/`check:boundary-negative` rejoués après le bump,
+  # 0 régression.
+  security-audit:
+    name: Dependency audit (bun audit)
+    runs-on: ubuntu-latest
+    needs: guardrails
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: bun audit (high/critical bloquant)
+        run: bun audit --audit-level=high
+
+  # ─── Job K-1/K-2 : clés i18n manquantes (check:i18n) ─────────────────────
+  # Audit-workspace-2026-08-03.md, chantier K. `tools/check-i18n.mjs` compare
+  # les clés réellement définies dans `fr.translation.ts` (transpilé et
+  # importé, pas parsé à l'œil) aux clés référencées dans `apps/`+`libs/`.
+  #
+  # Bloquant depuis le 2026-08-04 (backlog #7, cartographie). État mesuré à
+  # l'écriture de ce job : 313 clés référencées sans définition. K-3 (triage
+  # des faux positifs de la regex — 5 correctifs successifs documentés dans
+  # `tools/check-i18n.mjs`) et K-4 (rédaction des traductions manquantes) ont
+  # réduit ce chiffre à **0** (`node tools/check-i18n.mjs`, sans
+  # `--warn-only` : 0 clé référencée sans définition, 251 clés définies mais
+  # jamais référencées — avertissement seulement, pas bloquant). Plus de
+  # dette pré-existante à tolérer : `continue-on-error` retiré.
+  i18n-check:
+    name: i18n keys (check:i18n)
+    runs-on: ubuntu-latest
+    needs: guardrails
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: check:i18n (clés référencées sans définition)
+        run: node tools/check-i18n.mjs
+
+  # ─── Job F-4 / H-3 / P1-11 : fichiers byte-identiques cross-module ───────
+  # Baseline 0 (post F-7) — bloquant. Contrainte aussi dans pattern.json (H-3)
+  # et check:all / gate corpus module (H-2).
+  duplicates:
+    name: Duplicate files (MD5)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: check:duplicates (empreinte MD5 cross-module + contrainte H-3)
+        run: node tools/check-duplicate-files.mjs
+
+      # Audit O-1/O-2 (P1-25, ADR-0020) : duplication de la famille
+      # workflow-action modulo nom de module — invisible au check MD5
+      # ci-dessus. Bloquant à la hausse seulement (isolation scope:* choisie,
+      # pas une dette à zéro) contre docs/architecture/
+      # family-duplication-metrics.json.
+      - name: check:duplicates --family (P1-25 / ADR-0020, bloquant à la hausse)
+        run: node tools/check-duplicate-files.mjs --family
+
+      # Audit J-9 (onzième passe, 2026-08-04) : conformité structurelle au
+      # pattern crud-entity Nx-shaped (N-7, docs/architecture/patterns/
+      # crud-entity.pattern.json), contre les 3 modules déjà validés
+      # fichier par fichier (administrative-infrastructure/infrastructure,
+      # administrative-boundary/region, coverage-areas/site-group — 3e
+      # validation ajoutée le 2026-08-04). Script local
+      # (tools/check-pattern-nx.mjs, pas un des outils vendorés
+      # tools/seos/ — cf. son propre docstring).
+      - name: check:pattern-nx (J-9, crud-entity Nx-shaped)
+        run: bun run check:pattern-nx:crud-entity

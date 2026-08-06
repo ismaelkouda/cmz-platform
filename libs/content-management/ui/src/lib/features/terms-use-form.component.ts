@@ -1,18 +1,11 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TermsUseFacade } from '@cmz/content-management-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { TermsUseFormStore } from '../stores/terms-use-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'CONTENT_MANAGEMENT.TERMS_USE';
 
@@ -25,8 +18,6 @@ const T = 'CONTENT_MANAGEMENT.TERMS_USE';
  */
 @Component({
     selector: 'cmz-terms-use-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [TermsUseFormStore],
     template: `

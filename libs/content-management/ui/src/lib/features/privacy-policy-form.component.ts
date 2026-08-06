@@ -1,18 +1,11 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PrivacyPolicyFacade } from '@cmz/content-management-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { PrivacyPolicyFormStore } from '../stores/privacy-policy-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'CONTENT_MANAGEMENT.PRIVACY_POLICY';
 
@@ -25,8 +18,6 @@ const T = 'CONTENT_MANAGEMENT.PRIVACY_POLICY';
  */
 @Component({
     selector: 'cmz-privacy-policy-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [PrivacyPolicyFormStore],
     template: `

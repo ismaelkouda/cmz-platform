@@ -1,9 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { MapFacade } from '@cmz/interactive-map-application';
 import { GrafanaEmbedComponent } from '@cmz/shared-ui';
 
@@ -11,8 +6,6 @@ const T = 'INTERACTIVE_MAP.DASHBOARD';
 
 @Component({
     selector: 'cmz-map-page',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [GrafanaEmbedComponent],
     template: `
         <cmz-grafana-embed

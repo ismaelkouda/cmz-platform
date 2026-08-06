@@ -1,10 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Signal,
-    computed,
-    inject,
-} from '@angular/core';
+import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
     DepartmentFacade,
@@ -34,8 +28,6 @@ const T = 'ADMINISTRATIVE_BOUNDARY.DEPARTMENT';
 
 @Component({
     selector: 'cmz-department-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FilterComponent, TableComponent, PaginationComponent],
     providers: [DepartmentFilterStore],
     template: `

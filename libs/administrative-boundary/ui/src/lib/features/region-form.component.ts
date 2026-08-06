@@ -1,25 +1,16 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RegionFacade } from '@cmz/administrative-boundary-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FieldComponent } from '@cmz/shared-ui';
+import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { RegionFormStore } from '../stores/region-form.store';
-import { FormMode } from '../stores/form-mode.type';
 
 const T = 'ADMINISTRATIVE_BOUNDARY.REGION';
 
 @Component({
     selector: 'cmz-region-form',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormField, FieldComponent],
     providers: [RegionFormStore],
     template: `

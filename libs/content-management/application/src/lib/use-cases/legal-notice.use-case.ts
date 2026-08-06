@@ -13,6 +13,7 @@ import {
     legalNoticeDeleteVo,
     legalNoticeUnpublishVo,
     legalNoticePublishVo,
+    legalNoticeFilterEntity,
     legalNoticeFilterVo,
     legalNoticeUpdateVo,
 } from '@cmz/content-management-domain';
@@ -29,7 +30,7 @@ export class LegalNoticeUseCase {
     ): Observable<PageResult<LegalNoticeEntity>> {
         return defer(() =>
             this.repository.execute(
-                legalNoticeFilterVo(contract),
+                legalNoticeFilterEntity(legalNoticeFilterVo(contract)),
                 page,
                 options
             )

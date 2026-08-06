@@ -10,10 +10,29 @@
     "check:versions": "node tools/check-catalog-usage.mjs",
     "check:weight": "node tools/check-file-weight.mjs",
     "check:names": "node tools/check-project-names.mjs",
-    "check:dead-code": "bunx knip",
+    "check:targets": "node tools/check-project-targets.mjs",
+    "check:declared-deps": "node tools/check-declared-deps.mjs",
+    "check:boundary-negative": "node tools/check-boundary-negative.mjs",
+    "check:legacy-lock": "node tools/corpus/check-legacy-lock.mjs",
+    "check:docs-freshness": "node tools/check-docs-freshness.mjs",
+    "legacy:pin": "node tools/corpus/pin-legacy.mjs",
+    "legacy:checkout": "node tools/corpus/checkout-legacy.mjs",
+    "corpus:backfill-legacy-ref": "node tools/corpus/backfill-legacy-ref.mjs",
+    "check:dead-code": "knip",
+    "check:duplicates": "node tools/check-duplicate-files.mjs",
+    "check:duplicates:family": "node tools/check-duplicate-files.mjs --family",
+    "check:duplicates:family:record": "node tools/check-duplicate-files.mjs --family --record",
+    "check:i18n": "node tools/check-i18n.mjs --warn-only",
+    "check:convention-profile": "node tools/check-convention-profile.mjs",
+    "check:pattern-nx:crud-entity": "node tools/check-pattern-nx.mjs libs/administrative-infrastructure infrastructure --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/administrative-infrastructure infrastructure-type --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/administrative-boundary region --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/administrative-boundary department --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/administrative-boundary municipality --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/coverage-areas site-group --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/coverage-areas mobile-network --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/team-organization teams --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/team-organization participants --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/communication messaging --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/content-management home --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/content-management slide --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/content-management news --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/content-management legal-notice --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/content-management privacy-policy --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/content-management terms-use --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/settings-security profiles-permissions --schema docs/architecture/patterns/crud-entity.pattern.json && node tools/check-pattern-nx.mjs libs/settings-security users --schema docs/architecture/patterns/crud-entity.pattern.json",
+    "protect:main": "node tools/apply-branch-protection.mjs",
     "check:tier2": "bunx ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit && bunx nx run backoffice-angular:build:development && bunx nx run backoffice-angular:build:production",
-    "check:all": "bun run check:engines && bun run check:versions && bun run check:weight && bun run check:names",
+    "check:all": "bun run check:engines && bun run check:versions && bun run check:weight && bun run check:names && bun run check:targets && bun run check:declared-deps && bun run check:boundary-negative && bun run check:legacy-lock && bun run check:docs-freshness && bun run check:duplicates && bun run check:duplicates:family && bun run check:convention-profile && bun run check:pattern-nx:crud-entity",
     "generate:status": "node tools/generate-status.mjs",
+    "generate:adr-index": "node tools/generate-adr-index.mjs",
+    "bundle:record": "node tools/record-bundle-metrics.mjs",
+    "bundle:metrics": "bunx nx run backoffice-angular:build:production && bun run bundle:record",
+    "bundle:composition": "bunx nx run backoffice-angular:build:production --source-map=true && bunx source-map-explorer dist/apps/backoffice-angular/browser/main-*.js --html bundle-composition-report.html && echo 'Rapport : bundle-composition-report.html'",
     "corpus:processing": "node tools/corpus/emit-pairs.mjs processing --verify --tranche A",
     "corpus:processing:full": "node tools/corpus/emit-pairs.mjs processing --verify",
     "corpus:processing:export": "node tools/corpus/emit-pairs.mjs processing --verify --chain processing.export.list",
@@ -38,9 +57,11 @@
     "corpus:sync-pattern": "node tools/corpus/sync-workflow-action-pattern.mjs && node tools/corpus/sync-read-only-view-pattern.mjs",
     "corpus:sync-workflow-action-pattern": "node tools/corpus/sync-workflow-action-pattern.mjs",
     "corpus:sync-read-only-view-pattern": "node tools/corpus/sync-read-only-view-pattern.mjs",
-    "corpus:ci": "CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs processing --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs requests --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs finalization --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs report-states --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs monitoring --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs reporting --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs dashboard --verify --oracle-only && CORPUS_ORACLE_ONLY=1 node tools/corpus/emit-pairs.mjs interactive-map --verify --oracle-only",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "corpus:ci": "CORPUS_STRUCTURAL_ONLY=1 node tools/corpus/emit-all.mjs --verify --structural-only",
+    "corpus:all": "node tools/corpus/emit-all.mjs --verify --structural-only",
+    "corpus:full": "node tools/corpus/emit-all.mjs --verify",
+    "format": "node tools/run-prettier.mjs --write",
+    "format:check": "node tools/run-prettier.mjs --check",
     "mock": "node tools/mock-server.mjs"
   },
   "dependencies": {
@@ -76,13 +97,16 @@
     "@swc/helpers": "~0.5.18",
     "@typescript-eslint/utils": "^8.58.0",
     "angular-eslint": "^22.0.0",
+    "axe-core": "4.12.1",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "husky": "^9.1.7",
     "jsdom": "^27.1.0",
+    "knip": "6.31.0",
     "lint-staged": "^17.1.0",
     "nx": "23.1.0",
     "prettier": "^3.9.6",
+    "source-map-explorer": "^2.5.3",
     "typescript": "catalog:tooling",
     "typescript-eslint": "^8.58.0",
     "vitest": "^4.0.8",
@@ -116,7 +140,7 @@
       "ol": "^10.9.0",
       "tailwindcss": "4.1.13",
       "@tailwindcss/postcss": "4.1.13",
-      "postcss": "8.5.6"
+      "postcss": "8.5.22"
     },
     "catalogs": {
       "tooling": {
@@ -130,6 +154,12 @@
         "typescript": "6.0.3"
       }
     }
+  },
+  "overrides": {
+    "axios": "1.19.0",
+    "brace-expansion": "5.0.9",
+    "fast-uri": "4.1.2",
+    "ip-address": "10.4.0"
   },
   "packageManager": "bun@1.3.14",
   "engines": {

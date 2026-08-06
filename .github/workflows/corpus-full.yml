@@ -1,0 +1,59 @@
+# Corpus SEOS — verify complet (avec legacy figé)
+# Audit B-5 / ADR-0014 / P0-6
+#
+# Différence vs job `corpus` (ci.yml) — ADR-0015 :
+#   - ci.yml / corpus:ci  → --structural-only (oracles Nx, PAS de correspondance legacy)
+#   - ce workflow         → --verify sans --structural-only (chemins legacy requis)
+#
+# Déclenchement : push sur main + manuel. Pas sur chaque PR (coût + auth legacy).
+#
+# Secret requis si le miroir GitHub ne porte pas le SHA piné :
+#   LEGACY_CHECKOUT_TOKEN — PAT / deploy token lecture sur lock.repo (GitLab)
+
+name: Corpus full — verify + legacy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Audit G-8 : un seul run actif sur main / dispatch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22.22.3'
+  BUN_VERSION: '1.3.14'
+
+jobs:
+  corpus-full:
+    name: Corpus SEOS — full verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Checkout legacy (legacy.lock.json#commit)
+        env:
+          LEGACY_CHECKOUT_TOKEN: ${{ secrets.LEGACY_CHECKOUT_TOKEN }}
+        run: bun run legacy:checkout
+        # checkout-legacy.mjs écrit SEOS_LEGACY_ROOT dans $GITHUB_ENV
+
+      - name: check:legacy-lock (concordance SHA)
+        run: bun run check:legacy-lock
+
+      - name: Corpus full (--verify, sans --structural-only)
+        run: bun run corpus:full

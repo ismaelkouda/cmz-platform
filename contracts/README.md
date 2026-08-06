@@ -64,11 +64,14 @@ qu'on croyait un archétype recouvre plusieurs formes (cas `dto`), on **scinde**
 | `util`              | domain      | [`util.contract.md`](./util.contract.md)                           |
 | `type`              | domain      | [`type.contract.md`](./type.contract.md)                           |
 | `service`           | selon deps  | [`service.contract.md`](./service.contract.md)                     |
+| `constant`          | constants   | [`constant.contract.md`](./constant.contract.md)                   |
 | `pipe`              | ui          | [`pipe.contract.md`](./pipe.contract.md)                           |
 | `facade`            | application | [`facade.contract.md`](./facade.contract.md)                       |
 
-_Domaine terminé. À compléter au fil des couches data/ui/application (facade,
-pipe, constant, bases de mappers), puis réutilisés en Phase 07._
+**État :** domain, data, application (`facade`), ui (`pipe`) et
+`shared-constants` (`constant`) sont couverts — y compris `mapper` et la
+famille `dto*`. Manquent encore surtout les contrats **composant** et
+**route** (couche `ui` / composition root — chantier H-4).
 
 ## Principe de non-reproduction
 

@@ -1,8 +1,6 @@
 import {
-    ChangeDetectionStrategy,
     Component,
     ElementRef,
-    HostListener,
     computed,
     inject,
     input,
@@ -21,8 +19,13 @@ import { ActionDropdownItem } from '../../interfaces/action-dropdown-item.interf
  */
 @Component({
     selector: 'cmz-action-dropdown',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
+    // Audit-workspace-2026-08-02-addendum.md, J-5 : objet `host` du
+    // décorateur plutôt que les décorateurs de host binding par méthode
+    // (conventions/angular-22.profile.json, component.hostBindings).
+    host: {
+        '(document:click)': 'onOutsideClick($event)',
+        '(document:keydown.escape)': 'onEscape()',
+    },
     template: `
         <button
             type="button"
@@ -169,7 +172,6 @@ export class ActionDropdownComponent {
         this.open.set(false);
     }
 
-    @HostListener('document:click', ['$event'])
     protected onOutsideClick(event: MouseEvent): void {
         if (
             this.open() &&
@@ -179,7 +181,6 @@ export class ActionDropdownComponent {
         }
     }
 
-    @HostListener('document:keydown.escape')
     protected onEscape(): void {
         this.open.set(false);
     }

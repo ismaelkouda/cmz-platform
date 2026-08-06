@@ -95,4 +95,4 @@ peut être migrée package par package, chacun restant fonctionnel isolément.
 
 - [create-nx-workspace — `--workspaceType` et presets](https://nx.dev/docs/reference/create-nx-workspace)
 - Projet d'origine analysé :
-  `/Users/macbookair/Dev/Angular/cmz-backoffice-frontend`
+  `$SEOS_LEGACY_ROOT`

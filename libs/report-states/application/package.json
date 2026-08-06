@@ -14,6 +14,7 @@
     "rxjs": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:tooling"
+    "typescript": "catalog:tooling",
+    "vitest": "^4.0.8"
   }
 }
