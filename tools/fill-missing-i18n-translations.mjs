@@ -15,17 +15,13 @@
  * fichier, puis laisse `prettier --write` remettre au format du dépôt
  * (guillemets simples, largeur 80, etc. — `.prettierrc.json`).
  */
-import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import ts from 'typescript';
-
-const ROOT = new URL('..', import.meta.url).pathname;
-const TRANSLATION_FILE = join(
-    ROOT,
-    'apps/backoffice-angular/src/app/i18n/fr.translation.ts'
-);
+import {
+    FR_TRANSLATION_ENTRY as TRANSLATION_FILE,
+    loadFrModule,
+    REPO_ROOT as ROOT,
+} from './load-fr-i18n.mjs';
 
 /**
  * Redérive la liste des clés manquantes en rejouant `check-i18n.mjs`
@@ -194,20 +190,10 @@ function translate(key) {
     throw new Error(`Aucune règle de traduction pour la clé : ${key}`);
 }
 
-// --- Chargement de FR (réel, transpilé — même méthode que check-i18n.mjs) --
+// --- Chargement de FR (réel, transpilé — tools/load-fr-i18n.mjs) --
 
 async function loadFR() {
-    const source = readFileSync(TRANSLATION_FILE, 'utf8');
-    const { outputText } = ts.transpileModule(source, {
-        compilerOptions: {
-            module: ts.ModuleKind.ESNext,
-            target: ts.ScriptTarget.ES2022,
-        },
-    });
-    const tmpDir = mkdtempSync(join(tmpdir(), 'cmz-k4-'));
-    const tmpFile = join(tmpDir, 'fr.translation.mjs');
-    writeFileSync(tmpFile, outputText);
-    const { FR } = await import(`file://${tmpFile}`);
+    const { FR } = await loadFrModule();
     return FR;
 }
 

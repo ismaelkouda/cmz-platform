@@ -533,5 +533,49 @@ export const FR_PACK_2 = {
                 },
             },
         },
+        AGENTS_PERFORMANCES: {
+            TITLE: 'Performances agents',
+            FILTER: {
+                SEARCH: 'Recherche',
+                SEARCH_PLACEHOLDER: 'Rechercher…',
+                PARTICIPANT: 'Participant',
+                PARTICIPANT_PLACEHOLDER: 'Filtrer par participant…',
+            },
+            TABLE: {
+                FIRST_NAME: 'Prénom',
+                LAST_NAME: 'Nom',
+                GOALS_SIZE: 'Objectifs',
+                ACHIEVEMENTS_SIZE: 'Réalisations',
+                PERCENTAGES: 'Progression',
+                STATUS: 'Statut',
+                CREATED_AT: 'Créé le',
+                ACTION: 'Actions',
+            },
+            HISTORY: {
+                TITLE: 'Historique des performances',
+                FILTER: {
+                    SEARCH: 'Recherche',
+                },
+                TABLE: {
+                    REPORT_TYPE: 'Type de signalement',
+                    OPERATORS: 'Opérateurs',
+                    SOURCE: 'Source',
+                    INITIATOR: 'Initiateur',
+                    CREATED_AT: 'Créé le',
+                },
+            },
+        },
+        DAILY_GOAL: {
+            TITLE: 'Objectifs journaliers',
+            TABLE: {
+                FIRST_NAME: 'Prénom',
+                LAST_NAME: 'Nom',
+                GOALS_SIZE: 'Objectifs',
+                ACHIEVEMENTS_SIZE: 'Réalisations',
+                PERCENTAGES: 'Progression',
+                STATUS: 'Statut',
+                CREATED_AT: 'Créé le',
+            },
+        },
     },
 } as const;

@@ -11,10 +11,11 @@
  *
  * Méthode, pour rester fidèle au constat d'origine tout en réduisant ses
  * faux positifs connus :
- *   1. Clés définies : `FR` (apps/backoffice-angular/src/app/i18n/
- *      fr.translation.ts) est transpilé (TypeScript API, pas d'`eval` sur du
- *      texte non validé) puis importé réellement — flatten en chemins
- *      pointés (feuilles `string` uniquement).
+ *   1. Clés définies : `FR` (façade `fr.translation.ts` + packs
+ *      `i18n/fr/fr-pack-*.ts`) est transpilé (TypeScript API, pas d'`eval`
+ *      sur du texte non validé) puis importé réellement via
+ *      `tools/load-fr-i18n.mjs` — flatten en chemins pointés (feuilles
+ *      `string` uniquement).
  *   2. Clés référencées, dans tout `.ts` sous `apps/`/`libs/` (hors
  *      node_modules) :
  *      a. littéraux directs `'X.Y.Z'` / `` `X.Y.Z` `` (regex restreinte à
@@ -57,17 +58,11 @@
  * `.REPORT_TYPE`, `.DIALOG.FORM.TYPE`, etc.) n'étaient jamais vus du tout
  * (faux négatif silencieux, plus trompeur qu'un faux positif visible).
  */
-import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { globSync } from 'node:fs';
-import ts from 'typescript';
+import { loadDefinedFrKeys, REPO_ROOT as ROOT } from './load-fr-i18n.mjs';
 
-const ROOT = new URL('..', import.meta.url).pathname;
-const TRANSLATION_FILE = join(
-    ROOT,
-    'apps/backoffice-angular/src/app/i18n/fr.translation.ts'
-);
 const SCAN_GLOBS = ['apps/**/*.ts', 'libs/**/*.ts'];
 const EXCLUDE_SEGMENTS = ['node_modules', '.spec.ts', '.test.ts'];
 
@@ -147,32 +142,7 @@ function stripComments(content) {
 }
 
 function loadDefinedKeys() {
-    const source = readFileSync(TRANSLATION_FILE, 'utf8');
-    const { outputText } = ts.transpileModule(source, {
-        compilerOptions: {
-            module: ts.ModuleKind.ESNext,
-            target: ts.ScriptTarget.ES2022,
-        },
-    });
-
-    const tmpDir = mkdtempSync(join(tmpdir(), 'cmz-check-i18n-'));
-    const tmpFile = join(tmpDir, 'fr.translation.mjs');
-    writeFileSync(tmpFile, outputText);
-
-    return import(`file://${tmpFile}`).then(({ FR }) => {
-        const keys = new Set();
-        (function walk(node, path) {
-            for (const [key, value] of Object.entries(node)) {
-                const nextPath = path ? `${path}.${key}` : key;
-                if (typeof value === 'string') {
-                    keys.add(nextPath);
-                } else if (value && typeof value === 'object') {
-                    walk(value, nextPath);
-                }
-            }
-        })(FR, '');
-        return keys;
-    });
+    return loadDefinedFrKeys();
 }
 
 function listSourceFiles() {
