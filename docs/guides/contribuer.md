@@ -20,12 +20,27 @@ bun install      # installe et active les hooks Git
 
 ```bash
 bun run check:all           # moteurs, versions du socle, poids des fichiers
-bun run format              # formate le dépôt
-bun run format:check        # vérifie sans modifier
+bun run format              # formate le périmètre produit (voir § Format)
+bun run format:check        # vérifie le même périmètre, sans modifier
 bunx nx show projects       # liste les packages
 bunx nx graph               # graphe de dépendances
 bunx nx affected -t build   # ne reconstruit que ce qui a changé depuis main
 ```
+
+## Format (Prettier) — périmètre produit
+
+`format` et `format:check` partagent **le même scope** (ADR-0006 : garde-fou
+local et CI alignés) :
+
+| Inclus | Exclu (hors gate CI) |
+| ------ | -------------------- |
+| `apps/`, `libs/`, `tools/`, `deploy/` | `docs/**` (audits, guides hors collatéral ADR vivant) |
+| configs racine listées dans `package.json` (`package.json`, `nx.json`, …) | patterns SEOS vendored `tools/seos/patterns/**` |
+| | artefacts générés E-5 (déjà dans `.prettierignore`) |
+| | templates `*.in` (ex. `deploy/env.template.js.in`) |
+
+Le hook `lint-staged` n’applique Prettier qu’aux chemins de ce périmètre. Un
+fichier sous `docs/` peut être commité sans reformat Prettier automatique.
 
 ## Commits
 

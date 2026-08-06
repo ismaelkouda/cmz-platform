@@ -161,7 +161,7 @@ sur la forge : `gh auth login && bun run protect:main`.
 
 **Remédiation G-5 (2026-08-02) :** `window.__env` extrait de `index.html` vers
 [`public/env.js`](../../apps/backoffice-angular/public/env.js) ; template
-[`deploy/env.template.js`](../../deploy/env.template.js) substitué par
+[`deploy/env.template.js.in`](../../deploy/env.template.js.in) substitué par
 [`deploy/docker-entrypoint.sh`](../../deploy/docker-entrypoint.sh) (`CMZ_*`).
 
 **Remédiation G-6 (2026-08-02) :** `assertAppConfig` dans `@cmz/core` —

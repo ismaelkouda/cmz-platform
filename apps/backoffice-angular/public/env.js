@@ -2,7 +2,7 @@
  * Configuration runtime locale (dev) — chargée par `index.html` avant le bundle.
  *
  * ADR-0007 / audit G-5 : un seul artefact de build ; en conteneur, ce fichier
- * est **écrasé** au démarrage depuis `deploy/env.template.js` (variables
+ * est **écrasé** au démarrage depuis `deploy/env.template.js.in` (variables
  * d'environnement). Ne pas y mettre de secrets.
  */
 window.__env = {

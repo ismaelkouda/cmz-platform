@@ -14,7 +14,7 @@ const REQUIRED_STRING_KEYS = [
 const HINT = [
     'Corriger :',
     '  • Dev local     → apps/backoffice-angular/public/env.js',
-    '  • Conteneur     → variables CMZ_* (deploy/env.template.js + entrypoint)',
+    '  • Conteneur     → variables CMZ_* (deploy/env.template.js.in + entrypoint)',
     '  • Clés requises → authenticationUrl, reportUrl, settingUrl, fileUrl,',
     '                    environmentDeployment, enableDebug',
 ].join('\n');
@@ -107,8 +107,9 @@ export function assertAppConfig(raw: unknown): AppConfig {
         // validation ici — ce champ n'est pas dans REQUIRED_STRING_KEYS.
         ...(Array.isArray(obj['trustedFrameOrigins'])
             ? {
-                  trustedFrameOrigins:
-                      obj['trustedFrameOrigins'] as readonly string[],
+                  trustedFrameOrigins: obj[
+                      'trustedFrameOrigins'
+                  ] as readonly string[],
               }
             : {}),
     };

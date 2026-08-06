@@ -1,5 +1,11 @@
 {
-  "*.{ts,tsx,js,mjs,cjs,json,jsonc,html,css,scss,md,yml,yaml}": [
+  "{apps,libs,tools,deploy}/**/*.{ts,tsx,js,mjs,cjs,json,jsonc,html,css,scss,md,yml,yaml}": [
     "prettier --write"
-  ]
+  ],
+  "package.json": ["prettier --write"],
+  "nx.json": ["prettier --write"],
+  "tsconfig.base.json": ["prettier --write"],
+  "eslint.config.mjs": ["prettier --write"],
+  ".prettierrc.json": ["prettier --write"],
+  ".lintstagedrc.json": ["prettier --write"]
 }

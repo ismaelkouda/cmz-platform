@@ -1,10 +1,10 @@
 #!/bin/sh
-# Génère env.js depuis env.template.js (audit G-5 / ADR-0007) et le CSP
+# Génère env.js depuis env.template.js.in (audit G-5 / ADR-0007) et le CSP
 # depuis csp.template.conf (audit-workspace-2026-08-03.md, I-14/I-15),
 # puis démarre nginx.
 set -eu
 
-TEMPLATE="${CMZ_ENV_TEMPLATE:-/etc/cmz/env.template.js}"
+TEMPLATE="${CMZ_ENV_TEMPLATE:-/etc/cmz/env.template.js.in}"
 TARGET="${CMZ_ENV_TARGET:-/usr/share/nginx/html/env.js}"
 CSP_TEMPLATE="${CMZ_CSP_TEMPLATE:-/etc/cmz/csp.template.conf}"
 CSP_TARGET="${CMZ_CSP_TARGET:-/etc/nginx/conf.d/csp.conf}"

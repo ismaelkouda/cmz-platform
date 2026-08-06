@@ -4,6 +4,8 @@
 - **Date :** 2026-07-21
 - **Amendement :** 2026-08-02 — `public/env.js` + `deploy/env.template.js`
   (entrypoint conteneur, audit G-5)
+- **Amendement :** 2026-08-06 — rename `env.template.js` → `env.template.js.in`
+  (template envsubst hors parsing Prettier ; contrat substitution inchangé)
 
 ## Contexte
 
@@ -70,14 +72,16 @@ corrections :
 1. **Dev local** : `apps/backoffice-angular/public/env.js` (valeurs proxy
    `/api/…`) est versionné et chargé par `index.html` via
    `<script src="env.js">` — hors du bundle Angular.
-2. **Conteneur** : `deploy/env.template.js` est substitué à l'entrypoint
+2. **Conteneur** : `deploy/env.template.js.in` est substitué à l'entrypoint
    (`deploy/docker-entrypoint.sh` + `envsubst`) vers `env.js` servi par nginx.
    Les valeurs d'exploitation viennent des variables `CMZ_*`, pas du dépôt.
+   Suffixe `.in` : artefact template (bool/JSON non quotés pour envsubst) —
+   hors périmètre Prettier (pas du JS source).
 3. L'application **valide sa configuration au démarrage** via
    `assertAppConfig` (`@cmz/core`) : clés requises, types, enum
    `environmentDeployment`, détection des placeholders `${CMZ_*}` non
    substitués — diagnostic multi-lignes pointant `public/env.js` /
-   `deploy/env.template.js`.
+   `deploy/env.template.js.in`.
 
 ## Justification
 

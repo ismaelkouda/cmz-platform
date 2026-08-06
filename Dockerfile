@@ -4,7 +4,8 @@
 #
 # Contrainte ADR-0006 : copier `tools/` **avant** `bun install` (preinstall).
 # Config runtime ADR-0007 : `env.js` généré à l'entrypoint depuis
-# `deploy/env.template.js` (variables CMZ_*).
+# `deploy/env.template.js.in` (variables CMZ_* ; suffixe .in = template
+# envsubst, pas du JS source pour Prettier).
 #
 # Build :
 #   docker build -t cmz-backoffice .
@@ -51,7 +52,7 @@ RUN apk add --no-cache gettext \
     && rm -f /docker-entrypoint.d/30-tune-worker-processes.sh
 
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
-COPY deploy/env.template.js /etc/cmz/env.template.js
+COPY deploy/env.template.js.in /etc/cmz/env.template.js.in
 COPY deploy/csp.template.conf /etc/cmz/csp.template.conf
 COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh \

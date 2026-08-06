@@ -60,8 +60,8 @@
     "corpus:ci": "CORPUS_STRUCTURAL_ONLY=1 node tools/corpus/emit-all.mjs --verify --structural-only",
     "corpus:all": "node tools/corpus/emit-all.mjs --verify --structural-only",
     "corpus:full": "node tools/corpus/emit-all.mjs --verify",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write apps libs tools deploy package.json nx.json tsconfig.base.json eslint.config.mjs .prettierrc.json .lintstagedrc.json",
+    "format:check": "prettier --check apps libs tools deploy package.json nx.json tsconfig.base.json eslint.config.mjs .prettierrc.json .lintstagedrc.json",
     "mock": "node tools/mock-server.mjs"
   },
   "dependencies": {
