@@ -214,14 +214,23 @@ function buildAliases(): Record<string, string> {
     };
 }
 
-/** Config Vitest — exige `CMZ_VITEST_LIB_ROOT` (chemin relatif au workspace). */
+/** Config Vitest — exige `CMZ_VITEST_LIB_ROOT` quand lancé par Vitest/Nx. */
 export default () => {
     const libRootEnv = process.env.CMZ_VITEST_LIB_ROOT;
     if (!libRootEnv) {
-        throw new Error(
-            'CMZ_VITEST_LIB_ROOT manquant — définir le chemin de la lib ' +
-                '(ex. libs/report-states/domain) via project.json options.env.'
-        );
+        // Hors cible Nx (knip, analyse IDE) le fichier de config partagé est
+        // chargé sans env. Ne pas throw : ce n'est pas une exécution de tests.
+        // Vitest via project.json injecte toujours CMZ_VITEST_LIB_ROOT.
+        const underVitest =
+            process.env.VITEST === 'true' ||
+            process.argv.some((a) => /(^|[\\/])vitest(\.m?js)?$/.test(a));
+        if (underVitest) {
+            throw new Error(
+                'CMZ_VITEST_LIB_ROOT manquant — définir le chemin de la lib ' +
+                    '(ex. libs/report-states/domain) via project.json options.env.'
+            );
+        }
+        return defineConfig({ test: { include: [] } });
     }
     return defineLibTestConfig(resolve(workspaceRoot, libRootEnv));
 };

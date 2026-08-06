@@ -1,30 +1,52 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": [
-    "apps/backoffice-angular/src/main.ts",
-    "apps/backoffice-angular/src/app/app.config.ts",
-    "apps/backoffice-angular/src/app/app.routes.ts",
-    "libs/*/src/index.ts",
-    "libs/*/*/src/index.ts",
-    "tools/**/*.mjs"
-  ],
-  "project": ["apps/**/*.ts", "libs/**/*.ts", "tools/**/*.mjs"],
-  "ignore": [
-    "**/*.spec.ts",
-    "**/*.test.ts",
-    "**/node_modules/**",
-    "**/dist/**"
-  ],
-  "ignoreDependencies": [
-    "zone.js",
-    "@angular/localize",
-    "@angular/service-worker",
-    "tslib"
-  ],
+  "ignore": ["**/*.spec.ts"],
+  "ignoreBinaries": ["bunx", "ngc"],
   "ignoreExportsUsedInFile": true,
   "workspaces": {
     ".": {
-      "entry": ["tools/**/*.mjs"]
+      "entry": [
+        "apps/backoffice-angular/src/main.ts",
+        "apps/backoffice-angular/public/env.js",
+        "apps/backoffice-angular/src/tailwind.css",
+        "tools/**/*.{mjs,ts}",
+        "apps/backoffice-angular/src/app/providers/permission.guard.ts",
+        "apps/backoffice-angular/src/app/testing/axe-a11y.util.ts"
+      ],
+      "project": [
+        "apps/backoffice-angular/**/*.{ts,tsx,css,mjs}",
+        "apps/backoffice-angular/public/**/*.js",
+        "tools/**/*.{mjs,ts}"
+      ]
+    },
+    "libs/*": {
+      "project": ["src/**/*.ts"]
+    },
+    "libs/*/*": {
+      "project": ["src/**/*.ts"]
     }
+  },
+  "eslint": {
+    "config": ["eslint.config.mjs", "apps/**/eslint.config.mjs"]
+  },
+  "ignoreDependencies": [
+    "@angular/cli",
+    "@angular/language-service",
+    "@eslint/js",
+    "@nx/js",
+    "@swc/helpers",
+    "@typescript-eslint/utils",
+    "angular-eslint",
+    "typescript-eslint",
+    "@tailwindcss/postcss",
+    "@angular/forms",
+    "date-fns",
+    "exceljs",
+    "i18next",
+    "ol"
+  ],
+  "rules": {
+    "catalog": "off",
+    "types": "off"
   }
 }
