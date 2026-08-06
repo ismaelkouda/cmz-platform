@@ -24,6 +24,11 @@ export function defineLibTestConfig(libRoot: string) {
             globals: true,
             environment: 'node',
             setupFiles: [resolve(workspaceRoot, 'tools/vitest-setup.ts')],
+            // Ne pas dépendre du flag CLI `nx … --passWithNoTests` : Nx le
+            // propage à tous les targets test ; le builder app
+            // `@angular/build:unit-test` le rejette (schéma strict). SSoT
+            // côté libs : exit 0 si aucun fichier de test (CI H-2 / affected).
+            passWithNoTests: true,
             // Chemins absolus — Vitest est lancé depuis la racine du monorepo
             include: [
                 resolve(libRoot, 'src/**/*.spec.ts'),

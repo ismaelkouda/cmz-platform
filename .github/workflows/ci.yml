@@ -144,10 +144,12 @@ jobs:
       - name: strictTemplates (ngc)
         run: bunx ngc -p apps/backoffice-angular/tsconfig.app.json --noEmit
 
-      # Tests Vitest — ADR-0008 (actif dès qu'I-01 est amorcé)
-      # Conditionnel : ne plante pas si aucun test n'existe encore
+      # Tests Vitest — ADR-0008. Ne pas passer `--passWithNoTests` ici : Nx
+      # le forward à tous les targets ; `@angular/build:unit-test` (app) a un
+      # schéma strict et échoue. Les libs ont `passWithNoTests: true` dans
+      # tools/vitest-lib.config.ts (SSoT).
       - name: Test (nx affected)
-        run: bunx nx affected -t test --base=${{ env.NX_BASE }} --passWithNoTests
+        run: bunx nx affected -t test --base=${{ env.NX_BASE }}
 
   # ─── Job 4 : Corpus SEOS — structural-only (ADR-0015 / B-6) ───────────────
   # Vérif. structurelle Nx Tier 1 — PAS de correspondance legacy.
