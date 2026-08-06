@@ -159,7 +159,7 @@ sign/attest optionnel.
 | T6-1 | Revue juridique `licences-tierces.md` + `LICENSE` + regime SEOS/corpus | décision      |   M    |  P1   | OPS-6          |
 | T6-2 | Job CI inventaire licences (automatiser license-checker)               | ouvert        |   S    |  P2   | P1-N2 residual |
 | T6-3 | Générer **SBOM** cyclonedx/spdx en CI artifact                         | ouvert        |   M    |  P2   | Big Tech gap   |
-| T6-4 | Claim / usage Nx Cloud (token org) — *aujourd’hui désactivé proprement* (`neverConnectToCloud` + `NX_NO_CLOUD`, sans `nxCloudId` orphelin) | décision (claim optionnel) |   S    |  P1   | OPS-3          |
+| T6-4 | Claim + activer Nx Cloud : claim [cloud.nx.app](https://cloud.nx.app), secret CI `NX_CLOUD_ACCESS_TOKEN`, `nxCloudId` déjà en `nx.json` | en cours (humain) |   S    |  P1   | OPS-3          |
 
 ## T7 — Audit confidentialité & protection des données
 
