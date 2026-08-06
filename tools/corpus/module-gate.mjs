@@ -137,30 +137,35 @@ export function runModuleGate(module) {
 
     // H-3 — contrainte pattern.json : pas de copie byte-identique cross-module
     try {
-        execSync(
-            `node tools/check-duplicate-files.mjs --module=${module}`,
-            {
-                cwd: ROOT,
-                stdio: 'pipe',
-                env: process.env,
-            }
-        );
+        execSync(`node tools/check-duplicate-files.mjs --module=${module}`, {
+            cwd: ROOT,
+            stdio: 'pipe',
+            env: process.env,
+        });
         results.push({
             task: 'duplicates',
             ok: true,
             detail: `check-duplicate-files --module=${module}`,
         });
-        console.error(`[gate:H-3] ✓ no cross-module byte-identical files — ${module}`);
+        console.error(
+            `[gate:H-3] ✓ no cross-module byte-identical files — ${module}`
+        );
     } catch (err) {
         const stderr = err?.stderr?.toString?.() ?? '';
         const stdout = err?.stdout?.toString?.() ?? '';
-        const tail = (stderr || stdout).trim().split('\n').slice(-12).join('\n');
+        const tail = (stderr || stdout)
+            .trim()
+            .split('\n')
+            .slice(-12)
+            .join('\n');
         results.push({
             task: 'duplicates',
             ok: false,
             detail: tail || err?.message || 'doublons détectés',
         });
-        console.error(`[gate:H-3] ✗ cross-module byte-identical files — ${module}`);
+        console.error(
+            `[gate:H-3] ✗ cross-module byte-identical files — ${module}`
+        );
         if (tail) console.error(tail);
     }
 

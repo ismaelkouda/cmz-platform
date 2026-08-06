@@ -16,7 +16,13 @@
  * (identique à la ligne « Initial total » du builder Angular).
  */
 
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import {
+    existsSync,
+    readdirSync,
+    readFileSync,
+    statSync,
+    writeFileSync,
+} from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -34,7 +40,7 @@ function die(msg) {
 if (!existsSync(BROWSER)) {
     die(
         [
-            'FAIL  dist introuvable — lancer d\'abord :',
+            "FAIL  dist introuvable — lancer d'abord :",
             '  bunx nx run backoffice-angular:build:production',
             'Puis :',
             '  bun run bundle:record',

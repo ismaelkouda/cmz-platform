@@ -1,5 +1,10 @@
 import { InfrastructureEntity } from '@cmz/administrative-infrastructure-domain';
-import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { InfrastructureVmProps } from './infrastructure-vm-props.interface';
 
 interface InfrastructurePermission {

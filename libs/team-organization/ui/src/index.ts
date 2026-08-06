@@ -1,4 +1,3 @@
-
 export * from './lib/enums/participants-status-style.enum';
 export * from './lib/constants/participants-status-label.constant';
 export * from './lib/mappers/participants-status-style.mapper';

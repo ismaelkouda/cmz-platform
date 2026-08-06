@@ -7,10 +7,7 @@
  * @see docs/architecture/module-dashboard.md
  */
 
-import {
-    ensureBehavioralLevel,
-    layerOracles,
-} from './oracle-levels.mjs';
+import { ensureBehavioralLevel, layerOracles } from './oracle-levels.mjs';
 
 const MODULE = 'dashboard';
 

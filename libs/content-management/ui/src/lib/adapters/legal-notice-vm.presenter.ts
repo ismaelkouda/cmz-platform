@@ -2,7 +2,12 @@ import {
     LegalNoticeStatus,
     LegalNoticeEntity,
 } from '@cmz/content-management-domain';
-import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { LEGAL_NOTICE_STATUS_LABEL } from '../constants/legal-notice-status-label.constant';
 import { legalNoticeStatusStyleOf } from '../mappers/legal-notice-status-style.mapper';
 import { LegalNoticeVmProps } from './legal-notice-vm-props.interface';

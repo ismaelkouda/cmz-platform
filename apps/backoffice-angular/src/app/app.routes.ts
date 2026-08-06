@@ -36,9 +36,7 @@ export const appRoutes: Route[] = [
             {
                 path: 'dashboard',
                 loadChildren: () =>
-                    import('@cmz/dashboard-ui').then(
-                        (m) => m.DASHBOARD_ROUTES
-                    ),
+                    import('@cmz/dashboard-ui').then((m) => m.DASHBOARD_ROUTES),
             },
             {
                 path: 'monitoring',
@@ -50,9 +48,7 @@ export const appRoutes: Route[] = [
             {
                 path: 'reporting',
                 loadChildren: () =>
-                    import('@cmz/reporting-ui').then(
-                        (m) => m.REPORTING_ROUTES
-                    ),
+                    import('@cmz/reporting-ui').then((m) => m.REPORTING_ROUTES),
             },
             {
                 path: 'interactive-map',

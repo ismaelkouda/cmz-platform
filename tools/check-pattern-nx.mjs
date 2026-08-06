@@ -125,7 +125,9 @@ console.log(
 );
 console.log(`Module : ${moduleRoot}`);
 console.log(`Entité : ${entityName}`);
-console.log(`Conformité : ${present.length}/${total} fichiers du cœur présents (${score}%)`);
+console.log(
+    `Conformité : ${present.length}/${total} fichiers du cœur présents (${score}%)`
+);
 
 if (missing.length > 0) {
     console.log(`\nFichiers manquants (${missing.length}) :`);

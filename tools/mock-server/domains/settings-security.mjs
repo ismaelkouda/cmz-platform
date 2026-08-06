@@ -296,7 +296,6 @@ export const accessLogs = [
     },
 ];
 
-
 /**
  * @param {{ path: string, method: string, req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse, page: string | null, url: URL }} ctx
  * @returns {Promise<boolean|void>|boolean|void} truthy si la route a été servie

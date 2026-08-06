@@ -2,7 +2,12 @@ import {
     ProfilesPermissionsEntity,
     ProfilesPermissionsStatus,
 } from '@cmz/settings-security-domain';
-import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { PROFILES_PERMISSIONS_STATUS_LABEL } from '../constants/profiles-permissions-status-label.constant';
 import { profilesPermissionsStatusStyleOf } from '../mappers/profiles-permissions-status-style.mapper';
 import { ProfilesPermissionsVmProps } from './profiles-permissions-vm-props.interface';

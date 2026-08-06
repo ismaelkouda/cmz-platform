@@ -184,13 +184,17 @@ for (const pkgPath of manifests.sort()) {
     try {
         pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
     } catch {
-        console.error('FAIL  package.json invalide: ' + relative(ROOT, pkgPath));
+        console.error(
+            'FAIL  package.json invalide: ' + relative(ROOT, pkgPath)
+        );
         process.exit(1);
     }
 
     const selfName = pkg.name;
     if (!selfName) {
-        console.error('FAIL  package.json sans name: ' + relative(ROOT, pkgPath));
+        console.error(
+            'FAIL  package.json sans name: ' + relative(ROOT, pkgPath)
+        );
         process.exit(1);
     }
 
@@ -262,7 +266,9 @@ console.log(
 let failed = false;
 
 if (missingViolations.length === 0) {
-    console.log('OK  check:declared-deps — 0 arête manquante (import sans déclaration)');
+    console.log(
+        'OK  check:declared-deps — 0 arête manquante (import sans déclaration)'
+    );
 } else {
     failed = true;
     console.error('');
@@ -290,7 +296,9 @@ if (missingViolations.length === 0) {
     console.error(
         'Remède: déclarer chaque package manquant dans dependencies (workspace:* / catalog:)'
     );
-    console.error('ou devDependencies (ex. vitest). Voir audit D-2 / ADR-0004.');
+    console.error(
+        'ou devDependencies (ex. vitest). Voir audit D-2 / ADR-0004.'
+    );
 }
 
 if (unusedViolations.length === 0) {
@@ -315,7 +323,7 @@ if (unusedViolations.length === 0) {
         'Remède: retirer la dépendance inutilisée du package.json (graphe Nx / ADR-0004).'
     );
     console.error(
-        'Si un package est requis sans import source (rare), l\'ajouter à UNUSED_ALLOWLIST avec justification.'
+        "Si un package est requis sans import source (rare), l'ajouter à UNUSED_ALLOWLIST avec justification."
     );
 }
 

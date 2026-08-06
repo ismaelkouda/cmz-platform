@@ -11,9 +11,7 @@ export class TermsUseSelectApi {
     private readonly http = inject(HttpClient);
     private readonly baseUrl: string = inject(SETTINGS_API_URL);
 
-    readAll(
-        options?: FetchOptions
-    ): Observable<TermsUseSelectResponseApiDto> {
+    readAll(options?: FetchOptions): Observable<TermsUseSelectResponseApiDto> {
         const url = `${this.baseUrl}${CONTENT_MANAGEMENT_ENDPOINTS.TERMS_USE}`;
         const context = new HttpContext().set(
             BYPASS_CACHE,

@@ -6,9 +6,7 @@ import { PrivacyPolicySelectMapper } from '../mappers/privacy-policy-select.mapp
 import { PrivacyPolicySelectApi } from '../sources/privacy-policy-select.api';
 
 @Service()
-export class PrivacyPolicySelectRepositoryImpl
-    implements PrivacyPolicySelectRepository
-{
+export class PrivacyPolicySelectRepositoryImpl implements PrivacyPolicySelectRepository {
     private readonly api = inject(PrivacyPolicySelectApi);
     private readonly mapper = inject(PrivacyPolicySelectMapper);
 

@@ -1,5 +1,10 @@
 import { NewsStatus, NewsEntity } from '@cmz/content-management-domain';
-import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { NEWS_STATUS_LABEL } from '../constants/news-status-label.constant';
 import { newsStatusStyleOf } from '../mappers/news-status-style.mapper';
 import { NewsVmProps } from './news-vm-props.interface';

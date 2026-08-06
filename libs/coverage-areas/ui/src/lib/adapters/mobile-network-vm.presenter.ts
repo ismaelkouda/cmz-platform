@@ -1,5 +1,10 @@
 import { MobileNetworkEntity, Status } from '@cmz/coverage-areas-domain';
-import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { STATUS_LABEL } from '../constants/site-group-status-label.constant';
 import { statusStyleOf } from '../mappers/site-group-status-style.mapper';
 import { MobileNetworkVmProps } from './mobile-network-vm-props.interface';

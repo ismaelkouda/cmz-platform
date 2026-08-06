@@ -1,5 +1,10 @@
 import { HomeStatus, HomeEntity } from '@cmz/content-management-domain';
-import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { HOME_STATUS_LABEL } from '../constants/home-status-label.constant';
 import { homeStatusStyleOf } from '../mappers/home-status-style.mapper';
 import { HomeVmProps } from './home-vm-props.interface';

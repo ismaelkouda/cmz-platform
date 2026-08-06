@@ -1,10 +1,6 @@
 /** Environnements connus de `window.__env.environmentDeployment`. */
 export type EnvironmentDeployment =
-    | 'DEV'
-    | 'CLOUD'
-    | 'CMZ_DEV'
-    | 'CMZ_PROD'
-    | 'PROD';
+    'DEV' | 'CLOUD' | 'CMZ_DEV' | 'CMZ_PROD' | 'PROD';
 
 export const ENVIRONMENT_DEPLOYMENTS: readonly EnvironmentDeployment[] = [
     'DEV',

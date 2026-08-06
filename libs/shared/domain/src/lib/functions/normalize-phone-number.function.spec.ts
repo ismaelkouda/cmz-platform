@@ -20,9 +20,7 @@ describe('normalizePhoneNumber', () => {
     });
 
     it("retire l'indicatif international (+) et les tirets", () => {
-        expect(normalizePhoneNumber('+33-6-12-34-56-78')).toBe(
-            '33612345678'
-        );
+        expect(normalizePhoneNumber('+33-6-12-34-56-78')).toBe('33612345678');
     });
 
     it('retire les parenthèses', () => {

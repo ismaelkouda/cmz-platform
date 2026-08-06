@@ -10,21 +10,19 @@ describe('UsersUseCase', () => {
 
     beforeEach(() => {
         mockRepository = {
-            execute: vi
-                .fn()
-                .mockReturnValue(
-                    of({
-                        data: [],
-                        meta: {
-                            page: 1,
-                            total: 0,
-                            perPage: 10,
-                            pageCount: 0,
-                            hasPrev: false,
-                            hasNext: false,
-                        },
-                    } as PageResult<any>)
-                ),
+            execute: vi.fn().mockReturnValue(
+                of({
+                    data: [],
+                    meta: {
+                        page: 1,
+                        total: 0,
+                        perPage: 10,
+                        pageCount: 0,
+                        hasPrev: false,
+                        hasNext: false,
+                    },
+                } as PageResult<any>)
+            ),
             create: vi
                 .fn()
                 .mockReturnValue(of({ message: 'Success' } as MessageEntity)),

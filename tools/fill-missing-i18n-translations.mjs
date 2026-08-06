@@ -222,7 +222,9 @@ function setDeep(obj, path, value) {
     }
     const leaf = path[path.length - 1];
     if (leaf in node) {
-        throw new Error(`Clé déjà présente, ne devrait pas l'être : ${path.join('.')}`);
+        throw new Error(
+            `Clé déjà présente, ne devrait pas l'être : ${path.join('.')}`
+        );
     }
     node[leaf] = value;
 }
@@ -237,7 +239,8 @@ async function main() {
         added++;
     }
 
-    const header = "/** Bundle de traduction FR (dev) — couvre le commun + le module. */\n";
+    const header =
+        '/** Bundle de traduction FR (dev) — couvre le commun + le module. */\n';
     const body = JSON.stringify(FR, null, 4);
     const output = `${header}export const FR = ${body} as const;\n`;
     writeFileSync(TRANSLATION_FILE, output);

@@ -36,7 +36,7 @@ describe('buildHttpPayload', () => {
         expect(buildHttpPayload(payload, [])).toEqual(payload);
     });
 
-    it("combine exclusion de clé et filtrage de valeur vide dans le même appel", () => {
+    it('combine exclusion de clé et filtrage de valeur vide dans le même appel', () => {
         const payload = {
             id: 1,
             internalFlag: true,

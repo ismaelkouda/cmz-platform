@@ -3,10 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/finalization/domain/src",
   "projectType": "library",
-  "tags": [
-    "scope:finalization",
-    "type:domain"
-  ],
+  "tags": ["scope:finalization", "type:domain"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",

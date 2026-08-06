@@ -1,7 +1,6 @@
 import { ok, send } from '../http.mjs';
 import { now } from '../ids.mjs';
 
-
 // ---- INTERACTIVE-MAP : signalements géolocalisés (SIG v1) ----------------
 export function interactiveMapReports() {
     const points = [
@@ -27,7 +26,6 @@ export function interactiveMapReports() {
         })),
     };
 }
-
 
 /**
  * @param {{ path: string, method: string, req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse, page: string | null, url: URL }} ctx

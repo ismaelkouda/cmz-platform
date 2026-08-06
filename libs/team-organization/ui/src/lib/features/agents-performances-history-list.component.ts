@@ -3,7 +3,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { AgentsPerformancesHistoryFacade } from '@cmz/team-organization-application';
 import { TranslationPort } from '@cmz/shared-application';
-import { FilterComponent, FilterField, PaginationComponent, TableComponent } from '@cmz/shared-ui';
+import {
+    FilterComponent,
+    FilterField,
+    PaginationComponent,
+    TableComponent,
+} from '@cmz/shared-ui';
 import { AGENTS_PERFORMANCES_HISTORY_FILTER_KEYS } from '../constants/agents-performances-history-filter-keys.constant';
 import { AGENTS_PERFORMANCES_HISTORY_TABLE } from '../constants/agents-performances-history-table.constant';
 import { AgentsPerformancesHistoryVmProps } from '../adapters/agents-performances-history-vm-props.interface';

@@ -6,9 +6,7 @@ import { ParticipantsSelectMapper } from '../mappers/participants-select.mapper'
 import { ParticipantsSelectApi } from '../sources/participants-select.api';
 
 @Service()
-export class ParticipantsSelectRepositoryImpl
-    implements ParticipantsSelectRepository
-{
+export class ParticipantsSelectRepositoryImpl implements ParticipantsSelectRepository {
     private readonly api = inject(ParticipantsSelectApi);
     private readonly mapper = inject(ParticipantsSelectMapper);
 

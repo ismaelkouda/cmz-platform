@@ -44,7 +44,10 @@ function getViolatingFiles() {
         if (/^[A-Za-z@]/.test(line) && line.includes(':')) {
             section = null; // autre en-tête, hors périmètre de ce codemod
         }
-        if ((section === 'standalone' || section === 'cd') && line.startsWith('  ')) {
+        if (
+            (section === 'standalone' || section === 'cd') &&
+            line.startsWith('  ')
+        ) {
             files.add(line.trim());
         }
     }

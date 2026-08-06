@@ -8,9 +8,7 @@ export class PrivacyPolicySelectMapper extends ArrayResponseMapper<
     SelectOption,
     PrivacyPolicySelectItemApiDto
 > {
-    protected mapItemFromDto(
-        dto: PrivacyPolicySelectItemApiDto
-    ): SelectOption {
+    protected mapItemFromDto(dto: PrivacyPolicySelectItemApiDto): SelectOption {
         MapperUtils.validateDto(dto, { required: ['id'] });
         return { label: dto.version, value: dto.id };
     }

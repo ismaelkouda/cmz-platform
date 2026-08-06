@@ -17,9 +17,7 @@ export class TermsUseSelectFacade extends ResourceFacade<
 
     readonly options = computed(() => this.value() ?? []);
 
-    protected stream(
-        params: TermsUseSelectParams
-    ): Observable<SelectOption[]> {
+    protected stream(params: TermsUseSelectParams): Observable<SelectOption[]> {
         return this.useCase.readAll(params.options);
     }
 

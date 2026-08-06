@@ -6,9 +6,7 @@ import { TermsUseSelectMapper } from '../mappers/terms-use-select.mapper';
 import { TermsUseSelectApi } from '../sources/terms-use-select.api';
 
 @Service()
-export class TermsUseSelectRepositoryImpl
-    implements TermsUseSelectRepository
-{
+export class TermsUseSelectRepositoryImpl implements TermsUseSelectRepository {
     private readonly api = inject(TermsUseSelectApi);
     private readonly mapper = inject(TermsUseSelectMapper);
 

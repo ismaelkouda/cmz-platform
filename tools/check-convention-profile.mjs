@@ -113,8 +113,7 @@ function checkHostBindings(files) {
 }
 
 function checkLegacyTemplateSyntax(files) {
-    const forbidden =
-        /\*ngIf\b|\*ngFor\b|\*ngSwitch\b|\[ngClass\]|\[ngStyle\]/;
+    const forbidden = /\*ngIf\b|\*ngFor\b|\*ngSwitch\b|\[ngClass\]|\[ngStyle\]/;
     const violations = [];
     for (const file of files) {
         const content = readFileSync(join(ROOT, file), 'utf8');

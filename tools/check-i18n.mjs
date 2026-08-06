@@ -112,7 +112,8 @@ const PREFIX_DECL_RE =
 // `this.` optionnel devant l'identifiant, comme pour CONCAT_SUFFIX_RE —
 // trouvé sur `` `${this.T}.DIALOG.TITLE.CREATE` `` (tasks-actions-processing-
 // form-dialog.component.ts), pas seulement `${T}.SUFFIX` sans `this.`.
-const TEMPLATE_SUFFIX_RE = /\$\{(?:this\.)?([A-Za-z_$][\w$]*)\}\.([A-Z][\w.]*)/g;
+const TEMPLATE_SUFFIX_RE =
+    /\$\{(?:this\.)?([A-Za-z_$][\w$]*)\}\.([A-Z][\w.]*)/g;
 // Même trois fichiers : le suffixe n'est pas résolu par template literal
 // (`` `${T}.X` ``) mais par concaténation (`T + '.X'`, y compris
 // `this.T + '.X'` dans les templates inline Angular).
@@ -138,8 +139,9 @@ function stripComments(content) {
     let out = content.replace(/\/\*[\s\S]*?\*\//g, (m) =>
         m.replace(/[^\n]/g, ' ')
     );
-    out = out.replace(/^([ \t]*)\/\/.*$/gm, (m, indent) =>
-        indent + ' '.repeat(m.length - indent.length)
+    out = out.replace(
+        /^([ \t]*)\/\/.*$/gm,
+        (m, indent) => indent + ' '.repeat(m.length - indent.length)
     );
     return out;
 }
@@ -224,7 +226,10 @@ function collectReferencedKeys(files) {
             if (/^[A-Z][A-Z0-9._]*$/.test(value)) {
                 prefixCandidates.set(ident, value);
                 const start = m.index + m[0].lastIndexOf(value);
-                candidateLiteralRanges.set(ident, [start, start + value.length]);
+                candidateLiteralRanges.set(ident, [
+                    start,
+                    start + value.length,
+                ]);
             }
         }
 
@@ -237,7 +242,10 @@ function collectReferencedKeys(files) {
                 prefixCandidates.has(sourceIdent) &&
                 !prefixCandidates.has(aliasIdent)
             ) {
-                prefixCandidates.set(aliasIdent, prefixCandidates.get(sourceIdent));
+                prefixCandidates.set(
+                    aliasIdent,
+                    prefixCandidates.get(sourceIdent)
+                );
                 aliasSource.set(aliasIdent, sourceIdent);
             }
         }
@@ -280,7 +288,9 @@ function collectReferencedKeys(files) {
             .map((ident) => candidateLiteralRanges.get(ident))
             .filter(Boolean);
         const isPrefixDeclaration = (index) =>
-            prefixLiteralRanges.some(([start, end]) => index >= start && index < end);
+            prefixLiteralRanges.some(
+                ([start, end]) => index >= start && index < end
+            );
 
         // 3) littéraux directs 'X.Y.Z' — hors déclarations de préfixe (1)
         for (const m of content.matchAll(FLAT_KEY_RE)) {
@@ -303,9 +313,7 @@ async function main() {
     const missing = [...usages.keys()]
         .filter((key) => !definedKeys.has(key))
         .sort();
-    const unused = [...definedKeys]
-        .filter((key) => !usages.has(key))
-        .sort();
+    const unused = [...definedKeys].filter((key) => !usages.has(key)).sort();
 
     console.log(
         `check:i18n — ${definedKeys.size} clés définies, ${usages.size} clés référencées (regex + résolution ${'`'}${'$'}{T}.SUFFIX${'`'}), ${files.length} fichiers scannés.\n`
@@ -338,7 +346,7 @@ async function main() {
             '\nRéserve de méthode (K-3, audit-workspace-2026-08-02-addendum.md) : ' +
                 'cette liste mélange probablement de vraies clés manquantes et des ' +
                 'faux positifs résiduels de la regex sur les usages. Trier avant de ' +
-                "rendre ce check bloquant en CI, ou relancer avec --warn-only en attendant."
+                'rendre ce check bloquant en CI, ou relancer avec --warn-only en attendant.'
         );
         process.exitCode = 1;
     }

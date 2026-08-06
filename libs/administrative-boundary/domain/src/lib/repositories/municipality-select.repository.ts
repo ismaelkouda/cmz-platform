@@ -13,7 +13,5 @@ import { MunicipalityOption } from '../interfaces/municipality-option.interface'
  * cascade : aucun enfant à imbriquer, `readAll` retourne une liste plate.
  */
 export abstract class MunicipalitySelectRepository {
-    abstract readAll(
-        options?: FetchOptions
-    ): Observable<MunicipalityOption[]>;
+    abstract readAll(options?: FetchOptions): Observable<MunicipalityOption[]>;
 }

@@ -21,8 +21,7 @@ import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
-const PROBE_REL =
-    'libs/monitoring/domain/src/lib/__boundary-negative.probe.ts';
+const PROBE_REL = 'libs/monitoring/domain/src/lib/__boundary-negative.probe.ts';
 const PROBE_ABS = join(ROOT, PROBE_REL);
 
 /**

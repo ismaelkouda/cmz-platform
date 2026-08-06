@@ -16,9 +16,7 @@ export class AgentsPerformancesHistoryFilterStore {
         };
     }
 
-    toContract(
-        uniqId: string | null
-    ): AgentsPerformancesHistoryFilterContract {
+    toContract(uniqId: string | null): AgentsPerformancesHistoryFilterContract {
         const m = this.model();
         const start = m[AGENTS_PERFORMANCES_HISTORY_FILTER_KEYS.START_DATE];
         const end = m[AGENTS_PERFORMANCES_HISTORY_FILTER_KEYS.END_DATE];

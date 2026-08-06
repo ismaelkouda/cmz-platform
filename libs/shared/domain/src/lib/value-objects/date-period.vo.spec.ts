@@ -46,7 +46,7 @@ describe('DatePeriod.create', () => {
         );
     });
 
-    it("priorise InvalidStartDateError sur InvalidEndDateError quand les deux bornes sont invalides", () => {
+    it('priorise InvalidStartDateError sur InvalidEndDateError quand les deux bornes sont invalides', () => {
         expect(() =>
             DatePeriod.create('pas-une-date', 'pas-une-date-non-plus')
         ).toThrow(InvalidStartDateError);

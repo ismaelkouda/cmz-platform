@@ -94,7 +94,9 @@ try {
         );
         process.exit(1);
     }
-    console.error('FAIL  git diff : ' + String(err.stderr || err.message || err));
+    console.error(
+        'FAIL  git diff : ' + String(err.stderr || err.message || err)
+    );
     process.exit(1);
 }
 

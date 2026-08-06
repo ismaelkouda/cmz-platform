@@ -14,10 +14,7 @@ interface ItemEntity {
     name: string;
 }
 
-class TestArrayResponseMapper extends ArrayResponseMapper<
-    ItemEntity,
-    ItemDto
-> {
+class TestArrayResponseMapper extends ArrayResponseMapper<ItemEntity, ItemDto> {
     protected mapItemFromDto(dto: ItemDto): ItemEntity {
         return { id: dto.id, name: dto.label.toUpperCase() };
     }

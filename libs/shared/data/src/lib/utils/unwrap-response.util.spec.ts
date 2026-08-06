@@ -20,13 +20,15 @@ describe('unwrapResponse', () => {
 
     it('retourne une donnée falsy valide (0, "", false, []) sans la confondre avec une absence', () => {
         expect(unwrapResponse({ error: false, message: '', data: 0 })).toBe(0);
-        expect(unwrapResponse({ error: false, message: '', data: '' })).toBe('');
-        expect(
-            unwrapResponse({ error: false, message: '', data: false })
-        ).toBe(false);
-        expect(
-            unwrapResponse({ error: false, message: '', data: [] })
-        ).toEqual([]);
+        expect(unwrapResponse({ error: false, message: '', data: '' })).toBe(
+            ''
+        );
+        expect(unwrapResponse({ error: false, message: '', data: false })).toBe(
+            false
+        );
+        expect(unwrapResponse({ error: false, message: '', data: [] })).toEqual(
+            []
+        );
     });
 
     it('lève ServerResponseError avec le message serveur quand error est true — même si data est présente', () => {

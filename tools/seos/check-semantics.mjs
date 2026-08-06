@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * SEOS — Semantic validation engine ("Etape 2", zero IA).
- * 
+ *
  * check-pattern.js verifie la PRESENCE des fichiers du coeur canonique (fait structurel).
  * Ce script verifie le CONTENU de certains de ces fichiers contre des regles mecaniques
  * derivees de bugs REELS trouves manuellement dans administrative-infrastructure au cours
@@ -85,11 +85,27 @@
 
 import fs from 'fs';
 import path from 'path';
+import {
+    readIfExists,
+    findMatchingBracket,
+    extractMethodBody,
+    extractUseCaseMethodNames,
+    getNestedValue,
+    TS_PATH_ALIASES,
+    resolveImportToFile,
+    extractImportMap,
+    extractCalledIdentifiers,
+    fileCanThrowSynchronously,
+    findRepoRootMarker,
+    walk,
+} from './check-semantics-lib.mjs';
 
 const [, , moduleRoot, entityName] = process.argv;
 
 if (!moduleRoot || !entityName) {
-    console.error('Usage: node check-semantics.js <chemin-du-module> <nom-entite>');
+    console.error(
+        'Usage: node check-semantics.js <chemin-du-module> <nom-entite>'
+    );
     process.exit(1);
 }
 
@@ -98,150 +114,6 @@ if (!fs.existsSync(moduleRoot)) {
         `Erreur : le chemin "${moduleRoot}" n'existe pas depuis le dossier courant (${process.cwd()}).`
     );
     process.exit(2);
-}
-
-function readIfExists(p) {
-    return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null;
-}
-
-function findMatchingBracket(text, openIdx, openChar, closeChar) {
-    let depth = 0;
-    for (let i = openIdx; i < text.length; i++) {
-        if (text[i] === openChar) depth++;
-        else if (text[i] === closeChar) {
-            depth--;
-            if (depth === 0) return i;
-        }
-    }
-    return -1;
-}
-
-function extractMethodBody(source, methodName) {
-    // trouve "methodName(" en debut de ligne/mot (pas un appel du style this.xxx.methodName)
-    const re = new RegExp(`(?:^|\\s)${methodName}\\s*\\(`, 'm');
-    const match = re.exec(source);
-    if (!match) return null;
-    const parenOpen = match.index + match[0].indexOf('(');
-    const parenClose = findMatchingBracket(source, parenOpen, '(', ')');
-    if (parenClose === -1) return null;
-    const braceOpen = source.indexOf('{', parenClose);
-    if (braceOpen === -1) return null;
-    const braceClose = findMatchingBracket(source, braceOpen, '{', '}');
-    if (braceClose === -1) return null;
-    return source.slice(braceOpen, braceClose + 1);
-}
-
-function extractUseCaseMethodNames(source) {
-    // Toute methode publique d'un use-case de ce schema retourne Observable<...> —
-    // heuristique generalisable sans AST : on matche la signature plutot qu'une
-    // liste figee de noms ('create'/'update'), pour ne plus dependre du nom de la
-    // methode (execute/delete/enable/disable/... doivent etre couverts pareil).
-    const names = new Set();
-    const re = /(\w+)\s*\([^()]*(?:\([^()]*\)[^()]*)*\)\s*:\s*Observable</g;
-    let m;
-    while ((m = re.exec(source)) !== null) {
-        names.add(m[1]);
-    }
-    return [...names];
-}
-
-function getNestedValue(obj, dottedKey) {
-    return dottedKey.split('.').reduce((acc, k) => (acc && typeof acc === 'object' ? acc[k] : undefined), obj);
-}
-
-// Resolution d'alias tsconfig (@shared/, @presentation/, @pages/) vers un chemin fichier reel.
-// Deplace ici (utilise a la fois par le check 1 et le check 3) — un import relatif (./ ou ../)
-// n'est pas resolu, ce n'est pas necessaire pour les cas reels rencontres dans ce schema.
-const TS_PATH_ALIASES = [
-    ['@shared/', 'shared/'],
-    ['@presentation/', 'presentation/'],
-    ['@pages/', 'presentation/pages/'],
-];
-function resolveImportToFile(importPath, srcRootDir) {
-    for (const [alias, real] of TS_PATH_ALIASES) {
-        if (importPath.startsWith(alias)) {
-            return path.resolve(srcRootDir, real + importPath.slice(alias.length)) + '.ts';
-        }
-    }
-    return null;
-}
-
-function extractImportMap(source) {
-    // nom local -> chemin d'import brut (ex: '@pages/.../home-enable.vo')
-    const map = new Map();
-    const importRe = /import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/g;
-    let m;
-    while ((m = importRe.exec(source)) !== null) {
-        const specifiers = m[1].split(',').map((s) => s.trim()).filter(Boolean);
-        for (const spec of specifiers) {
-            const asMatch = /^(\w+)\s+as\s+(\w+)$/.exec(spec);
-            if (asMatch) {
-                map.set(asMatch[2], m[2]);
-            } else if (/^\w+$/.test(spec)) {
-                map.set(spec, m[2]);
-            }
-        }
-    }
-    return map;
-}
-
-function extractCalledIdentifiers(body) {
-    // identifiants suivis d'une parenthese d'appel, hors mots-cles JS/TS courants.
-    const EXCLUDE = new Set([
-        'if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'defer',
-        'of', 'throw', 'new', 'typeof', 'this', 'super', 'in', 'instanceof',
-    ]);
-    const names = new Set();
-    const re = /\b([a-zA-Z_$][\w$]*)\s*\(/g;
-    let m;
-    while ((m = re.exec(body)) !== null) {
-        if (!EXCLUDE.has(m[1])) names.add(m[1]);
-    }
-    return [...names];
-}
-
-// Est-ce que le fichier resolu (VO, validateur, ou toute fonction qu'il appelle a son tour,
-// jusqu'a une profondeur limitee) contient un throw synchrone ? Utilise pour le check 1 :
-// seule une methode de use-case qui appelle reellement une fonction capable de throw a
-// besoin de defer() — un VO identite pur (ex: (dto) => dto) ne peut jamais throw, l'envelopper
-// dans defer() ne corrige rien de reel et signaler cette absence serait un faux positif.
-function fileCanThrowSynchronously(absFilePath, srcRootDir, depth, seen) {
-    if (depth <= 0 || !absFilePath || seen.has(absFilePath)) return false;
-    seen.add(absFilePath);
-    const src = readIfExists(absFilePath);
-    if (!src) return false;
-    if (/\bthrow\s+new\s+\w+/.test(src)) return true;
-    const importMap = extractImportMap(src);
-    const called = extractCalledIdentifiers(src);
-    for (const name of called) {
-        const importPath = importMap.get(name);
-        if (!importPath) continue;
-        const resolved = resolveImportToFile(importPath, srcRootDir);
-        if (resolved && fileCanThrowSynchronously(resolved, srcRootDir, depth - 1, seen)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function findRepoRootMarker(mr, marker) {
-    let dir = path.resolve(mr);
-    for (let i = 0; i < 8; i++) {
-        const candidate = path.join(dir, ...marker);
-        if (fs.existsSync(candidate)) return candidate;
-        const parent = path.dirname(dir);
-        if (parent === dir) break;
-        dir = parent;
-    }
-    return null;
-}
-
-function walk(dir, out) {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) walk(full, out);
-        else if (entry.name.endsWith('.ts')) out.push(full);
-    }
 }
 
 const srcRoot = findRepoRootMarker(moduleRoot, ['src']);
@@ -264,13 +136,24 @@ const findings = {
 // Ne se limite plus a {entityName}.use-case.ts : un meme bug a ete retrouve sur des fichiers
 // use-case satellites (ex: {entityName}-find-one.use-case.ts) qui portent leur propre classe
 // avec leur propre appel this.repository.xxx() — Experience 028.
-const useCasesDir = path.join(moduleRoot, 'application', 'use-cases', entityName);
+const useCasesDir = path.join(
+    moduleRoot,
+    'application',
+    'use-cases',
+    entityName
+);
 if (!fs.existsSync(useCasesDir)) {
-    findings.defer.push(`Dossier absent (${useCasesDir}) — verification impossible.`);
+    findings.defer.push(
+        `Dossier absent (${useCasesDir}) — verification impossible.`
+    );
 } else {
-    const useCaseFiles = fs.readdirSync(useCasesDir).filter((f) => f.endsWith('.use-case.ts'));
+    const useCaseFiles = fs
+        .readdirSync(useCasesDir)
+        .filter((f) => f.endsWith('.use-case.ts'));
     if (useCaseFiles.length === 0) {
-        findings.defer.push(`Aucun fichier *.use-case.ts trouve dans ${useCasesDir}.`);
+        findings.defer.push(
+            `Aucun fichier *.use-case.ts trouve dans ${useCasesDir}.`
+        );
     }
     for (const file of useCaseFiles) {
         const useCasePath = path.join(useCasesDir, file);
@@ -302,8 +185,19 @@ if (!fs.existsSync(useCasesDir)) {
                 if (name === method) continue; // recursion triviale, ignorer
                 const importPath = useCaseImportMap.get(name);
                 if (!importPath) continue;
-                const resolved = resolveImportToFile(importPath, srcRoot || '.');
-                if (resolved && fileCanThrowSynchronously(resolved, srcRoot || '.', 3, new Set())) {
+                const resolved = resolveImportToFile(
+                    importPath,
+                    srcRoot || '.'
+                );
+                if (
+                    resolved &&
+                    fileCanThrowSynchronously(
+                        resolved,
+                        srcRoot || '.',
+                        3,
+                        new Set()
+                    )
+                ) {
                     riskyCall = name;
                     break;
                 }
@@ -318,12 +212,21 @@ if (!fs.existsSync(useCasesDir)) {
 }
 
 // ---------- Check 2 : cles i18n des validateurs presentes dans fr.json ----------
-const frJsonPath = findRepoRootMarker(moduleRoot, ['src', 'assets', 'i18n', 'fr.json']);
-const frJson = frJsonPath ? JSON.parse(fs.readFileSync(frJsonPath, 'utf8')) : null;
+const frJsonPath = findRepoRootMarker(moduleRoot, [
+    'src',
+    'assets',
+    'i18n',
+    'fr.json',
+]);
+const frJson = frJsonPath
+    ? JSON.parse(fs.readFileSync(frJsonPath, 'utf8'))
+    : null;
 
 const validatorsDir = path.join(moduleRoot, 'domain', 'validators', entityName);
 if (fs.existsSync(validatorsDir)) {
-    const validatorFiles = fs.readdirSync(validatorsDir).filter((f) => f.endsWith('.validator.ts'));
+    const validatorFiles = fs
+        .readdirSync(validatorsDir)
+        .filter((f) => f.endsWith('.validator.ts'));
     for (const file of validatorFiles) {
         const src = fs.readFileSync(path.join(validatorsDir, file), 'utf8');
         const re = /new\s+\w*Error\s*\(\s*['"]([^'"]+)['"]/g;
@@ -331,16 +234,22 @@ if (fs.existsSync(validatorsDir)) {
         while ((m = re.exec(src)) !== null) {
             const key = m[1];
             if (!frJson) {
-                findings.i18n.push(`${file} : cle "${key}" — impossible de verifier, fr.json introuvable.`);
+                findings.i18n.push(
+                    `${file} : cle "${key}" — impossible de verifier, fr.json introuvable.`
+                );
                 continue;
             }
             if (getNestedValue(frJson, key) === undefined) {
-                findings.i18n.push(`${file} : cle "${key}" absente de fr.json.`);
+                findings.i18n.push(
+                    `${file} : cle "${key}" absente de fr.json.`
+                );
             }
         }
     }
 } else {
-    findings.i18n.push(`Dossier absent (${validatorsDir}) — verification impossible.`);
+    findings.i18n.push(
+        `Dossier absent (${validatorsDir}) — verification impossible.`
+    );
 }
 
 // ---------- Check 3 : DomainError -> handler enregistre dans UiFeedbackService (app-wide) ----------
@@ -364,12 +273,19 @@ if (srcRoot) {
         let m;
         while ((m = re.exec(src)) !== null) {
             const abs = path.resolve(f);
-            if (!domainErrorsByFile.has(abs)) domainErrorsByFile.set(abs, new Set());
+            if (!domainErrorsByFile.has(abs))
+                domainErrorsByFile.set(abs, new Set());
             domainErrorsByFile.get(abs).add(m[1]);
         }
     }
 
-    const uiFeedbackPath = path.join(srcRoot, 'shared', 'domain', 'services', 'ui-feedback.service.ts');
+    const uiFeedbackPath = path.join(
+        srcRoot,
+        'shared',
+        'domain',
+        'services',
+        'ui-feedback.service.ts'
+    );
     const uiFeedbackSrc = readIfExists(uiFeedbackPath);
 
     // localName -> { file, originalName } via les instructions d'import de ui-feedback.service.ts
@@ -378,14 +294,23 @@ if (srcRoot) {
         const importRe = /import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/g;
         let im;
         while ((im = importRe.exec(uiFeedbackSrc)) !== null) {
-            const specifiers = im[1].split(',').map((s) => s.trim()).filter(Boolean);
+            const specifiers = im[1]
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
             const resolvedFile = resolveImportToFile(im[2], srcRoot);
             for (const spec of specifiers) {
                 const asMatch = /^(\w+)\s+as\s+(\w+)$/.exec(spec);
                 if (asMatch) {
-                    localToOrigin.set(asMatch[2], { file: resolvedFile, originalName: asMatch[1] });
+                    localToOrigin.set(asMatch[2], {
+                        file: resolvedFile,
+                        originalName: asMatch[1],
+                    });
                 } else if (/^\w+$/.test(spec)) {
-                    localToOrigin.set(spec, { file: resolvedFile, originalName: spec });
+                    localToOrigin.set(spec, {
+                        file: resolvedFile,
+                        originalName: spec,
+                    });
                 }
             }
         }
@@ -413,7 +338,10 @@ if (srcRoot) {
             total++;
             const key = `${file}::${name}`;
             const fallbackKey = `?::${name}`;
-            if (!registeredPairs.has(key) && !registeredPairs.has(fallbackKey)) {
+            if (
+                !registeredPairs.has(key) &&
+                !registeredPairs.has(fallbackKey)
+            ) {
                 unregistered.push(`${name} (${path.relative(srcRoot, file)})`);
             }
         }
@@ -425,7 +353,9 @@ if (srcRoot) {
         );
     }
 } else {
-    findings.uiFeedback.push('Racine src/ introuvable — verification impossible.');
+    findings.uiFeedback.push(
+        'Racine src/ introuvable — verification impossible.'
+    );
 }
 
 // ---------- Check 4 : Validators.required (formulaire) vs create/update.validator.ts (domaine) ----------
@@ -455,7 +385,8 @@ function extractRequiredFieldsFromValidator(src) {
     const re1 = /if\s*\(\s*!contract\.(\w+)\s*\)/g;
     // Autorise les conditions composees (ex: if (contract.x === null || contract.x === undefined))
     // et pas seulement une condition unique isolee entre parentheses.
-    const re2 = /if\s*\([^)]*\bcontract\.(\w+)\s*===\s*(undefined|null)\b[^)]*\)/g;
+    const re2 =
+        /if\s*\([^)]*\bcontract\.(\w+)\s*===\s*(undefined|null)\b[^)]*\)/g;
     // Champs tableau (ex: platforms: string[]) verifies via !contract.field?.length
     // plutot que !contract.field seul — idiome legitime, pas une absence de check.
     const re3 = /if\s*\(\s*!contract\.(\w+)\?\.\w+\s*\)/g;
@@ -470,8 +401,20 @@ function extractRequiredFieldsFromValidator(src) {
 // presentation/store (administrative-infrastructure, departments, ...) et application/store
 // (content-management, encore non migre). On essaie les deux, dans cet ordre.
 const formStoreCandidates = [
-    path.join(moduleRoot, 'presentation', 'store', entityName, `${entityName}-form.store.ts`),
-    path.join(moduleRoot, 'application', 'store', entityName, `${entityName}-form.store.ts`),
+    path.join(
+        moduleRoot,
+        'presentation',
+        'store',
+        entityName,
+        `${entityName}-form.store.ts`
+    ),
+    path.join(
+        moduleRoot,
+        'application',
+        'store',
+        entityName,
+        `${entityName}-form.store.ts`
+    ),
 ];
 let formStorePath = formStoreCandidates[0];
 let formStoreSrc = null;
@@ -485,12 +428,21 @@ for (const candidate of formStoreCandidates) {
 }
 
 if (!formStoreSrc) {
-    findings.requiredMismatch.push(`Fichier absent (${formStorePath}) — verification impossible.`);
+    findings.requiredMismatch.push(
+        `Fichier absent (${formStorePath}) — verification impossible.`
+    );
 } else {
-    const { required: formRequired, all: formAllFields } = extractRequiredFieldsFromFormStore(formStoreSrc);
+    const { required: formRequired, all: formAllFields } =
+        extractRequiredFieldsFromFormStore(formStoreSrc);
 
     for (const op of ['create', 'update']) {
-        const validatorPath = path.join(moduleRoot, 'domain', 'validators', entityName, `${entityName}-${op}.validator.ts`);
+        const validatorPath = path.join(
+            moduleRoot,
+            'domain',
+            'validators',
+            entityName,
+            `${entityName}-${op}.validator.ts`
+        );
         const validatorSrc = readIfExists(validatorPath);
         if (!validatorSrc) {
             findings.requiredMismatch.push(
@@ -500,12 +452,18 @@ if (!formStoreSrc) {
         }
         const domainRequired = extractRequiredFieldsFromValidator(validatorSrc);
         // uniqId est tolere en plus sur update (jamais un champ de formulaire) — pas un mismatch.
-        const ignoredOnUpdate = op === 'update' ? new Set(['uniqId']) : new Set();
+        const ignoredOnUpdate =
+            op === 'update' ? new Set(['uniqId']) : new Set();
 
         const requiredByDomainNotByForm = [...domainRequired].filter(
-            (f) => !ignoredOnUpdate.has(f) && formAllFields.has(f) && !formRequired.has(f)
+            (f) =>
+                !ignoredOnUpdate.has(f) &&
+                formAllFields.has(f) &&
+                !formRequired.has(f)
         );
-        const requiredByFormNotByDomain = [...formRequired].filter((f) => !domainRequired.has(f));
+        const requiredByFormNotByDomain = [...formRequired].filter(
+            (f) => !domainRequired.has(f)
+        );
 
         if (requiredByDomainNotByForm.length > 0) {
             findings.requiredMismatch.push(
@@ -563,18 +521,24 @@ if (srcRoot) {
         }
     }
 } else {
-    findings.orphaned.push('Racine src/ introuvable — verification impossible.');
+    findings.orphaned.push(
+        'Racine src/ introuvable — verification impossible.'
+    );
 }
 
 // ---------- Check 6 : ceremonie VO/Entity (passthrough sans transformation reelle) ----------
 const entitiesDir = path.join(moduleRoot, 'domain', 'entities', entityName);
 if (fs.existsSync(entitiesDir)) {
     for (const op of ['create', 'update', 'delete', 'filter']) {
-        const entityFile = path.join(entitiesDir, `${entityName}-${op}.entity.ts`);
+        const entityFile = path.join(
+            entitiesDir,
+            `${entityName}-${op}.entity.ts`
+        );
         const src = readIfExists(entityFile);
         if (!src) continue; // absent = deja collapse, rien a signaler
         // heuristique : presence d'un operateur conditionnel/de defaut = transformation reelle probable
-        const hasConditionalLogic = /(\bif\s*\(|\?\s*[^:]+:|\?\?|\|\|\s*[^,)\n]+)/.test(src);
+        const hasConditionalLogic =
+            /(\bif\s*\(|\?\s*[^:]+:|\?\?|\|\|\s*[^,)\n]+)/.test(src);
         if (!hasConditionalLogic) {
             findings.ceremony.push(
                 `${entityName}-${op}.entity.ts existe encore et ne contient aucune logique conditionnelle detectee (if / ternaire / ?? / ||) — probable pur passthrough. Candidat a la suppression, meme regle que la decision explicite de l'architecte (Experience 007/010) : verifier a la main avant de supprimer.`
@@ -596,12 +560,20 @@ const selectRepoPath = path.join(
     `${entityName}-select.repository.ts`
 );
 if (fs.existsSync(selectRepoPath)) {
-    const apiDtoDir = path.join(moduleRoot, 'infrastructure', 'api', 'dto', entityName);
+    const apiDtoDir = path.join(
+        moduleRoot,
+        'infrastructure',
+        'api',
+        'dto',
+        entityName
+    );
     const expectedFile = `${entityName}-select-response-api.dto.ts`;
     const expectedPath = path.join(apiDtoDir, expectedFile);
     if (!fs.existsSync(expectedPath)) {
         const candidates = fs.existsSync(apiDtoDir)
-            ? fs.readdirSync(apiDtoDir).filter((f) => f.includes('select') && f.endsWith('.ts'))
+            ? fs
+                  .readdirSync(apiDtoDir)
+                  .filter((f) => f.includes('select') && f.endsWith('.ts'))
             : [];
         if (candidates.length > 0) {
             findings.selectNaming.push(
@@ -617,7 +589,9 @@ if (fs.existsSync(selectRepoPath)) {
 
 // ---------- Check 8 : chainage VO -> Entity (regle metier implementee mais jamais appelee) ----------
 if (fs.existsSync(useCasesDir)) {
-    const useCaseFiles8 = fs.readdirSync(useCasesDir).filter((f) => f.endsWith('.use-case.ts'));
+    const useCaseFiles8 = fs
+        .readdirSync(useCasesDir)
+        .filter((f) => f.endsWith('.use-case.ts'));
     for (const file of useCaseFiles8) {
         const useCasePath = path.join(useCasesDir, file);
         const useCaseSrc = readIfExists(useCasePath);
@@ -629,9 +603,14 @@ if (fs.existsSync(useCasesDir)) {
             const calledInBody = extractCalledIdentifiers(body);
             for (const name of calledInBody) {
                 const importPath = useCaseImportMap.get(name);
-                if (!importPath || !/\/value-objects\//.test(importPath)) continue;
+                if (!importPath || !/\/value-objects\//.test(importPath))
+                    continue;
                 const voBasename = importPath.split('/').pop() || '';
-                if (!voBasename.startsWith(`${entityName}-`) || !voBasename.endsWith('.vo')) continue;
+                if (
+                    !voBasename.startsWith(`${entityName}-`) ||
+                    !voBasename.endsWith('.vo')
+                )
+                    continue;
                 const operation = voBasename.slice(entityName.length + 1, -3);
                 if (!operation) continue;
 
@@ -644,7 +623,10 @@ if (fs.existsSync(useCasesDir)) {
                 );
                 const entitySrc = readIfExists(entityFilePath);
                 if (!entitySrc) continue; // pas d'entity pour cette operation : rien a chainer, cas normal
-                const hasConditionalLogic = /(\bif\s*\(|\?\s*[^:]+:|\?\?|\|\|\s*[^,)\n]+)/.test(entitySrc);
+                const hasConditionalLogic =
+                    /(\bif\s*\(|\?\s*[^:]+:|\?\?|\|\|\s*[^,)\n]+)/.test(
+                        entitySrc
+                    );
                 if (!hasConditionalLogic) continue; // entity passthrough : deja couvert par la regle 6
 
                 let entityCalled = false;
@@ -652,8 +634,14 @@ if (fs.existsSync(useCasesDir)) {
                     if (other === name) continue;
                     const otherImportPath = useCaseImportMap.get(other);
                     if (!otherImportPath) continue;
-                    const resolved = resolveImportToFile(otherImportPath, srcRoot || '.');
-                    if (resolved && path.resolve(resolved) === path.resolve(entityFilePath)) {
+                    const resolved = resolveImportToFile(
+                        otherImportPath,
+                        srcRoot || '.'
+                    );
+                    if (
+                        resolved &&
+                        path.resolve(resolved) === path.resolve(entityFilePath)
+                    ) {
                         entityCalled = true;
                         break;
                     }
@@ -709,19 +697,40 @@ function printSection(title, items) {
 }
 
 printSection('1. defer() sur create()/update() (use-case)', findings.defer);
-printSection('2. Cles i18n des validateurs presentes dans fr.json', findings.i18n);
-printSection('3. DomainError -> handler UiFeedbackService (app entiere, pas scope au module)', findings.uiFeedback);
-printSection('4. Validators.required (formulaire) vs create/update.validator.ts (domaine)', findings.requiredMismatch);
-printSection('5. Artefacts orphelins (commands/dto/entities de cette entite, heuristique)', findings.orphaned);
-printSection('6. Ceremonie VO/Entity (heuristique, a verifier a la main avant suppression)', findings.ceremony);
-printSection('7. Nommage {ENTITY}-select-response-api.dto.ts', findings.selectNaming);
-printSection('8. Chainage VO -> Entity (regle metier implementee mais jamais appelee)', findings.voEntityChain);
+printSection(
+    '2. Cles i18n des validateurs presentes dans fr.json',
+    findings.i18n
+);
+printSection(
+    '3. DomainError -> handler UiFeedbackService (app entiere, pas scope au module)',
+    findings.uiFeedback
+);
+printSection(
+    '4. Validators.required (formulaire) vs create/update.validator.ts (domaine)',
+    findings.requiredMismatch
+);
+printSection(
+    '5. Artefacts orphelins (commands/dto/entities de cette entite, heuristique)',
+    findings.orphaned
+);
+printSection(
+    '6. Ceremonie VO/Entity (heuristique, a verifier a la main avant suppression)',
+    findings.ceremony
+);
+printSection(
+    '7. Nommage {ENTITY}-select-response-api.dto.ts',
+    findings.selectNaming
+);
+printSection(
+    '8. Chainage VO -> Entity (regle metier implementee mais jamais appelee)',
+    findings.voEntityChain
+);
 printSection('9. Residus console.log/debug/warn', findings.debugResidue);
 
 console.log(
     'Note : verification par analyse textuelle simple (regex + comptage de parentheses/accolades), pas par AST complet, aucune IA. ' +
-    'Un resultat "OK" ne couvre que les 9 regles ci-dessus, pas une garantie generale d\'absence de bug semantique. ' +
-    'Les regles 5, 6 et 8 sont des heuristiques (detection de logique conditionnelle par regex) : elles signalent des candidats a verifier a la main, jamais un verdict a executer aveuglement.'
+        'Un resultat "OK" ne couvre que les 9 regles ci-dessus, pas une garantie generale d\'absence de bug semantique. ' +
+        'Les regles 5, 6 et 8 sont des heuristiques (detection de logique conditionnelle par regex) : elles signalent des candidats a verifier a la main, jamais un verdict a executer aveuglement.'
 );
 
 process.exitCode = hasIssue ? 1 : 0;

@@ -25,23 +25,17 @@ describe('authGuard', () => {
         configure({ expiresAt: new Date(Date.now() + 60_000).toISOString() });
 
         const result = TestBed.runInInjectionContext(() =>
-            authGuard(
-                {} as never,
-                { url: '/administrative-boundary' } as never
-            )
+            authGuard({} as never, { url: '/administrative-boundary' } as never)
         );
 
         expect(result).toBe(true);
     });
 
-    it('redirige vers /auth/login quand il n\'y a pas de jeton (session absente ou pas encore déchiffrée)', () => {
+    it("redirige vers /auth/login quand il n'y a pas de jeton (session absente ou pas encore déchiffrée)", () => {
         configure(null);
 
         const result = TestBed.runInInjectionContext(() =>
-            authGuard(
-                {} as never,
-                { url: '/administrative-boundary' } as never
-            )
+            authGuard({} as never, { url: '/administrative-boundary' } as never)
         ) as UrlTree;
 
         expect(result).toBeInstanceOf(UrlTree);
@@ -52,10 +46,7 @@ describe('authGuard', () => {
         configure({ expiresAt: new Date(Date.now() - 1000).toISOString() });
 
         const result = TestBed.runInInjectionContext(() =>
-            authGuard(
-                {} as never,
-                { url: '/administrative-boundary' } as never
-            )
+            authGuard({} as never, { url: '/administrative-boundary' } as never)
         ) as UrlTree;
 
         expect(result).toBeInstanceOf(UrlTree);

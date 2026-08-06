@@ -40,9 +40,7 @@ export class DailyGoalMapper extends PaginatedMapper<
 
         const cacheKey = `dto:${props.uniqId}`;
         const cached = this.entityCache.get(cacheKey);
-        const entity = cached
-            ? cached.with(props)
-            : new DailyGoalEntity(props);
+        const entity = cached ? cached.with(props) : new DailyGoalEntity(props);
         this.entityCache.set(cacheKey, entity);
         return entity;
     }

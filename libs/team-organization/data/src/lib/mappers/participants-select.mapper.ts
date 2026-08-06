@@ -13,9 +13,7 @@ export class ParticipantsSelectMapper extends ArrayResponseMapper<
     SelectOption,
     ParticipantsSelectItemApiDto
 > {
-    protected mapItemFromDto(
-        dto: ParticipantsSelectItemApiDto
-    ): SelectOption {
+    protected mapItemFromDto(dto: ParticipantsSelectItemApiDto): SelectOption {
         MapperUtils.validateDto(dto, { required: ['id'] });
         return {
             label: `${dto.last_name} ${dto.first_name}`,

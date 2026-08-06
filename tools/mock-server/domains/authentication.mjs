@@ -2,7 +2,10 @@ import { fail, ok, readBody, send } from '../http.mjs';
 import { nextId } from '../ids.mjs';
 
 // ---- AUTHENTICATION : utilisateur + identifiants seedés -----------------
-export const MOCK_CREDENTIALS = { email: 'admin@cmz.tg', password: 'Password123!' };
+export const MOCK_CREDENTIALS = {
+    email: 'admin@cmz.tg',
+    password: 'Password123!',
+};
 export const MOCK_RESET_TOKEN = 'valid-token';
 
 export const mockUser = {
@@ -37,7 +40,6 @@ export const mockToken = () => ({
     value: `mock-token-${nextId()}`,
     expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
 });
-
 
 /**
  * @param {{ path: string, method: string, req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse, page: string | null, url: URL }} ctx

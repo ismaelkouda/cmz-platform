@@ -6,9 +6,7 @@ import { LegalNoticeSelectMapper } from '../mappers/legal-notice-select.mapper';
 import { LegalNoticeSelectApi } from '../sources/legal-notice-select.api';
 
 @Service()
-export class LegalNoticeSelectRepositoryImpl
-    implements LegalNoticeSelectRepository
-{
+export class LegalNoticeSelectRepositoryImpl implements LegalNoticeSelectRepository {
     private readonly api = inject(LegalNoticeSelectApi);
     private readonly mapper = inject(LegalNoticeSelectMapper);
 

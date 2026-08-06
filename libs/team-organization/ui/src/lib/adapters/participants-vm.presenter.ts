@@ -2,7 +2,13 @@ import {
     ParticipantsEntity,
     ParticipantsStatus,
 } from '@cmz/team-organization-domain';
-import { actionItem, resolveTooltip, ROLE_LABEL, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROLE_LABEL,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { PARTICIPANTS_STATUS_LABEL } from '../constants/participants-status-label.constant';
 import { participantsStatusStyleOf } from '../mappers/participants-status-style.mapper';
 import { ParticipantsVmProps } from './participants-vm-props.interface';

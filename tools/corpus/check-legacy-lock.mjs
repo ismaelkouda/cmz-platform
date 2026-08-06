@@ -36,9 +36,13 @@ try {
     process.exit(1);
 }
 
-const missing = REQUIRED.filter((k) => !lock[k] || String(lock[k]).trim() === '');
+const missing = REQUIRED.filter(
+    (k) => !lock[k] || String(lock[k]).trim() === ''
+);
 if (missing.length) {
-    console.error('FAIL  legacy.lock.json — champs manquants: ' + missing.join(', '));
+    console.error(
+        'FAIL  legacy.lock.json — champs manquants: ' + missing.join(', ')
+    );
     process.exit(1);
 }
 
@@ -68,9 +72,7 @@ if (!legacyRoot) {
 
 const root = resolve(legacyRoot);
 if (!existsSync(join(root, '.git'))) {
-    console.error(
-        'FAIL  SEOS_LEGACY_ROOT n\'est pas un depot git: ' + root
-    );
+    console.error("FAIL  SEOS_LEGACY_ROOT n'est pas un depot git: " + root);
     process.exit(1);
 }
 
@@ -87,7 +89,9 @@ try {
 }
 
 if (head.toLowerCase() !== String(lock.commit).toLowerCase()) {
-    console.error('FAIL  SEOS_LEGACY_ROOT ne correspond pas au pin legacy.lock.json');
+    console.error(
+        'FAIL  SEOS_LEGACY_ROOT ne correspond pas au pin legacy.lock.json'
+    );
     console.error('  attendu : ' + lock.commit);
     console.error('  actuel  : ' + head);
     console.error('  root    : ' + root);

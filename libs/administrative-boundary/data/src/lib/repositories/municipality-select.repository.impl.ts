@@ -9,9 +9,7 @@ import { MunicipalitySelectMapper } from '../mappers/municipality-select.mapper'
 import { MunicipalitySelectApi } from '../sources/municipality-select.api';
 
 @Service()
-export class MunicipalitySelectRepositoryImpl
-    implements MunicipalitySelectRepository
-{
+export class MunicipalitySelectRepositoryImpl implements MunicipalitySelectRepository {
     private readonly api = inject(MunicipalitySelectApi);
     private readonly mapper = inject(MunicipalitySelectMapper);
 

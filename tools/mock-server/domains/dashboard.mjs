@@ -1,7 +1,6 @@
 import { ok, send } from '../http.mjs';
 import { now } from '../ids.mjs';
 
-
 // ---- DASHBOARD : statistiques agrégées (lecture seule) -------------------
 // Objet unique, pas de liste — `period` (query param) ignoré, même
 // précédent que tout le reste du fichier (aucune route ne filtre
@@ -26,7 +25,6 @@ export function dashboardStats() {
         last_refresh_at: now(),
     };
 }
-
 
 /**
  * @param {{ path: string, method: string, req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse, page: string | null, url: URL }} ctx

@@ -6,9 +6,7 @@ import { MobileNetworkSelectMapper } from '../mappers/mobile-network-select.mapp
 import { MobileNetworkSelectApi } from '../sources/mobile-network-select.api';
 
 @Service()
-export class MobileNetworkSelectRepositoryImpl
-    implements MobileNetworkSelectRepository
-{
+export class MobileNetworkSelectRepositoryImpl implements MobileNetworkSelectRepository {
     private readonly api = inject(MobileNetworkSelectApi);
     private readonly mapper = inject(MobileNetworkSelectMapper);
 

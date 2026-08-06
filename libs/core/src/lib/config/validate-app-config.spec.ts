@@ -21,9 +21,9 @@ describe('assertAppConfig', () => {
     });
 
     it('liste les clés manquantes', () => {
-        expect(() =>
-            assertAppConfig({ ...valid, reportUrl: '' })
-        ).toThrow(/reportUrl/);
+        expect(() => assertAppConfig({ ...valid, reportUrl: '' })).toThrow(
+            /reportUrl/
+        );
     });
 
     it('détecte un placeholder non substitué', () => {

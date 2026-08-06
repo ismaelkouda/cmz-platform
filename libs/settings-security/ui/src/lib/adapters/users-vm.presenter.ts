@@ -1,5 +1,11 @@
 import { UsersEntity, UsersStatus } from '@cmz/settings-security-domain';
-import { actionItem, resolveTooltip, ROLE_LABEL, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROLE_LABEL,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { USERS_STATUS_LABEL } from '../constants/users-status-label.constant';
 import { usersStatusStyleOf } from '../mappers/users-status-style.mapper';
 import { UsersVmProps } from './users-vm-props.interface';

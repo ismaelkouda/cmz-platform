@@ -3,10 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/settings-security/ui/src",
   "projectType": "library",
-  "tags": [
-    "scope:settings-security",
-    "type:ui"
-  ],
+  "tags": ["scope:settings-security", "type:ui"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",

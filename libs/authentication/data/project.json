@@ -3,10 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/authentication/data/src",
   "projectType": "library",
-  "tags": [
-    "scope:authentication",
-    "type:data"
-  ],
+  "tags": ["scope:authentication", "type:data"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",

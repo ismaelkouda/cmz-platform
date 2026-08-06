@@ -2,7 +2,12 @@ import {
     PrivacyPolicyStatus,
     PrivacyPolicyEntity,
 } from '@cmz/content-management-domain';
-import { actionItem, resolveTooltip, ROW_ACTION_LABEL, RowAction } from '@cmz/shared-ui';
+import {
+    actionItem,
+    resolveTooltip,
+    ROW_ACTION_LABEL,
+    RowAction,
+} from '@cmz/shared-ui';
 import { PRIVACY_POLICY_STATUS_LABEL } from '../constants/privacy-policy-status-label.constant';
 import { privacyPolicyStatusStyleOf } from '../mappers/privacy-policy-status-style.mapper';
 import { PrivacyPolicyVmProps } from './privacy-policy-vm-props.interface';

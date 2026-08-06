@@ -7,7 +7,7 @@ import { resolveOpenEndedEndDate } from './resolve-open-ended-end-date.util';
  * jusqu'à aujourd'hui. Jamais testé.
  */
 describe('resolveOpenEndedEndDate', () => {
-    it("retourne la date du jour quand startDate est fourni sans endDate", () => {
+    it('retourne la date du jour quand startDate est fourni sans endDate', () => {
         const before = Date.now();
         const result = resolveOpenEndedEndDate(new Date('2026-01-01'));
         const after = Date.now();

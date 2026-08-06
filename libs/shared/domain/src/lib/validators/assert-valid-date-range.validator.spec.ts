@@ -9,10 +9,7 @@ import { DateRangeInvalidError } from '../errors/validation/date-range-invalid.e
 describe('assertValidDateRange', () => {
     it('ne lève rien quand startDate est avant endDate', () => {
         expect(() =>
-            assertValidDateRange(
-                new Date('2026-01-01'),
-                new Date('2026-01-31')
-            )
+            assertValidDateRange(new Date('2026-01-01'), new Date('2026-01-31'))
         ).not.toThrow();
     });
 
@@ -23,14 +20,11 @@ describe('assertValidDateRange', () => {
 
     it('lève DateRangeInvalidError quand startDate est après endDate', () => {
         expect(() =>
-            assertValidDateRange(
-                new Date('2026-01-31'),
-                new Date('2026-01-01')
-            )
+            assertValidDateRange(new Date('2026-01-31'), new Date('2026-01-01'))
         ).toThrow(DateRangeInvalidError);
     });
 
-    it("ne lève rien quand seul startDate est fourni (non comparable)", () => {
+    it('ne lève rien quand seul startDate est fourni (non comparable)', () => {
         expect(() =>
             assertValidDateRange(new Date('2026-01-01'), undefined)
         ).not.toThrow();
@@ -43,8 +37,6 @@ describe('assertValidDateRange', () => {
     });
 
     it("ne lève rien quand aucune des deux bornes n'est fournie", () => {
-        expect(() =>
-            assertValidDateRange(undefined, undefined)
-        ).not.toThrow();
+        expect(() => assertValidDateRange(undefined, undefined)).not.toThrow();
     });
 });

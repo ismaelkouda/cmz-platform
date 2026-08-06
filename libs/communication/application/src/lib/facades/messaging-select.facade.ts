@@ -17,7 +17,9 @@ export class MessagingSelectFacade extends ResourceFacade<
 
     readonly options = computed(() => this.value() ?? []);
 
-    protected stream(params: MessagingSelectParams): Observable<SelectOption[]> {
+    protected stream(
+        params: MessagingSelectParams
+    ): Observable<SelectOption[]> {
         return this.useCase.readAll(params.options);
     }
 

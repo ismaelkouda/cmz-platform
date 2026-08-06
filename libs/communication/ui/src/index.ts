@@ -1,4 +1,3 @@
-
 export * from './lib/constants/messaging-type-label.constant';
 export * from './lib/constants/messaging-target-label.constant';
 export * from './lib/constants/messaging-channel-label.constant';

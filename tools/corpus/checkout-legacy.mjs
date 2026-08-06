@@ -16,7 +16,13 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+    appendFileSync,
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    rmSync,
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -62,13 +68,20 @@ function withToken(url, token) {
     }
     // oauth2:TOKEN@host — compatible GitLab ; GitHub accepte aussi x-access-token
     const user = url.includes('github.com') ? 'x-access-token' : 'oauth2';
-    return url.replace('https://', `https://${user}:${encodeURIComponent(token)}@`);
+    return url.replace(
+        'https://',
+        `https://${user}:${encodeURIComponent(token)}@`
+    );
 }
 
 function commitReachable(url, commit) {
     try {
         const out = git(['ls-remote', url, commit]);
-        return out.split('\n').some((line) => line.toLowerCase().startsWith(commit.toLowerCase()));
+        return out
+            .split('\n')
+            .some((line) =>
+                line.toLowerCase().startsWith(commit.toLowerCase())
+            );
     } catch {
         return false;
     }
@@ -164,7 +177,8 @@ if (!chosen) {
             'FAIL  impossible de résoudre le SHA legacy ' + commit,
             '  repo    : ' + lock.repo,
             '  mirrors : ' + (mirrors.length ? mirrors.join(', ') : '(aucun)'),
-            '  token   : ' + (token ? 'défini' : 'absent (définir LEGACY_CHECKOUT_TOKEN)'),
+            '  token   : ' +
+                (token ? 'défini' : 'absent (définir LEGACY_CHECKOUT_TOKEN)'),
             '',
             'Le job corpus-full nécessite un miroir public portant le pin,',
             'ou un secret LEGACY_CHECKOUT_TOKEN avec accès lecture au repo.',
@@ -186,7 +200,15 @@ try {
     git(['init', dest]);
     git(['-C', dest, 'remote', 'add', 'origin', chosen.fetchUrl]);
     // Partial clone : métadonnées légères, blobs à la demande
-    git(['-C', dest, 'fetch', '--filter=blob:none', '--depth=1', 'origin', commit]);
+    git([
+        '-C',
+        dest,
+        'fetch',
+        '--filter=blob:none',
+        '--depth=1',
+        'origin',
+        commit,
+    ]);
     git(['-C', dest, 'checkout', '--force', 'FETCH_HEAD']);
 } catch (err) {
     die(

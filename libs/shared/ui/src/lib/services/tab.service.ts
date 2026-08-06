@@ -19,9 +19,7 @@ export class TabService {
     }
 
     private async restore(): Promise<void> {
-        const saved = await this.storage.getObfuscated<Tab[]>(
-            this.STORAGE_KEY
-        );
+        const saved = await this.storage.getObfuscated<Tab[]>(this.STORAGE_KEY);
         if (saved && saved.length > 0) {
             this._tabs.set(saved);
         } else {

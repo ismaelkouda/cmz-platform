@@ -11,9 +11,7 @@ import { AgentsPerformancesMapper } from '../mappers/agents-performances.mapper'
 import { AgentsPerformancesApi } from '../sources/agents-performances.api';
 
 @Service()
-export class AgentsPerformancesRepositoryImpl
-    implements AgentsPerformancesRepository
-{
+export class AgentsPerformancesRepositoryImpl implements AgentsPerformancesRepository {
     private readonly api = inject(AgentsPerformancesApi);
     private readonly mapper = inject(AgentsPerformancesMapper);
 

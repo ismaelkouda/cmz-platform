@@ -54,7 +54,9 @@ try {
 }
 
 const lock = {
-    repo: repo || 'https://gitlab.imako.digital/ansut-apps/cmz-backoffice-frontend.git',
+    repo:
+        repo ||
+        'https://gitlab.imako.digital/ansut-apps/cmz-backoffice-frontend.git',
     mirrors,
     commit,
     date,

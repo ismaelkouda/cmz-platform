@@ -6,9 +6,7 @@ import { MessagingSelectMapper } from '../mappers/messaging-select.mapper';
 import { MessagingSelectApi } from '../sources/messaging-select.api';
 
 @Service()
-export class MessagingSelectRepositoryImpl
-    implements MessagingSelectRepository
-{
+export class MessagingSelectRepositoryImpl implements MessagingSelectRepository {
     private readonly api = inject(MessagingSelectApi);
     private readonly mapper = inject(MessagingSelectMapper);
 

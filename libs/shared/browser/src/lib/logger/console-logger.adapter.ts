@@ -27,7 +27,11 @@ export class ConsoleLoggerAdapter extends LoggerPort {
         error?: unknown,
         context?: Record<string, unknown>
     ): void {
-        console.error(this.prefix('ERROR', message), error ?? '', context ?? '');
+        console.error(
+            this.prefix('ERROR', message),
+            error ?? '',
+            context ?? ''
+        );
     }
 
     private prefix(level: string, message: string): string {

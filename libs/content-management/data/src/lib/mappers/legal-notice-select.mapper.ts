@@ -8,9 +8,7 @@ export class LegalNoticeSelectMapper extends ArrayResponseMapper<
     SelectOption,
     LegalNoticeSelectItemApiDto
 > {
-    protected mapItemFromDto(
-        dto: LegalNoticeSelectItemApiDto
-    ): SelectOption {
+    protected mapItemFromDto(dto: LegalNoticeSelectItemApiDto): SelectOption {
         MapperUtils.validateDto(dto, { required: ['id'] });
         return { label: dto.version, value: dto.id };
     }

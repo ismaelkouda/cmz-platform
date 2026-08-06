@@ -32,12 +32,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const rawArgs = process.argv.slice(2);
 const schemaFlagIndex = rawArgs.indexOf('--schema');
-let schemaPath = path.join(__dirname, '..', 'patterns', 'crud-entity.pattern.json');
+let schemaPath = path.join(
+    __dirname,
+    '..',
+    'patterns',
+    'crud-entity.pattern.json'
+);
 const positional = [...rawArgs];
 if (schemaFlagIndex !== -1) {
     const explicit = rawArgs[schemaFlagIndex + 1];
     if (!explicit) {
-        console.error('Erreur : --schema requiert un chemin (ex: --schema seos/patterns/action-request.pattern.json)');
+        console.error(
+            'Erreur : --schema requiert un chemin (ex: --schema seos/patterns/action-request.pattern.json)'
+        );
         process.exit(1);
     }
     schemaPath = path.resolve(explicit);
@@ -48,16 +55,18 @@ const [moduleRoot, unitName] = positional;
 const spec = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
 
 if (!moduleRoot || !unitName) {
-    console.error('Usage: node check-pattern.js <chemin-du-module> <nom-unite> [--schema <chemin-du-schema>]');
+    console.error(
+        'Usage: node check-pattern.js <chemin-du-module> <nom-unite> [--schema <chemin-du-schema>]'
+    );
     process.exit(1);
 }
 
 if (!fs.existsSync(moduleRoot)) {
     console.error(
         `Erreur : le chemin "${moduleRoot}" n'existe pas depuis le dossier courant (${process.cwd()}).\n` +
-        `Le premier argument doit etre le chemin RELATIF COMPLET vers le dossier du module, par exemple :\n` +
-        `  node seos/tools/check-pattern.js src/presentation/pages/administrative-infrastructure infrastructure\n` +
-        `(et non juste le nom du module, ex: "administrative-infrastructure")`
+            `Le premier argument doit etre le chemin RELATIF COMPLET vers le dossier du module, par exemple :\n` +
+            `  node seos/tools/check-pattern.js src/presentation/pages/administrative-infrastructure infrastructure\n` +
+            `(et non juste le nom du module, ex: "administrative-infrastructure")`
     );
     process.exit(2);
 }
@@ -97,10 +106,16 @@ for (const tpl of spec.core_files) {
 const total = spec.core_files.length;
 const score = ((present.length / total) * 100).toFixed(1);
 
-console.log(`SEOS — verification du pattern "${spec.pattern}" (${spec.lineage})`);
+console.log(
+    `SEOS — verification du pattern "${spec.pattern}" (${spec.lineage})`
+);
 console.log(`Module : ${moduleRoot}`);
-console.log(`${unitPlaceholder === 'OPERATION' ? 'Operation' : 'Entite'} : ${unitName}`);
-console.log(`Conformite : ${present.length}/${total} fichiers du coeur presents (${score}%)`);
+console.log(
+    `${unitPlaceholder === 'OPERATION' ? 'Operation' : 'Entite'} : ${unitName}`
+);
+console.log(
+    `Conformite : ${present.length}/${total} fichiers du coeur presents (${score}%)`
+);
 
 if (missing.length > 0) {
     console.log(`\nFichiers manquants (${missing.length}) :`);

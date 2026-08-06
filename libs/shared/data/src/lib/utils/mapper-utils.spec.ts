@@ -50,17 +50,12 @@ describe('MapperUtils.validateDto', () => {
     });
 
     it("n'exige rien quand schema.required est absent", () => {
-        expect(() =>
-            MapperUtils.validateDto({ id: 1 }, {})
-        ).not.toThrow();
+        expect(() => MapperUtils.validateDto({ id: 1 }, {})).not.toThrow();
     });
 
     it("lève une erreur générique si dto n'est pas un objet", () => {
         expect(() =>
-            MapperUtils.validateDto(
-                null as unknown as object,
-                { required: [] }
-            )
+            MapperUtils.validateDto(null as unknown as object, { required: [] })
         ).toThrow('DTO must be an object');
     });
 
@@ -92,17 +87,20 @@ describe('MapperUtils.validateRequiredFields', () => {
 
     it('ne lève rien quand tous les champs sont présents et non vides', () => {
         expect(() =>
-            MapperUtils.validateRequiredFields(
-                { id: 1, label: 'x' },
-                ['id', 'label']
-            )
+            MapperUtils.validateRequiredFields({ id: 1, label: 'x' }, [
+                'id',
+                'label',
+            ])
         ).not.toThrow();
     });
 });
 
 describe('MapperUtils.createEnumMap', () => {
     it("construit une Map fidèle à l'objet source", () => {
-        const map = MapperUtils.createEnumMap({ AUTO: 'auto', MANUAL: 'manual' });
+        const map = MapperUtils.createEnumMap({
+            AUTO: 'auto',
+            MANUAL: 'manual',
+        });
         expect(map.get('AUTO')).toBe('auto');
         expect(map.get('MANUAL')).toBe('manual');
         expect(map.size).toBe(2);

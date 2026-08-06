@@ -11,9 +11,7 @@ import { AgentsPerformancesHistoryMapper } from '../mappers/agents-performances-
 import { AgentsPerformancesHistoryApi } from '../sources/agents-performances-history.api';
 
 @Service()
-export class AgentsPerformancesHistoryRepositoryImpl
-    implements AgentsPerformancesHistoryRepository
-{
+export class AgentsPerformancesHistoryRepositoryImpl implements AgentsPerformancesHistoryRepository {
     private readonly api = inject(AgentsPerformancesHistoryApi);
     private readonly mapper = inject(AgentsPerformancesHistoryMapper);
 
