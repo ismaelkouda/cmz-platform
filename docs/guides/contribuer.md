@@ -35,12 +35,13 @@ local et CI alignés) :
 | Inclus | Exclu (hors gate CI) |
 | ------ | -------------------- |
 | `apps/`, `libs/`, `tools/`, `deploy/` | `docs/**` (audits, guides hors collatéral ADR vivant) |
-| configs racine listées dans `package.json` (`package.json`, `nx.json`, …) | patterns SEOS vendored `tools/seos/patterns/**` |
+| configs monorepo listées dans `tools/run-prettier.mjs` (`PRETTIER_PATHS`) | patterns SEOS vendored `tools/seos/patterns/**` |
 | | artefacts générés E-5 (déjà dans `.prettierignore`) |
 | | templates `*.in` (ex. `deploy/env.template.js.in`) |
 
-Le hook `lint-staged` n’applique Prettier qu’aux chemins de ce périmètre. Un
-fichier sous `docs/` peut être commité sans reformat Prettier automatique.
+Les scripts `format` / `format:check` appellent `tools/run-prettier.mjs` (même
+liste de chemins). Le hook `lint-staged` miroite ce périmètre. Un fichier sous
+`docs/` peut être commité sans reformat Prettier automatique.
 
 ## Commits
 

@@ -6,6 +6,8 @@
   "nx.json": ["prettier --write"],
   "tsconfig.base.json": ["prettier --write"],
   "eslint.config.mjs": ["prettier --write"],
+  "commitlint.config.mjs": ["prettier --write"],
+  "knip.json": ["prettier --write"],
   ".prettierrc.json": ["prettier --write"],
   ".lintstagedrc.json": ["prettier --write"]
 }
