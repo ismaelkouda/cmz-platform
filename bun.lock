@@ -27,7 +27,7 @@
         "@angular/language-service": "catalog:tooling",
         "@commitlint/cli": "^21.2.1",
         "@commitlint/config-conventional": "^21.2.0",
-        "@eslint/js": "^9.8.0",
+        "@eslint/js": "^10.0.1",
         "@nx/angular": "23.1.0",
         "@nx/eslint": "23.1.0",
         "@nx/eslint-plugin": "23.1.0",
@@ -307,7 +307,6 @@
         "rxjs": "catalog:",
       },
       "devDependencies": {
-        "@angular/compiler": "catalog:",
         "typescript": "catalog:tooling",
         "vitest": "^4.0.8",
       },
@@ -409,7 +408,6 @@
       "name": "@cmz/finalization-application",
       "version": "0.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/finalization-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
@@ -425,7 +423,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/core": "workspace:*",
         "@cmz/finalization-domain": "workspace:*",
@@ -566,7 +563,6 @@
       "name": "@cmz/processing-application",
       "version": "0.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/processing-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
@@ -582,7 +578,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/core": "workspace:*",
         "@cmz/processing-domain": "workspace:*",
@@ -624,7 +619,6 @@
       "name": "@cmz/report-states-application",
       "version": "1.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/report-states-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
@@ -730,7 +724,6 @@
       "name": "@cmz/requests-application",
       "version": "0.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/requests-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
@@ -746,7 +739,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/core": "workspace:*",
         "@cmz/requests-domain": "workspace:*",
@@ -844,7 +836,6 @@
         "rxjs": "catalog:",
       },
       "devDependencies": {
-        "@angular/compiler": "catalog:",
         "vitest": "^4.0.8",
       },
     },
@@ -857,7 +848,6 @@
         "exceljs": "catalog:",
       },
       "devDependencies": {
-        "@angular/compiler": "catalog:",
         "vitest": "^4.0.8",
       },
     },
@@ -870,7 +860,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/shared-domain": "workspace:*",
         "date-fns": "catalog:",
@@ -891,7 +880,6 @@
       "name": "@cmz/shared-ui",
       "version": "0.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@angular/forms": "catalog:",
         "@angular/platform-browser": "catalog:",
@@ -1541,7 +1529,7 @@
 
     "@eslint/eslintrc": ["@eslint/eslintrc@3.3.6", "", { "dependencies": { "ajv": "^6.14.0", "debug": "^4.3.2", "espree": "^10.0.1", "globals": "^14.0.0", "ignore": "^5.2.0", "import-fresh": "^3.2.1", "js-yaml": "^4.3.0", "minimatch": "^3.1.5", "strip-json-comments": "^3.1.1" } }, "sha512-l2Ul9PrHsPCKcEY/ac7VgFj9D80C7S68sOKc618SyHDPK36s1XcFebXY0iTzUVn4Yq+YbwvSnDmCz9yxjX+QrA=="],
 
-    "@eslint/js": ["@eslint/js@9.39.5", "", {}, "sha512-QywQuszQh77pIXCsq998c8hbhSTI/azTty1Z6N53dmAudKHhy573j3yvRLsX2BSp8YpLtoCEG8E9DJe+8zUh4A=="],
+    "@eslint/js": ["@eslint/js@10.0.1", "", { "peerDependencies": { "eslint": "^10.0.0" }, "optionalPeers": ["eslint"] }, "sha512-zeR9k5pd4gxjZ0abRoIaxdc7I3nDktoXZk2qOv9gCNWx3mVwEn32VRhyLaRsDiJjTs0xq/T8mfPtyuXu7GWBcA=="],
 
     "@eslint/object-schema": ["@eslint/object-schema@2.1.7", "", {}, "sha512-VtAOaymWVfZcmZbp6E2mympDIHvyjXs/12LqWYjVw6qjrfF+VK+fyG33kChz3nnK+SU5/NeHOqrTEHS8sXO3OA=="],
 
@@ -3748,6 +3736,8 @@
     "dom-serializer/entities": ["entities@4.5.0", "", {}, "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="],
 
     "duplexer2/readable-stream": ["readable-stream@2.3.8", "", { "dependencies": { "core-util-is": "~1.0.0", "inherits": "~2.0.3", "isarray": "~1.0.0", "process-nextick-args": "~2.0.0", "safe-buffer": "~5.1.1", "string_decoder": "~1.1.1", "util-deprecate": "~1.0.1" } }, "sha512-8p0AUk4XODgIewSi0l8Epjs+EVnWiK7NoDIEGU0HhE7+ZyY8D1IMY7odu5lRrFXGg71L15KG8QrPmum45RTtdA=="],
+
+    "eslint/@eslint/js": ["@eslint/js@9.39.5", "", {}, "sha512-QywQuszQh77pIXCsq998c8hbhSTI/azTty1Z6N53dmAudKHhy573j3yvRLsX2BSp8YpLtoCEG8E9DJe+8zUh4A=="],
 
     "eslint/ajv": ["ajv@6.15.0", "", { "dependencies": { "fast-deep-equal": "^3.1.1", "fast-json-stable-stringify": "^2.0.0", "json-schema-traverse": "^0.4.1", "uri-js": "^4.2.2" } }, "sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw=="],
 
