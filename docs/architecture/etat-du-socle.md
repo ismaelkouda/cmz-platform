@@ -167,11 +167,17 @@ sur la forge : `gh auth login && bun run protect:main`.
 **Remédiation G-6 (2026-08-02) :** `assertAppConfig` dans `@cmz/core` —
 validation de forme au bootstrap (`APP_CONFIG`) avec diagnostic exploitable.
 
-**Remédiation G-7 (2026-08-02) :** Nx Cloud **activé** — `nxCloudId` dans
-`nx.json` via `bunx nx connect --generateToken` (remote GitHub
-`ismaelkouda/cmz-platform`). Claim compte : ouvrir l’URL affichée par
-`bunx nx connect` (ou [cloud.nx.app](https://cloud.nx.app)) et rattacher le
-workspace ; pas de refus ADR.
+**Remédiation G-7 (2026-08-02, révisée 2026-08-06) :** `nxCloudId`
+`6a6fc43fcf076738a1d8db2e` écrit via `bunx nx connect` (remote
+`ismaelkouda/cmz-platform`). **Décision produit :** *claim + activer* (pas de
+`neverConnectToCloud` / `NX_NO_CLOUD`). Tant que le workspace n’est pas claimé
+sous 3 jours **ou** que le secret CI `NX_CLOUD_ACCESS_TOKEN` manque, Nx
+loggue encore des **401** / « unconnected » — bruit sans cache, **pas** un
+gate CI. Runbook humain (porteurs) : (1) [cloud.nx.app](https://cloud.nx.app)
+→ claim / rattacher le workspace à l’org ; (2) générer un CI Access Token ;
+(3) secret GitHub `NX_CLOUD_ACCESS_TOKEN` (repo + forks selon politique) ;
+(4) vérifier un `nx` en CI sans message 401 et avec hits de remote cache.
+T6-4 / OPS-3.
 
 **Remédiation G-8 (2026-08-02) :** `concurrency: cancel-in-progress` sur
 `ci.yml` (par PR/ref), `nightly-integration.yml` (workflow), `corpus-full.yml`

@@ -3,9 +3,11 @@
 # soient incontournables. --no-verify local ne passe pas en CI.
 #
 # Stratégie : nx affected pour ne reconstruire que ce qui a changé.
-# Nx Cloud : nxCloudId dans nx.json (audit G-7) — remote cache / distribution
-# optionnels ; claim compte via bunx nx connect si le workspace n'est pas encore
-# rattaché à une org Nx Cloud.
+# Nx Cloud (décision G-7/T6-4 : claim + activer) :
+# - `nxCloudId` dans nx.json (workspace Nx Cloud)
+# - secret repo `NX_CLOUD_ACCESS_TOKEN` (CI access token émis après claim)
+# Sans claim + secret : bruit 401 / pas de remote cache — acceptable temporairement
+# tant que le porteur suit le runbook claim (pas de désactivation silencieuse).
 
 name: CI
 
@@ -23,6 +25,7 @@ concurrency:
 env:
   NODE_VERSION: '22.22.3'
   BUN_VERSION: '1.3.14'
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 jobs:
   # ─── Job 1 : Garde-fous socle (rapide, bloquant) ─────────────────────────
@@ -183,8 +186,8 @@ jobs:
     name: Dead-code (knip)
     runs-on: ubuntu-latest
     needs: guardrails
-    # Non bloquant tant que I-04 n'est pas pleinement instrumenté
-    continue-on-error: true
+    # Bloquant : contrat monorepo package-based documenté
+    # (docs/architecture/knip-contrat.md) — exit 0 local/CI attendu.
     steps:
       - uses: actions/checkout@v4
 
