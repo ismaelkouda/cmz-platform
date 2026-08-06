@@ -10,8 +10,13 @@
   "targetDefaults": {
     "@angular/build:application": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["default", "^default"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "default",
+        "^default"
+      ]
     },
     "lint": {
       "cache": true,
@@ -41,7 +46,10 @@
     },
     "@angular/build:unit-test": {
       "cache": true,
-      "inputs": ["default", "^default"]
+      "inputs": [
+        "default",
+        "^default"
+      ]
     }
   },
   "generators": {
@@ -60,5 +68,5 @@
       }
     }
   ],
-  "nxCloudId": "6a6fc4dc5d5a3d6e2134a9b7"
+  "nxCloudId": "6a6fc43fcf076738a1d8db2e"
 }
