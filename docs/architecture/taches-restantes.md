@@ -159,7 +159,7 @@ sign/attest optionnel.
 | T6-1 | Revue juridique `licences-tierces.md` + `LICENSE` + regime SEOS/corpus | décision      |   M    |  P1   | OPS-6          |
 | T6-2 | Job CI inventaire licences (automatiser license-checker)               | ouvert        |   S    |  P2   | P1-N2 residual |
 | T6-3 | Générer **SBOM** cyclonedx/spdx en CI artifact                         | ouvert        |   M    |  P2   | Big Tech gap   |
-| T6-4 | Claim / usage Nx Cloud (token org, pas seulement `nxCloudId`)          | bloqué-humain |   S    |  P1   | OPS-3          |
+| T6-4 | Claim / usage Nx Cloud (token org) — *aujourd’hui désactivé proprement* (`neverConnectToCloud` + `NX_NO_CLOUD`, sans `nxCloudId` orphelin) | décision (claim optionnel) |   S    |  P1   | OPS-3          |
 
 ## T7 — Audit confidentialité & protection des données
 
@@ -229,7 +229,7 @@ copie interdite ; convention machine.
 
 | Id    | Tâche                                                                                   | État    | Effort | Crit. | Alias           |
 | ----- | --------------------------------------------------------------------------------------- | ------- | :----: | :---: | --------------- |
-| T11-1 | knip `dead-code` : prouver runner x86_64 puis **bloquer** (`continue-on-error` → false) | ouvert  |   M    |  P1   | C-9 · carto #13 |
+| T11-1 | knip `dead-code` : **bloquant** (`continue-on-error` retiré ; contrat `knip-contrat.md`) | fait    |   M    |  P1   | C-9 · carto #13 |
 | T11-2 | Aligner `check:i18n` local (encore `--warn-only`) sur CI bloquante                      | partiel |   S    |  P2   | CI-2            |
 | T11-3 | Purger clés i18n orphelines (~K-5) après revue dynamique                                | ouvert  |   M    |  P2   | K-5             |
 | T11-4 | Union littérale clés i18n (tsc)                                                         | ouvert  |   M    |  P2   | K-6             |

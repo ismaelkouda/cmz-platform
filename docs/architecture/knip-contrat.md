@@ -1,7 +1,7 @@
 # Knip (dead-code) — contrat monorepo
 
-> `bun run check:dead-code` · CI job `dead-code` (`continue-on-error` tant
-> que le socle d’instrumentation n’est pas verrouillé en bloquant).
+> `bun run check:dead-code` · CI job `dead-code` **bloquant**
+> (`continue-on-error` retiré une fois le graphe package-based stabilisé).
 
 ## Causes historiques du faux rouge (corrigées)
 
@@ -20,11 +20,11 @@ Package-based Bun (`workspaces.packages` : `apps/*`, `libs/*`, `libs/*/*`)
 mais **l’app n’a pas de `package.json`** propre — elle vit dans le workspace
 racine `.` :
 
-| Workspace    | Rôle                                      |
-| ------------ | ----------------------------------------- |
-| `.`          | App `backoffice-angular` + outillage `tools/` |
-| `libs/*`     | Noyaux monocouche (ex. `@cmz/core`)       |
-| `libs/*/*`   | Volets module (domain/data/application/ui) |
+| Workspace  | Rôle                                          |
+| ---------- | --------------------------------------------- |
+| `.`        | App `backoffice-angular` + outillage `tools/` |
+| `libs/*`   | Noyaux monocouche (ex. `@cmz/core`)           |
+| `libs/*/*` | Volets module (domain/data/application/ui)    |
 
 Entries app : `main.ts` (bootstrap), `public/env.js` (script index — ADR-0007),
 `tailwind.css` (styles Angular), guards/util de test **volontairement
