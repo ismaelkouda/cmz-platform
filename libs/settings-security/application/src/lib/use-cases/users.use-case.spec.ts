@@ -1,5 +1,5 @@
 import { Injector } from '@angular/core';
-import { UsersRepository } from '@cmz/settings-security-domain';
+import { UsersEntity, UsersRepository } from '@cmz/settings-security-domain';
 import { MessageEntity, PageResult } from '@cmz/shared-domain';
 import { firstValueFrom, of } from 'rxjs';
 import { UsersUseCase } from './users.use-case';
@@ -9,20 +9,15 @@ describe('UsersUseCase', () => {
     let mockRepository: Partial<UsersRepository>;
 
     beforeEach(() => {
+        const emptyPage: PageResult<UsersEntity> = {
+            items: [],
+            currentPage: 1,
+            lastPage: 0,
+            total: 0,
+            perPage: 10,
+        };
         mockRepository = {
-            execute: vi.fn().mockReturnValue(
-                of({
-                    data: [],
-                    meta: {
-                        page: 1,
-                        total: 0,
-                        perPage: 10,
-                        pageCount: 0,
-                        hasPrev: false,
-                        hasNext: false,
-                    },
-                } as PageResult<any>)
-            ),
+            execute: vi.fn().mockReturnValue(of(emptyPage)),
             create: vi
                 .fn()
                 .mockReturnValue(of({ message: 'Success' } as MessageEntity)),
@@ -53,7 +48,7 @@ describe('UsersUseCase', () => {
     it('exécute le cas d usage de liste avec le repository', async () => {
         const result = await firstValueFrom(useCase.execute({}, '1'));
         expect(mockRepository.execute).toHaveBeenCalled();
-        expect(result.data).toEqual([]);
+        expect(result.items).toEqual([]);
     });
 
     it('exécute la création d un utilisateur', async () => {
