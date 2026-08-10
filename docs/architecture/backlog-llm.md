@@ -203,7 +203,7 @@ localiser avant de modifier quoi que ce soit :**
 5. Vérifier que les 10 fichiers listés dans "Fichiers concernés" ont bien
    été modifiés par la commande (`git status corpus/`).
 
-**Critère de succès (vérifier les 2 dans l'ordre) :**
+**Critère de succès :**
 1. `grep -rn '"legacy":"legacy/' corpus/administrative-boundary.pairs.jsonl
    corpus/administrative-infrastructure.pairs.jsonl
    corpus/communication.pairs.jsonl corpus/content-management.pairs.jsonl
@@ -211,7 +211,30 @@ localiser avant de modifier quoi que ce soit :**
    corpus/team-organization.pairs.jsonl corpus/authentication.pairs.jsonl
    corpus/core.pairs.jsonl corpus/shared.pairs.jsonl` ne retourne aucun
    résultat (plus aucune ligne avec l'ancien format de placeholder).
-2. `node tools/corpus/validate-pair-schema.mjs` se termine sans erreur.
+
+**Note découverte lors de l'exécution (2026-08-10) :** `node
+tools/corpus/validate-pair-schema.mjs` échoue déjà (800 lignes en échec)
+**avant même cette tâche**, pour deux raisons distinctes et cumulables sur
+les mêmes lignes crud-entity :
+- `docs/architecture/corpus/pair.schema.json` interdit `:` dans `id`
+  (`pattern: ^[a-z0-9][a-z0-9.-]*$`) alors que tous les ids crud-entity
+  utilisent le séparateur `::` (`chain_id::node`) — défaut préexistant,
+  non introduit par cette tâche (voir `taches-restantes.md` T12-18b) ;
+- `pair.schema.json` déclare aussi `legacy: { type: "string" }` (pas de
+  `null` autorisé), alors que le correctif demandé par **cette tâche**
+  écrit précisément `legacy: null`. Le schéma n'a jamais été mis à jour
+  pour accepter ce cas — autre volet du même défaut T12-18b.
+
+Résultat mesuré : le compteur global `FAIL — N error(s)` reste à 800
+avant/après (il compte les lignes en échec, pas les erreurs — les lignes
+crud-entity échouaient déjà sur `id`, donc l'ajout de l'erreur `legacy`
+sur les mêmes lignes ne change pas le total). **Ne pas exiger que
+`validate-pair-schema.mjs` se termine sans erreur** comme critère de
+cette tâche tant que T12-18b n'est pas traité — c'est un prérequis
+schéma distinct, hors périmètre "Fichiers concernés" de P0-2 (qui ne
+liste que `crud-entity.mjs`, `legacy-root.mjs` et les 10 `.pairs.jsonl`,
+pas `pair.schema.json`). Le critère de succès de P0-2 se limite donc au
+point 1 ci-dessus.
 
 ---
 

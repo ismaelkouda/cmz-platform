@@ -273,19 +273,17 @@ export function expandCrudEntityChain(module, chain) {
 
         pairs.push({
             id: pairId,
-            legacy: `legacy/${module}/${item.node}`,
+            legacy: null,
             nx: exists ? item.rel : null,
             chain_id: chain.id,
             node: item.node,
             pattern: 'crud-entity',
             module,
             layer: item.layer,
-            status: exists ? 'verified' : 'n/a',
+            status: 'n/a',
             oracle: exists ? layerOracles(module, item.layer) : [],
             verified_at: new Date().toISOString().split('T')[0],
-            notes: exists
-                ? `Vérifié par l'Oracle Nx Tier 1 pour ${entity}`
-                : `Fichier non requis ou optionnel pour ${entity}`,
+            notes: 'Correspondance legacy non vérifiable — voir docs/architecture/backlog-llm.md P0-2',
         });
     }
 
