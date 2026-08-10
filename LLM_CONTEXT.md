@@ -67,6 +67,44 @@ libs/<module>/
    `eslint.config.mjs` interdisent tout import ascendant ou latéral non
    autorisé.
 
+### Convention d'injection : `@Service()` vs `@Injectable()`
+
+Deux décorateurs Angular coexistent dans le monorepo, avec un usage strict
+et non interchangeable (vérifié 2026-08-10 :
+`grep -rl "@Service()" libs/ apps/ | wc -l` → **555** fichiers,
+`grep -rl "@Injectable()" libs/ apps/ | wc -l` → **66** fichiers, aucun
+chevauchement) :
+
+- **`@Service()`** (`import { Service } from '@angular/core'`, Angular 22) —
+  décorateur "auto-provided" (`autoProvided` vaut `true` par défaut dans son
+  type Angular natif) : la classe est fournie automatiquement, sans entrée
+  `providers:` explicite, avec une durée de vie de singleton applicatif
+  (tree-shakable, dans l'esprit de l'ancien `@Injectable({ providedIn:
+  'root' })`). Utilisé pour **tout ce qui est injecté au niveau applicatif
+  standard** : services, mappers, facades, use-cases, repositories (555
+  fichiers au total, catégories non ventilées individuellement). Exemple :
+  `libs/report-states/data/src/lib/mappers/report-states-details.mapper.ts`.
+
+- **`@Injectable()` sans options** — **n'est PAS auto-fourni** : la classe
+  doit obligatoirement être déclarée dans un tableau `providers: [...]` au
+  niveau d'un composant pour être injectable, ce qui lie sa durée de vie au
+  cycle de vie de ce composant (nouvelle instance à chaque activation,
+  détruite avec le composant — pas un singleton applicatif). Réservé
+  **exclusivement aux stores de composant `*-filter.store.ts` (42 fichiers)
+  et `*-form.store.ts` (24 fichiers)**, fournis via `providers:
+  [XxxFilterStore]` ou `providers: [XxxFormStore]` sur le composant de page
+  ou de dialog qui les possède — jamais sur un composant enfant. Exemples :
+  `libs/report-states/ui/src/lib/stores/approve-report-states-filter.store.ts`
+  (fourni par `libs/report-states/ui/src/lib/features/*-list.component.ts`),
+  `libs/communication/ui/src/lib/stores/messaging-form.store.ts` (fourni
+  par `messaging-form.component.ts` via `providers: [MessagingFormStore]`).
+  Aucun des 66 fichiers ne déclare `providedIn`.
+
+**Règle pour un nouveau fichier :** un mapper/service/facade/use-case/
+repository → `@Service()`. Un store de formulaire ou de filtre porté par un
+composant de page/dialog → `@Injectable()` sans options, fourni
+explicitement via `providers:` sur ce composant.
+
 ---
 
 ## 3. Catalogue des Archétypes (IR SEOS)

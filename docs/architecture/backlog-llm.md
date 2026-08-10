@@ -603,6 +603,22 @@ cette hypothèse.
 distinction `@Service()` / `@Injectable()` avec au moins un exemple de
 chaque.
 
+**Historique de résolution (2026-08-10) :** le constat initial contenait
+deux erreurs factuelles, corrigées après vérification (pas supposées) :
+(1) le compte `@Injectable()` est **66**, pas 41
+(`grep -rl "@Injectable()" libs/ apps/ | wc -l`) ; (2) ces 66 fichiers ne
+sont **pas exclusivement** des `*-filter.store.ts` — 42 sont des
+`*-filter.store.ts`, 24 sont des `*-form.store.ts` (`grep -c
+"\-filter\.store\.ts$"` / `"\-form\.store\.ts$"` sur la même liste = 42 +
+24 = 66, aucun fichier hors de ces deux patterns). Le compte `@Service()`
+(555, pas 554) et la nature auto-provided du décorateur ont aussi été
+vérifiés directement dans les typings Angular 22
+(`node_modules/@angular/core` : `Service` a `autoProvided` vrai par
+défaut). Confirmé sur 2 exemples concrets que les stores `@Injectable()`
+sont bien fournis via `providers: [...]` sur le composant de page/dialog
+propriétaire, jamais en root. Section ajoutée dans `LLM_CONTEXT.md` §2
+avec les chiffres corrigés.
+
 ---
 
 ### P2-4 — Retirer le duplicata trivial `GrafanaDashboardEntity`/`MapEntity`
