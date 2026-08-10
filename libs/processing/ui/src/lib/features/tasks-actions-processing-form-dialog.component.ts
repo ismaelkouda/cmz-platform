@@ -5,33 +5,31 @@ import {
     inject,
     input,
     output,
-    signal,
     viewChild,
     ElementRef,
 } from '@angular/core';
-import {
-    FormControl,
-    FormGroup,
-    ReactiveFormsModule,
-    Validators,
-} from '@angular/forms';
-import {
-    TasksActionsProcessingFacade,
-    TasksActionsTypeProcessingFacade,
-} from '@cmz/processing-application';
+import { FormField } from '@angular/forms/signals';
 import {
     TasksActionsProcessingConformity,
     TasksActionsProcessingEntity,
 } from '@cmz/processing-domain';
 import { TranslationPort } from '@cmz/shared-application';
-import { TelecomOperator } from '@cmz/shared-domain';
-import { TELECOM_OPERATOR_OPTIONS } from '@cmz/shared-ui';
+import { FieldComponent } from '@cmz/shared-ui';
+import { TasksActionsProcessingFormStore } from '../stores/tasks-actions-processing-form.store';
 
 export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
 
+/**
+ * Dialog `tasks-actions-processing` — Signal Forms (P2-1, migré depuis
+ * `ReactiveFormsModule`/`FormGroup`). Cascade `type` → `operator` déléguée
+ * au store (même pattern que `messaging-form.store.ts`), formulaire
+ * désactivé en mode `view` ou pendant une action via `disabled()` déclaratif
+ * plutôt que `form.disable()` impératif.
+ */
 @Component({
     selector: 'cmz-tasks-actions-processing-form-dialog',
-    imports: [ReactiveFormsModule],
+    imports: [FormField, FieldComponent],
+    providers: [TasksActionsProcessingFormStore],
     template: `
         <dialog
             #dlg
@@ -55,59 +53,78 @@ export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
 
             <form
                 class="flex flex-col gap-3 px-4 py-4"
-                [formGroup]="form"
-                (ngSubmit)="onSubmit()"
+                (submit)="onSubmit($event)"
             >
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="text-muted">{{
-                        t(T + '.DIALOG.FORM.TYPE')
-                    }}</span>
+                <cmz-field
+                    [label]="T + '.DIALOG.FORM.TYPE'"
+                    [field]="store.form.type"
+                    for="type"
+                    [required]="true"
+                >
                     <select
-                        formControlName="type"
-                        class="rounded border border-border bg-surface px-2 py-2"
+                        id="type"
+                        [formField]="store.form.type"
+                        (change)="onTypeChange($event)"
+                        class="rounded border border-border bg-surface px-2 py-2 disabled:opacity-50"
                     >
                         <option value="">
                             {{ t('COMMON.SELECT_PLACEHOLDER') }}
                         </option>
-                        @for (opt of typeOptions(); track opt.value) {
+                        @for (opt of store.typeOptions(); track opt.value) {
                             <option [value]="opt.value">{{ opt.label }}</option>
                         }
                     </select>
-                </label>
+                </cmz-field>
 
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="text-muted">{{ t('COMMON.OPERATORS') }}</span>
+                <cmz-field
+                    [label]="'COMMON.OPERATORS'"
+                    [field]="store.form.operator"
+                    for="operator"
+                    [required]="true"
+                >
                     <select
-                        formControlName="operator"
-                        class="rounded border border-border bg-surface px-2 py-2"
+                        id="operator"
+                        [formField]="store.form.operator"
+                        class="rounded border border-border bg-surface px-2 py-2 disabled:opacity-50"
                     >
                         <option value="">
                             {{ t('COMMON.SELECT_PLACEHOLDER') }}
                         </option>
-                        @for (opt of operatorOptions(); track opt.value) {
-                            <option [value]="opt.value">{{ opt.label }}</option>
+                        @for (
+                            opt of store.operatorOptions();
+                            track opt.value
+                        ) {
+                            <option [value]="opt.value">
+                                {{ t(opt.label) }}
+                            </option>
                         }
                     </select>
-                </label>
+                </cmz-field>
 
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="text-muted">{{
-                        t(T + '.DIALOG.FORM.DATE_ACTION')
-                    }}</span>
+                <cmz-field
+                    [label]="T + '.DIALOG.FORM.DATE_ACTION'"
+                    [field]="store.form.date"
+                    for="date"
+                    [required]="true"
+                >
                     <input
+                        id="date"
                         type="datetime-local"
-                        formControlName="date"
-                        class="rounded border border-border bg-surface px-2 py-2"
+                        [formField]="store.form.date"
+                        class="rounded border border-border bg-surface px-2 py-2 disabled:opacity-50"
                     />
-                </label>
+                </cmz-field>
 
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="text-muted">{{
-                        t(T + '.DIALOG.FORM.CONFORMITY.TITLE')
-                    }}</span>
+                <cmz-field
+                    [label]="T + '.DIALOG.FORM.CONFORMITY.TITLE'"
+                    [field]="store.form.isConform"
+                    for="isConform"
+                    [required]="true"
+                >
                     <select
-                        formControlName="isConform"
-                        class="rounded border border-border bg-surface px-2 py-2"
+                        id="isConform"
+                        [formField]="store.form.isConform"
+                        class="rounded border border-border bg-surface px-2 py-2 disabled:opacity-50"
                     >
                         <option value="">
                             {{ t('COMMON.SELECT_PLACEHOLDER') }}
@@ -119,25 +136,30 @@ export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
                             {{ t(T + '.DIALOG.FORM.CONFORMITY.NO_CONFORM') }}
                         </option>
                     </select>
-                </label>
+                </cmz-field>
 
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="text-muted">{{
-                        t(T + '.DIALOG.FORM.DESCRIPTION')
-                    }}</span>
+                <cmz-field
+                    [label]="T + '.DIALOG.FORM.DESCRIPTION'"
+                    [field]="store.form.description"
+                    for="description"
+                    [required]="true"
+                >
                     <textarea
-                        formControlName="description"
+                        id="description"
+                        [formField]="store.form.description"
                         rows="3"
-                        maxlength="255"
-                        class="rounded border border-border bg-surface px-2 py-2"
+                        class="rounded border border-border bg-surface px-2 py-2 disabled:opacity-50"
                         [placeholder]="
                             t(T + '.DIALOG.FORM.DESCRIPTION_PLACEHOLDER')
                         "
                     ></textarea>
-                </label>
+                </cmz-field>
 
                 <label class="flex items-center gap-2 text-sm">
-                    <input type="checkbox" formControlName="shouldNotifyUser" />
+                    <input
+                        type="checkbox"
+                        [formField]="store.form.shouldNotifyUser"
+                    />
                     <span>{{ t(T + '.DIALOG.FORM.NOTIFY_USERS') }}</span>
                 </label>
 
@@ -149,8 +171,8 @@ export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
                             type="submit"
                             class="rounded bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50"
                             [disabled]="
-                                form.invalid ||
-                                actionsFacade.actionState() === 'loading'
+                                !store.isValid() ||
+                                store.actionsFacade.actionState() === 'loading'
                             "
                         >
                             {{ t('COMMON.SAVE') }}
@@ -172,60 +194,11 @@ export class TasksActionsProcessingFormDialogComponent {
     readonly closed = output<void>();
     readonly saved = output<void>();
 
-    protected readonly actionsFacade = inject(TasksActionsProcessingFacade);
-    private readonly typesFacade = inject(TasksActionsTypeProcessingFacade);
+    protected readonly store = inject(TasksActionsProcessingFormStore);
     private readonly i18n = inject(TranslationPort);
 
     private readonly dialogRef =
         viewChild<ElementRef<HTMLDialogElement>>('dlg');
-
-    private readonly selectedTypeCode = signal('');
-
-    readonly form = new FormGroup({
-        type: new FormControl('', {
-            nonNullable: true,
-            validators: [Validators.required],
-        }),
-        operator: new FormControl('', {
-            nonNullable: true,
-            validators: [Validators.required],
-        }),
-        date: new FormControl('', {
-            nonNullable: true,
-            validators: [Validators.required],
-        }),
-        description: new FormControl('', {
-            nonNullable: true,
-            validators: [Validators.required],
-        }),
-        shouldNotifyUser: new FormControl(false, { nonNullable: true }),
-        isConform: new FormControl<TasksActionsProcessingConformity | ''>('', {
-            nonNullable: true,
-            validators: [Validators.required],
-        }),
-    });
-
-    protected readonly typeOptions = computed(() =>
-        this.typesFacade.options().map((item) => ({
-            value: item.value,
-            label: item.label,
-        }))
-    );
-
-    protected readonly operatorOptions = computed(() => {
-        const selected = this.typesFacade
-            .options()
-            .find((item) => item.value === this.selectedTypeCode());
-        const allowed = selected?.operators ?? [];
-        return TELECOM_OPERATOR_OPTIONS.filter((opt) =>
-            allowed.length > 0
-                ? allowed.includes(opt.value as TelecomOperator)
-                : true
-        ).map((opt) => ({
-            value: opt.value,
-            label: this.t(opt.label),
-        }));
-    });
 
     protected readonly dialogTitle = computed(() => {
         const key =
@@ -238,11 +211,6 @@ export class TasksActionsProcessingFormDialogComponent {
     });
 
     constructor() {
-        this.form.controls.type.valueChanges.subscribe((value) => {
-            this.selectedTypeCode.set(value);
-            this.form.controls.operator.reset('');
-        });
-
         effect(() => {
             const dlg = this.dialogRef()?.nativeElement;
             if (!dlg) {
@@ -250,22 +218,10 @@ export class TasksActionsProcessingFormDialogComponent {
             }
             if (this.visible()) {
                 dlg.showModal();
-                this.typesFacade.loadTypes(this.reportUniqId(), {
-                    forceRefresh: true,
-                });
-                this.patchForm();
+                this.store.loadTypes(this.reportUniqId());
+                this.store.open(this.mode(), this.editingItem());
             } else if (dlg.open) {
                 dlg.close();
-            }
-        });
-
-        effect(() => {
-            const isView = this.mode() === 'view';
-            const loading = this.actionsFacade.actionState() === 'loading';
-            if (isView || loading) {
-                this.form.disable({ emitEvent: false });
-            } else {
-                this.form.enable({ emitEvent: false });
             }
         });
     }
@@ -274,11 +230,17 @@ export class TasksActionsProcessingFormDialogComponent {
         return this.i18n.translate(key);
     }
 
-    protected onSubmit(): void {
-        if (this.form.invalid || this.mode() === 'view') {
+    protected onTypeChange(event: Event): void {
+        const type = (event.target as HTMLSelectElement).value;
+        this.store.onTypeChange(type);
+    }
+
+    protected onSubmit(event: Event): void {
+        event.preventDefault();
+        if (!this.store.isValid() || this.mode() === 'view') {
             return;
         }
-        const value = this.form.getRawValue();
+        const value = this.store.model();
         const date = new Date(value.date);
         const payload = {
             reportUniqId: this.reportUniqId(),
@@ -287,7 +249,7 @@ export class TasksActionsProcessingFormDialogComponent {
             operator: value.operator,
             description: value.description,
             shouldNotifyUser: value.shouldNotifyUser,
-            isConform: value.isConform as TasksActionsProcessingConformity,
+            isConform: value.isConform as TasksActionsProcessingEntity['isConform'],
         };
 
         if (this.mode() === 'edit') {
@@ -295,9 +257,9 @@ export class TasksActionsProcessingFormDialogComponent {
             if (!item) {
                 return;
             }
-            this.actionsFacade.update({ uniqId: item.uniqId, ...payload });
+            this.store.actionsFacade.update({ uniqId: item.uniqId, ...payload });
         } else {
-            this.actionsFacade.create(payload);
+            this.store.actionsFacade.create(payload);
         }
         this.saved.emit();
         this.close();
@@ -309,43 +271,7 @@ export class TasksActionsProcessingFormDialogComponent {
 
     close(): void {
         this.dialogRef()?.nativeElement.close();
-        this.form.reset({
-            type: '',
-            operator: '',
-            date: '',
-            description: '',
-            shouldNotifyUser: false,
-            isConform: '',
-        });
+        this.store.reset();
         this.closed.emit();
-    }
-
-    private patchForm(): void {
-        const item = this.editingItem();
-        if (!item || this.mode() === 'create') {
-            this.form.reset({
-                type: '',
-                operator: '',
-                date: this.toLocalInput(new Date()),
-                description: '',
-                shouldNotifyUser: false,
-                isConform: '',
-            });
-            return;
-        }
-        this.selectedTypeCode.set(item.code);
-        this.form.reset({
-            type: item.code,
-            operator: item.operators[0] ?? '',
-            date: this.toLocalInput(item.date),
-            description: item.description,
-            shouldNotifyUser: item.shouldNotifyUser,
-            isConform: item.isConform,
-        });
-    }
-
-    private toLocalInput(date: Date): string {
-        const pad = (n: number) => String(n).padStart(2, '0');
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 }

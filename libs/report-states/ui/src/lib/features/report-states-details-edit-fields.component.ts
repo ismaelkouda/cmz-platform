@@ -21,6 +21,31 @@ export interface ReportStatesDetailsEditFieldsForm {
     placePhotoFile: FormControl<File | null>;
 }
 
+/**
+ * Reste sur `ReactiveFormsModule` (P2-1, backlog-llm.md) — exception
+ * documentée, pas un oubli. Deux raisons concrètes et vérifiables :
+ *
+ * 1. Composition : ce composant reçoit un `FormGroup` complet en `@Input`
+ *    depuis `report-states-details-qualification-form.component.ts` (le
+ *    `group()` ci-dessous), c-à-d un sous-formulaire passé à un composant
+ *    enfant à sélecteur séparé. Aucun des 48 composants déjà migrés vers
+ *    Signal Forms dans ce monorepo ne suit ce pattern — ils déclarent tous
+ *    leurs champs inline dans un seul template (cf. `messaging-form` et les
+ *    formulaires de cascade région/département/commune). Migrer isolément
+ *    ce composant sans migrer aussi son parent créerait une frontière
+ *    `FormGroup`/`FieldTree` au milieu d'un seul et même formulaire logique.
+ * 2. Complexité du parent : `qualification-form.component.ts` bascule les
+ *    validateurs (`syncValidators`, `syncCallbackValidators`,
+ *    `syncEditValidators`) de façon impérative selon 3 points d'interaction
+ *    (`decision`, `approvalType`, visibilité de `editFields`), sur 9+ champs
+ *    plus 2 validateurs cross-champs. Aucun schéma Signal Forms existant
+ *    dans le repo n'atteint ce niveau d'interdépendance conditionnelle.
+ *
+ * Migration groupée (parent + ce composant) recommandée comme item de
+ * backlog séparé plutôt que migration isolée à risque. Voir aussi
+ * `requests-details-edit-fields.component.ts` (même exception, même
+ * parent-pattern côté `requests`).
+ */
 @Component({
     selector: 'cmz-report-states-details-edit-fields',
     imports: [ReactiveFormsModule],

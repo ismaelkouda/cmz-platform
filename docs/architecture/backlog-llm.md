@@ -481,6 +481,43 @@ composant expliquant pourquoi ce fichier reste sur `ReactiveFormsModule`.
 soit chacun des 3 fichiers a un commentaire explicite justifiant
 l'exception.
 
+**Historique de résolution (2026-08-10) :** vérification de l'API
+`@angular/forms/signals` (types `FieldTree<T>`/`schema()`) : aucun blocage
+technique dur — `FieldTree` est générique et supporte en principe la
+composition (sous-formulaire passé à un enfant), et les cases à
+cocher/dates ont déjà un précédent Signal Forms fonctionnel dans le repo
+(`teams-form.component.ts`, `slide-form.component.ts`). Décision par
+fichier :
+- `tasks-actions-processing-form-dialog.component.ts` **migré** vers Signal
+  Forms (nouveau store `tasks-actions-processing-form.store.ts`, pattern
+  `messaging-form.store.ts`). Un problème réel a été détecté et corrigé
+  pendant la migration, pas seulement documenté : l'attribut natif
+  `maxlength="255"` sur le `<textarea>` du template original est **interdit**
+  par le compilateur Angular sur un nœud `[formField]` (erreur NG8022,
+  vérifiée via `ngc --strictTemplates`) — remplacé par une règle `validate()`
+  déclarative équivalente (`DESCRIPTION_MAX_LENGTH`) plus la clé i18n
+  `COMMON.VALIDATION.MAX_LENGTH` (absente du catalogue, ajoutée dans
+  `fr-pack-01.ts`). Vérifié : `ngc --strictTemplates` sur
+  `apps/backoffice-angular` → 0 erreur sur ce fichier ; `tsc --noEmit` sur
+  les 4 projets `scope:processing` → succès ; `eslint --max-warnings=0` → 0
+  warning ; `check:i18n` → 0 clé manquante ; tests `scope:processing`
+  (domain 14, application 14, data 16 = 44/44) → tous verts.
+- `report-states-details-edit-fields.component.ts` et
+  `requests-details-edit-fields.component.ts` **non migrés**, avec
+  commentaire d'exception ajouté au-dessus de la déclaration du composant
+  (raison vérifiable, pas une esquive) : (1) chacun reçoit un `FormGroup`
+  complet en `@Input` depuis son formulaire parent
+  (`*-qualification-form.component.ts`) — composition de sous-formulaire
+  vers un composant enfant à sélecteur séparé, un pattern sans aucun
+  précédent parmi les 48 composants déjà migrés ; (2) le formulaire parent
+  bascule ses validateurs de façon impérative selon 3 points d'interaction
+  (`decision`, `approvalType`, visibilité de `editFields`) sur 9+ champs
+  plus 2 validateurs cross-champs, une complexité supérieure à tout schéma
+  Signal Forms existant dans le repo. Migration en bloc (parent + enfant)
+  recommandée comme item de backlog séparé. `tsc --noEmit` sur les 8
+  projets `scope:report-states,scope:requests` → succès ; `eslint
+  --max-warnings=0` sur les 2 fichiers → 0 warning.
+
 ---
 
 ### P2-2 — Évaluer la nécessité d'une politique d'éviction pour les caches mapper

@@ -100,6 +100,7 @@ export const FR_PACK_1 = {
         },
         VALIDATION: {
             REQUIRED: 'Ce champ est requis.',
+            MAX_LENGTH: 'Ce champ dépasse la longueur maximale autorisée.',
         },
         SUCCESS: {
             CREATE: 'Création réussie.',

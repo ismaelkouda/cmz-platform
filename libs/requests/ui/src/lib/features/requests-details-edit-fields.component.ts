@@ -21,6 +21,19 @@ export interface RequestsDetailsEditFieldsForm {
     placePhotoFile: FormControl<File | null>;
 }
 
+/**
+ * Reste sur `ReactiveFormsModule` (P2-1, backlog-llm.md) — exception
+ * documentée, pas un oubli. Même justification exacte que
+ * `report-states-details-edit-fields.component.ts` (voir ce fichier pour le
+ * détail) : (1) `FormGroup` reçu en `@Input` depuis
+ * `requests-details-qualification-form.component.ts`, un pattern de
+ * composition sans précédent parmi les composants déjà migrés vers Signal
+ * Forms ; (2) le formulaire parent bascule ses validateurs de façon
+ * impérative selon 3 points d'interaction (`decision`, `approvalType`,
+ * visibilité de `editFields`) sur 9+ champs, une complexité supérieure à
+ * tout schéma Signal Forms existant dans le repo. Migration recommandée en
+ * bloc (parent + ce composant) dans un item de backlog dédié.
+ */
 @Component({
     selector: 'cmz-requests-details-edit-fields',
     imports: [ReactiveFormsModule],
