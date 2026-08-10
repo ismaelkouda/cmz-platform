@@ -94,6 +94,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'equipments/types',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/administrative-infrastructure-ui').then(
                         (m) => m.INFRASTRUCTURE_TYPE_ROUTES
@@ -101,6 +102,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'equipments/list',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/administrative-infrastructure-ui').then(
                         (m) => m.INFRASTRUCTURE_ROUTES
@@ -108,6 +110,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'territorial-structures/regions',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/administrative-boundary-ui').then((m) => [
                         ...m.REGION_ROUTES,
@@ -123,6 +126,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'territorial-structures/departments',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/administrative-boundary-ui').then((m) => [
                         ...m.DEPARTMENT_ROUTES,
@@ -138,6 +142,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'territorial-structures/municipalities',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/administrative-boundary-ui').then(
                         (m) => m.MUNICIPALITY_ROUTES
@@ -145,6 +150,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'coverage-areas/site-groups',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/coverage-areas-ui').then(
                         (m) => m.SITE_GROUP_ROUTES
@@ -152,6 +158,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'coverage-areas/mobile-networks',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/coverage-areas-ui').then(
                         (m) => m.MOBILE_NETWORK_ROUTES
@@ -159,6 +166,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'coverage-areas/optical-fiber-networks',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/coverage-areas-ui').then(
                         (m) => m.OPTICAL_FIBER_NETWORK_ROUTES
@@ -166,6 +174,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'coverage-areas/radio-relay-links',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/coverage-areas-ui').then(
                         (m) => m.RADIO_RELAY_LINKS_ROUTES
@@ -173,6 +182,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'team-organization/participants',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/team-organization-ui').then(
                         (m) => m.PARTICIPANTS_ROUTES
@@ -180,6 +190,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'team-organization/teams',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/team-organization-ui').then(
                         (m) => m.TEAMS_ROUTES
@@ -187,6 +198,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'team-organization/agents-performances',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/team-organization-ui').then(
                         (m) => m.AGENTS_PERFORMANCES_ROUTES
@@ -194,6 +206,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'team-organization/daily-goal',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/team-organization-ui').then(
                         (m) => m.DAILY_GOAL_ROUTES
@@ -201,6 +214,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'content-management/home',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/content-management-ui').then(
                         (m) => m.HOME_ROUTES
@@ -208,6 +222,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'content-management/slide',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/content-management-ui').then(
                         (m) => m.SLIDE_ROUTES
@@ -215,6 +230,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'content-management/news',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/content-management-ui').then(
                         (m) => m.NEWS_ROUTES
@@ -222,6 +238,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'content-management/legal-notice',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/content-management-ui').then(
                         (m) => m.LEGAL_NOTICE_ROUTES
@@ -229,6 +246,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'content-management/privacy-policy',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/content-management-ui').then(
                         (m) => m.PRIVACY_POLICY_ROUTES
@@ -236,6 +254,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'content-management/terms-use',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/content-management-ui').then(
                         (m) => m.TERMS_USE_ROUTES
@@ -243,6 +262,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'settings-security/users',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/settings-security-ui').then(
                         (m) => m.USERS_ROUTES
@@ -250,6 +270,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'settings-security/profiles-permissions',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/settings-security-ui').then(
                         (m) => m.PROFILES_PERMISSIONS_ROUTES
@@ -257,6 +278,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'settings-security/access-logs',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/settings-security-ui').then(
                         (m) => m.ACCESS_LOGS_ROUTES
@@ -264,6 +286,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'communication/messaging',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/communication-ui').then(
                         (m) => m.MESSAGING_ROUTES
@@ -271,6 +294,7 @@ export const appRoutes: Route[] = [
             },
             {
                 path: 'communication/notifications',
+                canActivate: [pathsGuard],
                 loadChildren: () =>
                     import('@cmz/communication-ui').then(
                         (m) => m.NOTIFICATIONS_ROUTES

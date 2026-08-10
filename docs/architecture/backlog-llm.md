@@ -84,9 +84,9 @@ Une route à corriger ressemble actuellement à ceci (sans la ligne
 
 **Instruction, étape par étape :**
 1. Ouvrir `apps/backoffice-angular/src/app/app.routes.ts`.
-2. Pour chacune des 23 routes listées dans "Constat" ci-dessus, trouver le
+2. Pour chacune des 24 routes listées dans "Constat" ci-dessus, trouver le
    bloc `{ path: '<segment>', loadChildren: ... }` correspondant (le
-   `path` doit correspondre exactement à un des 23 segments listés,
+   `path` doit correspondre exactement à un des 24 segments listés,
    exemple `'equipments/types'`).
 3. Dans ce bloc, ajouter une ligne `canActivate: [pathsGuard],`
    immédiatement après la ligne `path: '...',` et avant la ligne
@@ -99,7 +99,7 @@ Une route à corriger ressemble actuellement à ceci (sans la ligne
 5. Ne modifier aucun autre fichier.
 6. Exécuter `bunx nx run backoffice-angular:test`.
 7. Si des tests échouent avec une erreur liée à `StorePathsService` ou
-   `paths()` non défini pour une des 23 routes touchées, ouvrir le fichier
+   `paths()` non défini pour une des 24 routes touchées, ouvrir le fichier
    de test qui échoue et ajouter un mock de `StorePathsService` identique
    à celui utilisé dans `paths.guard.spec.ts` (chercher
    `StorePathsService` dans ce fichier pour voir le modèle exact). Ne pas
@@ -109,7 +109,7 @@ Une route à corriger ressemble actuellement à ceci (sans la ligne
 
 **Critère de succès (vérifier les 3 dans l'ordre) :**
 1. `grep -c "canActivate: \[pathsGuard\]" apps/backoffice-angular/src/app/app.routes.ts`
-   retourne `27` (4 routes déjà correctes + 23 nouvelles).
+   retourne `28` (4 routes déjà correctes + 24 nouvelles).
 2. `bunx nx run backoffice-angular:test` se termine sans échec.
 3. `bunx nx run backoffice-angular:build` se termine sans erreur.
 
