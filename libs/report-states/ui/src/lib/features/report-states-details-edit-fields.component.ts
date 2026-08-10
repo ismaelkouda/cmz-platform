@@ -7,7 +7,7 @@ import {
     TELECOM_OPERATOR_OPTIONS,
 } from '@cmz/shared-ui';
 
-const E = 'REQUESTS.DETAILS.EDIT';
+const E = 'REPORT_STATES.DETAILS.EDIT';
 
 export interface ReportStatesDetailsEditFieldsForm {
     latitude: FormControl<number>;

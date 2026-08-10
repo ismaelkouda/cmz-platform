@@ -2,7 +2,7 @@ import { Component, input, inject } from '@angular/core';
 import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
 import { TranslationPort } from '@cmz/shared-application';
 
-const T = 'REQUESTS.DETAILS';
+const T = 'REPORT_STATES.DETAILS';
 
 @Component({
     selector: 'cmz-report-states-details-location-panel',

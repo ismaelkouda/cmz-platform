@@ -313,6 +313,32 @@ ne retourne aucun résultat ; `bun run check:i18n` (ou la commande
 équivalente définie dans `package.json`) ne signale aucune clé manquante
 introduite par ce changement.
 
+**Historique de résolution (2026-08-10) :** la liste "Fichiers concernés"
+ci-dessus était incomplète — le grep exhaustif
+(`grep -rln "REQUESTS.DETAILS" libs/report-states/`) a trouvé **15**
+fichiers, pas 10 : 5 manquaient (`report-states-details-location-panel.component.ts`,
+`report-states-details-photos-panel.component.ts`,
+`report-states-details-info-panel.component.ts`,
+`report-states-details-qualification.vo.spec.ts`,
+`report-states-details-filter.vo.spec.ts`). Les deux `.spec.ts` manquants
+assertent sur les chaînes exactes lancées par les `.vo.ts` correspondants
+(`toThrow('REQUESTS.DETAILS...')`) — les omettre aurait cassé leurs tests
+après correction des `.vo.ts`. Les 15 fichiers ont été corrigés. Catalogue
+de traduction identifié : `apps/backoffice-angular/src/app/i18n/fr/fr-pack-04.ts`
+(bloc `REPORT_STATES`, `fr-pack-05.ts` contient le bloc `REQUESTS` source).
+Bloc `DETAILS` dupliqué depuis `REQUESTS.DETAILS` (valeurs identiques, pas
+de réécriture). Vérifié : `grep -rn "REQUESTS.DETAILS" libs/report-states/`
+→ 0 résultat ; `bun run check:i18n` → « 0 clé référencée sans définition »
+(255 clés non référencées signalées, catégorie d'avertissement
+préexistante et sans rapport) ; `bunx nx run report-states-domain:test`
+et les tests report-states application/data → tous verts (44 tests, y
+compris les `.vo.spec.ts` modifiés). Découverte annexe hors périmètre,
+non corrigée ici : `report-states-details-status-label.constant.ts`
+(lignes 8-17, non listées dans "Fichiers concernés" et non couvertes par
+le préfixe `REQUESTS.DETAILS.`) utilise `REQUESTS.ALL.FILTER.*` sans
+équivalent `REPORT_STATES.ALL.FILTER.*` — même classe de bug, préfixe
+différent, documenté séparément dans `taches-restantes.md` T12-22.
+
 ---
 
 ### P1-3 — Confirmer le format réel de `CurrentUser.paths` et sécuriser `pathsGuard`

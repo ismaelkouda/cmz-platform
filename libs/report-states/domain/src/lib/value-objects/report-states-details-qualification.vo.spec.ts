@@ -41,7 +41,7 @@ describe('reportStatesDetailsQualificationVo', () => {
                 approvalType: 'view',
                 callbackType: null,
             })
-        ).toThrow('REQUESTS.DETAILS.QUALIFICATION.COMMENT_REQUIRED');
+        ).toThrow('REPORT_STATES.DETAILS.QUALIFICATION.COMMENT_REQUIRED');
 
         expect(() =>
             reportStatesDetailsQualificationVo({
@@ -51,7 +51,7 @@ describe('reportStatesDetailsQualificationVo', () => {
                 approvalType: 'view',
                 callbackType: null,
             })
-        ).toThrow('REQUESTS.DETAILS.QUALIFICATION.REASON_REQUIRED');
+        ).toThrow('REPORT_STATES.DETAILS.QUALIFICATION.REASON_REQUIRED');
     });
 
     it('trim les champs texte sur rejet', () => {
@@ -76,7 +76,7 @@ describe('reportStatesDetailsQualificationVo', () => {
                 approvalType: 'callback',
                 callbackType: null,
             })
-        ).toThrow('REQUESTS.DETAILS.QUALIFICATION.CALLBACK_TYPE_REQUIRED');
+        ).toThrow('REPORT_STATES.DETAILS.QUALIFICATION.CALLBACK_TYPE_REQUIRED');
     });
 
     it('normalise callbackType null hors mode callback', () => {
@@ -100,7 +100,7 @@ describe('reportStatesDetailsQualificationVo', () => {
                 approvalType: 'edit',
                 callbackType: null,
             })
-        ).toThrow('REQUESTS.DETAILS.QUALIFICATION.COMMENT_REQUIRED');
+        ).toThrow('REPORT_STATES.DETAILS.QUALIFICATION.COMMENT_REQUIRED');
 
         expect(() =>
             reportStatesDetailsQualificationVo({

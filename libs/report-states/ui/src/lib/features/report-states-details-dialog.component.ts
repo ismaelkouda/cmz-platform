@@ -229,12 +229,12 @@ export class ReportStatesDetailsDialogComponent {
 
     protected async onTake(details: { uniqId: string }): Promise<void> {
         const confirmed = await this.confirm.confirm(
-            this.t('REQUESTS.DETAILS.CONFIRM.TAKE.MESSAGE').replace(
+            this.t('REPORT_STATES.DETAILS.CONFIRM.TAKE.MESSAGE').replace(
                 '{uniqId}',
                 details.uniqId
             ),
             {
-                title: this.t('REQUESTS.DETAILS.CONFIRM.TAKE.TITLE'),
+                title: this.t('REPORT_STATES.DETAILS.CONFIRM.TAKE.TITLE'),
                 confirmText: this.t('COMMON.CONFIRM'),
                 cancelText: this.t('COMMON.CANCEL'),
             }
@@ -259,7 +259,7 @@ export class ReportStatesDetailsDialogComponent {
             reportStatesDetailsQualificationVo(form);
         } catch {
             this.notification.error(
-                this.t('REQUESTS.DETAILS.QUALIFICATION.VALIDATION_ERROR')
+                this.t('REPORT_STATES.DETAILS.QUALIFICATION.VALIDATION_ERROR')
             );
             return;
         }
@@ -267,12 +267,12 @@ export class ReportStatesDetailsDialogComponent {
         const isReject = form.decision === 'rejected';
         const confirmKey = isReject ? 'REJECT' : 'APPROVE';
         const confirmed = await this.confirm.confirm(
-            this.t(`REQUESTS.DETAILS.CONFIRM.${confirmKey}.MESSAGE`).replace(
+            this.t(`REPORT_STATES.DETAILS.CONFIRM.${confirmKey}.MESSAGE`).replace(
                 '{uniqId}',
                 entity.uniqId
             ),
             {
-                title: this.t(`REQUESTS.DETAILS.CONFIRM.${confirmKey}.TITLE`),
+                title: this.t(`REPORT_STATES.DETAILS.CONFIRM.${confirmKey}.TITLE`),
                 confirmText: this.t('COMMON.CONFIRM'),
                 cancelText: this.t('COMMON.CANCEL'),
             }

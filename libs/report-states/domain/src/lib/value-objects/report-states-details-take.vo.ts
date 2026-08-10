@@ -5,7 +5,7 @@ export function reportStatesDetailsTakeVo(
 ): ReportStatesDetailsTakeContract {
     const uniqId = contract.uniqId?.trim();
     if (!uniqId) {
-        throw new Error('REQUESTS.DETAILS.TAKE.UNIQ_ID_REQUIRED');
+        throw new Error('REPORT_STATES.DETAILS.TAKE.UNIQ_ID_REQUIRED');
     }
     return { uniqId };
 }

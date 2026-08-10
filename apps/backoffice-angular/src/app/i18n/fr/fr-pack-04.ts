@@ -664,5 +664,96 @@ export const FR_PACK_4 = {
                 NO_PERMISSION_DOWNLOAD: 'Téléchargement non permis',
             },
         },
+        DETAILS: {
+            UNIQ_ID: 'Identifiant',
+            REPORT_TYPE: 'Type de demande',
+            OPERATORS: 'Opérateurs',
+            SOURCE: 'Canal',
+            INITIATOR: 'Numéro initiateur',
+            REPORTED_AT: 'Signalé le',
+            DESCRIPTION: 'Description',
+            STATUS_FIELD: 'Statut',
+            LOCATION_NAME: 'Lien avec la zone',
+            REGION: 'Région',
+            DEPARTMENT: 'Département',
+            MUNICIPALITY: 'Commune/Sous-préfecture',
+            PLACE_DESCRIPTION: "Description de l'endroit",
+            LATITUDE: 'Latitude',
+            LONGITUDE: 'Longitude',
+            LOCATION_DESCRIPTION: 'Description de la localisation',
+            OPEN_MAP: 'Ouvrir sur OpenStreetMap',
+            TABS: {
+                INFORMATION: 'Informations',
+                PHOTOS: 'Images',
+                LOCATION: 'Vue géographique',
+            },
+            PHOTOS: {
+                EMPTY: 'Aucune image disponible',
+                ALT: 'Photo du signalement',
+            },
+            STATUS: {
+                PENDING: 'En attente',
+            },
+            CALLBACK: {
+                WHATSAPP: 'WhatsApp',
+                APPEL: 'Appel téléphonique',
+            },
+            EDIT: {
+                TITLE: 'Modifier le signalement',
+                LATITUDE: 'Latitude',
+                LONGITUDE: 'Longitude',
+                LOCATION_NAME: 'Lien avec la zone',
+                REPORT_TYPE: 'Type de demande',
+                OPERATORS: 'Opérateurs concernés',
+                DESCRIPTION: 'Description du signalement',
+                PLACE_DESCRIPTION: "Description de l'endroit",
+                PLACE_PHOTO: 'Photo du lieu',
+                PLACE_PHOTO_ALT: 'Photo actuelle du signalement',
+            },
+            CONFIRM: {
+                TAKE: {
+                    TITLE: 'Prise en charge',
+                    MESSAGE:
+                        'Confirmer la prise en charge de la demande {uniqId} ?',
+                },
+                APPROVE: {
+                    TITLE: 'Qualification',
+                    MESSAGE:
+                        'Confirmer la qualification de la demande {uniqId} ?',
+                },
+                REJECT: {
+                    TITLE: 'Rejet',
+                    MESSAGE: 'Confirmer le rejet de la demande {uniqId} ?',
+                },
+            },
+            QUALIFICATION: {
+                DECISION: 'Décision',
+                APPROVE: 'Approuver',
+                REJECT: 'Rejeter',
+                MOTIF_LABEL: 'Motif',
+                COMMENT: 'Commentaire',
+                DECISION_REQUIRED: 'La décision est requise.',
+                REASON_REQUIRED: 'Le motif est requis pour un rejet.',
+                COMMENT_REQUIRED: 'Le commentaire est requis pour un rejet.',
+                CALLBACK_TYPE_REQUIRED: 'Le type de rappel est requis.',
+                VALIDATION_ERROR: 'Veuillez compléter le formulaire.',
+                EDIT_FIELDS_REQUIRED:
+                    'Veuillez compléter tous les champs modifiables.',
+                MOTIFS: {
+                    DUP: '[DUP] Signalement en doublon',
+                    HOP: '[HOP] Signalement hors périmètre',
+                    IFM: '[IFM] Informations incomplètes',
+                    FAS: '[FAS] Faux signalement',
+                    EXP: '[EXP] Expiration de délais',
+                    AUT: '[AUT] Autre raison',
+                },
+            },
+            FILTER: {
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
+            },
+            TAKE: {
+                UNIQ_ID_REQUIRED: "L'identifiant est requis",
+            },
+        },
     },
 } as const;

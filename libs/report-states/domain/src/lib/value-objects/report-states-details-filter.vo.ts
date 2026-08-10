@@ -5,7 +5,7 @@ export function reportStatesDetailsFilterVo(
 ): ReportStatesDetailsFilterContract {
     const uniqId = contract.uniqId?.trim();
     if (!uniqId) {
-        throw new Error('REQUESTS.DETAILS.FILTER.UNIQ_ID_REQUIRED');
+        throw new Error('REPORT_STATES.DETAILS.FILTER.UNIQ_ID_REQUIRED');
     }
     return { uniqId };
 }

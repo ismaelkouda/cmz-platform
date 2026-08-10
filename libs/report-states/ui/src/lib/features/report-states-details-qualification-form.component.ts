@@ -11,7 +11,7 @@ import { REPORT_STATES_DETAILS_CALLBACK_TYPES } from '../constants/report-states
 import { REPORT_STATES_DETAILS_REJECT_MOTIFS } from '../constants/report-states-details-reject-motif.constant';
 import { ReportStatesDetailsEditFieldsComponent } from './report-states-details-edit-fields.component';
 
-const Q = 'REQUESTS.DETAILS.QUALIFICATION';
+const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
 
 @Component({
     selector: 'cmz-report-states-details-qualification-form',

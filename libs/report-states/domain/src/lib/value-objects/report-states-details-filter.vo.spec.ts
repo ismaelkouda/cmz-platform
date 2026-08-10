@@ -10,7 +10,7 @@ describe('reportStatesDetailsFilterVo', () => {
 
     it('lève si uniqId absent', () => {
         expect(() => reportStatesDetailsFilterVo({ uniqId: '   ' })).toThrow(
-            'REQUESTS.DETAILS.FILTER.UNIQ_ID_REQUIRED'
+            'REPORT_STATES.DETAILS.FILTER.UNIQ_ID_REQUIRED'
         );
     });
 });

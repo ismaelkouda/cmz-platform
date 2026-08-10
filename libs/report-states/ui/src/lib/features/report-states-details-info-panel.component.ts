@@ -8,7 +8,7 @@ import {
 } from '@cmz/shared-ui';
 import { REPORT_STATES_DETAILS_STATUS_LABEL } from '../constants/report-states-details-status-label.constant';
 
-const T = 'REQUESTS.DETAILS';
+const T = 'REPORT_STATES.DETAILS';
 
 @Component({
     selector: 'cmz-report-states-details-info-panel',
