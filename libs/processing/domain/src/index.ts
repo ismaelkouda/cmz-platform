@@ -13,14 +13,8 @@ export { ProcessingDetailsRepository } from './lib/repositories/processing-detai
 export { processingDetailsFilterVo } from './lib/value-objects/processing-details-filter.vo';
 export { processingDetailsTakeVo } from './lib/value-objects/processing-details-take.vo';
 export { processingDetailsTreatVo } from './lib/value-objects/processing-details-treat.vo';
-export {
-    ProcessingDetailsProcessingState,
-    isProcessingDetailsProcessingState,
-} from './lib/enums/processing-details-processing-state.enum';
-export {
-    ProcessingDetailsState,
-    isProcessingDetailsState,
-} from './lib/enums/processing-details-state.enum';
+export { ProcessingDetailsProcessingState } from './lib/enums/processing-details-processing-state.enum';
+export { ProcessingDetailsState } from './lib/enums/processing-details-state.enum';
 export { ProcessingDetailsStatus } from './lib/enums/processing-details-status.enum';
 export {
     PROCESSING_ALL_ROUTE,

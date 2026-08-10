@@ -15,10 +15,7 @@ export type {
 export { ReportStatesDetailsRepository } from './lib/repositories/report-states-details.repository';
 export { reportStatesDetailsFilterVo } from './lib/value-objects/report-states-details-filter.vo';
 export { reportStatesDetailsTakeVo } from './lib/value-objects/report-states-details-take.vo';
-export {
-    ReportStatesDetailsStatus,
-    isReportStatesDetailsStatus,
-} from './lib/enums/report-states-details-status.enum';
+export { ReportStatesDetailsStatus } from './lib/enums/report-states-details-status.enum';
 export { ReportStatesDetailsQualificationState } from './lib/enums/report-states-details-qualification-state.enum';
 export {
     REPORT_STATES_APPROVE_ROUTE,
