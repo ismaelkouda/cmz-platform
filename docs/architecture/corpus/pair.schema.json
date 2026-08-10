@@ -99,12 +99,12 @@
   "properties": {
     "id": {
       "type": "string",
-      "description": "Identifiant stable — ex. processing.queues.list-item-entity",
-      "pattern": "^[a-z0-9][a-z0-9.-]*$"
+      "description": "Identifiant stable — ex. processing.queues.list-item-entity, ou chain_id::node pour la famille crud-entity (ex. shared.shared-ui.crud-v0::crud-props)",
+      "pattern": "^[a-z0-9][a-z0-9.:-]*$"
     },
     "legacy": {
-      "type": "string",
-      "description": "Chemin relatif depuis la racine cmz-backoffice-frontend"
+      "type": ["string", "null"],
+      "description": "Chemin relatif depuis la racine cmz-backoffice-frontend, ou null si la correspondance legacy n'est pas vérifiable/applicable (voir status:'n/a' — ex. exception aggregated-stats-view, ou crud-entity T12-18)"
     },
     "nx": {
       "type": ["string", "null"],
@@ -135,6 +135,10 @@
     "volet": {
       "type": "string",
       "description": "Sous-entité volet — ex. queues, tasks, all"
+    },
+    "section": {
+      "type": "string",
+      "description": "Équivalent de « volet » pour les patterns read-only-view / aggregated-stats-view — ex. jobs, node, resources, services (monitoring), report, report-by-channel, report-by-operator, requests (reporting). Voir tools/corpus/read-only-view-nodes.mjs / read-only-view-shared.mjs."
     },
     "layer": {
       "type": "string",
