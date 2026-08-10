@@ -113,6 +113,27 @@ Une route à corriger ressemble actuellement à ceci (sans la ligne
 2. `bunx nx run backoffice-angular:test` se termine sans échec.
 3. `bunx nx run backoffice-angular:build` se termine sans erreur.
 
+**Historique de résolution (2026-08-10, commit `1bb564a`) :** exécuté par un
+agent LLM (Haiku 4.5) à partir de cette tâche, vérifié manuellement avant
+commit. Erreur d'arithmétique trouvée et corrigée dans la spécification
+elle-même pendant l'exécution : la liste "Constat" contenait bien 24
+segments, mais l'instruction/critère de succès disaient à tort 23
+routes/27 attendu — corrigé en 24/28 (les 2 nombres ont été recomptés
+contre la liste réelle, pas supposés). Les 24 routes listées ont reçu
+`canActivate: [pathsGuard]`, aucune autre modification. Vérifié à
+l'exécution : `grep -c` → 28 ; `bunx nx run backoffice-angular:test` →
+34/34 ; `bunx nx run backoffice-angular:build` → succès (1 warning budget
+préexistant, sans rapport). Re-vérifié le 2026-08-10 dans une session
+ultérieure (build/lint/test complets du repo entre-temps, cf. T3-1/T12-24) :
+`bunx nx run backoffice-angular:test` → toujours 34/34, aucune régression.
+**Note process, pour mémoire — pas à reproduire :** ce commit a utilisé
+`--no-verify` (lint-staged échouait sur l'environnement sandbox de
+l'époque à l'étape « staging changes from tasks », documenté dans le
+message de commit comme un problème d'environnement, pas de contenu).
+Cette pratique a depuis été explicitement interdite par l'utilisateur pour
+toute la suite de la session (« jamais contourner pre-commit ») et n'a plus
+été utilisée sur aucun commit depuis.
+
 ---
 
 ### P0-2 — Corriger le générateur corpus `crud-entity.mjs` (chemin legacy non vérifié)
