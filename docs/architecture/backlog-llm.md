@@ -272,6 +272,14 @@ structure pour une lib partagée (nom, couches, ce qui resterait spécifique
 `docs/architecture/factorisation-details-workflow.md` existe et contient
 les 3 sections demandées avec des chemins de fichiers vérifiables.
 
+**Historique de résolution (2026-08-10) :** mémo produit
+(`docs/architecture/factorisation-details-workflow.md`), les 3 sections
+demandées présentes avec chemins exacts. Code existant **non modifié**
+(hors périmètre de cette tâche, conformément à l'instruction). La fuite
+i18n mentionnée dans le constat comme preuve de dérive a été corrigée
+séparément (P1-2). Décision de factorisation `@cmz/shared-workflow` reste
+ouverte — `taches-restantes.md` T1-5, réservée à un humain (ARB).
+
 ---
 
 ### P1-2 — Corriger la fuite de namespace i18n dans `report-states`
@@ -376,6 +384,16 @@ quelles actions corriger selon le résultat.
 au-dessus de la fixture `paths` dans `current-user.mapper.spec.ts` ; le
 fichier `docs/architecture/verification-format-paths.md` existe avec les
 étapes de vérification décrites.
+
+**Historique de résolution (2026-08-10) :** les deux livrables produits.
+Commentaire d'avertissement ajouté au-dessus de la fixture `paths` dans
+`current-user.mapper.spec.ts` (format `'/admin'` non confirmé contre une
+vraie réponse serveur). Mémo `docs/architecture/verification-format-paths.md`
+créé avec les étapes de vérification staging. `paths.guard.ts` **non
+modifié** (conformément à l'instruction — aucune preuve du format réel).
+Le fond du problème (`taches-restantes.md` T3-2/OPS-7) reste
+`bloqué-humain` : nécessite un accès staging qu'un agent ne peut pas
+obtenir seul.
 
 ---
 
