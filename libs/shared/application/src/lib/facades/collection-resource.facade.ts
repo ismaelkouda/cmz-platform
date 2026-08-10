@@ -1,5 +1,5 @@
 import { inject, signal } from '@angular/core';
-import { DomainError } from '@cmz/shared-domain';
+import { DomainError, UnknownError } from '@cmz/shared-domain';
 import { Observable } from 'rxjs';
 import { NotificationPort } from '../ports/notification.port';
 import { TranslationPort } from '../ports/translation.port';
@@ -47,7 +47,12 @@ export abstract class CollectionResourceFacade<
             },
             error: (err: unknown) => {
                 this._actionError.set(err);
-                this.mutationErrorHandler.handle(err as DomainError);
+                // T3-1 (docs/architecture/taches-restantes.md, 2026-08-10) :
+                // même garde-fou que `ResourceFacade` (voir ce fichier) — `err`
+                // est `unknown`, converti plutôt que casté vers `DomainError`.
+                this.mutationErrorHandler.handle(
+                    err instanceof DomainError ? err : new UnknownError()
+                );
                 this._actionState.set('idle');
             },
             complete: () => this._actionState.set('idle'),

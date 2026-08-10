@@ -1,6 +1,6 @@
 import { computed, effect, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { DomainError } from '@cmz/shared-domain';
+import { DomainError, UnknownError } from '@cmz/shared-domain';
 import { Observable } from 'rxjs';
 import { ErrorHandlerRegistry } from '../services/error-handler-registry.service';
 
@@ -41,7 +41,20 @@ export abstract class ResourceFacade<TData, TParams> {
         effect(() => {
             const err = this.resource.error();
             if (err) {
-                this.errorHandler.handle(err as DomainError);
+                // T3-1 (docs/architecture/taches-restantes.md, 2026-08-10) :
+                // `err` est `unknown` (contrat `rxResource`) — un `as DomainError`
+                // ici est un cast, pas une conversion, et reproduit le bug déjà
+                // documenté et corrigé côté transport (`error.interceptor.ts`) :
+                // si `err` n'est pas un vrai `DomainError`, `ErrorHandlerRegistry`
+                // retombe sur le handler par défaut avec un `messageKey`
+                // `undefined` → toast vide. `errorInterceptor` convertit déjà les
+                // échecs de transport en `DomainError` réel, donc ce garde-fou ne
+                // devrait normalement jamais tomber sur la branche `UnknownError`
+                // — il couvre les erreurs qui échapperaient à l'intercepteur
+                // (ex. exception levée par un mapper avant l'enveloppe HTTP).
+                this.errorHandler.handle(
+                    err instanceof DomainError ? err : new UnknownError()
+                );
             }
         });
     }
