@@ -1,10 +1,13 @@
 import { SimpleResponseMapper } from '@cmz/shared-data';
-import { MapEntity } from '@cmz/interactive-map-domain';
+import { GrafanaLinkEntity } from '@cmz/shared-domain';
 import { MapItemDto } from '../dtos/map-response.dto';
 
-export class MapMapper extends SimpleResponseMapper<MapEntity, MapItemDto> {
-    protected override mapItemFromDto(dto: MapItemDto): MapEntity {
+export class MapMapper extends SimpleResponseMapper<
+    GrafanaLinkEntity,
+    MapItemDto
+> {
+    protected override mapItemFromDto(dto: MapItemDto): GrafanaLinkEntity {
         const link = dto.mapLink ?? dto.map_link ?? '';
-        return new MapEntity(link);
+        return new GrafanaLinkEntity(link);
     }
 }

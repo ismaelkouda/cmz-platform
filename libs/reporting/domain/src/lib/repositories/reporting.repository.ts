@@ -1,7 +1,6 @@
-import { FetchOptions } from '@cmz/shared-domain';
+import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
 import { Observable } from 'rxjs';
 import { ReportingSection } from '../enums/reporting-section.enum';
-import { GrafanaDashboardEntity } from '../entities/grafana-dashboard.entity';
 
 /**
  * Port unique pour les 4 sections `reporting` — le source avait 4
@@ -14,5 +13,5 @@ export abstract class ReportingRepository {
     abstract execute(
         section: ReportingSection,
         options?: FetchOptions
-    ): Observable<GrafanaDashboardEntity>;
+    ): Observable<GrafanaLinkEntity>;
 }

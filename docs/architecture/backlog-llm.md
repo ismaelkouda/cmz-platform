@@ -658,6 +658,33 @@ unique depuis `@cmz/shared-domain` et `bunx nx run-many -t build` passe
 pour les 3 modules concernés, soit les 3 fichiers ont chacun un commentaire
 croisé référençant les 2 autres emplacements.
 
+**Historique de résolution (2026-08-10) :** `libs/shared/domain` avait déjà
+un conteneur `entities/` adapté (vérifié : `find libs/shared/domain -type d
+-name entities` → existe, contient déjà des entités transversales similaires
+comme `CoordinatesEntity`). Branche "oui" appliquée : nouvelle entité
+`GrafanaLinkEntity` créée dans
+`libs/shared/domain/src/lib/entities/grafana-link.entity.ts`, exportée
+depuis `libs/shared/domain/src/index.ts`. Les 3 fichiers dupliqués
+supprimés (`monitoring`, `reporting` : `entities/grafana-dashboard.entity.ts` ;
+`interactive-map` : `entities/map.entity.ts`), leurs exports retirés des 3
+barrels `domain/src/index.ts`. Les 24 fichiers référençant l'un des 3 noms
+(`grep -rl "GrafanaDashboardEntity\|MapEntity" libs/` avant correction)
+mis à jour : import repointé vers `@cmz/shared-domain`, identifiant renommé
+en `GrafanaLinkEntity` (les noms de classes de mapper comme
+`GrafanaDashboardMapper`/`ReportingDashboardMapper`/`MapMapper` sont
+restés inchangés — hors périmètre, ce sont des mappers, pas l'entité).
+Vérifié : `grep -rln "GrafanaDashboardEntity\|\bMapEntity\b" libs/ apps/` →
+plus aucune occurrence hors du commentaire de `grafana-link.entity.ts` lui-même ;
+`tsc --noEmit` sur les 19 projets `scope:monitoring,scope:reporting,
+scope:interactive-map,scope:shared,scope:core` → succès ; `eslint
+--max-warnings=0` sur les mêmes 19 projets (limites `@nx/enforce-module-
+boundaries` incluses) → 0 warning ; `ngc --strictTemplates` sur
+`apps/backoffice-angular` → 0 erreur ; tests (monitoring-data 4,
+reporting-data 5, interactive-map-data 9, shared-domain 36, shared-data 87
+= 141/141) → tous verts ; `prettier --check` sur tous les fichiers
+modifiés → 2 fichiers reformatés (`reporting.use-case.ts`,
+`reporting.repository.impl.ts`), re-vérifiés après reformatage.
+
 ---
 
 ## Mémos d'investigation (décision humaine requise après production du mémo)

@@ -1,11 +1,7 @@
 import { inject, Service } from '@angular/core';
 import { map, Observable } from 'rxjs';
-import { FetchOptions } from '@cmz/shared-domain';
-import {
-    GrafanaDashboardEntity,
-    ReportingRepository,
-    ReportingSection,
-} from '@cmz/reporting-domain';
+import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
+import { ReportingRepository, ReportingSection } from '@cmz/reporting-domain';
 import { ReportingApi } from '../sources/reporting.api';
 import { ReportingDashboardMapper } from '../mappers/reporting-dashboard.mapper';
 
@@ -16,7 +12,7 @@ export class ReportingRepositoryImpl implements ReportingRepository {
     execute(
         section: ReportingSection,
         options?: FetchOptions
-    ): Observable<GrafanaDashboardEntity> {
+    ): Observable<GrafanaLinkEntity> {
         const mapper = new ReportingDashboardMapper(section);
         return this.api
             .getVariables(options)

@@ -1,21 +1,18 @@
 import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ResourceFacade } from '@cmz/shared-application';
-import { FetchOptions } from '@cmz/shared-domain';
-import {
-    GrafanaDashboardEntity,
-    ReportingSection,
-} from '@cmz/reporting-domain';
+import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
+import { ReportingSection } from '@cmz/reporting-domain';
 import { ReportingUseCase } from '../use-cases/reporting.use-case';
 
 @Service()
 export class RequestsFacade extends ResourceFacade<
-    GrafanaDashboardEntity,
+    GrafanaLinkEntity,
     FetchOptions
 > {
     private readonly useCase = inject(ReportingUseCase);
 
-    protected stream(params: FetchOptions): Observable<GrafanaDashboardEntity> {
+    protected stream(params: FetchOptions): Observable<GrafanaLinkEntity> {
         return this.useCase.execute(ReportingSection.REQUESTS, params);
     }
 

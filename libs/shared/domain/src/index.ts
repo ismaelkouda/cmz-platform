@@ -45,6 +45,7 @@ export * from './lib/errors/date-period/invalid-end-date.error';
 export * from './lib/entities/actor.entity';
 export * from './lib/entities/administrative-boundary.entity';
 export * from './lib/entities/coordinates.entity';
+export * from './lib/entities/grafana-link.entity';
 export * from './lib/entities/message.entity';
 export * from './lib/entities/report-location.entity';
 export * from './lib/entities/report-media.entity';

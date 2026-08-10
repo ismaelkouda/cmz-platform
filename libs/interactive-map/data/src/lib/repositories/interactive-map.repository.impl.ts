@@ -1,11 +1,10 @@
 import { inject, Service } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { unwrapResponse } from '@cmz/shared-data';
-import { FetchOptions } from '@cmz/shared-domain';
+import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
 import {
     InteractiveMapReportEntity,
     InteractiveMapRepository,
-    MapEntity,
 } from '@cmz/interactive-map-domain';
 import { MapApi } from '../sources/map.api';
 import { InteractiveMapReportsApi } from '../sources/interactive-map-reports.api';
@@ -20,7 +19,7 @@ export class InteractiveMapRepositoryImpl implements InteractiveMapRepository {
     private readonly mapMapper = new MapMapper();
     private readonly reportMapper = new InteractiveMapReportMapper();
 
-    getMap(options?: FetchOptions): Observable<MapEntity> {
+    getMap(options?: FetchOptions): Observable<GrafanaLinkEntity> {
         return this.mapApi
             .getMap(options)
             .pipe(map((response) => this.mapMapper.mapFromDto(response)));

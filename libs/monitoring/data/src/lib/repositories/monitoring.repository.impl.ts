@@ -1,8 +1,7 @@
 import { Service, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { FetchOptions } from '@cmz/shared-domain';
+import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
 import {
-    GrafanaDashboardEntity,
     MonitoringRepository,
     MonitoringSection,
 } from '@cmz/monitoring-domain';
@@ -16,7 +15,7 @@ export class MonitoringRepositoryImpl implements MonitoringRepository {
     execute(
         section: MonitoringSection,
         options?: FetchOptions
-    ): Observable<GrafanaDashboardEntity> {
+    ): Observable<GrafanaLinkEntity> {
         const mapper = new GrafanaDashboardMapper(section);
         return this.api
             .getVariables(options)

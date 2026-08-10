@@ -1,15 +1,14 @@
 import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ResourceFacade } from '@cmz/shared-application';
-import { FetchOptions } from '@cmz/shared-domain';
-import { MapEntity } from '@cmz/interactive-map-domain';
+import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
 import { MapUseCase } from '../use-cases/map.use-case';
 
 @Service()
-export class MapFacade extends ResourceFacade<MapEntity, FetchOptions> {
+export class MapFacade extends ResourceFacade<GrafanaLinkEntity, FetchOptions> {
     private readonly useCase = inject(MapUseCase);
 
-    protected stream(params: FetchOptions): Observable<MapEntity> {
+    protected stream(params: FetchOptions): Observable<GrafanaLinkEntity> {
         return this.useCase.execute(params);
     }
 

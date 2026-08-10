@@ -1,11 +1,7 @@
 import { inject, Service } from '@angular/core';
 import { defer, Observable } from 'rxjs';
-import { FetchOptions } from '@cmz/shared-domain';
-import {
-    GrafanaDashboardEntity,
-    ReportingRepository,
-    ReportingSection,
-} from '@cmz/reporting-domain';
+import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
+import { ReportingRepository, ReportingSection } from '@cmz/reporting-domain';
 
 @Service()
 export class ReportingUseCase {
@@ -14,7 +10,7 @@ export class ReportingUseCase {
     execute(
         section: ReportingSection,
         options?: FetchOptions
-    ): Observable<GrafanaDashboardEntity> {
+    ): Observable<GrafanaLinkEntity> {
         return defer(() => this.repository.execute(section, options));
     }
 }

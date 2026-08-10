@@ -1,8 +1,6 @@
 import { SimpleResponseMapper } from '@cmz/shared-data';
-import {
-    GrafanaDashboardEntity,
-    MonitoringSection,
-} from '@cmz/monitoring-domain';
+import { GrafanaLinkEntity } from '@cmz/shared-domain';
+import { MonitoringSection } from '@cmz/monitoring-domain';
 import { MonitoringVariablesItemDto } from '../dtos/monitoring-variables-response.dto';
 
 /**
@@ -26,7 +24,7 @@ const MONITORING_SECTION_FIELD: Record<
  * dto)` de debug, jamais retiré — non reproduit ici.
  */
 export class GrafanaDashboardMapper extends SimpleResponseMapper<
-    GrafanaDashboardEntity,
+    GrafanaLinkEntity,
     MonitoringVariablesItemDto
 > {
     constructor(private readonly section: MonitoringSection) {
@@ -35,8 +33,8 @@ export class GrafanaDashboardMapper extends SimpleResponseMapper<
 
     protected override mapItemFromDto(
         dto: MonitoringVariablesItemDto
-    ): GrafanaDashboardEntity {
+    ): GrafanaLinkEntity {
         const field = MONITORING_SECTION_FIELD[this.section];
-        return new GrafanaDashboardEntity(dto[field]);
+        return new GrafanaLinkEntity(dto[field]);
     }
 }
