@@ -16,7 +16,6 @@ export * from './lib/constants/requests-details-approval-type.constant';
 export * from './lib/constants/requests-details-callback-type.constant';
 export * from './lib/constants/requests-details-status-label.constant';
 export * from './lib/constants/requests-details-tab.constant';
-export * from './lib/features/requests-details-edit-fields.component';
 export * from './lib/features/requests-details-info-panel.component';
 export * from './lib/features/requests-details-location-panel.component';
 export * from './lib/features/requests-details-photos-panel.component';

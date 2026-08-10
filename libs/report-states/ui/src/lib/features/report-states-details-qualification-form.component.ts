@@ -1,26 +1,44 @@
-import { Component, input, output, inject, effect } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import {
-    ReportStatesDetailsEntity,
-    ReportStatesDetailsQualificationContract,
-    ReportStatesDetailsQualificationEditFields,
-} from '@cmz/report-states-domain';
+import { Component, effect, inject, input, output } from '@angular/core';
+import { FormField } from '@angular/forms/signals';
+import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
+import type { ReportStatesDetailsQualificationContract } from '@cmz/report-states-domain';
 import { TranslationPort } from '@cmz/shared-application';
+import {
+    FieldComponent,
+    LOCATION_NAME_OPTIONS,
+    REPORT_TYPE_OPTIONS,
+    TELECOM_OPERATOR_OPTIONS,
+} from '@cmz/shared-ui';
 import { REPORT_STATES_DETAILS_APPROVAL_TYPES } from '../constants/report-states-details-approval-type.constant';
 import { REPORT_STATES_DETAILS_CALLBACK_TYPES } from '../constants/report-states-details-callback-type.constant';
 import { REPORT_STATES_DETAILS_REJECT_MOTIFS } from '../constants/report-states-details-reject-motif.constant';
-import { ReportStatesDetailsEditFieldsComponent } from './report-states-details-edit-fields.component';
+import { ReportStatesDetailsQualificationFormStore } from '../stores/report-states-details-qualification-form.store';
 
 const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
+const E = 'REPORT_STATES.DETAILS.EDIT';
 
+/**
+ * Formulaire qualification `report-states-details` — Signal Forms.
+ *
+ * T27 (`docs/architecture/taches-restantes.md`) : fusionne l'ancien duo
+ * `ReportStatesDetailsQualificationFormComponent` (`FormBuilder`,
+ * `ReactiveFormsModule`) + `ReportStatesDetailsEditFieldsComponent` (enfant
+ * recevant un `FormGroup` en `@Input`) — voir `ReportStatesDetailsQualification
+ * FormStore` pour le détail du raisonnement (aucun composant Signal Forms du
+ * repo ne compose de sous-`FieldTree` à travers une frontière de composant ;
+ * fusion en un seul template plutôt que d'inventer ce pattern pour un seul
+ * cas d'usage). Contrat public inchangé pour son unique consommateur
+ * (`report-states-details-dialog.component.ts`) : `[details]`, `[loading]`,
+ * `(submitted)`, `(cancelled)`, méthode publique `reset()`.
+ */
 @Component({
     selector: 'cmz-report-states-details-qualification-form',
-    imports: [ReactiveFormsModule, ReportStatesDetailsEditFieldsComponent],
+    imports: [FormField, FieldComponent],
+    providers: [ReportStatesDetailsQualificationFormStore],
     template: `
         <form
             class="flex flex-col gap-3 border-t border-border pt-3"
-            [formGroup]="form"
-            (ngSubmit)="onSubmit()"
+            (submit)="onSubmit($event)"
         >
             <fieldset class="flex flex-col gap-2">
                 <legend class="text-sm font-medium text-text">
@@ -32,8 +50,8 @@ const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
                     >
                         <input
                             type="radio"
-                            formControlName="decision"
                             value="accepted"
+                            [formField]="store.form.decision"
                         />
                         {{ t(Q + '.APPROVE') }}
                     </label>
@@ -42,15 +60,15 @@ const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
                     >
                         <input
                             type="radio"
-                            formControlName="decision"
                             value="rejected"
+                            [formField]="store.form.decision"
                         />
                         {{ t(Q + '.REJECT') }}
                     </label>
                 </div>
                 @if (
-                    form.controls.decision.touched &&
-                    form.controls.decision.invalid
+                    store.form.decision().touched() &&
+                    store.form.decision().invalid()
                 ) {
                     <p class="text-xs text-danger">
                         {{ t(Q + '.DECISION_REQUIRED') }}
@@ -58,7 +76,7 @@ const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
                 }
             </fieldset>
 
-            @if (showApprovalType()) {
+            @if (store.showApprovalType()) {
                 <fieldset class="flex flex-col gap-2">
                     <legend class="text-sm font-medium text-text">
                         {{ t('MANAGEMENT.TREATMENT.CALLBACK_ACTION.TITLE') }}
@@ -70,8 +88,8 @@ const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
                             >
                                 <input
                                     type="radio"
-                                    formControlName="approvalType"
                                     [value]="option.value"
+                                    [formField]="store.form.approvalType"
                                 />
                                 {{ t(option.label) }}
                             </label>
@@ -79,19 +97,15 @@ const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
                     </div>
                 </fieldset>
 
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="font-medium text-text">
-                        {{
-                            t(
-                                'MANAGEMENT.TREATMENT.CALLBACK_ACTION.CALLBACK_TYPE'
-                            )
-                        }}
-                        @if (callbackRequired()) {
-                            <span class="text-danger">*</span>
-                        }
-                    </span>
+                <cmz-field
+                    [label]="'MANAGEMENT.TREATMENT.CALLBACK_ACTION.CALLBACK_TYPE'"
+                    [field]="store.form.callbackType"
+                    for="callbackType"
+                    [required]="store.callbackRequired()"
+                >
                     <select
-                        formControlName="callbackType"
+                        id="callbackType"
+                        [formField]="store.form.callbackType"
                         class="rounded border border-border bg-surface px-3 py-2 disabled:opacity-50"
                     >
                         <option value="">
@@ -103,31 +117,178 @@ const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
                             </option>
                         }
                     </select>
-                    @if (
-                        form.controls.callbackType.touched &&
-                        form.controls.callbackType.invalid
-                    ) {
-                        <span class="text-xs text-danger">
-                            {{ t(Q + '.CALLBACK_TYPE_REQUIRED') }}
-                        </span>
-                    }
-                </label>
+                </cmz-field>
             }
 
-            @if (showEditFields()) {
-                <cmz-report-states-details-edit-fields
-                    [group]="form.controls.editFields"
-                />
+            @if (store.showEditFields()) {
+                <fieldset
+                    class="flex flex-col gap-3 rounded border border-border p-3"
+                >
+                    <legend class="text-sm font-medium text-text">
+                        {{ t(E + '.TITLE') }}
+                    </legend>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <cmz-field
+                            [label]="E + '.LATITUDE'"
+                            [field]="store.form.latitude"
+                            for="latitude"
+                            [required]="true"
+                        >
+                            <input
+                                id="latitude"
+                                type="number"
+                                step="any"
+                                [formField]="store.form.latitude"
+                                class="rounded border border-border bg-surface px-3 py-2"
+                            />
+                        </cmz-field>
+                        <cmz-field
+                            [label]="E + '.LONGITUDE'"
+                            [field]="store.form.longitude"
+                            for="longitude"
+                            [required]="true"
+                        >
+                            <input
+                                id="longitude"
+                                type="number"
+                                step="any"
+                                [formField]="store.form.longitude"
+                                class="rounded border border-border bg-surface px-3 py-2"
+                            />
+                        </cmz-field>
+                    </div>
+
+                    <cmz-field
+                        [label]="E + '.LOCATION_NAME'"
+                        [field]="store.form.locationName"
+                        for="locationName"
+                        [required]="true"
+                    >
+                        <select
+                            id="locationName"
+                            [formField]="store.form.locationName"
+                            class="rounded border border-border bg-surface px-3 py-2"
+                        >
+                            <option value="">
+                                {{ t('COMMON.SELECT_PLACEHOLDER') }}
+                            </option>
+                            @for (opt of locationOptions; track opt.value) {
+                                <option [value]="opt.value">
+                                    {{ t(opt.label) }}
+                                </option>
+                            }
+                        </select>
+                    </cmz-field>
+
+                    <cmz-field
+                        [label]="E + '.REPORT_TYPE'"
+                        [field]="store.form.reportType"
+                        for="reportType"
+                        [required]="true"
+                    >
+                        <select
+                            id="reportType"
+                            [formField]="store.form.reportType"
+                            class="rounded border border-border bg-surface px-3 py-2"
+                        >
+                            <option value="">
+                                {{ t('COMMON.SELECT_PLACEHOLDER') }}
+                            </option>
+                            @for (opt of reportTypeOptions; track opt.value) {
+                                <option [value]="opt.value">
+                                    {{ t(opt.label) }}
+                                </option>
+                            }
+                        </select>
+                    </cmz-field>
+
+                    <cmz-field
+                        [label]="E + '.OPERATORS'"
+                        [field]="store.form.operators"
+                        for="operators"
+                        [required]="true"
+                    >
+                        <div class="flex flex-wrap gap-3">
+                            @for (opt of operatorOptions; track opt.value) {
+                                <label
+                                    class="inline-flex items-center gap-2 text-sm"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        [checked]="
+                                            isOperatorSelected(opt.value)
+                                        "
+                                        (change)="toggleOperator(opt.value)"
+                                    />
+                                    {{ t(opt.label) }}
+                                </label>
+                            }
+                        </div>
+                    </cmz-field>
+
+                    <cmz-field
+                        [label]="E + '.DESCRIPTION'"
+                        [field]="store.form.description"
+                        for="description"
+                        [required]="true"
+                    >
+                        <textarea
+                            id="description"
+                            rows="3"
+                            [formField]="store.form.description"
+                            class="rounded border border-border bg-surface px-3 py-2"
+                        ></textarea>
+                    </cmz-field>
+
+                    <cmz-field
+                        [label]="E + '.PLACE_DESCRIPTION'"
+                        [field]="store.form.placeDescription"
+                        for="placeDescription"
+                        [required]="true"
+                    >
+                        <textarea
+                            id="placeDescription"
+                            rows="2"
+                            [formField]="store.form.placeDescription"
+                            class="rounded border border-border bg-surface px-3 py-2"
+                        ></textarea>
+                    </cmz-field>
+
+                    <cmz-field
+                        [label]="E + '.PLACE_PHOTO'"
+                        [field]="store.form.placePhotoUrl"
+                        for="placePhoto"
+                        [required]="true"
+                    >
+                        @if (store.model().placePhotoUrl; as url) {
+                            <img
+                                [src]="url"
+                                [alt]="t(E + '.PLACE_PHOTO_ALT')"
+                                class="mb-2 max-h-32 rounded border border-border object-cover"
+                            />
+                        }
+                        <input
+                            id="placePhoto"
+                            type="file"
+                            accept="image/*"
+                            class="text-sm"
+                            (change)="onPhotoSelected($event)"
+                        />
+                    </cmz-field>
+                </fieldset>
             }
 
-            @if (showReason()) {
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="font-medium text-text">
-                        {{ t(Q + '.MOTIF_LABEL') }}
-                        <span class="text-danger">*</span>
-                    </span>
+            @if (store.showReason()) {
+                <cmz-field
+                    [label]="Q + '.MOTIF_LABEL'"
+                    [field]="store.form.reason"
+                    for="reason"
+                    [required]="true"
+                >
                     <select
-                        formControlName="reason"
+                        id="reason"
+                        [formField]="store.form.reason"
                         class="rounded border border-border bg-surface px-3 py-2"
                     >
                         <option value="">
@@ -139,38 +300,22 @@ const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
                             </option>
                         }
                     </select>
-                    @if (
-                        form.controls.reason.touched &&
-                        form.controls.reason.invalid
-                    ) {
-                        <span class="text-xs text-danger">
-                            {{ t(Q + '.REASON_REQUIRED') }}
-                        </span>
-                    }
-                </label>
+                </cmz-field>
             }
 
-            <label class="flex flex-col gap-1 text-sm">
-                <span class="font-medium text-text">
-                    {{ t(Q + '.COMMENT') }}
-                    @if (commentRequired()) {
-                        <span class="text-danger">*</span>
-                    }
-                </span>
+            <cmz-field
+                [label]="Q + '.COMMENT'"
+                [field]="store.form.comment"
+                for="comment"
+                [required]="store.commentRequired()"
+            >
                 <textarea
-                    formControlName="comment"
+                    id="comment"
+                    [formField]="store.form.comment"
                     rows="3"
                     class="rounded border border-border bg-surface px-3 py-2"
                 ></textarea>
-                @if (
-                    form.controls.comment.touched &&
-                    form.controls.comment.invalid
-                ) {
-                    <span class="text-xs text-danger">
-                        {{ t(Q + '.COMMENT_REQUIRED') }}
-                    </span>
-                }
-            </label>
+            </cmz-field>
 
             <footer class="flex justify-end gap-2">
                 <button
@@ -184,7 +329,7 @@ const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
                 <button
                     type="submit"
                     class="rounded bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50"
-                    [disabled]="loading()"
+                    [disabled]="loading() || store.form().invalid()"
                 >
                     {{ t('MANAGEMENT.BUTTONS.APPROBATION') }}
                 </button>
@@ -193,10 +338,17 @@ const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
     `,
 })
 export class ReportStatesDetailsQualificationFormComponent {
+    protected readonly store = inject(
+        ReportStatesDetailsQualificationFormStore
+    );
     protected readonly Q = Q;
+    protected readonly E = E;
     protected readonly motifs = REPORT_STATES_DETAILS_REJECT_MOTIFS;
     protected readonly approvalTypes = REPORT_STATES_DETAILS_APPROVAL_TYPES;
     protected readonly callbackTypes = REPORT_STATES_DETAILS_CALLBACK_TYPES;
+    protected readonly locationOptions = LOCATION_NAME_OPTIONS;
+    protected readonly reportTypeOptions = REPORT_TYPE_OPTIONS;
+    protected readonly operatorOptions = TELECOM_OPERATOR_OPTIONS;
 
     readonly details = input<ReportStatesDetailsEntity | null>(null);
     readonly loading = input(false);
@@ -204,71 +356,12 @@ export class ReportStatesDetailsQualificationFormComponent {
     readonly cancelled = output<void>();
 
     private readonly i18n = inject(TranslationPort);
-    private readonly fb = inject(FormBuilder);
-
-    protected readonly form = this.fb.nonNullable.group({
-        decision: ['', Validators.required],
-        approvalType: ['view'],
-        callbackType: [''],
-        reason: [''],
-        comment: [''],
-        editFields: this.fb.nonNullable.group({
-            latitude: [0],
-            longitude: [0],
-            locationName: [''],
-            reportType: [''],
-            operators: [[] as string[]],
-            description: [''],
-            placeDescription: [''],
-            placePhotoUrl: [''],
-            placePhotoFile: [null as File | null],
-        }),
-    });
-
-    protected showReason(): boolean {
-        return this.form.controls.decision.value === 'rejected';
-    }
-
-    protected showApprovalType(): boolean {
-        return this.form.controls.decision.value === 'accepted';
-    }
-
-    protected showEditFields(): boolean {
-        if (this.form.controls.decision.value !== 'accepted') {
-            return false;
-        }
-        const mode = this.form.controls.approvalType.value;
-        return mode === 'edit' || mode === 'callback';
-    }
-
-    protected commentRequired(): boolean {
-        return (
-            this.form.controls.decision.value === 'rejected' ||
-            this.showEditFields()
-        );
-    }
-
-    protected callbackRequired(): boolean {
-        return (
-            this.form.controls.decision.value === 'accepted' &&
-            this.form.controls.approvalType.value === 'callback'
-        );
-    }
 
     constructor() {
-        this.form.controls.decision.valueChanges.subscribe((decision) => {
-            this.syncValidators(decision);
-            this.maybeHydrateEditFields();
-        });
-        this.form.controls.approvalType.valueChanges.subscribe(() => {
-            this.syncCallbackValidators();
-            this.syncEditValidators();
-            this.maybeHydrateEditFields();
-        });
-
         effect(() => {
-            if (this.details()) {
-                this.maybeHydrateEditFields();
+            const entity = this.details();
+            if (entity && this.store.showEditFields()) {
+                this.store.hydrateEditFields(entity);
             }
         });
     }
@@ -277,176 +370,29 @@ export class ReportStatesDetailsQualificationFormComponent {
         return this.i18n.translate(key);
     }
 
-    protected onSubmit(): void {
-        this.syncValidators(this.form.controls.decision.value);
-        this.syncCallbackValidators();
-        this.syncEditValidators();
-        this.form.markAllAsTouched();
-        if (this.form.invalid) {
+    protected isOperatorSelected(value: string): boolean {
+        return this.store.model().operators.includes(value);
+    }
+
+    protected toggleOperator(value: string): void {
+        this.store.toggleOperator(value);
+    }
+
+    protected onPhotoSelected(event: Event): void {
+        const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+        this.store.setPlacePhotoFile(file);
+    }
+
+    protected onSubmit(event: Event): void {
+        event.preventDefault();
+        const contract = this.store.buildContract();
+        if (!contract) {
             return;
         }
-        const raw = this.form.getRawValue();
-        const contract: ReportStatesDetailsQualificationContract = {
-            decision: raw.decision as 'accepted' | 'rejected',
-            comment: raw.comment,
-            reason: raw.reason,
-            approvalType: raw.approvalType,
-            callbackType: raw.callbackType || null,
-        };
-
-        if (this.showEditFields()) {
-            contract.editFields = this.buildEditFields(raw.editFields);
-        }
-
         this.submitted.emit(contract);
     }
 
     reset(): void {
-        this.form.reset({
-            decision: '',
-            approvalType: 'view',
-            callbackType: '',
-            reason: '',
-            comment: '',
-            editFields: {
-                latitude: 0,
-                longitude: 0,
-                locationName: '',
-                reportType: '',
-                operators: [],
-                description: '',
-                placeDescription: '',
-                placePhotoUrl: '',
-                placePhotoFile: null,
-            },
-        });
-    }
-
-    private maybeHydrateEditFields(): void {
-        const entity = this.details();
-        if (!entity || !this.showEditFields()) {
-            return;
-        }
-        this.hydrateEditFields(entity);
-    }
-
-    private buildEditFields(
-        raw: typeof this.form.controls.editFields.value
-    ): ReportStatesDetailsQualificationEditFields {
-        return {
-            latitude: Number(raw.latitude),
-            longitude: Number(raw.longitude),
-            locationName: raw.locationName ?? '',
-            reportType: raw.reportType ?? '',
-            operators: raw.operators ?? [],
-            description: raw.description ?? '',
-            placeDescription: raw.placeDescription ?? '',
-            placePhoto: raw.placePhotoFile ?? (raw.placePhotoUrl || null),
-        };
-    }
-
-    private hydrateEditFields(details: ReportStatesDetailsEntity): void {
-        const photoUrl =
-            details.placePhoto ||
-            details.media?.placePhoto ||
-            details.media?.accessPlacePhoto ||
-            '';
-
-        this.form.controls.editFields.patchValue({
-            latitude: details.location.coordinates.latitude,
-            longitude: details.location.coordinates.longitude,
-            locationName: details.location.name,
-            reportType: details.reportType,
-            operators: [...details.operators],
-            description: details.description,
-            placeDescription: details.placeDescription,
-            placePhotoUrl: photoUrl,
-            placePhotoFile: null,
-        });
-    }
-
-    private syncValidators(decision: string): void {
-        const reason = this.form.controls.reason;
-        const comment = this.form.controls.comment;
-        if (decision === 'rejected') {
-            reason.setValidators([Validators.required]);
-            comment.setValidators([Validators.required]);
-        } else if (this.showEditFields()) {
-            reason.clearValidators();
-            comment.setValidators([Validators.required]);
-        } else {
-            reason.clearValidators();
-            comment.clearValidators();
-        }
-        reason.updateValueAndValidity({ emitEvent: false });
-        comment.updateValueAndValidity({ emitEvent: false });
-        this.syncCallbackValidators();
-        this.syncEditValidators();
-    }
-
-    private syncCallbackValidators(): void {
-        const callback = this.form.controls.callbackType;
-        const approvalType = this.form.controls.approvalType.value;
-        const decision = this.form.controls.decision.value;
-
-        if (decision === 'accepted' && approvalType === 'callback') {
-            callback.setValidators([Validators.required]);
-            callback.enable({ emitEvent: false });
-        } else {
-            callback.clearValidators();
-            callback.setValue('', { emitEvent: false });
-            callback.disable({ emitEvent: false });
-        }
-        callback.updateValueAndValidity({ emitEvent: false });
-    }
-
-    private syncEditValidators(): void {
-        const group = this.form.controls.editFields;
-        const required = this.showEditFields();
-
-        const controls = [
-            group.controls.latitude,
-            group.controls.longitude,
-            group.controls.locationName,
-            group.controls.reportType,
-            group.controls.description,
-            group.controls.placeDescription,
-        ];
-
-        for (const control of controls) {
-            if (required) {
-                control.setValidators([Validators.required]);
-            } else {
-                control.clearValidators();
-            }
-            control.updateValueAndValidity({ emitEvent: false });
-        }
-
-        const operators = group.controls.operators;
-        if (required) {
-            operators.setValidators([
-                (ctrl) =>
-                    ((ctrl.value as string[])?.length ?? 0) > 0
-                        ? null
-                        : { required: true },
-            ]);
-        } else {
-            operators.clearValidators();
-        }
-        operators.updateValueAndValidity({ emitEvent: false });
-
-        const photoUrl = group.controls.placePhotoUrl;
-        const photoFile = group.controls.placePhotoFile;
-        if (required) {
-            photoUrl.setValidators([
-                () =>
-                    photoUrl.value || photoFile.value
-                        ? null
-                        : { required: true },
-            ]);
-        } else {
-            photoUrl.clearValidators();
-        }
-        photoUrl.updateValueAndValidity({ emitEvent: false });
+        this.store.reset();
     }
 }

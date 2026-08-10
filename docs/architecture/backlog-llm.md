@@ -503,20 +503,49 @@ fichier :
   warning ; `check:i18n` → 0 clé manquante ; tests `scope:processing`
   (domain 14, application 14, data 16 = 44/44) → tous verts.
 - `report-states-details-edit-fields.component.ts` et
-  `requests-details-edit-fields.component.ts` **non migrés**, avec
-  commentaire d'exception ajouté au-dessus de la déclaration du composant
-  (raison vérifiable, pas une esquive) : (1) chacun reçoit un `FormGroup`
+  `requests-details-edit-fields.component.ts` initialement **non migrés**
+  (exception documentée le 2026-08-10) : (1) chacun recevait un `FormGroup`
   complet en `@Input` depuis son formulaire parent
   (`*-qualification-form.component.ts`) — composition de sous-formulaire
   vers un composant enfant à sélecteur séparé, un pattern sans aucun
   précédent parmi les 48 composants déjà migrés ; (2) le formulaire parent
-  bascule ses validateurs de façon impérative selon 3 points d'interaction
-  (`decision`, `approvalType`, visibilité de `editFields`) sur 9+ champs
-  plus 2 validateurs cross-champs, une complexité supérieure à tout schéma
-  Signal Forms existant dans le repo. Migration en bloc (parent + enfant)
-  recommandée comme item de backlog séparé. `tsc --noEmit` sur les 8
-  projets `scope:report-states,scope:requests` → succès ; `eslint
-  --max-warnings=0` sur les 2 fichiers → 0 warning.
+  basculait ses validateurs de façon impérative selon 3 points
+  d'interaction (`decision`, `approvalType`, visibilité de `editFields`)
+  sur 9+ champs plus 2 validateurs cross-champs, une complexité supérieure
+  à tout schéma Signal Forms existant dans le repo à l'époque.
+
+**Retraité (T27, `docs/architecture/taches-restantes.md`, 2026-08-10) :**
+l'exception ci-dessus n'est plus acceptée — contrainte utilisateur
+explicite « jamais de `ReactiveFormsModule` ». Plutôt que d'inventer la
+composition de sous-`FieldTree` à travers une frontière de composant
+(toujours sans précédent dans le repo), chaque paire
+enfant/parent a été **fusionnée en un seul composant** : les 9 champs
+d'édition sont aplatis dans le même modèle Signal Forms que les champs de
+décision (`decision`/`approvalType`/`callbackType`/`reason`/`comment`),
+suivant l'idiome déjà établi par les 48 autres formulaires du repo (un seul
+`*FormStore` + un seul template). `ReportStatesDetailsEditFieldsComponent`
+et `RequestsDetailsEditFieldsComponent` sont supprimés ; leurs deux seuls
+consommateurs (`*-qualification-form.component.ts`) sont réécrits avec un
+nouveau store (`report-states-details-qualification-form.store.ts` /
+`requests-details-qualification-form.store.ts`). Contrat public inchangé
+côté consommateur (`*-details-dialog.component.ts` : `[details]`,
+`[loading]`, `(submitted)`, `(cancelled)`, `reset()`), donc aucune
+modification requise dans ces fichiers. Piège détecté et corrigé pendant la
+migration (même famille que T12-23/P2-1 `tasks-actions-processing-form`) :
+l'attribut natif `name` sur les boutons radio (`decision`, `approvalType`)
+est **interdit** par le compilateur sur un nœud `[formField]` (NG8022,
+détecté uniquement par `ngc --strictTemplates`, pas par `tsc --noEmit`) —
+retiré ; l'exclusivité du groupe radio reste correcte car chaque instance
+de la directive `[formField]` réagit au même signal de champ et remet à
+jour `element.checked` en conséquence (vérifié dans les sources
+`@angular/forms/signals`, pas seulement supposé). Vérifié : `tsc --noEmit`
++ `eslint --max-warnings=0` sur `@cmz/report-states-ui` et
+`@cmz/requests-ui` → 0 erreur/warning ; `ngc --strictTemplates` sur
+`apps/backoffice-angular` → 0 erreur ; `grep -rl "ReactiveFormsModule"
+libs/ apps/` → 0 import réel restant (seules des mentions en commentaire de
+doc historique subsistent) ; `check:i18n`, `check:weight`,
+`check:duplicates`, `check:boundary-negative`, `check:convention-profile`,
+`check:declared-deps` → tous verts.
 
 ---
 
