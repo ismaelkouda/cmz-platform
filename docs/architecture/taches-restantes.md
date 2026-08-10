@@ -1,9 +1,16 @@
 # Tâches restantes — cmz-platform
 
 - **Créé :** 2026-08-05
-- **Dernière mise à jour :** 2026-08-07 — **T3-4** exclusion prod
-  `provideDevPermissions` (specs + `check:dev-permissions-prod` CI) ; **T4-5**
-  gitleaks ; **T5-3** · **T12-6** ; Cloud (OPS-3) en cours.
+- **Dernière mise à jour :** 2026-08-10 — audit fichier-par-fichier exhaustif
+  de 8 modules restants (report-states, requests, processing, communication,
+  finalization, authentication, dashboard, interactive-map, monitoring,
+  reporting, core), rigueur Meta/Google, chaque fichier lu individuellement.
+  Findings majeurs : **T5-5** (pathsGuard absent sur 23 routes CRUD, dont
+  settings-security) ; **T1-5** (duplication complète report-states ↔
+  requests, preuve = fuite i18n **T13-10**) ; **T12-18** (corpus
+  `crud-entity.mjs` — 726 paires à `legacy` synthétique non vérifié) ; revue
+  senior post-commit `c73d75d` (a11y sévérité, e2e RBAC, gitleaks,
+  `whenReady()`, oracle_report, settings-security tests câblés).
 - **Statut :** source de vérité des travaux **encore ouverts / partiels**
 - **Référentiel d’évaluation :** 13 audits Big Tech (Meta / Google / Amazon /
 Microsoft) — Architecte Senior / Principal Engineer. Principes :
@@ -99,6 +106,8 @@ illégal ; tags de couche ; test négatif prouvant que la règle fire encore.
 | T1-2 | Décision ARB : scinder `shared` UI (historique ~351 fichiers — D3 plan)                                                     | décision | L      | P2    | plan D3 · ROAD-4 |
 | T1-3 | Décision ADR-0020 : baisser dette family-dup **sous** baseline (ou rester non-régression)                                   | décision | L      | P2    | O-X · O-3/O-4    |
 | T1-4 | Si Option factorisation : `@cmz/shared-workflow` + contracts take/filter génériques                                         | différé  | L      | P2    | O-3 O-4          |
+| T1-5 | **Duplication confirmée entités "details" `report-states` ↔ `requests`** : `ReportStatesDetailsEntity`/`RequestsDetailsEntity` (domain), permissions util, qualification VO, `*DetailsDialogComponent` (UI, template HTML identique caractère pour caractère) — **diff normalisé = 0 ligne de logique différente**, seuls les noms de classes changent. Preuve concrète de la dette T1-4 : la dérive a déjà eu lieu (5 clés i18n `REQUESTS.DETAILS.*` oubliées dans `report-states` lors du copier-coller, cf. T13-10). Reclasse T1-4 de "décision différée" à "dette mesurée avec preuve d'incident" — factoriser dans `@cmz/shared-workflow` réduirait ce risque à la source. | **ouvert** | L | **P1** | NOUVEAU 2026-08-10, lié T1-4/T13-10 |
+| T1-6 | Duplicata trivial `GrafanaDashboardEntity`/`MapEntity` (`{ grafanaLink: string }`, constructeur identique) copié **3 fois** indépendamment dans `monitoring`, `reporting`, `interactive-map`. Enjeu faible (3 lignes, zéro logique) mais même défaut de principe que T1-5 : un concept transversal ("lien d'intégration Grafana") sans lib partagée. Envisager `@cmz/shared-domain` si un 4e cas apparaît. | ouvert | S | P2 | NOUVEAU 2026-08-10 |
 
 
 ## T2 — Audit des contrats d’API & gouvernance des schémas
@@ -128,10 +137,11 @@ typées ; pas de state divergeant du wire.
 | Id   | Tâche                                                                                          | État          | Effort | Crit. | Alias       |
 | ---- | ---------------------------------------------------------------------------------------------- | ------------- | ------ | ----- | ----------- |
 | T3-1 | Narrowing des `catch` archétype d’erreur (app stricte > SEOS)                                  | ouvert        | M      | P1    | OUVERT-2    |
-| T3-2 | Confirmer format **réel** `CurrentUser.paths` vs `pathsGuard` (login staging)                  | bloqué-humain | S      | P0    | OPS-7 · I-7 |
+| T3-2 | Confirmer format **réel** `CurrentUser.paths` vs `pathsGuard` (login staging). **Preuve concrète du risque** : `current-user.mapper.spec.ts` (authentication/data) utilise une fixture `paths: ['/admin', '/admin/users']` — chemins **absolus avec slash** — alors que `pathsGuard` compare contre `route.routeConfig?.path` (**segment nu**, ex. `"report-states"`, sans slash). Si le format réel du backend est absolu, `paths.includes(segment)` ne matchera jamais et `pathsGuard` bloquerait silencieusement tous les utilisateurs sur les 4 routes protégées — régression du même type que le bug I-7 historique. Cette fixture pourrait aussi induire en erreur un futur contributeur qui la prendrait pour référence du format réel : elle n'est pas vérifiée contre une vraie réponse serveur. | bloqué-humain | S      | P0    | OPS-7 · I-7 |
 | T3-3 | Couvrir VO/entity/validators restants (esp. settings-security orphelins → T12)                 | partiel       | M      | P1    | C-4         |
 | T3-4 | Risque `provideDevPermissions()` : preuve exclusion **prod** (`isDev` + check:dev-permissions-prod + unit) | fait          | S      | P1    | DT-6        |
 | T3-5 | Invariants filtre/période (ex. `InvalidPeriodError`) : matrix tests croisée modules RO + WA    | partiel       | M      | P2    | domaine     |
+| T3-6 | `reportStatesDetailsPermissionsReject`/`requestsDetailsPermissionsReject` autorisent le reject dès `status IN_PROGRESS`, **sans condition sur `qualificationState`** — contrairement à `permissionsQualify` qui exige `qualificationState === PENDING`. Dupliqué identiquement dans les 2 modules (cohérence inter-module = probablement voulu) mais **aucun test ne couvre le cas croisé** (reject alors que qualification déjà `COMPLETED`). Clarifier l'intention métier et ajouter le test manquant. | ouvert | S | P1 | NOUVEAU 2026-08-10 |
 
 
 ---
@@ -166,6 +176,7 @@ typées ; pas de state divergeant du wire.
 | T5-2 | Matrix tests `pathsGuard` × formats `paths` réels (après T3-2)        | ouvert        | M      | P0    | I-7              |
 | T5-3 | Tests e2e / intégration **refus** route hors path (RBAC) — mock pathsGuard + matrice WA unit + hydrate session | fait          | M      | P1    | IAM              |
 | T5-4 | Document / ADR matrice permission legacy ↔ monorepo (vocabulaire fin) | partiel       | M      | P2    | I-7 doc          |
+| T5-5 | **`pathsGuard` limité aux 4 modules workflow-action** (`report-states`/`processing`/`requests`/`finalization`, `app.routes.ts` L61-94). **23 segments de route** CRUD (`equipments/*`, `territorial-structures/*`, `coverage-areas/*`, `team-organization/*`, `content-management/*`, **`settings-security/*` — gestion users/permissions incluse —**, `communication/*`) n'ont aucune garde au-delà de `authGuard` (authentifié = accès, zéro contrôle "cette page vous est-elle accordée"). Seule une vérif fine par action existe dans certains composants (`PermissionActionsService.can()`), jamais au niveau route. Invisible en dev (`provideDevPermissions()` bypass tout) — même classe de risque que le bug historique I-7, non résolu ici. Décision requise : étendre `pathsGuard` à tous les modules ou documenter/justifier l'exemption. | **ouvert** | M | **P0** | NOUVEAU 2026-08-10 |
 
 
 ## T6 — Audit chaîne d’approvisionnement & licences tierces
@@ -266,6 +277,8 @@ copie interdite ; convention machine.
 | T11-5 | Réparer référence `tools/eslint-rules/**` (inputs retirés — 0 rules custom)               | fait    | S      | P2    | DT-3            |
 | T11-6 | Plafond poids fichiers : surveiller allowlist (pas d’extension silencieuse)              | partiel | S      | P2    | F-6             |
 | T11-7 | `check:convention-profile` + pattern-nx : garder 100 % à chaque entité nouvelle          | partiel | S      | P1    | J · crud        |
+| T11-8 | **Pattern `entityCache = new Map()` non borné, dupliqué indépendamment dans 67 fichiers mapper** à travers presque tous les modules (report-states, requests, processing, finalization, team-organization, communication, settings-security, content-management, coverage-areas, administrative-boundary, administrative-infrastructure, dashboard). Objectif probable = stabilité référentielle des entités pour `OnPush`/signals. **Nuance après vérification croisée avec `HttpCacheStore` (`libs/core/.../http-cache.store.ts`, même pattern `Map` non borné mais délibéré et documenté)** : `SessionService.clear()` déclenche `navigation.reload()`, ce qui efface la mémoire JS à la déconnexion par construction — donc le cache **n'est pas** une fuite permanente au sens strict. Le risque réel, plus précis : **croissance non bornée pendant une session active longue** (agents/opérateurs qui consultent des centaines de fiches sur plusieurs heures sans déconnexion), jamais évalué ni testé sous charge. **Aucune mutualisation** dans les classes de base `SimpleResponseMapper`/`PaginatedMapper` (vérifiées : juste `mapItemFromDto` abstrait, zéro infra cache) — 67 implémentations indépendantes, donc 67 points de divergence possible si la politique doit un jour changer. Décision requise : mesurer si le volume réel justifie une factorisation `CachedEntityMapper` avec LRU borné, ou documenter explicitement (comme pour `HttpCacheStore`) pourquoi la taille non bornée est acceptable en pratique. | ouvert | M | P1 | NOUVEAU 2026-08-10, précisé après vérification `HttpCacheStore` |
+| T11-9 | 3 composants dérogent à la convention établie **Signal Forms** (`@angular/forms/signals`, `FormField` via `@cmz/shared-ui` `FieldComponent` — 48 fichiers) et utilisent `ReactiveFormsModule`/`FormGroup` directement : `report-states-details-edit-fields.component.ts`, `requests-details-edit-fields.component.ts` (paire dupliquée, cf. T1-5), `tasks-actions-processing-form-dialog.component.ts`. Documenter si voulu (dialogs complexes non couverts par `FieldComponent`) ou migrer vers Signal Forms pour cohérence. | ouvert | S | P2 | NOUVEAU 2026-08-10 |
 
 
 ## T12 — Audit matrice de tests & sévérité de l’oracle
@@ -294,6 +307,8 @@ emission.
 | T12-15 | `check-semantics.mjs` porté Nx + CI                                                       | ouvert        | L      | P1    | J-9b            |
 | T12-16 | Générateur chaînes depuis pattern JSON seul                                               | ouvert        | L      | P1    | GVR-1           |
 | T12-17 | Specs unit restantes `core` + `shared-ui` composants                                      | partiel       | L      | P1    | L-CORE · L-UI   |
+| T12-18 | **`crud-entity.mjs` : champ `legacy` synthétique (`legacy/${module}/${node}`) jamais résolu contre `SEOS_LEGACY_ROOT`/`existsSync`, contrairement à `read-only-view.mjs`/`workflow-action` (vrais chemins `src/presentation/...`). `backfill-legacy-ref.mjs` tamponne le même `legacy_ref.commit` sur ces paires sans distinction → **fausse impression de traçabilité** sur 726 paires / 7 modules (administrative-boundary, administrative-infrastructure, communication, content-management, coverage-areas, settings-security, team-organization, authentication, core, shared). Corriger : résoudre le vrai chemin legacy (ou `null` + `status:'n/a'` explicite si le fichier n'existe pas côté legacy), jamais un placeholder qui ressemble à un chemin réel. | **ouvert** | M | **P0** | NOUVEAU 2026-08-10 |
+| T12-19 | **4 use-cases sur 6 sans test** dans `report-states/application` (close/download/evaluate/reject-report-states.use-case.ts) — seuls `approve` et `report-states-details` ont un `.spec.ts`. Pattern quasi-identique entre les 6, donc risque de divergence silencieuse non détectée. Ajouter les 4 specs manquantes (template déjà disponible via `approve-report-states.use-case.spec.ts`). | ouvert | S | P1 | NOUVEAU 2026-08-10 |
 
 
 ## T13 — Audit fraîcheur documentaire & déductions architecturales (ADR)
@@ -313,6 +328,8 @@ CI ; zéro doc périmée sur `main`.
 | T13-7 | Revue humaine ton des ~320 traductions auto                                         | bloqué-humain | M      | P1    | OPS-5            |
 | T13-8 | Documenter `corpus:all` / `emit-all` dans guides                                    | partiel       | S      | P2    | GVR-8            |
 | T13-9 | ADR-0015 option : `oracle.mode` dans JSONL                                          | différé       | S      | P2    | ADR-0015         |
+| T13-10 | **Fuite i18n confirmée** : `report-states` (fiche "details" — dialog, qualification form, VO) utilise le namespace `REQUESTS.DETAILS.*` au lieu de `REPORT_STATES.DETAILS.*` (32 occurrences / 12 fichiers, vs 48 occurrences correctes `REPORT_STATES.*` dans le reste du module). Cause racine identifiée : copier-coller du module `requests` (T1-5) sans renommage complet. Corriger les clés + vérifier leur existence dans le catalogue de traduction réel (T13-7). | **ouvert** | S | **P1** | NOUVEAU 2026-08-10 |
+| T13-11 | Convention DI incohérente non documentée : `@Service()` (554 fichiers — services/mappers/facades/use-cases/repositories) vs `@Injectable()` sans `providedIn` (41 fichiers, exclusivement les `*-filter.store.ts` UI). Aucune règle eslint ni doc n'impose/justifie cette distinction. Documenter la convention (ADR ou `LLM_CONTEXT.md`) ou l'unifier. | ouvert | S | P2 | NOUVEAU 2026-08-10 |
 
 
 ---
@@ -399,6 +416,7 @@ T9-1, T12-4, T13-6, factorisation O, multi-stack ROAD-3.
 | CODEOWNERS « fait »              | zoné ✅ ≠ **OPS-4** second regard                             |
 | « 2,2 % tests »                  | Périmé ; unit RO-view ✅ · e2e smoke mock ✅ · staging = T12-7 |
 | Corpus `verified` = comportement | **T12-11** encore vrai risque                                |
+| Corpus 18/18 modules couverts (2026-08-10) | **Volume seulement.** 7 modules crud-entity sur 18 ont un `legacy` synthétique non vérifié — **T12-18**. Ne pas rapporter "corpus complet" sans cette réserve. |
 
 
 ---
