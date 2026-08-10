@@ -90,10 +90,7 @@ export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
                         <option value="">
                             {{ t('COMMON.SELECT_PLACEHOLDER') }}
                         </option>
-                        @for (
-                            opt of store.operatorOptions();
-                            track opt.value
-                        ) {
+                        @for (opt of store.operatorOptions(); track opt.value) {
                             <option [value]="opt.value">
                                 {{ t(opt.label) }}
                             </option>
@@ -249,7 +246,8 @@ export class TasksActionsProcessingFormDialogComponent {
             operator: value.operator,
             description: value.description,
             shouldNotifyUser: value.shouldNotifyUser,
-            isConform: value.isConform as TasksActionsProcessingEntity['isConform'],
+            isConform:
+                value.isConform as TasksActionsProcessingEntity['isConform'],
         };
 
         if (this.mode() === 'edit') {
@@ -257,7 +255,10 @@ export class TasksActionsProcessingFormDialogComponent {
             if (!item) {
                 return;
             }
-            this.store.actionsFacade.update({ uniqId: item.uniqId, ...payload });
+            this.store.actionsFacade.update({
+                uniqId: item.uniqId,
+                ...payload,
+            });
         } else {
             this.store.actionsFacade.create(payload);
         }

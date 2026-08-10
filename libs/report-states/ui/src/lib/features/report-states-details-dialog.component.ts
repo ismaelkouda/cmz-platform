@@ -267,12 +267,13 @@ export class ReportStatesDetailsDialogComponent {
         const isReject = form.decision === 'rejected';
         const confirmKey = isReject ? 'REJECT' : 'APPROVE';
         const confirmed = await this.confirm.confirm(
-            this.t(`REPORT_STATES.DETAILS.CONFIRM.${confirmKey}.MESSAGE`).replace(
-                '{uniqId}',
-                entity.uniqId
-            ),
+            this.t(
+                `REPORT_STATES.DETAILS.CONFIRM.${confirmKey}.MESSAGE`
+            ).replace('{uniqId}', entity.uniqId),
             {
-                title: this.t(`REPORT_STATES.DETAILS.CONFIRM.${confirmKey}.TITLE`),
+                title: this.t(
+                    `REPORT_STATES.DETAILS.CONFIRM.${confirmKey}.TITLE`
+                ),
                 confirmText: this.t('COMMON.CONFIRM'),
                 cancelText: this.t('COMMON.CANCEL'),
             }

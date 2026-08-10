@@ -130,7 +130,10 @@ export class TasksActionsProcessingFormStore {
     }
 
     /** Ouverture dialog : mode `create` → modèle vide (date = maintenant) ; sinon hydrate depuis `item`. */
-    open(mode: TasksActionsDialogMode, item: TasksActionsProcessingEntity | null): void {
+    open(
+        mode: TasksActionsDialogMode,
+        item: TasksActionsProcessingEntity | null
+    ): void {
         this.mode.set(mode);
         if (!item || mode === 'create') {
             this.model.set(empty(toLocalInput(new Date())));

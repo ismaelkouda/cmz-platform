@@ -35,7 +35,9 @@ function normalizeEditFields(
         operators.length === 0 ||
         !placePhoto
     ) {
-        throw new Error('REPORT_STATES.DETAILS.QUALIFICATION.EDIT_FIELDS_REQUIRED');
+        throw new Error(
+            'REPORT_STATES.DETAILS.QUALIFICATION.EDIT_FIELDS_REQUIRED'
+        );
     }
 
     return {
@@ -55,7 +57,9 @@ export function reportStatesDetailsQualificationVo(
 ): ReportStatesDetailsQualificationContract {
     const decision = contract.decision;
     if (decision !== 'accepted' && decision !== 'rejected') {
-        throw new Error('REPORT_STATES.DETAILS.QUALIFICATION.DECISION_REQUIRED');
+        throw new Error(
+            'REPORT_STATES.DETAILS.QUALIFICATION.DECISION_REQUIRED'
+        );
     }
 
     const comment = contract.comment?.trim() ?? '';
@@ -63,10 +67,14 @@ export function reportStatesDetailsQualificationVo(
 
     if (decision === 'rejected') {
         if (!reason) {
-            throw new Error('REPORT_STATES.DETAILS.QUALIFICATION.REASON_REQUIRED');
+            throw new Error(
+                'REPORT_STATES.DETAILS.QUALIFICATION.REASON_REQUIRED'
+            );
         }
         if (!comment) {
-            throw new Error('REPORT_STATES.DETAILS.QUALIFICATION.COMMENT_REQUIRED');
+            throw new Error(
+                'REPORT_STATES.DETAILS.QUALIFICATION.COMMENT_REQUIRED'
+            );
         }
     }
 
@@ -89,7 +97,9 @@ export function reportStatesDetailsQualificationVo(
         (approvalType === 'edit' || approvalType === 'callback')
     ) {
         if (!comment) {
-            throw new Error('REPORT_STATES.DETAILS.QUALIFICATION.COMMENT_REQUIRED');
+            throw new Error(
+                'REPORT_STATES.DETAILS.QUALIFICATION.COMMENT_REQUIRED'
+            );
         }
         editFields = normalizeEditFields(contract);
     }
