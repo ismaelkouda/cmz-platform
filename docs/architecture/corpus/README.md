@@ -36,6 +36,26 @@ Une ligne = un objet JSON validé par [`pair.schema.json`](./pair.schema.json).
     "status": "verified",
     "oracle": ["@cmz/processing-domain:build"],
     "verified_at": "2026-07-30",
+    "oracle_report": {
+        "ran_at": "2026-08-06T12:00:00.000Z",
+        "mode": "structural-only",
+        "build": {
+            "status": "pass",
+            "at": "2026-08-06T12:00:00.000Z",
+            "targets": ["@cmz/processing-domain:build"]
+        },
+        "lint": { "status": "pass", "at": "2026-08-06T12:00:00.000Z" },
+        "test": { "status": "skip", "at": "2026-08-06T12:00:00.000Z", "detail": "C-2" },
+        "strict_templates": {
+            "status": "not_run",
+            "detail": "Tier 2 only — check:tier2"
+        },
+        "pair_targets": {
+            "verified": ["@cmz/processing-domain:build"],
+            "failed": []
+        },
+        "levels": { "structural": 1, "behavioral": 0, "other": 0 }
+    },
     "legacy_ref": {
         "commit": "cb15bf80fa072e12e9d4fce4b9236abe6ac78058",
         "repo": "https://gitlab.imako.digital/ansut-apps/cmz-backoffice-frontend.git",
@@ -46,6 +66,18 @@ Une ligne = un objet JSON validé par [`pair.schema.json`](./pair.schema.json).
 
 `legacy_ref` est tamponné à chaque émission depuis [`legacy.lock.json`](../../legacy.lock.json)
 (audit B-4 / [ADR-0014](../../adr/0014-figer-le-legacy-via-lock-json.md)).
+
+### `oracle` vs `oracle_report` (H-5 / T2-7)
+
+| Champ | Rôle | Quand |
+| ----- | ---- | ----- |
+| **`oracle`** | Intent — liste de cibles Nx (`@cmz/…:build\|test`) | Toujours (si paire instrumentée) |
+| **`oracle_report`** | Evidence horodatée — `{ build, lint, test, strict_templates }` + mode ADR-0015 | Écrit **uniquement** sous `emit-pairs --verify` |
+
+- `strict_templates` reste `not_run` en Tier 1 module ; Tier 2 =
+  `bun run check:tier2` / nightly-integration.
+- Validation schéma : `bun run check:pair-schema` (fixtures) ;
+  `node tools/corpus/validate-pair-schema.mjs corpus/*.pairs.jsonl` sur manifests.
 
 ## Statuts (`status`)
 

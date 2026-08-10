@@ -1,12 +1,8 @@
 import { fail, ok, readBody, send } from '../http.mjs';
 import { nextId } from '../ids.mjs';
+import { MOCK_CREDENTIALS, MOCK_RESET_TOKEN } from '../credentials.mjs';
 
-// ---- AUTHENTICATION : utilisateur + identifiants seedés -----------------
-export const MOCK_CREDENTIALS = {
-    email: 'admin@cmz.tg',
-    password: 'Password123!',
-};
-export const MOCK_RESET_TOKEN = 'valid-token';
+export { MOCK_CREDENTIALS, MOCK_RESET_TOKEN };
 
 export const mockUser = {
     id: 1,
@@ -32,7 +28,16 @@ export const mockUser = {
             active: true,
         },
     ],
-    paths: ['equipments/types', 'territorial-structures/regions'],
+    // pathsGuard (T5-3) ne porte que les 4 segments workflow-action :
+    //   report-states | processing | requests | finalization
+    // `processing` autorisé pour le cas positif e2e ; les 3 autres refusés.
+    // dashboard / crud hors pathsGuard → accessibles post-auth uniquement.
+    paths: [
+        'dashboard',
+        'processing',
+        'equipments/types',
+        'territorial-structures/regions',
+    ],
     actions: { INFRASTRUCTURE: ['create', 'edit', 'delete'] },
 };
 

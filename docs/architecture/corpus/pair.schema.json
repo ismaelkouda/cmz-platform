@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cmz-platform.local/schemas/corpus-pair.schema.json",
   "title": "SEOS Corpus Pair",
-  "description": "Une paire annotée legacy → Nx pour la Méthode 2 (synthèse neurosymbolique)",
+  "description": "Une paire annotée legacy → Nx pour la Méthode 2 (synthèse neurosymbolique). H-5/T2-7 : `oracle` = cibles déclarées ; `oracle_report` = résultat horodaté multi-niveaux (build/lint/test/strict_templates).",
   "type": "object",
   "required": [
     "id",
@@ -14,6 +14,88 @@
     "module",
     "status"
   ],
+  "$defs": {
+    "oracleCheck": {
+      "type": "object",
+      "description": "Résultat d'un contrôle d'oracle (Google/Meta-style shift-left gate).",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail", "skip", "not_run"],
+          "description": "pass|fail = exécuté ; skip = exempté documenté (ex. C-2 sans target test) ; not_run = hors mode (ex. strict_templates en tier 1)."
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Horodatage ISO-8601 UTC de l'exécution de ce contrôle."
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^@cmz/[a-z0-9-]+(?::[a-z0-9-]+)?$"
+          },
+          "description": "Cibles Nx concernées (`@cmz/…:build` / `:test`)."
+        },
+        "detail": {
+          "type": "string",
+          "description": "Commande, skip reason, ou extrait d'erreur (pas de PII — ADR-0019)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "oracleReport": {
+      "type": "object",
+      "description": "Audit H-5 / T2-7 — traçabilité machine de la validation. Ne remplace pas `oracle` (liste de cibles) : `oracle` = intent, `oracle_report` = evidence.",
+      "required": ["ran_at", "mode", "build", "lint", "test", "strict_templates"],
+      "properties": {
+        "ran_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Horodatage global de la passe verify/gate."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["structural-only", "full"],
+          "description": "ADR-0015 : structural-only ignore les chemins legacy ; full exige SEOS_LEGACY_ROOT."
+        },
+        "build": { "$ref": "#/$defs/oracleCheck" },
+        "lint": { "$ref": "#/$defs/oracleCheck" },
+        "test": { "$ref": "#/$defs/oracleCheck" },
+        "strict_templates": {
+          "$ref": "#/$defs/oracleCheck",
+          "description": "Tier 2 intégration (`ngc --strictTemplates` / check:tier2) — not_run en émission module (Tier 1)."
+        },
+        "pair_targets": {
+          "type": "object",
+          "description": "Agrégat des cibles `oracle[]` de **cette** paire après run --verify.",
+          "properties": {
+            "verified": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "failed": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "levels": {
+          "type": "object",
+          "description": "Comptage des cibles uniques par niveau H-1 (module entier).",
+          "properties": {
+            "structural": { "type": "integer", "minimum": 0 },
+            "behavioral": { "type": "integer", "minimum": 0 },
+            "other": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
   "properties": {
     "id": {
       "type": "string",
@@ -25,7 +107,7 @@
       "description": "Chemin relatif depuis la racine cmz-backoffice-frontend"
     },
     "nx": {
-      "type": "string",
+      "type": ["string", "null"],
       "description": "Chemin relatif depuis la racine cmz-platform (ou null si n/a)"
     },
     "chain_id": {
@@ -65,12 +147,15 @@
     "oracle": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Cibles nx — ex. @cmz/processing-domain:build"
+      "description": "Cibles nx déclarées — intent (ex. @cmz/processing-domain:build). Distinct de oracle_report (evidence)."
+    },
+    "oracle_report": {
+      "$ref": "#/$defs/oracleReport"
     },
     "verified_at": {
       "type": "string",
       "format": "date",
-      "description": "Date ISO de dernière vérification oracle réussie"
+      "description": "Date ISO (YYYY-MM-DD) de dernière vérification oracle réussie (status=verified)."
     },
     "notes": {
       "type": "string",

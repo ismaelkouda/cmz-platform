@@ -48,6 +48,7 @@ import {
 import { requireLegacyRoot } from './legacy-root.mjs';
 import { assertModuleGate } from './module-gate.mjs';
 import { oracleLevel } from './oracle-levels.mjs';
+import { buildOracleReport } from './oracle-report.mjs';
 
 const CHAINS = {
     ...WORKFLOW_CHAINS,
@@ -82,7 +83,12 @@ const ROOT = resolve(__dirname, '../..');
 
 /**
  * @typedef {{ commit: string; repo?: string; date?: string }} LegacyRef
- * @typedef {{ id: string; legacy: string; nx: string | null; chain_id: string; node: string; pattern: string; module: string; volet?: string; layer: string; status: string; oracle?: string[]; verified_at?: string; notes?: string; assumption_ref?: string; legacy_ref?: LegacyRef }} CorpusPair
+ * @typedef {{
+ *   id: string; legacy: string; nx: string | null; chain_id: string; node: string;
+ *   pattern: string; module: string; volet?: string; layer: string; status: string;
+ *   oracle?: string[]; verified_at?: string; notes?: string; assumption_ref?: string;
+ *   legacy_ref?: LegacyRef; oracle_report?: import('./oracle-report.mjs').OracleReport;
+ * }} CorpusPair
  */
 
 const args = process.argv.slice(2);
@@ -190,14 +196,16 @@ function resolveStatus(pair, verifiedOracles) {
 }
 
 /** @param {CorpusPair[]} pairs */
-function emitPairs(pairs) {
+function emitPairs(pairs, gateResult) {
     const verifiedOracles = new Set();
+    /** @type {{ structural: number; behavioral: number; other: number }} */
+    const byLevel = { structural: 0, behavioral: 0, other: 0 };
+    const ranAt = new Date().toISOString();
 
     if (verify) {
         const uniqueOracles = [
             ...new Set(pairs.flatMap((p) => p.oracle ?? [])),
         ];
-        const byLevel = { structural: 0, behavioral: 0, other: 0 };
         for (const oracle of uniqueOracles) {
             const level = oracleLevel(oracle);
             byLevel[level] += 1;
@@ -215,7 +223,7 @@ function emitPairs(pairs) {
         );
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = ranAt.slice(0, 10);
 
     return pairs.map((pair) => {
         const status = resolveStatus(pair, verifiedOracles);
@@ -230,6 +238,20 @@ function emitPairs(pairs) {
         }
         if (status === 'blocked' && !out.notes) {
             out.notes = `Legacy introuvable: ${pair.legacy}`;
+        }
+        // H-5 / T2-7 — evidence horodatée uniquement sur passe --verify
+        if (verify) {
+            out.oracle_report = buildOracleReport({
+                structuralOnly,
+                gate: gateResult,
+                pairOracle: pair.oracle,
+                verifiedOracles,
+                levels: byLevel,
+                ranAt,
+            });
+        } else if (out.oracle_report) {
+            // Ne pas propager un report périmé d'une expansion source
+            delete out.oracle_report;
         }
         return out;
     });
@@ -332,8 +354,10 @@ if (chainFilter && chainIds.length === 0) {
 const willWrite = !reportOnly && !dryRun && !chainFilter;
 
 // Audit H-2 — pas d'émission (ni verify) si build/lint/test module non verts.
+/** @type {import('./module-gate.mjs').ModuleGateResult | null} */
+let gateResult = null;
 if (verify || willWrite) {
-    assertModuleGate(moduleName);
+    gateResult = assertModuleGate(moduleName);
 }
 
 /** @type {CorpusPair[]} */
@@ -342,7 +366,7 @@ for (const chainId of chainIds) {
     allPairs.push(...expandForModule(moduleName, CHAINS[chainId]));
 }
 
-const resolved = emitPairs(allPairs);
+const resolved = emitPairs(allPairs, gateResult);
 
 if (reportOnly || dryRun) {
     const ok = printReport(resolved);

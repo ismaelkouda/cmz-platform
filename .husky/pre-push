@@ -5,3 +5,5 @@
 export PATH="$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"
 
 bun run check:versions
+# T4-5 — secrets sur les commits de la branche (origin/main..HEAD)
+bun run check:secrets -- --pre-push

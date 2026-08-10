@@ -176,17 +176,19 @@ export function runModuleGate(module) {
 /**
  * Échoue le process si le gate est rouge.
  * @param {string} module
+ * @returns {ModuleGateResult}
  */
 export function assertModuleGate(module) {
     console.error(
         `[gate] contrôle build + lint + test (H-2) + no-duplicates (H-3) — ${module}`
     );
-    const { ok } = runModuleGate(module);
-    if (!ok) {
+    const result = runModuleGate(module);
+    if (!result.ok) {
         console.error(
             `[gate] émission refusée pour « ${module} » — corriger build/lint/test/doublons avant d'écrire le corpus.`
         );
         process.exit(1);
     }
     console.error(`[gate] ✓ module ${module} — émission autorisée`);
+    return result;
 }

@@ -18,8 +18,7 @@
       "inputs": [
         "default",
         "^default",
-        "{workspaceRoot}/eslint.config.mjs",
-        "{workspaceRoot}/tools/eslint-rules/**/*"
+        "{workspaceRoot}/eslint.config.mjs"
       ],
       "options": {
         "max-warnings": 0
@@ -32,8 +31,7 @@
         "^default",
         "{workspaceRoot}/.eslintrc.json",
         "{workspaceRoot}/.eslintignore",
-        "{workspaceRoot}/eslint.config.mjs",
-        "{workspaceRoot}/tools/eslint-rules/**/*"
+        "{workspaceRoot}/eslint.config.mjs"
       ],
       "options": {
         "maxWarnings": 0
@@ -60,5 +58,5 @@
       }
     }
   ],
-  "nxCloudId": "6a6fc43fcf076738a1d8db2e"
+  "nxCloudId": "69cfa6ba213c8001d0f75641"
 }

@@ -58,13 +58,14 @@ PR obligatoire, 1 approbation, status checks CI, pas de force-push.
 
 ### Garde-fous automatisés
 
-| Hook         | Contrôle                              | Script                   |
-| ------------ | ------------------------------------- | ------------------------ |
-| `pre-commit` | Aucun fichier volumineux ajouté       | `check:weight`           |
-| `pre-commit` | Formatage des fichiers modifiés       | `lint-staged` + Prettier |
-| `commit-msg` | Message conforme à la convention      | `commitlint`             |
-| `pre-push`   | Politique de version unique respectée | `check:versions`         |
-| `preinstall` | Node et bun conformes à `engines`     | `check:engines`          |
+| Hook         | Contrôle                              | Script                         |
+| ------------ | ------------------------------------- | ------------------------------ |
+| `pre-commit` | Aucun fichier volumineux ajouté       | `check:weight`                 |
+| `pre-commit` | Formatage des fichiers modifiés       | `lint-staged` + Prettier       |
+| `commit-msg` | Message conforme à la convention      | `commitlint`                   |
+| `pre-push`   | Politique de version unique respectée | `check:versions`               |
+| `pre-push`   | Pas de secret dans les commits pushés | `check:secrets -- --pre-push`  |
+| `preinstall` | Node et bun conformes à `engines`     | `check:engines`                |
 
 Le placement de chaque contrôle est délibéré : au plus tôt, mais pas au point de
 gêner. Vérifier les versions à chaque commit serait pénible pour un bénéfice nul
@@ -122,7 +123,8 @@ garde-fou vérifié.
   [`Dockerfile`](../../Dockerfile) racine copie `tools/` avant
   `bun install --frozen-lockfile` (G-4).
 - Les hooks ne s'exécutent que localement : la CI rejoue les mêmes contrôles
-  (`ci.yml`) ; `--no-verify` local ne passe pas la forge.
+  (`ci.yml`, y compris `check:secrets` / job Secret scan) ; `--no-verify` local
+  ne passe pas la forge.
 - **Une équipe CODEOWNERS inexistante ne provoque aucune erreur** : la règle
   est ignorée en silence — ne jamais retirer le handle valide d'une zone avant
   d'avoir substitué une équipe GitHub réelle.

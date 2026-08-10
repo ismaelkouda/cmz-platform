@@ -14,11 +14,12 @@ const TOKEN_STORAGE_KEY = 'token_data';
  * jeton courant en signal, pour les consommateurs synchrones (intercepteur
  * HTTP, guards) qui ne peuvent pas attendre une promesse à chaque requête.
  *
- * Même limite assumée que `PermissionActionsService`/`StorePathsService`
- * (cf. `application-scope.md`) : le déchiffrement Web Crypto est asynchrone,
- * le signal démarre donc à `null` puis se remplit. Un signal encore vide est
- * traité comme « pas de session » par les consommateurs — refus par sécurité,
- * jamais par défaut permissif.
+ * Limite Web Crypto : le déchiffrement est asynchrone. `token()` démarre
+ * à `null` puis se remplit. Les **guards** doivent attendre `whenReady()`
+ * avant de décider (auth.guard / paths.guard) — sinon un full reload
+ * (Playwright `page.goto`, F5) refuse toute session encore chiffrée en
+ * storage. Les consommateurs hot-path (intercepteur HTTP) gardent le
+ * modèle « null = pas de session » par sécurité s'ils ne pollent pas.
  *
  * **Bug réel trouvé et corrigé (audit `audit-workspace-2026-08-02-revue-finale.md`,
  * I-7) : `user.paths` (liste des pages autorisées, wire fidèle au legacy —
@@ -41,14 +42,37 @@ export class SessionService {
     /** Jeton courant, ou `null` si absent — ou pas encore déchiffré. */
     readonly token = this._token.asReadonly();
 
+    private readonly _ready = signal(false);
+    /**
+     * `true` une fois le premier `loadToken()` terminé (succès ou absence).
+     * Ne repasse jamais à `false` après hydratation initiale.
+     */
+    readonly ready = this._ready.asReadonly();
+
+    private readonly readyGate: Promise<void>;
+    private resolveReady!: () => void;
+
     constructor() {
+        this.readyGate = new Promise<void>((resolve) => {
+            this.resolveReady = resolve;
+        });
         void this.loadToken();
     }
 
+    /** Attend la fin du déchiffrement initial (guards route). */
+    whenReady(): Promise<void> {
+        return this.readyGate;
+    }
+
     private async loadToken(): Promise<void> {
-        this._token.set(
-            await this.storage.getObfuscated<AuthToken>(TOKEN_STORAGE_KEY)
-        );
+        try {
+            this._token.set(
+                await this.storage.getObfuscated<AuthToken>(TOKEN_STORAGE_KEY)
+            );
+        } finally {
+            this._ready.set(true);
+            this.resolveReady();
+        }
     }
 
     async save(user: CurrentUser, token: AuthToken): Promise<void> {

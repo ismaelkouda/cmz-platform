@@ -28,16 +28,24 @@ const T = 'DASHBOARD';
 
                 <div class="flex flex-wrap items-center gap-3">
                     <div class="flex items-center gap-2">
-                        <span class="text-sm text-text-muted">
+                        <span
+                            id="dashboard-period-label"
+                            class="text-sm text-text-muted"
+                        >
                             {{ t(ns + '.FILTER.PERIOD_LABEL') }}
                         </span>
                         <div
+                            role="group"
+                            aria-labelledby="dashboard-period-label"
                             class="flex overflow-hidden rounded border border-border"
                         >
                             @for (option of periodOptions; track option.value) {
                                 <button
                                     type="button"
                                     [disabled]="loading()"
+                                    [attr.aria-pressed]="
+                                        isSelected(option.value)
+                                    "
                                     [class.bg-primary]="
                                         isSelected(option.value)
                                     "

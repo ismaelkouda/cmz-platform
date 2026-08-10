@@ -216,6 +216,55 @@ function buildAliases(): Record<string, string> {
             root,
             'libs/communication/application/src/index.ts'
         ),
+        // T12-1 — RO-view (dashboard / monitoring / reporting / interactive-map)
+        '@cmz/dashboard-domain': resolve(
+            root,
+            'libs/dashboard/domain/src/index.ts'
+        ),
+        '@cmz/dashboard-data': resolve(
+            root,
+            'libs/dashboard/data/src/index.ts'
+        ),
+        '@cmz/dashboard-application': resolve(
+            root,
+            'libs/dashboard/application/src/index.ts'
+        ),
+        '@cmz/monitoring-domain': resolve(
+            root,
+            'libs/monitoring/domain/src/index.ts'
+        ),
+        '@cmz/monitoring-data': resolve(
+            root,
+            'libs/monitoring/data/src/index.ts'
+        ),
+        '@cmz/monitoring-application': resolve(
+            root,
+            'libs/monitoring/application/src/index.ts'
+        ),
+        '@cmz/reporting-domain': resolve(
+            root,
+            'libs/reporting/domain/src/index.ts'
+        ),
+        '@cmz/reporting-data': resolve(
+            root,
+            'libs/reporting/data/src/index.ts'
+        ),
+        '@cmz/reporting-application': resolve(
+            root,
+            'libs/reporting/application/src/index.ts'
+        ),
+        '@cmz/interactive-map-domain': resolve(
+            root,
+            'libs/interactive-map/domain/src/index.ts'
+        ),
+        '@cmz/interactive-map-data': resolve(
+            root,
+            'libs/interactive-map/data/src/index.ts'
+        ),
+        '@cmz/interactive-map-application': resolve(
+            root,
+            'libs/interactive-map/application/src/index.ts'
+        ),
     };
 }
 

@@ -72,7 +72,6 @@
         "{workspaceRoot}/.eslintrc.json",
         "{workspaceRoot}/.eslintignore",
         "{workspaceRoot}/eslint.config.mjs",
-        "{workspaceRoot}/tools/eslint-rules/**/*",
         {
           "externalDependencies": ["eslint"]
         }
@@ -82,6 +81,13 @@
       "executor": "@angular/build:unit-test",
       "options": {
         "watch": false
+      }
+    },
+    "e2e": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bunx playwright test -c apps/backoffice-angular/playwright.config.mjs",
+        "cwd": "{workspaceRoot}"
       }
     },
     "serve-static": {

@@ -55,9 +55,10 @@ apps/backoffice-angular/public/env.local.js
 # Tests et couverture
 # ---------------------------------------------------------------------------
 /coverage
-test-results
 playwright-report
 .playwright
+test-results
+/blob-report
 
 # ---------------------------------------------------------------------------
 # Éditeurs et IDE
@@ -99,6 +100,9 @@ Thumbs.db
 
 # Checkout local/CI du legacy piné (tools/corpus/checkout-legacy.mjs / B-5)
 .legacy-cmz-backoffice/
+
+# Cache binaire gitleaks (T4-5 / tools/check-secrets.mjs)
+tools/.cache/
 
 __screenshots__/
 

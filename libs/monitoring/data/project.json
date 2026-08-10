@@ -3,13 +3,26 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/monitoring/data/src",
   "projectType": "library",
-  "tags": ["scope:monitoring", "type:data"],
+  "tags": [
+    "scope:monitoring",
+    "type:data"
+  ],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
       "options": {
         "command": "tsc --noEmit --project libs/monitoring/data/tsconfig.json",
         "cwd": "{workspaceRoot}"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bunx vitest run --config tools/vitest-lib.config.ts",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "CMZ_VITEST_LIB_ROOT": "libs/monitoring/data"
+        }
       }
     }
   }

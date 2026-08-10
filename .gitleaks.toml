@@ -1,0 +1,24 @@
+# T4-5 — gitleaks (ADR-0006 / AppSec).
+# Doc : https://github.com/gitleaks/gitleaks
+title = "cmz-platform"
+
+[extend]
+# Règles community par défaut (AWS, private keys, generic API keys, …)
+useDefault = true
+
+[allowlist]
+description = "Faux positifs documentés — ne jamais y coller de vrais secrets"
+paths = [
+  # Credentials **mock** e2e / mock-server (SSoT tools/mock-server/credentials.mjs)
+  '''tools/mock-server/credentials\.mjs''',
+  '''apps/backoffice-angular/e2e/credentials\.ts''',
+  # Lockfiles / assets générés non secrets
+  '''bun\.lock''',
+  '''package-lock\.json''',
+  '''yarn\.lock''',
+  # Sorties Playwright / build
+  '''playwright-report/''',
+  '''test-results/''',
+  '''dist/''',
+  '''tools/\.cache/''',
+]

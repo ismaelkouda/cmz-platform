@@ -47,10 +47,15 @@ import { StorePathsService } from '@cmz/shared-application';
  * (comparaison stricte sur `state.url`) n'a jamais été activé côté legacy.
  * **À confirmer contre une vraie réponse de connexion avant mise en
  * production** — signalé explicitement, pas supposé silencieusement correct.
+ *
+ * **Hydratation (T5-3)** : `await storePaths.whenReady()` avant décision —
+ * même race Crypto qu'`authGuard` (voir ce fichier / SessionService).
  */
-export const pathsGuard: CanActivateFn = (route) => {
+export const pathsGuard: CanActivateFn = async (route) => {
     const storePaths = inject(StorePathsService);
     const router = inject(Router);
+
+    await storePaths.whenReady();
 
     const segment = route.routeConfig?.path;
     const paths = storePaths.paths();

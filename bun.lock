@@ -33,6 +33,7 @@
         "@nx/eslint-plugin": "23.1.0",
         "@nx/js": "23.1.0",
         "@nx/web": "23.1.0",
+        "@playwright/test": "1.58.2",
         "@schematics/angular": "catalog:tooling",
         "@swc/helpers": "~0.5.18",
         "@tailwindcss/postcss": "catalog:",
@@ -307,7 +308,6 @@
         "rxjs": "catalog:",
       },
       "devDependencies": {
-        "@angular/compiler": "catalog:",
         "typescript": "catalog:tooling",
         "vitest": "^4.0.8",
       },
@@ -409,7 +409,6 @@
       "name": "@cmz/finalization-application",
       "version": "0.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/finalization-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
@@ -425,7 +424,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/core": "workspace:*",
         "@cmz/finalization-domain": "workspace:*",
@@ -566,7 +564,6 @@
       "name": "@cmz/processing-application",
       "version": "0.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/processing-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
@@ -582,7 +579,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/core": "workspace:*",
         "@cmz/processing-domain": "workspace:*",
@@ -624,7 +620,6 @@
       "name": "@cmz/report-states-application",
       "version": "1.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/report-states-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
@@ -730,7 +725,6 @@
       "name": "@cmz/requests-application",
       "version": "0.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/requests-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
@@ -746,7 +740,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/core": "workspace:*",
         "@cmz/requests-domain": "workspace:*",
@@ -844,7 +837,6 @@
         "rxjs": "catalog:",
       },
       "devDependencies": {
-        "@angular/compiler": "catalog:",
         "vitest": "^4.0.8",
       },
     },
@@ -857,7 +849,6 @@
         "exceljs": "catalog:",
       },
       "devDependencies": {
-        "@angular/compiler": "catalog:",
         "vitest": "^4.0.8",
       },
     },
@@ -870,7 +861,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@angular/common": "catalog:",
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@cmz/shared-domain": "workspace:*",
         "date-fns": "catalog:",
@@ -891,7 +881,6 @@
       "name": "@cmz/shared-ui",
       "version": "0.0.0",
       "dependencies": {
-        "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@angular/forms": "catalog:",
         "@angular/platform-browser": "catalog:",
@@ -1886,6 +1875,8 @@
     "@petamoriken/float16": ["@petamoriken/float16@3.9.3", "", {}, "sha512-8awtpHXCx/bNpFt4mt2xdkgtgVvKqty8VbjHI/WWWQuEw+KLzFot3f4+LkQY9YmOtq7A5GdOnqoIC8Pdygjk2g=="],
 
     "@phenomnomnominal/tsquery": ["@phenomnomnominal/tsquery@6.2.0", "", { "dependencies": { "@types/esquery": "^1.5.4", "esquery": "^1.7.0" }, "peerDependencies": { "typescript": ">3.0.0" } }, "sha512-Vo9nkhfZxDB/sBiqIY3pjDC4mOSyure+AFlEW5hcy/tRE82MqCXjRN4InnVNMldinRt0dLYqg4HAU2XPq5e1LA=="],
+
+    "@playwright/test": ["@playwright/test@1.58.2", "", { "dependencies": { "playwright": "1.58.2" }, "bin": { "playwright": "cli.js" } }, "sha512-akea+6bHYBBfA9uQqSYmlJXn61cTa+jbO87xVLCWbTqbWadRVmhxlXATaOjOgcBaWU4ePo0wB41KMFv3o35IXA=="],
 
     "@rollup/rollup-android-arm-eabi": ["@rollup/rollup-android-arm-eabi@4.60.2", "", { "os": "android", "cpu": "arm" }, "sha512-dnlp69efPPg6Uaw2dVqzWRfAWRnYVb1XJ8CyyhIbZeaq4CA5/mLeZ1IEt9QqQxmbdvagjLIm2ZL8BxXv5lH4Yw=="],
 
@@ -3065,6 +3056,10 @@
 
     "pkg-dir": ["pkg-dir@7.0.0", "", { "dependencies": { "find-up": "^6.3.0" } }, "sha512-Ie9z/WINcxxLp27BKOCHGde4ITq9UklYKDzVo1nhk5sqGEXU3FpkwP5GM2voTGJkGd9B3Otl+Q4uwSOeSUtOBA=="],
 
+    "playwright": ["playwright@1.58.2", "", { "dependencies": { "playwright-core": "1.58.2" }, "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "playwright": "cli.js" } }, "sha512-vA30H8Nvkq/cPBnNw4Q8TWz1EJyqgpuinBcHET0YVJVFldr8JDNiU9LaWAE1KqSkRYazuaBhTpB5ZzShOezQ6A=="],
+
+    "playwright-core": ["playwright-core@1.58.2", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-yZkEtftgwS8CsfYo7nm0KE8jsvm6i/PTgVtB8DL726wNf6H2IMsDuxCpJj59KDaxCtSnrWan2AeDqM7JBaultg=="],
+
     "portfinder": ["portfinder@1.0.38", "", { "dependencies": { "async": "^3.2.6", "debug": "^4.3.6" } }, "sha512-rEwq/ZHlJIKw++XtLAO8PPuOQA/zaPJOZJ37BVuN97nLpMJeuDVLVGRwbFoBgLudgdTMP2hdRJP++H+8QOA3vg=="],
 
     "postcss": ["postcss@8.5.22", "", { "dependencies": { "nanoid": "^3.3.16", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-KBDEIpLrvpv16pp3K0Fw+UCoZfopFjjgeB+0tA/aaThfEE74kKDLrgg603YvOWJyg3+WYtyq3xYsQWsIyZlPqQ=="],
@@ -3886,6 +3881,8 @@
     "parse-json/lines-and-columns": ["lines-and-columns@1.2.4", "", {}, "sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg=="],
 
     "pkg-dir/find-up": ["find-up@6.3.0", "", { "dependencies": { "locate-path": "^7.1.0", "path-exists": "^5.0.0" } }, "sha512-v2ZsoEuVHYy8ZIlYqwPe/39Cy+cFDzp4dXPaxNvkEuouymu+2Jbz0PxpKarJHYJTmv2HWT3O382qY8l4jMWthw=="],
+
+    "playwright/fsevents": ["fsevents@2.3.2", "", { "os": "darwin" }, "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="],
 
     "postcss-loader/semver": ["semver@7.8.5", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA=="],
 

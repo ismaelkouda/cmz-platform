@@ -131,6 +131,23 @@ describe('SessionService', () => {
         );
     });
 
+    it('whenReady() se résout après hydratation initiale (token null ou présent)', async () => {
+        const storage = makeFakeStorage();
+        const injector = createEnvironmentInjector(
+            [
+                { provide: StoragePort, useValue: storage },
+                { provide: NavigationPort, useValue: { reload: vi.fn() } },
+                StorePathsService,
+                SessionService,
+            ],
+            null as never
+        );
+        const session = injector.get(SessionService);
+
+        await expect(session.whenReady()).resolves.toBeUndefined();
+        expect(session.ready()).toBe(true);
+    });
+
     it('clear() efface le stockage et déclenche un rechargement de navigation', async () => {
         const storage = makeFakeStorage();
         const navigation: NavigationPort = { reload: vi.fn() };

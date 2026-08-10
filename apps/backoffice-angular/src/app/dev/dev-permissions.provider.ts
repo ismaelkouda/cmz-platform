@@ -6,12 +6,22 @@ import { PermissionActionsService } from '@cmz/shared-application';
  * storage chiffré n'est pas branché en dev). Remplace `PermissionActionsService`
  * pour activer les boutons Créer/éditer/supprimer.
  *
- * **Gardé par `isDevMode()`** : en build production (`enableProdMode()`), renvoie
- * `[]` → le vrai `PermissionActionsService` (lecture chiffrée) reprend la main.
- * Ne peut donc pas fuiter en prod.
+ * **Gardé par `isDevMode()`** (paramètre injectable pour les tests, défaut
+ * Angular). En build production, `isDevMode() === false` → renvoie `[]` → le
+ * vrai `PermissionActionsService` (lecture chiffrée) reprend la main. Ne peut
+ * donc pas fuiter en prod.
+ *
+ * Preuve machine (T3-4 / DT-6) :
+ * - unit : `dev-permissions.provider.spec.ts` (`isDev` true/false)
+ * - structure : `bun run check:dev-permissions-prod` (CI garde-fous)
+ *
+ * @param isDev prédicat d'environnement — **ne pas passer `() => true` hors
+ *   tests**. Prod/call site app.config utilise le défaut `isDevMode`.
  */
-export function provideDevPermissions(): Provider[] {
-    if (!isDevMode()) {
+export function provideDevPermissions(
+    isDev: () => boolean = isDevMode
+): Provider[] {
+    if (!isDev()) {
         return [];
     }
     return [

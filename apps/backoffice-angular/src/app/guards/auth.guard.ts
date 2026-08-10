@@ -4,7 +4,7 @@ import { SessionService } from '@cmz/shared-application';
 
 /**
  * Guard fonctionnel d'authentification — porte d'entrée *coarse-grained*,
- * évaluée **avant** `permissionGuard` (*fine-grained*, par module/action).
+ * évaluée **avant** `permissionGuard` / `pathsGuard` (*fine-grained*).
  * Vérifie qu'une session existe et n'est pas expirée ; sinon redirige vers
  * `/auth/login`.
  *
@@ -18,14 +18,16 @@ import { SessionService } from '@cmz/shared-application';
  * n'apporterait rien que ce point unique ne couvre déjà — moins de
  * mécanismes pour le même résultat.
  *
- * Même limite assumée que `permissionGuard`/`SessionService` (Web Crypto
- * asynchrone, cf. `application-scope.md`) : un jeton encore non déchiffré
- * au moment du guard est traité comme « pas de session » — refus par
- * sécurité, jamais un défaut permissif.
+ * **Hydratation (T5-3)** : attend `SessionService.whenReady()` avant de
+ * lire le jeton. Sans cela, un full document load (F5, e2e `page.goto`)
+ * évalue le guard pendant le déchiffrement Crypto → rejet faux-négatif
+ * de session valide. Fail-closed **après** hydratation uniquement.
  */
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = async () => {
     const session = inject(SessionService);
     const router = inject(Router);
+
+    await session.whenReady();
 
     const token = session.token();
     const isValid =
