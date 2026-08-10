@@ -555,6 +555,23 @@ tâche ultérieure une fois la conception validée.
 `docs/architecture/politique-cache-mappers.md` existe avec les 3 éléments
 demandés, dont le compte exact de fichiers concernés.
 
+**Historique de résolution (2026-08-10) :** mémo produit. Compte confirmé à
+67 (répartition par module vérifiée via `grep | sed | sort | uniq -c`, pas
+estimée). Découverte substantielle en écrivant le mémo, qui change la
+conception proposée : le cache n'est **pas d'abord un cache de
+performance** mais un mécanisme de **stabilité de référence** pour la
+détection de changements Angular — les 67 mappers appellent tous
+`entity.with(props)` sur un hit (vérifié : `for f in $(grep -rl
+"entityCache = new Map" libs/); do grep -q ".with(props)" "$f" || echo
+"$f"; done` → aucune sortie, 0 exception), et `.with()` renvoie la **même
+référence** si `updatedAt`/`uniqId` sont inchangés (vérifié sur
+`ReportStatesDetailsEntity.with()`). Un cache générique qui ignorerait ce
+contrat casserait la fraîcheur des données. Conception recommandée :
+composition (`LruEntityCache<TEntity>` injectée à la place du `new Map()`
+actuel) plutôt qu'une nouvelle classe de base parallèle, pour limiter le
+diff par mapper à quelques lignes sur les 67 fichiers d'une future
+migration. Rien implémenté, conformément à l'instruction.
+
 ---
 
 ### P2-3 — Documenter la convention `@Service()` vs `@Injectable()`
