@@ -84,6 +84,25 @@ describe('requestsDetailsPermissionsReject', () => {
             )
         ).toBe(true);
     });
+
+    // Comportement intentionnel (P1-5, backlog-llm.md) : contrairement à
+    // `*PermissionsQualify` qui exige `qualificationState === PENDING`,
+    // `*PermissionsReject` ne vérifie jamais `qualificationState` — le
+    // rejet reste possible même après qu'une qualification ait déjà été
+    // complétée. Documenté ici pour qu'une future modification ne
+    // « corrige » pas ce qui ressemble à un oubli mais n'en est pas un.
+    it('autorise reject en in-progress même si qualificationState est COMPLETED (comportement voulu, pas un bug)', () => {
+        expect(
+            requestsDetailsPermissionsReject(
+                makeProps({
+                    status: RequestsDetailsStatus.IN_PROGRESS,
+                    qualificationState:
+                        RequestsDetailsQualificationState.COMPLETED,
+                }),
+                true
+            )
+        ).toBe(true);
+    });
 });
 
 describe('requestsDetailsPermissionsRejectContext', () => {
