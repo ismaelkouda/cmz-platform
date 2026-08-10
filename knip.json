@@ -1,7 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "ignore": ["**/*.spec.ts"],
-  "ignoreBinaries": ["bunx", "ngc"],
+  "ignore": ["**/*.spec.ts", "!apps/backoffice-angular/e2e/*.spec.ts"],
   "ignoreExportsUsedInFile": true,
   "workspaces": {
     ".": {
@@ -12,7 +11,8 @@
         "tools/**/*.{mjs,ts}",
         "apps/backoffice-angular/src/app/providers/permission.guard.ts",
         "apps/backoffice-angular/src/app/testing/axe-a11y.util.ts",
-        "apps/backoffice-angular/src/app/testing/a11y-testbed.harness.ts"
+        "apps/backoffice-angular/src/app/testing/a11y-testbed.harness.ts",
+        "apps/backoffice-angular/e2e/*.spec.ts"
       ],
       "project": [
         "apps/backoffice-angular/**/*.{ts,tsx,css,mjs}",

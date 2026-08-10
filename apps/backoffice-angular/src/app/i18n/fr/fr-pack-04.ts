@@ -693,6 +693,12 @@ export const FR_PACK_4 = {
             },
             STATUS: {
                 PENDING: 'En attente',
+                APPROVED: 'Approuvé',
+                REJECTED: 'Rejeté',
+                ABANDONED: 'Abandonné',
+                IN_PROGRESS: 'En cours',
+                TERMINATED: 'Terminé',
+                CONFIRMED: 'Confirmé',
             },
             CALLBACK: {
                 WHATSAPP: 'WhatsApp',

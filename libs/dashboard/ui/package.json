@@ -10,5 +10,9 @@
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
     "@cmz/shared-ui": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:tooling",
+    "vitest": "^4.0.8"
   }
 }

@@ -10,5 +10,9 @@
     "@angular/core": "catalog:",
     "@angular/common": "catalog:",
     "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:tooling",
+    "vitest": "^4.0.8"
   }
 }

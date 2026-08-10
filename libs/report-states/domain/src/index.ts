@@ -19,10 +19,7 @@ export {
     ReportStatesDetailsStatus,
     isReportStatesDetailsStatus,
 } from './lib/enums/report-states-details-status.enum';
-export {
-    ReportStatesDetailsQualificationState,
-    isReportStatesDetailsQualificationState,
-} from './lib/enums/report-states-details-qualification-state.enum';
+export { ReportStatesDetailsQualificationState } from './lib/enums/report-states-details-qualification-state.enum';
 export {
     REPORT_STATES_APPROVE_ROUTE,
     REPORT_STATES_EVALUATE_ROUTE,

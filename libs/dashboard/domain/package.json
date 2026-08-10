@@ -5,5 +5,9 @@
   "dependencies": {
     "@cmz/shared-domain": "workspace:*",
     "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:tooling",
+    "vitest": "^4.0.8"
   }
 }
