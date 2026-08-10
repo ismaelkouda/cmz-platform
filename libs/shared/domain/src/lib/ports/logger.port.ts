@@ -7,10 +7,17 @@
  * avant ce port : les erreurs non capturées (rejets de promesse, exceptions
  * de template, échecs `ErrorHandler` par défaut) ne laissaient de trace que
  * dans la console du navigateur de l'utilisateur, invisible à quiconque
- * d'autre. `GlobalErrorHandler` (`@cmz/core`) et `errorInterceptor`
- * (`@cmz/shared-data`) consomment ce port pour que ces erreurs aient au
- * moins **un point d'écriture unique**, remplaçable par un vrai collecteur
- * (Sentry/OTel) sans toucher au code appelant.
+ * d'autre. `GlobalErrorHandler` (`@cmz/core`) consomme ce port pour que ces
+ * erreurs aient au moins **un point d'écriture unique**, remplaçable par un
+ * vrai collecteur (Sentry/OTel) sans toucher au code appelant.
+ *
+ * Correction 2026-08-10 (MÉMO-3, `docs/architecture/memo-telemetrie.md`) :
+ * cette docstring citait aussi `errorInterceptor` (`@cmz/shared-data`) comme
+ * consommateur de ce port — vérifié faux (`grep -rn "inject(LoggerPort)"
+ * libs/ apps/` → un seul résultat, `global-error-handler.ts`).
+ * `error.interceptor.ts` normalise les erreurs de transport HTTP en
+ * `DomainError` mais n'appelle jamais `LoggerPort` ; il n'y a donc
+ * aujourd'hui qu'**un seul point d'écriture**, pas deux.
  *
  * **Port de domaine, pas encore un choix de diffusion (P-1 seul, pas P-3).**
  * L'adaptateur câblé aujourd'hui (`ConsoleLoggerAdapter`, `@cmz/shared-browser`)

@@ -714,6 +714,18 @@ recommander une.
 **Critère de succès :** le mémo existe avec les 3 sections, sans
 recommandation finale tranchée.
 
+**Historique de résolution (2026-08-10) :** mémo produit
+(`docs/architecture/memo-openapi.md`). Découverte notable : `SEOS_LEGACY_ROOT`
+(`LLM_CONTEXT.md` §4) pointe vers un projet **frontend** legacy, pas un
+contrat backend — les 301 DTOs actuels sont donc déjà une rétro-ingénierie
+de deuxième main (frontend legacy → DTOs actuels), pas la transcription
+d'un schéma serveur documenté. `tools/mock-server` (14 fichiers `.mjs`)
+n'importe aucun DTO TypeScript (vérifié par `grep`) : 3 représentations
+indépendantes de la même forme de donnée (DTO, mock, API réelle) existent
+sans mécanisme de synchronisation. 4 options présentées sans
+recommandation (rétro-ingénierie depuis les DTOs, rétro-ingénierie depuis
+le trafic réel, demande à l'équipe backend, statu quo documenté).
+
 ---
 
 ### MÉMO-2 — Cadrage réglementaire des données personnelles
@@ -735,6 +747,20 @@ politique.
 `report-states`, `requests`, `processing`, `finalization`,
 `administrative-boundary`, avec chemin de fichier exact pour chacun.
 
+**Historique de résolution (2026-08-10) :** mémo produit
+(`docs/architecture/memo-donnees-personnelles.md`). Les 4 modules workflow
+(`report-states`/`requests`/`processing`/`finalization`) partagent
+exactement la même forme de données personnelles (`initiatorPhone`,
+`initiator` + 7 rôles `ActorEntity` — nom/prénom/téléphone/email chacun,
+`location` avec coordonnées GPS précises, `media` avec photo du lieu).
+`administrative-boundary` : **aucune donnée personnelle trouvée** après
+vérification des 3 props principales (région/département/commune, données
+géographiques agrégées uniquement) — un résultat négatif explicite, pas
+une case non traitée. Élargi au-delà du périmètre minimal demandé à
+`authentication` (`CurrentUser`), `settings-security` (`UsersProps`,
+`AccessLogsProps`) et `team-organization` (`ParticipantsProps`) par la
+même méthode de lecture directe, pour l'exhaustivité.
+
 ---
 
 ### MÉMO-3 — Choix d'un collecteur de télémétrie
@@ -754,6 +780,23 @@ collecteur choisi, sans recommander un fournisseur en particulier.
 
 **Critère de succès :** le mémo existe avec les 3 sections, sans
 fournisseur recommandé.
+
+**Historique de résolution (2026-08-10) :** mémo produit
+(`docs/architecture/memo-telemetrie.md`). Défaut de documentation réel
+détecté et **corrigé directement** (pas seulement noté) : la docstring de
+`logger.port.ts` affirmait que `error.interceptor.ts` consommait aussi ce
+port — vérifié faux (`grep -rn "inject(LoggerPort)" libs/ apps/` → un seul
+résultat, `global-error-handler.ts`) et corrigé dans le fichier lui-même.
+Conséquence factuelle pour le mémo : seules les erreurs remontant à
+`GlobalErrorHandler` seraient visibles d'un futur collecteur ; les échecs
+HTTP gérés par `error.interceptor.ts` ne sont journalisés nulle part
+aujourd'hui. Aucune CSP n'existe dans ce dépôt (ni balise meta dans
+`index.html`, ni fichier de config) — si une CSP est appliquée, c'est hors
+du dépôt (infrastructure non versionnée ici), invérifiable depuis le code
+seul. Point additionnel soulevé (pas traité, hors périmètre du mémo) :
+risque de fuite de données personnelles vers le collecteur si le contexte
+d'erreur inclut des champs identifiés dans
+`docs/architecture/memo-donnees-personnelles.md`.
 
 ---
 
