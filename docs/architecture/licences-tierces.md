@@ -41,9 +41,45 @@ un import du paquet npm — ce projet ne dépend pas de `sweetalert2`.
 
 ## Ensemble du dépôt (production + outillage de build)
 
-46 paquets résolus au total : 40 MIT, 3 Apache-2.0, 1 BSD-2-Clause, 1 0BSD, 1
-`UNLICENSED` (ce dépôt). Aucune licence copyleft, aucune licence non
-identifiée (`UNKNOWN`).
+**Correction (2026-08-11, T6-2)** : le compte ci-dessous (rejoué le
+2026-08-03) est corrigé — `axe-core` (MPL-2.0, devDependency ajoutée le
+2026-08-04, gate a11y T12-8) manquait, la relecture manuelle n'ayant jamais
+été rejouée depuis son ajout. C'est exactement la dérive que ce document
+annonçait lui-même comme possible (« pas de garantie de fraîcheur
+automatique », section précédente) — corrigée en l'outillant (`check:
+licenses`, ci-dessous), pas seulement en mettant à jour le chiffre une fois
+de plus.
+
+54 paquets résolus au total : 43 MIT, 5 Apache-2.0, 1 BSD-2-Clause, 1
+BSD-3-Clause, 1 ISC, 1 0BSD, 1 **MPL-2.0** (`axe-core@4.12.1`), 1
+`UNLICENSED` (ce dépôt). Aucune licence copyleft **côté production** ; une
+seule licence copyleft faible (MPL-2.0, fichier par fichier) côté
+outillage, jamais bundlée dans le livrable navigateur — voir §
+« Exception documentée » ci-dessous.
+
+### Exception documentée — `axe-core` (MPL-2.0)
+
+`axe-core@4.12.1` est une devDependency utilisée uniquement par la suite de
+tests d'accessibilité (T12-8, gate CI a11y) — jamais importée par
+`apps/backoffice-angular` ni bundlée dans `dist/`. MPL-2.0 est un copyleft
+« faible » (obligations limitées aux fichiers du paquet lui-même modifiés,
+pas de contamination du code appelant) ; en usage devDependency non
+redistribué, aucune obligation ne s'applique au code de ce dépôt. Exception
+déclarée nominativement dans `tools/check-licenses.mjs`
+(`DEV_ONLY_EXCEPTIONS`) — invalidée automatiquement si `axe-core` migrait
+un jour vers une dépendance de production.
+
+## Automatisation (T6-2)
+
+Ce document reste la référence lisible par un humain, mais n'est plus la
+seule barrière : `tools/check-licenses.mjs` (`bun run check:licenses`, job
+CI bloquant `licenses`) rejoue `license-checker-rseidelsohn` à chaque build
+et échoue si (1) une dépendance de **production** a une licence non
+permissive, ou (2) une dépendance **quelconque** (prod ou dev) a une
+licence copyleft/inconnue non explicitement documentée dans
+`DEV_ONLY_EXCEPTIONS`. Un nouveau paquet copyleft ne peut donc plus dériver
+silencieusement — il fait échouer la CI et force une décision explicite
+(ajout justifié à l'allowlist, ou refus de la dépendance).
 
 ## Ce que ce document ne tranche pas
 
@@ -55,8 +91,7 @@ identifiée (`UNKNOWN`).
   tiers** (portage prévu, chantier J-8/J-9/J-10, pas encore fait) ont un
   régime de licence distinct, non couvert ici — voir
   [`LICENSE`](../../LICENSE).
-- **Pas de garantie de fraîcheur automatique** : ce fichier n'est pas
-  régénéré par un job CI (contrairement à `STATUS.md`/`README.md`, marqueurs
-  `BEGIN:GENERATED`) — à rejouer manuellement avant chaque revue de
-  dépendances majeure, ou à outiller (`check:licenses` dans `tools/`, non
-  fait) si la fréquence de dérive le justifie.
+- **Ce tableau détaillé** (paquets de production listés un par un,
+  ci-dessus) reste à rejouer manuellement pour une revue humaine complète —
+  seul le comptage/la classification par licence est désormais garanti à
+  jour par la CI, pas la liste nominative de ce document.
