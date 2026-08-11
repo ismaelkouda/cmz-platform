@@ -1,9 +1,6 @@
 /** Fragment i18n FR — PROCESSING, REQUESTS, FINALIZATION, MANAGEMENT, AUTHENTICATION (plafond 800 l.). */
 export const FR_PACK_5 = {
     PROCESSING: {
-        BREADCRUMB: {
-            LABEL: 'Prise en charge',
-        },
         QUEUES: {
             TITLE: "Signalements en attente d'affectation",
             BREADCRUMB: {
@@ -46,9 +43,6 @@ export const FR_PACK_5 = {
                 SOURCE: 'Canal Emission [Numéro]',
                 REPORTED_AT: 'Signalé le',
                 ACTION: 'Action',
-                EDIT: 'Modifier',
-                DELETE: 'Supprimer',
-                SEE_MORE: 'Voir plus',
                 CLOSURE: 'Clôturer',
             },
             FILTER: {
@@ -78,7 +72,6 @@ export const FR_PACK_5 = {
                     CREATED_BY: 'Créé par',
                     OPERATORS: 'Opérateur',
                     CONFORMITY: 'Conformité',
-                    SEE_MORE: 'Voir plus',
                 },
                 SWEET_ALERT: {
                     TITLE: {
@@ -206,9 +199,6 @@ export const FR_PACK_5 = {
         },
     },
     REQUESTS: {
-        BREADCRUMB: {
-            LABEL: 'Qualification des demandes',
-        },
         QUEUES: {
             TITLE: "Demandes en attente d'affectation",
             BREADCRUMB: {
@@ -230,7 +220,6 @@ export const FR_PACK_5 = {
                 SOURCE: "Canal d'émission",
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste des demandes',
                 EXPORT: 'Exporter la liste de {nb} demandes',
                 TAKE: 'Prendre en charge cette demande',
                 SEE_MORE: "Voir plus d'informations",
@@ -261,7 +250,6 @@ export const FR_PACK_5 = {
                 SOURCE: "Canal d'émission",
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste des demandes',
                 EXPORT: 'Exporter la liste de {nb} demandes',
                 QUALIFY: 'Qualifier cette demande',
                 SEE_MORE: "Voir plus d'informations",
@@ -298,7 +286,6 @@ export const FR_PACK_5 = {
                 STATUS_CONFIRMED: 'Confirmé',
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste des demandes',
                 EXPORT: 'Exporter la liste de {nb} demandes',
                 SEE_MORE: "Voir plus d'informations",
                 NO_PERMISSION_EXPORT: 'Exportation des demandes non permise',
@@ -398,9 +385,6 @@ export const FR_PACK_5 = {
         },
     },
     FINALIZATION: {
-        BREADCRUMB: {
-            LABEL: 'Finalisation des signalements',
-        },
         QUEUES: {
             TITLE: 'Signalements en attente de finalisation',
             BREADCRUMB: {
@@ -422,7 +406,6 @@ export const FR_PACK_5 = {
                 SOURCE: "Canal d'émission",
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste',
                 EXPORT: 'Exporter la liste de {nb} signalements',
                 TAKE: 'Prendre en charge',
                 SEE_MORE: "Voir plus d'informations",
@@ -452,7 +435,6 @@ export const FR_PACK_5 = {
                 SOURCE: "Canal d'émission",
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste',
                 EXPORT: 'Exporter la liste de {nb} signalements',
                 FINALIZE: 'Finaliser ce signalement',
                 SEE_MORE: "Voir plus d'informations",
@@ -484,7 +466,6 @@ export const FR_PACK_5 = {
                 STATE_TERMINATED: 'Terminé',
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste',
                 EXPORT: 'Exporter la liste de {nb} signalements',
                 SEE_MORE: "Voir plus d'informations",
                 NO_PERMISSION_EXPORT: 'Exportation non permise',
@@ -531,18 +512,15 @@ export const FR_PACK_5 = {
             SUBMISSION: 'Soumission',
             QUALIFICATION: 'Qualification',
             FINALIZATION: 'Prise en charge',
-            CLOSURE: 'Clôture',
         },
         BUTTONS: {
             TAKE: 'Ajouter au panier',
             TREATMENT: 'Traiter',
             APPROBATION: 'Qualifier',
             FINALIZATION: 'Finaliser',
-            REJECT: 'Rejeter',
             INFORMATION: 'Fermer',
         },
         HEADER: {
-            DETAILS_REPORT: 'du signalement',
             DETAILS_DEMAND: 'de la demande',
             NUMBER_OF_CONFIRMATIONS: 'Nombre de confirmations',
         },

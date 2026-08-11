@@ -309,6 +309,15 @@ async function main() {
         console.log(
             `⚠️  ${unused.length} clé(s) définie(s) mais jamais référencée(s) (traduction morte — avertissement, pas un échec).`
         );
+        // T11-3 (docs/architecture/taches-restantes.md) : la liste elle-même
+        // n'était jamais imprimée, seulement le compte — impossible de trier
+        // sans la relancer avec une modification ad hoc. `--list-unused`
+        // l'imprime pour permettre une purge revue clé par clé (le compte
+        // seul ne dit pas *lesquelles*).
+        if (process.argv.includes('--list-unused')) {
+            console.log('');
+            for (const key of unused) console.log(`  ${key}`);
+        }
     }
 
     if (missing.length > 0 && !warnOnly) {

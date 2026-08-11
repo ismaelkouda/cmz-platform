@@ -445,19 +445,11 @@ export const FR_PACK_4 = {
         },
     },
     INTERACTIVE_MAP: {
-        BREADCRUMB: {
-            LABEL: 'Vue Interactive',
-            ROUTE: 'map',
-            ICON: 'pi pi-map',
-        },
-        LABEL: 'Vue Interactive',
         MAP: {
             BREADCRUMB: {
                 LABEL: 'Carte interactive',
-                ROUTE: 'interactive',
             },
             TITLE: 'Carte interactive',
-            LABEL: 'Carte interactive',
             LOADING_DESCRIPTION: 'Chargement de la carte et des signalements…',
             ERROR_DESCRIPTION:
                 'Une erreur est survenue lors du chargement de la carte interactive.',
@@ -467,31 +459,16 @@ export const FR_PACK_4 = {
         DASHBOARD: {
             BREADCRUMB: {
                 LABEL: 'Tableau de bord interactif',
-                ROUTE: 'visualization',
             },
             TITLE: 'Tableau de bord interactif',
-            LABEL: 'Tableau de bord interactif',
             LOADING_DESCRIPTION: 'Suivi des performances en cours…',
             ERROR_DESCRIPTION:
                 'Une erreur est survenue lors du chargement du tableau de bord interactif.',
         },
     },
     REPORT_STATES: {
-        BREADCRUMB: {
-            LABEL: 'État des signalements',
-            ROUTE: 'report-status',
-            ICON: 'pi-list-check',
-        },
-        LABEL: 'Qualifications',
-        REFRESH: 'Actualiser',
-        NO_DATA: 'Aucun signalement.',
         APPROVE: {
             TITLE: 'Demandes recevables',
-            LABEL: 'Demandes recevables',
-            DESCRIPTION:
-                'Liste des signalements validés et déclarés recevables.',
-            LOADING_DESCRIPTION: 'Chargement des demandes recevables…',
-            ERROR_DESCRIPTION: 'Impossible de charger les demandes recevables.',
             BREADCRUMB: {
                 LABEL: 'Demandes recevables',
             },
@@ -511,7 +488,6 @@ export const FR_PACK_4 = {
                 SOURCE: "Canal d'émission",
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste',
                 EXPORT: 'Exporter la liste de {nb} signalements',
                 TAKE: 'Prendre en charge',
                 SEE_MORE: "Voir plus d'informations",
@@ -522,12 +498,6 @@ export const FR_PACK_4 = {
         },
         EVALUATE: {
             TITLE: 'Signalements évalués',
-            LABEL: 'Signalements évalués',
-            DESCRIPTION:
-                "Signalements ayant fait l'objet d'une évaluation technique ou terrain.",
-            LOADING_DESCRIPTION: 'Chargement des signalements évalués…',
-            ERROR_DESCRIPTION:
-                'Impossible de charger les signalements évalués.',
             BREADCRUMB: {
                 LABEL: 'Signalements évalués',
             },
@@ -547,7 +517,6 @@ export const FR_PACK_4 = {
                 SOURCE: "Canal d'émission",
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste',
                 EXPORT: 'Exporter la liste de {nb} signalements',
                 FINALIZE: 'Finaliser ce signalement',
                 SEE_MORE: "Voir plus d'informations",
@@ -558,11 +527,6 @@ export const FR_PACK_4 = {
         },
         CLOSE: {
             TITLE: 'Signalements clôturés',
-            LABEL: 'Signalements clôturés',
-            DESCRIPTION: 'Signalements dont le traitement a été finalisé.',
-            LOADING_DESCRIPTION: 'Chargement des signalements clôturés…',
-            ERROR_DESCRIPTION:
-                'Impossible de charger les signalements clôturés.',
             BREADCRUMB: {
                 LABEL: 'Signalements clôturés',
             },
@@ -582,7 +546,6 @@ export const FR_PACK_4 = {
                 SOURCE: "Canal d'émission",
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste',
                 EXPORT: 'Exporter la liste de {nb} signalements',
                 SEE_MORE: "Voir plus d'informations",
                 NO_PERMISSION_EXPORT: 'Exportation non permise',
@@ -591,11 +554,6 @@ export const FR_PACK_4 = {
         },
         REJECT: {
             TITLE: 'Demandes non recevables',
-            LABEL: 'Demandes non recevables',
-            DESCRIPTION: 'Signalements rejetés ou déclarés non recevables.',
-            LOADING_DESCRIPTION: 'Chargement des demandes non recevables…',
-            ERROR_DESCRIPTION:
-                'Impossible de charger les demandes non recevables.',
             BREADCRUMB: {
                 LABEL: 'Demandes non recevables',
             },
@@ -615,7 +573,6 @@ export const FR_PACK_4 = {
                 SOURCE: "Canal d'émission",
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste',
                 EXPORT: 'Exporter la liste de {nb} signalements',
                 TAKE: 'Prendre en charge',
                 SEE_MORE: "Voir plus d'informations",
@@ -626,11 +583,6 @@ export const FR_PACK_4 = {
         },
         DOWNLOAD: {
             TITLE: 'Historique des exports',
-            LABEL: 'Historique des exports',
-            DESCRIPTION:
-                'Fichiers exportés (Shapefile, Excel) — téléchargement lorsque le statut est terminé.',
-            LOADING_DESCRIPTION: 'Chargement des exports…',
-            ERROR_DESCRIPTION: 'Impossible de charger les exports.',
             BREADCRUMB: {
                 LABEL: 'Historique des exports',
             },
@@ -655,7 +607,6 @@ export const FR_PACK_4 = {
                 },
             },
             TOOLTIP: {
-                REFRESH: 'Rafraîchir la liste',
                 EXPORT: 'Exporter la liste de {nb} fichiers',
                 NO_PERMISSION_EXPORT: 'Exportation non permise',
                 NO_EXPORT: 'Aucun fichier à exporter',
