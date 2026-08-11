@@ -11,7 +11,7 @@
 | Fichiers TypeScript (`libs/`) | **2 722 fichiers hors tests** (2 884 au total, dont 162 specs) |
 | Modules détectés | **19** |
 | Périmètre applicatif (`scope.json`, M-7) | **54 / 54 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
-| Corpus SEOS — couverture fichiers (N-4) | **916 / 2 722 fichiers libs/ hors tests → 33.7 %** — 1 modules sans aucune paire (1 `kernel`) |
+| Corpus SEOS — couverture fichiers (N-4) | **914 / 2 722 fichiers libs/ hors tests → 33.6 %** — 1 modules sans aucune paire (1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **585 correspondances** + **922 décisions d'architecture** (`status: n/a`) — pas 1507 paires d'apprentissage |
 
 ## Légende

@@ -5,6 +5,7 @@ import {
     legacyPage,
     mapperNxPath,
     viewEntityNxPath,
+    viewEntityOracle,
     variablesDtoNxPath,
     apiSourceNxPath,
     useCaseNxPath,
@@ -20,11 +21,15 @@ export const ROV_NODE_MAPPINGS = {
                 : legacyPage(module, 'domain/entities/node/node.entity.ts'),
         nx: ({ module }) => viewEntityNxPath(module),
         layer: 'domain',
-        oracle: (ctx) => modOracle(ctx.module, 'domain'),
+        // T1-6 (2026-08-10) — GrafanaDashboardEntity/MapEntity supprimés,
+        // remplacés par 1 GrafanaLinkEntity dans @cmz/shared-domain :
+        // l'oracle suit le fichier, pas le module (audit self-review
+        // post-ADR-0022, 2026-08-11 — voir viewEntityNxPath).
+        oracle: () => viewEntityOracle(),
         notes: ({ module }) =>
             module === 'interactive-map'
-                ? 'MapEntity(grafanaLink) — sous-graphe grafana_single_view'
-                : 'Legacy node entity représentatif — consolidation → GrafanaDashboardEntity',
+                ? 'MapEntity → GrafanaLinkEntity (@cmz/shared-domain, T1-6)'
+                : 'Legacy node entity représentatif — consolidation → GrafanaLinkEntity (@cmz/shared-domain, T1-6)',
     },
     'rov-section-enum': {
         legacy: ({ module }) =>
@@ -195,11 +200,13 @@ export const ROV_NODE_MAPPINGS = {
                 module,
                 `domain/entities/${legacyFolder}/${legacyFolder}.entity.ts`
             ),
-        nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/grafana-dashboard.entity.ts`,
+        // T1-6 (2026-08-10) — voir rov-view-entity / viewEntityNxPath :
+        // même entité partagée, même correction (audit self-review
+        // post-ADR-0022, 2026-08-11).
+        nx: () => viewEntityNxPath(),
         layer: 'domain',
-        oracle: (ctx) => modOracle(ctx.module, 'domain'),
-        notes: 'Consolidation N× verticals → 1 GrafanaDashboardEntity',
+        oracle: () => viewEntityOracle(),
+        notes: 'Consolidation N× verticals → 1 GrafanaLinkEntity (@cmz/shared-domain, T1-6)',
     },
     'rov-section-legacy-repository': {
         legacy: ({ module, legacyFolder }) =>
@@ -293,9 +300,14 @@ export const ROV_NODE_MAPPINGS = {
     'rov-map-legacy-entity': {
         legacy: () =>
             legacyPage('interactive-map', 'domain/entities/map/map.entity.ts'),
-        nx: () => 'libs/interactive-map/domain/src/lib/entities/map.entity.ts',
+        // T1-6 (2026-08-10) — MapEntity supprimée, remplacée par
+        // GrafanaLinkEntity dans @cmz/shared-domain (voir rov-view-entity /
+        // viewEntityNxPath ; même correction, audit self-review
+        // post-ADR-0022, 2026-08-11).
+        nx: () => viewEntityNxPath(),
         layer: 'domain',
-        oracle: () => modOracle('interactive-map', 'domain'),
+        oracle: () => viewEntityOracle(),
+        notes: 'MapEntity → GrafanaLinkEntity (@cmz/shared-domain, T1-6)',
     },
     'rov-map-legacy-repository': {
         legacy: () =>

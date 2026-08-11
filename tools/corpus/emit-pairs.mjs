@@ -49,6 +49,7 @@ import { requireLegacyRoot } from './legacy-root.mjs';
 import { assertModuleGate } from './module-gate.mjs';
 import { oracleLevel } from './oracle-levels.mjs';
 import { buildOracleReport } from './oracle-report.mjs';
+import { existsAt, resolveStatus } from './resolve-status.mjs';
 
 const CHAINS = {
     ...WORKFLOW_CHAINS,
@@ -149,12 +150,6 @@ if (!moduleDef) {
     process.exit(1);
 }
 
-/** @param {string} root @param {string | null} rel */
-function existsAt(root, rel) {
-    if (!rel) return false;
-    return existsSync(join(root, rel));
-}
-
 /** @param {string} target ex. @cmz/processing-domain:build */
 function runOracle(target) {
     const [project, task] = target.split(':');
@@ -163,36 +158,6 @@ function runOracle(target) {
         stdio: 'pipe',
         env: process.env,
     });
-}
-
-/** @param {CorpusPair} pair @param {Set<string>} verifiedOracles */
-function resolveStatus(pair, verifiedOracles) {
-    if (pair.status === 'n/a') {
-        return 'n/a';
-    }
-
-    if (!structuralOnly) {
-        const legacyOk = existsAt(LEGACY_ROOT, pair.legacy);
-        if (!legacyOk) {
-            return 'blocked';
-        }
-    }
-
-    if (!pair.nx) {
-        return pair.status === 'n/a' ? 'n/a' : 'pending';
-    }
-
-    const nxOk = existsAt(ROOT, pair.nx);
-    if (!nxOk) {
-        return 'pending';
-    }
-
-    if (!verify || !pair.oracle?.length) {
-        return 'emitted';
-    }
-
-    const allOk = pair.oracle.every((o) => verifiedOracles.has(o));
-    return allOk ? 'verified' : 'emitted';
 }
 
 /** @param {CorpusPair[]} pairs */
@@ -226,7 +191,12 @@ function emitPairs(pairs, gateResult) {
     const today = ranAt.slice(0, 10);
 
     return pairs.map((pair) => {
-        const status = resolveStatus(pair, verifiedOracles);
+        const status = resolveStatus(pair, verifiedOracles, {
+            structuralOnly,
+            verify,
+            legacyRoot: LEGACY_ROOT,
+            root: ROOT,
+        });
         const out = {
             ...pair,
             status,

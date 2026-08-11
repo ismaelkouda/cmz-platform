@@ -8,10 +8,10 @@
   },
   "dependencies": {
     "@cmz/shared-domain": "workspace:*",
+    "@cmz/workflow-details-domain": "workspace:*",
     "rxjs": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:tooling",
-    "vitest": "^4.0.8"
+    "typescript": "catalog:tooling"
   }
 }

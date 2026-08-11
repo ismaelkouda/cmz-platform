@@ -671,11 +671,11 @@
       "version": "1.0.0",
       "dependencies": {
         "@cmz/shared-domain": "workspace:*",
+        "@cmz/workflow-details-domain": "workspace:*",
         "rxjs": "catalog:",
       },
       "devDependencies": {
         "typescript": "catalog:tooling",
-        "vitest": "^4.0.8",
       },
     },
     "libs/report-states/ui": {
@@ -778,6 +778,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@cmz/shared-domain": "workspace:*",
+        "@cmz/workflow-details-domain": "workspace:*",
         "rxjs": "catalog:",
       },
       "devDependencies": {
@@ -964,6 +965,18 @@
         "@cmz/shared-ui": "workspace:*",
         "@cmz/team-organization-application": "workspace:*",
         "@cmz/team-organization-domain": "workspace:*",
+      },
+    },
+    "libs/workflow-details/domain": {
+      "name": "@cmz/workflow-details-domain",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cmz/shared-domain": "workspace:*",
+        "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "typescript": "catalog:tooling",
+        "vitest": "^4.0.8",
       },
     },
   },
@@ -1431,6 +1444,8 @@
     "@cmz/team-organization-domain": ["@cmz/team-organization-domain@workspace:libs/team-organization/domain"],
 
     "@cmz/team-organization-ui": ["@cmz/team-organization-ui@workspace:libs/team-organization/ui"],
+
+    "@cmz/workflow-details-domain": ["@cmz/workflow-details-domain@workspace:libs/workflow-details/domain"],
 
     "@colordx/core": ["@colordx/core@5.5.0", "", {}, "sha512-3PxTH8itZzltK0U9jTwVVnjLXvnDYuq3m+QXsHkENxWiPRh4WaoLcs1SQjqgZ55kS+QyirpH5BVwzP2gMVG6EQ=="],
 

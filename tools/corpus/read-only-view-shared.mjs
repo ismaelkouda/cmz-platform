@@ -122,12 +122,34 @@ export function mapperNxPath(module) {
     return 'libs/reporting/data/src/lib/mappers/reporting-dashboard.mapper.ts';
 }
 
-/** @param {string} module */
-export function viewEntityNxPath(module) {
-    if (module === 'interactive-map') {
-        return 'libs/interactive-map/domain/src/lib/entities/map.entity.ts';
-    }
-    return `libs/${module}/domain/src/lib/entities/grafana-dashboard.entity.ts`;
+/**
+ * Chemin nx de l'entité "vue Grafana" — audit self-review post-ADR-0022
+ * (2026-08-11) : trouvé stale. Depuis T1-6 (`taches-restantes.md`,
+ * 2026-08-10), `GrafanaDashboardEntity` (monitoring/reporting) et
+ * `MapEntity` (interactive-map) — 3 fichiers dupliqués — ont été supprimés
+ * et remplacés par une unique `GrafanaLinkEntity` dans `@cmz/shared-domain`
+ * (`libs/shared/domain/src/lib/entities/grafana-link.entity.ts`). Ce
+ * helper retournait encore les 3 anciens chemins par module (tous
+ * inexistants depuis) — chaque paire read-only-view référençant ce nœud
+ * ressortait `pending` sous un nouveau `emit-pairs.mjs --verify`, malgré un
+ * `status: "verified"` figé et périmé dans les `corpus/*.pairs.jsonl`
+ * commités le jour même du refactor T1-6. Même classe de bug que
+ * `details-edit-fields` (ADR-0022) : un refactor de dédup qui supprime un
+ * fichier sans régénérer le corpus qui le référence.
+ * @param {string} _module conservé pour compat de signature (plus de
+ *   variance par module depuis T1-6 — les 3 modules partagent 1 seul
+ *   fichier)
+ */
+export function viewEntityNxPath(_module) {
+    return 'libs/shared/domain/src/lib/entities/grafana-link.entity.ts';
+}
+
+/**
+ * Oracle de l'entité "vue Grafana" partagée — `@cmz/shared-domain`, pas
+ * `@cmz/${module}-domain` (T1-6, voir `viewEntityNxPath`).
+ */
+export function viewEntityOracle() {
+    return layerOracles('shared', 'domain');
 }
 
 /** @param {string} module */

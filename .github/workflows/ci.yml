@@ -77,6 +77,20 @@ jobs:
       - name: check:legacy-lock
         run: bun run check:legacy-lock
 
+      # Trouvé lors de l'audit self-review post-ADR-0022 (2026-08-11) :
+      # `check:pair-schema` (fixture du schéma de paires corpus) et
+      # `check:corpus-tools` (tests node:test de la logique pure de l'Oracle
+      # corpus — resolveStatus, mapping-helpers, oracle-levels, module-gate)
+      # étaient définis dans package.json/check:all mais jamais invoqués par
+      # aucun gate automatisé (ni husky, ni CI) — un script qui existe sans
+      # jamais s'exécuter n'est qu'une intention (cf. philosophie du
+      # référentiel, taches-restantes.md). Câblés ici.
+      - name: check:pair-schema (schéma des paires corpus)
+        run: bun run check:pair-schema
+
+      - name: check:corpus-tools (tests unitaires de l'Oracle corpus)
+        run: bun run check:corpus-tools
+
       # J-2 (audit-workspace-2026-08-03.md, chantier J) — ADR-0010 fait de
       # conventions/angular-22.profile.json la source unique lisible par
       # machine des conventions de code ; J-1 l'a rendu vérifiable
