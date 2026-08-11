@@ -26,6 +26,7 @@
     "check:duplicates:family:record": "node tools/check-duplicate-files.mjs --family --record",
     "check:i18n": "node tools/check-i18n.mjs",
     "check:secrets": "node tools/check-secrets.mjs",
+    "check:sast": "semgrep scan --config p/default --config p/owasp-top-ten --metrics off --exclude dist --exclude node_modules --exclude corpus .",
     "check:licenses": "node tools/check-licenses.mjs",
     "check:dev-permissions-prod": "node tools/check-dev-permissions-prod.mjs",
     "check:convention-profile": "node tools/check-convention-profile.mjs",

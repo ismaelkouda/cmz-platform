@@ -128,6 +128,53 @@ jobs:
       - name: check:secrets (gitleaks detect)
         run: node tools/check-secrets.mjs
 
+  # ─── Job T4-3 : SAST complémentaire (Semgrep) ────────────────────────────
+  # Big Tech gap identifié (`taches-restantes.md`) : ESLint (style/qualité)
+  # et gitleaks (secrets, job ci-dessus) ne couvrent pas les patterns de
+  # vulnérabilité applicative (injection, XSS, désérialisation dangereuse,
+  # etc.). Semgrep choisi plutôt que CodeQL : gratuit sans dépendre d'un
+  # plan GitHub Advanced Security (statut du repo non confirmé), CLI open
+  # source, pas de dépendance à une Action tierce non pinnée.
+  #
+  # **Mode rapport seul, volontairement non bloquant pour ce premier
+  # rollout** (2026-08-11) : je n'ai pas pu exécuter Semgrep localement
+  # avant d'ajouter ce job (sandbox sans accès réseau sortant vers le
+  # registre de règles — `semgrep --version` reste bloqué indéfiniment),
+  # donc aucune vérification empirique de ce qu'il remonterait sur les
+  # ~2700 fichiers du dépôt n'a pu être faite avant ce commit. Pas de
+  # `--error` (Semgrep n'échoue alors jamais sur des findings) +
+  # `continue-on-error: true` (n'échoue pas non plus sur un crash/timeout
+  # de l'outil) : le job tourne et publie ses résultats sans jamais
+  # bloquer un push/PR. À repasser en bloquant une fois qu'un run réel (sur
+  # GitHub, avec accès réseau) a été revu par un humain et que les faux
+  # positifs pertinents ont été exclus (`.semgrepignore` / commentaires
+  # `nosemgrep`) — voir T4-3 (`taches-restantes.md`).
+  sast:
+    name: SAST (Semgrep, rapport seul)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep (piné)
+        run: pip install semgrep==1.172.0
+
+      - name: Semgrep scan (p/default + p/owasp-top-ten, rapport seul)
+        continue-on-error: true
+        run: |
+          semgrep scan \
+            --config p/default \
+            --config p/owasp-top-ten \
+            --metrics off \
+            --exclude 'dist' \
+            --exclude 'node_modules' \
+            --exclude 'corpus' \
+            .
+
   # ─── Job docs : fraîcheur des blocs générés (audit E-5 / P1-9) ───────────
   # Node pur — pas de bun install (generate-status lit project.json / corpus).
   docs-freshness:
