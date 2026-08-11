@@ -1,9 +1,10 @@
 import { GenericRequiredError } from '@cmz/shared-domain';
-import { validateUsersCreate } from './users-create.validator';
-import { UsersCreateContract } from '../contracts/users-create.contract';
+import { validateUsersUpdate } from './users-update.validator';
+import { UsersUpdateContract } from '../contracts/users-update.contract';
 
-describe('validateUsersCreate', () => {
-    const validContract: UsersCreateContract = {
+describe('validateUsersUpdate', () => {
+    const validContract: UsersUpdateContract = {
+        uniqId: 'user-1',
         firstName: 'Jean',
         lastName: 'Dupont',
         email: 'jean.dupont@example.com',
@@ -12,40 +13,47 @@ describe('validateUsersCreate', () => {
     };
 
     it('valide avec succès un contrat complet', () => {
-        expect(() => validateUsersCreate(validContract)).not.toThrow();
+        expect(() => validateUsersUpdate(validContract)).not.toThrow();
+    });
+
+    it('lève GenericRequiredError si uniqId est absent', () => {
+        const invalid = { ...validContract, uniqId: '' };
+        expect(() => validateUsersUpdate(invalid)).toThrow(
+            GenericRequiredError
+        );
     });
 
     it('lève GenericRequiredError si firstName est absent', () => {
         const invalid = { ...validContract, firstName: '' };
-        expect(() => validateUsersCreate(invalid)).toThrow(
+        expect(() => validateUsersUpdate(invalid)).toThrow(
             GenericRequiredError
         );
     });
 
     it('lève GenericRequiredError si lastName est absent', () => {
         const invalid = { ...validContract, lastName: '' };
-        expect(() => validateUsersCreate(invalid)).toThrow(
+        expect(() => validateUsersUpdate(invalid)).toThrow(
             GenericRequiredError
         );
     });
 
     it('lève GenericRequiredError si email est absent', () => {
         const invalid = { ...validContract, email: '' };
-        expect(() => validateUsersCreate(invalid)).toThrow(
+        expect(() => validateUsersUpdate(invalid)).toThrow(
             GenericRequiredError
         );
     });
 
     it('lève GenericRequiredError si phone est absent', () => {
         const invalid = { ...validContract, phone: '' };
-        expect(() => validateUsersCreate(invalid)).toThrow(
+        expect(() => validateUsersUpdate(invalid)).toThrow(
             GenericRequiredError
         );
     });
 
     it('lève GenericRequiredError si profileId est absent', () => {
         const invalid = { ...validContract, profileId: '' };
-        expect(() => validateUsersCreate(invalid)).toThrow(
+        expect(() => validateUsersUpdate(invalid)).toThrow(
             GenericRequiredError
         );
     });
