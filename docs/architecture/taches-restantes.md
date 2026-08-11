@@ -176,7 +176,7 @@ typées ; pas de state divergeant du wire.
 | T4-3 | Introduire **SAST** complementary (CodeQL / Semgrep / gitleaks) en CI    | ouvert  | M      | P1    | Big Tech gap |
 | T4-4 | **DAST** minimal staging (OWASP ZAP baseline ou équivalent) post-I-8     | différé | M      | P2    | Big Tech gap |
 | T4-5 | Secret scanning pre-push + CI (**gitleaks** v8.24.3 piné, `check:secrets`) | fait    | S      | P1    | Big Tech gap |
-| T4-6 | Revue configs `frame-src` Grafana (fail-closed documenté — runbook ops)  | ouvert  | S      | P2    | CSP          |
+| T4-6 | ~~Revue configs `frame-src` Grafana (fail-closed documenté — runbook ops)~~ — **corrigé** : revue de `deploy/csp.template.conf`/`docker-entrypoint.sh`/`TrustedOriginPort`/`SafeUrlPipe`/`GrafanaEmbedComponent` — confirmé fail-closed par construction des deux côtés (CSP réseau + `TrustedOriginPort` applicatif, même source `CMZ_CSP_FRAME_SRC`), jamais de wildcard possible. Découverte pendant la revue : le commentaire de `csp.template.conf` affirmait `SafeUrlPipe` « non résolu » alors que le correctif (vérification d'origine via `TrustedOriginPort`) existe déjà dans le code — doc périmée, corrigée. Runbook créé : `docs/architecture/runbook-csp-grafana.md` (procédure de déploiement, vérification post-déploiement, limites). | **fait** | S | P2 | 2026-08-11 |
 
 
 ## T5 — Audit d’identité & contrôle d’accès (IAM / RBAC·ABAC)
@@ -270,7 +270,7 @@ offline/degraded UI, chaos de dépendances optionnel.
 | T10-2 | Mode dégradé UI quand API 0/5xx (empty states documentés + tests)       | ouvert  | M      | P1    | Big Tech gap |
 | T10-3 | Circuit / backoff pour boucles facade `resource` (éviter storm)         | ouvert  | M      | P2    | Big Tech gap |
 | T10-4 | Smoke « back offline » : auth + pages clés restent safe (pas de crash)  | ouvert  | M      | P1    | croise T12   |
-| T10-5 | Documenter fail-closed CSP sans Grafana frame (déjà partiel) en runbook | partiel | S      | P2    | CSP          |
+| T10-5 | ~~Documenter fail-closed CSP sans Grafana frame (déjà partiel) en runbook~~ — **corrigé** (même revue que T4-6, `docs/architecture/runbook-csp-grafana.md`) : le comportement fail-closed était déjà correct dans le code (`CMZ_CSP_FRAME_SRC` vide par défaut → iframe bloquée des deux côtés, jamais de repli permissif) mais seulement documenté en commentaires inline dispersés sur 3 fichiers (`csp.template.conf`, `docker-entrypoint.sh`, ports/pipe) — aucun document autonome consultable par un opérateur au déploiement. Runbook regroupe : procédure (positionner la variable, jamais `*`), vérification (en-tête CSP réel, `env.js`, comportement UI si origine refusée), limites (rotation d'origine, `frame-ancestors` hors périmètre). | **fait** | S | P2 | 2026-08-11 |
 
 
 ---

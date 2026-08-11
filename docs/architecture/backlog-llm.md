@@ -858,13 +858,23 @@ résultat, `global-error-handler.ts`) et corrigé dans le fichier lui-même.
 Conséquence factuelle pour le mémo : seules les erreurs remontant à
 `GlobalErrorHandler` seraient visibles d'un futur collecteur ; les échecs
 HTTP gérés par `error.interceptor.ts` ne sont journalisés nulle part
-aujourd'hui. Aucune CSP n'existe dans ce dépôt (ni balise meta dans
-`index.html`, ni fichier de config) — si une CSP est appliquée, c'est hors
-du dépôt (infrastructure non versionnée ici), invérifiable depuis le code
-seul. Point additionnel soulevé (pas traité, hors périmètre du mémo) :
-risque de fuite de données personnelles vers le collecteur si le contexte
-d'erreur inclut des champs identifiés dans
+aujourd'hui. Point additionnel soulevé (pas traité, hors périmètre du
+mémo) : risque de fuite de données personnelles vers le collecteur si le
+contexte d'erreur inclut des champs identifiés dans
 `docs/architecture/memo-donnees-personnelles.md`.
+
+**Correction (2026-08-11, T4-6/T10-5) :** l'affirmation ci-dessus « Aucune
+CSP n'existe dans ce dépôt » était **fausse** — `deploy/csp.template.conf`
+(antérieur au mémo, présent depuis 2026-08-04) définit une CSP réelle,
+générée à chaque démarrage de conteneur par `docker-entrypoint.sh` et
+incluse par `nginx.conf`. Le grep qui a produit cette conclusion aurait dû
+remonter ce fichier et ne l'a pas fait. Corrigé directement dans
+`docs/architecture/memo-telemetrie.md` §3 (pas seulement noté ici) : le
+constat exact est que `connect-src` est dérivé automatiquement des 4 URLs
+backend et n'a aujourd'hui aucune variable dédiée pour une origine
+supplémentaire (collecteur de télémétrie) — mécanisme existant à étendre,
+pas politique absente à créer. Détail : `docs/architecture/
+runbook-csp-grafana.md`.
 
 ---
 

@@ -82,31 +82,41 @@ externe de ce type dans le dépôt.
 
 ## 3. Contraintes CSP (`connect-src`)
 
-**Constat vérifié, pas supposé :** ce dépôt ne définit aujourd'hui
-**aucune Content-Security-Policy** — ni balise `<meta
-http-equiv="Content-Security-Policy">` dans
-`apps/backoffice-angular/src/index.html` (fichier lu intégralement : head
-minimal, `env.js` chargé en script classique, aucune balise CSP), ni
-fichier de configuration serveur/proxy dans ce dépôt qui en poserait une
-(recherche `grep -rl "connect-src\|Content-Security-Policy"` sur tout le
-dépôt, hors `node_modules` → seule occurrence : la mention textuelle dans
-le docstring de `logger.port.ts` lui-même, pas une politique réelle).
+**Correction (2026-08-11, T4-6/T10-5) : le constat ci-dessous, tel qu'écrit
+le 2026-08-10, était faux.** Il affirmait qu'« aucune CSP n'existe dans ce
+dépôt » sur la base d'une recherche `grep -rl "connect-src\|
+Content-Security-Policy"` qui aurait dû, mais n'a pas, remonté
+`deploy/csp.template.conf` (présent depuis 2026-08-04, antérieur à ce
+mémo). Une CSP réelle et versionnée existe : `deploy/csp.template.conf`
+(template `envsubst`, en-tête `Content-Security-Policy` complet —
+`default-src`, `script-src`, `connect-src`, `frame-src`, etc.), inclus par
+`deploy/nginx.conf` (`include /etc/nginx/conf.d/csp.conf`) et généré à
+chaque démarrage de conteneur par `deploy/docker-entrypoint.sh`. Détail et
+procédure opérateur : `docs/architecture/runbook-csp-grafana.md`
+(initialement rédigé pour `frame-src`/Grafana, mécanisme identique pour
+`connect-src`).
 
-**Conséquence factuelle :** si une CSP est appliquée pour cette
-application, elle l'est en dehors de ce dépôt (reverse proxy, CDN,
-configuration d'infrastructure non versionnée ici) — invérifiable depuis
-le code source seul. Deux cas possibles, à trancher par un humain ayant
-visibilité sur l'infrastructure de déploiement :
+**Constat corrigé :** `connect-src` est aujourd'hui **dérivé
+automatiquement** par `docker-entrypoint.sh`, à partir des 4 URLs backend
+existantes (`CMZ_AUTHENTICATION_URL`, `CMZ_REPORT_URL`,
+`CMZ_SETTING_URL`, `CMZ_FILE_URL`) — origine (schéma+hôte) de chacune,
+dédupliquée. Il n'existe **aucune variable dédiée** pour ajouter une
+origine `connect-src` supplémentaire qui ne serait pas déjà l'une de ces 4
+URLs.
 
-- **Si aucune CSP n'est appliquée nulle part** : brancher un collecteur
-  n'a besoin d'aucun ajustement `connect-src` particulier, mais introduit
-  une nouvelle destination réseau non gouvernée par une politique
-  quelconque — point à considérer indépendamment du choix du collecteur.
-- **Si une CSP existe en dehors de ce dépôt** : `connect-src` devrait être
-  étendu avec le domaine exact du endpoint d'ingestion du collecteur
-  choisi (par exemple `*.sentry.io` pour Sentry, l'URL du collecteur OTLP
-  pour OpenTelemetry) — le domaine précis dépend du fournisseur retenu,
-  non tranché ici.
+**Conséquence factuelle pour le choix d'un collecteur :** brancher un
+collecteur de télémétrie externe (Sentry, OTLP, ou autre) introduirait une
+nouvelle destination réseau dont l'origine n'est **par construction pas**
+couverte par la dérivation automatique actuelle — l'iframe Grafana et les
+appels de télémétrie ne partagent pas le même mécanisme d'allowlist
+(`frame-src` a sa propre variable `CMZ_CSP_FRAME_SRC` ; `connect-src` n'en
+a aucune, il est 100 % dérivé des URLs backend). Sans modification de
+`docker-entrypoint.sh`/`csp.template.conf` pour ajouter l'origine du
+collecteur à `connect-src`, la requête réseau du SDK de télémétrie serait
+bloquée par la CSP existante — pas une politique absente à définir depuis
+zéro, mais un mécanisme existant à étendre. Le domaine exact dépend du
+fournisseur retenu (par exemple `*.sentry.io` pour Sentry, l'URL du
+collecteur OTLP retenu), non tranché ici.
 
 ## 4. Ce que ce mémo ne fait pas
 
