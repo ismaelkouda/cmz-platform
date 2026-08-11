@@ -15,6 +15,7 @@ import {
     reportStatesDetailsQualificationVo,
     reportStatesDetailsFilterEntity,
     reportStatesDetailsFilterVo,
+    REPORT_STATES_DETAILS_MODULE_PREFIX,
 } from '@cmz/report-states-domain';
 
 /**
@@ -23,10 +24,13 @@ import {
  * utilisateur (2026-08-11, POC ADR-0020 Option B) : la logique de validation
  * est 100 % partagée dans `@cmz/workflow-details-domain`
  * (`workflowDetails*Vo`, `WorkflowDetails{Approve,Take}Entity`), seul ce
- * préfixe reste propre au module. Seul point du fichier qui change avec
- * l'extraction — les 4 méthodes ci-dessous gardent leur signature publique.
+ * préfixe reste propre au module. Source unique `REPORT_STATES_DETAILS_
+ * MODULE_PREFIX` (`@cmz/report-states-domain`) — aussi consommée par
+ * `report-states-details-dialog.component.ts`, pas retapée en dur (audit
+ * de cohérence post-refactor : la chaîne était dupliquée dans les 2
+ * fichiers jusqu'à cette correction).
  */
-const MODULE_PREFIX = 'REPORT_STATES';
+const MODULE_PREFIX = REPORT_STATES_DETAILS_MODULE_PREFIX;
 
 export interface ReportStatesDetailsQuery {
     filter: ReportStatesDetailsFilterContract;

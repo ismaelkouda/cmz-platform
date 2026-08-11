@@ -28,6 +28,7 @@ export type {
     WorkflowDetailsWorkflowTimestamp as ReportStatesDetailsWorkflowTimestamp,
 } from '@cmz/workflow-details-domain';
 export { ReportStatesDetailsRepository } from './lib/repositories/report-states-details.repository';
+export { REPORT_STATES_DETAILS_MODULE_PREFIX } from './lib/constants/report-states-details-module-prefix.constant';
 export {
     REPORT_STATES_APPROVE_ROUTE,
     REPORT_STATES_EVALUATE_ROUTE,

@@ -36,6 +36,7 @@ export type {
     WorkflowDetailsWorkflowTimestamp as RequestsDetailsWorkflowTimestamp,
 } from '@cmz/workflow-details-domain';
 export { RequestsDetailsRepository } from './lib/repositories/requests-details.repository';
+export { REQUESTS_DETAILS_MODULE_PREFIX } from './lib/constants/requests-details-module-prefix.constant';
 export {
     REQUESTS_ALL_ROUTE,
     REQUESTS_QUEUES_ROUTE,

@@ -17,6 +17,7 @@ import {
 import {
     ReportStatesDetailsQualificationContract,
     reportStatesDetailsQualificationVo,
+    REPORT_STATES_DETAILS_MODULE_PREFIX,
 } from '@cmz/report-states-domain';
 import {
     REPORT_STATES_DETAILS_TABS,
@@ -256,7 +257,10 @@ export class ReportStatesDetailsDialogComponent {
         }
 
         try {
-            reportStatesDetailsQualificationVo(form, 'REPORT_STATES');
+            reportStatesDetailsQualificationVo(
+                form,
+                REPORT_STATES_DETAILS_MODULE_PREFIX
+            );
         } catch {
             this.notification.error(
                 this.t('REPORT_STATES.DETAILS.QUALIFICATION.VALIDATION_ERROR')

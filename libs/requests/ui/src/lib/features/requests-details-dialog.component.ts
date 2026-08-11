@@ -17,6 +17,7 @@ import {
 import {
     RequestsDetailsQualificationContract,
     requestsDetailsQualificationVo,
+    REQUESTS_DETAILS_MODULE_PREFIX,
 } from '@cmz/requests-domain';
 import {
     REQUESTS_DETAILS_TABS,
@@ -256,7 +257,10 @@ export class RequestsDetailsDialogComponent {
         }
 
         try {
-            requestsDetailsQualificationVo(form, 'REQUESTS');
+            requestsDetailsQualificationVo(
+                form,
+                REQUESTS_DETAILS_MODULE_PREFIX
+            );
         } catch {
             this.notification.error(
                 this.t('REQUESTS.DETAILS.QUALIFICATION.VALIDATION_ERROR')
