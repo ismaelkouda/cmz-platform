@@ -10,7 +10,7 @@ import { handle as handleSettingsSecurity } from './domains/settings-security.mj
 import { handle as handleCommunication } from './domains/communication.mjs';
 import { handle as handleDashboard } from './domains/dashboard.mjs';
 import { handle as handleInteractiveMap } from './domains/interactive-map.mjs';
-import { handle as handleMonitoring } from './domains/monitoring.mjs';
+import { handle as handleDashboardVariables } from './domains/dashboard-variables.mjs';
 import { handle as handleReportStates } from './domains/report-states.mjs';
 import { handle as handleRequests } from './domains/requests.mjs';
 import { handle as handleProcessing } from './domains/processing.mjs';
@@ -27,7 +27,7 @@ const DOMAIN_HANDLERS = [
     handleCommunication,
     handleDashboard,
     handleInteractiveMap,
-    handleMonitoring,
+    handleDashboardVariables,
     handleReportStates,
     handleRequests,
     handleProcessing,
