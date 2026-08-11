@@ -145,7 +145,8 @@ if (problemesPoids.length > 0) {
     console.error(
         `\nLimite : ${formaterTaille(LIMITE_OCTETS)}, abaissée à 100 Ko pour les archives et binaires.` +
             "\nUn fichier committé reste dans l'historique pour toujours : hébergez-le hors du dépôt" +
-            "\n(stockage d'artefacts, CDN, registre d'images)."
+            "\n(stockage d'artefacts, CDN, registre d'images) — pas d'allowlist pour" +
+            '\nle poids, jamais `git commit --no-verify`.'
     );
 }
 
@@ -158,12 +159,12 @@ if (problemesLignes.length > 0) {
     }
     console.error(
         '\nDécouper le fichier (un module / une responsabilité) plutôt que' +
-            " d'étendre l'allowlist. Exceptions : voir ALLOWLIST_LIGNES dans" +
-            '\ntools/check-file-weight.mjs — chaque entrée doit être justifiée.'
+            " d'étendre l'allowlist. Si le découpage est réellement injustifié" +
+            ' (cas rare) : ajouter une entrée commentée à ALLOWLIST_LIGNES dans' +
+            ' tools/check-file-weight.mjs (revue de code), jamais' +
+            ' `git commit --no-verify` (T11-6, docs/architecture/taches-restantes.md :' +
+            ' ce plafond doit rester une porte machine, pas une porte contournable).'
     );
 }
 
-console.error(
-    "\nSi l'ajout est réellement justifié : git commit --no-verify.\n"
-);
 process.exit(1);
