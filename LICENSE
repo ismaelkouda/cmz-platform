@@ -24,6 +24,14 @@ tranchées :
   `$SEOS_LEGACY_ROOT`) et les **outils SEOS** tiers ont leurs propres termes,
   non couverts par ce fichier.
 
+**Titularité du legacy clarifiée** ([ADR-0023](./docs/adr/0023-titularite-des-droits-sur-le-legacy.md),
+2026-08-11) : le legacy (`cmz-backoffice-frontend`) a été développé par le
+porteur du projet à titre personnel, hors tout contrat de travail ou de
+prestation avec ANSUT/CMZ — les droits d'auteur lui reviennent par défaut.
+Reste hors périmètre de cette clarification : le régime des **outils SEOS
+tiers** et la question distincte des droits d'usage qu'ANSUT/CMZ pourrait
+détenir en tant qu'opérateur du service (voir ADR-0023, § Conséquences).
+
 À faire trancher par le détenteur des droits (porteur métier/juridique),
 puis à documenter dans un ADR si le régime de licence devient une décision
 structurante (ex. avant toute publication du corpus ou des outils SEOS) :

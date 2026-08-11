@@ -91,6 +91,10 @@ silencieusement — il fait échouer la CI et force une décision explicite
   tiers** (portage prévu, chantier J-8/J-9/J-10, pas encore fait) ont un
   régime de licence distinct, non couvert ici — voir
   [`LICENSE`](../../LICENSE).
+- **Le code du legacy** (`cmz-backoffice-frontend`) n'est pas un paquet
+  tiers résolu par `node_modules` — il est hors périmètre de cet inventaire.
+  Sa titularité est clarifiée séparément par
+  [ADR-0023](../adr/0023-titularite-des-droits-sur-le-legacy.md).
 - **Ce tableau détaillé** (paquets de production listés un par un,
   ci-dessus) reste à rejouer manuellement pour une revue humaine complète —
   seul le comptage/la classification par licence est désormais garanti à

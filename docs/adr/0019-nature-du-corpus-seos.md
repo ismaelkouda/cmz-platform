@@ -156,6 +156,13 @@ dès qu'elle est mesurée (ADR-0006, garde-fous de fraîcheur documentaire).
 - Si le régime de diffusion du contenu legacy (question posée sans réponse
   dans `licences-tierces.md`) est tranché en faveur de l'inclusion : cela
   lève un des obstacles de l'Option B.
+  **Mise à jour 2026-08-11** : ce point est désormais tranché — voir
+  [ADR-0023](./0023-titularite-des-droits-sur-le-legacy.md). Le porteur du
+  projet est titulaire des droits sur le legacy (développement personnel,
+  hors contrat avec ANSUT/CMZ). L'obstacle juridique de l'Option B est
+  levé ; il ne reste que l'obstacle technique/budgétaire (N-2/N-3/N-5,
+  effort XL pour l'extension à la famille `crud-entity`) — toujours non
+  entamé, toujours à budgéter explicitement par le porteur du projet.
 
 ## Références
 
