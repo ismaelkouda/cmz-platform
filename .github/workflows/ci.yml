@@ -402,3 +402,13 @@ jobs:
       # tools/seos/ — cf. son propre docstring).
       - name: check:pattern-nx (J-9, crud-entity Nx-shaped)
         run: bun run check:pattern-nx:crud-entity
+
+      # T11-7 — toute entité crud-entity du périmètre (scope.json) doit être
+      # couverte par check:pattern-nx:crud-entity ci-dessus, sinon elle peut
+      # dériver en silence (constat réel : optical-fiber-network/
+      # radio-relay-links construites à 89.4 % sans jamais être vérifiées,
+      # cf. docstring de tools/check-pattern-nx-coverage.mjs). Exceptions
+      # nominatives documentées dans le script (KNOWN_GAPS) ; toute AUTRE
+      # entité manquante fait échouer ce job.
+      - name: check:pattern-nx-coverage (T11-7, angle mort périmètre)
+        run: bun run check:pattern-nx-coverage

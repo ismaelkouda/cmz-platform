@@ -1,6 +1,6 @@
 # STATUS — cmz-platform
 
-> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-10.
+> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-11.
 > Ne pas éditer manuellement — lancer `node tools/generate-status.mjs` pour régénérer.
 
 ## Résumé
@@ -10,7 +10,7 @@
 | Packages Nx | **71 libs + 1 app** (72 `project.json`) |
 | Fichiers TypeScript (`libs/`) | **2 723 fichiers hors tests** (2 890 au total, dont 167 specs) |
 | Modules détectés | **18** |
-| Périmètre applicatif (`scope.json`, M-7) | **52 / 52 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
+| Périmètre applicatif (`scope.json`, M-7) | **54 / 54 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
 | Corpus SEOS — couverture fichiers (N-4) | **930 / 2 723 fichiers libs/ hors tests → 34.2 %** — 1 modules sans aucune paire (1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **587 correspondances** + **920 décisions d'architecture** (`status: n/a`) — pas 1507 paires d'apprentissage |
 
