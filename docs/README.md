@@ -61,6 +61,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0018](./adr/0018-perimetre-team-organization.md)           | Périmètre de `team-organization` : `agents-performances` et `daily-goal` |
 | [0019](./adr/0019-nature-du-corpus-seos.md)                 | Nature du corpus SEOS : index de correspondances, pas jeu d'apprentissage |
 | [0020](./adr/0020-isolation-vs-factorisation-workflow-action.md) | Famille `workflow-action` : isolation `scope:*` vs factorisation |
+| [0021](./adr/0021-seuils-de-couverture-tests-par-couche.md) | Seuils de couverture de tests par couche                 |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

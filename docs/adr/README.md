@@ -54,4 +54,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0018](./0018-perimetre-team-organization.md)             | Périmètre de `team-organization` : `agents-performances` et `daily-goal` | Accepted |
 | [0019](./0019-nature-du-corpus-seos.md)                   | Nature du corpus SEOS : index de correspondances, pas jeu d'apprentissage | Accepted |
 | [0020](./0020-isolation-vs-factorisation-workflow-action.md) | Famille `workflow-action` : isolation `scope:*` vs factorisation | Accepted |
+| [0021](./0021-seuils-de-couverture-tests-par-couche.md)   | Seuils de couverture de tests par couche                 | Accepted |
 <!-- END:GENERATED:adr-index -->
