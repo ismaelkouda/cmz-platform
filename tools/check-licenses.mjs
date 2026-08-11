@@ -60,9 +60,8 @@ const OWN_LICENSE = 'UNLICENSED';
  * Exceptions nominatives pour du code jamais bundlé/distribué (tests,
  * outillage) — chaque entrée doit être justifiée en commentaire. Rejetée
  * automatiquement si le paquet apparaît un jour dans le set `--production`
- * (cf. `assertNoExceptionInProduction` ci-dessous) : une exception dev-only
- * qui migrerait en dépendance de production doit être re-décidée, pas
- * héritée silencieusement.
+ * (cf. `checkFull` ci-dessous) : une exception dev-only qui migrerait en
+ * dépendance de production doit être re-décidée, pas héritée silencieusement.
  */
 const DEV_ONLY_EXCEPTIONS = new Map([
     // MPL-2.0 (copyleft faible, fichier par fichier) — devDependency de
@@ -74,7 +73,12 @@ const DEV_ONLY_EXCEPTIONS = new Map([
 function runLicenseChecker(extraArgs) {
     const raw = execFileSync(
         'npx',
-        ['--yes', `license-checker-rseidelsohn@${VERSION}`, '--json', ...extraArgs],
+        [
+            '--yes',
+            `license-checker-rseidelsohn@${VERSION}`,
+            '--json',
+            ...extraArgs,
+        ],
         { encoding: 'utf8', maxBuffer: 1024 * 1024 * 16 }
     );
     return JSON.parse(raw);
