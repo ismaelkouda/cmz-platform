@@ -82,7 +82,7 @@ describe('SessionService', () => {
         const session = injector.get(SessionService);
         const storePaths = injector.get(StorePathsService);
 
-        const user = makeUser(['report-states', 'processing']);
+        const user = makeUser(['/report-states', '/processing']);
         const token: AuthToken = {
             value: 'a.b.c',
             expiresAt: new Date(Date.now() + 3600_000).toISOString(),
@@ -92,10 +92,13 @@ describe('SessionService', () => {
 
         // Le guard `pathsGuard` ne lit que `StorePathsService.paths()` — c'est
         // ce signal, pas l'appel interne à `setPaths`, qui doit être vérifié.
-        expect(storePaths.paths()).toEqual(['report-states', 'processing']);
+        // Format chemin absolu depuis T3-2 (2026-08-11) — SessionService ne
+        // transforme pas la valeur (pass-through pur), le format exact
+        // n'affecte donc pas ce test, gardé cohérent avec paths.guard.ts.
+        expect(storePaths.paths()).toEqual(['/report-states', '/processing']);
         expect(storage.saveObfuscated).toHaveBeenCalledWith('paths_data', [
-            'report-states',
-            'processing',
+            '/report-states',
+            '/processing',
         ]);
     });
 

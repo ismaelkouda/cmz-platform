@@ -32,11 +32,13 @@ export const mockUser = {
     //   report-states | processing | requests | finalization
     // `processing` autorisé pour le cas positif e2e ; les 3 autres refusés.
     // dashboard / crud hors pathsGuard → accessibles post-auth uniquement.
+    // Format chemin absolu avec slash depuis T3-2 (2026-08-11) — confirmé
+    // contre une vraie réponse de connexion staging, voir paths.guard.ts.
     paths: [
-        'dashboard',
-        'processing',
-        'equipments/types',
-        'territorial-structures/regions',
+        '/dashboard',
+        '/processing',
+        '/equipments/types',
+        '/territorial-structures/regions',
     ],
     actions: { INFRASTRUCTURE: ['create', 'edit', 'delete'] },
 };

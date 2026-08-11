@@ -15,6 +15,10 @@ import { pathsGuard } from './paths.guard';
  * `audit-workspace-2026-08-02-revue-finale.md`, débloqué 2026-08-03) :
  * la décision se prend sur le **segment de route configuré**
  * (`route.routeConfig?.path`), pas sur `state.url` complet.
+ *
+ * Fixtures `paths` en **chemin absolu avec slash** (ex. `'/report-states'`)
+ * depuis T3-2 (2026-08-11) — format confirmé contre une vraie réponse de
+ * connexion staging, voir le commentaire de `paths.guard.ts`.
  */
 function configure(paths: string[] | null): void {
     TestBed.configureTestingModule({
@@ -40,8 +44,8 @@ const WA_SEGMENTS = [
 ] as const;
 
 describe('pathsGuard', () => {
-    it('autorise le passage quand le segment de route est présent dans les pages autorisées', async () => {
-        configure(['report-states', 'processing']);
+    it('autorise le passage quand le segment de route (préfixé /) est présent dans les pages autorisées', async () => {
+        configure(['/report-states', '/processing']);
 
         const result = await TestBed.runInInjectionContext(() =>
             pathsGuard(
@@ -54,9 +58,9 @@ describe('pathsGuard', () => {
     });
 
     it.each([...WA_SEGMENTS])(
-        'autorise le segment WA « %s » quand listé dans paths',
+        'autorise le segment WA « %s » quand listé dans paths (chemin absolu)',
         async (segment) => {
-            configure([...WA_SEGMENTS]);
+            configure(WA_SEGMENTS.map((s) => `/${s}`));
 
             const result = await TestBed.runInInjectionContext(() =>
                 pathsGuard(
@@ -70,7 +74,7 @@ describe('pathsGuard', () => {
     );
 
     it.each([...WA_SEGMENTS])(
-        "refuse le segment WA « %s » hors paths → UrlTree /auth/login",
+        'refuse le segment WA « %s » hors paths → UrlTree /auth/login',
         async (segment) => {
             const alone = WA_SEGMENTS.find((s) => s !== segment);
             if (!alone) {
@@ -78,7 +82,7 @@ describe('pathsGuard', () => {
                     'WA_SEGMENTS doit contenir au moins 2 segments distincts pour ce test'
                 );
             }
-            configure([alone]);
+            configure([`/${alone}`]);
 
             const result = (await TestBed.runInInjectionContext(() =>
                 pathsGuard(
@@ -93,7 +97,7 @@ describe('pathsGuard', () => {
     );
 
     it("redirige vers /auth/login quand le segment n'est pas dans les pages autorisées", async () => {
-        configure(['processing']);
+        configure(['/processing']);
 
         const result = (await TestBed.runInInjectionContext(() =>
             pathsGuard(
@@ -121,7 +125,7 @@ describe('pathsGuard', () => {
     });
 
     it("redirige vers /auth/login quand la route n'a pas de segment configuré (défense en profondeur)", async () => {
-        configure(['report-states']);
+        configure(['/report-states']);
 
         const result = (await TestBed.runInInjectionContext(() =>
             pathsGuard({ routeConfig: null } as never, {} as never)
@@ -132,7 +136,21 @@ describe('pathsGuard', () => {
     });
 
     it('refuse un path semblable mais non exact (pas de préfixe)', async () => {
-        configure(['report']);
+        configure(['/report']);
+
+        const result = (await TestBed.runInInjectionContext(() =>
+            pathsGuard(
+                { routeConfig: { path: 'report-states' } } as never,
+                {} as never
+            )
+        )) as UrlTree;
+
+        expect(result).toBeInstanceOf(UrlTree);
+        expect(result.toString()).toBe('/auth/login');
+    });
+
+    it("refuse le segment nu même s'il est présent tel quel dans paths (sans le / attendu)", async () => {
+        configure(['report-states']);
 
         const result = (await TestBed.runInInjectionContext(() =>
             pathsGuard(

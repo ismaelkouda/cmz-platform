@@ -108,16 +108,12 @@ describe('mapCurrentUserFromDto', () => {
                 type: 'menu',
             },
         ],
-        // ⚠️ Format arbitraire de test, NON confirmé contre une vraie réponse
-        // serveur — ne pas utiliser comme référence pour deviner le format
-        // réel de `CurrentUser.paths`. `pathsGuard`
-        // (apps/backoffice-angular/src/app/guards/paths.guard.ts) compare
-        // ces valeurs à `route.routeConfig?.path`, un segment nu sans slash
-        // (ex. `"report-states"`), format incompatible avec les chemins
-        // absolus utilisés ici (`'/admin'`). Voir
-        // docs/architecture/verification-format-paths.md pour la procédure
-        // de vérification à mener contre un environnement de staging avant
-        // de considérer l'un ou l'autre format comme correct (P1-3).
+        // Format confirmé (T3-2, 2026-08-11) contre une vraie réponse de
+        // connexion staging : chemins absolus avec slash — cette fixture
+        // est représentative du format réel. `pathsGuard`
+        // (apps/backoffice-angular/src/app/guards/paths.guard.ts) préfixe
+        // désormais le segment de route d'un `/` avant comparaison. Voir
+        // docs/architecture/verification-format-paths.md pour la démarche.
         paths: ['/admin', '/admin/users'],
         actions: { admin: ['create', 'delete'] },
     };
