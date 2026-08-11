@@ -8,10 +8,10 @@
 | Indicateur | Valeur |
 |:---|---:|
 | Packages Nx | **71 libs + 1 app** (72 `project.json`) |
-| Fichiers TypeScript (`libs/`) | **2 723 fichiers hors tests** (2 890 au total, dont 167 specs) |
+| Fichiers TypeScript (`libs/`) | **2 737 fichiers hors tests** (2 904 au total, dont 167 specs) |
 | Modules détectés | **18** |
 | Périmètre applicatif (`scope.json`, M-7) | **54 / 54 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
-| Corpus SEOS — couverture fichiers (N-4) | **930 / 2 723 fichiers libs/ hors tests → 34.2 %** — 1 modules sans aucune paire (1 `kernel`) |
+| Corpus SEOS — couverture fichiers (N-4) | **930 / 2 737 fichiers libs/ hors tests → 34.0 %** — 1 modules sans aucune paire (1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **587 correspondances** + **920 décisions d'architecture** (`status: n/a`) — pas 1507 paires d'apprentissage |
 
 ## Légende
@@ -34,7 +34,7 @@
 | `communication` | ✅ | crud-entity | application, data, domain, ui | 129 | Compilant — messagerie + notifications |
 | `content-management` | ✅ | crud-entity | application, data, domain, ui | 505 | Compilant — 6 entités |
 | `core` | ✅ | kernel |  | 10 | Tokens d'injection + intercepteurs |
-| `coverage-areas` | ✅ | crud-entity | application, data, domain, ui | 321 | Compilant — 4 entités |
+| `coverage-areas` | ✅ | crud-entity | application, data, domain, ui | 335 | Compilant — 4 entités |
 | `dashboard` | ✅ | read-only-view | application, data, domain, ui | 30 | Module IR clôturé — corpus 25 paires, Meta 12/12 ; aggregated_stats_view |
 | `finalization` | ✅ | workflow-action | application, data, domain, ui | 108 | Module IR clôturé — corpus 126 paires, 6 chaînes, Meta 12/12 |
 | `interactive-map` | ✅ | read-only-view | application, data, domain, ui | 22 | Module IR clôturé — SIG v1 + Grafana ; corpus 28 paires, Meta 12/12 ; P2 clusters/tiles |

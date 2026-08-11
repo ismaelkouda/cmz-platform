@@ -127,6 +127,7 @@ export * from './lib/value-objects/optical-fiber-network-find-one-filter.vo';
 
 export * from './lib/repositories/optical-fiber-network.repository';
 export * from './lib/repositories/optical-fiber-network-find-one.repository';
+export * from './lib/repositories/optical-fiber-network-select.repository';
 export * from './lib/repositories/fiber-constructor-select.repository';
 
 export * from './lib/enums/radio-relay-links-operator.enum';
@@ -171,3 +172,4 @@ export * from './lib/value-objects/radio-relay-links-find-one-filter.vo';
 
 export * from './lib/repositories/radio-relay-links.repository';
 export * from './lib/repositories/radio-relay-links-find-one.repository';
+export * from './lib/repositories/radio-relay-links-select.repository';

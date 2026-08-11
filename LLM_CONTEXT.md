@@ -193,10 +193,10 @@ directives suivantes :
 | Dernière génération       | **2026-08-11** (`bun run generate:status`)                                                                      |
 | Modules livrés            | **18** (voir [`STATUS.md`](./STATUS.md))                                                         |
 | Packages Nx               | **72** (71 libs + 1 app)                                              |
-| Fichiers TypeScript       | **2 723** hors tests / **2 890** total (167 specs)                 |
+| Fichiers TypeScript       | **2 737** hors tests / **2 904** total (167 specs)                 |
 | Corpus SEOS               | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                       |
 | Corpus SEOS — nature (N-6)| **587 correspondances** + **920 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |
-| Corpus SEOS — couverture (N-4) | **930 / 2 723 fichiers libs/ hors tests → 34.2 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
+| Corpus SEOS — couverture (N-4) | **930 / 2 737 fichiers libs/ hors tests → 34.0 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
 | Périmètre applicatif (M-7)| **54 / 54 entités** construites (`docs/architecture/scope.json`, 0 manquantes — voir [ADR-0018](./docs/adr/0018-perimetre-team-organization.md)) |
 | Bundle initial (prod, raw)| **882.18 kB** ([`bundle-metrics.json`](./apps/backoffice-angular/bundle-metrics.json), 2026-08-03) |
 | Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                         |

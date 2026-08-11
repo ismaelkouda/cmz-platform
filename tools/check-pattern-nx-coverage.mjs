@@ -24,14 +24,20 @@
  * les deux) et échoue si une entité `crud-entity` du périmètre n'est
  * couverte par aucune invocation `check-pattern-nx.mjs`.
  *
- * `optical-fiber-network`/`radio-relay-links` ne peuvent pas être corrigées
- * ici : compléter la variante `select` exige de connaître la forme DTO
- * réelle de l'endpoint backend correspondant (`$SEOS_LEGACY_ROOT` requis,
- * absent de cette session — reproduire la forme d'une autre entité `select`
- * au hasard serait deviner un contrat, interdit par LLM_CONTEXT.md
- * « Deterministic Contract Compliance »). Documentées en exception
- * nominative ci-dessous (KNOWN_GAPS), pas silencieusement ignorées : toute
- * AUTRE entité `crud-entity` manquante à l'avenir fait échouer ce script.
+ * MàJ (2026-08-11) — `optical-fiber-network`/`radio-relay-links` : la
+ * variante `select` manquante (7 fichiers/entité) a été construite sans
+ * `$SEOS_LEGACY_ROOT`, à partir de précédent 100 % in-repo, pas deviné :
+ * (1) le champ wire du DTO `select` reprend celui déjà utilisé par la
+ * réponse DTO **propre à l'entité**, déjà construite et vérifiée
+ * (`OpticalFiberNetworkItemApiDto.name`, `RadioRelayLinksItemApiDto.name`),
+ * confirmant la convention `name` plat de `SiteGroupSelectMapper` (pas la
+ * variante `site_name` de `MobileNetworkSelectMapper`, non transposable
+ * ici) ; (2) l'API `select` réutilise le même endpoint que la liste
+ * principale de l'entité (`COVERAGE_AREAS_ENDPOINTS.OPTICAL_FIBER_NETWORK` /
+ * `.RADIO_RELAY_LINKS`, déjà existants), comme `SiteGroupSelectApi` le fait
+ * pour `SITE_GROUP`. Les deux entités sont désormais 66/66 (100 %) et
+ * couvertes par `check:pattern-nx:crud-entity` — `KNOWN_GAPS` est vide ;
+ * toute entité `crud-entity` manquante à l'avenir fait échouer ce script.
  *
  * Usage : bun run check:pattern-nx-coverage
  */
@@ -51,16 +57,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
  * apparaîtrait alors comme "couverte" et ferait échouer la vérification
  * d'exception, cf. plus bas).
  */
-const KNOWN_GAPS = new Map([
-    [
-        'coverage-areas/optical-fiber-network',
-        "89.4 % (59/66) — variante 'select' manquante (7 fichiers), forme DTO à confirmer via $SEOS_LEGACY_ROOT avant de construire (pas de contrat deviné).",
-    ],
-    [
-        'coverage-areas/radio-relay-links',
-        '89.4 % (59/66) — même écart que optical-fiber-network, même raison.',
-    ],
-]);
+const KNOWN_GAPS = new Map([]);
 
 function loadScopeCrudEntities() {
     const scope = JSON.parse(

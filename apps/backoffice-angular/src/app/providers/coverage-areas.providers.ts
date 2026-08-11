@@ -5,8 +5,10 @@ import {
     MobileNetworkRepository,
     OpticalFiberNetworkFindOneRepository,
     OpticalFiberNetworkRepository,
+    OpticalFiberNetworkSelectRepository,
     RadioRelayLinksFindOneRepository,
     RadioRelayLinksRepository,
+    RadioRelayLinksSelectRepository,
     SiteGroupFindOneRepository,
     SiteGroupRepository,
     SiteGroupSelectRepository,
@@ -18,8 +20,10 @@ import {
     MobileNetworkRepositoryImpl,
     OpticalFiberNetworkFindOneRepositoryImpl,
     OpticalFiberNetworkRepositoryImpl,
+    OpticalFiberNetworkSelectRepositoryImpl,
     RadioRelayLinksFindOneRepositoryImpl,
     RadioRelayLinksRepositoryImpl,
+    RadioRelayLinksSelectRepositoryImpl,
     SiteGroupFindOneRepositoryImpl,
     SiteGroupRepositoryImpl,
     SiteGroupSelectRepositoryImpl,
@@ -63,6 +67,10 @@ export function provideCoverageAreas(): Provider[] {
             useClass: OpticalFiberNetworkFindOneRepositoryImpl,
         },
         {
+            provide: OpticalFiberNetworkSelectRepository,
+            useClass: OpticalFiberNetworkSelectRepositoryImpl,
+        },
+        {
             provide: FiberConstructorSelectRepository,
             useClass: FiberConstructorSelectRepositoryImpl,
         },
@@ -73,6 +81,10 @@ export function provideCoverageAreas(): Provider[] {
         {
             provide: RadioRelayLinksFindOneRepository,
             useClass: RadioRelayLinksFindOneRepositoryImpl,
+        },
+        {
+            provide: RadioRelayLinksSelectRepository,
+            useClass: RadioRelayLinksSelectRepositoryImpl,
         },
     ];
 }
