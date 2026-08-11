@@ -8,6 +8,7 @@ import {
     listExportRefVolet,
     moduleOracle,
     modDetails,
+    detailsDomainNxPath,
 } from './mapping-helpers.mjs';
 
 /** @type {Record<string, import('./mapping-helpers.mjs').NodeMapping>} */
@@ -54,11 +55,18 @@ export const NODE_MAPPINGS_PACK_3 = {
     'details-edit-fields': {
         legacy: () =>
             'src/shared/components/management/presentation/management-info-panel/management-info-panel.component.ts',
-        nx: ({ module }) =>
-            `libs/${module}/ui/src/lib/features/${modDetails(module)}-edit-fields.component.ts`,
-        layer: 'ui',
-        oracle: ['@cmz/processing-ui:build'],
-        notes: 'Champs éditables approvalType=edit|callback (legacy champs éditables ManagementInfoPanel)',
+        nx: () => null,
+        layer: 'legacy-only',
+        statusOverride: 'n/a',
+        notes:
+            'Fichier séparé absorbé dans details-qualification-form ' +
+            '(commit b3d812c « refactor(forms): migrate qualification forms to ' +
+            'Signal Forms » — *-qualification-form + *-edit-fields fusionnés ' +
+            'en un seul composant Signal Forms, avant cette session). Nœud ' +
+            'corpus jamais régénéré depuis ce merge — trouvé stale (status ' +
+            'verified sur un chemin nx supprimé) en exécutant emit-pairs ' +
+            '--verify pendant le POC ADR-0020 ; corrigé ici, indépendant de ' +
+            'la factorisation workflow-details.',
     },
     'details-approve-command-bus-legacy': {
         legacy: ({ module }) =>
@@ -309,7 +317,11 @@ export const NODE_MAPPINGS_PACK_3 = {
                 'domain/functions/details/details-permissions-approve.function.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/utils/${modDetails(module)}-permissions.util.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/utils/${modDetails(module)}-permissions.util.ts`,
+                'utils/workflow-details-permissions.util.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build', '@cmz/processing-domain:test'],
         notes: 'requestsDetailsPermissionsQualify — IN_PROGRESS + qualificationState pending + permission',
@@ -321,7 +333,11 @@ export const NODE_MAPPINGS_PACK_3 = {
                 'domain/functions/details/details-permissions-reject.function.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/utils/${modDetails(module)}-permissions.util.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/utils/${modDetails(module)}-permissions.util.ts`,
+                'utils/workflow-details-permissions.util.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build', '@cmz/processing-domain:test'],
         notes: 'requestsDetailsPermissionsReject + RejectContext — IN_PROGRESS ; reject sans qualificationState pending',
@@ -344,7 +360,11 @@ export const NODE_MAPPINGS_PACK_3 = {
                 'domain/functions/details/details-permissions-take.function.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/utils/${modDetails(module)}-permissions.util.spec.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/utils/${modDetails(module)}-permissions.util.spec.ts`,
+                'utils/workflow-details-permissions.util.spec.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:test'],
         notes: 'Oracle edge cases take/qualify/reject',
@@ -401,7 +421,11 @@ export const NODE_MAPPINGS_PACK_3 = {
                 'application/dto/details/details-approve.dto.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/contracts/${modDetails(module)}-qualification.contract.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/contracts/${modDetails(module)}-qualification.contract.ts`,
+                'contracts/workflow-details-qualification.contract.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
         notes: 'Contract unifié accept/reject + editFields — remplace DetailsApproveDto + DetailsRejectDto',
@@ -413,7 +437,11 @@ export const NODE_MAPPINGS_PACK_3 = {
                 'domain/value-objects/details/details-approve.vo.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-qualification.vo.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-qualification.vo.ts`,
+                'value-objects/workflow-details-qualification.vo.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build', '@cmz/processing-domain:test'],
         notes: 'approvalType edit|callback|view + callbackType + editFields validation',
@@ -425,7 +453,11 @@ export const NODE_MAPPINGS_PACK_3 = {
                 'domain/value-objects/details/details-reject.vo.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-qualification.vo.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-qualification.vo.ts`,
+                'value-objects/workflow-details-qualification.vo.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build', '@cmz/processing-domain:test'],
         notes: 'Reject absorbé dans requestsDetailsQualificationVo (decision rejected)',
@@ -437,7 +469,11 @@ export const NODE_MAPPINGS_PACK_3 = {
                 'domain/value-objects/details/details-approve.vo.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-qualification.vo.spec.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-qualification.vo.spec.ts`,
+                'value-objects/workflow-details-qualification.vo.spec.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:test'],
         notes: 'Oracle edit|callback : callbackType requis, editFields + commentaire edit',
@@ -449,7 +485,11 @@ export const NODE_MAPPINGS_PACK_3 = {
                 'domain/entities/details/details-approve.entity.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/${modDetails(module)}-approve.entity.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/entities/${modDetails(module)}-approve.entity.ts`,
+                'entities/workflow-details-approve.entity.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/requests-domain:build', '@cmz/requests-domain:test'],
         notes: 'fromDetails() applique editFields si approvalType=edit|callback',
@@ -461,7 +501,11 @@ export const NODE_MAPPINGS_PACK_3 = {
                 'domain/entities/details/details-approve.entity.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/${modDetails(module)}-approve.entity.spec.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/entities/${modDetails(module)}-approve.entity.spec.ts`,
+                'entities/workflow-details-approve.entity.spec.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:test'],
         notes: 'Spec mode edit — champs fiche remplacés par editFields',

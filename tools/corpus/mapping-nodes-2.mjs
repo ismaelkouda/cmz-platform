@@ -8,6 +8,7 @@ import {
     listExportRefVolet,
     moduleOracle,
     modDetails,
+    detailsDomainNxPath,
 } from './mapping-helpers.mjs';
 
 /** @type {Record<string, import('./mapping-helpers.mjs').NodeMapping>} */
@@ -375,7 +376,11 @@ export const NODE_MAPPINGS_PACK_2 = {
                 'domain/entities/details/details-approve.entity.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/${modDetails(module)}-approve.entity.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/entities/${modDetails(module)}-approve.entity.ts`,
+                'entities/workflow-details-approve.entity.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -386,7 +391,11 @@ export const NODE_MAPPINGS_PACK_2 = {
                 'domain/entities/details/details-reject.entity.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/${modDetails(module)}-reject.entity.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/entities/${modDetails(module)}-reject.entity.ts`,
+                'entities/workflow-details-reject.entity.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -397,7 +406,11 @@ export const NODE_MAPPINGS_PACK_2 = {
                 'domain/value-objects/details/details-approve.vo.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-qualification.vo.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-qualification.vo.ts`,
+                'value-objects/workflow-details-qualification.vo.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build', '@cmz/processing-domain:test'],
         notes: 'VO unifié accept/reject (legacy approve.vo + reject.vo)',
@@ -409,7 +422,11 @@ export const NODE_MAPPINGS_PACK_2 = {
                 'domain/functions/details/details-permissions-take.function.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/utils/${modDetails(module)}-permissions.util.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/utils/${modDetails(module)}-permissions.util.ts`,
+                'utils/workflow-details-permissions.util.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build', '@cmz/processing-domain:test'],
         notes: 'Fusion take/approve/reject/manage legacy → utils pures Nx',
@@ -421,7 +438,11 @@ export const NODE_MAPPINGS_PACK_2 = {
                 'domain/functions/details/details-title.function.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/utils/${modDetails(module)}-label.util.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/utils/${modDetails(module)}-label.util.ts`,
+                'utils/workflow-details-label.util.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build', '@cmz/processing-domain:test'],
         notes: 'title + submit label (legacy title + label-button-submit)',

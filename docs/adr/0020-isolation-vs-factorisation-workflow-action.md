@@ -1,7 +1,17 @@
 # ADR-0020 — Famille `workflow-action` : isolation `scope:*` vs factorisation
 
-- **Statut :** Accepted
+- **Statut :** Accepted — partiellement réévalué par [ADR-0022](./0022-workflow-details-poc-factorisation.md)
 - **Date :** 2026-08-03
+
+> **MàJ 2026-08-11 (ADR-0022) :** la condition de réouverture ci-dessous
+> (« dérive de correction détectée ») s'est produite — T1-5,
+> `taches-restantes.md`. Option B exécutée en POC pour `report-states`/
+> `requests` uniquement (sous-graphe domaine « details »,
+> `@cmz/workflow-details-domain`) ; `processing`/`finalization` restent en
+> Option A (isolation), non concernés par l'incident déclencheur. Cette
+> décision reste donc **Accepted** pour ces deux modules et pour toute autre
+> famille de duplication future — voir ADR-0022 pour le détail de
+> l'exécution.
 
 ## Contexte
 

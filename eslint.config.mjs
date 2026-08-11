@@ -212,6 +212,7 @@ export default [
                             sourceTag: 'scope:report-states',
                             onlyDependOnLibsWithTags: [
                                 'scope:report-states',
+                                'scope:workflow-details',
                                 'scope:shared',
                             ],
                         },
@@ -228,6 +229,7 @@ export default [
                             sourceTag: 'scope:requests',
                             onlyDependOnLibsWithTags: [
                                 'scope:requests',
+                                'scope:workflow-details',
                                 'scope:shared',
                             ],
                         },
@@ -235,6 +237,24 @@ export default [
                             sourceTag: 'scope:finalization',
                             onlyDependOnLibsWithTags: [
                                 'scope:finalization',
+                                'scope:shared',
+                            ],
+                        },
+                        // ADR-0020 (Option B, POC 2026-08-11) — bibliothèque
+                        // transverse dédiée à la fonctionnalité « details »
+                        // partagée par `report-states`/`requests` (99 groupes
+                        // quasi-identiques modulo nom de module, cf. mémo
+                        // `docs/architecture/factorisation-details-workflow.md`).
+                        // Scope dédié plutôt que `scope:shared` pour ne pas
+                        // mélanger un concept spécifique au workflow de
+                        // traitement de signalement avec le kernel générique
+                        // (`ActorEntity`, etc.). Ne dépend que de `scope:shared`
+                        // — ne referme aucun cycle, `processing`/`finalization`
+                        // ne l'importent pas (non migrés dans ce POC).
+                        {
+                            sourceTag: 'scope:workflow-details',
+                            onlyDependOnLibsWithTags: [
+                                'scope:workflow-details',
                                 'scope:shared',
                             ],
                         },

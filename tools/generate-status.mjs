@@ -177,6 +177,14 @@ const META = {
         family: 'workflow-action',
         notes: 'Module IR clôturé — corpus 157 paires, 8 chaînes, Meta 12/12',
     },
+    'workflow-details': {
+        status: '✅',
+        family: 'kernel',
+        notes:
+            'ADR-0020 (Option B, POC 2026-08-11) — sous-graphe "details" ' +
+            'partagé report-states/requests (domain uniquement, 1 seule ' +
+            'couche) ; pas un module fonctionnel — kernel comme shared/core.',
+    },
 };
 
 // ── Compteurs ─────────────────────────────────────────────────────────────

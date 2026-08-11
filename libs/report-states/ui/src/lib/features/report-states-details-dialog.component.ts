@@ -256,7 +256,7 @@ export class ReportStatesDetailsDialogComponent {
         }
 
         try {
-            reportStatesDetailsQualificationVo(form);
+            reportStatesDetailsQualificationVo(form, 'REPORT_STATES');
         } catch {
             this.notification.error(
                 this.t('REPORT_STATES.DETAILS.QUALIFICATION.VALIDATION_ERROR')

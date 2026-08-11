@@ -150,6 +150,9 @@
       "@cmz/finalization-data": ["./libs/finalization/data/src/index.ts"],
       "@cmz/finalization-application": [
         "./libs/finalization/application/src/index.ts"
+      ],
+      "@cmz/workflow-details-domain": [
+        "./libs/workflow-details/domain/src/index.ts"
       ]
     }
   },

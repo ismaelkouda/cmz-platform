@@ -1,20 +1,12 @@
-import { Observable } from 'rxjs';
-import { FetchOptions } from '@cmz/shared-domain';
-import { RequestsDetailsFilterContract } from '../contracts/requests-details-filter.contract';
-import { RequestsDetailsEntity } from '../entities/requests-details.entity';
-import { RequestsDetailsApproveEntity } from '../entities/requests-details-approve.entity';
-import { RequestsDetailsRejectEntity } from '../entities/requests-details-reject.entity';
-import { RequestsDetailsTakeEntity } from '../entities/requests-details-take.entity';
+import { WorkflowDetailsRepositoryBase } from '@cmz/workflow-details-domain';
 
-export abstract class RequestsDetailsRepository {
-    abstract execute(
-        filter: RequestsDetailsFilterContract,
-        options?: FetchOptions
-    ): Observable<RequestsDetailsEntity>;
-
-    abstract take(entity: RequestsDetailsTakeEntity): Observable<void>;
-
-    abstract approve(entity: RequestsDetailsApproveEntity): Observable<void>;
-
-    abstract reject(entity: RequestsDetailsRejectEntity): Observable<void>;
-}
+/**
+ * Port module `requests` — logique 100 % partagée avec `report-states` via
+ * `WorkflowDetailsRepositoryBase` (ADR-0020 Option B, POC 2026-08-11).
+ * Reste une classe distincte (pas un alias direct de la base) pour garder un
+ * token Angular DI distinct de `ReportStatesDetailsRepository` — deux
+ * `provide: WorkflowDetailsRepositoryBase` dans le même injecteur racine
+ * s'écraseraient silencieusement l'un l'autre (memo
+ * `factorisation-details-workflow.md` §3.3).
+ */
+export abstract class RequestsDetailsRepository extends WorkflowDetailsRepositoryBase {}

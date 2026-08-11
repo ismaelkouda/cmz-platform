@@ -1,22 +1,33 @@
-export { ReportStatesDetailsTakeEntity } from './lib/entities/report-states-details-take.entity';
-export { ReportStatesDetailsApproveEntity } from './lib/entities/report-states-details-approve.entity';
-export { ReportStatesDetailsRejectEntity } from './lib/entities/report-states-details-reject.entity';
-export { ReportStatesDetailsEntity } from './lib/entities/report-states-details.entity';
-export { reportStatesDetailsFilterEntity } from './lib/entities/report-states-details-filter.entity';
-export type { ReportStatesDetailsFilterContract } from './lib/contracts/report-states-details-filter.contract';
-export type { ReportStatesDetailsTakeContract } from './lib/contracts/report-states-details-take.contract';
-export type { ReportStatesDetailsQualificationContract } from './lib/contracts/report-states-details-qualification.contract';
-export type { ReportStatesDetailsQualificationEditFields } from './lib/contracts/report-states-details-qualification.contract';
-export { reportStatesDetailsQualificationVo } from './lib/value-objects/report-states-details-qualification.vo';
+// ADR-0020 (Option B, POC 2026-08-11) — la fonctionnalité "details" (99
+// groupes quasi-identiques avec `requests`, mémo
+// `docs/architecture/factorisation-details-workflow.md`) est désormais
+// portée par `@cmz/workflow-details-domain`, ré-exportée ici sous les noms
+// historiques pour ne rien casser côté data/application/ui (aucun fichier
+// hors domain n'a dû changer). Seul `ReportStatesDetailsRepository` reste un
+// fichier local (token DI distinct, voir son commentaire).
+export {
+    WorkflowDetailsTakeEntity as ReportStatesDetailsTakeEntity,
+    WorkflowDetailsApproveEntity as ReportStatesDetailsApproveEntity,
+    WorkflowDetailsRejectEntity as ReportStatesDetailsRejectEntity,
+    WorkflowDetailsEntity as ReportStatesDetailsEntity,
+    workflowDetailsFilterEntity as reportStatesDetailsFilterEntity,
+    workflowDetailsQualificationVo as reportStatesDetailsQualificationVo,
+    workflowDetailsFilterVo as reportStatesDetailsFilterVo,
+    workflowDetailsTakeVo as reportStatesDetailsTakeVo,
+    WorkflowDetailsStatus as ReportStatesDetailsStatus,
+    WorkflowDetailsQualificationState as ReportStatesDetailsQualificationState,
+    workflowDetailsWorkflowTimestamps as reportStatesDetailsWorkflowTimestamps,
+} from '@cmz/workflow-details-domain';
 export type {
-    ReportStatesDetailsPermissions,
-    ReportStatesDetailsProps,
-} from './lib/props/report-states-details.props';
+    WorkflowDetailsFilterContract as ReportStatesDetailsFilterContract,
+    WorkflowDetailsTakeContract as ReportStatesDetailsTakeContract,
+    WorkflowDetailsQualificationContract as ReportStatesDetailsQualificationContract,
+    WorkflowDetailsQualificationEditFields as ReportStatesDetailsQualificationEditFields,
+    WorkflowDetailsPermissions as ReportStatesDetailsPermissions,
+    WorkflowDetailsProps as ReportStatesDetailsProps,
+    WorkflowDetailsWorkflowTimestamp as ReportStatesDetailsWorkflowTimestamp,
+} from '@cmz/workflow-details-domain';
 export { ReportStatesDetailsRepository } from './lib/repositories/report-states-details.repository';
-export { reportStatesDetailsFilterVo } from './lib/value-objects/report-states-details-filter.vo';
-export { reportStatesDetailsTakeVo } from './lib/value-objects/report-states-details-take.vo';
-export { ReportStatesDetailsStatus } from './lib/enums/report-states-details-status.enum';
-export { ReportStatesDetailsQualificationState } from './lib/enums/report-states-details-qualification-state.enum';
 export {
     REPORT_STATES_APPROVE_ROUTE,
     REPORT_STATES_EVALUATE_ROUTE,
@@ -64,5 +75,3 @@ export { evaluateReportStatesFilterEntity } from './lib/entities/evaluate-report
 export { closeReportStatesFilterEntity } from './lib/entities/close-report-states-filter.entity';
 export { rejectReportStatesFilterEntity } from './lib/entities/reject-report-states-filter.entity';
 export { downloadReportStatesFilterEntity } from './lib/entities/download-report-states-filter.entity';
-export type { ReportStatesDetailsWorkflowTimestamp } from './lib/interfaces/report-states-details-workflow-timestamp.interface';
-export { reportStatesDetailsWorkflowTimestamps } from './lib/utils/report-states-details-workflow-timestamps.util';

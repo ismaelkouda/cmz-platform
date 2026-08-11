@@ -74,4 +74,30 @@ export function modDetails(module) {
     return `${module}-details`;
 }
 
+/**
+ * ADR-0020 (Option B, POC 2026-08-11) — `report-states`/`requests` ont vu
+ * leur sous-graphe domaine "details" (props/entity/filter/take/qualification
+ * VOs, permissions/label utils, repository port) extrait vers
+ * `@cmz/workflow-details-domain` (mémo
+ * `docs/architecture/factorisation-details-workflow.md`). `processing`/
+ * `finalization` gardent leurs fichiers domain par module (non migrés dans
+ * ce POC — pas de "approve"/"reject"/"qualification" chez eux, seulement
+ * "treat", jamais concerné par cette liste).
+ */
+export const WORKFLOW_DETAILS_SHARED_MODULES = ['report-states', 'requests'];
+
+/**
+ * Chemin nx d'un nœud domaine "details" — bascule vers la lib partagée pour
+ * les modules migrés, garde le chemin historique par module sinon.
+ * @param {string} module
+ * @param {string} perModulePath chemin historique `libs/{module}/domain/...`
+ * @param {string} sharedRelPath chemin relatif sous `libs/workflow-details/domain/src/lib/`
+ */
+export function detailsDomainNxPath(module, perModulePath, sharedRelPath) {
+    if (WORKFLOW_DETAILS_SHARED_MODULES.includes(module)) {
+        return `libs/workflow-details/domain/src/lib/${sharedRelPath}`;
+    }
+    return perModulePath;
+}
+
 /** @type {Record<string, NodeMapping>} */

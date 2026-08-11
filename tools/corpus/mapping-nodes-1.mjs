@@ -8,6 +8,7 @@ import {
     listExportRefVolet,
     moduleOracle,
     modDetails,
+    detailsDomainNxPath,
 } from './mapping-helpers.mjs';
 
 /** @type {Record<string, import('./mapping-helpers.mjs').NodeMapping>} */
@@ -354,7 +355,11 @@ export const NODE_MAPPINGS_PACK_1 = {
                 'domain/interfaces/details/details-props.interface.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/props/${modDetails(module)}.props.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/props/${modDetails(module)}.props.ts`,
+                'props/workflow-details.props.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -362,7 +367,11 @@ export const NODE_MAPPINGS_PACK_1 = {
         legacy: ({ module }) =>
             legacyPage(module, 'domain/entities/details/details.entity.ts'),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/${modDetails(module)}.entity.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/entities/${modDetails(module)}.entity.ts`,
+                'entities/workflow-details.entity.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -373,7 +382,11 @@ export const NODE_MAPPINGS_PACK_1 = {
                 'domain/entities/details/details-filter.entity.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/${modDetails(module)}-filter.entity.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/entities/${modDetails(module)}-filter.entity.ts`,
+                'entities/workflow-details-filter.entity.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -381,7 +394,11 @@ export const NODE_MAPPINGS_PACK_1 = {
         legacy: ({ module }) =>
             legacyPage(module, 'application/dto/details/details-filter.dto.ts'),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/contracts/${modDetails(module)}-filter.contract.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/contracts/${modDetails(module)}-filter.contract.ts`,
+                'contracts/workflow-details-filter.contract.ts'
+            ),
         layer: 'domain',
         notes: 'Contract domaine remplace filter DTO application legacy',
         oracle: ['@cmz/processing-domain:build'],
@@ -393,7 +410,11 @@ export const NODE_MAPPINGS_PACK_1 = {
                 'domain/value-objects/details/details-filter.vo.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-filter.vo.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-filter.vo.ts`,
+                'value-objects/workflow-details-filter.vo.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -404,7 +425,11 @@ export const NODE_MAPPINGS_PACK_1 = {
                 'domain/entities/details/details-take.entity.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/entities/${modDetails(module)}-take.entity.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/entities/${modDetails(module)}-take.entity.ts`,
+                'entities/workflow-details-take.entity.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },
@@ -426,7 +451,11 @@ export const NODE_MAPPINGS_PACK_1 = {
                 'domain/value-objects/details/details-take.vo.ts'
             ),
         nx: ({ module }) =>
-            `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-take.vo.ts`,
+            detailsDomainNxPath(
+                module,
+                `libs/${module}/domain/src/lib/value-objects/${modDetails(module)}-take.vo.ts`,
+                'value-objects/workflow-details-take.vo.ts'
+            ),
         layer: 'domain',
         oracle: ['@cmz/processing-domain:build'],
     },

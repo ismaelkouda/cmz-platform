@@ -62,6 +62,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0019](./adr/0019-nature-du-corpus-seos.md)                 | Nature du corpus SEOS : index de correspondances, pas jeu d'apprentissage |
 | [0020](./adr/0020-isolation-vs-factorisation-workflow-action.md) | Famille `workflow-action` : isolation `scope:*` vs factorisation |
 | [0021](./adr/0021-seuils-de-couverture-tests-par-couche.md) | Seuils de couverture de tests par couche                 |
+| [0022](./adr/0022-workflow-details-poc-factorisation.md)    | Factorisation `details` report-states/requests : exécution du POC (ADR-0020 Option B) |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

@@ -116,6 +116,12 @@ function buildAliases(): Record<string, string> {
             root,
             'libs/finalization/application/src/index.ts'
         ),
+        // ADR-0020 (Option B, POC 2026-08-11) — lib transverse `details`
+        // partagée par report-states/requests.
+        '@cmz/workflow-details-domain': resolve(
+            root,
+            'libs/workflow-details/domain/src/index.ts'
+        ),
         // Backlog cartographie #4 (2026-08-04) — mêmes 3 couches ajoutées
         // pour les 8 modules crud-entity/action-request qui n'avaient
         // encore aucun test (donc jamais eu besoin de résoudre leurs
