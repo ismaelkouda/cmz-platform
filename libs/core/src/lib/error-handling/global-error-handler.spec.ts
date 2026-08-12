@@ -1,7 +1,7 @@
 import { Injector } from '@angular/core';
 import { describe, expect, it, vi } from 'vitest';
 import { LoggerPort } from '@cmz/shared-domain';
-import { LOGGER_PORT } from './logger-port.token';
+import { LOGGER_PORT } from '../tokens/logger-port.token';
 import { GlobalErrorHandler } from './global-error-handler';
 
 /**

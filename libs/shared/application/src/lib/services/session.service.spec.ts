@@ -2,6 +2,7 @@ import { createEnvironmentInjector } from '@angular/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthToken, CurrentUser } from '@cmz/shared-domain';
 import { NavigationPort, StoragePort } from '@cmz/shared-domain';
+import { NAVIGATION_PORT } from '../tokens/navigation-port.token';
 import { SessionService } from './session.service';
 import { StorePathsService } from './store-paths.service';
 
@@ -73,7 +74,7 @@ describe('SessionService', () => {
         const injector = createEnvironmentInjector(
             [
                 { provide: StoragePort, useValue: storage },
-                { provide: NavigationPort, useValue: { reload: vi.fn() } },
+                { provide: NAVIGATION_PORT, useValue: { reload: vi.fn() } },
                 StorePathsService,
                 SessionService,
             ],
@@ -107,7 +108,7 @@ describe('SessionService', () => {
         const injector = createEnvironmentInjector(
             [
                 { provide: StoragePort, useValue: storage },
-                { provide: NavigationPort, useValue: { reload: vi.fn() } },
+                { provide: NAVIGATION_PORT, useValue: { reload: vi.fn() } },
                 StorePathsService,
                 SessionService,
             ],
@@ -139,7 +140,7 @@ describe('SessionService', () => {
         const injector = createEnvironmentInjector(
             [
                 { provide: StoragePort, useValue: storage },
-                { provide: NavigationPort, useValue: { reload: vi.fn() } },
+                { provide: NAVIGATION_PORT, useValue: { reload: vi.fn() } },
                 StorePathsService,
                 SessionService,
             ],
@@ -157,7 +158,7 @@ describe('SessionService', () => {
         const injector = createEnvironmentInjector(
             [
                 { provide: StoragePort, useValue: storage },
-                { provide: NavigationPort, useValue: navigation },
+                { provide: NAVIGATION_PORT, useValue: navigation },
                 StorePathsService,
                 SessionService,
             ],

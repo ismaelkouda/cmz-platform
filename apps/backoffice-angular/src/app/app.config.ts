@@ -13,12 +13,12 @@ import {
 } from '@cmz/core';
 import {
     ConfirmDialogPort,
+    NAVIGATION_PORT,
     NotificationPort,
     TranslationPort,
 } from '@cmz/shared-application';
 import {
     ExcelExportPort,
-    NavigationPort,
     StoragePort,
     TrustedOriginPort,
 } from '@cmz/shared-domain';
@@ -75,7 +75,10 @@ export const appConfig: ApplicationConfig = {
         provideI18n(),
         // Adaptateurs des ports (design-system + moteurs agnostiques).
         { provide: StoragePort, useExisting: BrowserStorageAdapter },
-        { provide: NavigationPort, useExisting: BrowserNavigationAdapter },
+        // Jeton NAVIGATION_PORT séparé du contrat (interface pure) depuis
+        // ADR-0024 — vit dans @cmz/shared-application (pas @cmz/core, qui
+        // n'est pas consommable depuis type:application).
+        { provide: NAVIGATION_PORT, useExisting: BrowserNavigationAdapter },
         { provide: ExcelExportPort, useExisting: BrowserExcelExportAdapter },
         BrowserExcelExportAdapter,
         { provide: NotificationPort, useExisting: CmzNotificationService },

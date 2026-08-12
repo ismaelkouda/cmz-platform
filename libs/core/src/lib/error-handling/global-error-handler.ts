@@ -1,5 +1,5 @@
 import { ErrorHandler, Service, inject } from '@angular/core';
-import { LOGGER_PORT } from './logger-port.token';
+import { LOGGER_PORT } from '../tokens/logger-port.token';
 
 /**
  * `ErrorHandler` global — remplace le handler par défaut d'Angular, qui ne
