@@ -7,3 +7,4 @@ export * from './lib/interceptors/auth-context.token';
 export * from './lib/interceptors/http-cache.store';
 export * from './lib/interceptors/cache.interceptor';
 export * from './lib/error-handling/global-error-handler';
+export * from './lib/error-handling/logger-port.token';

@@ -1,5 +1,5 @@
 import { ErrorHandler, Service, inject } from '@angular/core';
-import { LoggerPort } from '@cmz/shared-domain';
+import { LOGGER_PORT } from './logger-port.token';
 
 /**
  * `ErrorHandler` global — remplace le handler par défaut d'Angular, qui ne
@@ -27,7 +27,7 @@ import { LoggerPort } from '@cmz/shared-domain';
  */
 @Service()
 export class GlobalErrorHandler implements ErrorHandler {
-    private readonly logger = inject(LoggerPort);
+    private readonly logger = inject(LOGGER_PORT);
 
     handleError(error: unknown): void {
         this.logger.error('Erreur non capturée', error, {

@@ -9,7 +9,7 @@ import { LoggerPort } from '@cmz/shared-domain';
  * délibéré, voir le docstring de `LoggerPort`.
  */
 @Service()
-export class ConsoleLoggerAdapter extends LoggerPort {
+export class ConsoleLoggerAdapter implements LoggerPort {
     debug(message: string, context?: Record<string, unknown>): void {
         console.debug(this.prefix('DEBUG', message), context ?? '');
     }

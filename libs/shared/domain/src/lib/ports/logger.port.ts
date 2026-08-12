@@ -1,6 +1,8 @@
 /**
- * Port de journalisation — abstraction agnostique, sur le même modèle que
- * `StoragePort`/`NavigationPort` (ADR-0010 §Ports & Adapters).
+ * Port de journalisation — contrat agnostique pur (ADR-0024 : `interface`,
+ * pas `abstract class` — aucune logique, jamais de jeton d'injection ici).
+ * Sur le même modèle que `StoragePort`/`NavigationPort`
+ * (ADR-0010 §Ports & Adapters).
  *
  * Origine du besoin : `audit-workspace-2026-08-02-revue-finale.md`, chantier
  * P (P-1, réf. P1-26) — **aucune observabilité applicative** n'existait
@@ -26,16 +28,21 @@
  * (`connect-src`) à part entière, hors du mandat d'un correctif de code seul.
  * Ce port rend ce choix **futur** possible sans réécrire les appelants —
  * il ne le prend pas à leur place.
+ *
+ * Le jeton d'injection Angular (`LOGGER_PORT`, `InjectionToken<LoggerPort>`)
+ * vit séparément dans `@cmz/shared-browser`
+ * (`logger-port.token.ts`) — cette interface reste consommable par tout
+ * runtime JS/TS sans dépendre d'Angular (ADR-0024).
  */
-export abstract class LoggerPort {
+export interface LoggerPort {
     /** Diagnostic de développement — jamais destiné à un collecteur de production. */
-    abstract debug(message: string, context?: Record<string, unknown>): void;
+    debug(message: string, context?: Record<string, unknown>): void;
 
     /** Événement notable, sans échec — ex. dégradation gracieuse d'une fonctionnalité optionnelle. */
-    abstract info(message: string, context?: Record<string, unknown>): void;
+    info(message: string, context?: Record<string, unknown>): void;
 
     /** Situation anormale mais non bloquante — ex. `check-i18n`/`continue-on-error` du même esprit côté runtime. */
-    abstract warn(message: string, context?: Record<string, unknown>): void;
+    warn(message: string, context?: Record<string, unknown>): void;
 
     /**
      * Erreur réelle — échec applicatif, exception non capturée, ou rejet de
@@ -43,7 +50,7 @@ export abstract class LoggerPort {
      * que l'adaptateur choisisse comment le sérialiser (stack trace incluse
      * ou non selon l'environnement).
      */
-    abstract error(
+    error(
         message: string,
         error?: unknown,
         context?: Record<string, unknown>

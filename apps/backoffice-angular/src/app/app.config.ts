@@ -7,6 +7,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import {
     GlobalErrorHandler,
+    LOGGER_PORT,
     TrustedOriginAdapter,
     cacheInterceptor,
 } from '@cmz/core';
@@ -17,7 +18,6 @@ import {
 } from '@cmz/shared-application';
 import {
     ExcelExportPort,
-    LoggerPort,
     NavigationPort,
     StoragePort,
     TrustedOriginPort,
@@ -86,8 +86,9 @@ export const appConfig: ApplicationConfig = {
         TrustedOriginAdapter,
         // Audit P-1/P-2 : journalisation + ErrorHandler global. Adaptateur
         // console par défaut (P-3, collecteur externe, non décidé) — voir
-        // le docstring de LoggerPort.
-        { provide: LoggerPort, useExisting: ConsoleLoggerAdapter },
+        // le docstring de LoggerPort. Jeton LOGGER_PORT séparé du contrat
+        // (interface pure) depuis ADR-0024.
+        { provide: LOGGER_PORT, useExisting: ConsoleLoggerAdapter },
         ConsoleLoggerAdapter,
         { provide: ErrorHandler, useClass: GlobalErrorHandler },
         // Composition root des modules (ports domaine -> impls data).
