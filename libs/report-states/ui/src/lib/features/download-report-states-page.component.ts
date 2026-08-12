@@ -7,12 +7,12 @@ import {
     PermissionActionsService,
     TranslationPort,
 } from '@cmz/shared-application';
-import { ExcelExportPort } from '@cmz/shared-domain';
 import {
     FilterComponent,
     FilterField,
     PaginationComponent,
     TableComponent,
+    EXCEL_EXPORT_PORT,
 } from '@cmz/shared-ui';
 import { DownloadReportStatesVmProps } from '../adapters/download-report-states-vm-props.interface';
 import { DownloadReportStatesPresenter } from '../adapters/download-report-states-vm.presenter';
@@ -110,7 +110,7 @@ export class DownloadReportStatesPageComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
-    private readonly excelExport = inject(ExcelExportPort);
+    private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;

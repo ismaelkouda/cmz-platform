@@ -6,7 +6,6 @@ import {
     PermissionActionsService,
     TranslationPort,
 } from '@cmz/shared-application';
-import { ExcelExportPort } from '@cmz/shared-domain';
 import {
     FilterComponent,
     FilterField,
@@ -14,6 +13,7 @@ import {
     REPORT_SOURCE_OPTIONS,
     REPORT_TYPE_OPTIONS,
     TableComponent,
+    EXCEL_EXPORT_PORT,
 } from '@cmz/shared-ui';
 import { AllFinalizationVmProps } from '../adapters/all-finalization-vm-props.interface';
 import { AllFinalizationPresenter } from '../adapters/all-finalization-vm.presenter';
@@ -106,7 +106,7 @@ export class AllFinalizationPageComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
-    private readonly excelExport = inject(ExcelExportPort);
+    private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;

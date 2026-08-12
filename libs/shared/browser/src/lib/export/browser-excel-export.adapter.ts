@@ -5,7 +5,7 @@ type ExcelJsModule = typeof import('exceljs');
 
 /** Adaptateur navigateur — export `.xlsx` via ExcelJS (legacy `ExcelExportService`). */
 @Service()
-export class BrowserExcelExportAdapter extends ExcelExportPort {
+export class BrowserExcelExportAdapter implements ExcelExportPort {
     private excelJsModule?: Promise<ExcelJsModule>;
 
     async exportToExcel(options: ExportOptions): Promise<void> {

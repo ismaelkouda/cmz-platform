@@ -7,7 +7,6 @@ import {
     PermissionActionsService,
     TranslationPort,
 } from '@cmz/shared-application';
-import { ExcelExportPort } from '@cmz/shared-domain';
 import {
     FilterComponent,
     FilterField,
@@ -15,6 +14,7 @@ import {
     REPORT_SOURCE_OPTIONS,
     REPORT_TYPE_OPTIONS,
     TableComponent,
+    EXCEL_EXPORT_PORT,
 } from '@cmz/shared-ui';
 import { TasksProcessingVmProps } from '../adapters/tasks-processing-vm-props.interface';
 import { TasksProcessingPresenter } from '../adapters/tasks-processing-vm.presenter';
@@ -93,7 +93,7 @@ export class TasksProcessingPageComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
-    private readonly excelExport = inject(ExcelExportPort);
+    private readonly excelExport = inject(EXCEL_EXPORT_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

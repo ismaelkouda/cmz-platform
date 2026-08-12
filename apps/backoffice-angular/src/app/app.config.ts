@@ -18,7 +18,6 @@ import {
     STORAGE_PORT,
     TranslationPort,
 } from '@cmz/shared-application';
-import { ExcelExportPort } from '@cmz/shared-domain';
 import { errorInterceptor } from '@cmz/shared-data';
 import {
     BrowserExcelExportAdapter,
@@ -29,6 +28,7 @@ import {
 import {
     CmzConfirmDialogService,
     CmzNotificationService,
+    EXCEL_EXPORT_PORT,
     I18nextTranslationService,
     TRUSTED_ORIGIN_PORT,
 } from '@cmz/shared-ui';
@@ -77,7 +77,9 @@ export const appConfig: ApplicationConfig = {
         // ADR-0024 — vit dans @cmz/shared-application (pas @cmz/core, qui
         // n'est pas consommable depuis type:application).
         { provide: NAVIGATION_PORT, useExisting: BrowserNavigationAdapter },
-        { provide: ExcelExportPort, useExisting: BrowserExcelExportAdapter },
+        // Jeton EXCEL_EXPORT_PORT colocalisé dans @cmz/shared-ui (ADR-0024)
+        // — consommé par 4 modules fonctionnels isolés par scope:*.
+        { provide: EXCEL_EXPORT_PORT, useExisting: BrowserExcelExportAdapter },
         BrowserExcelExportAdapter,
         { provide: NotificationPort, useExisting: CmzNotificationService },
         { provide: ConfirmDialogPort, useExisting: CmzConfirmDialogService },
