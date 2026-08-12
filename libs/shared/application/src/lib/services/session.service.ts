@@ -1,6 +1,7 @@
 import { Service, inject, signal } from '@angular/core';
-import { AuthToken, CurrentUser, StoragePort } from '@cmz/shared-domain';
+import { AuthToken, CurrentUser } from '@cmz/shared-domain';
 import { NAVIGATION_PORT } from '../tokens/navigation-port.token';
+import { STORAGE_PORT } from '../tokens/storage-port.token';
 import { StorePathsService } from './store-paths.service';
 
 const TOKEN_STORAGE_KEY = 'token_data';
@@ -30,7 +31,7 @@ const TOKEN_STORAGE_KEY = 'token_data';
  */
 @Service()
 export class SessionService {
-    private readonly storage = inject(StoragePort);
+    private readonly storage = inject(STORAGE_PORT);
     private readonly navigation = inject(NAVIGATION_PORT);
     private readonly storePaths = inject(StorePathsService);
 

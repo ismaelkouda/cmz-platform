@@ -1,5 +1,5 @@
 import { Service, inject, signal } from '@angular/core';
-import { StoragePort } from '@cmz/shared-domain';
+import { STORAGE_PORT } from '../tokens/storage-port.token';
 
 /**
  * Pages autorisées (`CurrentUser.paths`) — miroir legacy `StorePathsService`.
@@ -10,7 +10,7 @@ import { StoragePort } from '@cmz/shared-domain';
  */
 @Service()
 export class StorePathsService {
-    private readonly storage = inject(StoragePort);
+    private readonly storage = inject(STORAGE_PORT);
     private readonly STORAGE_KEY = 'paths_data';
 
     private readonly _paths = signal<string[] | null>(null);

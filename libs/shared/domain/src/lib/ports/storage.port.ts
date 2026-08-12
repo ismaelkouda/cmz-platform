@@ -15,23 +15,29 @@
  * `HttpOnly` si l'architecture le permet un jour (cf. commentaire de
  * `BrowserStorageAdapter`).
  */
-export abstract class StoragePort {
-    abstract save(key: string, value: unknown): void;
+/**
+ * Contrat agnostique pur (ADR-0024 : `interface`, pas `abstract class`).
+ * Jeton d'injection Angular (`STORAGE_PORT`) séparé, dans
+ * `@cmz/shared-application` (consommé aussi par `@cmz/shared-ui`, autorisé
+ * par `eslint.config.mjs` : `type:ui` dépend de `type:application`).
+ */
+export interface StoragePort {
+    save(key: string, value: unknown): void;
 
-    abstract get<T>(key: string, defaultValue: T | null): T | null;
+    get<T>(key: string, defaultValue: T | null): T | null;
 
-    abstract remove(key: string): void;
+    remove(key: string): void;
 
-    abstract hasKey(key: string): boolean;
+    hasKey(key: string): boolean;
 
-    abstract saveObfuscated(key: string, value: unknown): Promise<void>;
+    saveObfuscated(key: string, value: unknown): Promise<void>;
 
-    abstract getObfuscated<T>(key: string): Promise<T | null>;
+    getObfuscated<T>(key: string): Promise<T | null>;
 
-    abstract removeKeysWithPrefix(prefix: string): Promise<void>;
+    removeKeysWithPrefix(prefix: string): Promise<void>;
 
-    abstract clearObfuscated(): Promise<void>;
+    clearObfuscated(): Promise<void>;
 
     /** Purge totale du stockage local (session incluse). */
-    abstract clearAll(): void;
+    clearAll(): void;
 }

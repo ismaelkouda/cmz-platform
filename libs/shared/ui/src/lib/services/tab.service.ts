@@ -1,6 +1,6 @@
 import { Service, inject, signal } from '@angular/core';
 import { Router, RouteReuseStrategy } from '@angular/router';
-import { StoragePort } from '@cmz/shared-domain';
+import { STORAGE_PORT } from '@cmz/shared-application';
 import { CustomRouteReuseStrategy } from '../route-strategies/custom-route-reuse-strategy';
 import { Tab } from '../interfaces/tab.interface';
 
@@ -8,7 +8,7 @@ import { Tab } from '../interfaces/tab.interface';
 export class TabService {
     private readonly router = inject(Router);
     private readonly routeReuseStrategy = inject(RouteReuseStrategy);
-    private readonly storage = inject(StoragePort);
+    private readonly storage = inject(STORAGE_PORT);
 
     private readonly STORAGE_KEY = 'tabs';
     private readonly _tabs = signal<Tab[]>([]);
