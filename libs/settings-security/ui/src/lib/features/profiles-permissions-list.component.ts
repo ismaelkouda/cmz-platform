@@ -2,7 +2,6 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProfilesPermissionsFacade } from '@cmz/settings-security-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -13,6 +12,7 @@ import {
     PaginationComponent,
     TableComponent,
     labelsToFilterOptions,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { PROFILES_PERMISSIONS_FILTER_KEYS } from '../constants/profiles-permissions-filter-keys.constant';
 import { PROFILES_PERMISSIONS_STATUS_LABEL } from '../constants/profiles-permissions-status-label.constant';
@@ -85,7 +85,7 @@ export class ProfilesPermissionsListComponent {
     protected readonly facade = inject(ProfilesPermissionsFacade);
     private readonly store = inject(ProfilesPermissionsFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

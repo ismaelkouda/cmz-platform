@@ -2,7 +2,6 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LegalNoticeFacade } from '@cmz/content-management-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -13,6 +12,7 @@ import {
     PaginationComponent,
     TableComponent,
     labelsToFilterOptions,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { LEGAL_NOTICE_TABLE } from '../constants/legal-notice-table.constant';
 import { LEGAL_NOTICE_FORM } from '../constants/legal-notice-paths.constant';
@@ -85,7 +85,7 @@ export class LegalNoticeListComponent {
     protected readonly facade = inject(LegalNoticeFacade);
     private readonly store = inject(LegalNoticeFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

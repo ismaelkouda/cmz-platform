@@ -5,7 +5,6 @@ import {
     InfrastructureTypeSelectFacade,
 } from '@cmz/administrative-infrastructure-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -15,6 +14,7 @@ import {
     FilterField,
     PaginationComponent,
     TableComponent,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { INFRASTRUCTURE_FILTER_KEYS } from '../constants/infrastructure-filter-keys.constant';
 import { INFRASTRUCTURE_FORM } from '../constants/infrastructure-paths.constant';
@@ -92,7 +92,7 @@ export class InfrastructureListComponent {
     private readonly typeSelect = inject(InfrastructureTypeSelectFacade);
     private readonly store = inject(InfrastructureFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

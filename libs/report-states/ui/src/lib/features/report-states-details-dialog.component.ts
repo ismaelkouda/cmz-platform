@@ -9,11 +9,7 @@ import {
     ElementRef,
 } from '@angular/core';
 import { ReportStatesDetailsFacade } from '@cmz/report-states-application';
-import {
-    ConfirmDialogPort,
-    NotificationPort,
-    TranslationPort,
-} from '@cmz/shared-application';
+import { NotificationPort, TranslationPort } from '@cmz/shared-application';
 import {
     ReportStatesDetailsQualificationContract,
     reportStatesDetailsQualificationVo,
@@ -30,6 +26,7 @@ import { ReportStatesDetailsPhotosPanelComponent } from './report-states-details
 import { ReportStatesDetailsQualificationFormComponent } from './report-states-details-qualification-form.component';
 import { ReportStatesDetailsSidebarComponent } from './report-states-details-sidebar.component';
 import { ReportStatesDetailsStepBarComponent } from './report-states-details-step-bar.component';
+import { CONFIRM_DIALOG_PORT } from '@cmz/shared-ui';
 
 /**
  * Dialog fiche demande — tranche D (shell fullscreen substitut `ManagementDialog`).
@@ -160,7 +157,7 @@ export class ReportStatesDetailsDialogComponent {
     readonly actionCompleted = output<void>();
 
     protected readonly facade = inject(ReportStatesDetailsFacade);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
 

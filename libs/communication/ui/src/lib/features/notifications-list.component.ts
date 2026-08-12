@@ -1,7 +1,6 @@
 import { Component, Signal, computed, inject } from '@angular/core';
 import { NotificationsFacade } from '@cmz/communication-application';
 import {
-    ConfirmDialogPort,
     PermissionActionsService,
     TranslationPort,
 } from '@cmz/shared-application';
@@ -12,6 +11,7 @@ import {
     TableComponent,
     TYPE_REPORT_LABEL,
     labelsToFilterOptions,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { NOTIFICATIONS_TABLE } from '../constants/notifications-table.constant';
 import { NOTIFICATIONS_FILTER_KEYS } from '../constants/notifications-filter-keys.constant';
@@ -92,7 +92,7 @@ export class NotificationsListComponent {
     protected readonly facade = inject(NotificationsFacade);
     private readonly store = inject(NotificationsFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly i18n = inject(TranslationPort);
 
     protected readonly ns = T;

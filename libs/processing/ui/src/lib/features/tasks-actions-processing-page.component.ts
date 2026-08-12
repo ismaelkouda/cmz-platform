@@ -10,12 +10,15 @@ import {
     TasksActionsProcessingEntity,
 } from '@cmz/processing-domain';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
 } from '@cmz/shared-application';
-import { PaginationComponent, TableComponent } from '@cmz/shared-ui';
+import {
+    PaginationComponent,
+    TableComponent,
+    CONFIRM_DIALOG_PORT,
+} from '@cmz/shared-ui';
 import { map } from 'rxjs';
 import { TasksActionsProcessingPresenter } from '../adapters/tasks-actions-processing-vm.presenter';
 import { TasksActionsProcessingVmProps } from '../adapters/tasks-actions-processing-vm-props.interface';
@@ -117,7 +120,7 @@ export class TasksActionsProcessingPageComponent {
     protected readonly facade = inject(TasksActionsProcessingFacade);
     private readonly detailsFacade = inject(ProcessingDetailsFacade);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

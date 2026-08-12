@@ -50,3 +50,4 @@ export * from './lib/utils/action-item.factory';
 export * from './lib/enums/status-style.enum';
 export * from './lib/tokens/trusted-origin-port.token';
 export * from './lib/tokens/excel-export-port.token';
+export * from './lib/tokens/confirm-dialog-port.token';

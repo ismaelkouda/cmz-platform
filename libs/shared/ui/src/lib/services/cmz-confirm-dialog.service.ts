@@ -15,7 +15,7 @@ export interface DialogState {
  * `Promise` sur réponse. Aucune dépendance UI tierce ; a11y/theming maîtrisés.
  */
 @Service()
-export class CmzConfirmDialogService extends ConfirmDialogPort {
+export class CmzConfirmDialogService implements ConfirmDialogPort {
     private readonly _state = signal<DialogState | null>(null);
     readonly state = this._state.asReadonly();
     private resolver: ((value: boolean) => void) | null = null;

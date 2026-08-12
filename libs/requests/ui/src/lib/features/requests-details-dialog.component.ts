@@ -9,11 +9,7 @@ import {
     ElementRef,
 } from '@angular/core';
 import { RequestsDetailsFacade } from '@cmz/requests-application';
-import {
-    ConfirmDialogPort,
-    NotificationPort,
-    TranslationPort,
-} from '@cmz/shared-application';
+import { NotificationPort, TranslationPort } from '@cmz/shared-application';
 import {
     RequestsDetailsQualificationContract,
     requestsDetailsQualificationVo,
@@ -30,6 +26,7 @@ import { RequestsDetailsPhotosPanelComponent } from './requests-details-photos-p
 import { RequestsDetailsQualificationFormComponent } from './requests-details-qualification-form.component';
 import { RequestsDetailsSidebarComponent } from './requests-details-sidebar.component';
 import { RequestsDetailsStepBarComponent } from './requests-details-step-bar.component';
+import { CONFIRM_DIALOG_PORT } from '@cmz/shared-ui';
 
 /**
  * Dialog fiche demande — tranche D (shell fullscreen substitut `ManagementDialog`).
@@ -160,7 +157,7 @@ export class RequestsDetailsDialogComponent {
     readonly actionCompleted = output<void>();
 
     protected readonly facade = inject(RequestsDetailsFacade);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
 

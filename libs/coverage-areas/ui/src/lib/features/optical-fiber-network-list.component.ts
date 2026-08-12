@@ -3,7 +3,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { OpticalFiberNetworkFacade } from '@cmz/coverage-areas-application';
 import { Operator } from '@cmz/coverage-areas-domain';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -13,6 +12,7 @@ import {
     FilterField,
     PaginationComponent,
     TableComponent,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { OPTICAL_FIBER_NETWORK_FILTER_KEYS } from '../constants/optical-fiber-network-filter-keys.constant';
 import { OPTICAL_FIBER_NETWORK_FORM } from '../constants/optical-fiber-network-paths.constant';
@@ -89,7 +89,7 @@ export class OpticalFiberNetworkListComponent {
     protected readonly facade = inject(OpticalFiberNetworkFacade);
     private readonly store = inject(OpticalFiberNetworkFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

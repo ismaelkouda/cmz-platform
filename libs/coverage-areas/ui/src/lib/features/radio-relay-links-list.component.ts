@@ -3,7 +3,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { RadioRelayLinksFacade } from '@cmz/coverage-areas-application';
 import { RadioRelayLinksOperator } from '@cmz/coverage-areas-domain';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -13,6 +12,7 @@ import {
     FilterField,
     PaginationComponent,
     TableComponent,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { RADIO_RELAY_LINKS_FILTER_KEYS } from '../constants/radio-relay-links-filter-keys.constant';
 import { RADIO_RELAY_LINKS_FORM } from '../constants/radio-relay-links-paths.constant';
@@ -89,7 +89,7 @@ export class RadioRelayLinksListComponent {
     protected readonly facade = inject(RadioRelayLinksFacade);
     private readonly store = inject(RadioRelayLinksFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

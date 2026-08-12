@@ -5,7 +5,6 @@ import {
     TeamsSelectFacade,
 } from '@cmz/team-organization-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -17,6 +16,7 @@ import {
     ROLE_OPTIONS,
     TableComponent,
     labelsToFilterOptions,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { PARTICIPANTS_FILTER_KEYS } from '../constants/participants-filter-keys.constant';
 import { PARTICIPANTS_STATUS_LABEL } from '../constants/participants-status-label.constant';
@@ -95,7 +95,7 @@ export class ParticipantsListComponent {
     private readonly teamsSelectFacade = inject(TeamsSelectFacade);
     private readonly store = inject(ParticipantsFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

@@ -12,7 +12,6 @@ import {
     cacheInterceptor,
 } from '@cmz/core';
 import {
-    ConfirmDialogPort,
     NAVIGATION_PORT,
     NotificationPort,
     STORAGE_PORT,
@@ -26,6 +25,7 @@ import {
     ConsoleLoggerAdapter,
 } from '@cmz/shared-browser';
 import {
+    CONFIRM_DIALOG_PORT,
     CmzConfirmDialogService,
     CmzNotificationService,
     EXCEL_EXPORT_PORT,
@@ -82,7 +82,12 @@ export const appConfig: ApplicationConfig = {
         { provide: EXCEL_EXPORT_PORT, useExisting: BrowserExcelExportAdapter },
         BrowserExcelExportAdapter,
         { provide: NotificationPort, useExisting: CmzNotificationService },
-        { provide: ConfirmDialogPort, useExisting: CmzConfirmDialogService },
+        // Jeton CONFIRM_DIALOG_PORT colocalisé dans @cmz/shared-ui (ADR-0024)
+        // — consommé par de nombreux modules fonctionnels isolés par scope:*.
+        {
+            provide: CONFIRM_DIALOG_PORT,
+            useExisting: CmzConfirmDialogService,
+        },
         { provide: TranslationPort, useExisting: I18nextTranslationService },
         // Audit I-14/I-15 : origine du lien Grafana embarqué (SafeUrlPipe).
         // Jeton TRUSTED_ORIGIN_PORT colocalisé dans @cmz/shared-ui (ADR-0024)

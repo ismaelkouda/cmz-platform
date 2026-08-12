@@ -9,11 +9,12 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FinalizationDetailsFacade } from '@cmz/finalization-application';
-import { ConfirmDialogPort, TranslationPort } from '@cmz/shared-application';
+import { TranslationPort } from '@cmz/shared-application';
 import {
     REPORT_SOURCE_LABEL,
     REPORT_TYPE_LABEL,
     TELECOM_OPERATOR_LABEL,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { FinalizationDetailsEntity } from '@cmz/finalization-domain';
 
@@ -122,7 +123,7 @@ export class FinalizationDetailsDialogComponent {
 
     protected readonly facade = inject(FinalizationDetailsFacade);
     private readonly i18n = inject(TranslationPort);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
 
     protected comment = '';
 

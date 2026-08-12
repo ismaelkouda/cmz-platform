@@ -2,7 +2,6 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SlideFacade } from '@cmz/content-management-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -13,6 +12,7 @@ import {
     PaginationComponent,
     TableComponent,
     labelsToFilterOptions,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { SLIDE_TABLE } from '../constants/slide-table.constant';
 import { SLIDE_FORM } from '../constants/slide-paths.constant';
@@ -85,7 +85,7 @@ export class SlideListComponent {
     protected readonly facade = inject(SlideFacade);
     private readonly store = inject(SlideFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

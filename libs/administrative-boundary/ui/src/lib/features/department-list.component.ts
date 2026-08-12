@@ -5,7 +5,6 @@ import {
     RegionSelectFacade,
 } from '@cmz/administrative-boundary-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -15,6 +14,7 @@ import {
     FilterField,
     PaginationComponent,
     TableComponent,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { DEPARTMENT_FILTER_KEYS } from '../constants/department-filter-keys.constant';
 import { DEPARTMENT_FORM } from '../constants/department-paths.constant';
@@ -87,7 +87,7 @@ export class DepartmentListComponent {
     private readonly store = inject(DepartmentFilterStore);
     private readonly regionSelect = inject(RegionSelectFacade);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

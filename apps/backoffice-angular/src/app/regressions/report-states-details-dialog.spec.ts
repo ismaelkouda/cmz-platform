@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import {
-    ConfirmDialogPort,
-    NotificationPort,
-    TranslationPort,
-} from '@cmz/shared-application';
+import { NotificationPort, TranslationPort } from '@cmz/shared-application';
+import { CONFIRM_DIALOG_PORT } from '@cmz/shared-ui';
 import {
     ReportStatesDetailsEntity,
     ReportStatesDetailsStatus,
@@ -93,7 +90,7 @@ describe('ReportStatesDetailsDialogComponent.onQualificationSubmit — catch-blo
             imports: [ReportStatesDetailsDialogComponent],
             providers: [
                 { provide: ReportStatesDetailsFacade, useValue: fakeFacade },
-                { provide: ConfirmDialogPort, useValue: fakeConfirm },
+                { provide: CONFIRM_DIALOG_PORT, useValue: fakeConfirm },
                 { provide: NotificationPort, useValue: fakeNotification },
                 { provide: TranslationPort, useValue: fakeI18n },
             ],

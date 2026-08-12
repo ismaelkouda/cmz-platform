@@ -2,7 +2,6 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TeamsFacade } from '@cmz/team-organization-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -13,6 +12,7 @@ import {
     PaginationComponent,
     TableComponent,
     labelsToFilterOptions,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { TEAMS_FILTER_KEYS } from '../constants/teams-filter-keys.constant';
 import { TEAMS_STATUS_LABEL } from '../constants/teams-status-label.constant';
@@ -85,7 +85,7 @@ export class TeamsListComponent {
     protected readonly facade = inject(TeamsFacade);
     private readonly store = inject(TeamsFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

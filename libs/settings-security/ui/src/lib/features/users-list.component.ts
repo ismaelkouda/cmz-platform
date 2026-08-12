@@ -2,7 +2,6 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UsersFacade } from '@cmz/settings-security-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -14,6 +13,7 @@ import {
     ROLE_OPTIONS,
     TableComponent,
     labelsToFilterOptions,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { USERS_FILTER_KEYS } from '../constants/users-filter-keys.constant';
 import { USERS_STATUS_LABEL } from '../constants/users-status-label.constant';
@@ -93,7 +93,7 @@ export class UsersListComponent {
     protected readonly facade = inject(UsersFacade);
     private readonly store = inject(UsersFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

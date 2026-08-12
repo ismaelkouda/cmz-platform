@@ -2,7 +2,6 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -13,6 +12,7 @@ import {
     PaginationComponent,
     TableComponent,
     labelsToFilterOptions,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { INFRASTRUCTURE_TYPE_FILTER_KEYS } from '../constants/infrastructure-type-filter-keys.constant';
 import { STATUS_LABEL } from '../constants/infrastructure-type-status-label.constant';
@@ -92,7 +92,7 @@ export class InfrastructureTypeListComponent {
     protected readonly facade = inject(InfrastructureTypeFacade);
     private readonly store = inject(InfrastructureTypeFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

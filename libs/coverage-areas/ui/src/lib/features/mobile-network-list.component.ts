@@ -3,7 +3,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MobileNetworkFacade } from '@cmz/coverage-areas-application';
 import { Operator, Technology } from '@cmz/coverage-areas-domain';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -13,6 +12,7 @@ import {
     FilterField,
     PaginationComponent,
     TableComponent,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { MOBILE_NETWORK_FILTER_KEYS } from '../constants/mobile-network-filter-keys.constant';
 import { MOBILE_NETWORK_FORM } from '../constants/mobile-network-paths.constant';
@@ -88,7 +88,7 @@ export class MobileNetworkListComponent {
     protected readonly facade = inject(MobileNetworkFacade);
     private readonly store = inject(MobileNetworkFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

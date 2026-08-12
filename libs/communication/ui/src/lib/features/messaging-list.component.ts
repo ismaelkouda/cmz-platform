@@ -2,7 +2,6 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessagingFacade } from '@cmz/communication-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -14,6 +13,7 @@ import {
     labelsToFilterOptions,
     PaginationComponent,
     TableComponent,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { MESSAGING_TABLE } from '../constants/messaging-table.constant';
 import { MESSAGING_FORM } from '../constants/messaging-paths.constant';
@@ -86,7 +86,7 @@ export class MessagingListComponent {
     protected readonly facade = inject(MessagingFacade);
     private readonly store = inject(MessagingFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);

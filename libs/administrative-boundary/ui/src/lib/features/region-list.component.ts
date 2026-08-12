@@ -2,7 +2,6 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RegionFacade } from '@cmz/administrative-boundary-application';
 import {
-    ConfirmDialogPort,
     NotificationPort,
     PermissionActionsService,
     TranslationPort,
@@ -12,6 +11,7 @@ import {
     FilterField,
     PaginationComponent,
     TableComponent,
+    CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { REGION_FILTER_KEYS } from '../constants/region-filter-keys.constant';
 import { REGION_FORM } from '../constants/region-paths.constant';
@@ -83,7 +83,7 @@ export class RegionListComponent {
     protected readonly facade = inject(RegionFacade);
     private readonly store = inject(RegionFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly confirm = inject(ConfirmDialogPort);
+    private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NotificationPort);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);
