@@ -21,12 +21,17 @@
  * trustedFrameOrigins` — même canal de configuration runtime que le reste,
  * ADR-0007). Câblé en composition root (`apps/backoffice-angular/src/app/
  * app.config.ts`), comme `StoragePort`/`NavigationPort`.
+ *
+ * Interface pure depuis ADR-0024 (Chantier Q, découplage DI Angular hors du
+ * kernel agnostique). Jeton `TRUSTED_ORIGIN_PORT` colocalisé dans
+ * `@cmz/shared-ui` (`SafeUrlPipe`, seul consommateur `inject()`) — pas dans
+ * `@cmz/core`, qui n'est pas consommable depuis `type:ui`.
  */
-export abstract class TrustedOriginPort {
+export interface TrustedOriginPort {
     /**
      * @param url URL à vérifier (typiquement absolue, ex. `https://grafana.
      *   example.org/d/xyz?embed`). Une URL malformée ou relative renvoie
      *   toujours `false` — jamais de bénéfice du doute.
      */
-    abstract isTrustedFrameOrigin(url: string): boolean;
+    isTrustedFrameOrigin(url: string): boolean;
 }

@@ -7,8 +7,8 @@ import {
     signal,
 } from '@angular/core';
 import { TranslationPort } from '@cmz/shared-application';
-import { TrustedOriginPort } from '@cmz/shared-domain';
 import { SafeUrlPipe } from '../../pipes/safe-url.pipe';
+import { TRUSTED_ORIGIN_PORT } from '../../tokens/trusted-origin-port.token';
 
 /**
  * Visionneuse Grafana générique — reconstruction de `shared/components/
@@ -270,7 +270,7 @@ export class GrafanaEmbedComponent {
     readonly refresh = output<void>();
 
     private readonly i18n = inject(TranslationPort);
-    private readonly trustedOrigin = inject(TrustedOriginPort);
+    private readonly trustedOrigin = inject(TRUSTED_ORIGIN_PORT);
 
     protected readonly isFullscreen = signal(false);
 

@@ -17,7 +17,7 @@ import { APP_CONFIG } from './config.token';
  * l'origine doit correspondre exactement (schéma + hôte + port).
  */
 @Service()
-export class TrustedOriginAdapter extends TrustedOriginPort {
+export class TrustedOriginAdapter implements TrustedOriginPort {
     private readonly config = inject(APP_CONFIG);
 
     isTrustedFrameOrigin(url: string): boolean {

@@ -1,6 +1,6 @@
 import { Pipe, PipeTransform, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { TrustedOriginPort } from '@cmz/shared-domain';
+import { TRUSTED_ORIGIN_PORT } from '../tokens/trusted-origin-port.token';
 
 /**
  * Sanitizer d'URL de ressource (iframe `src`) — **vérifie l'origine avant**
@@ -27,7 +27,7 @@ import { TrustedOriginPort } from '@cmz/shared-domain';
 @Pipe({ name: 'safeUrl' })
 export class SafeUrlPipe implements PipeTransform {
     private readonly sanitizer = inject(DomSanitizer);
-    private readonly trustedOrigin = inject(TrustedOriginPort);
+    private readonly trustedOrigin = inject(TRUSTED_ORIGIN_PORT);
 
     transform(url: string): SafeResourceUrl | null {
         if (!this.trustedOrigin.isTrustedFrameOrigin(url)) {

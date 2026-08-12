@@ -18,7 +18,7 @@ import {
     STORAGE_PORT,
     TranslationPort,
 } from '@cmz/shared-application';
-import { ExcelExportPort, TrustedOriginPort } from '@cmz/shared-domain';
+import { ExcelExportPort } from '@cmz/shared-domain';
 import { errorInterceptor } from '@cmz/shared-data';
 import {
     BrowserExcelExportAdapter,
@@ -30,6 +30,7 @@ import {
     CmzConfirmDialogService,
     CmzNotificationService,
     I18nextTranslationService,
+    TRUSTED_ORIGIN_PORT,
 } from '@cmz/shared-ui';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
@@ -82,7 +83,9 @@ export const appConfig: ApplicationConfig = {
         { provide: ConfirmDialogPort, useExisting: CmzConfirmDialogService },
         { provide: TranslationPort, useExisting: I18nextTranslationService },
         // Audit I-14/I-15 : origine du lien Grafana embarqué (SafeUrlPipe).
-        { provide: TrustedOriginPort, useExisting: TrustedOriginAdapter },
+        // Jeton TRUSTED_ORIGIN_PORT colocalisé dans @cmz/shared-ui (ADR-0024)
+        // — pas @cmz/core, qui n'est pas consommable depuis type:ui.
+        { provide: TRUSTED_ORIGIN_PORT, useExisting: TrustedOriginAdapter },
         TrustedOriginAdapter,
         // Audit P-1/P-2 : journalisation + ErrorHandler global. Adaptateur
         // console par défaut (P-3, collecteur externe, non décidé) — voir

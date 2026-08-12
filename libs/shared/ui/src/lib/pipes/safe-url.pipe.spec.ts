@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Injector, runInInjectionContext } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
-import { TrustedOriginPort } from '@cmz/shared-domain';
+import { TRUSTED_ORIGIN_PORT } from '../tokens/trusted-origin-port.token';
 import { SafeUrlPipe } from './safe-url.pipe';
 
 /**
@@ -24,7 +24,10 @@ function createPipe(
                 provide: DomSanitizer,
                 useValue: { bypassSecurityTrustResourceUrl },
             },
-            { provide: TrustedOriginPort, useValue: { isTrustedFrameOrigin } },
+            {
+                provide: TRUSTED_ORIGIN_PORT,
+                useValue: { isTrustedFrameOrigin },
+            },
         ],
     });
     return runInInjectionContext(injector, () => new SafeUrlPipe());
