@@ -88,6 +88,16 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
   Phase 08 — workflow zéro code métier manuel (G-V-R)
 - [Licences tierces](./architecture/licences-tierces.md) — inventaire factuel
   des licences des dépendances (pas un avis juridique)
+- [Stratégie cross-stack — revue critique](./architecture/strategie-cross-stack-revue.md) —
+  instruit la dette d'ADR-0012, chantiers Q/R/S/T pour un cœur agnostique
+- [Échantillonnage — règles métier non déductibles](./architecture/echantillonnage-regles-non-deductibles.md) —
+  taux mesuré (37 % mécanique / 37 % déductible avec contexte / 25 % non déductible) sur le corpus SEOS
+- [Propositions d'automatisation SEOS](./architecture/propositions-automatisation-seos.md) —
+  garde-fou LLM+Oracle calibré sur ce taux, inspiré d'un précédent Google publié
+- [Test end-to-end — registre de motifs + punt check](./architecture/test-e2e-oracle-punt-check.md) —
+  validation empirique du garde-fou sur 2 cas réels
+- [Conception — pipeline Figma vers code](./architecture/conception-pipeline-figma-vers-code.md) —
+  génération ex nihilo à action humaine minimisée, non implémentée
 
 ## Conventions
 
