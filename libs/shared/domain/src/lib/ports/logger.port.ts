@@ -30,9 +30,13 @@
  * il ne le prend pas à leur place.
  *
  * Le jeton d'injection Angular (`LOGGER_PORT`, `InjectionToken<LoggerPort>`)
- * vit séparément dans `@cmz/shared-browser`
- * (`logger-port.token.ts`) — cette interface reste consommable par tout
- * runtime JS/TS sans dépendre d'Angular (ADR-0024).
+ * vit séparément dans `@cmz/core` (`libs/core/src/lib/tokens/
+ * logger-port.token.ts`) — colocalisé avec son seul consommateur
+ * `inject()` (`GlobalErrorHandler`, `type:core`). Pas `@cmz/shared-browser` :
+ * `type:core` n'a pas le droit de dépendre de `type:browser`
+ * (`eslint.config.mjs`, `type:browser` consommable uniquement depuis
+ * `type:app`). Cette interface reste consommable par tout runtime JS/TS
+ * sans dépendre d'Angular (ADR-0024).
  */
 export interface LoggerPort {
     /** Diagnostic de développement — jamais destiné à un collecteur de production. */
