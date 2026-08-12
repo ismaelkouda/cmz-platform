@@ -3,11 +3,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TypeMedia } from '@cmz/shared-domain';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     NewsCategoriesSelectFacade,
     NewsFacade,
 } from '@cmz/content-management-application';
-import { TranslationPort } from '@cmz/shared-application';
 import { FieldComponent, FormMode, TYPE_MEDIA_OPTIONS } from '@cmz/shared-ui';
 import { NewsFormStore } from '../stores/news-form.store';
 
@@ -242,7 +242,7 @@ export class NewsFormComponent {
     protected readonly store = inject(NewsFormStore);
     private readonly facade = inject(NewsFacade);
     private readonly categoriesFacade = inject(NewsCategoriesSelectFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

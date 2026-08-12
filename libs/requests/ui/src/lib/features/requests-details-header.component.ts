@@ -1,6 +1,6 @@
 import { Component, input, output, inject } from '@angular/core';
 import { RequestsDetailsEntity } from '@cmz/requests-domain';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { REPORT_SOURCE_LABEL } from '@cmz/shared-ui';
 import { REQUESTS_DETAILS_STATUS_BADGE_CLASS } from '../constants/requests-details-status-badge.constant';
 import { REQUESTS_DETAILS_STATUS_LABEL } from '../constants/requests-details-status-label.constant';
@@ -62,7 +62,7 @@ export class RequestsDetailsHeaderComponent {
 
     readonly copyRequested = output<string>();
 
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected sourceLabel(item: RequestsDetailsEntity): string {
         return this.t(REPORT_SOURCE_LABEL[item.source]);

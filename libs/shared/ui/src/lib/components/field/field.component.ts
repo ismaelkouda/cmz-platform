@@ -1,6 +1,6 @@
 import { Component, inject, input } from '@angular/core';
 import { Field } from '@angular/forms/signals';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 
 /**
  * Champ de formulaire — **design-system, Signal Forms (Angular 22)**. Enveloppe
@@ -33,7 +33,7 @@ import { TranslationPort } from '@cmz/shared-application';
     `,
 })
 export class FieldComponent {
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     readonly for = input('');
     readonly label = input.required<string>();

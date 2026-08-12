@@ -2,7 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { NotificationsFacade } from '@cmz/communication-application';
 import {
     PermissionActionsService,
-    TranslationPort,
+    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -93,7 +93,7 @@ export class NotificationsListComponent {
     private readonly store = inject(NotificationsFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;

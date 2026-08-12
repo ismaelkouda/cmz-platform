@@ -7,8 +7,8 @@ import {
     RadioRelayLinksFrequency,
     RadioRelayLinksOperator,
 } from '@cmz/coverage-areas-domain';
-import { TranslationPort } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { RadioRelayLinksFormStore } from '../stores/radio-relay-links-form.store';
 
 const T = 'COVERAGE_AREAS.RADIO_RELAY_LINKS';
@@ -133,7 +133,7 @@ const T = 'COVERAGE_AREAS.RADIO_RELAY_LINKS';
 export class RadioRelayLinksFormComponent {
     protected readonly store = inject(RadioRelayLinksFormStore);
     private readonly facade = inject(RadioRelayLinksFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

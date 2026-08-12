@@ -1,6 +1,6 @@
 import { Component, input, output, inject } from '@angular/core';
 import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 
 @Component({
     selector: 'cmz-report-states-details-sidebar',
@@ -161,7 +161,7 @@ export class ReportStatesDetailsSidebarComponent {
     readonly takeRequested = output<void>();
     readonly copyRequested = output<string>();
 
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected showInitiatorSection(item: ReportStatesDetailsEntity): boolean {
         return !!(

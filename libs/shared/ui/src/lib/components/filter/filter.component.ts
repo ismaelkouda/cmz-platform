@@ -1,6 +1,6 @@
 import { Component, inject, input, model, output } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FilterField } from './filter.types';
 
 /**
@@ -106,7 +106,7 @@ import { FilterField } from './filter.types';
     `,
 })
 export class FilterComponent {
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     /** Modèle de filtre (deux-voies) : `{ [name]: valeur }`. */
     readonly model = model<Record<string, string>>({});

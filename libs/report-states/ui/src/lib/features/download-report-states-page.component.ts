@@ -4,8 +4,8 @@ import { DownloadReportStatesFacade } from '@cmz/report-states-application';
 import { DownloadReportStatesStatus } from '@cmz/report-states-domain';
 import {
     PermissionActionsService,
-    TranslationPort,
     NOTIFICATION_PORT,
+    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -109,7 +109,7 @@ export class DownloadReportStatesPageComponent {
     private readonly store = inject(DownloadReportStatesFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;

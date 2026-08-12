@@ -6,7 +6,7 @@ import {
     ProfilesPermissionsSelectFacade,
     UsersFacade,
 } from '@cmz/settings-security-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode, ROLE_LABEL } from '@cmz/shared-ui';
 import { UsersFormStore } from '../stores/users-form.store';
 
@@ -139,7 +139,7 @@ export class UsersFormComponent {
     private readonly profilesSelectFacade = inject(
         ProfilesPermissionsSelectFacade
     );
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

@@ -1,6 +1,6 @@
 import { Component, computed, input, inject } from '@angular/core';
 import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 
 const T = 'REPORT_STATES.DETAILS';
 
@@ -29,7 +29,7 @@ export class ReportStatesDetailsPhotosPanelComponent {
 
     readonly details = input.required<ReportStatesDetailsEntity>();
 
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected readonly photoUrls = computed(() => {
         const entity = this.details();

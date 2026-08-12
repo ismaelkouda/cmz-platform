@@ -4,7 +4,7 @@ import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessagingTarget, MessagingChannel } from '@cmz/communication-domain';
 import { MessagingFacade } from '@cmz/communication-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { MESSAGING_TYPE_OPTIONS } from '../constants/messaging-type-label.constant';
 import { MESSAGING_TARGET_OPTIONS } from '../constants/messaging-target-label.constant';
@@ -243,7 +243,7 @@ const T = 'COMMUNICATION.MESSAGING';
 export class MessagingFormComponent {
     protected readonly store = inject(MessagingFormStore);
     private readonly facade = inject(MessagingFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

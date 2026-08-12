@@ -1,6 +1,6 @@
 import { Component, input, inject } from '@angular/core';
 import { RequestsDetailsEntity } from '@cmz/requests-domain';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     REPORT_SOURCE_LABEL,
     REPORT_TYPE_LABEL,
@@ -72,7 +72,7 @@ export class RequestsDetailsInfoPanelComponent {
 
     readonly details = input.required<RequestsDetailsEntity>();
 
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected statusLabel(): string {
         const status = this.details().status;

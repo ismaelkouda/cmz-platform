@@ -4,8 +4,8 @@ import { finalize } from 'rxjs/operators';
 import {
     PermissionActionsService,
     ResourceFacade,
-    TranslationPort,
     NOTIFICATION_PORT,
+    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
 import {
@@ -38,7 +38,7 @@ export class RequestsDetailsFacade extends ResourceFacade<
     private readonly useCase = inject(RequestsDetailsUseCase);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly queuesFacade = inject(QueuesRequestsFacade);
     private readonly tasksFacade = inject(TasksRequestsFacade);
     private readonly allFacade = inject(AllRequestsFacade);

@@ -1,16 +1,21 @@
 /**
  * Port de traduction — **abstraction agnostique** (aucun framework, aucun i18next).
- * Sert de contrat ET de jeton d'injection (classe abstraite). Chaque framework
- * fournit son adaptateur (Angular : wrapper i18next ; React : react-i18next).
- * Cf. ADR-0012.
+ * Chaque framework fournit son adaptateur (Angular : wrapper i18next ; React :
+ * react-i18next). Cf. ADR-0012.
+ *
+ * Interface pure depuis ADR-0024 (Chantier Q). Jeton `TRANSLATION_PORT`
+ * colocalisé ici même, dans `@cmz/shared-application` (même raison que
+ * `NOTIFICATION_PORT`) : consommateurs `inject()` à la fois en `type:ui`
+ * (~14 modules) et en `type:application` (façades — `type:application` ne
+ * peut pas dépendre de `type:ui`, `eslint.config.mjs`).
  */
-export abstract class TranslationPort {
+export interface TranslationPort {
     /** Traduit une clé, avec paramètres d'interpolation optionnels. */
-    abstract translate(key: string, params?: Record<string, unknown>): string;
+    translate(key: string, params?: Record<string, unknown>): string;
 
     /** Change la langue active. */
-    abstract setLanguage(lang: string): Promise<void>;
+    setLanguage(lang: string): Promise<void>;
 
     /** Langue active courante. */
-    abstract get currentLanguage(): string;
+    get currentLanguage(): string;
 }

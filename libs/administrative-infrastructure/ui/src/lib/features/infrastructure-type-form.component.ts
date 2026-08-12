@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { InfrastructureTypeFormStore } from '../stores/infrastructure-type-form.store';
 
@@ -76,7 +76,7 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
 export class InfrastructureTypeFormComponent {
     protected readonly store = inject(InfrastructureTypeFormStore);
     private readonly facade = inject(InfrastructureTypeFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

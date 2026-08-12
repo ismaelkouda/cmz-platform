@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AgentsPerformancesFacade } from '@cmz/team-organization-application';
 import {
     PermissionActionsService,
-    TranslationPort,
+    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -73,7 +73,7 @@ export class AgentsPerformancesListComponent {
     protected readonly facade = inject(AgentsPerformancesFacade);
     private readonly store = inject(AgentsPerformancesFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

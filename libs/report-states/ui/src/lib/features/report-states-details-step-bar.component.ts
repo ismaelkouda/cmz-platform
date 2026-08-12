@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, input, inject } from '@angular/core';
 import { ReportStatesDetailsWorkflowTimestamp } from '@cmz/report-states-domain';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 
 @Component({
     selector: 'cmz-report-states-details-step-bar',
@@ -46,7 +46,7 @@ export class ReportStatesDetailsStepBarComponent {
 
     protected readonly skeletonSteps = [1, 2];
 
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected t(key: string): string {
         return this.i18n.translate(key);

@@ -7,7 +7,7 @@ import {
     TeamsPermissionsFacade,
 } from '@cmz/team-organization-application';
 import { ReportType, TelecomOperator } from '@cmz/shared-domain';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FieldComponent,
     FormMode,
@@ -151,7 +151,7 @@ export class TeamsFormComponent {
     protected readonly store = inject(TeamsFormStore);
     private readonly facade = inject(TeamsFacade);
     private readonly permissionsFacade = inject(TeamsPermissionsFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

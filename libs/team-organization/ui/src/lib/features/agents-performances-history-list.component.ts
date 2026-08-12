@@ -2,7 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { AgentsPerformancesHistoryFacade } from '@cmz/team-organization-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FilterComponent,
     FilterField,
@@ -64,7 +64,7 @@ const T = 'TEAM_ORGANIZATION.AGENTS_PERFORMANCES.HISTORY';
 export class AgentsPerformancesHistoryListComponent {
     protected readonly facade = inject(AgentsPerformancesHistoryFacade);
     private readonly store = inject(AgentsPerformancesHistoryFilterStore);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly route = inject(ActivatedRoute);
 
     protected readonly ns = T;

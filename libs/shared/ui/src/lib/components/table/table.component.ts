@@ -1,5 +1,5 @@
 import { Component, inject, input, output } from '@angular/core';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { TableColumn } from '../../interfaces/table-column.interface';
 import { TableRowActionDefinition } from '../../interfaces/table-row-action.interface';
 import { TableRowBase } from '../../interfaces/table-row.interface';
@@ -211,7 +211,7 @@ const ACTIONS_FIELD = '__actionDropdown';
     `,
 })
 export class TableComponent<T extends TableRowBase> {
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected readonly INDEX_FIELD = INDEX_FIELD;
     protected readonly ACTION_BUTTONS_FIELD = ACTION_BUTTONS_FIELD;

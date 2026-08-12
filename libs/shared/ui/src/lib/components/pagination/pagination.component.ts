@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, output } from '@angular/core';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { PaginationMeta } from '@cmz/shared-domain';
 import { pageWindow } from './page-window.util';
 
@@ -137,7 +137,7 @@ import { pageWindow } from './page-window.util';
     `,
 })
 export class PaginationComponent {
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     /** Métadonnées de pagination (structurellement satisfaites par `PageResult`). */
     readonly meta = input.required<PaginationMeta>();

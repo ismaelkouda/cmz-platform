@@ -4,8 +4,8 @@ import { firstValueFrom } from 'rxjs';
 import { TasksProcessingFacade } from '@cmz/processing-application';
 import {
     PermissionActionsService,
-    TranslationPort,
     NOTIFICATION_PORT,
+    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -92,7 +92,7 @@ export class TasksProcessingPageComponent {
     private readonly store = inject(TasksProcessingFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);

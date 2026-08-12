@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { DashboardFacade } from '@cmz/dashboard-application';
 import { Period } from '@cmz/dashboard-domain';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { PERIOD_OPTIONS } from '../constants/period-label.constant';
 import { DashboardPresenter } from '../adapters/dashboard-vm.presenter';
 import { DashboardFilterStore } from '../stores/dashboard-filter.store';
@@ -255,7 +255,7 @@ const T = 'DASHBOARD';
 export class DashboardPageComponent {
     private readonly facade = inject(DashboardFacade);
     private readonly store = inject(DashboardFilterStore);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
 
     protected readonly ns = T;

@@ -4,7 +4,7 @@ import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Platform, TypeMedia } from '@cmz/shared-domain';
 import { SlideFacade } from '@cmz/content-management-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FieldComponent,
     FormMode,
@@ -236,7 +236,7 @@ const T = 'CONTENT_MANAGEMENT.SLIDE';
 export class SlideFormComponent {
     protected readonly store = inject(SlideFormStore);
     private readonly facade = inject(SlideFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

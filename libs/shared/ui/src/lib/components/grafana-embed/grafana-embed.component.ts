@@ -6,7 +6,7 @@ import {
     output,
     signal,
 } from '@angular/core';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { SafeUrlPipe } from '../../pipes/safe-url.pipe';
 import { TRUSTED_ORIGIN_PORT } from '../../tokens/trusted-origin-port.token';
 
@@ -269,7 +269,7 @@ export class GrafanaEmbedComponent {
     readonly error = input.required<boolean>();
     readonly refresh = output<void>();
 
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly trustedOrigin = inject(TRUSTED_ORIGIN_PORT);
 
     protected readonly isFullscreen = signal(false);

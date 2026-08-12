@@ -2,7 +2,7 @@ import { Component, effect, inject, input, output } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
 import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
 import type { ReportStatesDetailsQualificationContract } from '@cmz/report-states-domain';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FieldComponent,
     LOCATION_NAME_OPTIONS,
@@ -355,7 +355,7 @@ export class ReportStatesDetailsQualificationFormComponent {
     readonly submitted = output<ReportStatesDetailsQualificationContract>();
     readonly cancelled = output<void>();
 
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     constructor() {
         effect(() => {

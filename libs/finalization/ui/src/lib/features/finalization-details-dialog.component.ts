@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FinalizationDetailsFacade } from '@cmz/finalization-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     REPORT_SOURCE_LABEL,
     REPORT_TYPE_LABEL,
@@ -122,7 +122,7 @@ export class FinalizationDetailsDialogComponent {
     readonly actionCompleted = output<void>();
 
     protected readonly facade = inject(FinalizationDetailsFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
 
     protected comment = '';

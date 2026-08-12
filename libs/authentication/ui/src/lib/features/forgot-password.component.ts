@@ -2,7 +2,7 @@ import { Component, effect, inject, signal } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 import { ForgotPasswordFacade } from '@cmz/authentication-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent } from '@cmz/shared-ui';
 import { LOGIN_ROUTE } from '../constants/authentication-paths.constant';
 import { ForgotPasswordFormStore } from '../stores/forgot-password-form.store';
@@ -72,7 +72,7 @@ const T = 'AUTHENTICATION.FORGOT_PASSWORD';
 export class ForgotPasswordComponent {
     protected readonly store = inject(ForgotPasswordFormStore);
     protected readonly facade = inject(ForgotPasswordFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected readonly ns = T;
     protected readonly loginRoute = LOGIN_ROUTE;

@@ -1,6 +1,6 @@
 import { Component, Signal, computed, inject } from '@angular/core';
 import { AccessLogsFacade } from '@cmz/settings-security-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FilterComponent,
     FilterField,
@@ -70,7 +70,7 @@ const T = 'SETTINGS_SECURITY.ACCESS_LOGS';
 export class AccessLogsListComponent {
     protected readonly facade = inject(AccessLogsFacade);
     private readonly store = inject(AccessLogsFilterStore);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;

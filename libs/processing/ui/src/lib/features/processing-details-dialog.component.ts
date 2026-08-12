@@ -8,7 +8,7 @@ import {
     ElementRef,
 } from '@angular/core';
 import { ProcessingDetailsFacade } from '@cmz/processing-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     REPORT_SOURCE_LABEL,
     REPORT_TYPE_LABEL,
@@ -113,7 +113,7 @@ export class ProcessingDetailsDialogComponent {
     readonly actionCompleted = output<void>();
 
     protected readonly facade = inject(ProcessingDetailsFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
 
     private readonly dialogRef =

@@ -8,7 +8,7 @@ import { TranslationPort } from '@cmz/shared-application';
  * sans dépendre elle-même d'i18next. Cf. ADR-0012.
  */
 @Service()
-export class I18nextTranslationService extends TranslationPort {
+export class I18nextTranslationService implements TranslationPort {
     /** Initialise i18next avec les ressources fournies (bootstrap). */
     init(resources: Resource, lng = 'fr'): Promise<unknown> {
         return i18next.init({

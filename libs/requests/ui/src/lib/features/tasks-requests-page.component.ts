@@ -3,8 +3,8 @@ import { firstValueFrom } from 'rxjs';
 import { TasksRequestsFacade } from '@cmz/requests-application';
 import {
     PermissionActionsService,
-    TranslationPort,
     NOTIFICATION_PORT,
+    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -104,7 +104,7 @@ export class TasksRequestsPageComponent {
     private readonly store = inject(TasksRequestsFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;

@@ -15,7 +15,7 @@ import {
     NAVIGATION_PORT,
     NOTIFICATION_PORT,
     STORAGE_PORT,
-    TranslationPort,
+    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import { errorInterceptor } from '@cmz/shared-data';
 import {
@@ -93,7 +93,12 @@ export const appConfig: ApplicationConfig = {
             provide: CONFIRM_DIALOG_PORT,
             useExisting: CmzConfirmDialogService,
         },
-        { provide: TranslationPort, useExisting: I18nextTranslationService },
+        // Jeton TRANSLATION_PORT colocalise dans @cmz/shared-application
+        // (ADR-0024) - consommateurs a la fois type:ui et type:application.
+        {
+            provide: TRANSLATION_PORT,
+            useExisting: I18nextTranslationService,
+        },
         // Audit I-14/I-15 : origine du lien Grafana embarqué (SafeUrlPipe).
         // Jeton TRUSTED_ORIGIN_PORT colocalisé dans @cmz/shared-ui (ADR-0024)
         // — pas @cmz/core, qui n'est pas consommable depuis type:ui.

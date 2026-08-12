@@ -2,7 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DepartmentsByRegionIdFacade } from '@cmz/administrative-boundary-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FilterComponent,
     FilterField,
@@ -69,7 +69,7 @@ const T = 'ADMINISTRATIVE_BOUNDARY.DEPARTMENTS_BY_REGION_ID';
 export class DepartmentsByRegionIdComponent {
     protected readonly facade = inject(DepartmentsByRegionIdFacade);
     private readonly store = inject(DepartmentsByRegionIdFilterStore);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

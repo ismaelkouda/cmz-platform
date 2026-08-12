@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DepartmentFacade } from '@cmz/administrative-boundary-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { DepartmentFormStore } from '../stores/department-form.store';
 
@@ -130,7 +130,7 @@ const T = 'ADMINISTRATIVE_BOUNDARY.DEPARTMENT';
 export class DepartmentFormComponent {
     protected readonly store = inject(DepartmentFormStore);
     private readonly facade = inject(DepartmentFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

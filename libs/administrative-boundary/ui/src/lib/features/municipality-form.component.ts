@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MunicipalityFacade } from '@cmz/administrative-boundary-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { MunicipalityFormStore } from '../stores/municipality-form.store';
 
@@ -156,7 +156,7 @@ const T = 'ADMINISTRATIVE_BOUNDARY.MUNICIPALITY';
 export class MunicipalityFormComponent {
     protected readonly store = inject(MunicipalityFormStore);
     private readonly facade = inject(MunicipalityFacade);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

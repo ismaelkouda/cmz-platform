@@ -7,7 +7,7 @@ import {
     output,
     signal,
 } from '@angular/core';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { ActionDropdownItem } from '../../interfaces/action-dropdown-item.interface';
 
 /**
@@ -140,7 +140,7 @@ import { ActionDropdownItem } from '../../interfaces/action-dropdown-item.interf
     `,
 })
 export class ActionDropdownComponent {
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly host = inject(ElementRef<HTMLElement>);
 
     readonly actions = input.required<ActionDropdownItem[]>();

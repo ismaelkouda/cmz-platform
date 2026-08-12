@@ -1,6 +1,6 @@
 import { Component, input, output, inject } from '@angular/core';
 import { RequestsDetailsEntity } from '@cmz/requests-domain';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 
 @Component({
     selector: 'cmz-requests-details-sidebar',
@@ -161,7 +161,7 @@ export class RequestsDetailsSidebarComponent {
     readonly takeRequested = output<void>();
     readonly copyRequested = output<string>();
 
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected showInitiatorSection(item: RequestsDetailsEntity): boolean {
         return !!(

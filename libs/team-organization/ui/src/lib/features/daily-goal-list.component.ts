@@ -2,7 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { DailyGoalFacade } from '@cmz/team-organization-application';
 import {
     PermissionActionsService,
-    TranslationPort,
+    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -69,7 +69,7 @@ export class DailyGoalListComponent {
     protected readonly facade = inject(DailyGoalFacade);
     private readonly store = inject(DailyGoalFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;

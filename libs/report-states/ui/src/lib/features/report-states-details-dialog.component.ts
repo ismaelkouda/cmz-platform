@@ -9,7 +9,7 @@ import {
     ElementRef,
 } from '@angular/core';
 import { ReportStatesDetailsFacade } from '@cmz/report-states-application';
-import { NOTIFICATION_PORT, TranslationPort } from '@cmz/shared-application';
+import { NOTIFICATION_PORT, TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     ReportStatesDetailsQualificationContract,
     reportStatesDetailsQualificationVo,
@@ -159,7 +159,7 @@ export class ReportStatesDetailsDialogComponent {
     protected readonly facade = inject(ReportStatesDetailsFacade);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     protected readonly selectedTab =
         signal<ReportStatesDetailsTabId>('information');

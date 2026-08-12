@@ -6,7 +6,7 @@ import {
     ProfilesPermissionsFacade,
     ProfilesPermissionsPermissionsFacade,
 } from '@cmz/settings-security-application';
-import { TranslationPort } from '@cmz/shared-application';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { ProfilesPermissionsFormStore } from '../stores/profiles-permissions-form.store';
 import { PermissionTreeNodeComponent } from './permission-tree-node.component';
@@ -101,7 +101,7 @@ export class ProfilesPermissionsFormComponent {
     private readonly permissionsFacade = inject(
         ProfilesPermissionsPermissionsFacade
     );
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

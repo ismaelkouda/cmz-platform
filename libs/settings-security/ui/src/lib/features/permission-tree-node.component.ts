@@ -1,9 +1,9 @@
 import { Component, inject, input, output } from '@angular/core';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     PermissionActions,
     PermissionTreeNode,
 } from '@cmz/settings-security-domain';
-import { TranslationPort } from '@cmz/shared-application';
 import { permissionActionLabel } from '../constants/permission-action-label.constant';
 
 /**
@@ -72,7 +72,7 @@ import { permissionActionLabel } from '../constants/permission-action-label.cons
     `,
 })
 export class PermissionTreeNodeComponent {
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     readonly node = input.required<PermissionTreeNode>();
     readonly disabled = input(false);

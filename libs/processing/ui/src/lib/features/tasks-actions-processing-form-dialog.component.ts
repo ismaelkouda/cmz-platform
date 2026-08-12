@@ -13,8 +13,8 @@ import {
     TasksActionsProcessingConformity,
     TasksActionsProcessingEntity,
 } from '@cmz/processing-domain';
-import { TranslationPort } from '@cmz/shared-application';
 import { FieldComponent } from '@cmz/shared-ui';
+import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { TasksActionsProcessingFormStore } from '../stores/tasks-actions-processing-form.store';
 
 export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
@@ -192,7 +192,7 @@ export class TasksActionsProcessingFormDialogComponent {
     readonly saved = output<void>();
 
     protected readonly store = inject(TasksActionsProcessingFormStore);
-    private readonly i18n = inject(TranslationPort);
+    private readonly i18n = inject(TRANSLATION_PORT);
 
     private readonly dialogRef =
         viewChild<ElementRef<HTMLDialogElement>>('dlg');
