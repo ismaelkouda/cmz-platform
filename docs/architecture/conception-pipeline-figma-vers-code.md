@@ -488,6 +488,7 @@ validées par le porteur du projet — pas avant.
 ## Références
 
 ### Internes (déjà commitées dans ce dépôt)
+- [`strategie-cross-stack-revue.md`](./strategie-cross-stack-revue.md) — antérieur à ce document (2026-08-02), non consulté avant sa première version : instruit la même discipline (« partager la spécification, jamais l'implémentation », IDL-first, layering test) au niveau du **code kernel existant** plutôt que du **pipeline de génération** traité ici. Le Chantier Q (découplage DI) qu'il propose est le préalable naturel à toute génération multi-stack réelle depuis ce dépôt — cf. `taches-restantes.md` ROAD-3a.
 - [`propositions-automatisation-seos.md`](./propositions-automatisation-seos.md) — mécanisme de garde-fou repris ici (§3.4, motif R-3 ajouté)
 - [`test-e2e-oracle-punt-check.md`](./test-e2e-oracle-punt-check.md) — validation empirique du punt check, méthode reprise pour §7
 - [`echantillonnage-regles-non-deductibles.md`](./echantillonnage-regles-non-deductibles.md) — origine du chiffre 37/37/25, contrasté avec le 100% structurel de §2.4
