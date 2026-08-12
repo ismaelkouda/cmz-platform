@@ -1,7 +1,16 @@
 # Tâches restantes — cmz-platform
 
 - **Créé :** 2026-08-05
-- **Dernière mise à jour :** 2026-08-10 — audit fichier-par-fichier exhaustif
+- **Mise à jour 2026-08-12 :** `ROAD-3` réécrit (était une ligne unique
+  « différé », périmée depuis que le déclencheur d'ADR-0012 — « quand
+  React démarrera » — s'est produit) en 7 sous-tâches (ROAD-3a…3g)
+  reflétant le chantier réellement mené ce jour : POC React+TS,
+  échantillonnage de règles métier non déductibles, propositions de
+  garde-fou testées sur 2 cas réels, conception d'un pipeline Figma, et
+  statut du POC mobile en pause. `T13-6` annoté (pas clos) : son
+  obstacle juridique est résolu par ADR-0023, mais le chantier
+  fine-tuning proprement dit reste interdit d'improviser.
+- **Dernière mise à jour (précédente) :** 2026-08-10 — audit fichier-par-fichier exhaustif
   de 8 modules restants (report-states, requests, processing, communication,
   finalization, authentication, dashboard, interactive-map, monitoring,
   reporting, core), rigueur Meta/Google, chaque fichier lu individuellement.
@@ -346,7 +355,7 @@ CI ; zéro doc périmée sur `main`.
 | T13-3 | Cadrage IA local documenté (skills, MCP Nx, Web Codegen Scorer)                     | ouvert        | M      | P2    | OUVERT-1 · GVR-5 |
 | T13-4 | Finaliser commit des 10 JSONL corpus + coverage générée                             | partiel       | M      | P1    | CORPUS-1         |
 | T13-5 | Meta 12/12 **ou** règle écrite « hors scorecard IR » pour modules crud              | ouvert        | L      | P1    | CORPUS-2         |
-| T13-6 | Si stratégie ML : nouvel ADR + schéma contenu (N-2/N-3) — **interdit d’improviser** | différé       | XL     | P2    | ADR-0019         |
+| T13-6 | Si stratégie ML : nouvel ADR + schéma contenu (N-2/N-3) — **interdit d'improviser**. **Partiellement répondu, pas clos** (2026-08-12) : l'obstacle juridique qui bloquait l'Option B d'ADR-0019 est levé par [ADR-0023](../adr/0023-titularite-des-droits-sur-le-legacy.md). Le POC few-shot (`poc-few-shot-legacy-nx.md`) puis l'échantillonnage (ROAD-3d) ont tranché la question technique préalable : l'ambition retenue devient une génération LLM+Oracle **avec garde-fou et revue humaine** (ROAD-3e), jamais une génération autonome sans supervision — donc pas la « stratégie ML : fine-tuning + génération from scratch » que cette ligne visait à l'origine. Le chantier N-2/N-3/N-5 (fine-tuning proprement dit, distinct de ROAD-3e) reste non engagé et **reste interdit d'improviser** sans le nouvel ADR ici demandé. | différé       | XL     | P2    | ADR-0019, annoté 2026-08-12         |
 | T13-7 | Revue humaine ton des ~320 traductions auto                                         | bloqué-humain | M      | P1    | OPS-5            |
 | T13-8 | Documenter `corpus:all` / `emit-all` dans guides                                    | partiel       | S      | P2    | GVR-8            |
 | T13-9 | ADR-0015 option : `oracle.mode` dans JSONL                                          | différé       | S      | P2    | ADR-0015         |
@@ -384,11 +393,25 @@ CI ; zéro doc périmée sur `main`.
 
 # Roadmap hors Angular backoffice
 
+**ROAD-3 réécrit le 2026-08-12** — l'entrée unique « différé » ne
+reflétait plus l'état réel : le déclencheur posé par
+[ADR-0012](../adr/0012-strategie-cross-framework.md) (« extraire un
+cœur agnostique **quand la partie React démarrera** ») s'est produit
+ce jour (POC React+TS, ci-dessous). Éclaté en sous-tâches distinctes
+plutôt qu'une ligne vague, pour ne pas répéter l'écueil déjà identifié
+ailleurs dans ce document (« une règle non instrumentée n'est qu'une
+intention »).
 
-| Id     | Tâche                                                               | État    | Crit. |
-| ------ | ------------------------------------------------------------------- | ------- | ----- |
-| ROAD-3 | Stacks multi (React, RN, Kotlin, Swift, PHP, Spring, Rust, Grafana) | différé | P2    |
-| ROAD-2 | Phase 09 (cf. T12-13)                                               | ouvert  | P0    |
+| Id      | Tâche                                                                                                        | État    | Effort | Crit. | Alias |
+| ------- | ------------------------------------------------------------------------------------------------------------- | ------- | ------ | ----- | ----- |
+| ROAD-3a | **Chantier Q** (découpler la DI Angular des ports `shared-domain`/`shared-application`) — cf. [`strategie-cross-stack-revue.md`](./strategie-cross-stack-revue.md) §3, Q-1 à Q-8. Déclencheur ADR-0012 atteint (React démarré via ROAD-3c). ADR-0018 déjà pris par `team-organization` — le futur ADR de ce chantier doit porter un nouveau numéro (0024+). `tools/check-framework-purity.mjs` (Q-6/Q-7) non écrit. | ouvert  | L      | P1    | Q-1…Q-8 |
+| ROAD-3b | **Chantier S** (IDL-first : OpenAPI → DTO générés, tokens de design en JSON plutôt qu'en CSS Angular) — cf. `strategie-cross-stack-revue.md` §3, S-1 à S-7. Recoupe directement T2-1/T2-2/T2-3 (déjà ouverts dans ce document) — **ne pas traiter séparément**, S-1 = T2-1. | ouvert  | L      | P1    | S-1…S-7, = T2-1 |
+| ROAD-3c | POC transposition multi-stack (preuve empirique que l'Oracle/patterns sont indépendants du framework) — **fait** (2026-08-12) : `libs`-équivalent React+TS pour `settings-security/users` construit dans un dossier scratch (hors dépôt, jamais copié dans `libs/`), Oracle réel exécuté (`tsc --noEmit`, `eslint --max-warnings=0`, `vitest run`) → 0 erreur, 25/25 tests, domain 100 % statements. A servi de déclencheur à ROAD-3a (cf. note ci-dessus) — **aucun code n'a été ajouté à ce dépôt**, seule la preuve de faisabilité compte ici. | **fait** | M | P2 | React POC 2026-08-12 |
+| ROAD-3d | Échantillonnage du corpus pour mesurer le taux de règles métier non déductibles d'un legacy (8/44 chaînes, 37 % mécanique / 37 % déductible avec contexte / 25 % non déductible) — cf. [`echantillonnage-regles-non-deductibles.md`](./echantillonnage-regles-non-deductibles.md). Sert de base de calibrage à ROAD-3e. | **fait** | M | P2 | 2026-08-12 |
+| ROAD-3e | Propositions de garde-fou pour une génération LLM+Oracle semi-autonome (registre de motifs à risque + arrêt sur absence de preuve, calqué sur Google arXiv:2504.09691) — cf. [`propositions-automatisation-seos.md`](./propositions-automatisation-seos.md), testé sur 2 cas réels dans [`test-e2e-oracle-punt-check.md`](./test-e2e-oracle-punt-check.md). **Non branché en pipeline exécutable** — conception + test manuel uniquement, cf. ROAD-3f pour le préalable identifié avant tout branchement. | **fait** (conception + test manuel) | M | P2 | 2026-08-12 |
+| ROAD-3f | Conception d'un pipeline de génération ex nihilo depuis une maquette Figma (extraction MCP+Code Connect → suggestion de pattern → spec métier humaine courte → G-V-R) — cf. [`conception-pipeline-figma-vers-code.md`](./conception-pipeline-figma-vers-code.md). **Non implémenté** — 4 critères de passage définis (§7 du document), aucun engagé. Nécessite un accès Figma réel (fichier + Figma desktop + bibliothèque Code Connect configurée) pour la première validation (couche 1). | ouvert | XL | P1 | 2026-08-12, bloqué-accès pour couche 1 |
+| ROAD-3g | POC mobile natif (Kotlin/Swift), même module de preuve que ROAD-3c (`settings-security/users`) — **en pause**, pas abandonné. Bloqué par l'allowlist réseau du sandbox d'exécution (`repo1.maven.org`, `release-assets.githubusercontent.com`, `download.swift.org` tous `blocked-by-allowlist`, même avec le réglage Claude.ai « Tous les domaines » actif — couche de filtrage Cowork distincte, non identifiée). Reprise conditionnée à un accès réseau débloqué ou exécution directe sur une machine du porteur du projet (Android Studio / Xcode déjà installés). Bloc A (principes transposés, sur papier) reste valide — cf. `docs/seos/principes-transferables-multi-plateforme.md` et `docs/seos/poc-mobile-bloque-acces-sandbox.md`. | en pause | M | P2 | 2026-08-11 |
+| ROAD-2  | Phase 09 (cf. T12-13)                                                                                          | ouvert  | P0     |       |       |
 
 
 ---
