@@ -10,9 +10,9 @@ import {
     TasksActionsProcessingEntity,
 } from '@cmz/processing-domain';
 import {
-    NotificationPort,
     PermissionActionsService,
     TranslationPort,
+    NOTIFICATION_PORT,
 } from '@cmz/shared-application';
 import {
     PaginationComponent,
@@ -121,7 +121,7 @@ export class TasksActionsProcessingPageComponent {
     private readonly detailsFacade = inject(ProcessingDetailsFacade);
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);

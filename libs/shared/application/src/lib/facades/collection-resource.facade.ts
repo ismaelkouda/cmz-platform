@@ -1,9 +1,9 @@
 import { inject, signal } from '@angular/core';
 import { DomainError, UnknownError } from '@cmz/shared-domain';
 import { Observable } from 'rxjs';
-import { NotificationPort } from '../ports/notification.port';
 import { TranslationPort } from '../ports/translation.port';
 import { ErrorHandlerRegistry } from '../services/error-handler-registry.service';
+import { NOTIFICATION_PORT } from '../tokens/notification-port.token';
 import { PaginatedResourceFacade } from './paginated-resource.facade';
 
 /**
@@ -17,7 +17,7 @@ export abstract class CollectionResourceFacade<
     TEntity,
     TFilter,
 > extends PaginatedResourceFacade<TEntity, TFilter> {
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly translation = inject(TranslationPort);
     private readonly mutationErrorHandler = inject(ErrorHandlerRegistry);
 

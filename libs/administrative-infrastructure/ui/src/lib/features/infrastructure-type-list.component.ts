@@ -2,9 +2,9 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
 import {
-    NotificationPort,
     PermissionActionsService,
     TranslationPort,
+    NOTIFICATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -93,7 +93,7 @@ export class InfrastructureTypeListComponent {
     private readonly store = inject(InfrastructureTypeFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);

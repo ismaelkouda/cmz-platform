@@ -9,7 +9,7 @@ import {
     ElementRef,
 } from '@angular/core';
 import { RequestsDetailsFacade } from '@cmz/requests-application';
-import { NotificationPort, TranslationPort } from '@cmz/shared-application';
+import { NOTIFICATION_PORT, TranslationPort } from '@cmz/shared-application';
 import {
     RequestsDetailsQualificationContract,
     requestsDetailsQualificationVo,
@@ -158,7 +158,7 @@ export class RequestsDetailsDialogComponent {
 
     protected readonly facade = inject(RequestsDetailsFacade);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(TranslationPort);
 
     protected readonly selectedTab =

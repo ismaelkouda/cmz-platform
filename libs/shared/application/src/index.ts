@@ -3,6 +3,7 @@ export * from './lib/ports/notification.port';
 export * from './lib/ports/confirm-dialog.port';
 export * from './lib/tokens/navigation-port.token';
 export * from './lib/tokens/storage-port.token';
+export * from './lib/tokens/notification-port.token';
 export * from './lib/facades/resource.facade';
 export * from './lib/facades/paginated-resource.facade';
 export * from './lib/facades/collection-resource.facade';

@@ -5,9 +5,9 @@ import {
     RegionSelectFacade,
 } from '@cmz/administrative-boundary-application';
 import {
-    NotificationPort,
     PermissionActionsService,
     TranslationPort,
+    NOTIFICATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -88,7 +88,7 @@ export class MunicipalityListComponent {
     private readonly regionSelect = inject(RegionSelectFacade);
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);

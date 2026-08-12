@@ -16,7 +16,7 @@ export interface ToastMessage {
  * auto-dismiss. Aucune dépendance UI tierce ; réplicable en React.
  */
 @Service()
-export class CmzNotificationService extends NotificationPort {
+export class CmzNotificationService implements NotificationPort {
     private seq = 0;
     private readonly _toasts = signal<ToastMessage[]>([]);
     readonly toasts = this._toasts.asReadonly();

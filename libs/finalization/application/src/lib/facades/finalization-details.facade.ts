@@ -2,10 +2,10 @@ import { inject, Service, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import {
-    NotificationPort,
     PermissionActionsService,
     ResourceFacade,
     TranslationPort,
+    NOTIFICATION_PORT,
 } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
 import {
@@ -36,7 +36,7 @@ export class FinalizationDetailsFacade extends ResourceFacade<
 > {
     private readonly useCase = inject(FinalizationDetailsUseCase);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(TranslationPort);
     private readonly queuesFacade = inject(QueuesFinalizationFacade);
     private readonly tasksFacade = inject(TasksFinalizationFacade);

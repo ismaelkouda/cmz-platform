@@ -3,9 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { OpticalFiberNetworkFacade } from '@cmz/coverage-areas-application';
 import { Operator } from '@cmz/coverage-areas-domain';
 import {
-    NotificationPort,
     PermissionActionsService,
     TranslationPort,
+    NOTIFICATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -90,7 +90,7 @@ export class OpticalFiberNetworkListComponent {
     private readonly store = inject(OpticalFiberNetworkFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);

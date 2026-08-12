@@ -2,9 +2,9 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UsersFacade } from '@cmz/settings-security-application';
 import {
-    NotificationPort,
     PermissionActionsService,
     TranslationPort,
+    NOTIFICATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -94,7 +94,7 @@ export class UsersListComponent {
     private readonly store = inject(UsersFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(TranslationPort);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);

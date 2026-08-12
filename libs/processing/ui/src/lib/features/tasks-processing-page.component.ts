@@ -3,9 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { TasksProcessingFacade } from '@cmz/processing-application';
 import {
-    NotificationPort,
     PermissionActionsService,
     TranslationPort,
+    NOTIFICATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -91,7 +91,7 @@ export class TasksProcessingPageComponent {
     protected readonly facade = inject(TasksProcessingFacade);
     private readonly store = inject(TasksProcessingFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(TranslationPort);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
     private readonly router = inject(Router);

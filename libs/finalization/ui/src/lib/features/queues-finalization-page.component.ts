@@ -2,9 +2,9 @@ import { Component, Signal, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { QueuesFinalizationFacade } from '@cmz/finalization-application';
 import {
-    NotificationPort,
     PermissionActionsService,
     TranslationPort,
+    NOTIFICATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -103,7 +103,7 @@ export class QueuesFinalizationPageComponent {
     protected readonly facade = inject(QueuesFinalizationFacade);
     private readonly store = inject(QueuesFinalizationFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly notification = inject(NotificationPort);
+    private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(TranslationPort);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 

@@ -13,7 +13,7 @@ import {
 } from '@cmz/core';
 import {
     NAVIGATION_PORT,
-    NotificationPort,
+    NOTIFICATION_PORT,
     STORAGE_PORT,
     TranslationPort,
 } from '@cmz/shared-application';
@@ -81,7 +81,12 @@ export const appConfig: ApplicationConfig = {
         // — consommé par 4 modules fonctionnels isolés par scope:*.
         { provide: EXCEL_EXPORT_PORT, useExisting: BrowserExcelExportAdapter },
         BrowserExcelExportAdapter,
-        { provide: NotificationPort, useExisting: CmzNotificationService },
+        // Jeton NOTIFICATION_PORT colocalise dans @cmz/shared-application
+        // (ADR-0024) - consommateurs a la fois type:ui et type:application.
+        {
+            provide: NOTIFICATION_PORT,
+            useExisting: CmzNotificationService,
+        },
         // Jeton CONFIRM_DIALOG_PORT colocalisé dans @cmz/shared-ui (ADR-0024)
         // — consommé par de nombreux modules fonctionnels isolés par scope:*.
         {
