@@ -1,6 +1,6 @@
 # STATUS — cmz-platform
 
-> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-11.
+> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-12.
 > Ne pas éditer manuellement — lancer `node tools/generate-status.mjs` pour régénérer.
 
 ## Résumé
@@ -8,10 +8,10 @@
 | Indicateur | Valeur |
 |:---|---:|
 | Packages Nx | **72 libs + 1 app** (73 `project.json`) |
-| Fichiers TypeScript (`libs/`) | **2 722 fichiers hors tests** (2 923 au total, dont 201 specs) |
+| Fichiers TypeScript (`libs/`) | **2 730 fichiers hors tests** (2 931 au total, dont 201 specs) |
 | Modules détectés | **19** |
 | Périmètre applicatif (`scope.json`, M-7) | **54 / 54 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
-| Corpus SEOS — couverture fichiers (N-4) | **914 / 2 722 fichiers libs/ hors tests → 33.6 %** — 1 modules sans aucune paire (1 `kernel`) |
+| Corpus SEOS — couverture fichiers (N-4) | **914 / 2 730 fichiers libs/ hors tests → 33.5 %** — 1 modules sans aucune paire (1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **585 correspondances** + **922 décisions d'architecture** (`status: n/a`) — pas 1507 paires d'apprentissage |
 
 ## Légende
@@ -33,7 +33,7 @@
 | `authentication` | ✅ | action-request | application, data, domain, ui | 67 | Compilant — login/forgot/reset |
 | `communication` | ✅ | crud-entity | application, data, domain, ui | 129 | Compilant — messagerie + notifications |
 | `content-management` | ✅ | crud-entity | application, data, domain, ui | 505 | Compilant — 6 entités |
-| `core` | ✅ | kernel |  | 10 | Tokens d'injection + intercepteurs |
+| `core` | ✅ | kernel |  | 11 | Tokens d'injection + intercepteurs |
 | `coverage-areas` | ✅ | crud-entity | application, data, domain, ui | 335 | Compilant — 4 entités |
 | `dashboard` | ✅ | read-only-view | application, data, domain, ui | 30 | Module IR clôturé — corpus 25 paires, Meta 12/12 ; aggregated_stats_view |
 | `finalization` | ✅ | workflow-action | application, data, domain, ui | 108 | Module IR clôturé — corpus 126 paires, 6 chaînes, Meta 12/12 |
@@ -44,7 +44,7 @@
 | `reporting` | ✅ | read-only-view | application, data, domain, ui | 21 | Module IR clôturé (a posteriori 2026-08-04) — 4 vues analytiques ; corpus 51 paires, 5 chaînes, Meta 12/12 |
 | `requests` | ✅ | workflow-action | application, data, domain, ui | 107 | Module IR clôturé — corpus 157 paires, 8 chaînes, Meta 12/12 |
 | `settings-security` | ✅ | crud-entity | application, data, domain, ui | 204 | Compilant — 3 entités |
-| `shared` | ✅ | kernel | application, browser, constants, data, domain, ui | 190 | Kernel transverse opérationnel |
+| `shared` | ✅ | kernel | application, browser, constants, data, domain, ui | 197 | Kernel transverse opérationnel |
 | `team-organization` | ✅ | crud-entity | application, data, domain, ui | 254 | Compilant — 2 entités |
 | `workflow-details` | ✅ | kernel | domain | 21 | ADR-0020 (Option B, POC 2026-08-11) — sous-graphe "details" partagé report-states/requests (domain uniquement, 1 seule couche) ; pas un module fonctionnel — kernel comme shared/core. |
 

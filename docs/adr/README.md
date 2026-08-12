@@ -58,4 +58,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0022](./0022-workflow-details-poc-factorisation.md)      | Factorisation `details` report-states/requests : exécution du POC (ADR-0020 Option B) | Accepted |
 | [0023](./0023-titularite-des-droits-sur-le-legacy.md)     | Titularité des droits sur le code legacy (`cmz-backoffice-frontend`) | Accepted |
 | [0024](./0024-decouplage-di-ports-shared.md)              | Découpler le contrat de port du jeton d'injection Angular | Accepted |
+| [0025](./0025-perimetre-purete-framework-domaine.md)      | Périmètre de « pureté framework » pour `type:domain`/`type:constants` (RxJS autorisé, `@angular/*` interdit) | Accepted |
 <!-- END:GENERATED:adr-index -->

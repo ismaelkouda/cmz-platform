@@ -73,6 +73,12 @@ jobs:
       - name: check:boundary-negative (scope cross-module interdit)
         run: bun run check:boundary-negative
 
+      # Chantier Q, Q-6/Q-7 (ADR-0024/ADR-0025) — layering test rendu
+      # exécutable : type:domain/type:constants doit rester compilable sans
+      # Angular (0 import @angular/*, 0 décorateur Angular). RxJS autorisé.
+      - name: check:framework-purity (0 couplage Angular en domain/constants)
+        run: bun run check:framework-purity
+
       # Audit B-3 / ADR-0014 — pin SHA legacy versionné (concordance si SEOS_LEGACY_ROOT)
       - name: check:legacy-lock
         run: bun run check:legacy-lock
