@@ -14,6 +14,7 @@
     "check:declared-deps": "node tools/check-declared-deps.mjs",
     "check:boundary-negative": "node tools/check-boundary-negative.mjs",
     "check:framework-purity": "node tools/check-framework-purity.mjs",
+    "check:framework-purity:destructive": "node tools/check-framework-purity-destructive.mjs",
     "check:legacy-lock": "node tools/corpus/check-legacy-lock.mjs",
     "check:pair-schema": "node tools/corpus/validate-pair-schema.mjs --fixture",
     "check:corpus-tools": "node --test tools/corpus/*.test.mjs",

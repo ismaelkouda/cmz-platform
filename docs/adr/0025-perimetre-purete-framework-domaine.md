@@ -88,8 +88,31 @@ La question posée par cette mesure : RxJS doit-il être traité comme un
 
 - Q-6/Q-7 peut être câblé en CI bloquant dès aujourd'hui, sans dette
   préexistante à tolérer.
-- Le garde teste précisément ce que Q-8 (test destructif : retirer
-  `@angular/*` des `paths` tsconfig, vérifier que la compilation échoue
+- Le garde teste précisément ce que Q-8 (test destructif) devra confirmer
+  mécaniquement — **addendum 2026-08-12** : Q-8 a été implémenté
+  (`tools/check-framework-purity-destructive.mjs`). La méthode envisagée
+  initialement (« retirer `@angular/*` des `paths` tsconfig ») s'est révélée
+  **inopérante** à l'usage : avec `moduleResolution: "bundler"`
+  (`tsconfig.base.json`), TypeScript résout un paquet npm réel via la
+  résolution `node_modules` standard et ne consulte `paths` que pour les
+  alias qui n'ont pas de résolution de module native — remapper
+  `@angular/*` vers un chemin inexistant dans `paths` n'empêche pas la
+  compilation de trouver `@angular/core` (vérifié : `libs/core` compilait
+  toujours à 0 erreur). Le retrait doit être **physique** : ce monorepo
+  utilise `bun`, qui matérialise `node_modules/@angular/*` en symlinks vers
+  un store `node_modules/.bun/@angular+<pkg>@<version>+<hash>/` — renommer
+  temporairement à la fois le lien et les répertoires du store (jamais de
+  suppression, toujours réversible, restauration garantie par `finally` +
+  handler `process.on('exit', ...)`) fait échouer réellement la
+  compilation d'une lib qui dépend d'Angular. Vérifié sur les 19 libs
+  `type:domain`/`type:constants` (0 échec) et sur 2 libs témoins connues
+  pour dépendre d'Angular, `@cmz/core`/`@cmz/shared-application` (échec
+  confirmé dans les deux cas — preuve que le test est significatif, pas un
+  faux négatif silencieux). Volontairement **pas branché en CI bloquant à
+  chaque commit** — Q-6/Q-7 (statique, rapide) couvre déjà le cas courant ;
+  Q-8 manipule `node_modules` et prend plusieurs dizaines de secondes
+  (~20 compilations `tsc` complètes), réservé à un usage manuel ou un job
+  périodique (`bun run check:framework-purity:destructive`).
   ailleurs mais pas dans `type:domain`/`type:constants`) devra confirmer
   mécaniquement.
 
