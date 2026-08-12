@@ -64,6 +64,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0021](./adr/0021-seuils-de-couverture-tests-par-couche.md) | Seuils de couverture de tests par couche                 |
 | [0022](./adr/0022-workflow-details-poc-factorisation.md)    | Factorisation `details` report-states/requests : exécution du POC (ADR-0020 Option B) |
 | [0023](./adr/0023-titularite-des-droits-sur-le-legacy.md)   | Titularité des droits sur le code legacy (`cmz-backoffice-frontend`) |
+| [0024](./adr/0024-decouplage-di-ports-shared.md)            | Découpler le contrat de port du jeton d'injection Angular |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

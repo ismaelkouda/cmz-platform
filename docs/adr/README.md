@@ -57,4 +57,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0021](./0021-seuils-de-couverture-tests-par-couche.md)   | Seuils de couverture de tests par couche                 | Accepted |
 | [0022](./0022-workflow-details-poc-factorisation.md)      | Factorisation `details` report-states/requests : exécution du POC (ADR-0020 Option B) | Accepted |
 | [0023](./0023-titularite-des-droits-sur-le-legacy.md)     | Titularité des droits sur le code legacy (`cmz-backoffice-frontend`) | Accepted |
+| [0024](./0024-decouplage-di-ports-shared.md)              | Découpler le contrat de port du jeton d'injection Angular | Accepted |
 <!-- END:GENERATED:adr-index -->
