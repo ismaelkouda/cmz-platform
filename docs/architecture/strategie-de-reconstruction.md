@@ -6,6 +6,9 @@
   [ADR-0009](../adr/0009-reconstruction-pilotee-par-patterns.md),
   [ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md),
   [ADR-0004](../adr/0004-graphe-de-dependances-declarees.md)
+- **Portée (précision 2026-08-13) :** ce document couvre strictement le cas
+  d'usage `cmz-backoffice-frontend`, un sous-ensemble de l'objectif global du
+  dépôt depuis [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md).
 
 ## Nature du travail
 

@@ -66,6 +66,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0023](./adr/0023-titularite-des-droits-sur-le-legacy.md)   | Titularité des droits sur le code legacy (`cmz-backoffice-frontend`) |
 | [0024](./adr/0024-decouplage-di-ports-shared.md)            | Découpler le contrat de port du jeton d'injection Angular |
 | [0025](./adr/0025-perimetre-purete-framework-domaine.md)    | Périmètre de « pureté framework » pour `type:domain`/`type:constants` (RxJS autorisé, `@angular/*` interdit) |
+| [0026](./adr/0026-reorientation-objectif-generation-generique.md) | Réorientation de l'objectif : système de génération générique multi-source/multi-stack |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
@@ -98,7 +99,8 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
   garde-fou LLM+Oracle calibré sur ce taux, inspiré d'un précédent Google publié
 - [Test end-to-end — registre de motifs + punt check](./architecture/test-e2e-oracle-punt-check.md) —
   validation empirique du garde-fou sur 2 cas réels
-- [Conception — pipeline Figma vers code](./architecture/conception-pipeline-figma-vers-code.md) —
+- **[Conception — pipeline Figma vers code](./architecture/conception-pipeline-figma-vers-code.md)** —
+  document de conception détaillé de la réorientation ([ADR-0026](./adr/0026-reorientation-objectif-generation-generique.md)) :
   génération ex nihilo à action humaine minimisée, non implémentée
 
 ## Conventions
@@ -119,6 +121,7 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 
 | Question                            | Document                                                               |
 | ----------------------------------- | ---------------------------------------------------------------------- |
+| **Quel est l'objectif du projet ?** | **[ADR-0026 — réorientation 2026-08-12](./adr/0026-reorientation-objectif-generation-generique.md)** (SEOS/Angular = cas d'usage d'un système de génération générique, pas la finalité) |
 | Comment je démarre ?                | [Contribuer](./guides/contribuer.md)                                   |
 | Qu'est-ce qui existe déjà ?         | [État du socle](./architecture/etat-du-socle.md)                       |
 | Pourquoi ce choix ?                 | L'ADR correspondant                                                    |

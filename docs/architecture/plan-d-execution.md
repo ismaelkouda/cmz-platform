@@ -1,10 +1,18 @@
 # Plan d'exécution
 
 - **Dernière mise à jour :** 2026-08-02
-- **Objectif :** reconstruire `cmz-backoffice-frontend` en Angular 22 dans le
-  monorepo, par génération à partir des patterns SEOS
+- **Objectif (cas d'usage SEOS spécifiquement — voir portée ci-dessous) :**
+  reconstruire `cmz-backoffice-frontend` en Angular 22 dans le monorepo, par
+  génération à partir des patterns SEOS
   ([ADR-0009](../adr/0009-reconstruction-pilotee-par-patterns.md))
 - **Point de départ :** socle terminé — voir [état du socle](./etat-du-socle.md)
+
+> **Portée de ce document (précision 2026-08-13)** : ce plan détaille
+> l'exécution du chantier Angular/SEOS, qui reste valide tel quel. Il ne
+> décrit plus l'objectif du dépôt dans son ensemble depuis la réorientation
+> du 2026-08-12 — voir
+> [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md) et
+> [conception-pipeline-figma-vers-code.md](./conception-pipeline-figma-vers-code.md).
 
 ## Comment lire ce plan
 

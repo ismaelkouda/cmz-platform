@@ -2,6 +2,17 @@
 
 - **Dernière mise à jour :** 2026-08-02
 
+> **Portée de ce document (précision 2026-08-13)** : le séquencement
+> « Angular d'abord, les autres stacks ensuite » ci-dessous reste correct
+> pour retracer le chantier Angular/SEOS, mais l'objectif global du dépôt a
+> été réorienté depuis
+> ([ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md)) —
+> le POC React et le POC mobile (Kotlin/Swift, en pause) ont déjà été menés
+> en parallèle du chantier Angular, pas après. Ce document décrit le cas
+> d'usage SEOS spécifiquement, pas la trajectoire multi-stack réelle. Voir
+> `taches-restantes.md` (section ROAD-3) pour l'état à jour des chantiers
+> multi-stack.
+
 Le monorepo se construit **stack par stack**, chaque stack étant découpée en
 phases validées une à une. Angular d'abord ; les autres ne démarreront qu'une
 fois celle-ci stabilisée.

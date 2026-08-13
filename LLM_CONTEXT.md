@@ -8,14 +8,38 @@
 
 ---
 
-## 1. Vision Système & Paradigme SEOS
+## 0. Objectif du projet — RÉORIENTÉ le 2026-08-12 (lire avant tout le reste)
+
+**Décision structurante : [ADR-0026](./docs/adr/0026-reorientation-objectif-generation-generique.md).**
+Ce dépôt n'a plus pour seule finalité la migration de SEOS vers Angular 22.
+L'objectif est désormais de concevoir un **système de génération générique**
+capable de produire du code conforme à partir de **n'importe quelle source**
+(legacy, maquette Figma, description texte) et vers **n'importe quelle stack
+cible** (Angular, React, React Native, Kotlin, Swift, etc.), avec l'action
+humaine réduite au strict irréductible (règles métier, cas limites, contrats
+d'intégration).
+
+**SEOS/Angular est désormais un cas d'usage particulier de ce système, pas sa
+finalité.** Tout ce qui suit dans ce document (§1 à la fin) reste exact et
+utile — l'Oracle, les patterns par rôle, l'isolation en couches sont
+précisément la partie du travail qui s'est révélée réutilisable indépendamment
+de SEOS (prouvé par un POC React généré sans legacy, cf. ADR-0026) — mais lisez
+ces sections en gardant à l'esprit qu'elles décrivent **le cas d'usage SEOS
+concret**, pas l'ambition globale du dépôt. Conception détaillée du pipeline
+générique (Figma en premier cas d'entrée testé, non implémenté à ce jour) :
+[`docs/architecture/conception-pipeline-figma-vers-code.md`](./docs/architecture/conception-pipeline-figma-vers-code.md).
+
+---
+
+## 1. Vision Système & Paradigme SEOS (cas d'usage concret — voir §0 pour l'objectif global)
 
 ### 1.1 Objet du Projet
 
 `cmz-platform` est le monorepo Nx TypeScript central de la plateforme **CMZ
 (_Connect My Zone_)**. Il héberge la reconstruction industrielle et le découpage
 modulaire du backoffice front-end (`cmz-backoffice-frontend`) en **Angular 22**
-avec **Bun 1.3** et **Nx 23.1** (mode _package-based_).
+avec **Bun 1.3** et **Nx 23.1** (mode _package-based_) — **le cas d'usage SEOS
+du système de génération générique décrit en §0.**
 
 ### 1.2 Thèse Scientifique & Philosophie d'Ingénierie
 
@@ -190,10 +214,10 @@ directives suivantes :
 <!-- BEGIN:GENERATED:monorepo-status -->
 | Indicateur                | Valeur                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Dernière génération       | **2026-08-12** (`bun run generate:status`)                                                                      |
+| Dernière génération       | **2026-08-13** (`bun run generate:status`)                                                                      |
 | Modules livrés            | **19** (voir [`STATUS.md`](./STATUS.md))                                                         |
 | Packages Nx               | **73** (72 libs + 1 app)                                              |
-| Fichiers TypeScript       | **2 730** hors tests / **2 931** total (201 specs)                 |
+| Fichiers TypeScript       | **2 730** hors tests / **2 979** total (249 specs)                 |
 | Corpus SEOS               | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                       |
 | Corpus SEOS — nature (N-6)| **585 correspondances** + **922 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |
 | Corpus SEOS — couverture (N-4) | **914 / 2 730 fichiers libs/ hors tests → 33.5 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |

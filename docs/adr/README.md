@@ -59,4 +59,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0023](./0023-titularite-des-droits-sur-le-legacy.md)     | Titularité des droits sur le code legacy (`cmz-backoffice-frontend`) | Accepted |
 | [0024](./0024-decouplage-di-ports-shared.md)              | Découpler le contrat de port du jeton d'injection Angular | Accepted |
 | [0025](./0025-perimetre-purete-framework-domaine.md)      | Périmètre de « pureté framework » pour `type:domain`/`type:constants` (RxJS autorisé, `@angular/*` interdit) | Accepted |
+| [0026](./0026-reorientation-objectif-generation-generique.md) | Réorientation de l'objectif : système de génération générique multi-source/multi-stack | Accepted |
 <!-- END:GENERATED:adr-index -->

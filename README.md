@@ -5,8 +5,15 @@ reconstruction industrielle de `cmz-backoffice-frontend` en **Angular 22** avec
 **Bun 1.3** et **Nx 23.1**, puis progressivement les autres composants de la
 plateforme.
 
+> **Objectif réorienté le 2026-08-12** : ce dépôt n'est plus seulement une
+> migration SEOS→Angular — c'est un système de génération générique capable
+> de produire du code conforme depuis n'importe quelle source (legacy,
+> maquette, description) vers n'importe quelle stack. Angular/SEOS est le cas
+> d'usage concret déjà bâti. Voir
+> [ADR-0026](./docs/adr/0026-reorientation-objectif-generation-generique.md).
+
 <!-- BEGIN:GENERATED:monorepo-status -->
-**État au 2026-08-12 :** Phase **08** (génération depuis patterns) — **19** modules, **72** libs + **1** app, **2 730** fichiers `.ts` hors tests. Bundle initial prod **872.78 kB**. Voir [`STATUS.md`](./STATUS.md).
+**État au 2026-08-13 :** Phase **08** (génération depuis patterns) — **19** modules, **72** libs + **1** app, **2 730** fichiers `.ts` hors tests. Bundle initial prod **872.78 kB**. Voir [`STATUS.md`](./STATUS.md).
 <!-- END:GENERATED:monorepo-status -->
 
 > 🤖 **Note pour les LLM / Agents IA** : Consulter le document maître

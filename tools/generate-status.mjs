@@ -427,6 +427,9 @@ const statusMd = `# STATUS — cmz-platform
 > **Généré automatiquement** par \`tools/generate-status.mjs\` le ${now}.
 > Ne pas éditer manuellement — lancer \`node tools/generate-status.mjs\` pour régénérer.
 
+> Ces métriques décrivent le cas d'usage Angular/SEOS. Objectif global du
+> dépôt (réorienté 2026-08-12) : [ADR-0026](./docs/adr/0026-reorientation-objectif-generation-generique.md).
+
 ## Résumé
 
 | Indicateur | Valeur |

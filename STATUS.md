@@ -1,14 +1,17 @@
 # STATUS — cmz-platform
 
-> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-12.
+> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-13.
 > Ne pas éditer manuellement — lancer `node tools/generate-status.mjs` pour régénérer.
+
+> Ces métriques décrivent le cas d'usage Angular/SEOS. Objectif global du
+> dépôt (réorienté 2026-08-12) : [ADR-0026](./docs/adr/0026-reorientation-objectif-generation-generique.md).
 
 ## Résumé
 
 | Indicateur | Valeur |
 |:---|---:|
 | Packages Nx | **72 libs + 1 app** (73 `project.json`) |
-| Fichiers TypeScript (`libs/`) | **2 730 fichiers hors tests** (2 931 au total, dont 201 specs) |
+| Fichiers TypeScript (`libs/`) | **2 730 fichiers hors tests** (2 979 au total, dont 249 specs) |
 | Modules détectés | **19** |
 | Périmètre applicatif (`scope.json`, M-7) | **54 / 54 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
 | Corpus SEOS — couverture fichiers (N-4) | **914 / 2 730 fichiers libs/ hors tests → 33.5 %** — 1 modules sans aucune paire (1 `kernel`) |

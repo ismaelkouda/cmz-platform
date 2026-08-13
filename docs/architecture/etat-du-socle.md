@@ -4,8 +4,12 @@ Ce document décrit **ce qui existe aujourd'hui** dans le monorepo. Il est mis �
 jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
+> Ce socle (Angular/SEOS) est le cas d'usage concret de l'objectif global du
+> dépôt — voir [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md)
+> pour la réorientation vers un système de génération générique multi-source.
+
 <!-- BEGIN:GENERATED:monorepo-status -->
-- **Dernière mise à jour :** 2026-08-12 (généré par `tools/generate-status.mjs`)
+- **Dernière mise à jour :** 2026-08-13 (généré par `tools/generate-status.mjs`)
 - **État :** **Phase 08** — génération depuis patterns ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle outillé + Kernel `shared/` / `@cmz/core` + **19** modules livrés/compilants (**72** libs + **1** app ; **2 730** `.ts` hors tests). Voir [`STATUS.md`](../../STATUS.md).
 - **Familles IR :** `workflow-action` **4/4**, `read-only-view` **4/4**. Corpus **1 507** paires. CI `corpus:ci` (structural-only) + `corpus-full` (main) + Tier 2 nightly.
 <!-- END:GENERATED:monorepo-status -->
