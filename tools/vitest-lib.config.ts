@@ -34,6 +34,12 @@ export function defineLibTestConfig(libRoot: string) {
                 resolve(libRoot, 'src/**/*.spec.ts'),
                 resolve(libRoot, 'src/**/*.test.ts'),
             ],
+            // `*.rxresource.spec.ts` : environnement `node` insuffisant pour
+            // `rxResource`/`effect()` (besoin de `ChangeDetectionScheduler`,
+            // fourni uniquement par un `TestBed` jsdom complet — voir
+            // `tools/vitest-lib-rxresource.config.ts`). Exclus ici pour ne
+            // pas faire échouer ce projet avec `NG0201`.
+            exclude: [resolve(libRoot, 'src/**/*.rxresource.spec.ts')],
             reporters: ['verbose'],
             coverage: {
                 provider: 'v8',

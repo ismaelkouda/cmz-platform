@@ -15,7 +15,10 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "bunx vitest run --config tools/vitest-lib.config.ts",
+        "commands": [
+          "bunx vitest run --config tools/vitest-lib.config.ts",
+          "bunx vitest run --config tools/vitest-lib-rxresource.config.ts"
+        ],
         "cwd": "{workspaceRoot}",
         "env": {
           "CMZ_VITEST_LIB_ROOT": "libs/shared/application"
