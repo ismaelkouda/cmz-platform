@@ -14,11 +14,27 @@ export class PermissionActionsService {
     }
 
     private async load(): Promise<void> {
-        const data =
-            await this.storage.getObfuscated<PermissionMap>(
-                'permissionsActions'
+        // T3-7 (2026-08-13, même famille que SessionService.loadToken()/
+        // StorePathsService.load()) : sans ce `catch`, une exception de
+        // `getObfuscated` (payload corrompu, tag AES-GCM invalide) fuirait
+        // hors de `void this.load()` (constructeur) — unhandled promise
+        // rejection. Fail-closed déjà correct par construction ici :
+        // `_permissions` reste à son défaut `{}` (posé à la déclaration du
+        // signal) si `load()` échoue avant `.set()`, donc `can()` continue
+        // de répondre `false` pour toute route — aucun changement de
+        // comportement sécurité, seulement absorption + trace de l'erreur.
+        try {
+            const data =
+                await this.storage.getObfuscated<PermissionMap>(
+                    'permissionsActions'
+                );
+            this._permissions.set(data ?? {});
+        } catch (error) {
+            console.error(
+                'PermissionActionsService: permissions illisibles au démarrage',
+                error
             );
-        this._permissions.set(data ?? {});
+        }
     }
 
     can(route: string, action: string): Signal<boolean> {
