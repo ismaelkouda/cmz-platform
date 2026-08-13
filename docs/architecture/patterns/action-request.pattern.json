@@ -1,0 +1,147 @@
+{
+  "$schema": "./pattern-core.schema.json",
+  "pattern": "action-request",
+  "version": 0,
+  "lineage": "Enterprise OOP (Angular + DDD/CQRS-lite) — famille action ponctuelle non-CRUD, non-liste : requête → validation → mutation serveur → réponse, sans état de collection ni cycle de vie d'entité persistante côté client (AIP-136 custom methods).",
+  "description": "Première formalisation Nx-shaped de action-request pour ce dépôt (T2-8, ADR-0027) — jamais eu de contrepartie `docs/architecture/patterns/` propre jusqu'ici (cf. README.md qui ne référençait qu'un fichier legacy `seos/patterns/action-request.pattern.json`, v6). `core_files_nx` ci-dessous est construit à partir de l'inspection réelle de `libs/authentication` (67 fichiers .ts hors *.spec.ts), le seul module du dépôt classé `action-request` par `docs/architecture/scope.json` (3 entités : forgot-password, login, reset-password). Chaque opération est un verbe custom indépendant : reçoit un Contract, le valide, mappe vers un DTO wire, appelle un endpoint dédié (pas de ressource nommée réutilisable), retourne une Entity de réponse — aucune des 3 n'a de liste paginée (pas de Collection), aucune ne modélise un objet persistant avec cycle de vie get/update/delete (pas d'Entity du noyau), aucune ne fait transiter un état préexistant (pas de Transition : login/forgot-password/reset-password créent un effet côté serveur mais n'opèrent sur aucune ressource cliente déjà chargée), et aucune n'agrège plusieurs sources en lecture (pas de Composite Read) — c'est l'exemple canonique cité par l'ADR pour justifier Custom (AIP-136).",
+  "validated_on": ["authentication"],
+  "reference_module": "authentication",
+  "reference_implementation": {
+    "entities_used": ["forgot-password", "login", "reset-password"],
+    "nx_path": "libs/authentication",
+    "description": "Module Nx à 3 opérations action-request indépendantes (cf. `docs/architecture/scope.json`, chacune `class: \"action-request\"`), 67 fichiers .ts (hors *.spec.ts) sous `libs/authentication` au moment de cette formalisation (2026-08-13, `find libs/authentication -name '*.ts' ! -name '*.spec.ts' | wc -l`). Les 3 opérations partagent EXACTEMENT la même forme à 17 fichiers chacune (vérifié fichier par fichier via `find libs/authentication -name '*{operation}*' ! -name '*.spec.ts'`, pas supposé par extrapolation depuis une seule opération) : 7 domain (props, contract, validate-contract, validator, vo, entité de réponse, repository — port), 6 data (2 DTOs request/response, 2 mappers request/response, repository.impl, source api), 2 application (use-case, facade), 2 ui (component, form-store) — 7+6+2+2 = 17 par opération, 3×17 = 51 fichiers. Le reste des 67 fichiers du module (67-51 = 16) se répartit exactement, vérifié par grep différentiel : 3 module_shell_files internes à libs/ (authentication.routes.ts, authentication-paths.constant.ts, authentication.endpoints.ts — provider.ts vit hors libs/, sous apps/backoffice-angular, cf. module_shell_files.nx) + 9 shared_utils_non_core (2 utils, 5 errors, 2 fichiers current-user dto+mapper, cf. ci-dessous) + 4 fichiers index.ts barrel (un par couche domain/data/application/ui, non listés séparément — export public standard de chaque lib Nx, hors périmètre core_files_nx/shared_utils_non_core comme dans les 3 autres patterns). 3+9+4 = 16. Les 2 fichiers *.spec.ts existants (current-user.mapper.spec.ts, login-response.mapper.spec.ts) sont hors du compte 67 (exclus par le find). Différence réelle notée entre les 3 : `login` n'a pas de DTO de confirmation de mot de passe (`forgot-password`/`reset-password` valident un couple password/confirmPassword via `match-confirm-password.util.ts` partagé, `login` valide seulement email+password) — ce util partagé vit sous `libs/authentication/domain/src/lib/utils/`, hors core_files_nx (utilitaire transverse au module, pas structurel à un verbe)."
+  },
+  "core_files_legacy_reference": "tools/seos/patterns/action-request.pattern.json (v6, source authentication) — non ré-audité ligne à ligne dans ce travail (portée : formalisation Nx-shaped uniquement, cf. mission T2-8), ne pas dupliquer ici",
+  "composition": [
+    {
+      "verb": "custom",
+      "label": "forgot-password / login / reset-password",
+      "files_field": "core_files_nx",
+      "justification": "AIP-136 — aucune des 3 opérations n'a de liste paginée (pas de Collection : pas de PageResult, pas de filtre, pas de tri), aucune ne modélise le cycle de vie d'un objet identifiable persistant côté client (pas d'Entity du noyau : pas de get/update/delete sur une ressource adressable par id après l'appel), aucune n'opère une transition d'état sur une ressource métier déjà chargée (pas de Transition : login/forgot-password/reset-password produisent un effet serveur one-shot, sans état préalable client à faire évoluer), et aucune n'agrège plusieurs sources en lecture (pas de Composite Read : chacune est un aller-retour requête→réponse simple, une seule source). C'est exactement le cas d'usage cité par AIP-136 (custom methods) et par l'ADR-0027 comme exemple canonique de Custom — vérifié contre le code réel de libs/authentication avant classement, pas supposé."
+    }
+  ],
+  "core_files_nx": {
+    "domain": [
+      "libs/{MODULE}/domain/src/lib/props/{operation}.props.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{operation}-request.contract.ts",
+      "libs/{MODULE}/domain/src/lib/contracts/{operation}-request.validate-contract.ts",
+      "libs/{MODULE}/domain/src/lib/validators/{operation}-request.validator.ts",
+      "libs/{MODULE}/domain/src/lib/value-objects/{operation}-request.vo.ts",
+      "libs/{MODULE}/domain/src/lib/entities/{operation}-response.entity.ts",
+      "libs/{MODULE}/domain/src/lib/repositories/{operation}.repository.ts"
+    ],
+    "data": [
+      "libs/{MODULE}/data/src/lib/dtos/{operation}-request-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/dtos/{operation}-response-api.dto.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{operation}-request.mapper.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{operation}-response.mapper.ts",
+      "libs/{MODULE}/data/src/lib/repositories/{operation}.repository.impl.ts",
+      "libs/{MODULE}/data/src/lib/sources/{operation}.api.ts"
+    ],
+    "application": [
+      "libs/{MODULE}/application/src/lib/use-cases/{operation}.use-case.ts",
+      "libs/{MODULE}/application/src/lib/facades/{operation}.facade.ts"
+    ],
+    "ui": [
+      "libs/{MODULE}/ui/src/lib/features/{operation}.component.ts",
+      "libs/{MODULE}/ui/src/lib/stores/{operation}-form.store.ts"
+    ]
+  },
+  "module_shell_files": {
+    "legacy": [
+      "{MODULE}.routes.ts",
+      "di/{MODULE}.providers.ts",
+      "infrastructure/api/{MODULE}.endpoints.ts"
+    ],
+    "nx": [
+      "libs/authentication/ui/src/lib/authentication.routes.ts",
+      "libs/authentication/ui/src/lib/constants/authentication-paths.constant.ts",
+      "libs/authentication/data/src/lib/endpoints/authentication.endpoints.ts",
+      "apps/backoffice-angular/src/app/providers/authentication.providers.ts"
+    ]
+  },
+  "nx_mapping": {
+    "module_placeholder": "{MODULE}",
+    "operation_placeholder": "{OPERATION}",
+    "operation_kebab": "{operation}",
+    "naming": {
+      "props_interface": "{OperationPascal}Props",
+      "contract_interface": "{OperationPascal}RequestContract / {OperationPascal}RequestValidateContract",
+      "validator_fn": "validate{OperationPascal}Request(contract): asserts contract is {OperationPascal}RequestValidateContract",
+      "vo_fn": "{operation}RequestVo(contract) — fonction pure, pas de classe VO (même convention que crud-entity)",
+      "response_entity_class": "{OperationPascal}ResponseEntity",
+      "repository_port": "{OperationPascal}Repository (abstract class)",
+      "repository_impl": "{OperationPascal}RepositoryImpl — @Service(), implements {OperationPascal}Repository",
+      "request_dto": "{OperationPascal}RequestApiDto (wire snake_case si applicable)",
+      "response_dto": "{OperationPascal}ResponseApiDto",
+      "request_mapper_fn": "{operation}RequestMapper(voResult) — fonction",
+      "response_mapper_fn": "{operation}ResponseMapper(dto) — fonction",
+      "api_class": "{OperationPascal}Api — @Service(), un seul HttpClient injecté",
+      "use_case_class": "{OperationPascal}UseCase — execute(contract), defer() vers le repository",
+      "facade_class": "{OperationPascal}Facade extends ResourceFacade<{OperationPascal}ResponseEntity, ...>",
+      "form_store_class": "{OperationPascal}FormStore",
+      "form_component": "{OperationPascal}Component",
+      "routes_const": "AUTHENTICATION_ROUTES (un seul point de composition module, pas par opération)",
+      "providers_fn": "provideAuthentication() — un seul point de composition racine par MODULE, pas par opération"
+    },
+    "layer_map": {
+      "domain": "libs/{MODULE}/domain/src/lib",
+      "data": "libs/{MODULE}/data/src/lib",
+      "application": "libs/{MODULE}/application/src/lib",
+      "ui": "libs/{MODULE}/ui/src/lib",
+      "di": "apps/backoffice-angular/src/app/providers"
+    }
+  },
+  "shared_utils_non_core": {
+    "description": "Utilitaires transverses au module authentication, partagés entre plusieurs opérations mais non structurels à un seul verbe custom — non listés dans core_files_nx par cohérence avec extension_candidates de crud-entity (fonctionnalité réelle mais optionnelle, pas brique obligatoire).",
+    "files": [
+      "libs/authentication/domain/src/lib/utils/match-confirm-password.util.ts",
+      "libs/authentication/domain/src/lib/utils/valid-email.util.ts",
+      "libs/authentication/domain/src/lib/errors/confirm-password-required.error.ts",
+      "libs/authentication/domain/src/lib/errors/confirm-password.error.ts",
+      "libs/authentication/domain/src/lib/errors/email-required.error.ts",
+      "libs/authentication/domain/src/lib/errors/invalid-email.error.ts",
+      "libs/authentication/domain/src/lib/errors/password-required.error.ts",
+      "libs/authentication/data/src/lib/dtos/current-user-api.dto.ts",
+      "libs/authentication/data/src/lib/mappers/current-user.mapper.ts"
+    ],
+    "notes": "current-user-api.dto.ts/current-user.mapper.ts servent la session applicative globale (hors des 3 opérations action-request elles-mêmes) — observé par lecture du dossier data/dtos et data/mappers, pas supposé."
+  },
+  "constraints": {
+    "no_cross_module_byte_identical_files": {
+      "id": "H-3",
+      "severity": "P1-11",
+      "rule": "libs/{MODULE}/** — aucun fichier source (.ts/.html/.scss/.css, ≥40 o) byte-identique (MD5) à un fichier d'un autre module sous libs/",
+      "rationale": "Prévention F-1/F-2 : helpers transverses doivent vivre dans @cmz/shared-* ou tools/, jamais être recopiés par génération G-V-R",
+      "enforcement": {
+        "tool": "tools/check-duplicate-files.mjs",
+        "script": "bun run check:duplicates",
+        "module_scoped": "bun run check:duplicates -- --module={MODULE}"
+      },
+      "remediation": "Remonter dans @cmz/shared-ui (ou shared-*) / tools/ et supprimer les copies",
+      "exceptions": []
+    }
+  },
+  "differences_vs_crud_entity": {
+    "pas_de_liste": "Aucune des 3 opérations n'a de PageResult/liste paginée — crud-entity a toujours au moins une liste par entité",
+    "pas_de_cycle_de_vie": "Pas de get/update/delete sur une ressource identifiable persistée — chaque opération est un aller simple requête→réponse"
+  },
+  "differences_vs_workflow_action": {
+    "pas_de_volet": "Aucune partition queues/tasks/all, aucun sous-graphe details/tasks-actions",
+    "pas_de_transition_d_etat": "login/forgot-password/reset-password ne font pas transiter un état préexistant d'une ressource métier déjà chargée côté client — elles produisent un effet serveur one-shot"
+  },
+  "differences_vs_read_only_view": {
+    "mutation_serveur": "Chaque opération produit un effet de bord serveur (authentification, envoi email, changement de mot de passe) — read-only-view n'a par construction aucune mutation"
+  },
+  "design_decisions_v0": {
+    "contexte": "Première formalisation Nx-shaped de action-request pour ce dépôt (T2-8, ADR-0027) — contrairement à crud-entity/workflow-action/read-only-view, action-request n'avait jamais eu de fichier `docs/architecture/patterns/*.pattern.json` propre, seulement une référence croisée dans les 3 autres patterns (`differences_vs_action_request`) et un fichier legacy `tools/seos/patterns/action-request.pattern.json` (v6) jamais porté côté Nx.",
+    "pourquoi_maintenant": "ADR-0027 acte action-request comme la composition native de référence pour le verbe Custom (AIP-136) — nécessaire pour que le noyau de 5 verbes ait un exemple concret de Custom documenté dans le catalogue, pas seulement dans le schéma.",
+    "portee_explicitement_exclue": "Ne couvre pas de nouvelle mesure fichier par fichier via check-pattern-nx.mjs au-delà de la vérification de cette mission (T2-8) — l'inspection ci-dessus (reference_implementation) sert de première mesure, mais aucune campagne de complétion (« reecris le code pour atteindre les 100% ») n'a été demandée pour ce pattern dans ce lot.",
+    "oracle_minimum": [
+      "tsc --noEmit (tsconfig du module)",
+      "eslint libs/authentication --max-warnings=0",
+      "bun run check:duplicates -- --module=authentication",
+      "nx test authentication-data (2 .spec.ts existants : current-user.mapper.spec.ts, login-response.mapper.spec.ts)"
+    ]
+  }
+}

@@ -1,0 +1,348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz-platform.local/schemas/pattern-core.schema.json",
+  "title": "Noyau de verbes structurels — catalogue ouvert de patterns",
+  "description": "ADR-0027 : contrat machine-readable du noyau de 5 verbes structurels (collection, entity, transition, compositeRead, custom) et de la forme d'un fichier `*.pattern.json` qui les compose. Le noyau (`$defs.verbRegistry`, exposé en clair sous la constante `CORE_VERBS` ci-dessous) est stable et ne doit pas être révisé à chaque nouveau pattern — c'est le champ `composition`, dans chaque fichier `*.pattern.json`, qui absorbe la nouveauté (catalogue ouvert). Ajouter un pattern n'implique jamais de modifier ce schéma. Deux axes orthogonaux structurent chaque instance de composition : le verbe (QUI agit sur quoi — CQS/CQRS, Meyer 1988 / Young 2010, stable et fermé à 5) et `execution_topology` (COMMENT ça s'exécute — atomic/sequential/async_callback/streaming/…, délibérément ouvert, cf. $defs.executionTopology). Ne jamais fusionner les deux axes dans le noyau lui-même : c'est précisément ce qui ferait regonfler la liste des verbes sans fin, l'erreur qu'ADR-0027 corrige.",
+  "type": "object",
+  "required": ["pattern", "version", "composition"],
+
+  "$defs": {
+    "verbName": {
+      "type": "string",
+      "enum": ["collection", "entity", "transition", "compositeRead", "custom"],
+      "description": "Les 5 verbes structurels stables du noyau (ADR-0027). Toute composition doit référencer un de ces 5 noms — jamais un nom de pattern (crud-entity, workflow-action, …) directement : les noms de pattern sont des compositions nommées, pas des primitives."
+    },
+
+    "placeholder": {
+      "type": "string",
+      "description": "Placeholder générique accepté dans un template de fichier — ex. {entity}, {MODULE}/{module}, {VOLET}/{volet}, {SECTION}/{section}. Volontairement non fermé à un jeu fixe : chaque verbe déclare ceux qu'il accepte réellement dans `placeholders`.",
+      "pattern": "^\\{[A-Za-z][A-Za-z0-9_-]*\\}$"
+    },
+
+    "layerFileTemplates": {
+      "type": "object",
+      "description": "Templates de chemins de fichiers par couche Nx (ADR-0027 : contrat Nx par couche domain/data/application/ui). Chaque couche est une liste de chemins-gabarits contenant des placeholders déclarés dans `placeholders`. Toutes les couches sont optionnelles — un verbe donné peut ne rien produire dans une couche (ex. `custom` peut être purement application+ui).",
+      "properties": {
+        "domain": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Chemins-gabarits de la couche domain (0 import framework/data/ui — cf. CLAUDE.md Nx Layer Isolation Invariants)."
+        },
+        "data": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Chemins-gabarits de la couche data (dépend uniquement de domain/core/shared-data)."
+        },
+        "application": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Chemins-gabarits de la couche application (dépend uniquement de domain/shared-application)."
+        },
+        "ui": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Chemins-gabarits de la couche ui (dépend de application/domain/shared-ui)."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "verbDefinition": {
+      "type": "object",
+      "description": "Définition d'un verbe structurel du noyau : son contrat Nx par couche et les placeholders qu'il accepte. Utilisé par le registre `verbRegistry` ci-dessous — pas par les fichiers *.pattern.json eux-mêmes, qui ne font que RÉFÉRENCER un verbName dans leur `composition`.",
+      "required": ["description", "placeholders", "file_templates"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Rôle métier stable du verbe, indépendant de tout pattern ou module concret."
+        },
+        "placeholders": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/placeholder" },
+          "description": "Placeholders génériques que ce verbe accepte dans ses file_templates — ex. [\"{entity}\", \"{MODULE}\", \"{module}\"] pour entity ; [\"{MODULE}\", \"{module}\", \"{VOLET}\", \"{volet}\"] pour collection. Volontairement pas un jeu unique imposé à tous les verbes."
+        },
+        "file_templates": { "$ref": "#/$defs/layerFileTemplates" },
+        "variants": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Variantes légitimes et récurrentes de ce verbe, reconnues au niveau du noyau — ex. [\"select\"] pour collection (liste minimale pour dropdown, cf. crud-entity {entity}-select*). Une variante n'est PAS une échappatoire vers custom : c'est une forme allégée du même verbe, déclarée ici pour éviter que chaque pattern la réinvente sous un nom différent."
+        },
+        "justification_required": {
+          "type": "boolean",
+          "description": "true uniquement pour le verbe custom — impose qu'une instance de composition référençant ce verbe porte un champ justification non vide (façon AIP-136, cf. ADR-0027)."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "verbRegistry": {
+      "type": "object",
+      "description": "Le noyau complet : les 5 verbes structurels et rien d'autre. required=all 5 — un fichier qui prétendrait définir ce registre doit les déclarer tous. Les fichiers *.pattern.json ne portent PAS ce registre : ils vivent dans `CORE_VERBS` (constante de ce schéma, voir plus bas) et référencent seulement des verbName dans leur `composition`.",
+      "required": [
+        "collection",
+        "entity",
+        "transition",
+        "compositeRead",
+        "custom"
+      ],
+      "properties": {
+        "collection": { "$ref": "#/$defs/verbDefinition" },
+        "entity": { "$ref": "#/$defs/verbDefinition" },
+        "transition": { "$ref": "#/$defs/verbDefinition" },
+        "compositeRead": { "$ref": "#/$defs/verbDefinition" },
+        "custom": { "$ref": "#/$defs/verbDefinition" }
+      },
+      "additionalProperties": false
+    },
+
+    "executionTopology": {
+      "type": "string",
+      "description": "Métadonnée SÉPARÉE du noyau de verbes (ADR-0027, complément post-recherche CQS/van der Aalst) — décrit COMMENT une instance de composition s'exécute, orthogonalement à QUI agit sur quoi (le verbe). Champ ouvert délibérément non fermé à une liste fixe (voir `pattern` pour la même logique catalogue-ouvert) : les valeurs ci-dessous sont les topologies observées à ce jour dans ce dépôt, pas une énumération exhaustive prétendue. Ajouter une nouvelle topologie n'implique pas de modifier le noyau de verbes — exactement le même principe que `custom` pour l'axe verbe, appliqué à l'axe exécution.",
+      "examples": ["atomic", "sequential", "async_callback", "streaming"]
+    },
+
+    "compositionInstance": {
+      "type": "object",
+      "description": "Une instance de verbe au sein du champ `composition` d'un pattern. Plusieurs instances du même verbe peuvent apparaître (ex. workflow-action = Collection×N, une par volet).",
+      "required": ["verb"],
+      "properties": {
+        "verb": { "$ref": "#/$defs/verbName" },
+        "variant": {
+          "type": "string",
+          "description": "Variante optionnelle du verbe (doit correspondre à une entrée de CORE_VERBS.<verb>.variants quand elle est renseignée) — ex. { \"verb\": \"collection\", \"variant\": \"select\" }."
+        },
+        "label": {
+          "type": "string",
+          "description": "Étiquette lisible de cette instance dans la composition — ex. \"queues\"/\"tasks\"/\"all\" pour les 3 instances Collection de workflow-action, ou \"select\" pour la variante allégée de crud-entity."
+        },
+        "execution_topology": {
+          "$ref": "#/$defs/executionTopology",
+          "description": "Comment cette instance s'exécute (atomic/sequential/async_callback/streaming/…) — voir $defs.executionTopology. Optionnel : l'absence de ce champ signifie \"atomic\" par défaut implicite (cas le plus fréquent, ex. Get/Create/Update/Delete simples), pas une lacune de modélisation."
+        },
+        "justification": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Justification écrite obligatoire quand verb=\"custom\" (façon AIP-136 — jamais un défaut silencieux, cf. ADR-0027). Optionnelle pour les 4 autres verbes."
+        },
+        "files_field": {
+          "type": "string",
+          "description": "Nom du champ du fichier *.pattern.json qui porte la liste de fichiers Nx associée à cette instance de composition (ex. \"core_files_nx\", \"list_volet_core_files_nx\", \"grafana_multi_section_core_files_nx\", \"grafana_single_view_core_files_nx\"). Pont explicite entre la lecture uniforme `composition` et la forme hétérogène historique des champs de fichiers — voir tools/check-pattern-nx.mjs."
+        }
+      },
+      "if": { "properties": { "verb": { "const": "custom" } } },
+      "then": { "required": ["verb", "justification"] },
+      "additionalProperties": false
+    }
+  },
+
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Référence vers ce fichier de schéma (chemin relatif depuis le fichier *.pattern.json, ex. \"./pattern-core.schema.json\")."
+    },
+    "pattern": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Nom du pattern (composition nommée) — ex. crud-entity, workflow-action, read-only-view, action-request. Catalogue ouvert : ajouter un nouveau nom n'implique jamais de modifier ce schéma."
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Version du fichier pattern lui-même (pas du noyau de verbes)."
+    },
+    "lineage": {
+      "type": "string",
+      "description": "Filiation architecturale/technique du pattern (style, familles legacy couvertes, etc.)."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description libre du pattern — rôle métier, pipeline, différenciation vs les autres patterns du catalogue."
+    },
+    "validated_on": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Liste des modules réels (libs/<module>) sur lesquels ce pattern a été validé empiriquement."
+    },
+    "composition": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/compositionInstance" },
+      "description": "Lecture uniforme du pattern comme assemblage du noyau de 5 verbes structurels (ADR-0027) — PAR-DESSUS la forme hétérogène historique des champs de fichiers (core_files_nx / list_volet_core_files_nx / grafana_*_core_files_nx / futurs champs), qu'elle ne remplace pas. Ex. crud-entity = [{verb:entity}, {verb:collection}, {verb:collection, variant:select}] ; workflow-action = [{verb:collection, label:queues}, {verb:collection, label:tasks}, {verb:collection, label:all}, {verb:transition}] ; read-only-view = [{verb:compositeRead}] ; action-request = [{verb:custom, justification:\"...\"}]."
+    }
+  },
+
+  "additionalProperties": true,
+  "$comment": "additionalProperties=true au niveau racine (volontairement, contrairement à pair.schema.json) : les 3 fichiers migrés portent une quantité substantielle de champs hétérogènes déjà en place (core_files_nx, list_volet_core_files_nx, grafana_*_core_files_nx, reference_implementation, second_validation, …, nx_mapping, constraints, subgraphs, chains, differences_vs_*, design_decisions_v0, core_files_count_estimate) que ce schéma ne doit ni fermer ni contraindre — ADR-0027 acte que la forme hétérogène des noms de champs de fichiers reste, `composition` sert de lecture uniforme PAR-DESSUS, pas de remplacement strict. Ces champs libres ('reference_implementation', 'second_validation', 'third_validation', etc.) sont des preuves empiriques en prose, pas des données structurées strictes — délibérément non modélisés ici.",
+
+  "CORE_VERBS": {
+    "$comment": "Instance concrète du noyau (conforme à $defs.verbRegistry) — SOURCE DE VÉRITÉ des 5 verbes, lue par tools/... /validate-pattern-core.mjs pour vérifier qu'une composition ne référence que des verbes existants et que leurs variantes sont reconnues. Ce champ n'apparaît QUE dans ce fichier-schéma, jamais dans un fichier *.pattern.json individuel (ceux-ci référencent seulement `verb`/`variant` par nom).",
+    "collection": {
+      "description": "Lecture paginée/filtrée d'un ensemble d'éléments (List → PageResult, filtres, tri). Couvre les listes crud-entity et les volets workflow-action.",
+      "placeholders": [
+        "{entity}",
+        "{MODULE}",
+        "{module}",
+        "{VOLET}",
+        "{volet}"
+      ],
+      "file_templates": {
+        "domain": [
+          "libs/{MODULE}/domain/src/lib/entities/{entity}-filter.entity.ts",
+          "libs/{MODULE}/domain/src/lib/contracts/{entity}-filter.contract.ts",
+          "libs/{MODULE}/domain/src/lib/value-objects/{entity}-filter.vo.ts",
+          "libs/{MODULE}/domain/src/lib/validators/{entity}-filter.validator.ts",
+          "libs/{MODULE}/domain/src/lib/repositories/{entity}.repository.ts"
+        ],
+        "data": [
+          "libs/{MODULE}/data/src/lib/dtos/{entity}-filter-api.dto.ts",
+          "libs/{MODULE}/data/src/lib/dtos/{entity}-response-api.dto.ts",
+          "libs/{MODULE}/data/src/lib/mappers/{entity}-filter.mapper.ts",
+          "libs/{MODULE}/data/src/lib/mappers/{entity}.mapper.ts",
+          "libs/{MODULE}/data/src/lib/repositories/{entity}.repository.impl.ts",
+          "libs/{MODULE}/data/src/lib/sources/{entity}.api.ts"
+        ],
+        "application": [
+          "libs/{MODULE}/application/src/lib/use-cases/{entity}.use-case.ts",
+          "libs/{MODULE}/application/src/lib/facades/{entity}.facade.ts"
+        ],
+        "ui": [
+          "libs/{MODULE}/ui/src/lib/features/{entity}-list.component.ts",
+          "libs/{MODULE}/ui/src/lib/constants/{entity}-table.constant.ts",
+          "libs/{MODULE}/ui/src/lib/constants/{entity}-filter-keys.constant.ts",
+          "libs/{MODULE}/ui/src/lib/stores/{entity}-filter.store.ts"
+        ]
+      },
+      "variants": ["select"],
+      "justification_required": false
+    },
+    "entity": {
+      "description": "Cycle de vie complet d'un objet identifiable (Get/Create/Update/Delete d'une ressource unique) — AIP-131/132/133/134.",
+      "placeholders": ["{entity}", "{MODULE}", "{module}"],
+      "file_templates": {
+        "domain": [
+          "libs/{MODULE}/domain/src/lib/props/{entity}.props.ts",
+          "libs/{MODULE}/domain/src/lib/props/{entity}-find-one.props.ts",
+          "libs/{MODULE}/domain/src/lib/entities/{entity}.entity.ts",
+          "libs/{MODULE}/domain/src/lib/entities/{entity}-find-one.entity.ts",
+          "libs/{MODULE}/domain/src/lib/contracts/{entity}-create.contract.ts",
+          "libs/{MODULE}/domain/src/lib/contracts/{entity}-update.contract.ts",
+          "libs/{MODULE}/domain/src/lib/contracts/{entity}-delete.contract.ts",
+          "libs/{MODULE}/domain/src/lib/validators/{entity}-create.validator.ts",
+          "libs/{MODULE}/domain/src/lib/validators/{entity}-update.validator.ts",
+          "libs/{MODULE}/domain/src/lib/validators/{entity}-delete.validator.ts",
+          "libs/{MODULE}/domain/src/lib/value-objects/{entity}-create.vo.ts",
+          "libs/{MODULE}/domain/src/lib/value-objects/{entity}-update.vo.ts",
+          "libs/{MODULE}/domain/src/lib/value-objects/{entity}-delete.vo.ts",
+          "libs/{MODULE}/domain/src/lib/repositories/{entity}-find-one.repository.ts"
+        ],
+        "data": [
+          "libs/{MODULE}/data/src/lib/dtos/{entity}-create-api.dto.ts",
+          "libs/{MODULE}/data/src/lib/dtos/{entity}-update-api.dto.ts",
+          "libs/{MODULE}/data/src/lib/dtos/{entity}-delete-api.dto.ts",
+          "libs/{MODULE}/data/src/lib/dtos/{entity}-find-one-response-api.dto.ts",
+          "libs/{MODULE}/data/src/lib/mappers/{entity}-create.mapper.ts",
+          "libs/{MODULE}/data/src/lib/mappers/{entity}-update.mapper.ts",
+          "libs/{MODULE}/data/src/lib/mappers/{entity}-delete.mapper.ts",
+          "libs/{MODULE}/data/src/lib/mappers/{entity}-find-one.mapper.ts",
+          "libs/{MODULE}/data/src/lib/repositories/{entity}-find-one.repository.impl.ts",
+          "libs/{MODULE}/data/src/lib/sources/{entity}-find-one.api.ts"
+        ],
+        "application": [
+          "libs/{MODULE}/application/src/lib/use-cases/{entity}-find-one.use-case.ts",
+          "libs/{MODULE}/application/src/lib/facades/{entity}-find-one.facade.ts"
+        ],
+        "ui": [
+          "libs/{MODULE}/ui/src/lib/features/{entity}-form.component.ts",
+          "libs/{MODULE}/ui/src/lib/stores/{entity}-form.store.ts",
+          "libs/{MODULE}/ui/src/lib/adapters/{entity}-vm-props.interface.ts",
+          "libs/{MODULE}/ui/src/lib/adapters/{entity}-vm.presenter.ts"
+        ]
+      },
+      "variants": [],
+      "justification_required": false
+    },
+    "transition": {
+      "description": "Action qui fait passer un état d'une valeur à une autre, avec pré/post-conditions (take/treat/approve/reject/qualify — workflow-action, checkout multi-étapes).",
+      "placeholders": ["{MODULE}", "{module}", "{entity}"],
+      "file_templates": {
+        "domain": [
+          "libs/{MODULE}/domain/src/lib/entities/details.entity.ts",
+          "libs/{MODULE}/domain/src/lib/contracts/take.contract.ts",
+          "libs/{MODULE}/domain/src/lib/contracts/treat.contract.ts",
+          "libs/{MODULE}/domain/src/lib/repositories/details.repository.ts"
+        ],
+        "data": [
+          "libs/{MODULE}/data/src/lib/dtos/details-response-api.dto.ts",
+          "libs/{MODULE}/data/src/lib/mappers/details.mapper.ts",
+          "libs/{MODULE}/data/src/lib/repositories/details.repository.impl.ts",
+          "libs/{MODULE}/data/src/lib/sources/details.api.ts"
+        ],
+        "application": [
+          "libs/{MODULE}/application/src/lib/use-cases/details.use-case.ts",
+          "libs/{MODULE}/application/src/lib/facades/details.facade.ts"
+        ],
+        "ui": ["libs/{MODULE}/ui/src/lib/features/details.component.ts"]
+      },
+      "variants": ["permissions_gate", "qualification", "sub_action"],
+      "justification_required": false
+    },
+    "compositeRead": {
+      "description": "Assemblage en lecture de plusieurs sources sans mutation (read-only-view/Grafana, dashboards, vues agrégées).",
+      "placeholders": ["{MODULE}", "{module}", "{SECTION}", "{section}"],
+      "file_templates": {
+        "domain": [
+          "libs/{MODULE}/domain/src/lib/entities/grafana-dashboard.entity.ts",
+          "libs/{MODULE}/domain/src/lib/repositories/{module}.repository.ts"
+        ],
+        "data": [
+          "libs/{MODULE}/data/src/lib/dtos/{module}-variables-response.dto.ts",
+          "libs/{MODULE}/data/src/lib/mappers/grafana-dashboard.mapper.ts",
+          "libs/{MODULE}/data/src/lib/sources/{module}.api.ts",
+          "libs/{MODULE}/data/src/lib/repositories/{module}.repository.impl.ts"
+        ],
+        "application": [
+          "libs/{MODULE}/application/src/lib/use-cases/{module}.use-case.ts",
+          "libs/{MODULE}/application/src/lib/facades/{section-kebab}.facade.ts"
+        ],
+        "ui": [
+          "libs/{MODULE}/ui/src/lib/features/{section-kebab}-page.component.ts"
+        ]
+      },
+      "variants": ["single_view"],
+      "justification_required": false
+    },
+    "custom": {
+      "description": "Échappatoire documentée (façon AIP-136) pour toute fonctionnalité qui ne se modélise pas proprement avec les 4 verbes ci-dessus — ex. action-request (forgot-password/login/reset-password : ni liste, ni cycle de vie d'entité, ni transition d'état d'un objet métier, ni lecture composite).",
+      "placeholders": ["{MODULE}", "{module}", "{OPERATION}", "{operation}"],
+      "file_templates": {
+        "domain": [
+          "libs/{MODULE}/domain/src/lib/props/{operation}.props.ts",
+          "libs/{MODULE}/domain/src/lib/contracts/{operation}-request.contract.ts",
+          "libs/{MODULE}/domain/src/lib/validators/{operation}-request.validator.ts",
+          "libs/{MODULE}/domain/src/lib/value-objects/{operation}-request.vo.ts",
+          "libs/{MODULE}/domain/src/lib/entities/{operation}-response.entity.ts",
+          "libs/{MODULE}/domain/src/lib/repositories/{operation}.repository.ts"
+        ],
+        "data": [
+          "libs/{MODULE}/data/src/lib/dtos/{operation}-request-api.dto.ts",
+          "libs/{MODULE}/data/src/lib/dtos/{operation}-response-api.dto.ts",
+          "libs/{MODULE}/data/src/lib/mappers/{operation}-request.mapper.ts",
+          "libs/{MODULE}/data/src/lib/mappers/{operation}-response.mapper.ts",
+          "libs/{MODULE}/data/src/lib/repositories/{operation}.repository.impl.ts",
+          "libs/{MODULE}/data/src/lib/sources/{operation}.api.ts"
+        ],
+        "application": [
+          "libs/{MODULE}/application/src/lib/use-cases/{operation}.use-case.ts",
+          "libs/{MODULE}/application/src/lib/facades/{operation}.facade.ts"
+        ],
+        "ui": [
+          "libs/{MODULE}/ui/src/lib/features/{operation}.component.ts",
+          "libs/{MODULE}/ui/src/lib/stores/{operation}-form.store.ts"
+        ]
+      },
+      "variants": [],
+      "justification_required": true
+    }
+  }
+}

@@ -1,6 +1,11 @@
 {
+  "$schema": "./pattern-core.schema.json",
   "pattern": "read-only-view",
   "version": 0,
+  "composition": [
+    { "verb": "compositeRead", "label": "grafana_multi_section", "files_field": "grafana_multi_section_core_files_nx" },
+    { "verb": "compositeRead", "variant": "single_view", "label": "grafana_single_view", "files_field": "grafana_single_view_core_files_nx" }
+  ],
   "lineage": "Enterprise OOP (Angular + DDD) — famille lecture seule : vues analytiques query-only, embeds Grafana, cartes SIG (optionnel)",
   "description": "Module ou page en lecture seule sans mutation métier. Pipeline minimal : entité lien (Grafana ou carte) + section paramétrée + use-case defer + ResourceFacade par page + composant page mince. Ni crud-entity (pas de liste paginée CRUD) ni workflow-action (pas de take/treat). Consolidation domaine/data : N pages legacy identiques → 1 entité, 1 DTO variables, 1 repository paramétré par section, 1 mapper pluck ; application/UI restent N façades + N pages.",
   "validated_on": ["monitoring", "reporting", "dashboard", "interactive-map"],

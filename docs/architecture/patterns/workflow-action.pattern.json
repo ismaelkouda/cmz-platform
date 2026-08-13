@@ -1,7 +1,61 @@
 {
-  "$schema": "./workflow-action.pattern.schema.json",
+  "$schema": "./pattern-core.schema.json",
   "pattern": "workflow-action",
   "version": 0,
+  "composition": [
+    {
+      "verb": "collection",
+      "label": "queues",
+      "execution_topology": "atomic",
+      "files_field": "list_volet_core_files_nx"
+    },
+    {
+      "verb": "collection",
+      "label": "tasks",
+      "execution_topology": "atomic",
+      "files_field": "list_volet_core_files_nx"
+    },
+    {
+      "verb": "collection",
+      "label": "all",
+      "execution_topology": "atomic",
+      "files_field": "list_volet_core_files_nx"
+    },
+    {
+      "verb": "collection",
+      "variant": "select",
+      "label": "export (requests_only — subgraph list_export)",
+      "execution_topology": "async_callback",
+      "files_field": "list_volet_core_files_nx"
+    },
+    {
+      "verb": "transition",
+      "label": "details — take/treat (subgraph details)",
+      "execution_topology": "sequential",
+      "files_field": "list_volet_core_files_nx"
+    },
+    {
+      "verb": "transition",
+      "variant": "permissions_gate",
+      "label": "details_permissions — RBAC + edge cases take/qualify/reject/export (requests_only)",
+      "execution_topology": "sequential",
+      "files_field": "list_volet_core_files_nx"
+    },
+    {
+      "verb": "transition",
+      "variant": "qualification",
+      "label": "details_qualification — approve/reject, approvalType edit|callback (requests_only)",
+      "execution_topology": "sequential",
+      "files_field": "list_volet_core_files_nx"
+    },
+    {
+      "verb": "transition",
+      "variant": "sub_action",
+      "label": "tasks_actions — CRUD actions de traitement, sous-route tasks/actions (alias actions-treatment)",
+      "execution_topology": "atomic",
+      "files_field": "list_volet_core_files_nx"
+    }
+  ],
   "lineage": "Enterprise OOP (Angular + DDD/CQRS) — famille workflow : files d'attente, tâches agent, vue consolidée, détail signalement, mutations take/treat, actions CRUD",
   "description": "Module opérationnel de traitement de signalements. Chaque VOLET (queues, tasks, all) possède une chaîne liste complète (entity, filter, repository, use-case, presenter, filter-store). Sous-graphes transverses : DETAILS (take/treat) et TASKS-ACTIONS (CRUD actions sur une tâche). Ni crud-entity pur (pas de create/update/delete sur l'entité liste) ni action-request pur (lectures paginées + filtres + workflow multi-étapes).",
   "validated_on": ["processing", "requests"],
