@@ -38,6 +38,14 @@ export class StorePathsService {
             this._paths.set(
                 await this.storage.getObfuscated<string[]>(this.STORAGE_KEY)
             );
+        } catch (error) {
+            // T3-7 (2026-08-13) — même défaut et même choix que
+            // `SessionService.loadToken()` (voir sa docstring pour le
+            // raisonnement complet) : absorbe l'exception pour éviter un
+            // unhandled promise rejection, `console.error` en filet minimal
+            // sans introduire de nouveau token `LoggerPort` dans
+            // `type:application`.
+            console.error('StorePathsService: paths illisibles au démarrage', error);
         } finally {
             this._ready.set(true);
             this.resolveReady();

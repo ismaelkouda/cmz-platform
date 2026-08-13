@@ -99,12 +99,15 @@ describe('StorePathsService', () => {
         ]);
     });
 
-    it('ready() reste true et paths() reste null si l’hydratation initiale échoue (finally garanti, même défaut que SessionService)', async () => {
-        // Même défaut réel que `session.service.spec.ts` (T12-3, 2026-08-13),
-        // non corrigé ici : `load()` n'a qu'un `try`/`finally`, pas de
-        // `catch` — l'exception continue de se propager après le `finally`,
-        // et `void this.load()` dans le constructeur ne l'intercepte pas →
-        // unhandled promise rejection à chaque `paths_data` illisible.
+    it('ready() reste true et paths() reste null si l’hydratation initiale échoue (catch + finally garantis, T3-7)', async () => {
+        // Régression T3-7 (corrigée 2026-08-13) — même défaut et même
+        // correctif que `session.service.spec.ts` (voir sa docstring pour le
+        // raisonnement complet) : `load()` avait un `try`/`finally` sans
+        // `catch`, provoquant un unhandled promise rejection à chaque
+        // `paths_data` illisible. Corrigé par un `catch` qui absorbe
+        // l'erreur et la journalise via `console.error` (pas `LoggerPort`,
+        // hors de portée de `type:application`). Ce test verrouille le
+        // nouveau comportement.
         const storage = makeFakeStorage();
         storage.getObfuscated = vi.fn(async () => {
             throw new Error('corrupted payload');
@@ -115,6 +118,9 @@ describe('StorePathsService', () => {
             capturedRejection = reason;
         };
         process.on('unhandledRejection', onUnhandledRejection);
+        const errorSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => undefined);
 
         try {
             const injector = createEnvironmentInjector(
@@ -131,11 +137,15 @@ describe('StorePathsService', () => {
             expect(service.paths()).toBeNull();
 
             await new Promise((r) => setTimeout(r, 0));
-            expect((capturedRejection as Error)?.message).toBe(
-                'corrupted payload'
+            expect(capturedRejection).toBeUndefined();
+
+            expect(errorSpy).toHaveBeenCalledWith(
+                'StorePathsService: paths illisibles au démarrage',
+                expect.objectContaining({ message: 'corrupted payload' })
             );
         } finally {
             process.off('unhandledRejection', onUnhandledRejection);
+            errorSpy.mockRestore();
         }
     });
 });

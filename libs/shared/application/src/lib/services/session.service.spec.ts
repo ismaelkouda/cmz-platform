@@ -177,23 +177,25 @@ describe('SessionService', () => {
         expect(session.token()).toEqual(existingToken);
     });
 
-    it('ready() reste true et token() reste null si le déchiffrement initial échoue (finally garanti)', async () => {
-        // Défaut réel constaté en écrivant ce test (T12-3, 2026-08-13), pas
-        // corrigé ici (hors périmètre — écrire les tests, pas patcher du
-        // code métier sans validation) : `loadToken()` n'a qu'un
-        // `try`/`finally`, aucun `catch`. Le `finally` garantit bien que
-        // `ready`/`resolveReady()` s'exécutent (`whenReady()` se débloque
-        // quand même — pas de guard bloqué indéfiniment), MAIS l'exception
-        // continue ensuite de se propager hors de `loadToken()`. Le
-        // constructeur l'appelle en `void this.loadToken()` sans `.catch()`
-        // → **unhandled promise rejection** au niveau de l'application à
-        // chaque session illisible (quota dépassé, payload corrompu, mauvais
-        // tag AES-GCM). Ce test capture ce rejet explicitement (sinon il
-        // fuit dans Vitest en tant que "Unhandled Rejection" au niveau de la
-        // suite) et documente le symptôme sans le masquer. Même pattern
-        // exact et même trou dans `StorePathsService.load()` (constructeur
-        // co-injecté ici) — géré séparément dans
-        // `store-paths.service.spec.ts`.
+    it('ready() reste true et token() reste null si le déchiffrement initial échoue (catch + finally garantis, T3-7)', async () => {
+        // Régression T3-7 (corrigée 2026-08-13, découverte en écrivant ce
+        // test lors de T12-3) : avant correctif, `loadToken()` n'avait qu'un
+        // `try`/`finally`, aucun `catch` — le `finally` garantissait déjà
+        // `ready`/`resolveReady()` (`whenReady()` se débloque, `token()`
+        // fail-closed à `null`), mais l'exception continuait ensuite de se
+        // propager hors de `loadToken()`, et `void this.loadToken()` dans le
+        // constructeur ne l'interceptait pas → unhandled promise rejection
+        // au niveau de l'application à chaque session illisible (quota
+        // dépassé, payload corrompu, mauvais tag AES-GCM). Corrigé par un
+        // `catch` qui absorbe l'erreur et la journalise via `console.error`
+        // (pas `LoggerPort` : ce port vit dans `@cmz/core`, hors de portée
+        // de `type:application` — introduire un second token colocalisé
+        // pour ce seul garde-fou est un choix d'architecture à trancher
+        // séparément, pas à improviser ici). Ce test verrouille le nouveau
+        // comportement : plus de rejet non géré, mais l'échec reste visible
+        // via `console.error`. Même pattern exact et même correctif dans
+        // `StorePathsService.load()` (constructeur co-injecté ici) — testé
+        // séparément dans `store-paths.service.spec.ts`.
         const storage = makeFakeStorage();
         const originalGetObfuscated = storage.getObfuscated.bind(storage);
         storage.getObfuscated = vi.fn(async (key: string, ...rest) => {
@@ -209,6 +211,9 @@ describe('SessionService', () => {
             capturedRejection = reason;
         };
         process.on('unhandledRejection', onUnhandledRejection);
+        const errorSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => undefined);
 
         try {
             const injector = createEnvironmentInjector(
@@ -225,20 +230,22 @@ describe('SessionService', () => {
             );
             const session = injector.get(SessionService);
 
-            // `whenReady()` doit se résoudre même si `loadToken()` a levé —
-            // c'est le seul contrat que `finally` tient réellement.
             await expect(session.whenReady()).resolves.toBeUndefined();
             expect(session.ready()).toBe(true);
             expect(session.token()).toBeNull();
 
-            // Laisse le microtask du rejet non intercepté atteindre le
-            // handler process avant d'affirmer sa présence.
+            // Laisse le temps à un éventuel rejet non intercepté d'atteindre
+            // le handler process — il ne doit plus jamais s'y présenter.
             await new Promise((r) => setTimeout(r, 0));
-            expect((capturedRejection as Error)?.message).toBe(
-                'corrupted payload'
+            expect(capturedRejection).toBeUndefined();
+
+            expect(errorSpy).toHaveBeenCalledWith(
+                'SessionService: session illisible au démarrage',
+                expect.objectContaining({ message: 'corrupted payload' })
             );
         } finally {
             process.off('unhandledRejection', onUnhandledRejection);
+            errorSpy.mockRestore();
         }
     });
 

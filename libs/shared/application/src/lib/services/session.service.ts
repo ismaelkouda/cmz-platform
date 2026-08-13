@@ -66,6 +66,24 @@ export class SessionService {
             this._token.set(
                 await this.storage.getObfuscated<AuthToken>(TOKEN_STORAGE_KEY)
             );
+        } catch (error) {
+            // T3-7 (2026-08-13) : avant ce `catch`, une session illisible
+            // (quota `localStorage` dépassé, tag AES-GCM invalide après
+            // rotation de clé) faisait fuiter cette exception hors de
+            // `void this.loadToken()` (constructeur) — unhandled promise
+            // rejection au niveau de l'application. Le `finally` ci-dessous
+            // garantissait déjà `whenReady()`/`ready()` (fail-closed :
+            // `token()` reste `null`), mais pas l'absorption de l'erreur
+            // elle-même. Pas de `LOGGER_PORT` ici par choix : ce port vit
+            // dans `@cmz/core`, hors de portée de `type:application`
+            // (`eslint.config.mjs`) ; introduire un second token colocalisé
+            // uniquement pour ce garde-fou (même pattern que
+            // `NOTIFICATION_PORT`/`TRANSLATION_PORT`, ADR-0024) est un choix
+            // d'architecture à trancher séparément, pas à improviser pour un
+            // correctif ponctuel. `console.error` reste un filet minimal —
+            // ne remplace pas `LoggerPort`/`GlobalErrorHandler` comme voie
+            // principale d'observabilité (P-1).
+            console.error('SessionService: session illisible au démarrage', error);
         } finally {
             this._ready.set(true);
             this.resolveReady();
