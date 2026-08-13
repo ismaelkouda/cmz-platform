@@ -153,6 +153,95 @@ describe('SessionService', () => {
         expect(session.ready()).toBe(true);
     });
 
+    it('hydrate token() depuis le stockage au démarrage si un jeton y est déjà présent', async () => {
+        const storage = makeFakeStorage();
+        const existingToken: AuthToken = {
+            value: 'existing.token',
+            expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+        };
+        await storage.saveObfuscated('token_data', existingToken);
+
+        const injector = createEnvironmentInjector(
+            [
+                { provide: STORAGE_PORT, useValue: storage },
+                { provide: NAVIGATION_PORT, useValue: { reload: vi.fn() } },
+                StorePathsService,
+                SessionService,
+            ],
+            null as never
+        );
+        const session = injector.get(SessionService);
+
+        await session.whenReady();
+
+        expect(session.token()).toEqual(existingToken);
+    });
+
+    it('ready() reste true et token() reste null si le déchiffrement initial échoue (finally garanti)', async () => {
+        // Défaut réel constaté en écrivant ce test (T12-3, 2026-08-13), pas
+        // corrigé ici (hors périmètre — écrire les tests, pas patcher du
+        // code métier sans validation) : `loadToken()` n'a qu'un
+        // `try`/`finally`, aucun `catch`. Le `finally` garantit bien que
+        // `ready`/`resolveReady()` s'exécutent (`whenReady()` se débloque
+        // quand même — pas de guard bloqué indéfiniment), MAIS l'exception
+        // continue ensuite de se propager hors de `loadToken()`. Le
+        // constructeur l'appelle en `void this.loadToken()` sans `.catch()`
+        // → **unhandled promise rejection** au niveau de l'application à
+        // chaque session illisible (quota dépassé, payload corrompu, mauvais
+        // tag AES-GCM). Ce test capture ce rejet explicitement (sinon il
+        // fuit dans Vitest en tant que "Unhandled Rejection" au niveau de la
+        // suite) et documente le symptôme sans le masquer. Même pattern
+        // exact et même trou dans `StorePathsService.load()` (constructeur
+        // co-injecté ici) — géré séparément dans
+        // `store-paths.service.spec.ts`.
+        const storage = makeFakeStorage();
+        const originalGetObfuscated = storage.getObfuscated.bind(storage);
+        storage.getObfuscated = vi.fn(async (key: string, ...rest) => {
+            if (key === 'token_data') {
+                throw new Error('corrupted payload');
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return (originalGetObfuscated as any)(key, ...rest);
+        });
+
+        let capturedRejection: unknown;
+        const onUnhandledRejection = (reason: unknown) => {
+            capturedRejection = reason;
+        };
+        process.on('unhandledRejection', onUnhandledRejection);
+
+        try {
+            const injector = createEnvironmentInjector(
+                [
+                    { provide: STORAGE_PORT, useValue: storage },
+                    {
+                        provide: NAVIGATION_PORT,
+                        useValue: { reload: vi.fn() },
+                    },
+                    StorePathsService,
+                    SessionService,
+                ],
+                null as never
+            );
+            const session = injector.get(SessionService);
+
+            // `whenReady()` doit se résoudre même si `loadToken()` a levé —
+            // c'est le seul contrat que `finally` tient réellement.
+            await expect(session.whenReady()).resolves.toBeUndefined();
+            expect(session.ready()).toBe(true);
+            expect(session.token()).toBeNull();
+
+            // Laisse le microtask du rejet non intercepté atteindre le
+            // handler process avant d'affirmer sa présence.
+            await new Promise((r) => setTimeout(r, 0));
+            expect((capturedRejection as Error)?.message).toBe(
+                'corrupted payload'
+            );
+        } finally {
+            process.off('unhandledRejection', onUnhandledRejection);
+        }
+    });
+
     it('clear() efface le stockage et déclenche un rechargement de navigation', async () => {
         const storage = makeFakeStorage();
         const navigation: NavigationPort = { reload: vi.fn() };
