@@ -45,7 +45,10 @@ export class StorePathsService {
             // unhandled promise rejection, `console.error` en filet minimal
             // sans introduire de nouveau token `LoggerPort` dans
             // `type:application`.
-            console.error('StorePathsService: paths illisibles au démarrage', error);
+            console.error(
+                'StorePathsService: paths illisibles au démarrage',
+                error
+            );
         } finally {
             this._ready.set(true);
             this.resolveReady();

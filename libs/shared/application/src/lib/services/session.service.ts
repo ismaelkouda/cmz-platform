@@ -83,7 +83,10 @@ export class SessionService {
             // correctif ponctuel. `console.error` reste un filet minimal —
             // ne remplace pas `LoggerPort`/`GlobalErrorHandler` comme voie
             // principale d'observabilité (P-1).
-            console.error('SessionService: session illisible au démarrage', error);
+            console.error(
+                'SessionService: session illisible au démarrage',
+                error
+            );
         } finally {
             this._ready.set(true);
             this.resolveReady();
