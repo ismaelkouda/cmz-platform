@@ -7,22 +7,34 @@
 
 ## Rôle
 
+> ⚠️ **Modèle révisé le 2026-08-13** — voir
+> [ADR-0027](../adr/0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md)/[ADR-0028](../adr/0028-execution-topology-compositions-memorisees.md) :
+> les 4 schémas ci-dessous ne sont plus des primitives fermées mais des
+> **compositions mémorisées** d'un noyau ouvert de 5 verbes structurels
+> (`Collection`/`Entity`/`Transition`/`Composite Read`/`Custom`), décrit par
+> [`pattern-core.schema.json`](./pattern-core.schema.json) et vérifié par
+> [`validate-pattern-core.mjs`](./validate-pattern-core.mjs). Chaque fichier
+> `*.pattern.json` porte désormais un champ `composition` qui l'exprime comme
+> assemblage de ces verbes (`$schema: "./pattern-core.schema.json"`).
+
 Les schémas JSON de ce dossier décrivent la **structure canonique** d'une
 famille d'entités. Ils servent à :
 
 1. **Générer** (LLM ou générateur) sous contrat d'archétype — pas d'invention.
-2. **Vérifier** la conformité structurelle (`check-pattern.js` côté legacy, ou
-   outils monorepo).
+2. **Vérifier** la conformité structurelle (`tools/check-pattern-nx.mjs`,
+   généralisé pour consommer n'importe quel pattern du catalogue —
+   `--files-field`/`--set` ; `check-pattern.js` côté legacy reste la
+   référence historique pour le dépôt d'origine).
 3. **Annoter le corpus** d'apprentissage (paires legacy → Nx) pour la Méthode 2.
 
 ## Schémas disponibles
 
-| Pattern               | Fichier                                                          | Module de référence                                                       | Statut                              |
-| --------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------- |
-| `crud-entity`         | legacy `seos/patterns/crud-entity.pattern.json`                  | `administrative-infrastructure`                                           | ✅ v23 — référence historique       |
-| `action-request`      | legacy `seos/patterns/action-request.pattern.json`               | `authentication`                                                          | ✅ v6                               |
-| `read-only-view`      | [`read-only-view.pattern.json`](./read-only-view.pattern.json)   | **`monitoring`**, **`reporting`**, **`dashboard`**, **`interactive-map`** | ✅ **v0 — 4/4 modules IR clôturés** |
-| **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`**, **`requests`**, **`finalization`**, **`report-states`** | ✅ **v0 — 4/4 modules IR clôturés** |
+| Pattern               | Fichier                                                           | Module de référence                                                       | Statut                                                                              |
+| ---------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `crud-entity`          | [`crud-entity.pattern.json`](./crud-entity.pattern.json)           | `administrative-infrastructure`                                           | ✅ v0 — migré, `composition` = Entity + Collection + Collection/select               |
+| `action-request`       | [`action-request.pattern.json`](./action-request.pattern.json)     | `authentication`                                                          | ✅ v0 — premier fichier natif du noyau (T2-8, jamais eu de contrepartie Nx-shaped avant) |
+| `read-only-view`       | [`read-only-view.pattern.json`](./read-only-view.pattern.json)     | **`monitoring`**, **`reporting`**, **`dashboard`**, **`interactive-map`** | ✅ v0 — migré, `composition` = Composite Read                                        |
+| **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`**, **`requests`**, **`finalization`**, **`report-states`** | ✅ v0 — migré, `composition` = Collection×4 + Transition×4 (6 sous-graphes réels)     |
 
 ## Différence legacy vs monorepo
 
@@ -67,5 +79,4 @@ Legacy source (vérité métier)
 - [Module processing (référence workflow)](../module-processing.md)
 - [Module monitoring (référence read-only-view)](../module-monitoring.md)
 - [ADR-0010 — Flux IA](../adr/0010-flux-de-generation-assistee-par-ia.md)
-- [Génération depuis patterns (Phase 08)](../generation-from-patterns.md)
 - [Génération depuis patterns (Phase 08)](../generation-from-patterns.md)

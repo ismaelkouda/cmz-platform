@@ -133,8 +133,22 @@ explicitement via `providers:` sur ce composant.
 
 ## 3. Catalogue des Archétypes (IR SEOS)
 
-L'ensemble des 53 entités du projet legacy (18 domaines) se répartit en 4
-grandes familles d'archétypes :
+> ⚠️ **Modèle révisé le 2026-08-13** : voir
+> [ADR-0027](./docs/adr/0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md)/[ADR-0028](./docs/adr/0028-execution-topology-compositions-memorisees.md)
+> avant de traiter les 4 lignes ci-dessous comme une liste fermée. Ce ne sont
+> plus des primitives mais des **compositions mémorisées** d'un noyau stable
+> de **5 verbes structurels** (`Collection`, `Entity`, `Transition`,
+> `Composite Read`, `Custom`) — voir
+> [`docs/architecture/patterns/pattern-core.schema.json`](./docs/architecture/patterns/pattern-core.schema.json).
+> Un nouveau besoin qui ne rentre dans aucune des 4 lignes n'impose plus de
+> créer un 5ᵉ archétype nommé : composer directement les verbes du noyau est
+> tout aussi légitime (catalogue ouvert). Le tableau reste correct comme
+> **catalogue des compositions déjà rencontrées et vérifiées sur du code
+> réel**, pas comme l'univers complet des formes possibles.
+
+L'ensemble des 52 entités métier du projet legacy (hors fixture SEOS) se
+répartit aujourd'hui en 4 compositions mémorisées (voir avertissement
+ci-dessus pour leur statut réel) :
 
 | Archétype  
 | Périmètre / Famille  
