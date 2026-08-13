@@ -68,6 +68,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0025](./adr/0025-perimetre-purete-framework-domaine.md)    | Périmètre de « pureté framework » pour `type:domain`/`type:constants` (RxJS autorisé, `@angular/*` interdit) |
 | [0026](./adr/0026-reorientation-objectif-generation-generique.md) | Réorientation de l'objectif : système de génération générique multi-source/multi-stack |
 | [0027](./adr/0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md) | Noyau de verbes structurels + catalogue ouvert de patterns (remplace la liste fermée d'archétypes) |
+| [0028](./adr/0028-execution-topology-compositions-memorisees.md) | `execution_topology` comme axe ouvert + compositions mémorisées plutôt que primitives |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
