@@ -58,7 +58,7 @@
   ],
   "lineage": "Enterprise OOP (Angular + DDD/CQRS) — famille workflow : files d'attente, tâches agent, vue consolidée, détail signalement, mutations take/treat, actions CRUD",
   "description": "Module opérationnel de traitement de signalements. Chaque VOLET (queues, tasks, all) possède une chaîne liste complète (entity, filter, repository, use-case, presenter, filter-store). Sous-graphes transverses : DETAILS (take/treat) et TASKS-ACTIONS (CRUD actions sur une tâche). Ni crud-entity pur (pas de create/update/delete sur l'entité liste) ni action-request pur (lectures paginées + filtres + workflow multi-étapes).",
-  "validated_on": ["processing", "requests"],
+  "validated_on": ["processing", "requests", "finalization", "report-states"],
   "reference_module": "processing",
   "reference_implementation": {
     "legacy_path": "src/presentation/pages/processing",

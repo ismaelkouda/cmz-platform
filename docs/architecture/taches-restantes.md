@@ -183,12 +183,56 @@ précis) est classé SEOS en §3.
   (fin maintenance manuelle multi-domaines).
 - **T2-5** — **fait**, M, P2, alias `H-4-UI`. `contracts/component.contract.md`
     - `route.contract.md` (couche UI).
-- **T2-6** — ouvert, L, P2, alias `GVR-3`. Contrats archétype machine-readable
-  (JSON schema) consommés par l'oracle G-V-R.
+- **T2-6** — **fait** (2026-08-13), L, P2, alias `GVR-3`. Contrat
+  machine-readable unifié pour les patterns d'archétype — voir
+  [ADR-0027](../adr/0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md)/[ADR-0028](../adr/0028-execution-topology-compositions-memorisees.md).
+  `docs/architecture/patterns/pattern-core.schema.json` (JSON Schema draft
+  2020-12) : noyau de 5 verbes structurels (Collection, Entity, Transition,
+  Composite Read, Custom) + `execution_topology` (axe orthogonal ouvert). Les 3
+  patterns existants migrés de façon additive (`composition` + `$schema`
+  corrigé, aucune donnée historique perdue) ;
+  `docs/architecture/patterns/action-request.pattern.json` créé de zéro (jamais
+  eu de fichier Nx-shaped propre, `core_files_nx` dérivé de l'inspection réelle
+  de `libs/authentication`, 17 fichiers/opération). Validateur
+  `docs/architecture/patterns/validate-pattern-core.mjs` (sans Ajv, même
+  doctrine que `validate-pair-schema.mjs`). `tools/check-pattern-nx.mjs`
+  généralisé (`--files-field`, `--set`) — vérifie désormais n'importe quel
+  pattern du catalogue, plus seulement `crud-entity`. **Gap connu, non traité
+  ici** : `workflow-action.composition` a révélé 6 sous-graphes réels
+  (`list_volet`, `list_export`, `details`, `details_permissions`,
+  `details_qualification`, `tasks_actions`) contre 1 seule instance `transition`
+  fourre-tout avant correction — corrigé dans ce lot. `read-only-view` révèle un
+  vrai gap préexistant (`grafana-dashboard.entity.ts`/`map.entity.ts` consolidés
+  en `GrafanaLinkEntity` par T1-6, templates non mis à jour) — signalé, pas
+  corrigé (hors périmètre de cette migration additive).
 - **T2-7** — **fait**, M, P1, alias `H-5`. `pair.schema.json` étendu : oracle
   structuré horodaté `{build,lint,test,…}`.
-- **T2-8** — ouvert, L, P1, alias `J-9a · GVR-6`. Pattern Nx `action-request`
-    - job pattern-nx (crud déjà CI).
+- **T2-8** — **fait** (2026-08-13), L, P1, alias `J-9a · GVR-6`. Pattern Nx
+  `action-request` formalisé (voir T2-6) + jobs CI
+  `check:pattern-nx:workflow-action`/`check:pattern-nx:action-request` ajoutés à
+  `package.json`, branchés dans `check:all`. Couverture réelle découverte en
+  vérifiant chaque module contre `scope.json` (5 modules
+  `class: "workflow-action"`, pas les 2 que `validated_on` du pattern
+  documentait avant ce lot) : `processing`/`requests` (déjà connus) +
+  **`finalization`/`report-states` nouvellement vérifiés, 11 volets à 100 %**
+  (`finalization` queues/tasks/all ; `report-states`
+  approve/close/download/evaluate/reject — noms de volets métier plutôt que
+  génériques, mais même structure `list_volet_core_files_nx`). **Découverte à
+  trancher par un humain, non corrigée ici** :
+  `team-organization/agents-performances` et `daily-goal`
+  (`docs/architecture/scope.json`) sont classées `workflow-action` mais leur
+  code réel (`daily-goal.use-case.ts`, `approve-report-states.use-case.ts` pour
+  comparaison) ne contient **aucune mutation** (`take`/`treat`/pas de
+  sous-graphe `details`) — juste `Observable<PageResult<...>>`, la forme d'un
+  `Collection` pur. Classification `scope.json` probablement erronée pour ces 2
+  entités — à corriger après confirmation humaine (pas trancé unilatéralement
+  ici, `scope.json` fait autorité tant qu'il n'est pas amendé).
+  `check:pattern-nx-coverage.mjs` (T11-7) ne croise que `crud-entity` avec
+  `scope.json` — ne détecte pas ce genre de mésclassement ni les gaps de
+  couverture pour `workflow-action`/`action-request`/ `read-only-view`.
+  Généraliser ce script serait la suite logique, non entreprise dans ce lot
+  (périmètre T2-8 = couvrir les modules réels trouvés, pas généraliser l'outil
+  de couverture lui-même).
 
 ### 1.3 Modèle de données & gestion d'état — patterns génériques (ex-T3, sous-ensemble)
 
