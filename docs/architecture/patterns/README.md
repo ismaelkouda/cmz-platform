@@ -33,7 +33,7 @@ famille d'entités. Ils servent à :
 | ---------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | `crud-entity`          | [`crud-entity.pattern.json`](./crud-entity.pattern.json)           | `administrative-infrastructure`                                           | ✅ v0 — migré, `composition` = Entity + Collection + Collection/select               |
 | `action-request`       | [`action-request.pattern.json`](./action-request.pattern.json)     | `authentication`                                                          | ✅ v0 — premier fichier natif du noyau (T2-8, jamais eu de contrepartie Nx-shaped avant) |
-| `read-only-view`       | [`read-only-view.pattern.json`](./read-only-view.pattern.json)     | **`monitoring`**, **`reporting`**, **`dashboard`**, **`interactive-map`** | ✅ v0 — migré, `composition` = Composite Read                                        |
+| `read-only-view`       | [`read-only-view.pattern.json`](./read-only-view.pattern.json)     | **`monitoring`**, **`reporting`**, **`dashboard`**, **`interactive-map`** | ✅ v0 — migré, `composition` = Composite Read ; templates corrigés 2026-08-14 (T1-6 consolidation `GrafanaLinkEntity`) ; `check:pattern-nx:read-only-view` 9/9 entités 100 % |
 | **`workflow-action`** | [`workflow-action.pattern.json`](./workflow-action.pattern.json) | **`processing`**, **`requests`**, **`finalization`**, **`report-states`** | ✅ v0 — migré, `composition` = Collection×4 + Transition×4 (6 sous-graphes réels)     |
 
 ## Différence legacy vs monorepo

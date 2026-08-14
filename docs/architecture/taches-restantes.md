@@ -229,11 +229,23 @@ précis) est classé SEOS en §3.
   correctement classée « Divers » dans l'annexe source
   (`analyse-du-projet-source.md`), donc l'erreur avait été introduite dans
   `scope.json` lui-même, pas héritée de l'annexe. Voir notes horodatées dans
-  `scope.json`. **Reste ouvert** : `check:pattern-nx-coverage.mjs` (T11-7) ne
-  croise toujours que `crud-entity` avec `scope.json` — ne détecte pas ce genre
-  de mésclassement ni les gaps de couverture pour
-  `workflow-action`/`action-request`/`read-only-view`. Généraliser ce script
-  reste la suite logique, non entreprise dans ce lot.
+  `scope.json`. **Généralisation livrée le 2026-08-14** :
+  `check:pattern-nx-coverage.mjs` croise désormais les **4 classes**
+  (`crud-entity`/`workflow-action`/`action-request`/`read-only-view`) via une
+  Map `CLASS_TO_SCRIPT` à un seul point d'édition. Deux catégories d'écart
+  traitées distinctement : `KNOWN_GAPS` (manques temporaires, vide
+  actuellement) et `STRUCTURAL_EXCEPTIONS` (les 4 entrées `*/details` de
+  `workflow-action` — couvertes par les variantes `transition`, jamais par un
+  volet direct, donc pas un gap mais une limite structurelle documentée de la
+  correspondance 1:1). Préalable réglé au passage : `read-only-view.pattern
+  .json` référençait encore `grafana-dashboard.entity.ts`/`map.entity.ts`
+  comme fichiers par module — périmé depuis la consolidation T1-6
+  (`GrafanaLinkEntity` unique dans `@cmz/shared-domain`), jamais répercuté
+  dans le pattern ; corrigé par inspection directe de
+  `monitoring`/`reporting`/`interactive-map`. Nouveau script
+  `check:pattern-nx:read-only-view` (9 entités, 100 % testé), branché dans
+  `check:all`. Résultat final : 50 entités auditées, 46 couvertes directement
+  + 4 exceptions structurelles documentées, 0 gap réel restant.
 
 ### 1.3 Modèle de données & gestion d'état — patterns génériques (ex-T3, sous-ensemble)
 

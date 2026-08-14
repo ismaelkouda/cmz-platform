@@ -7,6 +7,7 @@
     { "verb": "compositeRead", "variant": "single_view", "label": "grafana_single_view", "files_field": "grafana_single_view_core_files_nx" }
   ],
   "lineage": "Enterprise OOP (Angular + DDD) — famille lecture seule : vues analytiques query-only, embeds Grafana, cartes SIG (optionnel)",
+  "correction_2026_08_14": "grafana_multi_section_core_files_nx/grafana_single_view_core_files_nx référençaient encore grafana-dashboard.entity.ts et map.entity.ts comme fichiers par module — obsolète depuis T1-6 (2026-08-10), qui a consolidé les 2 classes dupliquées en une seule GrafanaLinkEntity dans libs/shared/domain (24 fichiers repointés à l'époque, jamais répercuté dans ce pattern). Templates corrigés par inspection directe des 3 modules validés (monitoring/reporting/interactive-map) : entité retirée des templates par-module, GrafanaLinkEntity ajoutée à shared_kernel. Exception nominative découverte au passage : le mapper monitoring garde son nom hérité grafana-dashboard.mapper.ts au lieu de monitoring-dashboard.mapper.ts (jamais renommé lors de T1-6) — documentée dans nx_mapping.naming.mapper_class, pas corrigée dans le code (renommage hors périmètre de cette correction de pattern).",
   "description": "Module ou page en lecture seule sans mutation métier. Pipeline minimal : entité lien (Grafana ou carte) + section paramétrée + use-case defer + ResourceFacade par page + composant page mince. Ni crud-entity (pas de liste paginée CRUD) ni workflow-action (pas de take/treat). Consolidation domaine/data : N pages legacy identiques → 1 entité, 1 DTO variables, 1 repository paramétré par section, 1 mapper pluck ; application/UI restent N façades + N pages.",
   "validated_on": ["monitoring", "reporting", "dashboard", "interactive-map"],
   "reference_module": "monitoring",
@@ -167,12 +168,11 @@
   ],
   "grafana_multi_section_core_files_nx": {
     "consolidated_domain_data": [
-      "libs/{MODULE}/domain/src/lib/entities/grafana-dashboard.entity.ts",
       "libs/{MODULE}/domain/src/lib/enums/{module}-section.enum.ts",
       "libs/{MODULE}/domain/src/lib/repositories/{module}.repository.ts",
       "libs/{MODULE}/data/src/lib/dtos/{module}-variables-response.dto.ts",
       "libs/{MODULE}/data/src/lib/endpoints/{module}.endpoints.ts",
-      "libs/{MODULE}/data/src/lib/mappers/grafana-dashboard.mapper.ts",
+      "libs/{MODULE}/data/src/lib/mappers/{module-mapper}-dashboard.mapper.ts",
       "libs/{MODULE}/data/src/lib/sources/{module}.api.ts",
       "libs/{MODULE}/data/src/lib/repositories/{module}.repository.impl.ts"
     ],
@@ -188,12 +188,12 @@
       "apps/backoffice-angular/src/app/providers/{module}.providers.ts"
     ],
     "shared_kernel": [
+      "libs/shared/domain/src/lib/entities/grafana-link.entity.ts",
       "libs/shared/application/src/lib/facades/resource.facade.ts",
       "libs/shared/ui/src/lib/components/grafana-embed/grafana-embed.component.ts"
     ]
   },
   "grafana_single_view_core_files_nx": [
-    "libs/{MODULE}/domain/src/lib/entities/map.entity.ts",
     "libs/{MODULE}/domain/src/lib/repositories/{module}.repository.ts",
     "libs/{MODULE}/data/src/lib/dtos/map-response.dto.ts",
     "libs/{MODULE}/data/src/lib/mappers/map.mapper.ts",
@@ -201,19 +201,20 @@
     "libs/{MODULE}/data/src/lib/repositories/{module}.repository.impl.ts",
     "libs/{MODULE}/application/src/lib/use-cases/map.use-case.ts",
     "libs/{MODULE}/application/src/lib/facades/map.facade.ts",
-    "libs/{MODULE}/ui/src/lib/features/map-page.component.ts"
+    "libs/{MODULE}/ui/src/lib/features/map-page.component.ts",
+    "libs/shared/domain/src/lib/entities/grafana-link.entity.ts"
   ],
   "nx_mapping": {
     "module_placeholder": "{MODULE}",
     "section_placeholder": "{SECTION}",
     "section_kebab": "{section-kebab}",
     "naming": {
-      "entity_class_multi": "GrafanaDashboardEntity",
-      "entity_class_single": "MapEntity",
+      "entity_class_shared": "GrafanaLinkEntity (libs/shared/domain — T1-6, 2026-08-10, remplace les 2 classes GrafanaDashboardEntity/MapEntity dupliquées par module)",
       "section_enum": "{ModulePascal}Section",
       "repository_port": "{ModulePascal}Repository",
       "repository_impl": "{ModulePascal}RepositoryImpl",
       "use_case_class": "{ModulePascal}UseCase",
+      "mapper_class": "{ModulePascal}DashboardMapper — EXCEPTION nominative : monitoring garde le nom hérité GrafanaDashboardMapper/grafana-dashboard.mapper.ts (jamais renommé lors de T1-6), reporting suit la convention ReportingDashboardMapper/reporting-dashboard.mapper.ts. check:pattern-nx:read-only-view vérifie donc monitoring avec --set module-mapper=grafana, les autres avec --set module-mapper={module}",
       "facade_class": "{SectionPascal}Facade",
       "page_component": "{SectionPascal}PageComponent",
       "section_field_map": "{MODULE}_SECTION_FIELD"
