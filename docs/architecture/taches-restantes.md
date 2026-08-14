@@ -217,22 +217,23 @@ précis) est classé SEOS en §3.
   **`finalization`/`report-states` nouvellement vérifiés, 11 volets à 100 %**
   (`finalization` queues/tasks/all ; `report-states`
   approve/close/download/evaluate/reject — noms de volets métier plutôt que
-  génériques, mais même structure `list_volet_core_files_nx`). **Découverte à
-  trancher par un humain, non corrigée ici** :
-  `team-organization/agents-performances` et `daily-goal`
-  (`docs/architecture/scope.json`) sont classées `workflow-action` mais leur
-  code réel (`daily-goal.use-case.ts`, `approve-report-states.use-case.ts` pour
-  comparaison) ne contient **aucune mutation** (`take`/`treat`/pas de
-  sous-graphe `details`) — juste `Observable<PageResult<...>>`, la forme d'un
-  `Collection` pur. Classification `scope.json` probablement erronée pour ces 2
-  entités — à corriger après confirmation humaine (pas trancé unilatéralement
-  ici, `scope.json` fait autorité tant qu'il n'est pas amendé).
-  `check:pattern-nx-coverage.mjs` (T11-7) ne croise que `crud-entity` avec
-  `scope.json` — ne détecte pas ce genre de mésclassement ni les gaps de
-  couverture pour `workflow-action`/`action-request`/ `read-only-view`.
-  Généraliser ce script serait la suite logique, non entreprise dans ce lot
-  (périmètre T2-8 = couvrir les modules réels trouvés, pas généraliser l'outil
-  de couverture lui-même).
+  génériques, mais même structure `list_volet_core_files_nx`).
+  **Découverte tranchée le 2026-08-14** :
+  `team-organization/agents-performances` et `daily-goal` étaient classées
+  `workflow-action` dans `docs/architecture/scope.json` par erreur — reclassées
+  `collection`, preuve croisée sur 3 sources indépendantes (legacy CQRS =
+  aucun dossier `commands*/` pour ces 2 entités contre présence confirmée sur
+  `report-states`/`processing` ; code Nx actuel = aucune mutation, uniquement
+  `http.get` et `Observable<PageResult<...>>` ; ADR-0027/0028 = forme d'un
+  `Collection` pur, jamais d'un `Transition`). `daily-goal` était déjà
+  correctement classée « Divers » dans l'annexe source
+  (`analyse-du-projet-source.md`), donc l'erreur avait été introduite dans
+  `scope.json` lui-même, pas héritée de l'annexe. Voir notes horodatées dans
+  `scope.json`. **Reste ouvert** : `check:pattern-nx-coverage.mjs` (T11-7) ne
+  croise toujours que `crud-entity` avec `scope.json` — ne détecte pas ce genre
+  de mésclassement ni les gaps de couverture pour
+  `workflow-action`/`action-request`/`read-only-view`. Généraliser ce script
+  reste la suite logique, non entreprise dans ce lot.
 
 ### 1.3 Modèle de données & gestion d'état — patterns génériques (ex-T3, sous-ensemble)
 
