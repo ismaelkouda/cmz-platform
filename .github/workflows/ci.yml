@@ -111,6 +111,17 @@ jobs:
       - name: check:dev-permissions-prod
         run: bun run check:dev-permissions-prod
 
+      # Audit Big Tech 2026-08-14 — root cause du bug "script dans check:all
+      # jamais réellement câblé en CI" (rencontré 3 fois : check:pair-schema/
+      # check:corpus-tools en 2026-08-11, check:dto-schema/check:pattern-nx:
+      # workflow-action/action-request/read-only-view en 2026-08-14).
+      # Dernière step du job guardrails à dessein : elle vérifie que TOUS
+      # les scripts check:all (y compris ceux ajoutés ci-dessus) ont une
+      # step CI ou un hook husky dédié — se garde donc elle-même de devenir,
+      # un jour, le prochain script orphelin non détecté.
+      - name: check:ci-wiring (angle mort — gate déclaré vs gate exécuté)
+        run: node tools/check-ci-wiring.mjs
+
       - name: Format check (Prettier)
         run: bun run format:check
 
@@ -195,6 +206,20 @@ jobs:
 
       - name: check:docs-freshness (generate:status + git diff)
         run: node tools/check-docs-freshness.mjs
+
+      # T2-2 — gate de fraîcheur schéma↔DTO (docs/architecture/schema/
+      # dto.schema.json régénéré en mémoire depuis les 303 DTOs TS et
+      # comparé à la version committée, même mécanisme que
+      # check:docs-freshness ci-dessus). Trouvé lors de l'audit Big Tech du
+      # 2026-08-14 : ce script existait dans check:all depuis T2-2
+      # (2026-08-13) mais n'avait jamais reçu de step CI dédiée — jamais
+      # exécuté automatiquement malgré taches-restantes.md affirmant
+      # "branché dans check:all" (vrai littéralement, mais check:all
+      # lui-même n'est jamais invoqué en CI/husky, cf. commentaire
+      # check:pair-schema/check:corpus-tools ci-dessus dans le job
+      # guardrails, même classe de bug).
+      - name: check:dto-schema (T2-2, fraîcheur schéma↔DTO)
+        run: node tools/check-dto-schema.mjs
 
   # ─── Job 2 : Oracle de vérification (nx affected) ────────────────────────
   oracle:
@@ -470,12 +495,34 @@ jobs:
       - name: check:pattern-nx (J-9, crud-entity Nx-shaped)
         run: bun run check:pattern-nx:crud-entity
 
-      # T11-7 — toute entité crud-entity du périmètre (scope.json) doit être
-      # couverte par check:pattern-nx:crud-entity ci-dessus, sinon elle peut
-      # dériver en silence (constat réel : optical-fiber-network/
-      # radio-relay-links construites à 89.4 % sans jamais être vérifiées,
-      # cf. docstring de tools/check-pattern-nx-coverage.mjs). Exceptions
-      # nominatives documentées dans le script (KNOWN_GAPS) ; toute AUTRE
-      # entité manquante fait échouer ce job.
+      # T2-8 (ADR-0027/0028) — même vérification structurelle que
+      # crud-entity ci-dessus, pour les 3 autres classes du catalogue de
+      # patterns. Trouvé lors de l'audit Big Tech du 2026-08-14 : ces 3
+      # scripts existaient dans check:all depuis T2-6/T2-8/T2-8-suite
+      # (2026-08-13/14) mais n'avaient jamais reçu de step CI dédiée —
+      # jamais exécutés automatiquement, même bug que check:dto-schema
+      # (job docs-freshness) et check:pair-schema/check:corpus-tools
+      # (job guardrails) : une commande "branchée dans check:all" n'est
+      # bloquante que si check:all lui-même est invoqué en CI, ce qui
+      # n'est jamais le cas (check:all est un raccourci local uniquement).
+      - name: check:pattern-nx (T2-8, workflow-action Nx-shaped)
+        run: bun run check:pattern-nx:workflow-action
+
+      - name: check:pattern-nx (T2-8, action-request Nx-shaped)
+        run: bun run check:pattern-nx:action-request
+
+      - name: check:pattern-nx (T2-8 suite, read-only-view Nx-shaped)
+        run: bun run check:pattern-nx:read-only-view
+
+      # T11-7, généralisé 2026-08-14 (T2-8 suite) — toute entité des 4
+      # classes du périmètre (scope.json) doit être couverte par l'un des
+      # check:pattern-nx:* ci-dessus, sinon elle peut dériver en silence
+      # (constat réel : optical-fiber-network/radio-relay-links construites
+      # à 89.4 % sans jamais être vérifiées, cf. docstring de
+      # tools/check-pattern-nx-coverage.mjs). Exceptions nominatives
+      # documentées dans le script (KNOWN_GAPS/STRUCTURAL_EXCEPTIONS) ;
+      # toute AUTRE entité manquante fait échouer ce job. Doit rester la
+      # DERNIÈRE step check:pattern-nx du job — elle valide la cohérence
+      # des 4 scripts précédents.
       - name: check:pattern-nx-coverage (T11-7, angle mort périmètre)
         run: bun run check:pattern-nx-coverage

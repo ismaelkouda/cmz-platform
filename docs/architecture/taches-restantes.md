@@ -366,6 +366,27 @@ couverture non-régression ; gate emission.
   self-review précédent, gap de process). Corrigé : `package.json` créé, 2
   arêtes ajoutées, `vitest` fantôme retiré. Vérifié : `check:declared-deps` → «
   scan 72 libs », 0 arête manquante/fantôme.
+- **T13-17** — **fait** (2026-08-14), M, **P0**, alias
+  `NOUVEAU 2026-08-14, audit Big Tech Meta/Google`. 3e récurrence de la même
+  classe de bug que T13-14/T13-16 (« un script `check:*` ajouté à `check:all`
+  n'est bloquant que s'il a AUSSI une step CI ou un hook husky dédié —
+  `check:all` lui-même n'est jamais invoqué automatiquement ») : audit
+  factuel (agent dédié, mesures reproductibles, pas d'opinion) a trouvé 4
+  scripts `check:dto-schema`/`check:pattern-nx:workflow-action`/
+  `check:pattern-nx:action-request`/`check:pattern-nx:read-only-view`
+  documentés « branchés dans check:all » (T2-2, T2-8, T2-8 suite) mais jamais
+  invoqués individuellement en CI — donc réellement non bloquants malgré la
+  documentation. `check:pattern-nx-coverage` (T11-7) manquait même de
+  `check:all`. Corrigé : 5 steps CI ajoutées (`docs-freshness` pour
+  dto-schema, `duplicates` pour les 4 pattern-nx). **Root cause traitée, pas
+  seulement le symptôme** : nouveau script `tools/check-ci-wiring.mjs`
+  (`check:ci-wiring`, dernière step du job `guardrails`) croise
+  mécaniquement chaque `bun run check:x` de `check:all` avec le contenu réel
+  de `.github/workflows/*.yml` et `.husky/*` — toute future addition à
+  `check:all` sans step CI/husky dédiée fait désormais échouer la CI
+  elle-même, plutôt que d'attendre le prochain audit manuel pour être
+  découverte. Testé positif (script orphelin simulé → détecté, exit 1) et
+  négatif (état réel du dépôt → 23/23 scripts câblés, exit 0).
 
 ### 1.7 Documentation & fraîcheur ADR — mécanisme générique (ex-T13, sous-ensemble)
 
