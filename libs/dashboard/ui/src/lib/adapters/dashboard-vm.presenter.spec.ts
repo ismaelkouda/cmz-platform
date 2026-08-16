@@ -74,14 +74,15 @@ describe('DashboardPresenter', () => {
 
     it('formate les perf en unités métier (%)/j/h', () => {
         const vm = presenter.map(makeEntity());
-        expect(vm.performanceCards.find((c) => c.key === 'treatmentRate')?.value).toBe(
-            '80%'
-        );
         expect(
-            vm.performanceCards.find((c) => c.key === 'averageTreatmentTime')?.value
+            vm.performanceCards.find((c) => c.key === 'treatmentRate')?.value
+        ).toBe('80%');
+        expect(
+            vm.performanceCards.find((c) => c.key === 'averageTreatmentTime')
+                ?.value
         ).toBe('2j');
-        expect(vm.performanceCards.find((c) => c.key === 'responseTime')?.value).toBe(
-            '4h'
-        );
+        expect(
+            vm.performanceCards.find((c) => c.key === 'responseTime')?.value
+        ).toBe('4h');
     });
 });

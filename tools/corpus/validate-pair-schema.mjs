@@ -16,13 +16,13 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildOracleReport, assertOracleReportShape } from './oracle-report.mjs';
+import {
+    buildOracleReport,
+    assertOracleReportShape,
+} from './oracle-report.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const SCHEMA_PATH = join(
-    ROOT,
-    'docs/architecture/corpus/pair.schema.json'
-);
+const SCHEMA_PATH = join(ROOT, 'docs/architecture/corpus/pair.schema.json');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const DATE_TIME_RE =
@@ -55,7 +55,11 @@ function validate(schema, data, path, rootSchema) {
             if (t === 'null') return data === null;
             if (t === 'array') return Array.isArray(data);
             if (t === 'object')
-                return data !== null && typeof data === 'object' && !Array.isArray(data);
+                return (
+                    data !== null &&
+                    typeof data === 'object' &&
+                    !Array.isArray(data)
+                );
             if (t === 'integer')
                 return typeof data === 'number' && Number.isInteger(data);
             return typeof data === t;

@@ -3,10 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/monitoring/data/src",
   "projectType": "library",
-  "tags": [
-    "scope:monitoring",
-    "type:data"
-  ],
+  "tags": ["scope:monitoring", "type:data"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",

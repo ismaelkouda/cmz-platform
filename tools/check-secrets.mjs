@@ -192,14 +192,7 @@ async function main() {
         }
         run(
             bin,
-            [
-                'detect',
-                '--source',
-                ROOT,
-                '--log-opts',
-                logOpts,
-                ...common,
-            ],
+            ['detect', '--source', ROOT, '--log-opts', logOpts, ...common],
             opts.verbose
         );
         return;

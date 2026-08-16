@@ -83,12 +83,8 @@ describe('oracle-report (H-5 / T2-7)', () => {
         assert.equal(report.mode, 'structural-only');
         assert.equal(report.strict_templates.status, 'not_run');
         assert.equal(report.build.status, 'pass');
-        assert.deepEqual(report.build.targets, [
-            '@cmz/dashboard-domain:build',
-        ]);
-        assert.deepEqual(report.test.targets, [
-            '@cmz/dashboard-domain:test',
-        ]);
+        assert.deepEqual(report.build.targets, ['@cmz/dashboard-domain:build']);
+        assert.deepEqual(report.test.targets, ['@cmz/dashboard-domain:test']);
         assert.equal(assertOracleReportShape(report).length, 0);
     });
 

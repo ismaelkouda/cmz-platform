@@ -3,10 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/interactive-map/data/src",
   "projectType": "library",
-  "tags": [
-    "scope:interactive-map",
-    "type:data"
-  ],
+  "tags": ["scope:interactive-map", "type:data"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",

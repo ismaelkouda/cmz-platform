@@ -3,10 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/dashboard/application/src",
   "projectType": "library",
-  "tags": [
-    "scope:dashboard",
-    "type:application"
-  ],
+  "tags": ["scope:dashboard", "type:application"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",

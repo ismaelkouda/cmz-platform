@@ -24,9 +24,8 @@ describe('a11y crud-entity — InfrastructureListComponent', () => {
 
         fixture.detectChanges();
 
-        const listResponse: InfrastructureResponseApiDto = simpleOkEnvelope(
-            emptyLaravelPage()
-        );
+        const listResponse: InfrastructureResponseApiDto =
+            simpleOkEnvelope(emptyLaravelPage());
         const typeSelectResponse: InfrastructureTypeSelectResponseApiDto =
             simpleOkEnvelope([]);
 

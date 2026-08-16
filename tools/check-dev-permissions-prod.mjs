@@ -22,10 +22,7 @@ const PROVIDER = join(
     ROOT,
     'apps/backoffice-angular/src/app/dev/dev-permissions.provider.ts'
 );
-const APP_CONFIG = join(
-    ROOT,
-    'apps/backoffice-angular/src/app/app.config.ts'
-);
+const APP_CONFIG = join(ROOT, 'apps/backoffice-angular/src/app/app.config.ts');
 
 /** @type {string[]} */
 const errors = [];
@@ -72,9 +69,7 @@ if (
     );
 }
 // Signature : défaut = isDevMode Angular
-if (
-    !/isDev\s*:\s*\(\s*\)\s*=>\s*boolean\s*=\s*isDevMode/.test(providerSrc)
-) {
+if (!/isDev\s*:\s*\(\s*\)\s*=>\s*boolean\s*=\s*isDevMode/.test(providerSrc)) {
     errors.push(
         `${PROVIDER}: paramètre isDev doit default à isDevMode (signature ` +
             '`isDev: () => boolean = isDevMode`)'

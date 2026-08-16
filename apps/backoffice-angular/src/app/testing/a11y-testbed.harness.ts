@@ -64,9 +64,10 @@ export async function configureA11yTestBed(
 /**
  * Stabilise le rendu après flushes HTTP (resource / rxResource async).
  */
-export async function stabilizeFixture(
-    fixture: { detectChanges(): void; whenStable(): Promise<unknown> }
-): Promise<void> {
+export async function stabilizeFixture(fixture: {
+    detectChanges(): void;
+    whenStable(): Promise<unknown>;
+}): Promise<void> {
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();

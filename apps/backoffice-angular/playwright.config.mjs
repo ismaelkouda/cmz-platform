@@ -42,10 +42,7 @@ export default defineConfig({
     reporter: isCI
         ? [
               ['list'],
-              [
-                  'html',
-                  { open: 'never', outputFolder: 'playwright-report' },
-              ],
+              ['html', { open: 'never', outputFolder: 'playwright-report' }],
           ]
         : [['list']],
     outputDir: resolve(rootDir, 'test-results'),

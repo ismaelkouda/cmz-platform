@@ -15,11 +15,7 @@
     },
     "lint": {
       "cache": true,
-      "inputs": [
-        "default",
-        "^default",
-        "{workspaceRoot}/eslint.config.mjs"
-      ],
+      "inputs": ["default", "^default", "{workspaceRoot}/eslint.config.mjs"],
       "options": {
         "max-warnings": 0
       }

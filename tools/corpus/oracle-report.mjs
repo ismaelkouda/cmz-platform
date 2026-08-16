@@ -42,7 +42,11 @@
 export function checkFromGate(gateResults, task, at) {
     const r = gateResults?.find((x) => x.task === task);
     if (!r) {
-        return { status: 'not_run', at, detail: `gate task « ${task} » absent` };
+        return {
+            status: 'not_run',
+            at,
+            detail: `gate task « ${task} » absent`,
+        };
     }
     if (r.skipped) {
         return { status: 'skip', at, detail: r.detail };
@@ -102,8 +106,7 @@ export function buildOracleReport({
         strict_templates: {
             status: 'not_run',
             at: ranAt,
-            detail:
-                'Tier 2 only — `bun run check:tier2` / nightly-integration (H-5)',
+            detail: 'Tier 2 only — `bun run check:tier2` / nightly-integration (H-5)',
         },
     };
 

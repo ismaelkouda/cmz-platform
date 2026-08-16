@@ -8,10 +8,7 @@ import {
 } from './axe-a11y.util';
 import type { Result } from 'axe-core';
 
-function makeViolation(
-    id: string,
-    impact: Result['impact']
-): Result {
+function makeViolation(id: string, impact: Result['impact']): Result {
     return {
         id,
         impact,

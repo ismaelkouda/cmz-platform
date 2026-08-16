@@ -16,10 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DIST = resolve(
-    ROOT,
-    'dist/apps/backoffice-angular/browser'
-);
+const DIST = resolve(ROOT, 'dist/apps/backoffice-angular/browser');
 const PORT = Number(process.env.E2E_APP_PORT ?? 4200);
 const MOCK_PORT = Number(process.env.MOCK_PORT ?? 3333);
 const MOCK_HOST = process.env.MOCK_HOST ?? '127.0.0.1';

@@ -3,10 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/reporting/ui/src",
   "projectType": "library",
-  "tags": [
-    "scope:reporting",
-    "type:ui"
-  ],
+  "tags": ["scope:reporting", "type:ui"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
