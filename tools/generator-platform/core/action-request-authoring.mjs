@@ -93,6 +93,16 @@ export function validateActionRequestDefinition(definition) {
             `${operation.id}: authorized access requires permissions`
         );
         invariant(
+            operation.access.mode === 'authorized' ||
+                operation.access.permissions === undefined,
+            `${operation.id}: only authorized access may declare permissions`
+        );
+        const permissions = operation.access.permissions ?? [];
+        invariant(
+            new Set(permissions).size === permissions.length,
+            `${operation.id}: duplicate permissions are forbidden`
+        );
+        invariant(
             operation.access.mode !== 'public' ||
                 operation.http.authentication === 'none',
             `${operation.id}: public access requires authentication none`
@@ -283,7 +293,7 @@ export function compileActionRequestDefinition(
             access: {
                 mode: operation.access.mode,
                 ...(operation.access.permissions
-                    ? { permissions: operation.access.permissions }
+                    ? { permissions: [...operation.access.permissions] }
                     : {}),
                 evidence_refs: [ids.operation],
             },

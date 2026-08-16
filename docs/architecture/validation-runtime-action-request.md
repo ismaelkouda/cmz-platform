@@ -37,6 +37,11 @@ Les preuves propres aux frameworks vivent dans
 [`stack-tests/angular/action-request.spec.ts`](../../tools/generator-platform/stack-tests/angular/action-request.spec.ts)
 et
 [`stack-tests/reactjs/action-request.spec.ts`](../../tools/generator-platform/stack-tests/reactjs/action-request.spec.ts).
+Les gardes de permissions PLAT-5G sont couvertes séparément par
+[`stack-tests/angular/action-request-permissions.spec.ts`](../../tools/generator-platform/stack-tests/angular/action-request-permissions.spec.ts),
+[`stack-tests/reactjs/action-request-permissions.spec.ts`](../../tools/generator-platform/stack-tests/reactjs/action-request-permissions.spec.ts)
+et la campagne
+[`action-request-permissions-mutations.test.mjs`](../../tools/generator-platform/action-request-permissions-mutations.test.mjs).
 Le gate agrégé `bun run check:generator-platform` exécute successivement le core
 Node, Angular natif et ReactJS natif ; il est câblé dans la CI existante.
 
@@ -114,6 +119,28 @@ transport et n'émettent le contrat de session que lorsqu'un effet le requiert.
 Le validateur rejette aussi les contradictions `public` avec transport
 authentifié et `authenticated/authorized` avec transport anonyme.
 
+## Enforcement des permissions PLAT-5G
+
+La projection `support` du contrat directeur remplace l'accès par `authorized`
+avec `support.submit`. La permission n'est plus seulement présente dans l'IR :
+elle devient une garde exécutable à la frontière commandes/hooks.
+
+- Angular exige le token DI `PERMISSION_PORT`, évalue la permission lors de la
+  souscription RxJS et ne construit l'appel HTTP qu'après autorisation ;
+- ReactJS exige un `PermissionPort` dans `createActionRequestHooks`, l'évalue à
+  chaque `execute` et publie un état `error` lors du refus ;
+- les deux sorties exigent toutes les permissions déclarées et produisent
+  `PermissionDeniedError` avec `code: 'permission_denied'` et la liste exacte
+  des permissions manquantes ;
+- le chemin refusé effectue zéro appel HTTP/fetch, tandis que le chemin accordé
+  en effectue exactement un ;
+- quatre mutants neutralisant la garde ou remplaçant `support.submit` sont tués
+  sur les deux cibles.
+
+Il s'agit d'un contrôle frontend utile à l'expérience et au fail-closed local,
+pas d'une frontière de sécurité autonome. Le backend reste responsable de
+l'autorisation réelle de chaque requête.
+
 ## Seconde fonctionnalité indépendante
 
 La définition déclarative
@@ -139,6 +166,7 @@ Cette validation ne couvre pas :
 - le stockage réel de session, sa sécurité ou son cycle de vie ;
 - l'acquisition d'un credential et la construction réelle d'un en-tête Bearer ;
   le mutant d'accès prouve la transmission du mode au port hôte ;
+- l'origine réelle des permissions et leur cohérence avec l'autorité backend ;
 - les timeouts, annulations, retries, concurrence et réponses mal formées ;
 - l'accessibilité, l'interface utilisateur, la performance ou la sécurité
   applicative de bout en bout ;

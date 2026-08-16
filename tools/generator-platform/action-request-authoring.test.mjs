@@ -12,6 +12,7 @@ import { createEnvironmentInjector } from '@angular/core';
 import { firstValueFrom, of } from 'rxjs';
 
 import { compileActionRequestDefinition } from './core/action-request-authoring.mjs';
+import { assertPermissionRuntimeOracle } from './core/permission-runtime-oracle.mjs';
 import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
 import { generateActionRequest } from './generate-action-request.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
@@ -121,6 +122,34 @@ test('authoring compiler fails closed on contradictory or unsupported declaratio
     assert.throws(
         () => compile(constrainedOutput),
         /output constraints are unsupported/
+    );
+
+    const authorizedWithoutPermission = structuredClone(definition);
+    authorizedWithoutPermission.operations[0].access = {
+        mode: 'authorized',
+    };
+    assert.throws(
+        () => compile(authorizedWithoutPermission),
+        /authorized access requires permissions/
+    );
+
+    const permissionsWithoutAuthorization = structuredClone(definition);
+    permissionsWithoutAuthorization.operations[0].access.permissions = [
+        'support.submit',
+    ];
+    assert.throws(
+        () => compile(permissionsWithoutAuthorization),
+        /only authorized access may declare permissions/
+    );
+
+    const duplicatePermissions = structuredClone(definition);
+    duplicatePermissions.operations[0].access = {
+        mode: 'authorized',
+        permissions: ['support.submit', 'support.submit'],
+    };
+    assert.throws(
+        () => compile(duplicatePermissions),
+        /duplicate permissions are forbidden/
     );
 });
 
@@ -246,6 +275,34 @@ test('ReactJS executes the generated support hook with bearer metadata', async (
         transitions.map(({ status }) => status),
         ['pending', 'success']
     );
+});
+
+test('authorized support requires every canonical permission before either target calls its transport', async () => {
+    const authorizedDefinition = structuredClone(definition);
+    authorizedDefinition.operations[0].access = {
+        mode: 'authorized',
+        permissions: ['support.submit', 'support.audit'],
+    };
+    const authorized = compileActionRequestDefinition(authorizedDefinition, {
+        sourceUri: 'authorized-support.definition.json',
+        sourceSha256: '0'.repeat(64),
+    });
+    const authorizedTargets = await computeTargetsForSemantic(
+        authorized.semantic
+    );
+    const authorizedRuntime =
+        await materializeGeneratedRuntime(authorizedTargets);
+    try {
+        await assertPermissionRuntimeOracle(authorizedRuntime, {
+            permissions: ['support.submit', 'support.audit'],
+            input,
+            result,
+            angularMethod: 'contactSupport',
+            reactHook: 'useContactSupport',
+        });
+    } finally {
+        await authorizedRuntime.cleanup();
+    }
 });
 
 test('CLI pipeline writes verified Angular and ReactJS packages and refuses overwrite', async () => {

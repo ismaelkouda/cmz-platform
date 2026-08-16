@@ -9,8 +9,10 @@ import {
     expandProfileValue,
     operationTypes,
     pascalCase,
+    renderPermissionContract,
     renderModels,
     renderValidation,
+    requiredPermissions,
 } from './shared.mjs';
 import {
     renderActionAfterSuccessContract,
@@ -37,6 +39,9 @@ function renderClient(semantic) {
 
 function renderCommands(semantic) {
     const imports = [...new Set(operationTypes(semantic))];
+    const hasAuthorizedOperation = semantic.operations.some(
+        (operation) => operation.access.mode === 'authorized'
+    );
     const hasSessionEffect = semantic.operations.some((operation) =>
         operation.effects.some((effect) => effect.kind === 'establish_session')
     );
@@ -51,10 +56,23 @@ function renderCommands(semantic) {
             const establishesSession = operation.effects.some(
                 (effect) => effect.kind === 'establish_session'
             );
+            const permissions = requiredPermissions(operation);
+            const authorizationStart = permissions.length
+                ? `        return defer(() => {\n            assertRequiredPermissions(this.permissionPort, ${JSON.stringify(permissions)});\n`
+                : '';
+            const authorizationEnd = permissions.length ? '\n        });' : '';
             if (!establishesSession) {
-                return `    ${method}(input: ${input}): Observable<${output}> {\n        return this.client.${method}(input).pipe(\n            switchMap((result) =>\n                from(afterSuccess({ operationId: '${operation.id}', output: result })).pipe(\n                    map(() => result)\n                )\n            )\n        );\n    }`;
+                const body = `return this.client.${method}(input).pipe(\n                switchMap((result) =>\n                    from(afterSuccess({ operationId: '${operation.id}', output: result })).pipe(\n                        map(() => result)\n                    )\n                )\n            );`;
+                if (permissions.length) {
+                    return `    ${method}(input: ${input}): Observable<${output}> {\n${authorizationStart}            ${body}${authorizationEnd}\n    }`;
+                }
+                return `    ${method}(input: ${input}): Observable<${output}> {\n        ${body.replaceAll('\n            ', '\n        ')}\n    }`;
             }
-            return `    ${method}(input: ${input}): Observable<${output}> {\n        return this.client.${method}(input).pipe(\n            switchMap((result) =>\n                from(this.session.persist(result.user, result.token)).pipe(\n                    switchMap(() =>\n                        from(afterSuccess({ operationId: '${operation.id}', output: result }))\n                    ),\n                    map(() => result)\n                )\n            )\n        );\n    }`;
+            const body = `return this.client.${method}(input).pipe(\n                switchMap((result) =>\n                    from(this.session.persist(result.user, result.token)).pipe(\n                        switchMap(() =>\n                            from(afterSuccess({ operationId: '${operation.id}', output: result }))\n                        ),\n                        map(() => result)\n                    )\n                )\n            );`;
+            if (permissions.length) {
+                return `    ${method}(input: ${input}): Observable<${output}> {\n${authorizationStart}            ${body}${authorizationEnd}\n    }`;
+            }
+            return `    ${method}(input: ${input}): Observable<${output}> {\n        ${body.replaceAll('\n            ', '\n        ')}\n    }`;
         })
         .join('\n\n');
     const sessionContract = hasSessionEffect
@@ -63,7 +81,16 @@ function renderCommands(semantic) {
     const sessionInjection = hasSessionEffect
         ? '\n    private readonly session = inject(SESSION_PORT);'
         : '';
-    return `import { Injectable, InjectionToken, inject } from '@angular/core';\nimport { from, map, switchMap, type Observable } from 'rxjs';\nimport { ActionRequestClient } from './action-request-client';\nimport { afterSuccess } from './after-success.extension';\nimport type { ${[...new Set(imports)].join(', ')} } from './models';\n${sessionContract}\n@Injectable()\nexport class ActionRequestCommands {\n    private readonly client = inject(ActionRequestClient);${sessionInjection}\n\n${methods}\n}\n`;
+    const permissionContract = hasAuthorizedOperation
+        ? `\n${renderPermissionContract()}\n\nexport const PERMISSION_PORT = new InjectionToken<PermissionPort>('PERMISSION_PORT');\n`
+        : '';
+    const permissionInjection = hasAuthorizedOperation
+        ? '\n    private readonly permissionPort = inject(PERMISSION_PORT);'
+        : '';
+    const rxjsImports = hasAuthorizedOperation
+        ? 'defer, from, map, switchMap, type Observable'
+        : 'from, map, switchMap, type Observable';
+    return `import { Injectable, InjectionToken, inject } from '@angular/core';\nimport { ${rxjsImports} } from 'rxjs';\nimport { ActionRequestClient } from './action-request-client';\nimport { afterSuccess } from './after-success.extension';\nimport type { ${[...new Set(imports)].join(', ')} } from './models';\n${sessionContract}${permissionContract}\n@Injectable()\nexport class ActionRequestCommands {\n    private readonly client = inject(ActionRequestClient);${sessionInjection}${permissionInjection}\n\n${methods}\n}\n`;
 }
 
 export function renderAngularNx(semantic, artifactPlan, profile) {

@@ -163,6 +163,14 @@ implemented and the contract is promoted from characterization to a blocking
 acceptance gate. An intentional capability addition must update the executable
 probe and contract in the same change.
 
+`permissions.runtime-enforcement` is now in the supported set. The projected
+`authorized` operation requires a host permission port on both targets, checks
+every declared permission at execution time, and returns the stable
+`permission_denied` error before HTTP/fetch when access is denied. The proof is
+behavioral, not a source-string search: the director Oracle executes denied and
+granted paths on both generated runtimes. The three remaining gaps are
+`composition.persisted-instance`, `behavior.graph`, and `presentation.flow`.
+
 ## Author a bounded workflow-action
 
 `generate-workflow-action.mjs` accepts the currently supported workflow
@@ -302,6 +310,9 @@ The check verifies both JSON Schemas and cross-document invariants:
 - native ReactJS hook execution through React Testing Library, including
   success/error state publication, permission refusal and causal waiting of an
   asynchronous export callback;
+- native Angular and ReactJS enforcement of canonical `action-request`
+  permissions before HTTP/fetch, plus four killed bypass/wrong-permission
+  mutants;
 - exact characterization of the evolvable-composition director contract,
   including regression detection for its supported subset and drift detection
   for its declared gaps.

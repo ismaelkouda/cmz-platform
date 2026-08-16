@@ -1203,6 +1203,9 @@ La baseline du 16 août 2026 prouve actuellement :
   deux cibles ;
 - le passage simultané du contrat d'accès vers `authorized` avec une permission
   dans le modèle canonique ;
+- l'application de toutes les permissions déclarées dans les frontières
+  d'exécution Angular et ReactJS, avec un refus `permission_denied` avant tout
+  HTTP/fetch ;
 - le rendu et la compilation séparés d'Angular et ReactJS depuis le même hash
   sémantique ;
 - l'absence d'import ReactJS dans la sortie Angular et d'import Angular dans la
@@ -1227,8 +1230,6 @@ Elle expose sans ambiguïté les lacunes suivantes :
 - le graphe comportemental n'est pas accepté par le contrat auteur
   `action-request` ;
 - le Presentation Intent n'est pas accepté ;
-- la permission canonique n'est pas encore matérialisée comme garde runtime par
-  les deux renderers ;
 - aucune composition instance autonome n'est persistée avec la sortie ;
 - la publication v1 suit le contrat `offline-activation` d'ADR-0035 : aucun
   lecteur externe concurrent n'est supporté pendant la commande ; APFS/macOS et
@@ -1257,7 +1258,9 @@ avant de savoir qui peut écrire chaque fichier produirait une garantie illusoir
    anti-TOCTOU, verrou exclusif, rollback, journal synchronisé et reprise
    déterministe, y compris sous `SIGKILL` réel ; le contrat borné de lecteurs et
    de stockage est fixé par ADR-0035, et sa matrice CI est bloquante ;
-6. garde runtime de permission partagée par scénario, propre à chaque stack ;
+6. ~~garde runtime de permission partagée par scénario, propre à chaque stack~~
+   — livrée avec ports hôtes obligatoires, erreur stable, tests natifs et
+   mutants sur Angular et ReactJS ;
 7. intégration du Behavior Graph et du Presentation Intent ;
 8. promotion du contrat directeur en gate bloquant seulement quand
    `expected_gaps` devient vide.

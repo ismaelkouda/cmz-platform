@@ -73,6 +73,7 @@
     "data.canonical-model",
     "extensions.human-owned-preservation",
     "permissions.canonical-model",
+    "permissions.runtime-enforcement",
     "planning.shared-artifact-plan",
     "regeneration.dry-run-drift-detection",
     "regeneration.existing-output",
@@ -84,7 +85,6 @@
   "expected_gaps": [
     "behavior.graph",
     "composition.persisted-instance",
-    "permissions.runtime-enforcement",
     "presentation.flow"
   ],
   "promotion_rule": {

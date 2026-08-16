@@ -99,3 +99,37 @@ test('operation access and integration authentication must agree', () => {
         )
     );
 });
+
+test('operation permissions are fail-closed and belong only to authorized access', () => {
+    const authorizedWithoutPermission = clone(semantic);
+    authorizedWithoutPermission.operations[0].access.mode = 'authorized';
+    assert.ok(
+        validateSemantic(
+            authorizedWithoutPermission,
+            semanticSchema,
+            evidence
+        ).some((error) => error.includes('authorized access needs permissions'))
+    );
+
+    const publicWithPermission = clone(semantic);
+    publicWithPermission.operations[0].access.permissions = ['auth.login'];
+    assert.ok(
+        validateSemantic(publicWithPermission, semanticSchema, evidence).some(
+            (error) =>
+                error.includes('only authorized access may declare permissions')
+        )
+    );
+
+    const duplicatePermissions = clone(semantic);
+    duplicatePermissions.operations[0].access = {
+        ...duplicatePermissions.operations[0].access,
+        mode: 'authorized',
+        permissions: ['auth.login', 'auth.login'],
+    };
+    duplicatePermissions.integrations[0].authentication = 'bearer';
+    assert.ok(
+        validateSemantic(duplicatePermissions, semanticSchema, evidence).some(
+            (error) => error.includes('duplicate permissions')
+        )
+    );
+});

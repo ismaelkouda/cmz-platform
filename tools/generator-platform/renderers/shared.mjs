@@ -96,6 +96,41 @@ export function operationTypes(semantic) {
     ]);
 }
 
+export function requiredPermissions(operation) {
+    return operation.access.mode === 'authorized'
+        ? operation.access.permissions
+        : [];
+}
+
+export function renderPermissionContract() {
+    return `export interface PermissionPort {
+    has(permission: string): boolean;
+}
+
+export class PermissionDeniedError extends Error {
+    readonly code = 'permission_denied';
+    readonly missingPermissions: readonly string[];
+
+    constructor(missingPermissions: readonly string[]) {
+        super(\`Missing required permissions: \${missingPermissions.join(', ')}\`);
+        this.name = 'PermissionDeniedError';
+        this.missingPermissions = Object.freeze([...missingPermissions]);
+    }
+}
+
+function assertRequiredPermissions(
+    permissionPort: PermissionPort,
+    requiredPermissions: readonly string[]
+): void {
+    const missingPermissions = requiredPermissions.filter(
+        (permission) => !permissionPort.has(permission)
+    );
+    if (missingPermissions.length > 0) {
+        throw new PermissionDeniedError(missingPermissions);
+    }
+}`;
+}
+
 export function expandProfileValue(value, semantic, field) {
     if (typeof value !== 'string') {
         throw new Error(`renderer: profile ${field} must be a string`);
@@ -142,6 +177,25 @@ export function assertRendererInput(semantic, profile, expectedProfile) {
         if (operation.integration_ref === undefined) {
             throw new Error(
                 `renderer: integration missing for ${operation.id}`
+            );
+        }
+        const permissions = operation.access.permissions ?? [];
+        if (
+            operation.access.mode === 'authorized' &&
+            permissions.length === 0
+        ) {
+            throw new Error(
+                `renderer: authorized operation ${operation.id} requires permissions`
+            );
+        }
+        if (operation.access.mode !== 'authorized' && permissions.length > 0) {
+            throw new Error(
+                `renderer: ${operation.access.mode} operation ${operation.id} cannot declare permissions`
+            );
+        }
+        if (new Set(permissions).size !== permissions.length) {
+            throw new Error(
+                `renderer: operation ${operation.id} declares duplicate permissions`
             );
         }
     }

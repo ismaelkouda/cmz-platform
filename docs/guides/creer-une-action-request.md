@@ -49,7 +49,8 @@ Le fichier contient cinq blocs utiles :
 - `feature` : nom et objectif de la fonctionnalité ;
 - `input` : informations envoyées ;
 - `output` : informations reçues ;
-- `access` et `http` : accès public ou connecté, méthode et chemin backend ;
+- `access` et `http` : accès public, connecté ou autorisé par permissions,
+  méthode et chemin backend ;
 - `effects` : conséquence observable de l'action.
 
 Les noms `Angular` et `ReactJS` n'apparaissent pas dans ce fichier. La même
@@ -168,6 +169,22 @@ spécifique au slot n'est encore fourni.
 Ne pas déplacer ce code dans `action-request-commands.ts` ou un autre fichier
 `generator-owned` : le dry-run le considérerait comme une dérive.
 
+### Raccorder une opération autorisée
+
+Pour une opération `authorized`, `access.permissions` doit contenir une liste
+non vide et sans doublon. Toutes les permissions déclarées sont requises. Le
+package Angular expose `PERMISSION_PORT` à fournir par l'application hôte ; la
+factory ReactJS `createActionRequestHooks` exige un objet `PermissionPort`.
+L'implémentation du port doit consulter l'utilisateur courant au moment de
+l'exécution.
+
+Si une permission manque, le code généré renvoie `PermissionDeniedError` avec le
+code stable `permission_denied` avant tout appel HTTP/fetch. L'absence de
+fournisseur Angular fait échouer l'injection au lieu d'autoriser implicitement.
+Ce raccordement améliore le comportement de l'interface, mais le backend doit
+toujours refaire l'autorisation : une garde frontend peut être contournée par un
+client externe.
+
 ## 6. Ce qu'il reste à faire dans le produit
 
 La génération fournit le contrat, les modèles, les validations, le client HTTP
@@ -176,6 +193,8 @@ et la commande ou le hook. Une équipe doit encore raccorder :
 - le véritable serveur et son contrat d'erreurs ;
 - le formulaire et les messages visibles ;
 - l'adaptateur qui ajoute réellement le jeton d'authentification Bearer ;
+- la source réelle des permissions de l'utilisateur courant lorsque l'accès est
+  `authorized` ;
 - l'implémentation produit du slot après succès, par exemple la navigation ;
 - les tests dans le navigateur ;
 - la sécurité, l'accessibilité et l'observabilité.

@@ -71,6 +71,7 @@ produit jamais directement des chemins ou classes d'une cible.
 | Publication sur sortie existante      | apply lié au Change Set + verrou + rollback        |   M2   |
 | Reprise après interruption            | APFS local qualifié ; matrice APFS/ext4 câblée     |   M2   |
 | Extension humaine typée               | `after-success`, runtime + conservation par hash   |   M2   |
+| Garde runtime de permissions          | Angular + ReactJS, refus avant effet externe       |   M2   |
 | Repair sous contraintes               | méthode documentée, partiellement exercée          |   M2   |
 
 `docs/architecture/patterns/pattern-core.schema.json` est un profil structurel
@@ -105,6 +106,14 @@ la sortie est inactive pendant la génération et activée seulement après succ
 les lecteurs externes concurrents ne sont pas supportés en v1. APFS est qualifié
 localement. La capacité reste M2 jusqu'à la première matrice CI verte sur
 `macos-14`/APFS et `ubuntu-24.04`/ext4.
+
+PLAT-5G matérialise les permissions du Semantic Model dans les frontières
+d'exécution `action-request`. Angular et ReactJS exigent un port hôte, évaluent
+toutes les permissions au moment réel de l'exécution et renvoient
+`permission_denied` avant HTTP/fetch en cas de manque. Le gate directeur, les
+tests natifs propres aux deux stacks et les mutants de contournement sont verts
+localement. Cette capacité reste un contrôle applicatif : l'autorité backend
+doit appliquer les mêmes règles indépendamment.
 
 ## 5. Cibles
 

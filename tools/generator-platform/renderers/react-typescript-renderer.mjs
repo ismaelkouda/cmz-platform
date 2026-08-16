@@ -9,8 +9,10 @@ import {
     expandProfileValue,
     operationTypes,
     pascalCase,
+    renderPermissionContract,
     renderModels,
     renderValidation,
+    requiredPermissions,
 } from './shared.mjs';
 import {
     renderActionAfterSuccessContract,
@@ -37,6 +39,9 @@ function renderClient(semantic) {
 
 function renderHooks(semantic) {
     const imports = [...new Set(operationTypes(semantic))];
+    const hasAuthorizedOperation = semantic.operations.some(
+        (operation) => operation.access.mode === 'authorized'
+    );
     const hasSessionEffect = semantic.operations.some((operation) =>
         operation.effects.some((effect) => effect.kind === 'establish_session')
     );
@@ -54,8 +59,16 @@ function renderHooks(semantic) {
             )
                 ? '\n                await session.persist(result.user, result.token);'
                 : '';
-            const dependencies = persist ? '[client, session]' : '[client]';
-            return `    function ${hook}(): CommandBinding<${input}, ${output}> {\n        const [state, setState] = hooks.useState<CommandState<${output}>>({ status: 'idle' });\n        const execute = hooks.useCallback(async (input: ${input}) => {\n            setState({ status: 'pending' });\n            try {\n                const result = await client.${method}(input);${persist}\n                await afterSuccess({ operationId: '${operation.id}', output: result });\n                setState({ status: 'success', value: result });\n                return result;\n            } catch (error: unknown) {\n                setState({ status: 'error', error });\n                throw error;\n            }\n        }, ${dependencies});\n        return { state, execute };\n    }`;
+            const permissions = requiredPermissions(operation);
+            const authorization = permissions.length
+                ? `\n                assertRequiredPermissions(permissionPort, ${JSON.stringify(permissions)});`
+                : '';
+            const dependencies = [
+                'client',
+                ...(permissions.length ? ['permissionPort'] : []),
+                ...(persist ? ['session'] : []),
+            ];
+            return `    function ${hook}(): CommandBinding<${input}, ${output}> {\n        const [state, setState] = hooks.useState<CommandState<${output}>>({ status: 'idle' });\n        const execute = hooks.useCallback(async (input: ${input}) => {\n            setState({ status: 'pending' });\n            try {${authorization}\n                const result = await client.${method}(input);${persist}\n                await afterSuccess({ operationId: '${operation.id}', output: result });\n                setState({ status: 'success', value: result });\n                return result;\n            } catch (error: unknown) {\n                setState({ status: 'error', error });\n                throw error;\n            }\n        }, [${dependencies.join(', ')}]);\n        return { state, execute };\n    }`;
         })
         .join('\n\n');
     const returned = semantic.operations
@@ -69,7 +82,13 @@ function renderHooks(semantic) {
     const sessionParameter = hasSessionEffect
         ? ',\n    session: SessionPort'
         : '';
-    return `import type { ActionRequestClient } from './action-request-client';\nimport type { ${[...new Set(imports)].join(', ')} } from './models';\n\nexport type StateSetter<T> = (value: T) => void;\n\nexport interface ReactHooksPort {\n    useState<T>(initial: T): readonly [T, StateSetter<T>];\n    useCallback<TArguments extends unknown[], TResult>(\n        callback: (...arguments_: TArguments) => TResult,\n        dependencies: readonly unknown[]\n    ): (...arguments_: TArguments) => TResult;\n}\n${sessionContract}\nexport type CommandState<T> =\n    | { readonly status: 'idle' }\n    | { readonly status: 'pending' }\n    | { readonly status: 'success'; readonly value: T }\n    | { readonly status: 'error'; readonly error: unknown };\n\nexport interface CommandBinding<TInput, TOutput> {\n    readonly state: CommandState<TOutput>;\n    readonly execute: (input: TInput) => Promise<TOutput>;\n}\n\nexport function createActionRequestHooks(\n    hooks: ReactHooksPort,\n    client: ActionRequestClient${sessionParameter}\n) {\n${hooks}\n\n    return { ${returned} };\n}\n`;
+    const permissionContract = hasAuthorizedOperation
+        ? `\n${renderPermissionContract()}\n`
+        : '';
+    const permissionParameter = hasAuthorizedOperation
+        ? ',\n    permissionPort: PermissionPort'
+        : '';
+    return `import type { ActionRequestClient } from './action-request-client';\nimport type { ${[...new Set(imports)].join(', ')} } from './models';\n\nexport type StateSetter<T> = (value: T) => void;\n\nexport interface ReactHooksPort {\n    useState<T>(initial: T): readonly [T, StateSetter<T>];\n    useCallback<TArguments extends unknown[], TResult>(\n        callback: (...arguments_: TArguments) => TResult,\n        dependencies: readonly unknown[]\n    ): (...arguments_: TArguments) => TResult;\n}\n${sessionContract}${permissionContract}\nexport type CommandState<T> =\n    | { readonly status: 'idle' }\n    | { readonly status: 'pending' }\n    | { readonly status: 'success'; readonly value: T }\n    | { readonly status: 'error'; readonly error: unknown };\n\nexport interface CommandBinding<TInput, TOutput> {\n    readonly state: CommandState<TOutput>;\n    readonly execute: (input: TInput) => Promise<TOutput>;\n}\n\nexport function createActionRequestHooks(\n    hooks: ReactHooksPort,\n    client: ActionRequestClient${permissionParameter}${sessionParameter}\n) {\n${hooks}\n\n    return { ${returned} };\n}\n`;
 }
 
 export function renderReactTypescript(semantic, artifactPlan, profile) {

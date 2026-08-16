@@ -25,7 +25,7 @@ La première démonstration attendue est une matrice reproductible de deux sourc
 (Angular + ReactJS), sur `action-request` puis `workflow-action`. Les
 identifiants techniques des profils restent `angular-nx` et `react-typescript`.
 
-**État local de la preuve :** PLAT-1 à PLAT-5F sont implémentés localement ;
+**État local de la preuve :** PLAT-1 à PLAT-5G sont implémentés localement ;
 la promotion externe de PLAT-5F attend la première matrice CI APFS/ext4 verte.
 Pour `action-request`, les deux sources convergent sur une IR et une seconde
 fonctionnalité `support` suit le parcours déclaratif. Pour `workflow-action`, un
@@ -65,6 +65,16 @@ reste requis avant promotion M3. Voir
 [`validation-runtime-action-request.md`](./docs/architecture/validation-runtime-action-request.md)
 et
 [`validation-runtime-workflow-action.md`](./docs/architecture/validation-runtime-workflow-action.md).
+
+PLAT-5G ferme en outre la lacune
+`permissions.runtime-enforcement` du contrat directeur : une opération
+`authorized` exige toutes les permissions canoniques à sa frontière
+d'exécution. Angular génère un `PERMISSION_PORT` obligatoire et évalue la garde
+à la souscription RxJS ; ReactJS exige le port dans la factory de hooks et
+évalue la garde à chaque exécution. Un refus produit l'erreur stable
+`permission_denied` avant HTTP/fetch. Le gate directeur, les tests natifs
+TestBed/React Testing Library et quatre mutants ciblés prouvent ce comportement.
+Ce contrôle frontend ne remplace jamais l'autorisation du backend.
 
 **Direction d'évolution :** `action-request`, `workflow-action`, `crud-entity`
 et `read-only-view` sont des compositions de référence, pas des familles

@@ -543,6 +543,21 @@ Figma, désormais source partielle différée :
   sans dérogation. **Seule action restante avant promotion M3 :** obtenir la
   première exécution verte de cette matrice externe après revue/indexation et
   push ; ne pas inventer ce résultat depuis le poste local.
+- **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
+  `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
+  opération `authorized` doit déclarer une liste non vide et sans doublon ; les
+  autres modes ne peuvent pas porter de permission. Les deux renderers génèrent
+  le même contrat `PermissionPort`/`PermissionDeniedError` et appliquent une
+  sémantique « toutes requises ». Angular expose un `PERMISSION_PORT` DI
+  obligatoire et diffère la vérification jusqu'à la souscription RxJS ; ReactJS
+  exige le port dans `createActionRequestHooks` et vérifie à chaque exécution.
+  Une permission absente produit `permission_denied` avant tout HTTP/fetch ; une
+  permission présente autorise exactement un appel. Preuves : Oracle exécutable
+  du gate directeur, 3 scénarios natifs TestBed, 2 scénarios natifs React
+  Testing Library et 4 mutants tués (garde neutralisée ou permission remplacée
+  sur les deux cibles). Limite explicite : ce garde frontend ne remplace pas
+  l'autorisation backend. Il reste exactement 3 lacunes :
+  `composition.persisted-instance`, `behavior.graph` et `presentation.flow`.
 - **PLAT-6** — différé, L, P1. Ajouter Figma comme source de Presentation intent
   après clôture de PLAT-1 à PLAT-5.
 

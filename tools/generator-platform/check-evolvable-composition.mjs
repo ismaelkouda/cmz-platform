@@ -6,6 +6,8 @@ import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { compileActionRequestDefinition } from './core/action-request-authoring.mjs';
+import { assertPermissionRuntimeOracle } from './core/permission-runtime-oracle.mjs';
+import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
 import { generateActionRequest } from './generate-action-request.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
 import {
@@ -45,7 +47,7 @@ function assertContract(contract) {
     assert.ok(contract.expected_gaps?.length);
 }
 
-function buildSupportedProjection(definition, contract) {
+export function buildSupportedProjection(definition, contract) {
     const projected = clone(definition);
     const operation = projected.operations[0];
     operation.input.fields.push({
@@ -54,6 +56,32 @@ function buildSupportedProjection(definition, contract) {
     });
     operation.access = clone(contract.evolution.permissions.replace_access);
     return projected;
+}
+
+export async function computeEvolvableCompositionTargets() {
+    const contract = await loadJson(directorContractPath);
+    assertContract(contract);
+    const definitionPath = resolve(repositoryRoot, contract.source.definition);
+    const [definitionContent, definitionSchema] = await Promise.all([
+        readFile(definitionPath, 'utf8'),
+        loadJson(definitionSchemaPath),
+    ]);
+    const definition = JSON.parse(definitionContent);
+    const projected = buildSupportedProjection(definition, contract);
+    assert.deepEqual(validateJsonSchema(projected, definitionSchema), []);
+    const compiled = compileActionRequestDefinition(projected, {
+        sourceUri: contract.source.definition,
+        sourceSha256: sha256(JSON.stringify(projected)),
+    });
+    const targets = await computeTargetsForSemantic(compiled.semantic);
+    return {
+        compiled,
+        contract,
+        definitionPath,
+        definitionSchema,
+        projected,
+        targets,
+    };
 }
 
 function allRenderedFiles(targets) {
@@ -178,23 +206,40 @@ async function probeExistingOutput(definitionPath) {
     }
 }
 
-export async function probeEvolvableComposition() {
-    const contract = await loadJson(directorContractPath);
-    assertContract(contract);
-    const definitionPath = resolve(repositoryRoot, contract.source.definition);
-    const [definitionContent, definitionSchema] = await Promise.all([
-        readFile(definitionPath, 'utf8'),
-        loadJson(definitionSchemaPath),
-    ]);
-    const definition = JSON.parse(definitionContent);
-    const projected = buildSupportedProjection(definition, contract);
-    assert.deepEqual(validateJsonSchema(projected, definitionSchema), []);
+async function probePermissionRuntime(targets, contract) {
+    const runtime = await materializeGeneratedRuntime(targets);
+    try {
+        await assertPermissionRuntimeOracle(runtime, {
+            permissions:
+                contract.evolution.permissions.replace_access.permissions,
+            input: {
+                email: 'person@example.com',
+                subject: 'Cannot open a report',
+                message: 'The report remains unavailable.',
+                priority: 'high',
+            },
+            result: {
+                request_id: 'support-42',
+                message: 'Request accepted',
+            },
+            angularMethod: 'contactSupport',
+            reactHook: 'useContactSupport',
+        });
+        return true;
+    } finally {
+        await runtime.cleanup();
+    }
+}
 
-    const compiled = compileActionRequestDefinition(projected, {
-        sourceUri: contract.source.definition,
-        sourceSha256: sha256(JSON.stringify(projected)),
-    });
-    const targets = await computeTargetsForSemantic(compiled.semantic);
+export async function probeEvolvableComposition() {
+    const {
+        compiled,
+        contract,
+        definitionPath,
+        definitionSchema,
+        projected,
+        targets,
+    } = await computeEvolvableCompositionTargets();
     const rendered = allRenderedFiles(targets);
     const permission =
         contract.evolution.permissions.replace_access.permissions[0];
@@ -212,7 +257,10 @@ export async function probeEvolvableComposition() {
                 file.owner === 'human-owned' && file.write_policy === 'preserve'
         )
     );
-    const outputProbe = await probeExistingOutput(definitionPath);
+    const [outputProbe, permissionRuntimeEnforcement] = await Promise.all([
+        probeExistingOutput(definitionPath),
+        probePermissionRuntime(targets, contract),
+    ]);
     const supported = {
         'data.canonical-model':
             compiled.semantic.types
@@ -229,6 +277,7 @@ export async function probeEvolvableComposition() {
             compiled.semantic.operations[0].access.permissions?.includes(
                 permission
             ) === true,
+        'permissions.runtime-enforcement': permissionRuntimeEnforcement,
         'planning.shared-artifact-plan':
             targets.artifactPlan.input.sha256 ===
                 targets.angular.manifest.input.sha256 &&
@@ -265,9 +314,6 @@ export async function probeEvolvableComposition() {
             0,
         'composition.persisted-instance': rendered.some((content) =>
             content.includes(contract.contract_id)
-        ),
-        'permissions.runtime-enforcement': rendered.some((content) =>
-            content.includes(permission)
         ),
         'presentation.flow':
             validateJsonSchema(presentationDefinition, definitionSchema)

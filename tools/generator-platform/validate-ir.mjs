@@ -463,6 +463,17 @@ export function validateSemantic(semantic, schema, evidence) {
                 `operation ${operation.id}: authorized access needs permissions`
             );
         }
+        const permissions = operation.access?.permissions ?? [];
+        if (operation.access?.mode !== 'authorized' && permissions.length > 0) {
+            errors.push(
+                `operation ${operation.id}: only authorized access may declare permissions`
+            );
+        }
+        if (new Set(permissions).size !== permissions.length) {
+            errors.push(
+                `operation ${operation.id}: duplicate permissions are forbidden`
+            );
+        }
         if (
             integration &&
             operation.access?.mode === 'public' &&

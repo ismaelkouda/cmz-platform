@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { computeTargets } from './render-targets.mjs';
+import { computeEvolvableCompositionTargets } from './check-evolvable-composition.mjs';
 import { computeWorkflowTargets } from './workflow-targets.mjs';
 
 const generatorRoot = dirname(fileURLToPath(import.meta.url));
@@ -23,10 +24,12 @@ async function writeTargetFiles(root, files) {
     }
 }
 
-const [actionRequest, workflowAction] = await Promise.all([
-    computeTargets(),
-    computeWorkflowTargets(),
-]);
+const [actionRequest, authorizedActionRequest, workflowAction] =
+    await Promise.all([
+        computeTargets(),
+        computeEvolvableCompositionTargets(),
+        computeWorkflowTargets(),
+    ]);
 const sourceKey = target === 'angular' ? 'angular' : 'react';
 const targetRoot = resolve(outputRoot, target);
 
@@ -35,6 +38,10 @@ await Promise.all([
     writeTargetFiles(
         resolve(targetRoot, 'action-request'),
         actionRequest[sourceKey].files
+    ),
+    writeTargetFiles(
+        resolve(targetRoot, 'action-request-authorized'),
+        authorizedActionRequest.targets[sourceKey].files
     ),
     writeTargetFiles(
         resolve(targetRoot, 'workflow-action'),
