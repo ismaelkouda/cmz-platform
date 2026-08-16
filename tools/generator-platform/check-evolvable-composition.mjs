@@ -6,6 +6,11 @@ import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { compileActionRequestDefinition } from './core/action-request-authoring.mjs';
+import {
+    buildCompositionInstance,
+    reloadAndRegenerate,
+    verifyCompositionInstanceIntegrity,
+} from './core/composition-instance.mjs';
 import { assertPermissionRuntimeOracle } from './core/permission-runtime-oracle.mjs';
 import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
 import { generateActionRequest } from './generate-action-request.mjs';
@@ -24,6 +29,10 @@ export const directorContractPath = resolve(
 const definitionSchemaPath = resolve(
     moduleRoot,
     'schemas/action-request-definition.schema.json'
+);
+const compositionInstanceSchemaPath = resolve(
+    moduleRoot,
+    'schemas/composition-instance.schema.json'
 );
 
 function sha256(content) {
@@ -231,6 +240,171 @@ async function probePermissionRuntime(targets, contract) {
     }
 }
 
+export async function probePersistedInstance({
+    compiled,
+    contract,
+    projected,
+    targets,
+}) {
+    const definitionContentSha256 = sha256(JSON.stringify(projected));
+    const compositionInstanceSchema = await loadJson(
+        compositionInstanceSchemaPath
+    );
+    const temporaryRoot = await mkdtemp(
+        resolve(tmpdir(), 'cmz-composition-instance-')
+    );
+    try {
+        const instancePath = resolve(temporaryRoot, 'instance.json');
+        const instance = buildCompositionInstance({
+            instanceId: `instance.${compiled.semantic.model_id}`,
+            recordedAt: '2026-08-16T00:00:00.000Z',
+            definitionUri: contract.source.definition,
+            definitionSha256: definitionContentSha256,
+            contractId: contract.contract_id,
+            projectedDefinition: projected,
+            targets,
+        });
+        assert.deepEqual(
+            validateJsonSchema(instance, compositionInstanceSchema),
+            [],
+            'persisted instance violates its own schema'
+        );
+        assert.equal(
+            instance.kind,
+            'composition-instance',
+            'an instance is never itself a promoted pattern (ADR-0032)'
+        );
+
+        // Real persistence: write to disk, then discard the in-memory value
+        // and re-read it back, so "reload" is not just an object reference.
+        await writeFile(instancePath, JSON.stringify(instance, null, 2));
+        const reloadedRaw = await readFile(instancePath, 'utf8');
+        const reloaded = JSON.parse(reloadedRaw);
+
+        const computeTargetsForDefinition = async (definition) => {
+            const recompiled = compileActionRequestDefinition(definition, {
+                sourceUri: contract.source.definition,
+                sourceSha256: definitionContentSha256,
+            });
+            return computeTargetsForSemantic(recompiled.semantic);
+        };
+
+        const { regenerated } = await reloadAndRegenerate(
+            reloaded,
+            compositionInstanceSchema,
+            { contractId: contract.contract_id, computeTargetsForDefinition }
+        );
+        const hashIdentical =
+            regenerated.angular.manifest_tree_sha256 ===
+                targets.angular.manifest.tree_sha256 &&
+            regenerated.reactjs.manifest_tree_sha256 ===
+                targets.react.manifest.tree_sha256;
+
+        // Fail-closed on a tampered self-hash: corrupt one byte of the
+        // persisted projected definition after the envelope hash was
+        // computed, then require reload to refuse regeneration instead of
+        // silently generating from invalid data.
+        const tamperedHash = {
+            ...reloaded,
+            projected_definition: {
+                ...reloaded.projected_definition,
+                feature: {
+                    ...reloaded.projected_definition.feature,
+                    id: `${reloaded.projected_definition.feature.id}-tampered`,
+                },
+            },
+        };
+        let tamperedHashRejected = false;
+        try {
+            await reloadAndRegenerate(tamperedHash, compositionInstanceSchema, {
+                contractId: contract.contract_id,
+                computeTargetsForDefinition,
+            });
+        } catch (error) {
+            tamperedHashRejected = /invalid or corrupted instance/.test(
+                error.message
+            );
+        }
+
+        // Fail-closed on schema violation: strip a required field.
+        const missingRequiredField = { ...reloaded };
+        delete missingRequiredField.instance_id;
+        const invalidRejected =
+            verifyCompositionInstanceIntegrity(
+                missingRequiredField,
+                compositionInstanceSchema
+            ).length > 0;
+
+        // Fail-closed on corrupted JSON bytes: truncate the persisted file
+        // and prove reload itself throws rather than returning a partial
+        // instance to the caller.
+        const corruptPath = resolve(temporaryRoot, 'instance-corrupt.json');
+        await writeFile(corruptPath, reloadedRaw.slice(0, 40));
+        let corruptedJsonRejected = false;
+        try {
+            JSON.parse(await readFile(corruptPath, 'utf8'));
+        } catch {
+            corruptedJsonRejected = true;
+        }
+
+        // A regenerated tree hash mismatch (simulating a persisted instance
+        // whose recorded tree hash no longer matches what the definition it
+        // carries actually produces) must also be refused.
+        const driftedInstance = {
+            ...reloaded,
+            targets: {
+                ...reloaded.targets,
+                angular: {
+                    ...reloaded.targets.angular,
+                    manifest_tree_sha256:
+                        '0'.repeat(63) +
+                        (reloaded.targets.angular.manifest_tree_sha256.at(
+                            -1
+                        ) === '0'
+                            ? '1'
+                            : '0'),
+                },
+            },
+        };
+        const driftedIntegrity = verifyCompositionInstanceIntegrity(
+            driftedInstance,
+            compositionInstanceSchema
+        );
+        let driftedRegenerationRejected = driftedIntegrity.length > 0;
+        if (!driftedRegenerationRejected) {
+            try {
+                await reloadAndRegenerate(
+                    driftedInstance,
+                    compositionInstanceSchema,
+                    {
+                        contractId: contract.contract_id,
+                        computeTargetsForDefinition,
+                    }
+                );
+            } catch (error) {
+                driftedRegenerationRejected =
+                    /invalid or corrupted instance|diverged/.test(
+                        error.message
+                    );
+            }
+        }
+
+        return {
+            hashIdentical,
+            tamperedHashRejected,
+            invalidRejected,
+            corruptedJsonRejected,
+            driftedRegenerationRejected,
+            distinctFromPromotedPattern:
+                instance.kind === 'composition-instance' &&
+                !Object.hasOwn(instance, 'promotion') &&
+                !Object.hasOwn(instance, 'reusable_invariants'),
+        };
+    } finally {
+        await rm(temporaryRoot, { recursive: true, force: true });
+    }
+}
+
 export async function probeEvolvableComposition() {
     const {
         compiled,
@@ -257,10 +431,12 @@ export async function probeEvolvableComposition() {
                 file.owner === 'human-owned' && file.write_policy === 'preserve'
         )
     );
-    const [outputProbe, permissionRuntimeEnforcement] = await Promise.all([
-        probeExistingOutput(definitionPath),
-        probePermissionRuntime(targets, contract),
-    ]);
+    const [outputProbe, permissionRuntimeEnforcement, persistedInstance] =
+        await Promise.all([
+            probeExistingOutput(definitionPath),
+            probePermissionRuntime(targets, contract),
+            probePersistedInstance({ compiled, contract, projected, targets }),
+        ]);
     const supported = {
         'data.canonical-model':
             compiled.semantic.types
@@ -307,14 +483,18 @@ export async function probeEvolvableComposition() {
         'targets.renderer-separation':
             !containsFrameworkReference(targets.angular.files, /\breact\b/i) &&
             !containsFrameworkReference(targets.react.files, /@angular\//),
+        'composition.persisted-instance':
+            persistedInstance.hashIdentical &&
+            persistedInstance.tamperedHashRejected &&
+            persistedInstance.invalidRejected &&
+            persistedInstance.corruptedJsonRejected &&
+            persistedInstance.driftedRegenerationRejected &&
+            persistedInstance.distinctFromPromotedPattern,
     };
     const capabilities = {
         'behavior.graph':
             validateJsonSchema(behaviorDefinition, definitionSchema).length ===
             0,
-        'composition.persisted-instance': rendered.some((content) =>
-            content.includes(contract.contract_id)
-        ),
         'presentation.flow':
             validateJsonSchema(presentationDefinition, definitionSchema)
                 .length === 0 &&

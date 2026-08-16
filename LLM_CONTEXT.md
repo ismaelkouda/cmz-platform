@@ -25,7 +25,7 @@ La première démonstration attendue est une matrice reproductible de deux sourc
 (Angular + ReactJS), sur `action-request` puis `workflow-action`. Les
 identifiants techniques des profils restent `angular-nx` et `react-typescript`.
 
-**État local de la preuve :** PLAT-1 à PLAT-5G sont implémentés localement ;
+**État local de la preuve :** PLAT-1 à PLAT-5H sont implémentés localement ;
 la promotion externe de PLAT-5F attend la première matrice CI APFS/ext4 verte.
 Pour `action-request`, les deux sources convergent sur une IR et une seconde
 fonctionnalité `support` suit le parcours déclaratif. Pour `workflow-action`, un
@@ -75,6 +75,25 @@ d'exécution. Angular génère un `PERMISSION_PORT` obligatoire et évalue la ga
 `permission_denied` avant HTTP/fetch. Le gate directeur, les tests natifs
 TestBed/React Testing Library et quatre mutants ciblés prouvent ce comportement.
 Ce contrôle frontend ne remplace jamais l'autorisation du backend.
+
+PLAT-5H ferme la lacune `composition.persisted-instance` en implémentant le
+premier acte d'ADR-0032 Option C — l'instance de composition persistée,
+distincte de la promotion en pattern qui reste hors périmètre. Le module
+`core/composition-instance.mjs` construit une enveloppe JSON versionnée et
+immuable (`projected_definition` exacte, hash d'arbre des deux cibles,
+intégrité `sha256-stable-json-v1` sur l'enveloppe) qui ne porte jamais de
+champ de promotion ou de réutilisabilité. Le cycle persist → écriture disque →
+relecture depuis les octets → régénération à partir de la définition
+rechargée → comparaison des hash d'arbre est exécuté réellement, pas simulé.
+Le rechargement échoue fermé sur hash d'enveloppe non concordant, violation de
+schéma, JSON corrompu, `contract_ref` erroné et divergence de régénération —
+cinq scénarios testés séparément, dont un qui prouve que l'intégrité de
+l'enveloppe et la comparaison de régénération sont des contrôles
+complémentaires, non redondants. Preuves : Oracle du gate directeur, 8 tests
+directs et 3 mutants tués sur les gardes fail-closed. Limite explicite : ce
+mécanisme ne définit pas où stocker les instances en production ni les
+critères de promotion en pattern, qu'ADR-0032 déclare explicitement comme
+dette assumée.
 
 **Direction d'évolution :** `action-request`, `workflow-action`, `crud-entity`
 et `read-only-view` sont des compositions de référence, pas des familles

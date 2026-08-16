@@ -558,6 +558,49 @@ Figma, désormais source partielle différée :
   sur les deux cibles). Limite explicite : ce garde frontend ne remplace pas
   l'autorisation backend. Il reste exactement 3 lacunes :
   `composition.persisted-instance`, `behavior.graph` et `presentation.flow`.
+- **PLAT-5H** — **fait localement** (2026-08-16), M, P0. La lacune
+  `composition.persisted-instance` est fermée dans le contrat directeur.
+  ADR-0032 (Option C) sépare l'instance de composition persistée de la
+  promotion en pattern ; PLAT-5H ne construit que le premier acte, jamais le
+  second. Un nouveau module core (`core/composition-instance.mjs`) sait
+  construire une enveloppe JSON versionnée et immuable
+  (`kind: "composition-instance"`, `schema_version`, `instance_id`,
+  `recorded_at`, `source`, `contract_ref`, la `projected_definition` exacte
+  qui a produit le rendu, les hash d'arbre `manifest_tree_sha256` des deux
+  cibles, et une intégrité `sha256-stable-json-v1` calculée sur l'enveloppe
+  elle-même). L'enveloppe ne porte jamais de champ de promotion, d'invariants
+  réutilisables ni d'identifiant de pattern — c'est vérifié explicitement par
+  Oracle. Le cycle complet est exécuté réellement : écriture sur disque dans
+  un répertoire temporaire, relecture depuis les octets écrits (pas une
+  référence mémoire), recompilation de la `projected_definition` rechargée
+  via `compileActionRequestDefinition` + les deux renderers, puis comparaison
+  des `tree_sha256` régénérés contre ceux enregistrés — une régénération
+  identique aux hash près est la preuve de déterminisme. Le rechargement
+  échoue fermé dans quatre scénarios distincts et testés séparément : hash
+  d'enveloppe non concordant (charge utile modifiée sans resigner
+  l'intégrité), violation de schéma (champ requis absent), JSON tronqué/
+  corrompu sur disque, et `contract_ref` ne correspondant pas au contrat
+  attendu ; aucun de ces cas ne produit de génération silencieuse. Un
+  cinquième cas — une enveloppe validement resignée mais dont le hash d'arbre
+  enregistré ne correspond plus à ce que la définition régénère réellement —
+  est détecté par la comparaison de régénération, pas par l'intégrité seule,
+  ce qui prouve que les deux contrôles sont complémentaires et non redondants.
+  Preuves : Oracle exécutable du gate directeur
+  (`probePersistedInstance` dans `check-evolvable-composition.mjs`), 8 tests
+  directs (`composition-instance.test.mjs`) couvrant construction, séparation
+  ADR-0032, round-trip disque octet pour octet, régénération identique,
+  falsification, schéma incomplet, `contract_ref` erroné et divergence
+  d'arbre, et 3 mutants tués sur les gardes fail-closed du module core
+  (`composition-instance-mutations.test.mjs` : hash d'intégrité neutralisé,
+  vérification de `contract_ref` neutralisée, détection de divergence
+  neutralisée — chacun prouvé en montrant que le module original rejette le
+  scénario et que le module muté l'accepte). Limite explicite : ce mécanisme
+  ne dit rien sur *où* les instances doivent être stockées en production
+  (registre, base de données, etc.) ni sur les critères de promotion en
+  pattern — ADR-0032 les déclare explicitement hors périmètre et dette
+  assumée ; PLAT-5H prouve seulement que le cycle persist → reload →
+  regenerate est déterministe et fail-closed. Il reste exactement 2 lacunes :
+  `behavior.graph` et `presentation.flow`.
 - **PLAT-6** — différé, L, P1. Ajouter Figma comme source de Presentation intent
   après clôture de PLAT-1 à PLAT-5.
 

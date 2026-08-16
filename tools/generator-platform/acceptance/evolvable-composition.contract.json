@@ -70,6 +70,7 @@
     "The evolution run itself does not modify core, planner, profiles, or renderers."
   ],
   "expected_supported": [
+    "composition.persisted-instance",
     "data.canonical-model",
     "extensions.human-owned-preservation",
     "permissions.canonical-model",
@@ -82,11 +83,7 @@
     "targets.shared-semantic-input",
     "targets.renderer-separation"
   ],
-  "expected_gaps": [
-    "behavior.graph",
-    "composition.persisted-instance",
-    "presentation.flow"
-  ],
+  "expected_gaps": ["behavior.graph", "presentation.flow"],
   "promotion_rule": {
     "blocking_now": false,
     "blocking_when": "All expected gaps have been implemented and removed from this contract.",
