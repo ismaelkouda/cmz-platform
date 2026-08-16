@@ -789,6 +789,144 @@ Figma, désormais source partielle différée :
   spécifier dans un futur contrat si un cas réel l'exige. Il ne reste
   **aucune lacune déclarée** dans le contrat directeur
   `evolvable-composition.contract.json` à l'issue de ce chantier.
+- **PLAT-5K** — **fait localement** (2026-08-16), M, P0. Ferme le seul
+  invariant du contrat directeur (`invariants[5]`, sur 6) qui n'avait jamais
+  eu d'oracle exécutable : « The evolution run itself does not modify core,
+  planner, profiles, or renderers. » Avant ce chantier, cette affirmation
+  n'était vraie que **par construction du code** : chaque `writeFile`/
+  `mkdir`/`rm` du pipeline de génération cible un répertoire obtenu via
+  `mkdtemp(resolve(tmpdir(), ...))`, un fait vérifiable à la lecture mais
+  jamais vérifié par un test — aucun oracle ne l'aurait détecté si un futur
+  bug faisait fuir une écriture vers le vrai arbre source.
+  **Délimitation exacte retenue pour « core, planner, profiles, or
+  renderers »** : le planner (`core/artifact-plan.mjs`) vit dans `core/`, ce
+  n'est donc pas un répertoire frère distinct — le protéger revient à
+  protéger `core/` entier. L'ensemble protégé retenu est **tout l'arbre
+  source `tools/generator-platform/`**, à l'exception unique du répertoire
+  scratch gitignored `.stack-test-runtime/` (régénéré par un script sans
+  rapport, `prepare-stack-tests.mjs`, jamais touché par une exécution
+  d'évolution) : `core/`, `renderers/`, `profiles/`, `adapters/`, `schemas/`,
+  `manifests/`, `contracts/`, `policies/`, `sources/`, `acceptance/`,
+  `fixtures/`, `test-support/`, `stack-tests/`, et chaque fichier
+  `.mjs`/`.json` directement sous `tools/generator-platform/` (y compris
+  `check-evolvable-composition.mjs`, `render-targets.mjs`,
+  `workflow-targets.mjs`, `generate-action-request.mjs`,
+  `generate-workflow-action.mjs`, `validate-ir.mjs`). Ce périmètre est
+  délibérément plus large que les quatre noms cités par le contrat : un bug
+  qui corromprait un schéma ou une fixture serait tout aussi grave que s'il
+  corrompait `core/`, et l'intention de l'invariant (« l'exécution
+  n'altère pas la plateforme ») est mieux servie en ne pré-décidant pas quelle
+  sous-zone un bug futur toucherait. **Nouveau module
+  `core/run-isolation-oracle.mjs`** : `snapshotProtectedTree(root)` hash
+  chaque octet de chaque fichier sous `root` (sha256 + taille, clé = chemin
+  relatif) ; `diffProtectedTreeSnapshots(before, after)` détecte fichier
+  modifié / ajouté / supprimé ; `assertRunIsolation(run, { root })` prend un
+  instantané, exécute `run()` réellement, reprend un instantané, et lève une
+  erreur listant chaque violation si un seul octet a changé. **Câblage dans
+  le gate directeur** : `check-evolvable-composition.mjs` extrait le corps
+  entier de `probeEvolvableComposition()` (calcul des cibles **et** les 5
+  probes existants — permissions, instance persistée, graphe de
+  comportement, flux de présentation, sortie existante/dry-run/apply — en
+  parallèle) dans `runEvolutionOnce()`, puis l'enveloppe entièrement dans
+  `assertRunIsolation(runEvolutionOnce)` contre `generatorPlatformRoot` (le
+  vrai `tools/generator-platform/`). Ce choix — protéger l'exécution
+  complète, pas seulement un sous-probe — est déterminant : un bug pourrait
+  fuir depuis n'importe quel probe futur aussi bien que depuis celui
+  d'aujourd'hui, et l'invariant ne fait pas cette distinction. Le rapport du
+  gate expose un nouveau champ `run_isolation: { invariant, files_checked,
+  violated }` — non ajouté à `expected_supported`/`expected_gaps` : le
+  contrat directeur n'a pas de slot pour les invariants eux-mêmes (seulement
+  pour les 14 capacités numérotées sous `evolution.*`), et forcer un
+  identifiant de capacité artificiel aurait déformé cette structure sans
+  raison. **Preuve que l'oracle n'est pas une tautologie (« mutant tué »
+  appliqué à une absence d'effet de bord plutôt qu'à une garde rendue)** :
+  nouveau fichier `run-isolation.test.mjs`, 10 tests. Sur un arbre fixture
+  isolé (jamais le vrai dépôt, construit et détruit dans `mkdtemp`) :
+  détection d'un octet modifié, d'un fichier ajouté, d'un fichier supprimé,
+  et absence de faux positif entre deux instantanés identiques. Le test
+  négatif décisif : `assertRunIsolation` reçoit une fonction `run()` qui
+  écrit délibérément un octet dans un fichier de la fixture protégée
+  (simulant l'échec futur exact que l'invariant existe pour prévenir — une
+  résolution de chemin qui fuit hors du `mkdtemp`) ; l'oracle doit lever, le
+  test vérifie `assert.rejects(..., /run isolation violated/)`, **puis relit
+  le fichier corrompu pour prouver que la mutation a réellement eu lieu**
+  (l'oracle ne fait que détecter, jamais de rollback) — élimine la
+  possibilité que le rejet vienne d'un chemin court-circuité plutôt que
+  d'une vraie comparaison de hash. Un test symétrique prouve qu'une
+  exécution qui n'écrit que hors de la racine protégée résout proprement
+  (`filesChecked` > 0, pas de faux positif systématique). Le dernier test
+  est l'intégration bout en bout : il appelle le vrai
+  `probeEvolvableComposition()` (calcul de cibles réel, 5 probes réels, pas
+  simulé) et vérifie `report.run_isolation.violated === false` et
+  `files_checked > 0` contre le vrai `generatorPlatformRoot`. **Découverte
+  réelle en cours de route, corrigée** : le premier lancement du nouvel
+  oracle contre la suite complète a échoué de façon intermittente
+  (`removed: core/composition-instance.mutant.self-hash-mismatch-guard-neutralis-.mjs`)
+  — `composition-instance-mutations.test.mjs` (PLAT-5H) écrivait
+  auparavant son mutant comme fichier frère réel dans
+  `core/` (pour que ses imports relatifs résolvent), puis le supprimait dans
+  un `finally`. Sous la parallélisation par défaut de `node --test`, une
+  fenêtre de snapshot du nouvel oracle pouvait chevaucher cette écriture
+  transitoire — un vrai (bien que bref et nettoyé) effet de bord sur l'arbre
+  protégé, que l'oracle a correctement détecté. Corrigé en réécrivant
+  `loadMutant()` : le mutant est désormais écrit dans un `mkdtemp` dédié,
+  avec `generation-manifest.mjs` et `validate-ir.mjs` symlinkés au même
+  chemin relatif pour que les imports du module continuent de résoudre, sans
+  jamais toucher le vrai `core/`. Ce n'est pas un contournement de l'oracle :
+  c'est la correction d'un vrai défaut latent qu'aucun test précédent
+  n'aurait pu révéler avant ce chantier. **Validations exécutées
+  personnellement** : `node --test tools/generator-platform/*.test.mjs` →
+  **159/159** (149 préexistants + 10 nouveaux dans `run-isolation.test.mjs`),
+  relancé 3 fois consécutives sans flakiness. `npx eslint
+  tools/generator-platform/renderers tools/generator-platform/core
+  tools/generator-platform/*.mjs --max-warnings=0` → 0 sortie, exit 0.
+  `node tools/run-prettier.mjs --check` → vert (2 fichiers reformatés par
+  `--write` puis revérifiés). `node tools/check-file-weight.mjs --all` →
+  OK (`core/run-isolation-oracle.mjs` 145 l., `run-isolation.test.mjs` 211
+  l., `check-evolvable-composition.mjs` 645 l., tous sous le plafond de 800).
+  `node tools/generator-platform/check-evolvable-composition.mjs` → gate
+  PASS, `regressions:[]`, `unexpectedly_implemented:[]`, `actual_gaps:[]`,
+  `run_isolation.files_checked: 110`, `run_isolation.violated: false`,
+  `target_tree_sha256` Angular/ReactJS **inchangés** par rapport à avant ce
+  chantier (`77452f6c...b408` / `f0f8db27...091f0`), confirmant l'absence
+  d'effet de bord sur les renderers `action-request` génériques. **Fichiers
+  créés** : `tools/generator-platform/core/run-isolation-oracle.mjs`,
+  `tools/generator-platform/run-isolation.test.mjs`. **Fichiers modifiés** :
+  `tools/generator-platform/check-evolvable-composition.mjs` (extraction de
+  `runEvolutionOnce()`, câblage `assertRunIsolation`, nouveau champ
+  `run_isolation` dans le rapport),
+  `tools/generator-platform/composition-instance-mutations.test.mjs`
+  (correction du chemin d'écriture du mutant, cf. découverte ci-dessus).
+  **Limite explicite assumée :** l'oracle protège l'arbre source de
+  `tools/generator-platform/` tel que délimité ci-dessus ; il ne protège pas
+  le reste du monorepo (`apps/`, `libs/`) — hors périmètre du contrat
+  directeur, qui porte spécifiquement sur le pipeline de génération. Il ne
+  protège pas non plus contre une corruption qui se répare elle-même avant
+  la deuxième capture de hash (fenêtre de détection = durée de
+  `runEvolutionOnce()`) ; c'est la même limite de principe que toute preuve
+  par comparaison avant/après, partagée avec `generation-change-set.test.mjs`
+  pour la préservation des extensions.
+  **Conclusion sur `promotion_rule.success` (« expected_gaps est vide et
+  chaque invariant est vérifié par des oracles exécutables »)** : les 2
+  conditions cumulatives sont maintenant, à ma connaissance et sur la base
+  des preuves listées dans ce fichier, **toutes les deux satisfaites**.
+  Condition 1 (`expected_gaps` vide) : acquise depuis PLAT-5J, confirmée par
+  ce lancement (`"expected_gaps": []`). Condition 2 (chaque invariant vérifié
+  par un oracle exécutable) : les 6 invariants de
+  `evolvable-composition.contract.json` → `invariants` ont chacun un oracle
+  exécutable réel — invariants 1 à 5 fermés par PLAT-5G à PLAT-5J
+  (`renderers.test.mjs`, `check-evolvable-composition.mjs` capacité
+  `targets.renderer-separation`, `validate-ir.test.mjs`,
+  `generation-change-set.test.mjs`), invariant 6 fermé par ce chantier
+  (`run-isolation.test.mjs` + `assertRunIsolation` intégré au gate
+  directeur). **Ce constat n'est cependant qu'une lecture locale et n'a la
+  valeur que des preuves listées ici** : PLAT-5K ne déclenche, n'active ni
+  ne câble aucun mécanisme de promotion. `contract.status` reste
+  `"characterization"` (inchangé, vérifié par `assertContract` dans
+  `check-evolvable-composition.mjs`), aucun champ du contrat JSON n'a été
+  modifié, et la décision d'agir sur cette conclusion (déclencher une
+  promotion, faire réviser ce constat par une revue humaine, etc.) reste
+  explicitement hors périmètre de ce chantier.
 - **PLAT-6** — différé, L, P1. Ajouter Figma comme source de Presentation intent
   après clôture de PLAT-1 à PLAT-5.
 

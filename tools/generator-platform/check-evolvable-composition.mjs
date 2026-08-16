@@ -14,6 +14,7 @@ import {
 } from './core/composition-instance.mjs';
 import { assertPermissionRuntimeOracle } from './core/permission-runtime-oracle.mjs';
 import { assertPresentationFlowRuntimeOracle } from './core/presentation-flow-runtime-oracle.mjs';
+import { assertRunIsolation } from './core/run-isolation-oracle.mjs';
 import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
 import { generateActionRequest } from './generate-action-request.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
@@ -414,7 +415,18 @@ export async function probePersistedInstance({
     }
 }
 
-export async function probeEvolvableComposition() {
+// Invariant #6 ("The evolution run itself does not modify core, planner,
+// profiles, or renderers.") is proven by wrapping the ENTIRE evolution run
+// — target computation plus every probe below, not just one of them — in
+// assertRunIsolation. That is deliberate: a bug could just as easily leak a
+// write from computeEvolvableCompositionTargets, probePermissionRuntime, or
+// any future probe as from probeExistingOutput specifically, and the
+// invariant makes no such distinction either. snapshotProtectedTree hashes
+// every byte under tools/generator-platform/ (excluding only the gitignored
+// `.stack-test-runtime` scratch dir written by a different, unrelated
+// script) before this function's real work starts and again after it
+// finishes, and throws on any difference.
+async function runEvolutionOnce() {
     const { compiled, contract, definitionPath, projected, targets } =
         await computeEvolvableCompositionTargets();
     const permission =
@@ -438,6 +450,34 @@ export async function probeEvolvableComposition() {
         probeBehaviorGraph(contract),
         probePresentationFlow(contract),
     ]);
+    return {
+        compiled,
+        contract,
+        extensionOwned,
+        outputProbe,
+        permission,
+        permissionRuntimeEnforcement,
+        persistedInstance,
+        behaviorGraphRuntime,
+        presentationFlowRuntime,
+        targets,
+    };
+}
+
+export async function probeEvolvableComposition() {
+    const { filesChecked, result } = await assertRunIsolation(runEvolutionOnce);
+    const {
+        compiled,
+        contract,
+        extensionOwned,
+        outputProbe,
+        permission,
+        permissionRuntimeEnforcement,
+        persistedInstance,
+        behaviorGraphRuntime,
+        presentationFlowRuntime,
+        targets,
+    } = result;
     const supported = {
         'data.canonical-model':
             compiled.semantic.types
@@ -532,6 +572,22 @@ export async function probeEvolvableComposition() {
         target_tree_sha256: {
             angular: targets.angular.manifest.tree_sha256,
             reactjs: targets.react.manifest.tree_sha256,
+        },
+        // Not a numbered capability in expected_supported/expected_gaps:
+        // the contract has no slot for invariants themselves, only for the
+        // 14 named capabilities under evolution.*. This field is the direct
+        // executable proof of invariant #6 ("The evolution run itself does
+        // not modify core, planner, profiles, or renderers.") — throwing
+        // inside assertRunIsolation above would already have aborted this
+        // whole function before this object is built, so reaching this line
+        // at all is part of the proof; filesChecked records how many files
+        // were actually hashed twice so a future change can sanity-check
+        // that the oracle didn't silently start covering zero files.
+        run_isolation: {
+            invariant:
+                'The evolution run itself does not modify core, planner, profiles, or renderers.',
+            files_checked: filesChecked,
+            violated: false,
         },
     };
 }

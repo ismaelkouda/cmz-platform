@@ -25,7 +25,7 @@ La première démonstration attendue est une matrice reproductible de deux sourc
 (Angular + ReactJS), sur `action-request` puis `workflow-action`. Les
 identifiants techniques des profils restent `angular-nx` et `react-typescript`.
 
-**État local de la preuve :** PLAT-1 à PLAT-5J sont implémentés localement ;
+**État local de la preuve :** PLAT-1 à PLAT-5K sont implémentés localement ;
 la promotion externe de PLAT-5F attend la première matrice CI APFS/ext4 verte.
 Pour `action-request`, les deux sources convergent sur une IR et une seconde
 fonctionnalité `support` suit le parcours déclaratif. Pour `workflow-action`, un
@@ -155,6 +155,46 @@ n'évalue ni ne déclenche la seconde condition ni aucune promotion ;
 PLAT-5I, ce moteur ne gouverne que le flux de cette composition ; le critère
 de complétude par champ (présence + non-vide) est délibérément simple, sans
 validation métier par étape plus riche.
+
+PLAT-5K ferme le dernier des 6 invariants du contrat directeur sans oracle
+exécutable : « The evolution run itself does not modify core, planner,
+profiles, or renderers. » Avant ce chantier ce fait tenait uniquement par
+construction du code (tout `writeFile`/`mkdir`/`rm` du pipeline cible un
+`mkdtemp(tmpdir())`), jamais vérifié activement. Nouveau module
+`core/run-isolation-oracle.mjs` : `snapshotProtectedTree(root)` hash chaque
+octet de chaque fichier sous `root` ; `assertRunIsolation(run, { root })`
+capture un instantané, exécute `run()` réellement, recapture, et lève sur la
+moindre différence. Protection retenue : tout l'arbre
+`tools/generator-platform/` (le planner `core/artifact-plan.mjs` vit dans
+`core/`, donc protéger `core/` le couvre) à l'exception du scratch gitignored
+`.stack-test-runtime/`. `check-evolvable-composition.mjs` enveloppe
+désormais le corps entier de `probeEvolvableComposition()` (calcul des
+cibles + les 5 probes existants) dans `assertRunIsolation`, pas seulement un
+sous-probe — un futur bug pourrait fuir depuis n'importe lequel. Le rapport
+gagne un champ `run_isolation: { files_checked, violated }`, volontairement
+absent de `expected_supported`/`expected_gaps` (pas de slot contractuel pour
+un invariant). Preuve de non-tautologie : `run-isolation.test.mjs` (10
+tests) construit une fixture isolée et injecte une écriture délibérée dans
+le répertoire protégé — l'oracle doit lever, puis le test relit le fichier
+pour prouver que la corruption a réellement eu lieu (l'oracle détecte, ne
+répare pas). Un test d'intégration appelle le vrai
+`probeEvolvableComposition()` et vérifie `run_isolation.violated === false`
+contre le vrai arbre source. En cours de route, le nouvel oracle a détecté
+un vrai défaut latent préexistant : `composition-instance-mutations.test.mjs`
+(PLAT-5H) écrivait son mutant comme fichier frère réel dans `core/` avant de
+le supprimer, un effet de bord transitoire sur l'arbre protégé sous
+parallélisation `node --test` — corrigé en écrivant désormais le mutant dans
+un `mkdtemp` avec imports symlinkés. Validations : 159/159 tests
+(149 préexistants + 10 nouveaux), 3 lancements consécutifs sans flakiness,
+`eslint --max-warnings=0` propre, `format:check` vert, poids de fichiers
+conforme, gate directeur PASS avec `regressions:[]`, `actual_gaps:[]`,
+`run_isolation.violated: false`, hash d'arbre Angular/ReactJS inchangés.
+**Conclusion sur `promotion_rule.success` :** les 2 conditions cumulatives
+(`expected_gaps` vide et chaque invariant vérifié par un oracle exécutable)
+sont désormais, sur la base des preuves listées dans
+`taches-restantes.md`, toutes deux satisfaites — mais ce chantier ne
+déclenche, n'active ni ne câble aucun mécanisme de promotion ;
+`contract.status` reste `"characterization"`, inchangé.
 
 **Direction d'évolution :** `action-request`, `workflow-action`, `crud-entity`
 et `read-only-view` sont des compositions de référence, pas des familles

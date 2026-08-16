@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFile, rm, writeFile } from 'node:fs/promises';
+import {
+    mkdir,
+    mkdtemp,
+    readFile,
+    rm,
+    symlink,
+    writeFile,
+} from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
@@ -44,6 +52,17 @@ const mutants = [
     },
 ];
 
+// Mutants are written to a mkdtemp root, never into the real
+// tools/generator-platform source tree: run-isolation-oracle.mjs (PLAT-5K)
+// hashes every byte under that tree before and after a director-gate run
+// and fails on any change, so a mutant that briefly existed as a sibling of
+// composition-instance.mjs — even if cleaned up in a `finally` — would be a
+// genuine (if transient) violation of invariant #6 if the director gate ran
+// concurrently with this suite under `node --test`'s default parallelism.
+// The mutant's relative imports (./generation-manifest.mjs,
+// ../validate-ir.mjs) are preserved by symlinking those two files, which
+// themselves have no further relative imports, into the same relative
+// layout under the temporary root.
 async function loadMutant(mutant) {
     const original = await readFile(sourcePath, 'utf8');
     assert.ok(
@@ -56,15 +75,31 @@ async function loadMutant(mutant) {
         original,
         `${mutant.name}: mutation had no effect`
     );
-    // Written as a sibling of the original so its relative imports
-    // (./generation-manifest.mjs, ../validate-ir.mjs) still resolve.
+    const temporaryRoot = await mkdtemp(
+        resolve(tmpdir(), 'cmz-composition-instance-mutant-')
+    );
+    const temporaryCore = resolve(temporaryRoot, 'core');
+    await mkdir(temporaryCore, { recursive: true });
+    await symlink(
+        resolve(
+            repositoryRoot,
+            'tools/generator-platform/core/generation-manifest.mjs'
+        ),
+        resolve(temporaryCore, 'generation-manifest.mjs')
+    );
+    await symlink(
+        resolve(repositoryRoot, 'tools/generator-platform/validate-ir.mjs'),
+        resolve(temporaryRoot, 'validate-ir.mjs')
+    );
     const path = resolve(
-        repositoryRoot,
-        'tools/generator-platform/core',
+        temporaryCore,
         `composition-instance.mutant.${mutant.name.replace(/\W+/g, '-')}.mjs`
     );
     await writeFile(path, mutated);
-    return { module: await import(pathToFileURL(path).href), path };
+    return {
+        module: await import(pathToFileURL(path).href),
+        root: temporaryRoot,
+    };
 }
 
 async function buildFixture() {
@@ -152,7 +187,7 @@ test('mutants against composition-instance guards are killed', async (t) => {
     const schema = await loadJson(
         new URL('schemas/composition-instance.schema.json', import.meta.url)
     );
-    const writtenMutantPaths = [];
+    const writtenMutantRoots = [];
     try {
         const { computeTargetsForDefinition, contract, instance } =
             await buildFixture();
@@ -180,9 +215,9 @@ test('mutants against composition-instance guards are killed', async (t) => {
                 // neutralized — must accept the same scenario, proving the
                 // guard (and therefore the test coverage of it) is
                 // load-bearing.
-                const { module: mutatedModule, path } =
+                const { module: mutatedModule, root } =
                     await loadMutant(mutant);
-                writtenMutantPaths.push(path);
+                writtenMutantRoots.push(root);
                 await assert.doesNotReject(
                     () =>
                         mutatedModule.reloadAndRegenerate(badInstance, schema, {
@@ -195,7 +230,9 @@ test('mutants against composition-instance guards are killed', async (t) => {
         }
     } finally {
         await Promise.all(
-            writtenMutantPaths.map((path) => rm(path, { force: true }))
+            writtenMutantRoots.map((root) =>
+                rm(root, { recursive: true, force: true })
+            )
         );
     }
 });
