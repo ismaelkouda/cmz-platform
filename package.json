@@ -86,6 +86,7 @@
     "corpus:full": "node tools/corpus/emit-all.mjs --verify",
     "format": "node tools/run-prettier.mjs --write",
     "format:check": "node tools/run-prettier.mjs --check",
+    "dashboard:tasks": "node tools/generate-task-dashboard.mjs",
     "mock": "node tools/mock-server.mjs",
     "e2e": "bunx playwright test -c apps/backoffice-angular/playwright.config.mjs",
     "e2e:ui": "bunx playwright test -c apps/backoffice-angular/playwright.config.mjs --ui"
