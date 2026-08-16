@@ -1242,10 +1242,6 @@ gouvernance, sécurité, licences.
 
 ### 4.1 Préalable forge / ARB
 
-- **OPS-1** — partiel, M, P0 Ops, alias `P0-N1`. Push + PR + CI verte. Mesure
-  locale du 2026-08-16 après `67051e2` : `main` est en avance de **101 commits**
-  sur `origin/main`. Le lot Prettier OPS-11 est en plus présent dans le worktree
-  et doit rester un commit séparé du prochain changement PLAT.
 - **OPS-2** — partiel, S, P1 Ops, alias `G-2`. Revalider protection `main` UI
   GitHub.
 - **OPS-3** — en cours, S, P1 Ops, alias `G-7 · T6-4`. Claim compte Nx Cloud
@@ -1293,6 +1289,84 @@ gouvernance, sécurité, licences.
   réécriture : `format:check` vert, `git diff --check` vert et `check:all`
   complet vert. Ne pas mélanger ce lot au prochain changement de capacité de la
   plateforme.
+- **OPS-1** — **fait** (2026-08-16), M, P0 Ops, alias `P0-N1`. Push
+  `feature/plat-5-generator-platform` (109 commits, PLAT-5G→5K inclus)
+  effectué avec succès (`git push origin feature/plat-5-generator-platform`,
+  gitleaks 0 leak). `main` a également reçu ces commits directement (push
+  précédent). Première CI réelle observée : **run #39**
+  (`https://github.com/ismaelkouda/cmz-platform/actions/runs/31975317345`,
+  commit `ebd6df1`, déclenchée par le push direct sur `main`) — **statut
+  global rouge à l'observation initiale**, 3 causes distinctes identifiées et
+  documentées séparément sous **OPS-12** ci-dessous. Aucune des 3 causes n'est
+  liée au contenu de PLAT-5G→5K (tests, gate directeur, oracle d'exécution) :
+  ce sont des défauts de câblage CI préexistants et une dette de sécurité
+  transitive, découverts seulement maintenant faute d'exécution CI antérieure
+  sur ce lot. **Limite explicite :** je n'ai pas personnellement inspecté
+  chaque job de la matrice `check:publication-durability`
+  (`macos-14`/APFS + `ubuntu-24.04`/ext4) attendue par PLAT-5F — seul le
+  statut global de la run a été rapporté, d'abord comme vert puis corrigé en
+  rouge par l'utilisateur avec les logs exacts des 3 échecs. La promotion
+  PLAT-5F → M3 reste donc **non confirmée** tant qu'une run CI verte n'a pas
+  été observée après correction d'OPS-12.
+- **OPS-12** — **partiel** (2026-08-16), M, P0 Ops. Trois causes distinctes de
+  rouge sur la run CI #39, aucune liée au contenu PLAT-5G→5K :
+    - **OPS-12a — fait.** `check:dto-schema` (ajouté au job `docs-freshness`
+      par T13-17/OPS le 2026-08-14) importe `typescript` via
+      `tools/schema/generate-dto-schema.mjs`, mais ce job était conçu Node pur
+      (`check:docs-freshness` ne lit que `project.json`/corpus, sans
+      dépendance npm) — jamais de `bun install`, donc
+      `ERR_MODULE_NOT_FOUND 'typescript'` dès la première exécution réelle du
+      step. Aucune run CI n'avait encore exercé ce chemin avant #39, d'où
+      l'angle mort resté invisible. Corrigé : `oven-sh/setup-bun@v2` +
+      `bun install --frozen-lockfile` ajoutés au job `docs-freshness` dans
+      `.github/workflows/ci.yml`, avant le step `check:dto-schema`. Vérifié
+      **localement** avec `node_modules` déjà installé (le sandbox ne peut pas
+      exécuter `bun`, seulement `node`/`npx`) : `node tools/check-dto-schema.mjs`
+      → `OK` (432 définitions, 303 DTOs, 3 avertissements de portée non
+      bloquants déjà documentés en T2-1). YAML validé structurellement
+      (`python3 -c "import yaml; yaml.safe_load(...)"`), mais **le job CI
+      complet avec `bun install` réel n'a pas été rejoué par moi** — à
+      confirmer par la prochaine run CI.
+    - **OPS-12b — fait.** `bun run check:dead-code` (knip) échouait avec
+      « Unlisted binaries (1) : `semgrep` — `package.json` » : `semgrep`
+      apparaît dans le script `check:sast` de `package.json` mais est un
+      outil Python installé via `pip install semgrep==1.172.0` dans un job CI
+      séparé (`sast`), jamais un binaire npm/bun — faux-positif de détection
+      knip, pas un vrai défaut. Corrigé : ajout de
+      `"ignoreBinaries": ["semgrep"]` à `knip.json`, champ de premier niveau
+      confirmé dans le code source de `knip@6.31.0` (`ConfigurationChief.js`,
+      valeur par défaut `[]`). **Limite explicite : je n'ai pas pu exécuter
+      `knip` en entier dans ce sandbox** (`RangeError: Array buffer allocation
+      failed` dans le parseur `oxc-parser`, contrainte mémoire de
+      l'environnement, sans rapport avec la modification) — la correction est
+      structurellement correcte et validée par lecture du schéma/code source
+      de l'outil, mais pas par une exécution réelle réussie ; à confirmer par
+      la prochaine run CI.
+    - **OPS-12c — ouvert, transmis à l'utilisateur.** `bun audit --audit-level=high`
+      remonte 4 vulnérabilités high dans des dépendances transitives :
+      `image-size` (`<=2.0.2`, via `@angular/build`/`@nx/webpack`/`less`/
+      `vitest`, DoS boucle infinie ICNS/JXL/HEIF), `nanoid` (`<3.3.18`, via
+      `postcss`, boucle infinie si `size=0`), `js-yaml` (`>=4.0.0 <4.3.1`, via
+      `eslint`/`@eslint/eslintrc`, `@commitlint/cli`/`cosmiconfig`,
+      `@nx/js`/`babel-plugin-macros`/`cosmiconfig`,
+      `@nx/angular`/`@nx/rspack`/`postcss-loader`/`cosmiconfig`,
+      `@nx/web`/`@nx/webpack`/`postcss-loader`/`cosmiconfig` — CVE-2026-59870,
+      consommation CPU quadratique). **`bun` n'est pas installé dans le
+      sandbox d'exécution** (seulement `node`/`npx`) : ni `bun audit` ni
+      `bun update` n'ont pu être exécutés ou vérifiés par moi. Une tentative
+      accidentelle de résolution via `npx prettier` a modifié `package.json`
+      et `bun.lock` (versions `eslint`, `@commitlint/*`, `typescript-eslint`,
+      `ol`, etc. bumpées sans validation d'aucun build) — **annulée**
+      (`git checkout -- package.json bun.lock`) avant tout commit, car aucune
+      vérification de build/lint/test n'avait été faite sur ce changement non
+      voulu. Reste à faire par l'utilisateur, qui dispose de `bun` : lancer
+      `bun audit --audit-level=high` pour confirmer l'état de départ, puis
+      `bun update` (ou `bun update --latest` si insuffisant), puis rejouer
+      `bunx nx run-many -t build`/`lint` et `bun audit --audit-level=high`
+      avant de committer. Si les CVE persistent après mise à jour (dépendance
+      transitive profonde dont l'amont n'a pas encore publié de correctif),
+      documenter une exception justifiée plutôt que forcer un `overrides` à
+      l'aveugle.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 

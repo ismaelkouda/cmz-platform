@@ -46,6 +46,7 @@
     "i18next",
     "ol"
   ],
+  "ignoreBinaries": ["semgrep"],
   "rules": {
     "catalog": "off",
     "types": "off"

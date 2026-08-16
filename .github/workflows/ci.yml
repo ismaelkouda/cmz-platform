@@ -236,7 +236,6 @@ jobs:
             .
 
   # ─── Job docs : fraîcheur des blocs générés (audit E-5 / P1-9) ───────────
-  # Node pur — pas de bun install (generate-status lit project.json / corpus).
   docs-freshness:
     name: Docs freshness
     runs-on: ubuntu-latest
@@ -261,6 +260,22 @@ jobs:
       # lui-même n'est jamais invoqué en CI/husky, cf. commentaire
       # check:pair-schema/check:corpus-tools ci-dessus dans le job
       # guardrails, même classe de bug).
+      #
+      # OPS-12a (2026-08-16) : ce step échouait en CI depuis son ajout
+      # (ERR_MODULE_NOT_FOUND 'typescript') — le job était conçu Node pur
+      # (check:docs-freshness ne lit que project.json/corpus, sans
+      # dépendance npm), une hypothèse restée vraie jusqu'à l'ajout de ce
+      # step, qui importe `typescript` via generate-dto-schema.mjs et donc
+      # exige node_modules. bun install ajouté ci-dessous pour combler cet
+      # angle mort réel, jamais détecté car aucune run CI n'avait encore été
+      # observée après l'ajout du step avant OPS-12a.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
       - name: check:dto-schema (T2-2, fraîcheur schéma↔DTO)
         run: node tools/check-dto-schema.mjs
 
