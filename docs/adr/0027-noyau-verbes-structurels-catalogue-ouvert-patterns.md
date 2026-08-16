@@ -1,7 +1,11 @@
 # ADR-0027 — Noyau de verbes structurels + catalogue ouvert de patterns (remplace la liste fermée d'archétypes)
 
-- **Statut :** Accepted
+- **Statut :** Superseded by ADR-0030
 - **Date :** 2026-08-13
+
+> Supersédé par [ADR-0030](./0030-ir-canonique-et-profils-cibles.md). Le
+> catalogue ouvert et les compositions restent retenus dans les profils cibles ;
+> les cinq verbes et leurs templates Nx ne constituent plus l'IR canonique.
 
 ## Contexte
 

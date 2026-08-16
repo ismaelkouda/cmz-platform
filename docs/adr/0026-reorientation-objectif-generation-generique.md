@@ -1,7 +1,12 @@
 # ADR-0026 — Réorientation de l'objectif : système de génération générique multi-source/multi-stack
 
-- **Statut :** Accepted
+- **Statut :** Superseded by ADR-0029
 - **Date :** 2026-08-12
+
+> Supersédé par
+> [ADR-0029](./0029-perimetre-capacites-plateforme-generation.md), qui conserve
+> la réorientation mais remplace la promesse universelle par une enveloppe de
+> capacités déclarée et falsifiable.
 
 ## Contexte
 

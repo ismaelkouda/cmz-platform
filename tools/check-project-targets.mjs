@@ -116,8 +116,27 @@ function tryInvokeNx(args) {
 
 function nxProjectsWithTarget(target) {
     const out = tryInvokeNx(['show', 'projects', '--with-target=' + target]);
+    const trimmed = out.trim();
+    if (!trimmed) return new Set();
+
+    // Nx peut rendre soit un nom par ligne, soit un tableau JSON compact selon
+    // la version et le type de terminal. Traiter un tableau JSON comme une
+    // unique chaîne produit un faux négatif pour toutes les bibliothèques.
+    if (trimmed.startsWith('[')) {
+        const parsed = JSON.parse(trimmed);
+        if (
+            !Array.isArray(parsed) ||
+            !parsed.every((project) => typeof project === 'string')
+        ) {
+            throw new Error(
+                `sortie Nx JSON invalide pour --with-target=${target}`
+            );
+        }
+        return new Set(parsed);
+    }
+
     return new Set(
-        out
+        trimmed
             .split('\n')
             .map((line) => line.trim())
             .filter(Boolean)

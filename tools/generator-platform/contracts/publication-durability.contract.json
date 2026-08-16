@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0.0",
+  "capability_id": "generation.publication-durability",
+  "reader_contract": {
+    "mode": "offline-activation",
+    "activation_boundary": "publication-command-success",
+    "concurrent_non_cooperating_readers": "unsupported",
+    "enforcement": "calling-orchestrator-precondition"
+  },
+  "storage_contract": {
+    "layout": "same-local-filesystem",
+    "required_primitives": [
+      "atomic-directory-rename",
+      "file-fsync",
+      "directory-fsync"
+    ],
+    "unsupported": [
+      "network-filesystem",
+      "cross-filesystem-publication",
+      "symbolic-link-output",
+      "special-file-output"
+    ]
+  },
+  "failure_model": {
+    "covered": [
+      "writer-process-sigkill",
+      "host-stop-after-successful-fsync",
+      "interrupted-cleanup"
+    ],
+    "excluded": [
+      "storage-media-loss",
+      "filesystem-contract-violation",
+      "concurrent-external-output-mutation"
+    ]
+  },
+  "filesystem_profiles": [
+    {
+      "id": "linux-ext4",
+      "platform": "linux",
+      "statfs_type": 61267,
+      "ci_runner": "ubuntu-24.04"
+    },
+    {
+      "id": "macos-apfs",
+      "platform": "darwin",
+      "statfs_type": 26,
+      "ci_runner": "macos-14"
+    }
+  ],
+  "required_evidence": [
+    "environment-profile-match",
+    "real-filesystem-publication-probe",
+    "sigkill-after-previous-move",
+    "sigkill-after-candidate-publish",
+    "journal-and-artifact-hash-verification",
+    "ci-matrix-green"
+  ]
+}

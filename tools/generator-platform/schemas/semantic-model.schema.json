@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/semantic-model.schema.json",
+  "title": "CMZ Generator Platform Canonical Semantic Model",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "model_id",
+    "domain",
+    "types",
+    "operations",
+    "constraints",
+    "integrations"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "model_id": { "$ref": "#/$defs/id" },
+    "domain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "types": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/typeDefinition" }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/constraint" }
+    },
+    "integrations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/integration" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "typeRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "nullable"],
+      "properties": {
+        "kind": { "enum": ["primitive", "model", "list", "map"] },
+        "name": { "type": "string", "minLength": 1 },
+        "nullable": { "type": "boolean" },
+        "items": { "$ref": "#/$defs/typeRef" },
+        "values": { "$ref": "#/$defs/typeRef" }
+      }
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "required", "evidence_refs"],
+      "properties": {
+        "name": { "$ref": "#/$defs/id" },
+        "type": { "$ref": "#/$defs/typeRef" },
+        "required": { "type": "boolean" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "typeDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "description", "fields", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["object", "scalar", "opaque"] },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "fields": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/field" }
+        },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "evidence_refs"],
+      "properties": {
+        "mode": { "enum": ["public", "authenticated", "authorized"] },
+        "permissions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "evidence_refs"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "external_call",
+            "establish_session",
+            "request_recovery",
+            "reset_credential"
+          ]
+        },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "description",
+        "input",
+        "output",
+        "access",
+        "effects",
+        "integration_ref",
+        "evidence_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["command", "query", "subscription"] },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "input": { "$ref": "#/$defs/typeRef" },
+        "output": { "$ref": "#/$defs/typeRef" },
+        "access": { "$ref": "#/$defs/access" },
+        "effects": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/effect" }
+        },
+        "integration_ref": { "$ref": "#/$defs/id" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "constraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "target", "parameters", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["required", "format", "equals"] },
+        "target": { "$ref": "#/$defs/nonEmptyString" },
+        "parameters": { "type": "object" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "method",
+        "path",
+        "authentication",
+        "evidence_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "const": "http" },
+        "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+        "path": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9/_{}-]*$"
+        },
+        "authentication": {
+          "enum": ["none", "bearer", "session", "api_key", "other"]
+        },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0.0",
+  "contract_id": "director.evolvable-composition.angular-reactjs",
+  "status": "characterization",
+  "decision": "A remembered composition can evolve across data, permissions, behavior graph, and presentation, then regenerate Angular and ReactJS without losing human-owned extensions or changing the platform core during that regeneration.",
+  "source": {
+    "definition": "tools/generator-platform/sources/support-request.definition.json",
+    "remembered_pattern": "action-request",
+    "pattern_role": "reference-composition-not-core-family"
+  },
+  "targets": ["angular", "reactjs"],
+  "evolution": {
+    "data": {
+      "add_required_field": {
+        "name": "priority",
+        "type": {
+          "kind": "primitive",
+          "name": "string",
+          "nullable": false
+        }
+      }
+    },
+    "permissions": {
+      "replace_access": {
+        "mode": "authorized",
+        "permissions": ["support.submit"]
+      },
+      "required_runtime_effect": "The generated execution boundary denies the command when support.submit is absent."
+    },
+    "behavior_graph": {
+      "initial": "editing",
+      "nodes": ["editing", "submitting", "confirmed", "business-error"],
+      "edges": [
+        { "from": "editing", "event": "submit", "to": "submitting" },
+        { "from": "submitting", "event": "accepted", "to": "confirmed" },
+        {
+          "from": "submitting",
+          "event": "business-rejected",
+          "to": "business-error"
+        }
+      ]
+    },
+    "presentation": {
+      "kind": "wizard",
+      "steps": [
+        {
+          "id": "request",
+          "fields": ["email", "subject", "message", "priority"]
+        },
+        { "id": "review", "fields": [] },
+        { "id": "confirmation", "fields": ["request_id"] }
+      ]
+    },
+    "extensions": {
+      "slots": [
+        {
+          "id": "after-success",
+          "owner": "human",
+          "invariant": "Content and hash survive regeneration byte-for-byte."
+        }
+      ]
+    }
+  },
+  "invariants": [
+    "One canonical evolved composition is consumed by both target renderers.",
+    "Each generated application remains mono-stack.",
+    "Angular and ReactJS renderers remain strictly separated.",
+    "Human-owned extension content survives regeneration byte-for-byte.",
+    "Generator-owned artifacts may be replaced only after drift and ownership checks.",
+    "The evolution run itself does not modify core, planner, profiles, or renderers."
+  ],
+  "expected_supported": [
+    "data.canonical-model",
+    "extensions.human-owned-preservation",
+    "permissions.canonical-model",
+    "planning.shared-artifact-plan",
+    "regeneration.dry-run-drift-detection",
+    "regeneration.existing-output",
+    "targets.angular",
+    "targets.reactjs",
+    "targets.shared-semantic-input",
+    "targets.renderer-separation"
+  ],
+  "expected_gaps": [
+    "behavior.graph",
+    "composition.persisted-instance",
+    "permissions.runtime-enforcement",
+    "presentation.flow"
+  ],
+  "promotion_rule": {
+    "blocking_now": false,
+    "blocking_when": "All expected gaps have been implemented and removed from this contract.",
+    "success": "expected_gaps is empty and every invariant is verified by executable oracles."
+  }
+}

@@ -103,6 +103,7 @@ Thumbs.db
 
 # Cache binaire gitleaks (T4-5 / tools/check-secrets.mjs)
 tools/.cache/
+tools/generator-platform/.stack-test-runtime/
 
 __screenshots__/
 

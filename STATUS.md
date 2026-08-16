@@ -1,10 +1,10 @@
 # STATUS — cmz-platform
 
-> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-14.
+> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-16.
 > Ne pas éditer manuellement — lancer `node tools/generate-status.mjs` pour régénérer.
 
-> Ces métriques décrivent le cas d'usage Angular/SEOS. Objectif global du
-> dépôt (réorienté 2026-08-12) : [ADR-0026](./docs/adr/0026-reorientation-objectif-generation-generique.md).
+> Ces métriques décrivent le golden reference Angular/SEOS. Périmètre courant
+> de la plateforme (consolidé 2026-08-14) : [ADR-0029](./docs/adr/0029-perimetre-capacites-plateforme-generation.md).
 
 ## Résumé
 
@@ -13,7 +13,7 @@
 | Packages Nx | **72 libs + 1 app** (73 `project.json`) |
 | Fichiers TypeScript (`libs/`) | **2 730 fichiers hors tests** (2 979 au total, dont 249 specs) |
 | Modules détectés | **19** |
-| Périmètre applicatif (`scope.json`, M-7) | **54 / 54 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
+| Périmètre applicatif (`scope.json`, M-7) | **55 / 55 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
 | Corpus SEOS — couverture fichiers (N-4) | **914 / 2 730 fichiers libs/ hors tests → 33.5 %** — 1 modules sans aucune paire (1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **585 correspondances** + **922 décisions d'architecture** (`status: n/a`) — pas 1507 paires d'apprentissage |
 
@@ -59,7 +59,7 @@ la main (M-7/L-2/L-3, `audit-workspace-2026-08-02-addendum.md` P1-19).
 
 | Module | Entité | Famille | Fichiers source (legacy) | Statut |
 |:---|:---|:---|---:|:---|
-| — | — | — | — | Aucun écart — les 52 entités du périmètre (hors fixture SEOS) ont une trace dans libs/ |
+| — | — | — | — | Aucun écart — les 55 entités du périmètre (hors fixture SEOS) ont une trace dans libs/ |
 
 ---
-*[LLM_CONTEXT.md](./LLM_CONTEXT.md) — source de vérité architecture et directives agents IA*
+*[LLM_CONTEXT.md](./LLM_CONTEXT.md) — point d'entrée architecture et directives agents IA*

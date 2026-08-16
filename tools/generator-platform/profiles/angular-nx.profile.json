@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0.0",
+  "id": "angular-nx",
+  "version": "1.0.0",
+  "package_name": "generated-{domain}-angular",
+  "output_root": "libs/generated/{domain}-angular",
+  "external_dependencies": ["@angular/common", "@angular/core", "rxjs"],
+  "runtime_contract": "Angular injectable services packaged as an Nx library"
+}

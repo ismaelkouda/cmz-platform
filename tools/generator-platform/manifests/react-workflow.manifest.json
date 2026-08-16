@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.1.0",
+  "generator": { "name": "cmz-generator-platform", "version": "1.2.0" },
+  "input": {
+    "model_id": "behavior:requests-workflow",
+    "sha256": "e69ca7acc729afa239380acbbedea07eea2ec22e0a9411f0ff264f2448b384cd"
+  },
+  "plan": {
+    "plan_id": "behavior:requests-workflow:artifacts",
+    "sha256": "43f663514151d924ad070772c12237e4095143463efe7982a3a552414f3558a4"
+  },
+  "target": {
+    "profile_id": "react-typescript",
+    "profile_version": "1.0.0",
+    "profile_sha256": "91b15dc02bb36def8ba6ead2fca2b265465128a6b2bb3b0d41d45306029cd66f"
+  },
+  "files": [
+    {
+      "path": "package.json",
+      "artifact_id": "package-descriptor",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 147,
+      "sha256": "4f9e28fe053b13b1187c4e2f1fffadb407d6a8d48260561154b9423a4bd8ba99"
+    },
+    {
+      "path": "src/after-success.extension.ts",
+      "artifact_id": "after-success-extension",
+      "owner": "human-owned",
+      "write_policy": "preserve",
+      "bytes": 224,
+      "sha256": "aa69da7f7a1e6c507d6710e5cf050faab530101d568011b2c0e04f6c538db3fe"
+    },
+    {
+      "path": "src/extension-contract.ts",
+      "artifact_id": "extension-contract",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 276,
+      "sha256": "c70ec7d7a0e04329d2e6366228eed0bad1b66ee27864d03ec249bf87ad1a470e"
+    },
+    {
+      "path": "src/index.ts",
+      "artifact_id": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 188,
+      "sha256": "d9c0cfec7ec4c5f0f2b3d10b51608c30dbafaf8049bc7f8884c5fbb881750539"
+    },
+    {
+      "path": "src/models.ts",
+      "artifact_id": "domain-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 2073,
+      "sha256": "d454fb2c2195232d34613b76cc16b3ba03e03a14a827774eaa3f32deb8606f2a"
+    },
+    {
+      "path": "src/use-workflow-action.ts",
+      "artifact_id": "runtime-binding",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1890,
+      "sha256": "28d0f60716ff259bdfe481c4e819a7ab2408922e35a250f4c61c3f745eb860d5"
+    },
+    {
+      "path": "src/workflow-action-engine.ts",
+      "artifact_id": "execution-controller",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 5503,
+      "sha256": "d764d70a57227ffd762ce175bb377566d5da9c6a5b95bcc4054b5090028d7364"
+    },
+    {
+      "path": "tsconfig.json",
+      "artifact_id": "compiler-configuration",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 253,
+      "sha256": "cadc5053a749d3ad79f4f773d1ecf1b5eeb8430b1373bd291f5b7bf307f8d659"
+    }
+  ],
+  "tree_sha256": "a324262875c63d95aed0ad8bc38b929e542833711087e932a63999ae58a9850c"
+}

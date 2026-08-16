@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/workflow-action-definition.schema.json",
+  "title": "CMZ Workflow Action Authoring Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "feature",
+    "state",
+    "permissions",
+    "operations"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "workflow-action" },
+    "feature": { "$ref": "#/$defs/feature" },
+    "state": { "$ref": "#/$defs/state" },
+    "permissions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statuses", "qualification_statuses"],
+      "properties": {
+        "statuses": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "qualification_statuses": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "branch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "when",
+        "permission",
+        "qualification_from",
+        "qualification_to",
+        "to"
+      ],
+      "properties": {
+        "when": { "$ref": "#/$defs/id" },
+        "permission": { "$ref": "#/$defs/id" },
+        "qualification_from": { "type": "string" },
+        "qualification_to": { "type": "string" },
+        "to": { "$ref": "#/$defs/id" }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "topology",
+        "permission",
+        "from",
+        "to",
+        "branches",
+        "rules",
+        "steps"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["transition", "export"] },
+        "topology": { "enum": ["sequential", "async_callback"] },
+        "permission": { "$ref": "#/$defs/id" },
+        "from": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "to": { "$ref": "#/$defs/id" },
+        "branches": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/branch" }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "rejected_requires_reason_comment",
+              "callback_requires_type",
+              "edit_or_callback_requires_comment_and_fields",
+              "not_loading",
+              "not_exporting",
+              "positive_total",
+              "no_rows_no_write",
+              "errors_notified"
+            ]
+          }
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

@@ -69,6 +69,13 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0026](./adr/0026-reorientation-objectif-generation-generique.md) | Réorientation de l'objectif : système de génération générique multi-source/multi-stack |
 | [0027](./adr/0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md) | Noyau de verbes structurels + catalogue ouvert de patterns (remplace la liste fermée d'archétypes) |
 | [0028](./adr/0028-execution-topology-compositions-memorisees.md) | `execution_topology` comme axe ouvert + compositions mémorisées plutôt que primitives |
+| [0029](./adr/0029-perimetre-capacites-plateforme-generation.md) | Périmètre de capacités de la plateforme de génération    |
+| [0030](./adr/0030-ir-canonique-et-profils-cibles.md)        | IR canonique indépendante et profils de rendu cibles     |
+| [0031](./adr/0031-graphe-execution-et-manifests-composition.md) | Graphe d'exécution typé et manifests de composition persistés |
+| [0032](./adr/0032-cycle-vie-compositions-et-promotion-patterns.md) | Cycle de vie des compositions et promotion des patterns  |
+| [0033](./adr/0033-propriete-artefacts-regeneration-non-destructive.md) | Propriété des artefacts et régénération non destructive  |
+| [0034](./adr/0034-plateforme-multi-stack-renderers-separes-sorties-mono-stack.md) | Plateforme multi-stack, renderers séparés, sorties mono-stack |
+| [0035](./adr/0035-contrat-durabilite-publication-generation.md) | Contrat de durabilité de la publication générée          |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
@@ -76,6 +83,17 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 ## Architecture
 
 - [État du socle](./architecture/etat-du-socle.md) — ce qui existe aujourd'hui
+- [Matrice de capacités de la plateforme](./architecture/generation-platform-capability-matrix.md)
+  — sources, cibles et niveaux de preuve réellement atteints
+- [Conception des compositions évolutives et patterns mémorisés](./architecture/conception-compositions-evolutives-patterns-memorises.md)
+  — architecture cible, mémoire des compositions, promotion des patterns,
+  régénération non destructive et test directeur multi-axes
+- [Validation runtime `action-request`](./architecture/validation-runtime-action-request.md)
+  — cas métier exécutés sur les sorties Angular et ReactJS, avec limites
+  explicites de la preuve
+- [Validation runtime `workflow-action`](./architecture/validation-runtime-workflow-action.md)
+  — états, permissions, branches et export asynchrone exécutés sur Angular et
+  ReactJS
 - [Feuille de route](./architecture/feuille-de-route.md) — phases et
   séquencement
 - [Plan d'exécution](./architecture/plan-d-execution.md) — étapes détaillées,
@@ -93,17 +111,20 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
   Phase 08 — workflow zéro code métier manuel (G-V-R)
 - [Licences tierces](./architecture/licences-tierces.md) — inventaire factuel
   des licences des dépendances (pas un avis juridique)
-- [Stratégie cross-stack — revue critique](./architecture/strategie-cross-stack-revue.md) —
-  instruit la dette d'ADR-0012, chantiers Q/R/S/T pour un cœur agnostique
-- [Échantillonnage — règles métier non déductibles](./architecture/echantillonnage-regles-non-deductibles.md) —
-  taux mesuré (37 % mécanique / 37 % déductible avec contexte / 25 % non déductible) sur le corpus SEOS
-- [Propositions d'automatisation SEOS](./architecture/propositions-automatisation-seos.md) —
-  garde-fou LLM+Oracle calibré sur ce taux, inspiré d'un précédent Google publié
-- [Test end-to-end — registre de motifs + punt check](./architecture/test-e2e-oracle-punt-check.md) —
-  validation empirique du garde-fou sur 2 cas réels
-- **[Conception — pipeline Figma vers code](./architecture/conception-pipeline-figma-vers-code.md)** —
-  document de conception détaillé de la réorientation ([ADR-0026](./adr/0026-reorientation-objectif-generation-generique.md)) :
-  génération ex nihilo à action humaine minimisée, non implémentée
+- [Stratégie cross-stack — revue critique](./architecture/strategie-cross-stack-revue.md)
+  — instruit la dette d'ADR-0012, chantiers Q/R/S/T pour un cœur agnostique
+- [Échantillonnage — règles métier non déductibles](./architecture/echantillonnage-regles-non-deductibles.md)
+  — taux mesuré (37 % mécanique / 37 % déductible avec contexte / 25 % non
+  déductible) sur le corpus SEOS
+- [Propositions d'automatisation SEOS](./architecture/propositions-automatisation-seos.md)
+  — garde-fou LLM+Oracle calibré sur ce taux, inspiré d'un précédent Google
+  publié
+- [Test end-to-end — registre de motifs + punt check](./architecture/test-e2e-oracle-punt-check.md)
+  — validation empirique du garde-fou sur 2 cas réels
+- **[Conception — pipeline Figma vers code](./architecture/conception-pipeline-figma-vers-code.md)**
+  — adaptateur de présentation futur, non implémenté et non prioritaire avant la
+  matrice web 2×2
+  d'[ADR-0029](./adr/0029-perimetre-capacites-plateforme-generation.md)
 
 ## Conventions
 
@@ -118,15 +139,19 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 ## Guides
 
 - [Contribuer](./guides/contribuer.md) — prérequis, commandes, conventions
+- [Créer une fonctionnalité `action-request`](./guides/creer-une-action-request.md)
+  — décrire un besoin métier puis générer une cible Angular et/ou ReactJS
+- [Créer une fonctionnalité `workflow-action`](./guides/creer-un-workflow-action.md)
+  — décrire un graphe borné puis générer Angular et/ou ReactJS
 
 ## Pour s'y retrouver
 
-| Question                            | Document                                                               |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| **Quel est l'objectif du projet ?** | **[ADR-0026 — réorientation 2026-08-12](./adr/0026-reorientation-objectif-generation-generique.md)** (SEOS/Angular = cas d'usage d'un système de génération générique, pas la finalité) |
-| Comment je démarre ?                | [Contribuer](./guides/contribuer.md)                                   |
-| Qu'est-ce qui existe déjà ?         | [État du socle](./architecture/etat-du-socle.md)                       |
-| Pourquoi ce choix ?                 | L'ADR correspondant                                                    |
-| Qu'est-ce qui vient ensuite ?       | [Feuille de route](./architecture/feuille-de-route.md)                 |
-| Comment on s'y prend concrètement ? | [Plan d'exécution](./architecture/plan-d-execution.md)                 |
-| Que contient l'application source ? | [Analyse du projet source](./architecture/analyse-du-projet-source.md) |
+| Question                            | Document                                                                                                                                                                        |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Quel est l'objectif du projet ?** | **[ADR-0029 — périmètre de capacités](./adr/0029-perimetre-capacites-plateforme-generation.md)** + [matrice de preuve](./architecture/generation-platform-capability-matrix.md) |
+| Comment je démarre ?                | [Contribuer](./guides/contribuer.md)                                                                                                                                            |
+| Qu'est-ce qui existe déjà ?         | [État du socle](./architecture/etat-du-socle.md)                                                                                                                                |
+| Pourquoi ce choix ?                 | L'ADR correspondant                                                                                                                                                             |
+| Qu'est-ce qui vient ensuite ?       | [Feuille de route](./architecture/feuille-de-route.md)                                                                                                                          |
+| Comment on s'y prend concrètement ? | [Plan d'exécution](./architecture/plan-d-execution.md)                                                                                                                          |
+| Que contient l'application source ? | [Analyse du projet source](./architecture/analyse-du-projet-source.md)                                                                                                          |

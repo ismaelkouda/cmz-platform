@@ -38,19 +38,18 @@
 > 🤖 **IMPORTANT FOR ALL LLM AGENTS**: Always read
 > [`LLM_CONTEXT.md`](./LLM_CONTEXT.md) at the beginning of your session.
 
-> ⚠️ **OBJECTIF DU PROJET — RÉORIENTÉ 2026-08-12** : ce dépôt n'est plus
-> uniquement une migration SEOS→Angular. Voir
-> [`docs/adr/0026-reorientation-objectif-generation-generique.md`](./docs/adr/0026-reorientation-objectif-generation-generique.md)
-> avant toute action de fond — SEOS/Angular est désormais un **cas d'usage**
-> d'un système de génération générique multi-source (legacy, maquette,
-> description) et multi-stack, pas la finalité du projet.
+> ⚠️ **OBJECTIF DU PROJET — CONSOLIDÉ 2026-08-14** : voir
+> [`ADR-0029`](./docs/adr/0029-perimetre-capacites-plateforme-generation.md)
+> avant toute action de fond. Le dépôt vise une plateforme extensible dans une
+> enveloppe déclarée d'applications métier ; il ne revendique pas « toute
+> source/toute stack ». SEOS/Angular reste le golden reference industriel.
 
 ### Core Mindset & Execution Principles:
 
 1. **Architect Posture**: Do not act as a naive ticket-doer. Understand the
    system end-to-end (SEOS paradigm, MDE + LLM Generate-Verify-Repair loop, Nx
-   package-based invariants) **as the current concrete case of the broader
-   generic generation system — see ADR-0026**.
+   package-based invariants) **as the current Angular/Nx target profile of the
+   bounded platform described by ADR-0029/0030**.
 2. **Deterministic Contract Compliance**: The source of truth for business logic
    is `$SEOS_LEGACY_ROOT` (required env var; no machine-path fallback). Never
    guess DTO shapes, endpoints, or field names.

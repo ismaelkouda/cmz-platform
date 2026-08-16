@@ -8,14 +8,18 @@
  * $ref $defs, if/then, additionalProperties) suffit à couvrir exactement
  * `pattern-core.schema.json` — pas besoin de la totalité de draft 2020-12.
  *
- * Au-delà de la validation JSON Schema générique, ce script vérifie deux
- * invariants métier propres au noyau de verbes (ADR-0027), non exprimables
- * par le sous-ensemble JSON Schema supporté ici :
- *   1. Chaque `composition[].verb` référence un verbe qui existe réellement
+ * Au-delà de la validation JSON Schema générique, ce script vérifie les
+ * invariants propres au profil Angular/Nx, non exprimables par le sous-ensemble
+ * JSON Schema supporté ici :
+ *   1. `CORE_VERBS` respecte `$defs.verbRegistry` et chaque placeholder de
+ *      template est déclaré par son verbe.
+ *   2. Chaque `composition[].verb` référence un verbe qui existe réellement
  *      dans le registre `CORE_VERBS` du schéma (pas seulement dans l'enum —
  *      l'enum liste les noms possibles, CORE_VERBS est la définition réelle).
- *   2. Chaque `composition[].variant`, quand renseigné, correspond à une
+ *   3. Chaque `composition[].variant`, quand renseigné, correspond à une
  *      entrée déclarée dans `CORE_VERBS.<verb>.variants`.
+ *   4. Chaque `composition[].files_field`, quand renseigné, existe dans le
+ *      pattern et référence un tableau ou un objet de listes.
  * (Le if/then du schéma couvre déjà la règle "justification requise si
  * verb=custom" — pas dupliqué ici.)
  *
@@ -66,7 +70,11 @@ function validate(schema, data, path, rootSchema) {
             if (t === 'null') return data === null;
             if (t === 'array') return Array.isArray(data);
             if (t === 'object')
-                return data !== null && typeof data === 'object' && !Array.isArray(data);
+                return (
+                    data !== null &&
+                    typeof data === 'object' &&
+                    !Array.isArray(data)
+                );
             if (t === 'integer')
                 return typeof data === 'number' && Number.isInteger(data);
             return typeof data === t;
@@ -80,7 +88,9 @@ function validate(schema, data, path, rootSchema) {
     }
 
     if (schema.enum && !schema.enum.includes(data)) {
-        errors.push(`${path}: value "${data}" not in enum [${schema.enum.join(', ')}]`);
+        errors.push(
+            `${path}: value "${data}" not in enum [${schema.enum.join(', ')}]`
+        );
     }
 
     if (typeof data === 'string') {
@@ -108,11 +118,7 @@ function validate(schema, data, path, rootSchema) {
         }
     }
 
-    if (
-        data &&
-        typeof data === 'object' &&
-        !Array.isArray(data)
-    ) {
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
         const obj = /** @type {Record<string, unknown>} */ (data);
 
         if (schema.required) {
@@ -171,19 +177,19 @@ export function validatePattern(schema, data) {
 }
 
 /**
- * Invariants métier ADR-0027 non couverts par le sous-ensemble JSON Schema
- * ci-dessus : composition[].verb doit exister dans CORE_VERBS, et
- * composition[].variant (si présent) doit être une variante déclarée de ce
- * verbe.
+ * Invariants du profil non couverts par le sous-ensemble JSON Schema :
+ * références de verbes/variantes et existence des champs de fichiers.
  *
  * @param {object} schema
  * @param {object} pattern
  * @returns {string[]}
  */
-function validateCoreVerbReferences(schema, pattern) {
+export function validateCoreVerbReferences(schema, pattern) {
     const errors = [];
     const coreVerbs = schema.CORE_VERBS ?? {};
-    const composition = Array.isArray(pattern.composition) ? pattern.composition : [];
+    const composition = Array.isArray(pattern.composition)
+        ? pattern.composition
+        : [];
 
     composition.forEach((instance, i) => {
         const verb = instance?.verb;
@@ -207,7 +213,64 @@ function validateCoreVerbReferences(schema, pattern) {
                 `composition[${i}]: verb="custom" exige une "justification" non vide (AIP-136, ADR-0027)`
             );
         }
+        if (instance.files_field) {
+            const value = pattern[instance.files_field];
+            if (value === undefined) {
+                errors.push(
+                    `composition[${i}]: files_field "${instance.files_field}" absent du pattern`
+                );
+            } else if (
+                !Array.isArray(value) &&
+                (!value || typeof value !== 'object')
+            ) {
+                errors.push(
+                    `composition[${i}]: files_field "${instance.files_field}" doit référencer un tableau ou un objet de listes`
+                );
+            }
+        }
     });
+
+    return errors;
+}
+
+/**
+ * Valide la source de vérité CORE_VERBS elle-même, puis vérifie que chaque
+ * placeholder employé par un template est déclaré par le verbe.
+ *
+ * @param {object} schema
+ * @returns {string[]}
+ */
+export function validateCoreVerbRegistry(schema) {
+    const errors = [];
+    const registrySchema = schema.$defs?.verbRegistry;
+    const coreVerbs = schema.CORE_VERBS;
+
+    if (!registrySchema) return ['CORE_VERBS: $defs.verbRegistry absent'];
+    if (!coreVerbs || typeof coreVerbs !== 'object') {
+        return ['CORE_VERBS: registre absent ou invalide'];
+    }
+
+    errors.push(...validate(registrySchema, coreVerbs, 'CORE_VERBS', schema));
+
+    for (const [verb, definition] of Object.entries(coreVerbs)) {
+        const declared = new Set(definition.placeholders ?? []);
+        const templates = definition.file_templates ?? {};
+
+        for (const [layer, paths] of Object.entries(templates)) {
+            if (!Array.isArray(paths)) continue;
+            paths.forEach((template, i) => {
+                const used =
+                    String(template).match(/\{[A-Za-z][A-Za-z0-9_-]*\}/g) ?? [];
+                for (const placeholder of used) {
+                    if (!declared.has(placeholder)) {
+                        errors.push(
+                            `CORE_VERBS.${verb}.file_templates.${layer}[${i}]: placeholder ${placeholder} utilisé mais non déclaré`
+                        );
+                    }
+                }
+            });
+        }
+    }
 
     return errors;
 }
@@ -224,14 +287,28 @@ function main() {
     const args = process.argv.slice(2);
 
     if (!existsSync(SCHEMA_PATH)) {
-        console.error(`[validate-pattern-core] schéma introuvable — ${SCHEMA_PATH}`);
+        console.error(
+            `[validate-pattern-core] schéma introuvable — ${SCHEMA_PATH}`
+        );
         process.exit(2);
     }
     const schema = JSON.parse(readFileSync(SCHEMA_PATH, 'utf8'));
 
+    const registryErrs = validateCoreVerbRegistry(schema);
+    if (registryErrs.length) {
+        console.error(
+            `[validate-pattern-core] pattern-core.schema.json — ${registryErrs.length} erreur(s) CORE_VERBS :`
+        );
+        for (const error of registryErrs) console.error(`  - ${error}`);
+        process.exit(1);
+    }
+    console.error('[validate-pattern-core] ✓ CORE_VERBS');
+
     const files = collectPatternPaths(args);
     if (files.length === 0) {
-        console.error('[validate-pattern-core] aucun fichier *.pattern.json trouvé');
+        console.error(
+            '[validate-pattern-core] aucun fichier *.pattern.json trouvé'
+        );
         process.exit(2);
     }
 
@@ -249,7 +326,9 @@ function main() {
         try {
             obj = JSON.parse(readFileSync(file, 'utf8'));
         } catch (e) {
-            console.error(`[validate-pattern-core] ${file} — JSON parse: ${e.message}`);
+            console.error(
+                `[validate-pattern-core] ${file} — JSON parse: ${e.message}`
+            );
             failures += 1;
             continue;
         }
@@ -259,7 +338,9 @@ function main() {
         const errs = [...schemaErrs, ...verbErrs];
 
         if (errs.length) {
-            console.error(`[validate-pattern-core] ${file} — ${errs.length} erreur(s) :`);
+            console.error(
+                `[validate-pattern-core] ${file} — ${errs.length} erreur(s) :`
+            );
             for (const e of errs) console.error(`  - ${e}`);
             failures += 1;
         } else {
@@ -273,7 +354,12 @@ function main() {
         );
         process.exit(1);
     }
-    console.error(`\n[validate-pattern-core] OK — ${checked} fichier(s) valides`);
+    console.error(
+        `\n[validate-pattern-core] OK — ${checked} fichier(s) valides`
+    );
 }
 
-main();
+const IS_MAIN =
+    process.argv[1] &&
+    resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (IS_MAIN) main();

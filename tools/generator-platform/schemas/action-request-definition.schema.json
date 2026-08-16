@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/action-request-definition.schema.json",
+  "title": "CMZ Action Request Authoring Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "feature",
+    "opaque_types",
+    "operations"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "action-request" },
+    "feature": { "$ref": "#/$defs/feature" },
+    "opaque_types": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/opaqueType" }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "opaqueType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "description": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "typeRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name", "nullable"],
+      "properties": {
+        "kind": { "enum": ["primitive", "model"] },
+        "name": { "$ref": "#/$defs/id" },
+        "nullable": { "type": "boolean" }
+      }
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "required"],
+      "properties": {
+        "name": { "$ref": "#/$defs/id" },
+        "type": { "$ref": "#/$defs/typeRef" },
+        "required": { "type": "boolean" },
+        "format": { "enum": ["email"] },
+        "equals": { "$ref": "#/$defs/id" }
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "fields"],
+      "properties": {
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/field" }
+        }
+      }
+    },
+    "outputBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/field" }
+        }
+      }
+    },
+    "access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["public", "authenticated", "authorized"] },
+        "permissions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "http": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "path", "authentication"],
+      "properties": {
+        "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+        "path": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9/_{}-]*$"
+        },
+        "authentication": {
+          "enum": ["none", "bearer", "session", "api_key", "other"]
+        }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "external_call",
+            "establish_session",
+            "request_recovery",
+            "reset_credential"
+          ]
+        },
+        "description": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "input",
+        "output",
+        "access",
+        "http",
+        "effects"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "input": { "$ref": "#/$defs/boundary" },
+        "output": { "$ref": "#/$defs/outputBoundary" },
+        "access": { "$ref": "#/$defs/access" },
+        "http": { "$ref": "#/$defs/http" },
+        "effects": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/effect" }
+        }
+      }
+    }
+  }
+}

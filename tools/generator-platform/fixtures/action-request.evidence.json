@@ -1,0 +1,242 @@
+{
+  "schema_version": "1.0.0",
+  "model_id": "authentication-action-request-evidence",
+  "sources": [
+    {
+      "id": "source.login-contract",
+      "kind": "source_code",
+      "uri": "libs/authentication/domain/src/lib/contracts/login-request.contract.ts",
+      "sha256": "df8b901edf85e5605b2159b978891d0fa107813c66853600d82bbca9dd667e87"
+    },
+    {
+      "id": "source.forgot-password-contract",
+      "kind": "source_code",
+      "uri": "libs/authentication/domain/src/lib/contracts/forgot-password-request.contract.ts",
+      "sha256": "973be988fe12ea1be9827078128459ca7c22dd31feda615b88fcdec4fe6e0bb5"
+    },
+    {
+      "id": "source.reset-password-contract",
+      "kind": "source_code",
+      "uri": "libs/authentication/domain/src/lib/contracts/reset-password-request.contract.ts",
+      "sha256": "aa2a359290808fc19acf658659603acc0c56e38d07bcd517eec0abe2d6ed234f"
+    },
+    {
+      "id": "source.login-validator",
+      "kind": "source_code",
+      "uri": "libs/authentication/domain/src/lib/validators/login-request.validator.ts",
+      "sha256": "f9ea0f19c3d1e493a6c1d44ea2dba19f3f643ea98dff7e5ef39699c4eba08b67"
+    },
+    {
+      "id": "source.forgot-password-validator",
+      "kind": "source_code",
+      "uri": "libs/authentication/domain/src/lib/validators/forgot-password-request.validator.ts",
+      "sha256": "f28f062048a79c3294434e53ce348c89a1fe70d0fba7e5273f222580e48021ce"
+    },
+    {
+      "id": "source.reset-password-validator",
+      "kind": "source_code",
+      "uri": "libs/authentication/domain/src/lib/validators/reset-password-request.validator.ts",
+      "sha256": "959d5da0640ca74fbbe53034c07fe6f62b0aa5dd120da41cd53f219bccc5a11c"
+    },
+    {
+      "id": "source.login-props",
+      "kind": "source_code",
+      "uri": "libs/authentication/domain/src/lib/props/login.props.ts",
+      "sha256": "cb67acf3bd86b51ac78dc446e756ff37b592b8e294e9f9029cdd6f8ebeba7433"
+    },
+    {
+      "id": "source.forgot-password-props",
+      "kind": "source_code",
+      "uri": "libs/authentication/domain/src/lib/props/forgot-password.props.ts",
+      "sha256": "a2e9fab5742eb8551031a61c2e10d0d65526638e78c457da42a26486d820446d"
+    },
+    {
+      "id": "source.reset-password-props",
+      "kind": "source_code",
+      "uri": "libs/authentication/domain/src/lib/props/reset-password.props.ts",
+      "sha256": "f90cc2af16595b88b16334f0197609ce857660ff4d058bcc3194eb3e3d6c9e3e"
+    },
+    {
+      "id": "source.login-api",
+      "kind": "source_code",
+      "uri": "libs/authentication/data/src/lib/sources/login.api.ts",
+      "sha256": "83a4835e0dfd0795cc8db0c112f678ffd8133121f2d402b107fb1e52e07df1fb"
+    },
+    {
+      "id": "source.forgot-password-api",
+      "kind": "source_code",
+      "uri": "libs/authentication/data/src/lib/sources/forgot-password.api.ts",
+      "sha256": "c71f49a58878e348a259703d027fbdb7e0177639772d2b726f577e9d2086abae"
+    },
+    {
+      "id": "source.reset-password-api",
+      "kind": "source_code",
+      "uri": "libs/authentication/data/src/lib/sources/reset-password.api.ts",
+      "sha256": "4174d8e3cb6d0bfdd690213f115030f64dcbbfa0161afc43e6af0edac5336ce7"
+    },
+    {
+      "id": "source.authentication-endpoints",
+      "kind": "source_code",
+      "uri": "libs/authentication/data/src/lib/endpoints/authentication.endpoints.ts",
+      "sha256": "56a82a226a790da0129658228ca12ae4ece17ed8f8adc41b3a07352d019c479c"
+    },
+    {
+      "id": "source.login-facade",
+      "kind": "source_code",
+      "uri": "libs/authentication/application/src/lib/facades/login.facade.ts",
+      "sha256": "bb7fac90723d0ff6a870da2a12a9a60388bfb84f8ae6970cefc3c3bf1c6e3cbf"
+    }
+  ],
+  "facts": [
+    {
+      "id": "fact.login.operation",
+      "category": "operation",
+      "statement": "Login is exposed as a public unauthenticated HTTP POST operation at login.",
+      "evidence_refs": ["source.login-api", "source.authentication-endpoints"],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.login.input",
+      "category": "data_shape",
+      "statement": "Login accepts email and password values.",
+      "evidence_refs": ["source.login-contract"],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.login.constraints",
+      "category": "constraint",
+      "statement": "Login requires email and password, and email must match the declared email format.",
+      "evidence_refs": ["source.login-validator"],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.login.output",
+      "category": "data_shape",
+      "statement": "Login returns a user, an authentication token, and an optional message.",
+      "evidence_refs": ["source.login-props"],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.login.session-effect",
+      "category": "effect",
+      "statement": "A successful login persists the returned user and token before reporting success.",
+      "evidence_refs": ["source.login-facade"],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.forgot-password.operation",
+      "category": "operation",
+      "statement": "Forgot password is exposed as a public unauthenticated HTTP POST operation at forgot-password.",
+      "evidence_refs": [
+        "source.forgot-password-api",
+        "source.authentication-endpoints"
+      ],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.forgot-password.input",
+      "category": "data_shape",
+      "statement": "Forgot password accepts a required email value with the declared email format.",
+      "evidence_refs": [
+        "source.forgot-password-contract",
+        "source.forgot-password-validator"
+      ],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.forgot-password.output",
+      "category": "data_shape",
+      "statement": "Forgot password returns a required message.",
+      "evidence_refs": ["source.forgot-password-props"],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.reset-password.operation",
+      "category": "operation",
+      "statement": "Reset password is exposed as a public unauthenticated HTTP POST operation at reset-password.",
+      "evidence_refs": [
+        "source.reset-password-api",
+        "source.authentication-endpoints"
+      ],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.reset-password.input",
+      "category": "data_shape",
+      "statement": "Reset password accepts token, email, password, and password confirmation values.",
+      "evidence_refs": ["source.reset-password-contract"],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.reset-password.constraints",
+      "category": "constraint",
+      "statement": "Reset password requires every input, validates email format, and requires password confirmation to equal password.",
+      "evidence_refs": ["source.reset-password-validator"],
+      "confidence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "fact.reset-password.output",
+      "category": "data_shape",
+      "statement": "Reset password returns a required message.",
+      "evidence_refs": ["source.reset-password-props"],
+      "confidence": 1,
+      "status": "observed"
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "unknown.backend-contract-authority",
+      "question": "Does a versioned backend or OpenAPI contract independently confirm these client-observed operations?",
+      "impact": "Without an independent contract, the slice can prove extraction consistency but cannot claim M4 cross-source conformance.",
+      "blocking": false,
+      "evidence_refs": [
+        "source.login-api",
+        "source.forgot-password-api",
+        "source.reset-password-api"
+      ]
+    },
+    {
+      "id": "unknown.error-contract",
+      "question": "Which transport errors, status codes, and domain failures form the canonical error contract?",
+      "impact": "Target generators cannot yet emit portable typed failure handling.",
+      "blocking": false,
+      "evidence_refs": []
+    },
+    {
+      "id": "unknown.runtime-base-url",
+      "question": "Which environment-owned base URL resolves the relative HTTP paths?",
+      "impact": "The base URL remains deployment configuration and must not leak into the canonical semantic model.",
+      "blocking": false,
+      "evidence_refs": []
+    }
+  ],
+  "decisions": [
+    {
+      "id": "decision.command-classification",
+      "statement": "Classify the three operations as commands rather than generic custom actions.",
+      "rationale": "Each operation changes external authentication state or initiates a state-changing recovery process.",
+      "evidence_refs": [
+        "fact.login.operation",
+        "fact.forgot-password.operation",
+        "fact.reset-password.operation"
+      ]
+    },
+    {
+      "id": "decision.opaque-authentication-values",
+      "statement": "Keep user and authentication-token internals opaque in this first action-request slice.",
+      "rationale": "PLAT-1 validates the command boundary; expanding shared identity internals would enlarge the slice without testing the Evidence-to-Semantic seam.",
+      "evidence_refs": ["fact.login.output"]
+    }
+  ]
+}

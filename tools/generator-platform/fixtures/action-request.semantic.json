@@ -1,0 +1,380 @@
+{
+  "schema_version": "1.0.0",
+  "model_id": "authentication-action-request-semantic",
+  "domain": {
+    "id": "authentication",
+    "name": "Authentication",
+    "description": "Public commands for session establishment and credential recovery."
+  },
+  "types": [
+    {
+      "id": "current-user",
+      "kind": "opaque",
+      "description": "Authenticated identity returned at the command boundary.",
+      "fields": [],
+      "evidence_refs": [
+        "fact.login.output",
+        "decision.opaque-authentication-values"
+      ]
+    },
+    {
+      "id": "authentication-token",
+      "kind": "opaque",
+      "description": "Credential used to establish an authenticated session.",
+      "fields": [],
+      "evidence_refs": [
+        "fact.login.output",
+        "decision.opaque-authentication-values"
+      ]
+    },
+    {
+      "id": "login-input",
+      "kind": "object",
+      "description": "Credentials submitted to establish a session.",
+      "fields": [
+        {
+          "name": "email",
+          "type": { "kind": "primitive", "name": "string", "nullable": false },
+          "required": true,
+          "evidence_refs": ["fact.login.input", "fact.login.constraints"]
+        },
+        {
+          "name": "password",
+          "type": { "kind": "primitive", "name": "string", "nullable": false },
+          "required": true,
+          "evidence_refs": ["fact.login.input", "fact.login.constraints"]
+        }
+      ],
+      "evidence_refs": ["fact.login.input", "fact.login.constraints"]
+    },
+    {
+      "id": "login-result",
+      "kind": "object",
+      "description": "Identity and credential returned after successful authentication.",
+      "fields": [
+        {
+          "name": "user",
+          "type": {
+            "kind": "model",
+            "name": "current-user",
+            "nullable": false
+          },
+          "required": true,
+          "evidence_refs": ["fact.login.output"]
+        },
+        {
+          "name": "token",
+          "type": {
+            "kind": "model",
+            "name": "authentication-token",
+            "nullable": false
+          },
+          "required": true,
+          "evidence_refs": ["fact.login.output"]
+        },
+        {
+          "name": "message",
+          "type": { "kind": "primitive", "name": "string", "nullable": false },
+          "required": false,
+          "evidence_refs": ["fact.login.output"]
+        }
+      ],
+      "evidence_refs": ["fact.login.output"]
+    },
+    {
+      "id": "forgot-password-input",
+      "kind": "object",
+      "description": "Identity address used to initiate credential recovery.",
+      "fields": [
+        {
+          "name": "email",
+          "type": { "kind": "primitive", "name": "string", "nullable": false },
+          "required": true,
+          "evidence_refs": ["fact.forgot-password.input"]
+        }
+      ],
+      "evidence_refs": ["fact.forgot-password.input"]
+    },
+    {
+      "id": "message-result",
+      "kind": "object",
+      "description": "Confirmation message returned by a command.",
+      "fields": [
+        {
+          "name": "message",
+          "type": { "kind": "primitive", "name": "string", "nullable": false },
+          "required": true,
+          "evidence_refs": [
+            "fact.forgot-password.output",
+            "fact.reset-password.output"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "fact.forgot-password.output",
+        "fact.reset-password.output"
+      ]
+    },
+    {
+      "id": "reset-password-input",
+      "kind": "object",
+      "description": "Recovery proof and replacement credential submitted to complete recovery.",
+      "fields": [
+        {
+          "name": "token",
+          "type": { "kind": "primitive", "name": "string", "nullable": false },
+          "required": true,
+          "evidence_refs": [
+            "fact.reset-password.input",
+            "fact.reset-password.constraints"
+          ]
+        },
+        {
+          "name": "email",
+          "type": { "kind": "primitive", "name": "string", "nullable": false },
+          "required": true,
+          "evidence_refs": [
+            "fact.reset-password.input",
+            "fact.reset-password.constraints"
+          ]
+        },
+        {
+          "name": "password",
+          "type": { "kind": "primitive", "name": "string", "nullable": false },
+          "required": true,
+          "evidence_refs": [
+            "fact.reset-password.input",
+            "fact.reset-password.constraints"
+          ]
+        },
+        {
+          "name": "confirm_password",
+          "type": { "kind": "primitive", "name": "string", "nullable": false },
+          "required": true,
+          "evidence_refs": [
+            "fact.reset-password.input",
+            "fact.reset-password.constraints"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "fact.reset-password.input",
+        "fact.reset-password.constraints"
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "id": "login",
+      "kind": "command",
+      "description": "Authenticate credentials and establish a session.",
+      "input": { "kind": "model", "name": "login-input", "nullable": false },
+      "output": { "kind": "model", "name": "login-result", "nullable": false },
+      "access": {
+        "mode": "public",
+        "evidence_refs": ["fact.login.operation"]
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Submit credentials to the authentication boundary.",
+          "evidence_refs": ["fact.login.operation"]
+        },
+        {
+          "kind": "establish_session",
+          "description": "Persist identity and credential before reporting success.",
+          "evidence_refs": ["fact.login.session-effect"]
+        }
+      ],
+      "integration_ref": "integration.login",
+      "evidence_refs": [
+        "decision.command-classification",
+        "fact.login.operation",
+        "fact.login.input",
+        "fact.login.output",
+        "fact.login.session-effect"
+      ]
+    },
+    {
+      "id": "forgot-password",
+      "kind": "command",
+      "description": "Initiate credential recovery for an identity address.",
+      "input": {
+        "kind": "model",
+        "name": "forgot-password-input",
+        "nullable": false
+      },
+      "output": {
+        "kind": "model",
+        "name": "message-result",
+        "nullable": false
+      },
+      "access": {
+        "mode": "public",
+        "evidence_refs": ["fact.forgot-password.operation"]
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Submit a recovery request to the authentication boundary.",
+          "evidence_refs": ["fact.forgot-password.operation"]
+        },
+        {
+          "kind": "request_recovery",
+          "description": "Request initiation of a credential recovery process.",
+          "evidence_refs": ["fact.forgot-password.operation"]
+        }
+      ],
+      "integration_ref": "integration.forgot-password",
+      "evidence_refs": [
+        "decision.command-classification",
+        "fact.forgot-password.operation",
+        "fact.forgot-password.input",
+        "fact.forgot-password.output"
+      ]
+    },
+    {
+      "id": "reset-password",
+      "kind": "command",
+      "description": "Replace a credential using recovery proof.",
+      "input": {
+        "kind": "model",
+        "name": "reset-password-input",
+        "nullable": false
+      },
+      "output": {
+        "kind": "model",
+        "name": "message-result",
+        "nullable": false
+      },
+      "access": {
+        "mode": "public",
+        "evidence_refs": ["fact.reset-password.operation"]
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Submit recovery proof and replacement credential.",
+          "evidence_refs": ["fact.reset-password.operation"]
+        },
+        {
+          "kind": "reset_credential",
+          "description": "Replace the credential after recovery proof is accepted.",
+          "evidence_refs": ["fact.reset-password.operation"]
+        }
+      ],
+      "integration_ref": "integration.reset-password",
+      "evidence_refs": [
+        "decision.command-classification",
+        "fact.reset-password.operation",
+        "fact.reset-password.input",
+        "fact.reset-password.output"
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "id": "constraint.login-email-required",
+      "kind": "required",
+      "target": "login-input.email",
+      "parameters": {},
+      "evidence_refs": ["fact.login.constraints"]
+    },
+    {
+      "id": "constraint.login-email-format",
+      "kind": "format",
+      "target": "login-input.email",
+      "parameters": { "format": "email" },
+      "evidence_refs": ["fact.login.constraints"]
+    },
+    {
+      "id": "constraint.login-password-required",
+      "kind": "required",
+      "target": "login-input.password",
+      "parameters": {},
+      "evidence_refs": ["fact.login.constraints"]
+    },
+    {
+      "id": "constraint.forgot-email-required",
+      "kind": "required",
+      "target": "forgot-password-input.email",
+      "parameters": {},
+      "evidence_refs": ["fact.forgot-password.input"]
+    },
+    {
+      "id": "constraint.forgot-email-format",
+      "kind": "format",
+      "target": "forgot-password-input.email",
+      "parameters": { "format": "email" },
+      "evidence_refs": ["fact.forgot-password.input"]
+    },
+    {
+      "id": "constraint.reset-token-required",
+      "kind": "required",
+      "target": "reset-password-input.token",
+      "parameters": {},
+      "evidence_refs": ["fact.reset-password.constraints"]
+    },
+    {
+      "id": "constraint.reset-email-required",
+      "kind": "required",
+      "target": "reset-password-input.email",
+      "parameters": {},
+      "evidence_refs": ["fact.reset-password.constraints"]
+    },
+    {
+      "id": "constraint.reset-email-format",
+      "kind": "format",
+      "target": "reset-password-input.email",
+      "parameters": { "format": "email" },
+      "evidence_refs": ["fact.reset-password.constraints"]
+    },
+    {
+      "id": "constraint.reset-password-required",
+      "kind": "required",
+      "target": "reset-password-input.password",
+      "parameters": {},
+      "evidence_refs": ["fact.reset-password.constraints"]
+    },
+    {
+      "id": "constraint.reset-confirmation-required",
+      "kind": "required",
+      "target": "reset-password-input.confirm_password",
+      "parameters": {},
+      "evidence_refs": ["fact.reset-password.constraints"]
+    },
+    {
+      "id": "constraint.reset-password-confirmation",
+      "kind": "equals",
+      "target": "reset-password-input.confirm_password",
+      "parameters": { "other_target": "reset-password-input.password" },
+      "evidence_refs": ["fact.reset-password.constraints"]
+    }
+  ],
+  "integrations": [
+    {
+      "id": "integration.login",
+      "kind": "http",
+      "method": "POST",
+      "path": "login",
+      "authentication": "none",
+      "evidence_refs": ["fact.login.operation"]
+    },
+    {
+      "id": "integration.forgot-password",
+      "kind": "http",
+      "method": "POST",
+      "path": "forgot-password",
+      "authentication": "none",
+      "evidence_refs": ["fact.forgot-password.operation"]
+    },
+    {
+      "id": "integration.reset-password",
+      "kind": "http",
+      "method": "POST",
+      "path": "reset-password",
+      "authentication": "none",
+      "evidence_refs": ["fact.reset-password.operation"]
+    }
+  ]
+}

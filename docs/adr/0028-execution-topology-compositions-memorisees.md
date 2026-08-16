@@ -1,10 +1,15 @@
 # ADR-0028 — `execution_topology` comme axe ouvert + compositions mémorisées plutôt que primitives
 
-- **Statut :** Accepted
+- **Statut :** Superseded by ADR-0031
 - **Date :** 2026-08-13
 - **Complète :**
   [ADR-0027](./0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md) (ne
-  le contredit pas — ADR-0027 reste Accepted tel quel)
+  le contredisait pas au moment de son acceptation)
+
+> Supersédé par
+> [ADR-0031](./0031-graphe-execution-et-manifests-composition.md), qui conserve
+> la séparation de l'exécution et les compositions mémorisées, mais remplace la
+> chaîne ouverte par un graphe typé et impose un manifest persistant.
 
 ## Contexte
 

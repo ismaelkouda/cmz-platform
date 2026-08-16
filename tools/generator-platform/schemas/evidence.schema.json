@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/evidence.schema.json",
+  "title": "CMZ Generator Platform Evidence Model",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "model_id",
+    "sources",
+    "facts",
+    "unknowns",
+    "decisions"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "model_id": { "$ref": "#/$defs/id" },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "facts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/fact" }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/unknown" }
+    },
+    "decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/decision" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "idList": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "uri", "sha256"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": {
+          "enum": [
+            "source_code",
+            "test",
+            "specification",
+            "human_decision",
+            "api_contract",
+            "runtime_trace",
+            "design"
+          ]
+        },
+        "uri": { "$ref": "#/$defs/nonEmptyString" },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "category",
+        "statement",
+        "evidence_refs",
+        "confidence",
+        "status"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "category": {
+          "enum": [
+            "operation",
+            "data_shape",
+            "constraint",
+            "access",
+            "integration",
+            "effect",
+            "behavior"
+          ]
+        },
+        "statement": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_refs": { "$ref": "#/$defs/idList" },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "status": { "enum": ["observed", "inferred", "asserted"] }
+      }
+    },
+    "unknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "question", "impact", "blocking", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "question": { "$ref": "#/$defs/nonEmptyString" },
+        "impact": { "$ref": "#/$defs/nonEmptyString" },
+        "blocking": { "type": "boolean" },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "rationale", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "statement": { "$ref": "#/$defs/nonEmptyString" },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    }
+  }
+}

@@ -1,33 +1,87 @@
 # LLM Master Context & System Architecture Guide — cmz-platform
 
 > **Note pour tout Agent IA / LLM (Claude, Gemini, GPT, Cursor, etc.)** : Ce
-> document est la source de vérité absolue pour comprendre l'architecture, la
-> philosophie de recherche, la structure et l'état courant de `cmz-platform`.
-> Lisez ce document au démarrage de chaque session pour avoir la vision à 360°
-> du projet.
+> document est le point d'entrée vers l'architecture, la philosophie de
+> recherche, la structure et l'état courant de `cmz-platform`. En cas de
+> conflit, les ADR non supersédés, les schémas exécutables et les résultats CI
+> priment sur la prose. Lisez ce document au démarrage de chaque session.
 
 ---
 
-## 0. Objectif du projet — RÉORIENTÉ le 2026-08-12 (lire avant tout le reste)
+## 0. Objectif du projet — PÉRIMÈTRE CONSOLIDÉ le 2026-08-14
 
-**Décision structurante : [ADR-0026](./docs/adr/0026-reorientation-objectif-generation-generique.md).**
-Ce dépôt n'a plus pour seule finalité la migration de SEOS vers Angular 22.
-L'objectif est désormais de concevoir un **système de génération générique**
-capable de produire du code conforme à partir de **n'importe quelle source**
-(legacy, maquette Figma, description texte) et vers **n'importe quelle stack
-cible** (Angular, React, React Native, Kotlin, Swift, etc.), avec l'action
-humaine réduite au strict irréductible (règles métier, cas limites, contrats
-d'intégration).
+**Décision structurante courante :
+[ADR-0029](./docs/adr/0029-perimetre-capacites-plateforme-generation.md).**
+ADR-0029 supersède la formulation non bornée d'ADR-0026 : le dépôt ne promet
+plus « n'importe quelle source vers n'importe quelle stack ». Il construit une
+**plateforme extensible de compilation de spécifications applicatives**, dans
+une enveloppe initiale d'applications métier data-centric (backoffices, CRUD,
+vues analytiques et workflows).
 
-**SEOS/Angular est désormais un cas d'usage particulier de ce système, pas sa
-finalité.** Tout ce qui suit dans ce document (§1 à la fin) reste exact et
-utile — l'Oracle, les patterns par rôle, l'isolation en couches sont
-précisément la partie du travail qui s'est révélée réutilisable indépendamment
-de SEOS (prouvé par un POC React généré sans legacy, cf. ADR-0026) — mais lisez
-ces sections en gardant à l'esprit qu'elles décrivent **le cas d'usage SEOS
-concret**, pas l'ambition globale du dépôt. Conception détaillée du pipeline
-générique (Figma en premier cas d'entrée testé, non implémenté à ce jour) :
-[`docs/architecture/conception-pipeline-figma-vers-code.md`](./docs/architecture/conception-pipeline-figma-vers-code.md).
+Les capacités sont déclarées et promues par preuve dans la
+[`matrice de capacités`](./docs/architecture/generation-platform-capability-matrix.md).
+La première démonstration attendue est une matrice reproductible de deux sources
+(spécification structurée + legacy TypeScript) vers deux cibles utilisateur
+(Angular + ReactJS), sur `action-request` puis `workflow-action`. Les
+identifiants techniques des profils restent `angular-nx` et `react-typescript`.
+
+**État local de la preuve :** PLAT-1 à PLAT-5F sont implémentés localement ;
+la promotion externe de PLAT-5F attend la première matrice CI APFS/ext4 verte.
+Pour `action-request`, les deux sources convergent sur une IR et une seconde
+fonctionnalité `support` suit le parcours déclaratif. Pour `workflow-action`, un
+adaptateur borné du cas réel `requests` sépare provenance et Behavior Model,
+puis une définition JSON indépendante converge sur le même graphe. La commande
+`generate:workflow-action` génère Angular et ReactJS pour cette composition
+bornée ; le même Oracle couvre états, permissions, branches et export
+asynchrone. Les mutations ciblées sont tuées sur chaque cible. La promotion
+reste conditionnée à une CI verte. PLAT-5A ajoute un Artifact Plan neutre
+partagé par les deux renderers et un manifest 1.1 où chaque fichier possède une
+responsabilité, un owner et une politique d'écriture. PLAT-5B ajoute un dry-run
+read-only, un Change Set déterministe et le refus du drift des fichiers générés.
+PLAT-5C raccorde un slot typé `after-success` dans `action-request` et
+`workflow-action`, avec un fichier séparé `human-owned/preserve` dont le hash
+réel est conservé avant/après par le Change Set sur Angular et ReactJS. Les
+Oracles prouvent son exécution et interdisent son remplacement ou sa
+suppression. PLAT-5D sépare désormais les tests par cible : le core et ses
+Oracles boîte noire restent sous `node:test`, les sorties Angular passent un
+gate Vitest + `TestBed`, et les hooks ReactJS un gate Vitest + React Testing
+Library avec React/ReactDOM réels. PLAT-5E autorise désormais une régénération
+explicite avec `--apply <change_set_id>` : l'identifiant fourni doit être celui
+du dry-run revu, sinon l'application est refusée. Le plan de contrôle et les
+artefacts des deux cibles sont vérifiés par ownership, une arborescence candidate est compilée, les slots
+humains y sont recopiés octet par octet, puis la sortie est publiée avec rollback
+sur erreur. La capacité `regeneration.existing-output` est donc prouvée. Le
+durcissement PLAT-5F ajoute un verrou exclusif publié atomiquement, un journal
+de transaction durable, la synchronisation des fichiers/répertoires et une
+reprise déterministe qui restaure l'ancienne version ou vérifie intégralement
+la version publiée. La concurrence, les verrous périmés, les deux états de crash
+— y compris un processus réellement tué par `SIGKILL` après chacun des deux
+renommages — et les journaux contradictoires ont des tests négatifs. ADR-0035
+borne la v1 au modèle `offline-activation` : aucun lecteur externe concurrent
+n'est supporté pendant la commande. Le runtime refuse tout stockage autre
+qu'APFS/macOS ou ext4/Linux local. Le probe APFS est vert localement et une
+matrice CI bloquante vérifie les deux profils ; son premier résultat externe
+reste requis avant promotion M3. Voir
+[`validation-runtime-action-request.md`](./docs/architecture/validation-runtime-action-request.md)
+et
+[`validation-runtime-workflow-action.md`](./docs/architecture/validation-runtime-workflow-action.md).
+
+**Direction d'évolution :** `action-request`, `workflow-action`, `crud-entity`
+et `read-only-view` sont des compositions de référence, pas des familles
+exhaustives du core. Toute fonctionnalité générée doit conserver une composition
+persistée ; seules les compositions démontrées comme réutilisables sont promues
+en patterns versionnés. La conception cible, la propriété des artefacts, le
+cycle de vie des patterns et le test directeur de régénération non destructive
+sont définis dans
+[`conception-compositions-evolutives-patterns-memorises.md`](./docs/architecture/conception-compositions-evolutives-patterns-memorises.md).
+Cette direction n'est pas encore une capacité livrée : les vertical slices
+actuelles restent bornées et spécialisées.
+
+**SEOS/Angular est le golden reference et le cas d'usage industriel déjà bâti.**
+Il reste un livrable produit et le terrain de la Phase 09 d'équivalence
+fonctionnelle. Les sections suivantes décrivent ce cas concret ; elles ne sont
+pas, par défaut, des invariants de la plateforme. Figma est une future source
+partielle d'intention de présentation, non le premier chemin de preuve du core.
 
 ---
 
@@ -44,16 +98,16 @@ du système de génération générique décrit en §0.**
 ### 1.2 Thèse Scientifique & Philosophie d'Ingénierie
 
 Le projet n'est pas une simple refonte front-end : c'est le terrain
-d'expérimentation et de validation industrielle du système **SEOS (_Software
-Engineering Operating System_)**, un compilateur d'architecture logicielle.
+d'expérimentation et de validation industrielle de **SEOS (_Software Engineering
+Operating System_)** et de la future plateforme de génération.
 
-- **Paradigme d'exécution (Méthode 3 Big Tech)** : Nous fonctionnons en **Boucle
-  MDE + LLM fermée par un Oracle de Vérification Stricte
-  (_Generate-Verify-Repair_)**.
-- **Rôle de l'IA (LLM)** : L'IA agit comme le **générateur déterministe sous
-  contrat d'archétype**. Elle n'invente pas le code métier : elle lit la source
-  de vérité métier d'origine (`$SEOS_LEGACY_ROOT`), extrait les métadonnées et
-  instancie la Représentation Intermédiaire (**IR**) de l'archétype cible.
+- **Paradigme d'exécution** : Nous fonctionnons en **boucle MDE + LLM fermée par
+  un Oracle de Vérification Stricte (_Generate-Verify-Repair_)**.
+- **Rôle de l'IA (LLM)** : l'IA est un moteur d'inférence et de réparation sous
+  contraintes. Elle n'est pas le composant déterministe. Le déterminisme doit
+  appartenir à l'IR normalisée, au manifest, au planner et aux renderers. Sur le
+  cas SEOS, elle lit la source métier (`$SEOS_LEGACY_ROOT`) et ne doit jamais
+  inventer un fait absent.
 - **Objectif à Long Terme** : Constituer le jeu de données d'apprentissage
   annoté et validé (Corpus de paires _Source legacy → Cible Nx 4 couches_) pour
   alimenter la **Synthèse Neurosymbolique (Méthode 2)**. **État réel, mesuré et
@@ -93,8 +147,8 @@ libs/<module>/
 
 ### Convention d'injection : `@Service()` vs `@Injectable()`
 
-Deux décorateurs Angular coexistent dans le monorepo, avec un usage strict
-et non interchangeable (vérifié 2026-08-10 :
+Deux décorateurs Angular coexistent dans le monorepo, avec un usage strict et
+non interchangeable (vérifié 2026-08-10 :
 `grep -rl "@Service()" libs/ apps/ | wc -l` → **555** fichiers,
 `grep -rl "@Injectable()" libs/ apps/ | wc -l` → **66** fichiers, aucun
 chevauchement) :
@@ -103,52 +157,50 @@ chevauchement) :
   décorateur "auto-provided" (`autoProvided` vaut `true` par défaut dans son
   type Angular natif) : la classe est fournie automatiquement, sans entrée
   `providers:` explicite, avec une durée de vie de singleton applicatif
-  (tree-shakable, dans l'esprit de l'ancien `@Injectable({ providedIn:
-  'root' })`). Utilisé pour **tout ce qui est injecté au niveau applicatif
-  standard** : services, mappers, facades, use-cases, repositories (555
-  fichiers au total, catégories non ventilées individuellement). Exemple :
+  (tree-shakable, dans l'esprit de l'ancien
+  `@Injectable({ providedIn: 'root' })`). Utilisé pour **tout ce qui est injecté
+  au niveau applicatif standard** : services, mappers, facades, use-cases,
+  repositories (555 fichiers au total, catégories non ventilées
+  individuellement). Exemple :
   `libs/report-states/data/src/lib/mappers/report-states-details.mapper.ts`.
 
-- **`@Injectable()` sans options** — **n'est PAS auto-fourni** : la classe
-  doit obligatoirement être déclarée dans un tableau `providers: [...]` au
-  niveau d'un composant pour être injectable, ce qui lie sa durée de vie au
-  cycle de vie de ce composant (nouvelle instance à chaque activation,
-  détruite avec le composant — pas un singleton applicatif). Réservé
-  **exclusivement aux stores de composant `*-filter.store.ts` (42 fichiers)
-  et `*-form.store.ts` (24 fichiers)**, fournis via `providers:
-  [XxxFilterStore]` ou `providers: [XxxFormStore]` sur le composant de page
-  ou de dialog qui les possède — jamais sur un composant enfant. Exemples :
+- **`@Injectable()` sans options** — **n'est PAS auto-fourni** : la classe doit
+  obligatoirement être déclarée dans un tableau `providers: [...]` au niveau
+  d'un composant pour être injectable, ce qui lie sa durée de vie au cycle de
+  vie de ce composant (nouvelle instance à chaque activation, détruite avec le
+  composant — pas un singleton applicatif). Réservé **exclusivement aux stores
+  de composant `*-filter.store.ts` (42 fichiers) et `*-form.store.ts` (24
+  fichiers)**, fournis via `providers: [XxxFilterStore]` ou
+  `providers: [XxxFormStore]` sur le composant de page ou de dialog qui les
+  possède — jamais sur un composant enfant. Exemples :
   `libs/report-states/ui/src/lib/stores/approve-report-states-filter.store.ts`
   (fourni par `libs/report-states/ui/src/lib/features/*-list.component.ts`),
-  `libs/communication/ui/src/lib/stores/messaging-form.store.ts` (fourni
-  par `messaging-form.component.ts` via `providers: [MessagingFormStore]`).
-  Aucun des 66 fichiers ne déclare `providedIn`.
+  `libs/communication/ui/src/lib/stores/messaging-form.store.ts` (fourni par
+  `messaging-form.component.ts` via `providers: [MessagingFormStore]`). Aucun
+  des 66 fichiers ne déclare `providedIn`.
 
 **Règle pour un nouveau fichier :** un mapper/service/facade/use-case/
 repository → `@Service()`. Un store de formulaire ou de filtre porté par un
-composant de page/dialog → `@Injectable()` sans options, fourni
-explicitement via `providers:` sur ce composant.
+composant de page/dialog → `@Injectable()` sans options, fourni explicitement
+via `providers:` sur ce composant.
 
 ---
 
-## 3. Catalogue des Archétypes (IR SEOS)
+## 3. Profil structurel Angular/Nx du cas SEOS
 
-> ⚠️ **Modèle révisé le 2026-08-13** : voir
-> [ADR-0027](./docs/adr/0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md)/[ADR-0028](./docs/adr/0028-execution-topology-compositions-memorisees.md)
-> avant de traiter les 4 lignes ci-dessous comme une liste fermée. Ce ne sont
-> plus des primitives mais des **compositions mémorisées** d'un noyau stable
-> de **5 verbes structurels** (`Collection`, `Entity`, `Transition`,
-> `Composite Read`, `Custom`) — voir
-> [`docs/architecture/patterns/pattern-core.schema.json`](./docs/architecture/patterns/pattern-core.schema.json).
-> Un nouveau besoin qui ne rentre dans aucune des 4 lignes n'impose plus de
-> créer un 5ᵉ archétype nommé : composer directement les verbes du noyau est
-> tout aussi légitime (catalogue ouvert). Le tableau reste correct comme
-> **catalogue des compositions déjà rencontrées et vérifiées sur du code
-> réel**, pas comme l'univers complet des formes possibles.
+> ⚠️ **Portée consolidée par
+> [ADR-0030](./docs/adr/0030-ir-canonique-et-profils-cibles.md) et
+> [ADR-0031](./docs/adr/0031-graphe-execution-et-manifests-composition.md).**
+> Les quatre lignes ci-dessous sont des compositions mémorisées du **profil de
+> rendu Angular/Nx**. Les cinq catégories historiques restent utiles pour
+> planifier cette cible, mais ne sont plus l'IR canonique de la plateforme. Le
+> fichier `pattern-core.schema.json`, malgré son nom conservé temporairement,
+> contient des chemins et conventions Nx et doit être traité comme un artefact
+> de compatibilité cible.
 
 L'ensemble des 52 entités métier du projet legacy (hors fixture SEOS) se
-répartit aujourd'hui en 4 compositions mémorisées (voir avertissement
-ci-dessus pour leur statut réel) :
+répartit aujourd'hui en 4 compositions mémorisées (voir avertissement ci-dessus
+pour leur statut réel) :
 
 | Archétype  
 | Périmètre / Famille  
@@ -228,14 +280,14 @@ directives suivantes :
 <!-- BEGIN:GENERATED:monorepo-status -->
 | Indicateur                | Valeur                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Dernière génération       | **2026-08-14** (`bun run generate:status`)                                                                      |
+| Dernière génération       | **2026-08-16** (`bun run generate:status`)                                                                      |
 | Modules livrés            | **19** (voir [`STATUS.md`](./STATUS.md))                                                         |
 | Packages Nx               | **73** (72 libs + 1 app)                                              |
 | Fichiers TypeScript       | **2 730** hors tests / **2 979** total (249 specs)                 |
 | Corpus SEOS               | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                       |
 | Corpus SEOS — nature (N-6)| **585 correspondances** + **922 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |
 | Corpus SEOS — couverture (N-4) | **914 / 2 730 fichiers libs/ hors tests → 33.5 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
-| Périmètre applicatif (M-7)| **54 / 54 entités** construites (`docs/architecture/scope.json`, 0 manquantes — voir [ADR-0018](./docs/adr/0018-perimetre-team-organization.md)) |
+| Périmètre applicatif (M-7)| **55 / 55 entités** construites (`docs/architecture/scope.json`, 0 manquantes — voir [ADR-0018](./docs/adr/0018-perimetre-team-organization.md)) |
 | Bundle initial (prod, raw)| **872.78 kB** ([`bundle-metrics.json`](./apps/backoffice-angular/bundle-metrics.json), 2026-08-11) |
 | Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                         |
 | Famille `read-only-view`  | **4/4 IR clôturés** — `monitoring`, `reporting`, `dashboard`, `interactive-map`              |

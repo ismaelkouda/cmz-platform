@@ -427,8 +427,8 @@ const statusMd = `# STATUS — cmz-platform
 > **Généré automatiquement** par \`tools/generate-status.mjs\` le ${now}.
 > Ne pas éditer manuellement — lancer \`node tools/generate-status.mjs\` pour régénérer.
 
-> Ces métriques décrivent le cas d'usage Angular/SEOS. Objectif global du
-> dépôt (réorienté 2026-08-12) : [ADR-0026](./docs/adr/0026-reorientation-objectif-generation-generique.md).
+> Ces métriques décrivent le golden reference Angular/SEOS. Périmètre courant
+> de la plateforme (consolidé 2026-08-14) : [ADR-0029](./docs/adr/0029-perimetre-capacites-plateforme-generation.md).
 
 ## Résumé
 
@@ -473,11 +473,11 @@ ${
                       `| \`${e.module}\` | \`${e.entity}\` | ${e.class} | ${e.source_files ?? '—'} | ${e.expected_status} |`
               )
               .join('\n')
-        : '| — | — | — | — | Aucun écart — les 52 entités du périmètre (hors fixture SEOS) ont une trace dans libs/ |'
+        : `| — | — | — | — | Aucun écart — les ${scope.inScope} entités du périmètre (hors fixture SEOS) ont une trace dans libs/ |`
 }
 
 ---
-*[LLM_CONTEXT.md](./LLM_CONTEXT.md) — source de vérité architecture et directives agents IA*
+*[LLM_CONTEXT.md](./LLM_CONTEXT.md) — point d'entrée architecture et directives agents IA*
 `;
 
 writeFileSync(STATUS_OUT, statusMd, 'utf8');

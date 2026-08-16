@@ -5,6 +5,11 @@
   "prefix": "app",
   "sourceRoot": "apps/backoffice-angular/src",
   "tags": ["type:app", "scope:app"],
+  "cli": {
+    "cache": {
+      "enabled": false
+    }
+  },
   "targets": {
     "build": {
       "executor": "@angular/build:application",

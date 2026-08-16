@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "workflow-action",
+  "feature": {
+    "id": "requests-workflow",
+    "name": "Requests qualification workflow",
+    "description": "Take, qualification and filtered export of work items"
+  },
+  "state": {
+    "statuses": ["pending", "in-progress", "approved", "rejected"],
+    "qualification_statuses": ["pending", "completed"]
+  },
+  "permissions": ["take", "qualify", "reject", "export"],
+  "operations": [
+    {
+      "id": "take",
+      "kind": "transition",
+      "topology": "sequential",
+      "permission": "take",
+      "from": ["pending"],
+      "to": "in-progress",
+      "branches": [],
+      "rules": [],
+      "steps": [
+        "external_call:take",
+        "notify:take",
+        "refresh:queues",
+        "refresh:tasks"
+      ]
+    },
+    {
+      "id": "qualify",
+      "kind": "transition",
+      "topology": "sequential",
+      "permission": "qualify",
+      "from": ["in-progress"],
+      "to": "branch",
+      "branches": [
+        {
+          "when": "accepted",
+          "permission": "qualify",
+          "qualification_from": "pending",
+          "qualification_to": "completed",
+          "to": "approved"
+        },
+        {
+          "when": "rejected",
+          "permission": "reject",
+          "qualification_from": "",
+          "qualification_to": "completed",
+          "to": "rejected"
+        }
+      ],
+      "rules": [
+        "rejected_requires_reason_comment",
+        "callback_requires_type",
+        "edit_or_callback_requires_comment_and_fields"
+      ],
+      "steps": [
+        "validate:qualification",
+        "external_call:decision",
+        "notify:decision",
+        "refresh:tasks",
+        "refresh:all"
+      ]
+    },
+    {
+      "id": "export",
+      "kind": "export",
+      "topology": "async_callback",
+      "permission": "export",
+      "from": ["state-preserving"],
+      "to": "state-preserving",
+      "branches": [
+        {
+          "when": "rows-found",
+          "permission": "export",
+          "qualification_from": "",
+          "qualification_to": "",
+          "to": "write-file"
+        },
+        {
+          "when": "no-rows",
+          "permission": "export",
+          "qualification_from": "",
+          "qualification_to": "",
+          "to": "notify-no-data"
+        }
+      ],
+      "rules": [
+        "not_loading",
+        "not_exporting",
+        "positive_total",
+        "no_rows_no_write",
+        "errors_notified"
+      ],
+      "steps": ["callback:fetch-rows", "branch:rows", "await:write-file"]
+    }
+  ]
+}

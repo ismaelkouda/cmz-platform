@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "domain": {
+    "id": "authentication",
+    "name": "Authentication",
+    "description": "Public commands for session establishment and credential recovery."
+  },
+  "opaque_types": [
+    {
+      "id": "current-user",
+      "description": "Authenticated identity returned at the command boundary."
+    },
+    {
+      "id": "authentication-token",
+      "description": "Credential used to establish an authenticated session."
+    }
+  ],
+  "operations": {
+    "login": {
+      "description": "Authenticate credentials and establish a session.",
+      "input_description": "Credentials submitted to establish a session.",
+      "output_type": "login-result",
+      "output_description": "Identity and credential returned after successful authentication.",
+      "constraint_prefix": "login",
+      "constraint_fact": "fact.login.constraints",
+      "effects": {
+        "external_call": "Submit credentials to the authentication boundary.",
+        "establish_session": "Persist identity and credential before reporting success."
+      }
+    },
+    "forgot-password": {
+      "description": "Initiate credential recovery for an identity address.",
+      "input_description": "Identity address used to initiate credential recovery.",
+      "output_type": "message-result",
+      "output_description": "Confirmation message returned by a command.",
+      "constraint_prefix": "forgot",
+      "constraint_fact": "fact.forgot-password.input",
+      "effects": {
+        "external_call": "Submit a recovery request to the authentication boundary.",
+        "request_recovery": "Request initiation of a credential recovery process."
+      }
+    },
+    "reset-password": {
+      "description": "Replace a credential using recovery proof.",
+      "input_description": "Recovery proof and replacement credential submitted to complete recovery.",
+      "output_type": "message-result",
+      "output_description": "Confirmation message returned by a command.",
+      "constraint_prefix": "reset",
+      "constraint_fact": "fact.reset-password.constraints",
+      "effects": {
+        "external_call": "Submit recovery proof and replacement credential.",
+        "reset_credential": "Replace the credential after recovery proof is accepted."
+      }
+    }
+  }
+}

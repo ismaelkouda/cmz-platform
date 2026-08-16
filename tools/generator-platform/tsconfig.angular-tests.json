@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "types": ["vitest/globals"]
+  },
+  "include": [
+    ".stack-test-runtime/angular/**/*.ts",
+    "stack-tests/angular/**/*.spec.ts"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "types": ["vitest/globals", "react", "react-dom"]
+  },
+  "include": [
+    ".stack-test-runtime/reactjs/**/*.ts",
+    "stack-tests/reactjs/**/*.spec.ts"
+  ]
+}

@@ -3,29 +3,32 @@
 - **Créé :** 2026-07-30
 - **Statut :** extension du système SEOS (dépôt legacy) pour la **cible de
   validation Nx**
-  ([ADR-0009](../adr/0009-reconstruction-pilotee-par-patterns.md)).
+  ([ADR-0009](../../adr/0009-reconstruction-pilotee-par-patterns.md)).
 
 ## Rôle
 
-> ⚠️ **Modèle révisé le 2026-08-13** — voir
-> [ADR-0027](../adr/0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md)/[ADR-0028](../adr/0028-execution-topology-compositions-memorisees.md) :
-> les 4 schémas ci-dessous ne sont plus des primitives fermées mais des
-> **compositions mémorisées** d'un noyau ouvert de 5 verbes structurels
-> (`Collection`/`Entity`/`Transition`/`Composite Read`/`Custom`), décrit par
-> [`pattern-core.schema.json`](./pattern-core.schema.json) et vérifié par
-> [`validate-pattern-core.mjs`](./validate-pattern-core.mjs). Chaque fichier
-> `*.pattern.json` porte désormais un champ `composition` qui l'exprime comme
-> assemblage de ces verbes (`$schema: "./pattern-core.schema.json"`).
+> ⚠️ **Portée consolidée le 2026-08-14** — voir
+> [ADR-0030](../../adr/0030-ir-canonique-et-profils-cibles.md) et
+> [ADR-0031](../../adr/0031-graphe-execution-et-manifests-composition.md).
+> Les 4 schémas ci-dessous sont des **compositions mémorisées du profil cible
+> Angular/Nx**. Le nom `pattern-core.schema.json` est conservé temporairement
+> pour compatibilité, mais ce fichier n'est pas l'IR canonique multi-stack. Ses
+> cinq catégories et ses chemins Nx servent à vérifier la cible actuelle.
 
-Les schémas JSON de ce dossier décrivent la **structure canonique** d'une
-famille d'entités. Ils servent à :
+Les schémas JSON de ce dossier décrivent la **structure attendue du renderer
+Angular/Nx** pour une famille d'entités. Ils servent à :
 
 1. **Générer** (LLM ou générateur) sous contrat d'archétype — pas d'invention.
 2. **Vérifier** la conformité structurelle (`tools/check-pattern-nx.mjs`,
    généralisé pour consommer n'importe quel pattern du catalogue —
    `--files-field`/`--set` ; `check-pattern.js` côté legacy reste la
    référence historique pour le dépôt d'origine).
-3. **Annoter le corpus** d'apprentissage (paires legacy → Nx) pour la Méthode 2.
+3. **Annoter l'index de correspondances** legacy → Nx. Le corpus actuel n'est
+   pas un jeu d'apprentissage autoporteur.
+
+Le gate `bun run check:pattern-profile-schema`, inclus dans `check:all`, valide
+le registre `CORE_VERBS`, les placeholders, les références de variantes, les
+`files_field` et les quatre compositions mémorisées.
 
 ## Schémas disponibles
 
@@ -78,5 +81,5 @@ Legacy source (vérité métier)
 - [Archétype read-only-view](../archetypes/read-only-view.md)
 - [Module processing (référence workflow)](../module-processing.md)
 - [Module monitoring (référence read-only-view)](../module-monitoring.md)
-- [ADR-0010 — Flux IA](../adr/0010-flux-de-generation-assistee-par-ia.md)
+- [ADR-0010 — Flux IA](../../adr/0010-flux-de-generation-assistee-par-ia.md)
 - [Génération depuis patterns (Phase 08)](../generation-from-patterns.md)

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/artifact-plan.schema.json",
+  "title": "CMZ Generator Platform Artifact Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "plan_id", "input", "artifacts"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "plan_id": { "$ref": "#/$defs/id" },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "model_id", "sha256"],
+      "properties": {
+        "kind": { "enum": ["semantic-model", "behavior-model"] },
+        "model_id": { "$ref": "#/$defs/id" },
+        "sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "responsibility",
+          "owner",
+          "write_policy",
+          "depends_on"
+        ],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "responsibility": {
+            "enum": [
+              "after-success-extension",
+              "compiler-configuration",
+              "domain-model",
+              "execution-controller",
+              "extension-contract",
+              "input-validator",
+              "integration-client",
+              "package-descriptor",
+              "public-api",
+              "runtime-binding"
+            ]
+          },
+          "owner": {
+            "enum": [
+              "generator-owned",
+              "human-owned",
+              "configuration-owned",
+              "external-owned"
+            ]
+          },
+          "write_policy": {
+            "enum": ["create", "replace", "preserve", "delete"]
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/id" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9:._-]*$" },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

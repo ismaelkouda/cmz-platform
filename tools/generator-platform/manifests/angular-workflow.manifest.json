@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.1.0",
+  "generator": { "name": "cmz-generator-platform", "version": "1.2.0" },
+  "input": {
+    "model_id": "behavior:requests-workflow",
+    "sha256": "e69ca7acc729afa239380acbbedea07eea2ec22e0a9411f0ff264f2448b384cd"
+  },
+  "plan": {
+    "plan_id": "behavior:requests-workflow:artifacts",
+    "sha256": "43f663514151d924ad070772c12237e4095143463efe7982a3a552414f3558a4"
+  },
+  "target": {
+    "profile_id": "angular-nx",
+    "profile_version": "1.0.0",
+    "profile_sha256": "59c4a50ab91ac1eaee73c11833dfb1a0eba11082542e5b1ef7371cdb17d3c2e6"
+  },
+  "files": [
+    {
+      "path": "project.json",
+      "artifact_id": "package-descriptor",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 256,
+      "sha256": "16e53e62daa0dd427c3f7f69789d33bdbdb04380858123a089341f1f038dcb9c"
+    },
+    {
+      "path": "src/after-success.extension.ts",
+      "artifact_id": "after-success-extension",
+      "owner": "human-owned",
+      "write_policy": "preserve",
+      "bytes": 224,
+      "sha256": "aa69da7f7a1e6c507d6710e5cf050faab530101d568011b2c0e04f6c538db3fe"
+    },
+    {
+      "path": "src/extension-contract.ts",
+      "artifact_id": "extension-contract",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 276,
+      "sha256": "c70ec7d7a0e04329d2e6366228eed0bad1b66ee27864d03ec249bf87ad1a470e"
+    },
+    {
+      "path": "src/index.ts",
+      "artifact_id": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 192,
+      "sha256": "7147ad2dc6e59a0a8ab328e8141dd8f2aee5ab1dc067890f3892dca56380b091"
+    },
+    {
+      "path": "src/models.ts",
+      "artifact_id": "domain-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 2073,
+      "sha256": "d454fb2c2195232d34613b76cc16b3ba03e03a14a827774eaa3f32deb8606f2a"
+    },
+    {
+      "path": "src/workflow-action-engine.ts",
+      "artifact_id": "execution-controller",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 5503,
+      "sha256": "d764d70a57227ffd762ce175bb377566d5da9c6a5b95bcc4054b5090028d7364"
+    },
+    {
+      "path": "src/workflow-action.service.ts",
+      "artifact_id": "runtime-binding",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 866,
+      "sha256": "cf8bf8f34e8510ddcbf5dacc74a440c68224dbc01c560c165ecaf4f2f77eb8f0"
+    },
+    {
+      "path": "tsconfig.json",
+      "artifact_id": "compiler-configuration",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 253,
+      "sha256": "cadc5053a749d3ad79f4f773d1ecf1b5eeb8430b1373bd291f5b7bf307f8d659"
+    }
+  ],
+  "tree_sha256": "034ceb4afb6424f43d5c9f1ed3741cf61630e067152e58c8c01be1562f8cad4f"
+}

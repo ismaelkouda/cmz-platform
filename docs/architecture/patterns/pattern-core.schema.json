@@ -1,8 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cmz-platform.local/schemas/pattern-core.schema.json",
-  "title": "Noyau de verbes structurels — catalogue ouvert de patterns",
-  "description": "ADR-0027 : contrat machine-readable du noyau de 5 verbes structurels (collection, entity, transition, compositeRead, custom) et de la forme d'un fichier `*.pattern.json` qui les compose. Le noyau (`$defs.verbRegistry`, exposé en clair sous la constante `CORE_VERBS` ci-dessous) est stable et ne doit pas être révisé à chaque nouveau pattern — c'est le champ `composition`, dans chaque fichier `*.pattern.json`, qui absorbe la nouveauté (catalogue ouvert). Ajouter un pattern n'implique jamais de modifier ce schéma. Deux axes orthogonaux structurent chaque instance de composition : le verbe (QUI agit sur quoi — CQS/CQRS, Meyer 1988 / Young 2010, stable et fermé à 5) et `execution_topology` (COMMENT ça s'exécute — atomic/sequential/async_callback/streaming/…, délibérément ouvert, cf. $defs.executionTopology). Ne jamais fusionner les deux axes dans le noyau lui-même : c'est précisément ce qui ferait regonfler la liste des verbes sans fin, l'erreur qu'ADR-0027 corrige.",
+  "title": "Profil structurel Angular/Nx — compositions SEOS",
+  "description": "Artefact de compatibilité du profil cible Angular/Nx, requalifié par ADR-0030/0031. Les cinq catégories historiques (collection, entity, transition, compositeRead, custom), les templates de fichiers Nx et execution_topology servent à vérifier la cible SEOS actuelle ; ils ne constituent pas l'IR canonique multi-source/multi-stack. Le nom du fichier est conservé temporairement pour ne pas casser les outils existants.",
+  "x_cmz_scope": "angular-nx-target-profile",
+  "x_cmz_status": "transitional",
+  "x_cmz_superseded_by": ["ADR-0030", "ADR-0031"],
   "type": "object",
   "required": ["pattern", "version", "composition"],
 
@@ -176,7 +179,6 @@
   "$comment": "additionalProperties=true au niveau racine (volontairement, contrairement à pair.schema.json) : les 3 fichiers migrés portent une quantité substantielle de champs hétérogènes déjà en place (core_files_nx, list_volet_core_files_nx, grafana_*_core_files_nx, reference_implementation, second_validation, …, nx_mapping, constraints, subgraphs, chains, differences_vs_*, design_decisions_v0, core_files_count_estimate) que ce schéma ne doit ni fermer ni contraindre — ADR-0027 acte que la forme hétérogène des noms de champs de fichiers reste, `composition` sert de lecture uniforme PAR-DESSUS, pas de remplacement strict. Ces champs libres ('reference_implementation', 'second_validation', 'third_validation', etc.) sont des preuves empiriques en prose, pas des données structurées strictes — délibérément non modélisés ici.",
 
   "CORE_VERBS": {
-    "$comment": "Instance concrète du noyau (conforme à $defs.verbRegistry) — SOURCE DE VÉRITÉ des 5 verbes, lue par tools/... /validate-pattern-core.mjs pour vérifier qu'une composition ne référence que des verbes existants et que leurs variantes sont reconnues. Ce champ n'apparaît QUE dans ce fichier-schéma, jamais dans un fichier *.pattern.json individuel (ceux-ci référencent seulement `verb`/`variant` par nom).",
     "collection": {
       "description": "Lecture paginée/filtrée d'un ensemble d'éléments (List → PageResult, filtres, tri). Couvre les listes crud-entity et les volets workflow-action.",
       "placeholders": [
@@ -289,7 +291,13 @@
     },
     "compositeRead": {
       "description": "Assemblage en lecture de plusieurs sources sans mutation (read-only-view/Grafana, dashboards, vues agrégées).",
-      "placeholders": ["{MODULE}", "{module}", "{SECTION}", "{section}"],
+      "placeholders": [
+        "{MODULE}",
+        "{module}",
+        "{SECTION}",
+        "{section}",
+        "{section-kebab}"
+      ],
       "file_templates": {
         "domain": [
           "libs/{MODULE}/domain/src/lib/entities/grafana-dashboard.entity.ts",

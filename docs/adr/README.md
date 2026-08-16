@@ -59,7 +59,14 @@ envisagées, le choix retenu et ses conséquences.
 | [0023](./0023-titularite-des-droits-sur-le-legacy.md)     | Titularité des droits sur le code legacy (`cmz-backoffice-frontend`) | Accepted |
 | [0024](./0024-decouplage-di-ports-shared.md)              | Découpler le contrat de port du jeton d'injection Angular | Accepted |
 | [0025](./0025-perimetre-purete-framework-domaine.md)      | Périmètre de « pureté framework » pour `type:domain`/`type:constants` (RxJS autorisé, `@angular/*` interdit) | Accepted |
-| [0026](./0026-reorientation-objectif-generation-generique.md) | Réorientation de l'objectif : système de génération générique multi-source/multi-stack | Accepted |
-| [0027](./0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md) | Noyau de verbes structurels + catalogue ouvert de patterns (remplace la liste fermée d'archétypes) | Accepted |
-| [0028](./0028-execution-topology-compositions-memorisees.md) | `execution_topology` comme axe ouvert + compositions mémorisées plutôt que primitives | Accepted |
+| [0026](./0026-reorientation-objectif-generation-generique.md) | Réorientation de l'objectif : système de génération générique multi-source/multi-stack | Superseded |
+| [0027](./0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md) | Noyau de verbes structurels + catalogue ouvert de patterns (remplace la liste fermée d'archétypes) | Superseded |
+| [0028](./0028-execution-topology-compositions-memorisees.md) | `execution_topology` comme axe ouvert + compositions mémorisées plutôt que primitives | Superseded |
+| [0029](./0029-perimetre-capacites-plateforme-generation.md) | Périmètre de capacités de la plateforme de génération    | Accepted |
+| [0030](./0030-ir-canonique-et-profils-cibles.md)          | IR canonique indépendante et profils de rendu cibles     | Accepted |
+| [0031](./0031-graphe-execution-et-manifests-composition.md) | Graphe d'exécution typé et manifests de composition persistés | Accepted |
+| [0032](./0032-cycle-vie-compositions-et-promotion-patterns.md) | Cycle de vie des compositions et promotion des patterns  | Accepted |
+| [0033](./0033-propriete-artefacts-regeneration-non-destructive.md) | Propriété des artefacts et régénération non destructive  | Accepted |
+| [0034](./0034-plateforme-multi-stack-renderers-separes-sorties-mono-stack.md) | Plateforme multi-stack, renderers séparés, sorties mono-stack | Accepted |
+| [0035](./0035-contrat-durabilite-publication-generation.md) | Contrat de durabilité de la publication générée          | Accepted |
 <!-- END:GENERATED:adr-index -->

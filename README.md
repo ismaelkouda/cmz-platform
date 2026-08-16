@@ -5,15 +5,16 @@ reconstruction industrielle de `cmz-backoffice-frontend` en **Angular 22** avec
 **Bun 1.3** et **Nx 23.1**, puis progressivement les autres composants de la
 plateforme.
 
-> **Objectif réorienté le 2026-08-12** : ce dépôt n'est plus seulement une
-> migration SEOS→Angular — c'est un système de génération générique capable
-> de produire du code conforme depuis n'importe quelle source (legacy,
-> maquette, description) vers n'importe quelle stack. Angular/SEOS est le cas
-> d'usage concret déjà bâti. Voir
-> [ADR-0026](./docs/adr/0026-reorientation-objectif-generation-generique.md).
+> **Objectif consolidé le 2026-08-14** : ce dépôt construit une plateforme
+> extensible de compilation de spécifications pour applications métier
+> data-centric. Les sources et cibles ne sont déclarées supportées qu'après une
+> preuve reproductible dans la matrice de capacités. Angular/SEOS est le golden
+> reference déjà bâti. Voir
+> [ADR-0029](./docs/adr/0029-perimetre-capacites-plateforme-generation.md) et la
+> [matrice de capacités](./docs/architecture/generation-platform-capability-matrix.md).
 
 <!-- BEGIN:GENERATED:monorepo-status -->
-**État au 2026-08-14 :** Phase **08** (génération depuis patterns) — **19** modules, **72** libs + **1** app, **2 730** fichiers `.ts` hors tests. Bundle initial prod **872.78 kB**. Voir [`STATUS.md`](./STATUS.md).
+**État au 2026-08-16 :** Phase **08** (génération depuis patterns) — **19** modules, **72** libs + **1** app, **2 730** fichiers `.ts` hors tests. Bundle initial prod **872.78 kB**. Voir [`STATUS.md`](./STATUS.md).
 <!-- END:GENERATED:monorepo-status -->
 
 > 🤖 **Note pour les LLM / Agents IA** : Consulter le document maître

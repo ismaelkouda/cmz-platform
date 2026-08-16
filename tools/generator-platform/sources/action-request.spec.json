@@ -1,0 +1,168 @@
+{
+  "schema_version": "1.0.0",
+  "domain_id": "authentication",
+  "operations": [
+    {
+      "id": "login",
+      "input": {
+        "fields": [
+          {
+            "name": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true,
+            "format": "email"
+          },
+          {
+            "name": "password",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "output": {
+        "fields": [
+          {
+            "name": "user",
+            "type": {
+              "kind": "model",
+              "name": "current-user",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "token",
+            "type": {
+              "kind": "model",
+              "name": "authentication-token",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": false
+          }
+        ]
+      },
+      "access": "public",
+      "http": { "method": "POST", "path": "login", "authentication": "none" },
+      "effects": ["external_call", "establish_session"]
+    },
+    {
+      "id": "forgot-password",
+      "input": {
+        "fields": [
+          {
+            "name": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true,
+            "format": "email"
+          }
+        ]
+      },
+      "output": {
+        "fields": [
+          {
+            "name": "message",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "access": "public",
+      "http": {
+        "method": "POST",
+        "path": "forgot-password",
+        "authentication": "none"
+      },
+      "effects": ["external_call", "request_recovery"]
+    },
+    {
+      "id": "reset-password",
+      "input": {
+        "fields": [
+          {
+            "name": "token",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true,
+            "format": "email"
+          },
+          {
+            "name": "password",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "confirm_password",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true,
+            "equals": "reset-password-input.password"
+          }
+        ]
+      },
+      "output": {
+        "fields": [
+          {
+            "name": "message",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "access": "public",
+      "http": {
+        "method": "POST",
+        "path": "reset-password",
+        "authentication": "none"
+      },
+      "effects": ["external_call", "reset_credential"]
+    }
+  ]
+}

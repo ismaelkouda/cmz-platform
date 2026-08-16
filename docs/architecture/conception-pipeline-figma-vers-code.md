@@ -1,25 +1,21 @@
 # Conception — Pipeline Figma → Code, génération ex nihilo à action humaine minimisée
 
-> ⚠️ **Portée révisée le 2026-08-13** : ce document a été rédigé la veille
-> d'[ADR-0027](./../adr/0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md)/[ADR-0028](./../adr/0028-execution-topology-compositions-memorisees.md)
-> et parle encore, en plusieurs endroits (§1 tableau, §2.5, §3, §7), de « 4
-> patterns » (`crud-entity`/`workflow-action`/`read-only-view`/`action-request`)
-> comme si c'était une liste fermée à laquelle la couche 2 (détection de
-> pattern) devrait faire correspondre une maquette. Ce n'est plus le modèle en
-> vigueur : ces 4 noms sont désormais des **compositions mémorisées** d'un noyau
-> ouvert de 5 verbes structurels (`Collection`/`Entity`/`Transition`/
-> `Composite Read`/`Custom`, voir
-> [`pattern-core.schema.json`](./patterns/pattern-core.schema.json)). La
-> question posée par la couche 2 reste valide et le raisonnement ci-dessous
-> (ambiguïté structurelle, échec de la détection automatique pure) n'est pas
-> invalidé — mais la bonne cible d'une heuristique de détection devient « à
-> quel(s) verbe(s) du noyau cette structure visuelle correspond-elle ? » plutôt
-> que « lequel des 4 patterns nommés est-ce ? ». Une maquette qui ne ressemble à
-> aucun des 4 patterns connus n'est plus un cas d'échec du pipeline — c'est une
-> composition nouvelle et légitime du même noyau. Non retouché en profondeur ici
-> (le fond de la conception ne change pas, seule la cible interne de la couche 2
-> change) — à réviser au moment où ce pipeline entrera effectivement en
-> implémentation (§7, critères non encore engagés).
+> ⚠️ **Orientation consolidée le 2026-08-14** :
+> [ADR-0029](../adr/0029-perimetre-capacites-plateforme-generation.md) ne retient
+> plus Figma comme première preuve du core. Figma est une source partielle de
+> `Presentation intent`, à fusionner avec une source sémantique après réussite
+> de la matrice web 2×2. Les appels produisant directement du code pour un
+> framework cible ne doivent pas devenir l'IR source. Ce document reste une
+> conception utile de l'adaptateur Figma, non le plan d'implémentation
+> prioritaire de la plateforme.
+
+> ⚠️ **Modèle interne supersédé** : les références ci-dessous aux quatre
+> patterns ou aux cinq verbes documentent le profil Angular/Nx historique.
+> [ADR-0030](../adr/0030-ir-canonique-et-profils-cibles.md) impose désormais une
+> IR canonique multi-axes ;
+> [ADR-0031](../adr/0031-graphe-execution-et-manifests-composition.md) impose un
+> graphe d'exécution typé et un manifest. Cette conception devra cibler ces
+> contrats lorsqu'elle sera reprise.
 
 - **Date :** 2026-08-12
 - **Statut :** conception documentée, **non implémentée**. Ce document prépare

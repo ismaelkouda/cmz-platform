@@ -1,16 +1,19 @@
 # Tâches restantes — cmz-platform
 
 - **Créé :** 2026-08-05
+- **Consolidation stratégique 2026-08-14** :
+  [ADR-0029](../adr/0029-perimetre-capacites-plateforme-generation.md) supersède
+  la promesse non bornée d'ADR-0026. Le dépôt vise une plateforme extensible
+  pour applications métier data-centric, avec claims promus par la
+  [matrice de capacités](./generation-platform-capability-matrix.md).
 - **Refonte structurelle 2026-08-13** : réorganisation complète du document
   (ancienne structure : 13 audits Big Tech T1→T13 dans leur ordre historique,
   tableaux à cellules-paragraphes). Cette refonte ne change **aucun fait, aucun
   état, aucune donnée vérifiée** — elle reclasse les mêmes items selon la
   priorité réelle issue de
-  [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md)
-  (2026-08-12 : ce dépôt n'est plus seulement une migration SEOS→Angular, c'est
-  un système de génération générique multi-source/multi-stack dont SEOS/Angular
-  est un cas d'usage). Tous les ids historiques (`Txx-y`, `OPS-y`, `ROAD-y`,
-  `P2-*`) restent valides et cherchables — voir l'Annexe « Index de
+  [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md),
+  désormais supersédé par ADR-0029. Tous les ids historiques (`Txx-y`, `OPS-y`,
+  `ROAD-y`, `P2-*`) restent valides et cherchables — voir l'Annexe « Index de
   correspondance » en fin de fichier pour retrouver un id par sa nouvelle
   section.
 - **Statut :** source de vérité des travaux **encore ouverts / partiels**.
@@ -24,17 +27,17 @@
 
 | Colonne    | Sens                                                                                                            |
 | ---------- | --------------------------------------------------------------------------------------------------------------- |
-| **Id**     | Stable : `T{n}-{k}` = audit Big Tech nº n · under-id ; alias historique entre parenthèses                       |
+| **Id**     | Stable : `T{n}-{k}` = audit historique ; `PLAT-{k}` = programme plateforme ADR-0029 ; alias entre parenthèses   |
 | **État**   | `ouvert` · `partiel` · `en cours` · `bloqué-humain` · `décision` · `différé` · `en pause` · `fait`              |
 | **Crit.**  | P0 · P1 · P2 · Ops                                                                                              |
 | **Effort** | S / M / L / XL                                                                                                  |
 | **Classe** | voir légende ci-dessous — jugement du 2026-08-13, base = texte factuel déjà écrit dans ce fichier avant refonte |
 
-**Légende Classe** (introduite par cette refonte, cf. ADR-0026) :
+**Légende Classe** (introduite par la refonte, consolidée par ADR-0029) :
 
-- **ORACLE** = Oracle générique (build/lint/test/CI/architecture) réutilisable
-  pour n'importe quelle stack/source future, pas seulement Angular/SEOS —
-  priorité actuelle du dépôt.
+- **ORACLE** = principes communs de vérification
+  (build/lint/test/CI/architecture), implémentés par des plugins et commandes
+  propres à chaque cible — priorité actuelle du dépôt.
 - **PIPELINE** = fait avancer concrètement le pipeline de génération
   multi-source (Figma ou autre), au sens de
   [`conception-pipeline-figma-vers-code.md`](./conception-pipeline-figma-vers-code.md).
@@ -43,34 +46,29 @@
   dans le cadrage élargi.
 - **OPS** = hygiène de dépôt/forge toujours pertinente quel que soit l'objectif
   (CI, protection de branche, hooks, gouvernance, sécurité, licences).
-- **REQUALIFIÉ** = pertinence réévaluée à l'aune d'ADR-0026, justification
+- **REQUALIFIÉ** = pertinence réévaluée à l'aune d'ADR-0029, justification
   donnée en section 5.
 
 ---
 
 ## 0. Statut du projet en une page
 
-- **Objectif réel du dépôt (ADR-0026, 2026-08-12)** : concevoir un système de
-  génération générique capable de produire du code conforme à partir de
-  n'importe quelle source (legacy, maquette Figma, description texte) et vers
-  n'importe quelle stack cible, action humaine réduite au strict irréductible
-  (règles métier, cas limites, contrats). SEOS/Angular est **un cas d'usage
-  particulier**, pas la finalité.
-- **Ce qui a déjà été prouvé réutilisable indépendamment de SEOS/Angular** (POC
-  React+TS, ROAD-3c, 2026-08-12) : l'isolation en couches vérifiée
-  mécaniquement, les patterns par rôle, l'Oracle multi-niveaux
-  (build→lint→test→intégration) et les contraintes machine (H-3/H-4) sont des
-  standards de conception **indépendants de la source d'entrée**. C'est la
-  justification centrale d'ADR-0026 — voir aussi ROAD-3a/g en §2.
+- **Objectif réel du dépôt (ADR-0029, 2026-08-14)** : construire une plateforme
+  extensible de compilation de spécifications pour applications métier
+  data-centric. Une source ou cible est supportée seulement après preuve
+  reproductible. SEOS/Angular est le **golden reference industriel**.
+- **Ce qui a été prouvé hors Angular** (POC React+TS, ROAD-3c) : le principe
+  build/lint/test et certaines règles de couches peuvent être transposés. Ce POC
+  hors dépôt ne prouve pas encore un renderer, une IR ou un Oracle multi-stack
+  reproductible.
 - **Ce qui n'est encore qu'une conception, non implémentée** : le pipeline
   Figma→code (4 couches, voir
   [`conception-pipeline-figma-vers-code.md`](./conception-pipeline-figma-vers-code.md)).
   4 critères de passage à l'implémentation définis en §7 de ce document, aucun
   engagé — trackés individuellement en §2 ci-dessous.
-- **Priorité de lecture de ce fichier** : §1 (Oracle) et §2 (Pipeline) sont la
-  priorité actuelle. §3 (SEOS/Angular) reste un travail légitime et volumineux
-  mais secondaire dans le nouveau cadrage. §4 (opérationnel) est transverse et
-  permanent.
+- **Priorité de lecture de ce fichier** : §1 (Oracle), §2 (preuve plateforme) et
+  la Phase 09 SEOS sont prioritaires. §3 reste le golden reference produit ; §4
+  est transverse et permanent.
 - **Mesure git 2026-08-06** (dernière mesure connue) : `main` = post PR #3
   (sync), #12 (`nxCloudId` claimé), #13 (knip bloquant, corpus, câblage
   `NX_CLOUD_ACCESS_TOKEN`). Smoke local OK. Nx Cloud : login + id OK, fin de
@@ -110,9 +108,9 @@ intention/doc peu ou pas instrumentée.
 
 ## 1. Oracle & fondations réutilisables (ORACLE) — priorité actuelle
 
-Ces items renforcent le socle machine (build/lint/test/CI/architecture) de façon
-réutilisable pour n'importe quelle stack/source future. C'est le premier acquis
-explicitement identifié par ADR-0026 comme réutilisable au sens large.
+Ces items renforcent les principes communs du socle machine
+(build/lint/test/CI/architecture). Chaque cible conserve toutefois ses propres
+plugins et commandes ; voir ADR-0029/0030.
 
 ### 1.1 Isolation en couches & graphe de dépendances (ex-T1)
 
@@ -204,7 +202,9 @@ précis) est classé SEOS en §3.
   fourre-tout avant correction — corrigé dans ce lot. `read-only-view` révèle un
   vrai gap préexistant (`grafana-dashboard.entity.ts`/`map.entity.ts` consolidés
   en `GrafanaLinkEntity` par T1-6, templates non mis à jour) — signalé, pas
-  corrigé (hors périmètre de cette migration additive).
+  corrigé (hors périmètre de cette migration additive). **Requalification
+  2026-08-14 :** ADR-0030 classe ce contrat comme profil structurel Angular/Nx
+  transitoire, et non comme IR canonique multi-stack.
 - **T2-7** — **fait**, M, P1, alias `H-5`. `pair.schema.json` étendu : oracle
   structuré horodaté `{build,lint,test,…}`.
 - **T2-8** — **fait** (2026-08-13), L, P1, alias `J-9a · GVR-6`. Pattern Nx
@@ -217,35 +217,39 @@ précis) est classé SEOS en §3.
   **`finalization`/`report-states` nouvellement vérifiés, 11 volets à 100 %**
   (`finalization` queues/tasks/all ; `report-states`
   approve/close/download/evaluate/reject — noms de volets métier plutôt que
-  génériques, mais même structure `list_volet_core_files_nx`).
-  **Découverte tranchée le 2026-08-14** :
-  `team-organization/agents-performances` et `daily-goal` étaient classées
-  `workflow-action` dans `docs/architecture/scope.json` par erreur — reclassées
-  `collection`, preuve croisée sur 3 sources indépendantes (legacy CQRS =
-  aucun dossier `commands*/` pour ces 2 entités contre présence confirmée sur
-  `report-states`/`processing` ; code Nx actuel = aucune mutation, uniquement
-  `http.get` et `Observable<PageResult<...>>` ; ADR-0027/0028 = forme d'un
-  `Collection` pur, jamais d'un `Transition`). `daily-goal` était déjà
-  correctement classée « Divers » dans l'annexe source
-  (`analyse-du-projet-source.md`), donc l'erreur avait été introduite dans
-  `scope.json` lui-même, pas héritée de l'annexe. Voir notes horodatées dans
-  `scope.json`. **Généralisation livrée le 2026-08-14** :
+  génériques, mais même structure `list_volet_core_files_nx`). **Découverte
+  tranchée le 2026-08-14** : `team-organization/agents-performances` et
+  `daily-goal` étaient classées `workflow-action` dans
+  `docs/architecture/scope.json` par erreur — reclassées `collection`, preuve
+  croisée sur 3 sources indépendantes (legacy CQRS = aucun dossier `commands*/`
+  pour ces 2 entités contre présence confirmée sur `report-states`/`processing`
+  ; code Nx actuel = aucune mutation, uniquement `http.get` et
+  `Observable<PageResult<...>>` ; ADR-0027/0028 = forme d'un `Collection` pur,
+  jamais d'un `Transition`). `daily-goal` était déjà correctement classée «
+  Divers » dans l'annexe source (`analyse-du-projet-source.md`), donc l'erreur
+  avait été introduite dans `scope.json` lui-même, pas héritée de l'annexe. Voir
+  notes horodatées dans `scope.json`. **Généralisation livrée le 2026-08-14** :
   `check:pattern-nx-coverage.mjs` croise désormais les **4 classes**
   (`crud-entity`/`workflow-action`/`action-request`/`read-only-view`) via une
   Map `CLASS_TO_SCRIPT` à un seul point d'édition. Deux catégories d'écart
-  traitées distinctement : `KNOWN_GAPS` (manques temporaires, vide
-  actuellement) et `STRUCTURAL_EXCEPTIONS` (les 4 entrées `*/details` de
-  `workflow-action` — couvertes par les variantes `transition`, jamais par un
-  volet direct, donc pas un gap mais une limite structurelle documentée de la
-  correspondance 1:1). Préalable réglé au passage : `read-only-view.pattern
-  .json` référençait encore `grafana-dashboard.entity.ts`/`map.entity.ts`
-  comme fichiers par module — périmé depuis la consolidation T1-6
-  (`GrafanaLinkEntity` unique dans `@cmz/shared-domain`), jamais répercuté
-  dans le pattern ; corrigé par inspection directe de
-  `monitoring`/`reporting`/`interactive-map`. Nouveau script
-  `check:pattern-nx:read-only-view` (9 entités, 100 % testé), branché dans
-  `check:all`. Résultat final : 50 entités auditées, 46 couvertes directement
-  + 4 exceptions structurelles documentées, 0 gap réel restant.
+  traitées distinctement : `KNOWN_GAPS` (manques temporaires, vide actuellement)
+  et `STRUCTURAL_EXCEPTIONS` (les 4 entrées `*/details` de `workflow-action` —
+  couvertes par les variantes `transition`, jamais par un volet direct, donc pas
+  un gap mais une limite structurelle documentée de la correspondance 1:1).
+  Préalable réglé au passage : `read-only-view.pattern .json` référençait encore
+  `grafana-dashboard.entity.ts`/`map.entity.ts` comme fichiers par module —
+  périmé depuis la consolidation T1-6 (`GrafanaLinkEntity` unique dans
+  `@cmz/shared-domain`), jamais répercuté dans le pattern ; corrigé par
+  inspection directe de `monitoring`/`reporting`/`interactive-map`. Nouveau
+  script `check:pattern-nx:read-only-view`, branché dans `check:all`.
+  **Requalification stricte du 2026-08-16 :** le contrôle de couverture a
+  détecté que `dashboard/dashboard` était bien dans le scope mais absent du
+  pattern. Aucune exception n'a été ajoutée : une composition
+  `compositeRead/aggregated_stats_view` et sa liste explicite de 20 artefacts
+  ont été définies, puis vérifiées 20/20 contre le module réel. Résultat final :
+  51 entités auditées, 47 couvertes directement, ainsi que 4 exceptions
+  structurelles documentées, 0 gap réel sur la cible supportée ; les 10 entités
+  `read-only-view` passent individuellement leur gate.
 
 ### 1.3 Modèle de données & gestion d'état — patterns génériques (ex-T3, sous-ensemble)
 
@@ -370,37 +374,178 @@ couverture non-régression ; gate emission.
   `NOUVEAU 2026-08-14, audit Big Tech Meta/Google`. 3e récurrence de la même
   classe de bug que T13-14/T13-16 (« un script `check:*` ajouté à `check:all`
   n'est bloquant que s'il a AUSSI une step CI ou un hook husky dédié —
-  `check:all` lui-même n'est jamais invoqué automatiquement ») : audit
-  factuel (agent dédié, mesures reproductibles, pas d'opinion) a trouvé 4
-  scripts `check:dto-schema`/`check:pattern-nx:workflow-action`/
-  `check:pattern-nx:action-request`/`check:pattern-nx:read-only-view`
-  documentés « branchés dans check:all » (T2-2, T2-8, T2-8 suite) mais jamais
-  invoqués individuellement en CI — donc réellement non bloquants malgré la
+  `check:all` lui-même n'est jamais invoqué automatiquement ») : audit factuel
+  (agent dédié, mesures reproductibles, pas d'opinion) a trouvé 4 scripts
+  `check:dto-schema`/`check:pattern-nx:workflow-action`/
+  `check:pattern-nx:action-request`/`check:pattern-nx:read-only-view` documentés
+  « branchés dans check:all » (T2-2, T2-8, T2-8 suite) mais jamais invoqués
+  individuellement en CI — donc réellement non bloquants malgré la
   documentation. `check:pattern-nx-coverage` (T11-7) manquait même de
-  `check:all`. Corrigé : 5 steps CI ajoutées (`docs-freshness` pour
-  dto-schema, `duplicates` pour les 4 pattern-nx). **Root cause traitée, pas
-  seulement le symptôme** : nouveau script `tools/check-ci-wiring.mjs`
-  (`check:ci-wiring`, dernière step du job `guardrails`) croise
-  mécaniquement chaque `bun run check:x` de `check:all` avec le contenu réel
-  de `.github/workflows/*.yml` et `.husky/*` — toute future addition à
-  `check:all` sans step CI/husky dédiée fait désormais échouer la CI
-  elle-même, plutôt que d'attendre le prochain audit manuel pour être
-  découverte. Testé positif (script orphelin simulé → détecté, exit 1) et
-  négatif (état réel du dépôt → 23/23 scripts câblés, exit 0).
+  `check:all`. Corrigé : 5 steps CI ajoutées (`docs-freshness` pour dto-schema,
+  `duplicates` pour les 4 pattern-nx). **Root cause traitée, pas seulement le
+  symptôme** : nouveau script `tools/check-ci-wiring.mjs` (`check:ci-wiring`,
+  dernière step du job `guardrails`) croise mécaniquement chaque
+  `bun run check:x` de `check:all` avec le contenu réel de
+  `.github/workflows/*.yml` et `.husky/*` — toute future addition à `check:all`
+  sans step CI/husky dédiée fait désormais échouer la CI elle-même, plutôt que
+  d'attendre le prochain audit manuel pour être découverte. Testé positif
+  (script orphelin simulé → détecté, exit 1) et négatif. **Requalification du
+  2026-08-16 :** l'état réel du dépôt compte désormais 26/26 scripts de
+  `check:all` câblés, exit 0.
 
 ### 1.7 Documentation & fraîcheur ADR — mécanisme générique (ex-T13, sous-ensemble)
 
 - **T13-1** — partiel, S, P2, alias `DT-4`. Resync cartographie/STATUS/LLM après
   push corpus (générateurs).
+- **T13-18** — **bloqué-humain** (observé 2026-08-16), S, P0. Les blocs de
+  statut ont été régénérés, mais `check:docs-freshness` reste rouge tant que les
+  documents intentionnellement modifiés ne sont pas présents dans l'index Git.
+  Ils n'ont pas été indexés automatiquement : cette opération doit suivre une
+  revue et une autorisation humaines explicites. **Critère de clôture :** faire
+  revoir la liste exacte des documents, indexer uniquement ceux approuvés, puis
+  obtenir `bun run check:docs-freshness` vert sans diff généré résiduel. Ne pas
+  contourner le contrôle ni élargir le `git add` à tout le worktree sale.
 
 ---
 
-## 2. Pipeline de génération générique (PIPELINE) — ce qui existe, ce qui reste
+## 2. Plateforme de génération (PIPELINE) — preuves avant extension
 
-Conception détaillée :
+Périmètre et gates de promotion :
+[`generation-platform-capability-matrix.md`](./generation-platform-capability-matrix.md),
+[ADR-0029](../adr/0029-perimetre-capacites-plateforme-generation.md),
+[ADR-0030](../adr/0030-ir-canonique-et-profils-cibles.md) et
+[ADR-0031](../adr/0031-graphe-execution-et-manifests-composition.md). Conception
+Figma, désormais source partielle différée :
 [`conception-pipeline-figma-vers-code.md`](./conception-pipeline-figma-vers-code.md)
-(non implémentée). ADR de cadrage :
-[ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md).
+(non implémentée).
+
+### 2.0 Programme de preuve prioritaire — nouveau cadrage
+
+- **PLAT-1** — **fait** (2026-08-14), L, P0. Evidence model et Semantic model
+  minimaux versionnés sur `action-request`, sans chemin ni concept de framework
+  dans l'IR canonique. La tranche couvre 3 commandes, 14 sources SHA-256, 12
+  faits, 3 inconnues et 2 décisions. Schémas, fixture, invariants
+  inter-documents, 6 tests de mutation et gate CI :
+  [`tools/generator-platform`](../../tools/generator-platform/README.md).
+- **PLAT-2** — **fait** (2026-08-14), L, P0. Deux adaptateurs indépendants et
+  fail-closed convergent sur la même observation normalisée puis la même IR :
+  spécification JSON versionnée et AST TypeScript du legacy réel. Provenance
+  SHA-256 séparée, inconnues explicites, décisions humaines isolées dans une
+  policy neutre, égalité profonde + fixture golden + mutations testées dans
+  [`tools/generator-platform`](../../tools/generator-platform/README.md).
+- **PLAT-3** — **fait localement** (2026-08-14), XL, P0. Deux renderers ne
+  consommant que les modèles canoniques, l'Artifact Plan et leur profil
+  produisent chacun 7 fichiers : bibliothèque Angular injectable et client/hooks
+  ReactJS. Les deux arbres compilent en mode strict ; manifests versionnés
+  couvrant hash IR, hash plan, hash profil, responsabilité, ownership, politique
+  d'écriture, hashes fichiers et hash d'arbre ; mutation d'endpoint détectée sur
+  les deux cibles. Les modules générés passent aussi un Oracle runtime commun
+  sur les validations, les trois commandes HTTP publiques, l'ordre de
+  persistance de session et les échecs transport/session :
+  [`validation-runtime-action-request.md`](./validation-runtime-action-request.md).
+  Gate `check:generator-platform` déjà câblé en CI. Promotion M3 conditionnée à
+  la première exécution CI verte du lot. Une seconde définition `support`, sans
+  vocabulaire d'authentification ni port de session, passe le parcours
+  déclaratif complet sur les deux cibles. Commande et procédure :
+  [`creer-une-action-request.md`](../guides/creer-une-action-request.md).
+- **PLAT-4** — **fait localement** (2026-08-14), XL, P0. Le cas réel
+  `requests-details` + export est extrait par un adaptateur fail-closed vers un
+  Evidence Model séparé et un Behavior Model neutre. Les renderers Angular et
+  ReactJS compilent et exécutent le même Oracle d'états, permissions, branches,
+  validations conditionnelles, erreurs et callback applicatif asynchrone
+  attendu. Les mutants de permission, garde d'état, branche de rejet,
+  `callbackType` et causalité d'écriture sont tués sur les deux cibles :
+  [`validation-runtime-workflow-action.md`](./validation-runtime-workflow-action.md).
+  Une définition JSON indépendante converge sur le même Behavior Model ; la
+  commande `generate:workflow-action` génère Angular/ReactJS, compile
+  strictement et refuse écrasement, règles ou compositions non supportées.
+  Procédure :
+  [`creer-un-workflow-action.md`](../guides/creer-un-workflow-action.md).
+  Promotion conditionnée à une CI verte ; validation sur un second domaine réel
+  encore ouverte.
+- **PLAT-5** — **fait localement** (2026-08-14), L, P0. Le même Oracle tue sur
+  Angular et ReactJS trois mutations structurellement valides : suppression de
+  la contrainte d'égalité de confirmation, suppression de l'effet de session et
+  passage de `public/none` à `authenticated/bearer`. La campagne a révélé puis
+  corrigé le contrat d'authentification absent du `FetchPort` ReactJS et la
+  génération inconditionnelle des ports de session. Détails et limites :
+  [`validation-runtime-action-request.md`](./validation-runtime-action-request.md).
+  Promotion M4 conditionnée à la première exécution CI verte du lot.
+- **PLAT-5A** — **fait localement** (2026-08-16), L, P0. Un Artifact Plan
+  target-neutral et déterministe décrit les responsabilités logiques communes.
+  Les renderers Angular et ReactJS doivent rattacher exhaustivement chaque
+  fichier au plan et refusent un plan périmé. Le manifest 1.1 enregistre
+  `artifact_id`, `owner` et `write_policy`; cette tranche initiale ne produisait
+  encore que `generator-owned/replace`. La lacune
+  `planning.shared-artifact-plan` est retirée du contrat directeur.
+- **PLAT-5B** — **fait localement** (2026-08-16), L, P0. Les deux commandes
+  acceptent `--dry-run` et produisent un Change Set déterministe sans écriture.
+  Une sortie absente produit des `create`; une sortie propre des `unchanged`;
+  une définition évoluée des `replace`; un artefact obsolète un `delete`. Toute
+  dérive d'un fichier `generator-owned` est refusée avant planification. La
+  capacité `regeneration.dry-run-drift-detection` est prouvée ; l'application du
+  Change Set alors encore ouverte est livrée par PLAT-5E.
+- **PLAT-5C** — **fait localement** (2026-08-16), L, P0. Un contrat typé et un
+  fichier `src/after-success.extension.ts` physiquement séparé sont produits
+  pour `action-request` et `workflow-action`, sur Angular et ReactJS. Le fichier
+  est `human-owned/preserve`; le dry-run capture son hash courant comme hash
+  avant/après, refuse sa suppression et refuse toute combinaison d'ownership non
+  prouvée. Un Oracle exécute une implémentation humaine instrumentée dans les
+  quatre parcours. La lacune `extensions.human-owned-preservation` est retirée
+  du contrat directeur ; la publication effective alors encore ouverte est
+  livrée par PLAT-5E.
+- **PLAT-5D** — **fait localement** (2026-08-16), M, P0. Le gate de la
+  plateforme est séparé en trois niveaux explicites : core `node:test`, Angular
+  Vitest + environnement zoneless jsdom + `TestBed`, et ReactJS Vitest +
+  React/ReactDOM + React Testing Library. Les deux runners natifs compilent les
+  arbres TypeScript fraîchement générés et leurs specs en mode strict, pas une
+  copie manuelle. Angular rejoue le workflow complet et les succès/échecs RxJS
+  d'`action-request`; ReactJS prouve les états réels des hooks, le refus de
+  permission et l'attente d'un export asynchrone. Un renderer futur doit fournir
+  son gate natif séparé : le seul Oracle neutre ne suffit pas à déclarer une
+  cible supportée.
+- **PLAT-5E** — **fait localement** (2026-08-16), L, P0. Les deux commandes
+  acceptent désormais `--apply <change_set_id>` pour une sortie existante.
+  L'identifiant lie l'écriture au dry-run effectivement revu et tout plan périmé
+  est refusé. Le plan de contrôle racine possède son propre manifest ; le drift,
+  les fichiers sans owner et les régénérations partielles ambiguës sont refusés.
+  La plateforme prépare une arborescence sœur, y conserve les extensions
+  `human-owned` octet par octet, compile les sorties, replanifie contre l'état
+  vivant, puis publie avec rollback sur erreur. Un double échec conserve
+  explicitement la version précédente dans un chemin de récupération. Preuves :
+  évolution `action-request` sur Angular et ReactJS, application
+  `workflow-action`, rejet du drift du plan de contrôle, rejet d'un fichier sans
+  owner, échec de compilation avant commit, rollback injecté et ajout de ReactJS
+  à une sortie Angular seule. `regeneration.existing-output` est retirée des
+  lacunes du contrat directeur.
+- **PLAT-5F** — **implémentation terminée localement ; promotion externe
+  bloquée-humain** (2026-08-16), M, P1. La stratégie retenue est le journal de
+  reprise : verrou exclusif par sortie publié atomiquement, récupération d'un
+  verrou local périmé, fichiers candidats synchronisés, répertoires
+  synchronisés, journal remplacé atomiquement et phases `prepared`,
+  `previous-moved`, `candidate-published`. À la tentative de publication
+  suivante, la plateforme restaure la version précédente si elle a été déplacée,
+  ou finalise la nouvelle seulement si le manifest de contrôle, les manifests
+  cibles et chaque fichier correspondent aux hashes attendus. Tout état ambigu
+  échoue fermé et conserve l'arbre de secours. Les tests couvrent concurrence de
+  deux créations, verrou vivant/périmé, crash simulé entre renommages, processus
+  enfant réellement tué par `SIGKILL` après chacun des deux renommages,
+  publication interrompue valide, contenu publié contradictoire, journal
+  sur-spécifié, rollback et double échec, ainsi que l'échec du journal sur une
+  première publication. **Décision fermée par ADR-0035 :** la sortie v1 est
+  inactive pendant la commande et activée uniquement après succès ; les lecteurs
+  externes concurrents ne sont pas supportés. APFS/macOS et ext4/Linux locaux
+  sont les seuls profils admis, contrôlés par `statfs` avant écriture. Le gate
+  `check:publication-durability` exerce les primitives réelles et les crashs ;
+  la CI possède une matrice bloquante `macos-14`/APFS + `ubuntu-24.04`/ext4. Le
+  code est séparé entre orchestration/candidats (`generation-publication.mjs`),
+  transaction durable (`generation-transaction.mjs`) et contrat de stockage
+  (`publication-durability.mjs`) ; chaque module et suite reste sous 800 lignes,
+  sans dérogation. **Seule action restante avant promotion M3 :** obtenir la
+  première exécution verte de cette matrice externe après revue/indexation et
+  push ; ne pas inventer ce résultat depuis le poste local.
+- **PLAT-6** — différé, L, P1. Ajouter Figma comme source de Presentation intent
+  après clôture de PLAT-1 à PLAT-5.
 
 ### 2.1 Preuves empiriques déjà produites
 
@@ -408,9 +553,10 @@ Conception détaillée :
   transposition multi-stack : `libs`-équivalent React+TS pour
   `settings-security/users` construit hors dépôt (scratch, jamais copié dans
   `libs/`), Oracle réel exécuté (`tsc --noEmit`, `eslint --max-warnings=0`,
-  `vitest run`) → 0 erreur, 25/25 tests, domain 100 % statements. **Preuve
-  empirique centrale d'ADR-0026** : a servi de déclencheur à ROAD-3a. Aucun code
-  ajouté à ce dépôt — seule la preuve de faisabilité compte.
+  `vitest run`) → 0 erreur, 25/25 tests, domain 100 % statements. **Portée de la
+  preuve :** les principes de vérification se transposent à React. Aucun code
+  ajouté au dépôt : ce résultat ne compte pas comme renderer reproductible ni
+  comme preuve de l'IR multi-stack d'ADR-0030.
 - **ROAD-3d** — **fait**, M, P2, alias `2026-08-12`. Échantillonnage du corpus
   pour mesurer le taux de règles métier non déductibles d'un legacy : 8/44
   chaînes → 37 % mécanique / 37 % déductible avec contexte / 25 % non
@@ -456,14 +602,15 @@ Conception détaillée :
   **Recoupe directement T2-1/T2-2/T2-3 (§1.2) — ne pas traiter séparément**, S-1
   = T2-1.
 
-### 2.3 Le pipeline Figma lui-même — 4 critères de passage à l'implémentation
+### 2.3 Adaptateur Figma — différé après la matrice web 2×2
 
-- **ROAD-3f** — ouvert, XL, P1, alias `2026-08-12, bloqué-accès pour couche 1`.
+- **ROAD-3f** — différé, XL, P1, alias `2026-08-12, bloqué-accès pour couche 1`.
   Conception d'un pipeline de génération ex nihilo depuis une maquette Figma
   (extraction MCP+Code Connect → suggestion de pattern → spec métier humaine
   courte → G-V-R). Cf.
   [`conception-pipeline-figma-vers-code.md`](./conception-pipeline-figma-vers-code.md).
-  **Non implémenté.** Nécessite un accès Figma réel (fichier + Figma desktop
+  **Non implémenté et non prioritaire avant PLAT-1…PLAT-5.** Nécessite ensuite
+  un accès Figma réel (fichier + Figma desktop
     - bibliothèque Code Connect configurée) pour la première validation.
 
     Les 4 critères de passage à l'implémentation (§7 du document de conception),
@@ -487,12 +634,12 @@ Conception détaillée :
 
 ---
 
-## 3. Cas d'usage SEOS/Angular (SEOS) — toujours légitime, secondaire
+## 3. Golden reference SEOS/Angular (SEOS) — produit et preuve sémantique
 
 Ces items raffinent le contenu du cas d'usage SEOS→Angular spécifiquement
 (traductions, données legacy, RBAC métier, budgets bundle Angular). Le travail
-reste nécessaire pour livrer ce cas d'usage, mais n'est plus la priorité de
-cadrage du dépôt dans son ensemble depuis ADR-0026.
+reste nécessaire pour livrer ce cas d'usage et alimenter la Phase 09. Il ne doit
+pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
 
 ### 3.1 Contrats & données SEOS spécifiques
 
@@ -723,6 +870,35 @@ gouvernance, sécurité, licences.
 - **OPS-4** — bloqué-humain, S, P1, alias `P1-13`. Second relecteur CODEOWNERS.
 - **OPS-8** — ouvert, S, P1 Ops, alias `carto #6`. `nginx -t` réel conf + CSP.
   _(recoupe T4-1, même sujet.)_
+- **OPS-9** — **fait localement** (2026-08-16), M, P0 Ops. Cause racine isolée
+  sous Node `22.22.3` : ce n'était ni TypeScript, ni le code applicatif, ni Nx
+  Cloud. Le cache compilateur persistant optionnel d'Angular ouvrait
+  `angular-compiler.db` avec le binding natif LMDB `3.5.4` sur macOS arm64 ; le
+  processus Node terminait en `SIGABRT`
+  (`pointer being freed was not allocated`, pile native `EnvWrap::open`). Le
+  message esbuild `all goroutines are asleep - deadlock` observé ensuite était
+  secondaire à la disparition du processus hôte. Un cache existant mis en
+  quarantaine puis une base neuve ont reproduit le même crash : l'hypothèse
+  d'une simple corruption de cache est donc réfutée. Correctif minimal dans
+  `apps/backoffice-angular/project.json` : `cli.cache.enabled=false` désactive
+  seulement ce cache Angular pour cette application ; le cache de tâches Nx
+  reste actif. Preuves sans `CI=true`, sans Nx Cloud et sans cache Nx : builds
+  `development` et `production` verts, `ngc --noEmit` vert et suite officielle
+  `@angular/build:unit-test` verte (14 fichiers, 57 tests). Le build production
+  reste dans le budget initial (`872.64 kB` pour une limite d'avertissement à
+  `900 kB`).
+- **OPS-10** — **fait localement** (2026-08-16), S, P0 Ops. Node `22.22.3` était
+  disponible via NVM et a été explicitement activé conformément à `.nvmrc`.
+  `bun run check:engines` est vert, puis `bun install --frozen-lockfile` a
+  terminé avec succès. Les gates rejoués dans ce runtime conforme sont verts :
+  plateforme de génération (94 tests core + 4 Angular + 5 ReactJS), Oracle des
+  targets (72 bibliothèques), `ngc`, tests Angular et deux builds d'OPS-9. Le
+  dépôt conserve son contrôle fail-closed : un shell parent qui n'active pas
+  `.nvmrc` et reste en `22.21.0` sera toujours refusé ; il doit exécuter
+  `nvm use` avant Bun. Au passage, `check:targets` a été rendu compatible avec
+  les deux sorties réelles de `nx show projects` (noms ligne par ligne ou
+  tableau JSON compact), supprimant un faux négatif de 144 violations sans
+  affaiblir l'oracle.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 
@@ -776,7 +952,7 @@ le seul mécanisme suffisamment générique pour figurer en §1.4.)_
 ## 5. Items requalifiés / écartés (REQUALIFIÉ)
 
 Ces items ne sont pas supprimés — leur pertinence a été réévaluée à l'aune
-d'ADR-0026, avec justification explicite.
+d'ADR-0029, avec justification explicite.
 
 - **T13-6** — état **différé** (inchangé), XL, P2, alias
   `ADR-0019, annoté 2026-08-12`. « Si stratégie ML : nouvel ADR + schéma contenu
@@ -795,9 +971,9 @@ d'ADR-0026, avec justification explicite.
   clos, mais sa légitimité dans le cadrage actuel est jugée **basse** : ce n'est
   pas la voie retenue pour avancer sur l'objectif générique.
 
-Aucun autre item du fichier source ne contredit directement la logique
-d'ADR-0026 — le reste du backlog (SEOS, opérationnel, Oracle) reste pertinent,
-seulement reclassé par priorité en §1–§4.
+Aucun autre item du fichier source ne contredit directement ADR-0029 — le reste
+du backlog (SEOS, opérationnel, Oracle) reste pertinent, seulement reclassé par
+priorité en §1–§4.
 
 ---
 
@@ -909,6 +1085,8 @@ dans ce document.
 | OPS-6 (=T6-1)    | §4.2             | T8-5    | §3.3             |
 | OPS-7 (=T3-2)    | §3.2             | T8-6    | §3.3             |
 | OPS-8 (≈T4-1)    | §4.1             | T9-1    | §3.3             |
+| OPS-9            | §4.1             | OPS-10  | §4.1             |
+| T13-18           | §1.7             | —       | —                |
 | P2-* (toutes)    | §3.7             | T9-2    | §3.3             |
 | ROAD-1 (=T13-2)  | §3.6             | T9-3    | §3.3             |
 | ROAD-2 (=T12-13) | §1.6             | T9-4    | §3.3             |
@@ -974,15 +1152,16 @@ dans ce document.
 
 ## Index
 
-| Doc                                                                                                                        | Rôle                                                                                              |
-| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Ce fichier                                                                                                                 | Backlog machine + ARB, réorganisé par priorité ADR-0026 (Oracle → Pipeline → SEOS → Opérationnel) |
-| [`etat-du-socle.md`](./etat-du-socle.md)                                                                                   | 2 points ouverts historiques + renvoi                                                             |
-| [`STATUS.md`](../../STATUS.md)                                                                                             | Chiffres générés                                                                                  |
-| [`LLM_CONTEXT.md`](../../LLM_CONTEXT.md)                                                                                   | Directives agents                                                                                 |
-| [`../adr/0026-reorientation-objectif-generation-generique.md`](../adr/0026-reorientation-objectif-generation-generique.md) | ADR de cadrage de cette refonte                                                                   |
-| [`conception-pipeline-figma-vers-code.md`](./conception-pipeline-figma-vers-code.md)                                       | Conception détaillée du pipeline §2 (non implémentée)                                             |
-| Audits 08-02→08-04                                                                                                         | Historique ; ce document prime si date conflict                                                   |
+| Doc                                                                                                                    | Rôle                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Ce fichier                                                                                                             | Backlog machine + ARB, consolidé par ADR-0029 (preuve plateforme + golden reference SEOS) |
+| [`etat-du-socle.md`](./etat-du-socle.md)                                                                               | 2 points ouverts historiques + renvoi                                                     |
+| [`STATUS.md`](../../STATUS.md)                                                                                         | Chiffres générés                                                                          |
+| [`LLM_CONTEXT.md`](../../LLM_CONTEXT.md)                                                                               | Directives agents                                                                         |
+| [`../adr/0029-perimetre-capacites-plateforme-generation.md`](../adr/0029-perimetre-capacites-plateforme-generation.md) | ADR de cadrage courant                                                                    |
+| [`generation-platform-capability-matrix.md`](./generation-platform-capability-matrix.md)                               | Claims, niveaux de maturité et matrice de preuve                                          |
+| [`conception-pipeline-figma-vers-code.md`](./conception-pipeline-figma-vers-code.md)                                   | Conception détaillée du pipeline §2 (non implémentée)                                     |
+| Audits 08-02→08-04                                                                                                     | Historique ; ce document prime si date conflict                                           |
 
 ---
 

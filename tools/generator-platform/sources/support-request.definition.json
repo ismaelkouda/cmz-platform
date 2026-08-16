@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "action-request",
+  "feature": {
+    "id": "support",
+    "name": "Support",
+    "description": "Authenticated submission of a support request."
+  },
+  "opaque_types": [],
+  "operations": [
+    {
+      "id": "contact-support",
+      "description": "Submit a support request for the current user.",
+      "input": {
+        "description": "Information needed to contact support.",
+        "fields": [
+          {
+            "name": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true,
+            "format": "email"
+          },
+          {
+            "name": "subject",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "output": {
+        "id": "support-request-result",
+        "description": "Confirmation returned after accepting the request.",
+        "fields": [
+          {
+            "name": "request_id",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "access": { "mode": "authenticated" },
+      "http": {
+        "method": "POST",
+        "path": "support/requests",
+        "authentication": "bearer"
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Submit the request to the support boundary."
+        }
+      ]
+    }
+  ]
+}
