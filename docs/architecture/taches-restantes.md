@@ -675,6 +675,120 @@ Figma, désormais source partielle différée :
   `action-request` future (cela exigerait d'étendre
   `action-request-definition.schema.json`, hors périmètre PLAT-5I). Il reste
   exactement 1 lacune : `presentation.flow`.
+- **PLAT-5J** — **fait localement** (2026-08-16), M, P0. La lacune
+  `presentation.flow` est fermée dans le contrat directeur — c'était la
+  **dernière** lacune déclarée : `expected_gaps` passe de
+  `["presentation.flow"]` à `[]`. Le wizard `evolution.presentation` (`kind:
+  "wizard"`, 3 étapes ordonnées `request`→`review`→`confirmation`, champs
+  propres par étape) est désormais gouverné par un moteur d'exécution réel,
+  pas par une validation de schéma suivie d'une recherche de sous-chaîne
+  `'confirmation'` dans le code généré (le faux-positif exact remplacé).
+  **Choix d'implémentation documenté :** ADR-0030 sépare explicitement le
+  Behavior model (états/opérations/transitions/graphe d'exécution) de la
+  Presentation intent (vues/navigation/interactions/contenu/accessibilité)
+  comme deux des quatre axes complémentaires de l'IR canonique ; le contrat
+  directeur reflète ce découpage — `behavior_graph` et `presentation` sont
+  deux clés sœurs sous `evolution`, avec un suivi de lacune indépendant
+  jusqu'à ce chantier. Une étape de wizard n'est pas un état atteint par un
+  événement arbitraire déclaré : c'est une position dans un ordre linéaire
+  fixe et déclaré, et la progression est conditionnée par la complétude des
+  champs de l'étape courante, pas par un vocabulaire d'événements. Réutiliser
+  le moteur `core/behavior-graph.mjs` (PLAT-5I) aurait forcé les id d'étape à
+  doubler comme noms de nœuds du graphe de comportement et la complétude de
+  champ à se réexprimer comme un événement — un couplage artificiel de deux
+  axes qu'ADR-0030 maintient orthogonaux. **presentation.flow est donc un
+  nouveau mécanisme générique, pas une extension de behavior-graph**, en
+  reproduisant strictement le même patron architectural (module core de
+  validation/compilation, renderer TS générique, adaptateurs de stack,
+  Oracle d'exécution réelle, mutants, tests natifs). Nouveau module core
+  `core/presentation-flow.mjs` : validation structurelle d'une déclaration
+  `{ kind, steps }` (id d'étape uniques, `fields` un tableau de chaînes non
+  vides) et compilation en table indexée par ordre. Fonctions pures
+  `isStepComplete` (un champ déclaré est complet s'il est présent et non
+  vide après trim ; une étape sans champ déclaré — `review` — est toujours
+  complète), `applyPresentationAdvance` (accepté seulement si la cible est
+  exactement l'étape suivante déclarée ET l'étape courante est complète ;
+  saut d'étape, étape inconnue, ou avance avant complétude sont tous refusés
+  de la même façon, fail-closed, en renvoyant l'étape inchangée) et
+  `applyPresentationBack` (retour accepté seulement d'une étape à la fois,
+  jamais de re-vérification de complétude — revisiter une étape déjà
+  remplie pour l'éditer est toujours permis). **Choix explicite sur le
+  retour arrière :** ADR-0030 ne tranche pas si un wizard doit permettre de
+  revenir en arrière ; le choix assumé ici est « oui, une étape à la fois,
+  sans re-validation », cohérent avec l'attente usuelle d'un wizard
+  (« revoir/corriger ce qui a déjà été saisi ») et testé comme tel des deux
+  côtés (fail-closed sur un saut de plus d'une étape en arrière).
+  Renderer générique `renderers/presentation-flow-renderer.mjs` : émet un
+  `PresentationFlowEngine` TypeScript piloté uniquement par une table
+  d'étapes/ordre/champs gelée, compilée depuis le contrat — jamais de nom
+  d'étape ou de champ codé en dur dans le contrôle de flux. Deux gardes
+  fail-closed distinctes dans `advance()` (`targetIndex !== currentIndex +
+  1` pour l'ordre, `!isCurrentStepComplete(values)` pour la complétude) et
+  une garde symétrique dans `back()`. Adaptateurs
+  `renderers/presentation-flow-stack-adapters.mjs` : service Angular
+  injectable + factory de hook React, à l'image exacte de
+  `PERMISSION_PORT`/`createActionRequestHooks` et de
+  `behavior-graph-stack-adapters.mjs`. Preuve d'exécution réelle
+  (`core/presentation-flow-runtime-oracle.mjs`, appelée par
+  `probePresentationFlow()` dans `check-evolvable-composition.mjs`) :
+  transpile et charge le moteur généré pour les deux cibles, démarre sur la
+  première étape déclarée (`request`), refuse fail-closed (a) un saut vers
+  une étape au-delà de la suivante immédiate, (b) une étape cible inconnue,
+  (c) une avance avant complétude des champs de l'étape courante — aucun de
+  ces trois refus ne change l'étape courante —, puis suit le chemin heureux
+  déclaré jusqu'à l'étape terminale une fois chaque étape complétée, et
+  prouve qu'un retour d'une étape est accepté tandis qu'un retour de plus
+  d'une étape est refusé — testé dans les deux stacks. **Choix explicite
+  sur le critère de progression :** la complétude d'une étape est définie
+  ici comme « chaque champ déclaré par le contrat pour cette étape est
+  présent et non vide (trim) dans les valeurs fournies » — aucune validation
+  métier plus fine (format email, etc., déjà couverte par
+  `permissions.runtime-enforcement`/`data.canonical-model`) n'est reprise
+  ici ; c'est le critère minimal explicite demandé par la consigne PLAT-5J
+  en l'absence d'un schéma de validation par étape dans le contrat. Tests
+  natifs TestBed (Angular, 9/9,
+  `stack-tests/angular/presentation-flow.spec.ts`) et Testing Library
+  (ReactJS, 9/9, `stack-tests/reactjs/presentation-flow.spec.ts`), générés
+  par `prepare-stack-tests.mjs` à partir des mêmes fonctions de rendu que
+  l'Oracle. 2 mutants tués sur les gardes rendues
+  (`presentation-flow-mutations.test.mjs`) : garde anti-saut d'étape
+  neutralisée (skip-ahead accepté) et garde de complétude neutralisée
+  (avance sur étape incomplète acceptée) — dans les deux cas l'Oracle catche
+  l'absence de refus et échoue, prouvant que les gardes sont porteuses de
+  preuve, pas un test tautologique. 20 tests directs sur
+  `core/presentation-flow.mjs` (validation structurelle, compilation,
+  complétude, avance/retour fail-closed) dans `presentation-flow.test.mjs`.
+  Validations : 149/149 tests core (dont 23 propres à ce lot : 20 + 3
+  sous-tests de mutants), gate directeur PASS avec `regressions:[]`,
+  `unexpectedly_implemented:[]` et **`actual_gaps:[]`** — `expected_gaps` du
+  contrat directeur passe à `[]`, `promotion_rule.success` (« expected_gaps
+  est vide et chaque invariant est vérifié par des oracles exécutables »)
+  voit sa première condition satisfaite ; ce script ne déclenche, n'évalue
+  ni ne documente lui-même la seconde condition ni aucune promotion —
+  `contract.status` reste `"characterization"`, aucun mécanisme de promotion
+  n'a été invoqué. `target_tree_sha256` Angular/ReactJS inchangés
+  (confirmant l'absence d'effet de bord sur les renderers `action-request`
+  génériques), `eslint --max-warnings=0` propre sur `core/`, `renderers/`,
+  `*.mjs`, `format:check` vert (Prettier a reformaté 5 fichiers du lot,
+  vérifié à nouveau vert après), poids fichiers conforme (plafond 800
+  lignes, chaque nouveau fichier ≤ 379 lignes), `tsc --noEmit` et
+  `vitest run` natifs verts sur les deux cibles (22/22 chacune, dont les 9
+  nouveaux tests `presentation-flow.spec.ts`). Un test préexistant
+  (`evolvable-composition.test.mjs`) affirmait en dur
+  `decision_satisfied === false` ; mis à jour pour refléter l'état réel
+  (`true`) désormais que `actual_gaps` est vide, avec un commentaire
+  explicite que ceci ne constitue ni ne déclenche une promotion. **Limite
+  explicite assumée :** comme PLAT-5I, ce moteur ne gouverne que le flux
+  déclaré par le contrat directeur pour cette composition
+  (`action-request`/`support-request`) ; il n'est pas câblé comme mécanisme
+  générique disponible à toute définition `action-request` future (le
+  schéma `action-request-definition.schema.json` n'a toujours aucun champ
+  `presentation`, `additionalProperties: false` inchangé). Le critère de
+  complétude par champ (présence + non-vide) est délibérément simple ; il ne
+  couvre pas une validation métier par étape plus riche, qui resterait à
+  spécifier dans un futur contrat si un cas réel l'exige. Il ne reste
+  **aucune lacune déclarée** dans le contrat directeur
+  `evolvable-composition.contract.json` à l'issue de ce chantier.
 - **PLAT-6** — différé, L, P1. Ajouter Figma comme source de Presentation intent
   après clôture de PLAT-1 à PLAT-5.
 

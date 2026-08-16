@@ -158,18 +158,27 @@ bun run probe:composition-evolution
 
 This is deliberately not a false feature-success gate. It exits successfully
 only while the currently supported subset still works and the exact known-gap
-set remains explicit. `decision_satisfied` stays `false` until all gaps are
-implemented and the contract is promoted from characterization to a blocking
-acceptance gate. An intentional capability addition must update the executable
-probe and contract in the same change.
+set remains explicit. An intentional capability addition must update the
+executable probe and contract in the same change.
 
 `permissions.runtime-enforcement` is now in the supported set. The projected
 `authorized` operation requires a host permission port on both targets, checks
 every declared permission at execution time, and returns the stable
 `permission_denied` error before HTTP/fetch when access is denied. The proof is
 behavioral, not a source-string search: the director Oracle executes denied and
-granted paths on both generated runtimes. The three remaining gaps are
-`composition.persisted-instance`, `behavior.graph`, and `presentation.flow`.
+granted paths on both generated runtimes.
+
+As of PLAT-5J, `expected_gaps` is empty: `composition.persisted-instance`,
+`behavior.graph`, and `presentation.flow` are all now proven by real
+execution and moved into the supported set — every capability declared by
+`evolvable-composition.contract.json` is now covered by an executable
+oracle, not a schema-shape check. `decision_satisfied` therefore reports
+`true`. This does **not** by itself promote the contract from
+characterization to a blocking acceptance gate: `contract.status` stays
+`"characterization"`, `promotion_rule.success` also requires every
+invariant to be verified by executable oracles (a separate, broader claim
+this probe does not itself adjudicate), and this script never mutates
+`contract.status` or triggers any promotion mechanism.
 
 ## Author a bounded workflow-action
 

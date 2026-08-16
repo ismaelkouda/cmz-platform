@@ -13,6 +13,7 @@ import {
     verifyCompositionInstanceIntegrity,
 } from './core/composition-instance.mjs';
 import { assertPermissionRuntimeOracle } from './core/permission-runtime-oracle.mjs';
+import { assertPresentationFlowRuntimeOracle } from './core/presentation-flow-runtime-oracle.mjs';
 import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
 import { generateActionRequest } from './generate-action-request.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
@@ -54,7 +55,11 @@ function assertContract(contract) {
     assert.ok(contract.evolution?.presentation?.steps?.length);
     assert.ok(contract.evolution?.extensions?.slots?.length);
     assert.ok(contract.expected_supported?.length);
-    assert.ok(contract.expected_gaps?.length);
+    // expected_gaps is allowed to be empty: an empty array is precisely
+    // what promotion_rule.success requires once every axis is proven by
+    // real execution (PLAT-5J closes the last one, presentation.flow).
+    // It must still be an array, never absent or a non-array value.
+    assert.ok(Array.isArray(contract.expected_gaps));
 }
 
 export function buildSupportedProjection(definition, contract) {
@@ -92,13 +97,6 @@ export async function computeEvolvableCompositionTargets() {
         projected,
         targets,
     };
-}
-
-function allRenderedFiles(targets) {
-    return [
-        ...Object.values(targets.angular.files),
-        ...Object.values(targets.react.files),
-    ];
 }
 
 function containsFrameworkReference(files, pattern) {
@@ -243,6 +241,11 @@ async function probePermissionRuntime(targets, contract) {
 
 async function probeBehaviorGraph(contract) {
     await assertBehaviorGraphRuntimeOracle(contract.evolution.behavior_graph);
+    return true;
+}
+
+async function probePresentationFlow(contract) {
+    await assertPresentationFlowRuntimeOracle(contract.evolution.presentation);
     return true;
 }
 
@@ -412,21 +415,10 @@ export async function probePersistedInstance({
 }
 
 export async function probeEvolvableComposition() {
-    const {
-        compiled,
-        contract,
-        definitionPath,
-        definitionSchema,
-        projected,
-        targets,
-    } = await computeEvolvableCompositionTargets();
-    const rendered = allRenderedFiles(targets);
+    const { compiled, contract, definitionPath, projected, targets } =
+        await computeEvolvableCompositionTargets();
     const permission =
         contract.evolution.permissions.replace_access.permissions[0];
-    const presentationDefinition = {
-        ...projected,
-        presentation: contract.evolution.presentation,
-    };
     const extensionOwned = [targets.angular, targets.react].every((target) =>
         target.manifest.files.some(
             (file) =>
@@ -438,11 +430,13 @@ export async function probeEvolvableComposition() {
         permissionRuntimeEnforcement,
         persistedInstance,
         behaviorGraphRuntime,
+        presentationFlowRuntime,
     ] = await Promise.all([
         probeExistingOutput(definitionPath),
         probePermissionRuntime(targets, contract),
         probePersistedInstance({ compiled, contract, projected, targets }),
         probeBehaviorGraph(contract),
+        probePresentationFlow(contract),
     ]);
     const supported = {
         'data.canonical-model':
@@ -498,13 +492,15 @@ export async function probeEvolvableComposition() {
             persistedInstance.driftedRegenerationRejected &&
             persistedInstance.distinctFromPromotedPattern,
         'behavior.graph': behaviorGraphRuntime,
+        'presentation.flow': presentationFlowRuntime,
     };
-    const capabilities = {
-        'presentation.flow':
-            validateJsonSchema(presentationDefinition, definitionSchema)
-                .length === 0 &&
-            rendered.some((content) => content.includes("'confirmation'")),
-    };
+    // No remaining director-contract gap: every capability declared by
+    // evolution.presentation (and every prior axis) is now proven by real
+    // execution above, not by schema validation. This object is kept
+    // (rather than deleted) so a future gap has a documented place to land
+    // without reshaping the actual_gaps/unexpectedly_implemented plumbing
+    // below.
+    const capabilities = {};
 
     const actualSupported = Object.entries(supported)
         .filter(([, value]) => value)
@@ -567,9 +563,22 @@ async function main() {
     const report = await probeEvolvableComposition();
     assertCharacterization(report);
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    process.stdout.write(
-        'Characterization gate: PASS. The target decision is not yet satisfied; known gaps remain explicitly non-blocking.\n'
-    );
+    if (report.expected_gaps.length === 0) {
+        // expected_gaps is empty: promotion_rule.success's first
+        // condition ("expected_gaps is empty") now holds. This script
+        // does not evaluate or trigger promotion_rule.success's second
+        // condition ("every invariant is verified by executable
+        // oracles") and never mutates contract.status or invokes any
+        // promotion mechanism — that decision is out of this probe's
+        // scope by design (see PLAT-5J notes in taches-restantes.md).
+        process.stdout.write(
+            'Characterization gate: PASS. expected_gaps is empty: promotion_rule.success is not evaluated or triggered by this script.\n'
+        );
+    } else {
+        process.stdout.write(
+            'Characterization gate: PASS. The target decision is not yet satisfied; known gaps remain explicitly non-blocking.\n'
+        );
+    }
 }
 
 if (

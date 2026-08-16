@@ -77,6 +77,7 @@
     "permissions.canonical-model",
     "permissions.runtime-enforcement",
     "planning.shared-artifact-plan",
+    "presentation.flow",
     "regeneration.dry-run-drift-detection",
     "regeneration.existing-output",
     "targets.angular",
@@ -84,7 +85,7 @@
     "targets.shared-semantic-input",
     "targets.renderer-separation"
   ],
-  "expected_gaps": ["presentation.flow"],
+  "expected_gaps": [],
   "promotion_rule": {
     "blocking_now": false,
     "blocking_when": "All expected gaps have been implemented and removed from this contract.",

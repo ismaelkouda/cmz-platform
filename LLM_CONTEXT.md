@@ -25,7 +25,7 @@ La première démonstration attendue est une matrice reproductible de deux sourc
 (Angular + ReactJS), sur `action-request` puis `workflow-action`. Les
 identifiants techniques des profils restent `angular-nx` et `react-typescript`.
 
-**État local de la preuve :** PLAT-1 à PLAT-5I sont implémentés localement ;
+**État local de la preuve :** PLAT-1 à PLAT-5J sont implémentés localement ;
 la promotion externe de PLAT-5F attend la première matrice CI APFS/ext4 verte.
 Pour `action-request`, les deux sources convergent sur une IR et une seconde
 fonctionnalité `support` suit le parcours déclaratif. Pour `workflow-action`, un
@@ -119,6 +119,42 @@ Preuves : Oracle du gate directeur (`probeBehaviorGraph`), 12 tests directs,
 transition rendue. Limite explicite : ce moteur gouverne uniquement le
 graphe de cette composition (`support-request`) ; il n'est pas encore un
 mécanisme générique disponible à toute définition `action-request` future.
+
+PLAT-5J ferme `presentation.flow`, la **dernière** lacune du contrat
+directeur : `expected_gaps` passe à `[]`. Le wizard
+`evolution.presentation` (`request`→`review`→`confirmation`, champs propres
+par étape) est prouvé par exécution réelle, remplaçant une validation de
+schéma suivie d'une recherche de sous-chaîne `'confirmation'` dans le code
+généré. **Choix délibéré : mécanisme séparé de `behavior-graph.mjs`, pas une
+extension.** ADR-0030 traite le Behavior model (états/transitions) et la
+Presentation intent (vues/navigation) comme deux axes orthogonaux de l'IR ;
+le contrat directeur reflète ce découpage (`behavior_graph` et
+`presentation` sont des clés sœurs sous `evolution`). Une étape de wizard
+est une position dans un ordre linéaire déclaré, pas un état atteint par un
+événement arbitraire — réutiliser le graphe de comportement aurait forcé un
+couplage artificiel entre id d'étape et nom de nœud. Nouveau module
+générique `core/presentation-flow.mjs` piloté par les données du contrat
+(`{ kind, steps }`), jamais par des noms d'étape/champ codés en dur :
+`applyPresentationAdvance` accepte uniquement l'étape suivante déclarée une
+fois l'étape courante complète (chaque champ déclaré présent et non vide) et
+refuse fail-closed tout saut, étape inconnue, ou avance prématurée ;
+`applyPresentationBack` accepte un retour d'une étape sans re-vérifier la
+complétude — choix assumé, ADR-0030 ne tranchant pas ce point. Renderers
+`renderers/presentation-flow-renderer.mjs` /
+`renderers/presentation-flow-stack-adapters.mjs` émettent un
+`PresentationFlowEngine` identique pour Angular et ReactJS, matérialisé
+séparément (comme PLAT-5I/5H) sans toucher aux hash d'arbre déjà couverts.
+Preuves : Oracle du gate directeur (`probePresentationFlow`), 20 tests
+directs, 9+9 tests natifs TestBed/Testing Library et 2 mutants tués (garde
+anti-saut, garde de complétude). Validations : 149/149 tests core (23
+propres à ce lot), gate directeur PASS avec `regressions:[]`,
+`unexpectedly_implemented:[]`, `actual_gaps:[]` — `promotion_rule.success`
+voit sa première condition (`expected_gaps` vide) satisfaite, mais ce script
+n'évalue ni ne déclenche la seconde condition ni aucune promotion ;
+`contract.status` reste `"characterization"`. Limite explicite : comme
+PLAT-5I, ce moteur ne gouverne que le flux de cette composition ; le critère
+de complétude par champ (présence + non-vide) est délibérément simple, sans
+validation métier par étape plus riche.
 
 **Direction d'évolution :** `action-request`, `workflow-action`, `crud-entity`
 et `read-only-view` sont des compositions de référence, pas des familles

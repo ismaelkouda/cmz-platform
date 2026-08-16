@@ -13,6 +13,11 @@ import {
     renderAngularBehaviorGraphService,
     renderReactBehaviorGraphHook,
 } from './renderers/behavior-graph-stack-adapters.mjs';
+import { renderPresentationFlowEngine } from './renderers/presentation-flow-renderer.mjs';
+import {
+    renderAngularPresentationFlowService,
+    renderReactPresentationFlowHook,
+} from './renderers/presentation-flow-stack-adapters.mjs';
 import { loadJson } from './validate-ir.mjs';
 
 const generatorRoot = dirname(fileURLToPath(import.meta.url));
@@ -57,6 +62,21 @@ const behaviorGraphFiles =
               'use-behavior-graph.ts': renderReactBehaviorGraphHook(),
           };
 
+const presentationFlowEngineSource = renderPresentationFlowEngine(
+    contract.evolution.presentation
+);
+const presentationFlowFiles =
+    target === 'angular'
+        ? {
+              'presentation-flow-engine.ts': presentationFlowEngineSource,
+              'presentation-flow.service.ts':
+                  renderAngularPresentationFlowService(),
+          }
+        : {
+              'presentation-flow-engine.ts': presentationFlowEngineSource,
+              'use-presentation-flow.ts': renderReactPresentationFlowHook(),
+          };
+
 await rm(targetRoot, { recursive: true, force: true });
 await Promise.all([
     writeTargetFiles(
@@ -72,6 +92,10 @@ await Promise.all([
         workflowAction[sourceKey].files
     ),
     writeTargetFiles(resolve(targetRoot, 'behavior-graph'), behaviorGraphFiles),
+    writeTargetFiles(
+        resolve(targetRoot, 'presentation-flow'),
+        presentationFlowFiles
+    ),
 ]);
 
 console.log(`Prepared generated ${target} sources for native stack tests.`);
