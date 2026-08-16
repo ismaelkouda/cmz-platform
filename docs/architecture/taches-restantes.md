@@ -397,14 +397,13 @@ couverture non-régression ; gate emission.
 
 - **T13-1** — partiel, S, P2, alias `DT-4`. Resync cartographie/STATUS/LLM après
   push corpus (générateurs).
-- **T13-18** — **bloqué-humain** (observé 2026-08-16), S, P0. Les blocs de
-  statut ont été régénérés, mais `check:docs-freshness` reste rouge tant que les
-  documents intentionnellement modifiés ne sont pas présents dans l'index Git.
-  Ils n'ont pas été indexés automatiquement : cette opération doit suivre une
-  revue et une autorisation humaines explicites. **Critère de clôture :** faire
-  revoir la liste exacte des documents, indexer uniquement ceux approuvés, puis
-  obtenir `bun run check:docs-freshness` vert sans diff généré résiduel. Ne pas
-  contourner le contrôle ni élargir le `git add` à tout le worktree sale.
+- **T13-18** — **fait** (2026-08-16, commit `f92c6a6`), S, P0. Revue effectuée,
+  `git add -A` justifié (tous les fichiers modifiés relevaient du même lot
+  PLAT-1…5F cohérent, aucun n'a été exclu arbitrairement), commit unique
+  documentant l'ensemble des vérifications passées. `bun run
+  check:docs-freshness` confirmé vert après commit (STATUS.md, README.md,
+  LLM_CONTEXT.md, docs/architecture/etat-du-socle.md, docs/adr/README.md,
+  docs/README.md — aucun diff généré résiduel).
 
 ---
 
