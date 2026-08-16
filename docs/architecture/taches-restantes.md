@@ -400,10 +400,10 @@ couverture non-régression ; gate emission.
 - **T13-18** — **fait** (2026-08-16, commit `f92c6a6`), S, P0. Revue effectuée,
   `git add -A` justifié (tous les fichiers modifiés relevaient du même lot
   PLAT-1…5F cohérent, aucun n'a été exclu arbitrairement), commit unique
-  documentant l'ensemble des vérifications passées. `bun run
-  check:docs-freshness` confirmé vert après commit (STATUS.md, README.md,
-  LLM_CONTEXT.md, docs/architecture/etat-du-socle.md, docs/adr/README.md,
-  docs/README.md — aucun diff généré résiduel).
+  documentant l'ensemble des vérifications passées.
+  `bun run check:docs-freshness` confirmé vert après commit (STATUS.md,
+  README.md, LLM_CONTEXT.md, docs/architecture/etat-du-socle.md,
+  docs/adr/README.md, docs/README.md — aucun diff généré résiduel).
 
 ---
 
@@ -858,8 +858,10 @@ gouvernance, sécurité, licences.
 
 ### 4.1 Préalable forge / ARB
 
-- **OPS-1** — partiel, M, P0 Ops, alias `P0-N1`. Push + PR + CI verte (36
-  commits + dirty).
+- **OPS-1** — partiel, M, P0 Ops, alias `P0-N1`. Push + PR + CI verte. Mesure
+  locale du 2026-08-16 après `67051e2` : `main` est en avance de **101 commits**
+  sur `origin/main`. Le lot Prettier OPS-11 est en plus présent dans le worktree
+  et doit rester un commit séparé du prochain changement PLAT.
 - **OPS-2** — partiel, S, P1 Ops, alias `G-2`. Revalider protection `main` UI
   GitHub.
 - **OPS-3** — en cours, S, P1 Ops, alias `G-7 · T6-4`. Claim compte Nx Cloud
@@ -898,6 +900,15 @@ gouvernance, sécurité, licences.
   les deux sorties réelles de `nx show projects` (noms ligne par ligne ou
   tableau JSON compact), supprimant un faux négatif de 144 violations sans
   affaiblir l'oracle.
+- **OPS-11** — **fait localement, à revoir/committer séparément** (2026-08-16),
+  S, P0 Ops. `format:check` signalait exactement **29 fichiers** suivis, et non
+  99 : 4 fichiers application/tests, 16 `project.json` de
+  dashboard/interactive-map/monitoring/reporting, 2 specs dashboard, `nx.json`
+  et 6 outils Node. Le formatage Prettier mécanique produit 64 insertions/133
+  suppressions sans changement intentionnel de comportement. Preuves après
+  réécriture : `format:check` vert, `git diff --check` vert et `check:all`
+  complet vert. Ne pas mélanger ce lot au prochain changement de capacité de la
+  plateforme.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 
