@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { compileActionRequestDefinition } from './core/action-request-authoring.mjs';
+import { assertBehaviorGraphRuntimeOracle } from './core/behavior-graph-runtime-oracle.mjs';
 import {
     buildCompositionInstance,
     reloadAndRegenerate,
@@ -240,6 +241,11 @@ async function probePermissionRuntime(targets, contract) {
     }
 }
 
+async function probeBehaviorGraph(contract) {
+    await assertBehaviorGraphRuntimeOracle(contract.evolution.behavior_graph);
+    return true;
+}
+
 export async function probePersistedInstance({
     compiled,
     contract,
@@ -417,10 +423,6 @@ export async function probeEvolvableComposition() {
     const rendered = allRenderedFiles(targets);
     const permission =
         contract.evolution.permissions.replace_access.permissions[0];
-    const behaviorDefinition = {
-        ...projected,
-        behavior_graph: contract.evolution.behavior_graph,
-    };
     const presentationDefinition = {
         ...projected,
         presentation: contract.evolution.presentation,
@@ -431,12 +433,17 @@ export async function probeEvolvableComposition() {
                 file.owner === 'human-owned' && file.write_policy === 'preserve'
         )
     );
-    const [outputProbe, permissionRuntimeEnforcement, persistedInstance] =
-        await Promise.all([
-            probeExistingOutput(definitionPath),
-            probePermissionRuntime(targets, contract),
-            probePersistedInstance({ compiled, contract, projected, targets }),
-        ]);
+    const [
+        outputProbe,
+        permissionRuntimeEnforcement,
+        persistedInstance,
+        behaviorGraphRuntime,
+    ] = await Promise.all([
+        probeExistingOutput(definitionPath),
+        probePermissionRuntime(targets, contract),
+        probePersistedInstance({ compiled, contract, projected, targets }),
+        probeBehaviorGraph(contract),
+    ]);
     const supported = {
         'data.canonical-model':
             compiled.semantic.types
@@ -490,11 +497,9 @@ export async function probeEvolvableComposition() {
             persistedInstance.corruptedJsonRejected &&
             persistedInstance.driftedRegenerationRejected &&
             persistedInstance.distinctFromPromotedPattern,
+        'behavior.graph': behaviorGraphRuntime,
     };
     const capabilities = {
-        'behavior.graph':
-            validateJsonSchema(behaviorDefinition, definitionSchema).length ===
-            0,
         'presentation.flow':
             validateJsonSchema(presentationDefinition, definitionSchema)
                 .length === 0 &&

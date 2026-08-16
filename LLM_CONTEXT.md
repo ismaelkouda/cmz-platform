@@ -25,7 +25,7 @@ La première démonstration attendue est une matrice reproductible de deux sourc
 (Angular + ReactJS), sur `action-request` puis `workflow-action`. Les
 identifiants techniques des profils restent `angular-nx` et `react-typescript`.
 
-**État local de la preuve :** PLAT-1 à PLAT-5H sont implémentés localement ;
+**État local de la preuve :** PLAT-1 à PLAT-5I sont implémentés localement ;
 la promotion externe de PLAT-5F attend la première matrice CI APFS/ext4 verte.
 Pour `action-request`, les deux sources convergent sur une IR et une seconde
 fonctionnalité `support` suit le parcours déclaratif. Pour `workflow-action`, un
@@ -94,6 +94,31 @@ directs et 3 mutants tués sur les gardes fail-closed. Limite explicite : ce
 mécanisme ne définit pas où stocker les instances en production ni les
 critères de promotion en pattern, qu'ADR-0032 déclare explicitement comme
 dette assumée.
+
+PLAT-5I ferme la lacune `behavior.graph` : le graphe
+`evolution.behavior_graph` (`editing`/`submitting`/`confirmed`/
+`business-error`, 3 transitions) est désormais prouvé par exécution réelle,
+pas par validation de schéma. Le mécanisme `workflow-action` existant a été
+examiné puis écarté comme base de réutilisation directe — c'est une state
+machine liée en dur à son propre domaine (`take`/`qualify`/`export`), pas un
+moteur générique ; le réutiliser aurait dupliqué une forme figée ou affaibli
+ses invariants. Le patron architectural réutilisé est celui déjà prouvé par
+`core/workflow-runtime-oracle.mjs` (garde fail-closed exécutée réellement en
+Angular DI et via un port de hooks React), transposé dans un nouveau module
+générique `core/behavior-graph.mjs` piloté par les données du contrat, jamais
+par des noms d'état codés en dur. Les renderers
+`renderers/behavior-graph-renderer.mjs` /
+`renderers/behavior-graph-stack-adapters.mjs` émettent un moteur
+`BehaviorGraphEngine` identique pour Angular et ReactJS ; ce moteur n'est pas
+câblé dans les renderers `action-request` génériques (qui servent aussi
+`login` sans graphe déclaré) mais matérialisé séparément à partir de
+`contract.evolution.behavior_graph`, sur le modèle d'isolation de PLAT-5H —
+sans toucher aux hash d'arbre déjà couverts par `composition.persisted-instance`.
+Preuves : Oracle du gate directeur (`probeBehaviorGraph`), 12 tests directs,
+6+6 tests natifs TestBed/Testing Library et 2 mutants tués sur la garde de
+transition rendue. Limite explicite : ce moteur gouverne uniquement le
+graphe de cette composition (`support-request`) ; il n'est pas encore un
+mécanisme générique disponible à toute définition `action-request` future.
 
 **Direction d'évolution :** `action-request`, `workflow-action`, `crud-entity`
 et `read-only-view` sont des compositions de référence, pas des familles

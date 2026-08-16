@@ -601,6 +601,80 @@ Figma, désormais source partielle différée :
   assumée ; PLAT-5H prouve seulement que le cycle persist → reload →
   regenerate est déterministe et fail-closed. Il reste exactement 2 lacunes :
   `behavior.graph` et `presentation.flow`.
+- **PLAT-5I** — **fait localement** (2026-08-16), M, P0. La lacune
+  `behavior.graph` est fermée dans le contrat directeur. Le graphe
+  `evolution.behavior_graph` (états `editing`/`submitting`/`confirmed`/
+  `business-error`, 3 transitions événementielles) est désormais gouverné par
+  un moteur d'exécution réel, pas par une validation de schéma. **Choix
+  d'implémentation documenté :** le mécanisme `workflow-action` existant
+  (`core/workflow-action-model.mjs`) a été examiné en premier — ADR-0030/0031
+  l'exigent — mais rejeté comme base de réutilisation directe : c'est une
+  state machine délibérément liée à un domaine fixe (opérations `take`/
+  `qualify`/`export`, permissions et règles nommées en dur, validées par
+  `validateWorkflowActionDefinition`), pas un moteur générique. Le
+  réutiliser pour `action-request`/`support-request` aurait exigé soit de
+  dupliquer une forme figée pour un domaine différent, soit d'affaiblir ses
+  invariants — les deux à l'opposé de l'esprit « un seul mécanisme, pas de
+  duplication ». Le patron architectural réellement réutilisé est celui déjà
+  prouvé par `core/workflow-runtime-oracle.mjs` +
+  `core/workflow-runtime-harness.mjs` (garde de transition fail-closed
+  exécutée réellement en Angular DI et via un port de hooks React) —
+  transposé à un graphe **générique et piloté par les données du contrat**,
+  jamais par des noms d'état ou d'événement codés en dur. Nouveau module
+  core `core/behavior-graph.mjs` : validation structurelle d'une déclaration
+  `{ initial, nodes, edges }` (nœuds uniques, initial connu, arêtes sans
+  doublon `from/event`, aucun nœud inatteignable depuis l'état initial) et
+  compilation en table de transition normalisée. Deux renderers génériques
+  (`renderers/behavior-graph-renderer.mjs`,
+  `renderers/behavior-graph-stack-adapters.mjs`) émettent un
+  `BehaviorGraphEngine` TypeScript identique pour les deux cibles — la garde
+  `if (next === undefined) throw new BehaviorGraphViolation(...)` est la
+  seule ligne qui décide fail-closed — plus un service Angular injectable et
+  une factory de hook React, à l'image exacte de `PERMISSION_PORT`/
+  `createActionRequestHooks`. **Choix de portée délibéré :** ce moteur n'est
+  pas branché dans les renderers génériques `action-request` (qui servent
+  aussi `login`/`forgot-password`/etc., sans graphe déclaré) : le schéma
+  `action-request-definition.schema.json` a `additionalProperties: false` et
+  ne porte aucun champ `behavior_graph`. Le moteur est matérialisé et exécuté
+  séparément à partir de `contract.evolution.behavior_graph`, sur le même
+  modèle d'isolation que `probePersistedInstance` (PLAT-5H) — sans toucher
+  aux fichiers ni aux hash d'arbre `targets.angular`/`targets.react` déjà
+  couverts par le manifest, donc sans risque de régression sur
+  `composition.persisted-instance`. Preuve d'exécution réelle
+  (`core/behavior-graph-runtime-oracle.mjs`, appelée par
+  `probeBehaviorGraph()` dans `check-evolvable-composition.mjs`) : transpile
+  et charge le moteur généré pour les deux cibles, démarre dans l'état
+  initial déclaré, suit les transitions déclarées
+  (`editing→submitting→confirmed` et `editing→submitting→business-error`) et
+  prouve qu'un événement absent du graphe est refusé sans jamais faire
+  progresser l'état — testé à la fois depuis l'état initial et depuis un
+  état intermédiaire, dans les deux stacks. Tests natifs TestBed (Angular,
+  6/6, `stack-tests/angular/behavior-graph.spec.ts`) et Testing Library
+  (ReactJS, 6/6, `stack-tests/reactjs/behavior-graph.spec.ts`), générés par
+  `prepare-stack-tests.mjs` à partir des mêmes fonctions de rendu que
+  l'Oracle — pas de duplication de logique. 2 mutants tués sur la garde de
+  transition rendue (`behavior-graph-mutations.test.mjs`) : garde
+  neutralisée (le `throw` est supprimé) et repli silencieux sur l'état
+  initial au lieu d'un rejet — dans les deux cas l'Oracle catche l'absence
+  de refus et échoue, prouvant que la garde est porteuse de preuve, pas un
+  test tautologique. 12 tests directs sur `core/behavior-graph.mjs`
+  (validation structurelle, compilation, application d'événement,
+  fail-closed sur état/événement non déclaré) dans `behavior-graph.test.mjs`.
+  Validations : 126/126 tests core (dont 14 propres à ce lot), gate
+  directeur PASS avec `regressions:[]` et `unexpectedly_implemented:[]`,
+  `target_tree_sha256` Angular/ReactJS inchangés (confirmant l'absence
+  d'effet de bord sur les renderers `action-request` génériques),
+  `eslint --max-warnings=0` propre sur `core/`, `renderers/`, `*.mjs`,
+  `format:check` vert, poids fichiers conforme (plafond 800 lignes, chaque
+  nouveau fichier ≤ 268 lignes), `tsc --noEmit` et `vitest run` natifs verts
+  sur les deux cibles (13/13 chacune, dont les 6 nouveaux tests
+  `behavior-graph.spec.ts`). **Limite explicite assumée :** le moteur ne
+  gouverne que le graphe déclaré par le contrat directeur pour cette
+  composition (`action-request`/`support-request`) ; il n'est pas encore
+  câblé comme mécanisme générique disponible à toute définition
+  `action-request` future (cela exigerait d'étendre
+  `action-request-definition.schema.json`, hors périmètre PLAT-5I). Il reste
+  exactement 1 lacune : `presentation.flow`.
 - **PLAT-6** — différé, L, P1. Ajouter Figma comme source de Presentation intent
   après clôture de PLAT-1 à PLAT-5.
 
