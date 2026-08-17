@@ -75,12 +75,19 @@ function withToken(url, token) {
 }
 
 function commitReachable(url, commit) {
+    // `git ls-remote <url> <sha>` ne resout JAMAIS un SHA brut : le serveur
+    // ne matche le pattern donne que contre des noms de refs (branches/tags),
+    // pas contre des hash arbitraires — meme quand ce SHA est exactement la
+    // cible d'un tag existant. On doit donc lister toutes les refs et
+    // comparer les SHA retournes, plutot que de demander le SHA en filtre.
+    // Regression constatee le 2026-08-17 (OPS-13) : un tag pousse sur le pin
+    // exact restait invisible pour cette fonction avant ce correctif.
     try {
-        const out = git(['ls-remote', url, commit]);
+        const out = git(['ls-remote', url]);
         return out
             .split('\n')
             .some((line) =>
-                line.toLowerCase().startsWith(commit.toLowerCase())
+                line.toLowerCase().startsWith(commit.toLowerCase() + '\t')
             );
     } catch {
         return false;
