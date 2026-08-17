@@ -61,18 +61,18 @@ produit jamais directement des chemins ou classes d'une cible.
 
 | Capacité                              | État réel                                          | Niveau |
 | ------------------------------------- | -------------------------------------------------- | :----: |
-| Evidence model avec provenance/fusion | auth + workflow, preuves séparées par source       |   M2   |
-| Semantic model source/cible neutre    | auth + `support`, validés et câblés en CI          |   M2   |
-| Behavior graph typé                   | `requests` : états, gardes, branches, topologies   |   M2   |
-| Presentation intent neutre            | conception Figma uniquement                        |   M1   |
-| Manifest de génération                | responsabilités, ownership et politiques persistés |   M2   |
-| Planner déterministe                  | Artifact Plan neutre partagé par les deux cibles   |   M2   |
-| Change Set / dry-run                  | create/replace/preserve/delete/unchanged + drift   |   M2   |
-| Publication sur sortie existante      | apply lié au Change Set + verrou + rollback        |   M2   |
-| Reprise après interruption            | APFS local qualifié ; matrice APFS/ext4 câblée     |   M2   |
-| Extension humaine typée               | `after-success`, runtime + conservation par hash   |   M2   |
-| Garde runtime de permissions          | Angular + ReactJS, refus avant effet externe       |   M2   |
-| Repair sous contraintes               | méthode documentée, partiellement exercée          |   M2   |
+| Evidence model avec provenance/fusion | auth + workflow, preuves séparées par source, CI verte 2026-08-17 |   M4   |
+| Semantic model source/cible neutre    | auth + `support`, validés et câblés en CI, verte 2026-08-17        |   M4   |
+| Behavior graph typé                   | `requests` : états, gardes, branches, topologies, CI verte         |   M4   |
+| Presentation intent neutre            | conception Figma uniquement                                        |   M1   |
+| Manifest de génération                | responsabilités, ownership, politiques, CI verte 2026-08-17        |   M4   |
+| Planner déterministe                  | Artifact Plan neutre partagé, CI verte 2026-08-17                  |   M4   |
+| Change Set / dry-run                  | create/replace/preserve/delete/unchanged + drift, CI verte         |   M4   |
+| Publication sur sortie existante      | apply lié au Change Set + verrou + rollback, CI verte              |   M4   |
+| Reprise après interruption            | matrice CI APFS/ext4 verte 2026-08-17                              |   M3   |
+| Extension humaine typée               | `after-success`, runtime + conservation par hash, CI verte         |   M4   |
+| Garde runtime de permissions          | Angular + ReactJS, refus avant effet externe, CI verte             |   M4   |
+| Repair sous contraintes               | méthode documentée, partiellement exercée                          |   M2   |
 
 `docs/architecture/patterns/pattern-core.schema.json` est un profil structurel
 Angular/Nx transitoire, pas le semantic model de cette table.
@@ -98,14 +98,19 @@ cette composition fermée ; elle ne revendique pas les workflows arbitraires.
 Cette indépendance est technique : la définition formalise le comportement déjà
 connu du code, elle ne constitue pas une seconde autorité métier.
 
-PLAT-5F possède désormais un contrat exécutable de durabilité. Il accepte
-uniquement APFS/macOS et ext4/Linux locaux, vérifie le type réel par `statfs`,
-exerce les primitives de publication, puis tue réellement un processus enfant
-après chacun des deux renommages critiques. ADR-0035 tranche le modèle lecteur :
-la sortie est inactive pendant la génération et activée seulement après succès ;
-les lecteurs externes concurrents ne sont pas supportés en v1. APFS est qualifié
-localement. La capacité reste M2 jusqu'à la première matrice CI verte sur
-`macos-14`/APFS et `ubuntu-24.04`/ext4.
+PLAT-5F possède un contrat exécutable de durabilité. Il accepte uniquement
+APFS/macOS et ext4/Linux locaux, vérifie le type réel par `statfs`, exerce les
+primitives de publication, puis tue réellement un processus enfant après
+chacun des deux renommages critiques. ADR-0035 tranche le modèle lecteur : la
+sortie est inactive pendant la génération et activée seulement après succès ;
+les lecteurs externes concurrents ne sont pas supportés en v1. **Mise à jour
+2026-08-17 (OPS-19/PLAT-6)** : la matrice CI bloquante `macos-14`/APFS +
+`ubuntu-24.04`/ext4 est verte pour la première fois
+(`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
+commit `24729f3`) — la seule condition posée pour la promotion M3
+(`taches-restantes.md`, entrée PLAT-5F : « seule action restante avant
+promotion M3 : obtenir la première exécution verte de cette matrice externe »)
+est remplie. Capacité promue M3.
 
 PLAT-5G matérialise les permissions du Semantic Model dans les frontières
 d'exécution `action-request`. Angular et ReactJS exigent un port hôte, évaluent
@@ -117,10 +122,10 @@ doit appliquer les mêmes règles indépendamment.
 
 ## 5. Cibles
 
-| Cible                | État réel                                        |             Niveau              |
-| -------------------- | ------------------------------------------------ | :-----------------------------: |
-| Angular              | action-request + workflow-action, mutants locaux | M2 ; M4 après première CI verte |
-| ReactJS              | action-request + workflow-action, mutants locaux | M2 ; M4 après première CI verte |
+| Cible                | État réel                                                            |             Niveau              |
+| -------------------- | --------------------------------------------------------------------- | :-----------------------------: |
+| Angular              | action-request + workflow-action, mutants locaux, CI verte 2026-08-17 |                M4                |
+| ReactJS              | action-request + workflow-action, mutants locaux, CI verte 2026-08-17 |                M4                |
 | React Native         | intention                                        |               M0                |
 | Kotlin/Compose       | POC interrompu par environnement                 |               M1                |
 | Swift/SwiftUI        | POC interrompu par environnement                 |               M1                |
@@ -158,22 +163,35 @@ versionné. Il ne doit pas inspecter la source d'origine.
 
 ## 7. Matrice de preuve initiale
 
+> **Mise à jour 2026-08-17 (OPS-19/PLAT-6)** : première exécution verte de
+> `ci.yml` confirmée sur `main`
+> (`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
+> commit `24729f3`, 22m14s). `check:generator-platform` fait partie du job
+> `guardrails`, bloquant en tête de pipeline — un run global vert implique
+> qu'il est passé. Les 5 lignes ci-dessous franchissent donc M3 et
+> satisfont les critères M4 « de cette seule tranche », comme la phrase
+> normative ci-dessous le prévoyait déjà avant cette date. Ce n'est **pas**
+> une promotion M4 de la plateforme entière : le second domaine réel de
+> PLAT-4 et la validation sémantique globale (§9) restent des conditions
+> distinctes, non remplies par cette seule CI verte.
+
 | Source / cible                            |       Angular        |       ReactJS        |
 | ----------------------------------------- | :------------------: | :------------------: |
-| Définition déclarative `support`          | `action-request` M2  | `action-request` M2  |
-| Spécification structurée `authentication` | `action-request` M2  | `action-request` M2  |
-| Legacy TypeScript `authentication`        | `action-request` M2  | `action-request` M2  |
-| Définition structurée `requests-workflow` | `workflow-action` M2 | `workflow-action` M2 |
-| Legacy TypeScript `requests` borné        | `workflow-action` M2 | `workflow-action` M2 |
+| Définition déclarative `support`          | `action-request` M4  | `action-request` M4  |
+| Spécification structurée `authentication` | `action-request` M4  | `action-request` M4  |
+| Legacy TypeScript `authentication`        | `action-request` M4  | `action-request` M4  |
+| Définition structurée `requests-workflow` | `workflow-action` M4 | `workflow-action` M4 |
+| Legacy TypeScript `requests` borné        | `workflow-action` M4 | `workflow-action` M4 |
 
 Les profils techniques sous-jacents sont `angular-nx` et `react-typescript`. Le
 runtime généré des deux colonnes passe le même Oracle local de validation,
 transport, accès public, ordre des effets de session et erreurs. Les mutations
 de contrainte, session et accès sont tuées sur les deux cibles. Voir
 [`validation-runtime-action-request.md`](./validation-runtime-action-request.md).
-Cette preuve ne promeut pas les lignes avant une CI verte et ne vaut pas
-adaptateur de traces runtime pour les sources. Une CI verte ferait franchir M3
-et satisferait les critères M4 de cette seule tranche.
+Cette preuve ne vaut pas adaptateur de traces runtime pour les sources. La
+condition normative posée ici (« une CI verte ferait franchir M3 et
+satisferait les critères M4 de cette seule tranche ») est désormais remplie
+— voir la note de mise à jour au-dessus du tableau.
 
 Le workflow utilise un Oracle distinct pour les états, permissions, branches de
 qualification et attente de l'export asynchrone. Ses mutants sont tués
@@ -208,9 +226,19 @@ de revue dépasse durablement celui d'un générateur spécialisé.
 
 ## 9. État synthétique actuel
 
-> **Maturité globale : M1–M2.** Le dépôt livre une matrice locale 2×2 sur la
-> composition de référence `action-request` et la composition contradictoire
-> `workflow-action`, exécutées sur Angular et ReactJS avec IR/Behavior Model
-> séparés, manifests et mutants détectés. Le claim plateforme reste refusé avant
-> une CI verte et avant validation du contrat workflow sur un second domaine
-> réel présentant des variations.
+> **Maturité globale : M0–M1 (minimum de tous les maillons, §1).**
+> **Mise à jour 2026-08-17 (OPS-19/PLAT-6)** : la matrice `action-request` +
+> `workflow-action` sur Angular/ReactJS (§7, `tools/generator-platform`)
+> franchit désormais M3/M4 — première exécution `ci.yml` verte confirmée
+> (`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
+> commit `24729f3`), condition normative posée depuis PLAT-1/PLAT-3/PLAT-5F.
+> Cette tranche precise n'est plus « refusée avant CI verte ». La maturité
+> **globale de la plateforme** reste néanmoins tirée vers le bas par les
+> maillons non encore promus, minimum au sens strict du §1 : `Presentation
+> intent neutre` (M1, conception Figma uniquement, PLAT-4 second domaine réel
+> encore ouvert), `OpenAPI`/`Description textuelle`/`Tests runtime` (M0–M1,
+> §3), `Repair sous contraintes` (M2, exercice partiel). Le claim « plateforme
+> générique » (§6, matrice 2 sources × 2 cibles + un second domaine réel +
+> budget d'extensions mesuré) reste distinct et non encore rempli — ne pas
+> confondre la promotion d'une tranche prouvée avec la promotion de
+> l'enveloppe entière.

@@ -543,6 +543,44 @@ Figma, désormais source partielle différée :
   sans dérogation. **Seule action restante avant promotion M3 :** obtenir la
   première exécution verte de cette matrice externe après revue/indexation et
   push ; ne pas inventer ce résultat depuis le poste local.
+- **PLAT-6 — fait** (2026-08-17), M, P0. Suite à OPS-19, `ci.yml` confirmé
+  vert pour la première fois sur `main`
+  (`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
+  commit `24729f3`, 22m14s) — condition exacte posée par PLAT-1/PLAT-3/
+  PLAT-4/PLAT-5F pour la promotion M3 (et, pour la matrice de preuve §7 de
+  `generation-platform-capability-matrix.md`, les critères M4 « de cette
+  seule tranche »). Vérifié avant de modifier la matrice, pas supposé : (1)
+  `check:generator-platform` fait partie du job `guardrails`, bloquant en
+  tête de `ci.yml`, donc un run global vert l'implique nécessairement ; (2)
+  `check:publication-durability` est un job matriciel `fail-fast: false`
+  avec les 2 profils `ubuntu-24.04`/ext4 et `macos-14`/APFS attendus par
+  PLAT-5F, tous deux dans le même workflow ; (3) le seul
+  `continue-on-error: true` du fichier concerne `sast` (Semgrep, rapport
+  seul, documenté non bloquant depuis son ajout) — aucun risque de faux vert
+  masqué sur les jobs pertinents ici. Mise à jour de
+  [`generation-platform-capability-matrix.md`](./generation-platform-capability-matrix.md) :
+  §7 (matrice de preuve, 5 lignes M2→M4, note datée), §5 (Angular/ReactJS
+  M2→M4), §4 (8 capacités de la tranche `action-request`/`workflow-action`
+  M2→M4, `Reprise après interruption` M2→M3 pour PLAT-5F spécifiquement),
+  §9 (état synthétique — reformulé pour distinguer la tranche prouvée,
+  désormais M3/M4, de la maturité globale de la plateforme qui reste tirée
+  vers le bas par `Presentation intent neutre` (M1), les sources non encore
+  outillées (§3, M0–M1) et `Repair sous contraintes` (M2, non touché faute
+  de critère de promotion explicite retrouvé). **Volontairement NON
+  promu** : `Presentation intent neutre` et les sources `OpenAPI`/
+  `Description textuelle`/`Tests runtime` (aucun changement de code les
+  concernant dans ce lot) ; le claim « plateforme générique » du §6 (second
+  domaine réel PLAT-4 encore ouvert, budget d'extensions non mesuré) ; PLAT-5
+  qui visait déjà M4 sur un sous-ensemble distinct des 3 mutations
+  d'authentification, non re-vérifié ici spécifiquement.
+  **Limite explicite** : je n'ai pas ouvert le détail job-par-job du run
+  GitHub Actions (pas d'accès réseau dans ce sandbox) — la déduction
+  « run global vert ⇒ jobs pertinents verts » s'appuie sur la lecture
+  statique de `ci.yml` (dépendances `needs:`, absence de
+  `continue-on-error` sur les jobs concernés), pas sur une inspection
+  visuelle de chaque job individuel. Si un doute apparaît sur un job
+  précis, le vérifier directement dans l'interface GitHub avant de se fier
+  à cette déduction pour une décision ultérieure.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
