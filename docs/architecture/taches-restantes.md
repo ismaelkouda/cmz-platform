@@ -1183,6 +1183,49 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   `monitoring`/`reporting`/`interactive-map` périmé depuis T1-6 (nœuds corpus
   pointaient encore vers les 3 anciens chemins d'entités supprimées). Corrigé,
   100 % verified/tranche-closed après régénération.
+- **OPS-16** — ouvert, M, P1, alias `réflexion 2026-08-17, suite OPS-15`.
+  **Détection de dérive automatique du corpus vs legacy, avant que le
+  gate casse en silence.** Constat : le même problème (chemins `legacy`
+  périmés dans `corpus/*.pairs.jsonl` suite à une restructuration du
+  dépôt legacy source) s'est produit deux fois pour les mêmes modules
+  (`monitoring`/`reporting`) — une première fois sous T13-15
+  (2026-08-11), une seconde fois découverte le 2026-08-17 (OPS-15) —
+  et les deux fois, la découverte n'a eu lieu qu'en lançant `bun run
+  corpus:full` manuellement, jamais via une alerte proactive. Coût
+  direct : 61 chemins cassés d'un coup à corriger via un agent dédié
+  (OPS-15), plutôt qu'une dérive détectée et corrigée au fil de l'eau.
+  Root cause structurelle (pas un bug de code, une absence
+  d'observabilité) : rien ne surveille si le contenu du legacy au SHA
+  pinné (`legacy.lock.json`) a divergé de ce que le corpus déclare,
+  entre deux exécutions de `corpus-full.yml` (qui ne tourne que sur
+  push `main` + déclenchement manuel, jamais en continu).
+  Justification de la priorité (P1, pas différé) : ADR-0029 (ligne 76)
+  tranche explicitement que « SEOS/Angular reste le golden reference,
+  le terrain de mesure ... Il n'est ni abandonné ni relégué derrière
+  des POC spéculatifs » — le corpus n'est donc pas un vestige à
+  déprioriser, c'est le seul étalon de fidélité de migration dont
+  dispose le projet aujourd'hui (voir aussi ADR-0019 : le corpus est
+  un index de correspondances traçables, pas un jeu d'apprentissage —
+  mais cet usage-là reste actif et voulu). Le vrai défaut n'est pas
+  « faut-il le garder » mais « pourquoi le découvre-t-on en mode
+  pompier ».
+  Piste de solution (non implémentée, à trancher/budgéter) : (1) job
+  CI léger et régulier (hebdomadaire, ou déclenché à chaque
+  modification de `legacy.lock.json`) qui compare uniquement
+  l'existence des chemins `legacy` déclarés contre le contenu réel du
+  legacy au SHA pinné — sans lancer tout `corpus:full` (donc sans
+  dépendance à Nx Cloud/build/lint/test), juste un diagnostic rapide
+  de dérive de chemins, sur le modèle du script `resolve-status.mjs`
+  déjà existant ; (2) séparer plus nettement le gate structurel
+  (`corpus:ci`/`--structural-only`, ADR-0015, déjà non-bloquant sur le
+  legacy) du gate de fidélité historique (`corpus:full`/`--verify`,
+  dépendant d'une source externe qui peut dériver hors du contrôle de
+  ce dépôt) dans la fréquence d'exécution et le niveau de criticité
+  attendu.
+  Aucune action entreprise sur ce point au-delà de cette
+  documentation — décision explicitement laissée au porteur du projet,
+  par cohérence avec la façon dont ADR-0019 a traité une question
+  similaire (« reste ouverte et n'est pas tranchée ici »).
 
 ### 3.6 Documentation & ADR spécifiques SEOS (ex-T13, sous-ensemble)
 
