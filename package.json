@@ -136,7 +136,7 @@
     "eslint-config-prettier": "^10.0.0",
     "husky": "^9.1.7",
     "jsdom": "^27.1.0",
-    "knip": "6.31.0",
+    "knip": "6.32.2",
     "lint-staged": "^17.1.0",
     "nx": "23.1.0",
     "postcss": "catalog:",
