@@ -186,15 +186,42 @@ export function expandReadOnlyViewChain(module, chain) {
             throw new Error(`Unknown read-only-view node: ${node}`);
         }
 
+        // OPS-17 (2026-08-17) : le fallback module.shell (pas de
+        // chain.section) hardcodait `legacyFolder: 'node'` pour TOUS les
+        // modules, y compris `reporting` qui n'a pas de section `node` —
+        // les nœuds rov-repository-port/mapper/api-source/use-case/
+        // repository-impl de reporting.module.shell pointaient donc vers
+        // des chemins monitoring inexistants côté reporting. Le module
+        // représentatif du shell doit rester celui déjà choisi par
+        // convention (`node` pour monitoring), mais généralisé via la
+        // première clé de la table de sections du module courant plutôt
+        // que la valeur `monitoring` en dur.
         const ctx = chain.section
             ? makeRovCtx(module, chain.section, sectionTable)
-            : {
-                  module,
-                  section: '',
-                  Section: '',
-                  legacyFolder: 'node',
-                  facadeKebab: 'node',
-              };
+            : sectionTable
+              ? // module.shell monitoring/reporting : représentant du module
+                // (`node` pour monitoring, `report` pour reporting — seule
+                // table disponible pour ces deux modules).
+                makeRovCtx(
+                    module,
+                    module === 'reporting' ? 'report' : 'node',
+                    sectionTable
+                )
+              : {
+                    // interactive-map.module.shell : pas de table de
+                    // sections (un seul "node" représentatif, `map`/`node`
+                    // selon le mapping). legacyFolder/legacyFlat restent
+                    // 'node' par convention historique — les templates
+                    // spécifiques à interactive-map (ROV_NODE_MAPPINGS)
+                    // testent `module === 'interactive-map'` directement et
+                    // n'utilisent pas ce champ.
+                    module,
+                    section: '',
+                    Section: '',
+                    legacyFolder: 'node',
+                    legacyFlat: 'node',
+                    facadeKebab: 'node',
+                };
 
         const legacyPath =
             typeof mapping.legacy === 'function'

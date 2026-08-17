@@ -10,7 +10,7 @@ import { ensureBehavioralLevel, layerOracles } from './oracle-levels.mjs';
 
 /** @typedef {{ id: string; description: string; subgraph?: string; section?: string; nodes: string[]; threshold_emit?: number; threshold_close?: number }} RovChainDef */
 
-/** @typedef {{ module: string; section: string; Section: string; legacyFolder: string; facadeKebab: string }} RovCtx */
+/** @typedef {{ module: string; section: string; Section: string; legacyFolder: string; legacyFlat: string; facadeKebab: string }} RovCtx */
 
 const MODULE_SHELL_NODES = [
     'module-routes-legacy',
@@ -46,41 +46,72 @@ export const ROV_SECTION_VIEW_NODES = [
     'rov-section-query-handler-legacy',
 ];
 
-/** @type {Record<string, { legacyFolder: string; Section: string; facadeKebab: string }>} */
+/**
+ * `legacyFlat` — OPS-17 (2026-08-17) : stem legacy des fichiers **plats**
+ * (sans sous-dossier de section) — `domain/repositories/*.ts`,
+ * `infrastructure/data/mappers/*.ts`, `infrastructure/data/sources/*.ts`,
+ * `infrastructure/data/repositories/*.repository.impl.ts`,
+ * `application/services/*.facade.ts`. Vérifié par clone frais du legacy au
+ * pin `cb15bf80fa072e12e9d4fce4b9236abe6ac78058` : ces 5 familles de
+ * fichiers n'ont JAMAIS de sous-dossier de section (contrairement à
+ * `entities`, `dto`, `use-cases`, `features`, `queries-bus`,
+ * `queries-handlers`, qui en ont un — voir `legacyFolder`), et leur stem
+ * n'est ni toujours `legacyFolder` ni toujours `facadeKebab` : `reporting`
+ * singularise `requests` → `request.*` alors que `facadeKebab` reste
+ * `requests`. D'où un champ dédié plutôt que de réutiliser un champ existant
+ * à la sémantique différente.
+ * @type {Record<string, { legacyFolder: string; legacyFlat: string; Section: string; facadeKebab: string }>}
+ */
 export const MONITORING_SECTIONS = {
-    node: { legacyFolder: 'node', Section: 'Node', facadeKebab: 'node' },
+    node: {
+        legacyFolder: 'node',
+        legacyFlat: 'node',
+        Section: 'Node',
+        facadeKebab: 'node',
+    },
     services: {
         legacyFolder: 'services',
+        legacyFlat: 'services',
         Section: 'Services',
         facadeKebab: 'services',
     },
     resources: {
         legacyFolder: 'resources',
+        legacyFlat: 'resources',
         Section: 'Resources',
         facadeKebab: 'resources',
     },
-    jobs: { legacyFolder: 'jobs', Section: 'Jobs', facadeKebab: 'jobs' },
+    jobs: {
+        legacyFolder: 'jobs',
+        legacyFlat: 'jobs',
+        Section: 'Jobs',
+        facadeKebab: 'jobs',
+    },
 };
 
-/** @type {Record<string, { legacyFolder: string; Section: string; facadeKebab: string }>} */
+/** @type {Record<string, { legacyFolder: string; legacyFlat: string; Section: string; facadeKebab: string }>} */
 export const REPORTING_SECTIONS = {
     report: {
         legacyFolder: 'reports',
+        legacyFlat: 'report',
         Section: 'Report',
         facadeKebab: 'report',
     },
     requests: {
         legacyFolder: 'requests',
+        legacyFlat: 'request',
         Section: 'Requests',
         facadeKebab: 'requests',
     },
     'report-by-channel': {
         legacyFolder: 'report-by-channel',
+        legacyFlat: 'report-by-channel',
         Section: 'ReportByChannel',
         facadeKebab: 'report-by-channel',
     },
     'report-by-operator': {
         legacyFolder: 'report-by-operator',
+        legacyFlat: 'report-by-operator',
         Section: 'ReportByOperator',
         facadeKebab: 'report-by-operator',
     },

@@ -15,10 +15,18 @@ import {
 /** @type {Record<string, import('./mapping.mjs').NodeMapping>} */
 export const ROV_NODE_MAPPINGS = {
     'rov-view-entity': {
-        legacy: ({ module }) =>
+        // OPS-17 (2026-08-17) : nœud de module.shell — le dossier
+        // représentatif dépend du module (`node` pour monitoring, `reports`
+        // pour reporting), pas hardcodé `node` (bug qui pointait
+        // `reporting.shell.rov-view-entity` vers un chemin monitoring
+        // inexistant côté reporting).
+        legacy: ({ module, legacyFolder }) =>
             module === 'interactive-map'
                 ? legacyPage(module, 'domain/entities/map/map.entity.ts')
-                : legacyPage(module, 'domain/entities/node/node.entity.ts'),
+                : legacyPage(
+                      module,
+                      `domain/entities/${legacyFolder}/${legacyFolder}.entity.ts`
+                  ),
         nx: ({ module }) => viewEntityNxPath(module),
         layer: 'domain',
         // T1-6 (2026-08-10) — GrafanaDashboardEntity/MapEntity supprimés,
@@ -41,7 +49,10 @@ export const ROV_NODE_MAPPINGS = {
         notes: 'Enum section — legacy éclaté ; Nx unifie MonitoringSection / ReportingSection',
     },
     'rov-repository-port': {
-        legacy: ({ module }) =>
+        // OPS-17 (2026-08-17) : plat, sans sous-dossier de section, suffixe
+        // `-repository.interface.ts` — vérifié clone frais legacy (pin
+        // cb15bf80fa072e12e9d4fce4b9236abe6ac78058).
+        legacy: ({ module, legacyFlat }) =>
             module === 'interactive-map'
                 ? legacyPage(
                       module,
@@ -49,7 +60,7 @@ export const ROV_NODE_MAPPINGS = {
                   )
                 : legacyPage(
                       module,
-                      'domain/repositories/node/node.repository.ts'
+                      `domain/repositories/${legacyFlat}-repository.interface.ts`
                   ),
         nx: ({ module }) =>
             `libs/${module}/domain/src/lib/repositories/${module}.repository.ts`,
@@ -57,7 +68,13 @@ export const ROV_NODE_MAPPINGS = {
         oracle: (ctx) => modOracle(ctx.module, 'domain'),
     },
     'rov-variables-dto': {
-        legacy: ({ module }) =>
+        // OPS-17 (2026-08-17) : suffixe réel `-response.dto.ts`, pas
+        // `-response-api.dto.ts` ; dossier = facadeKebab (`report/`, pas
+        // `reports/` = legacyFolder), stem fichier = legacyFlat
+        // (`report-response.dto.ts`) — nœud de module.shell, doit suivre le
+        // module représentatif (`node` monitoring, `report` reporting), pas
+        // hardcodé `node` (clone frais legacy).
+        legacy: ({ module, facadeKebab, legacyFlat }) =>
             module === 'interactive-map'
                 ? legacyPage(
                       module,
@@ -65,7 +82,7 @@ export const ROV_NODE_MAPPINGS = {
                   )
                 : legacyPage(
                       module,
-                      'infrastructure/api/dto/node/node-response-api.dto.ts'
+                      `infrastructure/api/dto/${facadeKebab}/${legacyFlat}-response.dto.ts`
                   ),
         nx: ({ module }) => variablesDtoNxPath(module),
         layer: 'data',
@@ -73,7 +90,8 @@ export const ROV_NODE_MAPPINGS = {
         notes: 'DTO wire unique regroupant tous les champs variables',
     },
     'rov-mapper': {
-        legacy: ({ module }) =>
+        // OPS-17 (2026-08-17) : plat, sans sous-dossier de section.
+        legacy: ({ module, legacyFlat }) =>
             module === 'interactive-map'
                 ? legacyPage(
                       module,
@@ -81,26 +99,33 @@ export const ROV_NODE_MAPPINGS = {
                   )
                 : legacyPage(
                       module,
-                      'infrastructure/data/mappers/node/node.mapper.ts'
+                      `infrastructure/data/mappers/${legacyFlat}.mapper.ts`
                   ),
         nx: ({ module }) => mapperNxPath(module),
         layer: 'data',
         oracle: (ctx) => modOracle(ctx.module, 'data'),
     },
     'rov-api-source': {
-        legacy: ({ module }) =>
+        // OPS-17 (2026-08-17) : plat, sans sous-dossier de section.
+        legacy: ({ module, legacyFlat }) =>
             module === 'interactive-map'
                 ? legacyPage(module, 'infrastructure/data/sources/map.api.ts')
                 : legacyPage(
                       module,
-                      'infrastructure/data/sources/node/node.api.ts'
+                      `infrastructure/data/sources/${legacyFlat}.api.ts`
                   ),
         nx: ({ module }) => apiSourceNxPath(module),
         layer: 'data',
         oracle: (ctx) => modOracle(ctx.module, 'data'),
     },
     'rov-repository-impl': {
-        legacy: ({ module }) =>
+        // OPS-17 (2026-08-17) : plat, sans sous-dossier — mais contrairement
+        // à mapper/api/facade/repository-port, ce fichier suit
+        // `legacyFolder` (pluriel `reports.repository.impl.ts` pour
+        // reporting.report), pas `legacyFlat` (singulier). Convention
+        // irrégulière constatée sur le clone frais legacy — pas une
+        // erreur de saisie, une incohérence réelle du code source.
+        legacy: ({ module, legacyFolder }) =>
             module === 'interactive-map'
                 ? legacyPage(
                       module,
@@ -108,7 +133,7 @@ export const ROV_NODE_MAPPINGS = {
                   )
                 : legacyPage(
                       module,
-                      'infrastructure/data/repositories/node/node.repository.impl.ts'
+                      `infrastructure/data/repositories/${legacyFolder}.repository.impl.ts`
                   ),
         nx: ({ module }) =>
             `libs/${module}/data/src/lib/repositories/${module}.repository.impl.ts`,
@@ -116,7 +141,9 @@ export const ROV_NODE_MAPPINGS = {
         oracle: (ctx) => modOracle(ctx.module, 'data'),
     },
     'rov-use-case': {
-        legacy: ({ module }) =>
+        // OPS-17 (2026-08-17) : nœud de module.shell — dossier représentatif
+        // dépendant du module (même correction que rov-view-entity).
+        legacy: ({ module, legacyFolder }) =>
             module === 'interactive-map'
                 ? legacyPage(
                       module,
@@ -124,21 +151,32 @@ export const ROV_NODE_MAPPINGS = {
                   )
                 : legacyPage(
                       module,
-                      'application/use-cases/node/node.use-case.ts'
+                      `application/use-cases/${legacyFolder}/${legacyFolder}.use-case.ts`
                   ),
         nx: ({ module }) => useCaseNxPath(module),
         layer: 'application',
         oracle: (ctx) => modOracle(ctx.module, 'application'),
     },
     'module-routes-legacy': {
-        legacy: ({ module }) => legacyPage(module, `${module}.routes.ts`),
+        // OPS-17 (2026-08-17) : `reporting` nomme son fichier de routes au
+        // singulier (`reporting.route.ts`), pas `reporting.routes.ts` comme
+        // `monitoring`/`interactive-map` — vérifié clone frais legacy.
+        legacy: ({ module }) =>
+            legacyPage(
+                module,
+                `${module}.${module === 'reporting' ? 'route' : 'routes'}.ts`
+            ),
         nx: () => null,
         layer: 'legacy-only',
         statusOverride: 'n/a',
         notes: (ctx) => `Routes migrées vers libs/${ctx.module}/ui`,
     },
     'module-routes-nx': {
-        legacy: ({ module }) => legacyPage(module, `${module}.routes.ts`),
+        legacy: ({ module }) =>
+            legacyPage(
+                module,
+                `${module}.${module === 'reporting' ? 'route' : 'routes'}.ts`
+            ),
         nx: ({ module }) =>
             `libs/${module}/ui/src/lib/features/${module}.routes.ts`,
         layer: 'ui',
@@ -182,12 +220,14 @@ export const ROV_NODE_MAPPINGS = {
         notes: 'Legacy DashboardViewer → GrafanaEmbedComponent @cmz/shared-ui',
     },
     'rov-shared-resource-facade': {
-        legacy: ({ module }) =>
+        // OPS-17 (2026-08-17) : plat, sans sous-dossier — et le stem dépend
+        // du module (`node` monitoring, `report` reporting), pas hardcodé.
+        legacy: ({ module, legacyFlat }) =>
             module === 'interactive-map'
                 ? legacyPage(module, 'application/services/map.facade.ts')
                 : legacyPage(
                       module,
-                      'application/services/node/node.facade.ts'
+                      `application/services/${legacyFlat}.facade.ts`
                   ),
         nx: () => 'libs/shared/application/src/lib/facades/resource.facade.ts',
         layer: 'application',
@@ -209,10 +249,12 @@ export const ROV_NODE_MAPPINGS = {
         notes: 'Consolidation N× verticals → 1 GrafanaLinkEntity (@cmz/shared-domain, T1-6)',
     },
     'rov-section-legacy-repository': {
-        legacy: ({ module, legacyFolder }) =>
+        // OPS-17 (2026-08-17) : plat, sans sous-dossier, suffixe
+        // `-repository.interface.ts` (clone frais legacy).
+        legacy: ({ module, legacyFlat }) =>
             legacyPage(
                 module,
-                `domain/repositories/${legacyFolder}/${legacyFolder}.repository.ts`
+                `domain/repositories/${legacyFlat}-repository.interface.ts`
             ),
         nx: ({ module }) =>
             `libs/${module}/domain/src/lib/repositories/${module}.repository.ts`,
@@ -221,20 +263,22 @@ export const ROV_NODE_MAPPINGS = {
         notes: 'Port unique paramétré par section',
     },
     'rov-section-legacy-mapper': {
-        legacy: ({ module, legacyFolder }) =>
+        // OPS-17 (2026-08-17) : plat, sans sous-dossier de section.
+        legacy: ({ module, legacyFlat }) =>
             legacyPage(
                 module,
-                `infrastructure/data/mappers/${legacyFolder}/${legacyFolder}.mapper.ts`
+                `infrastructure/data/mappers/${legacyFlat}.mapper.ts`
             ),
         nx: ({ module }) => mapperNxPath(module),
         layer: 'data',
         oracle: (ctx) => modOracle(ctx.module, 'data'),
     },
     'rov-section-legacy-api': {
-        legacy: ({ module, legacyFolder }) =>
+        // OPS-17 (2026-08-17) : plat, sans sous-dossier de section.
+        legacy: ({ module, legacyFlat }) =>
             legacyPage(
                 module,
-                `infrastructure/data/sources/${legacyFolder}/${legacyFolder}.api.ts`
+                `infrastructure/data/sources/${legacyFlat}.api.ts`
             ),
         nx: ({ module }) =>
             `libs/${module}/data/src/lib/sources/${module}.api.ts`,
@@ -253,21 +297,27 @@ export const ROV_NODE_MAPPINGS = {
         oracle: (ctx) => modOracle(ctx.module, 'application'),
     },
     'rov-section-legacy-facade': {
-        legacy: ({ module, legacyFolder }) =>
-            legacyPage(
-                module,
-                `application/services/${legacyFolder}/${legacyFolder}.facade.ts`
-            ),
+        // OPS-17 (2026-08-17) : plat, sans sous-dossier de section — et le
+        // stem est `legacyFlat` (singulier pour reporting.requests →
+        // `request.facade.ts`), pas `legacyFolder`.
+        legacy: ({ module, legacyFlat }) =>
+            legacyPage(module, `application/services/${legacyFlat}.facade.ts`),
         nx: ({ module, facadeKebab }) =>
             `libs/${module}/application/src/lib/facades/${facadeKebab}.facade.ts`,
         layer: 'application',
         oracle: (ctx) => modOracle(ctx.module, 'application'),
     },
     'rov-section-legacy-page': {
-        legacy: ({ module, legacyFolder }) =>
+        // OPS-17 (2026-08-17) : arborescence réelle
+        // `presentation/features/{facadeKebab}/pages/{facadeKebab}-page/
+        // {facadeKebab}-page.component.ts` — le dossier racine suit
+        // `facadeKebab`, pas `legacyFolder` (constaté sur
+        // reporting.report : dossier `report/`, alors que
+        // `legacyFolder='reports'` pour ce même nœud) ; clone frais legacy.
+        legacy: ({ module, facadeKebab }) =>
             legacyPage(
                 module,
-                `presentation/features/${legacyFolder}/${legacyFolder}.component.ts`
+                `presentation/features/${facadeKebab}/pages/${facadeKebab}-page/${facadeKebab}-page.component.ts`
             ),
         nx: ({ module, facadeKebab }) =>
             `libs/${module}/ui/src/lib/features/${facadeKebab}-page.component.ts`,
@@ -276,10 +326,14 @@ export const ROV_NODE_MAPPINGS = {
         notes: 'Page mince → cmz-grafana-embed',
     },
     'rov-section-query-legacy': {
+        // OPS-17 (2026-08-17) : legacy a migré `application/queries/` vers
+        // `application/queries-bus/{f}/{f}.bus.ts` (renommage constaté au
+        // pin courant — n/a de toute façon, mais chemin gardé exact pour la
+        // traçabilité de `existsAt`).
         legacy: ({ module, legacyFolder }) =>
             legacyPage(
                 module,
-                `application/queries/${legacyFolder}/${legacyFolder}.query.ts`
+                `application/queries-bus/${legacyFolder}/${legacyFolder}.bus.ts`
             ),
         nx: () => null,
         layer: 'legacy-only',

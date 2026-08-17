@@ -1687,6 +1687,72 @@ gouvernance, sécurité, licences.
       délibérément côté legacy (auquel cas la paire correspondante
       devrait être requalifiée `n/a` plutôt que rester `blocked`) ou
       s'il a été déplacé sous un nom non trouvé par la recherche.
+    - **OPS-17 — fait** (2026-08-17). Un run `corpus:full` frais
+      (déclenché via « Run workflow », pas un re-run — écarté comme
+      cause après vérification du log complet) a montré
+      `monitoring`/`reporting` retombés **exactement** sur les chiffres
+      pré-OPS-15 (`blocked=5`, `29%`/`46%`/`23%`), alors que le commit
+      OPS-15 était vérifié correct et présent sur `HEAD` trois fois de
+      suite. Root cause réelle, distincte d'OPS-15 : `emit-pairs.mjs`
+      **régénère** `corpus/{monitoring,reporting}.pairs.jsonl` à chaque
+      exécution depuis les templates de chemins codés dans
+      `tools/corpus/read-only-view-nodes.mjs`/`read-only-view.mjs` — le
+      correctif OPS-15 avait édité le fichier `.pairs.jsonl` **de
+      sortie** directement, un fichier entièrement écrasé à chaque run
+      par le générateur qui, lui, n'avait jamais été corrigé. Chaque
+      run CI « frais » régénérait donc fidèlement les mêmes chemins
+      périmés — ce n'était pas un problème de cache ni de re-run, mais
+      un fix appliqué à un artefact dérivé plutôt qu'à sa source.
+      Diagnostic : clone legacy frais au pin exact (nouvelle instance,
+      sans réutiliser aucun clone précédent) comparé champ par champ
+      aux templates de `read-only-view-nodes.mjs`/`-shared.mjs` — a mis
+      en évidence non seulement les 3 motifs déjà identifiés par
+      OPS-15 (toujours présents dans le générateur, jamais corrigés
+      là-bas) mais aussi 2 bugs supplémentaires jamais vus par OPS-15
+      car invisibles au niveau JSONL : (1) le nœud `module.shell` sans
+      `chain.section` hardcodait `legacyFolder: 'node'` pour **tous**
+      les modules, y compris `reporting` qui n'a pas de section `node`
+      — `reporting.module.shell` pointait donc plusieurs nœuds vers des
+      chemins monitoring inexistants côté reporting ; (2) plusieurs
+      convention irrégulières propres au legacy (repository/mapper/
+      api/facade en dossier plat, sans sous-dossier de section — sauf
+      `*.repository.impl.ts` qui reste au pluriel `legacyFolder`, pas
+      singulier `legacyFlat` ; DTO en sous-dossier `facadeKebab`, pas
+      `legacyFolder` ; `reporting.route.ts` singulier vs
+      `monitoring.routes.ts` pluriel ; page components sous
+      `pages/<facadeKebab>-page/`). Correctif : ajout d'un champ
+      `legacyFlat` dédié (stem plat, distinct de `legacyFolder` et de
+      `facadeKebab`) à `MONITORING_SECTIONS`/`REPORTING_SECTIONS`
+      (`read-only-view-shared.mjs`), correction du fallback de contexte
+      `module.shell` pour qu'il dérive du module courant plutôt que de
+      hardcoder `'node'` (`read-only-view.mjs`), et récriture de 11
+      templates de chemins dans `read-only-view-nodes.mjs` pour
+      refléter exactement l'arborescence constatée. **Vérification
+      indépendante avant commit** : script autonome important les
+      fonctions réelles de production (`expandReadOnlyViewChain`,
+      pas une réimplémentation) et testant `existsAt` contre le clone
+      legacy frais pour les 9 chaînes `monitoring`/`reporting` — 0
+      `blocked` inattendu sur les 4 traceurs `*.view` par module (100%)
+      et 1 seul `blocked` par module sur `module.shell` (92%), dans les
+      deux cas l'unique gap déjà documenté `rov-section-enum` (confirmé
+      encore absent sur ce nouveau clone) — aucune régression, aucun
+      nouveau gap. Vérification symétrique côté `nx` : les 2×15 chemins
+      `nx` de sortie existent tous dans le monorepo. `node --check`
+      (syntaxe) + `node tools/run-prettier.mjs --check`/`--write`
+      (formatage) verts sur les 3 fichiers modifiés.
+      **Limite explicite** : comme pour OPS-14/OPS-15, ni `bun`/`bunx`
+      ni `nx` ne sont disponibles dans ce sandbox — je n'ai pas pu
+      exécuter `emit-pairs.mjs` réellement (il appelle
+      `assertModuleGate()`, qui invoque `bunx nx`, de façon
+      inconditionnelle dès `--verify` ou écriture). Le fichier
+      `corpus/{monitoring,reporting}.pairs.jsonl` committé reste donc
+      celui d'OPS-15 (partiellement correct, mais pas identique à ce
+      que le générateur corrigé produirait, et ne couvrant pas du tout
+      `module.shell` qu'OPS-15 n'avait pas touché) — il sera régénéré
+      et écrasé automatiquement par le prochain `corpus:full` réel,
+      qui est désormais le générateur corrigé. Cela doit être confirmé
+      par un run CI frais (« Run workflow », pas re-run) montrant
+      `monitoring`/`reporting` passer `corpus-ready` (`≥80%`).
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 
