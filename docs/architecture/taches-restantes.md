@@ -1342,31 +1342,65 @@ gouvernance, sécurité, licences.
       structurellement correcte et validée par lecture du schéma/code source
       de l'outil, mais pas par une exécution réelle réussie ; à confirmer par
       la prochaine run CI.
-    - **OPS-12c — ouvert, transmis à l'utilisateur.** `bun audit --audit-level=high`
-      remonte 4 vulnérabilités high dans des dépendances transitives :
-      `image-size` (`<=2.0.2`, via `@angular/build`/`@nx/webpack`/`less`/
-      `vitest`, DoS boucle infinie ICNS/JXL/HEIF), `nanoid` (`<3.3.18`, via
-      `postcss`, boucle infinie si `size=0`), `js-yaml` (`>=4.0.0 <4.3.1`, via
-      `eslint`/`@eslint/eslintrc`, `@commitlint/cli`/`cosmiconfig`,
-      `@nx/js`/`babel-plugin-macros`/`cosmiconfig`,
-      `@nx/angular`/`@nx/rspack`/`postcss-loader`/`cosmiconfig`,
-      `@nx/web`/`@nx/webpack`/`postcss-loader`/`cosmiconfig` — CVE-2026-59870,
-      consommation CPU quadratique). **`bun` n'est pas installé dans le
-      sandbox d'exécution** (seulement `node`/`npx`) : ni `bun audit` ni
-      `bun update` n'ont pu être exécutés ou vérifiés par moi. Une tentative
-      accidentelle de résolution via `npx prettier` a modifié `package.json`
-      et `bun.lock` (versions `eslint`, `@commitlint/*`, `typescript-eslint`,
-      `ol`, etc. bumpées sans validation d'aucun build) — **annulée**
-      (`git checkout -- package.json bun.lock`) avant tout commit, car aucune
-      vérification de build/lint/test n'avait été faite sur ce changement non
-      voulu. Reste à faire par l'utilisateur, qui dispose de `bun` : lancer
-      `bun audit --audit-level=high` pour confirmer l'état de départ, puis
-      `bun update` (ou `bun update --latest` si insuffisant), puis rejouer
-      `bunx nx run-many -t build`/`lint` et `bun audit --audit-level=high`
-      avant de committer. Si les CVE persistent après mise à jour (dépendance
-      transitive profonde dont l'amont n'a pas encore publié de correctif),
-      documenter une exception justifiée plutôt que forcer un `overrides` à
-      l'aveugle.
+    - **OPS-12c — partiel** (2026-08-17). `bun audit --audit-level=high`
+      remontait 4 vulnérabilités high dans des dépendances transitives
+      (confirmé deux fois par l'utilisateur en CI réelle, `bun` absent du
+      sandbox d'exécution local). L'utilisateur a lancé `bun update` de son
+      côté : n'a bumpé que des dépendances directes proches de leur plage
+      déjà satisfaite (`@commitlint/cli`, `@typescript-eslint/utils`,
+      `lint-staged`, `angular-eslint`) sans toucher aux 3 paquets vulnérables
+      — attendu, `bun update` respecte les plages semver déclarées par les
+      paquets parents et ne peut pas les forcer au-delà. **2 CVE sur 3
+      corrigées par `overrides` ciblé dans `package.json`**, versions
+      vérifiées individuellement sur le registre npm avant écriture (pas de
+      supposition) :
+        - `nanoid` `<3.3.18` (via `postcss` — boucle infinie si `size=0`,
+          [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8))
+          → `overrides["nanoid"] = "3.3.18"`, dernière version publiée de la
+          ligne 3.x (dist-tag `legacy`, confirmée existante sur le registre).
+        - `js-yaml` `>=4.0.0 <4.3.1` (via `eslint`/`@eslint/eslintrc`,
+          `@commitlint/cli`/`cosmiconfig`,
+          `@nx/js`/`babel-plugin-macros`/`cosmiconfig`,
+          `@nx/angular`/`@nx/rspack`/`postcss-loader`/`cosmiconfig`,
+          `@nx/web`/`@nx/webpack`/`postcss-loader`/`cosmiconfig` —
+          CVE-2026-59870, consommation CPU quadratique en résolution
+          `!!omap`) → `overrides["js-yaml"] = "4.3.1"`, version publiée
+          2026-07-31 (plus d'un mois après `4.3.0`, cohérent avec un
+          correctif de sécurité), confirmée existante sur le registre.
+        - **`image-size` `<=2.0.2` — non corrigé, exception assumée et
+          documentée.** Vérification sur le registre npm :
+          **`image-size@2.0.2` est la dernière version publiée** ; aucun
+          correctif n'est disponible en amont à ce jour. Une première
+          tentative d'`overrides["image-size"] = "2.0.3"` a été écrite par
+          erreur (version inventée sans vérification préalable), détectée et
+          corrigée avant tout commit en revérifiant le registre. Un
+          `overrides` vers `2.0.2` (seule version existante) serait sans
+          effet — toujours la version vulnérable. Investigation de l'usage
+          réel : `image-size` n'est jamais une dépendance directe — c'est une
+          dépendance optionnelle transitive de `less` (`optionalDependencies`
+          de `less@4.5.1`), lui-même déclaré uniquement comme
+          `peerDependency` **optionnelle** de `@angular/build`, `@nx/webpack`
+          et `vite`. **Aucun fichier `.less` n'existe dans `apps/` ni
+          `libs/`** (`find … -iname "*.less"` vide) — le projet est
+          exclusivement Tailwind/CSS. `less` est physiquement présent dans
+          `node_modules/.bun/` (résolu par le lockfile car peer dep
+          optionnelle listée) mais son code, et donc celui d'`image-size`,
+          n'est jamais chargé à l'exécution : le parseur ICNS/JXL/HEIF
+          vulnérable ne s'exécute que si `less` traite un fichier `.less`,
+          ce qui n'arrive jamais dans ce dépôt. Tentative de neutralisation
+          via `overrides` explorée et abandonnée : la documentation officielle
+          Bun (`bun.com/docs/pm/overrides`, section Limitations) confirme
+          explicitement que Bun ne supporte pas la forme pnpm `"pkg@"`
+          (sélecteur vide) ni `"-"` (suppression de dépendance) — toute
+          tentative de ce type est silencieusement ignorée avec un
+          avertissement, donc inefficace. **Risque résiduel accepté et
+          documenté** : CVSS 8.7 (DoS/disponibilité uniquement, pas de RCE ni
+          fuite de données — `AV:N/AC:L … VC:N/VI:N/VA:H`), EPSS 0.43%
+          (34ᵉ percentile, faible probabilité d'exploitation), déclenchable
+          uniquement en traitant un buffer ICNS/JXL/HEIF malveillant via
+          `less`, jamais invoqué dans ce dépôt. À rouvrir si `less` cesse
+          d'être une dépendance dormante (ajout d'un fichier `.less`) ou si
+          les mainteneurs d'`image-size` publient un correctif.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 
