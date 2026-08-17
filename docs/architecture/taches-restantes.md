@@ -1753,6 +1753,42 @@ gouvernance, sécurité, licences.
       qui est désormais le générateur corrigé. Cela doit être confirmé
       par un run CI frais (« Run workflow », pas re-run) montrant
       `monitoring`/`reporting` passer `corpus-ready` (`≥80%`).
+    - **OPS-18 — fait** (2026-08-17). Confirmation par le run réel
+      post-OPS-17 : `monitoring`/`reporting` atteignent bien
+      `corpus-ready` sur les 9 traceurs comme prévu par la vérification
+      indépendante (4 traceurs `*.view` à 100%, `module.shell` à 92%
+      dans les deux modules, `blocked=1` = le seul gap
+      `rov-section-enum` déjà documenté). Les deux modules restent
+      néanmoins en `❌ Échec` dans le log car `emit-pairs.mjs --verify`
+      exige `tranche-closed` (100%) sur toutes les chaînes du module,
+      pas seulement `corpus-ready`. Ce gap unique par module
+      (`{monitoring,reporting}.shell.rov-section-enum` →
+      `domain/enums/node/node.enum.ts`) est une absence de design
+      légitime côté legacy, pas un renommage caché — confirmé par
+      recherche exhaustive `find -iname "*enum*"` sur tout l'arbre
+      legacy lors d'OPS-15 : des enums existent pour d'autres modules
+      (`finalization`, `requests`, `coverage-areas`…) mais jamais pour
+      `monitoring`/`reporting`. Décision utilisateur (AskUserQuestion,
+      option recommandée retenue) : requalifier ce nœud en `n/a` plutôt
+      que de le laisser indéfiniment `blocked` — même traitement que
+      les autres nœuds `*-query-legacy`/`module-routes-legacy` déjà
+      `n/a` dans le même pattern read-only-view. Correctif :
+      `statusOverride: 'n/a'` ajouté au nœud `rov-section-enum` dans
+      `read-only-view-nodes.mjs`, avec commentaire explicite sur la
+      justification (l'artefact Nx `${module}-section.enum.ts` reste
+      réel — unification `MonitoringSection`/`ReportingSection` — seule
+      la correspondance legacy est déclarée absente par décision).
+      Vérifié via le même script indépendant (fonctions de production
+      réelles, pas de réimplémentation) contre le clone legacy frais :
+      `blocked=0` sur les 9 chaînes des deux modules, `module.shell`
+      passe de `n/a=2` à `n/a=3` (12/12 `exists`) — 100% attendu sur
+      `verified/applicable`, débloquant `tranche-closed`. `node --check`
+      + `node tools/run-prettier.mjs --check` verts.
+      **Limite explicite** : même limite qu'OPS-17 — pas de `bun`/`nx`
+      dans ce sandbox, donc pas d'exécution réelle d'`emit-pairs.mjs`
+      ni de régénération du JSONL committé ; à confirmer par un
+      prochain run CI frais montrant `monitoring`/`reporting` en
+      `tranche-closed` (100%) sur les 9 traceurs, plus aucun `❌ Échec`.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 

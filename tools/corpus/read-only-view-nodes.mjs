@@ -40,13 +40,26 @@ export const ROV_NODE_MAPPINGS = {
                 : 'Legacy node entity représentatif — consolidation → GrafanaLinkEntity (@cmz/shared-domain, T1-6)',
     },
     'rov-section-enum': {
+        // OPS-17 (2026-08-17) : `domain/enums/node/node.enum.ts` n'existe
+        // sous AUCUN nom dans le legacy monitoring/reporting au pin
+        // cb15bf80fa072e12e9d4fce4b9236abe6ac78058 — confirmé par recherche
+        // exhaustive `find -iname "*enum*"` sur tout l'arbre legacy lors
+        // d'OPS-15 (2026-08-17) : des enums existent pour d'autres modules
+        // (finalization, requests, coverage-areas…) mais jamais pour
+        // monitoring/reporting. Ce n'est pas un renommage caché mais une
+        // absence de design côté legacy (section pilotée autrement, pas par
+        // un enum dédié) — l'enum Nx `${module}-section.enum.ts` reste un
+        // artefact réel (unification MonitoringSection/ReportingSection),
+        // seule la correspondance legacy est déclarée `n/a` par décision
+        // explicite plutôt que de rester `blocked` indéfiniment.
         legacy: ({ module }) =>
             legacyPage(module, 'domain/enums/node/node.enum.ts'),
         nx: ({ module }) =>
             `libs/${module}/domain/src/lib/enums/${module}-section.enum.ts`,
         layer: 'domain',
         oracle: (ctx) => modOracle(ctx.module, 'domain'),
-        notes: 'Enum section — legacy éclaté ; Nx unifie MonitoringSection / ReportingSection',
+        statusOverride: 'n/a',
+        notes: 'Enum section — pas de contrepartie legacy (design absent, confirmé par recherche exhaustive OPS-15) ; Nx unifie MonitoringSection / ReportingSection',
     },
     'rov-repository-port': {
         // OPS-17 (2026-08-17) : plat, sans sous-dossier de section, suffixe
