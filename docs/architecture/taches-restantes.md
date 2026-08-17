@@ -1301,27 +1301,48 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   silencieusement une régression business dans le corpus, jamais vue
   par personne). Retenu : **fail loud sur divergence**, pas de
   commit-back automatique.
-  Implémenté : step `check:corpus-committed (aucune dérive vs
-  génération réelle)` ajouté à `.github/workflows/corpus-full.yml`
-  après `corpus:full` — `git diff --exit-code --stat -- corpus/`
-  échoue le job avec un message explicite (`::error::`) si le contenu
-  régénéré diverge de ce qui est committé sur `main`, en indiquant la
-  commande exacte à lancer pour corriger (`bun run corpus:full &&
-  git add corpus/ && git commit`). Aucune écriture automatique vers
-  `main` — seulement une détection bloquante.
-  Vérifié : `python3 -c "import yaml; yaml.safe_load(...)"` (YAML
-  valide) + `node tools/run-prettier.mjs --check` (formatage) verts.
-  **Limite explicite** : je n'ai pas pu exécuter ce nouveau step
-  moi-même (`bun`/`git diff` sur un vrai run `corpus:full` — sandbox
-  sans `bun`), donc je n'ai pas pu vérifier empiriquement que ce step
-  détecte bien la divergence actuelle (probable, documentée dans ce
-  même item, mais jamais confirmée au niveau octet) entre le JSONL
-  committé et une vraie sortie de `emit-pairs.mjs`. Le prochain run CI
-  de `corpus-full.yml` tranchera : soit il reste vert (le JSONV édité
-  à la main était en fait octet-identique à la sortie réelle), soit il
-  échoue sur `check:corpus-committed` et il faudra alors régénérer
-  `corpus/*.pairs.jsonl` via une vraie exécution de `corpus:full` et
-  committer le résultat exact.
+  **Première implémentation invalidée le jour même par le premier run
+  réel.** `git diff --exit-code --stat -- corpus/` a échoué sur les
+  **18 modules** (1507 insertions/1507 suppressions, symétrique) —
+  pas seulement `monitoring`/`reporting`. Diagnostic avant de conclure
+  à une vraie divergence : `oracle_report.ran_at` (et tout `*.at`
+  imbriqué) est horodaté avec `new Date().toISOString()` à **chaque**
+  appel de `buildOracleReport()` (`tools/corpus/oracle-report.mjs`,
+  « evidence horodatée » par conception, ligne 2 du commentaire du
+  fichier) — un diff texte brut divergerait donc à *chaque* exécution
+  future, même sans aucun changement fonctionnel réel. Le gate tel
+  qu'écrit initialement aurait donc bloqué `corpus-full.yml`
+  indéfiniment, sur un faux positif structurel, pas sur la vraie
+  dérive qu'il visait à détecter.
+  Corrigé : `tools/corpus/check-corpus-committed.mjs` (nouveau script,
+  ~190 lignes) remplace le `git diff` brut. Il compare `git show
+  HEAD:<fichier>` (version committée) au fichier régénéré dans le
+  working tree, **paire par paire** (indexées par `id`), après avoir
+  retiré récursivement toute clé `ran_at`/`at` de chaque objet JSON —
+  pas un diff texte. Exposé via `bun run check:corpus-committed`
+  (`package.json`), appelé par `corpus-full.yml` après `corpus:full`.
+  **Vérifié par test empirique local, pas seulement par lecture du
+  code** : (1) contre `HEAD` inchangé → `OK`, 18 fichiers ; (2)
+  modification volontaire d'un `id` de paire (`dash-legacy-entity` →
+  `...-TEST`) → détecté correctement (`paire disparue` +
+  `paire nouvelle`), exit 1 ; (3) tous les `ran_at`/`at` du fichier
+  réécrits à un horodatage différent (simulant un vrai run
+  `corpus:full`, rien d'autre changé) → `OK`, aucun faux positif,
+  exit 0. Les 3 cas couvrent exactement le défaut trouvé et sa
+  correction. `node --check` (syntaxe) + `node
+  tools/run-prettier.mjs --check`/`--write` (formatage) +
+  `python3 -c "import yaml; yaml.safe_load(...)"` (YAML de
+  `corpus-full.yml`) + `python3 -c "import json; json.load(...)"`
+  (`package.json`) tous verts.
+  **Limite explicite** : les 3 tests ci-dessus ont été faits avec
+  `node` seul (mon sandbox n'a ni `bun` ni `git diff` interactif dans
+  le contexte du vrai job CI) — je n'ai jamais fait tourner
+  `bun run corpus:full` réellement suivi de ce nouveau step dans les
+  conditions exactes de `corpus-full.yml`. Le prochain run CI
+  tranchera si le JSONL committé (édité à la main depuis OPS-18) est
+  fonctionnellement identique à la sortie réelle du générateur
+  corrigé (OPS-17), ou s'il faut le régénérer et committer
+  explicitement.
 
 ### 3.6 Documentation & ADR spécifiques SEOS (ex-T13, sous-ensemble)
 

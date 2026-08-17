@@ -83,13 +83,14 @@ jobs:
       # que de laisser la dérive s'accumuler jusqu'à la prochaine
       # investigation manuelle (voir OPS-15/17/18, découverts en mode
       # pompier).
+      #
+      # PREMIÈRE VERSION (git diff --exit-code brut) invalidée le jour
+      # même par le premier run réel : `oracle_report.ran_at` et tout
+      # `*.at` imbriqué sont horodatés par construction à CHAQUE appel de
+      # `buildOracleReport()` (« evidence horodatée », voir
+      # oracle-report.mjs) — un diff texte brut divergeait donc sur les
+      # 18 fichiers à chaque exécution, même sans aucun changement
+      # fonctionnel. `check-corpus-committed.mjs` compare paire par paire
+      # après avoir retiré ces clés volatiles, pas un diff texte.
       - name: check:corpus-committed (aucune dérive vs génération réelle)
-        run: |
-          if ! git diff --exit-code --stat -- corpus/; then
-            echo ""
-            echo "::error::corpus/*.pairs.jsonl committé diverge de la sortie réelle de 'bun run corpus:full'."
-            echo "Le contenu ci-dessus doit être régénéré et committé explicitement :"
-            echo "  bun run corpus:full && git add corpus/ && git commit"
-            echo "Ne jamais éditer corpus/*.pairs.jsonl à la main sans faire tourner corpus:full ensuite."
-            exit 1
-          fi
+        run: bun run check:corpus-committed
