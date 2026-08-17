@@ -1568,6 +1568,82 @@ gouvernance, sécurité, licences.
       qui devra alors atteindre les étapes `build`/`lint`/`test` de
       chaque module et échouer ou réussir sur leur mérite réel, pas sur
       un refus d'authentification en amont.
+    - **OPS-15 — fait** (2026-08-17). Confirmation par le run réel :
+      OPS-14 a résolu l'authentification Nx Cloud, `corpus:full` a
+      atteint build/lint/test sur les 18 modules — 16/18 ont réussi.
+      2 échecs réels, distincts, restants : `monitoring` et `reporting`,
+      chacun avec plusieurs traceurs à `verified/applicable=29%`
+      (`blocked` élevé), sous le seuil `≥80%` requis par
+      `resolveStatus()`/`printReport` pour `corpus-ready`. Root cause :
+      les champs `legacy` de 27/43 paires (`monitoring`) et 34/49
+      paires (`reporting`) pointaient vers des chemins qui n'existent
+      plus dans le dépôt legacy au SHA pinné `cb15bf80fa072e12e9d4fce4b9236abe6ac78058` —
+      même classe de problème que **T13-12** (2026-08-11, déjà résolu
+      une fois pour ces mêmes 2 modules — signe que le legacy source a
+      probablement été restructuré une seconde fois côté GitLab, avant
+      que ce SHA précis ne soit re-figé ; cause exacte non élucidée,
+      non supposée).
+      Vérifié personnellement avant toute délégation : clone réel du
+      legacy au SHA pinné (`git clone --filter=blob:none --depth=1` +
+      `git fetch`/`checkout` du SHA exact), comparaison chemin par
+      chemin — confirmé que `report-states` (module qui avait réussi)
+      a 0/187 chemin manquant contre ce même clone, éliminant
+      l'hypothèse d'une divergence globale de miroir ; le problème est
+      bien localisé à `monitoring`/`reporting`.
+      Délégué à un agent (protocole identique PLAT-5H..5K) avec
+      consigne explicite : ne jamais fabriquer de correspondance sans
+      preuve, documenter plutôt que deviner en cas d'incertitude,
+      aucun `git add`/commit. L'agent a retracé chaque chemin manquant
+      contre son propre clone du même SHA et corrigé uniquement le
+      champ `legacy` de chaque paire concernée (3 motifs de divergence
+      identifiés : sous-dossier par entité supprimé côté legacy —
+      ex. `application/services/node/node.facade.ts` →
+      `application/services/node.facade.ts` ; renommage de pattern
+      architectural — `application/queries/<x>.query.ts` →
+      `application/queries-bus/<x>.bus.ts` ; renommage de fichier —
+      `domain/repositories/<x>.repository.ts` →
+      `domain/repositories/<x>-repository.interface.ts`,
+      `<x>-response-api.dto.ts` → `<x>-response.dto.ts`, composants
+      déplacés sous `pages/<x>-page/`). 2 gaps non résolus, documentés
+      plutôt que devinés : `monitoring.shell.rov-section-enum` et
+      `reporting.shell.rov-section-enum` pointent vers
+      `domain/enums/node/node.enum.ts`, introuvable sous quelque nom
+      que ce soit dans les arborescences `monitoring`/`reporting` du
+      clone (confirmé par une recherche exhaustive `find -iname
+      "*enum*"` sur tout le legacy : aucun fichier enum n'existe dans
+      ces deux modules à ce SHA — ce n'est pas un renommage caché).
+      **Revue staff indépendante effectuée avant ce commit** (pas
+      seulement confiance au rapport de l'agent) :
+        - `git diff` : nombre de paires identique avant/après sur les
+          2 fichiers (51 chacun), et comparaison programmatique
+          confirmant qu'aucun champ autre que `legacy` n'a changé (30
+          changements sur monitoring, 34 sur reporting, 0 diff
+          résiduel après normalisation de ce seul champ).
+        - Chaque nouveau chemin `legacy` re-testé indépendamment
+          contre mon propre clone (distinct de celui de l'agent) :
+          1 seul chemin manquant par module, exactement les 2 gaps
+          `node.enum.ts` documentés — aucune régression, aucune
+          correspondance fantaisiste introduite.
+        - Recalcul manuel du taux `verified/applicable` par traceur
+          (réimplémentation de la logique de `resolveStatus.mjs`) :
+          tous les traceurs `monitoring`/`reporting` atteignent
+          désormais ≥92% (`module.shell`, à cause du gap enum
+          persistant) ou 100% (les 4 autres traceurs par module) —
+          au-dessus du seuil `≥80%` requis, donc les deux modules
+          devraient passer le gate `corpus-ready` au prochain run.
+        - `node tools/run-prettier.mjs --check`, `node
+          tools/check-file-weight.mjs`, validité JSON ligne par ligne
+          des 2 fichiers : tous verts.
+      **Limite explicite** : je n'ai pas pu exécuter `bun run
+      corpus:full` moi-même (ni l'agent — `bunx`/`bun` absents des
+      deux sandboxes), donc ni moi ni l'agent n'avons vu le gate H-2
+      (build/lint/test) tourner après cette correction — seule la
+      logique de résolution des chemins `legacy` a été vérifiée
+      directement (2 fois, indépendamment). Le gap `node.enum.ts`
+      reste ouvert : à investiguer si le fichier a été supprimé
+      délibérément côté legacy (auquel cas la paire correspondante
+      devrait être requalifiée `n/a` plutôt que rester `blocked`) ou
+      s'il a été déplacé sous un nom non trouvé par la recherche.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 
