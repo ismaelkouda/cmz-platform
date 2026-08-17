@@ -58,7 +58,7 @@ Une ligne = un objet JSON validé par [`pair.schema.json`](./pair.schema.json).
     },
     "legacy_ref": {
         "commit": "cb15bf80fa072e12e9d4fce4b9236abe6ac78058",
-        "repo": "https://gitlab.imako.digital/ansut-apps/cmz-backoffice-frontend.git",
+        "repo": "https://github.com/ismaelkouda/cmz-backoffice.git",
         "date": "2026-07-31"
     }
 }

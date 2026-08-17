@@ -3,7 +3,7 @@
   "source": "docs/architecture/analyse-du-projet-source.md#annexe — classification des 53 entités (Phase 03)",
   "legacy_ref": {
     "commit": "cb15bf80fa072e12e9d4fce4b9236abe6ac78058",
-    "repo": "https://gitlab.imako.digital/ansut-apps/cmz-backoffice-frontend.git"
+    "repo": "https://github.com/ismaelkouda/cmz-backoffice.git"
   },
   "generated_by": "tools/generate-status.mjs (M-7, 2026-08-03) — compare chaque entité à une trace réelle dans libs/ (pas une déclaration)",
   "entities": [
