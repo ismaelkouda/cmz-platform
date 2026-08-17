@@ -453,8 +453,26 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # OPS-19 (2026-08-17) : `image-size <=2.0.2` (via `less`, dépendance
+      # optionnelle dormante de @angular/build/@nx/webpack/vite — aucun
+      # fichier .less dans apps/libs, code jamais exécuté) est la dernière
+      # version publiée du paquet, sans correctif amont possible ; `bun`
+      # (contrairement à pnpm) ne supporte ni le sélecteur `"pkg@"` ni `"-"`
+      # dans `overrides` pour neutraliser une dépendance transitive absente
+      # du direct — seule option outillée : `--ignore` par GHSA ID. Risque
+      # documenté en détail dans taches-restantes.md (OPS-12e) : CVSS 8.7
+      # DoS uniquement, EPSS 0.43%, jamais déclenché faute de fichier .less.
+      # Ce job échouait silencieusement depuis OPS-12e (2026-08-17) car
+      # cette exception n'avait jamais été reportée ici, seulement dans la
+      # doc — 0 run ci.yml vert depuis. Les 2 lignes du rapport (deux
+      # workspaces consommateurs) sont la même CVE unique sur le même
+      # image-size@0.5.5 verrouillé (vérifié bun.lock) : 1 seul --ignore
+      # suffit par GHSA ID, pas 2.
       - name: bun audit (high/critical bloquant)
-        run: bun audit --audit-level=high
+        run: |
+          bun audit --audit-level=high \
+            --ignore GHSA-w3rx-r6r6-pgpr \
+            --ignore GHSA-5p2g-fcmc-qvqq
 
   # ─── Job K-1/K-2 : clés i18n manquantes (check:i18n) ─────────────────────
   # Audit-workspace-2026-08-03.md, chantier K. `tools/check-i18n.mjs` compare

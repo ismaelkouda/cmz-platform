@@ -1789,6 +1789,82 @@ gouvernance, sécurité, licences.
       ni de régénération du JSONL committé ; à confirmer par un
       prochain run CI frais montrant `monitoring`/`reporting` en
       `tranche-closed` (100%) sur les 9 traceurs, plus aucun `❌ Échec`.
+    - **OPS-19 — fait** (2026-08-17). En creusant l'objectif plateforme
+      (composition depuis n'importe quelle source — legacy n'étant
+      qu'un exemple — vers n'importe quelle stack), tentative de
+      constater la promotion M2→M3 de PLAT-3/PLAT-4
+      (`generation-platform-capability-matrix.md` §4/§7 posait déjà
+      « Promotion M3 conditionnée à la première exécution CI verte du
+      lot »). Utilisateur d'abord confirmé « ci.yml est vert », puis —
+      questionné sur le lien exact du run par prudence (leçon de
+      l'épisode #39/OPS-12 : un statut « vert » déjà rapporté à tort
+      une fois) — a vérifié et corrigé : **`ci.yml` n'a pas de
+      `workflow_dispatch`, seulement `push`/`pull_request` sur `main`,
+      et échoue systématiquement depuis au moins le run #47** (56 runs
+      listés, tous rouges y compris le dernier push `73adb74`/OPS-18,
+      21m42s). Aucune promotion M3 ne pouvait donc être actée — écarté
+      avant toute modification de la matrice de capacités.
+      Root cause, 2 causes indépendantes dans 2 jobs distincts :
+        1. `security-audit` (`bun audit --audit-level=high`) :
+           `image-size <=2.0.2` (2 avisos high, DoS via boucles
+           infinies ICNS/JXL/HEIF) — déjà documenté comme exception
+           acceptée depuis OPS-12e (CVSS 8.7 mais code jamais exécuté,
+           `less` n'a aucun fichier `.less` dans ce dépôt, `overrides`
+           structurellement inefficace côté Bun pour neutraliser une
+           dépendance transitive). **Cette exception n'avait jamais été
+           reportée dans le gate CI lui-même** — seulement documentée
+           en prose — donc le job échouait silencieusement depuis
+           OPS-12e sans qu'aucun run `ci.yml` vert n'ait jamais été
+           observé depuis. Vérifié sur le registre npm que `2.0.2`
+           reste la dernière version publiée (`dist-tags.latest`,
+           aucun correctif disponible). Vérifié la doc Bun officielle
+           (`bun.com/docs/pm/cli/audit`, version documentée = 1.3.14,
+           identique à celle de CI) : `--ignore <GHSA-id>` existe,
+           répétable, agit sur le code de sortie. Corrigé :
+           `--ignore GHSA-w3rx-r6r6-pgpr --ignore GHSA-5p2g-fcmc-qvqq`
+           ajoutés à l'étape `bun audit` de `ci.yml`, avec commentaire
+           expliquant pourquoi (renvoie aussi vers le risque déjà
+           documenté OPS-12e plutôt que de le dupliquer).
+        2. `check:licenses` (`node tools/check-licenses.mjs`, qui
+           invoque `npx license-checker-rseidelsohn`) : `npm error code
+           EOVERRIDE — Override for postcss@catalog: conflicts with
+           direct dependency`. Root cause trouvée dans `package.json` :
+           `postcss` est déclaré deux fois — comme dépendance directe
+           du catalog Bun workspace (`workspaces.catalog.postcss`,
+           `8.5.22`) **et** dans `overrides.postcss` (`8.5.23`, ajouté
+           par OPS-12e pour corriger CVE-2026-69153 sans avoir vérifié
+           que `postcss` était déjà catalog-résolu). `bun install`
+           tolère silencieusement ce doublon, mais `npm` (invoqué via
+           `npx` par `check-licenses.mjs`) le rejette explicitement —
+           c'est une régression introduite par OPS-12e elle-même,
+           jamais détectée faute de `ci.yml` vert depuis. Corrigé à la
+           source plutôt qu'en contournant le symptôme : version du
+           catalog relevée à `8.5.23` (la version déjà patchée), entrée
+           dupliquée retirée d'`overrides` — `postcss` n'a plus qu'une
+           seule déclaration de version dans tout `package.json`.
+           Vérifié programmatiquement (script Python) qu'aucun autre
+           paquet ne partage ce même risque : intersection vide entre
+           les clés d'`overrides` et celles de tous les catalogs
+           (`catalog` + `catalogs.tooling`). `bun.lock` déjà verrouillé
+           sur `postcss@8.5.23` (résolu par l'ancien override avant
+           suppression) — pas de régénération de lockfile nécessaire
+           pour ce changement précis.
+      Vérifié : `python3 -c "import json; json.load(...)"` (JSON valide)
+      + `python3 -c "import yaml; yaml.safe_load(...)"` (YAML valide) +
+      `node tools/run-prettier.mjs --check` verts sur `package.json` et
+      `ci.yml`.
+      **Limite explicite** : je n'ai ni `bun` ni accès réseau GitHub
+      Actions dans ce sandbox — je n'ai pas pu exécuter `bun audit`
+      moi-même pour confirmer que `--ignore` avec ces 2 GHSA IDs
+      exacts ramène bien le code de sortie à 0, ni rejouer
+      `check:licenses` réellement. Les deux causes sont corrigées sur
+      la base d'une lecture directe des messages d'erreur et de la
+      documentation officielle Bun, pas d'une exécution locale — à
+      confirmer par le prochain run CI réel. Il est possible (mais non
+      confirmé) que d'autres jobs de `ci.yml` échouent aussi pour des
+      raisons encore non vues, puisqu'aucun run vert n'a permis de
+      vérifier les jobs suivants dans l'ordre — à réévaluer si le
+      prochain run échoue ailleurs.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 
