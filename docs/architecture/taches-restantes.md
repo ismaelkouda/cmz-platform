@@ -1342,7 +1342,7 @@ gouvernance, sécurité, licences.
       structurellement correcte et validée par lecture du schéma/code source
       de l'outil, mais pas par une exécution réelle réussie ; à confirmer par
       la prochaine run CI.
-    - **OPS-12c — partiel** (2026-08-17). `bun audit --audit-level=high`
+    - **OPS-12c — fait** (2026-08-17). `bun audit --audit-level=high`
       remontait 4 vulnérabilités high dans des dépendances transitives
       (confirmé deux fois par l'utilisateur en CI réelle, `bun` absent du
       sandbox d'exécution local). L'utilisateur a lancé `bun update` de son
@@ -1353,7 +1353,12 @@ gouvernance, sécurité, licences.
       paquets parents et ne peut pas les forcer au-delà. **2 CVE sur 3
       corrigées par `overrides` ciblé dans `package.json`**, versions
       vérifiées individuellement sur le registre npm avant écriture (pas de
-      supposition) :
+      supposition), puis `bun.lock` régénéré côté utilisateur (`bun install`
+      sans `--frozen-lockfile`) et poussé (commit `d4af5e7`). **Confirmé
+      résolu par une exécution CI réelle** (log `bun audit` collé par
+      l'utilisateur le 2026-08-17 après push) : `nanoid` et `js-yaml`
+      n'apparaissent plus dans le rapport, seule l'exception `image-size`
+      documentée ci-dessous subsiste :
         - `nanoid` `<3.3.18` (via `postcss` — boucle infinie si `size=0`,
           [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8))
           → `overrides["nanoid"] = "3.3.18"`, dernière version publiée de la
@@ -1398,7 +1403,27 @@ gouvernance, sécurité, licences.
           fuite de données — `AV:N/AC:L … VC:N/VI:N/VA:H`), EPSS 0.43%
           (34ᵉ percentile, faible probabilité d'exploitation), déclenchable
           uniquement en traitant un buffer ICNS/JXL/HEIF malveillant via
-          `less`, jamais invoqué dans ce dépôt. À rouvrir si `less` cesse
+          `less`, jamais invoqué dans ce dépôt.
+          **Post-régénération du lockfile (2026-08-17)** : le rapport CI
+          confirmé liste désormais 2 lignes pour cette même CVE au lieu
+          d'1 (`@angular/build › less › image-size` et une deuxième ligne
+          mentionnant `workspace:@cmz/administrative-boundary-data ›
+          vitest`). Vérifié dans `bun.lock` : une seule version
+          d'`image-size` est verrouillée (`0.5.5`, uniquement via
+          `less@4.5.1`) — `vitest@4.1.10` n'a aucune dépendance vers
+          `less` ni `image-size` dans son arbre (`node_modules/.bun/`
+          confirme une seule installation physique du paquet). La
+          deuxième ligne est un artefact d'affichage de `bun audit`
+          (regroupement par workspace consommateur dans le graphe
+          partagé du lockfile), pas une seconde occurrence réelle du
+          paquet ni une CVE distincte. Le risque documenté ci-dessus
+          reste inchangé et s'applique identiquement à la version
+          verrouillée `0.5.5` — l'advisory GHSA-w3rx-r6r6-pgpr ne
+          déclare aucune plage de version affectée structurée
+          (« Affected versions: Unknown » sur la page GitHub), seul le
+          texte « through 2.0.2 » la mentionne dans sa description,
+          cohérent avec une couverture de toute la ligne 0.x/2.x tant
+          qu'aucun correctif n'est publié. À rouvrir si `less` cesse
           d'être une dépendance dormante (ajout d'un fichier `.less`) ou si
           les mainteneurs d'`image-size` publient un correctif.
 
