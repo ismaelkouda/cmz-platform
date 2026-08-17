@@ -1525,6 +1525,49 @@ gouvernance, sécurité, licences.
       `--frozen-lockfile`) côté utilisateur avant que ces `overrides`
       prennent effet et que la CI (`bun install --frozen-lockfile`) ne
       les valide.
+    - **OPS-14 — fait** (2026-08-17). `bun run corpus:full` (job
+      `corpus-full.yml`, déclenché manuellement après OPS-13/13b)
+      échouait sur les 18 modules du corpus, chacun avec le même motif :
+      `NX Cloud: Workspace is unable to be authorized. Exiting run. /
+      Invalid Credentials (Nx Cloud ID)`, précédant tout essai réel de
+      `build`/`lint`/`test`. Root cause identifiée par lecture directe
+      de `.github/workflows/corpus-full.yml` et comparaison avec
+      `ci.yml` : `nx.json` déclare un `nxCloudId`
+      (`69cfa6ba213c8001d0f75641`), et `ci.yml` injecte le secret
+      `NX_CLOUD_ACCESS_TOKEN` en variable d'environnement (ligne 28)
+      pour authentifier chaque appel `nx`, mais `corpus-full.yml` ne
+      l'a jamais fait — oubli distinct de la régression `check:dto-schema`
+      d'OPS-12a, sur un autre workflow. Aggravé par
+      `tools/corpus/module-gate.mjs` (`runMany()`) : le gate H-2 traite
+      tout échec du process `bunx nx run-many` comme un échec de
+      build/lint/test, sans distinguer un refus d'authentification Nx
+      Cloud (bruit réseau, dégradable selon le commentaire de `ci.yml`
+      lui-même : « Sans claim + secret : bruit 401 / pas de remote
+      cache — acceptable temporairement ») d'un vrai échec de code —
+      et Nx CLI lui-même n'a pas dégradé gracieusement ici : le message
+      « Exiting run » confirme que l'absence de token a arrêté
+      l'exécution entière, pas seulement désactivé le cache distant.
+      Fix : ajout de `env: NX_CLOUD_ACCESS_TOKEN:
+      ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}` à `corpus-full.yml`,
+      identique à `ci.yml`, avec un commentaire expliquant pourquoi ce
+      workflow y est plus sensible que `ci.yml` (jobs indépendants côté
+      `ci.yml`, gate agrégé fail-closed côté `module-gate.mjs`).
+      Confirmé avec l'utilisateur que le secret `NX_CLOUD_ACCESS_TOKEN`
+      existe déjà dans les settings GitHub Actions du repo — le fix
+      n'a donc pas nécessité de créer/réclamer un nouveau workspace Nx
+      Cloud, seulement de propager le secret déjà valide au workflow
+      qui en manquait.
+      Vérification avant commit : YAML validé (`python3 -c "import
+      yaml; yaml.safe_load(...)"`), clé `NX_CLOUD_ACCESS_TOKEN` bien
+      présente dans le bloc `env` parsé, `node tools/run-prettier.mjs
+      --check` vert. **Limite explicite** : je n'ai pas pu déclencher
+      `corpus-full.yml` moi-même (pas d'accès réseau GitHub Actions
+      dans ce sandbox) — le fix est structurellement correct (même
+      mécanisme que `ci.yml`, secret confirmé existant par
+      l'utilisateur) mais reste à confirmer par le prochain run réel,
+      qui devra alors atteindre les étapes `build`/`lint`/`test` de
+      chaque module et échouer ou réussir sur leur mérite réel, pas sur
+      un refus d'authentification en amont.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 

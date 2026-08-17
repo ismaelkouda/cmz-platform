@@ -7,8 +7,18 @@
 #
 # Déclenchement : push sur main + manuel. Pas sur chaque PR (coût + auth legacy).
 #
-# Secret requis si le miroir GitHub ne porte pas le SHA piné :
-#   LEGACY_CHECKOUT_TOKEN — PAT / deploy token lecture sur lock.repo (GitLab)
+# Secrets requis :
+#   LEGACY_CHECKOUT_TOKEN — PAT / deploy token lecture sur lock.repo (GitLab),
+#     si le miroir GitHub ne porte pas le SHA piné.
+#   NX_CLOUD_ACCESS_TOKEN — même secret que ci.yml (nxCloudId dans nx.json).
+#     OPS-14 (2026-08-17) : ce workflow appelle `bun run corpus:full`, qui
+#     invoque `nx run-many` par module via tools/corpus/module-gate.mjs.
+#     Sans ce token, Nx Cloud refuse l'auth et NX **arrête tout le run**
+#     ("Exiting run", pas juste le cache distant) — les 18 modules échouent
+#     avant même que build/lint/test local ne s'exécute. Contrairement à
+#     ci.yml (jobs indépendants, un 401 Nx Cloud n'y bloque qu'une tâche),
+#     module-gate.mjs traite tout échec du process nx comme un échec de
+#     gate H-2, sans distinguer "auth Nx Cloud" d'un vrai échec de build.
 
 name: Corpus full — verify + legacy
 
@@ -25,6 +35,7 @@ concurrency:
 env:
   NODE_VERSION: '22.22.3'
   BUN_VERSION: '1.3.14'
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 jobs:
   corpus-full:
