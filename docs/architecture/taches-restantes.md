@@ -1334,15 +1334,52 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   `python3 -c "import yaml; yaml.safe_load(...)"` (YAML de
   `corpus-full.yml`) + `python3 -c "import json; json.load(...)"`
   (`package.json`) tous verts.
-  **Limite explicite** : les 3 tests ci-dessus ont été faits avec
-  `node` seul (mon sandbox n'a ni `bun` ni `git diff` interactif dans
-  le contexte du vrai job CI) — je n'ai jamais fait tourner
-  `bun run corpus:full` réellement suivi de ce nouveau step dans les
-  conditions exactes de `corpus-full.yml`. Le prochain run CI
-  tranchera si le JSONL committé (édité à la main depuis OPS-18) est
-  fonctionnellement identique à la sortie réelle du générateur
-  corrigé (OPS-17), ou s'il faut le régénérer et committer
-  explicitement.
+  **Limite explicite reconnue avant le fait suivant** : les 3 tests
+  ci-dessus ont été faits avec `node` seul, jamais dans les conditions
+  exactes du job CI — un vrai run CI a immédiatement invalidé cette
+  seconde version aussi.
+  **Deuxième itération, le jour même.** Le premier run CI réel de
+  `check:corpus-committed` a échoué sur **1507/1507 paires — la
+  totalité du corpus, tous les 18 modules**, y compris des modules
+  jamais touchés par une édition manuelle (`report-states`,
+  `processing`…), stables depuis longtemps. Ce taux de 100% (pas un
+  sous-ensemble ciblé) indiquait un second défaut structurel du
+  comparateur, pas une vraie divergence de contenu — confirmé en
+  isolant le premier diff affiché
+  (`report-states.approve.list-item-props`) : seul son champ
+  `verified_at` (`"2026-08-11"`) aurait changé. Root cause : `emit-
+  pairs.mjs` fixe `verified_at = today` (`ranAt.slice(0, 10)`, la date
+  du jour d'exécution) pour **toute** paire `status: "verified"` — la
+  quasi-totalité du corpus — à chaque run. Ce champ vit à la racine de
+  la paire, pas dans `oracle_report`, donc la première version du
+  script (qui n'excluait que `ran_at`/`at`) ne le voyait pas.
+  Corrigé : `verified_at` ajouté à `VOLATILE_KEYS` dans
+  `check-corpus-committed.mjs`. Avant de considérer le correctif
+  complet, recherche exhaustive de toute autre clé du même type :
+  script Python listant toutes les clés (récursif, tous niveaux)
+  réellement présentes dans les 18 `corpus/*.pairs.jsonl` actuels —
+  47 clés distinctes recensées. Seule `legacy_ref.date` restait à
+  vérifier (autre candidat plausible « date ») : tracée jusqu'à
+  `legacy.lock.json#date` (`loadLegacyRef()`, `emit-pairs.mjs`) — fixe
+  tant que le pin legacy ne change pas, pas un horodatage d'exécution,
+  donc légitimement comparable, non exclue.
+  Re-vérifié empiriquement après ce second correctif : (1) contre
+  `HEAD` inchangé → `OK` ; (2) `verified_at`+`ran_at`+`at` réécrits sur
+  **les 18 fichiers simultanément** (reproduction exacte du scénario
+  du run CI, rien d'autre changé) → `OK`, exit 0, aucun faux positif ;
+  (3) modification volontaire d'un `id` de paire → toujours détectée
+  correctement, exit 1 (la détection réelle n'a pas été cassée en
+  élargissant l'exclusion). `node --check` + `node
+  tools/run-prettier.mjs --check` verts.
+  **Limite explicite, inchangée** : toujours pas de vraie exécution de
+  `bun run corpus:full` suivie de ce step dans les conditions exactes
+  de `corpus-full.yml` — seulement des simulations `node` locales,
+  aussi proches que possible du scénario réel observé. Un troisième
+  champ volatil non anticipé reste possible ; seul un nouveau run CI
+  réel le confirmera ou l'infirmera. Si ce step réussit au prochain
+  run, cela confirmera que le JSONL édité à la main depuis OPS-18 est
+  fonctionnellement identique (hors horodatage) à la sortie réelle du
+  générateur corrigé par OPS-17.
 
 ### 3.6 Documentation & ADR spécifiques SEOS (ex-T13, sous-ensemble)
 

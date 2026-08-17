@@ -3,16 +3,24 @@
  * OPS-20 — vérifie que `corpus/*.pairs.jsonl` committé sur `main` est
  * fonctionnellement identique à ce que `corpus:full` vient de recalculer
  * dans le working tree, SANS faux positif sur les champs volatils par
- * construction (`oracle_report.ran_at` et tout `*.at` imbriqué —
- * « evidence horodatée », voir `oracle-report.mjs`).
+ * construction (`oracle_report.ran_at` + tout `*.at` imbriqué — « evidence
+ * horodatée », voir `oracle-report.mjs` — ET `verified_at` au niveau
+ * racine de chaque paire, voir `emit-pairs.mjs`).
  *
  * `git diff --exit-code -- corpus/` seul échoue à CHAQUE run, même sans
- * aucun changement fonctionnel, puisque `ran_at`/`at` sont réécrits avec
- * `new Date().toISOString()` par `buildOracleReport()` à chaque exécution
- * de `emit-pairs.mjs`. Ce script compare donc `git show HEAD:<fichier>`
- * (version committée) au fichier du working tree (version recalculée),
- * paire par paire, après avoir supprimé récursivement toute clé nommée
- * `ran_at` ou `at` de chaque objet JSON — pas un diff texte brut.
+ * aucun changement fonctionnel : `ran_at`/`at` sont réécrits avec
+ * `new Date().toISOString()` par `buildOracleReport()`, et `verified_at`
+ * (`today = ranAt.slice(0, 10)`, `emit-pairs.mjs` ligne ~191/207) est
+ * réécrit à la date du jour pour **toute** paire `status === 'verified'` —
+ * la quasi-totalité du corpus — à chaque exécution de `emit-pairs.mjs`.
+ * Découvert le 2026-08-17 : la première version de ce script n'excluait
+ * que `ran_at`/`at`, ratant `verified_at` qui vit au niveau racine de la
+ * paire (pas dans `oracle_report`) — d'où 1507/1507 « divergences » sur un
+ * run CI réel qui n'avait pourtant rien changé fonctionnellement.
+ * Ce script compare donc `git show HEAD:<fichier>` (version committée) au
+ * fichier du working tree (version recalculée), paire par paire, après
+ * avoir supprimé récursivement toute clé nommée `ran_at`, `at` ou
+ * `verified_at` de chaque objet JSON — pas un diff texte brut.
  *
  * Usage :
  *   node tools/corpus/check-corpus-committed.mjs
@@ -33,8 +41,10 @@ const CORPUS_DIR = join(ROOT, 'corpus');
 
 /** Clés volatiles retirées avant comparaison — horodatage d'exécution, pas
  * de contenu métier. Toute autre clé (chemins, status, oracle, notes…) doit
- * rester strictement identique pour ne pas déclencher ce gate. */
-const VOLATILE_KEYS = new Set(['ran_at', 'at']);
+ * rester strictement identique pour ne pas déclencher ce gate.
+ * `verified_at` : date du jour de run (`emit-pairs.mjs`), pas une valeur
+ * de contenu — voir le commentaire d'en-tête de ce fichier. */
+const VOLATILE_KEYS = new Set(['ran_at', 'at', 'verified_at']);
 
 /** @param {unknown} value @returns {unknown} */
 function stripVolatile(value) {
