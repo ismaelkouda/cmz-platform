@@ -1264,6 +1264,42 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   documentation — décision explicitement laissée au porteur du projet,
   par cohérence avec la façon dont ADR-0019 a traité une question
   similaire (« reste ouverte et n'est pas tranchée ici »).
+- **OPS-20** — ouvert, S, P1, alias `audit 2026-08-17, suite PLAT-6`.
+  **`corpus-full.yml` ne persiste jamais son résultat dans le dépôt.**
+  Distinct d'OPS-16 (dérive du contenu legacy) : ici le problème existe
+  même sans aucune dérive. `emit-pairs.mjs`, via `corpus:full`, écrit
+  `corpus/*.pairs.jsonl` dans le working tree du runner GitHub Actions
+  — confirmé en lisant `.github/workflows/corpus-full.yml` en entier :
+  aucun step `git commit`/`git push`, aucun `actions/upload-artifact`,
+  aucun mécanisme de rapatriement quel qu'il soit après le step
+  `Corpus full (--verify, sans --structural-only)`. Concrètement : le
+  run vert obtenu après OPS-17/OPS-18
+  (`monitoring`/`reporting` à `verified/applicable=100%`,
+  `blocked=0`) a recalculé des `corpus/monitoring.pairs.jsonl` et
+  `corpus/reporting.pairs.jsonl` corrects **dans l'éphémère du
+  runner**, puis les a jetés à la fin du job. Les fichiers réellement
+  committés sur `main` restent ceux d'OPS-18 (édités à la main via le
+  générateur, jamais réellement passés par une exécution de
+  `emit-pairs.mjs` que j'aurais pu observer moi-même — `bun`/`nx`
+  absents de mon sandbox tout du long d'OPS-15 à OPS-18). Rien
+  n'indique une divergence fonctionnelle actuelle (le run CI confirme
+  que le générateur produit les bons chemins), mais rien ne le
+  garantit non plus au niveau octet — `verified_at`, ordre des clés,
+  ou un champ additionnel du générateur que je n'aurais pas anticipé
+  pourraient différer entre ma version committée à la main et une
+  vraie sortie de `emit-pairs.mjs`. Ce même défaut vaut pour les 18
+  modules, pas seulement `monitoring`/`reporting` — aucun des
+  `corpus/*.pairs.jsonl` committés n'a jamais été garanti identique à
+  une sortie CI réelle depuis la création de ce workflow.
+  Piste de solution (non implémentée) : ajouter un step
+  `git diff --exit-code corpus/` après `corpus:full` pour détecter la
+  divergence sans la corriger (fail loud plutôt que silence), ou un
+  step de commit-back automatique (`git commit -m "chore(corpus):
+  regenerate" && git push`) si le porteur du projet juge que le
+  contenu de `corpus/*.pairs.jsonl` doit être une source dérivée
+  auto-régénérée plutôt qu'un fichier édité à la main. Décision
+  produit à trancher, pas une correction technique unilatérale — même
+  posture qu'OPS-16.
 
 ### 3.6 Documentation & ADR spécifiques SEOS (ex-T13, sous-ensemble)
 
