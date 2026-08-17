@@ -1264,7 +1264,7 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   documentation — décision explicitement laissée au porteur du projet,
   par cohérence avec la façon dont ADR-0019 a traité une question
   similaire (« reste ouverte et n'est pas tranchée ici »).
-- **OPS-20** — ouvert, S, P1, alias `audit 2026-08-17, suite PLAT-6`.
+- **OPS-20** — **fait** (2026-08-17), S, P1, alias `audit 2026-08-17, suite PLAT-6`.
   **`corpus-full.yml` ne persiste jamais son résultat dans le dépôt.**
   Distinct d'OPS-16 (dérive du contenu legacy) : ici le problème existe
   même sans aucune dérive. `emit-pairs.mjs`, via `corpus:full`, écrit
@@ -1291,15 +1291,37 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   modules, pas seulement `monitoring`/`reporting` — aucun des
   `corpus/*.pairs.jsonl` committés n'a jamais été garanti identique à
   une sortie CI réelle depuis la création de ce workflow.
-  Piste de solution (non implémentée) : ajouter un step
-  `git diff --exit-code corpus/` après `corpus:full` pour détecter la
-  divergence sans la corriger (fail loud plutôt que silence), ou un
-  step de commit-back automatique (`git commit -m "chore(corpus):
-  regenerate" && git push`) si le porteur du projet juge que le
-  contenu de `corpus/*.pairs.jsonl` doit être une source dérivée
-  auto-régénérée plutôt qu'un fichier édité à la main. Décision
-  produit à trancher, pas une correction technique unilatérale — même
-  posture qu'OPS-16.
+  **Décision utilisateur** : « approche big tech ». Traduit en choix
+  concret entre les deux options posées (commit-back automatique vs
+  fail loud) : un run CI ne doit jamais pousser silencieusement sur
+  `main` sans revue humaine/PR, même pour un artefact dérivé — c'est le
+  principe qui prime chez les éditeurs qui traitent le contenu généré
+  comme une source à revoir, pas comme un cache à rafraîchir en
+  arrière-plan (le risque inverse : un bug du générateur commit-back
+  silencieusement une régression business dans le corpus, jamais vue
+  par personne). Retenu : **fail loud sur divergence**, pas de
+  commit-back automatique.
+  Implémenté : step `check:corpus-committed (aucune dérive vs
+  génération réelle)` ajouté à `.github/workflows/corpus-full.yml`
+  après `corpus:full` — `git diff --exit-code --stat -- corpus/`
+  échoue le job avec un message explicite (`::error::`) si le contenu
+  régénéré diverge de ce qui est committé sur `main`, en indiquant la
+  commande exacte à lancer pour corriger (`bun run corpus:full &&
+  git add corpus/ && git commit`). Aucune écriture automatique vers
+  `main` — seulement une détection bloquante.
+  Vérifié : `python3 -c "import yaml; yaml.safe_load(...)"` (YAML
+  valide) + `node tools/run-prettier.mjs --check` (formatage) verts.
+  **Limite explicite** : je n'ai pas pu exécuter ce nouveau step
+  moi-même (`bun`/`git diff` sur un vrai run `corpus:full` — sandbox
+  sans `bun`), donc je n'ai pas pu vérifier empiriquement que ce step
+  détecte bien la divergence actuelle (probable, documentée dans ce
+  même item, mais jamais confirmée au niveau octet) entre le JSONL
+  committé et une vraie sortie de `emit-pairs.mjs`. Le prochain run CI
+  de `corpus-full.yml` tranchera : soit il reste vert (le JSONV édité
+  à la main était en fait octet-identique à la sortie réelle), soit il
+  échoue sur `check:corpus-committed` et il faudra alors régénérer
+  `corpus/*.pairs.jsonl` via une vraie exécution de `corpus:full` et
+  committer le résultat exact.
 
 ### 3.6 Documentation & ADR spécifiques SEOS (ex-T13, sous-ensemble)
 

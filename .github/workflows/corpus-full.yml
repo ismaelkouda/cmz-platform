@@ -68,3 +68,28 @@ jobs:
 
       - name: Corpus full (--verify, sans --structural-only)
         run: bun run corpus:full
+
+      # OPS-20 (2026-08-17) : `corpus:full`/`emit-pairs.mjs` réécrit
+      # corpus/*.pairs.jsonl à chaque run, mais ce run se termine sans
+      # jamais commit/push ni publier d'artefact — le résultat recalculé
+      # disparaît avec le runner. Les fichiers committés sur `main`
+      # peuvent donc dériver silencieusement de ce que le générateur
+      # produirait réellement aujourd'hui, sans qu'aucun gate ne le
+      # détecte. Décision (pas de commit-back automatique — un run CI ne
+      # doit jamais pousser silencieusement sur `main` sans revue
+      # humaine/PR, même pour un artefact dérivé) : échouer bruyamment
+      # si `corpus:full` a produit un résultat différent de ce qui est
+      # committé, pour forcer une régénération explicite et revue plutôt
+      # que de laisser la dérive s'accumuler jusqu'à la prochaine
+      # investigation manuelle (voir OPS-15/17/18, découverts en mode
+      # pompier).
+      - name: check:corpus-committed (aucune dérive vs génération réelle)
+        run: |
+          if ! git diff --exit-code --stat -- corpus/; then
+            echo ""
+            echo "::error::corpus/*.pairs.jsonl committé diverge de la sortie réelle de 'bun run corpus:full'."
+            echo "Le contenu ci-dessus doit être régénéré et committé explicitement :"
+            echo "  bun run corpus:full && git add corpus/ && git commit"
+            echo "Ne jamais éditer corpus/*.pairs.jsonl à la main sans faire tourner corpus:full ensuite."
+            exit 1
+          fi
