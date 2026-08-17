@@ -92,5 +92,19 @@ jobs:
       # 18 fichiers à chaque exécution, même sans aucun changement
       # fonctionnel. `check-corpus-committed.mjs` compare paire par paire
       # après avoir retiré ces clés volatiles, pas un diff texte.
+      # DIAGNOSTIC TEMPORAIRE (2026-08-17) — OPS-20, 3e faux positif consécutif
+      # de check:corpus-committed. Les 2 rounds précédents (ran_at/at, puis
+      # verified_at) ont chacun été confirmés insuffisants par le run CI réel
+      # suivant. Cette étape affiche le diff texte brut ligne à ligne (avant
+      # tout filtrage de clé volatile) pour identifier le/les champ(s) réels
+      # en cause, plutôt que de deviner une 4e hypothèse sans preuve.
+      # À RETIRER une fois le diagnostic obtenu — voir taches-restantes.md OPS-20.
+      - name: DIAGNOSTIC — git diff brut corpus/shared.pairs.jsonl
+        run: |
+          echo "--- git diff --stat ---"
+          git diff --stat -- corpus/ || true
+          echo "--- git diff -U5 corpus/shared.pairs.jsonl (head -200) ---"
+          git diff -U5 -- corpus/shared.pairs.jsonl | head -200 || true
+
       - name: check:corpus-committed (aucune dérive vs génération réelle)
         run: bun run check:corpus-committed
