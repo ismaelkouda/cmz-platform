@@ -1426,6 +1426,81 @@ gouvernance, sécurité, licences.
           qu'aucun correctif n'est publié. À rouvrir si `less` cesse
           d'être une dépendance dormante (ajout d'un fichier `.less`) ou si
           les mainteneurs d'`image-size` publient un correctif.
+    - **OPS-12e — fait** (2026-08-17). `bun audit` (sans `--audit-level`,
+      donc incluant `moderate`/`low`, non bloquant en CI qui ne filtre
+      que `high`) remonte 13 vulnérabilités sur 6 paquets
+      supplémentaires. Analysés un par un avant toute action, avec la
+      même discipline que OPS-12c (CVSS/EPSS, chemin de dépendance
+      réel, vérification registre npm avant écriture) :
+        - `postcss` `<=8.5.22` (chemin direct + via `@angular/build`,
+          `@tailwindcss/postcss`, `@nx/angular`/`@nx/webpack`,
+          `@nx/web`/`@nx/webpack` — CVE-2026-69153, correctif incomplet
+          d'un CVE antérieur permettant la lecture arbitraire de
+          fichiers `.map` via `sourceMappingURL` quand `from` n'est pas
+          fourni ; CVSS 6.3, confidentialité faible uniquement) →
+          `overrides["postcss"] = "8.5.23"`, version patchée officielle
+          publiée par les mainteneurs, confirmée existante sur le
+          registre, compatible avec toutes les plages `^8.x` déclarées
+          par les consommateurs (aucun saut majeur).
+        - `undici` `<6.28.0` (via `@angular/cli` › `pacote` ›
+          `@npmcli/run-script` › `node-gyp` — build-time uniquement,
+          jamais en runtime) — désynchronisation de réponse HTTP via
+          `interceptors.retry()` (CVE-2026-16728, CVSS 4.8, nécessite un
+          upstream malveillant/défaillant et un proxy qui relaie
+          `Content-Length` sans le recalculer — inapplicable au profil
+          d'usage réel mais corrigé par prudence) →
+          `overrides["undici"] = "6.28.0"`, patch officiel dans la
+          ligne 6.x elle-même (pas de saut majeur), confirmé existant
+          sur le registre.
+        - `@hono/node-server` `<1.19.15` et `hono` `<4.12.34` (chemin
+          unique : `@angular/cli` › `@modelcontextprotocol/sdk` — cette
+          paire n'est qu'une dépendance transitive de l'outil CLI
+          Angular utilisé en local/CI, jamais chargée dans le code
+          applicatif servi aux utilisateurs) — plusieurs CVE moderate/low
+          (ReDoS CORS, fuite cross-utilisateur du cache SSR `memo()`,
+          désynchronisation proxy, ReDoS middleware langue) →
+          `overrides["@hono/node-server"] = "1.19.15"` et
+          `overrides["hono"] = "4.12.34"`, versions patchées confirmées
+          existantes sur le registre, compatibles avec les plages
+          `^1.19.9`/`^4.11.4` déclarées par
+          `@modelcontextprotocol/sdk@1.29.0` (aucun saut majeur).
+        - `uuid` `<11.1.1` (via `workspace:@cmz/shared-browser` ›
+          `exceljs` — `exceljs@4.4.0` déclare `"uuid": "^8.3.0"`, et
+          `8.3.2` est la dernière version publiée de la ligne 8.x ;
+          aucun correctif n'existe dans cette plage, le patch minimum
+          `11.1.1` casserait la contrainte semver déclarée par
+          `exceljs`) — **exception assumée et documentée, pas
+          d'`overrides` écrit.** CVE-2026-41907 (CVSS 6.3, intégrité
+          faible) : absence de vérification de bornes dans les méthodes
+          `v3()`/`v5()`/`v6()` de l'API `uuid` quand un buffer de sortie
+          est fourni explicitement par l'appelant. Vérifié
+          indépendamment (`grep -rn "require('uuid')"
+          node_modules/exceljs/lib`, confirmant une note d'audit
+          antérieure du 2026-08-03) : un seul point d'appel dans
+          `exceljs`, `cf-rule-ext-xform.js`, qui utilise exclusivement
+          `v4()` sans buffer — hors du périmètre exact de cette CVE.
+          Risque résiduel jugé négligeable. À rouvrir si `exceljs`
+          publie une version compatible `uuid >=11.1.1`, ou si un usage
+          direct de `uuid` avec buffer apparaît ailleurs dans le code.
+        - `esbuild` `>=0.27.3 <0.28.1` (via `@angular/build`,
+          `workspace:@cmz/administrative-boundary-data` › `vitest`,
+          `@nx/angular`/`@nx/web` › `@nx/webpack` ›
+          `terser-webpack-plugin`) — **probable faux positif, aucune
+          action.** La version verrouillée dans `bun.lock` est déjà
+          `esbuild@0.28.1`, qui se situe hors de la plage annoncée
+          comme vulnérable par `bun audit` lui-même (`<0.28.1`
+          exclusif). Pas d'`overrides` nécessaire ; à revérifier si
+          `bun audit` persiste à signaler ce paquet après une future
+          régénération du lockfile.
+      Toutes les versions `overrides` ci-dessus vérifiées existantes
+      sur le registre npm (`curl
+      https://registry.npmjs.org/<pkg>` + inspection `versions.keys()`)
+      avant écriture dans `package.json`. **`bun.lock` non régénéré
+      dans ce commit** — même limite structurelle que OPS-12c : `bun`
+      absent du sandbox d'exécution. Nécessite `bun install` (sans
+      `--frozen-lockfile`) côté utilisateur avant que ces `overrides`
+      prennent effet et que la CI (`bun install --frozen-lockfile`) ne
+      les valide.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 
