@@ -1482,16 +1482,40 @@ gouvernance, sécurité, licences.
           Risque résiduel jugé négligeable. À rouvrir si `exceljs`
           publie une version compatible `uuid >=11.1.1`, ou si un usage
           direct de `uuid` avec buffer apparaît ailleurs dans le code.
-        - `esbuild` `>=0.27.3 <0.28.1` (via `@angular/build`,
-          `workspace:@cmz/administrative-boundary-data` › `vitest`,
-          `@nx/angular`/`@nx/web` › `@nx/webpack` ›
-          `terser-webpack-plugin`) — **probable faux positif, aucune
-          action.** La version verrouillée dans `bun.lock` est déjà
-          `esbuild@0.28.1`, qui se situe hors de la plage annoncée
-          comme vulnérable par `bun audit` lui-même (`<0.28.1`
-          exclusif). Pas d'`overrides` nécessaire ; à revérifier si
-          `bun audit` persiste à signaler ce paquet après une future
-          régénération du lockfile.
+        - `esbuild` `>=0.27.3 <0.28.1` — **correction du diagnostic
+          initial du 2026-08-17** : la première analyse n'avait vérifié
+          que la résolution top-level (`esbuild@0.28.1` via
+          `@angular/build`, hors plage vulnérable) et avait conclu à un
+          faux positif. Après régénération réelle de `bun.lock` par
+          l'utilisateur (`bun install`), `bun audit` a persisté à
+          signaler ce paquet — vérification approfondie du lockfile
+          (`grep -o '"esbuild@[0-9.]*"' bun.lock`) révèle en fait
+          **deux résolutions distinctes coexistant dans le graphe** :
+          `esbuild@0.28.1` au niveau `@angular/build` (version exacte,
+          hors plage vulnérable) et `esbuild@0.27.7` sous
+          `vite@7.3.5` (`"esbuild": "^0.27.0"`), cette dernière bien
+          `>=0.27.3 <0.28.1` — dans la plage vulnérable. Ce n'était donc
+          pas un faux positif : un vrai second exemplaire vulnérable
+          existe, manqué par la première analyse faute d'avoir vérifié
+          l'exhaustivité des résolutions imbriquées avant de conclure.
+          **Exception assumée, pas d'`overrides` écrit** : en semver
+          `0.x`, `^0.27.0` se comporte comme un verrou strict sur la
+          ligne `0.27.x` (pas d'extension au `0.28.x`) ; aucune version
+          `0.27.x` publiée n'atteint `0.28.1`, donc aucune version
+          compatible avec la contrainte déclarée par `vite@7.3.5`
+          n'existe hors de la plage vulnérable — un `overrides` forcé à
+          `0.28.x` violerait cette contrainte et risquerait de casser
+          la résolution de `vite`. Risque résiduel jugé négligeable :
+          GHSA-g7r4-m6w7-qqqr (severity low, CVSS 2.5, `AV:L/AC:H/PR:L`)
+          concerne un traversal de chemin dans le dev server
+          `esbuild --servedir` via des backslashes, **exclusivement
+          exploitable sous Windows** (`path.Clean()` de Go est
+          POSIX-only), et nécessite déjà des privilèges locaux ; ce
+          dépôt exécute sa CI sur `ubuntu-24.04`/`macos-14`
+          uniquement (matrice `check:publication-durability`) et
+          n'expose jamais ce dev server en production. À rouvrir si
+          `vite` publie une version majeure compatible `esbuild
+          >=0.28.1`, ou si une matrice CI Windows est introduite.
       Toutes les versions `overrides` ci-dessus vérifiées existantes
       sur le registre npm (`curl
       https://registry.npmjs.org/<pkg>` + inspection `versions.keys()`)
