@@ -98,6 +98,37 @@ cette composition fermée ; elle ne revendique pas les workflows arbitraires.
 Cette indépendance est technique : la définition formalise le comportement déjà
 connu du code, elle ne constitue pas une seconde autorité métier.
 
+**Mise à jour 2026-08-18 (PLAT-4bis)** : le gap « second domaine `workflow-action`
+réel » cité par les versions précédentes de ce document est fermé. Le moteur
+(compilateur `core/workflow-action-authoring.mjs`, IR
+`core/workflow-action-model.mjs`, codegen `renderers/workflow-shared.mjs`, Oracle
+`core/workflow-runtime-oracle.mjs`) a été généralisé pour dériver son vocabulaire
+d'opérations/permissions/statuts de la définition elle-même (détection des 3
+rôles structurels par forme — `entry`/`decision`/`export` — plutôt que par
+comparaison à des ids littéraux `take`/`qualify`/`export`), et non plus
+seulement `feature.id`/`feature.name`. Preuve : une définition indépendante
+hors legacy, vocabulaire disjoint (`claim`/`moderate`/`remove`/`export`, états
+`submitted/under-review/published/removed`,
+`tools/generator-platform/sources/content-moderation-workflow.definition.json`),
+compile, génère Angular + ReactJS, type-check strict des deux arbres, passe
+l'Oracle runtime complet (permission refusée, garde d'état, branches
+accept/reject, callback asynchrone), et détecte une mutation du graphe sur les
+deux cibles — fixture de non-régression permanente
+(`tools/generator-platform/content-moderation-workflow.test.mjs`). CI réelle
+confirmée verte après correctif d'un appelant `assertWorkflowOracle` manqué par
+la vérification locale
+(`https://github.com/ismaelkouda/cmz-platform/actions/runs/32136111520/job/95707805436`,
+commit `f73d5fa`). Voir `taches-restantes.md`, entrée PLAT-4bis, pour le détail
+complet (4 fichiers généralisés un à la fois, baseline 30/30 revérifiée après
+chacun, 161/161 tests core, angle mort stack-tests découvert et fermé).
+**Ce que ceci ne prouve pas encore** : `action-request` (contrairement à
+`workflow-action`) n'a, lui, jamais eu de second domaine construit spécifiquement
+pour prouver sa généricité au sens strict — `support`/`authentication` partagent
+déjà la même forme d'exécution documentée ci-dessus (« elle n'ajoute pas une
+troisième source équivalente à la matrice `authentication` »). Et le « budget
+d'extensions hors modèle » exigé par le claim § 6 n'a jamais été mesuré nulle
+part dans ce dépôt — un gap distinct, non touché par PLAT-4bis.
+
 PLAT-5F possède un contrat exécutable de durabilité. Il accepte uniquement
 APFS/macOS et ext4/Linux locaux, vérifie le type réel par `statfs`, exerce les
 primitives de publication, puis tue réellement un processus enfant après
@@ -232,13 +263,18 @@ de revue dépasse durablement celui d'un générateur spécialisé.
 > franchit désormais M3/M4 — première exécution `ci.yml` verte confirmée
 > (`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
 > commit `24729f3`), condition normative posée depuis PLAT-1/PLAT-3/PLAT-5F.
-> Cette tranche precise n'est plus « refusée avant CI verte ». La maturité
-> **globale de la plateforme** reste néanmoins tirée vers le bas par les
-> maillons non encore promus, minimum au sens strict du §1 : `Presentation
-> intent neutre` (M1, conception Figma uniquement, PLAT-4 second domaine réel
-> encore ouvert), `OpenAPI`/`Description textuelle`/`Tests runtime` (M0–M1,
-> §3), `Repair sous contraintes` (M2, exercice partiel). Le claim « plateforme
-> générique » (§6, matrice 2 sources × 2 cibles + un second domaine réel +
-> budget d'extensions mesuré) reste distinct et non encore rempli — ne pas
-> confondre la promotion d'une tranche prouvée avec la promotion de
-> l'enveloppe entière.
+> Cette tranche precise n'est plus « refusée avant CI verte ».
+> **Mise à jour 2026-08-18 (PLAT-4bis)** : le second domaine `workflow-action`
+> réel (`content-moderation-workflow`, vocabulaire disjoint de `requests-workflow`,
+> voir §4) est prouvé et confirmé par CI réelle — ce gap précis, cité par la
+> version précédente de cette note, est fermé. La maturité **globale de la
+> plateforme** reste néanmoins tirée vers le bas par les maillons non encore
+> promus, minimum au sens strict du §1 : `Presentation intent neutre` (M1,
+> conception Figma uniquement), `OpenAPI`/`Description textuelle`/`Tests
+> runtime` (M0–M1, §3), `Repair sous contraintes` (M2, exercice partiel). Le
+> claim « plateforme générique » (§6) exige aussi un **budget d'extensions
+> hors modèle mesuré et non masqué par `Custom`** — cette mesure n'a jamais été
+> produite dans ce dépôt, sur aucune tranche, et reste donc le gap concret le
+> plus proche pour ce claim maintenant que le second domaine `workflow-action`
+> est acquis. Ne pas confondre la promotion d'une tranche prouvée avec la
+> promotion de l'enveloppe entière.

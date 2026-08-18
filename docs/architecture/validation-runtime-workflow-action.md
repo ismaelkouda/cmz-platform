@@ -139,3 +139,13 @@ stack. Il faut obtenir une première CI verte, puis éprouver ce contrat sur un
 second domaine réel. Si ce domaine exige de nouveaux verbes ou une nouvelle
 topologie, l'extension doit être explicite et accompagnée de mutants ; elle ne
 doit pas passer par un échappatoire `Custom`.
+
+**Suite (2026-08-18, PLAT-4bis)** : cette recommandation est exécutée. Le
+moteur a été généralisé (compilateur, IR, codegen, Oracle) pour dériver son
+vocabulaire de la définition elle-même par forme structurelle
+(`entry`/`decision`/`export`), pas par comparaison à des ids littéraux. La
+preuve retenue est `content-moderation-workflow`
+(`claim`/`moderate`/`remove`/`export`, vocabulaire disjoint de
+`requests-workflow`), sans échappatoire `Custom` — voir
+`generation-platform-capability-matrix.md` §4 et `taches-restantes.md`, entrée
+PLAT-4bis, pour le détail complet et la référence CI.

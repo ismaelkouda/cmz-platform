@@ -872,6 +872,24 @@ Figma, désormais source partielle différée :
   sur le commit `f73d5fa`. PLAT-4bis est maintenant clos avec la CI
   réelle comme preuve finale, pas seulement la vérification locale
   partielle — cohérent avec la leçon retenue ci-dessus.
+  **Documentation de suivi resynchronisée (2026-08-18)** : détecté par
+  relecture que `generation-platform-capability-matrix.md` (§4, §9),
+  `validation-runtime-workflow-action.md` (avis Principal Engineer) et
+  `conception-compositions-evolutives-patterns-memorises.md` (étape H)
+  affirmaient encore « second domaine `workflow-action` réel encore
+  ouvert » après la clôture réelle de PLAT-4bis — même classe de risque
+  que les incidents T13-14/T13-16/T13-17 (documentation qui diverge du
+  code réel), ici sur un claim de maturité plutôt qu'un script CI.
+  Corrigé aux 3 endroits : le gap est fermé, référencé à PLAT-4bis et à
+  la CI verte `32136111520`. **Nouveau gap distinct rendu visible par
+  cette correction** : le claim « plateforme générique » (§6 de la
+  matrice) exige aussi un « budget d'extensions hors modèle mesuré et
+  non masqué par `Custom` » — cette mesure n'a jamais été produite dans
+  ce dépôt, sur aucune tranche. Ce n'est pas un gap créé par PLAT-4bis,
+  c'était déjà vrai avant, mais il restait masqué derrière le gap «
+  second domaine » plus visible. Annoté dans la matrice (§9), pas
+  encore budgété ni traité — décision de portée/méthode à trancher
+  séparément avant d'engager le travail.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

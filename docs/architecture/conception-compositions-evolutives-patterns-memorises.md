@@ -999,6 +999,12 @@ cibles, soit refusée avant génération.
 
 **Sortie :** le modèle résiste à une composition comportementale complexe.
 
+**Réalisé (2026-08-18, PLAT-4bis)** : les 4 conditions de cette étape sont
+remplies par `content-moderation-workflow` (vocabulaire `claim`/`moderate`/
+`remove`/`export`, disjoint de `take`/`qualify`/`export`), CI réelle
+confirmée verte. Voir `generation-platform-capability-matrix.md` §4 et
+`taches-restantes.md`, entrée PLAT-4bis.
+
 ### Étape I — Retrait contrôlé
 
 - déprécier les compilateurs et renderers spécialisés ;
