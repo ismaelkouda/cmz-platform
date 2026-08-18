@@ -410,13 +410,13 @@ directives suivantes :
 <!-- BEGIN:GENERATED:monorepo-status -->
 | Indicateur                | Valeur                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Dernière génération       | **2026-08-16** (`bun run generate:status`)                                                                      |
+| Dernière génération       | **2026-08-18** (`bun run generate:status`)                                                                      |
 | Modules livrés            | **19** (voir [`STATUS.md`](./STATUS.md))                                                         |
 | Packages Nx               | **73** (72 libs + 1 app)                                              |
 | Fichiers TypeScript       | **2 730** hors tests / **2 979** total (249 specs)                 |
 | Corpus SEOS               | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                       |
-| Corpus SEOS — nature (N-6)| **585 correspondances** + **922 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |
-| Corpus SEOS — couverture (N-4) | **914 / 2 730 fichiers libs/ hors tests → 33.5 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
+| Corpus SEOS — nature (N-6)| **583 correspondances** + **924 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |
+| Corpus SEOS — couverture (N-4) | **918 / 2 730 fichiers libs/ hors tests → 33.6 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
 | Périmètre applicatif (M-7)| **55 / 55 entités** construites (`docs/architecture/scope.json`, 0 manquantes — voir [ADR-0018](./docs/adr/0018-perimetre-team-organization.md)) |
 | Bundle initial (prod, raw)| **872.78 kB** ([`bundle-metrics.json`](./apps/backoffice-angular/bundle-metrics.json), 2026-08-11) |
 | Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                         |
