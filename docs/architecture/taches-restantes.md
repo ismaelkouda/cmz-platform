@@ -1264,7 +1264,7 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   documentation — décision explicitement laissée au porteur du projet,
   par cohérence avec la façon dont ADR-0019 a traité une question
   similaire (« reste ouverte et n'est pas tranchée ici »).
-- **OPS-20** — **ouvert** (2026-08-17), S, P1, alias `audit 2026-08-17, suite PLAT-6`.
+- **OPS-20** — **fait** (2026-08-18), S, P1, alias `audit 2026-08-17, suite PLAT-6`.
   **`corpus-full.yml` ne persiste jamais son résultat dans le dépôt.**
   Distinct d'OPS-16 (dérive du contenu legacy) : ici le problème existe
   même sans aucune dérive. `emit-pairs.mjs`, via `corpus:full`, écrit
@@ -1448,9 +1448,28 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   "full"` (18/18). Aucun signal de régression détecté : copie des 18
   fichiers effectuée (`cp corpus-full-regenerated-.../*.pairs.jsonl
   corpus/`), JSON revalidé ligne par ligne sur les 18 fichiers après
-  copie. Commit à suivre + nouveau run `corpus-full.yml` pour
-  confirmation finale que `check:corpus-committed` passe au vert —
-  seule preuve définitive que la boucle des 4 itérations est close.
+  copie. Committé (`e78be02`).
+  **Clôture confirmée (2026-08-18).** Commit du corpus régénéré a
+  mécaniquement fait dériver `check:docs-freshness` (E-5/P1-9) —
+  attendu et correct, pas un nouveau bug : les 2 changements de statut
+  (`verified→n/a`) déplacent les compteurs agrégés dans
+  `STATUS.md`/`LLM_CONTEXT.md` (585→583 correspondances, 922→924
+  décisions `n/a`, couverture fichiers 914→918, 33.5%→33.6%). Corrigé
+  via `bun run generate:status` exécuté par l'utilisateur en local
+  (commit `e0d66d6`), pas de valeurs éditées à la main. **Run CI
+  `corpus-full.yml` suivant (déclenché par `e0d66d6`, run
+  [32126888570](https://github.com/ismaelkouda/cmz-platform/actions/runs/32126888570))
+  : `Success`, 22m0s au total (job `corpus-full` : 19m47s). `bun run
+  check:corpus-committed` passe au vert pour la première fois** —
+  preuve CI réelle, indépendante de toute simulation locale, que le
+  corpus committé sur `main` correspond enfin à la sortie réelle de
+  `corpus:full`. Boucle des 4 itérations OPS-20 close : (1) `git diff`
+  brut → faux positif `ran_at`/`at` ; (2) `verified_at` manqué → faux
+  positif ; (3) root cause réelle `oracle_report.mode`
+  structural-only/full, tranchée non-négociable par ADR-0015/ADR-0029,
+  corpus jamais régénéré en mode `full` depuis sa création ; (4)
+  régénération réelle via artefact CI + vérification programmatique
+  paire par paire + commit + confirmation CI verte end-to-end.
 
 ### 3.6 Documentation & ADR spécifiques SEOS (ex-T13, sous-ensemble)
 
