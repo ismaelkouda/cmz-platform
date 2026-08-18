@@ -101,7 +101,10 @@ test('le contrat auteur refuse les compositions workflow non supportées', async
 
     const wrongTopology = structuredClone(definition);
     wrongTopology.operations[2].topology = 'sequential';
-    assert.throws(() => compile(wrongTopology), /must use async_callback/);
+    assert.throws(
+        () => compile(wrongTopology),
+        /does not match a supported structural role/
+    );
 
     const reorderedEffects = structuredClone(definition);
     reorderedEffects.operations[0].steps.reverse();
@@ -174,13 +177,22 @@ test('une mutation du graphe change les deux arbres et est visible par l’Oracl
     );
     const runtime = await materializeWorkflowRuntime(mutated);
     try {
+        // L'Oracle vérifie le code généré depuis `mutatedModel` contre les
+        // attentes du modèle ORIGINAL (non muté) : c'est cette
+        // divergence — comportement généré vs comportement attendu — que
+        // le test doit détecter, pas une comparaison du modèle muté avec
+        // lui-même (toujours cohérente par construction).
         await assert.rejects(() =>
-            assertWorkflowOracle((ports) =>
-                angularExecutor(runtime.angular, ports)
+            assertWorkflowOracle(
+                (ports) => angularExecutor(runtime.angular, ports),
+                original.model
             )
         );
         await assert.rejects(() =>
-            assertWorkflowOracle((ports) => reactExecutor(runtime.react, ports))
+            assertWorkflowOracle(
+                (ports) => reactExecutor(runtime.react, ports),
+                original.model
+            )
         );
     } finally {
         await runtime.cleanup();
@@ -297,8 +309,9 @@ test('Angular exécute états, permissions, branches et callback asynchrone', as
     const targets = await computeWorkflowTargets();
     const runtime = await materializeWorkflowRuntime(targets);
     try {
-        await assertWorkflowOracle((ports) =>
-            angularExecutor(runtime.angular, ports)
+        await assertWorkflowOracle(
+            (ports) => angularExecutor(runtime.angular, ports),
+            targets.model
         );
     } finally {
         await runtime.cleanup();
@@ -309,8 +322,9 @@ test('ReactJS exécute le même oracle comportemental', async () => {
     const targets = await computeWorkflowTargets();
     const runtime = await materializeWorkflowRuntime(targets);
     try {
-        await assertWorkflowOracle((ports) =>
-            reactExecutor(runtime.react, ports)
+        await assertWorkflowOracle(
+            (ports) => reactExecutor(runtime.react, ports),
+            targets.model
         );
     } finally {
         await runtime.cleanup();

@@ -3,15 +3,30 @@ import {
     validateWorkflowEvidence,
 } from './workflow-action-model.mjs';
 
-const expectedPermissions = ['take', 'qualify', 'reject', 'export'];
-const expectedSteps = {
-    take: [
-        'external_call:take',
-        'notify:take',
+/**
+ * Généralisation (PLAT-4bis, 2026-08-18) : le contrat `workflow-action`
+ * reste borné à exactement 3 RÔLES structurels — une transition d'entrée
+ * sans branche, une transition de décision à 2 branches accept/reject, un
+ * export async à 2 branches rows-found/no-rows — mais le VOCABULAIRE
+ * (`permissions`, `operations[].id`) n'est plus figé sur
+ * `take`/`qualify`/`reject`/`export`. Les rôles sont détectés
+ * structurellement (kind/topology/branches), pas par nom littéral. Les
+ * `steps`/`rules` attendus par rôle restent ceux déjà supportés par le
+ * renderer et l'Oracle (`renderers/workflow-shared.mjs`,
+ * `core/workflow-runtime-oracle.mjs`) — cette limite est réelle et
+ * documentée, pas contournée ici. Baseline de non-régression :
+ * `node --test workflow-action.test.mjs` (cas `requests-workflow`
+ * inchangé, toujours vocabulaire take/qualify/export).
+ * @see docs/architecture/taches-restantes.md, entrée PLAT-4bis.
+ */
+const expectedStepsByRole = {
+    entry: [
+        'external_call:{id}',
+        'notify:{id}',
         'refresh:queues',
         'refresh:tasks',
     ],
-    qualify: [
+    decision: [
         'validate:qualification',
         'external_call:decision',
         'notify:decision',
@@ -20,9 +35,9 @@ const expectedSteps = {
     ],
     export: ['callback:fetch-rows', 'branch:rows', 'await:write-file'],
 };
-const expectedRules = {
-    take: [],
-    qualify: [
+const expectedRulesByRole = {
+    entry: [],
+    decision: [
         'rejected_requires_reason_comment',
         'callback_requires_type',
         'edit_or_callback_requires_comment_and_fields',
@@ -47,59 +62,92 @@ function sameSet(actual, expected) {
     );
 }
 
-function sameOrder(actual, expected) {
+/**
+ * `entry` autorise un motif `{id}` dans les steps attendus (ex.
+ * `external_call:{id}`, `notify:{id}`) car ce rôle porte le nom de
+ * l'opération elle-même dans ses propres steps (voir
+ * `requests-workflow.definition.json` : `external_call:take`,
+ * `notify:take`) — ce n'est pas un vocabulaire partagé entre domaines,
+ * donc pas figeable en constante littérale comme `decision`/`export`.
+ */
+function sameOrderWithId(actual, expectedTemplate, id) {
+    const expected = expectedTemplate.map((step) => step.replace('{id}', id));
     return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
-function operation(definition, id) {
-    return definition.operations.find((candidate) => candidate.id === id);
+/**
+ * Détecte le rôle structurel d'une opération sans dépendre de son `id`.
+ * @param {object} op
+ * @returns {'entry' | 'decision' | 'export' | null}
+ */
+function detectRole(op) {
+    if (op.kind === 'export' && op.topology === 'async_callback') {
+        return 'export';
+    }
+    if (op.kind === 'transition' && op.topology === 'sequential') {
+        if (op.branches.length === 0) return 'entry';
+        if (op.to === 'branch' && op.branches.length === 2) return 'decision';
+    }
+    return null;
 }
 
 export function validateWorkflowActionDefinition(definition) {
     invariant(
-        sameSet(definition.permissions, expectedPermissions),
-        `permissions must be exactly ${expectedPermissions.join(', ')}`
+        new Set(definition.permissions).size === definition.permissions.length,
+        'permissions must not contain duplicates'
     );
     invariant(
-        sameSet(
-            definition.operations.map(({ id }) => id),
-            ['take', 'qualify', 'export']
-        ),
-        'operations must be exactly take, qualify, export'
+        definition.operations.length === 3,
+        'operations must declare exactly 3 entries'
     );
-    const take = operation(definition, 'take');
-    const qualify = operation(definition, 'qualify');
-    const exportOperation = operation(definition, 'export');
-    invariant(
-        take.kind === 'transition' && take.topology === 'sequential',
-        'take must be a sequential transition'
-    );
-    invariant(
-        qualify.kind === 'transition' && qualify.topology === 'sequential',
-        'qualify must be a sequential transition'
-    );
-    invariant(
-        exportOperation.kind === 'export' &&
-            exportOperation.topology === 'async_callback',
-        'export must use async_callback topology'
-    );
-    for (const candidate of [take, qualify, exportOperation]) {
+
+    const roles = new Map();
+    for (const op of definition.operations) {
+        const role = detectRole(op);
         invariant(
-            sameOrder(candidate.steps, expectedSteps[candidate.id]),
+            role !== null,
+            `${op.id}: does not match a supported structural role (entry, decision, export)`
+        );
+        invariant(
+            !roles.has(role),
+            `operations: more than one candidate for role ${role}`
+        );
+        roles.set(role, op);
+    }
+    for (const role of ['entry', 'decision', 'export']) {
+        invariant(
+            roles.has(role),
+            `operations must include one operation for role ${role}`
+        );
+    }
+
+    const entry = roles.get('entry');
+    const decision = roles.get('decision');
+    const exportOperation = roles.get('export');
+
+    for (const [role, candidate] of roles) {
+        const expectedSteps = expectedStepsByRole[role];
+        const matchesSteps =
+            role === 'entry'
+                ? sameOrderWithId(candidate.steps, expectedSteps, candidate.id)
+                : JSON.stringify(candidate.steps) ===
+                  JSON.stringify(expectedSteps);
+        invariant(
+            matchesSteps,
             `${candidate.id}: unsupported step composition`
         );
         invariant(
-            sameSet(candidate.rules, expectedRules[candidate.id]),
+            sameSet(candidate.rules, expectedRulesByRole[role]),
             `${candidate.id}: unsupported rule set`
         );
     }
-    invariant(take.branches.length === 0, 'take cannot declare branches');
+    invariant(entry.branches.length === 0, 'entry cannot declare branches');
     invariant(
         sameSet(
-            qualify.branches.map(({ when }) => when),
+            decision.branches.map(({ when }) => when),
             ['accepted', 'rejected']
         ),
-        'qualify requires accepted and rejected branches'
+        'decision requires accepted and rejected branches'
     );
     invariant(
         sameSet(

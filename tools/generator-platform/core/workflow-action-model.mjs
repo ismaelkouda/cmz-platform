@@ -35,17 +35,22 @@ export function validateWorkflowBehavior(model) {
             model.state.qualification_statuses.length,
         '$.state.qualification_statuses: duplicate'
     );
+    // PLAT-4bis (2026-08-18) : les noms d'états (`pending`/`in-progress`)
+    // ne sont plus exigés littéralement — le vocabulaire de `state` est
+    // libre, seule la FORME (au moins 2 statuts d'objet, au moins 2
+    // statuts de qualification, avec un état initial référencé par une
+    // opération `from`) est vérifiée plus bas, croisée avec les
+    // opérations réelles. Le rôle structurel de chaque état (initial,
+    // intermédiaire, terminal) est déduit du graphe des transitions, pas
+    // du nom. Voir docs/architecture/taches-restantes.md, entrée
+    // PLAT-4bis.
     assert(
-        model.state.statuses.includes('pending'),
-        '$.state: pending missing'
+        model.state.statuses.length >= 2,
+        '$.state.statuses: at least 2 statuses required (initial + reachable)'
     );
     assert(
-        model.state.statuses.includes('in-progress'),
-        '$.state: in-progress missing'
-    );
-    assert(
-        model.state.qualification_statuses.includes('pending'),
-        '$.state: qualification pending missing'
+        model.state.qualification_statuses.length >= 2,
+        '$.state.qualification_statuses: at least 2 statuses required'
     );
     assert(Array.isArray(model.permissions), '$.permissions: array');
     const permissionIds = new Set(model.permissions);
@@ -154,9 +159,11 @@ export function validateWorkflowBehavior(model) {
         }
     }
 
-    assert(operationIds.has('take'), '$.operations: take missing');
-    assert(operationIds.has('qualify'), '$.operations: qualify missing');
-    assert(operationIds.has('export'), '$.operations: export missing');
+    // PLAT-4bis : la présence des 3 rôles structurels (entry/decision/
+    // export) est vérifiée par `validateWorkflowActionDefinition`
+    // (`workflow-action-authoring.mjs`), appelée avant cette fonction
+    // dans `compileWorkflowActionDefinition` — pas de contrainte
+    // littérale sur les `id` ici.
     return model;
 }
 

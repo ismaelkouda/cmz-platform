@@ -1,7 +1,59 @@
-import { expandProfileValue } from './shared.mjs';
+import { camelCase, expandProfileValue } from './shared.mjs';
+
+/**
+ * Généralisation (PLAT-4bis, 2026-08-18) : ce fichier générait auparavant
+ * du code TypeScript avec les noms littéraux `take`/`qualify`/`export`
+ * codés en dur (types, méthodes de classe, appels de ports). Les rôles
+ * structurels sont désormais détectés depuis le modèle (comme dans
+ * `core/workflow-action-authoring.mjs`) et les identifiants TypeScript
+ * (noms de méthode, littéraux de discrimination `kind`) sont dérivés de
+ * `operation.id` réel — le vocabulaire de la définition. Les invariants
+ * structurels réels (3 rôles, steps/rules attendus par rôle) restent
+ * vérifiés ici, en défense en profondeur du compilateur.
+ *
+ * Limite explicite non levée par ce chantier : les champs de
+ * qualification riches (`QualificationEditFields` — latitude/longitude/
+ * placePhoto…) restent spécifiques au domaine `requests` et ne sont émis
+ * que si la branche d'acceptation déclare `approvalType` avec les
+ * variantes `edit`/`callback`. Un domaine qui n'utilise pas ces variantes
+ * (ex. `content-moderation-workflow`) ne les déclenche jamais. Étendre le
+ * schéma pour déclarer des champs de formulaire arbitraires est un
+ * chantier séparé, non engagé ici (voir docs/architecture/
+ * taches-restantes.md, entrée PLAT-4bis).
+ * @see docs/architecture/taches-restantes.md, entrée PLAT-4bis.
+ */
 
 function union(values) {
     return values.map((value) => `'${value}'`).join(' | ');
+}
+
+function detectRole(op) {
+    if (op.kind === 'export' && op.topology === 'async_callback') {
+        return 'export';
+    }
+    if (op.kind === 'transition' && op.topology === 'sequential') {
+        if (op.branches.length === 0) return 'entry';
+        if (op.to === 'branch' && op.branches.length === 2) return 'decision';
+    }
+    return null;
+}
+
+/** @returns {{ entry: object, decision: object, exportOperation: object }} */
+function resolveRoles(model) {
+    const roles = new Map();
+    for (const op of model.operations) {
+        const role = detectRole(op);
+        if (role) roles.set(role, op);
+    }
+    const entry = roles.get('entry');
+    const decision = roles.get('decision');
+    const exportOperation = roles.get('export');
+    if (!entry || !decision || !exportOperation) {
+        throw new Error(
+            'workflow renderer: missing entry, decision or export role'
+        );
+    }
+    return { entry, decision, exportOperation };
 }
 
 export function assertWorkflowRendererInput(model, profile, expectedProfile) {
@@ -10,11 +62,9 @@ export function assertWorkflowRendererInput(model, profile, expectedProfile) {
             `workflow renderer ${expectedProfile}: received ${profile.id}`
         );
     }
-    for (const operation of ['take', 'qualify', 'export']) {
-        if (!model.operations.some((candidate) => candidate.id === operation)) {
-            throw new Error(`workflow renderer: missing ${operation}`);
-        }
-    }
+    // Lève si un rôle structurel manque — remplace l'ancienne vérification
+    // par id littéral (`take`/`qualify`/`export`).
+    resolveRoles(model);
     return {
         outputRoot: expandProfileValue(
             profile.output_root,
@@ -30,6 +80,7 @@ export function assertWorkflowRendererInput(model, profile, expectedProfile) {
 }
 
 export function renderWorkflowModels(model) {
+    const { entry, decision, exportOperation } = resolveRoles(model);
     const permissionFields = model.permissions
         .map((permission) => `    readonly ${permission}: boolean;`)
         .join('\n');
@@ -61,9 +112,9 @@ export interface QualificationEditFields {
 }
 
 export type WorkflowCommand =
-    | { readonly kind: 'take'; readonly itemId: string }
+    | { readonly kind: '${entry.id}'; readonly itemId: string }
     | {
-          readonly kind: 'qualify';
+          readonly kind: '${decision.id}';
           readonly itemId: string;
           readonly decision: 'accepted' | 'rejected';
           readonly comment: string;
@@ -72,7 +123,7 @@ export type WorkflowCommand =
           readonly callbackType: string | null;
           readonly editFields?: QualificationEditFields;
       }
-    | { readonly kind: 'export'; readonly filter: Readonly<Record<string, unknown>> };
+    | { readonly kind: '${exportOperation.id}'; readonly filter: Readonly<Record<string, unknown>> };
 
 export type ExportOutcome = 'exported' | 'no-data' | 'failed';
 
@@ -82,7 +133,7 @@ export interface WorkflowResult {
 }
 
 export interface WorkflowPorts {
-    call(operation: 'take' | 'approve' | 'reject', payload: unknown): Promise<void>;
+    call(operation: '${entry.id}' | 'approve' | 'reject', payload: unknown): Promise<void>;
     fetchRows(filter: Readonly<Record<string, unknown>>): Promise<readonly unknown[]>;
     writeFile(rows: readonly unknown[]): Promise<void>;
     refresh(resource: 'queues' | 'tasks' | 'all'): void;
@@ -90,12 +141,6 @@ export interface WorkflowPorts {
     setBusy(operation: 'action' | 'export', busy: boolean): void;
 }
 `;
-}
-
-function findOperation(model, id) {
-    const found = model.operations.find((candidate) => candidate.id === id);
-    if (!found) throw new Error(`workflow renderer: missing ${id}`);
-    return found;
 }
 
 function requireRule(operation, rule) {
@@ -115,13 +160,11 @@ function requireExactSteps(operation, expected) {
 }
 
 export function renderWorkflowEngine(model) {
-    const take = findOperation(model, 'take');
-    const qualify = findOperation(model, 'qualify');
-    const exportOperation = findOperation(model, 'export');
-    const accepted = qualify.branches.find(
+    const { entry, decision, exportOperation } = resolveRoles(model);
+    const accepted = decision.branches.find(
         (branch) => branch.when === 'accepted'
     );
-    const rejected = qualify.branches.find(
+    const rejected = decision.branches.find(
         (branch) => branch.when === 'rejected'
     );
     if (
@@ -140,10 +183,10 @@ export function renderWorkflowEngine(model) {
         'callback_requires_type',
         'edit_or_callback_requires_comment_and_fields',
     ]) {
-        requireRule(qualify, rule);
+        requireRule(decision, rule);
     }
-    if (qualify.rules.length !== 3) {
-        throw new Error('workflow renderer: qualify has unsupported rules');
+    if (decision.rules.length !== 3) {
+        throw new Error('workflow renderer: decision has unsupported rules');
     }
     for (const rule of [
         'not_loading',
@@ -154,16 +197,16 @@ export function renderWorkflowEngine(model) {
     ]) {
         requireRule(exportOperation, rule);
     }
-    if (take.rules.length !== 0 || exportOperation.rules.length !== 5) {
+    if (entry.rules.length !== 0 || exportOperation.rules.length !== 5) {
         throw new Error('workflow renderer: unsupported rule composition');
     }
-    requireExactSteps(take, [
-        'external_call:take',
-        'notify:take',
+    requireExactSteps(entry, [
+        `external_call:${entry.id}`,
+        `notify:${entry.id}`,
         'refresh:queues',
         'refresh:tasks',
     ]);
-    requireExactSteps(qualify, [
+    requireExactSteps(decision, [
         'validate:qualification',
         'external_call:decision',
         'notify:decision',
@@ -175,6 +218,15 @@ export function renderWorkflowEngine(model) {
         'branch:rows',
         'await:write-file',
     ]);
+
+    const entryMethod = camelCase(entry.id);
+    const decisionMethod = camelCase(decision.id);
+    // Nom de méthode dédié pour le rôle export (évite la collision
+    // exportOperation.id === 'export' -> exportExport()) : suffixe
+    // `List`, cohérent avec le nom historique `exportList` du cas
+    // requests-workflow tout en restant dérivé de l'id réel.
+    const exportMethod = camelCase(`${exportOperation.id}-list`);
+
     return `import type {
     QualificationEditFields,
     WorkflowCommand,
@@ -209,34 +261,34 @@ export class WorkflowActionEngine {
     constructor(private readonly ports: WorkflowPorts) {}
 
     async execute(command: WorkflowCommand, context: WorkflowContext): Promise<WorkflowResult> {
-        if (command.kind === 'take') return this.take(command, context);
-        if (command.kind === 'qualify') return this.qualify(command, context);
-        return this.exportList(command.filter, context);
+        if (command.kind === '${entry.id}') return this.${entryMethod}(command, context);
+        if (command.kind === '${decision.id}') return this.${decisionMethod}(command, context);
+        return this.${exportMethod}(command.filter, context);
     }
 
-    private async take(
-        command: Extract<WorkflowCommand, { kind: 'take' }>,
+    private async ${entryMethod}(
+        command: Extract<WorkflowCommand, { kind: '${entry.id}' }>,
         context: WorkflowContext
     ): Promise<WorkflowResult> {
-        requireValue(context.permissions.${take.permission}, 'permission.${take.permission}.denied');
-        requireValue(context.status === '${take.from[0]}', 'state.take.invalid');
+        requireValue(context.permissions.${entry.permission}, 'permission.${entry.permission}.denied');
+        requireValue(context.status === '${entry.from[0]}', 'state.${entry.id}.invalid');
         this.ports.setBusy('action', true);
         try {
-            await this.ports.call('take', { itemId: command.itemId });
-            this.ports.notify('success', 'take.success');
+            await this.ports.call('${entry.id}', { itemId: command.itemId });
+            this.ports.notify('success', '${entry.id}.success');
             this.ports.refresh('queues');
             this.ports.refresh('tasks');
-            return { context: { ...context, status: '${take.to}' } };
+            return { context: { ...context, status: '${entry.to}' } };
         } finally {
             this.ports.setBusy('action', false);
         }
     }
 
-    private async qualify(
-        command: Extract<WorkflowCommand, { kind: 'qualify' }>,
+    private async ${decisionMethod}(
+        command: Extract<WorkflowCommand, { kind: '${decision.id}' }>,
         context: WorkflowContext
     ): Promise<WorkflowResult> {
-        requireValue(context.status === '${qualify.from[0]}', 'state.qualify.invalid');
+        requireValue(context.status === '${decision.from[0]}', 'state.${decision.id}.invalid');
         const rejected = command.decision === 'rejected';
         requireValue(
             rejected ? context.permissions.${rejected.permission} : context.permissions.${accepted.permission},
@@ -269,7 +321,7 @@ export class WorkflowActionEngine {
     }
 
     private validateQualification(
-        command: Extract<WorkflowCommand, { kind: 'qualify' }>
+        command: Extract<WorkflowCommand, { kind: '${decision.id}' }>
     ): void {
         if (command.decision === 'rejected') {
             requireValue(!!command.reason.trim(), 'qualification.reason.required');
@@ -285,7 +337,7 @@ export class WorkflowActionEngine {
         }
     }
 
-    private async exportList(
+    private async ${exportMethod}(
         filter: Readonly<Record<string, unknown>>,
         context: WorkflowContext
     ): Promise<WorkflowResult> {

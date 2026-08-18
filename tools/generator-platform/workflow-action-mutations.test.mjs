@@ -60,7 +60,7 @@ for (const mutant of mutants) {
                     : (ports) => reactExecutor(runtime.react, ports);
             try {
                 await assert.rejects(
-                    () => assertWorkflowOracle(createExecutor),
+                    () => assertWorkflowOracle(createExecutor, original.model),
                     undefined,
                     `${target}: le mutant a survécu`
                 );

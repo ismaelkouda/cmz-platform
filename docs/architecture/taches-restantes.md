@@ -581,7 +581,7 @@ Figma, désormais source partielle différée :
   visuelle de chaque job individuel. Si un doute apparaît sur un job
   précis, le vérifier directement dans l'interface GitHub avant de se fier
   à cette déduction pour une décision ultérieure.
-- **PLAT-4bis** — **ouvert** (2026-08-18), XL, P0, alias `second domaine
+- **PLAT-4bis** — **fait** (2026-08-18), XL, P0, alias `second domaine
   workflow-action, suite PLAT-6`. **Constat déclencheur** : PLAT-4/PLAT-6
   ne prouvent la plateforme que sur un seul cas réel `workflow-action`
   (`requests-workflow.definition.json`, cas `requests-details`). Les 4
@@ -656,6 +656,113 @@ Figma, désormais source partielle différée :
   **Fichier source déjà écrit, en attente du moteur généralisé** :
   `tools/generator-platform/sources/
   content-moderation-workflow.definition.json`.
+  **Généralisation exécutée et vérifiée (2026-08-18) — 4 fichiers, un à
+  la fois, baseline 10/10 revérifié après chacun.**
+  (1) `core/workflow-action-authoring.mjs` : `validateWorkflowActionDefinition`
+  détecte désormais les 3 rôles structurels (`entry`/`decision`/`export`)
+  par forme (`kind`/`topology`/`branches.length`/`to === 'branch'`) au
+  lieu de comparer aux ids littéraux `take`/`qualify`/`export` ; les
+  `steps`/`rules` attendus restent indexés par rôle, pas par nom — la
+  seule exception est `entry` dont les 2 premiers steps portent
+  légitimement le nom de l'opération (`external_call:{id}`,
+  `notify:{id}`, motif documenté en commentaire).
+  (2) `core/workflow-action-model.mjs` : les 3 assertions littérales
+  (`pending`/`in-progress` dans `state.statuses`, `pending` dans
+  `qualification_statuses`, `operationIds.has('take'/'qualify'/'export')`)
+  retirées — remplacées par une exigence de forme (au moins 2 statuts de
+  chaque catégorie) ; la présence des 3 rôles est déjà garantie en amont
+  par (1), qui s'exécute toujours avant dans
+  `compileWorkflowActionDefinition`.
+  (3) `renderers/workflow-shared.mjs` (le plus sensible — génère
+  littéralement le code TypeScript émis, pas seulement une validation) :
+  types, noms de méthodes de la classe `WorkflowActionEngine` et
+  littéraux `command.kind`/`ports.call(...)` dérivés de
+  `operation.id` réel via `camelCase()` (déjà présent dans
+  `renderers/shared.mjs`), au lieu d'être codés en dur. Un piège identifié
+  et corrigé pendant l'implémentation : nommer la méthode export
+  directement `camelCase(exportOperation.id)` produirait `exportExport`
+  (collision id/rôle) — nommage `camelCase(\`${id}-list\`)` retenu,
+  qui reproduit exactement l'ancien nom historique `exportList` pour
+  `requests-workflow` (donc hash du manifest golden
+  `manifests/angular-workflow.manifest.json` inchangé, pas de
+  régénération nécessaire — vérifié, pas supposé).
+  **Limite explicite non levée** (décision actée avant de coder, voir
+  plus haut) : `QualificationEditFields`/`validateEditFields` restent des
+  champs de formulaire fixes du domaine `requests` (latitude/longitude/
+  placePhoto…) — un domaine qui n'utilise pas `approvalType: 'edit'` ou
+  `'callback'` ne les déclenche jamais, mais étendre le schéma pour des
+  champs de formulaire arbitraires est un chantier séparé, non engagé.
+  (4) `core/workflow-runtime-oracle.mjs` : `assertWorkflowOracle` prend
+  désormais un second paramètre `model` obligatoire et dérive `entry`/
+  `decision`/`export`/leurs statuts/permissions depuis ce modèle au lieu
+  de littéraux `pending`/`in-progress`/`approved`/`rejected`/`take`/
+  `qualify`/`reject`. **Défaut de conception intercepté et corrigé avant
+  commit** : le premier essai passait le modèle *muté* à l'Oracle dans
+  le test de mutation existant (`workflow-action.test.mjs`, « une
+  mutation du graphe... ») — l'Oracle dérivait alors ses propres attentes
+  depuis le modèle déjà muté, donc ne pouvait structurellement plus
+  jamais détecter aucune mutation (cohérence toujours vraie par
+  construction). Corrigé : l'Oracle compare le code généré depuis le
+  modèle *muté* contre les attentes du modèle *original* — c'est cette
+  divergence, pas une tautologie, qui doit être détectée. Trois autres
+  appelants non couverts par le test suite initial découverts et
+  corrigés dans la foulée (signature `assertWorkflowOracle(fn)` à un
+  seul argument aurait planté sur `model.operations` undefined) :
+  `after-success-extension.test.mjs` et `workflow-action-mutations.test.mjs`
+  — ce dernier particulièrement important : sans le fix, ses 12 tests
+  passaient déjà, mais **par un faux positif dangereux** (l'exception de
+  `resolveRoles(undefined)` satisfaisait `assert.rejects` même sans
+  qu'aucune mutation ne soit jamais réellement exercée par l'Oracle) —
+  aurait laissé les 5 mutants du fichier « survivre » silencieusement à
+  toute vraie régression future du moteur.
+  **Preuve finale (script `tools/generator-platform/plat4bis-verify.mjs`,
+  ad hoc, sort à trancher — garder comme fixture de régression ou
+  retirer après ce constat) exécutée avec succès sur
+  `content-moderation-workflow.definition.json`** : (1) compilation de la
+  définition (domaine `content-moderation-workflow`, vocabulaire
+  `claim`/`moderate`/`remove`/`export`, états `submitted/under-review/
+  published/removed`, entièrement distinct de `requests-workflow`) ; (2)
+  génération Angular + ReactJS, type-check strict des deux arbres réussi
+  (`typecheckGenerated`, compilateur TypeScript réel, pas une
+  approximation) ; (3) Oracle runtime complet passé sur les deux cibles
+  (permission refusée, garde d'état invalide, branche accept avec champs
+  de callback, branche reject, callback asynchrone de l'export avec
+  timing réel vérifié, cas rows-found/no-rows/erreur réseau) ; (4)
+  mutation du graphe (`claim.to` changé) détectée sur les deux cibles,
+  symétrique au test de mutation existant sur `requests-workflow`.
+  **Baseline `requests-workflow` reverifié intact après tout le chantier** :
+  `node --test workflow-action.test.mjs
+  workflow-action-mutations.test.mjs after-success-extension.test.mjs
+  renderers.test.mjs` → 30/30 tests verts (10+12+2+8 — chiffre exact
+  reconstitué depuis les runs individuels, pas un seul run combiné à
+  cause d'un timeout de la commande shell sur la suite complète du
+  dossier `generator-platform`, non liée à ce chantier).
+  **Décision actée (2026-08-18)** : intégrer la preuve comme fixture de
+  non-régression permanente plutôt que la garder en script ad hoc —
+  symétrique à `requests-workflow.definition.json`, cohérent avec
+  l'objectif ADR-0029 (le second domaine devient une garantie
+  automatique que toute future modification du moteur qui casserait la
+  généricité est détectée, pas un constat ponctuel jetable). Exécuté :
+  `plat4bis-verify.mjs` réécrit en fichier `node:test` standard (2 tests
+  — compilation+génération+type-check strict+Oracle complet sur les deux
+  cibles ; détection de mutation sur `claim.to` sur les deux cibles),
+  renommé `content-moderation-workflow.test.mjs` pour être ramassé
+  automatiquement par le glob `tools/generator-platform/*.test.mjs` déjà
+  utilisé par `check:generator-platform:core` (`package.json`) — aucune
+  modification de script nécessaire, l'intégration à la gate CI est
+  immédiate. Vérifié isolément : 2/2 vert.
+  **Trou de vérification précédent fermé** : le run combiné complet du
+  dossier (`node --test tools/generator-platform/*.test.mjs`, ~22
+  fichiers, budget élargi à 580s au lieu du défaut 120s qui avait
+  provoqué un timeout précédemment) a été exécuté en entier dans cette
+  session → **161/161 tests verts, exit 0**, aucune régression sur les
+  ~20 fichiers non exécutés précédemment (`action-request-*`,
+  `behavior-graph-*`, `presentation-flow-*`, `composition-instance-*`…).
+  PLAT-4bis est donc clos avec une vérification locale complète, sans
+  reste conditionné à un run CI distant — la confirmation CI réelle
+  reste une bonne pratique de clôture mais n'est plus bloquante pour
+  affirmer que le moteur `workflow-action` est génériquement
+  paramétrable par le vocabulaire déclaré dans la définition.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

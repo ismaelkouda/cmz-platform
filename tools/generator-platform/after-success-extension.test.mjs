@@ -74,15 +74,18 @@ test('action-request invokes the human after-success slot on Angular and ReactJS
 
 test('workflow-action invokes the same semantic slot on Angular and ReactJS', async () => {
     globalThis.__cmzAfterSuccessEvents = [];
+    const workflowTargets = await computeWorkflowTargets();
     const runtime = await materializeWorkflowRuntime(
-        instrumentTargets(await computeWorkflowTargets())
+        instrumentTargets(workflowTargets)
     );
     try {
-        await assertWorkflowOracle((ports) =>
-            angularExecutor(runtime.angular, ports)
+        await assertWorkflowOracle(
+            (ports) => angularExecutor(runtime.angular, ports),
+            workflowTargets.model
         );
-        await assertWorkflowOracle((ports) =>
-            reactExecutor(runtime.react, ports)
+        await assertWorkflowOracle(
+            (ports) => reactExecutor(runtime.react, ports),
+            workflowTargets.model
         );
         assert.deepEqual(
             globalThis.__cmzAfterSuccessEvents.map(
