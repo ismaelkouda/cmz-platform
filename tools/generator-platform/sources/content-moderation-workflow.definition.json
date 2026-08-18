@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "workflow-action",
+  "feature": {
+    "id": "content-moderation-workflow",
+    "name": "Content moderation workflow",
+    "description": "Claim, moderation decision and filtered export of moderation outcomes"
+  },
+  "state": {
+    "statuses": ["submitted", "under-review", "published", "removed"],
+    "qualification_statuses": ["pending", "completed"]
+  },
+  "permissions": ["claim", "moderate", "remove", "export"],
+  "operations": [
+    {
+      "id": "claim",
+      "kind": "transition",
+      "topology": "sequential",
+      "permission": "claim",
+      "from": ["submitted"],
+      "to": "under-review",
+      "branches": [],
+      "rules": [],
+      "steps": [
+        "external_call:claim",
+        "notify:claim",
+        "refresh:queues",
+        "refresh:tasks"
+      ]
+    },
+    {
+      "id": "moderate",
+      "kind": "transition",
+      "topology": "sequential",
+      "permission": "moderate",
+      "from": ["under-review"],
+      "to": "branch",
+      "branches": [
+        {
+          "when": "accepted",
+          "permission": "moderate",
+          "qualification_from": "pending",
+          "qualification_to": "completed",
+          "to": "published"
+        },
+        {
+          "when": "rejected",
+          "permission": "remove",
+          "qualification_from": "",
+          "qualification_to": "completed",
+          "to": "removed"
+        }
+      ],
+      "rules": [
+        "rejected_requires_reason_comment",
+        "callback_requires_type",
+        "edit_or_callback_requires_comment_and_fields"
+      ],
+      "steps": [
+        "validate:qualification",
+        "external_call:decision",
+        "notify:decision",
+        "refresh:tasks",
+        "refresh:all"
+      ]
+    },
+    {
+      "id": "export",
+      "kind": "export",
+      "topology": "async_callback",
+      "permission": "export",
+      "from": ["state-preserving"],
+      "to": "state-preserving",
+      "branches": [
+        {
+          "when": "rows-found",
+          "permission": "export",
+          "qualification_from": "",
+          "qualification_to": "",
+          "to": "write-file"
+        },
+        {
+          "when": "no-rows",
+          "permission": "export",
+          "qualification_from": "",
+          "qualification_to": "",
+          "to": "notify-no-data"
+        }
+      ],
+      "rules": [
+        "not_loading",
+        "not_exporting",
+        "positive_total",
+        "no_rows_no_write",
+        "errors_notified"
+      ],
+      "steps": ["callback:fetch-rows", "branch:rows", "await:write-file"]
+    }
+  ]
+}

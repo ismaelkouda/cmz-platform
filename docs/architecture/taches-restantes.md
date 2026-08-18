@@ -581,6 +581,81 @@ Figma, désormais source partielle différée :
   visuelle de chaque job individuel. Si un doute apparaît sur un job
   précis, le vérifier directement dans l'interface GitHub avant de se fier
   à cette déduction pour une décision ultérieure.
+- **PLAT-4bis** — **ouvert** (2026-08-18), XL, P0, alias `second domaine
+  workflow-action, suite PLAT-6`. **Constat déclencheur** : PLAT-4/PLAT-6
+  ne prouvent la plateforme que sur un seul cas réel `workflow-action`
+  (`requests-workflow.definition.json`, cas `requests-details`). Les 4
+  modules `workflow-action` du périmètre SEOS (`finalization`,
+  `processing`, `report-states`, `requests`) sont déjà documentés comme
+  family-dup entre eux (même forme métier, code dupliqué — voir la
+  section family-dup plus haut dans ce fichier), donc aucun n'est un
+  second domaine réellement indépendant. Décision : construire un second
+  domaine **synthétique, hors legacy** (comme `support-request.
+  definition.json` l'a déjà fait pour `action-request`), pour prouver la
+  généricité du **core**, pas dépendre du périmètre SEOS existant — en
+  ligne avec le recadrage utilisateur du 2026-08-18 : « le but est la
+  composition qui construit n'importe quel type app… le legacy n'est
+  qu'un exemple de point de départ parmi d'autres (Figma, Stitch, idée) ».
+  **Découverte structurelle (bloquante, non anticipée)** : une définition
+  `content-moderation-workflow.definition.json` écrite à la main (vocabulaire
+  `claim`/`moderate`/`remove`/`export`, états `submitted/under-review/
+  published/removed`, strictement conforme au schéma JSON
+  `workflow-action-definition.schema.json` — schéma qui n'impose aucun nom
+  fixe sur `permissions`/`operations[].id`) est **rejetée par le
+  compilateur** dès la validation :
+  `permissions must be exactly take, qualify, reject, export`. Cause
+  identifiée par lecture de `tools/generator-platform/core/
+  workflow-action-authoring.mjs` : `validateWorkflowActionDefinition`
+  compare les `permissions`/`operations[].id`/`steps`/`rules` de la
+  définition à des **constantes en dur** (`expectedPermissions`,
+  `expectedSteps`, `expectedRules`) reprenant mot pour mot le vocabulaire
+  `take`/`qualify`/`export` de `requests-workflow`. Vérifié que ce n'est
+  pas isolé à ce seul fichier : `workflow-action-model.mjs` (lignes
+  157-159) exige littéralement les *ids* `take`/`qualify`/`export` dans
+  `operationIds.has(...)` ; `renderers/workflow-shared.mjs` (332 lignes)
+  code ces mêmes noms dans les **types TypeScript générés**, les noms de
+  méthodes de la classe engine émise et les appels de ports
+  (`this.ports.call('take', ...)`) ; `core/workflow-runtime-oracle.mjs`
+  construit ses événements de test avec `kind: 'take'`/`'qualify'`/
+  `'export'` en dur. **Conclusion** : le moteur `workflow-action` actuel
+  n'est pas un moteur générique paramétrable par le vocabulaire déclaré
+  dans la définition — c'est un template à un seul vocabulaire figé, où
+  seuls `feature.id`/`feature.name`/`feature.description` et
+  `state.statuses`/`state.qualification_statuses` sont réellement
+  variables (prouvé par le test existant « la commande génère une
+  fonctionnalité renommée », `workflow-action.test.mjs` lignes 202-294 —
+  qui renomme `feature` mais garde `take`/`qualify`/`export`
+  identiques). **Écart documentaire** : le schéma JSON et le guide
+  utilisateur (`creer-un-workflow-action.md`, « le contrat actuellement
+  supporté est volontairement borné ») laissent penser que seule la
+  *topologie* (take→qualify→export, un type de décision à 2 branches, un
+  export à 2 branches) est figée — pas le vocabulaire lexical exact des
+  permissions et des ids d'opération. Le claim implicite de généricité
+  du core (ADR-0029 §6, PLAT-1 « sans chemin ni concept de framework
+  dans l'IR canonique ») est donc plus étroit que ce qui a été
+  communiqué : l'IR est neutre vis-à-vis d'Angular/ReactJS (prouvé), mais
+  pas encore vis-à-vis du **vocabulaire métier** d'un second domaine
+  `workflow-action`. **Baseline de non-régression établi avant toute
+  modification du core** : `node --test tools/generator-platform/
+  workflow-action.test.mjs` → 10/10 tests verts (vérifié localement,
+  exécution réelle possible dans ce sandbox — `node` et `node_modules`
+  disponibles, contrairement à OPS-20 qui nécessitait `bun`/`nx`/legacy).
+  **Décision actée (2026-08-18)** : généraliser le moteur (compilateur +
+  IR + renderer + Oracle) pour accepter un vocabulaire d'opérations et de
+  permissions arbitraire, en conservant les invariants structurels réels
+  (exactement 3 rôles : une transition simple sans branche, une
+  transition avec 2 branches accept/reject, un export avec 2 branches
+  rows/no-rows), plutôt que de redimensionner la preuve au vocabulaire
+  existant ou de s'arrêter au seul constat. Séquencement retenu (principe
+  big tech : jamais de refonte XL sans checkpoint écrit avant, jamais un
+  refactor multi-fichiers sans garde-fou de non-régression à chaque
+  étape) : ce constat d'abord (fait, checkpoint non-réversible), puis
+  généralisation par sous-étape avec le test suite existant comme
+  garde-fou après chaque fichier touché, puis seulement alors le second
+  domaine `content-moderation-workflow` comme preuve d'acceptation.
+  **Fichier source déjà écrit, en attente du moteur généralisé** :
+  `tools/generator-platform/sources/
+  content-moderation-workflow.definition.json`.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
