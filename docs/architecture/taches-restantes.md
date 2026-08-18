@@ -789,6 +789,14 @@ Figma, désormais source partielle différée :
   régression pour de bon ; ne pas déclarer un chantier « clos sans
   reste » sur la seule base d'un run local partiel de la commande
   composite.
+  **Clôture CI confirmée (2026-08-18)** : run
+  [`32136111520`](https://github.com/ismaelkouda/cmz-platform/actions/runs/32136111520/job/95707805436)
+  vert après le correctif — `check:generator-platform` complet
+  (`:core` + `:angular` + `:reactjs`, donc y compris la compilation et
+  l'exécution réelles contre Angular via `TestBed`/`tsc --strict`) passe
+  sur le commit `f73d5fa`. PLAT-4bis est maintenant clos avec la CI
+  réelle comme preuve finale, pas seulement la vérification locale
+  partielle — cohérent avec la leçon retenue ci-dessus.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
