@@ -942,6 +942,39 @@ Figma, désormais source partielle différée :
   `generation-platform-capability-matrix.md` avec une condition de sortie
   explicite : rouvrir dès qu'une définition réelle exige factuellement plus
   d'une décision, pas avant. Aucune ligne de moteur modifiée.
+- **PLAT-4quater** — **fait** (2026-08-18), M, P1, alias `budget
+  d'extensions hors modèle, suite PLAT-4ter`. Le claim « plateforme
+  générique » (§6 de `generation-platform-capability-matrix.md`) exige un
+  « budget d'extensions hors modèle mesuré et non masqué par `Custom` »,
+  jamais produit dans ce dépôt. Inventaire exhaustif mené sur
+  `tools/generator-platform/renderers/*.mjs` (les deux familles
+  `action-request` et `workflow-action`), avec deux catégories exclues
+  explicitement du compte pour ne pas le gonfler artificiellement : le slot
+  `after-success` (PLAT-5C, typé, préservation garantie par hash) est de la
+  composition contractuelle prouvée, pas un échappatoire ; le verbe
+  `Custom` d'ADR-0027 est un mécanisme distinct (noyau de patterns Nx,
+  structure de fichiers), hors périmètre du moteur IR/renderer visé ici.
+  **Résultat : 1 seul échappatoire réel trouvé dans tout le moteur** —
+  `QualificationEditFields` (`renderers/workflow-shared.mjs`, lignes
+  103-112 et 248-258), 8 champs métier fixes codés en dur, sans
+  contrepartie dans `workflow-action-definition.schema.json`, déjà
+  documentés en commentaire depuis PLAT-4bis mais jamais comptés dans un
+  budget global. Aucun cas trouvé côté `action-request`
+  (`angular-nx-renderer.mjs`/`react-typescript-renderer.mjs`) : tous les
+  champs émis sont dérivés du modèle par interpolation, aucun littéral
+  métier. **Décision sur la méthode de comptage** : liste nommée, pas de
+  détecteur AST automatique — distinguer un champ métier fixe hors contrat
+  d'un type d'infrastructure du moteur (`WorkflowContext`/`WorkflowPorts`,
+  légitimement génériques) n'est pas un simple pattern syntaxique, et
+  instrumenter un détecteur pour valider un budget à une seule entrée
+  aurait été la même erreur que généraliser le moteur pour un besoin non
+  observé (même principe que PLAT-4ter) — de l'instrumentation spéculative,
+  pas de la rigueur. Documenté dans
+  `generation-platform-capability-matrix.md` §4/§9 : toute future extension
+  hors modèle découverte doit être ajoutée à cette liste au moment de son
+  introduction, pas déduite après coup. **Le claim § 6 reste non rempli** —
+  un budget mesuré à 1 n'est pas un budget nul, et le gap distinct « second
+  domaine réel pour `action-request` » reste ouvert séparément.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

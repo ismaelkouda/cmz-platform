@@ -162,6 +162,51 @@ factuellement plus d'une décision enchaînée — pas avant. Ce gap reste donc
 listé comme non couvert par le claim « plateforme générique » (§6), par
 choix documenté, pas par oubli.
 
+**Budget d'extensions hors modèle — première mesure (2026-08-18)** : le §6
+exige un « budget d'extensions hors modèle mesuré et non masqué par
+`Custom` », jamais produit avant ce jour. Inventaire exhaustif mené sur
+`tools/generator-platform/renderers/*.mjs` (les deux familles
+`action-request` et `workflow-action`), en distinguant explicitement deux
+catégories pour ne pas gonfler artificiellement le compte :
+- les points d'extension **contractuels et prouvés** ne comptent pas comme
+  échappatoire — le slot `after-success` (PLAT-5C, typé, préservation
+  garantie par hash à la régénération) est de la composition documentée,
+  pas une fuite hors modèle ;
+- le verbe `Custom` d'ADR-0027 (noyau de patterns Nx, structure de
+  fichiers/couches) est un mécanisme distinct de celui visé ici (le moteur
+  IR/renderer de `tools/generator-platform`), hors périmètre de cette
+  mesure.
+
+**Résultat de l'inventaire : exactement 1 échappatoire réel identifié, dans
+l'ensemble du moteur.** `renderers/workflow-shared.mjs`, interface
+`QualificationEditFields` (lignes 103-112) et la fonction
+`validateEditFields` du code généré (lignes 248-258) : 8 champs métier fixes
+(`latitude`, `longitude`, `locationName`, `reportType`, `operators`,
+`description`, `placeDescription`, `placePhoto`), codés en dur dans le
+template littéral, sans aucune contrepartie dans
+`workflow-action-definition.schema.json` — un domaine qui n'utilise pas
+`approvalType: 'edit'|'callback'` ne les déclenche jamais, mais s'il les
+déclenche, il hérite du vocabulaire figé du domaine `requests`, pas du sien.
+Cette limite était déjà documentée en commentaire dans le fichier source
+depuis PLAT-4bis (« limite explicite non levée ») mais jamais comptée dans
+un budget global. Aucun autre cas trouvé dans les renderers `action-request`
+(`angular-nx-renderer.mjs`, `react-typescript-renderer.mjs`) : tous les
+champs émis sont dérivés du modèle par interpolation de template, aucun
+champ métier littéral.
+
+**Méthode de comptage retenue, décision actée (2026-08-18)** : une liste
+nommée, pas un détecteur automatique. Construire une détection AST pour
+distinguer « champ métier fixe hors contrat » d'un « type d'infrastructure
+du moteur » (ex. `WorkflowContext`/`WorkflowPorts`, légitimement sans
+`${}` car génériques à toute composition) n'est pas un simple pattern
+syntaxique — et instrumenter un détecteur pour valider un budget à une
+seule entrée aurait été la même erreur que généraliser le moteur pour un
+besoin non observé (cf. PLAT-4ter ci-dessus) : de l'instrumentation
+spéculative. Le budget actuel est donc **1 échappatoire sur 2 familles de
+composition auditées**, nommément listé ici ; toute future extension hors
+modèle découverte doit être ajoutée à cette liste au moment de son
+introduction, pas déduite après coup par un audit périodique.
+
 PLAT-5F possède un contrat exécutable de durabilité. Il accepte uniquement
 APFS/macOS et ext4/Linux locaux, vérifie le type réel par `statfs`, exerce les
 primitives de publication, puis tue réellement un processus enfant après
@@ -304,10 +349,19 @@ de revue dépasse durablement celui d'un générateur spécialisé.
 > plateforme** reste néanmoins tirée vers le bas par les maillons non encore
 > promus, minimum au sens strict du §1 : `Presentation intent neutre` (M1,
 > conception Figma uniquement), `OpenAPI`/`Description textuelle`/`Tests
-> runtime` (M0–M1, §3), `Repair sous contraintes` (M2, exercice partiel). Le
-> claim « plateforme générique » (§6) exige aussi un **budget d'extensions
-> hors modèle mesuré et non masqué par `Custom`** — cette mesure n'a jamais été
-> produite dans ce dépôt, sur aucune tranche, et reste donc le gap concret le
-> plus proche pour ce claim maintenant que le second domaine `workflow-action`
-> est acquis. Ne pas confondre la promotion d'une tranche prouvée avec la
-> promotion de l'enveloppe entière.
+> runtime` (M0–M1, §3), `Repair sous contraintes` (M2, exercice partiel).
+> **Mise à jour 2026-08-18 (PLAT-4ter/budget d'extensions)** : deux points en
+> suspens de la note précédente sont désormais tranchés, tous deux par choix
+> documenté plutôt que par nouvelle implémentation. La topologie
+> `workflow-action` (N décisions enchaînées) reste bornée à 1 seule décision
+> — décision de différer, aucun cas réel ne l'exige aujourd'hui, condition
+> de sortie explicite posée en §4. Le « budget d'extensions hors modèle »
+> exigé par le claim « plateforme générique » (§6) est désormais mesuré
+> (§4) : 1 seul échappatoire réel identifié dans l'ensemble du moteur
+> (`QualificationEditFields`, `renderers/workflow-shared.mjs`), sur les deux
+> familles de composition auditées. Le claim § 6 reste néanmoins non rempli
+> — un budget mesuré à 1 n'est pas un budget nul, et `action-request` n'a
+> toujours pas de second domaine réel indépendant construit spécifiquement
+> pour prouver sa généricité (contrairement à `workflow-action`). Ne pas
+> confondre la promotion d'une tranche prouvée avec la promotion de
+> l'enveloppe entière.
