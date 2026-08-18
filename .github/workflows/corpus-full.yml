@@ -92,19 +92,32 @@ jobs:
       # 18 fichiers à chaque exécution, même sans aucun changement
       # fonctionnel. `check-corpus-committed.mjs` compare paire par paire
       # après avoir retiré ces clés volatiles, pas un diff texte.
-      # DIAGNOSTIC TEMPORAIRE (2026-08-17) — OPS-20, 3e faux positif consécutif
-      # de check:corpus-committed. Les 2 rounds précédents (ran_at/at, puis
-      # verified_at) ont chacun été confirmés insuffisants par le run CI réel
-      # suivant. Cette étape affiche le diff texte brut ligne à ligne (avant
-      # tout filtrage de clé volatile) pour identifier le/les champ(s) réels
-      # en cause, plutôt que de deviner une 4e hypothèse sans preuve.
-      # À RETIRER une fois le diagnostic obtenu — voir taches-restantes.md OPS-20.
-      - name: DIAGNOSTIC — git diff brut corpus/shared.pairs.jsonl
-        run: |
-          echo "--- git diff --stat ---"
-          git diff --stat -- corpus/ || true
-          echo "--- git diff -U5 corpus/shared.pairs.jsonl (head -200) ---"
-          git diff -U5 -- corpus/shared.pairs.jsonl | head -200 || true
-
+      # Diagnostic temporaire (commit 1dbbc89, 2026-08-17) retiré : root
+      # cause identifiée via `git diff -U5` brut en CI réelle —
+      # `oracle_report.mode` divergeait `"structural-only"` (corpus
+      # committé, généré via `corpus:ci`) vs `"full"` (sortie réelle de
+      # `corpus:full`, ce que ce job exécute). Ce n'est pas un champ
+      # volatil à exclure : ADR-0015 + ADR-0029 confirment que le mode
+      # `full` de ce job est intentionnel (seule vérification de
+      # correspondance legacy du dépôt, SEOS/Angular golden reference).
+      # Le corpus committé sur `main` n'a en réalité jamais été régénéré
+      # par une exécution réelle de `corpus:full` depuis sa création
+      # (voir `git log -- corpus/*.pairs.jsonl` : uniquement des commits
+      # `corpus:ci`/édition manuelle). Voir taches-restantes.md OPS-20
+      # pour le détail complet du diagnostic.
       - name: check:corpus-committed (aucune dérive vs génération réelle)
+        id: check_corpus
         run: bun run check:corpus-committed
+
+      # Sur échec du gate ci-dessus : publier le corpus réellement
+      # régénéré en mode full comme artefact téléchargeable, pour
+      # permettre un commit humain revu à partir d'une vraie sortie CI
+      # — jamais un commit-back automatique silencieux sur `main`
+      # (décision « approche big tech », voir taches-restantes.md OPS-20).
+      - name: Publier corpus régénéré (si divergence détectée)
+        if: failure() && steps.check_corpus.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus-full-regenerated-${{ github.sha }}
+          path: corpus/*.pairs.jsonl
+          retention-days: 14

@@ -1264,7 +1264,7 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   documentation — décision explicitement laissée au porteur du projet,
   par cohérence avec la façon dont ADR-0019 a traité une question
   similaire (« reste ouverte et n'est pas tranchée ici »).
-- **OPS-20** — **fait** (2026-08-17), S, P1, alias `audit 2026-08-17, suite PLAT-6`.
+- **OPS-20** — **ouvert** (2026-08-17), S, P1, alias `audit 2026-08-17, suite PLAT-6`.
   **`corpus-full.yml` ne persiste jamais son résultat dans le dépôt.**
   Distinct d'OPS-16 (dérive du contenu legacy) : ici le problème existe
   même sans aucune dérive. `emit-pairs.mjs`, via `corpus:full`, écrit
@@ -1380,6 +1380,53 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   run, cela confirmera que le JSONL édité à la main depuis OPS-18 est
   fonctionnellement identique (hors horodatage) à la sortie réelle du
   générateur corrigé par OPS-17.
+  **Troisième itération (2026-08-17, même jour) — root cause réelle,
+  pas un champ volatil.** Diagnostic temporaire ajouté à
+  `corpus-full.yml` (`git diff --stat` + `git diff -U5` brut sur
+  `corpus/shared.pairs.jsonl`, avant tout filtrage — commit
+  `1dbbc89`, retiré après diagnostic) plutôt que deviner un 4e candidat
+  sans preuve. Le diff CI réel obtenu montre, pour **chaque** paire des
+  18 fichiers : `"oracle_report":{"mode":"structural-only", ...}` (côté
+  committé, `verified_at:"2026-08-10"`) vs
+  `"oracle_report":{"mode":"full", ...}` (côté régénéré par le run,
+  `verified_at:"2026-08-17"`). Root cause confirmée par lecture croisée
+  de `package.json` (`corpus:ci` = `--structural-only`, utilisé par
+  `ci.yml` ; `corpus:full` = sans `--structural-only`, utilisé par
+  `corpus-full.yml`) et `git log --oneline -- corpus/shared.pairs.jsonl`
+  (5 commits, tous via `corpus:ci`/édition manuelle — jamais un commit
+  généré par une exécution réelle de `corpus:full`). **Ce n'est pas un
+  artefact volatil comme `ran_at`/`verified_at`** : `oracle_report.mode`
+  porte un signal réel (sous quel régime la paire a été vérifiée — avec
+  ou sans correspondance legacy). L'ajouter à `VOLATILE_KEYS` masquerait
+  une vraie question de fond plutôt que de la résoudre.
+  **Question posée à l'utilisateur avant toute action** : `corpus-full.yml`
+  doit-il vraiment tourner en mode `full` ? Réponse tranchée par relecture
+  d'ADR-0015 et ADR-0029 : **oui, sans ambiguïté**. ADR-0015 §Décision
+  point 4 : « Correspondance legacy : uniquement via `--verify` **sans**
+  `--structural-only` (job `corpus-full`) ». ADR-0029 : « SEOS/Angular
+  reste le **golden reference** ». Le mode `full` de `corpus-full.yml`
+  est la seule vérification de correspondance legacy qui existe dans
+  tout le dépôt — la réexaminer reviendrait à contredire ces deux ADR
+  sans justification nouvelle. Conclusion : **le mode `full` est correct
+  et volontaire ; le vrai défaut est que `corpus/*.pairs.jsonl` committé
+  sur `main` n'a jamais reflété une exécution réelle de `corpus:full`
+  depuis la création du corpus** — confirmé par l'historique git complet
+  du fichier (aucun des 5 commits touchant `shared.pairs.jsonl` ne
+  provient d'un run `corpus:full` réel, cohérent avec l'absence
+  documentée de tout mécanisme de commit-back dans `corpus-full.yml`,
+  cf. plus haut dans cette même entrée).
+  **Reste à faire (non trivial, hors capacité de mon sandbox actuel)** :
+  régénérer les 18 `corpus/*.pairs.jsonl` en mode `full` réel (nécessite
+  `bun`/`nx`/`SEOS_LEGACY_ROOT`, absents de mon environnement
+  d'exécution) et les committer, pour que le corpus committé corresponde
+  enfin à ce que `corpus-full.yml` vérifie réellement. Option envisagée
+  et non encore tranchée : publier `corpus/*.pairs.jsonl` régénéré comme
+  `actions/upload-artifact` dans `corpus-full.yml` quand
+  `check:corpus-committed` échoue, pour permettre un commit humain revu
+  à partir d'une sortie CI réelle plutôt que d'une simulation locale.
+  L'étape diagnostique temporaire (commit `1dbbc89`) reste dans
+  `corpus-full.yml` tant que cette régénération n'a pas eu lieu — à
+  retirer dans le même commit que la régénération finale.
 
 ### 3.6 Documentation & ADR spécifiques SEOS (ex-T13, sous-ensemble)
 
