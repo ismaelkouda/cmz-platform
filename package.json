@@ -117,7 +117,7 @@
     "@angular/language-service": "catalog:tooling",
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
-    "@eslint/js": "^9.8.0",
+    "@eslint/js": "^10.0.1",
     "@nx/angular": "23.1.0",
     "@nx/eslint": "23.1.0",
     "@nx/eslint-plugin": "23.1.0",
