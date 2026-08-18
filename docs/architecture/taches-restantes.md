@@ -1419,14 +1419,38 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   régénérer les 18 `corpus/*.pairs.jsonl` en mode `full` réel (nécessite
   `bun`/`nx`/`SEOS_LEGACY_ROOT`, absents de mon environnement
   d'exécution) et les committer, pour que le corpus committé corresponde
-  enfin à ce que `corpus-full.yml` vérifie réellement. Option envisagée
-  et non encore tranchée : publier `corpus/*.pairs.jsonl` régénéré comme
-  `actions/upload-artifact` dans `corpus-full.yml` quand
-  `check:corpus-committed` échoue, pour permettre un commit humain revu
-  à partir d'une sortie CI réelle plutôt que d'une simulation locale.
-  L'étape diagnostique temporaire (commit `1dbbc89`) reste dans
-  `corpus-full.yml` tant que cette régénération n'a pas eu lieu — à
-  retirer dans le même commit que la régénération finale.
+  enfin à ce que `corpus-full.yml` vérifie réellement. Option retenue et
+  exécutée (commit `47a4abd`) : publication de `corpus/*.pairs.jsonl`
+  régénéré via `actions/upload-artifact` dans `corpus-full.yml` quand
+  `check:corpus-committed` échoue (`if: failure() &&
+  steps.check_corpus.outcome == 'failure'`) — étape diagnostique
+  temporaire retirée dans le même commit.
+  **Quatrième itération (2026-08-18) — clôture.** Run CI suivant
+  (déclenché par `47a4abd`) a échoué comme attendu sur
+  `check:corpus-committed` (même signature 1507/1507, cohérente avec le
+  diagnostic — le corpus committé restait encore en `structural-only`
+  à ce stade), et a publié l'artefact
+  `corpus-full-regenerated-47a4abd8f3ca0e17bcb2d4355621184560c433bb`
+  comme prévu. Utilisateur a téléchargé et fourni l'accès au dossier
+  extrait. Avant de committer aveuglément, vérification programmatique
+  complète (Python, comparaison paire par paire par `id`) :
+  (1) même nombre de lignes par fichier (1507 total, 18/18 fichiers
+  identiques en compte) — aucune perte de paire ; (2) mêmes 1507 `id`
+  exactement des deux côtés (`old_ids == new_ids` sur chaque fichier) ;
+  (3) distribution des `status` : `n/a` 922→924, `verified` 585→583,
+  seulement **2 changements** de statut sur 1507 paires —
+  `monitoring.shell.rov-section-enum` et
+  `reporting.shell.rov-section-enum`, tous deux `verified → n/a`,
+  avec `notes` confirmant « Enum section — pas de contrepartie legacy
+  (design absent, confirmé par recherche exhaustive OPS-15) » —
+  cohérent avec la requalification déjà actée sous OPS-18, pas une
+  régression. (4) tous les fichiers de l'artefact confirmés `"mode":
+  "full"` (18/18). Aucun signal de régression détecté : copie des 18
+  fichiers effectuée (`cp corpus-full-regenerated-.../*.pairs.jsonl
+  corpus/`), JSON revalidé ligne par ligne sur les 18 fichiers après
+  copie. Commit à suivre + nouveau run `corpus-full.yml` pour
+  confirmation finale que `check:corpus-committed` passe au vert —
+  seule preuve définitive que la boucle des 4 itérations est close.
 
 ### 3.6 Documentation & ADR spécifiques SEOS (ex-T13, sous-ensemble)
 
