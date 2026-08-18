@@ -890,8 +890,9 @@ Figma, désormais source partielle différée :
   second domaine » plus visible. Annoté dans la matrice (§9), pas
   encore budgété ni traité — décision de portée/méthode à trancher
   séparément avant d'engager le travail.
-- **PLAT-4ter** — mémo produit (2026-08-18), décision humaine requise, L/XL,
-  P1, alias `topologie workflow-action, suite PLAT-4bis`. **Constat
+- **PLAT-4ter** — **décision actée : différé, non couvert par choix
+  documenté** (2026-08-18), L/XL, P1, alias `topologie workflow-action,
+  suite PLAT-4bis`. **Constat
   déclencheur** : recadrage utilisateur — reconstituer tout le legacy ou
   répéter un cas déjà couvert n'apporte rien ; la vraie preuve de généricité
   vient de challenger le moteur sur des cas **structurellement différents**,
@@ -916,8 +917,31 @@ Figma, désormais source partielle différée :
   [`memo-topologie-workflow-action.md`](./memo-topologie-workflow-action.md),
   3 options présentées sans recommandation (généralisation complète à N
   décisions arbitraires, généralisation bornée à un 4ᵉ rôle nommé fixe,
-  documentation de la limite sans coder maintenant). Aucune ligne de
-  moteur modifiée à ce stade — décision de portée réservée à l'utilisateur.
+  documentation de la limite sans coder maintenant).
+  **Décision (2026-08-18, arbitrée avec le mandat « rigueur stricte, peu
+  importe le temps »)** : Option C retenue — ne pas généraliser maintenant.
+  Vérification factuelle avant de trancher : les 3 définitions
+  `workflow-action` existantes (`requests-workflow`,
+  `content-moderation-workflow`, et les 4 modules SEOS family-dup
+  `finalization`/`processing`/`report-states`/`requests`, déjà documentés
+  comme même forme métier en §1.1) ont chacune exactement 1 décision —
+  vérifié par grep sur les `.definition.json` réels
+  (`"kind": "transition"` × 2, `"to": "branch"` × 1 dans chacun), pas
+  supposé. Aucun cas réel, legacy ou synthétique, n'exige aujourd'hui une
+  chaîne de décisions enchaînées dans ce dépôt. Raisonnement retenu :
+  « rigueur stricte » ne signifie pas « construire la généralisation la
+  plus ambitieuse possible » — ADR-0029 (§ Décision) pose explicitement
+  « une source ou une cible n'est annoncée comme supportée qu'après
+  satisfaction des gates » et le §6 exige la preuve avant l'extension,
+  jamais l'inverse. Réécrire ~600 lignes du cœur du générateur (renderer +
+  Oracle) pour un besoin non observé, avec un risque de régression réel sur
+  `requests-workflow` (production) et `content-moderation-workflow`
+  (fixture de non-régression déjà close), est de la sur-ingénierie
+  spéculative — le contraire de la rigueur exigée, même si l'effort
+  disponible n'est pas la contrainte. Documenté dans
+  `generation-platform-capability-matrix.md` avec une condition de sortie
+  explicite : rouvrir dès qu'une définition réelle exige factuellement plus
+  d'une décision, pas avant. Aucune ligne de moteur modifiée.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

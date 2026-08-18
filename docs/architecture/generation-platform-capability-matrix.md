@@ -129,6 +129,39 @@ troisième source équivalente à la matrice `authentication` »). Et le « budg
 d'extensions hors modèle » exigé par le claim § 6 n'a jamais été mesuré nulle
 part dans ce dépôt — un gap distinct, non touché par PLAT-4bis.
 
+**Limite topologique documentée, non traitée par décision (2026-08-18,
+PLAT-4ter)** : PLAT-4bis a généralisé le **vocabulaire** de `workflow-action`
+(noms d'opérations/permissions/états), jamais sa **topologie** — le moteur
+reste borné à exactement 3 rôles structurels fixes (`entry`/`decision`/
+`export`), avec au plus 1 `decision`. Investigation complète des 3 fichiers
+concernés (voir
+[`memo-topologie-workflow-action.md`](./memo-topologie-workflow-action.md)) :
+l'IR (`core/workflow-action-model.mjs`) est déjà générique ; le validateur
+est rigide mais localisé et peu risqué à changer ; le renderer
+(`renderers/workflow-shared.mjs`) et l'Oracle
+(`core/workflow-runtime-oracle.mjs`) sont en revanche des gabarits
+TypeScript à emplacements fixes (une méthode `decisionMethod` unique câblée
+en dur dans un template littéral), pas une boucle sur un tableau de
+décisions — généraliser à N décisions enchaînées serait une réécriture du
+cœur du générateur, d'ampleur comparable à PLAT-4bis entier.
+**Décision (2026-08-18)** : ne pas engager cette généralisation maintenant.
+Vérifié factuellement (pas supposé) : les 3 définitions `workflow-action`
+existantes dans ce dépôt (`requests-workflow`, `content-moderation-workflow`,
+et les 4 modules SEOS family-dup `finalization`/`processing`/
+`report-states`/`requests`) ont chacune exactement 1 décision — aucun cas
+réel, legacy ou synthétique, n'exige aujourd'hui une chaîne de décisions.
+Conforme à ADR-0029 (§ Décision, « preuve avant extension ») et au principe
+déjà appliqué par ce dépôt (ne jamais transformer une extensibilité
+souhaitée en capacité livrée sans preuve) : une réécriture L/XL du
+générateur, avec risque de régression sur `requests-workflow` (production)
+et `content-moderation-workflow` (fixture close), contre zéro cas d'usage
+observé, est de la sur-ingénierie spéculative — pas de la rigueur.
+**Condition de sortie explicite** : rouvrir ce chantier dès qu'une
+définition `workflow-action` réelle (legacy ou spécification) exige
+factuellement plus d'une décision enchaînée — pas avant. Ce gap reste donc
+listé comme non couvert par le claim « plateforme générique » (§6), par
+choix documenté, pas par oubli.
+
 PLAT-5F possède un contrat exécutable de durabilité. Il accepte uniquement
 APFS/macOS et ext4/Linux locaux, vérifie le type réel par `statfs`, exerce les
 primitives de publication, puis tue réellement un processus enfant après
