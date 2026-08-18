@@ -890,6 +890,34 @@ Figma, désormais source partielle différée :
   second domaine » plus visible. Annoté dans la matrice (§9), pas
   encore budgété ni traité — décision de portée/méthode à trancher
   séparément avant d'engager le travail.
+- **PLAT-4ter** — mémo produit (2026-08-18), décision humaine requise, L/XL,
+  P1, alias `topologie workflow-action, suite PLAT-4bis`. **Constat
+  déclencheur** : recadrage utilisateur — reconstituer tout le legacy ou
+  répéter un cas déjà couvert n'apporte rien ; la vraie preuve de généricité
+  vient de challenger le moteur sur des cas **structurellement différents**,
+  pas seulement un vocabulaire différent. PLAT-4bis a généralisé le
+  vocabulaire (noms d'opérations/permissions/états), jamais la **topologie**
+  (nombre et enchaînement des rôles structurels). Investigation menée avant
+  tout code (lecture des 3 fichiers concernés, pas de supposition) :
+  `core/workflow-action-model.mjs` (IR) est déjà générique, aucune
+  contrainte de nombre de rôles. `core/workflow-action-authoring.mjs`
+  (validateur) est rigide mais localisé : `operations.length === 3` en dur,
+  changement mécanique et à faible risque si engagé.
+  `renderers/workflow-shared.mjs` (codegen) et `core/workflow-runtime-oracle.mjs`
+  (Oracle) sont le vrai point dur : gabarits TypeScript à emplacements fixes
+  (une méthode `decisionMethod` unique câblée en dur dans un template
+  littéral de ~200 lignes, pas une boucle sur un tableau de décisions) —
+  généraliser à N décisions enchaînées est une réécriture du cœur du
+  générateur de code, d'ampleur comparable à PLAT-4bis entier, pas une
+  extension additive. Mémo produit avant tout engagement de code, dans le
+  respect de la doctrine `backlog-llm.md` (« ces tâches ne doivent jamais
+  aboutir à une décision prise par l'agent ») et du principe déjà appliqué
+  à PLAT-4bis (« jamais de refonte XL sans checkpoint écrit avant ») :
+  [`memo-topologie-workflow-action.md`](./memo-topologie-workflow-action.md),
+  3 options présentées sans recommandation (généralisation complète à N
+  décisions arbitraires, généralisation bornée à un 4ᵉ rôle nommé fixe,
+  documentation de la limite sans coder maintenant). Aucune ligne de
+  moteur modifiée à ce stade — décision de portée réservée à l'utilisateur.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
