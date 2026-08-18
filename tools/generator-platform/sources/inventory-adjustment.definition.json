@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "action-request",
+  "feature": {
+    "id": "inventory-adjustment",
+    "name": "Inventory Adjustment",
+    "description": "Authorized adjustment of a stock quantity, independent of the authentication and support domains."
+  },
+  "opaque_types": [],
+  "operations": [
+    {
+      "id": "adjust-stock",
+      "description": "Apply a signed quantity adjustment to a stock item.",
+      "input": {
+        "description": "Information needed to adjust a stock item.",
+        "fields": [
+          {
+            "name": "item_id",
+            "type": {
+              "kind": "primitive",
+              "name": "uuid",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "quantity_delta",
+            "type": {
+              "kind": "primitive",
+              "name": "integer",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "reason_code",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "output": {
+        "id": "stock-adjustment-result",
+        "description": "Confirmation returned after applying the adjustment.",
+        "fields": [
+          {
+            "name": "adjustment_id",
+            "type": {
+              "kind": "primitive",
+              "name": "uuid",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "resulting_quantity",
+            "type": {
+              "kind": "primitive",
+              "name": "integer",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "access": {
+        "mode": "authorized",
+        "permissions": ["inventory.adjust"]
+      },
+      "http": {
+        "method": "POST",
+        "path": "inventory/adjustments",
+        "authentication": "bearer"
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Submit the adjustment to the inventory boundary."
+        },
+        {
+          "kind": "stock_mutation",
+          "description": "Mutate the tracked quantity of the target item."
+        }
+      ]
+    },
+    {
+      "id": "reconcile-count",
+      "description": "Reconcile a counted quantity against the tracked quantity, requiring the counted value to be confirmed twice.",
+      "input": {
+        "description": "Information needed to reconcile a physical count.",
+        "fields": [
+          {
+            "name": "item_id",
+            "type": {
+              "kind": "primitive",
+              "name": "uuid",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "counted_quantity",
+            "type": {
+              "kind": "primitive",
+              "name": "integer",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "confirmed_quantity",
+            "type": {
+              "kind": "primitive",
+              "name": "integer",
+              "nullable": false
+            },
+            "required": true,
+            "equals": "counted_quantity"
+          }
+        ]
+      },
+      "output": {
+        "id": "stock-adjustment-result",
+        "description": "Confirmation returned after applying the adjustment.",
+        "fields": [
+          {
+            "name": "adjustment_id",
+            "type": {
+              "kind": "primitive",
+              "name": "uuid",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "resulting_quantity",
+            "type": {
+              "kind": "primitive",
+              "name": "integer",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "access": {
+        "mode": "authorized",
+        "permissions": ["inventory.adjust", "inventory.reconcile"]
+      },
+      "http": {
+        "method": "POST",
+        "path": "inventory/reconciliations",
+        "authentication": "bearer"
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Submit the reconciliation to the inventory boundary."
+        },
+        {
+          "kind": "stock_mutation",
+          "description": "Mutate the tracked quantity of the target item."
+        }
+      ]
+    }
+  ]
+}

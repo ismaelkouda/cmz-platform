@@ -132,14 +132,7 @@
       "additionalProperties": false,
       "required": ["kind", "description"],
       "properties": {
-        "kind": {
-          "enum": [
-            "external_call",
-            "establish_session",
-            "request_recovery",
-            "reset_credential"
-          ]
-        },
+        "kind": { "$ref": "#/$defs/id" },
         "description": { "$ref": "#/$defs/nonEmptyString" }
       }
     },

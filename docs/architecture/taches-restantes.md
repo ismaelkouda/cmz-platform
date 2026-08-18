@@ -167,91 +167,85 @@ précis) est classé SEOS en §3.
   non contraints et signalés en avertissement, pas silencieusement ignorés. =
   ROAD-3b/S-1 (chantier IDL-first, ne pas traiter séparément pour un schéma
   backend réel).
-- **T2-2** — **fait** (2026-08-18, initialement livré 2026-08-13), L, P0,
-  alias `P-9`. Gate CI de **fraîcheur schéma↔DTO** livré :
+- **T2-2** — **fait** (2026-08-18, initialement livré 2026-08-13), L, P0, alias
+  `P-9`. Gate CI de **fraîcheur schéma↔DTO** livré :
   `tools/check-dto-schema.mjs` (`bun run check:dto-schema`, branché dans
-  `check:all` après `check:pair-schema`) régénère le schéma en mémoire et
-  échoue si `git diff` détecte une divergence avec `dto.schema.json`
-  committé — même mécanisme que `check:docs-freshness`.
-  **Volet « mappers conformes au schéma » (2026-08-18)** : avant d'écrire
-  quoi que ce soit, vérifié que `tsconfig.base.json` a déjà `strict: true`
-  et que `tsc`/`ngc --strictTemplates` tournent déjà dans l'oracle
-  multi-niveaux — pour le sens `dto → domaine`
-  (`mapItemFromDto(dto: XxxApiDto)`), tout accès à un champ absent du type
-  est déjà une erreur de compilation ; un outil comparant contre
-  `dto.schema.json` (projection JSON avec pertes documentées) y serait plus
-  faible, donc redondant, pas un vrai gap. Le vrai gap trouvé par
+  `check:all` après `check:pair-schema`) régénère le schéma en mémoire et échoue
+  si `git diff` détecte une divergence avec `dto.schema.json` committé — même
+  mécanisme que `check:docs-freshness`. **Volet « mappers conformes au schéma »
+  (2026-08-18)** : avant d'écrire quoi que ce soit, vérifié que
+  `tsconfig.base.json` a déjà `strict: true` et que
+  `tsc`/`ngc --strictTemplates` tournent déjà dans l'oracle multi-niveaux — pour
+  le sens `dto → domaine` (`mapItemFromDto(dto: XxxApiDto)`), tout accès à un
+  champ absent du type est déjà une erreur de compilation ; un outil comparant
+  contre `dto.schema.json` (projection JSON avec pertes documentées) y serait
+  plus faible, donc redondant, pas un vrai gap. Le vrai gap trouvé par
   inspection réelle des 313 mappers : le sens `domaine → dto` utilise à 75
-  reprises le pattern `const params = {} as XxxApiDto;` puis des
-  assignations `params.champ = ...` une à une, certaines conditionnelles
-  (`if (...) { params.champ = ... }`) — le cast `as` désactive la
-  vérification stricte de complétude de TypeScript, rien ne garantit
-  statiquement qu'un champ `required` du DTO cible est bien assigné avant
-  le `return`. Nouveau `tools/check-mapper-dto-conformity.mjs` (AST via
-  `ts.createProgram`, même mécanisme que `generate-dto-schema.mjs`) :
-  détecte ce pattern précis, vérifie chaque champ `required` du schéma
-  contre les assignations inconditionnelles trouvées. **23 cas réels
-  trouvés en conditions réelles**, analysés un par un avant tout câblage
-  bloquant (aucun accès à `$SEOS_LEGACY_ROOT` ni à un contrat backend
-  documenté dans ce sandbox pour trancher formellement) : 2 familles
-  nettes — 12 fichiers `delete`/`disable`/`enable`/`find-one-filter` où un
-  seul champ id-like (`uniq_id`/`id`) est systématiquement conditionnel
-  (`if (validContract.uniqId) {...}`, même motif partout, probablement une
-  garde défensive délibérée) ; 11 fichiers `create`/`update`/`filter` où
-  plusieurs champs métier ne sont jamais assignés du tout (ex.
+  reprises le pattern `const params = {} as XxxApiDto;` puis des assignations
+  `params.champ = ...` une à une, certaines conditionnelles
+  (`if (...) { params.champ = ... }`) — le cast `as` désactive la vérification
+  stricte de complétude de TypeScript, rien ne garantit statiquement qu'un champ
+  `required` du DTO cible est bien assigné avant le `return`. Nouveau
+  `tools/check-mapper-dto-conformity.mjs` (AST via `ts.createProgram`, même
+  mécanisme que `generate-dto-schema.mjs`) : détecte ce pattern précis, vérifie
+  chaque champ `required` du schéma contre les assignations inconditionnelles
+  trouvées. **23 cas réels trouvés en conditions réelles**, analysés un par un
+  avant tout câblage bloquant (aucun accès à `$SEOS_LEGACY_ROOT` ni à un contrat
+  backend documenté dans ce sandbox pour trancher formellement) : 2 familles
+  nettes — 12 fichiers `delete`/`disable`/`enable`/`find-one-filter` où un seul
+  champ id-like (`uniq_id`/`id`) est systématiquement conditionnel
+  (`if (validContract.uniqId) {...}`, même motif partout, probablement une garde
+  défensive délibérée) ; 11 fichiers `create`/`update`/`filter` où plusieurs
+  champs métier ne sont jamais assignés du tout (ex.
   `infrastructure-create.mapper.ts` n'assigne jamais
   `region_id`/`department_id`/`municipality_id`, requis par
-  `InfrastructureCreateApiDto`). **Aucun des 23 mappers concernés n'a de
-  test unitaire** (`.spec.ts`) dans le dépôt — aucune preuve que ce
-  comportement soit testé/voulu, ni dans un sens ni dans l'autre. Câblé
-  selon la même doctrine que `KNOWN_GAPS` de
-  `check-pattern-nx-coverage.mjs` (tranché comme la seule option cohérente
-  avec le reste du dépôt, pas redemandé à l'utilisateur une seconde fois
-  après une première clarification déjà obtenue) : baseline figée des 23
-  cas nommément listés (clé stable `fichier::fonction::DtoName`), le gate
-  échoue sur tout **nouveau** cas non listé (régression bloquée dès
-  maintenant) et sur toute entrée devenue stale (corrigée sans être
-  retirée de la liste) — sans exiger de corriger les 23 cas existants
-  avant une revue humaine. 5 tests `node:test` (fixtures isolées,
-  `mkdtemp`) : détection réelle, cas conforme, cast vers type non-DTO
-  ignoré, cast sur littéral non vide ignoré (hors périmètre documenté),
-  stabilité de la clé.
-  **Volet « breaking change = fail » (2026-08-18)** : nouveau
-  `tools/check-dto-schema-breaking-changes.mjs`, diff sémantique entre
-  deux révisions de `dto.schema.json` (pas juste présence/absence, déjà
-  couvert par `check-dto-schema.mjs`). Doctrine de compatibilité standard
-  JSON Schema/OpenAPI : BREAKING = `$defs.<Name>` supprimé, propriété
-  supprimée, `type` changé, propriété devenue `required`, valeur `enum`
-  supprimée, `additionalProperties` resserré à `false` ; COMPATIBLE =
-  nouveau `$defs`, nouvelle propriété optionnelle, propriété devenue
-  optionnelle, nouvelle valeur `enum`. Lit l'ancienne révision via
+  `InfrastructureCreateApiDto`). **Aucun des 23 mappers concernés n'a de test
+  unitaire** (`.spec.ts`) dans le dépôt — aucune preuve que ce comportement soit
+  testé/voulu, ni dans un sens ni dans l'autre. Câblé selon la même doctrine que
+  `KNOWN_GAPS` de `check-pattern-nx-coverage.mjs` (tranché comme la seule option
+  cohérente avec le reste du dépôt, pas redemandé à l'utilisateur une seconde
+  fois après une première clarification déjà obtenue) : baseline figée des 23
+  cas nommément listés (clé stable `fichier::fonction::DtoName`), le gate échoue
+  sur tout **nouveau** cas non listé (régression bloquée dès maintenant) et sur
+  toute entrée devenue stale (corrigée sans être retirée de la liste) — sans
+  exiger de corriger les 23 cas existants avant une revue humaine. 5 tests
+  `node:test` (fixtures isolées, `mkdtemp`) : détection réelle, cas conforme,
+  cast vers type non-DTO ignoré, cast sur littéral non vide ignoré (hors
+  périmètre documenté), stabilité de la clé. **Volet « breaking change = fail »
+  (2026-08-18)** : nouveau `tools/check-dto-schema-breaking-changes.mjs`, diff
+  sémantique entre deux révisions de `dto.schema.json` (pas juste
+  présence/absence, déjà couvert par `check-dto-schema.mjs`). Doctrine de
+  compatibilité standard JSON Schema/OpenAPI : BREAKING = `$defs.<Name>`
+  supprimé, propriété supprimée, `type` changé, propriété devenue `required`,
+  valeur `enum` supprimée, `additionalProperties` resserré à `false` ;
+  COMPATIBLE = nouveau `$defs`, nouvelle propriété optionnelle, propriété
+  devenue optionnelle, nouvelle valeur `enum`. Lit l'ancienne révision via
   `git show <ref>:docs/architecture/schema/dto.schema.json` (dégradation
-  gracieuse si la révision n'existe pas — ex. première introduction du
-  schéma — log `INFO` et sort en 0, jamais un crash). 12 tests `node:test`
-  sur `diffSchemas()` isolément (chaque règle breaking et chaque règle
-  compatible testée séparément, plus schéma identique = aucun écart).
-  **Câblage CI (2026-08-18)** : les deux nouveaux scripts ajoutés à
-  `check:all` (`package.json`), puis immédiatement vérifiés avec
-  `tools/check-ci-wiring.mjs` — qui a effectivement détecté qu'ils étaient
-  fantômes (présents dans `check:all`, jamais invoqués par un vrai
-  mécanisme CI/husky), même classe de bug déjà rencontrée 3 fois
-  auparavant (`check:pair-schema`/`check:corpus-tools` 2026-08-11,
-  `check:dto-schema`/`check:pattern-nx:*` 2026-08-14). Corrigé avant tout
-  commit : deux nouvelles steps dans le job `docs-freshness` de
+  gracieuse si la révision n'existe pas — ex. première introduction du schéma —
+  log `INFO` et sort en 0, jamais un crash). 12 tests `node:test` sur
+  `diffSchemas()` isolément (chaque règle breaking et chaque règle compatible
+  testée séparément, plus schéma identique = aucun écart). **Câblage CI
+  (2026-08-18)** : les deux nouveaux scripts ajoutés à `check:all`
+  (`package.json`), puis immédiatement vérifiés avec `tools/check-ci-wiring.mjs`
+  — qui a effectivement détecté qu'ils étaient fantômes (présents dans
+  `check:all`, jamais invoqués par un vrai mécanisme CI/husky), même classe de
+  bug déjà rencontrée 3 fois auparavant
+  (`check:pair-schema`/`check:corpus-tools` 2026-08-11,
+  `check:dto-schema`/`check:pattern-nx:*` 2026-08-14). Corrigé avant tout commit
+  : deux nouvelles steps dans le job `docs-freshness` de
   `.github/workflows/ci.yml`, à la suite de `check:dto-schema`. Pour
-  `check:dto-schema-breaking-changes`, `fetch-depth: 0` ajouté au
-  checkout du job (nécessaire pour `git show origin/<base>:...`, un clone
-  superficiel ne contiendrait pas cette révision) et un step `Set schema
-  diff base branch` qui calcule `origin/<base_ref>` sur `pull_request`,
-  `HEAD~1` sur push direct — réplique exactement le pattern déjà éprouvé
-  `Set NX base branch` (job oracle, même fichier). `check-ci-wiring.mjs`
-  revérifié vert après ajout. YAML validé structurellement
-  (`python3 -c "import yaml; yaml.safe_load(...)"`). **Limite explicite**
-  : je n'ai pas pu déclencher ces steps CI moi-même (pas d'accès réseau
-  GitHub Actions dans ce sandbox) — le câblage est structurellement
-  correct (même mécanisme que les 3 précédents déjà confirmés par une run
-  CI réelle) mais reste à confirmer par le prochain run réel, en
-  particulier le calcul `origin/<base_ref>` sur une vraie PR.
+  `check:dto-schema-breaking-changes`, `fetch-depth: 0` ajouté au checkout du
+  job (nécessaire pour `git show origin/<base>:...`, un clone superficiel ne
+  contiendrait pas cette révision) et un step `Set schema diff base branch` qui
+  calcule `origin/<base_ref>` sur `pull_request`, `HEAD~1` sur push direct —
+  réplique exactement le pattern déjà éprouvé `Set NX base branch` (job oracle,
+  même fichier). `check-ci-wiring.mjs` revérifié vert après ajout. YAML validé
+  structurellement (`python3 -c "import yaml; yaml.safe_load(...)"`). **Limite
+  explicite** : je n'ai pas pu déclencher ces steps CI moi-même (pas d'accès
+  réseau GitHub Actions dans ce sandbox) — le câblage est structurellement
+  correct (même mécanisme que les 3 précédents déjà confirmés par une run CI
+  réelle) mais reste à confirmer par le prochain run réel, en particulier le
+  calcul `origin/<base_ref>` sur une vraie PR.
 - **T2-3** — ouvert, L, P1, alias `P-10`. Dériver `tools/mock-server` du schéma
   (fin maintenance manuelle multi-domaines).
 - **T2-5** — **fait**, M, P2, alias `H-4-UI`. `contracts/component.contract.md`
@@ -618,363 +612,322 @@ Figma, désormais source partielle différée :
   sans dérogation. **Seule action restante avant promotion M3 :** obtenir la
   première exécution verte de cette matrice externe après revue/indexation et
   push ; ne pas inventer ce résultat depuis le poste local.
-- **PLAT-6 — fait** (2026-08-17), M, P0. Suite à OPS-19, `ci.yml` confirmé
-  vert pour la première fois sur `main`
+- **PLAT-6 — fait** (2026-08-17), M, P0. Suite à OPS-19, `ci.yml` confirmé vert
+  pour la première fois sur `main`
   (`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
   commit `24729f3`, 22m14s) — condition exacte posée par PLAT-1/PLAT-3/
   PLAT-4/PLAT-5F pour la promotion M3 (et, pour la matrice de preuve §7 de
-  `generation-platform-capability-matrix.md`, les critères M4 « de cette
-  seule tranche »). Vérifié avant de modifier la matrice, pas supposé : (1)
-  `check:generator-platform` fait partie du job `guardrails`, bloquant en
-  tête de `ci.yml`, donc un run global vert l'implique nécessairement ; (2)
-  `check:publication-durability` est un job matriciel `fail-fast: false`
-  avec les 2 profils `ubuntu-24.04`/ext4 et `macos-14`/APFS attendus par
-  PLAT-5F, tous deux dans le même workflow ; (3) le seul
-  `continue-on-error: true` du fichier concerne `sast` (Semgrep, rapport
-  seul, documenté non bloquant depuis son ajout) — aucun risque de faux vert
-  masqué sur les jobs pertinents ici. Mise à jour de
-  [`generation-platform-capability-matrix.md`](./generation-platform-capability-matrix.md) :
-  §7 (matrice de preuve, 5 lignes M2→M4, note datée), §5 (Angular/ReactJS
+  `generation-platform-capability-matrix.md`, les critères M4 « de cette seule
+  tranche »). Vérifié avant de modifier la matrice, pas supposé : (1)
+  `check:generator-platform` fait partie du job `guardrails`, bloquant en tête
+  de `ci.yml`, donc un run global vert l'implique nécessairement ; (2)
+  `check:publication-durability` est un job matriciel `fail-fast: false` avec
+  les 2 profils `ubuntu-24.04`/ext4 et `macos-14`/APFS attendus par PLAT-5F,
+  tous deux dans le même workflow ; (3) le seul `continue-on-error: true` du
+  fichier concerne `sast` (Semgrep, rapport seul, documenté non bloquant depuis
+  son ajout) — aucun risque de faux vert masqué sur les jobs pertinents ici.
+  Mise à jour de
+  [`generation-platform-capability-matrix.md`](./generation-platform-capability-matrix.md)
+  : §7 (matrice de preuve, 5 lignes M2→M4, note datée), §5 (Angular/ReactJS
   M2→M4), §4 (8 capacités de la tranche `action-request`/`workflow-action`
-  M2→M4, `Reprise après interruption` M2→M3 pour PLAT-5F spécifiquement),
-  §9 (état synthétique — reformulé pour distinguer la tranche prouvée,
-  désormais M3/M4, de la maturité globale de la plateforme qui reste tirée
-  vers le bas par `Presentation intent neutre` (M1), les sources non encore
-  outillées (§3, M0–M1) et `Repair sous contraintes` (M2, non touché faute
-  de critère de promotion explicite retrouvé). **Volontairement NON
-  promu** : `Presentation intent neutre` et les sources `OpenAPI`/
+  M2→M4, `Reprise après interruption` M2→M3 pour PLAT-5F spécifiquement), §9
+  (état synthétique — reformulé pour distinguer la tranche prouvée, désormais
+  M3/M4, de la maturité globale de la plateforme qui reste tirée vers le bas par
+  `Presentation intent neutre` (M1), les sources non encore outillées (§3,
+  M0–M1) et `Repair sous contraintes` (M2, non touché faute de critère de
+  promotion explicite retrouvé). **Volontairement NON promu** :
+  `Presentation intent neutre` et les sources `OpenAPI`/
   `Description textuelle`/`Tests runtime` (aucun changement de code les
   concernant dans ce lot) ; le claim « plateforme générique » du §6 (second
   domaine réel PLAT-4 encore ouvert, budget d'extensions non mesuré) ; PLAT-5
   qui visait déjà M4 sur un sous-ensemble distinct des 3 mutations
-  d'authentification, non re-vérifié ici spécifiquement.
-  **Limite explicite** : je n'ai pas ouvert le détail job-par-job du run
-  GitHub Actions (pas d'accès réseau dans ce sandbox) — la déduction
-  « run global vert ⇒ jobs pertinents verts » s'appuie sur la lecture
-  statique de `ci.yml` (dépendances `needs:`, absence de
-  `continue-on-error` sur les jobs concernés), pas sur une inspection
-  visuelle de chaque job individuel. Si un doute apparaît sur un job
-  précis, le vérifier directement dans l'interface GitHub avant de se fier
-  à cette déduction pour une décision ultérieure.
-- **PLAT-4bis** — **fait** (2026-08-18), XL, P0, alias `second domaine
-  workflow-action, suite PLAT-6`. **Constat déclencheur** : PLAT-4/PLAT-6
-  ne prouvent la plateforme que sur un seul cas réel `workflow-action`
-  (`requests-workflow.definition.json`, cas `requests-details`). Les 4
-  modules `workflow-action` du périmètre SEOS (`finalization`,
-  `processing`, `report-states`, `requests`) sont déjà documentés comme
-  family-dup entre eux (même forme métier, code dupliqué — voir la
-  section family-dup plus haut dans ce fichier), donc aucun n'est un
-  second domaine réellement indépendant. Décision : construire un second
-  domaine **synthétique, hors legacy** (comme `support-request.
-  definition.json` l'a déjà fait pour `action-request`), pour prouver la
-  généricité du **core**, pas dépendre du périmètre SEOS existant — en
-  ligne avec le recadrage utilisateur du 2026-08-18 : « le but est la
-  composition qui construit n'importe quel type app… le legacy n'est
-  qu'un exemple de point de départ parmi d'autres (Figma, Stitch, idée) ».
-  **Découverte structurelle (bloquante, non anticipée)** : une définition
-  `content-moderation-workflow.definition.json` écrite à la main (vocabulaire
-  `claim`/`moderate`/`remove`/`export`, états `submitted/under-review/
-  published/removed`, strictement conforme au schéma JSON
-  `workflow-action-definition.schema.json` — schéma qui n'impose aucun nom
-  fixe sur `permissions`/`operations[].id`) est **rejetée par le
-  compilateur** dès la validation :
-  `permissions must be exactly take, qualify, reject, export`. Cause
-  identifiée par lecture de `tools/generator-platform/core/
-  workflow-action-authoring.mjs` : `validateWorkflowActionDefinition`
-  compare les `permissions`/`operations[].id`/`steps`/`rules` de la
-  définition à des **constantes en dur** (`expectedPermissions`,
-  `expectedSteps`, `expectedRules`) reprenant mot pour mot le vocabulaire
-  `take`/`qualify`/`export` de `requests-workflow`. Vérifié que ce n'est
-  pas isolé à ce seul fichier : `workflow-action-model.mjs` (lignes
-  157-159) exige littéralement les *ids* `take`/`qualify`/`export` dans
-  `operationIds.has(...)` ; `renderers/workflow-shared.mjs` (332 lignes)
-  code ces mêmes noms dans les **types TypeScript générés**, les noms de
-  méthodes de la classe engine émise et les appels de ports
-  (`this.ports.call('take', ...)`) ; `core/workflow-runtime-oracle.mjs`
-  construit ses événements de test avec `kind: 'take'`/`'qualify'`/
-  `'export'` en dur. **Conclusion** : le moteur `workflow-action` actuel
-  n'est pas un moteur générique paramétrable par le vocabulaire déclaré
-  dans la définition — c'est un template à un seul vocabulaire figé, où
-  seuls `feature.id`/`feature.name`/`feature.description` et
-  `state.statuses`/`state.qualification_statuses` sont réellement
-  variables (prouvé par le test existant « la commande génère une
-  fonctionnalité renommée », `workflow-action.test.mjs` lignes 202-294 —
-  qui renomme `feature` mais garde `take`/`qualify`/`export`
-  identiques). **Écart documentaire** : le schéma JSON et le guide
-  utilisateur (`creer-un-workflow-action.md`, « le contrat actuellement
-  supporté est volontairement borné ») laissent penser que seule la
-  *topologie* (take→qualify→export, un type de décision à 2 branches, un
-  export à 2 branches) est figée — pas le vocabulaire lexical exact des
-  permissions et des ids d'opération. Le claim implicite de généricité
-  du core (ADR-0029 §6, PLAT-1 « sans chemin ni concept de framework
-  dans l'IR canonique ») est donc plus étroit que ce qui a été
-  communiqué : l'IR est neutre vis-à-vis d'Angular/ReactJS (prouvé), mais
-  pas encore vis-à-vis du **vocabulaire métier** d'un second domaine
-  `workflow-action`. **Baseline de non-régression établi avant toute
-  modification du core** : `node --test tools/generator-platform/
-  workflow-action.test.mjs` → 10/10 tests verts (vérifié localement,
-  exécution réelle possible dans ce sandbox — `node` et `node_modules`
-  disponibles, contrairement à OPS-20 qui nécessitait `bun`/`nx`/legacy).
-  **Décision actée (2026-08-18)** : généraliser le moteur (compilateur +
-  IR + renderer + Oracle) pour accepter un vocabulaire d'opérations et de
-  permissions arbitraire, en conservant les invariants structurels réels
-  (exactement 3 rôles : une transition simple sans branche, une
-  transition avec 2 branches accept/reject, un export avec 2 branches
-  rows/no-rows), plutôt que de redimensionner la preuve au vocabulaire
-  existant ou de s'arrêter au seul constat. Séquencement retenu (principe
-  big tech : jamais de refonte XL sans checkpoint écrit avant, jamais un
-  refactor multi-fichiers sans garde-fou de non-régression à chaque
-  étape) : ce constat d'abord (fait, checkpoint non-réversible), puis
-  généralisation par sous-étape avec le test suite existant comme
-  garde-fou après chaque fichier touché, puis seulement alors le second
-  domaine `content-moderation-workflow` comme preuve d'acceptation.
-  **Fichier source déjà écrit, en attente du moteur généralisé** :
-  `tools/generator-platform/sources/
-  content-moderation-workflow.definition.json`.
-  **Généralisation exécutée et vérifiée (2026-08-18) — 4 fichiers, un à
-  la fois, baseline 10/10 revérifié après chacun.**
-  (1) `core/workflow-action-authoring.mjs` : `validateWorkflowActionDefinition`
-  détecte désormais les 3 rôles structurels (`entry`/`decision`/`export`)
-  par forme (`kind`/`topology`/`branches.length`/`to === 'branch'`) au
-  lieu de comparer aux ids littéraux `take`/`qualify`/`export` ; les
-  `steps`/`rules` attendus restent indexés par rôle, pas par nom — la
-  seule exception est `entry` dont les 2 premiers steps portent
-  légitimement le nom de l'opération (`external_call:{id}`,
-  `notify:{id}`, motif documenté en commentaire).
-  (2) `core/workflow-action-model.mjs` : les 3 assertions littérales
+  d'authentification, non re-vérifié ici spécifiquement. **Limite explicite** :
+  je n'ai pas ouvert le détail job-par-job du run GitHub Actions (pas d'accès
+  réseau dans ce sandbox) — la déduction « run global vert ⇒ jobs pertinents
+  verts » s'appuie sur la lecture statique de `ci.yml` (dépendances `needs:`,
+  absence de `continue-on-error` sur les jobs concernés), pas sur une inspection
+  visuelle de chaque job individuel. Si un doute apparaît sur un job précis, le
+  vérifier directement dans l'interface GitHub avant de se fier à cette
+  déduction pour une décision ultérieure.
+- **PLAT-4bis** — **fait** (2026-08-18), XL, P0, alias
+  `second domaine workflow-action, suite PLAT-6`. **Constat déclencheur** :
+  PLAT-4/PLAT-6 ne prouvent la plateforme que sur un seul cas réel
+  `workflow-action` (`requests-workflow.definition.json`, cas
+  `requests-details`). Les 4 modules `workflow-action` du périmètre SEOS
+  (`finalization`, `processing`, `report-states`, `requests`) sont déjà
+  documentés comme family-dup entre eux (même forme métier, code dupliqué — voir
+  la section family-dup plus haut dans ce fichier), donc aucun n'est un second
+  domaine réellement indépendant. Décision : construire un second domaine
+  **synthétique, hors legacy** (comme `support-request. definition.json` l'a
+  déjà fait pour `action-request`), pour prouver la généricité du **core**, pas
+  dépendre du périmètre SEOS existant — en ligne avec le recadrage utilisateur
+  du 2026-08-18 : « le but est la composition qui construit n'importe quel type
+  app… le legacy n'est qu'un exemple de point de départ parmi d'autres (Figma,
+  Stitch, idée) ». **Découverte structurelle (bloquante, non anticipée)** : une
+  définition `content-moderation-workflow.definition.json` écrite à la main
+  (vocabulaire `claim`/`moderate`/`remove`/`export`, états
+  `submitted/under-review/ published/removed`, strictement conforme au schéma
+  JSON `workflow-action-definition.schema.json` — schéma qui n'impose aucun nom
+  fixe sur `permissions`/`operations[].id`) est **rejetée par le compilateur**
+  dès la validation :
+  `permissions must be exactly take, qualify, reject, export`. Cause identifiée
+  par lecture de `tools/generator-platform/core/ workflow-action-authoring.mjs`
+  : `validateWorkflowActionDefinition` compare les
+  `permissions`/`operations[].id`/`steps`/`rules` de la définition à des
+  **constantes en dur** (`expectedPermissions`, `expectedSteps`,
+  `expectedRules`) reprenant mot pour mot le vocabulaire
+  `take`/`qualify`/`export` de `requests-workflow`. Vérifié que ce n'est pas
+  isolé à ce seul fichier : `workflow-action-model.mjs` (lignes 157-159) exige
+  littéralement les _ids_ `take`/`qualify`/`export` dans `operationIds.has(...)`
+  ; `renderers/workflow-shared.mjs` (332 lignes) code ces mêmes noms dans les
+  **types TypeScript générés**, les noms de méthodes de la classe engine émise
+  et les appels de ports (`this.ports.call('take', ...)`) ;
+  `core/workflow-runtime-oracle.mjs` construit ses événements de test avec
+  `kind: 'take'`/`'qualify'`/ `'export'` en dur. **Conclusion** : le moteur
+  `workflow-action` actuel n'est pas un moteur générique paramétrable par le
+  vocabulaire déclaré dans la définition — c'est un template à un seul
+  vocabulaire figé, où seuls `feature.id`/`feature.name`/`feature.description`
+  et `state.statuses`/`state.qualification_statuses` sont réellement variables
+  (prouvé par le test existant « la commande génère une fonctionnalité renommée
+  », `workflow-action.test.mjs` lignes 202-294 — qui renomme `feature` mais
+  garde `take`/`qualify`/`export` identiques). **Écart documentaire** : le
+  schéma JSON et le guide utilisateur (`creer-un-workflow-action.md`, « le
+  contrat actuellement supporté est volontairement borné ») laissent penser que
+  seule la _topologie_ (take→qualify→export, un type de décision à 2 branches,
+  un export à 2 branches) est figée — pas le vocabulaire lexical exact des
+  permissions et des ids d'opération. Le claim implicite de généricité du core
+  (ADR-0029 §6, PLAT-1 « sans chemin ni concept de framework dans l'IR canonique
+  ») est donc plus étroit que ce qui a été communiqué : l'IR est neutre
+  vis-à-vis d'Angular/ReactJS (prouvé), mais pas encore vis-à-vis du
+  **vocabulaire métier** d'un second domaine `workflow-action`. **Baseline de
+  non-régression établi avant toute modification du core** :
+  `node --test tools/generator-platform/ workflow-action.test.mjs` → 10/10 tests
+  verts (vérifié localement, exécution réelle possible dans ce sandbox — `node`
+  et `node_modules` disponibles, contrairement à OPS-20 qui nécessitait
+  `bun`/`nx`/legacy). **Décision actée (2026-08-18)** : généraliser le moteur
+  (compilateur + IR + renderer + Oracle) pour accepter un vocabulaire
+  d'opérations et de permissions arbitraire, en conservant les invariants
+  structurels réels (exactement 3 rôles : une transition simple sans branche,
+  une transition avec 2 branches accept/reject, un export avec 2 branches
+  rows/no-rows), plutôt que de redimensionner la preuve au vocabulaire existant
+  ou de s'arrêter au seul constat. Séquencement retenu (principe big tech :
+  jamais de refonte XL sans checkpoint écrit avant, jamais un refactor
+  multi-fichiers sans garde-fou de non-régression à chaque étape) : ce constat
+  d'abord (fait, checkpoint non-réversible), puis généralisation par sous-étape
+  avec le test suite existant comme garde-fou après chaque fichier touché, puis
+  seulement alors le second domaine `content-moderation-workflow` comme preuve
+  d'acceptation. **Fichier source déjà écrit, en attente du moteur généralisé**
+  :
+  `tools/generator-platform/sources/ content-moderation-workflow.definition.json`.
+  **Généralisation exécutée et vérifiée (2026-08-18) — 4 fichiers, un à la fois,
+  baseline 10/10 revérifié après chacun.** (1)
+  `core/workflow-action-authoring.mjs` : `validateWorkflowActionDefinition`
+  détecte désormais les 3 rôles structurels (`entry`/`decision`/`export`) par
+  forme (`kind`/`topology`/`branches.length`/`to === 'branch'`) au lieu de
+  comparer aux ids littéraux `take`/`qualify`/`export` ; les `steps`/`rules`
+  attendus restent indexés par rôle, pas par nom — la seule exception est
+  `entry` dont les 2 premiers steps portent légitimement le nom de l'opération
+  (`external_call:{id}`, `notify:{id}`, motif documenté en commentaire). (2)
+  `core/workflow-action-model.mjs` : les 3 assertions littérales
   (`pending`/`in-progress` dans `state.statuses`, `pending` dans
   `qualification_statuses`, `operationIds.has('take'/'qualify'/'export')`)
-  retirées — remplacées par une exigence de forme (au moins 2 statuts de
-  chaque catégorie) ; la présence des 3 rôles est déjà garantie en amont
-  par (1), qui s'exécute toujours avant dans
-  `compileWorkflowActionDefinition`.
-  (3) `renderers/workflow-shared.mjs` (le plus sensible — génère
-  littéralement le code TypeScript émis, pas seulement une validation) :
-  types, noms de méthodes de la classe `WorkflowActionEngine` et
-  littéraux `command.kind`/`ports.call(...)` dérivés de
-  `operation.id` réel via `camelCase()` (déjà présent dans
-  `renderers/shared.mjs`), au lieu d'être codés en dur. Un piège identifié
-  et corrigé pendant l'implémentation : nommer la méthode export
-  directement `camelCase(exportOperation.id)` produirait `exportExport`
-  (collision id/rôle) — nommage `camelCase(\`${id}-list\`)` retenu,
-  qui reproduit exactement l'ancien nom historique `exportList` pour
-  `requests-workflow` (donc hash du manifest golden
-  `manifests/angular-workflow.manifest.json` inchangé, pas de
-  régénération nécessaire — vérifié, pas supposé).
-  **Limite explicite non levée** (décision actée avant de coder, voir
-  plus haut) : `QualificationEditFields`/`validateEditFields` restent des
-  champs de formulaire fixes du domaine `requests` (latitude/longitude/
-  placePhoto…) — un domaine qui n'utilise pas `approvalType: 'edit'` ou
-  `'callback'` ne les déclenche jamais, mais étendre le schéma pour des
-  champs de formulaire arbitraires est un chantier séparé, non engagé.
-  (4) `core/workflow-runtime-oracle.mjs` : `assertWorkflowOracle` prend
-  désormais un second paramètre `model` obligatoire et dérive `entry`/
-  `decision`/`export`/leurs statuts/permissions depuis ce modèle au lieu
-  de littéraux `pending`/`in-progress`/`approved`/`rejected`/`take`/
-  `qualify`/`reject`. **Défaut de conception intercepté et corrigé avant
-  commit** : le premier essai passait le modèle *muté* à l'Oracle dans
-  le test de mutation existant (`workflow-action.test.mjs`, « une
-  mutation du graphe... ») — l'Oracle dérivait alors ses propres attentes
-  depuis le modèle déjà muté, donc ne pouvait structurellement plus
-  jamais détecter aucune mutation (cohérence toujours vraie par
-  construction). Corrigé : l'Oracle compare le code généré depuis le
-  modèle *muté* contre les attentes du modèle *original* — c'est cette
-  divergence, pas une tautologie, qui doit être détectée. Trois autres
-  appelants non couverts par le test suite initial découverts et
-  corrigés dans la foulée (signature `assertWorkflowOracle(fn)` à un
-  seul argument aurait planté sur `model.operations` undefined) :
-  `after-success-extension.test.mjs` et `workflow-action-mutations.test.mjs`
-  — ce dernier particulièrement important : sans le fix, ses 12 tests
-  passaient déjà, mais **par un faux positif dangereux** (l'exception de
-  `resolveRoles(undefined)` satisfaisait `assert.rejects` même sans
-  qu'aucune mutation ne soit jamais réellement exercée par l'Oracle) —
-  aurait laissé les 5 mutants du fichier « survivre » silencieusement à
-  toute vraie régression future du moteur.
-  **Preuve finale (script `tools/generator-platform/plat4bis-verify.mjs`,
-  ad hoc, sort à trancher — garder comme fixture de régression ou
-  retirer après ce constat) exécutée avec succès sur
-  `content-moderation-workflow.definition.json`** : (1) compilation de la
-  définition (domaine `content-moderation-workflow`, vocabulaire
-  `claim`/`moderate`/`remove`/`export`, états `submitted/under-review/
-  published/removed`, entièrement distinct de `requests-workflow`) ; (2)
-  génération Angular + ReactJS, type-check strict des deux arbres réussi
-  (`typecheckGenerated`, compilateur TypeScript réel, pas une
-  approximation) ; (3) Oracle runtime complet passé sur les deux cibles
-  (permission refusée, garde d'état invalide, branche accept avec champs
-  de callback, branche reject, callback asynchrone de l'export avec
-  timing réel vérifié, cas rows-found/no-rows/erreur réseau) ; (4)
-  mutation du graphe (`claim.to` changé) détectée sur les deux cibles,
-  symétrique au test de mutation existant sur `requests-workflow`.
-  **Baseline `requests-workflow` reverifié intact après tout le chantier** :
-  `node --test workflow-action.test.mjs
-  workflow-action-mutations.test.mjs after-success-extension.test.mjs
-  renderers.test.mjs` → 30/30 tests verts (10+12+2+8 — chiffre exact
-  reconstitué depuis les runs individuels, pas un seul run combiné à
-  cause d'un timeout de la commande shell sur la suite complète du
-  dossier `generator-platform`, non liée à ce chantier).
-  **Décision actée (2026-08-18)** : intégrer la preuve comme fixture de
-  non-régression permanente plutôt que la garder en script ad hoc —
-  symétrique à `requests-workflow.definition.json`, cohérent avec
-  l'objectif ADR-0029 (le second domaine devient une garantie
-  automatique que toute future modification du moteur qui casserait la
-  généricité est détectée, pas un constat ponctuel jetable). Exécuté :
-  `plat4bis-verify.mjs` réécrit en fichier `node:test` standard (2 tests
-  — compilation+génération+type-check strict+Oracle complet sur les deux
-  cibles ; détection de mutation sur `claim.to` sur les deux cibles),
-  renommé `content-moderation-workflow.test.mjs` pour être ramassé
-  automatiquement par le glob `tools/generator-platform/*.test.mjs` déjà
-  utilisé par `check:generator-platform:core` (`package.json`) — aucune
-  modification de script nécessaire, l'intégration à la gate CI est
-  immédiate. Vérifié isolément : 2/2 vert.
-  **Trou de vérification précédent fermé** : le run combiné complet du
-  dossier (`node --test tools/generator-platform/*.test.mjs`, ~22
-  fichiers, budget élargi à 580s au lieu du défaut 120s qui avait
-  provoqué un timeout précédemment) a été exécuté en entier dans cette
-  session → **161/161 tests verts, exit 0**, aucune régression sur les
-  ~20 fichiers non exécutés précédemment (`action-request-*`,
-  `behavior-graph-*`, `presentation-flow-*`, `composition-instance-*`…).
-  PLAT-4bis est donc clos avec une vérification locale complète, sans
-  reste conditionné à un run CI distant — la confirmation CI réelle
-  reste une bonne pratique de clôture mais n'est plus bloquante pour
-  affirmer que le moteur `workflow-action` est génériquement
-  paramétrable par le vocabulaire déclaré dans la définition.
-  **Correction post-CI (2026-08-18)** : le run CI réel (`check:generator-
-  platform:angular`) a révélé un 4ᵉ appelant de `assertWorkflowOracle`
-  non détecté par la vérification locale — `tools/generator-platform/
-  stack-tests/angular/workflow-action.spec.ts`, qui compile et exécute
-  le code généré contre un **vrai** `TestBed` Angular (`tsc` strict +
-  `vitest`). Ce fichier appelait encore l'ancienne signature à un seul
-  argument (`assertWorkflowOracle(fn)`), cassée par la généralisation
-  de l'Oracle — erreur `Cannot read properties of undefined (reading
-  'operations')`. **Cause du angle mort** : les `stack-tests/` ne sont
-  exécutables qu'avec `bun`/une compilation Angular réelle
-  (`check:generator-platform:angular`/`:reactjs`), indisponibles dans
-  ce sandbox (`node`/`node_modules` seuls) — le run local 161/161
-  couvrait uniquement `check:generator-platform:core` (`node --test`),
-  pas les deux autres sous-commandes de `check:generator-platform`. Le
-  pendant ReactJS (`stack-tests/reactjs/workflow-action.spec.ts`)
-  n'appelle pas `assertWorkflowOracle` (assertions manuelles
-  indépendantes) donc n'était pas affecté. Corrigé : le spec Angular
-  récupère désormais `computeWorkflowTargets().model` (le modèle par
-  défaut `requests-workflow`, celui utilisé par `prepare-stack-
-  tests.mjs` pour générer le code sous test) et le passe en second
-  argument. **Leçon retenue** : la vérification locale de ce sandbox
-  (`node --test`) ne couvre pas la totalité de la gate CI
-  `check:generator-platform` — seule la CI réelle ferme cette classe de
-  régression pour de bon ; ne pas déclarer un chantier « clos sans
-  reste » sur la seule base d'un run local partiel de la commande
-  composite.
-  **Clôture CI confirmée (2026-08-18)** : run
-  [`32136111520`](https://github.com/ismaelkouda/cmz-platform/actions/runs/32136111520/job/95707805436)
-  vert après le correctif — `check:generator-platform` complet
-  (`:core` + `:angular` + `:reactjs`, donc y compris la compilation et
-  l'exécution réelles contre Angular via `TestBed`/`tsc --strict`) passe
-  sur le commit `f73d5fa`. PLAT-4bis est maintenant clos avec la CI
-  réelle comme preuve finale, pas seulement la vérification locale
-  partielle — cohérent avec la leçon retenue ci-dessus.
-  **Documentation de suivi resynchronisée (2026-08-18)** : détecté par
-  relecture que `generation-platform-capability-matrix.md` (§4, §9),
-  `validation-runtime-workflow-action.md` (avis Principal Engineer) et
-  `conception-compositions-evolutives-patterns-memorises.md` (étape H)
-  affirmaient encore « second domaine `workflow-action` réel encore
-  ouvert » après la clôture réelle de PLAT-4bis — même classe de risque
-  que les incidents T13-14/T13-16/T13-17 (documentation qui diverge du
-  code réel), ici sur un claim de maturité plutôt qu'un script CI.
-  Corrigé aux 3 endroits : le gap est fermé, référencé à PLAT-4bis et à
-  la CI verte `32136111520`. **Nouveau gap distinct rendu visible par
-  cette correction** : le claim « plateforme générique » (§6 de la
-  matrice) exige aussi un « budget d'extensions hors modèle mesuré et
-  non masqué par `Custom` » — cette mesure n'a jamais été produite dans
-  ce dépôt, sur aucune tranche. Ce n'est pas un gap créé par PLAT-4bis,
-  c'était déjà vrai avant, mais il restait masqué derrière le gap «
-  second domaine » plus visible. Annoté dans la matrice (§9), pas
-  encore budgété ni traité — décision de portée/méthode à trancher
+  retirées — remplacées par une exigence de forme (au moins 2 statuts de chaque
+  catégorie) ; la présence des 3 rôles est déjà garantie en amont par (1), qui
+  s'exécute toujours avant dans `compileWorkflowActionDefinition`. (3)
+  `renderers/workflow-shared.mjs` (le plus sensible — génère littéralement le
+  code TypeScript émis, pas seulement une validation) : types, noms de méthodes
+  de la classe `WorkflowActionEngine` et littéraux
+  `command.kind`/`ports.call(...)` dérivés de `operation.id` réel via
+  `camelCase()` (déjà présent dans `renderers/shared.mjs`), au lieu d'être codés
+  en dur. Un piège identifié et corrigé pendant l'implémentation : nommer la
+  méthode export directement `camelCase(exportOperation.id)` produirait
+  `exportExport` (collision id/rôle) — nommage
+  `camelCase(\`${id}-list\`)`retenu, qui reproduit exactement l'ancien nom historique`exportList`pour`requests-workflow`(donc hash du manifest golden`manifests/angular-workflow.manifest.json`inchangé, pas de régénération nécessaire — vérifié, pas supposé). **Limite explicite non levée** (décision actée avant de coder, voir plus haut) :`QualificationEditFields`/`validateEditFields`restent des champs de formulaire fixes du domaine`requests`(latitude/longitude/ placePhoto…) — un domaine qui n'utilise pas`approvalType:
+  'edit'`ou`'callback'`ne les déclenche jamais, mais étendre le schéma pour des champs de formulaire arbitraires est un chantier séparé, non engagé. (4)`core/workflow-runtime-oracle.mjs`:`assertWorkflowOracle`prend désormais un second paramètre`model`obligatoire et dérive`entry`/ `decision`/`export`/leurs statuts/permissions depuis ce modèle au lieu de littéraux `pending`/`in-progress`/`approved`/`rejected`/`take`/ `qualify`/`reject`. **Défaut de conception intercepté et corrigé avant commit** : le premier essai passait le modèle *muté* à l'Oracle dans le test de mutation existant (`workflow-action.test.mjs`, « une mutation du graphe... ») — l'Oracle dérivait alors ses propres attentes depuis le modèle déjà muté, donc ne pouvait structurellement plus jamais détecter aucune mutation (cohérence toujours vraie par construction). Corrigé : l'Oracle compare le code généré depuis le modèle *muté* contre les attentes du modèle *original* — c'est cette divergence, pas une tautologie, qui doit être détectée. Trois autres appelants non couverts par le test suite initial découverts et corrigés dans la foulée (signature `assertWorkflowOracle(fn)`à un seul argument aurait planté sur`model.operations`undefined) :`after-success-extension.test.mjs`et`workflow-action-mutations.test.mjs`— ce dernier particulièrement important : sans le fix, ses 12 tests passaient déjà, mais **par un faux positif dangereux** (l'exception de`resolveRoles(undefined)`satisfaisait`assert.rejects`même sans qu'aucune mutation ne soit jamais réellement exercée par l'Oracle) — aurait laissé les 5 mutants du fichier « survivre » silencieusement à toute vraie régression future du moteur. **Preuve finale (script`tools/generator-platform/plat4bis-verify.mjs`, ad hoc, sort à trancher — garder comme fixture de régression ou retirer après ce constat) exécutée avec succès sur `content-moderation-workflow.definition.json`** : (1) compilation de la définition (domaine `content-moderation-workflow`, vocabulaire `claim`/`moderate`/`remove`/`export`, états `submitted/under-review/
+  published/removed`, entièrement distinct de `requests-workflow`) ; (2) génération Angular + ReactJS, type-check strict des deux arbres réussi (`typecheckGenerated`, compilateur TypeScript réel, pas une approximation) ; (3) Oracle runtime complet passé sur les deux cibles (permission refusée, garde d'état invalide, branche accept avec champs de callback, branche reject, callback asynchrone de l'export avec timing réel vérifié, cas rows-found/no-rows/erreur réseau) ; (4) mutation du graphe (`claim.to`changé) détectée sur les deux cibles, symétrique au test de mutation existant sur`requests-workflow`. **Baseline `requests-workflow`reverifié intact après tout le chantier** :`node
+  --test workflow-action.test.mjs workflow-action-mutations.test.mjs
+  after-success-extension.test.mjs
+  renderers.test.mjs`→ 30/30 tests verts (10+12+2+8 — chiffre exact reconstitué depuis les runs individuels, pas un seul run combiné à cause d'un timeout de la commande shell sur la suite complète du dossier`generator-platform`, non liée à ce chantier). **Décision actée (2026-08-18)** : intégrer la preuve comme fixture de non-régression permanente plutôt que la garder en script ad hoc — symétrique à `requests-workflow.definition.json`, cohérent avec l'objectif ADR-0029 (le second domaine devient une garantie automatique que toute future modification du moteur qui casserait la généricité est détectée, pas un constat ponctuel jetable). Exécuté : `plat4bis-verify.mjs`réécrit en fichier`node:test`standard (2 tests — compilation+génération+type-check strict+Oracle complet sur les deux cibles ; détection de mutation sur`claim.to`sur les deux cibles), renommé`content-moderation-workflow.test.mjs`pour être ramassé automatiquement par le glob`tools/generator-platform/_.test.mjs`déjà utilisé par`check:generator-platform:core` (`package.json`) — aucune modification de script nécessaire, l'intégration à la gate CI est immédiate. Vérifié isolément : 2/2 vert. **Trou de vérification précédent fermé** : le run combiné complet du dossier (`node
+  --test
+  tools/generator-platform/_.test.mjs`, ~22 fichiers, budget élargi à 580s au lieu du défaut 120s qui avait provoqué un timeout précédemment) a été exécuté en entier dans cette session → **161/161 tests verts, exit 0**, aucune régression sur les ~20 fichiers non exécutés précédemment (`action-request-_`, `behavior-graph-_`, `presentation-flow-_`, `composition-instance-_`…). PLAT-4bis est donc clos avec une vérification locale complète, sans reste conditionné à un run CI distant — la confirmation CI réelle reste une bonne pratique de clôture mais n'est plus bloquante pour affirmer que le moteur `workflow-action` est génériquement paramétrable par le vocabulaire déclaré dans la définition. **Correction post-CI (2026-08-18)** : le run CI réel (`check:generator-
+  platform:angular`) a révélé un 4ᵉ appelant de `assertWorkflowOracle`non détecté par la vérification locale —`tools/generator-platform/
+  stack-tests/angular/workflow-action.spec.ts`, qui compile et exécute le code généré contre un **vrai** `TestBed` Angular (`tsc`strict +`vitest`). Ce fichier appelait encore l'ancienne signature à un seul argument (`assertWorkflowOracle(fn)`), cassée par la généralisation de l'Oracle — erreur `Cannot
+  read properties of undefined (reading
+  'operations')`. **Cause du angle mort** : les `stack-tests/`ne sont exécutables qu'avec`bun`/une compilation Angular réelle (`check:generator-platform:angular`/`:reactjs`), indisponibles dans ce sandbox (`node`/`node_modules`seuls) — le run local 161/161 couvrait uniquement`check:generator-platform:core` (`node
+  --test`), pas les deux autres sous-commandes de `check:generator-platform`. Le pendant ReactJS (`stack-tests/reactjs/workflow-action.spec.ts`) n'appelle pas `assertWorkflowOracle`(assertions manuelles indépendantes) donc n'était pas affecté. Corrigé : le spec Angular récupère désormais`computeWorkflowTargets().model`(le modèle par défaut`requests-workflow`, celui utilisé par `prepare-stack-
+  tests.mjs` pour générer le code sous test) et le passe en second argument. **Leçon retenue** : la vérification locale de ce sandbox (`node
+  --test`) ne couvre pas la totalité de la gate CI `check:generator-platform` — seule la CI réelle ferme cette classe de régression pour de bon ; ne pas déclarer un chantier « clos sans reste » sur la seule base d'un run local partiel de la commande composite. **Clôture CI confirmée (2026-08-18)** : run [`32136111520`](https://github.com/ismaelkouda/cmz-platform/actions/runs/32136111520/job/95707805436) vert après le correctif — `check:generator-platform` complet (`:core`+`:angular`+`:reactjs`, donc y compris la compilation et l'exécution réelles contre Angular via `TestBed`/`tsc
+  --strict`) passe sur le commit `f73d5fa`. PLAT-4bis est maintenant clos avec la CI réelle comme preuve finale, pas seulement la vérification locale partielle — cohérent avec la leçon retenue ci-dessus. **Documentation de suivi resynchronisée (2026-08-18)** : détecté par relecture que `generation-platform-capability-matrix.md`(§4, §9),`validation-runtime-workflow-action.md`(avis Principal Engineer) et`conception-compositions-evolutives-patterns-memorises.md`(étape H) affirmaient encore « second domaine`workflow-action`réel encore ouvert » après la clôture réelle de PLAT-4bis — même classe de risque que les incidents T13-14/T13-16/T13-17 (documentation qui diverge du code réel), ici sur un claim de maturité plutôt qu'un script CI. Corrigé aux 3 endroits : le gap est fermé, référencé à PLAT-4bis et à la CI verte`32136111520`. **Nouveau gap distinct rendu visible par cette correction** : le claim « plateforme générique » (§6 de la matrice) exige aussi un « budget d'extensions hors modèle mesuré et non masqué par `Custom`
+  » — cette mesure n'a jamais été produite dans ce dépôt, sur aucune tranche. Ce
+  n'est pas un gap créé par PLAT-4bis, c'était déjà vrai avant, mais il restait
+  masqué derrière le gap « second domaine » plus visible. Annoté dans la matrice
+  (§9), pas encore budgété ni traité — décision de portée/méthode à trancher
   séparément avant d'engager le travail.
-- **PLAT-4ter** — **décision actée : différé, non couvert par choix
-  documenté** (2026-08-18), L/XL, P1, alias `topologie workflow-action,
-  suite PLAT-4bis`. **Constat
-  déclencheur** : recadrage utilisateur — reconstituer tout le legacy ou
-  répéter un cas déjà couvert n'apporte rien ; la vraie preuve de généricité
-  vient de challenger le moteur sur des cas **structurellement différents**,
-  pas seulement un vocabulaire différent. PLAT-4bis a généralisé le
-  vocabulaire (noms d'opérations/permissions/états), jamais la **topologie**
-  (nombre et enchaînement des rôles structurels). Investigation menée avant
-  tout code (lecture des 3 fichiers concernés, pas de supposition) :
-  `core/workflow-action-model.mjs` (IR) est déjà générique, aucune
-  contrainte de nombre de rôles. `core/workflow-action-authoring.mjs`
-  (validateur) est rigide mais localisé : `operations.length === 3` en dur,
-  changement mécanique et à faible risque si engagé.
-  `renderers/workflow-shared.mjs` (codegen) et `core/workflow-runtime-oracle.mjs`
-  (Oracle) sont le vrai point dur : gabarits TypeScript à emplacements fixes
-  (une méthode `decisionMethod` unique câblée en dur dans un template
-  littéral de ~200 lignes, pas une boucle sur un tableau de décisions) —
-  généraliser à N décisions enchaînées est une réécriture du cœur du
-  générateur de code, d'ampleur comparable à PLAT-4bis entier, pas une
+- **PLAT-4ter** — **décision actée : différé, non couvert par choix documenté**
+  (2026-08-18), L/XL, P1, alias `topologie workflow-action, suite PLAT-4bis`.
+  **Constat déclencheur** : recadrage utilisateur — reconstituer tout le legacy
+  ou répéter un cas déjà couvert n'apporte rien ; la vraie preuve de généricité
+  vient de challenger le moteur sur des cas **structurellement différents**, pas
+  seulement un vocabulaire différent. PLAT-4bis a généralisé le vocabulaire
+  (noms d'opérations/permissions/états), jamais la **topologie** (nombre et
+  enchaînement des rôles structurels). Investigation menée avant tout code
+  (lecture des 3 fichiers concernés, pas de supposition) :
+  `core/workflow-action-model.mjs` (IR) est déjà générique, aucune contrainte de
+  nombre de rôles. `core/workflow-action-authoring.mjs` (validateur) est rigide
+  mais localisé : `operations.length === 3` en dur, changement mécanique et à
+  faible risque si engagé. `renderers/workflow-shared.mjs` (codegen) et
+  `core/workflow-runtime-oracle.mjs` (Oracle) sont le vrai point dur : gabarits
+  TypeScript à emplacements fixes (une méthode `decisionMethod` unique câblée en
+  dur dans un template littéral de ~200 lignes, pas une boucle sur un tableau de
+  décisions) — généraliser à N décisions enchaînées est une réécriture du cœur
+  du générateur de code, d'ampleur comparable à PLAT-4bis entier, pas une
   extension additive. Mémo produit avant tout engagement de code, dans le
   respect de la doctrine `backlog-llm.md` (« ces tâches ne doivent jamais
-  aboutir à une décision prise par l'agent ») et du principe déjà appliqué
-  à PLAT-4bis (« jamais de refonte XL sans checkpoint écrit avant ») :
-  [`memo-topologie-workflow-action.md`](./memo-topologie-workflow-action.md),
-  3 options présentées sans recommandation (généralisation complète à N
-  décisions arbitraires, généralisation bornée à un 4ᵉ rôle nommé fixe,
-  documentation de la limite sans coder maintenant).
-  **Décision (2026-08-18, arbitrée avec le mandat « rigueur stricte, peu
-  importe le temps »)** : Option C retenue — ne pas généraliser maintenant.
-  Vérification factuelle avant de trancher : les 3 définitions
-  `workflow-action` existantes (`requests-workflow`,
+  aboutir à une décision prise par l'agent ») et du principe déjà appliqué à
+  PLAT-4bis (« jamais de refonte XL sans checkpoint écrit avant ») :
+  [`memo-topologie-workflow-action.md`](./memo-topologie-workflow-action.md), 3
+  options présentées sans recommandation (généralisation complète à N décisions
+  arbitraires, généralisation bornée à un 4ᵉ rôle nommé fixe, documentation de
+  la limite sans coder maintenant). **Décision (2026-08-18, arbitrée avec le
+  mandat « rigueur stricte, peu importe le temps »)** : Option C retenue — ne
+  pas généraliser maintenant. Vérification factuelle avant de trancher : les 3
+  définitions `workflow-action` existantes (`requests-workflow`,
   `content-moderation-workflow`, et les 4 modules SEOS family-dup
-  `finalization`/`processing`/`report-states`/`requests`, déjà documentés
-  comme même forme métier en §1.1) ont chacune exactement 1 décision —
-  vérifié par grep sur les `.definition.json` réels
-  (`"kind": "transition"` × 2, `"to": "branch"` × 1 dans chacun), pas
-  supposé. Aucun cas réel, legacy ou synthétique, n'exige aujourd'hui une
-  chaîne de décisions enchaînées dans ce dépôt. Raisonnement retenu :
-  « rigueur stricte » ne signifie pas « construire la généralisation la
-  plus ambitieuse possible » — ADR-0029 (§ Décision) pose explicitement
-  « une source ou une cible n'est annoncée comme supportée qu'après
-  satisfaction des gates » et le §6 exige la preuve avant l'extension,
+  `finalization`/`processing`/`report-states`/`requests`, déjà documentés comme
+  même forme métier en §1.1) ont chacune exactement 1 décision — vérifié par
+  grep sur les `.definition.json` réels (`"kind": "transition"` × 2,
+  `"to": "branch"` × 1 dans chacun), pas supposé. Aucun cas réel, legacy ou
+  synthétique, n'exige aujourd'hui une chaîne de décisions enchaînées dans ce
+  dépôt. Raisonnement retenu : « rigueur stricte » ne signifie pas « construire
+  la généralisation la plus ambitieuse possible » — ADR-0029 (§ Décision) pose
+  explicitement « une source ou une cible n'est annoncée comme supportée
+  qu'après satisfaction des gates » et le §6 exige la preuve avant l'extension,
   jamais l'inverse. Réécrire ~600 lignes du cœur du générateur (renderer +
   Oracle) pour un besoin non observé, avec un risque de régression réel sur
-  `requests-workflow` (production) et `content-moderation-workflow`
-  (fixture de non-régression déjà close), est de la sur-ingénierie
-  spéculative — le contraire de la rigueur exigée, même si l'effort
-  disponible n'est pas la contrainte. Documenté dans
-  `generation-platform-capability-matrix.md` avec une condition de sortie
-  explicite : rouvrir dès qu'une définition réelle exige factuellement plus
-  d'une décision, pas avant. Aucune ligne de moteur modifiée.
-- **PLAT-4quater** — **fait** (2026-08-18), M, P1, alias `budget
-  d'extensions hors modèle, suite PLAT-4ter`. Le claim « plateforme
-  générique » (§6 de `generation-platform-capability-matrix.md`) exige un
-  « budget d'extensions hors modèle mesuré et non masqué par `Custom` »,
-  jamais produit dans ce dépôt. Inventaire exhaustif mené sur
-  `tools/generator-platform/renderers/*.mjs` (les deux familles
-  `action-request` et `workflow-action`), avec deux catégories exclues
-  explicitement du compte pour ne pas le gonfler artificiellement : le slot
-  `after-success` (PLAT-5C, typé, préservation garantie par hash) est de la
-  composition contractuelle prouvée, pas un échappatoire ; le verbe
-  `Custom` d'ADR-0027 est un mécanisme distinct (noyau de patterns Nx,
-  structure de fichiers), hors périmètre du moteur IR/renderer visé ici.
-  **Résultat : 1 seul échappatoire réel trouvé dans tout le moteur** —
-  `QualificationEditFields` (`renderers/workflow-shared.mjs`, lignes
-  103-112 et 248-258), 8 champs métier fixes codés en dur, sans
-  contrepartie dans `workflow-action-definition.schema.json`, déjà
-  documentés en commentaire depuis PLAT-4bis mais jamais comptés dans un
-  budget global. Aucun cas trouvé côté `action-request`
-  (`angular-nx-renderer.mjs`/`react-typescript-renderer.mjs`) : tous les
-  champs émis sont dérivés du modèle par interpolation, aucun littéral
-  métier. **Décision sur la méthode de comptage** : liste nommée, pas de
-  détecteur AST automatique — distinguer un champ métier fixe hors contrat
-  d'un type d'infrastructure du moteur (`WorkflowContext`/`WorkflowPorts`,
-  légitimement génériques) n'est pas un simple pattern syntaxique, et
-  instrumenter un détecteur pour valider un budget à une seule entrée
-  aurait été la même erreur que généraliser le moteur pour un besoin non
-  observé (même principe que PLAT-4ter) — de l'instrumentation spéculative,
-  pas de la rigueur. Documenté dans
-  `generation-platform-capability-matrix.md` §4/§9 : toute future extension
+  `requests-workflow` (production) et `content-moderation-workflow` (fixture de
+  non-régression déjà close), est de la sur-ingénierie spéculative — le
+  contraire de la rigueur exigée, même si l'effort disponible n'est pas la
+  contrainte. Documenté dans `generation-platform-capability-matrix.md` avec une
+  condition de sortie explicite : rouvrir dès qu'une définition réelle exige
+  factuellement plus d'une décision, pas avant. Aucune ligne de moteur modifiée.
+- **PLAT-4quater** — **fait** (2026-08-18), M, P1, alias
+  `budget d'extensions hors modèle, suite PLAT-4ter`. Le claim « plateforme
+  générique » (§6 de `generation-platform-capability-matrix.md`) exige un «
+  budget d'extensions hors modèle mesuré et non masqué par `Custom` », jamais
+  produit dans ce dépôt. Inventaire exhaustif mené sur
+  `tools/generator-platform/renderers/*.mjs` (les deux familles `action-request`
+  et `workflow-action`), avec deux catégories exclues explicitement du compte
+  pour ne pas le gonfler artificiellement : le slot `after-success` (PLAT-5C,
+  typé, préservation garantie par hash) est de la composition contractuelle
+  prouvée, pas un échappatoire ; le verbe `Custom` d'ADR-0027 est un mécanisme
+  distinct (noyau de patterns Nx, structure de fichiers), hors périmètre du
+  moteur IR/renderer visé ici. **Résultat : 1 seul échappatoire réel trouvé dans
+  tout le moteur** — `QualificationEditFields` (`renderers/workflow-shared.mjs`,
+  lignes 103-112 et 248-258), 8 champs métier fixes codés en dur, sans
+  contrepartie dans `workflow-action-definition.schema.json`, déjà documentés en
+  commentaire depuis PLAT-4bis mais jamais comptés dans un budget global. Aucun
+  cas trouvé côté `action-request`
+  (`angular-nx-renderer.mjs`/`react-typescript-renderer.mjs`) : tous les champs
+  émis sont dérivés du modèle par interpolation, aucun littéral métier.
+  **Décision sur la méthode de comptage** : liste nommée, pas de détecteur AST
+  automatique — distinguer un champ métier fixe hors contrat d'un type
+  d'infrastructure du moteur (`WorkflowContext`/`WorkflowPorts`, légitimement
+  génériques) n'est pas un simple pattern syntaxique, et instrumenter un
+  détecteur pour valider un budget à une seule entrée aurait été la même erreur
+  que généraliser le moteur pour un besoin non observé (même principe que
+  PLAT-4ter) — de l'instrumentation spéculative, pas de la rigueur. Documenté
+  dans `generation-platform-capability-matrix.md` §4/§9 : toute future extension
   hors modèle découverte doit être ajoutée à cette liste au moment de son
-  introduction, pas déduite après coup. **Le claim § 6 reste non rempli** —
-  un budget mesuré à 1 n'est pas un budget nul, et le gap distinct « second
-  domaine réel pour `action-request` » reste ouvert séparément.
+  introduction, pas déduite après coup. **Le claim § 6 reste non rempli** — un
+  budget mesuré à 1 n'est pas un budget nul, et le gap distinct « second domaine
+  réel pour `action-request` » reste ouvert séparément.
+- **PLAT-4bis-AR** — **fait** (2026-08-18), L, P1, alias
+  `second domaine action-request indépendant, suite PLAT-4quater`. **Constat
+  déclencheur** : après la fermeture du gap topologique `workflow-action`
+  (PLAT-4ter, différé faute de cas réel) et la mesure du budget d'extensions
+  (PLAT-4quater), il restait un seul point ouvert du claim « plateforme
+  générique » (§6) : `action-request` n'a jamais eu de second domaine réel
+  construit spécifiquement pour prouver sa généricité au sens strict —
+  `support`/`authentication` partagent déjà la même forme d'exécution (documenté
+  dans `generation-platform-capability-matrix.md` §4 depuis PLAT-4bis).
+  **Investigation menée avant tout code** (même discipline que PLAT-4bis) :
+  contrairement à `workflow-action-authoring.mjs` (gabarit à 3 rôles fixes avant
+  PLAT-4bis), `action-request-authoring.mjs` n'a jamais eu de contrainte de
+  nombre d'opérations ni de rôle nommé — `operations` est un tableau libre, et
+  `renderers/angular-nx-renderer.mjs` boucle déjà sur
+  `semantic.operations.map(...)` (une méthode par opération, nombre arbitraire).
+  Preuve empirique déjà présente avant ce chantier : `authentication` (3
+  opérations) et `support` (1 opération) coexistent sans aucune adaptation de
+  code. **Le gap n'était donc pas structurel mais de preuve** : jamais testé sur
+  un axe autre que le nombre d'opérations et le vocabulaire. Axe retenu
+  (recommandation acceptée) : variation des effets/contraintes, pas juste un 3ᵉ
+  cas qui ressemble aux deux premiers. **3 défauts réels de généricité trouvés
+  et corrigés en construisant le second domaine** (aucun fabriqué a priori,
+  chacun découvert en tentant réellement de compiler/générer/type-checker une
+  définition différente, même méthode que PLAT-4bis) : (1) `effect.kind` était
+  un `enum` **fermé** à 4 valeurs (`external_call`, `establish_session`,
+  `request_recovery`, `reset_credential`) dans **2 schémas distincts**
+  (`action-request-definition.schema.json` ET `semantic-model.schema.json`, la
+  seconde duplication n'était pas anticipée) — vérifié dans le code (pas
+  supposé) que seul `establish_session` a jamais un comportement réel
+  (`action-request-authoring.mjs`, exige `user`+`token` en sortie ;
+  `angular-nx-renderer.mjs`, déclenche la persistance de session) ;
+  `request_recovery`/`reset_credential` n'étaient lus nulle part — du
+  vocabulaire `authentication` figé sans raison fonctionnelle. Élargi aux deux
+  schémas vers `$ref: "#/$defs/id"` (même pattern que `operation.id`),
+  `external_call` (requis structurellement) et `establish_session` (comportement
+  optionnel réservé) restant les seuls noms porteurs de sens. (2) Le renderer
+  (`renderers/shared.mjs`, `typeName`) ne mappait que 5 des 8 primitives
+  déclarées valides par le validateur (`action-request-authoring.mjs`,
+  `primitiveNames`) — `date`/`datetime`/ `uuid` absents, jamais exercés par
+  `authentication`/`support` (aucun champ `required` de ces deux définitions
+  n'utilise un type autre que `string`, vérifié par script). Ajoutés, mappés
+  vers `string` (aucun type wire natif TypeScript pour ces primitives). (3)
+  `renderRequiredCheck` (nouveau, extrait de `renderValidation`) : la contrainte
+  `required` générait `typeof value.champ === 'string' && value.champ.trim()...`
+  **quel que soit le type déclaré du champ** — vrai seulement parce que les 10
+  champs `required` existants dans `authentication`/`support` sont tous des
+  `string` (vérifié exhaustivement). Un champ `required` d'un autre type
+  primitif (`integer` dans le nouveau domaine) fait dégénérer l'intersection
+  TypeScript en `never` dans le bloc du garde, cassant le type-check strict
+  (`Property 'trim' does not exist on type 'never'`). Corrigé : la contrainte
+  required est désormais dérivée du type réel du champ (retrouvé dans
+  `semantic.types`), avec une vérification `undefined`/`null` pour tout type
+  non-`string`. **Second domaine retenu : `inventory-adjustment`**
+  (`tools/generator-platform/sources/inventory-adjustment.definition.json`),
+  synthétique et hors legacy comme `support-request` l'a déjà fait pour
+  `action-request` — 2 opérations (`adjust-stock`, `reconcile-count`, ni 1 comme
+  `support` ni 3 comme `authentication`), `access.mode: authorized` comme mode
+  natif de la définition source (pas une mutation en mémoire d'un cas `public`/
+  `authenticated` existant, contrairement au test `support` déjà en place),
+  effet métier personnalisé `stock_mutation`, contrainte `equals` croisée sur
+  des champs `integer` (jamais vu — `reset-password` avait déjà `equals` mais
+  sur des `string`), type `uuid`. Fixture de non-régression permanente :
+  `tools/generator-platform/inventory-adjustment-authoring. test.mjs` (8 tests —
+  compilation/schéma, absence de fuite de vocabulaire
+  `authentication`/`support`, rendu correct des 3 primitives ajoutées,
+  contrainte required non dégénérée, exécution Angular nominale avec
+  `authorized` natif et `equals` croisé, permission runtime sur les 2
+  opérations, **mutation de la contrainte `equals` qui change les deux arbres
+  générés et fait disparaître le check de la validation générée** — preuve de
+  détection de régression, pas seulement de compilation/exécution nominale),
+  ramassé automatiquement par le glob `tools/generator-platform/*.test.mjs` déjà
+  utilisé par `check:generator-platform:core` (`package.json`) — aucune
+  modification de script nécessaire, `check:ci-wiring` revérifié vert.
+  **Baseline de non-régression vérifiée à chaque étape** (même discipline que
+  PLAT-4bis) : `action-request-authoring.test.mjs` +
+  `action-request-mutations.test.mjs` + `action-request-runtime.test.mjs`
+  (16/16) revérifiés verts après chacun des 3 correctifs de généricité ; suite
+  complète `tools/generator-platform/*.test.mjs` (169/169, dont les 8 nouveaux)
+  verte en fin de chantier — aucune régression sur
+  `authentication`/`support`/`workflow-action`/ `content-moderation-workflow`.
+  `eslint --max-warnings=0` et `prettier --check` propres. **Le claim «
+  plateforme générique » (§6) n'a donc plus de gap connu et non traité** — les 3
+  points restés ouverts après PLAT-4bis (second domaine `workflow-action`,
+  budget d'extensions, second domaine `action-request`) sont chacun soit fermés
+  (PLAT-4bis, PLAT-4bis-AR), soit mesurés et documentés comme différés par choix
+  explicite (PLAT-4ter, PLAT-4quater) — aucun laissé simplement « non mesuré »
+  ou « non su ».
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
@@ -992,332 +945,318 @@ Figma, désormais source partielle différée :
   `composition.persisted-instance`, `behavior.graph` et `presentation.flow`.
 - **PLAT-5H** — **fait localement** (2026-08-16), M, P0. La lacune
   `composition.persisted-instance` est fermée dans le contrat directeur.
-  ADR-0032 (Option C) sépare l'instance de composition persistée de la
-  promotion en pattern ; PLAT-5H ne construit que le premier acte, jamais le
-  second. Un nouveau module core (`core/composition-instance.mjs`) sait
-  construire une enveloppe JSON versionnée et immuable
-  (`kind: "composition-instance"`, `schema_version`, `instance_id`,
-  `recorded_at`, `source`, `contract_ref`, la `projected_definition` exacte
-  qui a produit le rendu, les hash d'arbre `manifest_tree_sha256` des deux
-  cibles, et une intégrité `sha256-stable-json-v1` calculée sur l'enveloppe
-  elle-même). L'enveloppe ne porte jamais de champ de promotion, d'invariants
-  réutilisables ni d'identifiant de pattern — c'est vérifié explicitement par
-  Oracle. Le cycle complet est exécuté réellement : écriture sur disque dans
-  un répertoire temporaire, relecture depuis les octets écrits (pas une
-  référence mémoire), recompilation de la `projected_definition` rechargée
-  via `compileActionRequestDefinition` + les deux renderers, puis comparaison
-  des `tree_sha256` régénérés contre ceux enregistrés — une régénération
-  identique aux hash près est la preuve de déterminisme. Le rechargement
-  échoue fermé dans quatre scénarios distincts et testés séparément : hash
-  d'enveloppe non concordant (charge utile modifiée sans resigner
-  l'intégrité), violation de schéma (champ requis absent), JSON tronqué/
-  corrompu sur disque, et `contract_ref` ne correspondant pas au contrat
-  attendu ; aucun de ces cas ne produit de génération silencieuse. Un
-  cinquième cas — une enveloppe validement resignée mais dont le hash d'arbre
-  enregistré ne correspond plus à ce que la définition régénère réellement —
-  est détecté par la comparaison de régénération, pas par l'intégrité seule,
-  ce qui prouve que les deux contrôles sont complémentaires et non redondants.
-  Preuves : Oracle exécutable du gate directeur
-  (`probePersistedInstance` dans `check-evolvable-composition.mjs`), 8 tests
-  directs (`composition-instance.test.mjs`) couvrant construction, séparation
-  ADR-0032, round-trip disque octet pour octet, régénération identique,
-  falsification, schéma incomplet, `contract_ref` erroné et divergence
-  d'arbre, et 3 mutants tués sur les gardes fail-closed du module core
-  (`composition-instance-mutations.test.mjs` : hash d'intégrité neutralisé,
+  ADR-0032 (Option C) sépare l'instance de composition persistée de la promotion
+  en pattern ; PLAT-5H ne construit que le premier acte, jamais le second. Un
+  nouveau module core (`core/composition-instance.mjs`) sait construire une
+  enveloppe JSON versionnée et immuable (`kind: "composition-instance"`,
+  `schema_version`, `instance_id`, `recorded_at`, `source`, `contract_ref`, la
+  `projected_definition` exacte qui a produit le rendu, les hash d'arbre
+  `manifest_tree_sha256` des deux cibles, et une intégrité
+  `sha256-stable-json-v1` calculée sur l'enveloppe elle-même). L'enveloppe ne
+  porte jamais de champ de promotion, d'invariants réutilisables ni
+  d'identifiant de pattern — c'est vérifié explicitement par Oracle. Le cycle
+  complet est exécuté réellement : écriture sur disque dans un répertoire
+  temporaire, relecture depuis les octets écrits (pas une référence mémoire),
+  recompilation de la `projected_definition` rechargée via
+  `compileActionRequestDefinition` + les deux renderers, puis comparaison des
+  `tree_sha256` régénérés contre ceux enregistrés — une régénération identique
+  aux hash près est la preuve de déterminisme. Le rechargement échoue fermé dans
+  quatre scénarios distincts et testés séparément : hash d'enveloppe non
+  concordant (charge utile modifiée sans resigner l'intégrité), violation de
+  schéma (champ requis absent), JSON tronqué/ corrompu sur disque, et
+  `contract_ref` ne correspondant pas au contrat attendu ; aucun de ces cas ne
+  produit de génération silencieuse. Un cinquième cas — une enveloppe validement
+  resignée mais dont le hash d'arbre enregistré ne correspond plus à ce que la
+  définition régénère réellement — est détecté par la comparaison de
+  régénération, pas par l'intégrité seule, ce qui prouve que les deux contrôles
+  sont complémentaires et non redondants. Preuves : Oracle exécutable du gate
+  directeur (`probePersistedInstance` dans `check-evolvable-composition.mjs`), 8
+  tests directs (`composition-instance.test.mjs`) couvrant construction,
+  séparation ADR-0032, round-trip disque octet pour octet, régénération
+  identique, falsification, schéma incomplet, `contract_ref` erroné et
+  divergence d'arbre, et 3 mutants tués sur les gardes fail-closed du module
+  core (`composition-instance-mutations.test.mjs` : hash d'intégrité neutralisé,
   vérification de `contract_ref` neutralisée, détection de divergence
   neutralisée — chacun prouvé en montrant que le module original rejette le
-  scénario et que le module muté l'accepte). Limite explicite : ce mécanisme
-  ne dit rien sur *où* les instances doivent être stockées en production
-  (registre, base de données, etc.) ni sur les critères de promotion en
-  pattern — ADR-0032 les déclare explicitement hors périmètre et dette
-  assumée ; PLAT-5H prouve seulement que le cycle persist → reload →
-  regenerate est déterministe et fail-closed. Il reste exactement 2 lacunes :
-  `behavior.graph` et `presentation.flow`.
+  scénario et que le module muté l'accepte). Limite explicite : ce mécanisme ne
+  dit rien sur _où_ les instances doivent être stockées en production (registre,
+  base de données, etc.) ni sur les critères de promotion en pattern — ADR-0032
+  les déclare explicitement hors périmètre et dette assumée ; PLAT-5H prouve
+  seulement que le cycle persist → reload → regenerate est déterministe et
+  fail-closed. Il reste exactement 2 lacunes : `behavior.graph` et
+  `presentation.flow`.
 - **PLAT-5I** — **fait localement** (2026-08-16), M, P0. La lacune
   `behavior.graph` est fermée dans le contrat directeur. Le graphe
   `evolution.behavior_graph` (états `editing`/`submitting`/`confirmed`/
-  `business-error`, 3 transitions événementielles) est désormais gouverné par
-  un moteur d'exécution réel, pas par une validation de schéma. **Choix
+  `business-error`, 3 transitions événementielles) est désormais gouverné par un
+  moteur d'exécution réel, pas par une validation de schéma. **Choix
   d'implémentation documenté :** le mécanisme `workflow-action` existant
   (`core/workflow-action-model.mjs`) a été examiné en premier — ADR-0030/0031
-  l'exigent — mais rejeté comme base de réutilisation directe : c'est une
-  state machine délibérément liée à un domaine fixe (opérations `take`/
+  l'exigent — mais rejeté comme base de réutilisation directe : c'est une state
+  machine délibérément liée à un domaine fixe (opérations `take`/
   `qualify`/`export`, permissions et règles nommées en dur, validées par
-  `validateWorkflowActionDefinition`), pas un moteur générique. Le
-  réutiliser pour `action-request`/`support-request` aurait exigé soit de
-  dupliquer une forme figée pour un domaine différent, soit d'affaiblir ses
-  invariants — les deux à l'opposé de l'esprit « un seul mécanisme, pas de
-  duplication ». Le patron architectural réellement réutilisé est celui déjà
-  prouvé par `core/workflow-runtime-oracle.mjs` +
-  `core/workflow-runtime-harness.mjs` (garde de transition fail-closed
-  exécutée réellement en Angular DI et via un port de hooks React) —
-  transposé à un graphe **générique et piloté par les données du contrat**,
-  jamais par des noms d'état ou d'événement codés en dur. Nouveau module
-  core `core/behavior-graph.mjs` : validation structurelle d'une déclaration
-  `{ initial, nodes, edges }` (nœuds uniques, initial connu, arêtes sans
-  doublon `from/event`, aucun nœud inatteignable depuis l'état initial) et
+  `validateWorkflowActionDefinition`), pas un moteur générique. Le réutiliser
+  pour `action-request`/`support-request` aurait exigé soit de dupliquer une
+  forme figée pour un domaine différent, soit d'affaiblir ses invariants — les
+  deux à l'opposé de l'esprit « un seul mécanisme, pas de duplication ». Le
+  patron architectural réellement réutilisé est celui déjà prouvé par
+  `core/workflow-runtime-oracle.mjs` + `core/workflow-runtime-harness.mjs`
+  (garde de transition fail-closed exécutée réellement en Angular DI et via un
+  port de hooks React) — transposé à un graphe **générique et piloté par les
+  données du contrat**, jamais par des noms d'état ou d'événement codés en dur.
+  Nouveau module core `core/behavior-graph.mjs` : validation structurelle d'une
+  déclaration `{ initial, nodes, edges }` (nœuds uniques, initial connu, arêtes
+  sans doublon `from/event`, aucun nœud inatteignable depuis l'état initial) et
   compilation en table de transition normalisée. Deux renderers génériques
   (`renderers/behavior-graph-renderer.mjs`,
   `renderers/behavior-graph-stack-adapters.mjs`) émettent un
   `BehaviorGraphEngine` TypeScript identique pour les deux cibles — la garde
-  `if (next === undefined) throw new BehaviorGraphViolation(...)` est la
-  seule ligne qui décide fail-closed — plus un service Angular injectable et
-  une factory de hook React, à l'image exacte de `PERMISSION_PORT`/
-  `createActionRequestHooks`. **Choix de portée délibéré :** ce moteur n'est
-  pas branché dans les renderers génériques `action-request` (qui servent
-  aussi `login`/`forgot-password`/etc., sans graphe déclaré) : le schéma
-  `action-request-definition.schema.json` a `additionalProperties: false` et
-  ne porte aucun champ `behavior_graph`. Le moteur est matérialisé et exécuté
-  séparément à partir de `contract.evolution.behavior_graph`, sur le même
-  modèle d'isolation que `probePersistedInstance` (PLAT-5H) — sans toucher
-  aux fichiers ni aux hash d'arbre `targets.angular`/`targets.react` déjà
-  couverts par le manifest, donc sans risque de régression sur
-  `composition.persisted-instance`. Preuve d'exécution réelle
-  (`core/behavior-graph-runtime-oracle.mjs`, appelée par
-  `probeBehaviorGraph()` dans `check-evolvable-composition.mjs`) : transpile
-  et charge le moteur généré pour les deux cibles, démarre dans l'état
-  initial déclaré, suit les transitions déclarées
-  (`editing→submitting→confirmed` et `editing→submitting→business-error`) et
-  prouve qu'un événement absent du graphe est refusé sans jamais faire
-  progresser l'état — testé à la fois depuis l'état initial et depuis un
-  état intermédiaire, dans les deux stacks. Tests natifs TestBed (Angular,
-  6/6, `stack-tests/angular/behavior-graph.spec.ts`) et Testing Library
-  (ReactJS, 6/6, `stack-tests/reactjs/behavior-graph.spec.ts`), générés par
-  `prepare-stack-tests.mjs` à partir des mêmes fonctions de rendu que
-  l'Oracle — pas de duplication de logique. 2 mutants tués sur la garde de
-  transition rendue (`behavior-graph-mutations.test.mjs`) : garde
-  neutralisée (le `throw` est supprimé) et repli silencieux sur l'état
-  initial au lieu d'un rejet — dans les deux cas l'Oracle catche l'absence
-  de refus et échoue, prouvant que la garde est porteuse de preuve, pas un
-  test tautologique. 12 tests directs sur `core/behavior-graph.mjs`
-  (validation structurelle, compilation, application d'événement,
-  fail-closed sur état/événement non déclaré) dans `behavior-graph.test.mjs`.
-  Validations : 126/126 tests core (dont 14 propres à ce lot), gate
-  directeur PASS avec `regressions:[]` et `unexpectedly_implemented:[]`,
-  `target_tree_sha256` Angular/ReactJS inchangés (confirmant l'absence
-  d'effet de bord sur les renderers `action-request` génériques),
-  `eslint --max-warnings=0` propre sur `core/`, `renderers/`, `*.mjs`,
-  `format:check` vert, poids fichiers conforme (plafond 800 lignes, chaque
-  nouveau fichier ≤ 268 lignes), `tsc --noEmit` et `vitest run` natifs verts
-  sur les deux cibles (13/13 chacune, dont les 6 nouveaux tests
+  `if (next === undefined) throw new BehaviorGraphViolation(...)` est la seule
+  ligne qui décide fail-closed — plus un service Angular injectable et une
+  factory de hook React, à l'image exacte de `PERMISSION_PORT`/
+  `createActionRequestHooks`. **Choix de portée délibéré :** ce moteur n'est pas
+  branché dans les renderers génériques `action-request` (qui servent aussi
+  `login`/`forgot-password`/etc., sans graphe déclaré) : le schéma
+  `action-request-definition.schema.json` a `additionalProperties: false` et ne
+  porte aucun champ `behavior_graph`. Le moteur est matérialisé et exécuté
+  séparément à partir de `contract.evolution.behavior_graph`, sur le même modèle
+  d'isolation que `probePersistedInstance` (PLAT-5H) — sans toucher aux fichiers
+  ni aux hash d'arbre `targets.angular`/`targets.react` déjà couverts par le
+  manifest, donc sans risque de régression sur `composition.persisted-instance`.
+  Preuve d'exécution réelle (`core/behavior-graph-runtime-oracle.mjs`, appelée
+  par `probeBehaviorGraph()` dans `check-evolvable-composition.mjs`) : transpile
+  et charge le moteur généré pour les deux cibles, démarre dans l'état initial
+  déclaré, suit les transitions déclarées (`editing→submitting→confirmed` et
+  `editing→submitting→business-error`) et prouve qu'un événement absent du
+  graphe est refusé sans jamais faire progresser l'état — testé à la fois depuis
+  l'état initial et depuis un état intermédiaire, dans les deux stacks. Tests
+  natifs TestBed (Angular, 6/6, `stack-tests/angular/behavior-graph.spec.ts`) et
+  Testing Library (ReactJS, 6/6, `stack-tests/reactjs/behavior-graph.spec.ts`),
+  générés par `prepare-stack-tests.mjs` à partir des mêmes fonctions de rendu
+  que l'Oracle — pas de duplication de logique. 2 mutants tués sur la garde de
+  transition rendue (`behavior-graph-mutations.test.mjs`) : garde neutralisée
+  (le `throw` est supprimé) et repli silencieux sur l'état initial au lieu d'un
+  rejet — dans les deux cas l'Oracle catche l'absence de refus et échoue,
+  prouvant que la garde est porteuse de preuve, pas un test tautologique. 12
+  tests directs sur `core/behavior-graph.mjs` (validation structurelle,
+  compilation, application d'événement, fail-closed sur état/événement non
+  déclaré) dans `behavior-graph.test.mjs`. Validations : 126/126 tests core
+  (dont 14 propres à ce lot), gate directeur PASS avec `regressions:[]` et
+  `unexpectedly_implemented:[]`, `target_tree_sha256` Angular/ReactJS inchangés
+  (confirmant l'absence d'effet de bord sur les renderers `action-request`
+  génériques), `eslint --max-warnings=0` propre sur `core/`, `renderers/`,
+  `*.mjs`, `format:check` vert, poids fichiers conforme (plafond 800 lignes,
+  chaque nouveau fichier ≤ 268 lignes), `tsc --noEmit` et `vitest run` natifs
+  verts sur les deux cibles (13/13 chacune, dont les 6 nouveaux tests
   `behavior-graph.spec.ts`). **Limite explicite assumée :** le moteur ne
-  gouverne que le graphe déclaré par le contrat directeur pour cette
-  composition (`action-request`/`support-request`) ; il n'est pas encore
-  câblé comme mécanisme générique disponible à toute définition
-  `action-request` future (cela exigerait d'étendre
-  `action-request-definition.schema.json`, hors périmètre PLAT-5I). Il reste
-  exactement 1 lacune : `presentation.flow`.
+  gouverne que le graphe déclaré par le contrat directeur pour cette composition
+  (`action-request`/`support-request`) ; il n'est pas encore câblé comme
+  mécanisme générique disponible à toute définition `action-request` future
+  (cela exigerait d'étendre `action-request-definition.schema.json`, hors
+  périmètre PLAT-5I). Il reste exactement 1 lacune : `presentation.flow`.
 - **PLAT-5J** — **fait localement** (2026-08-16), M, P0. La lacune
   `presentation.flow` est fermée dans le contrat directeur — c'était la
   **dernière** lacune déclarée : `expected_gaps` passe de
-  `["presentation.flow"]` à `[]`. Le wizard `evolution.presentation` (`kind:
-  "wizard"`, 3 étapes ordonnées `request`→`review`→`confirmation`, champs
-  propres par étape) est désormais gouverné par un moteur d'exécution réel,
-  pas par une validation de schéma suivie d'une recherche de sous-chaîne
-  `'confirmation'` dans le code généré (le faux-positif exact remplacé).
-  **Choix d'implémentation documenté :** ADR-0030 sépare explicitement le
-  Behavior model (états/opérations/transitions/graphe d'exécution) de la
-  Presentation intent (vues/navigation/interactions/contenu/accessibilité)
-  comme deux des quatre axes complémentaires de l'IR canonique ; le contrat
-  directeur reflète ce découpage — `behavior_graph` et `presentation` sont
-  deux clés sœurs sous `evolution`, avec un suivi de lacune indépendant
-  jusqu'à ce chantier. Une étape de wizard n'est pas un état atteint par un
-  événement arbitraire déclaré : c'est une position dans un ordre linéaire
-  fixe et déclaré, et la progression est conditionnée par la complétude des
-  champs de l'étape courante, pas par un vocabulaire d'événements. Réutiliser
-  le moteur `core/behavior-graph.mjs` (PLAT-5I) aurait forcé les id d'étape à
-  doubler comme noms de nœuds du graphe de comportement et la complétude de
-  champ à se réexprimer comme un événement — un couplage artificiel de deux
-  axes qu'ADR-0030 maintient orthogonaux. **presentation.flow est donc un
-  nouveau mécanisme générique, pas une extension de behavior-graph**, en
-  reproduisant strictement le même patron architectural (module core de
-  validation/compilation, renderer TS générique, adaptateurs de stack,
-  Oracle d'exécution réelle, mutants, tests natifs). Nouveau module core
+  `["presentation.flow"]` à `[]`. Le wizard `evolution.presentation`
+  (`kind: "wizard"`, 3 étapes ordonnées `request`→`review`→`confirmation`,
+  champs propres par étape) est désormais gouverné par un moteur d'exécution
+  réel, pas par une validation de schéma suivie d'une recherche de sous-chaîne
+  `'confirmation'` dans le code généré (le faux-positif exact remplacé). **Choix
+  d'implémentation documenté :** ADR-0030 sépare explicitement le Behavior model
+  (états/opérations/transitions/graphe d'exécution) de la Presentation intent
+  (vues/navigation/interactions/contenu/accessibilité) comme deux des quatre
+  axes complémentaires de l'IR canonique ; le contrat directeur reflète ce
+  découpage — `behavior_graph` et `presentation` sont deux clés sœurs sous
+  `evolution`, avec un suivi de lacune indépendant jusqu'à ce chantier. Une
+  étape de wizard n'est pas un état atteint par un événement arbitraire déclaré
+  : c'est une position dans un ordre linéaire fixe et déclaré, et la progression
+  est conditionnée par la complétude des champs de l'étape courante, pas par un
+  vocabulaire d'événements. Réutiliser le moteur `core/behavior-graph.mjs`
+  (PLAT-5I) aurait forcé les id d'étape à doubler comme noms de nœuds du graphe
+  de comportement et la complétude de champ à se réexprimer comme un événement —
+  un couplage artificiel de deux axes qu'ADR-0030 maintient orthogonaux.
+  **presentation.flow est donc un nouveau mécanisme générique, pas une extension
+  de behavior-graph**, en reproduisant strictement le même patron architectural
+  (module core de validation/compilation, renderer TS générique, adaptateurs de
+  stack, Oracle d'exécution réelle, mutants, tests natifs). Nouveau module core
   `core/presentation-flow.mjs` : validation structurelle d'une déclaration
   `{ kind, steps }` (id d'étape uniques, `fields` un tableau de chaînes non
   vides) et compilation en table indexée par ordre. Fonctions pures
-  `isStepComplete` (un champ déclaré est complet s'il est présent et non
-  vide après trim ; une étape sans champ déclaré — `review` — est toujours
-  complète), `applyPresentationAdvance` (accepté seulement si la cible est
-  exactement l'étape suivante déclarée ET l'étape courante est complète ;
-  saut d'étape, étape inconnue, ou avance avant complétude sont tous refusés
-  de la même façon, fail-closed, en renvoyant l'étape inchangée) et
-  `applyPresentationBack` (retour accepté seulement d'une étape à la fois,
-  jamais de re-vérification de complétude — revisiter une étape déjà
-  remplie pour l'éditer est toujours permis). **Choix explicite sur le
-  retour arrière :** ADR-0030 ne tranche pas si un wizard doit permettre de
-  revenir en arrière ; le choix assumé ici est « oui, une étape à la fois,
-  sans re-validation », cohérent avec l'attente usuelle d'un wizard
-  (« revoir/corriger ce qui a déjà été saisi ») et testé comme tel des deux
-  côtés (fail-closed sur un saut de plus d'une étape en arrière).
-  Renderer générique `renderers/presentation-flow-renderer.mjs` : émet un
-  `PresentationFlowEngine` TypeScript piloté uniquement par une table
+  `isStepComplete` (un champ déclaré est complet s'il est présent et non vide
+  après trim ; une étape sans champ déclaré — `review` — est toujours complète),
+  `applyPresentationAdvance` (accepté seulement si la cible est exactement
+  l'étape suivante déclarée ET l'étape courante est complète ; saut d'étape,
+  étape inconnue, ou avance avant complétude sont tous refusés de la même façon,
+  fail-closed, en renvoyant l'étape inchangée) et `applyPresentationBack`
+  (retour accepté seulement d'une étape à la fois, jamais de re-vérification de
+  complétude — revisiter une étape déjà remplie pour l'éditer est toujours
+  permis). **Choix explicite sur le retour arrière :** ADR-0030 ne tranche pas
+  si un wizard doit permettre de revenir en arrière ; le choix assumé ici est «
+  oui, une étape à la fois, sans re-validation », cohérent avec l'attente
+  usuelle d'un wizard (« revoir/corriger ce qui a déjà été saisi ») et testé
+  comme tel des deux côtés (fail-closed sur un saut de plus d'une étape en
+  arrière). Renderer générique `renderers/presentation-flow-renderer.mjs` : émet
+  un `PresentationFlowEngine` TypeScript piloté uniquement par une table
   d'étapes/ordre/champs gelée, compilée depuis le contrat — jamais de nom
   d'étape ou de champ codé en dur dans le contrôle de flux. Deux gardes
-  fail-closed distinctes dans `advance()` (`targetIndex !== currentIndex +
-  1` pour l'ordre, `!isCurrentStepComplete(values)` pour la complétude) et
-  une garde symétrique dans `back()`. Adaptateurs
+  fail-closed distinctes dans `advance()` (`targetIndex !== currentIndex + 1`
+  pour l'ordre, `!isCurrentStepComplete(values)` pour la complétude) et une
+  garde symétrique dans `back()`. Adaptateurs
   `renderers/presentation-flow-stack-adapters.mjs` : service Angular
   injectable + factory de hook React, à l'image exacte de
   `PERMISSION_PORT`/`createActionRequestHooks` et de
   `behavior-graph-stack-adapters.mjs`. Preuve d'exécution réelle
   (`core/presentation-flow-runtime-oracle.mjs`, appelée par
-  `probePresentationFlow()` dans `check-evolvable-composition.mjs`) :
-  transpile et charge le moteur généré pour les deux cibles, démarre sur la
-  première étape déclarée (`request`), refuse fail-closed (a) un saut vers
-  une étape au-delà de la suivante immédiate, (b) une étape cible inconnue,
-  (c) une avance avant complétude des champs de l'étape courante — aucun de
-  ces trois refus ne change l'étape courante —, puis suit le chemin heureux
-  déclaré jusqu'à l'étape terminale une fois chaque étape complétée, et
-  prouve qu'un retour d'une étape est accepté tandis qu'un retour de plus
-  d'une étape est refusé — testé dans les deux stacks. **Choix explicite
-  sur le critère de progression :** la complétude d'une étape est définie
-  ici comme « chaque champ déclaré par le contrat pour cette étape est
-  présent et non vide (trim) dans les valeurs fournies » — aucune validation
-  métier plus fine (format email, etc., déjà couverte par
-  `permissions.runtime-enforcement`/`data.canonical-model`) n'est reprise
-  ici ; c'est le critère minimal explicite demandé par la consigne PLAT-5J
-  en l'absence d'un schéma de validation par étape dans le contrat. Tests
-  natifs TestBed (Angular, 9/9,
-  `stack-tests/angular/presentation-flow.spec.ts`) et Testing Library
-  (ReactJS, 9/9, `stack-tests/reactjs/presentation-flow.spec.ts`), générés
-  par `prepare-stack-tests.mjs` à partir des mêmes fonctions de rendu que
-  l'Oracle. 2 mutants tués sur les gardes rendues
-  (`presentation-flow-mutations.test.mjs`) : garde anti-saut d'étape
-  neutralisée (skip-ahead accepté) et garde de complétude neutralisée
-  (avance sur étape incomplète acceptée) — dans les deux cas l'Oracle catche
-  l'absence de refus et échoue, prouvant que les gardes sont porteuses de
-  preuve, pas un test tautologique. 20 tests directs sur
+  `probePresentationFlow()` dans `check-evolvable-composition.mjs`) : transpile
+  et charge le moteur généré pour les deux cibles, démarre sur la première étape
+  déclarée (`request`), refuse fail-closed (a) un saut vers une étape au-delà de
+  la suivante immédiate, (b) une étape cible inconnue, (c) une avance avant
+  complétude des champs de l'étape courante — aucun de ces trois refus ne change
+  l'étape courante —, puis suit le chemin heureux déclaré jusqu'à l'étape
+  terminale une fois chaque étape complétée, et prouve qu'un retour d'une étape
+  est accepté tandis qu'un retour de plus d'une étape est refusé — testé dans
+  les deux stacks. **Choix explicite sur le critère de progression :** la
+  complétude d'une étape est définie ici comme « chaque champ déclaré par le
+  contrat pour cette étape est présent et non vide (trim) dans les valeurs
+  fournies » — aucune validation métier plus fine (format email, etc., déjà
+  couverte par `permissions.runtime-enforcement`/`data.canonical-model`) n'est
+  reprise ici ; c'est le critère minimal explicite demandé par la consigne
+  PLAT-5J en l'absence d'un schéma de validation par étape dans le contrat.
+  Tests natifs TestBed (Angular, 9/9,
+  `stack-tests/angular/presentation-flow.spec.ts`) et Testing Library (ReactJS,
+  9/9, `stack-tests/reactjs/presentation-flow.spec.ts`), générés par
+  `prepare-stack-tests.mjs` à partir des mêmes fonctions de rendu que l'Oracle.
+  2 mutants tués sur les gardes rendues (`presentation-flow-mutations.test.mjs`)
+  : garde anti-saut d'étape neutralisée (skip-ahead accepté) et garde de
+  complétude neutralisée (avance sur étape incomplète acceptée) — dans les deux
+  cas l'Oracle catche l'absence de refus et échoue, prouvant que les gardes sont
+  porteuses de preuve, pas un test tautologique. 20 tests directs sur
   `core/presentation-flow.mjs` (validation structurelle, compilation,
   complétude, avance/retour fail-closed) dans `presentation-flow.test.mjs`.
-  Validations : 149/149 tests core (dont 23 propres à ce lot : 20 + 3
-  sous-tests de mutants), gate directeur PASS avec `regressions:[]`,
+  Validations : 149/149 tests core (dont 23 propres à ce lot : 20 + 3 sous-tests
+  de mutants), gate directeur PASS avec `regressions:[]`,
   `unexpectedly_implemented:[]` et **`actual_gaps:[]`** — `expected_gaps` du
-  contrat directeur passe à `[]`, `promotion_rule.success` (« expected_gaps
-  est vide et chaque invariant est vérifié par des oracles exécutables »)
-  voit sa première condition satisfaite ; ce script ne déclenche, n'évalue
-  ni ne documente lui-même la seconde condition ni aucune promotion —
-  `contract.status` reste `"characterization"`, aucun mécanisme de promotion
-  n'a été invoqué. `target_tree_sha256` Angular/ReactJS inchangés
-  (confirmant l'absence d'effet de bord sur les renderers `action-request`
-  génériques), `eslint --max-warnings=0` propre sur `core/`, `renderers/`,
-  `*.mjs`, `format:check` vert (Prettier a reformaté 5 fichiers du lot,
-  vérifié à nouveau vert après), poids fichiers conforme (plafond 800
-  lignes, chaque nouveau fichier ≤ 379 lignes), `tsc --noEmit` et
-  `vitest run` natifs verts sur les deux cibles (22/22 chacune, dont les 9
-  nouveaux tests `presentation-flow.spec.ts`). Un test préexistant
+  contrat directeur passe à `[]`, `promotion_rule.success` (« expected_gaps est
+  vide et chaque invariant est vérifié par des oracles exécutables ») voit sa
+  première condition satisfaite ; ce script ne déclenche, n'évalue ni ne
+  documente lui-même la seconde condition ni aucune promotion —
+  `contract.status` reste `"characterization"`, aucun mécanisme de promotion n'a
+  été invoqué. `target_tree_sha256` Angular/ReactJS inchangés (confirmant
+  l'absence d'effet de bord sur les renderers `action-request` génériques),
+  `eslint --max-warnings=0` propre sur `core/`, `renderers/`, `*.mjs`,
+  `format:check` vert (Prettier a reformaté 5 fichiers du lot, vérifié à nouveau
+  vert après), poids fichiers conforme (plafond 800 lignes, chaque nouveau
+  fichier ≤ 379 lignes), `tsc --noEmit` et `vitest run` natifs verts sur les
+  deux cibles (22/22 chacune, dont les 9 nouveaux tests
+  `presentation-flow.spec.ts`). Un test préexistant
   (`evolvable-composition.test.mjs`) affirmait en dur
-  `decision_satisfied === false` ; mis à jour pour refléter l'état réel
-  (`true`) désormais que `actual_gaps` est vide, avec un commentaire
-  explicite que ceci ne constitue ni ne déclenche une promotion. **Limite
-  explicite assumée :** comme PLAT-5I, ce moteur ne gouverne que le flux
-  déclaré par le contrat directeur pour cette composition
-  (`action-request`/`support-request`) ; il n'est pas câblé comme mécanisme
-  générique disponible à toute définition `action-request` future (le
-  schéma `action-request-definition.schema.json` n'a toujours aucun champ
-  `presentation`, `additionalProperties: false` inchangé). Le critère de
-  complétude par champ (présence + non-vide) est délibérément simple ; il ne
-  couvre pas une validation métier par étape plus riche, qui resterait à
-  spécifier dans un futur contrat si un cas réel l'exige. Il ne reste
-  **aucune lacune déclarée** dans le contrat directeur
+  `decision_satisfied === false` ; mis à jour pour refléter l'état réel (`true`)
+  désormais que `actual_gaps` est vide, avec un commentaire explicite que ceci
+  ne constitue ni ne déclenche une promotion. **Limite explicite assumée :**
+  comme PLAT-5I, ce moteur ne gouverne que le flux déclaré par le contrat
+  directeur pour cette composition (`action-request`/`support-request`) ; il
+  n'est pas câblé comme mécanisme générique disponible à toute définition
+  `action-request` future (le schéma `action-request-definition.schema.json` n'a
+  toujours aucun champ `presentation`, `additionalProperties: false` inchangé).
+  Le critère de complétude par champ (présence + non-vide) est délibérément
+  simple ; il ne couvre pas une validation métier par étape plus riche, qui
+  resterait à spécifier dans un futur contrat si un cas réel l'exige. Il ne
+  reste **aucune lacune déclarée** dans le contrat directeur
   `evolvable-composition.contract.json` à l'issue de ce chantier.
-- **PLAT-5K** — **fait localement** (2026-08-16), M, P0. Ferme le seul
-  invariant du contrat directeur (`invariants[5]`, sur 6) qui n'avait jamais
-  eu d'oracle exécutable : « The evolution run itself does not modify core,
-  planner, profiles, or renderers. » Avant ce chantier, cette affirmation
-  n'était vraie que **par construction du code** : chaque `writeFile`/
-  `mkdir`/`rm` du pipeline de génération cible un répertoire obtenu via
-  `mkdtemp(resolve(tmpdir(), ...))`, un fait vérifiable à la lecture mais
-  jamais vérifié par un test — aucun oracle ne l'aurait détecté si un futur
-  bug faisait fuir une écriture vers le vrai arbre source.
-  **Délimitation exacte retenue pour « core, planner, profiles, or
-  renderers »** : le planner (`core/artifact-plan.mjs`) vit dans `core/`, ce
-  n'est donc pas un répertoire frère distinct — le protéger revient à
-  protéger `core/` entier. L'ensemble protégé retenu est **tout l'arbre
-  source `tools/generator-platform/`**, à l'exception unique du répertoire
-  scratch gitignored `.stack-test-runtime/` (régénéré par un script sans
-  rapport, `prepare-stack-tests.mjs`, jamais touché par une exécution
-  d'évolution) : `core/`, `renderers/`, `profiles/`, `adapters/`, `schemas/`,
-  `manifests/`, `contracts/`, `policies/`, `sources/`, `acceptance/`,
-  `fixtures/`, `test-support/`, `stack-tests/`, et chaque fichier
+- **PLAT-5K** — **fait localement** (2026-08-16), M, P0. Ferme le seul invariant
+  du contrat directeur (`invariants[5]`, sur 6) qui n'avait jamais eu d'oracle
+  exécutable : « The evolution run itself does not modify core, planner,
+  profiles, or renderers. » Avant ce chantier, cette affirmation n'était vraie
+  que **par construction du code** : chaque `writeFile`/ `mkdir`/`rm` du
+  pipeline de génération cible un répertoire obtenu via
+  `mkdtemp(resolve(tmpdir(), ...))`, un fait vérifiable à la lecture mais jamais
+  vérifié par un test — aucun oracle ne l'aurait détecté si un futur bug faisait
+  fuir une écriture vers le vrai arbre source. **Délimitation exacte retenue
+  pour « core, planner, profiles, or renderers »** : le planner
+  (`core/artifact-plan.mjs`) vit dans `core/`, ce n'est donc pas un répertoire
+  frère distinct — le protéger revient à protéger `core/` entier. L'ensemble
+  protégé retenu est **tout l'arbre source `tools/generator-platform/`**, à
+  l'exception unique du répertoire scratch gitignored `.stack-test-runtime/`
+  (régénéré par un script sans rapport, `prepare-stack-tests.mjs`, jamais touché
+  par une exécution d'évolution) : `core/`, `renderers/`, `profiles/`,
+  `adapters/`, `schemas/`, `manifests/`, `contracts/`, `policies/`, `sources/`,
+  `acceptance/`, `fixtures/`, `test-support/`, `stack-tests/`, et chaque fichier
   `.mjs`/`.json` directement sous `tools/generator-platform/` (y compris
   `check-evolvable-composition.mjs`, `render-targets.mjs`,
   `workflow-targets.mjs`, `generate-action-request.mjs`,
   `generate-workflow-action.mjs`, `validate-ir.mjs`). Ce périmètre est
-  délibérément plus large que les quatre noms cités par le contrat : un bug
-  qui corromprait un schéma ou une fixture serait tout aussi grave que s'il
-  corrompait `core/`, et l'intention de l'invariant (« l'exécution
-  n'altère pas la plateforme ») est mieux servie en ne pré-décidant pas quelle
-  sous-zone un bug futur toucherait. **Nouveau module
-  `core/run-isolation-oracle.mjs`** : `snapshotProtectedTree(root)` hash
-  chaque octet de chaque fichier sous `root` (sha256 + taille, clé = chemin
-  relatif) ; `diffProtectedTreeSnapshots(before, after)` détecte fichier
-  modifié / ajouté / supprimé ; `assertRunIsolation(run, { root })` prend un
-  instantané, exécute `run()` réellement, reprend un instantané, et lève une
-  erreur listant chaque violation si un seul octet a changé. **Câblage dans
-  le gate directeur** : `check-evolvable-composition.mjs` extrait le corps
-  entier de `probeEvolvableComposition()` (calcul des cibles **et** les 5
-  probes existants — permissions, instance persistée, graphe de
-  comportement, flux de présentation, sortie existante/dry-run/apply — en
-  parallèle) dans `runEvolutionOnce()`, puis l'enveloppe entièrement dans
-  `assertRunIsolation(runEvolutionOnce)` contre `generatorPlatformRoot` (le
-  vrai `tools/generator-platform/`). Ce choix — protéger l'exécution
-  complète, pas seulement un sous-probe — est déterminant : un bug pourrait
-  fuir depuis n'importe quel probe futur aussi bien que depuis celui
-  d'aujourd'hui, et l'invariant ne fait pas cette distinction. Le rapport du
-  gate expose un nouveau champ `run_isolation: { invariant, files_checked,
-  violated }` — non ajouté à `expected_supported`/`expected_gaps` : le
-  contrat directeur n'a pas de slot pour les invariants eux-mêmes (seulement
-  pour les 14 capacités numérotées sous `evolution.*`), et forcer un
-  identifiant de capacité artificiel aurait déformé cette structure sans
-  raison. **Preuve que l'oracle n'est pas une tautologie (« mutant tué »
-  appliqué à une absence d'effet de bord plutôt qu'à une garde rendue)** :
-  nouveau fichier `run-isolation.test.mjs`, 10 tests. Sur un arbre fixture
-  isolé (jamais le vrai dépôt, construit et détruit dans `mkdtemp`) :
-  détection d'un octet modifié, d'un fichier ajouté, d'un fichier supprimé,
-  et absence de faux positif entre deux instantanés identiques. Le test
-  négatif décisif : `assertRunIsolation` reçoit une fonction `run()` qui
-  écrit délibérément un octet dans un fichier de la fixture protégée
-  (simulant l'échec futur exact que l'invariant existe pour prévenir — une
-  résolution de chemin qui fuit hors du `mkdtemp`) ; l'oracle doit lever, le
-  test vérifie `assert.rejects(..., /run isolation violated/)`, **puis relit
-  le fichier corrompu pour prouver que la mutation a réellement eu lieu**
-  (l'oracle ne fait que détecter, jamais de rollback) — élimine la
-  possibilité que le rejet vienne d'un chemin court-circuité plutôt que
-  d'une vraie comparaison de hash. Un test symétrique prouve qu'une
-  exécution qui n'écrit que hors de la racine protégée résout proprement
-  (`filesChecked` > 0, pas de faux positif systématique). Le dernier test
-  est l'intégration bout en bout : il appelle le vrai
-  `probeEvolvableComposition()` (calcul de cibles réel, 5 probes réels, pas
-  simulé) et vérifie `report.run_isolation.violated === false` et
-  `files_checked > 0` contre le vrai `generatorPlatformRoot`. **Découverte
-  réelle en cours de route, corrigée** : le premier lancement du nouvel
-  oracle contre la suite complète a échoué de façon intermittente
+  délibérément plus large que les quatre noms cités par le contrat : un bug qui
+  corromprait un schéma ou une fixture serait tout aussi grave que s'il
+  corrompait `core/`, et l'intention de l'invariant (« l'exécution n'altère pas
+  la plateforme ») est mieux servie en ne pré-décidant pas quelle sous-zone un
+  bug futur toucherait. **Nouveau module `core/run-isolation-oracle.mjs`** :
+  `snapshotProtectedTree(root)` hash chaque octet de chaque fichier sous `root`
+  (sha256 + taille, clé = chemin relatif) ;
+  `diffProtectedTreeSnapshots(before, after)` détecte fichier modifié / ajouté /
+  supprimé ; `assertRunIsolation(run, { root })` prend un instantané, exécute
+  `run()` réellement, reprend un instantané, et lève une erreur listant chaque
+  violation si un seul octet a changé. **Câblage dans le gate directeur** :
+  `check-evolvable-composition.mjs` extrait le corps entier de
+  `probeEvolvableComposition()` (calcul des cibles **et** les 5 probes existants
+  — permissions, instance persistée, graphe de comportement, flux de
+  présentation, sortie existante/dry-run/apply — en parallèle) dans
+  `runEvolutionOnce()`, puis l'enveloppe entièrement dans
+  `assertRunIsolation(runEvolutionOnce)` contre `generatorPlatformRoot` (le vrai
+  `tools/generator-platform/`). Ce choix — protéger l'exécution complète, pas
+  seulement un sous-probe — est déterminant : un bug pourrait fuir depuis
+  n'importe quel probe futur aussi bien que depuis celui d'aujourd'hui, et
+  l'invariant ne fait pas cette distinction. Le rapport du gate expose un
+  nouveau champ `run_isolation: { invariant, files_checked, violated }` — non
+  ajouté à `expected_supported`/`expected_gaps` : le contrat directeur n'a pas
+  de slot pour les invariants eux-mêmes (seulement pour les 14 capacités
+  numérotées sous `evolution.*`), et forcer un identifiant de capacité
+  artificiel aurait déformé cette structure sans raison. **Preuve que l'oracle
+  n'est pas une tautologie (« mutant tué » appliqué à une absence d'effet de
+  bord plutôt qu'à une garde rendue)** : nouveau fichier
+  `run-isolation.test.mjs`, 10 tests. Sur un arbre fixture isolé (jamais le vrai
+  dépôt, construit et détruit dans `mkdtemp`) : détection d'un octet modifié,
+  d'un fichier ajouté, d'un fichier supprimé, et absence de faux positif entre
+  deux instantanés identiques. Le test négatif décisif : `assertRunIsolation`
+  reçoit une fonction `run()` qui écrit délibérément un octet dans un fichier de
+  la fixture protégée (simulant l'échec futur exact que l'invariant existe pour
+  prévenir — une résolution de chemin qui fuit hors du `mkdtemp`) ; l'oracle
+  doit lever, le test vérifie `assert.rejects(..., /run isolation violated/)`,
+  **puis relit le fichier corrompu pour prouver que la mutation a réellement eu
+  lieu** (l'oracle ne fait que détecter, jamais de rollback) — élimine la
+  possibilité que le rejet vienne d'un chemin court-circuité plutôt que d'une
+  vraie comparaison de hash. Un test symétrique prouve qu'une exécution qui
+  n'écrit que hors de la racine protégée résout proprement (`filesChecked` > 0,
+  pas de faux positif systématique). Le dernier test est l'intégration bout en
+  bout : il appelle le vrai `probeEvolvableComposition()` (calcul de cibles
+  réel, 5 probes réels, pas simulé) et vérifie
+  `report.run_isolation.violated === false` et `files_checked > 0` contre le
+  vrai `generatorPlatformRoot`. **Découverte réelle en cours de route,
+  corrigée** : le premier lancement du nouvel oracle contre la suite complète a
+  échoué de façon intermittente
   (`removed: core/composition-instance.mutant.self-hash-mismatch-guard-neutralis-.mjs`)
-  — `composition-instance-mutations.test.mjs` (PLAT-5H) écrivait
-  auparavant son mutant comme fichier frère réel dans
-  `core/` (pour que ses imports relatifs résolvent), puis le supprimait dans
-  un `finally`. Sous la parallélisation par défaut de `node --test`, une
-  fenêtre de snapshot du nouvel oracle pouvait chevaucher cette écriture
-  transitoire — un vrai (bien que bref et nettoyé) effet de bord sur l'arbre
-  protégé, que l'oracle a correctement détecté. Corrigé en réécrivant
-  `loadMutant()` : le mutant est désormais écrit dans un `mkdtemp` dédié,
-  avec `generation-manifest.mjs` et `validate-ir.mjs` symlinkés au même
-  chemin relatif pour que les imports du module continuent de résoudre, sans
-  jamais toucher le vrai `core/`. Ce n'est pas un contournement de l'oracle :
-  c'est la correction d'un vrai défaut latent qu'aucun test précédent
-  n'aurait pu révéler avant ce chantier. **Validations exécutées
-  personnellement** : `node --test tools/generator-platform/*.test.mjs` →
-  **159/159** (149 préexistants + 10 nouveaux dans `run-isolation.test.mjs`),
-  relancé 3 fois consécutives sans flakiness. `npx eslint
-  tools/generator-platform/renderers tools/generator-platform/core
-  tools/generator-platform/*.mjs --max-warnings=0` → 0 sortie, exit 0.
-  `node tools/run-prettier.mjs --check` → vert (2 fichiers reformatés par
-  `--write` puis revérifiés). `node tools/check-file-weight.mjs --all` →
-  OK (`core/run-isolation-oracle.mjs` 145 l., `run-isolation.test.mjs` 211
-  l., `check-evolvable-composition.mjs` 645 l., tous sous le plafond de 800).
-  `node tools/generator-platform/check-evolvable-composition.mjs` → gate
-  PASS, `regressions:[]`, `unexpectedly_implemented:[]`, `actual_gaps:[]`,
+  — `composition-instance-mutations.test.mjs` (PLAT-5H) écrivait auparavant son
+  mutant comme fichier frère réel dans `core/` (pour que ses imports relatifs
+  résolvent), puis le supprimait dans un `finally`. Sous la parallélisation par
+  défaut de `node --test`, une fenêtre de snapshot du nouvel oracle pouvait
+  chevaucher cette écriture transitoire — un vrai (bien que bref et nettoyé)
+  effet de bord sur l'arbre protégé, que l'oracle a correctement détecté.
+  Corrigé en réécrivant `loadMutant()` : le mutant est désormais écrit dans un
+  `mkdtemp` dédié, avec `generation-manifest.mjs` et `validate-ir.mjs` symlinkés
+  au même chemin relatif pour que les imports du module continuent de résoudre,
+  sans jamais toucher le vrai `core/`. Ce n'est pas un contournement de l'oracle
+  : c'est la correction d'un vrai défaut latent qu'aucun test précédent n'aurait
+  pu révéler avant ce chantier. **Validations exécutées personnellement** :
+  `node --test tools/generator-platform/*.test.mjs` → **159/159** (149
+  préexistants + 10 nouveaux dans `run-isolation.test.mjs`), relancé 3 fois
+  consécutives sans flakiness.
+  `npx eslint tools/generator-platform/renderers tools/generator-platform/core tools/generator-platform/*.mjs --max-warnings=0`
+  → 0 sortie, exit 0. `node tools/run-prettier.mjs --check` → vert (2 fichiers
+  reformatés par `--write` puis revérifiés).
+  `node tools/check-file-weight.mjs --all` → OK (`core/run-isolation-oracle.mjs`
+  145 l., `run-isolation.test.mjs` 211 l., `check-evolvable-composition.mjs` 645
+  l., tous sous le plafond de 800).
+  `node tools/generator-platform/check-evolvable-composition.mjs` → gate PASS,
+  `regressions:[]`, `unexpectedly_implemented:[]`, `actual_gaps:[]`,
   `run_isolation.files_checked: 110`, `run_isolation.violated: false`,
   `target_tree_sha256` Angular/ReactJS **inchangés** par rapport à avant ce
   chantier (`77452f6c...b408` / `f0f8db27...091f0`), confirmant l'absence
@@ -1327,38 +1266,36 @@ Figma, désormais source partielle différée :
   `tools/generator-platform/check-evolvable-composition.mjs` (extraction de
   `runEvolutionOnce()`, câblage `assertRunIsolation`, nouveau champ
   `run_isolation` dans le rapport),
-  `tools/generator-platform/composition-instance-mutations.test.mjs`
-  (correction du chemin d'écriture du mutant, cf. découverte ci-dessus).
-  **Limite explicite assumée :** l'oracle protège l'arbre source de
-  `tools/generator-platform/` tel que délimité ci-dessus ; il ne protège pas
-  le reste du monorepo (`apps/`, `libs/`) — hors périmètre du contrat
-  directeur, qui porte spécifiquement sur le pipeline de génération. Il ne
-  protège pas non plus contre une corruption qui se répare elle-même avant
-  la deuxième capture de hash (fenêtre de détection = durée de
-  `runEvolutionOnce()`) ; c'est la même limite de principe que toute preuve
-  par comparaison avant/après, partagée avec `generation-change-set.test.mjs`
-  pour la préservation des extensions.
-  **Conclusion sur `promotion_rule.success` (« expected_gaps est vide et
-  chaque invariant est vérifié par des oracles exécutables »)** : les 2
-  conditions cumulatives sont maintenant, à ma connaissance et sur la base
-  des preuves listées dans ce fichier, **toutes les deux satisfaites**.
-  Condition 1 (`expected_gaps` vide) : acquise depuis PLAT-5J, confirmée par
-  ce lancement (`"expected_gaps": []`). Condition 2 (chaque invariant vérifié
-  par un oracle exécutable) : les 6 invariants de
-  `evolvable-composition.contract.json` → `invariants` ont chacun un oracle
-  exécutable réel — invariants 1 à 5 fermés par PLAT-5G à PLAT-5J
-  (`renderers.test.mjs`, `check-evolvable-composition.mjs` capacité
-  `targets.renderer-separation`, `validate-ir.test.mjs`,
+  `tools/generator-platform/composition-instance-mutations.test.mjs` (correction
+  du chemin d'écriture du mutant, cf. découverte ci-dessus). **Limite explicite
+  assumée :** l'oracle protège l'arbre source de `tools/generator-platform/` tel
+  que délimité ci-dessus ; il ne protège pas le reste du monorepo (`apps/`,
+  `libs/`) — hors périmètre du contrat directeur, qui porte spécifiquement sur
+  le pipeline de génération. Il ne protège pas non plus contre une corruption
+  qui se répare elle-même avant la deuxième capture de hash (fenêtre de
+  détection = durée de `runEvolutionOnce()`) ; c'est la même limite de principe
+  que toute preuve par comparaison avant/après, partagée avec
+  `generation-change-set.test.mjs` pour la préservation des extensions.
+  **Conclusion sur `promotion_rule.success` (« expected_gaps est vide et chaque
+  invariant est vérifié par des oracles exécutables »)** : les 2 conditions
+  cumulatives sont maintenant, à ma connaissance et sur la base des preuves
+  listées dans ce fichier, **toutes les deux satisfaites**. Condition 1
+  (`expected_gaps` vide) : acquise depuis PLAT-5J, confirmée par ce lancement
+  (`"expected_gaps": []`). Condition 2 (chaque invariant vérifié par un oracle
+  exécutable) : les 6 invariants de `evolvable-composition.contract.json` →
+  `invariants` ont chacun un oracle exécutable réel — invariants 1 à 5 fermés
+  par PLAT-5G à PLAT-5J (`renderers.test.mjs`, `check-evolvable-composition.mjs`
+  capacité `targets.renderer-separation`, `validate-ir.test.mjs`,
   `generation-change-set.test.mjs`), invariant 6 fermé par ce chantier
-  (`run-isolation.test.mjs` + `assertRunIsolation` intégré au gate
-  directeur). **Ce constat n'est cependant qu'une lecture locale et n'a la
-  valeur que des preuves listées ici** : PLAT-5K ne déclenche, n'active ni
-  ne câble aucun mécanisme de promotion. `contract.status` reste
-  `"characterization"` (inchangé, vérifié par `assertContract` dans
+  (`run-isolation.test.mjs` + `assertRunIsolation` intégré au gate directeur).
+  **Ce constat n'est cependant qu'une lecture locale et n'a la valeur que des
+  preuves listées ici** : PLAT-5K ne déclenche, n'active ni ne câble aucun
+  mécanisme de promotion. `contract.status` reste `"characterization"`
+  (inchangé, vérifié par `assertContract` dans
   `check-evolvable-composition.mjs`), aucun champ du contrat JSON n'a été
-  modifié, et la décision d'agir sur cette conclusion (déclencher une
-  promotion, faire réviser ce constat par une revue humaine, etc.) reste
-  explicitement hors périmètre de ce chantier.
+  modifié, et la décision d'agir sur cette conclusion (déclencher une promotion,
+  faire réviser ce constat par une revue humaine, etc.) reste explicitement hors
+  périmètre de ce chantier.
 - **PLAT-6** — différé, L, P1. Ajouter Figma comme source de Presentation intent
   après clôture de PLAT-1 à PLAT-5.
 
@@ -1616,254 +1553,221 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   pointaient encore vers les 3 anciens chemins d'entités supprimées). Corrigé,
   100 % verified/tranche-closed après régénération.
 - **OPS-16** — ouvert, M, P1, alias `réflexion 2026-08-17, suite OPS-15`.
-  **Détection de dérive automatique du corpus vs legacy, avant que le
-  gate casse en silence.** Constat : le même problème (chemins `legacy`
-  périmés dans `corpus/*.pairs.jsonl` suite à une restructuration du
-  dépôt legacy source) s'est produit deux fois pour les mêmes modules
-  (`monitoring`/`reporting`) — une première fois sous T13-15
-  (2026-08-11), une seconde fois découverte le 2026-08-17 (OPS-15) —
-  et les deux fois, la découverte n'a eu lieu qu'en lançant `bun run
-  corpus:full` manuellement, jamais via une alerte proactive. Coût
-  direct : 61 chemins cassés d'un coup à corriger via un agent dédié
-  (OPS-15), plutôt qu'une dérive détectée et corrigée au fil de l'eau.
-  Root cause structurelle (pas un bug de code, une absence
-  d'observabilité) : rien ne surveille si le contenu du legacy au SHA
-  pinné (`legacy.lock.json`) a divergé de ce que le corpus déclare,
-  entre deux exécutions de `corpus-full.yml` (qui ne tourne que sur
-  push `main` + déclenchement manuel, jamais en continu).
-  Justification de la priorité (P1, pas différé) : ADR-0029 (ligne 76)
-  tranche explicitement que « SEOS/Angular reste le golden reference,
-  le terrain de mesure ... Il n'est ni abandonné ni relégué derrière
-  des POC spéculatifs » — le corpus n'est donc pas un vestige à
-  déprioriser, c'est le seul étalon de fidélité de migration dont
-  dispose le projet aujourd'hui (voir aussi ADR-0019 : le corpus est
-  un index de correspondances traçables, pas un jeu d'apprentissage —
-  mais cet usage-là reste actif et voulu). Le vrai défaut n'est pas
-  « faut-il le garder » mais « pourquoi le découvre-t-on en mode
-  pompier ».
-  Piste de solution (non implémentée, à trancher/budgéter) : (1) job
-  CI léger et régulier (hebdomadaire, ou déclenché à chaque
-  modification de `legacy.lock.json`) qui compare uniquement
-  l'existence des chemins `legacy` déclarés contre le contenu réel du
-  legacy au SHA pinné — sans lancer tout `corpus:full` (donc sans
-  dépendance à Nx Cloud/build/lint/test), juste un diagnostic rapide
-  de dérive de chemins, sur le modèle du script `resolve-status.mjs`
-  déjà existant ; (2) séparer plus nettement le gate structurel
-  (`corpus:ci`/`--structural-only`, ADR-0015, déjà non-bloquant sur le
-  legacy) du gate de fidélité historique (`corpus:full`/`--verify`,
-  dépendant d'une source externe qui peut dériver hors du contrôle de
-  ce dépôt) dans la fréquence d'exécution et le niveau de criticité
-  attendu.
-  Aucune action entreprise sur ce point au-delà de cette
-  documentation — décision explicitement laissée au porteur du projet,
-  par cohérence avec la façon dont ADR-0019 a traité une question
-  similaire (« reste ouverte et n'est pas tranchée ici »).
-- **OPS-20** — **fait** (2026-08-18), S, P1, alias `audit 2026-08-17, suite PLAT-6`.
-  **`corpus-full.yml` ne persiste jamais son résultat dans le dépôt.**
-  Distinct d'OPS-16 (dérive du contenu legacy) : ici le problème existe
-  même sans aucune dérive. `emit-pairs.mjs`, via `corpus:full`, écrit
-  `corpus/*.pairs.jsonl` dans le working tree du runner GitHub Actions
-  — confirmé en lisant `.github/workflows/corpus-full.yml` en entier :
-  aucun step `git commit`/`git push`, aucun `actions/upload-artifact`,
+  **Détection de dérive automatique du corpus vs legacy, avant que le gate casse
+  en silence.** Constat : le même problème (chemins `legacy` périmés dans
+  `corpus/*.pairs.jsonl` suite à une restructuration du dépôt legacy source)
+  s'est produit deux fois pour les mêmes modules (`monitoring`/`reporting`) —
+  une première fois sous T13-15 (2026-08-11), une seconde fois découverte le
+  2026-08-17 (OPS-15) — et les deux fois, la découverte n'a eu lieu qu'en
+  lançant `bun run corpus:full` manuellement, jamais via une alerte proactive.
+  Coût direct : 61 chemins cassés d'un coup à corriger via un agent dédié
+  (OPS-15), plutôt qu'une dérive détectée et corrigée au fil de l'eau. Root
+  cause structurelle (pas un bug de code, une absence d'observabilité) : rien ne
+  surveille si le contenu du legacy au SHA pinné (`legacy.lock.json`) a divergé
+  de ce que le corpus déclare, entre deux exécutions de `corpus-full.yml` (qui
+  ne tourne que sur push `main` + déclenchement manuel, jamais en continu).
+  Justification de la priorité (P1, pas différé) : ADR-0029 (ligne 76) tranche
+  explicitement que « SEOS/Angular reste le golden reference, le terrain de
+  mesure ... Il n'est ni abandonné ni relégué derrière des POC spéculatifs » —
+  le corpus n'est donc pas un vestige à déprioriser, c'est le seul étalon de
+  fidélité de migration dont dispose le projet aujourd'hui (voir aussi ADR-0019
+  : le corpus est un index de correspondances traçables, pas un jeu
+  d'apprentissage — mais cet usage-là reste actif et voulu). Le vrai défaut
+  n'est pas « faut-il le garder » mais « pourquoi le découvre-t-on en mode
+  pompier ». Piste de solution (non implémentée, à trancher/budgéter) : (1) job
+  CI léger et régulier (hebdomadaire, ou déclenché à chaque modification de
+  `legacy.lock.json`) qui compare uniquement l'existence des chemins `legacy`
+  déclarés contre le contenu réel du legacy au SHA pinné — sans lancer tout
+  `corpus:full` (donc sans dépendance à Nx Cloud/build/lint/test), juste un
+  diagnostic rapide de dérive de chemins, sur le modèle du script
+  `resolve-status.mjs` déjà existant ; (2) séparer plus nettement le gate
+  structurel (`corpus:ci`/`--structural-only`, ADR-0015, déjà non-bloquant sur
+  le legacy) du gate de fidélité historique (`corpus:full`/`--verify`, dépendant
+  d'une source externe qui peut dériver hors du contrôle de ce dépôt) dans la
+  fréquence d'exécution et le niveau de criticité attendu. Aucune action
+  entreprise sur ce point au-delà de cette documentation — décision
+  explicitement laissée au porteur du projet, par cohérence avec la façon dont
+  ADR-0019 a traité une question similaire (« reste ouverte et n'est pas
+  tranchée ici »).
+- **OPS-20** — **fait** (2026-08-18), S, P1, alias
+  `audit 2026-08-17, suite PLAT-6`. **`corpus-full.yml` ne persiste jamais son
+  résultat dans le dépôt.** Distinct d'OPS-16 (dérive du contenu legacy) : ici
+  le problème existe même sans aucune dérive. `emit-pairs.mjs`, via
+  `corpus:full`, écrit `corpus/*.pairs.jsonl` dans le working tree du runner
+  GitHub Actions — confirmé en lisant `.github/workflows/corpus-full.yml` en
+  entier : aucun step `git commit`/`git push`, aucun `actions/upload-artifact`,
   aucun mécanisme de rapatriement quel qu'il soit après le step
-  `Corpus full (--verify, sans --structural-only)`. Concrètement : le
-  run vert obtenu après OPS-17/OPS-18
-  (`monitoring`/`reporting` à `verified/applicable=100%`,
-  `blocked=0`) a recalculé des `corpus/monitoring.pairs.jsonl` et
-  `corpus/reporting.pairs.jsonl` corrects **dans l'éphémère du
-  runner**, puis les a jetés à la fin du job. Les fichiers réellement
-  committés sur `main` restent ceux d'OPS-18 (édités à la main via le
-  générateur, jamais réellement passés par une exécution de
-  `emit-pairs.mjs` que j'aurais pu observer moi-même — `bun`/`nx`
-  absents de mon sandbox tout du long d'OPS-15 à OPS-18). Rien
-  n'indique une divergence fonctionnelle actuelle (le run CI confirme
-  que le générateur produit les bons chemins), mais rien ne le
-  garantit non plus au niveau octet — `verified_at`, ordre des clés,
-  ou un champ additionnel du générateur que je n'aurais pas anticipé
-  pourraient différer entre ma version committée à la main et une
-  vraie sortie de `emit-pairs.mjs`. Ce même défaut vaut pour les 18
-  modules, pas seulement `monitoring`/`reporting` — aucun des
-  `corpus/*.pairs.jsonl` committés n'a jamais été garanti identique à
-  une sortie CI réelle depuis la création de ce workflow.
-  **Décision utilisateur** : « approche big tech ». Traduit en choix
-  concret entre les deux options posées (commit-back automatique vs
-  fail loud) : un run CI ne doit jamais pousser silencieusement sur
-  `main` sans revue humaine/PR, même pour un artefact dérivé — c'est le
-  principe qui prime chez les éditeurs qui traitent le contenu généré
-  comme une source à revoir, pas comme un cache à rafraîchir en
-  arrière-plan (le risque inverse : un bug du générateur commit-back
-  silencieusement une régression business dans le corpus, jamais vue
-  par personne). Retenu : **fail loud sur divergence**, pas de
-  commit-back automatique.
-  **Première implémentation invalidée le jour même par le premier run
-  réel.** `git diff --exit-code --stat -- corpus/` a échoué sur les
-  **18 modules** (1507 insertions/1507 suppressions, symétrique) —
-  pas seulement `monitoring`/`reporting`. Diagnostic avant de conclure
-  à une vraie divergence : `oracle_report.ran_at` (et tout `*.at`
-  imbriqué) est horodaté avec `new Date().toISOString()` à **chaque**
-  appel de `buildOracleReport()` (`tools/corpus/oracle-report.mjs`,
-  « evidence horodatée » par conception, ligne 2 du commentaire du
-  fichier) — un diff texte brut divergerait donc à *chaque* exécution
-  future, même sans aucun changement fonctionnel réel. Le gate tel
-  qu'écrit initialement aurait donc bloqué `corpus-full.yml`
-  indéfiniment, sur un faux positif structurel, pas sur la vraie
-  dérive qu'il visait à détecter.
-  Corrigé : `tools/corpus/check-corpus-committed.mjs` (nouveau script,
-  ~190 lignes) remplace le `git diff` brut. Il compare `git show
-  HEAD:<fichier>` (version committée) au fichier régénéré dans le
-  working tree, **paire par paire** (indexées par `id`), après avoir
-  retiré récursivement toute clé `ran_at`/`at` de chaque objet JSON —
-  pas un diff texte. Exposé via `bun run check:corpus-committed`
-  (`package.json`), appelé par `corpus-full.yml` après `corpus:full`.
-  **Vérifié par test empirique local, pas seulement par lecture du
-  code** : (1) contre `HEAD` inchangé → `OK`, 18 fichiers ; (2)
-  modification volontaire d'un `id` de paire (`dash-legacy-entity` →
-  `...-TEST`) → détecté correctement (`paire disparue` +
-  `paire nouvelle`), exit 1 ; (3) tous les `ran_at`/`at` du fichier
-  réécrits à un horodatage différent (simulant un vrai run
-  `corpus:full`, rien d'autre changé) → `OK`, aucun faux positif,
-  exit 0. Les 3 cas couvrent exactement le défaut trouvé et sa
-  correction. `node --check` (syntaxe) + `node
-  tools/run-prettier.mjs --check`/`--write` (formatage) +
-  `python3 -c "import yaml; yaml.safe_load(...)"` (YAML de
-  `corpus-full.yml`) + `python3 -c "import json; json.load(...)"`
-  (`package.json`) tous verts.
-  **Limite explicite reconnue avant le fait suivant** : les 3 tests
-  ci-dessus ont été faits avec `node` seul, jamais dans les conditions
-  exactes du job CI — un vrai run CI a immédiatement invalidé cette
-  seconde version aussi.
+  `Corpus full (--verify, sans --structural-only)`. Concrètement : le run vert
+  obtenu après OPS-17/OPS-18 (`monitoring`/`reporting` à
+  `verified/applicable=100%`, `blocked=0`) a recalculé des
+  `corpus/monitoring.pairs.jsonl` et `corpus/reporting.pairs.jsonl` corrects
+  **dans l'éphémère du runner**, puis les a jetés à la fin du job. Les fichiers
+  réellement committés sur `main` restent ceux d'OPS-18 (édités à la main via le
+  générateur, jamais réellement passés par une exécution de `emit-pairs.mjs` que
+  j'aurais pu observer moi-même — `bun`/`nx` absents de mon sandbox tout du long
+  d'OPS-15 à OPS-18). Rien n'indique une divergence fonctionnelle actuelle (le
+  run CI confirme que le générateur produit les bons chemins), mais rien ne le
+  garantit non plus au niveau octet — `verified_at`, ordre des clés, ou un champ
+  additionnel du générateur que je n'aurais pas anticipé pourraient différer
+  entre ma version committée à la main et une vraie sortie de `emit-pairs.mjs`.
+  Ce même défaut vaut pour les 18 modules, pas seulement
+  `monitoring`/`reporting` — aucun des `corpus/*.pairs.jsonl` committés n'a
+  jamais été garanti identique à une sortie CI réelle depuis la création de ce
+  workflow. **Décision utilisateur** : « approche big tech ». Traduit en choix
+  concret entre les deux options posées (commit-back automatique vs fail loud) :
+  un run CI ne doit jamais pousser silencieusement sur `main` sans revue
+  humaine/PR, même pour un artefact dérivé — c'est le principe qui prime chez
+  les éditeurs qui traitent le contenu généré comme une source à revoir, pas
+  comme un cache à rafraîchir en arrière-plan (le risque inverse : un bug du
+  générateur commit-back silencieusement une régression business dans le corpus,
+  jamais vue par personne). Retenu : **fail loud sur divergence**, pas de
+  commit-back automatique. **Première implémentation invalidée le jour même par
+  le premier run réel.** `git diff --exit-code --stat -- corpus/` a échoué sur
+  les **18 modules** (1507 insertions/1507 suppressions, symétrique) — pas
+  seulement `monitoring`/`reporting`. Diagnostic avant de conclure à une vraie
+  divergence : `oracle_report.ran_at` (et tout `*.at` imbriqué) est horodaté
+  avec `new Date().toISOString()` à **chaque** appel de `buildOracleReport()`
+  (`tools/corpus/oracle-report.mjs`, « evidence horodatée » par conception,
+  ligne 2 du commentaire du fichier) — un diff texte brut divergerait donc à
+  _chaque_ exécution future, même sans aucun changement fonctionnel réel. Le
+  gate tel qu'écrit initialement aurait donc bloqué `corpus-full.yml`
+  indéfiniment, sur un faux positif structurel, pas sur la vraie dérive qu'il
+  visait à détecter. Corrigé : `tools/corpus/check-corpus-committed.mjs`
+  (nouveau script, ~190 lignes) remplace le `git diff` brut. Il compare
+  `git show HEAD:<fichier>` (version committée) au fichier régénéré dans le
+  working tree, **paire par paire** (indexées par `id`), après avoir retiré
+  récursivement toute clé `ran_at`/`at` de chaque objet JSON — pas un diff
+  texte. Exposé via `bun run check:corpus-committed` (`package.json`), appelé
+  par `corpus-full.yml` après `corpus:full`. **Vérifié par test empirique local,
+  pas seulement par lecture du code** : (1) contre `HEAD` inchangé → `OK`, 18
+  fichiers ; (2) modification volontaire d'un `id` de paire
+  (`dash-legacy-entity` → `...-TEST`) → détecté correctement (`paire disparue` +
+  `paire nouvelle`), exit 1 ; (3) tous les `ran_at`/`at` du fichier réécrits à
+  un horodatage différent (simulant un vrai run `corpus:full`, rien d'autre
+  changé) → `OK`, aucun faux positif, exit 0. Les 3 cas couvrent exactement le
+  défaut trouvé et sa correction. `node --check` (syntaxe) +
+  `node tools/run-prettier.mjs --check`/`--write` (formatage) +
+  `python3 -c "import yaml; yaml.safe_load(...)"` (YAML de `corpus-full.yml`) +
+  `python3 -c "import json; json.load(...)"` (`package.json`) tous verts.
+  **Limite explicite reconnue avant le fait suivant** : les 3 tests ci-dessus
+  ont été faits avec `node` seul, jamais dans les conditions exactes du job CI —
+  un vrai run CI a immédiatement invalidé cette seconde version aussi.
   **Deuxième itération, le jour même.** Le premier run CI réel de
-  `check:corpus-committed` a échoué sur **1507/1507 paires — la
-  totalité du corpus, tous les 18 modules**, y compris des modules
-  jamais touchés par une édition manuelle (`report-states`,
-  `processing`…), stables depuis longtemps. Ce taux de 100% (pas un
-  sous-ensemble ciblé) indiquait un second défaut structurel du
-  comparateur, pas une vraie divergence de contenu — confirmé en
-  isolant le premier diff affiché
-  (`report-states.approve.list-item-props`) : seul son champ
-  `verified_at` (`"2026-08-11"`) aurait changé. Root cause : `emit-
-  pairs.mjs` fixe `verified_at = today` (`ranAt.slice(0, 10)`, la date
-  du jour d'exécution) pour **toute** paire `status: "verified"` — la
-  quasi-totalité du corpus — à chaque run. Ce champ vit à la racine de
-  la paire, pas dans `oracle_report`, donc la première version du
-  script (qui n'excluait que `ran_at`/`at`) ne le voyait pas.
-  Corrigé : `verified_at` ajouté à `VOLATILE_KEYS` dans
-  `check-corpus-committed.mjs`. Avant de considérer le correctif
-  complet, recherche exhaustive de toute autre clé du même type :
-  script Python listant toutes les clés (récursif, tous niveaux)
-  réellement présentes dans les 18 `corpus/*.pairs.jsonl` actuels —
-  47 clés distinctes recensées. Seule `legacy_ref.date` restait à
-  vérifier (autre candidat plausible « date ») : tracée jusqu'à
-  `legacy.lock.json#date` (`loadLegacyRef()`, `emit-pairs.mjs`) — fixe
-  tant que le pin legacy ne change pas, pas un horodatage d'exécution,
-  donc légitimement comparable, non exclue.
-  Re-vérifié empiriquement après ce second correctif : (1) contre
-  `HEAD` inchangé → `OK` ; (2) `verified_at`+`ran_at`+`at` réécrits sur
-  **les 18 fichiers simultanément** (reproduction exacte du scénario
-  du run CI, rien d'autre changé) → `OK`, exit 0, aucun faux positif ;
-  (3) modification volontaire d'un `id` de paire → toujours détectée
-  correctement, exit 1 (la détection réelle n'a pas été cassée en
-  élargissant l'exclusion). `node --check` + `node
-  tools/run-prettier.mjs --check` verts.
-  **Limite explicite, inchangée** : toujours pas de vraie exécution de
-  `bun run corpus:full` suivie de ce step dans les conditions exactes
-  de `corpus-full.yml` — seulement des simulations `node` locales,
-  aussi proches que possible du scénario réel observé. Un troisième
-  champ volatil non anticipé reste possible ; seul un nouveau run CI
-  réel le confirmera ou l'infirmera. Si ce step réussit au prochain
-  run, cela confirmera que le JSONL édité à la main depuis OPS-18 est
-  fonctionnellement identique (hors horodatage) à la sortie réelle du
-  générateur corrigé par OPS-17.
-  **Troisième itération (2026-08-17, même jour) — root cause réelle,
-  pas un champ volatil.** Diagnostic temporaire ajouté à
-  `corpus-full.yml` (`git diff --stat` + `git diff -U5` brut sur
-  `corpus/shared.pairs.jsonl`, avant tout filtrage — commit
-  `1dbbc89`, retiré après diagnostic) plutôt que deviner un 4e candidat
-  sans preuve. Le diff CI réel obtenu montre, pour **chaque** paire des
-  18 fichiers : `"oracle_report":{"mode":"structural-only", ...}` (côté
-  committé, `verified_at:"2026-08-10"`) vs
-  `"oracle_report":{"mode":"full", ...}` (côté régénéré par le run,
-  `verified_at:"2026-08-17"`). Root cause confirmée par lecture croisée
-  de `package.json` (`corpus:ci` = `--structural-only`, utilisé par
-  `ci.yml` ; `corpus:full` = sans `--structural-only`, utilisé par
-  `corpus-full.yml`) et `git log --oneline -- corpus/shared.pairs.jsonl`
-  (5 commits, tous via `corpus:ci`/édition manuelle — jamais un commit
-  généré par une exécution réelle de `corpus:full`). **Ce n'est pas un
-  artefact volatil comme `ran_at`/`verified_at`** : `oracle_report.mode`
-  porte un signal réel (sous quel régime la paire a été vérifiée — avec
-  ou sans correspondance legacy). L'ajouter à `VOLATILE_KEYS` masquerait
-  une vraie question de fond plutôt que de la résoudre.
-  **Question posée à l'utilisateur avant toute action** : `corpus-full.yml`
-  doit-il vraiment tourner en mode `full` ? Réponse tranchée par relecture
-  d'ADR-0015 et ADR-0029 : **oui, sans ambiguïté**. ADR-0015 §Décision
-  point 4 : « Correspondance legacy : uniquement via `--verify` **sans**
-  `--structural-only` (job `corpus-full`) ». ADR-0029 : « SEOS/Angular
-  reste le **golden reference** ». Le mode `full` de `corpus-full.yml`
-  est la seule vérification de correspondance legacy qui existe dans
-  tout le dépôt — la réexaminer reviendrait à contredire ces deux ADR
-  sans justification nouvelle. Conclusion : **le mode `full` est correct
-  et volontaire ; le vrai défaut est que `corpus/*.pairs.jsonl` committé
-  sur `main` n'a jamais reflété une exécution réelle de `corpus:full`
-  depuis la création du corpus** — confirmé par l'historique git complet
-  du fichier (aucun des 5 commits touchant `shared.pairs.jsonl` ne
-  provient d'un run `corpus:full` réel, cohérent avec l'absence
-  documentée de tout mécanisme de commit-back dans `corpus-full.yml`,
-  cf. plus haut dans cette même entrée).
-  **Reste à faire (non trivial, hors capacité de mon sandbox actuel)** :
-  régénérer les 18 `corpus/*.pairs.jsonl` en mode `full` réel (nécessite
-  `bun`/`nx`/`SEOS_LEGACY_ROOT`, absents de mon environnement
-  d'exécution) et les committer, pour que le corpus committé corresponde
-  enfin à ce que `corpus-full.yml` vérifie réellement. Option retenue et
-  exécutée (commit `47a4abd`) : publication de `corpus/*.pairs.jsonl`
-  régénéré via `actions/upload-artifact` dans `corpus-full.yml` quand
-  `check:corpus-committed` échoue (`if: failure() &&
-  steps.check_corpus.outcome == 'failure'`) — étape diagnostique
-  temporaire retirée dans le même commit.
-  **Quatrième itération (2026-08-18) — clôture.** Run CI suivant
-  (déclenché par `47a4abd`) a échoué comme attendu sur
-  `check:corpus-committed` (même signature 1507/1507, cohérente avec le
-  diagnostic — le corpus committé restait encore en `structural-only`
-  à ce stade), et a publié l'artefact
-  `corpus-full-regenerated-47a4abd8f3ca0e17bcb2d4355621184560c433bb`
-  comme prévu. Utilisateur a téléchargé et fourni l'accès au dossier
-  extrait. Avant de committer aveuglément, vérification programmatique
-  complète (Python, comparaison paire par paire par `id`) :
-  (1) même nombre de lignes par fichier (1507 total, 18/18 fichiers
-  identiques en compte) — aucune perte de paire ; (2) mêmes 1507 `id`
-  exactement des deux côtés (`old_ids == new_ids` sur chaque fichier) ;
-  (3) distribution des `status` : `n/a` 922→924, `verified` 585→583,
+  `check:corpus-committed` a échoué sur **1507/1507 paires — la totalité du
+  corpus, tous les 18 modules**, y compris des modules jamais touchés par une
+  édition manuelle (`report-states`, `processing`…), stables depuis longtemps.
+  Ce taux de 100% (pas un sous-ensemble ciblé) indiquait un second défaut
+  structurel du comparateur, pas une vraie divergence de contenu — confirmé en
+  isolant le premier diff affiché (`report-states.approve.list-item-props`) :
+  seul son champ `verified_at` (`"2026-08-11"`) aurait changé. Root cause :
+  `emit- pairs.mjs` fixe `verified_at = today` (`ranAt.slice(0, 10)`, la date du
+  jour d'exécution) pour **toute** paire `status: "verified"` — la
+  quasi-totalité du corpus — à chaque run. Ce champ vit à la racine de la paire,
+  pas dans `oracle_report`, donc la première version du script (qui n'excluait
+  que `ran_at`/`at`) ne le voyait pas. Corrigé : `verified_at` ajouté à
+  `VOLATILE_KEYS` dans `check-corpus-committed.mjs`. Avant de considérer le
+  correctif complet, recherche exhaustive de toute autre clé du même type :
+  script Python listant toutes les clés (récursif, tous niveaux) réellement
+  présentes dans les 18 `corpus/*.pairs.jsonl` actuels — 47 clés distinctes
+  recensées. Seule `legacy_ref.date` restait à vérifier (autre candidat
+  plausible « date ») : tracée jusqu'à `legacy.lock.json#date`
+  (`loadLegacyRef()`, `emit-pairs.mjs`) — fixe tant que le pin legacy ne change
+  pas, pas un horodatage d'exécution, donc légitimement comparable, non exclue.
+  Re-vérifié empiriquement après ce second correctif : (1) contre `HEAD`
+  inchangé → `OK` ; (2) `verified_at`+`ran_at`+`at` réécrits sur **les 18
+  fichiers simultanément** (reproduction exacte du scénario du run CI, rien
+  d'autre changé) → `OK`, exit 0, aucun faux positif ; (3) modification
+  volontaire d'un `id` de paire → toujours détectée correctement, exit 1 (la
+  détection réelle n'a pas été cassée en élargissant l'exclusion).
+  `node --check` + `node tools/run-prettier.mjs --check` verts. **Limite
+  explicite, inchangée** : toujours pas de vraie exécution de
+  `bun run corpus:full` suivie de ce step dans les conditions exactes de
+  `corpus-full.yml` — seulement des simulations `node` locales, aussi proches
+  que possible du scénario réel observé. Un troisième champ volatil non anticipé
+  reste possible ; seul un nouveau run CI réel le confirmera ou l'infirmera. Si
+  ce step réussit au prochain run, cela confirmera que le JSONL édité à la main
+  depuis OPS-18 est fonctionnellement identique (hors horodatage) à la sortie
+  réelle du générateur corrigé par OPS-17. **Troisième itération (2026-08-17,
+  même jour) — root cause réelle, pas un champ volatil.** Diagnostic temporaire
+  ajouté à `corpus-full.yml` (`git diff --stat` + `git diff -U5` brut sur
+  `corpus/shared.pairs.jsonl`, avant tout filtrage — commit `1dbbc89`, retiré
+  après diagnostic) plutôt que deviner un 4e candidat sans preuve. Le diff CI
+  réel obtenu montre, pour **chaque** paire des 18 fichiers :
+  `"oracle_report":{"mode":"structural-only", ...}` (côté committé,
+  `verified_at:"2026-08-10"`) vs `"oracle_report":{"mode":"full", ...}` (côté
+  régénéré par le run, `verified_at:"2026-08-17"`). Root cause confirmée par
+  lecture croisée de `package.json` (`corpus:ci` = `--structural-only`, utilisé
+  par `ci.yml` ; `corpus:full` = sans `--structural-only`, utilisé par
+  `corpus-full.yml`) et `git log --oneline -- corpus/shared.pairs.jsonl` (5
+  commits, tous via `corpus:ci`/édition manuelle — jamais un commit généré par
+  une exécution réelle de `corpus:full`). **Ce n'est pas un artefact volatil
+  comme `ran_at`/`verified_at`** : `oracle_report.mode` porte un signal réel
+  (sous quel régime la paire a été vérifiée — avec ou sans correspondance
+  legacy). L'ajouter à `VOLATILE_KEYS` masquerait une vraie question de fond
+  plutôt que de la résoudre. **Question posée à l'utilisateur avant toute
+  action** : `corpus-full.yml` doit-il vraiment tourner en mode `full` ? Réponse
+  tranchée par relecture d'ADR-0015 et ADR-0029 : **oui, sans ambiguïté**.
+  ADR-0015 §Décision point 4 : « Correspondance legacy : uniquement via
+  `--verify` **sans** `--structural-only` (job `corpus-full`) ». ADR-0029 : «
+  SEOS/Angular reste le **golden reference** ». Le mode `full` de
+  `corpus-full.yml` est la seule vérification de correspondance legacy qui
+  existe dans tout le dépôt — la réexaminer reviendrait à contredire ces deux
+  ADR sans justification nouvelle. Conclusion : **le mode `full` est correct et
+  volontaire ; le vrai défaut est que `corpus/*.pairs.jsonl` committé sur `main`
+  n'a jamais reflété une exécution réelle de `corpus:full` depuis la création du
+  corpus** — confirmé par l'historique git complet du fichier (aucun des 5
+  commits touchant `shared.pairs.jsonl` ne provient d'un run `corpus:full` réel,
+  cohérent avec l'absence documentée de tout mécanisme de commit-back dans
+  `corpus-full.yml`, cf. plus haut dans cette même entrée). **Reste à faire (non
+  trivial, hors capacité de mon sandbox actuel)** : régénérer les 18
+  `corpus/*.pairs.jsonl` en mode `full` réel (nécessite
+  `bun`/`nx`/`SEOS_LEGACY_ROOT`, absents de mon environnement d'exécution) et
+  les committer, pour que le corpus committé corresponde enfin à ce que
+  `corpus-full.yml` vérifie réellement. Option retenue et exécutée (commit
+  `47a4abd`) : publication de `corpus/*.pairs.jsonl` régénéré via
+  `actions/upload-artifact` dans `corpus-full.yml` quand
+  `check:corpus-committed` échoue
+  (`if: failure() && steps.check_corpus.outcome == 'failure'`) — étape
+  diagnostique temporaire retirée dans le même commit. **Quatrième itération
+  (2026-08-18) — clôture.** Run CI suivant (déclenché par `47a4abd`) a échoué
+  comme attendu sur `check:corpus-committed` (même signature 1507/1507,
+  cohérente avec le diagnostic — le corpus committé restait encore en
+  `structural-only` à ce stade), et a publié l'artefact
+  `corpus-full-regenerated-47a4abd8f3ca0e17bcb2d4355621184560c433bb` comme
+  prévu. Utilisateur a téléchargé et fourni l'accès au dossier extrait. Avant de
+  committer aveuglément, vérification programmatique complète (Python,
+  comparaison paire par paire par `id`) : (1) même nombre de lignes par fichier
+  (1507 total, 18/18 fichiers identiques en compte) — aucune perte de paire ;
+  (2) mêmes 1507 `id` exactement des deux côtés (`old_ids == new_ids` sur chaque
+  fichier) ; (3) distribution des `status` : `n/a` 922→924, `verified` 585→583,
   seulement **2 changements** de statut sur 1507 paires —
-  `monitoring.shell.rov-section-enum` et
-  `reporting.shell.rov-section-enum`, tous deux `verified → n/a`,
-  avec `notes` confirmant « Enum section — pas de contrepartie legacy
-  (design absent, confirmé par recherche exhaustive OPS-15) » —
-  cohérent avec la requalification déjà actée sous OPS-18, pas une
-  régression. (4) tous les fichiers de l'artefact confirmés `"mode":
-  "full"` (18/18). Aucun signal de régression détecté : copie des 18
-  fichiers effectuée (`cp corpus-full-regenerated-.../*.pairs.jsonl
-  corpus/`), JSON revalidé ligne par ligne sur les 18 fichiers après
-  copie. Committé (`e78be02`).
-  **Clôture confirmée (2026-08-18).** Commit du corpus régénéré a
-  mécaniquement fait dériver `check:docs-freshness` (E-5/P1-9) —
-  attendu et correct, pas un nouveau bug : les 2 changements de statut
-  (`verified→n/a`) déplacent les compteurs agrégés dans
-  `STATUS.md`/`LLM_CONTEXT.md` (585→583 correspondances, 922→924
-  décisions `n/a`, couverture fichiers 914→918, 33.5%→33.6%). Corrigé
-  via `bun run generate:status` exécuté par l'utilisateur en local
-  (commit `e0d66d6`), pas de valeurs éditées à la main. **Run CI
-  `corpus-full.yml` suivant (déclenché par `e0d66d6`, run
+  `monitoring.shell.rov-section-enum` et `reporting.shell.rov-section-enum`,
+  tous deux `verified → n/a`, avec `notes` confirmant « Enum section — pas de
+  contrepartie legacy (design absent, confirmé par recherche exhaustive OPS-15)
+  » — cohérent avec la requalification déjà actée sous OPS-18, pas une
+  régression. (4) tous les fichiers de l'artefact confirmés `"mode": "full"`
+  (18/18). Aucun signal de régression détecté : copie des 18 fichiers effectuée
+  (`cp corpus-full-regenerated-.../*.pairs.jsonl corpus/`), JSON revalidé ligne
+  par ligne sur les 18 fichiers après copie. Committé (`e78be02`). **Clôture
+  confirmée (2026-08-18).** Commit du corpus régénéré a mécaniquement fait
+  dériver `check:docs-freshness` (E-5/P1-9) — attendu et correct, pas un nouveau
+  bug : les 2 changements de statut (`verified→n/a`) déplacent les compteurs
+  agrégés dans `STATUS.md`/`LLM_CONTEXT.md` (585→583 correspondances, 922→924
+  décisions `n/a`, couverture fichiers 914→918, 33.5%→33.6%). Corrigé via
+  `bun run generate:status` exécuté par l'utilisateur en local (commit
+  `e0d66d6`), pas de valeurs éditées à la main. **Run CI `corpus-full.yml`
+  suivant (déclenché par `e0d66d6`, run
   [32126888570](https://github.com/ismaelkouda/cmz-platform/actions/runs/32126888570))
-  : `Success`, 22m0s au total (job `corpus-full` : 19m47s). `bun run
-  check:corpus-committed` passe au vert pour la première fois** —
-  preuve CI réelle, indépendante de toute simulation locale, que le
-  corpus committé sur `main` correspond enfin à la sortie réelle de
-  `corpus:full`. Boucle des 4 itérations OPS-20 close : (1) `git diff`
-  brut → faux positif `ran_at`/`at` ; (2) `verified_at` manqué → faux
-  positif ; (3) root cause réelle `oracle_report.mode`
-  structural-only/full, tranchée non-négociable par ADR-0015/ADR-0029,
-  corpus jamais régénéré en mode `full` depuis sa création ; (4)
-  régénération réelle via artefact CI + vérification programmatique
-  paire par paire + commit + confirmation CI verte end-to-end.
+  : `Success`, 22m0s au total (job `corpus-full` : 19m47s).
+  `bun run check:corpus-committed` passe au vert pour la première fois** —
+  preuve CI réelle, indépendante de toute simulation locale, que le corpus
+  committé sur `main` correspond enfin à la sortie réelle de `corpus:full`.
+  Boucle des 4 itérations OPS-20 close : (1) `git diff` brut → faux positif
+  `ran_at`/`at` ; (2) `verified_at` manqué → faux positif ; (3) root cause
+  réelle `oracle_report.mode` structural-only/full, tranchée non-négociable par
+  ADR-0015/ADR-0029, corpus jamais régénéré en mode `full` depuis sa création ;
+  (4) régénération réelle via artefact CI + vérification programmatique paire
+  par paire + commit + confirmation CI verte end-to-end.
 
 ### 3.6 Documentation & ADR spécifiques SEOS (ex-T13, sous-ensemble)
 
@@ -1971,75 +1875,72 @@ gouvernance, sécurité, licences.
   complet vert. Ne pas mélanger ce lot au prochain changement de capacité de la
   plateforme.
 - **OPS-1** — **fait** (2026-08-16), M, P0 Ops, alias `P0-N1`. Push
-  `feature/plat-5-generator-platform` (109 commits, PLAT-5G→5K inclus)
-  effectué avec succès (`git push origin feature/plat-5-generator-platform`,
-  gitleaks 0 leak). `main` a également reçu ces commits directement (push
-  précédent). Première CI réelle observée : **run #39**
+  `feature/plat-5-generator-platform` (109 commits, PLAT-5G→5K inclus) effectué
+  avec succès (`git push origin feature/plat-5-generator-platform`, gitleaks 0
+  leak). `main` a également reçu ces commits directement (push précédent).
+  Première CI réelle observée : **run #39**
   (`https://github.com/ismaelkouda/cmz-platform/actions/runs/31975317345`,
-  commit `ebd6df1`, déclenchée par le push direct sur `main`) — **statut
-  global rouge à l'observation initiale**, 3 causes distinctes identifiées et
+  commit `ebd6df1`, déclenchée par le push direct sur `main`) — **statut global
+  rouge à l'observation initiale**, 3 causes distinctes identifiées et
   documentées séparément sous **OPS-12** ci-dessous. Aucune des 3 causes n'est
-  liée au contenu de PLAT-5G→5K (tests, gate directeur, oracle d'exécution) :
-  ce sont des défauts de câblage CI préexistants et une dette de sécurité
+  liée au contenu de PLAT-5G→5K (tests, gate directeur, oracle d'exécution) : ce
+  sont des défauts de câblage CI préexistants et une dette de sécurité
   transitive, découverts seulement maintenant faute d'exécution CI antérieure
-  sur ce lot. **Limite explicite :** je n'ai pas personnellement inspecté
-  chaque job de la matrice `check:publication-durability`
-  (`macos-14`/APFS + `ubuntu-24.04`/ext4) attendue par PLAT-5F — seul le
-  statut global de la run a été rapporté, d'abord comme vert puis corrigé en
-  rouge par l'utilisateur avec les logs exacts des 3 échecs. La promotion
-  PLAT-5F → M3 reste donc **non confirmée** tant qu'une run CI verte n'a pas
-  été observée après correction d'OPS-12.
+  sur ce lot. **Limite explicite :** je n'ai pas personnellement inspecté chaque
+  job de la matrice `check:publication-durability` (`macos-14`/APFS +
+  `ubuntu-24.04`/ext4) attendue par PLAT-5F — seul le statut global de la run a
+  été rapporté, d'abord comme vert puis corrigé en rouge par l'utilisateur avec
+  les logs exacts des 3 échecs. La promotion PLAT-5F → M3 reste donc **non
+  confirmée** tant qu'une run CI verte n'a pas été observée après correction
+  d'OPS-12.
 - **OPS-12** — **partiel** (2026-08-16), M, P0 Ops. Trois causes distinctes de
   rouge sur la run CI #39, aucune liée au contenu PLAT-5G→5K :
-    - **OPS-12a — fait.** `check:dto-schema` (ajouté au job `docs-freshness`
-      par T13-17/OPS le 2026-08-14) importe `typescript` via
+    - **OPS-12a — fait.** `check:dto-schema` (ajouté au job `docs-freshness` par
+      T13-17/OPS le 2026-08-14) importe `typescript` via
       `tools/schema/generate-dto-schema.mjs`, mais ce job était conçu Node pur
-      (`check:docs-freshness` ne lit que `project.json`/corpus, sans
-      dépendance npm) — jamais de `bun install`, donc
-      `ERR_MODULE_NOT_FOUND 'typescript'` dès la première exécution réelle du
-      step. Aucune run CI n'avait encore exercé ce chemin avant #39, d'où
-      l'angle mort resté invisible. Corrigé : `oven-sh/setup-bun@v2` +
-      `bun install --frozen-lockfile` ajoutés au job `docs-freshness` dans
-      `.github/workflows/ci.yml`, avant le step `check:dto-schema`. Vérifié
-      **localement** avec `node_modules` déjà installé (le sandbox ne peut pas
-      exécuter `bun`, seulement `node`/`npx`) : `node tools/check-dto-schema.mjs`
-      → `OK` (432 définitions, 303 DTOs, 3 avertissements de portée non
-      bloquants déjà documentés en T2-1). YAML validé structurellement
-      (`python3 -c "import yaml; yaml.safe_load(...)"`), mais **le job CI
-      complet avec `bun install` réel n'a pas été rejoué par moi** — à
-      confirmer par la prochaine run CI.
-    - **OPS-12b — fait.** `bun run check:dead-code` (knip) échouait avec
-      « Unlisted binaries (1) : `semgrep` — `package.json` » : `semgrep`
-      apparaît dans le script `check:sast` de `package.json` mais est un
-      outil Python installé via `pip install semgrep==1.172.0` dans un job CI
-      séparé (`sast`), jamais un binaire npm/bun — faux-positif de détection
-      knip, pas un vrai défaut. Corrigé : ajout de
-      `"ignoreBinaries": ["semgrep"]` à `knip.json`, champ de premier niveau
-      confirmé dans le code source de `knip@6.31.0` (`ConfigurationChief.js`,
-      valeur par défaut `[]`). **Limite explicite : je n'ai pas pu exécuter
-      `knip` en entier dans ce sandbox** (`RangeError: Array buffer allocation
-      failed` dans le parseur `oxc-parser`, contrainte mémoire de
-      l'environnement, sans rapport avec la modification) — la correction est
-      structurellement correcte et validée par lecture du schéma/code source
-      de l'outil, mais pas par une exécution réelle réussie ; à confirmer par
-      la prochaine run CI.
-    - **OPS-12c — fait** (2026-08-17). `bun audit --audit-level=high`
-      remontait 4 vulnérabilités high dans des dépendances transitives
-      (confirmé deux fois par l'utilisateur en CI réelle, `bun` absent du
-      sandbox d'exécution local). L'utilisateur a lancé `bun update` de son
-      côté : n'a bumpé que des dépendances directes proches de leur plage
-      déjà satisfaite (`@commitlint/cli`, `@typescript-eslint/utils`,
-      `lint-staged`, `angular-eslint`) sans toucher aux 3 paquets vulnérables
-      — attendu, `bun update` respecte les plages semver déclarées par les
-      paquets parents et ne peut pas les forcer au-delà. **2 CVE sur 3
-      corrigées par `overrides` ciblé dans `package.json`**, versions
-      vérifiées individuellement sur le registre npm avant écriture (pas de
-      supposition), puis `bun.lock` régénéré côté utilisateur (`bun install`
-      sans `--frozen-lockfile`) et poussé (commit `d4af5e7`). **Confirmé
-      résolu par une exécution CI réelle** (log `bun audit` collé par
-      l'utilisateur le 2026-08-17 après push) : `nanoid` et `js-yaml`
-      n'apparaissent plus dans le rapport, seule l'exception `image-size`
-      documentée ci-dessous subsiste :
+      (`check:docs-freshness` ne lit que `project.json`/corpus, sans dépendance
+      npm) — jamais de `bun install`, donc `ERR_MODULE_NOT_FOUND 'typescript'`
+      dès la première exécution réelle du step. Aucune run CI n'avait encore
+      exercé ce chemin avant #39, d'où l'angle mort resté invisible. Corrigé :
+      `oven-sh/setup-bun@v2` + `bun install --frozen-lockfile` ajoutés au job
+      `docs-freshness` dans `.github/workflows/ci.yml`, avant le step
+      `check:dto-schema`. Vérifié **localement** avec `node_modules` déjà
+      installé (le sandbox ne peut pas exécuter `bun`, seulement `node`/`npx`) :
+      `node tools/check-dto-schema.mjs` → `OK` (432 définitions, 303 DTOs, 3
+      avertissements de portée non bloquants déjà documentés en T2-1). YAML
+      validé structurellement (`python3 -c "import yaml; yaml.safe_load(...)"`),
+      mais **le job CI complet avec `bun install` réel n'a pas été rejoué par
+      moi** — à confirmer par la prochaine run CI.
+    - **OPS-12b — fait.** `bun run check:dead-code` (knip) échouait avec «
+      Unlisted binaries (1) : `semgrep` — `package.json` » : `semgrep` apparaît
+      dans le script `check:sast` de `package.json` mais est un outil Python
+      installé via `pip install semgrep==1.172.0` dans un job CI séparé
+      (`sast`), jamais un binaire npm/bun — faux-positif de détection knip, pas
+      un vrai défaut. Corrigé : ajout de `"ignoreBinaries": ["semgrep"]` à
+      `knip.json`, champ de premier niveau confirmé dans le code source de
+      `knip@6.31.0` (`ConfigurationChief.js`, valeur par défaut `[]`). **Limite
+      explicite : je n'ai pas pu exécuter `knip` en entier dans ce sandbox**
+      (`RangeError: Array buffer allocation failed` dans le parseur
+      `oxc-parser`, contrainte mémoire de l'environnement, sans rapport avec la
+      modification) — la correction est structurellement correcte et validée par
+      lecture du schéma/code source de l'outil, mais pas par une exécution
+      réelle réussie ; à confirmer par la prochaine run CI.
+    - **OPS-12c — fait** (2026-08-17). `bun audit --audit-level=high` remontait
+      4 vulnérabilités high dans des dépendances transitives (confirmé deux fois
+      par l'utilisateur en CI réelle, `bun` absent du sandbox d'exécution
+      local). L'utilisateur a lancé `bun update` de son côté : n'a bumpé que des
+      dépendances directes proches de leur plage déjà satisfaite
+      (`@commitlint/cli`, `@typescript-eslint/utils`, `lint-staged`,
+      `angular-eslint`) sans toucher aux 3 paquets vulnérables — attendu,
+      `bun update` respecte les plages semver déclarées par les paquets parents
+      et ne peut pas les forcer au-delà. **2 CVE sur 3 corrigées par `overrides`
+      ciblé dans `package.json`**, versions vérifiées individuellement sur le
+      registre npm avant écriture (pas de supposition), puis `bun.lock` régénéré
+      côté utilisateur (`bun install` sans `--frozen-lockfile`) et poussé
+      (commit `d4af5e7`). **Confirmé résolu par une exécution CI réelle** (log
+      `bun audit` collé par l'utilisateur le 2026-08-17 après push) : `nanoid`
+      et `js-yaml` n'apparaissent plus dans le rapport, seule l'exception
+      `image-size` documentée ci-dessous subsiste :
         - `nanoid` `<3.3.18` (via `postcss` — boucle infinie si `size=0`,
           [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8))
           → `overrides["nanoid"] = "3.3.18"`, dernière version publiée de la
@@ -2049,460 +1950,411 @@ gouvernance, sécurité, licences.
           `@nx/js`/`babel-plugin-macros`/`cosmiconfig`,
           `@nx/angular`/`@nx/rspack`/`postcss-loader`/`cosmiconfig`,
           `@nx/web`/`@nx/webpack`/`postcss-loader`/`cosmiconfig` —
-          CVE-2026-59870, consommation CPU quadratique en résolution
-          `!!omap`) → `overrides["js-yaml"] = "4.3.1"`, version publiée
-          2026-07-31 (plus d'un mois après `4.3.0`, cohérent avec un
-          correctif de sécurité), confirmée existante sur le registre.
+          CVE-2026-59870, consommation CPU quadratique en résolution `!!omap`) →
+          `overrides["js-yaml"] = "4.3.1"`, version publiée 2026-07-31 (plus
+          d'un mois après `4.3.0`, cohérent avec un correctif de sécurité),
+          confirmée existante sur le registre.
         - **`image-size` `<=2.0.2` — non corrigé, exception assumée et
-          documentée.** Vérification sur le registre npm :
-          **`image-size@2.0.2` est la dernière version publiée** ; aucun
-          correctif n'est disponible en amont à ce jour. Une première
-          tentative d'`overrides["image-size"] = "2.0.3"` a été écrite par
-          erreur (version inventée sans vérification préalable), détectée et
-          corrigée avant tout commit en revérifiant le registre. Un
-          `overrides` vers `2.0.2` (seule version existante) serait sans
-          effet — toujours la version vulnérable. Investigation de l'usage
-          réel : `image-size` n'est jamais une dépendance directe — c'est une
-          dépendance optionnelle transitive de `less` (`optionalDependencies`
-          de `less@4.5.1`), lui-même déclaré uniquement comme
-          `peerDependency` **optionnelle** de `@angular/build`, `@nx/webpack`
-          et `vite`. **Aucun fichier `.less` n'existe dans `apps/` ni
-          `libs/`** (`find … -iname "*.less"` vide) — le projet est
+          documentée.** Vérification sur le registre npm : **`image-size@2.0.2`
+          est la dernière version publiée** ; aucun correctif n'est disponible
+          en amont à ce jour. Une première tentative
+          d'`overrides["image-size"] = "2.0.3"` a été écrite par erreur (version
+          inventée sans vérification préalable), détectée et corrigée avant tout
+          commit en revérifiant le registre. Un `overrides` vers `2.0.2` (seule
+          version existante) serait sans effet — toujours la version vulnérable.
+          Investigation de l'usage réel : `image-size` n'est jamais une
+          dépendance directe — c'est une dépendance optionnelle transitive de
+          `less` (`optionalDependencies` de `less@4.5.1`), lui-même déclaré
+          uniquement comme `peerDependency` **optionnelle** de `@angular/build`,
+          `@nx/webpack` et `vite`. **Aucun fichier `.less` n'existe dans `apps/`
+          ni `libs/`** (`find … -iname "*.less"` vide) — le projet est
           exclusivement Tailwind/CSS. `less` est physiquement présent dans
-          `node_modules/.bun/` (résolu par le lockfile car peer dep
-          optionnelle listée) mais son code, et donc celui d'`image-size`,
-          n'est jamais chargé à l'exécution : le parseur ICNS/JXL/HEIF
-          vulnérable ne s'exécute que si `less` traite un fichier `.less`,
-          ce qui n'arrive jamais dans ce dépôt. Tentative de neutralisation
-          via `overrides` explorée et abandonnée : la documentation officielle
-          Bun (`bun.com/docs/pm/overrides`, section Limitations) confirme
+          `node_modules/.bun/` (résolu par le lockfile car peer dep optionnelle
+          listée) mais son code, et donc celui d'`image-size`, n'est jamais
+          chargé à l'exécution : le parseur ICNS/JXL/HEIF vulnérable ne
+          s'exécute que si `less` traite un fichier `.less`, ce qui n'arrive
+          jamais dans ce dépôt. Tentative de neutralisation via `overrides`
+          explorée et abandonnée : la documentation officielle Bun
+          (`bun.com/docs/pm/overrides`, section Limitations) confirme
           explicitement que Bun ne supporte pas la forme pnpm `"pkg@"`
           (sélecteur vide) ni `"-"` (suppression de dépendance) — toute
           tentative de ce type est silencieusement ignorée avec un
           avertissement, donc inefficace. **Risque résiduel accepté et
           documenté** : CVSS 8.7 (DoS/disponibilité uniquement, pas de RCE ni
-          fuite de données — `AV:N/AC:L … VC:N/VI:N/VA:H`), EPSS 0.43%
-          (34ᵉ percentile, faible probabilité d'exploitation), déclenchable
-          uniquement en traitant un buffer ICNS/JXL/HEIF malveillant via
-          `less`, jamais invoqué dans ce dépôt.
-          **Post-régénération du lockfile (2026-08-17)** : le rapport CI
-          confirmé liste désormais 2 lignes pour cette même CVE au lieu
-          d'1 (`@angular/build › less › image-size` et une deuxième ligne
-          mentionnant `workspace:@cmz/administrative-boundary-data ›
-          vitest`). Vérifié dans `bun.lock` : une seule version
-          d'`image-size` est verrouillée (`0.5.5`, uniquement via
-          `less@4.5.1`) — `vitest@4.1.10` n'a aucune dépendance vers
-          `less` ni `image-size` dans son arbre (`node_modules/.bun/`
-          confirme une seule installation physique du paquet). La
-          deuxième ligne est un artefact d'affichage de `bun audit`
-          (regroupement par workspace consommateur dans le graphe
-          partagé du lockfile), pas une seconde occurrence réelle du
-          paquet ni une CVE distincte. Le risque documenté ci-dessus
-          reste inchangé et s'applique identiquement à la version
-          verrouillée `0.5.5` — l'advisory GHSA-w3rx-r6r6-pgpr ne
-          déclare aucune plage de version affectée structurée
-          (« Affected versions: Unknown » sur la page GitHub), seul le
-          texte « through 2.0.2 » la mentionne dans sa description,
-          cohérent avec une couverture de toute la ligne 0.x/2.x tant
-          qu'aucun correctif n'est publié. À rouvrir si `less` cesse
-          d'être une dépendance dormante (ajout d'un fichier `.less`) ou si
-          les mainteneurs d'`image-size` publient un correctif.
-    - **OPS-12e — fait** (2026-08-17). `bun audit` (sans `--audit-level`,
-      donc incluant `moderate`/`low`, non bloquant en CI qui ne filtre
-      que `high`) remonte 13 vulnérabilités sur 6 paquets
-      supplémentaires. Analysés un par un avant toute action, avec la
-      même discipline que OPS-12c (CVSS/EPSS, chemin de dépendance
-      réel, vérification registre npm avant écriture) :
+          fuite de données — `AV:N/AC:L … VC:N/VI:N/VA:H`), EPSS 0.43% (34ᵉ
+          percentile, faible probabilité d'exploitation), déclenchable
+          uniquement en traitant un buffer ICNS/JXL/HEIF malveillant via `less`,
+          jamais invoqué dans ce dépôt. **Post-régénération du lockfile
+          (2026-08-17)** : le rapport CI confirmé liste désormais 2 lignes pour
+          cette même CVE au lieu d'1 (`@angular/build › less › image-size` et
+          une deuxième ligne mentionnant
+          `workspace:@cmz/administrative-boundary-data › vitest`). Vérifié dans
+          `bun.lock` : une seule version d'`image-size` est verrouillée
+          (`0.5.5`, uniquement via `less@4.5.1`) — `vitest@4.1.10` n'a aucune
+          dépendance vers `less` ni `image-size` dans son arbre
+          (`node_modules/.bun/` confirme une seule installation physique du
+          paquet). La deuxième ligne est un artefact d'affichage de `bun audit`
+          (regroupement par workspace consommateur dans le graphe partagé du
+          lockfile), pas une seconde occurrence réelle du paquet ni une CVE
+          distincte. Le risque documenté ci-dessus reste inchangé et s'applique
+          identiquement à la version verrouillée `0.5.5` — l'advisory
+          GHSA-w3rx-r6r6-pgpr ne déclare aucune plage de version affectée
+          structurée (« Affected versions: Unknown » sur la page GitHub), seul
+          le texte « through 2.0.2 » la mentionne dans sa description, cohérent
+          avec une couverture de toute la ligne 0.x/2.x tant qu'aucun correctif
+          n'est publié. À rouvrir si `less` cesse d'être une dépendance dormante
+          (ajout d'un fichier `.less`) ou si les mainteneurs d'`image-size`
+          publient un correctif.
+    - **OPS-12e — fait** (2026-08-17). `bun audit` (sans `--audit-level`, donc
+      incluant `moderate`/`low`, non bloquant en CI qui ne filtre que `high`)
+      remonte 13 vulnérabilités sur 6 paquets supplémentaires. Analysés un par
+      un avant toute action, avec la même discipline que OPS-12c (CVSS/EPSS,
+      chemin de dépendance réel, vérification registre npm avant écriture) :
         - `postcss` `<=8.5.22` (chemin direct + via `@angular/build`,
           `@tailwindcss/postcss`, `@nx/angular`/`@nx/webpack`,
-          `@nx/web`/`@nx/webpack` — CVE-2026-69153, correctif incomplet
-          d'un CVE antérieur permettant la lecture arbitraire de
-          fichiers `.map` via `sourceMappingURL` quand `from` n'est pas
-          fourni ; CVSS 6.3, confidentialité faible uniquement) →
-          `overrides["postcss"] = "8.5.23"`, version patchée officielle
-          publiée par les mainteneurs, confirmée existante sur le
-          registre, compatible avec toutes les plages `^8.x` déclarées
-          par les consommateurs (aucun saut majeur).
+          `@nx/web`/`@nx/webpack` — CVE-2026-69153, correctif incomplet d'un CVE
+          antérieur permettant la lecture arbitraire de fichiers `.map` via
+          `sourceMappingURL` quand `from` n'est pas fourni ; CVSS 6.3,
+          confidentialité faible uniquement) →
+          `overrides["postcss"] = "8.5.23"`, version patchée officielle publiée
+          par les mainteneurs, confirmée existante sur le registre, compatible
+          avec toutes les plages `^8.x` déclarées par les consommateurs (aucun
+          saut majeur).
         - `undici` `<6.28.0` (via `@angular/cli` › `pacote` ›
-          `@npmcli/run-script` › `node-gyp` — build-time uniquement,
-          jamais en runtime) — désynchronisation de réponse HTTP via
+          `@npmcli/run-script` › `node-gyp` — build-time uniquement, jamais en
+          runtime) — désynchronisation de réponse HTTP via
           `interceptors.retry()` (CVE-2026-16728, CVSS 4.8, nécessite un
           upstream malveillant/défaillant et un proxy qui relaie
-          `Content-Length` sans le recalculer — inapplicable au profil
-          d'usage réel mais corrigé par prudence) →
-          `overrides["undici"] = "6.28.0"`, patch officiel dans la
-          ligne 6.x elle-même (pas de saut majeur), confirmé existant
-          sur le registre.
-        - `@hono/node-server` `<1.19.15` et `hono` `<4.12.34` (chemin
-          unique : `@angular/cli` › `@modelcontextprotocol/sdk` — cette
-          paire n'est qu'une dépendance transitive de l'outil CLI
-          Angular utilisé en local/CI, jamais chargée dans le code
-          applicatif servi aux utilisateurs) — plusieurs CVE moderate/low
-          (ReDoS CORS, fuite cross-utilisateur du cache SSR `memo()`,
-          désynchronisation proxy, ReDoS middleware langue) →
+          `Content-Length` sans le recalculer — inapplicable au profil d'usage
+          réel mais corrigé par prudence) → `overrides["undici"] = "6.28.0"`,
+          patch officiel dans la ligne 6.x elle-même (pas de saut majeur),
+          confirmé existant sur le registre.
+        - `@hono/node-server` `<1.19.15` et `hono` `<4.12.34` (chemin unique :
+          `@angular/cli` › `@modelcontextprotocol/sdk` — cette paire n'est
+          qu'une dépendance transitive de l'outil CLI Angular utilisé en
+          local/CI, jamais chargée dans le code applicatif servi aux
+          utilisateurs) — plusieurs CVE moderate/low (ReDoS CORS, fuite
+          cross-utilisateur du cache SSR `memo()`, désynchronisation proxy,
+          ReDoS middleware langue) →
           `overrides["@hono/node-server"] = "1.19.15"` et
           `overrides["hono"] = "4.12.34"`, versions patchées confirmées
           existantes sur le registre, compatibles avec les plages
-          `^1.19.9`/`^4.11.4` déclarées par
-          `@modelcontextprotocol/sdk@1.29.0` (aucun saut majeur).
-        - `uuid` `<11.1.1` (via `workspace:@cmz/shared-browser` ›
-          `exceljs` — `exceljs@4.4.0` déclare `"uuid": "^8.3.0"`, et
-          `8.3.2` est la dernière version publiée de la ligne 8.x ;
-          aucun correctif n'existe dans cette plage, le patch minimum
-          `11.1.1` casserait la contrainte semver déclarée par
-          `exceljs`) — **exception assumée et documentée, pas
-          d'`overrides` écrit.** CVE-2026-41907 (CVSS 6.3, intégrité
-          faible) : absence de vérification de bornes dans les méthodes
-          `v3()`/`v5()`/`v6()` de l'API `uuid` quand un buffer de sortie
-          est fourni explicitement par l'appelant. Vérifié
-          indépendamment (`grep -rn "require('uuid')"
-          node_modules/exceljs/lib`, confirmant une note d'audit
-          antérieure du 2026-08-03) : un seul point d'appel dans
-          `exceljs`, `cf-rule-ext-xform.js`, qui utilise exclusivement
-          `v4()` sans buffer — hors du périmètre exact de cette CVE.
-          Risque résiduel jugé négligeable. À rouvrir si `exceljs`
-          publie une version compatible `uuid >=11.1.1`, ou si un usage
-          direct de `uuid` avec buffer apparaît ailleurs dans le code.
-        - `esbuild` `>=0.27.3 <0.28.1` — **correction du diagnostic
-          initial du 2026-08-17** : la première analyse n'avait vérifié
-          que la résolution top-level (`esbuild@0.28.1` via
-          `@angular/build`, hors plage vulnérable) et avait conclu à un
-          faux positif. Après régénération réelle de `bun.lock` par
-          l'utilisateur (`bun install`), `bun audit` a persisté à
-          signaler ce paquet — vérification approfondie du lockfile
-          (`grep -o '"esbuild@[0-9.]*"' bun.lock`) révèle en fait
-          **deux résolutions distinctes coexistant dans le graphe** :
-          `esbuild@0.28.1` au niveau `@angular/build` (version exacte,
-          hors plage vulnérable) et `esbuild@0.27.7` sous
-          `vite@7.3.5` (`"esbuild": "^0.27.0"`), cette dernière bien
-          `>=0.27.3 <0.28.1` — dans la plage vulnérable. Ce n'était donc
-          pas un faux positif : un vrai second exemplaire vulnérable
-          existe, manqué par la première analyse faute d'avoir vérifié
-          l'exhaustivité des résolutions imbriquées avant de conclure.
-          **Exception assumée, pas d'`overrides` écrit** : en semver
-          `0.x`, `^0.27.0` se comporte comme un verrou strict sur la
-          ligne `0.27.x` (pas d'extension au `0.28.x`) ; aucune version
-          `0.27.x` publiée n'atteint `0.28.1`, donc aucune version
-          compatible avec la contrainte déclarée par `vite@7.3.5`
-          n'existe hors de la plage vulnérable — un `overrides` forcé à
-          `0.28.x` violerait cette contrainte et risquerait de casser
-          la résolution de `vite`. Risque résiduel jugé négligeable :
+          `^1.19.9`/`^4.11.4` déclarées par `@modelcontextprotocol/sdk@1.29.0`
+          (aucun saut majeur).
+        - `uuid` `<11.1.1` (via `workspace:@cmz/shared-browser` › `exceljs` —
+          `exceljs@4.4.0` déclare `"uuid": "^8.3.0"`, et `8.3.2` est la dernière
+          version publiée de la ligne 8.x ; aucun correctif n'existe dans cette
+          plage, le patch minimum `11.1.1` casserait la contrainte semver
+          déclarée par `exceljs`) — **exception assumée et documentée, pas
+          d'`overrides` écrit.** CVE-2026-41907 (CVSS 6.3, intégrité faible) :
+          absence de vérification de bornes dans les méthodes
+          `v3()`/`v5()`/`v6()` de l'API `uuid` quand un buffer de sortie est
+          fourni explicitement par l'appelant. Vérifié indépendamment
+          (`grep -rn "require('uuid')" node_modules/exceljs/lib`, confirmant une
+          note d'audit antérieure du 2026-08-03) : un seul point d'appel dans
+          `exceljs`, `cf-rule-ext-xform.js`, qui utilise exclusivement `v4()`
+          sans buffer — hors du périmètre exact de cette CVE. Risque résiduel
+          jugé négligeable. À rouvrir si `exceljs` publie une version compatible
+          `uuid >=11.1.1`, ou si un usage direct de `uuid` avec buffer apparaît
+          ailleurs dans le code.
+        - `esbuild` `>=0.27.3 <0.28.1` — **correction du diagnostic initial du
+          2026-08-17** : la première analyse n'avait vérifié que la résolution
+          top-level (`esbuild@0.28.1` via `@angular/build`, hors plage
+          vulnérable) et avait conclu à un faux positif. Après régénération
+          réelle de `bun.lock` par l'utilisateur (`bun install`), `bun audit` a
+          persisté à signaler ce paquet — vérification approfondie du lockfile
+          (`grep -o '"esbuild@[0-9.]*"' bun.lock`) révèle en fait **deux
+          résolutions distinctes coexistant dans le graphe** : `esbuild@0.28.1`
+          au niveau `@angular/build` (version exacte, hors plage vulnérable) et
+          `esbuild@0.27.7` sous `vite@7.3.5` (`"esbuild": "^0.27.0"`), cette
+          dernière bien `>=0.27.3 <0.28.1` — dans la plage vulnérable. Ce
+          n'était donc pas un faux positif : un vrai second exemplaire
+          vulnérable existe, manqué par la première analyse faute d'avoir
+          vérifié l'exhaustivité des résolutions imbriquées avant de conclure.
+          **Exception assumée, pas d'`overrides` écrit** : en semver `0.x`,
+          `^0.27.0` se comporte comme un verrou strict sur la ligne `0.27.x`
+          (pas d'extension au `0.28.x`) ; aucune version `0.27.x` publiée
+          n'atteint `0.28.1`, donc aucune version compatible avec la contrainte
+          déclarée par `vite@7.3.5` n'existe hors de la plage vulnérable — un
+          `overrides` forcé à `0.28.x` violerait cette contrainte et risquerait
+          de casser la résolution de `vite`. Risque résiduel jugé négligeable :
           GHSA-g7r4-m6w7-qqqr (severity low, CVSS 2.5, `AV:L/AC:H/PR:L`)
           concerne un traversal de chemin dans le dev server
-          `esbuild --servedir` via des backslashes, **exclusivement
-          exploitable sous Windows** (`path.Clean()` de Go est
-          POSIX-only), et nécessite déjà des privilèges locaux ; ce
-          dépôt exécute sa CI sur `ubuntu-24.04`/`macos-14`
-          uniquement (matrice `check:publication-durability`) et
-          n'expose jamais ce dev server en production. À rouvrir si
-          `vite` publie une version majeure compatible `esbuild
-          >=0.28.1`, ou si une matrice CI Windows est introduite.
-      Toutes les versions `overrides` ci-dessus vérifiées existantes
-      sur le registre npm (`curl
-      https://registry.npmjs.org/<pkg>` + inspection `versions.keys()`)
-      avant écriture dans `package.json`. **`bun.lock` non régénéré
-      dans ce commit** — même limite structurelle que OPS-12c : `bun`
-      absent du sandbox d'exécution. Nécessite `bun install` (sans
-      `--frozen-lockfile`) côté utilisateur avant que ces `overrides`
-      prennent effet et que la CI (`bun install --frozen-lockfile`) ne
-      les valide.
+          `esbuild --servedir` via des backslashes, **exclusivement exploitable
+          sous Windows** (`path.Clean()` de Go est POSIX-only), et nécessite
+          déjà des privilèges locaux ; ce dépôt exécute sa CI sur
+          `ubuntu-24.04`/`macos-14` uniquement (matrice
+          `check:publication-durability`) et n'expose jamais ce dev server en
+          production. À rouvrir si `vite` publie une version majeure compatible
+          `esbuild
+            > =0.28.1`, ou si une matrice CI Windows est introduite. Toutes les versions `overrides` ci-dessus vérifiées existantes sur le registre npm (`curl
+            > https://registry.npmjs.org/<pkg>`+ inspection`versions.keys()`) avant écriture dans `package.json`. **`bun.lock`non régénéré dans ce commit** — même limite structurelle que OPS-12c :`bun`absent du sandbox d'exécution. Nécessite`bun
+            > install`(sans`--frozen-lockfile`) côté utilisateur avant que ces `overrides` prennent effet et que la CI (`bun
+            > install --frozen-lockfile`) ne les valide.
     - **OPS-14 — fait** (2026-08-17). `bun run corpus:full` (job
-      `corpus-full.yml`, déclenché manuellement après OPS-13/13b)
-      échouait sur les 18 modules du corpus, chacun avec le même motif :
-      `NX Cloud: Workspace is unable to be authorized. Exiting run. /
-      Invalid Credentials (Nx Cloud ID)`, précédant tout essai réel de
-      `build`/`lint`/`test`. Root cause identifiée par lecture directe
-      de `.github/workflows/corpus-full.yml` et comparaison avec
-      `ci.yml` : `nx.json` déclare un `nxCloudId`
+      `corpus-full.yml`, déclenché manuellement après OPS-13/13b) échouait sur
+      les 18 modules du corpus, chacun avec le même motif :
+      `NX Cloud: Workspace is unable to be authorized. Exiting run. / Invalid Credentials (Nx Cloud ID)`,
+      précédant tout essai réel de `build`/`lint`/`test`. Root cause identifiée
+      par lecture directe de `.github/workflows/corpus-full.yml` et comparaison
+      avec `ci.yml` : `nx.json` déclare un `nxCloudId`
       (`69cfa6ba213c8001d0f75641`), et `ci.yml` injecte le secret
-      `NX_CLOUD_ACCESS_TOKEN` en variable d'environnement (ligne 28)
-      pour authentifier chaque appel `nx`, mais `corpus-full.yml` ne
-      l'a jamais fait — oubli distinct de la régression `check:dto-schema`
-      d'OPS-12a, sur un autre workflow. Aggravé par
-      `tools/corpus/module-gate.mjs` (`runMany()`) : le gate H-2 traite
-      tout échec du process `bunx nx run-many` comme un échec de
-      build/lint/test, sans distinguer un refus d'authentification Nx
-      Cloud (bruit réseau, dégradable selon le commentaire de `ci.yml`
-      lui-même : « Sans claim + secret : bruit 401 / pas de remote
-      cache — acceptable temporairement ») d'un vrai échec de code —
-      et Nx CLI lui-même n'a pas dégradé gracieusement ici : le message
-      « Exiting run » confirme que l'absence de token a arrêté
-      l'exécution entière, pas seulement désactivé le cache distant.
-      Fix : ajout de `env: NX_CLOUD_ACCESS_TOKEN:
-      ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}` à `corpus-full.yml`,
-      identique à `ci.yml`, avec un commentaire expliquant pourquoi ce
-      workflow y est plus sensible que `ci.yml` (jobs indépendants côté
-      `ci.yml`, gate agrégé fail-closed côté `module-gate.mjs`).
-      Confirmé avec l'utilisateur que le secret `NX_CLOUD_ACCESS_TOKEN`
-      existe déjà dans les settings GitHub Actions du repo — le fix
-      n'a donc pas nécessité de créer/réclamer un nouveau workspace Nx
-      Cloud, seulement de propager le secret déjà valide au workflow
-      qui en manquait.
-      Vérification avant commit : YAML validé (`python3 -c "import
-      yaml; yaml.safe_load(...)"`), clé `NX_CLOUD_ACCESS_TOKEN` bien
-      présente dans le bloc `env` parsé, `node tools/run-prettier.mjs
-      --check` vert. **Limite explicite** : je n'ai pas pu déclencher
-      `corpus-full.yml` moi-même (pas d'accès réseau GitHub Actions
-      dans ce sandbox) — le fix est structurellement correct (même
-      mécanisme que `ci.yml`, secret confirmé existant par
-      l'utilisateur) mais reste à confirmer par le prochain run réel,
-      qui devra alors atteindre les étapes `build`/`lint`/`test` de
-      chaque module et échouer ou réussir sur leur mérite réel, pas sur
-      un refus d'authentification en amont.
-    - **OPS-15 — fait** (2026-08-17). Confirmation par le run réel :
-      OPS-14 a résolu l'authentification Nx Cloud, `corpus:full` a
-      atteint build/lint/test sur les 18 modules — 16/18 ont réussi.
-      2 échecs réels, distincts, restants : `monitoring` et `reporting`,
-      chacun avec plusieurs traceurs à `verified/applicable=29%`
-      (`blocked` élevé), sous le seuil `≥80%` requis par
-      `resolveStatus()`/`printReport` pour `corpus-ready`. Root cause :
-      les champs `legacy` de 27/43 paires (`monitoring`) et 34/49
-      paires (`reporting`) pointaient vers des chemins qui n'existent
-      plus dans le dépôt legacy au SHA pinné `cb15bf80fa072e12e9d4fce4b9236abe6ac78058` —
-      même classe de problème que **T13-12** (2026-08-11, déjà résolu
-      une fois pour ces mêmes 2 modules — signe que le legacy source a
-      probablement été restructuré une seconde fois côté GitLab, avant
-      que ce SHA précis ne soit re-figé ; cause exacte non élucidée,
-      non supposée).
-      Vérifié personnellement avant toute délégation : clone réel du
-      legacy au SHA pinné (`git clone --filter=blob:none --depth=1` +
-      `git fetch`/`checkout` du SHA exact), comparaison chemin par
-      chemin — confirmé que `report-states` (module qui avait réussi)
-      a 0/187 chemin manquant contre ce même clone, éliminant
-      l'hypothèse d'une divergence globale de miroir ; le problème est
-      bien localisé à `monitoring`/`reporting`.
-      Délégué à un agent (protocole identique PLAT-5H..5K) avec
-      consigne explicite : ne jamais fabriquer de correspondance sans
-      preuve, documenter plutôt que deviner en cas d'incertitude,
-      aucun `git add`/commit. L'agent a retracé chaque chemin manquant
-      contre son propre clone du même SHA et corrigé uniquement le
+      `NX_CLOUD_ACCESS_TOKEN` en variable d'environnement (ligne 28) pour
+      authentifier chaque appel `nx`, mais `corpus-full.yml` ne l'a jamais fait
+      — oubli distinct de la régression `check:dto-schema` d'OPS-12a, sur un
+      autre workflow. Aggravé par `tools/corpus/module-gate.mjs` (`runMany()`) :
+      le gate H-2 traite tout échec du process `bunx nx run-many` comme un échec
+      de build/lint/test, sans distinguer un refus d'authentification Nx Cloud
+      (bruit réseau, dégradable selon le commentaire de `ci.yml` lui-même : «
+      Sans claim + secret : bruit 401 / pas de remote cache — acceptable
+      temporairement ») d'un vrai échec de code — et Nx CLI lui-même n'a pas
+      dégradé gracieusement ici : le message « Exiting run » confirme que
+      l'absence de token a arrêté l'exécution entière, pas seulement désactivé
+      le cache distant. Fix : ajout de
+      `env: NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}` à
+      `corpus-full.yml`, identique à `ci.yml`, avec un commentaire expliquant
+      pourquoi ce workflow y est plus sensible que `ci.yml` (jobs indépendants
+      côté `ci.yml`, gate agrégé fail-closed côté `module-gate.mjs`). Confirmé
+      avec l'utilisateur que le secret `NX_CLOUD_ACCESS_TOKEN` existe déjà dans
+      les settings GitHub Actions du repo — le fix n'a donc pas nécessité de
+      créer/réclamer un nouveau workspace Nx Cloud, seulement de propager le
+      secret déjà valide au workflow qui en manquait. Vérification avant commit
+      : YAML validé (`python3 -c "import yaml; yaml.safe_load(...)"`), clé
+      `NX_CLOUD_ACCESS_TOKEN` bien présente dans le bloc `env` parsé,
+      `node tools/run-prettier.mjs --check` vert. **Limite explicite** : je n'ai
+      pas pu déclencher `corpus-full.yml` moi-même (pas d'accès réseau GitHub
+      Actions dans ce sandbox) — le fix est structurellement correct (même
+      mécanisme que `ci.yml`, secret confirmé existant par l'utilisateur) mais
+      reste à confirmer par le prochain run réel, qui devra alors atteindre les
+      étapes `build`/`lint`/`test` de chaque module et échouer ou réussir sur
+      leur mérite réel, pas sur un refus d'authentification en amont.
+    - **OPS-15 — fait** (2026-08-17). Confirmation par le run réel : OPS-14 a
+      résolu l'authentification Nx Cloud, `corpus:full` a atteint
+      build/lint/test sur les 18 modules — 16/18 ont réussi. 2 échecs réels,
+      distincts, restants : `monitoring` et `reporting`, chacun avec plusieurs
+      traceurs à `verified/applicable=29%` (`blocked` élevé), sous le seuil
+      `≥80%` requis par `resolveStatus()`/`printReport` pour `corpus-ready`.
+      Root cause : les champs `legacy` de 27/43 paires (`monitoring`) et 34/49
+      paires (`reporting`) pointaient vers des chemins qui n'existent plus dans
+      le dépôt legacy au SHA pinné `cb15bf80fa072e12e9d4fce4b9236abe6ac78058` —
+      même classe de problème que **T13-12** (2026-08-11, déjà résolu une fois
+      pour ces mêmes 2 modules — signe que le legacy source a probablement été
+      restructuré une seconde fois côté GitLab, avant que ce SHA précis ne soit
+      re-figé ; cause exacte non élucidée, non supposée). Vérifié
+      personnellement avant toute délégation : clone réel du legacy au SHA pinné
+      (`git clone --filter=blob:none --depth=1` + `git fetch`/`checkout` du SHA
+      exact), comparaison chemin par chemin — confirmé que `report-states`
+      (module qui avait réussi) a 0/187 chemin manquant contre ce même clone,
+      éliminant l'hypothèse d'une divergence globale de miroir ; le problème est
+      bien localisé à `monitoring`/`reporting`. Délégué à un agent (protocole
+      identique PLAT-5H..5K) avec consigne explicite : ne jamais fabriquer de
+      correspondance sans preuve, documenter plutôt que deviner en cas
+      d'incertitude, aucun `git add`/commit. L'agent a retracé chaque chemin
+      manquant contre son propre clone du même SHA et corrigé uniquement le
       champ `legacy` de chaque paire concernée (3 motifs de divergence
-      identifiés : sous-dossier par entité supprimé côté legacy —
-      ex. `application/services/node/node.facade.ts` →
-      `application/services/node.facade.ts` ; renommage de pattern
-      architectural — `application/queries/<x>.query.ts` →
+      identifiés : sous-dossier par entité supprimé côté legacy — ex.
+      `application/services/node/node.facade.ts` →
+      `application/services/node.facade.ts` ; renommage de pattern architectural
+      — `application/queries/<x>.query.ts` →
       `application/queries-bus/<x>.bus.ts` ; renommage de fichier —
       `domain/repositories/<x>.repository.ts` →
       `domain/repositories/<x>-repository.interface.ts`,
-      `<x>-response-api.dto.ts` → `<x>-response.dto.ts`, composants
-      déplacés sous `pages/<x>-page/`). 2 gaps non résolus, documentés
-      plutôt que devinés : `monitoring.shell.rov-section-enum` et
+      `<x>-response-api.dto.ts` → `<x>-response.dto.ts`, composants déplacés
+      sous `pages/<x>-page/`). 2 gaps non résolus, documentés plutôt que devinés
+      : `monitoring.shell.rov-section-enum` et
       `reporting.shell.rov-section-enum` pointent vers
-      `domain/enums/node/node.enum.ts`, introuvable sous quelque nom
-      que ce soit dans les arborescences `monitoring`/`reporting` du
-      clone (confirmé par une recherche exhaustive `find -iname
-      "*enum*"` sur tout le legacy : aucun fichier enum n'existe dans
-      ces deux modules à ce SHA — ce n'est pas un renommage caché).
-      **Revue staff indépendante effectuée avant ce commit** (pas
-      seulement confiance au rapport de l'agent) :
-        - `git diff` : nombre de paires identique avant/après sur les
-          2 fichiers (51 chacun), et comparaison programmatique
-          confirmant qu'aucun champ autre que `legacy` n'a changé (30
-          changements sur monitoring, 34 sur reporting, 0 diff
-          résiduel après normalisation de ce seul champ).
-        - Chaque nouveau chemin `legacy` re-testé indépendamment
-          contre mon propre clone (distinct de celui de l'agent) :
-          1 seul chemin manquant par module, exactement les 2 gaps
-          `node.enum.ts` documentés — aucune régression, aucune
-          correspondance fantaisiste introduite.
+      `domain/enums/node/node.enum.ts`, introuvable sous quelque nom que ce soit
+      dans les arborescences `monitoring`/`reporting` du clone (confirmé par une
+      recherche exhaustive `find -iname "*enum*"` sur tout le legacy : aucun
+      fichier enum n'existe dans ces deux modules à ce SHA — ce n'est pas un
+      renommage caché). **Revue staff indépendante effectuée avant ce commit**
+      (pas seulement confiance au rapport de l'agent) :
+        - `git diff` : nombre de paires identique avant/après sur les 2 fichiers
+          (51 chacun), et comparaison programmatique confirmant qu'aucun champ
+          autre que `legacy` n'a changé (30 changements sur monitoring, 34 sur
+          reporting, 0 diff résiduel après normalisation de ce seul champ).
+        - Chaque nouveau chemin `legacy` re-testé indépendamment contre mon
+          propre clone (distinct de celui de l'agent) : 1 seul chemin manquant
+          par module, exactement les 2 gaps `node.enum.ts` documentés — aucune
+          régression, aucune correspondance fantaisiste introduite.
         - Recalcul manuel du taux `verified/applicable` par traceur
-          (réimplémentation de la logique de `resolveStatus.mjs`) :
-          tous les traceurs `monitoring`/`reporting` atteignent
-          désormais ≥92% (`module.shell`, à cause du gap enum
-          persistant) ou 100% (les 4 autres traceurs par module) —
-          au-dessus du seuil `≥80%` requis, donc les deux modules
-          devraient passer le gate `corpus-ready` au prochain run.
-        - `node tools/run-prettier.mjs --check`, `node
-          tools/check-file-weight.mjs`, validité JSON ligne par ligne
-          des 2 fichiers : tous verts.
-      **Limite explicite** : je n'ai pas pu exécuter `bun run
-      corpus:full` moi-même (ni l'agent — `bunx`/`bun` absents des
-      deux sandboxes), donc ni moi ni l'agent n'avons vu le gate H-2
-      (build/lint/test) tourner après cette correction — seule la
-      logique de résolution des chemins `legacy` a été vérifiée
-      directement (2 fois, indépendamment). Le gap `node.enum.ts`
-      reste ouvert : à investiguer si le fichier a été supprimé
-      délibérément côté legacy (auquel cas la paire correspondante
-      devrait être requalifiée `n/a` plutôt que rester `blocked`) ou
-      s'il a été déplacé sous un nom non trouvé par la recherche.
-    - **OPS-17 — fait** (2026-08-17). Un run `corpus:full` frais
-      (déclenché via « Run workflow », pas un re-run — écarté comme
-      cause après vérification du log complet) a montré
-      `monitoring`/`reporting` retombés **exactement** sur les chiffres
-      pré-OPS-15 (`blocked=5`, `29%`/`46%`/`23%`), alors que le commit
-      OPS-15 était vérifié correct et présent sur `HEAD` trois fois de
+          (réimplémentation de la logique de `resolveStatus.mjs`) : tous les
+          traceurs `monitoring`/`reporting` atteignent désormais ≥92%
+          (`module.shell`, à cause du gap enum persistant) ou 100% (les 4 autres
+          traceurs par module) — au-dessus du seuil `≥80%` requis, donc les deux
+          modules devraient passer le gate `corpus-ready` au prochain run.
+        - `node tools/run-prettier.mjs --check`,
+          `node tools/check-file-weight.mjs`, validité JSON ligne par ligne des
+          2 fichiers : tous verts. **Limite explicite** : je n'ai pas pu
+          exécuter `bun run corpus:full` moi-même (ni l'agent — `bunx`/`bun`
+          absents des deux sandboxes), donc ni moi ni l'agent n'avons vu le gate
+          H-2 (build/lint/test) tourner après cette correction — seule la
+          logique de résolution des chemins `legacy` a été vérifiée directement
+          (2 fois, indépendamment). Le gap `node.enum.ts` reste ouvert : à
+          investiguer si le fichier a été supprimé délibérément côté legacy
+          (auquel cas la paire correspondante devrait être requalifiée `n/a`
+          plutôt que rester `blocked`) ou s'il a été déplacé sous un nom non
+          trouvé par la recherche.
+    - **OPS-17 — fait** (2026-08-17). Un run `corpus:full` frais (déclenché via
+      « Run workflow », pas un re-run — écarté comme cause après vérification du
+      log complet) a montré `monitoring`/`reporting` retombés **exactement** sur
+      les chiffres pré-OPS-15 (`blocked=5`, `29%`/`46%`/`23%`), alors que le
+      commit OPS-15 était vérifié correct et présent sur `HEAD` trois fois de
       suite. Root cause réelle, distincte d'OPS-15 : `emit-pairs.mjs`
       **régénère** `corpus/{monitoring,reporting}.pairs.jsonl` à chaque
       exécution depuis les templates de chemins codés dans
       `tools/corpus/read-only-view-nodes.mjs`/`read-only-view.mjs` — le
-      correctif OPS-15 avait édité le fichier `.pairs.jsonl` **de
-      sortie** directement, un fichier entièrement écrasé à chaque run
-      par le générateur qui, lui, n'avait jamais été corrigé. Chaque
-      run CI « frais » régénérait donc fidèlement les mêmes chemins
-      périmés — ce n'était pas un problème de cache ni de re-run, mais
-      un fix appliqué à un artefact dérivé plutôt qu'à sa source.
-      Diagnostic : clone legacy frais au pin exact (nouvelle instance,
-      sans réutiliser aucun clone précédent) comparé champ par champ
-      aux templates de `read-only-view-nodes.mjs`/`-shared.mjs` — a mis
-      en évidence non seulement les 3 motifs déjà identifiés par
-      OPS-15 (toujours présents dans le générateur, jamais corrigés
-      là-bas) mais aussi 2 bugs supplémentaires jamais vus par OPS-15
-      car invisibles au niveau JSONL : (1) le nœud `module.shell` sans
-      `chain.section` hardcodait `legacyFolder: 'node'` pour **tous**
-      les modules, y compris `reporting` qui n'a pas de section `node`
-      — `reporting.module.shell` pointait donc plusieurs nœuds vers des
-      chemins monitoring inexistants côté reporting ; (2) plusieurs
-      convention irrégulières propres au legacy (repository/mapper/
-      api/facade en dossier plat, sans sous-dossier de section — sauf
-      `*.repository.impl.ts` qui reste au pluriel `legacyFolder`, pas
-      singulier `legacyFlat` ; DTO en sous-dossier `facadeKebab`, pas
-      `legacyFolder` ; `reporting.route.ts` singulier vs
-      `monitoring.routes.ts` pluriel ; page components sous
-      `pages/<facadeKebab>-page/`). Correctif : ajout d'un champ
-      `legacyFlat` dédié (stem plat, distinct de `legacyFolder` et de
-      `facadeKebab`) à `MONITORING_SECTIONS`/`REPORTING_SECTIONS`
+      correctif OPS-15 avait édité le fichier `.pairs.jsonl` **de sortie**
+      directement, un fichier entièrement écrasé à chaque run par le générateur
+      qui, lui, n'avait jamais été corrigé. Chaque run CI « frais » régénérait
+      donc fidèlement les mêmes chemins périmés — ce n'était pas un problème de
+      cache ni de re-run, mais un fix appliqué à un artefact dérivé plutôt qu'à
+      sa source. Diagnostic : clone legacy frais au pin exact (nouvelle
+      instance, sans réutiliser aucun clone précédent) comparé champ par champ
+      aux templates de `read-only-view-nodes.mjs`/`-shared.mjs` — a mis en
+      évidence non seulement les 3 motifs déjà identifiés par OPS-15 (toujours
+      présents dans le générateur, jamais corrigés là-bas) mais aussi 2 bugs
+      supplémentaires jamais vus par OPS-15 car invisibles au niveau JSONL : (1)
+      le nœud `module.shell` sans `chain.section` hardcodait
+      `legacyFolder: 'node'` pour **tous** les modules, y compris `reporting`
+      qui n'a pas de section `node` — `reporting.module.shell` pointait donc
+      plusieurs nœuds vers des chemins monitoring inexistants côté reporting ;
+      (2) plusieurs convention irrégulières propres au legacy
+      (repository/mapper/ api/facade en dossier plat, sans sous-dossier de
+      section — sauf `*.repository.impl.ts` qui reste au pluriel `legacyFolder`,
+      pas singulier `legacyFlat` ; DTO en sous-dossier `facadeKebab`, pas
+      `legacyFolder` ; `reporting.route.ts` singulier vs `monitoring.routes.ts`
+      pluriel ; page components sous `pages/<facadeKebab>-page/`). Correctif :
+      ajout d'un champ `legacyFlat` dédié (stem plat, distinct de `legacyFolder`
+      et de `facadeKebab`) à `MONITORING_SECTIONS`/`REPORTING_SECTIONS`
       (`read-only-view-shared.mjs`), correction du fallback de contexte
-      `module.shell` pour qu'il dérive du module courant plutôt que de
-      hardcoder `'node'` (`read-only-view.mjs`), et récriture de 11
-      templates de chemins dans `read-only-view-nodes.mjs` pour
-      refléter exactement l'arborescence constatée. **Vérification
-      indépendante avant commit** : script autonome important les
-      fonctions réelles de production (`expandReadOnlyViewChain`,
-      pas une réimplémentation) et testant `existsAt` contre le clone
-      legacy frais pour les 9 chaînes `monitoring`/`reporting` — 0
-      `blocked` inattendu sur les 4 traceurs `*.view` par module (100%)
-      et 1 seul `blocked` par module sur `module.shell` (92%), dans les
-      deux cas l'unique gap déjà documenté `rov-section-enum` (confirmé
-      encore absent sur ce nouveau clone) — aucune régression, aucun
-      nouveau gap. Vérification symétrique côté `nx` : les 2×15 chemins
-      `nx` de sortie existent tous dans le monorepo. `node --check`
-      (syntaxe) + `node tools/run-prettier.mjs --check`/`--write`
-      (formatage) verts sur les 3 fichiers modifiés.
-      **Limite explicite** : comme pour OPS-14/OPS-15, ni `bun`/`bunx`
-      ni `nx` ne sont disponibles dans ce sandbox — je n'ai pas pu
-      exécuter `emit-pairs.mjs` réellement (il appelle
-      `assertModuleGate()`, qui invoque `bunx nx`, de façon
+      `module.shell` pour qu'il dérive du module courant plutôt que de hardcoder
+      `'node'` (`read-only-view.mjs`), et récriture de 11 templates de chemins
+      dans `read-only-view-nodes.mjs` pour refléter exactement l'arborescence
+      constatée. **Vérification indépendante avant commit** : script autonome
+      important les fonctions réelles de production (`expandReadOnlyViewChain`,
+      pas une réimplémentation) et testant `existsAt` contre le clone legacy
+      frais pour les 9 chaînes `monitoring`/`reporting` — 0 `blocked` inattendu
+      sur les 4 traceurs `*.view` par module (100%) et 1 seul `blocked` par
+      module sur `module.shell` (92%), dans les deux cas l'unique gap déjà
+      documenté `rov-section-enum` (confirmé encore absent sur ce nouveau clone)
+      — aucune régression, aucun nouveau gap. Vérification symétrique côté `nx`
+      : les 2×15 chemins `nx` de sortie existent tous dans le monorepo.
+      `node --check` (syntaxe) + `node tools/run-prettier.mjs --check`/`--write`
+      (formatage) verts sur les 3 fichiers modifiés. **Limite explicite** :
+      comme pour OPS-14/OPS-15, ni `bun`/`bunx` ni `nx` ne sont disponibles dans
+      ce sandbox — je n'ai pas pu exécuter `emit-pairs.mjs` réellement (il
+      appelle `assertModuleGate()`, qui invoque `bunx nx`, de façon
       inconditionnelle dès `--verify` ou écriture). Le fichier
-      `corpus/{monitoring,reporting}.pairs.jsonl` committé reste donc
-      celui d'OPS-15 (partiellement correct, mais pas identique à ce
-      que le générateur corrigé produirait, et ne couvrant pas du tout
-      `module.shell` qu'OPS-15 n'avait pas touché) — il sera régénéré
-      et écrasé automatiquement par le prochain `corpus:full` réel,
-      qui est désormais le générateur corrigé. Cela doit être confirmé
-      par un run CI frais (« Run workflow », pas re-run) montrant
-      `monitoring`/`reporting` passer `corpus-ready` (`≥80%`).
-    - **OPS-18 — fait** (2026-08-17). Confirmation par le run réel
-      post-OPS-17 : `monitoring`/`reporting` atteignent bien
-      `corpus-ready` sur les 9 traceurs comme prévu par la vérification
-      indépendante (4 traceurs `*.view` à 100%, `module.shell` à 92%
-      dans les deux modules, `blocked=1` = le seul gap
-      `rov-section-enum` déjà documenté). Les deux modules restent
-      néanmoins en `❌ Échec` dans le log car `emit-pairs.mjs --verify`
-      exige `tranche-closed` (100%) sur toutes les chaînes du module,
-      pas seulement `corpus-ready`. Ce gap unique par module
+      `corpus/{monitoring,reporting}.pairs.jsonl` committé reste donc celui
+      d'OPS-15 (partiellement correct, mais pas identique à ce que le générateur
+      corrigé produirait, et ne couvrant pas du tout `module.shell` qu'OPS-15
+      n'avait pas touché) — il sera régénéré et écrasé automatiquement par le
+      prochain `corpus:full` réel, qui est désormais le générateur corrigé. Cela
+      doit être confirmé par un run CI frais (« Run workflow », pas re-run)
+      montrant `monitoring`/`reporting` passer `corpus-ready` (`≥80%`).
+    - **OPS-18 — fait** (2026-08-17). Confirmation par le run réel post-OPS-17 :
+      `monitoring`/`reporting` atteignent bien `corpus-ready` sur les 9 traceurs
+      comme prévu par la vérification indépendante (4 traceurs `*.view` à 100%,
+      `module.shell` à 92% dans les deux modules, `blocked=1` = le seul gap
+      `rov-section-enum` déjà documenté). Les deux modules restent néanmoins en
+      `❌ Échec` dans le log car `emit-pairs.mjs --verify` exige
+      `tranche-closed` (100%) sur toutes les chaînes du module, pas seulement
+      `corpus-ready`. Ce gap unique par module
       (`{monitoring,reporting}.shell.rov-section-enum` →
-      `domain/enums/node/node.enum.ts`) est une absence de design
-      légitime côté legacy, pas un renommage caché — confirmé par
-      recherche exhaustive `find -iname "*enum*"` sur tout l'arbre
-      legacy lors d'OPS-15 : des enums existent pour d'autres modules
-      (`finalization`, `requests`, `coverage-areas`…) mais jamais pour
-      `monitoring`/`reporting`. Décision utilisateur (AskUserQuestion,
-      option recommandée retenue) : requalifier ce nœud en `n/a` plutôt
-      que de le laisser indéfiniment `blocked` — même traitement que
-      les autres nœuds `*-query-legacy`/`module-routes-legacy` déjà
-      `n/a` dans le même pattern read-only-view. Correctif :
+      `domain/enums/node/node.enum.ts`) est une absence de design légitime côté
+      legacy, pas un renommage caché — confirmé par recherche exhaustive
+      `find -iname "*enum*"` sur tout l'arbre legacy lors d'OPS-15 : des enums
+      existent pour d'autres modules (`finalization`, `requests`,
+      `coverage-areas`…) mais jamais pour `monitoring`/`reporting`. Décision
+      utilisateur (AskUserQuestion, option recommandée retenue) : requalifier ce
+      nœud en `n/a` plutôt que de le laisser indéfiniment `blocked` — même
+      traitement que les autres nœuds `*-query-legacy`/`module-routes-legacy`
+      déjà `n/a` dans le même pattern read-only-view. Correctif :
       `statusOverride: 'n/a'` ajouté au nœud `rov-section-enum` dans
       `read-only-view-nodes.mjs`, avec commentaire explicite sur la
-      justification (l'artefact Nx `${module}-section.enum.ts` reste
-      réel — unification `MonitoringSection`/`ReportingSection` — seule
-      la correspondance legacy est déclarée absente par décision).
-      Vérifié via le même script indépendant (fonctions de production
-      réelles, pas de réimplémentation) contre le clone legacy frais :
-      `blocked=0` sur les 9 chaînes des deux modules, `module.shell`
-      passe de `n/a=2` à `n/a=3` (12/12 `exists`) — 100% attendu sur
-      `verified/applicable`, débloquant `tranche-closed`. `node --check`
-      + `node tools/run-prettier.mjs --check` verts.
-      **Limite explicite** : même limite qu'OPS-17 — pas de `bun`/`nx`
-      dans ce sandbox, donc pas d'exécution réelle d'`emit-pairs.mjs`
-      ni de régénération du JSONL committé ; à confirmer par un
-      prochain run CI frais montrant `monitoring`/`reporting` en
-      `tranche-closed` (100%) sur les 9 traceurs, plus aucun `❌ Échec`.
+      justification (l'artefact Nx `${module}-section.enum.ts` reste réel —
+      unification `MonitoringSection`/`ReportingSection` — seule la
+      correspondance legacy est déclarée absente par décision). Vérifié via le
+      même script indépendant (fonctions de production réelles, pas de
+      réimplémentation) contre le clone legacy frais : `blocked=0` sur les 9
+      chaînes des deux modules, `module.shell` passe de `n/a=2` à `n/a=3` (12/12
+      `exists`) — 100% attendu sur `verified/applicable`, débloquant
+      `tranche-closed`. `node --check`
+        - `node tools/run-prettier.mjs --check` verts. **Limite explicite** :
+          même limite qu'OPS-17 — pas de `bun`/`nx` dans ce sandbox, donc pas
+          d'exécution réelle d'`emit-pairs.mjs` ni de régénération du JSONL
+          committé ; à confirmer par un prochain run CI frais montrant
+          `monitoring`/`reporting` en `tranche-closed` (100%) sur les 9
+          traceurs, plus aucun `❌ Échec`.
     - **OPS-19 — fait** (2026-08-17). En creusant l'objectif plateforme
-      (composition depuis n'importe quelle source — legacy n'étant
-      qu'un exemple — vers n'importe quelle stack), tentative de
-      constater la promotion M2→M3 de PLAT-3/PLAT-4
-      (`generation-platform-capability-matrix.md` §4/§7 posait déjà
-      « Promotion M3 conditionnée à la première exécution CI verte du
-      lot »). Utilisateur d'abord confirmé « ci.yml est vert », puis —
-      questionné sur le lien exact du run par prudence (leçon de
-      l'épisode #39/OPS-12 : un statut « vert » déjà rapporté à tort
-      une fois) — a vérifié et corrigé : **`ci.yml` n'a pas de
-      `workflow_dispatch`, seulement `push`/`pull_request` sur `main`,
-      et échoue systématiquement depuis au moins le run #47** (56 runs
-      listés, tous rouges y compris le dernier push `73adb74`/OPS-18,
-      21m42s). Aucune promotion M3 ne pouvait donc être actée — écarté
-      avant toute modification de la matrice de capacités.
-      Root cause, 2 causes indépendantes dans 2 jobs distincts :
+      (composition depuis n'importe quelle source — legacy n'étant qu'un exemple
+      — vers n'importe quelle stack), tentative de constater la promotion M2→M3
+      de PLAT-3/PLAT-4 (`generation-platform-capability-matrix.md` §4/§7 posait
+      déjà « Promotion M3 conditionnée à la première exécution CI verte du lot
+      »). Utilisateur d'abord confirmé « ci.yml est vert », puis — questionné
+      sur le lien exact du run par prudence (leçon de l'épisode #39/OPS-12 : un
+      statut « vert » déjà rapporté à tort une fois) — a vérifié et corrigé :
+      **`ci.yml` n'a pas de `workflow_dispatch`, seulement `push`/`pull_request`
+      sur `main`, et échoue systématiquement depuis au moins le run #47** (56
+      runs listés, tous rouges y compris le dernier push `73adb74`/OPS-18,
+      21m42s). Aucune promotion M3 ne pouvait donc être actée — écarté avant
+      toute modification de la matrice de capacités. Root cause, 2 causes
+      indépendantes dans 2 jobs distincts :
         1. `security-audit` (`bun audit --audit-level=high`) :
-           `image-size <=2.0.2` (2 avisos high, DoS via boucles
-           infinies ICNS/JXL/HEIF) — déjà documenté comme exception
-           acceptée depuis OPS-12e (CVSS 8.7 mais code jamais exécuté,
-           `less` n'a aucun fichier `.less` dans ce dépôt, `overrides`
-           structurellement inefficace côté Bun pour neutraliser une
-           dépendance transitive). **Cette exception n'avait jamais été
-           reportée dans le gate CI lui-même** — seulement documentée
-           en prose — donc le job échouait silencieusement depuis
-           OPS-12e sans qu'aucun run `ci.yml` vert n'ait jamais été
-           observé depuis. Vérifié sur le registre npm que `2.0.2`
-           reste la dernière version publiée (`dist-tags.latest`,
-           aucun correctif disponible). Vérifié la doc Bun officielle
-           (`bun.com/docs/pm/cli/audit`, version documentée = 1.3.14,
-           identique à celle de CI) : `--ignore <GHSA-id>` existe,
-           répétable, agit sur le code de sortie. Corrigé :
-           `--ignore GHSA-w3rx-r6r6-pgpr --ignore GHSA-5p2g-fcmc-qvqq`
-           ajoutés à l'étape `bun audit` de `ci.yml`, avec commentaire
-           expliquant pourquoi (renvoie aussi vers le risque déjà
-           documenté OPS-12e plutôt que de le dupliquer).
-        2. `check:licenses` (`node tools/check-licenses.mjs`, qui
-           invoque `npx license-checker-rseidelsohn`) : `npm error code
-           EOVERRIDE — Override for postcss@catalog: conflicts with
-           direct dependency`. Root cause trouvée dans `package.json` :
-           `postcss` est déclaré deux fois — comme dépendance directe
-           du catalog Bun workspace (`workspaces.catalog.postcss`,
-           `8.5.22`) **et** dans `overrides.postcss` (`8.5.23`, ajouté
-           par OPS-12e pour corriger CVE-2026-69153 sans avoir vérifié
-           que `postcss` était déjà catalog-résolu). `bun install`
-           tolère silencieusement ce doublon, mais `npm` (invoqué via
-           `npx` par `check-licenses.mjs`) le rejette explicitement —
-           c'est une régression introduite par OPS-12e elle-même,
-           jamais détectée faute de `ci.yml` vert depuis. Corrigé à la
-           source plutôt qu'en contournant le symptôme : version du
-           catalog relevée à `8.5.23` (la version déjà patchée), entrée
-           dupliquée retirée d'`overrides` — `postcss` n'a plus qu'une
-           seule déclaration de version dans tout `package.json`.
-           Vérifié programmatiquement (script Python) qu'aucun autre
-           paquet ne partage ce même risque : intersection vide entre
-           les clés d'`overrides` et celles de tous les catalogs
-           (`catalog` + `catalogs.tooling`). `bun.lock` déjà verrouillé
-           sur `postcss@8.5.23` (résolu par l'ancien override avant
-           suppression) — pas de régénération de lockfile nécessaire
-           pour ce changement précis.
-      Vérifié : `python3 -c "import json; json.load(...)"` (JSON valide)
-      + `python3 -c "import yaml; yaml.safe_load(...)"` (YAML valide) +
-      `node tools/run-prettier.mjs --check` verts sur `package.json` et
-      `ci.yml`.
-      **Limite explicite** : je n'ai ni `bun` ni accès réseau GitHub
-      Actions dans ce sandbox — je n'ai pas pu exécuter `bun audit`
-      moi-même pour confirmer que `--ignore` avec ces 2 GHSA IDs
-      exacts ramène bien le code de sortie à 0, ni rejouer
-      `check:licenses` réellement. Les deux causes sont corrigées sur
-      la base d'une lecture directe des messages d'erreur et de la
-      documentation officielle Bun, pas d'une exécution locale — à
-      confirmer par le prochain run CI réel. Il est possible (mais non
-      confirmé) que d'autres jobs de `ci.yml` échouent aussi pour des
-      raisons encore non vues, puisqu'aucun run vert n'a permis de
-      vérifier les jobs suivants dans l'ordre — à réévaluer si le
-      prochain run échoue ailleurs.
+           `image-size <=2.0.2` (2 avisos high, DoS via boucles infinies
+           ICNS/JXL/HEIF) — déjà documenté comme exception acceptée depuis
+           OPS-12e (CVSS 8.7 mais code jamais exécuté, `less` n'a aucun fichier
+           `.less` dans ce dépôt, `overrides` structurellement inefficace côté
+           Bun pour neutraliser une dépendance transitive). **Cette exception
+           n'avait jamais été reportée dans le gate CI lui-même** — seulement
+           documentée en prose — donc le job échouait silencieusement depuis
+           OPS-12e sans qu'aucun run `ci.yml` vert n'ait jamais été observé
+           depuis. Vérifié sur le registre npm que `2.0.2` reste la dernière
+           version publiée (`dist-tags.latest`, aucun correctif disponible).
+           Vérifié la doc Bun officielle (`bun.com/docs/pm/cli/audit`, version
+           documentée = 1.3.14, identique à celle de CI) : `--ignore <GHSA-id>`
+           existe, répétable, agit sur le code de sortie. Corrigé :
+           `--ignore GHSA-w3rx-r6r6-pgpr --ignore GHSA-5p2g-fcmc-qvqq` ajoutés à
+           l'étape `bun audit` de `ci.yml`, avec commentaire expliquant pourquoi
+           (renvoie aussi vers le risque déjà documenté OPS-12e plutôt que de le
+           dupliquer).
+        2. `check:licenses` (`node tools/check-licenses.mjs`, qui invoque
+           `npx license-checker-rseidelsohn`) :
+           `npm error code EOVERRIDE — Override for postcss@catalog: conflicts with direct dependency`.
+           Root cause trouvée dans `package.json` : `postcss` est déclaré deux
+           fois — comme dépendance directe du catalog Bun workspace
+           (`workspaces.catalog.postcss`, `8.5.22`) **et** dans
+           `overrides.postcss` (`8.5.23`, ajouté par OPS-12e pour corriger
+           CVE-2026-69153 sans avoir vérifié que `postcss` était déjà
+           catalog-résolu). `bun install` tolère silencieusement ce doublon,
+           mais `npm` (invoqué via `npx` par `check-licenses.mjs`) le rejette
+           explicitement — c'est une régression introduite par OPS-12e
+           elle-même, jamais détectée faute de `ci.yml` vert depuis. Corrigé à
+           la source plutôt qu'en contournant le symptôme : version du catalog
+           relevée à `8.5.23` (la version déjà patchée), entrée dupliquée
+           retirée d'`overrides` — `postcss` n'a plus qu'une seule déclaration
+           de version dans tout `package.json`. Vérifié programmatiquement
+           (script Python) qu'aucun autre paquet ne partage ce même risque :
+           intersection vide entre les clés d'`overrides` et celles de tous les
+           catalogs (`catalog` + `catalogs.tooling`). `bun.lock` déjà verrouillé
+           sur `postcss@8.5.23` (résolu par l'ancien override avant suppression)
+           — pas de régénération de lockfile nécessaire pour ce changement
+           précis. Vérifié : `python3 -c "import json; json.load(...)"` (JSON
+           valide)
+        - `python3 -c "import yaml; yaml.safe_load(...)"` (YAML valide) +
+          `node tools/run-prettier.mjs --check` verts sur `package.json` et
+          `ci.yml`. **Limite explicite** : je n'ai ni `bun` ni accès réseau
+          GitHub Actions dans ce sandbox — je n'ai pas pu exécuter `bun audit`
+          moi-même pour confirmer que `--ignore` avec ces 2 GHSA IDs exacts
+          ramène bien le code de sortie à 0, ni rejouer `check:licenses`
+          réellement. Les deux causes sont corrigées sur la base d'une lecture
+          directe des messages d'erreur et de la documentation officielle Bun,
+          pas d'une exécution locale — à confirmer par le prochain run CI réel.
+          Il est possible (mais non confirmé) que d'autres jobs de `ci.yml`
+          échouent aussi pour des raisons encore non vues, puisqu'aucun run vert
+          n'a permis de vérifier les jobs suivants dans l'ordre — à réévaluer si
+          le prochain run échoue ailleurs.
 
 ### 4.2 Sécurité applicative & chaîne d'approvisionnement (ex-T4/T6, sous-ensemble générique)
 

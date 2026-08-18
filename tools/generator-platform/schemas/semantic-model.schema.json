@@ -112,14 +112,7 @@
       "additionalProperties": false,
       "required": ["kind", "description", "evidence_refs"],
       "properties": {
-        "kind": {
-          "enum": [
-            "external_call",
-            "establish_session",
-            "request_recovery",
-            "reset_credential"
-          ]
-        },
+        "kind": { "$ref": "#/$defs/id" },
         "description": { "$ref": "#/$defs/nonEmptyString" },
         "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
       }

@@ -59,20 +59,20 @@ produit jamais directement des chemins ou classes d'une cible.
 
 ## 4. Noyau et orchestration
 
-| Capacité                              | État réel                                          | Niveau |
-| ------------------------------------- | -------------------------------------------------- | :----: |
+| Capacité                              | État réel                                                         | Niveau |
+| ------------------------------------- | ----------------------------------------------------------------- | :----: |
 | Evidence model avec provenance/fusion | auth + workflow, preuves séparées par source, CI verte 2026-08-17 |   M4   |
-| Semantic model source/cible neutre    | auth + `support`, validés et câblés en CI, verte 2026-08-17        |   M4   |
-| Behavior graph typé                   | `requests` : états, gardes, branches, topologies, CI verte         |   M4   |
-| Presentation intent neutre            | conception Figma uniquement                                        |   M1   |
-| Manifest de génération                | responsabilités, ownership, politiques, CI verte 2026-08-17        |   M4   |
-| Planner déterministe                  | Artifact Plan neutre partagé, CI verte 2026-08-17                  |   M4   |
-| Change Set / dry-run                  | create/replace/preserve/delete/unchanged + drift, CI verte         |   M4   |
-| Publication sur sortie existante      | apply lié au Change Set + verrou + rollback, CI verte              |   M4   |
-| Reprise après interruption            | matrice CI APFS/ext4 verte 2026-08-17                              |   M3   |
-| Extension humaine typée               | `after-success`, runtime + conservation par hash, CI verte         |   M4   |
-| Garde runtime de permissions          | Angular + ReactJS, refus avant effet externe, CI verte             |   M4   |
-| Repair sous contraintes               | méthode documentée, partiellement exercée                          |   M2   |
+| Semantic model source/cible neutre    | auth + `support`, validés et câblés en CI, verte 2026-08-17       |   M4   |
+| Behavior graph typé                   | `requests` : états, gardes, branches, topologies, CI verte        |   M4   |
+| Presentation intent neutre            | conception Figma uniquement                                       |   M1   |
+| Manifest de génération                | responsabilités, ownership, politiques, CI verte 2026-08-17       |   M4   |
+| Planner déterministe                  | Artifact Plan neutre partagé, CI verte 2026-08-17                 |   M4   |
+| Change Set / dry-run                  | create/replace/preserve/delete/unchanged + drift, CI verte        |   M4   |
+| Publication sur sortie existante      | apply lié au Change Set + verrou + rollback, CI verte             |   M4   |
+| Reprise après interruption            | matrice CI APFS/ext4 verte 2026-08-17                             |   M3   |
+| Extension humaine typée               | `after-success`, runtime + conservation par hash, CI verte        |   M4   |
+| Garde runtime de permissions          | Angular + ReactJS, refus avant effet externe, CI verte            |   M4   |
+| Repair sous contraintes               | méthode documentée, partiellement exercée                         |   M2   |
 
 `docs/architecture/patterns/pattern-core.schema.json` est un profil structurel
 Angular/Nx transitoire, pas le semantic model de cette table.
@@ -90,6 +90,32 @@ pipeline sur une autre composition présentant la même forme d'exécution, sans
 vocabulaire d'authentification généré. Elle n'ajoute pas une troisième source
 équivalente à la matrice `authentication` et ne crée pas une famille du core.
 
+**Mise à jour 2026-08-18 (PLAT-4bis-AR)** : le gap « second domaine
+`action-request` réel, structurellement différent » est fermé. Investigation
+préalable (pas de code avant compréhension) : contrairement à
+`workflow-action-authoring.mjs` avant PLAT-4bis, `action-request-authoring.mjs`
+n'a jamais eu de contrainte de nombre d'opérations ni de rôle nommé — le
+renderer boucle déjà sur `semantic.operations` (nombre arbitraire, déjà prouvé
+par `authentication` à 3 opérations vs `support` à 1). Le gap identifié n'était
+donc pas structurel mais de preuve : jamais testé sur un axe autre que le
+vocabulaire. Second domaine retenu : `inventory-adjustment`
+(`tools/generator-platform/sources/inventory-adjustment.definition.json`),
+synthétique et hors legacy — `access.mode: authorized` comme mode natif (pas une
+mutation en mémoire d'un cas existant), effet métier `stock_mutation`,
+contrainte `equals` croisée sur des champs `integer`, type `uuid`, 2 opérations.
+En construisant ce domaine, 3 défauts réels de généricité ont été trouvés et
+corrigés (non fabriqués a priori) : un `enum` fermé sur `effect.kind` dans 2
+schémas distincts (figeant le vocabulaire `authentication`), 3 primitives
+(`date`/`datetime`/`uuid`) déclarées valides par le validateur mais non
+supportées par le renderer, et une contrainte `required` générée en supposant
+`string` pour tout champ (cassait le type-check strict sur un `integer`).
+Fixture de non-régression permanente :
+`tools/generator-platform/inventory-adjustment-authoring.test.mjs` (8 tests,
+dont une mutation qui change les deux arbres et fait disparaître le check de
+validation généré). Baseline `action-request` (16 tests) et suite complète
+(169/169) revérifiées vertes après chaque correctif. Voir `taches-restantes.md`,
+entrée PLAT-4bis-AR, pour le détail complet.
+
 PLAT-4 ajoute deux chemins indépendants vers le workflow réel
 `requests-details` + export : l'adaptateur borné du code et une définition JSON
 versionnée. Leurs Evidence Models restent distincts et leurs Behavior Models
@@ -98,16 +124,17 @@ cette composition fermée ; elle ne revendique pas les workflows arbitraires.
 Cette indépendance est technique : la définition formalise le comportement déjà
 connu du code, elle ne constitue pas une seconde autorité métier.
 
-**Mise à jour 2026-08-18 (PLAT-4bis)** : le gap « second domaine `workflow-action`
-réel » cité par les versions précédentes de ce document est fermé. Le moteur
-(compilateur `core/workflow-action-authoring.mjs`, IR
-`core/workflow-action-model.mjs`, codegen `renderers/workflow-shared.mjs`, Oracle
-`core/workflow-runtime-oracle.mjs`) a été généralisé pour dériver son vocabulaire
-d'opérations/permissions/statuts de la définition elle-même (détection des 3
-rôles structurels par forme — `entry`/`decision`/`export` — plutôt que par
-comparaison à des ids littéraux `take`/`qualify`/`export`), et non plus
-seulement `feature.id`/`feature.name`. Preuve : une définition indépendante
-hors legacy, vocabulaire disjoint (`claim`/`moderate`/`remove`/`export`, états
+**Mise à jour 2026-08-18 (PLAT-4bis)** : le gap « second domaine
+`workflow-action` réel » cité par les versions précédentes de ce document est
+fermé. Le moteur (compilateur `core/workflow-action-authoring.mjs`, IR
+`core/workflow-action-model.mjs`, codegen `renderers/workflow-shared.mjs`,
+Oracle `core/workflow-runtime-oracle.mjs`) a été généralisé pour dériver son
+vocabulaire d'opérations/permissions/statuts de la définition elle-même
+(détection des 3 rôles structurels par forme — `entry`/`decision`/`export` —
+plutôt que par comparaison à des ids littéraux `take`/`qualify`/`export`), et
+non plus seulement `feature.id`/`feature.name`. Preuve : une définition
+indépendante hors legacy, vocabulaire disjoint
+(`claim`/`moderate`/`remove`/`export`, états
 `submitted/under-review/published/removed`,
 `tools/generator-platform/sources/content-moderation-workflow.definition.json`),
 compile, génère Angular + ReactJS, type-check strict des deux arbres, passe
@@ -120,106 +147,102 @@ la vérification locale
 (`https://github.com/ismaelkouda/cmz-platform/actions/runs/32136111520/job/95707805436`,
 commit `f73d5fa`). Voir `taches-restantes.md`, entrée PLAT-4bis, pour le détail
 complet (4 fichiers généralisés un à la fois, baseline 30/30 revérifiée après
-chacun, 161/161 tests core, angle mort stack-tests découvert et fermé).
-**Ce que ceci ne prouve pas encore** : `action-request` (contrairement à
-`workflow-action`) n'a, lui, jamais eu de second domaine construit spécifiquement
-pour prouver sa généricité au sens strict — `support`/`authentication` partagent
-déjà la même forme d'exécution documentée ci-dessus (« elle n'ajoute pas une
-troisième source équivalente à la matrice `authentication` »). Et le « budget
-d'extensions hors modèle » exigé par le claim § 6 n'a jamais été mesuré nulle
-part dans ce dépôt — un gap distinct, non touché par PLAT-4bis.
+chacun, 161/161 tests core, angle mort stack-tests découvert et fermé). **Ce que
+ceci ne prouve pas encore** : `action-request` (contrairement à
+`workflow-action`) n'a, lui, jamais eu de second domaine construit
+spécifiquement pour prouver sa généricité au sens strict —
+`support`/`authentication` partagent déjà la même forme d'exécution documentée
+ci-dessus (« elle n'ajoute pas une troisième source équivalente à la matrice
+`authentication` »). Et le « budget d'extensions hors modèle » exigé par le
+claim § 6 n'a jamais été mesuré nulle part dans ce dépôt — un gap distinct, non
+touché par PLAT-4bis.
 
 **Limite topologique documentée, non traitée par décision (2026-08-18,
 PLAT-4ter)** : PLAT-4bis a généralisé le **vocabulaire** de `workflow-action`
-(noms d'opérations/permissions/états), jamais sa **topologie** — le moteur
-reste borné à exactement 3 rôles structurels fixes (`entry`/`decision`/
-`export`), avec au plus 1 `decision`. Investigation complète des 3 fichiers
-concernés (voir
+(noms d'opérations/permissions/états), jamais sa **topologie** — le moteur reste
+borné à exactement 3 rôles structurels fixes (`entry`/`decision`/ `export`),
+avec au plus 1 `decision`. Investigation complète des 3 fichiers concernés (voir
 [`memo-topologie-workflow-action.md`](./memo-topologie-workflow-action.md)) :
-l'IR (`core/workflow-action-model.mjs`) est déjà générique ; le validateur
-est rigide mais localisé et peu risqué à changer ; le renderer
+l'IR (`core/workflow-action-model.mjs`) est déjà générique ; le validateur est
+rigide mais localisé et peu risqué à changer ; le renderer
 (`renderers/workflow-shared.mjs`) et l'Oracle
-(`core/workflow-runtime-oracle.mjs`) sont en revanche des gabarits
-TypeScript à emplacements fixes (une méthode `decisionMethod` unique câblée
-en dur dans un template littéral), pas une boucle sur un tableau de
-décisions — généraliser à N décisions enchaînées serait une réécriture du
-cœur du générateur, d'ampleur comparable à PLAT-4bis entier.
-**Décision (2026-08-18)** : ne pas engager cette généralisation maintenant.
-Vérifié factuellement (pas supposé) : les 3 définitions `workflow-action`
-existantes dans ce dépôt (`requests-workflow`, `content-moderation-workflow`,
-et les 4 modules SEOS family-dup `finalization`/`processing`/
-`report-states`/`requests`) ont chacune exactement 1 décision — aucun cas
-réel, legacy ou synthétique, n'exige aujourd'hui une chaîne de décisions.
-Conforme à ADR-0029 (§ Décision, « preuve avant extension ») et au principe
-déjà appliqué par ce dépôt (ne jamais transformer une extensibilité
-souhaitée en capacité livrée sans preuve) : une réécriture L/XL du
-générateur, avec risque de régression sur `requests-workflow` (production)
-et `content-moderation-workflow` (fixture close), contre zéro cas d'usage
-observé, est de la sur-ingénierie spéculative — pas de la rigueur.
-**Condition de sortie explicite** : rouvrir ce chantier dès qu'une
-définition `workflow-action` réelle (legacy ou spécification) exige
-factuellement plus d'une décision enchaînée — pas avant. Ce gap reste donc
-listé comme non couvert par le claim « plateforme générique » (§6), par
-choix documenté, pas par oubli.
+(`core/workflow-runtime-oracle.mjs`) sont en revanche des gabarits TypeScript à
+emplacements fixes (une méthode `decisionMethod` unique câblée en dur dans un
+template littéral), pas une boucle sur un tableau de décisions — généraliser à N
+décisions enchaînées serait une réécriture du cœur du générateur, d'ampleur
+comparable à PLAT-4bis entier. **Décision (2026-08-18)** : ne pas engager cette
+généralisation maintenant. Vérifié factuellement (pas supposé) : les 3
+définitions `workflow-action` existantes dans ce dépôt (`requests-workflow`,
+`content-moderation-workflow`, et les 4 modules SEOS family-dup
+`finalization`/`processing`/ `report-states`/`requests`) ont chacune exactement
+1 décision — aucun cas réel, legacy ou synthétique, n'exige aujourd'hui une
+chaîne de décisions. Conforme à ADR-0029 (§ Décision, « preuve avant extension
+») et au principe déjà appliqué par ce dépôt (ne jamais transformer une
+extensibilité souhaitée en capacité livrée sans preuve) : une réécriture L/XL du
+générateur, avec risque de régression sur `requests-workflow` (production) et
+`content-moderation-workflow` (fixture close), contre zéro cas d'usage observé,
+est de la sur-ingénierie spéculative — pas de la rigueur. **Condition de sortie
+explicite** : rouvrir ce chantier dès qu'une définition `workflow-action` réelle
+(legacy ou spécification) exige factuellement plus d'une décision enchaînée —
+pas avant. Ce gap reste donc listé comme non couvert par le claim « plateforme
+générique » (§6), par choix documenté, pas par oubli.
 
-**Budget d'extensions hors modèle — première mesure (2026-08-18)** : le §6
-exige un « budget d'extensions hors modèle mesuré et non masqué par
-`Custom` », jamais produit avant ce jour. Inventaire exhaustif mené sur
-`tools/generator-platform/renderers/*.mjs` (les deux familles
-`action-request` et `workflow-action`), en distinguant explicitement deux
-catégories pour ne pas gonfler artificiellement le compte :
+**Budget d'extensions hors modèle — première mesure (2026-08-18)** : le §6 exige
+un « budget d'extensions hors modèle mesuré et non masqué par `Custom` », jamais
+produit avant ce jour. Inventaire exhaustif mené sur
+`tools/generator-platform/renderers/*.mjs` (les deux familles `action-request`
+et `workflow-action`), en distinguant explicitement deux catégories pour ne pas
+gonfler artificiellement le compte :
+
 - les points d'extension **contractuels et prouvés** ne comptent pas comme
-  échappatoire — le slot `after-success` (PLAT-5C, typé, préservation
-  garantie par hash à la régénération) est de la composition documentée,
-  pas une fuite hors modèle ;
+  échappatoire — le slot `after-success` (PLAT-5C, typé, préservation garantie
+  par hash à la régénération) est de la composition documentée, pas une fuite
+  hors modèle ;
 - le verbe `Custom` d'ADR-0027 (noyau de patterns Nx, structure de
   fichiers/couches) est un mécanisme distinct de celui visé ici (le moteur
-  IR/renderer de `tools/generator-platform`), hors périmètre de cette
-  mesure.
+  IR/renderer de `tools/generator-platform`), hors périmètre de cette mesure.
 
 **Résultat de l'inventaire : exactement 1 échappatoire réel identifié, dans
 l'ensemble du moteur.** `renderers/workflow-shared.mjs`, interface
-`QualificationEditFields` (lignes 103-112) et la fonction
-`validateEditFields` du code généré (lignes 248-258) : 8 champs métier fixes
-(`latitude`, `longitude`, `locationName`, `reportType`, `operators`,
-`description`, `placeDescription`, `placePhoto`), codés en dur dans le
-template littéral, sans aucune contrepartie dans
-`workflow-action-definition.schema.json` — un domaine qui n'utilise pas
-`approvalType: 'edit'|'callback'` ne les déclenche jamais, mais s'il les
-déclenche, il hérite du vocabulaire figé du domaine `requests`, pas du sien.
-Cette limite était déjà documentée en commentaire dans le fichier source
-depuis PLAT-4bis (« limite explicite non levée ») mais jamais comptée dans
-un budget global. Aucun autre cas trouvé dans les renderers `action-request`
-(`angular-nx-renderer.mjs`, `react-typescript-renderer.mjs`) : tous les
-champs émis sont dérivés du modèle par interpolation de template, aucun
+`QualificationEditFields` (lignes 103-112) et la fonction `validateEditFields`
+du code généré (lignes 248-258) : 8 champs métier fixes (`latitude`,
+`longitude`, `locationName`, `reportType`, `operators`, `description`,
+`placeDescription`, `placePhoto`), codés en dur dans le template littéral, sans
+aucune contrepartie dans `workflow-action-definition.schema.json` — un domaine
+qui n'utilise pas `approvalType: 'edit'|'callback'` ne les déclenche jamais,
+mais s'il les déclenche, il hérite du vocabulaire figé du domaine `requests`,
+pas du sien. Cette limite était déjà documentée en commentaire dans le fichier
+source depuis PLAT-4bis (« limite explicite non levée ») mais jamais comptée
+dans un budget global. Aucun autre cas trouvé dans les renderers
+`action-request` (`angular-nx-renderer.mjs`, `react-typescript-renderer.mjs`) :
+tous les champs émis sont dérivés du modèle par interpolation de template, aucun
 champ métier littéral.
 
-**Méthode de comptage retenue, décision actée (2026-08-18)** : une liste
-nommée, pas un détecteur automatique. Construire une détection AST pour
-distinguer « champ métier fixe hors contrat » d'un « type d'infrastructure
-du moteur » (ex. `WorkflowContext`/`WorkflowPorts`, légitimement sans
-`${}` car génériques à toute composition) n'est pas un simple pattern
-syntaxique — et instrumenter un détecteur pour valider un budget à une
-seule entrée aurait été la même erreur que généraliser le moteur pour un
-besoin non observé (cf. PLAT-4ter ci-dessus) : de l'instrumentation
-spéculative. Le budget actuel est donc **1 échappatoire sur 2 familles de
-composition auditées**, nommément listé ici ; toute future extension hors
-modèle découverte doit être ajoutée à cette liste au moment de son
-introduction, pas déduite après coup par un audit périodique.
+**Méthode de comptage retenue, décision actée (2026-08-18)** : une liste nommée,
+pas un détecteur automatique. Construire une détection AST pour distinguer «
+champ métier fixe hors contrat » d'un « type d'infrastructure du moteur » (ex.
+`WorkflowContext`/`WorkflowPorts`, légitimement sans `${}` car génériques à
+toute composition) n'est pas un simple pattern syntaxique — et instrumenter un
+détecteur pour valider un budget à une seule entrée aurait été la même erreur
+que généraliser le moteur pour un besoin non observé (cf. PLAT-4ter ci-dessus) :
+de l'instrumentation spéculative. Le budget actuel est donc **1 échappatoire sur
+2 familles de composition auditées**, nommément listé ici ; toute future
+extension hors modèle découverte doit être ajoutée à cette liste au moment de
+son introduction, pas déduite après coup par un audit périodique.
 
 PLAT-5F possède un contrat exécutable de durabilité. Il accepte uniquement
 APFS/macOS et ext4/Linux locaux, vérifie le type réel par `statfs`, exerce les
-primitives de publication, puis tue réellement un processus enfant après
-chacun des deux renommages critiques. ADR-0035 tranche le modèle lecteur : la
-sortie est inactive pendant la génération et activée seulement après succès ;
-les lecteurs externes concurrents ne sont pas supportés en v1. **Mise à jour
+primitives de publication, puis tue réellement un processus enfant après chacun
+des deux renommages critiques. ADR-0035 tranche le modèle lecteur : la sortie
+est inactive pendant la génération et activée seulement après succès ; les
+lecteurs externes concurrents ne sont pas supportés en v1. **Mise à jour
 2026-08-17 (OPS-19/PLAT-6)** : la matrice CI bloquante `macos-14`/APFS +
 `ubuntu-24.04`/ext4 est verte pour la première fois
-(`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
-commit `24729f3`) — la seule condition posée pour la promotion M3
-(`taches-restantes.md`, entrée PLAT-5F : « seule action restante avant
-promotion M3 : obtenir la première exécution verte de cette matrice externe »)
-est remplie. Capacité promue M3.
+(`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`, commit
+`24729f3`) — la seule condition posée pour la promotion M3
+(`taches-restantes.md`, entrée PLAT-5F : « seule action restante avant promotion
+M3 : obtenir la première exécution verte de cette matrice externe ») est
+remplie. Capacité promue M3.
 
 PLAT-5G matérialise les permissions du Semantic Model dans les frontières
 d'exécution `action-request`. Angular et ReactJS exigent un port hôte, évaluent
@@ -231,14 +254,14 @@ doit appliquer les mêmes règles indépendamment.
 
 ## 5. Cibles
 
-| Cible                | État réel                                                            |             Niveau              |
-| -------------------- | --------------------------------------------------------------------- | :-----------------------------: |
-| Angular              | action-request + workflow-action, mutants locaux, CI verte 2026-08-17 |                M4                |
-| ReactJS              | action-request + workflow-action, mutants locaux, CI verte 2026-08-17 |                M4                |
-| React Native         | intention                                        |               M0                |
-| Kotlin/Compose       | POC interrompu par environnement                 |               M1                |
-| Swift/SwiftUI        | POC interrompu par environnement                 |               M1                |
-| Autres stacks citées | aucun renderer ni oracle                         |               M0                |
+| Cible                | État réel                                                             | Niveau |
+| -------------------- | --------------------------------------------------------------------- | :----: |
+| Angular              | action-request + workflow-action, mutants locaux, CI verte 2026-08-17 |   M4   |
+| ReactJS              | action-request + workflow-action, mutants locaux, CI verte 2026-08-17 |   M4   |
+| React Native         | intention                                                             |   M0   |
+| Kotlin/Compose       | POC interrompu par environnement                                      |   M1   |
+| Swift/SwiftUI        | POC interrompu par environnement                                      |   M1   |
+| Autres stacks citées | aucun renderer ni oracle                                              |   M0   |
 
 Un renderer supporté doit consommer uniquement l'IR canonique et un profil cible
 versionné. Il ne doit pas inspecter la source d'origine.
@@ -276,13 +299,13 @@ versionné. Il ne doit pas inspecter la source d'origine.
 > `ci.yml` confirmée sur `main`
 > (`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
 > commit `24729f3`, 22m14s). `check:generator-platform` fait partie du job
-> `guardrails`, bloquant en tête de pipeline — un run global vert implique
-> qu'il est passé. Les 5 lignes ci-dessous franchissent donc M3 et
-> satisfont les critères M4 « de cette seule tranche », comme la phrase
-> normative ci-dessous le prévoyait déjà avant cette date. Ce n'est **pas**
-> une promotion M4 de la plateforme entière : le second domaine réel de
-> PLAT-4 et la validation sémantique globale (§9) restent des conditions
-> distinctes, non remplies par cette seule CI verte.
+> `guardrails`, bloquant en tête de pipeline — un run global vert implique qu'il
+> est passé. Les 5 lignes ci-dessous franchissent donc M3 et satisfont les
+> critères M4 « de cette seule tranche », comme la phrase normative ci-dessous
+> le prévoyait déjà avant cette date. Ce n'est **pas** une promotion M4 de la
+> plateforme entière : le second domaine réel de PLAT-4 et la validation
+> sémantique globale (§9) restent des conditions distinctes, non remplies par
+> cette seule CI verte.
 
 | Source / cible                            |       Angular        |       ReactJS        |
 | ----------------------------------------- | :------------------: | :------------------: |
@@ -298,9 +321,9 @@ transport, accès public, ordre des effets de session et erreurs. Les mutations
 de contrainte, session et accès sont tuées sur les deux cibles. Voir
 [`validation-runtime-action-request.md`](./validation-runtime-action-request.md).
 Cette preuve ne vaut pas adaptateur de traces runtime pour les sources. La
-condition normative posée ici (« une CI verte ferait franchir M3 et
-satisferait les critères M4 de cette seule tranche ») est désormais remplie
-— voir la note de mise à jour au-dessus du tableau.
+condition normative posée ici (« une CI verte ferait franchir M3 et satisferait
+les critères M4 de cette seule tranche ») est désormais remplie — voir la note
+de mise à jour au-dessus du tableau.
 
 Le workflow utilise un Oracle distinct pour les états, permissions, branches de
 qualification et attente de l'export asynchrone. Ses mutants sont tués
@@ -335,33 +358,52 @@ de revue dépasse durablement celui d'un générateur spécialisé.
 
 ## 9. État synthétique actuel
 
-> **Maturité globale : M0–M1 (minimum de tous les maillons, §1).**
-> **Mise à jour 2026-08-17 (OPS-19/PLAT-6)** : la matrice `action-request` +
-> `workflow-action` sur Angular/ReactJS (§7, `tools/generator-platform`)
-> franchit désormais M3/M4 — première exécution `ci.yml` verte confirmée
+> **Maturité globale : M0–M1 (minimum de tous les maillons, §1).** **Mise à jour
+> 2026-08-17 (OPS-19/PLAT-6)** : la matrice `action-request` + `workflow-action`
+> sur Angular/ReactJS (§7, `tools/generator-platform`) franchit désormais M3/M4
+> — première exécution `ci.yml` verte confirmée
 > (`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
 > commit `24729f3`), condition normative posée depuis PLAT-1/PLAT-3/PLAT-5F.
-> Cette tranche precise n'est plus « refusée avant CI verte ».
-> **Mise à jour 2026-08-18 (PLAT-4bis)** : le second domaine `workflow-action`
-> réel (`content-moderation-workflow`, vocabulaire disjoint de `requests-workflow`,
+> Cette tranche precise n'est plus « refusée avant CI verte ». **Mise à jour
+> 2026-08-18 (PLAT-4bis)** : le second domaine `workflow-action` réel
+> (`content-moderation-workflow`, vocabulaire disjoint de `requests-workflow`,
 > voir §4) est prouvé et confirmé par CI réelle — ce gap précis, cité par la
 > version précédente de cette note, est fermé. La maturité **globale de la
 > plateforme** reste néanmoins tirée vers le bas par les maillons non encore
 > promus, minimum au sens strict du §1 : `Presentation intent neutre` (M1,
-> conception Figma uniquement), `OpenAPI`/`Description textuelle`/`Tests
-> runtime` (M0–M1, §3), `Repair sous contraintes` (M2, exercice partiel).
-> **Mise à jour 2026-08-18 (PLAT-4ter/budget d'extensions)** : deux points en
-> suspens de la note précédente sont désormais tranchés, tous deux par choix
-> documenté plutôt que par nouvelle implémentation. La topologie
-> `workflow-action` (N décisions enchaînées) reste bornée à 1 seule décision
-> — décision de différer, aucun cas réel ne l'exige aujourd'hui, condition
-> de sortie explicite posée en §4. Le « budget d'extensions hors modèle »
-> exigé par le claim « plateforme générique » (§6) est désormais mesuré
-> (§4) : 1 seul échappatoire réel identifié dans l'ensemble du moteur
-> (`QualificationEditFields`, `renderers/workflow-shared.mjs`), sur les deux
-> familles de composition auditées. Le claim § 6 reste néanmoins non rempli
-> — un budget mesuré à 1 n'est pas un budget nul, et `action-request` n'a
-> toujours pas de second domaine réel indépendant construit spécifiquement
-> pour prouver sa généricité (contrairement à `workflow-action`). Ne pas
-> confondre la promotion d'une tranche prouvée avec la promotion de
-> l'enveloppe entière.
+> conception Figma uniquement),
+> `OpenAPI`/`Description textuelle`/`Tests runtime` (M0–M1, §3),
+> `Repair sous contraintes` (M2, exercice partiel). **Mise à jour 2026-08-18
+> (PLAT-4ter/budget d'extensions)** : deux points en suspens de la note
+> précédente sont désormais tranchés, tous deux par choix documenté plutôt que
+> par nouvelle implémentation. La topologie `workflow-action` (N décisions
+> enchaînées) reste bornée à 1 seule décision — décision de différer, aucun cas
+> réel ne l'exige aujourd'hui, condition de sortie explicite posée en §4. Le «
+> budget d'extensions hors modèle » exigé par le claim « plateforme générique »
+> (§6) est désormais mesuré (§4) : 1 seul échappatoire réel identifié dans
+> l'ensemble du moteur (`QualificationEditFields`,
+> `renderers/workflow-shared.mjs`), sur les deux familles de composition
+> auditées. Le claim § 6 reste néanmoins non rempli à cette date — un budget
+> mesuré à 1 n'est pas un budget nul, et `action-request` n'a toujours pas de
+> second domaine réel indépendant construit spécifiquement pour prouver sa
+> généricité (contrairement à `workflow-action`). **Mise à jour 2026-08-18
+> (PLAT-4bis-AR)** : ce dernier point est fermé. `inventory-adjustment` (§4) est
+> un second domaine `action-request` réel, synthétique et hors legacy,
+> structurellement disjoint de `authentication`/`support` (mode `authorized`
+> natif, effet métier personnalisé, contrainte croisée sur types non-`string`,
+> primitive `uuid`, nombre d'opérations différent des deux cas connus) — 3
+> défauts réels de généricité trouvés et corrigés en le construisant (enum fermé
+> dupliqué sur 2 schémas, primitives manquantes au renderer, contrainte
+> `required` non générique), fixture de non-régression avec mutation testée. Le
+> claim « plateforme générique » (§6) n'a donc plus de gap **non traité** : les
+> 3 conditions qui restaient ouvertes après PLAT-4bis (second domaine
+> `workflow-action`, budget d'extensions, second domaine `action-request`) sont
+> chacune soit fermées par preuve (PLAT-4bis, PLAT-4bis-AR), soit mesurées et
+> différées par choix documenté et falsifiable (PLAT-4ter, PLAT-4quater) —
+> aucune ne reste simplement « non mesurée » ou « non sue ». Ceci ne promeut pas
+> automatiquement le claim § 6 lui-même à M4 : « matrice 2 sources × 2 cibles
+> entièrement reproductible » et « manifests et hashes de génération persistés »
+> sont déjà couverts par ailleurs (§7), mais une revue formelle des 6 conditions
+> du §6 une par une, plutôt que déduite ici, reste à faire avant d'affirmer la
+> promotion complète. Ne pas confondre la promotion d'une tranche prouvée avec
+> la promotion de l'enveloppe entière.

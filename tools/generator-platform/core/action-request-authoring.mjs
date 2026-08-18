@@ -1,3 +1,21 @@
+/**
+ * Généralisation (PLAT-4bis-AR, 2026-08-18) : `effect.kind` était un enum
+ * fermé au niveau du schéma (`action-request-definition.schema.json`) avec
+ * 4 valeurs — `external_call`, `establish_session`, `request_recovery`,
+ * `reset_credential`. Vérifié dans le code (pas supposé) : seul
+ * `establish_session` a jamais un comportement réel (ce fichier, exige
+ * `user`+`token` en sortie ; `renderers/angular-nx-renderer.mjs`, ligne
+ * ~46, déclenche la persistance de session). `request_recovery` et
+ * `reset_credential` n'étaient lus nulle part — du vocabulaire du domaine
+ * `authentication` figé dans le contrat sans raison fonctionnelle. Le
+ * schéma accepte désormais n'importe quel identifiant valide pour
+ * `effect.kind` (même pattern que `operation.id`) ; seuls `external_call`
+ * (requis structurellement, toute opération action-request appelle un
+ * backend) et `establish_session` (comportement optionnel réservé) restent
+ * des noms porteurs de sens dans ce fichier — tout le reste du vocabulaire
+ * est libre.
+ * @see docs/architecture/taches-restantes.md, entrée PLAT-4bis-AR.
+ */
 const primitiveNames = new Set([
     'boolean',
     'date',

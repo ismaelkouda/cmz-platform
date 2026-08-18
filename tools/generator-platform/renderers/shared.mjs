@@ -15,10 +15,13 @@ export function typeName(reference) {
     if (reference.kind === 'primitive') {
         const primitives = {
             boolean: 'boolean',
+            date: 'string',
+            datetime: 'string',
             decimal: 'number',
             integer: 'number',
             json: 'unknown',
             string: 'string',
+            uuid: 'string',
         };
         if (!primitives[reference.name]) {
             throw new Error(
@@ -53,12 +56,41 @@ export function renderModels(semantic) {
     return `${blocks.join('\n\n')}\n`;
 }
 
+/**
+ * Généralisation (PLAT-4bis-AR, 2026-08-18) : la contrainte `required`
+ * générait auparavant `typeof value.${field} === 'string' && value.${field}
+ * .trim().length === 0`, quel que soit le type déclaré du champ. Tant que
+ * tous les champs `required` connus étaient des `string` (10/10 dans
+ * `authentication`/`support`, vérifié), TypeScript acceptait ce garde ; dès
+ * qu'un champ `required` d'un autre type primitif (ex. `integer`, `uuid`)
+ * apparaît, l'intersection `string & number` que TypeScript infère dans le
+ * bloc du `if` devient `never`, et `.trim()` sur `never` casse le
+ * type-check strict. La contrainte required doit donc être générée selon
+ * le type réel du champ, pas supposer `string` pour tous.
+ * @see docs/architecture/taches-restantes.md, entrée PLAT-4bis-AR.
+ */
+function renderRequiredCheck(field, fieldType) {
+    if (fieldType === 'string') {
+        return `    if (typeof value.${field} === 'string' && value.${field}.trim().length === 0) issues.push({ field: '${field}', rule: 'required' });`;
+    }
+    return `    if (value.${field} === undefined || value.${field} === null) issues.push({ field: '${field}', rule: 'required' });`;
+}
+
 export function renderValidation(semantic) {
     const imports = semantic.operations.map((operation) =>
         pascalCase(operation.input.name)
     );
     const functions = semantic.operations.map((operation) => {
         const inputName = pascalCase(operation.input.name);
+        const inputType = semantic.types.find(
+            (type) => type.id === operation.input.name
+        );
+        const fieldTypeByName = new Map(
+            (inputType?.fields ?? []).map((field) => [
+                field.name,
+                typeName(field.type),
+            ])
+        );
         const constraints = semantic.constraints.filter((constraint) =>
             constraint.target.startsWith(`${operation.input.name}.`)
         );
@@ -67,7 +99,10 @@ export function renderValidation(semantic) {
             const field = constraint.target.split('.')[1];
             if (constraint.kind === 'required') {
                 lines.push(
-                    `    if (typeof value.${field} === 'string' && value.${field}.trim().length === 0) issues.push({ field: '${field}', rule: 'required' });`
+                    renderRequiredCheck(
+                        field,
+                        fieldTypeByName.get(field) ?? 'string'
+                    )
                 );
             } else if (constraint.kind === 'format') {
                 lines.push(
