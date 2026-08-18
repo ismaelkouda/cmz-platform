@@ -763,6 +763,32 @@ Figma, désormais source partielle différée :
   reste une bonne pratique de clôture mais n'est plus bloquante pour
   affirmer que le moteur `workflow-action` est génériquement
   paramétrable par le vocabulaire déclaré dans la définition.
+  **Correction post-CI (2026-08-18)** : le run CI réel (`check:generator-
+  platform:angular`) a révélé un 4ᵉ appelant de `assertWorkflowOracle`
+  non détecté par la vérification locale — `tools/generator-platform/
+  stack-tests/angular/workflow-action.spec.ts`, qui compile et exécute
+  le code généré contre un **vrai** `TestBed` Angular (`tsc` strict +
+  `vitest`). Ce fichier appelait encore l'ancienne signature à un seul
+  argument (`assertWorkflowOracle(fn)`), cassée par la généralisation
+  de l'Oracle — erreur `Cannot read properties of undefined (reading
+  'operations')`. **Cause du angle mort** : les `stack-tests/` ne sont
+  exécutables qu'avec `bun`/une compilation Angular réelle
+  (`check:generator-platform:angular`/`:reactjs`), indisponibles dans
+  ce sandbox (`node`/`node_modules` seuls) — le run local 161/161
+  couvrait uniquement `check:generator-platform:core` (`node --test`),
+  pas les deux autres sous-commandes de `check:generator-platform`. Le
+  pendant ReactJS (`stack-tests/reactjs/workflow-action.spec.ts`)
+  n'appelle pas `assertWorkflowOracle` (assertions manuelles
+  indépendantes) donc n'était pas affecté. Corrigé : le spec Angular
+  récupère désormais `computeWorkflowTargets().model` (le modèle par
+  défaut `requests-workflow`, celui utilisé par `prepare-stack-
+  tests.mjs` pour générer le code sous test) et le passe en second
+  argument. **Leçon retenue** : la vérification locale de ce sandbox
+  (`node --test`) ne couvre pas la totalité de la gate CI
+  `check:generator-platform` — seule la CI réelle ferme cette classe de
+  régression pour de bon ; ne pas déclarer un chantier « clos sans
+  reste » sur la seule base d'un run local partiel de la commande
+  composite.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

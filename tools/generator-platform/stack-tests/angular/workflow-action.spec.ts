@@ -12,6 +12,7 @@ import type {
 } from '../../.stack-test-runtime/angular/workflow-action/src/models';
 
 import { assertWorkflowOracle } from '../../core/workflow-runtime-oracle.mjs';
+import { computeWorkflowTargets } from '../../workflow-targets.mjs';
 
 afterEach(() => {
     TestBed.resetTestingModule();
@@ -19,6 +20,12 @@ afterEach(() => {
 
 describe('sortie Angular workflow-action', () => {
     it('respecte états, permissions, branches et callback asynchrone via TestBed', async () => {
+        // `assertWorkflowOracle` dérive ses attentes du Behavior Model depuis
+        // le second paramètre : le code natif compilé ici (via
+        // `.stack-test-runtime/`, produit par `prepare-stack-tests.mjs`)
+        // provient du modèle par défaut (`requests-workflow`), il faut donc
+        // le même modèle ici pour que l'Oracle compare le bon vocabulaire.
+        const { model } = await computeWorkflowTargets();
         await assertWorkflowOracle((ports: WorkflowPorts) => {
             TestBed.resetTestingModule();
             TestBed.configureTestingModule({
@@ -33,6 +40,6 @@ describe('sortie Angular workflow-action', () => {
             const service = TestBed.inject(WorkflowActionService);
             return (command: WorkflowCommand, context: WorkflowContext) =>
                 service.execute(command, context);
-        });
+        }, model);
     });
 });
