@@ -167,16 +167,91 @@ précis) est classé SEOS en §3.
   non contraints et signalés en avertissement, pas silencieusement ignorés. =
   ROAD-3b/S-1 (chantier IDL-first, ne pas traiter séparément pour un schéma
   backend réel).
-- **T2-2** — **partiel** (2026-08-13), L, P0, alias `P-9`. Gate CI de
-  **fraîcheur schéma↔DTO** livré : `tools/check-dto-schema.mjs`
-  (`bun run check:dto-schema`, branché dans `check:all` après
-  `check:pair-schema`) régénère le schéma en mémoire et échoue si `git diff`
-  détecte une divergence avec `dto.schema.json` committé — même mécanisme que
-  `check:docs-freshness`. **Reste à faire** : la partie « mappers conformes au
-  schéma » (valider que `libs/*/data/src/lib/mappers/*.ts` produit bien des
-  objets domaine cohérents avec le DTO source) et « breaking change = fail »
-  (diff sémantique entre deux versions du schéma, pas juste présence/absence) ne
-  sont pas couvertes — chantier distinct, non entamé.
+- **T2-2** — **fait** (2026-08-18, initialement livré 2026-08-13), L, P0,
+  alias `P-9`. Gate CI de **fraîcheur schéma↔DTO** livré :
+  `tools/check-dto-schema.mjs` (`bun run check:dto-schema`, branché dans
+  `check:all` après `check:pair-schema`) régénère le schéma en mémoire et
+  échoue si `git diff` détecte une divergence avec `dto.schema.json`
+  committé — même mécanisme que `check:docs-freshness`.
+  **Volet « mappers conformes au schéma » (2026-08-18)** : avant d'écrire
+  quoi que ce soit, vérifié que `tsconfig.base.json` a déjà `strict: true`
+  et que `tsc`/`ngc --strictTemplates` tournent déjà dans l'oracle
+  multi-niveaux — pour le sens `dto → domaine`
+  (`mapItemFromDto(dto: XxxApiDto)`), tout accès à un champ absent du type
+  est déjà une erreur de compilation ; un outil comparant contre
+  `dto.schema.json` (projection JSON avec pertes documentées) y serait plus
+  faible, donc redondant, pas un vrai gap. Le vrai gap trouvé par
+  inspection réelle des 313 mappers : le sens `domaine → dto` utilise à 75
+  reprises le pattern `const params = {} as XxxApiDto;` puis des
+  assignations `params.champ = ...` une à une, certaines conditionnelles
+  (`if (...) { params.champ = ... }`) — le cast `as` désactive la
+  vérification stricte de complétude de TypeScript, rien ne garantit
+  statiquement qu'un champ `required` du DTO cible est bien assigné avant
+  le `return`. Nouveau `tools/check-mapper-dto-conformity.mjs` (AST via
+  `ts.createProgram`, même mécanisme que `generate-dto-schema.mjs`) :
+  détecte ce pattern précis, vérifie chaque champ `required` du schéma
+  contre les assignations inconditionnelles trouvées. **23 cas réels
+  trouvés en conditions réelles**, analysés un par un avant tout câblage
+  bloquant (aucun accès à `$SEOS_LEGACY_ROOT` ni à un contrat backend
+  documenté dans ce sandbox pour trancher formellement) : 2 familles
+  nettes — 12 fichiers `delete`/`disable`/`enable`/`find-one-filter` où un
+  seul champ id-like (`uniq_id`/`id`) est systématiquement conditionnel
+  (`if (validContract.uniqId) {...}`, même motif partout, probablement une
+  garde défensive délibérée) ; 11 fichiers `create`/`update`/`filter` où
+  plusieurs champs métier ne sont jamais assignés du tout (ex.
+  `infrastructure-create.mapper.ts` n'assigne jamais
+  `region_id`/`department_id`/`municipality_id`, requis par
+  `InfrastructureCreateApiDto`). **Aucun des 23 mappers concernés n'a de
+  test unitaire** (`.spec.ts`) dans le dépôt — aucune preuve que ce
+  comportement soit testé/voulu, ni dans un sens ni dans l'autre. Câblé
+  selon la même doctrine que `KNOWN_GAPS` de
+  `check-pattern-nx-coverage.mjs` (tranché comme la seule option cohérente
+  avec le reste du dépôt, pas redemandé à l'utilisateur une seconde fois
+  après une première clarification déjà obtenue) : baseline figée des 23
+  cas nommément listés (clé stable `fichier::fonction::DtoName`), le gate
+  échoue sur tout **nouveau** cas non listé (régression bloquée dès
+  maintenant) et sur toute entrée devenue stale (corrigée sans être
+  retirée de la liste) — sans exiger de corriger les 23 cas existants
+  avant une revue humaine. 5 tests `node:test` (fixtures isolées,
+  `mkdtemp`) : détection réelle, cas conforme, cast vers type non-DTO
+  ignoré, cast sur littéral non vide ignoré (hors périmètre documenté),
+  stabilité de la clé.
+  **Volet « breaking change = fail » (2026-08-18)** : nouveau
+  `tools/check-dto-schema-breaking-changes.mjs`, diff sémantique entre
+  deux révisions de `dto.schema.json` (pas juste présence/absence, déjà
+  couvert par `check-dto-schema.mjs`). Doctrine de compatibilité standard
+  JSON Schema/OpenAPI : BREAKING = `$defs.<Name>` supprimé, propriété
+  supprimée, `type` changé, propriété devenue `required`, valeur `enum`
+  supprimée, `additionalProperties` resserré à `false` ; COMPATIBLE =
+  nouveau `$defs`, nouvelle propriété optionnelle, propriété devenue
+  optionnelle, nouvelle valeur `enum`. Lit l'ancienne révision via
+  `git show <ref>:docs/architecture/schema/dto.schema.json` (dégradation
+  gracieuse si la révision n'existe pas — ex. première introduction du
+  schéma — log `INFO` et sort en 0, jamais un crash). 12 tests `node:test`
+  sur `diffSchemas()` isolément (chaque règle breaking et chaque règle
+  compatible testée séparément, plus schéma identique = aucun écart).
+  **Câblage CI (2026-08-18)** : les deux nouveaux scripts ajoutés à
+  `check:all` (`package.json`), puis immédiatement vérifiés avec
+  `tools/check-ci-wiring.mjs` — qui a effectivement détecté qu'ils étaient
+  fantômes (présents dans `check:all`, jamais invoqués par un vrai
+  mécanisme CI/husky), même classe de bug déjà rencontrée 3 fois
+  auparavant (`check:pair-schema`/`check:corpus-tools` 2026-08-11,
+  `check:dto-schema`/`check:pattern-nx:*` 2026-08-14). Corrigé avant tout
+  commit : deux nouvelles steps dans le job `docs-freshness` de
+  `.github/workflows/ci.yml`, à la suite de `check:dto-schema`. Pour
+  `check:dto-schema-breaking-changes`, `fetch-depth: 0` ajouté au
+  checkout du job (nécessaire pour `git show origin/<base>:...`, un clone
+  superficiel ne contiendrait pas cette révision) et un step `Set schema
+  diff base branch` qui calcule `origin/<base_ref>` sur `pull_request`,
+  `HEAD~1` sur push direct — réplique exactement le pattern déjà éprouvé
+  `Set NX base branch` (job oracle, même fichier). `check-ci-wiring.mjs`
+  revérifié vert après ajout. YAML validé structurellement
+  (`python3 -c "import yaml; yaml.safe_load(...)"`). **Limite explicite**
+  : je n'ai pas pu déclencher ces steps CI moi-même (pas d'accès réseau
+  GitHub Actions dans ce sandbox) — le câblage est structurellement
+  correct (même mécanisme que les 3 précédents déjà confirmés par une run
+  CI réelle) mais reste à confirmer par le prochain run réel, en
+  particulier le calcul `origin/<base_ref>` sur une vraie PR.
 - **T2-3** — ouvert, L, P1, alias `P-10`. Dériver `tools/mock-server` du schéma
   (fin maintenance manuelle multi-domaines).
 - **T2-5** — **fait**, M, P2, alias `H-4-UI`. `contracts/component.contract.md`
