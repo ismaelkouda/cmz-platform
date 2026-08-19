@@ -148,6 +148,8 @@ test('uuid, date and datetime primitives render to a valid TypeScript model', ()
     const models = targets.angular.files['src/models.ts'];
     assert.match(models, /readonly item_id: string;/);
     assert.match(models, /readonly adjustment_id: string;/);
+    assert.match(models, /readonly counted_at\?: string;/);
+    assert.match(models, /readonly count_due_date\?: string;/);
 });
 
 test('required constraint on a non-string field does not degenerate to a string check', () => {

@@ -128,7 +128,9 @@ connu du code, elle ne constitue pas une seconde autorité métier.
 `workflow-action` réel » cité par les versions précédentes de ce document est
 fermé. Le moteur (compilateur `core/workflow-action-authoring.mjs`, IR
 `core/workflow-action-model.mjs`, codegen `renderers/workflow-shared.mjs`,
-Oracle `core/workflow-runtime-oracle.mjs`) a été généralisé pour dériver son
+Oracle `core/workflow-runtime-oracle.mjs` — chemin de l'Oracle à cette date ;
+déplacé depuis vers `oracles/workflow-runtime-oracle.mjs`, voir la mise à jour
+« revue formelle §6 » plus bas) a été généralisé pour dériver son
 vocabulaire d'opérations/permissions/statuts de la définition elle-même
 (détection des 3 rôles structurels par forme — `entry`/`decision`/`export` —
 plutôt que par comparaison à des ids littéraux `take`/`qualify`/`export`), et
@@ -166,7 +168,8 @@ avec au plus 1 `decision`. Investigation complète des 3 fichiers concernés (vo
 l'IR (`core/workflow-action-model.mjs`) est déjà générique ; le validateur est
 rigide mais localisé et peu risqué à changer ; le renderer
 (`renderers/workflow-shared.mjs`) et l'Oracle
-(`core/workflow-runtime-oracle.mjs`) sont en revanche des gabarits TypeScript à
+(`core/workflow-runtime-oracle.mjs` à cette date, depuis
+`oracles/workflow-runtime-oracle.mjs`) sont en revanche des gabarits TypeScript à
 emplacements fixes (une méthode `decisionMethod` unique câblée en dur dans un
 template littéral), pas une boucle sur un tableau de décisions — généraliser à N
 décisions enchaînées serait une réécriture du cœur du générateur, d'ampleur
@@ -438,3 +441,25 @@ de revue dépasse durablement celui d'un générateur spécialisé.
 > inchangés. **Conclusion de la revue** : les 6 conditions du §6 sont
 > désormais remplies avec preuve individuelle. Le claim « plateforme
 > générique » dans l'enveloppe initiale (ADR-0029) est promu **M4**.
+>
+> **Audit indépendant de PLAT-4bis-AR et de la revue §6 (2026-08-18)** : un
+> second agent, sans accès au raisonnement du premier, a rejoué les tests et
+> relu le code plutôt que de faire confiance aux résumés. Résultat : aucune
+> régression fonctionnelle, les comptes de tests (169/22/22) et les 3
+> correctifs de généricité confirmés exacts dans le code, C5 réellement
+> rempli. Trois écarts mineurs de rigueur documentaire relevés et corrigés
+> dans la foulée : (1) le test « uuid, date and datetime primitives... »
+> d'`inventory-adjustment-authoring.test.mjs` ne couvrait en réalité que
+> `uuid` — la définition source ne déclarait aucun champ `date`/`datetime` ;
+> corrigé en ajoutant deux champs optionnels réels (`counted_at`: datetime,
+> `count_due_date`: date) à `reconcile-count` et en étendant l'assertion, 8/8
+> tests toujours verts après correctif ; (2) `check:framework-purity`, cité
+> comme preuve de C5, audite en réalité les libs Nx du workspace principal,
+> pas `tools/generator-platform/core/` — le résultat final (C5 rempli) reste
+> correct mais avait été vérifié par une commande qui ne couvre pas ce
+> périmètre, corrigé en documentant la vérification manuelle réelle
+> (`grep -rl "@angular" tools/generator-platform/core/` → vide) comme la
+> preuve qui fait foi ; (3) deux citations de chemin dans ce document (§4,
+> PLAT-4bis et PLAT-4ter) pointaient vers l'ancien `core/workflow-runtime-
+> oracle.mjs` sans indiquer le déplacement — annotées in situ plutôt que
+> laissées ambiguës pour un lecteur ne parcourant pas jusqu'à cette note.

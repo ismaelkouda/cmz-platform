@@ -120,6 +120,24 @@
             },
             "required": true,
             "equals": "counted_quantity"
+          },
+          {
+            "name": "counted_at",
+            "type": {
+              "kind": "primitive",
+              "name": "datetime",
+              "nullable": false
+            },
+            "required": false
+          },
+          {
+            "name": "count_due_date",
+            "type": {
+              "kind": "primitive",
+              "name": "date",
+              "nullable": false
+            },
+            "required": false
           }
         ]
       },
