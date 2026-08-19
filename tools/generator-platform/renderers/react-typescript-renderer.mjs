@@ -10,6 +10,7 @@ import {
     operationTypes,
     pascalCase,
     renderPermissionContract,
+    renderResponseEnvelopeContract,
     renderModels,
     renderValidation,
     requiredPermissions,
@@ -19,8 +20,19 @@ import {
     renderAfterSuccessExtension,
 } from './after-success-slot.mjs';
 
+/**
+ * PLAT-7 (2026-08-19) : pendant technique du même changement côté Angular
+ * (`renderers/angular-nx-renderer.mjs`). Quand `integration.response_envelope
+ * === 'simple'`, `request<T>()` parse la réponse en `ResponseEnvelope<T>` et
+ * la déballe via `unwrapResponseEnvelope` avant de la retourner — les hooks
+ * générés par `renderHooks` continuent de recevoir un `Promise<T>` propre,
+ * sans jamais connaître la forme de transport réelle.
+ */
 function renderClient(semantic) {
     const imports = [...new Set(operationTypes(semantic))].join(', ');
+    const hasEnvelope = semantic.integrations.some(
+        (integration) => integration.response_envelope === 'simple'
+    );
     const methods = semantic.operations
         .map((operation) => {
             const integration = semantic.integrations.find(
@@ -31,10 +43,18 @@ function renderClient(semantic) {
                     `react renderer: missing ${operation.integration_ref}`
                 );
             }
-            return `    ${camelCase(operation.id)}(input: ${pascalCase(operation.input.name)}): Promise<${pascalCase(operation.output.name)}> {\n        return this.request<${pascalCase(operation.output.name)}>('${integration.path}', '${integration.method}', '${integration.authentication}', input);\n    }`;
+            const output = pascalCase(operation.output.name);
+            const isEnveloped = integration.response_envelope === 'simple';
+            return `    ${camelCase(operation.id)}(input: ${pascalCase(operation.input.name)}): Promise<${output}> {\n        return this.request<${output}>('${integration.path}', '${integration.method}', '${integration.authentication}', input, ${isEnveloped});\n    }`;
         })
         .join('\n\n');
-    return `import type { ${imports} } from './models';\n\nexport interface FetchResponse {\n    readonly ok: boolean;\n    readonly status: number;\n    json(): Promise<unknown>;\n}\n\nexport type RequestAuthentication = 'none' | 'bearer' | 'session' | 'api_key' | 'other';\n\nexport type FetchPort = (url: string, init: { readonly method: string; readonly authentication: RequestAuthentication; readonly headers: Readonly<Record<string, string>>; readonly body: string }) => Promise<FetchResponse>;\n\nfunction joinUrl(baseUrl: string, path: string): string {\n    return [baseUrl.replace(/\\/$/, ''), path.replace(/^\\//, '')].join('/');\n}\n\nexport class ActionRequestClient {\n    constructor(\n        private readonly baseUrl: string,\n        private readonly fetch: FetchPort\n    ) {}\n\n${methods}\n\n    private async request<T>(path: string, method: string, authentication: RequestAuthentication, input: unknown): Promise<T> {\n        const response = await this.fetch(joinUrl(this.baseUrl, path), {\n            method,\n            authentication,\n            headers: { 'content-type': 'application/json' },\n            body: JSON.stringify(input),\n        });\n        if (!response.ok) throw new Error(\`HTTP ${'${response.status}'}\`);\n        return (await response.json()) as T;\n    }\n}\n`;
+    const envelopeContract = hasEnvelope
+        ? `\n${renderResponseEnvelopeContract()}\n`
+        : '';
+    const unwrapCall = hasEnvelope
+        ? `        if (isEnveloped) {\n            return unwrapResponseEnvelope((await response.json()) as ResponseEnvelope<T>);\n        }\n        return (await response.json()) as T;`
+        : '        return (await response.json()) as T;';
+    return `import type { ${imports} } from './models';\n\nexport interface FetchResponse {\n    readonly ok: boolean;\n    readonly status: number;\n    json(): Promise<unknown>;\n}\n\nexport type RequestAuthentication = 'none' | 'bearer' | 'session' | 'api_key' | 'other';\n\nexport type FetchPort = (url: string, init: { readonly method: string; readonly authentication: RequestAuthentication; readonly headers: Readonly<Record<string, string>>; readonly body: string }) => Promise<FetchResponse>;\n\nfunction joinUrl(baseUrl: string, path: string): string {\n    return [baseUrl.replace(/\\/$/, ''), path.replace(/^\\//, '')].join('/');\n}\n${envelopeContract}\nexport class ActionRequestClient {\n    constructor(\n        private readonly baseUrl: string,\n        private readonly fetch: FetchPort\n    ) {}\n\n${methods}\n\n    private async request<T>(path: string, method: string, authentication: RequestAuthentication, input: unknown, isEnveloped: boolean): Promise<T> {\n        const response = await this.fetch(joinUrl(this.baseUrl, path), {\n            method,\n            authentication,\n            headers: { 'content-type': 'application/json' },\n            body: JSON.stringify(input),\n        });\n        if (!response.ok) throw new Error(\`HTTP ${'${response.status}'}\`);\n${unwrapCall}\n    }\n}\n`;
 }
 
 function renderHooks(semantic) {

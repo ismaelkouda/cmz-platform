@@ -1,8 +1,10 @@
 import { after, before, test } from 'node:test';
 
 import {
+    assertAngularEnvelopeOracle,
     assertAngularFailureOracle,
     assertAngularNominalOracle,
+    assertReactEnvelopeOracle,
     assertReactFailureOracle,
     assertReactNominalOracle,
     assertValidationOracle,
@@ -39,4 +41,12 @@ test('ReactJS target satisfies the nominal action-request oracle', async () => {
 
 test('ReactJS target exposes error state and propagates failures', async () => {
     await assertReactFailureOracle(runtime);
+});
+
+test('Angular target unwraps the response_envelope contract (PLAT-7)', async () => {
+    await assertAngularEnvelopeOracle(runtime);
+});
+
+test('ReactJS target unwraps the response_envelope contract (PLAT-7)', async () => {
+    await assertReactEnvelopeOracle(runtime);
 });

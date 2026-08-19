@@ -129,14 +129,13 @@ connu du code, elle ne constitue pas une seconde autorité métier.
 fermé. Le moteur (compilateur `core/workflow-action-authoring.mjs`, IR
 `core/workflow-action-model.mjs`, codegen `renderers/workflow-shared.mjs`,
 Oracle `core/workflow-runtime-oracle.mjs` — chemin de l'Oracle à cette date ;
-déplacé depuis vers `oracles/workflow-runtime-oracle.mjs`, voir la mise à jour
-« revue formelle §6 » plus bas) a été généralisé pour dériver son
-vocabulaire d'opérations/permissions/statuts de la définition elle-même
-(détection des 3 rôles structurels par forme — `entry`/`decision`/`export` —
-plutôt que par comparaison à des ids littéraux `take`/`qualify`/`export`), et
-non plus seulement `feature.id`/`feature.name`. Preuve : une définition
-indépendante hors legacy, vocabulaire disjoint
-(`claim`/`moderate`/`remove`/`export`, états
+déplacé depuis vers `oracles/workflow-runtime-oracle.mjs`, voir la mise à jour «
+revue formelle §6 » plus bas) a été généralisé pour dériver son vocabulaire
+d'opérations/permissions/statuts de la définition elle-même (détection des 3
+rôles structurels par forme — `entry`/`decision`/`export` — plutôt que par
+comparaison à des ids littéraux `take`/`qualify`/`export`), et non plus
+seulement `feature.id`/`feature.name`. Preuve : une définition indépendante hors
+legacy, vocabulaire disjoint (`claim`/`moderate`/`remove`/`export`, états
 `submitted/under-review/published/removed`,
 `tools/generator-platform/sources/content-moderation-workflow.definition.json`),
 compile, génère Angular + ReactJS, type-check strict des deux arbres, passe
@@ -169,8 +168,8 @@ l'IR (`core/workflow-action-model.mjs`) est déjà générique ; le validateur e
 rigide mais localisé et peu risqué à changer ; le renderer
 (`renderers/workflow-shared.mjs`) et l'Oracle
 (`core/workflow-runtime-oracle.mjs` à cette date, depuis
-`oracles/workflow-runtime-oracle.mjs`) sont en revanche des gabarits TypeScript à
-emplacements fixes (une méthode `decisionMethod` unique câblée en dur dans un
+`oracles/workflow-runtime-oracle.mjs`) sont en revanche des gabarits TypeScript
+à emplacements fixes (une méthode `decisionMethod` unique câblée en dur dans un
 template littéral), pas une boucle sur un tableau de décisions — généraliser à N
 décisions enchaînées serait une réécriture du cœur du générateur, d'ampleur
 comparable à PLAT-4bis entier. **Décision (2026-08-18)** : ne pas engager cette
@@ -419,47 +418,84 @@ de revue dépasse durablement celui d'un générateur spécialisé.
 > (§4). C3 (mutation métier détectée par l'Oracle) : rempli, 8 fichiers de test
 > dédiés aux mutations, 80+ assertions, sur les deux moteurs. C4 (manifests et
 > hashes persistés) : rempli — `core/generation-publication.mjs` sérialise et
-> écrit le manifest, `check:publication-durability` exerce en plus la
-> résistance à un crash mi-écriture. C6 (budget d'extensions mesuré, non masqué
-> par `Custom`) : rempli au sens littéral de la condition — mesuré et
-> transparent (§4, PLAT-4quater), la condition n'exige pas un budget nul. **C5
-> (aucune dépendance Angular/React/Figma/SEOS dans le core) a en revanche été
-> trouvée non remplie** : 7 fichiers de `tools/generator-platform/core/`
+> écrit le manifest, `check:publication-durability` exerce en plus la résistance
+> à un crash mi-écriture. C6 (budget d'extensions mesuré, non masqué par
+> `Custom`) : rempli au sens littéral de la condition — mesuré et transparent
+> (§4, PLAT-4quater), la condition n'exige pas un budget nul. **C5 (aucune
+> dépendance Angular/React/Figma/SEOS dans le core) a en revanche été trouvée
+> non remplie** : 7 fichiers de `tools/generator-platform/core/`
 > (`action-request-runtime-oracle.mjs`, `behavior-graph-runtime-oracle.mjs`,
 > `permission-runtime-oracle.mjs`, `presentation-flow-runtime-oracle.mjs`,
 > `workflow-runtime-oracle.mjs`, `runtime-harness.mjs`,
 > `workflow-runtime-harness.mjs`) importaient directement `@angular/core`,
-> `@angular/common/http` ou `@angular/compiler` pour exécuter réellement le
-> code Angular généré et vérifier son comportement — fonctionnellement
-> justifié (chaque oracle simule aussi un port React dans le même fichier pour
-> comparer les deux cibles), mais une dépendance framework directe dans un
-> dossier nommé et cerné comme neutre. Corrigé le jour même : les 7 fichiers
-> déplacés vers `tools/generator-platform/oracles/`, séparé de `core/`, tous
-> les imports (41 fichiers scannés, 15 référençant réellement ces 7 cibles plus
-> 3 `stack-tests/*.spec.ts`) corrigés, 169/169 tests core + 22/22 Angular +
-> 22/22 ReactJS revalidés après le déplacement, hashes de génération
-> inchangés. **Conclusion de la revue** : les 6 conditions du §6 sont
-> désormais remplies avec preuve individuelle. Le claim « plateforme
-> générique » dans l'enveloppe initiale (ADR-0029) est promu **M4**.
+> `@angular/common/http` ou `@angular/compiler` pour exécuter réellement le code
+> Angular généré et vérifier son comportement — fonctionnellement justifié
+> (chaque oracle simule aussi un port React dans le même fichier pour comparer
+> les deux cibles), mais une dépendance framework directe dans un dossier nommé
+> et cerné comme neutre. Corrigé le jour même : les 7 fichiers déplacés vers
+> `tools/generator-platform/oracles/`, séparé de `core/`, tous les imports (41
+> fichiers scannés, 15 référençant réellement ces 7 cibles plus 3
+> `stack-tests/*.spec.ts`) corrigés, 169/169 tests core + 22/22 Angular + 22/22
+> ReactJS revalidés après le déplacement, hashes de génération inchangés.
+> **Conclusion de la revue** : les 6 conditions du §6 sont désormais remplies
+> avec preuve individuelle. Le claim « plateforme générique » dans l'enveloppe
+> initiale (ADR-0029) est promu **M4**.
 >
 > **Audit indépendant de PLAT-4bis-AR et de la revue §6 (2026-08-18)** : un
 > second agent, sans accès au raisonnement du premier, a rejoué les tests et
 > relu le code plutôt que de faire confiance aux résumés. Résultat : aucune
-> régression fonctionnelle, les comptes de tests (169/22/22) et les 3
-> correctifs de généricité confirmés exacts dans le code, C5 réellement
-> rempli. Trois écarts mineurs de rigueur documentaire relevés et corrigés
-> dans la foulée : (1) le test « uuid, date and datetime primitives... »
-> d'`inventory-adjustment-authoring.test.mjs` ne couvrait en réalité que
-> `uuid` — la définition source ne déclarait aucun champ `date`/`datetime` ;
-> corrigé en ajoutant deux champs optionnels réels (`counted_at`: datetime,
+> régression fonctionnelle, les comptes de tests (169/22/22) et les 3 correctifs
+> de généricité confirmés exacts dans le code, C5 réellement rempli. Trois
+> écarts mineurs de rigueur documentaire relevés et corrigés dans la foulée :
+> (1) le test « uuid, date and datetime primitives... »
+> d'`inventory-adjustment-authoring.test.mjs` ne couvrait en réalité que `uuid`
+> — la définition source ne déclarait aucun champ `date`/`datetime` ; corrigé en
+> ajoutant deux champs optionnels réels (`counted_at`: datetime,
 > `count_due_date`: date) à `reconcile-count` et en étendant l'assertion, 8/8
 > tests toujours verts après correctif ; (2) `check:framework-purity`, cité
-> comme preuve de C5, audite en réalité les libs Nx du workspace principal,
-> pas `tools/generator-platform/core/` — le résultat final (C5 rempli) reste
-> correct mais avait été vérifié par une commande qui ne couvre pas ce
-> périmètre, corrigé en documentant la vérification manuelle réelle
-> (`grep -rl "@angular" tools/generator-platform/core/` → vide) comme la
-> preuve qui fait foi ; (3) deux citations de chemin dans ce document (§4,
-> PLAT-4bis et PLAT-4ter) pointaient vers l'ancien `core/workflow-runtime-
-> oracle.mjs` sans indiquer le déplacement — annotées in situ plutôt que
-> laissées ambiguës pour un lecteur ne parcourant pas jusqu'à cette note.
+> comme preuve de C5, audite en réalité les libs Nx du workspace principal, pas
+> `tools/generator-platform/core/` — le résultat final (C5 rempli) reste correct
+> mais avait été vérifié par une commande qui ne couvre pas ce périmètre,
+> corrigé en documentant la vérification manuelle réelle
+> (`grep -rl "@angular" tools/generator-platform/core/` → vide) comme la preuve
+> qui fait foi ; (3) deux citations de chemin dans ce document (§4, PLAT-4bis et
+> PLAT-4ter) pointaient vers l'ancien `core/workflow-runtime- oracle.mjs` sans
+> indiquer le déplacement — annotées in situ plutôt que laissées ambiguës pour
+> un lecteur ne parcourant pas jusqu'à cette note.
+>
+> **Mise à jour 2026-08-19 (PLAT-7 — extension prouvée, pas un cas fermé)** : un
+> vrai endpoint backend fourni par l'utilisateur (`/auth/v1.0/backoffice/`)
+> enveloppe sa réponse HTTP dans `{error, message, data}` — forme que le client
+> HTTP généré ne savait pas produire. Traité comme une extension légitime au
+> sens ADR-0029 (« preuve avant extension »), pas comme un signe que
+> `action-request`/`workflow-action` seraient une liste fermée : nouveau champ
+> optionnel `http.response_envelope` (`"none"` défaut | `"simple"`), calqué
+> terme à terme sur le pattern legacy consolidé
+> `SimpleResponseDto`/`unwrapResponse`
+> (`libs/shared/data/src/lib/{dtos/simple-response.dto.ts, utils/unwrap-response.util.ts}`,
+> 509 usages réels) plutôt que réinventé. Déballage exécuté dans le client HTTP
+> généré des deux cibles
+> (`renderers/{angular-nx,react-typescript}-renderer.mjs`), avec un contrat
+> d'erreur autonome (`ResponseEnvelope<T>`, `ResponseEnvelopeError`,
+> `ResponseEnvelopeIntegrityError`) généré dans `renderers/shared.mjs`. Preuve
+> portée par le domaine réel `authentication` (3 intégrations basculées sur
+> `"simple"`), pas un domaine synthétique séparé : l'oracle runtime
+> (`oracles/action-request-runtime-oracle.mjs`) exécute réellement (pas
+> seulement compile) le succès avec déballage, l'erreur applicative
+> (`error: true`) et l'erreur d'intégrité (`data` absent) sur Angular ET React.
+> **Un vrai écart de généricité découvert et corrigé en cours de route** (pas
+> contourné) : le legacy adapter (`adapters/legacy-typescript-adapter.mjs`, qui
+> recompile l'IR depuis le vrai code source Angular pour `check-adapters.mjs`)
+> n'avait jamais eu la notion d'enveloppe et produisait toujours `"none"`, alors
+> que vérification faite dans le code de production réel, les 3 DTOs de réponse
+> `authentication` et leurs mappers étaient déjà correctement enveloppés
+> (`SimpleResponseDto`/`SimpleResponseMapper`) — seul l'adapter ne le détectait
+> pas. Corrigé à la racine : nouvelle détection structurelle par AST
+> (`extractResponseEnvelope`) du DTO de réponse réel de chaque opération,
+> fail-closed sur toute forme non reconnue, pas une valeur supposée ou codée en
+> dur. Legacy et fixture golden convergent désormais honnêtement
+> (`evidence legacy=18/structured=2`, `check-adapters.mjs` vert). Suite complète
+> `tools/generator-platform/*.test.mjs` (171/171), `validate-ir.mjs`,
+> `check-adapters.mjs`, `render-targets.mjs`, `workflow-targets.mjs`,
+> stack-tests Angular (22/22) et ReactJS (22/22) tous verts, zéro régression.
+> Détail complet dans `taches-restantes.md`, entrée PLAT-7.

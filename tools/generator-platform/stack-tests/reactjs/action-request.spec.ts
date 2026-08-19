@@ -6,6 +6,7 @@ import { ActionRequestClient } from '../../.stack-test-runtime/reactjs/action-re
 import { createActionRequestHooks } from '../../.stack-test-runtime/reactjs/action-request/src/use-action-request-commands';
 
 import {
+    envelopedLoginResult,
     loginInput,
     loginResult,
 } from '../../oracles/action-request-runtime-oracle.mjs';
@@ -34,7 +35,7 @@ describe('sortie ReactJS action-request', () => {
         const persist = vi.fn(async () => undefined);
         const hooks = createActionRequestHooks(
             reactHooks,
-            createClient(loginResult, requests),
+            createClient(envelopedLoginResult, requests),
             { persist }
         );
         const rendered = renderHook(() => hooks.useLogin());

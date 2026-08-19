@@ -3,11 +3,11 @@
   "generator": { "name": "cmz-generator-platform", "version": "1.2.0" },
   "input": {
     "model_id": "authentication-action-request-semantic",
-    "sha256": "3e8586492e6ff9f18859f1c86848b3a4017f60354a85729a96f2d26509a343fb"
+    "sha256": "6d0c4dc7f47621d449b8c8d94309f2b4dfd24785b1b7d402ade93d5c88b122c9"
   },
   "plan": {
     "plan_id": "authentication-action-request-semantic:artifacts",
-    "sha256": "4a1edb8864d7afcca37e662cfed2261308eb12425696b39699f09271a84b4969"
+    "sha256": "5bbb6340a9eddb64a2b42b60520d8e58d3b1910888b7a8f81a41884d747040ed"
   },
   "target": {
     "profile_id": "react-typescript",
@@ -28,8 +28,8 @@
       "artifact_id": "integration-client",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 1781,
-      "sha256": "e376869c65ccd6bfcebe9b01e36beca586f991f8bb3c6f660efa67ca50f0e55b"
+      "bytes": 3019,
+      "sha256": "ed7817ffa93780a7b02950f2a513d768c7f91c18b641b02abfccc7d9b6dc597f"
     },
     {
       "path": "src/after-success.extension.ts",
@@ -88,5 +88,5 @@
       "sha256": "f26760b71af6d3bfe07ca163a2357eeb24bd6155f614a82ea67fb7951482e300"
     }
   ],
-  "tree_sha256": "545646d147f867a18933aeba36884247b837fb7f02b3f174f662158fd20ff252"
+  "tree_sha256": "0cbfaf6dc6f47e2c43f02ea3236e07abedb0f012896e9a58223d861732d179ce"
 }

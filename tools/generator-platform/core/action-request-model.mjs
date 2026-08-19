@@ -63,7 +63,7 @@ export function validateObservation(observation) {
         );
         assertKeys(
             operation.http,
-            ['method', 'path', 'authentication'],
+            ['method', 'path', 'authentication', 'response_envelope'],
             `${path}.http`
         );
 
@@ -331,6 +331,7 @@ export function buildSemanticModel(observation, policy) {
             method: operation.http.method,
             path: operation.http.path,
             authentication: operation.http.authentication,
+            response_envelope: operation.http.response_envelope ?? 'none',
             evidence_refs: [operationFact],
         });
     }

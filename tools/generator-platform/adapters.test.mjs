@@ -15,7 +15,7 @@ test('legacy TypeScript and structured specification converge on one canonical I
     const result = await verifyAdapters();
     assert.match(result.observationHash, /^[a-f0-9]{64}$/);
     assert.match(result.semanticHash, /^[a-f0-9]{64}$/);
-    assert.equal(result.legacyEvidence.sources.length, 15);
+    assert.equal(result.legacyEvidence.sources.length, 18);
     assert.equal(result.structuredEvidence.sources.length, 2);
 });
 

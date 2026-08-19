@@ -124,7 +124,8 @@
         },
         "authentication": {
           "enum": ["none", "bearer", "session", "api_key", "other"]
-        }
+        },
+        "response_envelope": { "enum": ["none", "simple"] }
       }
     },
     "effect": {

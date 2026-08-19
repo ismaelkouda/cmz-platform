@@ -23,6 +23,34 @@ export const loginResult = {
 };
 export const messageResult = { message: 'accepted' };
 
+/**
+ * PLAT-7 (2026-08-19) : le domaine `authentication` (fixture partagée par
+ * tous les oracles de ce fichier) porte désormais `response_envelope:
+ * "simple"` sur ses 3 intégrations HTTP. Le backend réel fourni par
+ * l'utilisateur (`/auth/v1.0/backoffice/`) enveloppe systématiquement sa
+ * réponse dans `{error, message, data}` — cette forme est reproduite
+ * ci-dessous, calquée sur la simulation statique fournie (succès avec
+ * `data.user`/`data.token` imbriqués, échec applicatif `error: true` avec
+ * `statusCode`). `envelopeSuccess`/`envelopeFailure` sont les seules
+ * réponses transportées sur le réseau simulé désormais : la preuve porte
+ * sur le déballage réel (`unwrapResponseEnvelope`), pas sur un domaine
+ * synthétique séparé.
+ * @see docs/architecture/taches-restantes.md, entrée PLAT-7.
+ */
+function envelopeSuccess(data) {
+    return { error: false, message: 'OK', data };
+}
+function envelopeFailure(message, statusCode) {
+    return { error: true, statusCode, message };
+}
+export const envelopedLoginResult = envelopeSuccess(loginResult);
+export const envelopedMessageResult = envelopeSuccess(messageResult);
+export const applicationErrorEnvelope = envelopeFailure(
+    'Email ou mot de passe incorrect',
+    400
+);
+export const integrityErrorEnvelope = { error: false, message: 'OK' };
+
 function issue(field, rule) {
     return { field, rule };
 }
@@ -128,7 +156,9 @@ export async function assertAngularNominalOracle(runtime) {
     const events = [];
     const angular = createAngularRuntime(runtime, {
         responseFor: (url) =>
-            url.endsWith('/login') ? loginResult : messageResult,
+            url.endsWith('/login')
+                ? envelopedLoginResult
+                : envelopedMessageResult,
         persist: async (user, token) => {
             events.push(['persist-start', user, token]);
             await Promise.resolve();
@@ -205,7 +235,7 @@ export async function assertAngularFailureOracle(runtime) {
     }
 
     const session = createAngularRuntime(runtime, {
-        responseFor: () => loginResult,
+        responseFor: () => envelopedLoginResult,
         persist: async () => {
             throw new Error('storage unavailable');
         },
@@ -217,6 +247,47 @@ export async function assertAngularFailureOracle(runtime) {
         );
     } finally {
         session.destroy();
+    }
+}
+
+/**
+ * PLAT-7 (2026-08-19) : exerce le déballage d'enveloppe réel
+ * (`unwrapResponseEnvelope`, généré dans `action-request-client.ts`) sur les
+ * deux cas fail-closed du contrat legacy `unwrapResponse` — erreur
+ * applicative (`error: true`, ex. identifiants incorrects) et erreur
+ * d'intégrité (`data` absent malgré `error: false`). Le transport HTTP
+ * réussit dans les deux cas (`response.ok === true`) : c'est le déballage,
+ * pas le transport, qui doit rejeter.
+ */
+export async function assertAngularEnvelopeOracle(runtime) {
+    const applicationError = createAngularRuntime(runtime, {
+        responseFor: () => applicationErrorEnvelope,
+        persist: async () =>
+            assert.fail('session must not run after an application error'),
+    });
+    try {
+        await assert.rejects(
+            firstValueFrom(applicationError.commands.login(loginInput)),
+            /Email ou mot de passe incorrect/,
+            'Angular: response_envelope error:true must reject with the envelope message'
+        );
+    } finally {
+        applicationError.destroy();
+    }
+
+    const integrityError = createAngularRuntime(runtime, {
+        responseFor: () => integrityErrorEnvelope,
+        persist: async () =>
+            assert.fail('session must not run after an integrity error'),
+    });
+    try {
+        await assert.rejects(
+            firstValueFrom(integrityError.commands.login(loginInput)),
+            /missing its data payload/,
+            'Angular: response_envelope with no data must reject as an integrity error'
+        );
+    } finally {
+        integrityError.destroy();
     }
 }
 
@@ -261,7 +332,9 @@ export async function assertReactNominalOracle(runtime) {
     const persisted = [];
     const react = createReactRuntime(runtime, {
         responseFor: (url) =>
-            url.endsWith('/login') ? loginResult : messageResult,
+            url.endsWith('/login')
+                ? envelopedLoginResult
+                : envelopedMessageResult,
         persist: async (user, token) => persisted.push({ user, token }),
     });
     assert.deepEqual(
@@ -342,7 +415,7 @@ export async function assertReactFailureOracle(runtime) {
     );
 
     const session = createReactRuntime(runtime, {
-        responseFor: () => loginResult,
+        responseFor: () => envelopedLoginResult,
         persist: async () => {
             throw new Error('storage unavailable');
         },
@@ -355,5 +428,43 @@ export async function assertReactFailureOracle(runtime) {
         session.transitions.at(-1).status,
         'error',
         'ReactJS: session failure state'
+    );
+}
+
+/**
+ * PLAT-7 (2026-08-19) : pendant React du même déballage d'enveloppe que
+ * `assertAngularEnvelopeOracle` — voir sa documentation pour le contexte.
+ */
+export async function assertReactEnvelopeOracle(runtime) {
+    const applicationError = createReactRuntime(runtime, {
+        responseFor: () => applicationErrorEnvelope,
+        persist: async () =>
+            assert.fail('session must not run after an application error'),
+    });
+    await assert.rejects(
+        applicationError.hooks.useLogin().execute(loginInput),
+        /Email ou mot de passe incorrect/,
+        'ReactJS: response_envelope error:true must reject with the envelope message'
+    );
+    assert.equal(
+        applicationError.transitions.at(-1).status,
+        'error',
+        'ReactJS: application error state'
+    );
+
+    const integrityError = createReactRuntime(runtime, {
+        responseFor: () => integrityErrorEnvelope,
+        persist: async () =>
+            assert.fail('session must not run after an integrity error'),
+    });
+    await assert.rejects(
+        integrityError.hooks.useLogin().execute(loginInput),
+        /missing its data payload/,
+        'ReactJS: response_envelope with no data must reject as an integrity error'
+    );
+    assert.equal(
+        integrityError.transitions.at(-1).status,
+        'error',
+        'ReactJS: integrity error state'
     );
 }

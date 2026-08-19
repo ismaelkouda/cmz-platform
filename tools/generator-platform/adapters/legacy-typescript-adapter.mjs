@@ -22,6 +22,9 @@ const operations = [
         api: 'libs/authentication/data/src/lib/sources/login.api.ts',
         facade: 'libs/authentication/application/src/lib/facades/login.facade.ts',
         endpointKey: 'LOGIN',
+        responseDto:
+            'libs/authentication/data/src/lib/dtos/login-response-api.dto.ts',
+        responseDtoType: 'LoginResponseApiDto',
     },
     {
         id: 'forgot-password',
@@ -34,6 +37,9 @@ const operations = [
         propsInterface: 'ForgotPasswordProps',
         api: 'libs/authentication/data/src/lib/sources/forgot-password.api.ts',
         endpointKey: 'FORGOT_PASSWORD',
+        responseDto:
+            'libs/authentication/data/src/lib/dtos/forgot-password-response-api.dto.ts',
+        responseDtoType: 'ForgotPasswordResponseApiDto',
     },
     {
         id: 'reset-password',
@@ -46,6 +52,9 @@ const operations = [
         propsInterface: 'ResetPasswordProps',
         api: 'libs/authentication/data/src/lib/sources/reset-password.api.ts',
         endpointKey: 'RESET_PASSWORD',
+        responseDto:
+            'libs/authentication/data/src/lib/dtos/reset-password-response-api.dto.ts',
+        responseDtoType: 'ResetPasswordResponseApiDto',
     },
 ];
 
@@ -232,7 +241,39 @@ function extractEndpoints(source, path) {
     );
 }
 
-function extractHttp(source, endpointKey, endpoints, path) {
+/**
+ * PLAT-7 (2026-08-19) : détecte si le DTO de réponse HTTP d'une opération
+ * est enveloppé dans le contrat legacy consolidé `SimpleResponseDto<T>`
+ * (`libs/shared/data/src/lib/dtos/simple-response.dto.ts`) — source de
+ * vérité factuelle, pas une convention supposée. Le fichier
+ * `{operation}-response-api.dto.ts` déclare `export type XApiDto =
+ * SimpleResponseDto<...>` (ou `MessageResponseDto`, variante sans payload) :
+ * on vérifie structurellement l'alias plutôt que de se fier au nom du
+ * fichier ou du type.
+ * @see docs/architecture/taches-restantes.md, entrée PLAT-7.
+ */
+function extractResponseEnvelope(source, typeName, path) {
+    const declaration = source.statements.find(
+        (statement) =>
+            ts.isTypeAliasDeclaration(statement) &&
+            statement.name.text === typeName
+    );
+    if (!declaration) {
+        throw new Error(`${path}: type alias ${typeName} not found`);
+    }
+    const aliasedText = declaration.type.getText(source);
+    if (
+        aliasedText.startsWith('SimpleResponseDto<') ||
+        aliasedText === 'MessageResponseDto'
+    ) {
+        return 'simple';
+    }
+    throw new Error(
+        `${path}: response DTO ${typeName} does not use a recognized envelope contract (${aliasedText})`
+    );
+}
+
+function extractHttp(source, endpointKey, endpoints, path, responseEnvelope) {
     const call = visit(source, (candidate) => {
         if (
             !ts.isCallExpression(candidate) ||
@@ -264,6 +305,7 @@ function extractHttp(source, endpointKey, endpoints, path) {
         method: call.expression.name.text.toUpperCase(),
         path: endpoints[endpointKey],
         authentication: 'none',
+        response_envelope: responseEnvelope,
     };
 }
 
@@ -314,31 +356,41 @@ export async function adaptLegacyTypescript(rootDirectory) {
 
     for (const operation of operations) {
         const prefix = operation.id;
-        const [contract, validator, props, api, facade] = await Promise.all([
-            loadSource(
-                rootDirectory,
-                operation.contract,
-                `source.${prefix}-contract`
-            ),
-            loadSource(
-                rootDirectory,
-                operation.validator,
-                `source.${prefix}-validator`
-            ),
-            loadSource(
-                rootDirectory,
-                operation.props,
-                `source.${prefix}-props`
-            ),
-            loadSource(rootDirectory, operation.api, `source.${prefix}-api`),
-            operation.facade
-                ? loadSource(
-                      rootDirectory,
-                      operation.facade,
-                      `source.${prefix}-facade`
-                  )
-                : undefined,
-        ]);
+        const [contract, validator, props, api, facade, responseDto] =
+            await Promise.all([
+                loadSource(
+                    rootDirectory,
+                    operation.contract,
+                    `source.${prefix}-contract`
+                ),
+                loadSource(
+                    rootDirectory,
+                    operation.validator,
+                    `source.${prefix}-validator`
+                ),
+                loadSource(
+                    rootDirectory,
+                    operation.props,
+                    `source.${prefix}-props`
+                ),
+                loadSource(
+                    rootDirectory,
+                    operation.api,
+                    `source.${prefix}-api`
+                ),
+                operation.facade
+                    ? loadSource(
+                          rootDirectory,
+                          operation.facade,
+                          `source.${prefix}-facade`
+                      )
+                    : undefined,
+                loadSource(
+                    rootDirectory,
+                    operation.responseDto,
+                    `source.${prefix}-response-dto`
+                ),
+            ]);
         const inputFields = extractInterface(
             parseSource(contract.content, operation.contract),
             operation.contractInterface,
@@ -361,6 +413,11 @@ export async function adaptLegacyTypescript(rootDirectory) {
         const facadeSource = facade
             ? parseSource(facade.content, operation.facade)
             : undefined;
+        const responseEnvelope = extractResponseEnvelope(
+            parseSource(responseDto.content, operation.responseDto),
+            operation.responseDtoType,
+            operation.responseDto
+        );
 
         normalizedOperations.push({
             id: operation.id,
@@ -378,7 +435,8 @@ export async function adaptLegacyTypescript(rootDirectory) {
                 apiSource,
                 operation.endpointKey,
                 endpoints,
-                operation.api
+                operation.api,
+                responseEnvelope
             ),
             effects: classifyEffects(operation.id, facadeSource),
         });
@@ -386,7 +444,8 @@ export async function adaptLegacyTypescript(rootDirectory) {
             contract.descriptor,
             validator.descriptor,
             props.descriptor,
-            api.descriptor
+            api.descriptor,
+            responseDto.descriptor
         );
         if (facade) sources.push(facade.descriptor);
     }

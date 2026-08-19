@@ -14,6 +14,8 @@ import {
 } from '../../.stack-test-runtime/angular/action-request/src/action-request-commands';
 
 import {
+    envelopedLoginResult,
+    envelopedMessageResult,
     forgotInput,
     loginInput,
     loginResult,
@@ -41,7 +43,9 @@ function configureActionRequest(options?: {
     const responseFor =
         options?.responseFor ??
         ((url: string) =>
-            url.endsWith('/login') ? loginResult : messageResult);
+            url.endsWith('/login')
+                ? envelopedLoginResult
+                : envelopedMessageResult);
     const http = {
         post(
             url: string,
@@ -150,6 +154,7 @@ describe('sortie Angular action-request', () => {
             persist: async () => {
                 throw new Error('storage unavailable');
             },
+            responseFor: () => envelopedLoginResult,
         });
 
         await expect(

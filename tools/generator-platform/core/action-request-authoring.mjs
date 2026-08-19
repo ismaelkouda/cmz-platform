@@ -15,6 +15,19 @@
  * des noms porteurs de sens dans ce fichier — tout le reste du vocabulaire
  * est libre.
  * @see docs/architecture/taches-restantes.md, entrée PLAT-4bis-AR.
+ *
+ * Généralisation (PLAT-7, 2026-08-19) : un vrai backend externe
+ * (`/auth/v1.0/backoffice/`) enveloppe systématiquement sa réponse HTTP dans
+ * `{error, message, data}` — forme identique au pattern legacy consolidé
+ * `libs/shared/data/src/lib/dtos/simple-response.dto.ts` /
+ * `unwrap-response.util.ts` (509 fichiers du dépôt réel l'utilisent). Le
+ * client HTTP généré typait jusqu'ici la sortie à plat
+ * (`this.http.post<Output>`), incompatible avec cette forme. Ajout d'un
+ * champ optionnel `http.response_envelope` (`"none"` par défaut, `"simple"`
+ * pour activer le déballage), calqué sur `unwrapResponse` : `error: true` ⇒
+ * erreur applicative typée (avec `statusCode` du corps, distincte de
+ * l'erreur de transport déjà gérée), `data` absent ⇒ erreur d'intégrité,
+ * sinon `data` devient la sortie typée de l'opération.
  */
 const primitiveNames = new Set([
     'boolean',
@@ -329,6 +342,7 @@ export function compileActionRequestDefinition(
             method: operation.http.method,
             path: operation.http.path,
             authentication: operation.http.authentication,
+            response_envelope: operation.http.response_envelope ?? 'none',
             evidence_refs: [ids.operation],
         });
     }

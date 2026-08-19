@@ -59,7 +59,12 @@
         ]
       },
       "access": "public",
-      "http": { "method": "POST", "path": "login", "authentication": "none" },
+      "http": {
+        "method": "POST",
+        "path": "login",
+        "authentication": "none",
+        "response_envelope": "simple"
+      },
       "effects": ["external_call", "establish_session"]
     },
     {
@@ -95,7 +100,8 @@
       "http": {
         "method": "POST",
         "path": "forgot-password",
-        "authentication": "none"
+        "authentication": "none",
+        "response_envelope": "simple"
       },
       "effects": ["external_call", "request_recovery"]
     },
@@ -160,7 +166,8 @@
       "http": {
         "method": "POST",
         "path": "reset-password",
-        "authentication": "none"
+        "authentication": "none",
+        "response_envelope": "simple"
       },
       "effects": ["external_call", "reset_credential"]
     }

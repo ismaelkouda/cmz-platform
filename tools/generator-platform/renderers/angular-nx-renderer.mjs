@@ -10,6 +10,7 @@ import {
     operationTypes,
     pascalCase,
     renderPermissionContract,
+    renderResponseEnvelopeContract,
     renderModels,
     renderValidation,
     requiredPermissions,
@@ -19,8 +20,21 @@ import {
     renderAfterSuccessExtension,
 } from './after-success-slot.mjs';
 
+/**
+ * PLAT-7 (2026-08-19) : quand `integration.response_envelope === 'simple'`,
+ * le backend enveloppe sa réponse dans `{error, message, data}` (voir
+ * `renderResponseEnvelopeContract` dans shared.mjs, calqué sur le pattern
+ * legacy `unwrapResponse`). Le client HTTP type alors la requête sur
+ * `ResponseEnvelope<Output>` et déballe via `map(unwrapResponseEnvelope)`
+ * avant de retourner — les commandes en aval (`renderCommands`) continuent
+ * de recevoir un `Observable<Output>` propre, sans jamais connaître la forme
+ * de transport réelle.
+ */
 function renderClient(semantic) {
     const imports = [...new Set(operationTypes(semantic))].join(', ');
+    const hasEnvelope = semantic.integrations.some(
+        (integration) => integration.response_envelope === 'simple'
+    );
     const methods = semantic.operations
         .map((operation) => {
             const integration = semantic.integrations.find(
@@ -31,10 +45,24 @@ function renderClient(semantic) {
                     `angular renderer: missing ${operation.integration_ref}`
                 );
             }
-            return `    ${camelCase(operation.id)}(input: ${pascalCase(operation.input.name)}): Observable<${pascalCase(operation.output.name)}> {\n        return this.http.${integration.method.toLowerCase()}<${pascalCase(operation.output.name)}>(joinUrl(this.baseUrl, '${integration.path}'), input, {\n            context: new HttpContext().set(PUBLIC_REQUEST, ${integration.authentication === 'none'}),\n        });\n    }`;
+            const output = pascalCase(operation.output.name);
+            const isEnveloped = integration.response_envelope === 'simple';
+            const requestType = isEnveloped
+                ? `ResponseEnvelope<${output}>`
+                : output;
+            const pipeline = isEnveloped
+                ? `.pipe(map(unwrapResponseEnvelope))`
+                : '';
+            return `    ${camelCase(operation.id)}(input: ${pascalCase(operation.input.name)}): Observable<${output}> {\n        return this.http.${integration.method.toLowerCase()}<${requestType}>(joinUrl(this.baseUrl, '${integration.path}'), input, {\n            context: new HttpContext().set(PUBLIC_REQUEST, ${integration.authentication === 'none'}),\n        })${pipeline};\n    }`;
         })
         .join('\n\n');
-    return `import { HttpClient, HttpContext, HttpContextToken } from '@angular/common/http';\nimport { Injectable, InjectionToken, inject } from '@angular/core';\nimport type { Observable } from 'rxjs';\nimport type { ${imports} } from './models';\n\nexport const ACTION_REQUEST_BASE_URL = new InjectionToken<string>('ACTION_REQUEST_BASE_URL');\nexport const PUBLIC_REQUEST = new HttpContextToken<boolean>(() => false);\n\nfunction joinUrl(baseUrl: string, path: string): string {\n    return [baseUrl.replace(/\\/$/, ''), path.replace(/^\\//, '')].join('/');\n}\n\n@Injectable()\nexport class ActionRequestClient {\n    private readonly http = inject(HttpClient);\n    private readonly baseUrl = inject(ACTION_REQUEST_BASE_URL);\n\n${methods}\n}\n`;
+    const rxjsImports = hasEnvelope
+        ? 'map, type Observable'
+        : 'type Observable';
+    const envelopeContract = hasEnvelope
+        ? `\n${renderResponseEnvelopeContract()}\n`
+        : '';
+    return `import { HttpClient, HttpContext, HttpContextToken } from '@angular/common/http';\nimport { Injectable, InjectionToken, inject } from '@angular/core';\nimport { ${rxjsImports} } from 'rxjs';\nimport type { ${imports} } from './models';\n\nexport const ACTION_REQUEST_BASE_URL = new InjectionToken<string>('ACTION_REQUEST_BASE_URL');\nexport const PUBLIC_REQUEST = new HttpContextToken<boolean>(() => false);\n${envelopeContract}\nfunction joinUrl(baseUrl: string, path: string): string {\n    return [baseUrl.replace(/\\/$/, ''), path.replace(/^\\//, '')].join('/');\n}\n\n@Injectable()\nexport class ActionRequestClient {\n    private readonly http = inject(HttpClient);\n    private readonly baseUrl = inject(ACTION_REQUEST_BASE_URL);\n\n${methods}\n}\n`;
 }
 
 function renderCommands(semantic) {

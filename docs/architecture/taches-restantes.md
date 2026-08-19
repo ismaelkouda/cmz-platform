@@ -928,6 +928,106 @@ Figma, désormais source partielle différée :
   (PLAT-4bis, PLAT-4bis-AR), soit mesurés et documentés comme différés par choix
   explicite (PLAT-4ter, PLAT-4quater) — aucun laissé simplement « non mesuré »
   ou « non su ».
+- **PLAT-7** — **fait** (2026-08-19), L, P1, extension au sens ADR-0029 (preuve
+  avant extension, pas un cas fermé de la liste `action-request`/
+  `workflow-action`). **Déclencheur** : un vrai endpoint backend fourni par
+  l'utilisateur (`/auth/v1.0/backoffice/`) enveloppe systématiquement sa réponse
+  HTTP dans `{error, message, data}` (succès) ou
+  `{error: true, statusCode, message}` (échec applicatif) — forme incompatible
+  avec le client HTTP généré, qui typait jusqu'ici la sortie à plat
+  (`this.http.post<Output>`). L'utilisateur a explicitement mandaté que
+  l'adapter/générateur supporte nativement ce format (« j'exige que l'adapter
+  prennent le format que je tes fourni »), puis a redirigé vers l'étude de son
+  propre code legacy avant toute conception (« regarde mon travail effectué au
+  niveau du legacy, ne reproduis pas la meme erreur »). **Pattern legacy
+  retrouvé et vérifié dans le code réel** (pas supposé) :
+  `libs/shared/data/src/lib/dtos/simple-response.dto.ts`
+  (`SimpleResponseDto<T> = {error, message, data}`) +
+  `libs/shared/data/src/lib/utils/unwrap-response.util.ts` (`unwrapResponse` —
+  `error:true` ⇒ `ServerResponseError`, `data` absent ⇒ `UnknownError`, sinon
+  `data`) ; 509 usages dans le dépôt réel. Design retenu côté générateur
+  (calqué, pas réinventé) : nouveau champ optionnel `http.response_envelope`
+  (`"none"` défaut | `"simple"`), le déballage s'exécute directement dans le
+  client HTTP généré (`renderClient`, point le plus proche du point d'exécution
+  réel de `unwrapResponse` côté legacy — le mapper/repository juste après
+  l'appel réseau), pas dans une couche « mapper » séparée que le générateur n'a
+  pas comme concept. Sur choix explicite de l'utilisateur (contre ma
+  recommandation initiale), `statusCode` est modélisé dans le type d'erreur
+  généré malgré la duplication avec le statut de transport HTTP réel. **9
+  fichiers touchés**, vérifiés incrémentalement (même discipline que
+  PLAT-4bis/PLAT-4bis-AR — un fichier, re-test, fichier suivant) : (1)
+  `schemas/action-request-definition.schema.json` — `response_envelope` en
+  `enum` optionnel sur `http`. (2) `schemas/semantic-model.schema.json` —
+  `response_envelope` **requis** sur `integration` (le compilateur applique le
+  défaut ; la forme canonique de l'IR reste explicite, sans valeur implicite).
+  (3) `core/action-request-authoring.mjs` — applique le défaut `?? 'none'`. (4)
+  `core/action-request-model.mjs` — **second chemin de compilation dupliqué, non
+  anticipé**, découvert seulement parce que `adapters.test.mjs` exerce
+  l'équivalence legacy/structured ; construit son propre objet `integrations`
+  indépendamment de (3), même correctif requis. (5) `renderers/shared.mjs` —
+  nouveau `renderResponseEnvelopeContract()` : interface `ResponseEnvelope<T>`,
+  `ResponseEnvelopeError` (avec `statusCode` optionnel),
+  `ResponseEnvelopeIntegrityError`, fonction `unwrapResponseEnvelope<T>()` —
+  calqués terme à terme sur `unwrapResponse` legacy. (6)
+  `renderers/angular-nx-renderer.mjs` — `renderClient` type la requête HTTP sur
+  `ResponseEnvelope<Output>` et pipe `map(unwrapResponseEnvelope)` quand
+  l'intégration le demande ; le contrat n'est émis dans le fichier généré que si
+  au moins une opération l'utilise (même pattern d'inclusion conditionnelle que
+  `hasSessionEffect`). (7) `renderers/react-typescript-renderer.mjs` — même
+  changement sur la méthode privée `request<T>()`. **Preuve runtime, pas
+  seulement compilation** : option retenue après question explicite à
+  l'utilisateur (qui a choisi de faire porter la preuve par le domaine réel
+  `authentication` plutôt que par un domaine synthétique séparé) — bascule des 3
+  intégrations `authentication` (`login`/`forgot-password`/`reset-password`) sur
+  `response_envelope: "simple"` dans la fixture golden, oracle runtime
+  (`oracles/action-request-runtime-oracle.mjs`) étendu avec 2 nouveaux cas
+  exécutés réellement (pas juste compilés) sur Angular ET React : succès avec
+  déballage (`data.user`/`data.token` imbriqués, calqués sur la simulation
+  statique fournie par l'utilisateur), erreur applicative
+  (`error: true, statusCode: 400` ⇒ rejette avec le message de l'enveloppe),
+  erreur d'intégrité (`data` absent malgré `error: false` ⇒ rejette comme
+  `ResponseEnvelopeIntegrityError`). **Conflit réel découvert en cours de route,
+  résolu par harmonisation plutôt que contournement** (sur instruction explicite
+  « harmonise tout, meme principe big tech ») : basculer la fixture
+  `authentication` sur `"simple"` faisait diverger `adapters.test.mjs`, qui
+  recompile l'IR depuis le vrai code source Angular
+  (`libs/authentication/data/src/lib/sources/{login,forgot-password, reset-password}.api.ts`
+  via `adapters/legacy-typescript-adapter.mjs`) — le legacy adapter n'avait
+  jamais eu la notion de `response_envelope` et produisait toujours `"none"`.
+  Vérification factuelle du code de production réel (pas supposée) : les 3
+  `*-response-api.dto.ts` d'`authentication` étaient **déjà** des alias
+  `SimpleResponseDto<...>`, et les 3 mappers de réponse étendaient déjà
+  `SimpleResponseMapper` (qui appelle déjà `unwrapResponse` en interne) — le
+  pipeline legacy réel est déjà correctement enveloppé de bout en bout ; seul
+  l'adapter ne le détectait pas. Corrigé à la racine, pas contourné :
+  `adaptLegacyTypescript` charge désormais le fichier
+  `{operation}-response-api.dto.ts` de chaque opération et une nouvelle fonction
+  `extractResponseEnvelope` vérifie structurellement (AST, pas nom de fichier ni
+  de type) que l'alias exporté est bien `SimpleResponseDto<...>` ou
+  `MessageResponseDto` avant de produire `response_envelope: "simple"` —
+  fail-closed sur toute forme non reconnue. `core/action-request-model.mjs`
+  (`validateObservation`) et `sources/action-request.spec.json` (second adapter
+  structuré, qui doit produire une observation identique au premier par
+  construction) mis à jour en cohérence. Nombre de sources d'évidence legacy
+  passé de 15 à 18 (3 nouveaux fichiers DTO de réponse comme preuve), assertion
+  figée dans `adapters.test.mjs` mise à jour en conséquence — pas de valeur
+  masquée. **2 fichiers stack-test vitest dupliquaient le même mock
+  non-enveloppé** que l'oracle (`stack-tests/angular/action-request.spec.ts`,
+  `stack-tests/reactjs/action-request.spec.ts`) — alignés sur
+  `envelopedLoginResult`/`envelopedMessageResult`, même correctif que l'oracle.
+  **Baseline finale vérifiée à chaque étape puis en bout de chantier** : suite
+  complète `tools/generator-platform/*.test.mjs` (171/171, 169 + 2 nouveaux cas
+  d'enveloppe), `validate-ir.mjs`, `check-adapters.mjs` (legacy/structured
+  convergent, `evidence legacy=18/structured=2`), `render-targets.mjs`,
+  `workflow-targets.mjs`, stack-tests Angular (22/22, `tsc --strictTemplates`
+  propre) et ReactJS (22/22) tous verts — zéro régression sur
+  `authentication`/`support`/
+  `inventory-adjustment`/`workflow-action`/`content-moderation-workflow`. Golden
+  fixtures (`fixtures/action-request.semantic.json`,
+  `manifests/{angular-nx,react-typescript}.manifest.json`) régénérées par edits
+  chirurgicaux (pas de régénération JSON.stringify large qui ré-emballe le
+  formatage — leçon retenue de PLAT-4bis-AR) pour garder les diffs minimaux et
+  revuables.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

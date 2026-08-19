@@ -3,11 +3,11 @@
   "generator": { "name": "cmz-generator-platform", "version": "1.2.0" },
   "input": {
     "model_id": "authentication-action-request-semantic",
-    "sha256": "3e8586492e6ff9f18859f1c86848b3a4017f60354a85729a96f2d26509a343fb"
+    "sha256": "6d0c4dc7f47621d449b8c8d94309f2b4dfd24785b1b7d402ade93d5c88b122c9"
   },
   "plan": {
     "plan_id": "authentication-action-request-semantic:artifacts",
-    "sha256": "4a1edb8864d7afcca37e662cfed2261308eb12425696b39699f09271a84b4969"
+    "sha256": "5bbb6340a9eddb64a2b42b60520d8e58d3b1910888b7a8f81a41884d747040ed"
   },
   "target": {
     "profile_id": "angular-nx",
@@ -28,8 +28,8 @@
       "artifact_id": "integration-client",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 1509,
-      "sha256": "ad1930131229b363c5fe7f696721ddc981240c36892346061ab960648932e6ba"
+      "bytes": 2740,
+      "sha256": "213121cd32c2b61e29c645e6631e9ad38e028fa7540ea0e4e34188d5467795ee"
     },
     {
       "path": "src/action-request-commands.ts",
@@ -88,5 +88,5 @@
       "sha256": "cadc5053a749d3ad79f4f773d1ecf1b5eeb8430b1373bd291f5b7bf307f8d659"
     }
   ],
-  "tree_sha256": "6859c8ac52ddd3b286f900ab5cd86ebf3af5e963ee4dbf8d1e0138374b45c433"
+  "tree_sha256": "69a86d5fc6e863bf98690e3f9260de5b8a615e96bdc266e6b2ba5849c33958ec"
 }

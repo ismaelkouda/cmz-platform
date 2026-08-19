@@ -358,6 +358,7 @@
       "method": "POST",
       "path": "login",
       "authentication": "none",
+      "response_envelope": "simple",
       "evidence_refs": ["fact.login.operation"]
     },
     {
@@ -366,6 +367,7 @@
       "method": "POST",
       "path": "forgot-password",
       "authentication": "none",
+      "response_envelope": "simple",
       "evidence_refs": ["fact.forgot-password.operation"]
     },
     {
@@ -374,6 +376,7 @@
       "method": "POST",
       "path": "reset-password",
       "authentication": "none",
+      "response_envelope": "simple",
       "evidence_refs": ["fact.reset-password.operation"]
     }
   ]

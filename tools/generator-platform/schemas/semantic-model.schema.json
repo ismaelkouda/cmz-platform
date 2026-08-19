@@ -168,6 +168,7 @@
         "method",
         "path",
         "authentication",
+        "response_envelope",
         "evidence_refs"
       ],
       "properties": {
@@ -181,6 +182,7 @@
         "authentication": {
           "enum": ["none", "bearer", "session", "api_key", "other"]
         },
+        "response_envelope": { "enum": ["none", "simple"] },
         "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
       }
     }

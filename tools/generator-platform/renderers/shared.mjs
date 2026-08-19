@@ -166,6 +166,58 @@ function assertRequiredPermissions(
 }`;
 }
 
+/**
+ * Généralisation (PLAT-7, 2026-08-19) : calque le pattern legacy consolidé
+ * `libs/shared/data/src/lib/dtos/simple-response.dto.ts` /
+ * `unwrap-response.util.ts` — un vrai backend externe
+ * (`/auth/v1.0/backoffice/`) enveloppe systématiquement sa réponse dans
+ * `{error, message, data}` (succès) ou `{error: true, statusCode, message}`
+ * (échec applicatif). Le client HTTP généré typait jusqu'ici la sortie à
+ * plat ; ce contrat + `unwrapResponseEnvelope` reproduisent le déballage
+ * qu'effectue `unwrapResponse` côté legacy, sans dépendre d'aucun import
+ * externe (même esprit que `renderPermissionContract` : le code généré
+ * reste autonome).
+ * @see docs/architecture/taches-restantes.md, entrée PLAT-7.
+ */
+export function renderResponseEnvelopeContract() {
+    return `export interface ResponseEnvelope<T> {
+    readonly error: boolean;
+    readonly message: string;
+    readonly statusCode?: number;
+    readonly data?: T | null;
+}
+
+export class ResponseEnvelopeError extends Error {
+    readonly code = 'response_envelope_error';
+    readonly statusCode?: number;
+
+    constructor(message: string, statusCode?: number) {
+        super(message);
+        this.name = 'ResponseEnvelopeError';
+        this.statusCode = statusCode;
+    }
+}
+
+export class ResponseEnvelopeIntegrityError extends Error {
+    readonly code = 'response_envelope_integrity_error';
+
+    constructor() {
+        super('Response envelope is missing its data payload');
+        this.name = 'ResponseEnvelopeIntegrityError';
+    }
+}
+
+function unwrapResponseEnvelope<T>(envelope: ResponseEnvelope<T>): T {
+    if (envelope.error) {
+        throw new ResponseEnvelopeError(envelope.message, envelope.statusCode);
+    }
+    if (envelope.data === undefined || envelope.data === null) {
+        throw new ResponseEnvelopeIntegrityError();
+    }
+    return envelope.data;
+}`;
+}
+
 export function expandProfileValue(value, semantic, field) {
     if (typeof value !== 'string') {
         throw new Error(`renderer: profile ${field} must be a string`);
