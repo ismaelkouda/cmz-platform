@@ -17,8 +17,8 @@ import {
     angularExecutor,
     assertWorkflowOracle,
     reactExecutor,
-} from './core/workflow-runtime-oracle.mjs';
-import { materializeWorkflowRuntime } from './core/workflow-runtime-harness.mjs';
+} from './oracles/workflow-runtime-oracle.mjs';
+import { materializeWorkflowRuntime } from './oracles/workflow-runtime-harness.mjs';
 import { computeWorkflowTargets } from './workflow-targets.mjs';
 
 const definitionUrl = new URL(

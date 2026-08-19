@@ -4,15 +4,15 @@ import test from 'node:test';
 import {
     assertAngularNominalOracle,
     assertReactNominalOracle,
-} from './core/action-request-runtime-oracle.mjs';
-import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
+} from './oracles/action-request-runtime-oracle.mjs';
+import { materializeGeneratedRuntime } from './oracles/runtime-harness.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import {
     angularExecutor,
     assertWorkflowOracle,
     reactExecutor,
-} from './core/workflow-runtime-oracle.mjs';
-import { materializeWorkflowRuntime } from './core/workflow-runtime-harness.mjs';
+} from './oracles/workflow-runtime-oracle.mjs';
+import { materializeWorkflowRuntime } from './oracles/workflow-runtime-harness.mjs';
 import { computeTargets } from './render-targets.mjs';
 import { repositoryRoot } from './validate-ir.mjs';
 import { computeWorkflowTargets } from './workflow-targets.mjs';

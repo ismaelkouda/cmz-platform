@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { assertPresentationFlowRuntimeOracle } from './core/presentation-flow-runtime-oracle.mjs';
+import { assertPresentationFlowRuntimeOracle } from './oracles/presentation-flow-runtime-oracle.mjs';
 import { renderPresentationFlowEngine } from './renderers/presentation-flow-renderer.mjs';
 import { loadJson } from './validate-ir.mjs';
 import { directorContractPath } from './check-evolvable-composition.mjs';

@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { computeEvolvableCompositionTargets } from './check-evolvable-composition.mjs';
-import { assertPermissionRuntimeOracle } from './core/permission-runtime-oracle.mjs';
-import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
+import { assertPermissionRuntimeOracle } from './oracles/permission-runtime-oracle.mjs';
+import { materializeGeneratedRuntime } from './oracles/runtime-harness.mjs';
 
 const mutants = [
     {

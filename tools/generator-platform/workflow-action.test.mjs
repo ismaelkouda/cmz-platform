@@ -22,8 +22,8 @@ import {
     angularExecutor,
     assertWorkflowOracle,
     reactExecutor,
-} from './core/workflow-runtime-oracle.mjs';
-import { materializeWorkflowRuntime } from './core/workflow-runtime-harness.mjs';
+} from './oracles/workflow-runtime-oracle.mjs';
+import { materializeWorkflowRuntime } from './oracles/workflow-runtime-harness.mjs';
 import { generateWorkflowAction } from './generate-workflow-action.mjs';
 import {
     loadJson,

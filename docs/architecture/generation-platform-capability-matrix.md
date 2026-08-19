@@ -407,3 +407,34 @@ de revue dépasse durablement celui d'un générateur spécialisé.
 > du §6 une par une, plutôt que déduite ici, reste à faire avant d'affirmer la
 > promotion complète. Ne pas confondre la promotion d'une tranche prouvée avec
 > la promotion de l'enveloppe entière.
+>
+> **Mise à jour 2026-08-18 (revue formelle §6)** : les 6 conditions ont été
+> reprises une par une avec preuve factuelle, pas déduites. C1 (matrice 2×2
+> reproductible) : rempli, hashes de `render-targets.mjs`/`workflow-targets.mjs`
+> identiques sur 2 exécutions consécutives. C2 (`action-request` +
+> `workflow-action` couverts) : rempli, chacun avec 2 domaines indépendants
+> (§4). C3 (mutation métier détectée par l'Oracle) : rempli, 8 fichiers de test
+> dédiés aux mutations, 80+ assertions, sur les deux moteurs. C4 (manifests et
+> hashes persistés) : rempli — `core/generation-publication.mjs` sérialise et
+> écrit le manifest, `check:publication-durability` exerce en plus la
+> résistance à un crash mi-écriture. C6 (budget d'extensions mesuré, non masqué
+> par `Custom`) : rempli au sens littéral de la condition — mesuré et
+> transparent (§4, PLAT-4quater), la condition n'exige pas un budget nul. **C5
+> (aucune dépendance Angular/React/Figma/SEOS dans le core) a en revanche été
+> trouvée non remplie** : 7 fichiers de `tools/generator-platform/core/`
+> (`action-request-runtime-oracle.mjs`, `behavior-graph-runtime-oracle.mjs`,
+> `permission-runtime-oracle.mjs`, `presentation-flow-runtime-oracle.mjs`,
+> `workflow-runtime-oracle.mjs`, `runtime-harness.mjs`,
+> `workflow-runtime-harness.mjs`) importaient directement `@angular/core`,
+> `@angular/common/http` ou `@angular/compiler` pour exécuter réellement le
+> code Angular généré et vérifier son comportement — fonctionnellement
+> justifié (chaque oracle simule aussi un port React dans le même fichier pour
+> comparer les deux cibles), mais une dépendance framework directe dans un
+> dossier nommé et cerné comme neutre. Corrigé le jour même : les 7 fichiers
+> déplacés vers `tools/generator-platform/oracles/`, séparé de `core/`, tous
+> les imports (41 fichiers scannés, 15 référençant réellement ces 7 cibles plus
+> 3 `stack-tests/*.spec.ts`) corrigés, 169/169 tests core + 22/22 Angular +
+> 22/22 ReactJS revalidés après le déplacement, hashes de génération
+> inchangés. **Conclusion de la revue** : les 6 conditions du §6 sont
+> désormais remplies avec preuve individuelle. Le claim « plateforme
+> générique » dans l'enveloppe initiale (ADR-0029) est promu **M4**.

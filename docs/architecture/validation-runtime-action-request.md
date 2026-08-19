@@ -28,7 +28,7 @@ fixture d'IR canonique
 ```
 
 Le harness est
-[`tools/generator-platform/core/runtime-harness.mjs`](../../tools/generator-platform/core/runtime-harness.mjs)
+[`tools/generator-platform/oracles/runtime-harness.mjs`](../../tools/generator-platform/oracles/runtime-harness.mjs)
 et l'Oracle exécutable est
 [`tools/generator-platform/action-request-runtime.test.mjs`](../../tools/generator-platform/action-request-runtime.test.mjs).
 La campagne de falsification est

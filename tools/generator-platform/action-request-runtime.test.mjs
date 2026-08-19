@@ -6,8 +6,8 @@ import {
     assertReactFailureOracle,
     assertReactNominalOracle,
     assertValidationOracle,
-} from './core/action-request-runtime-oracle.mjs';
-import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
+} from './oracles/action-request-runtime-oracle.mjs';
+import { materializeGeneratedRuntime } from './oracles/runtime-harness.mjs';
 import { computeTargets } from './render-targets.mjs';
 
 let runtime;

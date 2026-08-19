@@ -7,7 +7,7 @@ import {
     validateBehaviorGraph,
 } from './core/behavior-graph.mjs';
 import { renderBehaviorGraphEngine } from './renderers/behavior-graph-renderer.mjs';
-import { assertBehaviorGraphRuntimeOracle } from './core/behavior-graph-runtime-oracle.mjs';
+import { assertBehaviorGraphRuntimeOracle } from './oracles/behavior-graph-runtime-oracle.mjs';
 import { loadJson } from './validate-ir.mjs';
 import { directorContractPath } from './check-evolvable-composition.mjs';
 

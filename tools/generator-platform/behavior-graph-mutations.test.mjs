@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { assertBehaviorGraphRuntimeOracle } from './core/behavior-graph-runtime-oracle.mjs';
+import { assertBehaviorGraphRuntimeOracle } from './oracles/behavior-graph-runtime-oracle.mjs';
 import { renderBehaviorGraphEngine } from './renderers/behavior-graph-renderer.mjs';
 import { loadJson } from './validate-ir.mjs';
 import { directorContractPath } from './check-evolvable-composition.mjs';

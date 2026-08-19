@@ -13,7 +13,7 @@ import {
  * structurellement (kind/topology/branches), pas par nom littéral. Les
  * `steps`/`rules` attendus par rôle restent ceux déjà supportés par le
  * renderer et l'Oracle (`renderers/workflow-shared.mjs`,
- * `core/workflow-runtime-oracle.mjs`) — cette limite est réelle et
+ * `oracles/workflow-runtime-oracle.mjs`) — cette limite est réelle et
  * documentée, pas contournée ici. Baseline de non-régression :
  * `node --test workflow-action.test.mjs` (cas `requests-workflow`
  * inchangé, toujours vocabulaire take/qualify/export).

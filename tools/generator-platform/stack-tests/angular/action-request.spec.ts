@@ -19,7 +19,7 @@ import {
     loginResult,
     messageResult,
     resetInput,
-} from '../../core/action-request-runtime-oracle.mjs';
+} from '../../oracles/action-request-runtime-oracle.mjs';
 
 interface RecordedRequest {
     readonly body: unknown;

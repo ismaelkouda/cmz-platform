@@ -6,16 +6,16 @@ import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { compileActionRequestDefinition } from './core/action-request-authoring.mjs';
-import { assertBehaviorGraphRuntimeOracle } from './core/behavior-graph-runtime-oracle.mjs';
+import { assertBehaviorGraphRuntimeOracle } from './oracles/behavior-graph-runtime-oracle.mjs';
 import {
     buildCompositionInstance,
     reloadAndRegenerate,
     verifyCompositionInstanceIntegrity,
 } from './core/composition-instance.mjs';
-import { assertPermissionRuntimeOracle } from './core/permission-runtime-oracle.mjs';
-import { assertPresentationFlowRuntimeOracle } from './core/presentation-flow-runtime-oracle.mjs';
+import { assertPermissionRuntimeOracle } from './oracles/permission-runtime-oracle.mjs';
+import { assertPresentationFlowRuntimeOracle } from './oracles/presentation-flow-runtime-oracle.mjs';
 import { assertRunIsolation } from './core/run-isolation-oracle.mjs';
-import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
+import { materializeGeneratedRuntime } from './oracles/runtime-harness.mjs';
 import { generateActionRequest } from './generate-action-request.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
 import {

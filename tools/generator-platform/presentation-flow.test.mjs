@@ -9,7 +9,7 @@ import {
     validatePresentationFlow,
 } from './core/presentation-flow.mjs';
 import { renderPresentationFlowEngine } from './renderers/presentation-flow-renderer.mjs';
-import { assertPresentationFlowRuntimeOracle } from './core/presentation-flow-runtime-oracle.mjs';
+import { assertPresentationFlowRuntimeOracle } from './oracles/presentation-flow-runtime-oracle.mjs';
 import { loadJson } from './validate-ir.mjs';
 import { directorContractPath } from './check-evolvable-composition.mjs';
 

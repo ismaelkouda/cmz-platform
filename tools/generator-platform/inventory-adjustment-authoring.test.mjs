@@ -9,8 +9,8 @@ import { createEnvironmentInjector } from '@angular/core';
 import { firstValueFrom, of } from 'rxjs';
 
 import { compileActionRequestDefinition } from './core/action-request-authoring.mjs';
-import { assertPermissionRuntimeOracle } from './core/permission-runtime-oracle.mjs';
-import { materializeGeneratedRuntime } from './core/runtime-harness.mjs';
+import { assertPermissionRuntimeOracle } from './oracles/permission-runtime-oracle.mjs';
+import { materializeGeneratedRuntime } from './oracles/runtime-harness.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
 import {
     loadJson,

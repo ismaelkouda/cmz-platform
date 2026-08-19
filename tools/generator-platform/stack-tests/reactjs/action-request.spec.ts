@@ -8,7 +8,7 @@ import { createActionRequestHooks } from '../../.stack-test-runtime/reactjs/acti
 import {
     loginInput,
     loginResult,
-} from '../../core/action-request-runtime-oracle.mjs';
+} from '../../oracles/action-request-runtime-oracle.mjs';
 
 const reactHooks = { useCallback, useState };
 

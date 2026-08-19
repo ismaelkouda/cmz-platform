@@ -11,7 +11,7 @@ import type {
     WorkflowPorts,
 } from '../../.stack-test-runtime/angular/workflow-action/src/models';
 
-import { assertWorkflowOracle } from '../../core/workflow-runtime-oracle.mjs';
+import { assertWorkflowOracle } from '../../oracles/workflow-runtime-oracle.mjs';
 import { computeWorkflowTargets } from '../../workflow-targets.mjs';
 
 afterEach(() => {

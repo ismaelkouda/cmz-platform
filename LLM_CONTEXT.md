@@ -103,7 +103,7 @@ examiné puis écarté comme base de réutilisation directe — c'est une state
 machine liée en dur à son propre domaine (`take`/`qualify`/`export`), pas un
 moteur générique ; le réutiliser aurait dupliqué une forme figée ou affaibli
 ses invariants. Le patron architectural réutilisé est celui déjà prouvé par
-`core/workflow-runtime-oracle.mjs` (garde fail-closed exécutée réellement en
+`oracles/workflow-runtime-oracle.mjs` (garde fail-closed exécutée réellement en
 Angular DI et via un port de hooks React), transposé dans un nouveau module
 générique `core/behavior-graph.mjs` piloté par les données du contrat, jamais
 par des noms d'état codés en dur. Les renderers
