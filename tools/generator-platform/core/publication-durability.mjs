@@ -175,7 +175,10 @@ export function validatePublicationDurabilityContract(contract) {
         ids.add(profile.id);
         signatures.add(`${profile.platform}:${profile.statfs_type}`);
     }
-    if ([...ids].join('\0') !== ['linux-ext4', 'macos-apfs'].join('\0')) {
+    if (
+        [...ids].join('\0') !==
+        ['linux-ext4', 'macos-apfs', 'macos-apfs-25'].join('\0')
+    ) {
         fail('filesystem profiles do not match the accepted contract');
     }
     return contract;
@@ -235,6 +238,7 @@ export async function probePublicationFilesystem(root = tmpdir()) {
 export async function assertSupportedPublicationFilesystem({
     root = tmpdir(),
     expectedProfileId,
+    expectedPlatform,
 } = {}) {
     const contract = await loadPublicationDurabilityContract();
     const detected = await detectPublicationFilesystem(root);
@@ -250,6 +254,11 @@ export async function assertSupportedPublicationFilesystem({
     }
     if (expectedProfileId && profile.id !== expectedProfileId) {
         fail(`expected profile ${expectedProfileId}, detected ${profile.id}`);
+    }
+    if (expectedPlatform && profile.platform !== expectedPlatform) {
+        fail(
+            `expected platform ${expectedPlatform}, detected ${profile.platform}`
+        );
     }
     return { profile, detected };
 }

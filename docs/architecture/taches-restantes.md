@@ -1028,6 +1028,45 @@ Figma, désormais source partielle différée :
   chirurgicaux (pas de régénération JSON.stringify large qui ré-emballe le
   formatage — leçon retenue de PLAT-4bis-AR) pour garder les diffs minimaux et
   revuables.
+- **OPS-21** — **fait** (2026-08-19), S, P0. Après le push de PLAT-7 (commit
+  `2f6f327`), le job CI `publication-durability (macos-apfs)` a échoué avec
+  `unsupported filesystem darwin:25` — sans rapport avec PLAT-7, aucun fichier
+  touché par ce chantier n'était en cause. **Cause racine** :
+  `contracts/publication-durability.contract.json` fige `statfs_type: 26` pour
+  le profil `macos-apfs` (runner `macos-14`), valeur enregistrée une seule fois
+  lors de PLAT-5K (2026-08-16, commit `f92c6a6`) et jamais revérifiée depuis ;
+  le runner `macos-14` de GitHub Actions a visiblement changé de version d'image
+  entre-temps, faisant passer la valeur `statfs` réelle d'APFS de 26 à 25 — un
+  détail d'implémentation macOS qui n'était pas garanti stable, pas une
+  régression du dépôt. **Corrigé en ajoutant un fait, pas en affaiblissant une
+  garde** (option choisie explicitement par l'utilisateur après explication en
+  langage simple, sur 3 options proposées) : nouveau profil
+  `{id: "macos-apfs-25", platform: "darwin", statfs_type: 25, ci_runner: "macos-14"}`
+  ajouté à `filesystem_profiles` sans retirer l'entrée `26` —
+  `assertSupportedPublicationFilesystem` (`core/publication-durability.mjs`)
+  reste fail-closed sur toute valeur `statfs_type` non recensée, elle connaît
+  simplement deux valeurs APFS vérifiées au lieu d'une. La liste figée des ids
+  (`core/publication-durability.mjs` ligne ~178,
+  `publication-durability.test.mjs`) mise à jour en conséquence. **Second
+  correctif nécessaire, découvert en retraçant le chemin CI réel** : le workflow
+  (`ci.yml`) forçait `CMZ_PUBLICATION_PROFILE: macos-apfs`, donc même après
+  l'ajout du nouveau profil au contrat, le job macOS aurait échoué sur
+  `expected profile macos-apfs, detected macos-apfs-25` — épingler un id de
+  profil précis dans le workflow recrée exactement le problème qu'on vient de
+  corriger dès que GitHub fait à nouveau évoluer l'image. Corrigé par un
+  paramètre plus adapté à ce qu'on veut réellement garantir : nouveau
+  `expectedPlatform` dans `assertSupportedPublicationFilesystem` (accepte
+  n'importe quel profil connu de la plateforme demandée, sans figer la valeur
+  `statfs_type` exacte), exposé via `--platform`/`CMZ_PUBLICATION_PLATFORM` dans
+  `check-publication-durability.mjs`, câblé dans `ci.yml` pour les deux jobs de
+  la matrice (`linux`/`darwin`) à la place de l'ancien
+  `CMZ_PUBLICATION_PROFILE`. `expectedProfileId` reste disponible pour qui a
+  besoin d'être strict sur un id précis. Revérifié :
+  `publication-durability .test.mjs` + `generation-transaction.test.mjs`
+  (15/15), rejeu exact de la commande CI
+  (`CMZ_PUBLICATION_PLATFORM=linux node check-publication-durability.mjs`) vert,
+  `eslint --max-warnings=0` et `prettier --check` propres sur tous les fichiers
+  touchés.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

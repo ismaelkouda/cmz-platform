@@ -12,7 +12,7 @@ test('publication durability contract is closed, unique, and fail-closed', async
     const contract = await loadPublicationDurabilityContract();
     assert.deepEqual(
         contract.filesystem_profiles.map(({ id }) => id),
-        ['linux-ext4', 'macos-apfs']
+        ['linux-ext4', 'macos-apfs', 'macos-apfs-25']
     );
     assert.equal(contract.reader_contract.mode, 'offline-activation');
     assert.equal(
@@ -39,7 +39,11 @@ test('current filesystem matches a supported profile and executes the real publi
     const result = await assertSupportedPublicationEnvironment({
         root: tmpdir(),
     });
-    assert.ok(['linux-ext4', 'macos-apfs'].includes(result.profile.id));
+    assert.ok(
+        ['linux-ext4', 'macos-apfs', 'macos-apfs-25'].includes(
+            result.profile.id
+        )
+    );
     assert.ok(result.detected.block_size > 0);
 });
 

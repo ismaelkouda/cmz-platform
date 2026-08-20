@@ -147,8 +147,10 @@ jobs:
         include:
           - profile: linux-ext4
             runner: ubuntu-24.04
+            platform: linux
           - profile: macos-apfs
             runner: macos-14
+            platform: darwin
     steps:
       - uses: actions/checkout@v4
 
@@ -165,7 +167,7 @@ jobs:
 
       - name: check:publication-durability (${{ matrix.profile }})
         env:
-          CMZ_PUBLICATION_PROFILE: ${{ matrix.profile }}
+          CMZ_PUBLICATION_PLATFORM: ${{ matrix.platform }}
         run: bun run check:publication-durability
 
   # ─── Job T4-5 : secret scanning (gitleaks) ───────────────────────────────
