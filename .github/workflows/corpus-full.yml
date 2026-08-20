@@ -19,6 +19,17 @@
 #     ci.yml (jobs indépendants, un 401 Nx Cloud n'y bloque qu'une tâche),
 #     module-gate.mjs traite tout échec du process nx comme un échec de
 #     gate H-2, sans distinguer "auth Nx Cloud" d'un vrai échec de build.
+#
+#     OPS-23 (2026-08-20) : ce diagnostic OPS-14 identifiait déjà le
+#     symptôme mais n'avait pas été généralisé en fix — seul ci.yml a reçu
+#     le fallback NX_NO_CLOUD (OPS-22). Appliqué ici avec le même principe :
+#     si NX_CLOUD_ACCESS_TOKEN est vide pour n'importe quelle raison (secret
+#     manquant/révoqué, run sur un fork), NX_NO_CLOUD=true force le repli
+#     sur le cache local plutôt que de laisser `nx` faire échouer tout le
+#     run. Ce workflow n'est déclenché que par push sur main + dispatch
+#     (jamais pull_request) donc pas exposé à la restriction de secrets
+#     Dependabot elle-même — le fallback reste pertinent pour toute autre
+#     cause d'absence du token.
 
 name: Corpus full — verify + legacy
 
@@ -36,6 +47,7 @@ env:
   NODE_VERSION: '22.22.3'
   BUN_VERSION: '1.3.14'
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+  NX_NO_CLOUD: ${{ secrets.NX_CLOUD_ACCESS_TOKEN == '' && 'true' || 'false' }}
 
 jobs:
   corpus-full:

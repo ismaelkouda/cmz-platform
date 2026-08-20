@@ -1098,8 +1098,46 @@ Figma, désormais source partielle différée :
   héritée par tous les jobs sans duplication. Vérifié que `corpus-full.yml` et
   `nightly-integration.yml` (les deux autres workflows appelant `nx`) ne sont
   déclenchés que par `push main`/`schedule`/ `workflow_dispatch`, jamais par
-  `pull_request` — non exposés au même piège, non modifiés. YAML des 3 workflows
-  validé (`python3 -c "import yaml..."`, aucune erreur de syntaxe).
+  `pull_request` — non exposés au **vecteur Dependabot** spécifiquement, non
+  modifiés à ce stade. YAML des 3 workflows validé
+  (`python3 -c "import yaml..."`, aucune erreur de syntaxe). **Limite de ce
+  raisonnement révélée par OPS-23 ci-dessous** : « pas exposé à Dependabot »
+  n'impliquait pas « pas exposé du tout » — `nightly-integration.yml` ne déclare
+  même pas `NX_CLOUD_ACCESS_TOKEN` dans son `env:`, donc la variable y est vide
+  en permanence, schedule ou dispatch, sans qu'aucune PR ne soit en cause.
+- **OPS-23** — **fait** (2026-08-20), S, P0. Un run nightly réel
+  (`nightly-integration.yml`, déclenchement schedule, aucune PR/Dependabot
+  impliquée) a échoué sur `bunx nx run backoffice-angular:build:development`
+  avec exactement le même symptôme qu'OPS-22 :
+  `NX Cloud: Workspace is unable to be authorized... Invalid Credentials`. **Ce
+  que ça révèle sur le raisonnement d'OPS-22** : la vérification « déclenché
+  seulement par push/schedule/dispatch, jamais pull_request » avait écarté le
+  risque spécifiquement Dependabot (secrets non exposés aux PR de ce bot), mais
+  avait conclu à tort que ces deux workflows étaient donc à l'abri en général.
+  Erreur de portée, pas de fait : `nightly-integration.yml` ne déclare tout
+  simplement jamais `NX_CLOUD_ACCESS_TOKEN` dans son `env:` (seuls `ci.yml` et
+  `corpus-full.yml` le déclarent) — la variable y est vide à _chaque_ run,
+  schedule comme dispatch, indépendamment de tout acteur Dependabot. Le vrai
+  invariant qui compte n'est pas « qui déclenche le workflow » mais « le token
+  est-il présent dans l'environnement du job qui appelle `nx` » — un integer
+  plus étroit que celui vérifié en OPS-22. **Correctif** : le même fallback
+  `NX_NO_CLOUD` généralisé aux 2 workflows restants, plutôt qu'un patch ciblé
+  nightly. `nightly-integration.yml` reçoit désormais
+  `NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}` (qu'il ne
+  déclarait pas du tout avant — le token peut donc désormais être réellement
+  utilisé s'il est un jour ajouté au secret store) et
+  `NX_NO_CLOUD: ${{ secrets.NX_CLOUD_ACCESS_TOKEN == '' && 'true' || 'false' }}`
+  au niveau `env:` racine, identique à `ci.yml`. `corpus-full.yml` reçoit le
+  même `NX_NO_CLOUD` à côté du `NX_CLOUD_ACCESS_TOKEN` qu'il déclarait déjà — ce
+  workflow a normalement le token disponible (push sur `main`, pas de
+  restriction Dependabot), mais le fallback protège aussi contre toute autre
+  cause d'absence (rotation de secret, exécution sur un fork). Décision
+  explicite : ne pas traiter `nightly-integration.yml` comme un cas à part —
+  même principe qu'OPS-22, l'indisponibilité d'un accélérateur de cache ne doit
+  jamais faire échouer le pipeline. Vérifié : YAML des 3 workflows validé
+  (`python3 -c "import yaml..."`), `prettier --check` propre (aucun changement
+  de formatage nécessaire), diff minimal et proportionné (3 fichiers, uniquement
+  des ajouts d'`env:`/commentaires, aucune step modifiée ou supprimée).
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

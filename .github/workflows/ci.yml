@@ -18,6 +18,12 @@
 # faire échouer le pipeline, seulement le ralentir. S'applique à tout
 # contexte sans le secret (Dependabot aujourd'hui, tout futur cas
 # équivalent), pas seulement Dependabot nommément.
+#
+# OPS-23 (2026-08-20) : confirmé en CI réelle que ce même symptôme touchait
+# aussi nightly-integration.yml (run nightly, aucune PR/Dependabot en jeu) —
+# preuve que le problème est bien la dépendance structurelle de Nx 23+ au
+# token, pas un cas Dependabot isolé. Fallback NX_NO_CLOUD généralisé aux
+# 3 workflows (ci.yml, corpus-full.yml, nightly-integration.yml).
 
 name: CI
 
