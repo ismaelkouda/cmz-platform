@@ -6,8 +6,18 @@
 # Nx Cloud (décision G-7/T6-4 : claim + activer) :
 # - `nxCloudId` dans nx.json (workspace Nx Cloud)
 # - secret repo `NX_CLOUD_ACCESS_TOKEN` (CI access token émis après claim)
-# Sans claim + secret : bruit 401 / pas de remote cache — acceptable temporairement
-# tant que le porteur suit le runbook claim (pas de désactivation silencieuse).
+#
+# OPS-22 (2026-08-19) : GitHub n'expose pas les secrets du dépôt aux PR
+# ouvertes par Dependabot (protection anti-exfiltration standard). Sans
+# NX_CLOUD_ACCESS_TOKEN, Nx (v23+) n'exécute plus aucune commande — il
+# n'existe plus de dégradation silencieuse vers le cache local seul,
+# contrairement à ce que supposait le runbook G-7 d'origine (« bruit 401,
+# pas un gate CI »). NX_NO_CLOUD=true calculé ci-dessous force le repli sur
+# le cache local (toujours actif) sans jamais tenter Nx Cloud — le principe
+# général : l'indisponibilité d'un accélérateur de cache ne doit jamais
+# faire échouer le pipeline, seulement le ralentir. S'applique à tout
+# contexte sans le secret (Dependabot aujourd'hui, tout futur cas
+# équivalent), pas seulement Dependabot nommément.
 
 name: CI
 
@@ -26,6 +36,7 @@ env:
   NODE_VERSION: '22.22.3'
   BUN_VERSION: '1.3.14'
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+  NX_NO_CLOUD: ${{ secrets.NX_CLOUD_ACCESS_TOKEN == '' && 'true' || 'false' }}
 
 jobs:
   # ─── Job 1 : Garde-fous socle (rapide, bloquant) ─────────────────────────

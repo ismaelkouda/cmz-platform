@@ -1067,6 +1067,39 @@ Figma, désormais source partielle différée :
   (`CMZ_PUBLICATION_PLATFORM=linux node check-publication-durability.mjs`) vert,
   `eslint --max-warnings=0` et `prettier --check` propres sur tous les fichiers
   touchés.
+- **OPS-22** — **fait** (2026-08-19), M, P0. Après OPS-21, un run CI déclenché
+  par une PR Dependabot (`ci(deps): bump actions/checkout from 4 to 7`) échouait
+  systématiquement sur 3 jobs (`oracle`, `e2e-smoke`, `corpus`) avec
+  `NX Cloud: Workspace is unable to be authorized... Invalid Credentials`.
+  **Investigation avant correctif** (pas de patch au cas par cas) : le token
+  fonctionne correctement sur les pushes normaux de l'utilisateur (vérifié en
+  comparant les runs) — GitHub n'expose simplement jamais les secrets du dépôt
+  aux workflows déclenchés par `dependabot[bot]`, protection standard
+  anti-exfiltration, indépendante du contenu de la branche cible. **Cause racine
+  plus profonde que Dependabot lui-même** : Nx Cloud avait été activé par un
+  générateur automatique (`nx generate ci-workflow`, commit `027fc51`,
+  2026-08-06), pas par un besoin métier mesuré — son gain de cache réel n'a
+  jamais été chiffré dans ce dépôt. Le runbook d'origine (G-7,
+  `etat-du-socle.md`) supposait explicitement qu'un token manquant ne produirait
+  que « du bruit 401, pas un gate CI » ; ce n'est plus vrai avec la version
+  actuelle de Nx (23.1.0) — sans token, `nx` refuse totalement d'exécuter la
+  commande (`Exiting run`) au lieu de dégrader vers le cache local seul, y
+  compris sur `corpus-full.yml` où ce même symptôme avait déjà été noté une fois
+  (OPS-14, 2026-08-17) sans être généralisé. **Décision (option choisie
+  explicitement par l'utilisateur, avec le raisonnement explicité)** : ne pas
+  désactiver Nx Cloud (son claim reste actif, sa valeur sur les pushes normaux
+  n'est pas mise en cause) et ne pas traiter Dependabot comme un cas spécial —
+  poser une règle générale, robuste à tout futur contexte sans secret : si
+  `NX_CLOUD_ACCESS_TOKEN` est vide, forcer `NX_NO_CLOUD=true` (variable Nx
+  officielle — désactive uniquement le cache **distant**, le cache local reste
+  actif). Implémenté par une seule expression au niveau `env:` racine de
+  `ci.yml`
+  (`NX_NO_CLOUD: ${{ secrets.NX_CLOUD_ACCESS_TOKEN == '' && 'true' || 'false' }}`),
+  héritée par tous les jobs sans duplication. Vérifié que `corpus-full.yml` et
+  `nightly-integration.yml` (les deux autres workflows appelant `nx`) ne sont
+  déclenchés que par `push main`/`schedule`/ `workflow_dispatch`, jamais par
+  `pull_request` — non exposés au même piège, non modifiés. YAML des 3 workflows
+  validé (`python3 -c "import yaml..."`, aucune erreur de syntaxe).
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
