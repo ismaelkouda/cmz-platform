@@ -1138,6 +1138,33 @@ Figma, désormais source partielle différée :
   (`python3 -c "import yaml..."`), `prettier --check` propre (aucun changement
   de formatage nécessaire), diff minimal et proportionné (3 fichiers, uniquement
   des ajouts d'`env:`/commentaires, aucune step modifiée ou supprimée).
+- **OPS-24** — **fait** (2026-08-20), S, P2. `sign-in.definition.json` +
+  `sign-in.definition.annotated.md` restaient non trackés dans
+  `tools/generator-platform/sources/` depuis un exercice pédagogique antérieur
+  (5 écarts de schéma corrigés — `kind` absent, `output.id` manquant, `access`
+  chaîne au lieu d'objet, `effects` tableau de chaînes au lieu d'objets,
+  `opaque_types` non déclarés — détail complet dans le `.annotated.md`), sans
+  jamais être rejoués depuis. **Rejoué réellement avant tout commit** (rien
+  n'est resté sur la seule foi de l'annotation) :
+  `node tools/generator-platform/generate-action-request.mjs --definition tools/generator-platform/sources/sign-in.definition.json --out /tmp/generated-sign-in --target all`
+  — génération Angular + ReactJS réussie, change set et sémantique hachés.
+  Sortie inspectée (`SessionPort.persist(user, token)` généré identiquement sur
+  les deux cibles, cohérent avec l'effet `establish_session` déclaré ;
+  `POST /sign-in` public sans en-tête d'auth, cohérent avec
+  `http.authentication: "none"`). **Compilation TypeScript stricte rejouée sur
+  les deux cibles générées** (`tsc --noEmit`, `strict: true`) depuis une copie
+  temporaire sous le workspace (pour la résolution de modules
+  `@angular/*`/`rxjs`, supprimée après) : 0 erreur Angular, 0 erreur ReactJS.
+  Suite complète du moteur revérifiée après coup pour confirmer que cette
+  génération ad-hoc n'a rien perturbé :
+  `node --test tools/generator-platform/*.test.mjs` — 171/171 verts. **Statut
+  assumé** : ce fichier n'a, contrairement aux 5 autres définitions de
+  `sources/` (`support-request`, `requests-workflow`, `inventory-adjustment`,
+  `content-moderation-workflow`, `action-request.spec`), aucun test dédié qui le
+  charge en continu (aucun `*.test.mjs` ne le référence) — c'est un exemple
+  pédagogique documentant les pièges de schéma courants (voir
+  `sign-in.definition.annotated.md`), pas une fixture de contrat CI. Committé
+  tel quel, sans lui inventer un rôle de gate qu'il n'a pas.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "action-request",
+  "feature": {
+    "id": "sign-in",
+    "name": "Sign In",
+    "description": "Authenticate a user with email and password and establish a session."
+  },
+  "opaque_types": [
+    {
+      "id": "current-user",
+      "description": "Authenticated user profile returned after sign-in."
+    },
+    {
+      "id": "authentication-token",
+      "description": "Bearer token used to authorize subsequent requests."
+    }
+  ],
+  "operations": [
+    {
+      "id": "sign-in",
+      "description": "Exchange credentials for an authenticated session.",
+      "input": {
+        "description": "Credentials submitted by the user.",
+        "fields": [
+          {
+            "name": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true,
+            "format": "email"
+          },
+          {
+            "name": "password",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "output": {
+        "id": "sign-in-result",
+        "description": "Session information returned after a successful sign-in.",
+        "fields": [
+          {
+            "name": "user",
+            "type": {
+              "kind": "model",
+              "name": "current-user",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "token",
+            "type": {
+              "kind": "model",
+              "name": "authentication-token",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "access": { "mode": "public" },
+      "http": {
+        "method": "POST",
+        "path": "sign-in",
+        "authentication": "none"
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Submit the credentials to the authentication boundary."
+        },
+        {
+          "kind": "establish_session",
+          "description": "Persist the returned user and token as the active session."
+        }
+      ]
+    }
+  ]
+}
