@@ -7,20 +7,28 @@ export const appRoutes: Route[] = [
     // (c'est justement leur rôle). `authInterceptor` marque leurs appels
     // `SKIP_AUTH` côté HTTP (cf. authentication/data/src/lib/sources/*.api.ts).
     {
+        // Un seul niveau de `loadChildren` (pas de `loadChildren` imbriqué
+        // dans le `.then()` d'un autre `loadChildren`, cf. historique
+        // d'edge-cases du Router sur ce pattern précis —
+        // github.com/angular/angular/issues/54518) : les deux imports
+        // dynamiques (`providers/authentication.providers` et
+        // `@cmz/authentication-ui`) sont résolus en parallèle par
+        // `Promise.all`, puis combinés en un seul `Route[]` synthétique où
+        // `providers` et les 3 routes réelles (`AUTHENTICATION_ROUTES`)
+        // sont au même niveau `children` — pas de second `loadChildren`
+        // intermédiaire.
         path: 'auth',
         loadChildren: () =>
-            import('./providers/authentication.providers').then(
-                (providersModule) => [
-                    {
-                        path: '',
-                        providers: providersModule.provideAuthentication(),
-                        loadChildren: () =>
-                            import('@cmz/authentication-ui').then(
-                                (m) => m.AUTHENTICATION_ROUTES
-                            ),
-                    },
-                ]
-            ),
+            Promise.all([
+                import('./providers/authentication.providers'),
+                import('@cmz/authentication-ui'),
+            ]).then(([providersModule, routesModule]) => [
+                {
+                    path: '',
+                    providers: providersModule.provideAuthentication(),
+                    children: routesModule.AUTHENTICATION_ROUTES,
+                },
+            ]),
     },
     {
         // Périmètre protégé — un seul point d'application de `authGuard`
@@ -45,67 +53,59 @@ export const appRoutes: Route[] = [
             {
                 path: 'dashboard',
                 loadChildren: () =>
-                    import('./providers/dashboard.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers: providersModule.provideDashboard(),
-                                loadChildren: () =>
-                                    import('@cmz/dashboard-ui').then(
-                                        (m) => m.DASHBOARD_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/dashboard.providers'),
+                        import('@cmz/dashboard-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers: providersModule.provideDashboard(),
+                            children: routesModule.DASHBOARD_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'monitoring',
                 loadChildren: () =>
-                    import('./providers/monitoring.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers: providersModule.provideMonitoring(),
-                                loadChildren: () =>
-                                    import('@cmz/monitoring-ui').then(
-                                        (m) => m.MONITORING_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/monitoring.providers'),
+                        import('@cmz/monitoring-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers: providersModule.provideMonitoring(),
+                            children: routesModule.MONITORING_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'reporting',
                 loadChildren: () =>
-                    import('./providers/reporting.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers: providersModule.provideReporting(),
-                                loadChildren: () =>
-                                    import('@cmz/reporting-ui').then(
-                                        (m) => m.REPORTING_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/reporting.providers'),
+                        import('@cmz/reporting-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers: providersModule.provideReporting(),
+                            children: routesModule.REPORTING_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'interactive-map',
                 loadChildren: () =>
-                    import('./providers/interactive-map.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideInteractiveMap(),
-                                loadChildren: () =>
-                                    import('@cmz/interactive-map-ui').then(
-                                        (m) => m.INTERACTIVE_MAP_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/interactive-map.providers'),
+                        import('@cmz/interactive-map-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideInteractiveMap(),
+                            children: routesModule.INTERACTIVE_MAP_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'report-states',
@@ -116,107 +116,99 @@ export const appRoutes: Route[] = [
                 // PermissionActionsService.can() directement — inchangé.
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/report-states.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideReportStates(),
-                                loadChildren: () =>
-                                    import('@cmz/report-states-ui').then(
-                                        (m) => m.REPORT_STATES_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/report-states.providers'),
+                        import('@cmz/report-states-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideReportStates(),
+                            children: routesModule.REPORT_STATES_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'processing',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/processing.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers: providersModule.provideProcessing(),
-                                loadChildren: () =>
-                                    import('@cmz/processing-ui').then(
-                                        (m) => m.PROCESSING_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/processing.providers'),
+                        import('@cmz/processing-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers: providersModule.provideProcessing(),
+                            children: routesModule.PROCESSING_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'requests',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/requests.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers: providersModule.provideRequests(),
-                                loadChildren: () =>
-                                    import('@cmz/requests-ui').then(
-                                        (m) => m.REQUESTS_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/requests.providers'),
+                        import('@cmz/requests-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers: providersModule.provideRequests(),
+                            children: routesModule.REQUESTS_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'finalization',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/finalization.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideFinalization(),
-                                loadChildren: () =>
-                                    import('@cmz/finalization-ui').then(
-                                        (m) => m.FINALIZATION_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/finalization.providers'),
+                        import('@cmz/finalization-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideFinalization(),
+                            children: routesModule.FINALIZATION_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'equipments/types',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/administrative-infrastructure.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideAdministrativeInfrastructure(),
-                                loadChildren: () =>
-                                    import('@cmz/administrative-infrastructure-ui').then(
-                                        (m) => m.INFRASTRUCTURE_TYPE_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import(
+                            './providers/administrative-infrastructure.providers'
+                        ),
+                        import('@cmz/administrative-infrastructure-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideAdministrativeInfrastructure(),
+                            children: routesModule.INFRASTRUCTURE_TYPE_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'equipments/list',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/administrative-infrastructure.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideAdministrativeInfrastructure(),
-                                loadChildren: () =>
-                                    import('@cmz/administrative-infrastructure-ui').then(
-                                        (m) => m.INFRASTRUCTURE_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import(
+                            './providers/administrative-infrastructure.providers'
+                        ),
+                        import('@cmz/administrative-infrastructure-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideAdministrativeInfrastructure(),
+                            children: routesModule.INFRASTRUCTURE_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'territorial-structures/regions',
@@ -262,145 +254,131 @@ export const appRoutes: Route[] = [
                 path: 'coverage-areas/site-groups',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/coverage-areas.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideCoverageAreas(),
-                                loadChildren: () =>
-                                    import('@cmz/coverage-areas-ui').then(
-                                        (m) => m.SITE_GROUP_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/coverage-areas.providers'),
+                        import('@cmz/coverage-areas-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideCoverageAreas(),
+                            children: routesModule.SITE_GROUP_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'coverage-areas/mobile-networks',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/coverage-areas.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideCoverageAreas(),
-                                loadChildren: () =>
-                                    import('@cmz/coverage-areas-ui').then(
-                                        (m) => m.MOBILE_NETWORK_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/coverage-areas.providers'),
+                        import('@cmz/coverage-areas-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideCoverageAreas(),
+                            children: routesModule.MOBILE_NETWORK_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'coverage-areas/optical-fiber-networks',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/coverage-areas.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideCoverageAreas(),
-                                loadChildren: () =>
-                                    import('@cmz/coverage-areas-ui').then(
-                                        (m) => m.OPTICAL_FIBER_NETWORK_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/coverage-areas.providers'),
+                        import('@cmz/coverage-areas-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideCoverageAreas(),
+                            children:
+                                routesModule.OPTICAL_FIBER_NETWORK_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'coverage-areas/radio-relay-links',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/coverage-areas.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideCoverageAreas(),
-                                loadChildren: () =>
-                                    import('@cmz/coverage-areas-ui').then(
-                                        (m) => m.RADIO_RELAY_LINKS_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/coverage-areas.providers'),
+                        import('@cmz/coverage-areas-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideCoverageAreas(),
+                            children: routesModule.RADIO_RELAY_LINKS_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'team-organization/participants',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/team-organization.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideTeamOrganization(),
-                                loadChildren: () =>
-                                    import('@cmz/team-organization-ui').then(
-                                        (m) => m.PARTICIPANTS_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/team-organization.providers'),
+                        import('@cmz/team-organization-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideTeamOrganization(),
+                            children: routesModule.PARTICIPANTS_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'team-organization/teams',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/team-organization.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideTeamOrganization(),
-                                loadChildren: () =>
-                                    import('@cmz/team-organization-ui').then(
-                                        (m) => m.TEAMS_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/team-organization.providers'),
+                        import('@cmz/team-organization-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideTeamOrganization(),
+                            children: routesModule.TEAMS_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'team-organization/agents-performances',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/team-organization.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideTeamOrganization(),
-                                loadChildren: () =>
-                                    import('@cmz/team-organization-ui').then(
-                                        (m) => m.AGENTS_PERFORMANCES_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/team-organization.providers'),
+                        import('@cmz/team-organization-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideTeamOrganization(),
+                            children:
+                                routesModule.AGENTS_PERFORMANCES_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'team-organization/daily-goal',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/team-organization.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideTeamOrganization(),
-                                loadChildren: () =>
-                                    import('@cmz/team-organization-ui').then(
-                                        (m) => m.DAILY_GOAL_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/team-organization.providers'),
+                        import('@cmz/team-organization-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideTeamOrganization(),
+                            children: routesModule.DAILY_GOAL_ROUTES,
+                        },
+                    ]),
             },
             // POC réduction bundle initial (2026-08-21, voir taches-restantes.md) :
             // provideContentManagement() (13 repositories @cmz/content-management-data,
@@ -478,91 +456,82 @@ export const appRoutes: Route[] = [
                 path: 'settings-security/users',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/settings-security.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideSettingsSecurity(),
-                                loadChildren: () =>
-                                    import('@cmz/settings-security-ui').then(
-                                        (m) => m.USERS_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/settings-security.providers'),
+                        import('@cmz/settings-security-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideSettingsSecurity(),
+                            children: routesModule.USERS_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'settings-security/profiles-permissions',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/settings-security.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideSettingsSecurity(),
-                                loadChildren: () =>
-                                    import('@cmz/settings-security-ui').then(
-                                        (m) => m.PROFILES_PERMISSIONS_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/settings-security.providers'),
+                        import('@cmz/settings-security-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideSettingsSecurity(),
+                            children:
+                                routesModule.PROFILES_PERMISSIONS_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'settings-security/access-logs',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/settings-security.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideSettingsSecurity(),
-                                loadChildren: () =>
-                                    import('@cmz/settings-security-ui').then(
-                                        (m) => m.ACCESS_LOGS_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/settings-security.providers'),
+                        import('@cmz/settings-security-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideSettingsSecurity(),
+                            children: routesModule.ACCESS_LOGS_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'communication/messaging',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/communication.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideCommunication(),
-                                loadChildren: () =>
-                                    import('@cmz/communication-ui').then(
-                                        (m) => m.MESSAGING_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/communication.providers'),
+                        import('@cmz/communication-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideCommunication(),
+                            children: routesModule.MESSAGING_ROUTES,
+                        },
+                    ]),
             },
             {
                 path: 'communication/notifications',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('./providers/communication.providers').then(
-                        (providersModule) => [
-                            {
-                                path: '',
-                                providers:
-                                    providersModule.provideCommunication(),
-                                loadChildren: () =>
-                                    import('@cmz/communication-ui').then(
-                                        (m) => m.NOTIFICATIONS_ROUTES
-                                    ),
-                            },
-                        ]
-                    ),
+                    Promise.all([
+                        import('./providers/communication.providers'),
+                        import('@cmz/communication-ui'),
+                    ]).then(([providersModule, routesModule]) => [
+                        {
+                            path: '',
+                            providers:
+                                providersModule.provideCommunication(),
+                            children: routesModule.NOTIFICATIONS_ROUTES,
+                        },
+                    ]),
             },
         ],
     },
