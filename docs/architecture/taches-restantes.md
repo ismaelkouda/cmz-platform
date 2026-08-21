@@ -1569,8 +1569,14 @@ Figma, désormais source partielle différée :
   modifié, et la décision d'agir sur cette conclusion (déclencher une promotion,
   faire réviser ce constat par une revue humaine, etc.) reste explicitement hors
   périmètre de ce chantier.
-- **PLAT-6** — différé, L, P1. Ajouter Figma comme source de Presentation intent
-  après clôture de PLAT-1 à PLAT-5.
+- **PLAT-8** — différé, L, P1 (renommé depuis « PLAT-6 », en collision avec
+  l'entrée PLAT-6 ci-dessus « fait, 2026-08-17, vérification CI » — deux
+  chantiers distincts partageaient le même identifiant, corrigé le
+  2026-08-21). Ajouter Figma comme source de Presentation intent après
+  clôture de PLAT-1 à PLAT-5. **Condition de déblocage désormais remplie** :
+  PLAT-1 à PLAT-5 (K variantes incluses) sont tous fait/fait localement,
+  confirmés CI verte (voir PLAT-6 ci-dessus et §6 promotion M4) — ce
+  chantier peut être engagé.
 
 ### 2.1 Preuves empiriques déjà produites
 
