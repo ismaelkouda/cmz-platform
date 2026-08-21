@@ -36,21 +36,7 @@ import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { provideI18n } from './i18n/i18n.provider';
 import { provideDevPermissions } from './dev/dev-permissions.provider';
-import { provideAdministrativeInfrastructure } from './providers/administrative-infrastructure.providers';
 import { provideAdministrativeBoundary } from './providers/administrative-boundary.providers';
-import { provideAuthentication } from './providers/authentication.providers';
-import { provideCoverageAreas } from './providers/coverage-areas.providers';
-import { provideTeamOrganization } from './providers/team-organization.providers';
-import { provideSettingsSecurity } from './providers/settings-security.providers';
-import { provideCommunication } from './providers/communication.providers';
-import { provideDashboard } from './providers/dashboard.providers';
-import { provideMonitoring } from './providers/monitoring.providers';
-import { provideReporting } from './providers/reporting.providers';
-import { provideInteractiveMap } from './providers/interactive-map.providers';
-import { provideReportStates } from './providers/report-states.providers';
-import { provideProcessing } from './providers/processing.providers';
-import { provideRequests } from './providers/requests.providers';
-import { provideFinalization } from './providers/finalization.providers';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -111,21 +97,27 @@ export const appConfig: ApplicationConfig = {
         ConsoleLoggerAdapter,
         { provide: ErrorHandler, useClass: GlobalErrorHandler },
         // Composition root des modules (ports domaine -> impls data).
-        ...provideAdministrativeInfrastructure(),
+        //
+        // administrative-boundary reste fourni ici statiquement (pas
+        // route-scoped comme les 14 autres modules migrés en 2026-08-21,
+        // voir app.routes.ts) : `RegionSelectFacade`
+        // (@cmz/administrative-boundary-application) est consommé hors de
+        // son propre module par `MessagingFormStore`
+        // (libs/communication/ui/src/lib/stores/messaging-form.store.ts,
+        // cascade région → département → commune du formulaire de
+        // messagerie). Si `provideAdministrativeBoundary()` n'était fourni
+        // que sous les routes `territorial-structures/*`, visiter
+        // `communication/messaging` sans jamais avoir visité
+        // `territorial-structures/*` lèverait un `NullInjectorError` sur
+        // `RegionSelectRepository`. Confirmé par audit du repo (aucun autre
+        // module migré n'a de consommateur en dehors de son propre
+        // périmètre applicatif) — voir aussi les docstrings de
+        // `provideAdministrativeBoundary()`/`provideAuthentication()`/
+        // `provideCoverageAreas()`/`provideAdministrativeInfrastructure()`
+        // qui documentaient déjà ce risque générique ("façades/use-cases
+        // sont des singletons root") sans qu'il ne se matérialise pour ces
+        // trois derniers modules.
         ...provideAdministrativeBoundary(),
-        ...provideAuthentication(),
-        ...provideCoverageAreas(),
-        ...provideTeamOrganization(),
-        ...provideSettingsSecurity(),
-        ...provideCommunication(),
-        ...provideDashboard(),
-        ...provideMonitoring(),
-        ...provideReporting(),
-        ...provideInteractiveMap(),
-        ...provideReportStates(),
-        ...provideProcessing(),
-        ...provideRequests(),
-        ...provideFinalization(),
         // DEV ONLY : accorde toutes les permissions (no-op hors isDevMode()).
         ...provideDevPermissions(),
     ],
