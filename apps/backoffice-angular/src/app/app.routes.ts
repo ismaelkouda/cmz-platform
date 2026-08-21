@@ -101,8 +101,7 @@ export const appRoutes: Route[] = [
                     ]).then(([providersModule, routesModule]) => [
                         {
                             path: '',
-                            providers:
-                                providersModule.provideInteractiveMap(),
+                            providers: providersModule.provideInteractiveMap(),
                             children: routesModule.INTERACTIVE_MAP_ROUTES,
                         },
                     ]),
@@ -122,8 +121,7 @@ export const appRoutes: Route[] = [
                     ]).then(([providersModule, routesModule]) => [
                         {
                             path: '',
-                            providers:
-                                providersModule.provideReportStates(),
+                            providers: providersModule.provideReportStates(),
                             children: routesModule.REPORT_STATES_ROUTES,
                         },
                     ]),
@@ -168,8 +166,7 @@ export const appRoutes: Route[] = [
                     ]).then(([providersModule, routesModule]) => [
                         {
                             path: '',
-                            providers:
-                                providersModule.provideFinalization(),
+                            providers: providersModule.provideFinalization(),
                             children: routesModule.FINALIZATION_ROUTES,
                         },
                     ]),
@@ -179,9 +176,7 @@ export const appRoutes: Route[] = [
                 canActivate: [pathsGuard],
                 loadChildren: () =>
                     Promise.all([
-                        import(
-                            './providers/administrative-infrastructure.providers'
-                        ),
+                        import('./providers/administrative-infrastructure.providers'),
                         import('@cmz/administrative-infrastructure-ui'),
                     ]).then(([providersModule, routesModule]) => [
                         {
@@ -197,9 +192,7 @@ export const appRoutes: Route[] = [
                 canActivate: [pathsGuard],
                 loadChildren: () =>
                     Promise.all([
-                        import(
-                            './providers/administrative-infrastructure.providers'
-                        ),
+                        import('./providers/administrative-infrastructure.providers'),
                         import('@cmz/administrative-infrastructure-ui'),
                     ]).then(([providersModule, routesModule]) => [
                         {
@@ -260,8 +253,7 @@ export const appRoutes: Route[] = [
                     ]).then(([providersModule, routesModule]) => [
                         {
                             path: '',
-                            providers:
-                                providersModule.provideCoverageAreas(),
+                            providers: providersModule.provideCoverageAreas(),
                             children: routesModule.SITE_GROUP_ROUTES,
                         },
                     ]),
@@ -276,8 +268,7 @@ export const appRoutes: Route[] = [
                     ]).then(([providersModule, routesModule]) => [
                         {
                             path: '',
-                            providers:
-                                providersModule.provideCoverageAreas(),
+                            providers: providersModule.provideCoverageAreas(),
                             children: routesModule.MOBILE_NETWORK_ROUTES,
                         },
                     ]),
@@ -292,10 +283,8 @@ export const appRoutes: Route[] = [
                     ]).then(([providersModule, routesModule]) => [
                         {
                             path: '',
-                            providers:
-                                providersModule.provideCoverageAreas(),
-                            children:
-                                routesModule.OPTICAL_FIBER_NETWORK_ROUTES,
+                            providers: providersModule.provideCoverageAreas(),
+                            children: routesModule.OPTICAL_FIBER_NETWORK_ROUTES,
                         },
                     ]),
             },
@@ -309,8 +298,7 @@ export const appRoutes: Route[] = [
                     ]).then(([providersModule, routesModule]) => [
                         {
                             path: '',
-                            providers:
-                                providersModule.provideCoverageAreas(),
+                            providers: providersModule.provideCoverageAreas(),
                             children: routesModule.RADIO_RELAY_LINKS_ROUTES,
                         },
                     ]),
@@ -359,8 +347,7 @@ export const appRoutes: Route[] = [
                             path: '',
                             providers:
                                 providersModule.provideTeamOrganization(),
-                            children:
-                                routesModule.AGENTS_PERFORMANCES_ROUTES,
+                            children: routesModule.AGENTS_PERFORMANCES_ROUTES,
                         },
                     ]),
             },
@@ -480,8 +467,7 @@ export const appRoutes: Route[] = [
                             path: '',
                             providers:
                                 providersModule.provideSettingsSecurity(),
-                            children:
-                                routesModule.PROFILES_PERMISSIONS_ROUTES,
+                            children: routesModule.PROFILES_PERMISSIONS_ROUTES,
                         },
                     ]),
             },
@@ -511,8 +497,7 @@ export const appRoutes: Route[] = [
                     ]).then(([providersModule, routesModule]) => [
                         {
                             path: '',
-                            providers:
-                                providersModule.provideCommunication(),
+                            providers: providersModule.provideCommunication(),
                             children: routesModule.MESSAGING_ROUTES,
                         },
                     ]),
@@ -527,8 +512,7 @@ export const appRoutes: Route[] = [
                     ]).then(([providersModule, routesModule]) => [
                         {
                             path: '',
-                            providers:
-                                providersModule.provideCommunication(),
+                            providers: providersModule.provideCommunication(),
                             children: routesModule.NOTIFICATIONS_ROUTES,
                         },
                     ]),
