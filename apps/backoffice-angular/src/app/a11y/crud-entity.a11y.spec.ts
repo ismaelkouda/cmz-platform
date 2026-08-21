@@ -10,14 +10,22 @@ import {
     simpleOkEnvelope,
     stabilizeFixture,
 } from '../testing/a11y-testbed.harness';
+import { provideAdministrativeInfrastructure } from '../providers/administrative-infrastructure.providers';
 
 /**
  * Archétype **crud-entity** (T12-8 / M-9) — page liste + filtres + table.
  * Référence Nx : `administrative-infrastructure` / InfrastructureListComponent.
+ *
+ * `provideAdministrativeInfrastructure()` passé explicitement (OPS-25) :
+ * depuis la migration lazy-provider, ce repository n'est plus dans
+ * `appConfig.providers` — voir le docstring de `configureA11yTestBed`.
  */
 describe('a11y crud-entity — InfrastructureListComponent', () => {
     it('0 violation critical|serious sous jsdom (WCAG 2.0/2.1 A+AA)', async () => {
-        await configureA11yTestBed([InfrastructureListComponent]);
+        await configureA11yTestBed(
+            [InfrastructureListComponent],
+            provideAdministrativeInfrastructure()
+        );
 
         const http = TestBed.inject(HttpTestingController);
         const fixture = TestBed.createComponent(InfrastructureListComponent);

@@ -1,4 +1,4 @@
-import { Type } from '@angular/core';
+import { Provider, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
     HttpTestingController,
@@ -20,6 +20,20 @@ import { expectNoAxeViolations } from './axe-a11y.util';
  * 4. **Router** minimal — pages qui naviguent (dashboard cards).
  *
  * Ordre providers : `appConfig` puis overrides (dernière inscription gagne).
+ *
+ * **`extraProviders` (OPS-25, 2026-08-21)** : depuis la migration
+ * lazy-provider (`app.routes.ts`), 15 des 17 `provideXxx()` métier ne sont
+ * plus dans `appConfig.providers` — ils sont résolus par le child injector
+ * créé par `loadChildren` au moment où le Router active la route, pas au
+ * bootstrap. Un test qui monte un composant directement via
+ * `TestBed.createComponent` (sans jamais passer par le Router) ne traverse
+ * jamais cette factory et perd donc l'accès aux repositories du module
+ * testé. Toute spec a11y qui teste un composant appartenant à un module migré
+ * doit passer son `provideXxx()` ici (voir `crud-entity.a11y.spec.ts`,
+ * `read-only-view.a11y.spec.ts`, `workflow-action.a11y.spec.ts` pour
+ * l'exemple). `administrative-boundary` reste seul fourni statiquement dans
+ * `appConfig.providers` (cross-module, voir son commentaire dans
+ * `app.config.ts`) — aucune spec ne devrait avoir besoin de le repasser ici.
  */
 export const A11Y_TEST_APP_CONFIG = {
     authenticationUrl: 'https://test.invalid/auth/',
@@ -31,12 +45,14 @@ export const A11Y_TEST_APP_CONFIG = {
 } as const;
 
 export async function configureA11yTestBed(
-    components: Type<unknown>[]
+    components: Type<unknown>[],
+    extraProviders: Provider[] = []
 ): Promise<void> {
     await TestBed.configureTestingModule({
         imports: components,
         providers: [
             ...appConfig.providers,
+            ...extraProviders,
             provideHttpClientTesting(),
             provideRouter([]),
             {

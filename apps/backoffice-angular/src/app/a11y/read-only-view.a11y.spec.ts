@@ -8,6 +8,7 @@ import {
     simpleOkEnvelope,
     stabilizeFixture,
 } from '../testing/a11y-testbed.harness';
+import { provideDashboard } from '../providers/dashboard.providers';
 
 /**
  * Archétype **read-only-view** (T12-8 / M-9) — stats + filtre période +
@@ -16,6 +17,10 @@ import {
  * Couvre le ROI « lecture seule » du monorepo distinct de la liste crud
  * et du workflow-action ; une régression aria-pressed / aria-label sur
  * le filtre période est détectée ici.
+ *
+ * `provideDashboard()` passé explicitement (OPS-25) : depuis la migration
+ * lazy-provider, ce repository n'est plus dans `appConfig.providers` — voir
+ * le docstring de `configureA11yTestBed`.
  */
 function makeDashboardItem(
     partial: Partial<DashboardItemApiDto> = {}
@@ -42,7 +47,10 @@ function makeDashboardItem(
 
 describe('a11y read-only-view — DashboardPageComponent', () => {
     it('0 violation critical|serious sous jsdom (WCAG 2.0/2.1 A+AA)', async () => {
-        await configureA11yTestBed([DashboardPageComponent]);
+        await configureA11yTestBed(
+            [DashboardPageComponent],
+            provideDashboard()
+        );
 
         const http = TestBed.inject(HttpTestingController);
         const fixture = TestBed.createComponent(DashboardPageComponent);
