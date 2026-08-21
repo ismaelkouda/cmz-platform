@@ -58,6 +58,56 @@ définition sert aux deux cibles. Le code ReactJS produit est écrit en
 TypeScript, comme le code Angular ; TypeScript est ici le langage, pas le nom de
 la cible.
 
+### À quoi sert `opaque_types` ?
+
+Chaque champ d'`input` ou d'`output` a un `type`. La plupart du temps, ce type
+est une primitive simple : `{ "kind": "primitive", "name": "string" }` pour du
+texte, `"number"` pour un nombre, etc. Une primitive ne peut décrire qu'**une
+seule valeur simple**, pas un objet avec plusieurs informations à l'intérieur.
+
+`opaque_types` sert quand un champ doit contenir un **objet composé**, dont on
+ne détaille pas le contenu interne dans cette fiche (le générateur le traite
+comme une « boîte noire » nommée, à raccorder plus tard côté produit). On lui
+donne un nom en tête de fichier, puis on le réutilise dans `input`/`output` avec
+`"kind": "model"` au lieu de `"kind": "primitive"`.
+
+**Exemple concret** — une connexion qui renvoie un utilisateur et un jeton,
+plutôt qu'un simple texte :
+
+```json
+"opaque_types": [
+  { "id": "current-user", "description": "Profil renvoyé après connexion." },
+  { "id": "authentication-token", "description": "Jeton d'autorisation." }
+],
+"operations": [
+  {
+    "output": {
+      "fields": [
+        {
+          "name": "user",
+          "type": { "kind": "model", "name": "current-user", "nullable": false },
+          "required": true
+        },
+        {
+          "name": "token",
+          "type": { "kind": "model", "name": "authentication-token", "nullable": false },
+          "required": true
+        }
+      ]
+    }
+  }
+]
+```
+
+**Dans la plupart des formulaires simples (contact, demande de démo,
+newsletter), aucun `opaque_type` n'est nécessaire** : si chaque champ envoyé ou
+reçu est un texte, un nombre, un email ou une date, `opaque_types` reste un
+tableau vide `[]`. Voir
+[`sign-in.definition.json`](../../tools/generator-platform/sources/sign-in.definition.json)
+pour l'exemple complet, et son
+[`.annotated.md`](../../tools/generator-platform/sources/sign-in.definition.annotated.md)
+pour le détail ligne par ligne.
+
 Le vocabulaire d'effets accepté reste volontairement borné. Si la fonctionnalité
 nécessite un nouvel effet local que le schéma ne connaît pas, la commande doit
 échouer : il faut étendre explicitement le modèle et son Oracle, pas contourner
