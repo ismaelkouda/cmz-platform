@@ -1165,6 +1165,42 @@ Figma, désormais source partielle différée :
   pédagogique documentant les pièges de schéma courants (voir
   `sign-in.definition.annotated.md`), pas une fixture de contrat CI. Committé
   tel quel, sans lui inventer un rôle de gate qu'il n'a pas.
+- **OPS-25** — **fait** (2026-08-21), M, P1. Run nightly `#20` a signalé une
+  dérive de budget bundle (`check:docs-freshness`, chunk initial mesuré en CI à
+  `855.37 kB` contre `872.78 kB` committé — écart dû à un déterminisme de build
+  imparfait, pas à une régression de code). Plutôt que de rejouer une mesure
+  locale pour recaler `bundle-metrics.json` sur la nouvelle valeur (fixer le
+  symptôme), la cause structurelle a été traitée : les 17 modules fonctionnels
+  du back-office fournissaient tous leurs repositories
+  (`provideXxx(): Provider[]`, bindings domain→data) **statiquement** dans
+  `app.config.ts`, alors que leurs routes UI étaient déjà `loadChildren` —
+  chaque visite chargeait donc en un seul chunk initial le code métier des 17
+  modules, même ceux jamais visités. POC sur `content-management` (commit
+  `0c010d1`, le plus gros contributeur identifié par `source-map-explorer`, 44.7
+  kB source) : `loadChildren` restructuré pour retourner un `Route[]`
+  synthétique portant `providers` (résolus dans le même chunk paresseux que
+  `providers/content-management.providers.ts`) et les routes réelles en
+  `children` — pattern confirmé conforme à la doc officielle Angular v22
+  (`angular.dev/guide/routing/loading-strategies` : `loadChildren` accepte tout
+  loader async résolvant en `Routes` ; `providers` sur un `Route` crée un
+  `EnvironmentInjector` de niveau route, lazy ou non). Résultat mesuré :
+  `872.78 kB → 823.96 kB` (`-5.6 %`). Généralisé ensuite (commit `8fa311b`, via
+  agent délégué puis contre-vérifié indépendamment — build, lint, et absence de
+  duplication de chunk pour les 5 modules multi-route re-contrôlés à la main)
+  aux 14 modules sans consommateur cross-module :
+  `dashboard, monitoring, reporting, interactive-map, report-states, processing, requests, finalization, communication, administrative-infrastructure, settings-security, coverage-areas, team-organization, authentication`.
+  **1 module non migré** : `administrative-boundary` reste statique —
+  `RegionSelectFacade` (`@cmz/administrative-boundary-application`) est consommé
+  hors de son propre module par `MessagingFormStore`
+  (`libs/communication/ui/src/lib/stores/messaging-form.store.ts`, cascade
+  région→département→commune du formulaire de messagerie) ; le rendre
+  route-scoped casserait `communication/messaging` si `territorial-structures/*`
+  n'a jamais été visité au préalable (`NullInjectorError` sur
+  `RegionSelectRepository`) — vérifié par grep sur le repo, pas supposé.
+  Résultat final mesuré : chunk initial `872.78 kB → 629.01 kB` (`-243.77 kB`,
+  `-27.9 %`), marge sous le seuil d'alerte `900 kB` passée de `~1 kB` (cause de
+  la dérive nightly) à `~271 kB`. `nx build backoffice-angular:build:production`
+  et `nx lint --max-warnings=0` verts sur le résultat final.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
