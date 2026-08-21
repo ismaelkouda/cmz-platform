@@ -212,52 +212,76 @@ export const appRoutes: Route[] = [
                         (m) => m.DAILY_GOAL_ROUTES
                     ),
             },
+            // POC réduction bundle initial (2026-08-21, voir taches-restantes.md) :
+            // provideContentManagement() (13 repositories @cmz/content-management-data,
+            // 44.7 kB — le plus gros contributeur de code métier au chunk initial
+            // mesuré par source-map-explorer) était fourni statiquement dans
+            // app.config.ts, donc chargé au démarrage même si aucune page
+            // content-management n'est jamais visitée. `loadChildren` retourne
+            // maintenant un unique Route synthétique portant `providers` (résolus
+            // dans le même chunk paresseux que le module importé) et les 6 routes
+            // réelles en `children` — Angular Router applique les providers d'une
+            // route avant de résoudre ses enfants, y compris quand cette route
+            // elle-même provient d'un `loadChildren`. Le fichier
+            // `providers/content-management.providers.ts` reste inchangé : il
+            // n'est plus importé statiquement en haut de ce fichier, seulement
+            // depuis l'intérieur de cette factory paresseuse.
             {
-                path: 'content-management/home',
+                path: 'content-management',
                 canActivate: [pathsGuard],
                 loadChildren: () =>
-                    import('@cmz/content-management-ui').then(
-                        (m) => m.HOME_ROUTES
-                    ),
-            },
-            {
-                path: 'content-management/slide',
-                canActivate: [pathsGuard],
-                loadChildren: () =>
-                    import('@cmz/content-management-ui').then(
-                        (m) => m.SLIDE_ROUTES
-                    ),
-            },
-            {
-                path: 'content-management/news',
-                canActivate: [pathsGuard],
-                loadChildren: () =>
-                    import('@cmz/content-management-ui').then(
-                        (m) => m.NEWS_ROUTES
-                    ),
-            },
-            {
-                path: 'content-management/legal-notice',
-                canActivate: [pathsGuard],
-                loadChildren: () =>
-                    import('@cmz/content-management-ui').then(
-                        (m) => m.LEGAL_NOTICE_ROUTES
-                    ),
-            },
-            {
-                path: 'content-management/privacy-policy',
-                canActivate: [pathsGuard],
-                loadChildren: () =>
-                    import('@cmz/content-management-ui').then(
-                        (m) => m.PRIVACY_POLICY_ROUTES
-                    ),
-            },
-            {
-                path: 'content-management/terms-use',
-                canActivate: [pathsGuard],
-                loadChildren: () =>
-                    import('@cmz/content-management-ui').then(
-                        (m) => m.TERMS_USE_ROUTES
+                    import('./providers/content-management.providers').then(
+                        (providersModule) => [
+                            {
+                                path: '',
+                                providers:
+                                    providersModule.provideContentManagement(),
+                                children: [
+                                    {
+                                        path: 'home',
+                                        loadChildren: () =>
+                                            import('@cmz/content-management-ui').then(
+                                                (m) => m.HOME_ROUTES
+                                            ),
+                                    },
+                                    {
+                                        path: 'slide',
+                                        loadChildren: () =>
+                                            import('@cmz/content-management-ui').then(
+                                                (m) => m.SLIDE_ROUTES
+                                            ),
+                                    },
+                                    {
+                                        path: 'news',
+                                        loadChildren: () =>
+                                            import('@cmz/content-management-ui').then(
+                                                (m) => m.NEWS_ROUTES
+                                            ),
+                                    },
+                                    {
+                                        path: 'legal-notice',
+                                        loadChildren: () =>
+                                            import('@cmz/content-management-ui').then(
+                                                (m) => m.LEGAL_NOTICE_ROUTES
+                                            ),
+                                    },
+                                    {
+                                        path: 'privacy-policy',
+                                        loadChildren: () =>
+                                            import('@cmz/content-management-ui').then(
+                                                (m) => m.PRIVACY_POLICY_ROUTES
+                                            ),
+                                    },
+                                    {
+                                        path: 'terms-use',
+                                        loadChildren: () =>
+                                            import('@cmz/content-management-ui').then(
+                                                (m) => m.TERMS_USE_ROUTES
+                                            ),
+                                    },
+                                ],
+                            },
+                        ]
                     ),
             },
             {

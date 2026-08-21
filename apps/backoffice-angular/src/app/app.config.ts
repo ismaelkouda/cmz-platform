@@ -41,7 +41,6 @@ import { provideAdministrativeBoundary } from './providers/administrative-bounda
 import { provideAuthentication } from './providers/authentication.providers';
 import { provideCoverageAreas } from './providers/coverage-areas.providers';
 import { provideTeamOrganization } from './providers/team-organization.providers';
-import { provideContentManagement } from './providers/content-management.providers';
 import { provideSettingsSecurity } from './providers/settings-security.providers';
 import { provideCommunication } from './providers/communication.providers';
 import { provideDashboard } from './providers/dashboard.providers';
@@ -117,7 +116,6 @@ export const appConfig: ApplicationConfig = {
         ...provideAuthentication(),
         ...provideCoverageAreas(),
         ...provideTeamOrganization(),
-        ...provideContentManagement(),
         ...provideSettingsSecurity(),
         ...provideCommunication(),
         ...provideDashboard(),
