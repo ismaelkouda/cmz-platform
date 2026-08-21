@@ -9,7 +9,7 @@ consulter, l'historique Git fait foi.
 > pour la réorientation vers un système de génération générique multi-source.
 
 <!-- BEGIN:GENERATED:monorepo-status -->
-- **Dernière mise à jour :** 2026-08-18 (généré par `tools/generate-status.mjs`)
+- **Dernière mise à jour :** 2026-08-21 (généré par `tools/generate-status.mjs`)
 - **État :** **Phase 08** — génération depuis patterns ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle outillé + Kernel `shared/` / `@cmz/core` + **19** modules livrés/compilants (**72** libs + **1** app ; **2 730** `.ts` hors tests). Voir [`STATUS.md`](../../STATUS.md).
 - **Familles IR :** `workflow-action` **4/4**, `read-only-view` **4/4**. Corpus **1 507** paires. CI `corpus:ci` (structural-only) + `corpus-full` (main) + Tier 2 nightly.
 <!-- END:GENERATED:monorepo-status -->
@@ -42,7 +42,7 @@ d'imports, `package.json`/`project.json`/paths TS. Voir son
 Vitest). Build production : `bunx nx run backoffice-angular:build:production`.
 
 <!-- BEGIN:GENERATED:bundle-metrics -->
-- **Bundle initial (production, raw)** : **872.78 kB** — source [`bundle-metrics.json`](../../apps/backoffice-angular/bundle-metrics.json) (mesuré 2026-08-11 via `bun run bundle:record` après build).
+- **Bundle initial (production, raw)** : **629.01 kB** — source [`bundle-metrics.json`](../../apps/backoffice-angular/bundle-metrics.json) (mesuré 2026-08-21 via `bun run bundle:record` après build).
 - **ExcelJS (lazy)** : **948.32 kB** raw — hors budget initial.
 - **Budgets** (`project.json`) : warning `900kb` / error `1mb` — politique [ADR-0016](../adr/0016-politique-budget-bundle.md) (hausse interdite sans ADR).
 <!-- END:GENERATED:bundle-metrics -->
