@@ -9,7 +9,8 @@ import {
 } from '@cmz/finalization-domain';
 import { QueuesFinalizationUseCase } from '../use-cases/queues-finalization.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class QueuesFinalizationFacade extends PaginatedResourceFacade<
     QueuesFinalizationEntity,
     QueuesFinalizationFilterContract

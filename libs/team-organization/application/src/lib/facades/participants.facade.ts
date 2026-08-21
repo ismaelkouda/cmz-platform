@@ -13,7 +13,8 @@ import {
 } from '@cmz/team-organization-domain';
 import { ParticipantsUseCase } from '../use-cases/participants.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class ParticipantsFacade extends CollectionResourceFacade<
     ParticipantsEntity,
     ParticipantsFilterContract

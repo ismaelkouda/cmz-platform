@@ -7,7 +7,8 @@ import { ResourceFacade } from '@cmz/shared-application';
 import { Observable } from 'rxjs';
 import { ResetPasswordUseCase } from '../use-cases/reset-password.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade`. */
+@Service({ autoProvided: false })
 export class ResetPasswordFacade extends ResourceFacade<
     ResetPasswordResponseEntity,
     ResetPasswordRequestContract

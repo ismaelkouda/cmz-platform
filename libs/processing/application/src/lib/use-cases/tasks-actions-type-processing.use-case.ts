@@ -8,7 +8,8 @@ import {
     tasksActionsTypeProcessingFilterVo,
 } from '@cmz/processing-domain';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginUseCase` (libs/authentication/application/src/lib/use-cases/login.use-case.ts). */
+@Service({ autoProvided: false })
 export class TasksActionsTypeProcessingUseCase {
     private readonly repository = inject(TasksActionsTypeProcessingRepository);
 

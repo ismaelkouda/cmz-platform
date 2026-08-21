@@ -20,7 +20,8 @@ import { Observable, defer } from 'rxjs';
  * (filter entity) + repository (port). Le `defer` reporte l'éventuel throw de
  * validation dans le flux (rendu via la loop d'erreurs).
  */
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginUseCase` (libs/authentication/application/src/lib/use-cases/login.use-case.ts). */
+@Service({ autoProvided: false })
 export class InfrastructureUseCase {
     private readonly repository = inject(InfrastructureRepository);
 

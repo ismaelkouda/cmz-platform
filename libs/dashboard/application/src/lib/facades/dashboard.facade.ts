@@ -18,7 +18,8 @@ interface DashboardParams {
  * `MessagingFindOneFacade` : les statistiques du tableau de bord ne sont
  * pas une collection paginée, un seul objet agrégé par période.
  */
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (`libs/authentication/application/src/lib/facades/login.facade.ts`). */
+@Service({ autoProvided: false })
 export class DashboardFacade extends ResourceFacade<
     DashboardEntity,
     DashboardParams

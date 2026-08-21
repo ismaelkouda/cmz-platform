@@ -13,7 +13,8 @@ import {
 } from '@cmz/content-management-domain';
 import { NewsUseCase } from '../use-cases/news.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class NewsFacade extends CollectionResourceFacade<
     NewsEntity,
     NewsFilterContract

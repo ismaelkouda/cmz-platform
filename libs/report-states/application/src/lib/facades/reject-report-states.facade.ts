@@ -9,7 +9,8 @@ import {
 } from '@cmz/report-states-domain';
 import { RejectReportStatesUseCase } from '../use-cases/reject-report-states.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class RejectReportStatesFacade extends PaginatedResourceFacade<
     RejectReportStatesEntity,
     RejectReportStatesFilterContract

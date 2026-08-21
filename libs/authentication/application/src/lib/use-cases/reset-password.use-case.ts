@@ -7,7 +7,8 @@ import {
 } from '@cmz/authentication-domain';
 import { Observable, defer } from 'rxjs';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginUseCase`. */
+@Service({ autoProvided: false })
 export class ResetPasswordUseCase {
     private readonly repository = inject(ResetPasswordRepository);
 

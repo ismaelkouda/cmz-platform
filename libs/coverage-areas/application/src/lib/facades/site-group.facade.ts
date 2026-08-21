@@ -17,7 +17,8 @@ import { SiteGroupUseCase } from '../use-cases/site-group.use-case';
  * Facade SiteGroup : liste paginée via `rxResource` (signal-first) + mutations.
  * Étend `CollectionResourceFacade` ; aucune dépendance UI (feedback par ports).
  */
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class SiteGroupFacade extends CollectionResourceFacade<
     SiteGroupEntity,
     SiteGroupFilterContract

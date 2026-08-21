@@ -8,7 +8,8 @@ import {
 } from '@cmz/finalization-domain';
 import { TasksFinalizationUseCase } from '../use-cases/tasks-finalization.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class TasksFinalizationFacade extends PaginatedResourceFacade<
     TasksFinalizationEntity,
     TasksFinalizationFilterContract

@@ -4,7 +4,8 @@ import { ResourceFacade } from '@cmz/shared-application';
 import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
 import { MapUseCase } from '../use-cases/map.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class MapFacade extends ResourceFacade<GrafanaLinkEntity, FetchOptions> {
     private readonly useCase = inject(MapUseCase);
 

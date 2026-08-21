@@ -13,7 +13,8 @@ interface ProfilesPermissionsFindOneParams {
     options?: FetchOptions;
 }
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class ProfilesPermissionsFindOneFacade extends ResourceFacade<
     ProfilesPermissionsFindOneEntity,
     ProfilesPermissionsFindOneParams

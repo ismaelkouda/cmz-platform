@@ -14,8 +14,10 @@ import { InfrastructureUseCase } from '../use-cases/infrastructure.use-case';
 /**
  * Facade Infrastructure : liste paginée via `rxResource` (signal-first) + mutations.
  * Étend `CollectionResourceFacade` ; aucune dépendance UI (feedback par ports).
+ *
+ * `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts).
  */
-@Service()
+@Service({ autoProvided: false })
 export class InfrastructureFacade extends CollectionResourceFacade<
     InfrastructureEntity,
     InfrastructureFilterContract

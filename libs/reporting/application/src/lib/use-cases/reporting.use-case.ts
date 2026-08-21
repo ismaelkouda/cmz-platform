@@ -3,7 +3,8 @@ import { defer, Observable } from 'rxjs';
 import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
 import { ReportingRepository, ReportingSection } from '@cmz/reporting-domain';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginUseCase` (libs/authentication/application/src/lib/use-cases/login.use-case.ts). */
+@Service({ autoProvided: false })
 export class ReportingUseCase {
     private readonly repository = inject(ReportingRepository);
 

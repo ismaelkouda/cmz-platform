@@ -12,7 +12,8 @@ import { MonitoringUseCase } from '../use-cases/monitoring.use-case';
  * la section lue (`MonitoringSection.NODE`) diffère de `ServicesFacade` /
  * `ResourcesFacade` / `JobsFacade` — domaine/data, eux, sont consolidés.
  */
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (`libs/authentication/application/src/lib/facades/login.facade.ts`). */
+@Service({ autoProvided: false })
 export class NodeFacade extends ResourceFacade<
     GrafanaLinkEntity,
     FetchOptions

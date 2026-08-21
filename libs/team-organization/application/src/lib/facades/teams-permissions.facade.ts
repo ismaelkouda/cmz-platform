@@ -14,7 +14,8 @@ interface TeamsPermissionsParams {
  * édition récupère les permissions cochées via `TeamsFindOneFacade` —
  * cf. décision domaine `TeamsPermissionsRepository`).
  */
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class TeamsPermissionsFacade extends ResourceFacade<
     TeamsPermissionOption[],
     TeamsPermissionsParams

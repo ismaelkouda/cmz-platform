@@ -13,7 +13,8 @@ interface SlideFindOneParams {
     options?: FetchOptions;
 }
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class SlideFindOneFacade extends ResourceFacade<
     SlideFindOneEntity,
     SlideFindOneParams

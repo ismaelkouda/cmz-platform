@@ -29,8 +29,12 @@ export interface RequestsDetailsLoadParams {
     options?: FetchOptions;
 }
 
-/** Façade fiche demande + mutations take/approve/reject (tranche B). */
-@Service()
+/**
+ * Façade fiche demande + mutations take/approve/reject (tranche B).
+ *
+ * `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts).
+ */
+@Service({ autoProvided: false })
 export class RequestsDetailsFacade extends ResourceFacade<
     RequestsDetailsEntity,
     RequestsDetailsLoadParams

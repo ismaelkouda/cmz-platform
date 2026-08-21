@@ -5,7 +5,8 @@ import { FetchOptions } from '@cmz/shared-domain';
 import { InteractiveMapReportEntity } from '@cmz/interactive-map-domain';
 import { InteractiveMapReportsUseCase } from '../use-cases/interactive-map-reports.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class InteractiveMapSigFacade extends ResourceFacade<
     InteractiveMapReportEntity[],
     FetchOptions

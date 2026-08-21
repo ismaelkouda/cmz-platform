@@ -7,7 +7,8 @@ import { ResourceFacade } from '@cmz/shared-application';
 import { Observable } from 'rxjs';
 import { ForgotPasswordUseCase } from '../use-cases/forgot-password.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade`. */
+@Service({ autoProvided: false })
 export class ForgotPasswordFacade extends ResourceFacade<
     ForgotPasswordResponseEntity,
     ForgotPasswordRequestContract

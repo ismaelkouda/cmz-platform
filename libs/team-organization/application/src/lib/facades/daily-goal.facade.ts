@@ -8,7 +8,8 @@ import {
 } from '@cmz/team-organization-domain';
 import { DailyGoalUseCase } from '../use-cases/daily-goal.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class DailyGoalFacade extends PaginatedResourceFacade<
     DailyGoalEntity,
     DailyGoalFilterContract

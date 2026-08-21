@@ -13,7 +13,8 @@ import {
 } from '@cmz/content-management-domain';
 import { LegalNoticeUseCase } from '../use-cases/legal-notice.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class LegalNoticeFacade extends CollectionResourceFacade<
     LegalNoticeEntity,
     LegalNoticeFilterContract

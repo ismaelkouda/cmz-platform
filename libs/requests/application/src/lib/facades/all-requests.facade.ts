@@ -8,7 +8,8 @@ import {
 } from '@cmz/requests-domain';
 import { AllRequestsUseCase } from '../use-cases/all-requests.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class AllRequestsFacade extends PaginatedResourceFacade<
     AllRequestsEntity,
     AllRequestsFilterContract

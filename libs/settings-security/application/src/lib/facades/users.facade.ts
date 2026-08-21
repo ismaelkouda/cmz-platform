@@ -13,7 +13,8 @@ import {
 } from '@cmz/settings-security-domain';
 import { UsersUseCase } from '../use-cases/users.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class UsersFacade extends CollectionResourceFacade<
     UsersEntity,
     UsersFilterContract

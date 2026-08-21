@@ -8,7 +8,8 @@ import {
 } from '@cmz/report-states-domain';
 import { CloseReportStatesUseCase } from '../use-cases/close-report-states.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class CloseReportStatesFacade extends PaginatedResourceFacade<
     CloseReportStatesEntity,
     CloseReportStatesFilterContract

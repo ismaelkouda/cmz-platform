@@ -13,7 +13,8 @@ import {
 } from '@cmz/content-management-domain';
 import { SlideUseCase } from '../use-cases/slide.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class SlideFacade extends CollectionResourceFacade<
     SlideEntity,
     SlideFilterContract

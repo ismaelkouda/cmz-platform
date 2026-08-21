@@ -30,7 +30,8 @@ export interface ProcessingDetailsLoadParams {
 }
 
 /** Façade fiche signalement + mutations take/treat (tranche B). */
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class ProcessingDetailsFacade extends ResourceFacade<
     ProcessingDetailsEntity,
     ProcessingDetailsLoadParams

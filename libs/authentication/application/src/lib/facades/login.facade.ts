@@ -17,8 +17,16 @@ import { LoginUseCase } from '../use-cases/login.use-case';
  * devient vrai **qu'après** persistance réussie, et un échec de sauvegarde
  * devient une vraie erreur de flux — routée par `ErrorHandlerRegistry` comme
  * n'importe quelle autre, pas avalée.
+ *
+ * `autoProvided: false` (OPS-25bis) : dépend de `LoginUseCase`, lui-même
+ * `autoProvided: false` depuis la migration lazy-provider (voir son
+ * docstring) — si `LoginFacade` restait singleton racine, son
+ * `inject(LoginUseCase)` échouerait car `LoginUseCase` n'est plus dans
+ * l'injecteur racine. Toute la chaîne Facade → UseCase → Repository doit
+ * être scoped ensemble à l'injecteur de route ; fourni explicitement par
+ * `provideAuthentication()`.
  */
-@Service()
+@Service({ autoProvided: false })
 export class LoginFacade extends ResourceFacade<
     LoginResponseEntity,
     LoginRequestContract

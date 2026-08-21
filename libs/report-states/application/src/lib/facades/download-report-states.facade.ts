@@ -9,7 +9,8 @@ import {
 } from '@cmz/report-states-domain';
 import { DownloadReportStatesUseCase } from '../use-cases/download-report-states.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class DownloadReportStatesFacade extends PaginatedResourceFacade<
     DownloadReportStatesEntity,
     DownloadReportStatesFilterContract

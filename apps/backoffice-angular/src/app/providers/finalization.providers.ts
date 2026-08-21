@@ -11,8 +11,26 @@ import {
     QueuesFinalizationRepositoryImpl,
     TasksFinalizationRepositoryImpl,
 } from '@cmz/finalization-data';
+import {
+    AllFinalizationFacade,
+    AllFinalizationUseCase,
+    FinalizationDetailsFacade,
+    FinalizationDetailsUseCase,
+    QueuesFinalizationFacade,
+    QueuesFinalizationUseCase,
+    TasksFinalizationFacade,
+    TasksFinalizationUseCase,
+} from '@cmz/finalization-application';
 
-/** Composition root du module `finalization`. */
+/**
+ * Composition root du module `finalization`.
+ *
+ * OPS-25bis : chaque `XxxUseCase`/`XxxFacade` du module est
+ * `@Service({ autoProvided: false })` (injecte directement ou
+ * transitivement une `Repository` scopée ici) — fournis explicitement
+ * ci-dessous pour résoudre dans le même injecteur que leurs `Repository`
+ * (voir `provideAuthentication()` pour le pattern de référence).
+ */
 export function provideFinalization(): Provider[] {
     return [
         {
@@ -31,5 +49,13 @@ export function provideFinalization(): Provider[] {
             provide: FinalizationDetailsRepository,
             useClass: FinalizationDetailsRepositoryImpl,
         },
+        AllFinalizationUseCase,
+        QueuesFinalizationUseCase,
+        TasksFinalizationUseCase,
+        FinalizationDetailsUseCase,
+        AllFinalizationFacade,
+        QueuesFinalizationFacade,
+        TasksFinalizationFacade,
+        FinalizationDetailsFacade,
     ];
 }

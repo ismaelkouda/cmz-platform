@@ -5,7 +5,8 @@ import { FetchOptions, GrafanaLinkEntity } from '@cmz/shared-domain';
 import { ReportingSection } from '@cmz/reporting-domain';
 import { ReportingUseCase } from '../use-cases/reporting.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (`libs/authentication/application/src/lib/facades/login.facade.ts`). */
+@Service({ autoProvided: false })
 export class RequestsFacade extends ResourceFacade<
     GrafanaLinkEntity,
     FetchOptions

@@ -8,7 +8,8 @@ import {
 } from '@cmz/team-organization-domain';
 import { AgentsPerformancesHistoryUseCase } from '../use-cases/agents-performances-history.use-case';
 
-@Service()
+/** `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts). */
+@Service({ autoProvided: false })
 export class AgentsPerformancesHistoryFacade extends PaginatedResourceFacade<
     AgentsPerformancesHistoryEntity,
     AgentsPerformancesHistoryFilterContract

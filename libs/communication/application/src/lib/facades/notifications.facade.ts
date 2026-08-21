@@ -15,8 +15,10 @@ import { NotificationsUseCase } from '../use-cases/notifications.use-case';
  * réelles (`readOne`/`readAll`) — pas du CRUD classique, mais `runAction`
  * ne suppose rien de spécifique à create/update/delete, il s'applique tout
  * aussi bien ici.
+ *
+ * `autoProvided: false` (OPS-25bis) — voir docstring de `LoginFacade` (libs/authentication/application/src/lib/facades/login.facade.ts).
  */
-@Service()
+@Service({ autoProvided: false })
 export class NotificationsFacade extends CollectionResourceFacade<
     NotificationsEntity,
     NotificationsFilterContract
