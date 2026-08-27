@@ -403,6 +403,17 @@ directives suivantes :
     ([ADR-0013](./docs/adr/0013-phases-08-generation-et-09-verification.md)).
     Phase **09** = vérification fonctionnelle vs legacy (non démarrée).
 
+6. **Scaffolding Tailwind pour nouvelle app Angular/React** : ni
+   `@nx/angular:application` ni `@nx/react:application` n'ont de support
+   Tailwind natif (Nx 23.1.0, vérifié 2026-08-27). N'improvisez jamais une
+   config Tailwind depuis zéro ou depuis votre mémoire d'entraînement — lisez
+   d'abord [`docs/architecture/scaffold-tailwind-apps.md`](./docs/architecture/scaffold-tailwind-apps.md)
+   puis utilisez `node tools/scaffold-tailwind.mjs --app <nom> --reference angular|react`.
+   Le script dérive la config depuis une app de référence réelle du repo
+   plutôt que d'un template figé — s'il échoue avec un message explicatif,
+   c'est volontaire (l'écosystème Nx/Tailwind a peut-être changé) : ne
+   contournez jamais l'échec, lisez le message et la doc avant d'agir.
+
 ---
 
 ## 5. État courant du monorepo

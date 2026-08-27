@@ -5,7 +5,14 @@ export default [
     ...nx.configs['flat/typescript'],
     ...nx.configs['flat/javascript'],
     {
-        ignores: ['**/dist', '**/out-tsc'],
+        ignores: [
+            '**/dist',
+            '**/out-tsc',
+            '**/build',
+            '**/.react-router',
+            '**/vite.config.*.timestamp*',
+            '**/vitest.config.*.timestamp*',
+        ],
     },
     // Fichiers d'outillage de test — exclus de enforce-module-boundaries.
     // Configs Vitest locales (s'il en reste) et tools/vitest-lib.config.ts :

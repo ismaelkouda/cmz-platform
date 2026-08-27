@@ -1,11 +1,61 @@
 import { readFile } from 'node:fs/promises';
 
+/**
+ * ============================================================================
+ * CŒUR DU DOMAINE "action-request" — NE PAS MODIFIER POUR AJOUTER UNE SOURCE
+ * ============================================================================
+ *
+ * Ce fichier définit le CONTRAT CIBLE que toute source d'entrée (legacy
+ * TypeScript, spec JSON structurée, et — à terme — OpenAPI, texte en langage
+ * naturel, traces runtime...) doit produire pour être compilée par le
+ * générateur de plateforme.
+ *
+ * Deux fonctions publiques concentrent tout le contrat :
+ *   1. `validateObservation(observation)` — valide/normalise la forme neutre
+ *      ("observation") que N'IMPORTE QUELLE source doit produire. C'est le
+ *      SEUL point de vérité sur "à quoi doit ressembler une observation
+ *      valide". Un adaptateur ne fait QUE produire un objet qui passe cette
+ *      validation — il n'a jamais besoin de connaître ou de modifier cette
+ *      fonction.
+ *   2. `buildSemanticModel(observation, policy)` — transforme une observation
+ *      déjà validée en modèle sémantique canonique (types, opérations,
+ *      contraintes, intégrations HTTP), en s'appuyant sur une `policy`
+ *      (fichier `*.policy.json`, ex: `policies/action-request.policy.json`)
+ *      qui porte les décisions humaines non déductibles du code source seul
+ *      (descriptions, préfixes de contraintes, classification des effets...).
+ *
+ * Pourquoi ne pas toucher ce fichier pour ajouter une nouvelle source (ex:
+ * OpenAPI) : les deux adaptateurs existants
+ * (`adapters/legacy-typescript-adapter.mjs`,
+ * `adapters/structured-spec-adapter.mjs`) et tout ce qui consomme le modèle
+ * sémantique en aval (compilateur, renderers, oracles, fixtures de
+ * provenance comme `fixtures/action-request.evidence.json`) dépendent du
+ * contrat exact posé ici. Le modifier pour accommoder une source
+ * particulière risquerait de casser silencieusement les sources déjà
+ * branchées. La bonne pratique du repo : écrire un NOUVEAU fichier adaptateur
+ * (ex: `adapters/openapi-adapter.mjs`) qui IMPORTE `validateObservation` en
+ * lecture seule et produit une observation conforme — voir
+ * `structured-spec-adapter.mjs` comme modèle minimal (23 lignes) de ce que
+ * doit faire un adaptateur : lire une source, construire l'observation,
+ * la valider, renvoyer aussi un descripteur de provenance (`source` avec
+ * `sha256` du contenu lu).
+ * ============================================================================
+ */
+
+/** Type primitif "string" réutilisable — raccourci pour construire des champs
+ * de type chaîne sans répéter la forme `{ kind, name, nullable }` partout. */
 export const primitiveString = {
     kind: 'primitive',
     name: 'string',
     nullable: false,
 };
 
+/**
+ * Normalise un identifiant (camelCase ou kebab-case) vers le format canonique
+ * `snake_case` minuscule utilisé partout dans les IDs du modèle sémantique
+ * (ex: "loginRequest" ou "login-request" -> "login_request"). Utilisé par les
+ * adaptateurs et par la construction des IDs de contraintes/facts.
+ */
 export function canonicalName(value) {
     return value
         .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
@@ -13,16 +63,67 @@ export function canonicalName(value) {
         .toLowerCase();
 }
 
+/** Garde-fou minimal : lève une erreur explicite (avec chemin JSON-like dans
+ * le message) si la condition est fausse. Toutes les validations de ce
+ * fichier "fail closed" — au premier problème, on arrête tout plutôt que de
+ * continuer avec des données partiellement valides. */
 function assert(condition, message) {
     if (!condition) throw new Error(message);
 }
 
+/** Interdit toute clé non explicitement listée dans `allowed` sur `value`.
+ * C'est ce qui rend le contrat "fermé" : une source qui ajoute une propriété
+ * inconnue (ex: un champ spécifique à une techno particulière qui fuiterait
+ * dans le modèle neutre) est rejetée immédiatement, plutôt que silencieusement
+ * ignorée. Voir le test "target-specific framework leakage is rejected". */
 function assertKeys(value, allowed, path) {
     for (const key of Object.keys(value)) {
         assert(allowed.includes(key), `${path}: unsupported property ${key}`);
     }
 }
 
+/**
+ * LE CONTRAT D'ENTRÉE — forme exacte qu'une "observation" doit avoir pour
+ * être acceptée par le pipeline, quelle que soit sa source d'origine.
+ *
+ * Structure attendue (voir le corps de la fonction pour le détail exhaustif
+ * des règles, ceci est un résumé) :
+ * {
+ *   schema_version: "1.0.0",           // seule version supportée aujourd'hui
+ *   domain_id: "<string>",             // identifiant du domaine métier
+ *   operations: [                      // liste des opérations (endpoints)
+ *     {
+ *       id: "<string>",                // unique dans le tableau
+ *       access: "public" | "authenticated" | "authorized",
+ *       effects: ["<effect_kind>", ...],   // non vide
+ *       http: {
+ *         method: "GET"|"POST"|"PUT"|"PATCH"|"DELETE",
+ *         path: "<string>",
+ *         authentication: "none"|"bearer"|"session"|"api_key"|"other",
+ *         response_envelope: <optionnel>,
+ *       },
+ *       input:  { fields: [<field>, ...] },
+ *       output: { fields: [<field>, ...] },
+ *     },
+ *     ...
+ *   ]
+ * }
+ * où chaque <field> = {
+ *   name: "<string>",                  // unique dans son tableau fields
+ *   type: { kind: "primitive"|"model", name: "<string>", nullable: <bool> },
+ *   required: <bool>,
+ *   format: "email" (optionnel, seule valeur supportée aujourd'hui),
+ *   equals: "<autre_champ_qualifié>" (optionnel, doit contenir un ".")
+ * }
+ *
+ * Point clé pour un futur adaptateur OpenAPI : OpenAPI exprime les schémas de
+ * requête/réponse avec BEAUCOUP plus de vocabulaire que ce contrat n'en
+ * accepte (enums, formats variés, unions, références $ref, etc.). Le travail
+ * de l'adaptateur n'est PAS de faire évoluer ce contrat pour absorber tout
+ * OpenAPI — c'est de PROJETER ce qu'OpenAPI décrit vers ce vocabulaire
+ * volontairement restreint, et de lever une erreur explicite (fail closed,
+ * pas de dégradation silencieuse) pour tout ce qui n'a pas d'équivalent ici.
+ */
 export function validateObservation(observation) {
     assertKeys(observation, ['schema_version', 'domain_id', 'operations'], '$');
     assert(
@@ -148,6 +249,16 @@ export function validateObservation(observation) {
     return observation;
 }
 
+/**
+ * Calcule la liste des "evidence_refs" (traçabilité vers les faits/décisions
+ * source) associés à un champ d'entrée. Chaque champ pointe toujours vers le
+ * "fact" générique de son opération (`fact.<id>.input`), et en plus vers le
+ * "constraint_fact" spécifique de la policy si le champ porte une contrainte
+ * (required/format/equals) que ce fact ne couvre pas déjà. C'est le mécanisme
+ * qui permet, plus tard, de remonter "pourquoi ce champ est requis" jusqu'à
+ * la source humaine qui l'a décidé — indépendant de la provenance de
+ * l'observation (legacy, spec structurée, ou futur OpenAPI).
+ */
 function evidenceRefsForInput(operationId, policyOperation, field) {
     const inputFact = `fact.${operationId}.input`;
     const refs = [inputFact];
@@ -160,6 +271,12 @@ function evidenceRefsForInput(operationId, policyOperation, field) {
     return refs;
 }
 
+/** Construit un identifiant stable de contrainte à partir d'un préfixe
+ * (fourni par la policy, par opération), du nom du champ et du type de
+ * contrainte (required/format/equals). Cas spécial : une contrainte "equals"
+ * sur un champ de confirmation de mot de passe reçoit toujours l'id
+ * `constraint.<prefix>-password-confirmation`, quel que soit le nom réel du
+ * champ — convention figée du domaine authentication, pas générique. */
 function constraintId(prefix, fieldName, kind) {
     const field = fieldName
         .replaceAll('_', '-')

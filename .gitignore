@@ -108,3 +108,6 @@ tools/generator-platform/.stack-test-runtime/
 __screenshots__/
 
 .nx/polygraph
+
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
