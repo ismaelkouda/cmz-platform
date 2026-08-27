@@ -3,9 +3,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LegalNoticeFacade } from '@cmz/content-management-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { LegalNoticeFormStore } from '../stores/legal-notice-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'CONTENT_MANAGEMENT.LEGAL_NOTICE';
 
@@ -77,7 +77,7 @@ const T = 'CONTENT_MANAGEMENT.LEGAL_NOTICE';
 export class LegalNoticeFormComponent {
     protected readonly store = inject(LegalNoticeFormStore);
     private readonly facade = inject(LegalNoticeFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

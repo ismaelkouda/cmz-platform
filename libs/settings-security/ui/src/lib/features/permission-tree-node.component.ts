@@ -1,10 +1,10 @@
 import { Component, inject, input, output } from '@angular/core';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     PermissionActions,
     PermissionTreeNode,
 } from '@cmz/settings-security-domain';
 import { permissionActionLabel } from '../constants/permission-action-label.constant';
+import { TranslocoService } from '@jsverse/transloco';
 
 /**
  * Nœud récursif de l'arbre de permissions — se référence lui-même pour
@@ -72,7 +72,7 @@ import { permissionActionLabel } from '../constants/permission-action-label.cons
     `,
 })
 export class PermissionTreeNodeComponent {
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     readonly node = input.required<PermissionTreeNode>();
     readonly disabled = input(false);

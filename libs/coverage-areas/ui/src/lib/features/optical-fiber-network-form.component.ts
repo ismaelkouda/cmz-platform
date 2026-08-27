@@ -8,8 +8,8 @@ import {
 } from '@cmz/coverage-areas-application';
 import { FiberType, Operator } from '@cmz/coverage-areas-domain';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { OpticalFiberNetworkFormStore } from '../stores/optical-fiber-network-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'COVERAGE_AREAS.OPTICAL_FIBER_NETWORK';
 
@@ -158,7 +158,7 @@ export class OpticalFiberNetworkFormComponent {
     private readonly fiberConstructorFacade = inject(
         FiberConstructorSelectFacade
     );
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

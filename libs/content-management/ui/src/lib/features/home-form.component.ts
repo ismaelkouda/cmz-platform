@@ -4,9 +4,9 @@ import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Platform } from '@cmz/shared-domain';
 import { HomeFacade } from '@cmz/content-management-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode, PLATFORM_OPTIONS } from '@cmz/shared-ui';
 import { HomeFormStore } from '../stores/home-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'CONTENT_MANAGEMENT.HOME';
 
@@ -188,7 +188,7 @@ const T = 'CONTENT_MANAGEMENT.HOME';
 export class HomeFormComponent {
     protected readonly store = inject(HomeFormStore);
     private readonly facade = inject(HomeFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

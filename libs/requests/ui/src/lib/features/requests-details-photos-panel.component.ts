@@ -1,6 +1,6 @@
 import { Component, computed, input, inject } from '@angular/core';
 import { RequestsDetailsEntity } from '@cmz/requests-domain';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'REQUESTS.DETAILS';
 
@@ -29,7 +29,7 @@ export class RequestsDetailsPhotosPanelComponent {
 
     readonly details = input.required<RequestsDetailsEntity>();
 
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     protected readonly photoUrls = computed(() => {
         const entity = this.details();

@@ -1,12 +1,12 @@
 import { Component, input, inject } from '@angular/core';
 import { RequestsDetailsEntity } from '@cmz/requests-domain';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     REPORT_SOURCE_LABEL,
     REPORT_TYPE_LABEL,
     TELECOM_OPERATOR_LABEL,
 } from '@cmz/shared-ui';
 import { REQUESTS_DETAILS_STATUS_LABEL } from '../constants/requests-details-status-label.constant';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'REQUESTS.DETAILS';
 
@@ -72,7 +72,7 @@ export class RequestsDetailsInfoPanelComponent {
 
     readonly details = input.required<RequestsDetailsEntity>();
 
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     protected statusLabel(): string {
         const status = this.details().status;

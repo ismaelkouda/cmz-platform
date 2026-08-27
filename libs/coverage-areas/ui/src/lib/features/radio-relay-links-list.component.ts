@@ -5,7 +5,6 @@ import { RadioRelayLinksOperator } from '@cmz/coverage-areas-domain';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -20,6 +19,7 @@ import { RADIO_RELAY_LINKS_TABLE } from '../constants/radio-relay-links-table.co
 import { RadioRelayLinksVmProps } from '../adapters/radio-relay-links-vm-props.interface';
 import { RadioRelayLinksPresenter } from '../adapters/radio-relay-links-vm.presenter';
 import { RadioRelayLinksFilterStore } from '../stores/radio-relay-links-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/coverage-areas/radio-relay-links';
 const T = 'COVERAGE_AREAS.RADIO_RELAY_LINKS';
@@ -91,7 +91,7 @@ export class RadioRelayLinksListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

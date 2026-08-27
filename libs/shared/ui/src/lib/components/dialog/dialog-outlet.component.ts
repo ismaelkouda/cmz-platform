@@ -5,8 +5,8 @@ import {
     inject,
     viewChild,
 } from '@angular/core';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { CmzConfirmDialogService } from '../../services/cmz-confirm-dialog.service';
+import { TranslocoService } from '@jsverse/transloco';
 
 /**
  * Outlet de dialogue de confirmation — **design-system**. À placer une fois dans
@@ -110,7 +110,7 @@ import { CmzConfirmDialogService } from '../../services/cmz-confirm-dialog.servi
 })
 export class DialogOutletComponent {
     private readonly service = inject(CmzConfirmDialogService);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly dialog = viewChild<ElementRef<HTMLDialogElement>>('dlg');
 
     protected readonly state = this.service.state;

@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FinalizationDetailsFacade } from '@cmz/finalization-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     REPORT_SOURCE_LABEL,
     REPORT_TYPE_LABEL,
@@ -17,6 +16,7 @@ import {
     CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { FinalizationDetailsEntity } from '@cmz/finalization-domain';
+import { TranslocoService } from '@jsverse/transloco';
 
 @Component({
     selector: 'cmz-finalization-details-dialog',
@@ -122,7 +122,7 @@ export class FinalizationDetailsDialogComponent {
     readonly actionCompleted = output<void>();
 
     protected readonly facade = inject(FinalizationDetailsFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
 
     protected comment = '';

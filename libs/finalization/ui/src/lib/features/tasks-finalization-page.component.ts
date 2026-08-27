@@ -4,7 +4,6 @@ import { TasksFinalizationFacade } from '@cmz/finalization-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -27,6 +26,7 @@ import {
     finalizationListExportTooltip,
 } from '../utils/finalization-list-export.util';
 import { FinalizationDetailsDialogComponent } from './finalization-details-dialog.component';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'FINALIZATION.TASKS';
 
@@ -104,7 +104,7 @@ export class TasksFinalizationPageComponent {
     private readonly store = inject(TasksFinalizationFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;

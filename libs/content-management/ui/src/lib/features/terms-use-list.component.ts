@@ -4,7 +4,6 @@ import { TermsUseFacade } from '@cmz/content-management-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -21,6 +20,7 @@ import { TERMS_USE_STATUS_LABEL } from '../constants/terms-use-status-label.cons
 import { TermsUseVmProps } from '../adapters/terms-use-vm-props.interface';
 import { TermsUsePresenter } from '../adapters/terms-use-vm.presenter';
 import { TermsUseFilterStore } from '../stores/terms-use-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/content-management/terms-use';
 const T = 'CONTENT_MANAGEMENT.TERMS_USE';
@@ -87,7 +87,7 @@ export class TermsUseListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

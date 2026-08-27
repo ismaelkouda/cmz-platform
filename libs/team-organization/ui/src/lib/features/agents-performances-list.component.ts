@@ -1,10 +1,7 @@
 import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgentsPerformancesFacade } from '@cmz/team-organization-application';
-import {
-    PermissionActionsService,
-    TRANSLATION_PORT,
-} from '@cmz/shared-application';
+import { PermissionActionsService } from '@cmz/shared-application';
 import {
     FilterComponent,
     FilterField,
@@ -17,6 +14,7 @@ import { AGENTS_PERFORMANCES_TABLE } from '../constants/agents-performances-tabl
 import { AgentsPerformancesVmProps } from '../adapters/agents-performances-vm-props.interface';
 import { AgentsPerformancesPresenter } from '../adapters/agents-performances-vm.presenter';
 import { AgentsPerformancesFilterStore } from '../stores/agents-performances-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/team-organization/agents-performances';
 const T = 'TEAM_ORGANIZATION.AGENTS_PERFORMANCES';
@@ -73,7 +71,7 @@ export class AgentsPerformancesListComponent {
     protected readonly facade = inject(AgentsPerformancesFacade);
     private readonly store = inject(AgentsPerformancesFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

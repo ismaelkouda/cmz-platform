@@ -4,7 +4,6 @@ import { UsersFacade } from '@cmz/settings-security-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -22,6 +21,7 @@ import { USERS_TABLE } from '../constants/users-table.constant';
 import { UsersVmProps } from '../adapters/users-vm-props.interface';
 import { UsersPresenter } from '../adapters/users-vm.presenter';
 import { UsersFilterStore } from '../stores/users-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/settings-security/users';
 const T = 'SETTINGS_SECURITY.USERS';
@@ -95,7 +95,7 @@ export class UsersListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

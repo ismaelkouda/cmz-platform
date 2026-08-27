@@ -4,7 +4,6 @@ import { AllProcessingFacade } from '@cmz/processing-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -28,6 +27,7 @@ import {
     processingListExportTooltip,
 } from '../utils/processing-list-export.util';
 import { ProcessingDetailsDialogComponent } from './processing-details-dialog.component';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'PROCESSING.ALL';
 
@@ -104,7 +104,7 @@ export class AllProcessingPageComponent {
     private readonly store = inject(AllProcessingFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;

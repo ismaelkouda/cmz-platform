@@ -5,7 +5,6 @@ import { Operator, Technology } from '@cmz/coverage-areas-domain';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -20,6 +19,7 @@ import { MOBILE_NETWORK_TABLE } from '../constants/mobile-network-table.constant
 import { MobileNetworkVmProps } from '../adapters/mobile-network-vm-props.interface';
 import { MobileNetworkPresenter } from '../adapters/mobile-network-vm.presenter';
 import { MobileNetworkFilterStore } from '../stores/mobile-network-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/coverage-areas/mobile-networks';
 const T = 'COVERAGE_AREAS.MOBILE_NETWORK';
@@ -90,7 +90,7 @@ export class MobileNetworkListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

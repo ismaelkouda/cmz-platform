@@ -7,7 +7,6 @@ import {
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -22,6 +21,7 @@ import { MUNICIPALITY_TABLE } from '../constants/municipality-table.constant';
 import { MunicipalityVmProps } from '../adapters/municipality-vm-props.interface';
 import { MunicipalityPresenter } from '../adapters/municipality-vm.presenter';
 import { MunicipalityFilterStore } from '../stores/municipality-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/territorial-structures/municipalities';
 const T = 'ADMINISTRATIVE_BOUNDARY.MUNICIPALITY';
@@ -89,7 +89,7 @@ export class MunicipalityListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

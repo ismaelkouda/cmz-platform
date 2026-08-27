@@ -3,9 +3,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TermsUseFacade } from '@cmz/content-management-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { TermsUseFormStore } from '../stores/terms-use-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'CONTENT_MANAGEMENT.TERMS_USE';
 
@@ -77,7 +77,7 @@ const T = 'CONTENT_MANAGEMENT.TERMS_USE';
 export class TermsUseFormComponent {
     protected readonly store = inject(TermsUseFormStore);
     private readonly facade = inject(TermsUseFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

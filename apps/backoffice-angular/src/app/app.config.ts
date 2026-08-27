@@ -2,6 +2,7 @@ import {
     ApplicationConfig,
     ErrorHandler,
     provideBrowserGlobalErrorListeners,
+    isDevMode,
 } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -15,7 +16,6 @@ import {
     NAVIGATION_PORT,
     NOTIFICATION_PORT,
     STORAGE_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import { errorInterceptor } from '@cmz/shared-data';
 import {
@@ -29,14 +29,14 @@ import {
     CmzConfirmDialogService,
     CmzNotificationService,
     EXCEL_EXPORT_PORT,
-    I18nextTranslationService,
     TRUSTED_ORIGIN_PORT,
 } from '@cmz/shared-ui';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
-import { provideI18n } from './i18n/i18n.provider';
 import { provideDevPermissions } from './dev/dev-permissions.provider';
 import { provideAdministrativeBoundary } from './providers/administrative-boundary.providers';
+import { TranslocoHttpLoader } from './transloco-loader';
+import { provideTransloco } from '@jsverse/transloco';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -55,7 +55,19 @@ export const appConfig: ApplicationConfig = {
             ])
         ),
         provideRouter(appRoutes),
-        provideI18n(),
+        // i18n : Transloco (convergence de tout l'Angular du repo sur un seul
+        // mécanisme — voir docs/architecture/i18n-generator-scope.md). Ancien
+        // TranslationPort/I18nextTranslationService/provideI18n() retirés :
+        // migration complète, pas de coexistence des deux mécanismes ici.
+        provideTransloco({
+            config: {
+                availableLangs: ['fr'],
+                defaultLang: 'fr',
+                reRenderOnLangChange: true,
+                prodMode: !isDevMode(),
+            },
+            loader: TranslocoHttpLoader,
+        }),
         // Adaptateurs des ports (design-system + moteurs agnostiques).
         { provide: STORAGE_PORT, useExisting: BrowserStorageAdapter },
         // Jeton NAVIGATION_PORT séparé du contrat (interface pure) depuis
@@ -77,12 +89,6 @@ export const appConfig: ApplicationConfig = {
         {
             provide: CONFIRM_DIALOG_PORT,
             useExisting: CmzConfirmDialogService,
-        },
-        // Jeton TRANSLATION_PORT colocalise dans @cmz/shared-application
-        // (ADR-0024) - consommateurs a la fois type:ui et type:application.
-        {
-            provide: TRANSLATION_PORT,
-            useExisting: I18nextTranslationService,
         },
         // Audit I-14/I-15 : origine du lien Grafana embarqué (SafeUrlPipe).
         // Jeton TRUSTED_ORIGIN_PORT colocalisé dans @cmz/shared-ui (ADR-0024)

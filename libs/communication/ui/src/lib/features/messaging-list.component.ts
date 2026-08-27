@@ -4,7 +4,6 @@ import { MessagingFacade } from '@cmz/communication-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -22,6 +21,7 @@ import { MESSAGING_TARGET_LABEL } from '../constants/messaging-target-label.cons
 import { MessagingVmProps } from '../adapters/messaging-vm-props.interface';
 import { MessagingPresenter } from '../adapters/messaging-vm.presenter';
 import { MessagingFilterStore } from '../stores/messaging-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/communication/messaging';
 const T = 'COMMUNICATION.MESSAGING';
@@ -88,7 +88,7 @@ export class MessagingListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

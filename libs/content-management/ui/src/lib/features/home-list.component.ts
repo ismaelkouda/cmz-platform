@@ -4,7 +4,6 @@ import { HomeFacade } from '@cmz/content-management-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -21,6 +20,7 @@ import { HOME_STATUS_LABEL } from '../constants/home-status-label.constant';
 import { HomeVmProps } from '../adapters/home-vm-props.interface';
 import { HomePresenter } from '../adapters/home-vm.presenter';
 import { HomeFilterStore } from '../stores/home-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/content-management/home';
 const T = 'CONTENT_MANAGEMENT.HOME';
@@ -87,7 +87,7 @@ export class HomeListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

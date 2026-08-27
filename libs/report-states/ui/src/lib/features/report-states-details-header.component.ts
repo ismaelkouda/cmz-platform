@@ -1,9 +1,9 @@
 import { Component, input, output, inject } from '@angular/core';
 import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { REPORT_SOURCE_LABEL } from '@cmz/shared-ui';
 import { REPORT_STATES_DETAILS_STATUS_BADGE_CLASS } from '../constants/report-states-details-status-badge.constant';
 import { REPORT_STATES_DETAILS_STATUS_LABEL } from '../constants/report-states-details-status-label.constant';
+import { TranslocoService } from '@jsverse/transloco';
 
 @Component({
     selector: 'cmz-report-states-details-header',
@@ -62,7 +62,7 @@ export class ReportStatesDetailsHeaderComponent {
 
     readonly copyRequested = output<string>();
 
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     protected sourceLabel(item: ReportStatesDetailsEntity): string {
         return this.t(REPORT_SOURCE_LABEL[item.source]);

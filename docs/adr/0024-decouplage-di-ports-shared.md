@@ -1,7 +1,17 @@
 # ADR-0024 — Découpler le contrat de port du jeton d'injection Angular
 
-- **Statut :** Accepted
+- **Statut :** Accepted (révisée partiellement par
+  [ADR-0036](./0036-convergence-transloco-angular.md) — voir note ci-dessous)
 - **Date :** 2026-08-12
+
+> **Note (2026-08-27)** : la décision ci-dessous concernant spécifiquement
+> `TranslationPort` a été révisée par
+> [ADR-0036](./0036-convergence-transloco-angular.md) — `TranslationPort`,
+> `TRANSLATION_PORT` et `I18nextTranslationService` ont été **supprimés** au
+> profit de Transloco (mécanisme concret, pas d'interface portable). Les 7
+> autres ports traités par cette ADR (`NotificationPort`, `ConfirmDialogPort`,
+> `ExcelExportPort`, `StoragePort`, `TrustedOriginPort`, `NavigationPort`,
+> `LoggerPort`) restent inchangés et cette ADR reste la référence pour eux.
 
 ## Contexte
 

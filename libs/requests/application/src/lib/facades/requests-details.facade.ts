@@ -5,7 +5,6 @@ import {
     PermissionActionsService,
     ResourceFacade,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
 import {
@@ -23,6 +22,7 @@ import {
 import { AllRequestsFacade } from './all-requests.facade';
 import { QueuesRequestsFacade } from './queues-requests.facade';
 import { TasksRequestsFacade } from './tasks-requests.facade';
+import { TranslocoService } from '@jsverse/transloco';
 
 export interface RequestsDetailsLoadParams {
     filter: RequestsDetailsFilterContract;
@@ -42,7 +42,7 @@ export class RequestsDetailsFacade extends ResourceFacade<
     private readonly useCase = inject(RequestsDetailsUseCase);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly queuesFacade = inject(QueuesRequestsFacade);
     private readonly tasksFacade = inject(TasksRequestsFacade);
     private readonly allFacade = inject(AllRequestsFacade);

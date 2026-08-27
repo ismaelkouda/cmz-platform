@@ -5,7 +5,6 @@ import { DownloadReportStatesStatus } from '@cmz/report-states-domain';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -20,6 +19,7 @@ import { DOWNLOAD_REPORT_STATES_FILTER_KEYS } from '../constants/download-report
 import { REPORT_STATES_DOWNLOAD_ROUTE } from '../constants/report-states-paths.constant';
 import { DOWNLOAD_REPORT_STATES_TABLE } from '../constants/download-report-states-table.constant';
 import { DownloadReportStatesFilterStore } from '../stores/download-report-states-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 import {
     exportReportStatesList,
     reportStatesListExportDisabled,
@@ -109,7 +109,7 @@ export class DownloadReportStatesPageComponent {
     private readonly store = inject(DownloadReportStatesFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;

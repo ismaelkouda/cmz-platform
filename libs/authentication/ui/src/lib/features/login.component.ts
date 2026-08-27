@@ -2,10 +2,10 @@ import { Component, effect, inject } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { LoginFacade } from '@cmz/authentication-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent } from '@cmz/shared-ui';
 import { FORGOT_PASSWORD_ROUTE } from '../constants/authentication-paths.constant';
 import { LoginFormStore } from '../stores/login-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'AUTHENTICATION.LOGIN';
 
@@ -75,7 +75,7 @@ const T = 'AUTHENTICATION.LOGIN';
 export class LoginComponent {
     protected readonly store = inject(LoginFormStore);
     protected readonly facade = inject(LoginFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
 
     protected readonly ns = T;

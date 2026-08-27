@@ -12,7 +12,6 @@ import {
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     PaginationComponent,
@@ -24,6 +23,7 @@ import { TasksActionsProcessingPresenter } from '../adapters/tasks-actions-proce
 import { TasksActionsProcessingVmProps } from '../adapters/tasks-actions-processing-vm-props.interface';
 import { PROCESSING_TASKS_ROUTE } from '../constants/processing-paths.constant';
 import { TASKS_ACTIONS_PROCESSING_TABLE } from '../constants/tasks-actions-processing-table.constant';
+import { TranslocoService } from '@jsverse/transloco';
 import {
     TasksActionsDialogMode,
     TasksActionsProcessingFormDialogComponent,
@@ -122,7 +122,7 @@ export class TasksActionsProcessingPageComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

@@ -5,7 +5,7 @@ import { appConfig } from './app.config';
 /**
  * `App` dépend transitivement (via `DialogOutletComponent`/
  * `ToastOutletComponent` dans son template, et `UiFeedbackService` dans son
- * constructeur) de `TranslationPort`, `NotificationPort`, `StoragePort`,
+ * constructeur) de `TranslocoService`, `NotificationPort`, `StoragePort`,
  * `NavigationPort`, etc. — toute la composition root. Empiler des doubles
  * minimaux un par un (`NG0201`) au fil des erreurs de résolution DI serait
  * fragile et diffuserait une deuxième vérité sur "ce que `App` a besoin".

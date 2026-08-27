@@ -6,9 +6,9 @@ import {
     ProfilesPermissionsSelectFacade,
     UsersFacade,
 } from '@cmz/settings-security-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode, ROLE_LABEL } from '@cmz/shared-ui';
 import { UsersFormStore } from '../stores/users-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'SETTINGS_SECURITY.USERS';
 
@@ -139,7 +139,7 @@ export class UsersFormComponent {
     private readonly profilesSelectFacade = inject(
         ProfilesPermissionsSelectFacade
     );
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

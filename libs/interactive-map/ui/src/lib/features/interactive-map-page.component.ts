@@ -1,7 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { InteractiveMapSigFacade } from '@cmz/interactive-map-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { InteractiveMapOlViewComponent } from './interactive-map-ol-view.component';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'INTERACTIVE_MAP.MAP';
 
@@ -56,7 +56,7 @@ const T = 'INTERACTIVE_MAP.MAP';
 })
 export class InteractiveMapPageComponent {
     private readonly facade = inject(InteractiveMapSigFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     protected readonly loading = this.facade.isLoading;
     protected readonly hasError = computed(() => !!this.facade.error());

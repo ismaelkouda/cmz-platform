@@ -9,7 +9,7 @@ import {
     ElementRef,
 } from '@angular/core';
 import { RequestsDetailsFacade } from '@cmz/requests-application';
-import { NOTIFICATION_PORT, TRANSLATION_PORT } from '@cmz/shared-application';
+import { NOTIFICATION_PORT } from '@cmz/shared-application';
 import {
     RequestsDetailsQualificationContract,
     requestsDetailsQualificationVo,
@@ -27,6 +27,7 @@ import { RequestsDetailsQualificationFormComponent } from './requests-details-qu
 import { RequestsDetailsSidebarComponent } from './requests-details-sidebar.component';
 import { RequestsDetailsStepBarComponent } from './requests-details-step-bar.component';
 import { CONFIRM_DIALOG_PORT } from '@cmz/shared-ui';
+import { TranslocoService } from '@jsverse/transloco';
 
 /**
  * Dialog fiche demande — tranche D (shell fullscreen substitut `ManagementDialog`).
@@ -159,7 +160,7 @@ export class RequestsDetailsDialogComponent {
     protected readonly facade = inject(RequestsDetailsFacade);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     protected readonly selectedTab =
         signal<RequestsDetailsTabId>('information');

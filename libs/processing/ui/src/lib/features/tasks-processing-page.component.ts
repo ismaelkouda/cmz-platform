@@ -5,7 +5,6 @@ import { TasksProcessingFacade } from '@cmz/processing-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -22,6 +21,7 @@ import { PROCESSING_TASKS_ROUTE } from '../constants/processing-paths.constant';
 import { TASKS_PROCESSING_FILTER_KEYS } from '../constants/tasks-processing-filter-keys.constant';
 import { TASKS_PROCESSING_TABLE } from '../constants/tasks-processing-table.constant';
 import { TasksProcessingFilterStore } from '../stores/tasks-processing-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 import {
     exportProcessingList,
     processingListExportDisabled,
@@ -92,7 +92,7 @@ export class TasksProcessingPageComponent {
     private readonly store = inject(TasksProcessingFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);

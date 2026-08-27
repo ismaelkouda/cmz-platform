@@ -9,8 +9,8 @@ import {
 } from '@cmz/coverage-areas-application';
 import { Operator, Technology } from '@cmz/coverage-areas-domain';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { MobileNetworkFormStore } from '../stores/mobile-network-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'COVERAGE_AREAS.MOBILE_NETWORK';
 
@@ -195,7 +195,7 @@ export class MobileNetworkFormComponent {
     private readonly facade = inject(MobileNetworkFacade);
     private readonly siteGroupFacade = inject(SiteGroupSelectFacade);
     private readonly towerTypeFacade = inject(TowerTypeSelectFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

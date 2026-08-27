@@ -3,6 +3,17 @@ import { FormsModule } from '@angular/forms';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ActionRequestCommands } from '@cmz/newsletter-angular';
 
+// Note conformité Angular 22 / Transloco v8 (audit 2026-08-27, voir
+// docs/architecture/i18n-generator-scope.md) : la directive structurelle
+// *transloco="let t" reste le pattern OFFICIELLEMENT RECOMMANDÉ par la doc
+// Transloco pour le template ("the recommended approach as it is DRY and
+// efficient... single subscription per template") — donc conservée ici pour
+// t(). Seul transloco.activeLang (Signal natif exposé par TranslocoService
+// depuis v8) remplace l'appel impératif getActiveLang() : ce dernier était
+// ré-évalué à chaque cycle de détection de changement au lieu de s'intégrer
+// nativement au graphe de Signals, incohérent avec le reste du composant
+// (state ci-dessous est déjà un signal()).
+
 type SubmissionState =
     | { readonly kind: 'idle' }
     | { readonly kind: 'pending' }
@@ -21,7 +32,8 @@ type SubmissionState =
 })
 export class App {
     private readonly commands = inject(ActionRequestCommands);
-    protected readonly transloco = inject(TranslocoService);
+    private readonly transloco = inject(TranslocoService);
+    protected readonly activeLang = this.transloco.activeLang;
 
     protected email = '';
     protected readonly state = signal<SubmissionState>({ kind: 'idle' });

@@ -4,7 +4,6 @@ import { PrivacyPolicyFacade } from '@cmz/content-management-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -21,6 +20,7 @@ import { PRIVACY_POLICY_STATUS_LABEL } from '../constants/privacy-policy-status-
 import { PrivacyPolicyVmProps } from '../adapters/privacy-policy-vm-props.interface';
 import { PrivacyPolicyPresenter } from '../adapters/privacy-policy-vm.presenter';
 import { PrivacyPolicyFilterStore } from '../stores/privacy-policy-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/content-management/privacy-policy';
 const T = 'CONTENT_MANAGEMENT.PRIVACY_POLICY';
@@ -87,7 +87,7 @@ export class PrivacyPolicyListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

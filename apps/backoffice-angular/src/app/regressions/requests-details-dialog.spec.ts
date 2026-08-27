@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { NOTIFICATION_PORT, TRANSLATION_PORT } from '@cmz/shared-application';
+import { NOTIFICATION_PORT } from '@cmz/shared-application';
+import { TranslocoService } from '@jsverse/transloco';
 import { CONFIRM_DIALOG_PORT } from '@cmz/shared-ui';
 import {
     RequestsDetailsEntity,
@@ -112,7 +113,7 @@ describe('RequestsDetailsDialogComponent.onQualificationSubmit — catch-block v
                 { provide: RequestsDetailsFacade, useValue: fakeFacade },
                 { provide: CONFIRM_DIALOG_PORT, useValue: fakeConfirm },
                 { provide: NOTIFICATION_PORT, useValue: fakeNotification },
-                { provide: TRANSLATION_PORT, useValue: fakeI18n },
+                { provide: TranslocoService, useValue: fakeI18n },
             ],
         });
 

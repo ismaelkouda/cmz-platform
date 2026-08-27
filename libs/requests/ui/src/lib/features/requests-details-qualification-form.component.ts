@@ -2,7 +2,6 @@ import { Component, effect, inject, input, output } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
 import { RequestsDetailsEntity } from '@cmz/requests-domain';
 import type { RequestsDetailsQualificationContract } from '@cmz/requests-domain';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FieldComponent,
     LOCATION_NAME_OPTIONS,
@@ -13,6 +12,7 @@ import { REQUESTS_DETAILS_APPROVAL_TYPES } from '../constants/requests-details-a
 import { REQUESTS_DETAILS_CALLBACK_TYPES } from '../constants/requests-details-callback-type.constant';
 import { REQUESTS_DETAILS_REJECT_MOTIFS } from '../constants/requests-details-reject-motif.constant';
 import { RequestsDetailsQualificationFormStore } from '../stores/requests-details-qualification-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const Q = 'REQUESTS.DETAILS.QUALIFICATION';
 const E = 'REQUESTS.DETAILS.EDIT';
@@ -352,7 +352,7 @@ export class RequestsDetailsQualificationFormComponent {
     readonly submitted = output<RequestsDetailsQualificationContract>();
     readonly cancelled = output<void>();
 
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     constructor() {
         effect(() => {

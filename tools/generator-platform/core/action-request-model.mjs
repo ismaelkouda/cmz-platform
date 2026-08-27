@@ -286,6 +286,35 @@ function constraintId(prefix, fieldName, kind) {
     return `constraint.${prefix}-${field}-${suffix}`;
 }
 
+/**
+ * Transforme une observation VALIDE (voir `validateObservation`) en modèle
+ * sémantique canonique — la structure IR (`types`, `operations`,
+ * `constraints`, `integrations`) que compilateur/renderers/oracles
+ * consomment en aval, quelle que soit la cible (Angular ou ReactJS).
+ *
+ * `policy` est un fichier `*.policy.json` (ex:
+ * `policies/action-request.policy.json`) : il porte tout ce qui n'est PAS
+ * déductible mécaniquement du code/schéma source — descriptions humaines,
+ * classification des types de sortie partagés entre plusieurs opérations
+ * (`output_type`), préfixes de nommage des contraintes, et les "opaque
+ * types" (types dont la structure interne n'est jamais exposée, ex: un
+ * jeton de session). Une observation seule ne suffit jamais à produire un
+ * modèle sémantique complet — il faut toujours la coupler à sa policy.
+ *
+ * Étapes, dans l'ordre où le code les exécute :
+ *   1. Revalide l'observation (défense en profondeur — même déjà validée en
+ *      amont par l'adaptateur) et vérifie que la policy correspond bien au
+ *      même domaine.
+ *   2. Émet les types "opaques" déclarés par la policy (indépendants des
+ *      opérations).
+ *   3. Pour chaque opération de l'observation : émet son type d'entrée
+ *      (toujours propre à l'opération), émet son type de sortie (partagé
+ *      entre opérations si `metadata.output_type` coïncide — avec une
+ *      vérification stricte qu'un même `output_type` ne peut pas avoir deux
+ *      formes de champs différentes selon l'opération qui l'émet), dérive
+ *      les contraintes (required/format/equals) de chaque champ d'entrée,
+ *      et construit l'opération + son intégration HTTP.
+ */
 export function buildSemanticModel(observation, policy) {
     validateObservation(observation);
     assert(
@@ -293,6 +322,9 @@ export function buildSemanticModel(observation, policy) {
         'policy domain does not match observation'
     );
 
+    // Types "opaques" : structure jamais exposée dans le modèle (ex: jeton de
+    // session) — déclarés uniquement par la policy, indépendants des
+    // opérations observées.
     const types = policy.opaque_types.map((type) => ({
         id: type.id,
         kind: 'opaque',
@@ -309,10 +341,15 @@ export function buildSemanticModel(observation, policy) {
     const emittedOutputTypes = new Map();
 
     for (const operation of observation.operations) {
+        // Chaque opération observée DOIT avoir une entrée correspondante
+        // dans la policy — sinon fail closed immédiat (pas de valeurs par
+        // défaut devinées).
         const metadata = policy.operations[operation.id];
         assert(metadata, `policy missing operation ${operation.id}`);
         const inputType = `${operation.id}-input`;
         const constraintFact = metadata.constraint_fact;
+        // Type d'entrée : toujours propre à cette opération (jamais partagé),
+        // contrairement au type de sortie ci-dessous.
         types.push({
             id: inputType,
             kind: 'object',
@@ -336,6 +373,12 @@ export function buildSemanticModel(observation, policy) {
             ],
         });
 
+        // Type de sortie : peut être PARTAGÉ entre plusieurs opérations si la
+        // policy leur assigne le même `output_type` (ex: deux endpoints qui
+        // renvoient la même forme de réponse). Garde-fou : si deux opérations
+        // partagent un `output_type` mais que leurs champs de sortie diffèrent
+        // réellement, c'est une incohérence de policy — on échoue plutôt que
+        // d'émettre un type ambigu (fail closed).
         const outputSignature = JSON.stringify(operation.output.fields);
         const previousSignature = emittedOutputTypes.get(metadata.output_type);
         assert(
@@ -365,6 +408,8 @@ export function buildSemanticModel(observation, policy) {
             });
         }
 
+        // Dérive une contrainte par règle portée par le champ (required,
+        // format, equals) — un champ peut porter 0, 1, 2 ou les 3 à la fois.
         for (const field of operation.input.fields) {
             const target = `${inputType}.${field.name}`;
             if (field.required) {
@@ -408,6 +453,12 @@ export function buildSemanticModel(observation, policy) {
             }
         }
 
+        // Construit l'opération elle-même (kind "command" — ce domaine
+        // action-request ne modélise que des commandes, pas des requêtes en
+        // lecture seule) et son intégration HTTP associée. `effectFacts`
+        // associe chaque type d'effet possible au "fact" source dont il
+        // découle — utilisé pour tracer la provenance de chaque effet déclaré
+        // par l'opération.
         const operationFact = `fact.${operation.id}.operation`;
         const effectFacts = {
             establish_session: 'fact.login.session-effect',
@@ -455,6 +506,11 @@ export function buildSemanticModel(observation, policy) {
 
     return {
         schema_version: '1.0.0',
+        // NOTE : cet id est actuellement figé sur "authentication" — un
+        // futur second domaine (ex: dérivé d'un schéma OpenAPI d'un autre
+        // module) devra soit paramétrer ce `model_id`, soit confirmer qu'il
+        // reste correct pour son propre domaine avant réutilisation telle
+        // quelle de cette fonction.
         model_id: 'authentication-action-request-semantic',
         domain: policy.domain,
         types,
@@ -464,6 +520,9 @@ export function buildSemanticModel(observation, policy) {
     };
 }
 
+/** Lit un fichier JSON depuis le disque et le parse — utilitaire partagé par
+ * les adaptateurs et les scripts de validation (`validate-ir.mjs`,
+ * `check-adapters.mjs`) pour charger fixtures, schémas et policies. */
 export async function readJson(path) {
     return JSON.parse(await readFile(path, 'utf8'));
 }

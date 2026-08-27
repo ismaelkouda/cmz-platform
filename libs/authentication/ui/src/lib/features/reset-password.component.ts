@@ -2,10 +2,10 @@ import { Component, effect, inject } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ResetPasswordFacade } from '@cmz/authentication-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent } from '@cmz/shared-ui';
 import { LOGIN_ROUTE } from '../constants/authentication-paths.constant';
 import { ResetPasswordFormStore } from '../stores/reset-password-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'AUTHENTICATION.RESET_PASSWORD';
 
@@ -74,7 +74,7 @@ const T = 'AUTHENTICATION.RESET_PASSWORD';
 export class ResetPasswordComponent {
     protected readonly store = inject(ResetPasswordFormStore);
     protected readonly facade = inject(ResetPasswordFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

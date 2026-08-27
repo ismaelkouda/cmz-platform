@@ -1,7 +1,7 @@
 import { Component, inject, input, model, output } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FilterField } from './filter.types';
+import { TranslocoService } from '@jsverse/transloco';
 
 /**
  * Barre de filtres — **design-system, Signal Forms (Angular 22)**. Dirigée par
@@ -9,7 +9,7 @@ import { FilterField } from './filter.types';
  * par `form()` ; chaque champ (`text`/`number`/`select`/`date`) est lié par
  * `[formField]`. Émet `apply` à la soumission, `clear` à la réinitialisation.
  * Sans primeng, sans `ReactiveFormsModule`. Standalone, `OnPush`, a11y, i18n via
- * `TranslationPort`, mise en page Tailwind + tokens.
+ * Transloco, mise en page Tailwind + tokens.
  *
  * **Contrat** : le `model` fourni doit contenir une clé par `field.name`
  * (Signal Forms construit l'arbre à partir des clés présentes) — sinon
@@ -106,7 +106,7 @@ import { FilterField } from './filter.types';
     `,
 })
 export class FilterComponent {
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     /** Modèle de filtre (deux-voies) : `{ [name]: valeur }`. */
     readonly model = model<Record<string, string>>({});

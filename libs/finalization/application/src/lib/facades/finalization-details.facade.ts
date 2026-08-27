@@ -5,7 +5,6 @@ import {
     PermissionActionsService,
     ResourceFacade,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import { FetchOptions } from '@cmz/shared-domain';
 import {
@@ -23,6 +22,7 @@ import {
 import { AllFinalizationFacade } from './all-finalization.facade';
 import { QueuesFinalizationFacade } from './queues-finalization.facade';
 import { TasksFinalizationFacade } from './tasks-finalization.facade';
+import { TranslocoService } from '@jsverse/transloco';
 
 export interface FinalizationDetailsLoadParams {
     filter: FinalizationDetailsFilterContract;
@@ -38,7 +38,7 @@ export class FinalizationDetailsFacade extends ResourceFacade<
     private readonly useCase = inject(FinalizationDetailsUseCase);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly queuesFacade = inject(QueuesFinalizationFacade);
     private readonly tasksFacade = inject(TasksFinalizationFacade);
     private readonly allFacade = inject(AllFinalizationFacade);

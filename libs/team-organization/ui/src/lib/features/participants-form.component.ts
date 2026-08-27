@@ -8,8 +8,8 @@ import {
 } from '@cmz/team-organization-application';
 import { Role } from '@cmz/shared-domain';
 import { FieldComponent, FormMode, ROLE_OPTIONS } from '@cmz/shared-ui';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { ParticipantsFormStore } from '../stores/participants-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'TEAM_ORGANIZATION.PARTICIPANTS';
 
@@ -148,7 +148,7 @@ export class ParticipantsFormComponent {
     protected readonly store = inject(ParticipantsFormStore);
     private readonly facade = inject(ParticipantsFacade);
     private readonly teamsSelectFacade = inject(TeamsSelectFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

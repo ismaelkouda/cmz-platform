@@ -9,7 +9,7 @@ import {
     ElementRef,
 } from '@angular/core';
 import { ReportStatesDetailsFacade } from '@cmz/report-states-application';
-import { NOTIFICATION_PORT, TRANSLATION_PORT } from '@cmz/shared-application';
+import { NOTIFICATION_PORT } from '@cmz/shared-application';
 import {
     ReportStatesDetailsQualificationContract,
     reportStatesDetailsQualificationVo,
@@ -27,6 +27,7 @@ import { ReportStatesDetailsQualificationFormComponent } from './report-states-d
 import { ReportStatesDetailsSidebarComponent } from './report-states-details-sidebar.component';
 import { ReportStatesDetailsStepBarComponent } from './report-states-details-step-bar.component';
 import { CONFIRM_DIALOG_PORT } from '@cmz/shared-ui';
+import { TranslocoService } from '@jsverse/transloco';
 
 /**
  * Dialog fiche demande — tranche D (shell fullscreen substitut `ManagementDialog`).
@@ -159,7 +160,7 @@ export class ReportStatesDetailsDialogComponent {
     protected readonly facade = inject(ReportStatesDetailsFacade);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     protected readonly selectedTab =
         signal<ReportStatesDetailsTabId>('information');

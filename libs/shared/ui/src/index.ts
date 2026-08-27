@@ -9,7 +9,6 @@ export * from './lib/route-strategies/custom-route-reuse-strategy';
 export * from './lib/services/table-selection.service';
 export * from './lib/services/tab.service';
 export * from './lib/services/nav.service';
-export * from './lib/services/i18next-translation.service';
 export * from './lib/services/ui-feedback.service';
 export * from './lib/formatters/format-date-safe.function';
 export * from './lib/formatters/parse-french-date.function';

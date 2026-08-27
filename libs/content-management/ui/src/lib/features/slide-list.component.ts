@@ -4,7 +4,6 @@ import { SlideFacade } from '@cmz/content-management-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -21,6 +20,7 @@ import { SLIDE_STATUS_LABEL } from '../constants/slide-status-label.constant';
 import { SlideVmProps } from '../adapters/slide-vm-props.interface';
 import { SlidePresenter } from '../adapters/slide-vm.presenter';
 import { SlideFilterStore } from '../stores/slide-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/content-management/slide';
 const T = 'CONTENT_MANAGEMENT.SLIDE';
@@ -87,7 +87,7 @@ export class SlideListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

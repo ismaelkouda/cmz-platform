@@ -5,7 +5,6 @@ import { Operator } from '@cmz/coverage-areas-domain';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -20,6 +19,7 @@ import { OPTICAL_FIBER_NETWORK_TABLE } from '../constants/optical-fiber-network-
 import { OpticalFiberNetworkVmProps } from '../adapters/optical-fiber-network-vm-props.interface';
 import { OpticalFiberNetworkPresenter } from '../adapters/optical-fiber-network-vm.presenter';
 import { OpticalFiberNetworkFilterStore } from '../stores/optical-fiber-network-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/coverage-areas/optical-fiber-networks';
 const T = 'COVERAGE_AREAS.OPTICAL_FIBER_NETWORK';
@@ -91,7 +91,7 @@ export class OpticalFiberNetworkListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

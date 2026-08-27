@@ -7,7 +7,6 @@ import {
     TeamsPermissionsFacade,
 } from '@cmz/team-organization-application';
 import { ReportType, TelecomOperator } from '@cmz/shared-domain';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FieldComponent,
     FormMode,
@@ -15,6 +14,7 @@ import {
     TELECOM_OPERATOR_OPTIONS,
 } from '@cmz/shared-ui';
 import { TeamsFormStore } from '../stores/teams-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'TEAM_ORGANIZATION.TEAMS';
 
@@ -151,7 +151,7 @@ export class TeamsFormComponent {
     protected readonly store = inject(TeamsFormStore);
     private readonly facade = inject(TeamsFacade);
     private readonly permissionsFacade = inject(TeamsPermissionsFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

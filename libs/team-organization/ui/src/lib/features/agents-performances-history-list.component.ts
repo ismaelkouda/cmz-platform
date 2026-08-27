@@ -2,7 +2,6 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { AgentsPerformancesHistoryFacade } from '@cmz/team-organization-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FilterComponent,
     FilterField,
@@ -14,6 +13,7 @@ import { AGENTS_PERFORMANCES_HISTORY_TABLE } from '../constants/agents-performan
 import { AgentsPerformancesHistoryVmProps } from '../adapters/agents-performances-history-vm-props.interface';
 import { AgentsPerformancesHistoryPresenter } from '../adapters/agents-performances-history-vm.presenter';
 import { AgentsPerformancesHistoryFilterStore } from '../stores/agents-performances-history-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'TEAM_ORGANIZATION.AGENTS_PERFORMANCES.HISTORY';
 
@@ -64,7 +64,7 @@ const T = 'TEAM_ORGANIZATION.AGENTS_PERFORMANCES.HISTORY';
 export class AgentsPerformancesHistoryListComponent {
     protected readonly facade = inject(AgentsPerformancesHistoryFacade);
     private readonly store = inject(AgentsPerformancesHistoryFilterStore);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly route = inject(ActivatedRoute);
 
     protected readonly ns = T;

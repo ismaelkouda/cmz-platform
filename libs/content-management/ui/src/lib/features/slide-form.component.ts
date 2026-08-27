@@ -4,7 +4,6 @@ import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Platform, TypeMedia } from '@cmz/shared-domain';
 import { SlideFacade } from '@cmz/content-management-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FieldComponent,
     FormMode,
@@ -12,6 +11,7 @@ import {
     TYPE_MEDIA_OPTIONS,
 } from '@cmz/shared-ui';
 import { SlideFormStore } from '../stores/slide-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'CONTENT_MANAGEMENT.SLIDE';
 
@@ -236,7 +236,7 @@ const T = 'CONTENT_MANAGEMENT.SLIDE';
 export class SlideFormComponent {
     protected readonly store = inject(SlideFormStore);
     private readonly facade = inject(SlideFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

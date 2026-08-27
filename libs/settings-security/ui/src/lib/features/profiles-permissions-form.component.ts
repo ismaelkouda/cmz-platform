@@ -6,10 +6,10 @@ import {
     ProfilesPermissionsFacade,
     ProfilesPermissionsPermissionsFacade,
 } from '@cmz/settings-security-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { ProfilesPermissionsFormStore } from '../stores/profiles-permissions-form.store';
 import { PermissionTreeNodeComponent } from './permission-tree-node.component';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'SETTINGS_SECURITY.PROFILES_PERMISSIONS';
 
@@ -101,7 +101,7 @@ export class ProfilesPermissionsFormComponent {
     private readonly permissionsFacade = inject(
         ProfilesPermissionsPermissionsFacade
     );
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

@@ -5,13 +5,13 @@ import {
     ValidationError,
 } from '@cmz/shared-domain';
 import { ErrorHandlerRegistry, SessionService } from '@cmz/shared-application';
-import { I18nextTranslationService } from './i18next-translation.service';
+import { TranslocoService } from '@jsverse/transloco';
 import { CmzNotificationService } from './cmz-notification.service';
 
 /**
  * Point de convergence du feedback d'erreur. Branche le **handler par défaut**
  * du registre : tout `DomainError` sans handler propre → toast erreur avec
- * `messageKey` traduit (i18next). Seules les **exceptions** ont un handler.
+ * `messageKey` traduit (Transloco). Seules les **exceptions** ont un handler.
  * Supprime la répétition « un handler par erreur » du source (33 → 1 + 2).
  * Cf. contrats/error.contract.md, ADR-0012.
  */
@@ -19,7 +19,7 @@ import { CmzNotificationService } from './cmz-notification.service';
 export class UiFeedbackService {
     private readonly registry = inject(ErrorHandlerRegistry);
     private readonly notification = inject(CmzNotificationService);
-    private readonly translation = inject(I18nextTranslationService);
+    private readonly translation = inject(TranslocoService);
     private readonly session = inject(SessionService);
 
     constructor() {

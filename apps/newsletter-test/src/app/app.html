@@ -3,7 +3,7 @@
         <button
             type="button"
             class="underline"
-            [class.font-semibold]="transloco.getActiveLang() === 'fr'"
+            [class.font-semibold]="activeLang() === 'fr'"
             (click)="switchLanguage('fr')"
         >
             FR
@@ -11,7 +11,7 @@
         <button
             type="button"
             class="underline"
-            [class.font-semibold]="transloco.getActiveLang() === 'en'"
+            [class.font-semibold]="activeLang() === 'en'"
             (click)="switchLanguage('en')"
         >
             EN

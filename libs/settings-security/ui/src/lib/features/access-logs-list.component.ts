@@ -1,6 +1,5 @@
 import { Component, Signal, computed, inject } from '@angular/core';
 import { AccessLogsFacade } from '@cmz/settings-security-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import {
     FilterComponent,
     FilterField,
@@ -14,6 +13,7 @@ import { ACCESS_LOGS_TABLE } from '../constants/access-logs-table.constant';
 import { AccessLogsVmProps } from '../adapters/access-logs-vm-props.interface';
 import { AccessLogsPresenter } from '../adapters/access-logs-vm.presenter';
 import { AccessLogsFilterStore } from '../stores/access-logs-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'SETTINGS_SECURITY.ACCESS_LOGS';
 
@@ -70,7 +70,7 @@ const T = 'SETTINGS_SECURITY.ACCESS_LOGS';
 export class AccessLogsListComponent {
     protected readonly facade = inject(AccessLogsFacade);
     private readonly store = inject(AccessLogsFilterStore);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;

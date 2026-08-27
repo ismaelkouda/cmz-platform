@@ -7,7 +7,6 @@ import {
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -22,6 +21,7 @@ import { INFRASTRUCTURE_TABLE } from '../constants/infrastructure-table.constant
 import { InfrastructureVmProps } from '../adapters/infrastructure-vm-props.interface';
 import { InfrastructurePresenter } from '../adapters/infrastructure-vm.presenter';
 import { InfrastructureFilterStore } from '../stores/infrastructure-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/equipments/list';
 const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE';
@@ -94,7 +94,7 @@ export class InfrastructureListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

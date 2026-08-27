@@ -99,28 +99,96 @@ systématiquement ce fichier après tout `nx g @jsverse/transloco:ng-add` — ce
 n'est pas un problème que ce repo peut corriger dans le schematic tiers
 lui-même, seulement un point de vigilance documenté ici.
 
-## Pourquoi Transloco plutôt que le pattern `i18next`/`TranslationPort` déjà présent (ADR-0024)
+## Convergence complète sur Transloco (ADR-0036, 2026-08-27)
 
-`backoffice-angular` utilise déjà un `TranslationPort` agnostique
-(`libs/shared/application/src/lib/ports/translation.port.ts`) avec un adaptateur
-i18next (`I18nextTranslationService`,
-`libs/shared/ui/src/lib/services/i18next-translation.service.ts`), motivé par
+**Mise à jour** : la coexistence initialement décrite ci-dessous (deux
+mécanismes i18n Angular distincts) a été tranchée et close. Voir
+[ADR-0036](../adr/0036-convergence-transloco-angular.md) pour l'historique
+complet : `backoffice-angular` a migré ses 101 fichiers consommateurs de
+`TranslationPort`/i18next vers Transloco. `TranslationPort`,
+`TRANSLATION_PORT`, `I18nextTranslationService` et `provideI18n()` ont été
+**supprimés** du repo — pas dépréciés. Transloco est désormais l'unique
+mécanisme i18n pour tout Angular de ce repo, sur les deux apps
+(`newsletter-test` et `backoffice-angular`).
+
+Le paragraphe suivant décrit le contexte **historique** (avant la
+migration), conservé pour comprendre le raisonnement original derrière le
+choix initial de Transloco face au pattern déjà en place :
+
+`backoffice-angular` utilisait un `TranslationPort` agnostique
+(`libs/shared/application/src/lib/ports/translation.port.ts`, supprimé) avec un
+adaptateur i18next (`I18nextTranslationService`, supprimé), motivé par
 l'ADR-0024 : garder un contrat de traduction portable entre Angular et un futur
-consommateur React, sans dépendre d'un mécanisme propre à Angular.
-
-Le choix de Transloco pour les apps de test (`newsletter-test`) diverge
+consommateur React, sans dépendre d'un mécanisme propre à Angular. Le choix de
+Transloco pour les apps de test (`newsletter-test`) avait d'abord divergé
 **délibérément** de ce pattern existant, sur la base de deux critères
-explicitement posés par l'utilisateur : facilité d'automatisation (Transloco a
-un schematic Nx officiel qui pose tout le squelette en une commande —
-`nx g @jsverse/transloco:ng-add`, alors que le pattern `TranslationPort` exige
-un `AppInitializer` et un wrapper maison écrits à la main) et minimisation de
-l'action humaine. Cette divergence est **assumée et documentée ici**, pas une
-incohérence oubliée : ce repo contient donc aujourd'hui deux mécanismes i18n
-Angular distincts (`i18next`/`TranslationPort` dans `backoffice-angular`,
-Transloco dans `newsletter-test`), chacun légitime dans son contexte. Si une
-future consolidation devient nécessaire (ex. faire converger les deux), elle
-doit être tranchée explicitement — ne pas la déduire silencieusement de ce
-document.
+explicitement posés par l'utilisateur : facilité d'automatisation (schematic Nx
+officiel `nx g @jsverse/transloco:ng-add`) et minimisation de l'action
+humaine. Cette divergence, qui devait initialement rester ouverte à
+réévaluation, a ensuite été tranchée par l'utilisateur en faveur d'une
+convergence complète — voir ADR-0036 pour le détail de la migration et sa
+justification (le bénéfice de portabilité React de `TranslationPort` ne
+s'était jamais matérialisé en pratique).
+
+## Audit de conformité version-spécifique (Angular 22.0.7 / React 19.2.8)
+
+Après validation initiale des deux POC, un audit dédié a vérifié que
+l'implémentation respecte bien les recommandations officielles **pour les
+versions précises installées dans ce repo** (`@angular/core: 22.0.7`,
+`react`/`react-dom`: `19.2.8`) — pas seulement "ça compile et les tests
+passent". Deux écarts réels ont été trouvés et corrigés.
+
+### React : `Suspense` manquant autour de l'arbre applicatif
+
+La doc officielle react-i18next est explicite : `useTranslation()` a
+`useSuspense: true` par défaut, et sans `<Suspense>` englobant, un chargement
+asynchrone des traductions (notre cas : `i18next-http-backend` sur
+`public/i18n/{lng}.json`) provoque *"A component suspended while rendering,
+but no fallback UI was specified"*. `apps/newsletter/src/main.tsx` ne
+plaçait aucun `<Suspense>` autour de `<App />` — corrigé en enveloppant
+`<BrowserRouter><App /></BrowserRouter>` dans `<Suspense fallback={null}>`.
+`fallback={null}` plutôt qu'un spinner : formulaire minimal, chargement JSON
+quasi instantané en local, pas de valeur ajoutée à un état de chargement
+visible ici — à réévaluer si l'app grossit ou si le backend réel introduit de
+la latence réseau significative.
+
+### Angular : API Signals de Transloco (`activeLang`) sous-exploitée
+
+Transloco v8.4.0 (version installée, pas une nouveauté v9-alpha) expose une
+API Signals dédiée (`translateSignal`, `translateObjectSignal`,
+`activeLang` sur `TranslocoService`) — vérifiée sur la doc officielle
+`core-concepts/signals.md`. **Important** : la doc Transloco recommande
+toujours explicitement la directive structurelle (`*transloco="let t"`) pour
+le template ("the recommended approach as it is DRY and efficient... single
+subscription per template") — ce n'est donc PAS un remplacement de `t()`
+dans un template avec de nombreuses clés interpolées comme le nôtre.
+
+En revanche, `apps/newsletter-test/src/app/app.ts` appelait
+`transloco.getActiveLang()` (méthode impérative, ré-évaluée à chaque cycle de
+détection de changement) dans le template pour surligner le bouton de langue
+actif, alors que le composant utilise déjà `signal()` pour son propre état
+(`state`). Incohérent avec un composant par ailleurs Signals-first, sous un
+Angular 22 où les Signals sont l'idiome poussé par la doc officielle
+elle-même. Corrigé : `protected readonly activeLang = this.transloco.activeLang`
+(Signal natif), consommé dans le template via `activeLang() === 'fr'`.
+`t()` via la directive structurelle reste inchangé — conforme à la
+recommandation officielle actuelle, pas un oubli.
+
+### Méthode de vérification
+
+Chaque correction validée par un cycle complet réel (pas seulement une
+lecture de doc) : `nx run newsletter-test:build` (inclut `ngc
+--strictTemplates`), `nx run newsletter-test:test`, `nx run newsletter:build`,
+`nx run newsletter:test`, `eslint --max-warnings=0` sur les fichiers
+modifiés — tous verts après correction.
+
+**Retenir pour toute future app suivant ce pattern** : vérifier
+systématiquement (1) qu'un `<Suspense>` englobe l'arbre React si
+`useTranslation()` est utilisé avec un backend HTTP asynchrone, et (2)
+préférer les Signals natifs de `TranslocoService` (`activeLang`, etc.) à
+leurs équivalents impératifs partout où Angular Signals est déjà la
+convention du composant — sans pour autant abandonner la directive
+structurelle recommandée pour la traduction de clés dans le template.
 
 ## Ce que ce document ne couvre pas
 
@@ -129,9 +197,10 @@ document.
   `apps/newsletter/src/app/` comme référence vivante, dans le même esprit que
   [`scaffold-tailwind-apps.md`](./scaffold-tailwind-apps.md) renvoie aux apps de
   référence plutôt qu'à un template figé).
-- Il ne tranche pas la question de la consolidation entre les deux mécanismes
-  i18n Angular coexistants (voir section précédente) — c'est une décision future
-  distincte, pas actée ici.
+- ~~Il ne tranche pas la question de la consolidation entre les deux mécanismes
+  i18n Angular coexistants~~ — tranché depuis par ADR-0036 (2026-08-27) :
+  convergence complète sur Transloco, voir la section « Convergence complète
+  sur Transloco » ci-dessus.
 - Il n'automatise pas l'installation de Transloco/react-i18next sur une future
   app — contrairement à `tools/scaffold-tailwind.mjs` (Tailwind) et
   `tools/scaffold-lib-wiring.mjs` (câblage lib→app), aucun script équivalent

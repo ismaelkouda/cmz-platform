@@ -14,8 +14,8 @@ import {
     TasksActionsProcessingEntity,
 } from '@cmz/processing-domain';
 import { FieldComponent } from '@cmz/shared-ui';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { TasksActionsProcessingFormStore } from '../stores/tasks-actions-processing-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 export type TasksActionsDialogMode = 'create' | 'edit' | 'view';
 
@@ -192,7 +192,7 @@ export class TasksActionsProcessingFormDialogComponent {
     readonly saved = output<void>();
 
     protected readonly store = inject(TasksActionsProcessingFormStore);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
 
     private readonly dialogRef =
         viewChild<ElementRef<HTMLDialogElement>>('dlg');

@@ -4,7 +4,6 @@ import { LegalNoticeFacade } from '@cmz/content-management-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -21,6 +20,7 @@ import { LEGAL_NOTICE_STATUS_LABEL } from '../constants/legal-notice-status-labe
 import { LegalNoticeVmProps } from '../adapters/legal-notice-vm-props.interface';
 import { LegalNoticePresenter } from '../adapters/legal-notice-vm.presenter';
 import { LegalNoticeFilterStore } from '../stores/legal-notice-filter.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/content-management/legal-notice';
 const T = 'CONTENT_MANAGEMENT.LEGAL_NOTICE';
@@ -87,7 +87,7 @@ export class LegalNoticeListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

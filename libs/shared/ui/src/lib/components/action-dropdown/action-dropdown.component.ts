@@ -7,15 +7,15 @@ import {
     output,
     signal,
 } from '@angular/core';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { ActionDropdownItem } from '../../interfaces/action-dropdown-item.interface';
+import { TranslocoService } from '@jsverse/transloco';
 
 /**
  * Menu d'actions de ligne — **design-system**, sans lib UI tierce. Présentation
  * pure : reçoit les actions ([[ActionDropdownItem]]), émet l'id sélectionné.
  * Accessible : bouton `aria-haspopup`, menu `role="menu"`, items
  * `role="menuitem"`, fermeture Escape / clic extérieur, libellés traduits via
- * `TranslationPort`. Stylé par tokens CSS (`--cmz-*`).
+ * Transloco. Stylé par tokens CSS (`--cmz-*`).
  */
 @Component({
     selector: 'cmz-action-dropdown',
@@ -140,7 +140,7 @@ import { ActionDropdownItem } from '../../interfaces/action-dropdown-item.interf
     `,
 })
 export class ActionDropdownComponent {
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly host = inject(ElementRef<HTMLElement>);
 
     readonly actions = input.required<ActionDropdownItem[]>();

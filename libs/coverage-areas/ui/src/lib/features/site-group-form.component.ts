@@ -3,9 +3,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SiteGroupFacade } from '@cmz/coverage-areas-application';
-import { TRANSLATION_PORT } from '@cmz/shared-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { SiteGroupFormStore } from '../stores/site-group-form.store';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'COVERAGE_AREAS.SITE_GROUP';
 
@@ -88,7 +88,7 @@ const T = 'COVERAGE_AREAS.SITE_GROUP';
 export class SiteGroupFormComponent {
     protected readonly store = inject(SiteGroupFormStore);
     private readonly facade = inject(SiteGroupFacade);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

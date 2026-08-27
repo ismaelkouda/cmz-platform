@@ -4,7 +4,6 @@ import { AllRequestsFacade } from '@cmz/requests-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -28,6 +27,7 @@ import {
     requestsListExportTooltip,
 } from '../utils/requests-list-export.util';
 import { RequestsDetailsDialogComponent } from './requests-details-dialog.component';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'REQUESTS.ALL';
 
@@ -105,7 +105,7 @@ export class AllRequestsPageComponent {
     private readonly store = inject(AllRequestsFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;

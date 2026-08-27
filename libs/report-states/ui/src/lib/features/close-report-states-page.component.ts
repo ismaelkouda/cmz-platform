@@ -4,7 +4,6 @@ import { CloseReportStatesFacade } from '@cmz/report-states-application';
 import {
     PermissionActionsService,
     NOTIFICATION_PORT,
-    TRANSLATION_PORT,
 } from '@cmz/shared-application';
 import {
     FilterComponent,
@@ -27,6 +26,7 @@ import {
     reportStatesListExportTooltip,
 } from '../utils/report-states-list-export.util';
 import { ReportStatesDetailsDialogComponent } from './report-states-details-dialog.component';
+import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'REPORT_STATES.CLOSE';
 
@@ -104,7 +104,7 @@ export class CloseReportStatesPageComponent {
     private readonly store = inject(CloseReportStatesFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TRANSLATION_PORT);
+    private readonly i18n = inject(TranslocoService);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;
