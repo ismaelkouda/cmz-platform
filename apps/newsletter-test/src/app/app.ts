@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ActionRequestCommands } from '@cmz/newsletter-angular';
 
 type SubmissionState =
@@ -13,16 +14,21 @@ type SubmissionState =
     | { readonly kind: 'error'; readonly message: string };
 
 @Component({
-    imports: [FormsModule],
+    imports: [FormsModule, TranslocoDirective],
     selector: 'app-root',
     templateUrl: './app.html',
     styleUrl: './app.scss',
 })
 export class App {
     private readonly commands = inject(ActionRequestCommands);
+    protected readonly transloco = inject(TranslocoService);
 
     protected email = '';
     protected readonly state = signal<SubmissionState>({ kind: 'idle' });
+
+    protected switchLanguage(lang: string): void {
+        this.transloco.setActiveLang(lang);
+    }
 
     protected submit(): void {
         this.state.set({ kind: 'pending' });

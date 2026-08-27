@@ -1,0 +1,11 @@
+{
+  "newsletter": {
+    "title": "Newsletter — action-request test (React)",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "submit": "Subscribe",
+    "sending": "Sending…",
+    "successMessage": "Subscription confirmed (id: {{subscriptionId}}) — {{message}}",
+    "errorMessage": "Failed: {{message}}"
+  }
+}

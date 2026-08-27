@@ -1,15 +1,18 @@
 import {
     ApplicationConfig,
+    isDevMode,
     provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
+import { provideTransloco } from '@jsverse/transloco';
 import {
     ACTION_REQUEST_BASE_URL,
     ActionRequestClient,
     ActionRequestCommands,
 } from '@cmz/newsletter-angular';
 import { appRoutes } from './app.routes';
+import { TranslocoHttpLoader } from './transloco-loader';
 
 // Cas de test : générateur + mock local, pas de vrai backend.
 // Voir apps/newsletter-test/src/mock/newsletter-mock-server.mjs.
@@ -26,5 +29,14 @@ export const appConfig: ApplicationConfig = {
         },
         ActionRequestClient,
         ActionRequestCommands,
+        provideTransloco({
+            config: {
+                availableLangs: ['fr', 'en'],
+                defaultLang: 'fr',
+                reRenderOnLangChange: true,
+                prodMode: !isDevMode(),
+            },
+            loader: TranslocoHttpLoader,
+        }),
     ],
 };

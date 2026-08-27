@@ -414,6 +414,20 @@ directives suivantes :
    c'est volontaire (l'écosystème Nx/Tailwind a peut-être changé) : ne
    contournez jamais l'échec, lisez le message et la doc avant d'agir.
 
+7. **Internationalisation (i18n) pour toute nouvelle app** : lisez d'abord
+   [`docs/architecture/i18n-generator-scope.md`](./docs/architecture/i18n-generator-scope.md)
+   avant de toucher à l'i18n dans ce repo. Point clé : `tools/generator-
+   platform/` n'émet jamais de wording utilisateur (titres, labels,
+   messages) — inutile de modifier les renderers pour « les rendre
+   i18n-ready ». Le pattern de référence validé (deux POC réels) est
+   **Transloco** côté Angular (schematic officiel `nx g
+   @jsverse/transloco:ng-add`) et **react-i18next** côté React — voir
+   `apps/newsletter-test/src/app/` et `apps/newsletter/src/app/` comme
+   exemples vivants. Attention : ce choix diverge délibérément du pattern
+   `i18next`/`TranslationPort` déjà en place dans `backoffice-angular`
+   (ADR-0024) — les deux mécanismes coexistent aujourd'hui, c'est documenté
+   et assumé, pas une incohérence à corriger sans discussion préalable.
+
 ---
 
 ## 5. État courant du monorepo

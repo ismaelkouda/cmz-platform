@@ -101,10 +101,13 @@
     "@angular/forms": "catalog:",
     "@angular/platform-browser": "catalog:",
     "@angular/router": "catalog:",
+    "@jsverse/transloco": "8.4.0",
     "date-fns": "catalog:",
     "exceljs": "^4.4.0",
     "i18next": "catalog:",
+    "i18next-http-backend": "4.0.1",
     "ol": "catalog:",
+    "react-i18next": "17.0.12",
     "react-router-dom": "6.30.3",
     "rxjs": "catalog:",
     "tslib": "catalog:"
