@@ -153,7 +153,9 @@
       ],
       "@cmz/workflow-details-domain": [
         "./libs/workflow-details/domain/src/index.ts"
-      ]
+      ],
+      "@cmz/newsletter-angular": ["./libs/newsletter/angular/src/index.ts"],
+      "@cmz/newsletter-react": ["./libs/newsletter/reactjs/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

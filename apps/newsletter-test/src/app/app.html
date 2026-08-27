@@ -1,2 +1,33 @@
-<app-nx-welcome></app-nx-welcome>
-<router-outlet></router-outlet>
+<main class="mx-auto max-w-md p-8">
+    <h1 class="text-xl font-semibold text-gray-900">Newsletter — test action-request</h1>
+
+    <form class="mt-6 flex flex-col gap-3" (ngSubmit)="submit()">
+        <label class="text-sm font-medium text-gray-700" for="email">Email</label>
+        <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            [(ngModel)]="email"
+            class="rounded border border-gray-300 px-3 py-2"
+            placeholder="vous@exemple.fr"
+        />
+        <button
+            type="submit"
+            class="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
+            [disabled]="state().kind === 'pending'"
+        >
+            S'inscrire
+        </button>
+    </form>
+
+    @let current = state(); @switch (current.kind) { @case ('success') {
+    <p class="mt-4 rounded bg-green-50 p-3 text-green-800">
+        Inscription confirmée (id: {{ current.subscriptionId }}) — {{ current.message }}
+    </p>
+    } @case ('error') {
+    <p class="mt-4 rounded bg-red-50 p-3 text-red-800">Échec : {{ current.message }}</p>
+    } @case ('pending') {
+    <p class="mt-4 text-gray-500">Envoi en cours…</p>
+    } }
+</main>
