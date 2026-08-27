@@ -15,14 +15,18 @@ import {
 } from './after-success-slot.mjs';
 
 function renderService() {
-    return `import { Injectable, InjectionToken, inject } from '@angular/core';
+    return `import { InjectionToken, Service, inject } from '@angular/core';
 import { afterSuccess } from './after-success.extension';
 import type { WorkflowCommand, WorkflowContext, WorkflowPorts, WorkflowResult } from './models';
 import { WorkflowActionEngine } from './workflow-action-engine';
 
 export const WORKFLOW_PORTS = new InjectionToken<WorkflowPorts>('WORKFLOW_PORTS');
 
-@Injectable()
+// autoProvided:false — dépend de WORKFLOW_PORTS, un token sans valeur par
+// défaut qui doit être fourni explicitement par le host (voir providers de la
+// route/du composant consommateur). Un root-scope implicite masquerait cette
+// dépendance et échouerait au runtime hors du contexte prévu (cf. OPS-25bis).
+@Service({ autoProvided: false })
 export class WorkflowActionService {
     private readonly engine = new WorkflowActionEngine(inject(WORKFLOW_PORTS));
 

@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0.0",
+  "model_id": "newsletter-action-request-definition-evidence",
+  "sources": [
+    {
+      "id": "source.action-request-definition",
+      "kind": "specification",
+      "uri": "tools/generator-platform/sources/newsletter-subscribe.definition.json",
+      "sha256": "8a2a1412e8781978296a7282186201d207099fddbca487dfaf1de47073b20fc8"
+    }
+  ],
+  "facts": [
+    {
+      "id": "fact.newsletter.types",
+      "category": "data_shape",
+      "statement": "The definition declares the shared types for Newsletter.",
+      "evidence_refs": ["source.action-request-definition"],
+      "confidence": 1,
+      "status": "asserted"
+    },
+    {
+      "id": "fact.subscribe-newsletter.operation",
+      "category": "operation",
+      "statement": "Submit email for contact our service.",
+      "evidence_refs": ["source.action-request-definition"],
+      "confidence": 1,
+      "status": "asserted"
+    },
+    {
+      "id": "fact.subscribe-newsletter.input",
+      "category": "data_shape",
+      "statement": "Information needed to contact support.",
+      "evidence_refs": ["source.action-request-definition"],
+      "confidence": 1,
+      "status": "asserted"
+    },
+    {
+      "id": "fact.subscribe-newsletter.output",
+      "category": "data_shape",
+      "statement": "Confirmation returned after accepting the request.",
+      "evidence_refs": ["source.action-request-definition"],
+      "confidence": 1,
+      "status": "asserted"
+    },
+    {
+      "id": "fact.subscribe-newsletter.effects",
+      "category": "effect",
+      "statement": "Submit the request to the support boundary.",
+      "evidence_refs": ["source.action-request-definition"],
+      "confidence": 1,
+      "status": "asserted"
+    },
+    {
+      "id": "fact.subscribe-newsletter.constraints",
+      "category": "constraint",
+      "statement": "The definition declares validation constraints for subscribe-newsletter.",
+      "evidence_refs": ["source.action-request-definition"],
+      "confidence": 1,
+      "status": "asserted"
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "unknown.backend-contract-authority",
+      "question": "Does an independent backend contract confirm this declaration?",
+      "impact": "Generation can verify internal consistency but not the deployed backend.",
+      "blocking": false,
+      "evidence_refs": ["source.action-request-definition"]
+    },
+    {
+      "id": "unknown.error-contract",
+      "question": "Which transport and domain errors belong to the public contract?",
+      "impact": "Generated clients can propagate failures but cannot type unspecified errors.",
+      "blocking": false,
+      "evidence_refs": ["source.action-request-definition"]
+    }
+  ],
+  "decisions": []
+}

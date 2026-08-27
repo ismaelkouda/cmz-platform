@@ -1,13 +1,16 @@
 {
   "schema_version": "1.1.0",
-  "generator": { "name": "cmz-generator-platform", "version": "1.2.0" },
+  "generator": {
+    "name": "cmz-generator-platform",
+    "version": "1.2.0"
+  },
   "input": {
-    "model_id": "authentication-action-request-semantic",
-    "sha256": "6d0c4dc7f47621d449b8c8d94309f2b4dfd24785b1b7d402ade93d5c88b122c9"
+    "model_id": "newsletter-action-request-semantic",
+    "sha256": "71bbd5357296080460f40ea38306651a5fc1b72917ada265e1e433762223cb58"
   },
   "plan": {
-    "plan_id": "authentication-action-request-semantic:artifacts",
-    "sha256": "5bbb6340a9eddb64a2b42b60520d8e58d3b1910888b7a8f81a41884d747040ed"
+    "plan_id": "newsletter-action-request-semantic:artifacts",
+    "sha256": "b2a7bf0b1c1ef541c3975e89fc6eec99521e77de6b10302214e54be901fa0f67"
   },
   "target": {
     "profile_id": "angular-nx",
@@ -20,24 +23,24 @@
       "artifact_id": "package-descriptor",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 234,
-      "sha256": "9a96ed942732d877c04c01b6ebf168bb8c440bd9901019294f2dd3614cd628e7"
+      "bytes": 226,
+      "sha256": "8269b1c0b4c8fd410e16ab11753c2e1d068dff7c45f1b15f8c80d98ea076ca8a"
     },
     {
       "path": "src/action-request-client.ts",
       "artifact_id": "integration-client",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 3158,
-      "sha256": "f9e518651390179a50960a8072216f6047cd17a0a2fc850409a38c3b69287a30"
+      "bytes": 1458,
+      "sha256": "ef5aa2524e38f6c13e526a045c2d600d807f97b3387197a188605f264d6bde28"
     },
     {
       "path": "src/action-request-commands.ts",
       "artifact_id": "runtime-binding",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 2128,
-      "sha256": "7a1ebead923d5258530a80f2e92047303213949c5e7e2f881bce7159c3a2dbcb"
+      "bytes": 1078,
+      "sha256": "51d13213c0476e91169de66e9920aae484c059a2fa72c9ab86f4abc757aff8a7"
     },
     {
       "path": "src/after-success.extension.ts",
@@ -52,8 +55,8 @@
       "artifact_id": "extension-contract",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 421,
-      "sha256": "aa7ff10a3f80f50eecfe9cf32fbc7e5d3365fd27744d490ada41682c0675ad78"
+      "bytes": 292,
+      "sha256": "5ee0f055e926ae3c453661e062c4db95e2137c2179e4fc277c56a163f6200c05"
     },
     {
       "path": "src/index.ts",
@@ -68,16 +71,16 @@
       "artifact_id": "domain-model",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 664,
-      "sha256": "99328eaf2cf988002f992e4b122db84e377f66e5e7972a8ed15c6d109057c25a"
+      "bytes": 193,
+      "sha256": "c04f3a7e232fab6400a2a4ca02cbd6f523bba5704d317e8c0391bb73a3ed8db4"
     },
     {
       "path": "src/validation.ts",
       "artifact_id": "input-validator",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 2060,
-      "sha256": "c8c2f4c54fcecd55ba10b56a15b831f27343169d93208ac2e860fdf65b4858aa"
+      "bytes": 604,
+      "sha256": "99f5590c2f6012629defaf5f0bed0a6549a43e25d443b7c4c91e6407dd3c91a7"
     },
     {
       "path": "tsconfig.json",
@@ -88,5 +91,5 @@
       "sha256": "cadc5053a749d3ad79f4f773d1ecf1b5eeb8430b1373bd291f5b7bf307f8d659"
     }
   ],
-  "tree_sha256": "cb8b7bd96ad4faed683a5550c47d486f63f45a4bc5b0d02a8a7b7fd865d7cc3a"
+  "tree_sha256": "53a467458f8e6dcc1b6f537e1c4c7dccc64eec4031550b2fb447e2f2ef6cfa85"
 }

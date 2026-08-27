@@ -68,8 +68,8 @@
       "artifact_id": "runtime-binding",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 866,
-      "sha256": "cf8bf8f34e8510ddcbf5dacc74a440c68224dbc01c560c165ecaf4f2f77eb8f0"
+      "bytes": 1202,
+      "sha256": "f17a6ffae262c698dde47922fcf0449c93615ecb1361d37e1c15f6413ac1272d"
     },
     {
       "path": "tsconfig.json",
@@ -80,5 +80,5 @@
       "sha256": "cadc5053a749d3ad79f4f773d1ecf1b5eeb8430b1373bd291f5b7bf307f8d659"
     }
   ],
-  "tree_sha256": "034ceb4afb6424f43d5c9f1ed3741cf61630e067152e58c8c01be1562f8cad4f"
+  "tree_sha256": "02b6c8bfd027f9e87fa0331bf2be8c276c8d2ba910225f0c17b7c8892831363f"
 }

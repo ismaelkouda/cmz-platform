@@ -7,11 +7,17 @@
 // `PERMISSION_PORT`/`createActionRequestHooks`.
 
 export function renderAngularBehaviorGraphService() {
-    return `import { Injectable } from '@angular/core';
+    return `import { Service } from '@angular/core';
 import { BehaviorGraphEngine } from './behavior-graph-engine';
 import type { BehaviorState } from './behavior-graph-engine';
 
-@Injectable()
+// Root-scope par défaut correct ici : ce service n'a aucune dépendance
+// injectée (l'engine est instancié directement, sans InjectionToken ni
+// service scopé en amont) — contrairement à ActionRequestClient/Commands ou
+// WorkflowActionService, il n'y a rien qui nécessite un provider explicite
+// côté host. Voir autoProvided:false dans angular-nx-renderer.mjs et
+// angular-workflow-renderer.mjs pour le cas contraire.
+@Service()
 export class BehaviorGraphService {
     private readonly engine = new BehaviorGraphEngine();
 
