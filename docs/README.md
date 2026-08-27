@@ -76,6 +76,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0033](./adr/0033-propriete-artefacts-regeneration-non-destructive.md) | Propriété des artefacts et régénération non destructive  |
 | [0034](./adr/0034-plateforme-multi-stack-renderers-separes-sorties-mono-stack.md) | Plateforme multi-stack, renderers séparés, sorties mono-stack |
 | [0035](./adr/0035-contrat-durabilite-publication-generation.md) | Contrat de durabilité de la publication générée          |
+| [0036](./adr/0036-convergence-transloco-angular.md)         | Convergence de tout l'Angular du repo sur Transloco      |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
