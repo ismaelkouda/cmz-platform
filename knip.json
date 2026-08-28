@@ -55,7 +55,11 @@
     "date-fns",
     "exceljs",
     "i18next",
-    "ol"
+    "ol",
+    "eslint-plugin-import",
+    "eslint-plugin-jsx-a11y",
+    "eslint-plugin-react",
+    "eslint-plugin-react-hooks"
   ],
   "ignoreBinaries": ["semgrep"],
   "rules": {
