@@ -1,101 +1,63 @@
 /**
- * Charge le dictionnaire `FR` (façade + packs sous `i18n/fr/`) pour les tools
- * (check-i18n, fill-missing, …) sans Angular ni bundler : transpile TypeScript
- * API → modules ESM dans un temp, imports relatifs réécrits en `.mjs`
- * (résolution Node ESM stricte).
+ * Charge le dictionnaire FR pour les tools (check-i18n, fill-missing, …) sans
+ * Angular ni bundler.
  *
- * Après le découpage poids fichier, `fr.translation.ts` n'est plus un monolithe :
- * un seul fichier temp ne suffit plus.
+ * Historique (avant ADR-0030/0036, convergence Transloco) : la source de
+ * vérité était `apps/backoffice-angular/src/app/i18n/fr.translation.ts` (+
+ * packs `fr/fr-pack-*.ts`), un module TypeScript transpilé à la volée (API
+ * `typescript`) puis importé dynamiquement. La migration vers Transloco a
+ * remplacé ce module par un fichier JSON statique servi en HTTP
+ * (`TranslocoHttpLoader` → `i18n/${lang}.json`), cohérent avec le pattern
+ * documenté dans docs/architecture/i18n-generator-scope.md pour toute app de
+ * ce repo. `fr.translation.ts` et les packs associés ont été supprimés avec
+ * le reste de `TranslationPort` (ADR-0036) — cette fonction lisait encore
+ * l'ancien chemin, cassant check:i18n (ENOENT) sans que personne ne l'ait
+ * remarqué avant un run CI complet.
+ *
+ * Correction : lire directement le JSON, pas de transpilation ni d'import
+ * dynamique nécessaires — le format de clé (chemins pointés MAJUSCULES,
+ * ex. `COMMON.CREATE`) est resté identique, donc `flattenFrKeys` (le
+ * contrat consommé par check-i18n.mjs) n'a besoin d'aucun changement.
  */
-import {
-    mkdirSync,
-    mkdtempSync,
-    readdirSync,
-    readFileSync,
-    writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import ts from 'typescript';
 
 const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = join(TOOLS_DIR, '..');
-export const I18N_DIR = join(REPO_ROOT, 'apps/backoffice-angular/src/app/i18n');
-export const FR_TRANSLATION_ENTRY = join(I18N_DIR, 'fr.translation.ts');
+export const I18N_DIR = join(REPO_ROOT, 'apps/backoffice-angular/public/i18n');
+export const FR_TRANSLATION_ENTRY = join(I18N_DIR, 'fr.json');
 
 /**
- * @param {string} js
- * @returns {string}
+ * @returns {Record<string, unknown>}
  */
-function rewriteRelativeImportsWithMjs(js) {
-    return js.replace(/from\s+(['"])(\.[^'"]+)\1/g, (full, quote, spec) => {
-        if (/\.(mjs|cjs|js|json)$/.test(spec)) return full;
-        return `from ${quote}${spec}.mjs${quote}`;
-    });
-}
-
-/**
- * @param {string} dir
- * @param {string[]} acc
- * @returns {string[]}
- */
-function listTsFiles(dir, acc = []) {
-    for (const ent of readdirSync(dir, { withFileTypes: true })) {
-        const path = join(dir, ent.name);
-        if (ent.isDirectory()) {
-            listTsFiles(path, acc);
-            continue;
-        }
-        if (ent.name.endsWith('.ts') && !ent.name.endsWith('.spec.ts')) {
-            acc.push(path);
-        }
-    }
-    return acc;
-}
-
-/**
- * Fichiers du graphe dictionnaire FR uniquement (pas i18n.provider Angular).
- * @param {string} absPath
- */
-function isFrDictionaryTs(absPath) {
-    const rel = relative(I18N_DIR, absPath).replace(/\\/g, '/');
-    return rel === 'fr.translation.ts' || /^fr\/fr-pack-\d+\.ts$/.test(rel);
-}
-
-/**
- * @returns {Promise<{ FR: Record<string, unknown>, tmpDir: string }>}
- */
-export async function loadFrModule() {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'cmz-check-i18n-'));
-    const sources = listTsFiles(I18N_DIR).filter(isFrDictionaryTs);
-    if (!sources.includes(FR_TRANSLATION_ENTRY)) {
-        throw new Error(`Entrée i18n introuvable : ${FR_TRANSLATION_ENTRY}`);
-    }
-
-    for (const absTs of sources) {
-        const source = readFileSync(absTs, 'utf8');
-        const { outputText } = ts.transpileModule(source, {
-            compilerOptions: {
-                module: ts.ModuleKind.ESNext,
-                target: ts.ScriptTarget.ES2022,
-            },
-        });
-        const rel = relative(I18N_DIR, absTs);
-        const outPath = join(
-            tmpDir,
-            rel.replace(/\.ts$/i, '.mjs').replace(/\\/g, '/')
+export function loadFrModule() {
+    let raw;
+    try {
+        raw = readFileSync(FR_TRANSLATION_ENTRY, 'utf8');
+    } catch (error) {
+        throw new Error(
+            `Entrée i18n introuvable : ${FR_TRANSLATION_ENTRY} (${
+                /** @type {Error} */ (error).message
+            })`
         );
-        mkdirSync(dirname(outPath), { recursive: true });
-        writeFileSync(outPath, rewriteRelativeImportsWithMjs(outputText));
     }
-
-    const entry = join(tmpDir, 'fr.translation.mjs');
-    const mod = await import(`file://${entry}`);
-    if (!mod?.FR || typeof mod.FR !== 'object') {
-        throw new Error('Export FR manquant après transpile i18n');
+    let FR;
+    try {
+        FR = JSON.parse(raw);
+    } catch (error) {
+        throw new Error(
+            `Entrée i18n invalide (JSON malformé) : ${FR_TRANSLATION_ENTRY} (${
+                /** @type {Error} */ (error).message
+            })`
+        );
     }
-    return { FR: mod.FR, tmpDir };
+    if (!FR || typeof FR !== 'object' || Array.isArray(FR)) {
+        throw new Error(
+            `Entrée i18n invalide : ${FR_TRANSLATION_ENTRY} doit être un objet JSON, pas ${Array.isArray(FR) ? 'un tableau' : typeof FR}`
+        );
+    }
+    return FR;
 }
 
 /**
@@ -119,9 +81,12 @@ export function flattenFrKeys(FR) {
 }
 
 /**
+ * Async pour compatibilité d'appel (check-i18n.mjs fait `await
+ * loadDefinedFrKeys()`) — la lecture elle-même est désormais synchrone
+ * (JSON.parse), plus besoin de transpilation ni d'import dynamique.
  * @returns {Promise<Set<string>>}
  */
 export async function loadDefinedFrKeys() {
-    const { FR } = await loadFrModule();
+    const FR = loadFrModule();
     return flattenFrKeys(FR);
 }

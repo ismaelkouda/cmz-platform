@@ -50,7 +50,7 @@ export class ActionRequestClient implements ActionRequestPort {
         method: string,
         authentication: RequestAuthentication,
         input: unknown,
-        isEnveloped: boolean
+        _isEnveloped: boolean
     ): Promise<T> {
         const response = await this.fetch(joinUrl(this.baseUrl, path), {
             method,

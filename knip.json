@@ -12,11 +12,18 @@
         "apps/backoffice-angular/src/app/providers/permission.guard.ts",
         "apps/backoffice-angular/src/app/testing/axe-a11y.util.ts",
         "apps/backoffice-angular/src/app/testing/a11y-testbed.harness.ts",
-        "apps/backoffice-angular/e2e/*.spec.ts"
+        "apps/backoffice-angular/e2e/*.spec.ts",
+        "apps/newsletter-test/src/main.ts",
+        "apps/newsletter-test/src/tailwind.css",
+        "apps/newsletter/src/main.tsx",
+        "apps/newsletter/src/tailwind.css",
+        "apps/newsletter/vite.config.mts"
       ],
       "project": [
         "apps/backoffice-angular/**/*.{ts,tsx,css,mjs}",
         "apps/backoffice-angular/public/**/*.js",
+        "apps/newsletter-test/**/*.{ts,css}",
+        "apps/newsletter/**/*.{ts,tsx,mts,css}",
         "tools/**/*.{mjs,ts}"
       ]
     },

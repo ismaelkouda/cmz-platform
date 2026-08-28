@@ -306,6 +306,20 @@ export default [
             '**/*.cjs',
             '**/*.mjs',
         ],
-        rules: {},
+        rules: {
+            // Un paramètre préfixé `_` est délibérément non utilisé — cas
+            // légitime quand la signature est imposée par un contrat de
+            // type (ex. extension point humain AfterSuccessExtension,
+            // callback avec position fixe) et que l'implémentation
+            // n'exploite pas (encore) cet argument. Pattern déjà utilisé
+            // dans le repo (after-success.extension.ts newsletter-angular/
+            // -react) sans que la règle par défaut du preset Nx le
+            // reconnaisse — rendu explicite ici plutôt que contourné au
+            // cas par cas.
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+            ],
+        },
     },
 ];
