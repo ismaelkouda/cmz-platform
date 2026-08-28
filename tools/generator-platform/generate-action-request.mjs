@@ -28,6 +28,36 @@ const schemaPaths = {
     semantic: resolve(moduleRoot, 'schemas/semantic-model.schema.json'),
 };
 
+/**
+ * Étape 4 (additive) du chantier « générateur en couches » (ADR-0003
+ * §5d). `--target` accepte désormais, en plus des 4 valeurs historiques
+ * (angular, react, reactjs, all), les 6 targets en couches produits par
+ * render-targets.mjs (étape 3) — un par couche et par stack — plus
+ * `all-layered` pour les publier ensemble. `all` reste strictement la
+ * sortie plate historique (angular + reactjs) : ne pas y ajouter les
+ * couches implicitement serait une régression silencieuse de portée,
+ * mais les y ajouter automatiquement romprait la rétrocompatibilité
+ * (un appelant existant utilisant --target all ne s'attend pas à voir
+ * apparaître 6 nouveaux répertoires de sortie). L'utilisateur qui veut
+ * les couches doit le demander explicitement.
+ */
+const layeredTargetValues = [
+    'angular-domain',
+    'angular-data',
+    'angular-application',
+    'react-domain',
+    'react-data',
+    'react-application',
+];
+const targetValues = [
+    'all',
+    'angular',
+    'react',
+    'reactjs',
+    'all-layered',
+    ...layeredTargetValues,
+];
+
 function parseArguments(arguments_) {
     const options = { target: 'all' };
     for (let index = 0; index < arguments_.length; index += 1) {
@@ -61,8 +91,8 @@ function parseArguments(arguments_) {
     if (options.dryRun && options.applyChangeSetId) {
         throw new Error('--dry-run and --apply are mutually exclusive');
     }
-    if (!['all', 'angular', 'react', 'reactjs'].includes(options.target)) {
-        throw new Error('--target must be angular, reactjs, or all');
+    if (!targetValues.includes(options.target)) {
+        throw new Error(`--target must be one of: ${targetValues.join(', ')}`);
     }
     return options;
 }
@@ -126,14 +156,37 @@ export async function generateActionRequest({
 
     const targets = await computeTargetsForSemantic(compiled.semantic);
     const normalizedTarget = target === 'react' ? 'reactjs' : target;
-    const selected = {
-        ...(normalizedTarget === 'all' || normalizedTarget === 'angular'
-            ? { angular: targets.angular }
-            : {}),
-        ...(normalizedTarget === 'all' || normalizedTarget === 'reactjs'
-            ? { reactjs: targets.react }
-            : {}),
-    };
+    // Table de correspondance target CLI -> clé interne de render-targets.mjs
+    // (targets.*). 'angular'/'reactjs' restent nommés différemment en
+    // interne (angular/react) pour des raisons historiques — les 6 clés
+    // en couches, elles, sont identiques des deux côtés (pas de
+    // traduction à maintenir en double quand de nouvelles couches
+    // arriveront, ex. workflow-action).
+    const flatSelection =
+        normalizedTarget === 'all'
+            ? { angular: targets.angular, reactjs: targets.react }
+            : normalizedTarget === 'angular'
+              ? { angular: targets.angular }
+              : normalizedTarget === 'reactjs'
+                ? { reactjs: targets.react }
+                : {};
+    const layeredSelection =
+        normalizedTarget === 'all-layered'
+            ? Object.fromEntries(
+                  layeredTargetValues.map((id) => [id, targets[id]])
+              )
+            : layeredTargetValues.includes(normalizedTarget)
+              ? { [normalizedTarget]: targets[normalizedTarget] }
+              : {};
+    const selected = { ...flatSelection, ...layeredSelection };
+    if (Object.keys(selected).length === 0) {
+        throw new Error(`--target ${target}: no matching target found`);
+    }
+    // Référence de hash partagée : n'importe quel target sert de témoin
+    // (tous calculés depuis le même compiled.semantic), pas seulement
+    // 'angular' — utile pour --target react-domain (ou toute sélection
+    // n'incluant pas la sortie plate Angular).
+    const referenceSha256 = Object.values(selected)[0].manifest.input.sha256;
     const controlFiles = {
         'artifact-plan.json': {
             artifact_id: 'artifact-plan',
@@ -153,7 +206,7 @@ export async function generateActionRequest({
             feature: definition.feature.id,
             outputRoot: absoluteOutput,
             targets: Object.keys(selected),
-            semanticSha256: targets.angular.manifest.input.sha256,
+            semanticSha256: referenceSha256,
             changeSet: await inspectGenerationChangeSet({
                 outputRoot: absoluteOutput,
                 targets: selected,
@@ -172,7 +225,7 @@ export async function generateActionRequest({
             feature: definition.feature.id,
             outputRoot: absoluteOutput,
             targets: Object.keys(selected),
-            semanticSha256: targets.angular.manifest.input.sha256,
+            semanticSha256: referenceSha256,
             publication,
         };
     }
@@ -185,13 +238,13 @@ export async function generateActionRequest({
         feature: definition.feature.id,
         outputRoot: absoluteOutput,
         targets: Object.keys(selected),
-        semanticSha256: targets.angular.manifest.input.sha256,
+        semanticSha256: referenceSha256,
         publication,
     };
 }
 
 function usage() {
-    return `Usage:\n  bun run generate:action-request --definition <file.json> --out <directory> [--target angular|reactjs|all] [--dry-run | --apply <change_set_id>]\n`;
+    return `Usage:\n  bun run generate:action-request --definition <file.json> --out <directory> [--target ${targetValues.join('|')}] [--dry-run | --apply <change_set_id>]\n`;
 }
 
 async function main() {

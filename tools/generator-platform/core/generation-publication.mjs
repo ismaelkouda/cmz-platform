@@ -21,10 +21,65 @@ import {
 } from './generation-transaction.mjs';
 import { assertSupportedPublicationFilesystem } from './publication-durability.mjs';
 import { typecheckGenerated } from './typecheck-generated.mjs';
+import { typecheckLayeredTargets } from '../renderers/typecheck-layered.mjs';
 import { repositoryRoot } from '../validate-ir.mjs';
 
 function fail(message) {
     throw new Error(`generation publication: ${message}`);
+}
+
+/**
+ * Étape 4 (additive) du chantier « générateur en couches » (ADR-0003
+ * §5d). Un targetId `<famille>-<couche>` (ex. `angular-domain`) fait
+ * partie d'un groupe de couches liées par des imports inter-package
+ * (@cmz/<domaine>-<famille>-<couche>) — les type-checker isolément
+ * (typecheckGenerated, une seule racine virtuelle) échoue sur ces
+ * imports puisqu'aucun alias n'est configuré. Découvert par
+ * generate-action-request-layered-cli.test.mjs (--target all-layered) :
+ * publier plusieurs couches en même temps faisait échouer la
+ * vérification de compilation avant même l'écriture, alors que chaque
+ * couche publiée seule fonctionnait.
+ */
+const layeredTargetSuffixes = ['domain', 'data', 'application'];
+
+function layeredGroupOf(targetId) {
+    for (const suffix of layeredTargetSuffixes) {
+        if (targetId.endsWith(`-${suffix}`)) {
+            return {
+                family: targetId.slice(0, -(suffix.length + 1)),
+                layer: suffix,
+            };
+        }
+    }
+    return undefined;
+}
+
+/**
+ * Le nom de package réel (@cmz/<domaine>-<famille>-<couche>) n'est connu
+ * qu'après rendu — c'est le renderer qui le choisit (voir
+ * package_name/expandProfileValue), pas une convention que ce module
+ * devrait deviner. On le lit dans le descripteur de package déjà
+ * présent dans les fichiers candidats (project.json pour Angular,
+ * package.json pour React — les deux ont un champ `name`), plutôt que
+ * de le recalculer indépendamment et risquer une divergence.
+ */
+function packageNameOf(targetId, files) {
+    const descriptor = files['project.json'] ?? files['package.json'];
+    if (!descriptor) {
+        fail(`${targetId}: no package descriptor (project.json/package.json)`);
+    }
+    let parsed;
+    try {
+        parsed = JSON.parse(descriptor.toString('utf8'));
+    } catch (error) {
+        fail(
+            `${targetId}: package descriptor is not valid JSON (${error.message})`
+        );
+    }
+    if (typeof parsed.name !== 'string' || parsed.name.length === 0) {
+        fail(`${targetId}: package descriptor has no name`);
+    }
+    return parsed.name;
 }
 
 async function exists(path) {
@@ -185,17 +240,76 @@ async function buildCandidateTarget(
     ) {
         fail(`${targetId}: effective desired manifest drifted`);
     }
-    typecheckGenerated(
-        Object.fromEntries(
-            Object.entries(files).map(([path, content]) => [
-                path,
-                decodeTypeScript(path, content, targetId),
-            ])
-        ),
-        targetId,
-        repositoryRoot
-    );
+    // Le type-check n'est plus fait ici (voir typecheckCandidates,
+    // appelée par stageGenerationCandidate une fois tous les candidats
+    // construits) : un target en couches doit être vérifié avec ses
+    // pairs de la même famille (alias inter-package résolus), pas
+    // isolément — buildCandidateTarget ne voit qu'un seul target à la
+    // fois, il ne peut pas prendre cette décision correctement.
     return { files, manifest };
+}
+
+/**
+ * Type-checke tous les candidats d'une publication, group by group : un
+ * groupe de couches complet (ex. angular-domain + angular-data +
+ * angular-application, tous présents dans `candidates`) est vérifié
+ * ensemble via typecheckLayeredTargets (alias inter-package résolus) ;
+ * tout target hors groupe, ou appartenant à un groupe incomplet (ex.
+ * seulement angular-domain sans ses pairs — publication d'une seule
+ * couche, cas déjà supporté et testé), retombe sur typecheckGenerated
+ * (vérification isolée, comportement historique inchangé).
+ */
+function typecheckCandidates(candidates) {
+    const groups = new Map();
+    const standalone = [];
+    for (const [targetId, candidate] of Object.entries(candidates)) {
+        const group = layeredGroupOf(targetId);
+        if (!group) {
+            standalone.push(targetId);
+            continue;
+        }
+        if (!groups.has(group.family)) groups.set(group.family, new Map());
+        groups.get(group.family).set(group.layer, targetId);
+    }
+    for (const [family, layerTargets] of groups) {
+        const isComplete = layeredTargetSuffixes.every((layer) =>
+            layerTargets.has(layer)
+        );
+        if (!isComplete) {
+            standalone.push(...layerTargets.values());
+            continue;
+        }
+        const layers = {};
+        for (const [layer, targetId] of layerTargets) {
+            const decodedFiles = Object.fromEntries(
+                Object.entries(candidates[targetId].files).map(
+                    ([path, content]) => [
+                        path,
+                        decodeTypeScript(path, content, targetId),
+                    ]
+                )
+            );
+            layers[layer] = {
+                packageName: packageNameOf(targetId, decodedFiles),
+                files: decodedFiles,
+            };
+        }
+        typecheckLayeredTargets(layers, family, repositoryRoot);
+    }
+    for (const targetId of standalone) {
+        typecheckGenerated(
+            Object.fromEntries(
+                Object.entries(candidates[targetId].files).map(
+                    ([path, content]) => [
+                        path,
+                        decodeTypeScript(path, content, targetId),
+                    ]
+                )
+            ),
+            targetId,
+            repositoryRoot
+        );
+    }
 }
 
 async function readManifest(path, label) {
@@ -286,17 +400,28 @@ async function stageGenerationCandidate({
         manifestDocument(controlManifest)
     );
 
+    // Deux passes : (1) construire chaque candidat (validation de
+    // contenu/hash, indépendante par target) ; (2) type-checker tous les
+    // candidats ensemble (typecheckCandidates groupe les familles de
+    // couches complètes pour résoudre leurs alias inter-package) avant
+    // toute écriture sur disque — un candidat qui ne compile pas ne doit
+    // jamais atteindre candidateRoot, comme avant cette étape.
+    const candidates = {};
     for (const [targetId, target] of Object.entries(targets)) {
         const targetChangeSet = changeSet.targets.find(
             ({ id }) => id === targetId
         );
         if (!targetChangeSet) fail(`${targetId}: target plan is missing`);
-        const candidate = await buildCandidateTarget(
+        candidates[targetId] = await buildCandidateTarget(
             outputRoot,
             targetId,
             target,
             targetChangeSet
         );
+    }
+    typecheckCandidates(candidates);
+
+    for (const [targetId, candidate] of Object.entries(candidates)) {
         const targetRoot = resolve(candidateRoot, targetId);
         for (const [path, content] of Object.entries(candidate.files)) {
             await writeDocument(safeOutputPath(targetRoot, path), content);
