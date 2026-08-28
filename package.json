@@ -145,7 +145,7 @@
     "@vitest/coverage-v8": "4.1.10",
     "@vitest/ui": "~4.1.0",
     "angular-eslint": "^22.0.0",
-    "axe-core": "4.12.1",
+    "axe-core": "4.13.0",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-import": "2.31.0",
