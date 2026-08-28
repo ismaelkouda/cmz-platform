@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "action-request",
+  "feature": {
+    "id": "newsletter",
+    "name": "Newsletter",
+    "description": "Newsletter subscription."
+  },
+  "opaque_types": [],
+  "operations": [
+    {
+      "id": "subscribe-newsletter",
+      "description": "Submit email for contact our service.",
+      "input": {
+        "description": "Information needed to contact support.",
+        "fields": [
+          {
+            "name": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true,
+            "format": "email"
+          }
+        ]
+      },
+      "output": {
+        "id": "newsletter-subscription-result",
+        "description": "Confirmation returned after accepting the request.",
+        "fields": [
+          {
+            "name": "subscription_id",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "access": { "mode": "public" },
+      "http": {
+        "method": "POST",
+        "path": "newsletter",
+        "authentication": "none"
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Submit the request to the support boundary."
+        }
+      ]
+    }
+  ]
+}
