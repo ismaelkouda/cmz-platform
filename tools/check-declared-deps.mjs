@@ -57,6 +57,32 @@ const UNUSED_ALLOWLIST = new Set([
     'typescript',
 ]);
 
+/**
+ * Exceptions scopées à un package précis (contrairement à
+ * UNUSED_ALLOWLIST, globale à tout le repo) — utile quand la
+ * dépendance non importée est légitime pour CE package mais ne
+ * devrait pas être blanchie partout ailleurs.
+ * @type {Map<string, Set<string>>} selfName -> noms de deps exemptés
+ */
+const UNUSED_ALLOWLIST_BY_PACKAGE = new Map([
+    [
+        '@cmz/newsletter-react-application',
+        new Set([
+            // react est un peerDependency légitime pour ce package
+            // (hooks React purs), mais le code TypeScript ne fait jamais
+            // `import ... from 'react'` explicitement (pas de JSX ici —
+            // voir use-action-request-commands.ts, qui reçoit
+            // useState/useCallback via ReactHooksPort, pas depuis
+            // 'react' directement). Le renderer généré
+            // (renderers/react-typescript-layered-renderer.mjs) produit
+            // le même peerDependencies sans import source pour la même
+            // raison — structurel au pattern de ce package précis, pas
+            // une négligence ni une règle à généraliser à tout le repo.
+            'react',
+        ]),
+    ],
+]);
+
 /** @param {string} name */
 function isAmbientTypesPackage(name) {
     return name.startsWith('@types/');
@@ -233,9 +259,12 @@ for (const pkgPath of manifests.sort()) {
     }
 
     // D-6 — réciproque : déclaré mais jamais importé
+    const unusedAllowlistForThisPackage =
+        UNUSED_ALLOWLIST_BY_PACKAGE.get(selfName) ?? new Set();
     const unused = [...declaredByField.entries()]
         .filter(([name]) => name !== selfName)
         .filter(([name]) => !UNUSED_ALLOWLIST.has(name))
+        .filter(([name]) => !unusedAllowlistForThisPackage.has(name))
         .filter(([name]) => !isAmbientTypesPackage(name))
         .filter(([name]) => !used.has(name))
         .map(([name, field]) => ({ name, field }))

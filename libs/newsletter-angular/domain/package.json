@@ -6,6 +6,9 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "rxjs": "catalog:"
+  },
   "devDependencies": {
     "typescript": "catalog:tooling"
   }

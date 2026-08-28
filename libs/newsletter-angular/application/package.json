@@ -7,6 +7,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@angular/core": "catalog:",
     "@cmz/newsletter-angular-domain": "workspace:*",
     "rxjs": "catalog:"
   },
