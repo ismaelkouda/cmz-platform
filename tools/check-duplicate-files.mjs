@@ -84,6 +84,46 @@ const SKIP_DIRS = new Set([
 /** Ignore les stubs triviaux (barrels vides, re-exports d'une ligne). */
 const MIN_BYTES = 40;
 
+/**
+ * Exception explicite et motivée — ADR-0003 §5d (2026-08-28).
+ *
+ * newsletter-angular et newsletter-react sont DEUX modules mono-stack
+ * volontairement isolés (aucune dépendance croisée, scope:newsletter-angular
+ * / scope:newsletter-react séparés dans eslint.config.mjs) implémentant le
+ * MÊME contrat produit « subscribe-newsletter ». Les 4 fichiers ci-dessous
+ * sont byte-identiques par nature de ce contrat, pas par copier-coller de
+ * helper :
+ *   - domain/models.ts, domain/validation.ts : le contrat d'API (types +
+ *     règle de validation email) est un fait métier partagé, pas un
+ *     utilitaire technique. Le remonter dans @cmz/shared-domain le
+ *     rendrait visible/consommable par les 19 autres modules du repo qui
+ *     n'en ont aucun usage — violation d'isolation plus grave que la
+ *     duplication de 25 lignes qu'elle prétendrait éviter. Créer un 3e
+ *     scope dédié casserait le pattern « un scope = un module mono-stack »
+ *     établi par ADR-0003 §5d pour ce cas précis.
+ *   - data/index.ts, application/lib/after-success.extension.ts : barrel
+ *     technique et point d'extension volontairement vide par défaut
+ *     (« human-owned, preserved during regeneration ») — identiques
+ *     aujourd'hui par coïncidence de leur trivialité, destinés à diverger
+ *     dès qu'une des deux plateformes personnalise son extension.
+ *
+ * Le motif que ce check cible (README du script : « helper recopié au lieu
+ * d'être partagé », ex. form-mode/action-item/vite.config) ne s'applique
+ * pas ici — ce n'est pas de la dette, c'est un contrat entre deux
+ * implémentations isolées par design. Périmètre strictement borné à ces 4
+ * chemins ; toute autre duplication cross-module reste bloquante.
+ */
+const CROSS_MODULE_ALLOWLIST = new Set([
+    'libs/newsletter-angular/domain/src/lib/models.ts',
+    'libs/newsletter-react/domain/src/lib/models.ts',
+    'libs/newsletter-angular/domain/src/lib/validation.ts',
+    'libs/newsletter-react/domain/src/lib/validation.ts',
+    'libs/newsletter-angular/data/src/index.ts',
+    'libs/newsletter-react/data/src/index.ts',
+    'libs/newsletter-angular/application/src/lib/after-success.extension.ts',
+    'libs/newsletter-react/application/src/lib/after-success.extension.ts',
+]);
+
 const CONSTRAINT_KEY = 'no_cross_module_byte_identical_files';
 const FAMILY_CONSTRAINT_KEY = 'no_family_duplication_regression';
 
@@ -243,11 +283,13 @@ function runByteIdenticalCheck() {
         const crossModule = modules.length > 1;
         if (!crossModule && !reportIntraModule) continue;
         if (moduleFilter && !modules.includes(moduleFilter)) continue;
+        const relPaths = paths.map((p) => relative(ROOT, p)).sort();
+        if (relPaths.every((p) => CROSS_MODULE_ALLOWLIST.has(p))) continue;
         groups.push({
             digest,
             crossModule,
             modules,
-            paths: paths.map((p) => relative(ROOT, p)).sort(),
+            paths: relPaths,
         });
     }
 
