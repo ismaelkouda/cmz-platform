@@ -53,7 +53,10 @@
             "react-typescript",
             "angular-nx-layered-domain",
             "angular-nx-layered-data",
-            "angular-nx-layered-application"
+            "angular-nx-layered-application",
+            "react-typescript-layered-domain",
+            "react-typescript-layered-data",
+            "react-typescript-layered-application"
           ]
         },
         "profile_version": {

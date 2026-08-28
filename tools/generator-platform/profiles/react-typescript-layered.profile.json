@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0.0",
+  "id": "react-typescript-layered",
+  "version": "1.0.0",
+  "package_name": "{domain}-react",
+  "output_root": "libs/{domain}-react",
+  "external_dependencies": ["react"],
+  "runtime_contract": "React hooks split into domain/data/application Nx libraries (ADR-0003 §5d) — étape 2 (React) du chantier générateur-en-couches, non branché au pipeline de publication."
+}

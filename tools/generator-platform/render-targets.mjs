@@ -13,6 +13,12 @@ import {
     renderAngularNxLayered,
 } from './renderers/angular-nx-layered-renderer.mjs';
 import { renderReactTypescript } from './renderers/react-typescript-renderer.mjs';
+import {
+    applicationPackageName as reactApplicationPackageName,
+    dataPackageName as reactDataPackageName,
+    domainPackageName as reactDomainPackageName,
+    renderReactTypescriptLayered,
+} from './renderers/react-typescript-layered-renderer.mjs';
 import { expandProfileValue } from './renderers/shared.mjs';
 import {
     assertNoApplicationToDataImport,
@@ -41,6 +47,10 @@ const paths = {
     angularLayeredProfile: resolve(
         moduleDirectory,
         'profiles/angular-nx-layered.profile.json'
+    ),
+    reactLayeredProfile: resolve(
+        moduleDirectory,
+        'profiles/react-typescript-layered.profile.json'
     ),
     manifestSchema: resolve(
         moduleDirectory,
@@ -75,12 +85,17 @@ function layeredProfileView(baseProfile, layer) {
 }
 
 export async function computeTargetsForSemantic(semantic) {
-    const [angularProfile, reactProfile, angularLayeredProfile] =
-        await Promise.all([
-            loadJson(paths.angularProfile),
-            loadJson(paths.reactProfile),
-            loadJson(paths.angularLayeredProfile),
-        ]);
+    const [
+        angularProfile,
+        reactProfile,
+        angularLayeredProfile,
+        reactLayeredProfile,
+    ] = await Promise.all([
+        loadJson(paths.angularProfile),
+        loadJson(paths.reactProfile),
+        loadJson(paths.angularLayeredProfile),
+        loadJson(paths.reactLayeredProfile),
+    ]);
     const artifactPlan = buildArtifactPlan(semantic, 'semantic-model');
     const angularRendered = renderAngularNx(
         semantic,
@@ -141,6 +156,46 @@ export async function computeTargetsForSemantic(semantic) {
         repositoryRoot
     );
 
+    // Sortie React en couches — même traitement additif, symétrique du
+    // bloc Angular ci-dessus. N'affecte ni angularRendered ni
+    // reactRendered.
+    const reactLayered = renderReactTypescriptLayered(
+        semantic,
+        artifactPlan,
+        reactLayeredProfile
+    );
+    const reactLayeredBasePackageName = expandProfileValue(
+        reactLayeredProfile.package_name,
+        semantic,
+        'package_name'
+    );
+    const reactLayeredDataPackageName = reactDataPackageName(
+        reactLayeredBasePackageName
+    );
+    assertNoApplicationToDataImport(reactLayered, reactLayeredDataPackageName);
+    typecheckLayeredTargets(
+        {
+            domain: {
+                packageName: reactDomainPackageName(
+                    reactLayeredBasePackageName
+                ),
+                files: reactLayered.domain.files,
+            },
+            data: {
+                packageName: reactLayeredDataPackageName,
+                files: reactLayered.data.files,
+            },
+            application: {
+                packageName: reactApplicationPackageName(
+                    reactLayeredBasePackageName
+                ),
+                files: reactLayered.application.files,
+            },
+        },
+        reactLayeredProfile.id,
+        repositoryRoot
+    );
+
     return {
         artifactPlan,
         angular: {
@@ -186,6 +241,33 @@ export async function computeTargetsForSemantic(semantic) {
                 artifactPlan,
                 layeredProfileView(angularLayeredProfile, 'application'),
                 angularLayered.application
+            ),
+        },
+        'react-domain': {
+            files: reactLayered.domain.files,
+            manifest: buildGenerationManifest(
+                semantic,
+                artifactPlan,
+                layeredProfileView(reactLayeredProfile, 'domain'),
+                reactLayered.domain
+            ),
+        },
+        'react-data': {
+            files: reactLayered.data.files,
+            manifest: buildGenerationManifest(
+                semantic,
+                artifactPlan,
+                layeredProfileView(reactLayeredProfile, 'data'),
+                reactLayered.data
+            ),
+        },
+        'react-application': {
+            files: reactLayered.application.files,
+            manifest: buildGenerationManifest(
+                semantic,
+                artifactPlan,
+                layeredProfileView(reactLayeredProfile, 'application'),
+                reactLayered.application
             ),
         },
     };

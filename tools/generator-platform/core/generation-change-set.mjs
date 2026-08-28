@@ -28,6 +28,9 @@ const targetProfiles = {
     'angular-domain': 'angular-nx-layered-domain',
     'angular-data': 'angular-nx-layered-data',
     'angular-application': 'angular-nx-layered-application',
+    'react-domain': 'react-typescript-layered-domain',
+    'react-data': 'react-typescript-layered-data',
+    'react-application': 'react-typescript-layered-application',
 };
 
 export const controlPlaneManifestFilename = 'generation-control-manifest.json';

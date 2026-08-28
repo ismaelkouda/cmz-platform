@@ -26,7 +26,10 @@
                   "reactjs",
                   "angular-domain",
                   "angular-data",
-                  "angular-application"
+                  "angular-application",
+                  "react-domain",
+                  "react-data",
+                  "react-application"
                 ]
               }
             }
@@ -61,7 +64,10 @@
             "reactjs",
             "angular-domain",
             "angular-data",
-            "angular-application"
+            "angular-application",
+            "react-domain",
+            "react-data",
+            "react-application"
           ]
         },
         "previous_manifest_sha256": { "$ref": "#/$defs/hash" },
