@@ -5,6 +5,7 @@ import {
     assertArtifactPlan,
     bindRenderedArtifacts,
     buildArtifactPlan,
+    LAYERS,
 } from './core/artifact-plan.mjs';
 import { computeTargets } from './render-targets.mjs';
 import { renderAngularNx } from './renderers/angular-nx-renderer.mjs';
@@ -29,6 +30,44 @@ test('artifact plans are deterministic, schema-valid, and target-neutral', async
         /angular|react|typescript|nx|component|hook|injectable/i
     );
     assertArtifactPlan(plan, semantic, 'semantic-model');
+});
+
+// Étape 1 du chantier « générateur en couches » (ADR-0003 §5d) — le champ
+// `layer` est purement descriptif à ce stade (n'affecte aucune sortie
+// rendue), mais son mapping doit rester stable et documenté : c'est le
+// contrat que les étapes suivantes (scission réelle en libs domain/data/
+// application) s'engagent à respecter. Le gabarit de référence est
+// libs/newsletter-angular/{domain,data,application} (écrit à la main,
+// build+lint verts) : domain-model/input-validator → domain,
+// integration-client → data, extension-contract/after-success-extension/
+// runtime-binding → application.
+test('every artifact declares a known layer, matching the manual gabarit', async () => {
+    const semantic = await loadJson(
+        new URL('fixtures/action-request.semantic.json', root)
+    );
+    const plan = buildArtifactPlan(semantic, 'semantic-model');
+    const expectedLayerById = {
+        'package-descriptor': 'per-layer',
+        'compiler-configuration': 'per-layer',
+        'domain-model': 'domain',
+        'input-validator': 'domain',
+        'integration-client': 'data',
+        'extension-contract': 'application',
+        'after-success-extension': 'application',
+        'runtime-binding': 'application',
+        'public-api': 'per-layer',
+    };
+    for (const artifact of plan.artifacts) {
+        assert.ok(
+            LAYERS.has(artifact.layer),
+            `${artifact.id} has an unknown layer: ${artifact.layer}`
+        );
+        assert.equal(
+            artifact.layer,
+            expectedLayerById[artifact.id],
+            `${artifact.id}: unexpected layer`
+        );
+    }
 });
 
 test('one shared plan owns every Angular and ReactJS artifact', async () => {

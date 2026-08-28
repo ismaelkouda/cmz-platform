@@ -29,6 +29,7 @@
           "responsibility",
           "owner",
           "write_policy",
+          "layer",
           "depends_on"
         ],
         "properties": {
@@ -57,6 +58,10 @@
           },
           "write_policy": {
             "enum": ["create", "replace", "preserve", "delete"]
+          },
+          "layer": {
+            "description": "Couche Nx cible (domain/data/application) portant cette responsabilité dans une future sortie en couches — voir core/artifact-plan.mjs pour le détail. 'per-layer' : la responsabilité est répétée dans chaque couche produite (ex: package-descriptor, public-api), pas une couche unique. Champ purement descriptif à ce stade : n'affecte pas encore la sortie des renderers (étape 1 du chantier générateur-en-couches, ADR-0003 §5d).",
+            "enum": ["domain", "data", "application", "per-layer"]
           },
           "depends_on": {
             "type": "array",

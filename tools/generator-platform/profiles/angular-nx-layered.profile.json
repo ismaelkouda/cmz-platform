@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0.0",
+  "id": "angular-nx-layered",
+  "version": "1.0.0",
+  "package_name": "{domain}-angular",
+  "output_root": "libs/{domain}-angular",
+  "external_dependencies": ["@angular/common", "@angular/core", "rxjs"],
+  "runtime_contract": "Angular injectable services split into domain/data/application Nx libraries (ADR-0003 §5d) — étape 2 du chantier générateur-en-couches, non branché au pipeline de publication."
+}

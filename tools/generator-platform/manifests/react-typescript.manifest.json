@@ -7,7 +7,7 @@
   },
   "plan": {
     "plan_id": "authentication-action-request-semantic:artifacts",
-    "sha256": "5bbb6340a9eddb64a2b42b60520d8e58d3b1910888b7a8f81a41884d747040ed"
+    "sha256": "96a5c4a3f1c88327f43d8197fb29e767833d9b6ab722c57647a6e770af239240"
   },
   "target": {
     "profile_id": "react-typescript",

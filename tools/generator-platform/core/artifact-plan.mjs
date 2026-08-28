@@ -1,41 +1,63 @@
 import { sha256, stableStringify } from './generation-manifest.mjs';
 
-function generated(id, dependsOn = []) {
+/**
+ * Axe `layer` (2026-08-28, préparation ADR-0003 §5d) — quelle couche Nx
+ * (domain/data/application, voir libs/newsletter-angular/{domain,data,
+ * application} comme gabarit écrit à la main) porte cette responsabilité
+ * dans une future sortie en couches. N'affecte encore AUCUN comportement :
+ * les renderers continuent de produire une sortie plate à ce stade (étape 1
+ * du chantier « générateur en couches » — voir le plan associé). Champ
+ * purement descriptif, vérifié par assertArtifactPlan, ignoré par
+ * bindRenderedArtifacts et les renderers.
+ *
+ * - 'domain'      : types + règles de validation, zéro import framework.
+ * - 'data'        : accès HTTP/transport (implémente le port du domain).
+ * - 'application' : orchestration, points d'extension, câblage runtime.
+ * - 'per-layer'   : la responsabilité existe une fois PAR couche produite
+ *   (chaque lib a son propre project.json/tsconfig.json/index.ts) — pas une
+ *   seule couche cible unique. Résolu concrètement à l'étape où le plan se
+ *   scinde réellement en sous-plans par package (étape 3 du chantier).
+ */
+export const LAYERS = new Set(['domain', 'data', 'application', 'per-layer']);
+
+function generated(id, layer, dependsOn = []) {
     return {
         id,
         responsibility: id,
         owner: 'generator-owned',
         write_policy: 'replace',
+        layer,
         depends_on: dependsOn,
     };
 }
 
-function human(id, dependsOn = []) {
+function human(id, layer, dependsOn = []) {
     return {
         id,
         responsibility: id,
         owner: 'human-owned',
         write_policy: 'preserve',
+        layer,
         depends_on: dependsOn,
     };
 }
 
 const catalogs = {
     'semantic-model': [
-        generated('package-descriptor'),
-        generated('compiler-configuration'),
-        generated('domain-model'),
-        generated('input-validator', ['domain-model']),
-        generated('integration-client', ['domain-model']),
-        generated('extension-contract', ['domain-model']),
-        human('after-success-extension', ['extension-contract']),
-        generated('runtime-binding', [
+        generated('package-descriptor', 'per-layer'),
+        generated('compiler-configuration', 'per-layer'),
+        generated('domain-model', 'domain'),
+        generated('input-validator', 'domain', ['domain-model']),
+        generated('integration-client', 'data', ['domain-model']),
+        generated('extension-contract', 'application', ['domain-model']),
+        human('after-success-extension', 'application', ['extension-contract']),
+        generated('runtime-binding', 'application', [
             'domain-model',
             'integration-client',
             'extension-contract',
             'after-success-extension',
         ]),
-        generated('public-api', [
+        generated('public-api', 'per-layer', [
             'domain-model',
             'input-validator',
             'integration-client',
@@ -45,19 +67,19 @@ const catalogs = {
         ]),
     ],
     'behavior-model': [
-        generated('package-descriptor'),
-        generated('compiler-configuration'),
-        generated('domain-model'),
-        generated('execution-controller', ['domain-model']),
-        generated('extension-contract', ['domain-model']),
-        human('after-success-extension', ['extension-contract']),
-        generated('runtime-binding', [
+        generated('package-descriptor', 'per-layer'),
+        generated('compiler-configuration', 'per-layer'),
+        generated('domain-model', 'domain'),
+        generated('execution-controller', 'application', ['domain-model']),
+        generated('extension-contract', 'application', ['domain-model']),
+        human('after-success-extension', 'application', ['extension-contract']),
+        generated('runtime-binding', 'application', [
             'domain-model',
             'execution-controller',
             'extension-contract',
             'after-success-extension',
         ]),
-        generated('public-api', [
+        generated('public-api', 'per-layer', [
             'domain-model',
             'execution-controller',
             'extension-contract',
@@ -125,6 +147,11 @@ export function assertArtifactPlan(plan, model, kind) {
         assert(
             artifact.write_policy === expectedArtifact.write_policy,
             `${artifact.id}: policy`
+        );
+        assert(LAYERS.has(artifact.layer), `${artifact.id}: unknown layer`);
+        assert(
+            artifact.layer === expectedArtifact.layer,
+            `${artifact.id}: layer`
         );
         for (const dependency of artifact.depends_on) {
             assert(ids.has(dependency), `${artifact.id}: unknown dependency`);

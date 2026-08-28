@@ -7,7 +7,7 @@
   },
   "plan": {
     "plan_id": "behavior:requests-workflow:artifacts",
-    "sha256": "43f663514151d924ad070772c12237e4095143463efe7982a3a552414f3558a4"
+    "sha256": "e036716d6001a1eda71de01ed689ef6e4b9d2fbfc28de4243b8e2589a0b24042"
   },
   "target": {
     "profile_id": "angular-nx",
