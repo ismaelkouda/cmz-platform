@@ -5,7 +5,6 @@
   "dependencies": {
     "@cmz/authentication-application": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
-    "@cmz/shared-application": "workspace:*",
     "@angular/core": "catalog:",
     "@angular/router": "catalog:",
     "@angular/forms": "catalog:",
