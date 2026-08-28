@@ -11,7 +11,8 @@
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
     "date-fns": "catalog:",
-    "@angular/forms": "catalog:"
+    "@angular/forms": "catalog:",
+    "@jsverse/transloco": "catalog:"
   },
   "devDependencies": {
     "vitest": "^4.0.8"

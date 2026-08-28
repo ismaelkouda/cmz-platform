@@ -13,7 +13,8 @@
     "@cmz/interactive-map-domain": "workspace:*",
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
-    "ol": "catalog:"
+    "ol": "catalog:",
+    "@jsverse/transloco": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:tooling"

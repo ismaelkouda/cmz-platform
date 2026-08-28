@@ -6,7 +6,8 @@
     "@cmz/shared-domain": "workspace:*",
     "@angular/core": "catalog:",
     "@cmz/shared-constants": "workspace:*",
-    "rxjs": "catalog:"
+    "rxjs": "catalog:",
+    "@jsverse/transloco": "catalog:"
   },
   "devDependencies": {
     "vitest": "^4.0.8"

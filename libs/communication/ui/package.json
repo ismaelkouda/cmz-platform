@@ -12,6 +12,7 @@
     "@cmz/communication-domain": "workspace:*",
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
-    "@cmz/shared-ui": "workspace:*"
+    "@cmz/shared-ui": "workspace:*",
+    "@jsverse/transloco": "catalog:"
   }
 }

@@ -10,6 +10,7 @@
     "@cmz/shared-domain": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
     "@cmz/team-organization-application": "workspace:*",
-    "@cmz/team-organization-domain": "workspace:*"
+    "@cmz/team-organization-domain": "workspace:*",
+    "@jsverse/transloco": "catalog:"
   }
 }

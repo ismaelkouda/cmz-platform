@@ -11,6 +11,7 @@
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
-    "rxjs": "catalog:"
+    "rxjs": "catalog:",
+    "@jsverse/transloco": "catalog:"
   }
 }
