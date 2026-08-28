@@ -47,7 +47,15 @@
       "additionalProperties": false,
       "required": ["profile_id", "profile_version", "profile_sha256"],
       "properties": {
-        "profile_id": { "enum": ["angular-nx", "react-typescript"] },
+        "profile_id": {
+          "enum": [
+            "angular-nx",
+            "react-typescript",
+            "angular-nx-layered-domain",
+            "angular-nx-layered-data",
+            "angular-nx-layered-application"
+          ]
+        },
         "profile_version": {
           "type": "string",
           "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"

@@ -6,7 +6,18 @@ import { buildGenerationManifest } from './core/generation-manifest.mjs';
 import { buildArtifactPlan } from './core/artifact-plan.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularNx } from './renderers/angular-nx-renderer.mjs';
+import {
+    applicationPackageName,
+    dataPackageName,
+    domainPackageName,
+    renderAngularNxLayered,
+} from './renderers/angular-nx-layered-renderer.mjs';
 import { renderReactTypescript } from './renderers/react-typescript-renderer.mjs';
+import { expandProfileValue } from './renderers/shared.mjs';
+import {
+    assertNoApplicationToDataImport,
+    typecheckLayeredTargets,
+} from './renderers/typecheck-layered.mjs';
 import {
     loadJson,
     repositoryRoot,
@@ -27,6 +38,10 @@ const paths = {
         moduleDirectory,
         'profiles/angular-nx.profile.json'
     ),
+    angularLayeredProfile: resolve(
+        moduleDirectory,
+        'profiles/angular-nx-layered.profile.json'
+    ),
     manifestSchema: resolve(
         moduleDirectory,
         'schemas/generation-manifest.schema.json'
@@ -42,11 +57,30 @@ const paths = {
     semantic: resolve(moduleDirectory, 'fixtures/action-request.semantic.json'),
 };
 
+/**
+ * Étape 3 (additive) du chantier « générateur en couches » (ADR-0003 §5d).
+ *
+ * `layeredProfileView(baseProfile, layer)` dérive, sans dupliquer le
+ * fichier JSON, un profil "vue par couche" dont seul `id` change
+ * (suffixé par couche) — c'est ce `id` que buildGenerationManifest grave
+ * dans `target.profile_id`, et que core/generation-change-set.mjs
+ * (targetProfiles) exige exactement pour chaque target en couches
+ * (angular-domain -> angular-nx-layered-domain, etc.). Le reste du
+ * profil (package_name, output_root, external_dependencies) est
+ * partagé : les 3 couches sont des vues d'un seul profil de
+ * configuration, pas 3 profils indépendants à maintenir.
+ */
+function layeredProfileView(baseProfile, layer) {
+    return { ...baseProfile, id: `${baseProfile.id}-${layer}` };
+}
+
 export async function computeTargetsForSemantic(semantic) {
-    const [angularProfile, reactProfile] = await Promise.all([
-        loadJson(paths.angularProfile),
-        loadJson(paths.reactProfile),
-    ]);
+    const [angularProfile, reactProfile, angularLayeredProfile] =
+        await Promise.all([
+            loadJson(paths.angularProfile),
+            loadJson(paths.reactProfile),
+            loadJson(paths.angularLayeredProfile),
+        ]);
     const artifactPlan = buildArtifactPlan(semantic, 'semantic-model');
     const angularRendered = renderAngularNx(
         semantic,
@@ -64,6 +98,49 @@ export async function computeTargetsForSemantic(semantic) {
         repositoryRoot
     );
     typecheckGenerated(reactRendered.files, reactProfile.id, repositoryRoot);
+
+    // Sortie Angular en couches — additive, calculée en plus de la sortie
+    // plate ci-dessus, jamais à sa place. N'affecte ni angularRendered ni
+    // reactRendered : computed.angular/computed.react restent identiques
+    // bit-à-bit à avant cette étape (voir render-targets.test au besoin,
+    // et les tree sha256 déjà vérifiés inchangés par ailleurs).
+    const angularLayered = renderAngularNxLayered(
+        semantic,
+        artifactPlan,
+        angularLayeredProfile
+    );
+    // basePackageName expansé une seule fois ici, avec la même règle
+    // d'expansion (expandProfileValue) que celle appliquée en interne par
+    // renderAngularNxLayered sur ce même profil — les noms de package
+    // utilisés pour le type-check doivent être ceux réellement émis dans
+    // les fichiers générés (imports inter-package), pas une supposition
+    // indépendante.
+    const layeredBasePackageName = expandProfileValue(
+        angularLayeredProfile.package_name,
+        semantic,
+        'package_name'
+    );
+    const layeredDataPackageName = dataPackageName(layeredBasePackageName);
+    assertNoApplicationToDataImport(angularLayered, layeredDataPackageName);
+    typecheckLayeredTargets(
+        {
+            domain: {
+                packageName: domainPackageName(layeredBasePackageName),
+                files: angularLayered.domain.files,
+            },
+            data: {
+                packageName: layeredDataPackageName,
+                files: angularLayered.data.files,
+            },
+            application: {
+                packageName: applicationPackageName(layeredBasePackageName),
+                files: angularLayered.application.files,
+            },
+        },
+        angularLayeredProfile.id,
+        repositoryRoot
+    );
+
     return {
         artifactPlan,
         angular: {
@@ -82,6 +159,33 @@ export async function computeTargetsForSemantic(semantic) {
                 artifactPlan,
                 reactProfile,
                 reactRendered
+            ),
+        },
+        'angular-domain': {
+            files: angularLayered.domain.files,
+            manifest: buildGenerationManifest(
+                semantic,
+                artifactPlan,
+                layeredProfileView(angularLayeredProfile, 'domain'),
+                angularLayered.domain
+            ),
+        },
+        'angular-data': {
+            files: angularLayered.data.files,
+            manifest: buildGenerationManifest(
+                semantic,
+                artifactPlan,
+                layeredProfileView(angularLayeredProfile, 'data'),
+                angularLayered.data
+            ),
+        },
+        'angular-application': {
+            files: angularLayered.application.files,
+            manifest: buildGenerationManifest(
+                semantic,
+                artifactPlan,
+                layeredProfileView(angularLayeredProfile, 'application'),
+                angularLayered.application
             ),
         },
     };

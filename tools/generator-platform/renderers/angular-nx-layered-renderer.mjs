@@ -37,13 +37,18 @@ import {
 import { renderAfterSuccessExtension } from './after-success-slot.mjs';
 import { bindLayeredArtifacts } from './layered-artifact-binding.mjs';
 
-function domainPackageName(basePackageName) {
+// Exportées (étape 3) : seule source de vérité pour dériver les 3 noms de
+// package en couches depuis un package_name de base — render-targets.mjs
+// les réutilise pour construire les alias @cmz/... passés au type-check
+// multi-package (typecheckLayeredTargets), plutôt que de dupliquer cette
+// règle de nommage ailleurs dans le pipeline.
+export function domainPackageName(basePackageName) {
     return `@cmz/${basePackageName}-domain`;
 }
-function dataPackageName(basePackageName) {
+export function dataPackageName(basePackageName) {
     return `@cmz/${basePackageName}-data`;
 }
-function applicationPackageName(basePackageName) {
+export function applicationPackageName(basePackageName) {
     return `@cmz/${basePackageName}-application`;
 }
 

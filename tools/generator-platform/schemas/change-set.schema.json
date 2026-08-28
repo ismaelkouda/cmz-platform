@@ -20,7 +20,15 @@
             "type": "object",
             "required": ["id"],
             "properties": {
-              "id": { "enum": ["angular", "reactjs"] }
+              "id": {
+                "enum": [
+                  "angular",
+                  "reactjs",
+                  "angular-domain",
+                  "angular-data",
+                  "angular-application"
+                ]
+              }
             }
           }
         ]
@@ -47,7 +55,15 @@
       "additionalProperties": false,
       "required": ["desired_manifest_sha256", "changes"],
       "properties": {
-        "id": { "enum": ["angular", "reactjs"] },
+        "id": {
+          "enum": [
+            "angular",
+            "reactjs",
+            "angular-domain",
+            "angular-data",
+            "angular-application"
+          ]
+        },
         "previous_manifest_sha256": { "$ref": "#/$defs/hash" },
         "desired_manifest_sha256": { "$ref": "#/$defs/hash" },
         "changes": {

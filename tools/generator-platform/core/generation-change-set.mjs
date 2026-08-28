@@ -7,9 +7,27 @@ import {
     stableStringify,
 } from './generation-manifest.mjs';
 
+/**
+ * Étape 3 (additive) du chantier « générateur en couches » (ADR-0003 §5d).
+ *
+ * Les 3 clés `angular-domain`/`angular-data`/`angular-application`
+ * s'ajoutent à `angular`/`reactjs` sans les remplacer : le pipeline plat
+ * existant (2 targets) reste intégralement fonctionnel, inchangé, testé
+ * par ses propres golden manifests. Les 3 nouvelles clés permettent à un
+ * appelant (aujourd'hui : uniquement des tests, pas encore
+ * generate-action-request.mjs) de publier la sortie en couches Angular
+ * produite par renderAngularNxLayered (étape 2) via le même pipeline
+ * transactionnel (core/generation-publication.mjs, déjà générique).
+ *
+ * React et workflow-action restent hors périmètre de cette étape — voir
+ * le plan associé (audit staff, 2026-08-28).
+ */
 const targetProfiles = {
     angular: 'angular-nx',
     reactjs: 'react-typescript',
+    'angular-domain': 'angular-nx-layered-domain',
+    'angular-data': 'angular-nx-layered-data',
+    'angular-application': 'angular-nx-layered-application',
 };
 
 export const controlPlaneManifestFilename = 'generation-control-manifest.json';
@@ -554,7 +572,12 @@ export async function buildGenerationChangeSet({
     }
     const controlPlane = await planControlPlane(outputRoot, controlFiles);
     const plannedTargets = [];
-    for (const targetId of ['angular', 'reactjs']) {
+    // Itère sur targetProfiles (source de vérité des targets supportés)
+    // plutôt qu'une liste littérale — sinon un target ajouté à
+    // targetProfiles mais absent de cette liste serait silencieusement
+    // ignoré au lieu d'être publié (piège identifié lors de l'audit du
+    // 2026-08-28 avant l'extension additive aux targets en couches).
+    for (const targetId of Object.keys(targetProfiles)) {
         if (targets[targetId]) {
             plannedTargets.push(
                 await planTarget(outputRoot, targetId, targets[targetId])
