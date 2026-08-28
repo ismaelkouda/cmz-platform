@@ -43,7 +43,7 @@ RUN bun install --frozen-lockfile
 RUN bunx nx run backoffice-angular:build:production
 
 # ─── runtime nginx ───────────────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 
 # envsubst (gettext) — substitution du template à l'entrypoint
 RUN apk add --no-cache gettext \
