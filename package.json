@@ -130,7 +130,7 @@
     "@nx/vite": "23.1.0",
     "@nx/vitest": "23.1.0",
     "@nx/web": "23.1.0",
-    "@playwright/test": "1.58.2",
+    "@playwright/test": "1.62.1",
     "@schematics/angular": "catalog:tooling",
     "@swc/core": "~1.15.5",
     "@swc/helpers": "~0.5.18",
