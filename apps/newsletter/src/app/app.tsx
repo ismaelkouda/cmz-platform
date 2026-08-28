@@ -28,7 +28,7 @@ const { useSubscribeNewsletter } = createActionRequestHooks(
     client
 );
 
-export function App() {
+function App() {
     const { t, i18n } = useTranslation();
     const [email, setEmail] = useState('');
     const { state, execute } = useSubscribeNewsletter();

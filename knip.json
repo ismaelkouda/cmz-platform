@@ -1,6 +1,10 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "ignore": ["**/*.spec.ts", "!apps/backoffice-angular/e2e/*.spec.ts"],
+  "ignore": [
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "!apps/backoffice-angular/e2e/*.spec.ts"
+  ],
   "ignoreExportsUsedInFile": true,
   "workspaces": {
     ".": {
