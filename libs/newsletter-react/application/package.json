@@ -1,0 +1,18 @@
+{
+  "name": "@cmz/newsletter-react-application",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cmz/newsletter-react-domain": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "catalog:tooling"
+  }
+}

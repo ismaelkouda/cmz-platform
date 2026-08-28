@@ -2,10 +2,10 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     ActionRequestClient,
-    createActionRequestHooks,
-    validateSubscribeNewsletterInput,
     type FetchPort,
-} from '@cmz/newsletter-react';
+} from '@cmz/newsletter-react-data';
+import { validateSubscribeNewsletterInput } from '@cmz/newsletter-react-domain';
+import { createActionRequestHooks } from '@cmz/newsletter-react-application';
 
 // Cas de test : générateur + mock local, pas de vrai backend.
 // Voir apps/newsletter-test/src/mock/newsletter-mock-server.mjs (même mock,
@@ -13,7 +13,7 @@ import {
 const NEWSLETTER_MOCK_BASE_URL = 'http://localhost:4310';
 
 // FetchPort : le générateur découple le client HTTP du fetch natif pour
-// rester testable sans réseau réel (voir libs/newsletter/reactjs/src/
+// rester testable sans réseau réel (voir libs/newsletter-react/data/src/
 // action-request-client.ts). Ici on branche le vrai fetch du navigateur.
 const nativeFetch: FetchPort = (url, init) =>
     fetch(url, { method: init.method, headers: init.headers, body: init.body });

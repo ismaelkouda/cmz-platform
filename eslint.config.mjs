@@ -155,6 +155,27 @@ export default [
                                 'scope:shared',
                             ],
                         },
+                        // scope:newsletter-angular / scope:newsletter-react
+                        // (2026-08-28) — newsletter est scindé en 2 modules
+                        // mono-stack (ADR-0003 §3, cas jamais rencontré
+                        // ailleurs : tous les autres modules sont mono-stack
+                        // Angular). Chacun porte ses 3 couches
+                        // domain/data/application et son propre scope,
+                        // exactement comme n'importe quel module métier.
+                        {
+                            sourceTag: 'scope:newsletter-angular',
+                            onlyDependOnLibsWithTags: [
+                                'scope:newsletter-angular',
+                                'scope:shared',
+                            ],
+                        },
+                        {
+                            sourceTag: 'scope:newsletter-react',
+                            onlyDependOnLibsWithTags: [
+                                'scope:newsletter-react',
+                                'scope:shared',
+                            ],
+                        },
                         {
                             sourceTag: 'scope:content-management',
                             onlyDependOnLibsWithTags: [

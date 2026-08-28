@@ -1,11 +1,16 @@
 # ADR-0003 — Nommage et structure du monorepo
 
-- **Statut :** Accepted — **Amendé le 2026-07-29**
+- **Statut :** Accepted — **Amendé le 2026-08-28**
 - **Date initiale :** 2026-07-21
-- **Amendement :** 2026-07-29 — Formalisation de la taxonomie des tags Nx, du
+- **Amendement 2026-07-29** : Formalisation de la taxonomie des tags Nx, du
   sous-niveau kernel `libs/shared/`, du cas singleton `libs/core/`, de la
   convention canonique de nommage des packages, et de la règle de tenue à jour
   obligatoire à chaque nouveau module.
+- **Amendement 2026-08-28** : Les artefacts publiés par
+  `tools/generator-platform/` pour `newsletter` sont scindés en deux modules
+  mono-stack conformes au pattern à quatre couches (§5d) — `newsletter-angular`
+  et `newsletter-react`, chacun avec `domain`/`data`/`application`. Aucune
+  exception ni couche supplémentaire n'a été nécessaire.
 
 ## Contexte
 
@@ -88,6 +93,13 @@ Exemples validés par `tsconfig.base.json` :
 **Interdiction** : créer un package avec un suffixe autre que les cinq
 identifiants ci-dessus (ex. `@cmz/report-states-helpers`, `@cmz/utils`). Tout
 élément transverse trouve sa place dans `@cmz/shared-*` ou `@cmz/core`.
+
+**Modules mono-stack multiples pour un même produit** : quand plusieurs
+plateformes techniques (Angular, React, …) doivent coexister pour un même
+produit fonctionnel, chaque plateforme forme un **module distinct** au sens
+de cette convention — `<module>-<platform>` — plutôt qu'un sous-niveau de
+regroupement. Voir §5d pour l'exemple `newsletter-angular` /
+`newsletter-react`.
 
 ### 4. Taxonomie des tags Nx (deux axes orthogonaux)
 
@@ -183,6 +195,48 @@ implémentent des ports du domaine. Ils ne portent aucune logique métier.
 jamais de l'adaptateur concret. Enforceable : seule la contrainte `type:app`
 liste `type:browser` ([`eslint.config.mjs`](../../eslint.config.mjs), audit D-5 /
 P2-18).
+
+#### 5d. `newsletter-angular` / `newsletter-react` — deux modules mono-stack
+
+**Amendement 2026-08-28**. `tools/generator-platform/` génère à partir d'une
+définition source unique (`sources/newsletter-subscribe.definition.json`) un
+client HTTP typé, des commandes d'orchestration et une validation d'entrée,
+répliqués par plateforme cible (`profiles/angular-nx.profile.json`,
+`profiles/react-typescript.profile.json`). Une première version publiait
+cela comme deux packages Nx uniques (`libs/newsletter/angular/`,
+`libs/newsletter/reactjs/`), chacun mélangeant HTTP, orchestration et
+validation dans un seul package sans respecter le pattern à quatre couches.
+
+**Statut tranché** : ce contenu généré n'a pas de nature différente de tout
+autre module métier — il porte simplement des types/règles (`domain`), un
+accès HTTP (`data`) et une orchestration avec point d'extension post-succès
+(`application`). Aucune couche `ui` n'est produite : ces libs ne rendent
+rien, elles sont consommées par un composant applicatif de l'app hôte.
+
+**Nommage** : puisqu'une même définition produit un artefact par plateforme,
+et que ADR-0003 §3 réserve `libs/<module>/` à un seul module (pas de
+sous-niveau de regroupement pour les modules métier, §5a), chaque plateforme
+devient un **module distinct** : `libs/newsletter-angular/{domain,data,application}/`
+(`@cmz/newsletter-angular-domain`, `@cmz/newsletter-angular-data`,
+`@cmz/newsletter-angular-application`) et `libs/newsletter-react/{domain,data,application}/`
+(mêmes trois couches, suffixe `-react`). Aucune exception à la convention
+`@cmz/<module>-<couche>` n'a été nécessaire — c'est le premier cas du dépôt
+où un même produit fonctionnel existe en deux modules mono-stack parallèles.
+
+**Isolation `scope:*`** : `scope:newsletter-angular` et `scope:newsletter-react`,
+chacun avec la contrainte `onlyDependOnLibsWithTags: ['scope:<module>', 'scope:shared']`
+habituelle. Les deux scopes sont indépendants — aucun couplage inter-domaines
+comme celui documenté pour `scope:communication` (§4) n'est nécessaire ici,
+Angular et React ne partagent aucun code entre eux au-delà de la définition
+source (hors du périmètre Nx).
+
+**Garde-fou du générateur (`renderers/shared.mjs`, `assertRendererInput`)** :
+inchangé. Ce refactor a été fait manuellement, indépendamment de
+`tools/generator-platform/` — les profils (`package_name`/`output_root`)
+n'ont pas été modifiés pour produire cette structure ; le générateur produit
+toujours un package unique par plateforme. La scission en couches est un
+choix architectural appliqué après génération, pas une capacité native du
+moteur à ce jour.
 
 ## Justification
 

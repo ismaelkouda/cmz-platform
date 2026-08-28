@@ -1,0 +1,16 @@
+{
+  "name": "@cmz/newsletter-angular-application",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cmz/newsletter-angular-domain": "workspace:*",
+    "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:tooling"
+  }
+}

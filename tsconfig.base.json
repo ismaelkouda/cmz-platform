@@ -154,8 +154,24 @@
       "@cmz/workflow-details-domain": [
         "./libs/workflow-details/domain/src/index.ts"
       ],
-      "@cmz/newsletter-angular": ["./libs/newsletter/angular/src/index.ts"],
-      "@cmz/newsletter-react": ["./libs/newsletter/reactjs/src/index.ts"]
+      "@cmz/newsletter-angular-domain": [
+        "./libs/newsletter-angular/domain/src/index.ts"
+      ],
+      "@cmz/newsletter-angular-data": [
+        "./libs/newsletter-angular/data/src/index.ts"
+      ],
+      "@cmz/newsletter-angular-application": [
+        "./libs/newsletter-angular/application/src/index.ts"
+      ],
+      "@cmz/newsletter-react-domain": [
+        "./libs/newsletter-react/domain/src/index.ts"
+      ],
+      "@cmz/newsletter-react-data": [
+        "./libs/newsletter-react/data/src/index.ts"
+      ],
+      "@cmz/newsletter-react-application": [
+        "./libs/newsletter-react/application/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]

@@ -1,7 +1,0 @@
-{
-  "name": "generated-newsletter-react",
-  "projectType": "library",
-  "sourceRoot": "libs/newsletter/reactjs/src",
-  "tags": ["type:data", "platform:react", "generated:true"],
-  "targets": {}
-}

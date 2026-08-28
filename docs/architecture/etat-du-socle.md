@@ -9,8 +9,8 @@ consulter, l'historique Git fait foi.
 > pour la réorientation vers un système de génération générique multi-source.
 
 <!-- BEGIN:GENERATED:monorepo-status -->
-- **Dernière mise à jour :** 2026-08-27 (généré par `tools/generate-status.mjs`)
-- **État :** **Phase 08** — génération depuis patterns ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle outillé + Kernel `shared/` / `@cmz/core` + **20** modules livrés/compilants (**74** libs + **3** app ; **2 741** `.ts` hors tests). Voir [`STATUS.md`](../../STATUS.md).
+- **Dernière mise à jour :** 2026-08-28 (généré par `tools/generate-status.mjs`)
+- **État :** **Phase 08** — génération depuis patterns ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle outillé + Kernel `shared/` / `@cmz/core` + **21** modules livrés/compilants (**78** libs + **3** app ; **2 748** `.ts` hors tests). Voir [`STATUS.md`](../../STATUS.md).
 - **Familles IR :** `workflow-action` **4/4**, `read-only-view` **4/4**. Corpus **1 507** paires. CI `corpus:ci` (structural-only) + `corpus-full` (main) + Tier 2 nightly.
 <!-- END:GENERATED:monorepo-status -->
 

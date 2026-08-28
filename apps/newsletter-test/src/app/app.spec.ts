@@ -4,8 +4,11 @@ import { TranslocoTestingModule } from '@jsverse/transloco';
 import {
     ACTION_REQUEST_BASE_URL,
     ActionRequestClient,
+} from '@cmz/newsletter-angular-data';
+import {
+    ACTION_REQUEST_PORT,
     ActionRequestCommands,
-} from '@cmz/newsletter-angular';
+} from '@cmz/newsletter-angular-application';
 import { App } from './app';
 import fr from '../../public/i18n/fr.json';
 import en from '../../public/i18n/en.json';
@@ -34,6 +37,10 @@ describe('App', () => {
                     useValue: 'http://localhost:4310',
                 },
                 ActionRequestClient,
+                {
+                    provide: ACTION_REQUEST_PORT,
+                    useExisting: ActionRequestClient,
+                },
                 ActionRequestCommands,
             ],
         }).compileComponents();

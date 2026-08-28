@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
-import { ActionRequestCommands } from '@cmz/newsletter-angular';
+import { ActionRequestCommands } from '@cmz/newsletter-angular-application';
 
 // Note conformité Angular 22 / Transloco v8 (audit 2026-08-27, voir
 // docs/architecture/i18n-generator-scope.md) : la directive structurelle

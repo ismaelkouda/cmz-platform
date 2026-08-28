@@ -14,7 +14,7 @@ plateforme.
 > [matrice de capacités](./docs/architecture/generation-platform-capability-matrix.md).
 
 <!-- BEGIN:GENERATED:monorepo-status -->
-**État au 2026-08-27 :** Phase **08** (génération depuis patterns) — **20** modules, **74** libs + **3** app, **2 741** fichiers `.ts` hors tests. Bundle initial prod **629.01 kB**. Voir [`STATUS.md`](./STATUS.md).
+**État au 2026-08-28 :** Phase **08** (génération depuis patterns) — **21** modules, **78** libs + **3** app, **2 748** fichiers `.ts` hors tests. Bundle initial prod **629.01 kB**. Voir [`STATUS.md`](./STATUS.md).
 <!-- END:GENERATED:monorepo-status -->
 
 > 🤖 **Note pour les LLM / Agents IA** : Consulter le document maître

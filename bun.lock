@@ -603,10 +603,63 @@
         "@cmz/shared-ui": "workspace:*",
       },
     },
-    "libs/newsletter/reactjs": {
-      "name": "generated-newsletter-react",
+    "libs/newsletter-angular/application": {
+      "name": "@cmz/newsletter-angular-application",
+      "version": "1.0.0",
+      "dependencies": {
+        "@cmz/newsletter-angular-domain": "workspace:*",
+        "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "typescript": "catalog:tooling",
+      },
+    },
+    "libs/newsletter-angular/data": {
+      "name": "@cmz/newsletter-angular-data",
+      "version": "1.0.0",
+      "dependencies": {
+        "@cmz/newsletter-angular-domain": "workspace:*",
+        "rxjs": "catalog:",
+      },
+      "devDependencies": {
+        "typescript": "catalog:tooling",
+      },
+    },
+    "libs/newsletter-angular/domain": {
+      "name": "@cmz/newsletter-angular-domain",
+      "version": "1.0.0",
+      "devDependencies": {
+        "typescript": "catalog:tooling",
+      },
+    },
+    "libs/newsletter-react/application": {
+      "name": "@cmz/newsletter-react-application",
+      "version": "1.0.0",
+      "dependencies": {
+        "@cmz/newsletter-react-domain": "workspace:*",
+      },
+      "devDependencies": {
+        "typescript": "catalog:tooling",
+      },
       "peerDependencies": {
         "react": ">=18",
+      },
+    },
+    "libs/newsletter-react/data": {
+      "name": "@cmz/newsletter-react-data",
+      "version": "1.0.0",
+      "dependencies": {
+        "@cmz/newsletter-react-domain": "workspace:*",
+      },
+      "devDependencies": {
+        "typescript": "catalog:tooling",
+      },
+    },
+    "libs/newsletter-react/domain": {
+      "name": "@cmz/newsletter-react-domain",
+      "version": "1.0.0",
+      "devDependencies": {
+        "typescript": "catalog:tooling",
       },
     },
     "libs/processing/application": {
@@ -1434,6 +1487,18 @@
     "@cmz/monitoring-domain": ["@cmz/monitoring-domain@workspace:libs/monitoring/domain"],
 
     "@cmz/monitoring-ui": ["@cmz/monitoring-ui@workspace:libs/monitoring/ui"],
+
+    "@cmz/newsletter-angular-application": ["@cmz/newsletter-angular-application@workspace:libs/newsletter-angular/application"],
+
+    "@cmz/newsletter-angular-data": ["@cmz/newsletter-angular-data@workspace:libs/newsletter-angular/data"],
+
+    "@cmz/newsletter-angular-domain": ["@cmz/newsletter-angular-domain@workspace:libs/newsletter-angular/domain"],
+
+    "@cmz/newsletter-react-application": ["@cmz/newsletter-react-application@workspace:libs/newsletter-react/application"],
+
+    "@cmz/newsletter-react-data": ["@cmz/newsletter-react-data@workspace:libs/newsletter-react/data"],
+
+    "@cmz/newsletter-react-domain": ["@cmz/newsletter-react-domain@workspace:libs/newsletter-react/domain"],
 
     "@cmz/processing-application": ["@cmz/processing-application@workspace:libs/processing/application"],
 
@@ -2972,8 +3037,6 @@
     "function.prototype.name": ["function.prototype.name@1.2.0", "", { "dependencies": { "call-bind": "^1.0.9", "call-bound": "^1.0.4", "es-define-property": "^1.0.1", "es-errors": "^1.3.0", "functions-have-names": "^1.2.3", "has-property-descriptors": "^1.0.2", "hasown": "^2.0.4", "is-callable": "^1.2.7", "is-document.all": "^1.0.0" } }, "sha512-jObKIik1P2QjPHP5nz5BaOtUlfgS0fWo8IUByNXkM+o+02sJOi94em77GwJKQSJ3gfPHdgzLNrHc1uokV4P/ew=="],
 
     "functions-have-names": ["functions-have-names@1.2.3", "", {}, "sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ=="],
-
-    "generated-newsletter-react": ["generated-newsletter-react@workspace:libs/newsletter/reactjs"],
 
     "generator-function": ["generator-function@2.0.1", "", {}, "sha512-SFdFmIJi+ybC0vjlHN0ZGVGHc3lgE0DxPAT0djjVg+kjOnSqclqmj0KQ7ykTOLP6YxoqOvuAODGdcHJn+43q3g=="],
 

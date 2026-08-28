@@ -11,7 +11,7 @@ import { HttpClient } from '@angular/common/http';
 // @Service() root-scope légitime : dépend uniquement de HttpClient (fourni
 // par provideHttpClient(), valeur par défaut réelle) — pas de token custom
 // sans défaut, contrairement à ActionRequestClient (autoProvided:false, voir
-// libs/newsletter/angular/src/action-request-client.ts). Le schematic
+// libs/newsletter-angular/data/src/lib/action-request-client.ts). Le schematic
 // @jsverse/transloco:ng-add génère @Injectable({ providedIn: 'root' })
 // (idiome pré-Angular 19) — corrigé manuellement vers @Service(), l'idiome
 // recommandé par la doc Angular actuelle dans ce repo (cf. OPS-25bis).

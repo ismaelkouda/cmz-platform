@@ -1,7 +1,0 @@
-{
-  "name": "generated-newsletter-angular",
-  "projectType": "library",
-  "sourceRoot": "libs/generated/newsletter-angular/src",
-  "tags": ["type:data", "platform:angular", "generated:true"],
-  "targets": {}
-}

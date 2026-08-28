@@ -9,8 +9,11 @@ import { provideTransloco } from '@jsverse/transloco';
 import {
     ACTION_REQUEST_BASE_URL,
     ActionRequestClient,
+} from '@cmz/newsletter-angular-data';
+import {
+    ACTION_REQUEST_PORT,
     ActionRequestCommands,
-} from '@cmz/newsletter-angular';
+} from '@cmz/newsletter-angular-application';
 import { appRoutes } from './app.routes';
 import { TranslocoHttpLoader } from './transloco-loader';
 
@@ -28,6 +31,10 @@ export const appConfig: ApplicationConfig = {
             useValue: NEWSLETTER_MOCK_BASE_URL,
         },
         ActionRequestClient,
+        // Composition root : lie le port abstrait (application) à
+        // l'implémentation concrète (data) — application ne connaît que
+        // ACTION_REQUEST_PORT (ADR-0003 §4 / ADR-0024).
+        { provide: ACTION_REQUEST_PORT, useExisting: ActionRequestClient },
         ActionRequestCommands,
         provideTransloco({
             config: {
