@@ -44,15 +44,40 @@
  *      son verdict — la preuve d'exhaustivité n'est jamais l'avis de ce
  *      script sur lui-même, c'est un outil indépendant.
  *
+ * Un retrait complet, en pratique, prend DEUX commandes séparées — le
+ * scope (apps/libs) n'existe déjà plus lors de la seconde, donc ce n'est
+ * volontairement PAS la même invocation avec les mêmes arguments :
+ *
+ *   1. `node tools/retire-module.mjs --module <nom>` — supprime les
+ *      fichiers, rapporte les lignes de config à traiter à la main
+ *      (étape 5), s'arrête là (n'appelle PAS check-no-orphan-references :
+ *      il échouerait à coup sûr tant que le rapport n'est pas traité,
+ *      ce n'est pas un signal utile à ce stade).
+ *   2. L'humain édite eslint.config.mjs/tsconfig.base.json/knip.json/
+ *      package.json selon le rapport.
+ *   3. `node tools/retire-module.mjs --finalize --module <nom>` — ne
+ *      touche plus au filesystem des apps/libs (déjà supprimées), lance
+ *      SI package.json diffère de la version committée (HEAD) `bun
+ *      install` pour régénérer bun.lock (sinon `bun install
+ *      --frozen-lockfile` casse en CI — constaté plusieurs fois sur ce
+ *      repo : "lockfile had changes, but lockfile is frozen"), puis
+ *      appelle check-no-orphan-references comme preuve finale.
+ *
  * Usage :
  *   node tools/retire-module.mjs --module <nom> [--dry-run]
+ *   node tools/retire-module.mjs --finalize --module <nom> [--skip-install]
  *
- * --dry-run : n'écrit rien, affiche uniquement le plan (étapes 1-2 et 5).
+ * --dry-run : (mode retrait seulement) n'écrit rien, affiche le plan.
+ * --skip-install : (mode --finalize seulement) ne lance jamais bun
+ *   install même si package.json a changé (utile sans bun disponible —
+ *   le rapport reste affiché, bun install reste à lancer à la main).
  *
- * Exit 1 si la fermeture transitive échoue (étape 2) ou si
- * check-no-orphan-references échoue en fin de run (étape 6).
+ * Exit 1 si la fermeture transitive échoue (étape 2), si bun install
+ * échoue alors qu'il était requis, ou si check-no-orphan-references
+ * échoue en --finalize.
  */
 
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {
     existsSync,
@@ -87,15 +112,80 @@ function fail(message) {
 }
 
 function parseArgs(argv) {
-    const options = { dryRun: false };
+    const options = { dryRun: false, skipInstall: false, finalize: false };
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--module') options.module = argv[++i];
         else if (arg === '--dry-run') options.dryRun = true;
+        else if (arg === '--skip-install') options.skipInstall = true;
+        else if (arg === '--finalize') options.finalize = true;
         else fail(`Argument inconnu : ${arg}`);
     }
     if (!options.module) fail('--module <nom> est requis (ex: newsletter).');
+    if (options.finalize && options.dryRun)
+        fail('--finalize et --dry-run sont incompatibles.');
     return options;
+}
+
+/** Hash du contenu ACTUEL (working tree) de package.json. */
+function hashPackageJson() {
+    const path = join(ROOT, 'package.json');
+    if (!existsSync(path)) return null;
+    return createHash('sha256').update(readFileSync(path)).digest('hex');
+}
+
+/**
+ * Hash de package.json tel qu'il existait au dernier commit (HEAD) — pas
+ * "au début de ce run" : ce script est invoqué en DEUX temps séparés (voir
+ * docstring), donc la seule référence stable entre les deux est l'état
+ * committé, pas un hash capturé au lancement du process courant.
+ * Retourne null si git est indisponible ou si package.json n'est pas
+ * suivi (dégrade en "on ne sait pas" plutôt que de planter).
+ */
+function hashPackageJsonAtHead() {
+    try {
+        const content = execFileSync('git', ['show', 'HEAD:package.json'], {
+            cwd: ROOT,
+            encoding: 'utf8',
+        });
+        return createHash('sha256').update(content).digest('hex');
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Lance `bun install` pour régénérer bun.lock après un changement de
+ * package.json. Échoue explicitement si `bun` est introuvable (ex: ce
+ * script tournant dans un environnement sandbox sans bun) — jamais un
+ * échec silencieux : la conséquence d'un bun.lock désynchronisé n'est
+ * visible qu'en CI, bien plus tard, via `bun install --frozen-lockfile`.
+ */
+function runBunInstall() {
+    console.log(
+        `\npackage.json a changé depuis le début de ce run — régénération de bun.lock (bun install)...`
+    );
+    try {
+        const out = execFileSync('bun', ['install'], {
+            cwd: ROOT,
+            encoding: 'utf8',
+        });
+        console.log(out.trim());
+        console.log(`✅  bun.lock régénéré.`);
+        return true;
+    } catch (error) {
+        const message =
+            error.code === 'ENOENT'
+                ? `bun est introuvable dans cet environnement.`
+                : `bun install a échoué :\n${(error.stdout || '') + (error.stderr || '')}`;
+        console.error(
+            `\n⚠️  ${message}\n` +
+                `package.json a changé mais bun.lock n'a PAS été régénéré — ` +
+                `lance \`bun install\` manuellement avant de committer, sinon ` +
+                `\`bun install --frozen-lockfile\` cassera en CI.`
+        );
+        return false;
+    }
 }
 
 /** project.json trouvés récursivement sous un répertoire donné. */
@@ -226,10 +316,8 @@ function runNode(scriptRelPath, args = []) {
     }
 }
 
-function main() {
-    const options = parseArgs(process.argv.slice(2));
-    const { module: moduleName, dryRun } = options;
-
+/** Commande 1 : résout, vérifie, supprime, rapporte. */
+function runRetire(moduleName, dryRun) {
     console.log(
         `\n== retire-module: ${moduleName} ${dryRun ? '(dry-run)' : ''} ==\n`
     );
@@ -302,15 +390,54 @@ function main() {
         );
     }
 
-    // Rapport de config restant à traiter.
+    // Rapport de config restant à traiter — c'est la dernière chose que
+    // fait CETTE commande. check-no-orphan-references échouerait à coup
+    // sûr tant que ce rapport n'est pas traité ; ce n'est pas exécuté ici.
     printConfigReport(configReport);
-
-    // Étape 6 — preuve finale, obligatoire, par un outil indépendant.
-    console.log(`\n== Vérification finale (check-no-orphan-references) ==`);
     console.log(
-        `Note : cette vérification échouera tant que le rapport de config ` +
-            `ci-dessus n'a pas été traité à la main — c'est attendu, pas un bug.\n`
+        `\n== Prochaine étape ==\n` +
+            `Traite le rapport ci-dessus (édition manuelle), puis lance :\n` +
+            `  node tools/retire-module.mjs --finalize --module ${moduleName}\n`
     );
+}
+
+/**
+ * Commande 2 : à lancer après avoir traité le rapport de config à la
+ * main. Ne touche plus au filesystem des apps/libs (déjà supprimées par
+ * runRetire) — régénère bun.lock si besoin, puis appelle
+ * check-no-orphan-references comme preuve finale indépendante.
+ */
+function runFinalize(moduleName, skipInstall) {
+    console.log(`\n== retire-module --finalize: ${moduleName} ==\n`);
+
+    const packageJsonHashAtHead = hashPackageJsonAtHead();
+    const packageJsonHashNow = hashPackageJson();
+    const packageJsonChanged =
+        packageJsonHashAtHead !== null &&
+        packageJsonHashNow !== null &&
+        packageJsonHashNow !== packageJsonHashAtHead;
+
+    if (packageJsonChanged && !skipInstall) {
+        const installed = runBunInstall();
+        if (!installed) {
+            fail(
+                `bun install requis mais indisponible/échoué — corrige puis relance ` +
+                    `(ou relance avec --skip-install si tu géreras bun.lock toi-même).`
+            );
+        }
+    } else if (packageJsonChanged && skipInstall) {
+        console.log(
+            `\n⚠️  package.json a changé mais --skip-install est actif — ` +
+                `n'oublie pas de lancer bun install toi-même avant de committer.`
+        );
+    } else {
+        console.log(
+            `package.json inchangé depuis HEAD — bun install non requis.`
+        );
+    }
+
+    // Preuve finale, obligatoire, par un outil indépendant.
+    console.log(`\n== Vérification finale (check-no-orphan-references) ==\n`);
     const orphanCheck = runNode('tools/check-no-orphan-references.mjs', [
         '--module',
         moduleName,
@@ -318,12 +445,21 @@ function main() {
     console.log(orphanCheck.output.trim());
     if (!orphanCheck.ok) {
         console.error(
-            `\n⚠️  Des références orphelines subsistent. Traite le rapport de config ` +
-                `ci-dessus, puis relance : node tools/check-no-orphan-references.mjs --module ${moduleName} ` +
-                `(avec --allow / --allow-active-fixture pour les mentions historiques légitimes).`
+            `\n⚠️  Des références orphelines subsistent. Traite-les, puis relance : ` +
+                `node tools/check-no-orphan-references.mjs --module ${moduleName} ` +
+                `(avec --allow / --allow-active-fixture pour les mentions historiques légitimes), ` +
+                `ou directement node tools/retire-module.mjs --finalize --module ${moduleName}.`
         );
         process.exit(1);
     }
+}
+
+function main() {
+    const options = parseArgs(process.argv.slice(2));
+    const { module: moduleName, dryRun, skipInstall, finalize } = options;
+
+    if (finalize) runFinalize(moduleName, skipInstall);
+    else runRetire(moduleName, dryRun);
 }
 
 function printConfigReport(report) {

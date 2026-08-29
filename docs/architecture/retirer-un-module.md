@@ -47,6 +47,19 @@ script pour le détail des motifs recherchés (nom brut, alias
 
 ## `tools/retire-module.mjs`
 
+Un retrait complet est **deux commandes séparées**, pas une seule — et
+ce n'est pas arbitraire : après la commande 1, le scope du module
+(`apps/<nom>*`, `libs/<nom>*`) n'existe plus sur le filesystem. Toute
+tentative de faire tenir « suppression + finalisation » dans une seule
+invocation échouerait mécaniquement à la résolution de scope de la
+seconde moitié, avant même d'atteindre la logique de finalisation.
+Entre les deux commandes, l'étape humaine (édition de config) modifie
+`package.json` — c'est cette modification que la commande 2 doit
+détecter, et elle ne peut le faire qu'en comparant contre `HEAD`, pas
+contre un état capturé plus tôt dans le même run.
+
+### Commande 1 — retrait
+
 ```bash
 node tools/retire-module.mjs --module <nom> [--dry-run]
 ```
@@ -61,6 +74,9 @@ node tools/retire-module.mjs --module <nom> [--dry-run]
 3. Supprime les fichiers.
 4. Relance `check-project-names`/`check-declared-deps` pour confirmer
    que le graphe reste cohérent.
+5. Rapporte les lignes de config à traiter à la main, et s'arrête là —
+   n'appelle **pas** `check-no-orphan-references.mjs` (les fichiers de
+   config ne sont pas encore nettoyés, le check échouerait pour rien).
 
 Étape volontairement **non automatisée** : le nettoyage de
 `eslint.config.mjs` / `tsconfig.base.json` / `knip.json` /
@@ -70,10 +86,29 @@ fragilité qui peut corrompre silencieusement une config critique. Le
 script **rapporte** les lignes concernées (fichier + numéro de ligne +
 contenu) ; l'édition reste un geste humain ciblé, avec diff visible.
 
-Étape finale, non contournable : le script appelle
-`check-no-orphan-references.mjs` et affiche son verdict. Un retrait
-n'est jamais « terminé » selon le jugement de `retire-module.mjs`
-lui-même — c'est un outil indépendant qui tranche.
+### Commande 2 — finalisation
+
+Une fois le rapport de l'étape 5 traité à la main :
+
+```bash
+node tools/retire-module.mjs --finalize --module <nom> [--skip-install]
+```
+
+Ne touche plus au filesystem des apps/libs (déjà supprimé). Deux
+actions :
+
+1. Compare `package.json` actuel contre `git show HEAD:package.json`.
+   S'il a changé (cas typique : une dépendance devenue inutile a été
+   retirée pendant le nettoyage de config), lance `bun install` pour
+   garder `bun.lock` synchronisé — sinon `bun install
+   --frozen-lockfile` casse en CI. `--skip-install` désactive cet
+   appel (utile si `bun` n'est pas disponible dans l'environnement
+   courant) ; le script avertit alors qu'il faut lancer `bun install`
+   manuellement avant de committer.
+2. Appelle `check-no-orphan-references.mjs` et affiche son verdict. Un
+   retrait n'est jamais « terminé » selon le jugement de
+   `retire-module.mjs` lui-même — c'est un outil indépendant qui
+   tranche.
 
 ## Limite connue / piste d'amélioration
 
