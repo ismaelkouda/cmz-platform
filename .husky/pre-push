@@ -7,3 +7,10 @@ export PATH="$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"
 bun run check:versions
 # T4-5 — secrets sur les commits de la branche (origin/main..HEAD)
 bun run check:secrets -- --pre-push
+# Audit staff 2026-08-29 — check:duplicates n'était câblé qu'en CI, jamais
+# localement (bun run check:duplicates existait mais rien ne l'appelait avant
+# le push). Un module généré (tools/generator-platform) écrit toujours hors
+# de libs/ (--out) : la duplication ne devient détectable qu'une fois le
+# contenu intégré à la main dans libs/, ce qui arrive typiquement juste avant
+# ce push — c'est le point le plus tôt où le check a quelque chose à voir.
+bun run check:duplicates
