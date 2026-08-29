@@ -126,9 +126,22 @@ bun run generate:action-request \
 
 Valeurs possibles de `--target` :
 
-- `angular` pour Angular ;
-- `reactjs` pour ReactJS ;
-- `all` pour les deux.
+- `angular` pour Angular (sortie plate historique) ;
+- `reactjs` (ou `react`, alias équivalent) pour ReactJS (sortie plate) ;
+- `all` pour les deux sorties plates (Angular + ReactJS) — comportement par
+  défaut ;
+- `angular-domain`, `angular-data`, `angular-application` pour une seule
+  couche Angular séparée (Nx layers domain/data/application, ADR-0003 §5d) ;
+- `react-domain`, `react-data`, `react-application` pour la couche
+  équivalente côté ReactJS ;
+- `all-layered` pour les 6 couches en une seule commande.
+
+`all` reste strictement la sortie plate historique : demander les couches
+n'ajoute jamais silencieusement les 6 répertoires en couches, et
+inversement. Un appelant existant utilisant `--target all` continue de
+recevoir exactement `angular/` et `reactjs/`, sans changement de portée.
+Les couches doivent être demandées explicitement avec l'une des 7 valeurs
+dédiées.
 
 Sans option de régénération, le dossier indiqué par `--out` doit être nouveau.
 Une sortie existante exige d'abord `--dry-run`, puis l'option explicite
@@ -136,7 +149,7 @@ Une sortie existante exige d'abord `--dry-run`, puis l'option explicite
 
 ## 5. Comprendre le résultat
 
-Le dossier produit contient :
+Avec `--target all` (sortie plate, par défaut), le dossier produit contient :
 
 ```text
 evidence-model.json                  faits déclarés et inconnues conservées
@@ -150,6 +163,28 @@ reactjs/                             package ReactJS généré
   generation-manifest.json          hashes, ownership et politiques ReactJS
   src/after-success.extension.ts     code humain appelé après un succès
 ```
+
+Avec un `--target` en couches (`all-layered` ou une couche unique), les
+fichiers de contrôle communs (`evidence-model.json`, `semantic-model.json`,
+`artifact-plan.json`, `generation-control-manifest.json`) restent identiques
+; seuls les sous-dossiers changent. `--target all-layered` produit un
+sous-dossier par couche et par stack, nommé exactement comme la valeur de
+`--target` correspondante :
+
+```text
+angular-domain/       src/  generation-manifest.json
+angular-data/          src/  generation-manifest.json
+angular-application/   src/  generation-manifest.json
+react-domain/          src/  generation-manifest.json
+react-data/            src/  generation-manifest.json
+react-application/     src/  generation-manifest.json
+```
+
+Un `--target` en couches unique (ex. `angular-domain`) ne produit que le
+sous-dossier correspondant. Ces sorties sont indépendantes des sorties
+plates `angular/`/`reactjs/` : les deux formes peuvent coexister sous des
+`--out` différents, mais une même commande ne mélange jamais sortie plate et
+sortie en couches (`all` et `all-layered` restent deux choix exclusifs).
 
 Avant toute écriture, la commande :
 
