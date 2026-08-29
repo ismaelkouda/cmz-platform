@@ -300,10 +300,13 @@ même métier. Isoler ce périmètre a permis de désamorcer chacune des
 critiques soulevées en revue :
 
 - **Séquencement face à OpenAPI** (gap déjà ouvert, mieux borné, avec
-  mémo et adaptateur scaffoldé) — n'est plus une vraie compétition
-  d'investissement : ce document, dans son périmètre resserré, est un
-  risque strictement inférieur à celui de finir l'adaptateur OpenAPI, donc
-  peut avancer en parallèle sans qu'un ordre doive être justifié.
+  mémo et adaptateur scaffoldé) — le périmètre resserré rend ce chantier
+  strictement moins risqué qu'auparavant, mais ça ne justifie pas de le
+  démarrer en même temps qu'OpenAPI. OpenAPI était déjà en cours, a déjà
+  un mémo et un adaptateur scaffoldé : le terminer d'abord évite l'écueil
+  classique de deux chantiers menés de front qui, en pratique,
+  n'avancent plus vraiment ni l'un ni l'autre. Ce document reste donc
+  proposé, pas engagé, tant qu'OpenAPI n'est pas conclu.
 - **Nature de produit non actée** — n'a plus besoin d'être actée par ce
   document, puisqu'aucune décision de produit public n'y est prise ; elle
   est explicitement déléguée à ADR-0038.
