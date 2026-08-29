@@ -56,7 +56,7 @@
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 
@@ -87,6 +87,16 @@ function parseArgs(argv) {
         else fail(`Argument inconnu : ${arg}`);
     }
     if (!options.module) fail('--module <nom> est requis (ex: newsletter).');
+    if (!/^[a-z][a-z0-9-]*$/.test(options.module))
+        fail(
+            '--module doit être un identifiant kebab-case (ex: content-management).'
+        );
+    for (const path of [...options.allow, ...options.allowActiveFixture]) {
+        if (!path) fail('Une option d’exemption attend un chemin.');
+        const absolute = resolve(ROOT, path);
+        if (absolute !== ROOT && !absolute.startsWith(`${ROOT}${sep}`))
+            fail(`Chemin d’exemption hors workspace refusé : ${path}`);
+    }
     return options;
 }
 
@@ -153,9 +163,9 @@ function isJustified(fileContent, moduleName) {
 function main() {
     const options = parseArgs(process.argv.slice(2));
     const patterns = buildPatterns(options.module);
-    const allowSet = new Set(options.allow.map((p) => join(ROOT, p)));
+    const allowSet = new Set(options.allow.map((p) => resolve(ROOT, p)));
     const allowActiveSet = new Set(
-        options.allowActiveFixture.map((p) => join(ROOT, p))
+        options.allowActiveFixture.map((p) => resolve(ROOT, p))
     );
 
     // Toute entrée --allow (mention historique) doit réellement justifier
@@ -180,11 +190,18 @@ function main() {
         }
     }
     for (const allowedPath of allowActiveSet) {
+        let content;
         try {
-            readFileSync(allowedPath, 'utf8');
+            content = readFileSync(allowedPath, 'utf8');
         } catch {
             fail(
                 `--allow-active-fixture référence un fichier introuvable : ${relative(ROOT, allowedPath)}`
+            );
+        }
+        if (!patterns.some((pattern) => pattern.test(content))) {
+            fail(
+                `--allow-active-fixture ${relative(ROOT, allowedPath)} ne mentionne pas ` +
+                    `"${options.module}" — exemption inutile ou périmée.`
             );
         }
     }

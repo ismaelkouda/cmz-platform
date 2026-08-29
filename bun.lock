@@ -609,71 +609,6 @@
         "@cmz/shared-ui": "workspace:*",
       },
     },
-    "libs/newsletter-angular/application": {
-      "name": "@cmz/newsletter-angular-application",
-      "version": "1.0.0",
-      "dependencies": {
-        "@angular/core": "catalog:",
-        "@cmz/newsletter-angular-domain": "workspace:*",
-        "rxjs": "catalog:",
-      },
-      "devDependencies": {
-        "typescript": "catalog:tooling",
-      },
-    },
-    "libs/newsletter-angular/data": {
-      "name": "@cmz/newsletter-angular-data",
-      "version": "1.0.0",
-      "dependencies": {
-        "@angular/common": "catalog:",
-        "@angular/core": "catalog:",
-        "@cmz/newsletter-angular-domain": "workspace:*",
-        "rxjs": "catalog:",
-      },
-      "devDependencies": {
-        "typescript": "catalog:tooling",
-      },
-    },
-    "libs/newsletter-angular/domain": {
-      "name": "@cmz/newsletter-angular-domain",
-      "version": "1.0.0",
-      "dependencies": {
-        "rxjs": "catalog:",
-      },
-      "devDependencies": {
-        "typescript": "catalog:tooling",
-      },
-    },
-    "libs/newsletter-react/application": {
-      "name": "@cmz/newsletter-react-application",
-      "version": "1.0.0",
-      "dependencies": {
-        "@cmz/newsletter-react-domain": "workspace:*",
-      },
-      "devDependencies": {
-        "typescript": "catalog:tooling",
-      },
-      "peerDependencies": {
-        "react": ">=18",
-      },
-    },
-    "libs/newsletter-react/data": {
-      "name": "@cmz/newsletter-react-data",
-      "version": "1.0.0",
-      "dependencies": {
-        "@cmz/newsletter-react-domain": "workspace:*",
-      },
-      "devDependencies": {
-        "typescript": "catalog:tooling",
-      },
-    },
-    "libs/newsletter-react/domain": {
-      "name": "@cmz/newsletter-react-domain",
-      "version": "1.0.0",
-      "devDependencies": {
-        "typescript": "catalog:tooling",
-      },
-    },
     "libs/processing/application": {
       "name": "@cmz/processing-application",
       "version": "0.0.0",
@@ -1509,18 +1444,6 @@
     "@cmz/monitoring-domain": ["@cmz/monitoring-domain@workspace:libs/monitoring/domain"],
 
     "@cmz/monitoring-ui": ["@cmz/monitoring-ui@workspace:libs/monitoring/ui"],
-
-    "@cmz/newsletter-angular-application": ["@cmz/newsletter-angular-application@workspace:libs/newsletter-angular/application"],
-
-    "@cmz/newsletter-angular-data": ["@cmz/newsletter-angular-data@workspace:libs/newsletter-angular/data"],
-
-    "@cmz/newsletter-angular-domain": ["@cmz/newsletter-angular-domain@workspace:libs/newsletter-angular/domain"],
-
-    "@cmz/newsletter-react-application": ["@cmz/newsletter-react-application@workspace:libs/newsletter-react/application"],
-
-    "@cmz/newsletter-react-data": ["@cmz/newsletter-react-data@workspace:libs/newsletter-react/data"],
-
-    "@cmz/newsletter-react-domain": ["@cmz/newsletter-react-domain@workspace:libs/newsletter-react/domain"],
 
     "@cmz/processing-application": ["@cmz/processing-application@workspace:libs/processing/application"],
 

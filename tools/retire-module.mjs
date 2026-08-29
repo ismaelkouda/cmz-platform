@@ -7,7 +7,7 @@
  *
  * Contexte (audit staff, 2026-08-29) : la vision du projet est de
  * minimiser l'action humaine. Avant ce script, retirer un module
- * (ex: newsletter, 2026-08-29) exigeait un grep exhaustif ad hoc dans
+ * exigeait un grep exhaustif ad hoc dans
  * apps/, libs/, tools/, docs/, eslint.config.mjs, tsconfig.base.json,
  * knip.json, package.json — refait manuellement à chaque suppression, avec
  * un risque réel d'oubli (constaté : ce script a été écrit après qu'un
@@ -29,7 +29,8 @@
  *   2. Vérifie la fermeture transitive : aucun package HORS de ce scope
  *      ne doit importer un alias @cmz/<module>-* (sinon retrait refusé —
  *      ce serait casser un consommateur réel, pas un POC isolé).
- *   3. Supprime les fichiers (apps/libs résolus à l'étape 1).
+ *   3. Déplace les fichiers sous `.nx/retire-module/` pour rendre le
+ *      retrait visible tout en gardant une restauration transactionnelle.
  *   4. Relance check-project-names.mjs et check-declared-deps.mjs pour
  *      confirmer que le graphe reste cohérent après suppression physique.
  *
@@ -48,7 +49,7 @@
  * scope (apps/libs) n'existe déjà plus lors de la seconde, donc ce n'est
  * volontairement PAS la même invocation avec les mêmes arguments :
  *
- *   1. `node tools/retire-module.mjs --module <nom>` — supprime les
+ *   1. `node tools/retire-module.mjs --module <nom>` — met à l'écart les
  *      fichiers, rapporte les lignes de config à traiter à la main
  *      (étape 5), s'arrête là (n'appelle PAS check-no-orphan-references :
  *      il échouerait à coup sûr tant que le rapport n'est pas traité,
@@ -57,15 +58,18 @@
  *      package.json selon le rapport.
  *   3. `node tools/retire-module.mjs --finalize --module <nom>` — ne
  *      touche plus au filesystem des apps/libs (déjà supprimées), lance
- *      SI package.json diffère de la version committée (HEAD) `bun
- *      install` pour régénérer bun.lock (sinon `bun install
+ *      SI package.json diffère de son hash au début du retrait `bun install`
+ *      pour régénérer bun.lock (sinon `bun install
  *      --frozen-lockfile` casse en CI — constaté plusieurs fois sur ce
  *      repo : "lockfile had changes, but lockfile is frozen"), puis
- *      appelle check-no-orphan-references comme preuve finale.
+ *      appelle check-no-orphan-references comme preuve finale et supprime
+ *      la sauvegarde transactionnelle uniquement après succès.
  *
  * Usage :
  *   node tools/retire-module.mjs --module <nom> [--dry-run]
+ *     [--allow <fichier>] [--allow-active-fixture <fichier>]
  *   node tools/retire-module.mjs --finalize --module <nom> [--skip-install]
+ *     [--allow <fichier>] [--allow-active-fixture <fichier>]
  *
  * --dry-run : (mode retrait seulement) n'écrit rien, affiche le plan.
  * --skip-install : (mode --finalize seulement) ne lance jamais bun
@@ -81,12 +85,15 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {
     existsSync,
+    mkdirSync,
     readdirSync,
     readFileSync,
+    renameSync,
     rmSync,
     statSync,
+    writeFileSync,
 } from 'node:fs';
-import { join, relative } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const CONFIG_FILES_TO_SCAN = [
@@ -95,6 +102,7 @@ const CONFIG_FILES_TO_SCAN = [
     'knip.json',
     'package.json',
 ];
+const STATE_ROOT = join(ROOT, '.nx', 'retire-module');
 const SKIP_DIRS = new Set([
     'node_modules',
     'dist',
@@ -112,18 +120,37 @@ function fail(message) {
 }
 
 function parseArgs(argv) {
-    const options = { dryRun: false, skipInstall: false, finalize: false };
+    const options = {
+        allow: [],
+        allowActiveFixture: [],
+        dryRun: false,
+        skipInstall: false,
+        finalize: false,
+    };
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--module') options.module = argv[++i];
+        else if (arg === '--allow') options.allow.push(argv[++i]);
+        else if (arg === '--allow-active-fixture')
+            options.allowActiveFixture.push(argv[++i]);
         else if (arg === '--dry-run') options.dryRun = true;
         else if (arg === '--skip-install') options.skipInstall = true;
         else if (arg === '--finalize') options.finalize = true;
         else fail(`Argument inconnu : ${arg}`);
     }
-    if (!options.module) fail('--module <nom> est requis (ex: newsletter).');
+    if (!options.module) fail('--module <nom> est requis (ex: sample-module).');
+    if (!/^[a-z][a-z0-9-]*$/.test(options.module))
+        fail(
+            '--module doit être un identifiant kebab-case (ex: content-management).'
+        );
     if (options.finalize && options.dryRun)
         fail('--finalize et --dry-run sont incompatibles.');
+    for (const path of [...options.allow, ...options.allowActiveFixture]) {
+        if (!path) fail('Une option d’exemption attend un chemin.');
+        const absolute = resolve(ROOT, path);
+        if (absolute !== ROOT && !absolute.startsWith(`${ROOT}${sep}`))
+            fail(`Chemin d’exemption hors workspace refusé : ${path}`);
+    }
     return options;
 }
 
@@ -134,23 +161,35 @@ function hashPackageJson() {
     return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-/**
- * Hash de package.json tel qu'il existait au dernier commit (HEAD) — pas
- * "au début de ce run" : ce script est invoqué en DEUX temps séparés (voir
- * docstring), donc la seule référence stable entre les deux est l'état
- * committé, pas un hash capturé au lancement du process courant.
- * Retourne null si git est indisponible ou si package.json n'est pas
- * suivi (dégrade en "on ne sait pas" plutôt que de planter).
- */
-function hashPackageJsonAtHead() {
+/** État transactionnel conservé entre retrait et finalisation. */
+function stateDir(moduleName) {
+    return join(STATE_ROOT, moduleName);
+}
+
+function statePath(moduleName) {
+    return join(stateDir(moduleName), 'state.json');
+}
+
+function readState(moduleName) {
+    const path = statePath(moduleName);
+    if (!existsSync(path)) return null;
     try {
-        const content = execFileSync('git', ['show', 'HEAD:package.json'], {
-            cwd: ROOT,
-            encoding: 'utf8',
-        });
-        return createHash('sha256').update(content).digest('hex');
+        return JSON.parse(readFileSync(path, 'utf8'));
     } catch {
-        return null;
+        fail(`État de retrait illisible : ${relative(ROOT, path)}.`);
+    }
+}
+
+function writeState(moduleName, state) {
+    mkdirSync(stateDir(moduleName), { recursive: true });
+    writeFileSync(statePath(moduleName), `${JSON.stringify(state, null, 2)}\n`);
+}
+
+function restoreMovedRoots(movedRoots) {
+    for (const { root, backup } of [...movedRoots].reverse()) {
+        if (!existsSync(backup)) continue;
+        mkdirSync(dirname(root), { recursive: true });
+        renameSync(backup, root);
     }
 }
 
@@ -163,7 +202,7 @@ function hashPackageJsonAtHead() {
  */
 function runBunInstall() {
     console.log(
-        `\npackage.json a changé depuis le début de ce run — régénération de bun.lock (bun install)...`
+        `\npackage.json a changé depuis le début du retrait — régénération de bun.lock (bun install)...`
     );
     try {
         const out = execFileSync('bun', ['install'], {
@@ -204,8 +243,7 @@ function findProjectJsons(dir, results = []) {
 /**
  * Résout le scope réel d'un module à partir du NOM de dossier — pas d'une
  * déclaration séparée. Couvre libs/<module> ET libs/<module>-<suffixe>
- * (ex: un module scindé en newsletter-angular/newsletter-react comme
- * ADR-0003 §5d le documente pour les modules multi-stack).
+ * (ex: un module scindé par stack, comme ADR-0003 §5d le documente).
  */
 function resolveModuleScope(moduleName) {
     const roots = [];
@@ -234,8 +272,16 @@ function resolveModuleScope(moduleName) {
  */
 function findExternalConsumers(moduleName, scope) {
     const scopeRoots = new Set(scope.roots.map((r) => r));
+    const aliases = scope.packages
+        .map((pkg) => pkg.name)
+        .filter((name) => typeof name === 'string' && name.startsWith('@cmz/'));
+    const moduleEscaped = moduleName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const aliasPattern = new RegExp(
-        `@cmz/${moduleName}(-[a-z0-9-]+)?-(domain|data|application|ui)`
+        aliases.length > 0
+            ? aliases
+                  .map((alias) => alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+                  .join('|')
+            : `@cmz/${moduleEscaped}(?:-[a-z0-9-]+)?`
     );
     const allProjectJsons = [
         ...findProjectJsons(join(ROOT, 'apps')),
@@ -245,19 +291,20 @@ function findExternalConsumers(moduleName, scope) {
     for (const pj of allProjectJsons) {
         const isInScope = [...scopeRoots].some((root) => pj.startsWith(root));
         if (isInScope) continue;
-        const dir = pj.replace(/project\.json$/, '');
-        const srcDir = join(dir, 'src');
-        if (!existsSync(srcDir)) continue;
+        const dir = dirname(pj);
         const sourceFiles = [];
         (function walk(d) {
             for (const entry of readdirSync(d)) {
+                if (SKIP_DIRS.has(entry)) continue;
                 const full = join(d, entry);
                 const st = statSync(full);
                 if (st.isDirectory()) walk(full);
-                else if (/\.(ts|tsx|mts|cts)$/.test(entry))
+                else if (
+                    /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|json|jsonc)$/.test(entry)
+                )
                     sourceFiles.push(full);
             }
-        })(srcDir);
+        })(dir);
         for (const file of sourceFiles) {
             const content = readFileSync(file, 'utf8');
             if (aliasPattern.test(content)) {
@@ -317,10 +364,19 @@ function runNode(scriptRelPath, args = []) {
 }
 
 /** Commande 1 : résout, vérifie, supprime, rapporte. */
-function runRetire(moduleName, dryRun) {
+function runRetire(options) {
+    const { module: moduleName, dryRun, allow, allowActiveFixture } = options;
     console.log(
         `\n== retire-module: ${moduleName} ${dryRun ? '(dry-run)' : ''} ==\n`
     );
+
+    if (existsSync(stateDir(moduleName))) {
+        fail(
+            `Un retrait de "${moduleName}" est déjà en cours ou a été interrompu. ` +
+                `Finalise-le avec --finalize, ou restaure les fichiers sauvegardés sous ` +
+                `${relative(ROOT, stateDir(moduleName))}.`
+        );
+    }
 
     // Étape 1 — résolution du scope.
     const scope = resolveModuleScope(moduleName);
@@ -368,11 +424,36 @@ function runRetire(moduleName, dryRun) {
         process.exit(0);
     }
 
-    // Étape 3 — suppression physique.
-    console.log(`\nSuppression de ${scope.roots.length} racine(s)...`);
-    for (const root of scope.roots) {
-        rmSync(root, { recursive: true, force: true });
-        console.log(`  - supprimé : ${relative(ROOT, root)}`);
+    // Étape 3 — déplacement transactionnel dans .nx. Le workspace voit les
+    // suppressions, mais une vérification post-retrait qui échoue peut encore
+    // restaurer les fichiers, y compris les fichiers non suivis par git.
+    const packageJsonHashBefore = hashPackageJson();
+    const movedRoots = [];
+    const state = {
+        version: 1,
+        module: moduleName,
+        status: 'moving',
+        startedAt: new Date().toISOString(),
+        packageJsonHashBefore,
+        roots: scope.roots.map((root) => relative(ROOT, root)),
+        allow,
+        allowActiveFixture,
+    };
+    writeState(moduleName, state);
+    console.log(`\nMise à l'écart de ${scope.roots.length} racine(s)...`);
+    try {
+        for (const root of scope.roots) {
+            const rel = relative(ROOT, root);
+            const backup = join(stateDir(moduleName), 'removed', rel);
+            mkdirSync(dirname(backup), { recursive: true });
+            renameSync(root, backup);
+            movedRoots.push({ root, backup });
+            console.log(`  - retiré du workspace : ${rel}`);
+        }
+    } catch (error) {
+        restoreMovedRoots(movedRoots);
+        rmSync(stateDir(moduleName), { recursive: true, force: true });
+        fail(`Déplacement interrompu ; fichiers restaurés : ${error.message}`);
     }
 
     // Étape 4 — re-vérification du graphe.
@@ -384,11 +465,15 @@ function runRetire(moduleName, dryRun) {
     const depsCheck = runNode('tools/check-declared-deps.mjs');
     console.log(depsCheck.output.trim());
     if (!namesCheck.ok || !depsCheck.ok) {
+        restoreMovedRoots(movedRoots);
+        rmSync(stateDir(moduleName), { recursive: true, force: true });
         fail(
             `check-project-names ou check-declared-deps échoue après suppression — ` +
-                `état du repo incohérent, à investiguer avant de committer.`
+                `les fichiers ont été restaurés automatiquement.`
         );
     }
+
+    writeState(moduleName, { ...state, status: 'awaiting-finalize' });
 
     // Rapport de config restant à traiter — c'est la dernière chose que
     // fait CETTE commande. check-no-orphan-references échouerait à coup
@@ -397,7 +482,8 @@ function runRetire(moduleName, dryRun) {
     console.log(
         `\n== Prochaine étape ==\n` +
             `Traite le rapport ci-dessus (édition manuelle), puis lance :\n` +
-            `  node tools/retire-module.mjs --finalize --module ${moduleName}\n`
+            `  node tools/retire-module.mjs --finalize --module ${moduleName}\n` +
+            `Les exemptions fournies à cette commande sont conservées pour la finalisation.\n`
     );
 }
 
@@ -407,15 +493,46 @@ function runRetire(moduleName, dryRun) {
  * runRetire) — régénère bun.lock si besoin, puis appelle
  * check-no-orphan-references comme preuve finale indépendante.
  */
-function runFinalize(moduleName, skipInstall) {
+function runFinalize(options) {
+    const {
+        module: moduleName,
+        skipInstall,
+        allow: cliAllow,
+        allowActiveFixture: cliAllowActiveFixture,
+    } = options;
     console.log(`\n== retire-module --finalize: ${moduleName} ==\n`);
 
-    const packageJsonHashAtHead = hashPackageJsonAtHead();
+    const state = readState(moduleName);
+    if (!state) {
+        fail(
+            `Aucun retrait en cours pour "${moduleName}" sous ${relative(ROOT, STATE_ROOT)}. ` +
+                `Lance d'abord la commande de retrait.`
+        );
+    }
+    if (
+        state.version !== 1 ||
+        state.module !== moduleName ||
+        state.status !== 'awaiting-finalize'
+    ) {
+        fail(
+            `État de retrait incompatible pour "${moduleName}" ; restauration manuelle requise sous ` +
+                `${relative(ROOT, stateDir(moduleName))}.`
+        );
+    }
+
+    const allow = [...new Set([...(state.allow || []), ...cliAllow])];
+    const allowActiveFixture = [
+        ...new Set([
+            ...(state.allowActiveFixture || []),
+            ...cliAllowActiveFixture,
+        ]),
+    ];
+    writeState(moduleName, { ...state, allow, allowActiveFixture });
     const packageJsonHashNow = hashPackageJson();
     const packageJsonChanged =
-        packageJsonHashAtHead !== null &&
+        state.packageJsonHashBefore !== null &&
         packageJsonHashNow !== null &&
-        packageJsonHashNow !== packageJsonHashAtHead;
+        packageJsonHashNow !== state.packageJsonHashBefore;
 
     if (packageJsonChanged && !skipInstall) {
         const installed = runBunInstall();
@@ -432,16 +549,20 @@ function runFinalize(moduleName, skipInstall) {
         );
     } else {
         console.log(
-            `package.json inchangé depuis HEAD — bun install non requis.`
+            `package.json inchangé depuis le début du retrait — bun install non requis.`
         );
     }
 
     // Preuve finale, obligatoire, par un outil indépendant.
     console.log(`\n== Vérification finale (check-no-orphan-references) ==\n`);
-    const orphanCheck = runNode('tools/check-no-orphan-references.mjs', [
-        '--module',
-        moduleName,
-    ]);
+    const orphanArgs = ['--module', moduleName];
+    for (const path of allow) orphanArgs.push('--allow', path);
+    for (const path of allowActiveFixture)
+        orphanArgs.push('--allow-active-fixture', path);
+    const orphanCheck = runNode(
+        'tools/check-no-orphan-references.mjs',
+        orphanArgs
+    );
     console.log(orphanCheck.output.trim());
     if (!orphanCheck.ok) {
         console.error(
@@ -452,14 +573,18 @@ function runFinalize(moduleName, skipInstall) {
         );
         process.exit(1);
     }
+
+    rmSync(stateDir(moduleName), { recursive: true, force: true });
+    console.log(
+        `\n✅  Retrait finalisé. La sauvegarde transactionnelle a été supprimée ; ` +
+            `les fichiers suivis restent récupérables via git.`
+    );
 }
 
 function main() {
     const options = parseArgs(process.argv.slice(2));
-    const { module: moduleName, dryRun, skipInstall, finalize } = options;
-
-    if (finalize) runFinalize(moduleName, skipInstall);
-    else runRetire(moduleName, dryRun);
+    if (options.finalize) runFinalize(options);
+    else runRetire(options);
 }
 
 function printConfigReport(report) {

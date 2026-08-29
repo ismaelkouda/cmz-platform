@@ -86,6 +86,12 @@ jobs:
       - name: check:declared-deps (graphe déclaré complet)
         run: bun run check:declared-deps
 
+      # Audit staff 2026-08-29 — retire-module.mjs / check-no-orphan-references.mjs
+      # doivent rester fiables : suite node:test dédiée (transaction, restauration
+      # sur échec, bun install combiné à la finalisation, chemins d'exemption).
+      - name: check:retire-module (suite retire-module.mjs)
+        run: bun run check:retire-module
+
       # Audit A-12 — une violation scope: doit faire échouer ESLint (barrière machine)
       - name: check:boundary-negative (scope cross-module interdit)
         run: bun run check:boundary-negative
