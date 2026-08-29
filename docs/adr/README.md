@@ -70,5 +70,6 @@ envisagées, le choix retenu et ses conséquences.
 | [0034](./0034-plateforme-multi-stack-renderers-separes-sorties-mono-stack.md) | Plateforme multi-stack, renderers séparés, sorties mono-stack | Accepted |
 | [0035](./0035-contrat-durabilite-publication-generation.md) | Contrat de durabilité de la publication générée          | Accepted |
 | [0036](./0036-convergence-transloco-angular.md)           | Convergence de tout l'Angular du repo sur Transloco      | Accepted |
-| [0037](./0037-plateforme-intention-utilisateur-vers-application.md) | Plateforme d'intention utilisateur : langage naturel vers application identifiable et éditable | Proposed |
+| [0037](./0037-plateforme-intention-utilisateur-vers-application.md) | Génération assistée par langage naturel pour un utilisateur du dépôt | Proposed |
+| [0038](./0038-nature-produit-public-multi-locataire.md)   | Nature de produit : exposition publique et multi-location | Proposed |
 <!-- END:GENERATED:adr-index -->
