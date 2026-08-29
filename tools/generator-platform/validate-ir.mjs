@@ -110,6 +110,23 @@ export function validateJsonSchema(
         return errors;
     }
 
+    // Audit staff 2026-08-29 : allOf n'était lu par aucune branche ci-dessus,
+    // donc un schéma combinant plusieurs sous-schémas (ex. change-set.schema.json
+    // #/properties/targets/items) passait silencieusement quelle que soit la
+    // valeur — fail-open avéré, reproduit indépendamment avant ce correctif.
+    // JSON Schema exige que value soit valide contre CHAQUE sous-schéma
+    // d'allOf, chacun évalué indépendamment (additionalProperties d'une
+    // branche ne doit pas rejeter les propriétés d'une autre branche) : on
+    // valide donc chaque sous-schéma séparément puis on concatène les
+    // erreurs, sans early-return pour ne pas masquer les branches suivantes.
+    if (Array.isArray(currentSchema.allOf)) {
+        for (const subschema of currentSchema.allOf) {
+            errors.push(
+                ...validateJsonSchema(value, subschema, rootSchema, path)
+            );
+        }
+    }
+
     if (typeof value === 'number') {
         if (
             currentSchema.minimum !== undefined &&
