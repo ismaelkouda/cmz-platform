@@ -13,7 +13,10 @@ import {
 import { hostname } from 'node:os';
 import { basename, dirname, relative, resolve } from 'node:path';
 
-import { controlPlaneManifestFilename } from './generation-change-set.mjs';
+import {
+    controlPlaneManifestFilename,
+    targetProfiles,
+} from './generation-change-set.mjs';
 import {
     generationTreeSha256,
     sha256,
@@ -182,7 +185,14 @@ async function readTransactionJournal(transactionRoot) {
         Object.keys(expectedTargets).length === 0 ||
         Object.keys(expectedTargets).some(
             (targetId) =>
-                !['angular', 'reactjs'].includes(targetId) ||
+                // Contre targetProfiles (source de vérité, generation-
+                // change-set.mjs) plutôt qu'une liste littérale figée —
+                // sinon un target ajouté à targetProfiles mais absent
+                // d'ici rendrait tout journal le concernant illisible par
+                // son propre mécanisme de reprise (piège identifié le
+                // 2026-08-29 : les 6 targets en couches n'étaient jamais
+                // arrivés jusqu'ici malgré leur intégration ailleurs).
+                !Object.hasOwn(targetProfiles, targetId) ||
                 !/^[a-f0-9]{64}$/.test(expectedTargets[targetId] ?? '')
         ) ||
         (!journal.had_previous && journal.phase === 'previous-moved')

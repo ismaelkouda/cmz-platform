@@ -22,7 +22,17 @@ import {
  * React et workflow-action restent hors périmètre de cette étape — voir
  * le plan associé (audit staff, 2026-08-28).
  */
-const targetProfiles = {
+/**
+ * Source de vérité unique des target IDs valides (ADR-0003 §5d). Exportée
+ * pour que tout code amené à valider un target ID (ex:
+ * generation-transaction.mjs relisant le journal d'une transaction
+ * interrompue) le fasse contre cette liste plutôt que contre une copie
+ * littérale figée — piège identifié le 2026-08-29 : la liste blanche
+ * ['angular', 'reactjs'] de generation-transaction.mjs n'avait jamais été
+ * étendue aux 6 targets en couches ajoutés ici, rendant tout journal de
+ * transaction en couches invalide pour son propre mécanisme de reprise.
+ */
+export const targetProfiles = {
     angular: 'angular-nx',
     reactjs: 'react-typescript',
     'angular-domain': 'angular-nx-layered-domain',
