@@ -6,8 +6,8 @@ import { HttpClient } from '@angular/common/http';
 // assets: apps/backoffice-angular/public/ -> les traductions vivent dans
 // public/i18n/ (pas src/assets/i18n/, convention Angular CLI classique que
 // suppose le schematic @jsverse/transloco:ng-add par défaut). Même piège
-// documenté dans docs/architecture/i18n-generator-scope.md pour
-// apps/newsletter-test.
+// documenté dans docs/architecture/i18n-generator-scope.md (constaté à
+// l'origine sur une app de test Angular depuis retirée du repo).
 //
 // @Service() root-scope légitime : dépend uniquement de HttpClient (fourni
 // par provideHttpClient(), valeur par défaut réelle) — pas de token custom

@@ -12,6 +12,8 @@
     "check:names": "node tools/check-project-names.mjs",
     "check:targets": "node tools/check-project-targets.mjs",
     "check:declared-deps": "node tools/check-declared-deps.mjs",
+    "check:no-orphan-references": "node tools/check-no-orphan-references.mjs",
+    "retire-module": "node tools/retire-module.mjs",
     "check:boundary-negative": "node tools/check-boundary-negative.mjs",
     "check:framework-purity": "node tools/check-framework-purity.mjs",
     "check:framework-purity:destructive": "node tools/check-framework-purity-destructive.mjs",
