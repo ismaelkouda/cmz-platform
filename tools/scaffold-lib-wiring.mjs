@@ -5,7 +5,7 @@
  * app.config.ts, squelette de composant consommateur minimal.
  *
  * POURQUOI ce script (plutôt que refaire ces gestes à la main à chaque fois) :
- * lors du câblage manuel de libs/newsletter/angular dans apps/newsletter-test
+ * lors du câblage manuel d'une lib générée dans une app Angular de test
  * (2026-08-27), 4 gestes ont été nécessaires. Deux d'entre eux sont
  * mécaniquement dérivables du contenu généré (entrée tsconfig, squelette de
  * providers) — ce script les automatise. Les deux autres restent
@@ -29,13 +29,13 @@
  * Ce script ne DEVINE jamais silencieusement : il parse le contenu réel des
  * fichiers générés (models.ts, action-request-commands.ts) pour connaître
  * les vrais noms de champs/méthodes plutôt que de les coder en dur — sinon
- * il ne fonctionnerait que pour "newsletter", pas pour une future lib.
+ * il ne fonctionnerait que pour une lib précise, pas pour une future lib.
  *
  * Usage :
- *   node tools/scaffold-lib-wiring.mjs --lib <nom-libs-newsletter> --app <nom-app>
+ *   node tools/scaffold-lib-wiring.mjs --lib <nom-libs> --app <nom-app>
  *
  * Exemple :
- *   node tools/scaffold-lib-wiring.mjs --lib newsletter --app newsletter-test
+ *   node tools/scaffold-lib-wiring.mjs --lib content-moderation --app backoffice-angular
  *
  * Documentation complète (à lire avant usage) :
  *   docs/architecture/scaffold-lib-wiring.md
@@ -67,9 +67,9 @@ function parseArguments(argv) {
     }
     if (!options.lib)
         fail(
-            '--lib <nom> est requis (ex: newsletter, pour libs/newsletter/angular)'
+            '--lib <nom> est requis (ex: content-moderation, pour libs/content-moderation/angular)'
         );
-    if (!options.app) fail('--app <nom> est requis (ex: newsletter-test)');
+    if (!options.app) fail('--app <nom> est requis (ex: backoffice-angular)');
     return options;
 }
 
@@ -191,7 +191,7 @@ function camelCase(value) {
     return pascal.charAt(0).toLowerCase() + pascal.slice(1);
 }
 
-/** Extrait le nom court d'un alias @cmz/<nom>-angular (ex: "newsletter"). */
+/** Extrait le nom court d'un alias @cmz/<nom>-angular (ex: "content-moderation"). */
 function libShortName(aliasName) {
     return aliasName.replace('@cmz/', '').replace('-angular', '');
 }

@@ -2,6 +2,13 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-08-27
+- **Note du 2026-08-29** : les deux apps de test (`newsletter-test` en
+  Angular, `newsletter` en React) qui ont servi de POC pour le choix décrit
+  ci-dessous ont depuis été retirées du repo (module de démonstration écrit
+  à la main, destiné à être reconstruit par le générateur le cas échéant).
+  Cela n'invalide pas la décision actée ici : elle porte sur
+  `backoffice-angular`, l'app réelle du repo, pas sur les POC — voir la
+  section Décision.
 
 ## Contexte
 

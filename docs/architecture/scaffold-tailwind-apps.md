@@ -24,12 +24,12 @@ donc 3 gestes manuels après la génération Nx :
    d'entrée (`main.tsx`), car Vite n'assemble le CSS que via les imports JS/TS,
    pas via une liste déclarative comme Angular.
 
-Fait une fois à la main sur deux apps de ce repo (`backoffice-angular`,
-`newsletter-test` pour Angular ; `newsletter` pour React), c'est une tâche
-répétitive, mécanique, et donc un candidat naturel à l'outillage — mais avec
-un piège : coder en dur le contenu de ces 3 fichiers dans un générateur créerait
-une dette qui se révèle silencieusement le jour où Tailwind ou Nx change de
-mécanisme.
+Fait une fois à la main sur `backoffice-angular` (Angular) et, historiquement,
+sur deux apps de démonstration Angular/React retirées du repo depuis (voir
+Historique), c'est une tâche répétitive, mécanique, et donc un candidat
+naturel à l'outillage — mais avec un piège : coder en dur le contenu de ces 3
+fichiers dans un générateur créerait une dette qui se révèle silencieusement
+le jour où Tailwind ou Nx change de mécanisme.
 
 ## Pourquoi ce script lit des apps de référence plutôt que d'utiliser des templates figés
 
@@ -46,11 +46,20 @@ Ce script prend donc le parti de **dériver le contenu depuis une app de
 référence réelle et fonctionnelle du repo**, à chaque exécution, plutôt que de
 porter lui-même la vérité sur "à quoi ressemble une config Tailwind valide".
 Ça déplace la responsabilité de rester à jour vers les apps de référence
-elles-mêmes (`backoffice-angular`, `newsletter-test`, `newsletter`), qui de
-toute façon doivent rester fonctionnelles pour d'autres raisons. Le script
-reste alors correct tant qu'au moins une app de référence par framework existe
-et fonctionne — sans qu'on ait besoin de le réécrire à chaque évolution de
-l'écosystème.
+elles-mêmes, qui de toute façon doivent rester fonctionnelles pour d'autres
+raisons. Le script reste alors correct tant qu'au moins une app de référence
+par framework existe et fonctionne — sans qu'on ait besoin de le réécrire à
+chaque évolution de l'écosystème.
+
+**État actuel (2026-08-29)** : `ANGULAR_REFERENCES` ne contient que
+`backoffice-angular`. `REACT_REFERENCES` est vide — les deux apps de
+démonstration qui servaient de référence (Angular et React, voir Historique)
+ont été retirées du repo, et aucune app React n'a été câblée avec Tailwind
+depuis. `--reference react` échoue donc explicitement tant qu'aucune app
+React de référence n'a été repeuplée dans le script ; le mécanisme
+(résolution multi-référence, détection de divergence anti-drift décrite
+ci-dessous) reste inchangé et s'appliquera dès qu'une première app React sera
+ajoutée à `REACT_REFERENCES`.
 
 **Contrepartie explicite** : si Nx intègre un jour Tailwind nativement dans
 `@nx/angular:application`/`@nx/react:application`, ou si Tailwind abandonne le
@@ -86,11 +95,12 @@ Cas de sortie à connaître :
   signal que l'écosystème Nx/Tailwind a changé et que ce script — ainsi que ce
   document — doivent être révisés, pas contournés.
 - **`Les apps de référence <framework> divergent sur .postcssrc.json`** — deux
-  apps de référence candidates (ex: `newsletter-test` et `backoffice-angular`
-  pour Angular) ont des configs différentes. Le script refuse de choisir
-  arbitrairement. Il faut d'abord comprendre pourquoi elles divergent (une des
-  deux a-t-elle été mise à jour sans répercuter l'autre ? est-ce intentionnel ?)
-  avant de relancer.
+  apps de référence candidates pour un même framework (ex. deux entrées dans
+  `ANGULAR_REFERENCES`) ont des configs différentes. Le script refuse de
+  choisir arbitrairement. Il faut d'abord comprendre pourquoi elles divergent
+  (une des deux a-t-elle été mise à jour sans répercuter l'autre ? est-ce
+  intentionnel ?) avant de relancer. Ce cas ne peut pas se produire tant qu'une
+  seule référence est déclarée par framework (état actuel, voir plus haut).
 - **`Impossible de résoudre la version réelle de tailwindcss depuis bun.lock`**
   — ce repo utilise les "catalogs" Bun workspaces (`package.json` déclare
   `tailwindcss: "catalog:"`, pas un numéro de version direct). Le script
@@ -150,3 +160,10 @@ repo, créées pour éprouver `tools/generator-platform/` sur un cas réel
 (`newsletter-subscribe.definition.json`, vocabulaire `action-request`). Voir
 [`generation-from-patterns.md`](./generation-from-patterns.md) pour le contexte
 plus large du moteur de génération que ces apps de test visent à challenger.
+
+**Retrait du 2026-08-29** : `newsletter-test` et `newsletter` — module de
+démonstration/POC écrit à la main — ont été intégralement retirés du repo.
+`ANGULAR_REFERENCES` ne porte donc plus que `backoffice-angular`, et
+`REACT_REFERENCES` est désormais vide (voir « État actuel » plus haut). La
+fixture `newsletter-subscribe.definition.json` reste dans le repo comme cas
+de test du générateur, indépendamment des apps supprimées.

@@ -36,12 +36,10 @@ test('artifact plans are deterministic, schema-valid, and target-neutral', async
 // `layer` est purement descriptif à ce stade (n'affecte aucune sortie
 // rendue), mais son mapping doit rester stable et documenté : c'est le
 // contrat que les étapes suivantes (scission réelle en libs domain/data/
-// application) s'engagent à respecter. Le gabarit de référence est
-// libs/newsletter-angular/{domain,data,application} (écrit à la main,
-// build+lint verts) : domain-model/input-validator → domain,
-// integration-client → data, extension-contract/after-success-extension/
-// runtime-binding → application.
-test('every artifact declares a known layer, matching the manual gabarit', async () => {
+// application) s'engagent à respecter : domain-model/input-validator →
+// domain, integration-client → data, extension-contract/after-success-
+// extension/runtime-binding → application.
+test('every artifact declares a known layer, matching the expected mapping', async () => {
     const semantic = await loadJson(
         new URL('fixtures/action-request.semantic.json', root)
     );

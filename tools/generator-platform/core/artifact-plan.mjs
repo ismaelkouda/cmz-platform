@@ -2,8 +2,7 @@ import { sha256, stableStringify } from './generation-manifest.mjs';
 
 /**
  * Axe `layer` (2026-08-28, préparation ADR-0003 §5d) — quelle couche Nx
- * (domain/data/application, voir libs/newsletter-angular/{domain,data,
- * application} comme gabarit écrit à la main) porte cette responsabilité
+ * (domain/data/application) porte cette responsabilité
  * dans une future sortie en couches. N'affecte encore AUCUN comportement :
  * les renderers continuent de produire une sortie plate à ce stade (étape 1
  * du chantier « générateur en couches » — voir le plan associé). Champ

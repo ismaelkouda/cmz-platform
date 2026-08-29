@@ -3,9 +3,9 @@
  * (ADR-0003 §5d).
  *
  * Garde-fous exécutables pour renderAngularNxLayered — PAS une
- * comparaison texte au code écrit à la main (libs/newsletter-angular/) :
- * le code manuel a servi de POC pour concevoir le pattern port/token,
- * mais le générateur n'a pas vocation à imiter son formatage (les
+ * comparaison texte à du code écrit à la main : un POC manuel (2026-08-27,
+ * depuis retiré) a servi à concevoir le pattern port/token, mais le
+ * générateur n'a pas vocation à imiter son formatage (les
  * fichiers du repo passent par Prettier/ESLint selon leur extension, le
  * générateur ne le fait délibérément jamais — voir core/
  * typecheck-generated.mjs, même absence de formatage sur la sortie

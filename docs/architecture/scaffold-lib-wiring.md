@@ -10,9 +10,9 @@
 
 `tools/generator-platform/` produit une lib (`libs/<nom>/angular/...`) à partir
 d'un `*.definition.json` (vocabulaire `action-request`). Cette lib ne sert à
-rien tant qu'elle n'est pas câblée dans une vraie app. Câbler
-`libs/newsletter/angular` dans `apps/newsletter-test` à la main (2026-08-27) a
-demandé 4 gestes :
+rien tant qu'elle n'est pas câblée dans une vraie app. Câbler une lib générée
+dans une app Angular de test à la main (2026-08-27, sur un module de
+démonstration retiré du repo depuis — voir Historique) a demandé 4 gestes :
 
 1. Ajouter une entrée `@cmz/<nom>-angular` dans `tsconfig.base.json`.
 2. Importer `ActionRequestClient`/`ActionRequestCommands` et les déclarer dans
@@ -45,13 +45,14 @@ est absent. Ce garde-fou ne se contourne jamais — si un jour ce script doit
 câbler une lib dans autre chose qu'une app, c'est une décision architecturale à
 part entière, pas un flag à ajouter.
 
-## Pourquoi ce script parse le contenu généré plutôt que de coder en dur "newsletter"
+## Pourquoi ce script parse le contenu généré plutôt que de coder en dur une lib précise
 
-Le seul cas réel traité à ce jour est `newsletter` (`SubscribeNewsletterInput` →
-`subscribeNewsletter()` → `NewsletterSubscriptionResult`). Un script qui
+Le seul cas réel traité à ce jour (2026-08-27, sur le module de démonstration
+retiré depuis — voir Historique) exposait `SubscribeNewsletterInput` →
+`subscribeNewsletter()` → `NewsletterSubscriptionResult`. Un script qui
 connaîtrait ces noms en dur ne fonctionnerait que pour ce cas précis et
 casserait silencieusement — ou pire, produirait un câblage incorrect qui compile
-— sur la prochaine lib générée.
+— sur la prochaine lib générée (ex. `content-moderation`).
 
 Le script lit donc dynamiquement :
 
@@ -116,8 +117,10 @@ Cas de sortie à connaître :
 ## Bug réel rencontré et corrigé pendant les tests (camelCase / retours à la ligne)
 
 Une première version de `wireAppConfig()` utilisait `pascalCase()` pour nommer
-la constante d'URL backend, produisant `NewsletterBaseUrl` (majuscule initiale)
-au lieu de la convention `camelCase` attendue pour une constante locale. Elle
+la constante d'URL backend, produisant par exemple `NewsletterBaseUrl`
+(majuscule initiale, cas rencontré sur le module de démonstration qui a servi
+à ces tests) au lieu de la convention `camelCase` attendue pour une constante
+locale. Elle
 collait aussi le nouveau bloc de providers directement contre le contenu
 existant du tableau sans retour à la ligne, produisant une sortie du type
 `ActionRequestCommands,provideBrowserGlobalErrorListeners()...` sur une seule
@@ -154,13 +157,12 @@ node tools/scaffold-lib-wiring.mjs --lib <nom-libs> --app <nom-app>
 Exemple :
 
 ```bash
-node tools/scaffold-lib-wiring.mjs --lib newsletter --app newsletter-test
+node tools/scaffold-lib-wiring.mjs --lib content-moderation --app backoffice-angular
 ```
 
 Après exécution : fixer la vraie URL backend dans `app.config.ts` (ou pointer
-vers un mock local, voir par exemple
-`apps/newsletter-test/src/mock/newsletter-mock-server.mjs`), écrire ou adapter
-le composant consommateur, puis vérifier visuellement dans le navigateur — un
+vers un mock local), écrire ou adapter le composant consommateur, puis
+vérifier visuellement dans le navigateur — un
 `tsc --noEmit` clean ne suffit pas à lui seul à garantir que le formulaire
 fonctionne réellement (même discipline que celle établie pour Tailwind : voir la
 note du 2026-08-27 dans
@@ -169,9 +171,10 @@ d'un pipeline apparemment fonctionnel).
 
 ## Historique
 
-Écrit le 2026-08-27, après le câblage manuel de `libs/newsletter/angular` dans
-`apps/newsletter-test` (premier cas réel de `generator-platform` matérialisé et
-câblé bout-en-bout dans ce repo). Testé deux fois sur une app jetable
+Écrit le 2026-08-27, après le câblage manuel d'une lib générée par
+`action-request` (`newsletter`) dans une app Angular de test dédiée
+(`newsletter-test`) — premier cas réel de `generator-platform` matérialisé et
+câblé bout-en-bout dans ce repo. Testé deux fois sur une app jetable
 (`apps/wiring-test-tmp`, supprimée après vérification) — deux bugs réels trouvés
 et corrigés pendant ces tests (regex multi-ligne, camelCase/ retours à la
 ligne), documentés ci-dessus pour éviter de les redécouvrir à l'aveugle sur un
@@ -179,3 +182,12 @@ futur cas. Voir aussi [`scaffold-tailwind-apps.md`](./scaffold-tailwind-apps.md)
 pour l'outil frère (même discipline anti-devinette, même problème de fond :
 automatiser un geste répétitif sans lui faire porter une vérité qui peut devenir
 fausse).
+
+**Note du 2026-08-29** : le module de démonstration `newsletter`
+(`apps/newsletter`, `apps/newsletter-test`, `libs/newsletter*`) qui a servi à
+concevoir et tester ce script a été intégralement retiré du repo — c'était un
+POC écrit à la main, destiné à être reconstruit automatiquement par le
+générateur le jour où un cas réel se présente. Les exemples ci-dessus
+(`content-moderation`/`backoffice-angular`) sont génériques ; le
+comportement du script et les épisodes de bugs documentés restent valides
+tels quels.

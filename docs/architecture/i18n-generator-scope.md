@@ -6,6 +6,16 @@
 > réellement la responsabilité de l'internationalisation dans ce repo. Lis-le
 > avant de proposer un changement aux renderers pour "les rendre i18n-ready".
 
+> **Note du 2026-08-29** : les deux apps de référence citées tout au long de
+> ce document (`apps/newsletter-test` en Angular, `apps/newsletter` en React)
+> ont été intégralement retirées du repo — c'était un module de
+> démonstration/POC écrit à la main, pas une app métier destinée à durer. Les
+> constats techniques ci-dessous (audits, pièges rencontrés, corrections
+> appliquées) restent vrais historiquement ; ils ne sont simplement plus
+> vérifiables sur le repo dans son état actuel. La fixture
+> `newsletter-subscribe.definition.json` reste dans le repo comme cas de test
+> du générateur, indépendamment des apps supprimées.
+
 ## L'exigence de départ
 
 Toute application générée dans ce repo doit prendre en charge le multilingue,

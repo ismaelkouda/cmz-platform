@@ -3,9 +3,9 @@
  * « générateur en couches » (ADR-0003 §5d).
  *
  * Symétrique de renderers-layered.test.mjs (Angular) — mêmes garde-fous
- * exécutables, même philosophie (pas de comparaison texte au code
- * manuel libs/newsletter-react/, qui a servi de POC de conception, pas
- * de référence figée) :
+ * exécutables, même philosophie (pas de comparaison texte à du code
+ * manuel — un POC de conception, depuis retiré, n'a jamais été une
+ * référence figée) :
  *   1. Le code généré compile réellement, avec résolution d'alias
  *      inter-package simulant @cmz/<domain>-react-<layer>.
  *   2. Boundary structurel : aucun fichier application n'importe

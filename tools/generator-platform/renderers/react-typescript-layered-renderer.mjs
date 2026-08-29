@@ -4,23 +4,23 @@
  *
  * Produit la même substance que `renderReactTypescript`
  * (react-typescript-renderer.mjs) mais répartie dans 3 packages Nx
- * distincts (domain/data/application), conformes au gabarit écrit à la
- * main libs/newsletter-react/{domain,data,application} — au lieu d'un
- * seul package plat. Symétrique de angular-nx-layered-renderer.mjs.
+ * distincts (domain/data/application), suivant le pattern conçu à
+ * l'origine sur un POC écrit à la main (2026-08-27, depuis retiré) — au
+ * lieu d'un seul package plat. Symétrique de
+ * angular-nx-layered-renderer.mjs.
  *
  * DÉLIBÉRÉMENT NON BRANCHÉ (à ce stade) : ni render-targets.mjs, ni
  * generate-action-request.mjs, ni le pipeline de publication
  * (core/generation-change-set.mjs, core/generation-publication.mjs) ne
  * connaissent cette fonction. Elle n'est exercée que par
- * renderers-layered.test.mjs (React).
+ * renderers-layered-react.test.mjs.
  *
  * Différence structurelle avec Angular : pas de framework DI côté React,
  * donc pas d'InjectionToken séparé. `ActionRequestPort` (interface pure,
  * domain) est directement le type de paramètre attendu par
  * `createActionRequestHooks` (application) — la valeur concrète
  * (`ActionRequestClient`, data) est fournie par l'app hôte au point de
- * composition, exactement comme dans le gabarit manuel
- * libs/newsletter-react/application/src/lib/use-action-request-commands.ts.
+ * composition, exactement comme dans le POC d'origine.
  *
  * Boundary respectée (ADR-0003 §4, type:application ne dépend jamais de
  * type:data) : application importe uniquement le port depuis domain,

@@ -4,7 +4,7 @@
  *
  * Variante de core/typecheck-generated.mjs pour une sortie répartie en
  * plusieurs packages liés par des alias `@cmz/<domain>-<platform>-<layer>`
- * (ex: `@cmz/newsletter-angular-domain`). typecheck-generated.mjs
+ * (ex: `@cmz/content-moderation-angular-domain`). typecheck-generated.mjs
  * type-checke un seul package isolé, sans jamais résoudre d'import
  * inter-package — insuffisant ici puisque data/application importent
  * explicitement domain via cet alias (le vrai test du boundary : si les

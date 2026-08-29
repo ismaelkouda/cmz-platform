@@ -4,19 +4,21 @@
  *
  * Produit la même substance que `renderAngularNx` (angular-nx-renderer.mjs)
  * mais répartie dans 3 packages Nx distincts (domain/data/application),
- * conformes au gabarit écrit à la main libs/newsletter-angular/{domain,
- * data,application} — au lieu d'un seul package plat.
+ * suivant le pattern port/token conçu à l'origine sur un POC écrit à la
+ * main (2026-08-27, depuis retiré) — au lieu d'un seul package plat.
  *
  * DÉLIBÉRÉMENT NON BRANCHÉ : ni render-targets.mjs, ni
  * generate-action-request.mjs, ni le pipeline de publication
  * (core/generation-change-set.mjs, core/generation-publication.mjs) ne
  * connaissent cette fonction. Elle n'est exercée que par
- * renderers-layered.test.mjs, en golden-test contre le code manuel
- * existant. Voir le plan associé (audit staff, 2026-08-28) pour les
- * étapes 3+ (brancher réellement au pipeline de publication).
+ * renderers-layered.test.mjs — garde-fous exécutables (compilation réelle,
+ * boundary structurel), PAS une comparaison texte à du code figé (voir
+ * docstring de ce fichier de test). Voir le plan associé (audit staff,
+ * 2026-08-28) pour les étapes 3+ (brancher réellement au pipeline de
+ * publication).
  *
  * Boundary respectée (ADR-0003 §4, type:application ne dépend jamais de
- * type:data) : le pattern port/token du gabarit manuel est reproduit —
+ * type:data) : le pattern port/token du POC d'origine est reproduit —
  * ActionRequestPort (interface pure) en domain, ACTION_REQUEST_PORT
  * (InjectionToken) colocalisé en application, ActionRequestClient
  * (implémentation concrète) en data, implements ActionRequestPort.

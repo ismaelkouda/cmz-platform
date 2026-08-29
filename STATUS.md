@@ -1,6 +1,6 @@
 # STATUS — cmz-platform
 
-> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-28.
+> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-08-29.
 > Ne pas éditer manuellement — lancer `node tools/generate-status.mjs` pour régénérer.
 
 > Ces métriques décrivent le golden reference Angular/SEOS. Périmètre courant
@@ -10,11 +10,11 @@
 
 | Indicateur | Valeur |
 |:---|---:|
-| Packages Nx | **78 libs + 3 app** (81 `project.json`) |
-| Fichiers TypeScript (`libs/`) | **2 748 fichiers hors tests** (2 996 au total, dont 248 specs) |
-| Modules détectés | **21** |
+| Packages Nx | **72 libs + 1 app** (73 `project.json`) |
+| Fichiers TypeScript (`libs/`) | **2 727 fichiers hors tests** (2 975 au total, dont 248 specs) |
+| Modules détectés | **19** |
 | Périmètre applicatif (`scope.json`, M-7) | **55 / 55 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
-| Corpus SEOS — couverture fichiers (N-4) | **918 / 2 748 fichiers libs/ hors tests → 33.4 %** — 3 modules sans aucune paire (2 `inconnue`, 1 `kernel`) |
+| Corpus SEOS — couverture fichiers (N-4) | **918 / 2 727 fichiers libs/ hors tests → 33.7 %** — 1 modules sans aucune paire (1 `kernel`) |
 | Corpus SEOS — nature des paires (N-6) | **583 correspondances** + **924 décisions d'architecture** (`status: n/a`) — pas 1507 paires d'apprentissage |
 
 ## Légende
@@ -42,8 +42,6 @@
 | `finalization` | ✅ | workflow-action | application, data, domain, ui | 108 | Module IR clôturé — corpus 126 paires, 6 chaînes, Meta 12/12 |
 | `interactive-map` | ✅ | read-only-view | application, data, domain, ui | 22 | Module IR clôturé — SIG v1 + Grafana ; corpus 28 paires, Meta 12/12 ; P2 clusters/tiles |
 | `monitoring` | ✅ | read-only-view | application, data, domain, ui | 21 | Module IR clôturé (a posteriori 2026-08-04) — 4 embeds Grafana ; corpus 51 paires, 5 chaînes, Meta 12/12 |
-| `newsletter-angular` | ❓ | — | application, data, domain | 11 | — |
-| `newsletter-react` | ❓ | — | application, data, domain | 10 | — |
 | `processing` | ✅ | workflow-action | application, data, domain, ui | 138 | Module IR clôturé — corpus 156 paires, 7 chaînes, Meta 12/12 |
 | `report-states` | ✅ | workflow-action | application, data, domain, ui | 151 | Module IR clôturé — corpus 187 paires, 8 chaînes, Meta 12/12 |
 | `reporting` | ✅ | read-only-view | application, data, domain, ui | 21 | Module IR clôturé (a posteriori 2026-08-04) — 4 vues analytiques ; corpus 51 paires, 5 chaînes, Meta 12/12 |

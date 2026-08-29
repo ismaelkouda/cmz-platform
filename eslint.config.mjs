@@ -155,27 +155,6 @@ export default [
                                 'scope:shared',
                             ],
                         },
-                        // scope:newsletter-angular / scope:newsletter-react
-                        // (2026-08-28) — newsletter est scindé en 2 modules
-                        // mono-stack (ADR-0003 §3, cas jamais rencontré
-                        // ailleurs : tous les autres modules sont mono-stack
-                        // Angular). Chacun porte ses 3 couches
-                        // domain/data/application et son propre scope,
-                        // exactement comme n'importe quel module métier.
-                        {
-                            sourceTag: 'scope:newsletter-angular',
-                            onlyDependOnLibsWithTags: [
-                                'scope:newsletter-angular',
-                                'scope:shared',
-                            ],
-                        },
-                        {
-                            sourceTag: 'scope:newsletter-react',
-                            onlyDependOnLibsWithTags: [
-                                'scope:newsletter-react',
-                                'scope:shared',
-                            ],
-                        },
                         {
                             sourceTag: 'scope:content-management',
                             onlyDependOnLibsWithTags: [
@@ -311,11 +290,9 @@ export default [
             // légitime quand la signature est imposée par un contrat de
             // type (ex. extension point humain AfterSuccessExtension,
             // callback avec position fixe) et que l'implémentation
-            // n'exploite pas (encore) cet argument. Pattern déjà utilisé
-            // dans le repo (after-success.extension.ts newsletter-angular/
-            // -react) sans que la règle par défaut du preset Nx le
-            // reconnaisse — rendu explicite ici plutôt que contourné au
-            // cas par cas.
+            // n'exploite pas (encore) cet argument, sans que la règle par
+            // défaut du preset Nx le reconnaisse — rendu explicite ici
+            // plutôt que contourné au cas par cas.
             '@typescript-eslint/no-unused-vars': [
                 'error',
                 { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },

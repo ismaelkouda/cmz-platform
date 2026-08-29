@@ -100,9 +100,9 @@ plutôt qu'un simple texte :
 ```
 
 **Dans la plupart des formulaires simples (contact, demande de démo,
-newsletter), aucun `opaque_type` n'est nécessaire** : si chaque champ envoyé ou
-reçu est un texte, un nombre, un email ou une date, `opaque_types` reste un
-tableau vide `[]`. Voir
+inscription à un événement), aucun `opaque_type` n'est nécessaire** : si
+chaque champ envoyé ou reçu est un texte, un nombre, un email ou une date,
+`opaque_types` reste un tableau vide `[]`. Voir
 [`sign-in.definition.json`](../../tools/generator-platform/sources/sign-in.definition.json)
 pour l'exemple complet, et son
 [`.annotated.md`](../../tools/generator-platform/sources/sign-in.definition.annotated.md)

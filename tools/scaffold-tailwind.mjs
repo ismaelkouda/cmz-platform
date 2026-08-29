@@ -38,8 +38,12 @@ const REPO_ROOT = process.cwd();
 // Apps de référence connues à ce jour. Si une nouvelle app de référence est
 // ajoutée (ex: une deuxième app React avec une config Tailwind différente),
 // il faut décider explicitement laquelle fait autorité — voir resolveReference.
-const ANGULAR_REFERENCES = ['newsletter-test', 'backoffice-angular'];
-const REACT_REFERENCES = ['newsletter'];
+const ANGULAR_REFERENCES = ['backoffice-angular'];
+// Aucune app React de référence dans le repo actuellement (newsletter/
+// newsletter-test retirés). resolveReference() échoue explicitement si
+// --reference react est demandé tant que cette liste reste vide — à
+// repeupler dès qu'une app React est câblée avec Tailwind.
+const REACT_REFERENCES = [];
 
 function fail(message) {
     console.error(`\n✖ ${message}\n`);

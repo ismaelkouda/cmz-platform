@@ -7,10 +7,15 @@
   convention canonique de nommage des packages, et de la règle de tenue à jour
   obligatoire à chaque nouveau module.
 - **Amendement 2026-08-28** : Les artefacts publiés par
-  `tools/generator-platform/` pour `newsletter` sont scindés en deux modules
-  mono-stack conformes au pattern à quatre couches (§5d) — `newsletter-angular`
-  et `newsletter-react`, chacun avec `domain`/`data`/`application`. Aucune
-  exception ni couche supplémentaire n'a été nécessaire.
+  `tools/generator-platform/` pour un module de démonstration (`newsletter`)
+  ont été scindés en deux modules mono-stack conformes au pattern à quatre
+  couches (§5d) — `newsletter-angular` et `newsletter-react`, chacun avec
+  `domain`/`data`/`application`. Aucune exception ni couche supplémentaire
+  n'a été nécessaire. **Retrait du 2026-08-29** : ce module de démonstration
+  a été intégralement retiré du repo (POC écrit à la main, destiné à être
+  reconstruit automatiquement par le générateur le jour où un module
+  réellement multi-stack en aura besoin) — le pattern documenté en §5d reste
+  valide et applicable, seul l'exemple concret a disparu.
 
 ## Contexte
 
@@ -98,8 +103,9 @@ identifiants ci-dessus (ex. `@cmz/report-states-helpers`, `@cmz/utils`). Tout
 plateformes techniques (Angular, React, …) doivent coexister pour un même
 produit fonctionnel, chaque plateforme forme un **module distinct** au sens
 de cette convention — `<module>-<platform>` — plutôt qu'un sous-niveau de
-regroupement. Voir §5d pour l'exemple `newsletter-angular` /
-`newsletter-react`.
+regroupement. Voir §5d pour l'exemple historique `newsletter-angular` /
+`newsletter-react` (module de démonstration retiré du repo depuis, le
+pattern reste valide).
 
 ### 4. Taxonomie des tags Nx (deux axes orthogonaux)
 
@@ -197,6 +203,19 @@ liste `type:browser` ([`eslint.config.mjs`](../../eslint.config.mjs), audit D-5 
 P2-18).
 
 #### 5d. `newsletter-angular` / `newsletter-react` — deux modules mono-stack
+
+> **Retrait du 2026-08-29** : `newsletter-angular`/`newsletter-react` (ainsi
+> que `apps/newsletter`, `apps/newsletter-test` et `libs/newsletter`) ont été
+> intégralement retirés du repo — c'était un module de démonstration/POC
+> écrit à la main pour concevoir le pattern décrit ci-dessous, pas un module
+> métier destiné à durer. Sa suppression ne remet pas en cause le pattern :
+> il reste l'exemple de référence documenté ici pour tout futur module
+> réellement multi-stack, qui devra être **généré** via
+> `tools/generator-platform/` plutôt qu'écrit à la main. La fixture d'entrée
+> qui a servi à cette démonstration,
+> [`sources/newsletter-subscribe.definition.json`](../../tools/generator-platform/sources/newsletter-subscribe.definition.json),
+> reste dans le repo comme cas de test du générateur, indépendamment des
+> apps/libs supprimées.
 
 **Amendement 2026-08-28**. `tools/generator-platform/` génère à partir d'une
 définition source unique (`sources/newsletter-subscribe.definition.json`) un
