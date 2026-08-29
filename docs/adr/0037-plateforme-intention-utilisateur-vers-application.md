@@ -159,7 +159,7 @@ parce qu'une réécriture complète peut faire disparaître silencieusement un
 champ ou une règle que personne n'a demandé de retirer. Le matching par
 correspondance de motif exact est plus robuste que l'édition par numéro de
 ligne pour les patches produits par un LLM. Directement applicable à
-l'étape 5 (modification ciblée d'une page).
+l'étape 7 (modification ciblée d'une page).
 
 ### Le précédent d'abus (Lovable, phishing) motive la portée resserrée plutôt qu'une conséquence à part
 
@@ -241,23 +241,55 @@ mort documenté en section Recherche : un biais de complétion partagé par
 tous les échantillons n'est, par construction, jamais détecté par cette
 méthode.
 
-### 3. Revue humaine avant compilation, comme toute autre contribution au dépôt
+### 3. Une checklist déterministe, indépendante du LLM, avant la revue humaine
 
-Le `.definition.json` issu de l'étape 2 est présenté à un humain titulaire
-d'un accès au dépôt avant toute compilation — pas optionnellement, pas
-seulement pour les cas jugés incertains. C'est le mécanisme qui compense
-l'angle mort de l'étape 2 et qui rend ce document exécutable sans une
-décision produit public préalable : la même discipline de revue qui
-s'applique déjà à tout `.definition.json` écrit à la main s'applique ici,
-sans exception nouvelle à créer.
+Avant présentation au relecteur humain, le `.definition.json` issu de
+l'étape 2 est vérifié contre une **checklist métier fixe** — une liste de
+règles écrites une fois par un humain (dérivée des questions déjà posées
+par `creer-une-action-request.md` §2 : résultat recherché, champs
+saisis, règles obligatoires, accès, appel backend, réponse, effet local)
+et appliquée mécaniquement, sans appel à un modèle de langage. Une règle
+absente, un champ attendu manquant, ou une incohérence détectable par un
+motif fixe (ex : une opération `public` qui référence une intégration
+`authenticated`) fait échouer la checklist avant même que le fichier
+atteigne un humain.
 
-### 4. Le `.definition.json` validé reste l'unique porte d'entrée du compilateur
+Cette checklist n'est pas une reformulation de l'étape 2 : elle attrape
+une classe d'erreur différente. L'étape 2 compare plusieurs sorties du
+*même* modèle entre elles — son angle mort documenté est qu'un biais de
+complétion partagé par tous les échantillons lui est invisible par
+construction. La checklist ne dépend d'aucun modèle : elle compare une
+sortie à une règle écrite d'avance, donc elle attrape précisément le cas
+que l'étape 2 rate — une erreur systématique que le LLM commet à chaque
+tirage sans jamais varier.
+
+### 4. Revue humaine avant compilation, comme toute autre contribution au dépôt
+
+Le `.definition.json` qui a passé les étapes 2 et 3 (désambiguïsation puis
+checklist) est présenté à un humain titulaire d'un accès au dépôt avant
+toute compilation — pas
+optionnellement, pas seulement pour les cas jugés incertains. La même
+discipline de revue qui s'applique déjà à tout `.definition.json` écrit à
+la main s'applique ici, sans exception nouvelle à créer.
+
+**Les trois mécanismes (désaccord entre échantillons, checklist
+déterministe, revue humaine) se combinent, aucun ne remplace les deux
+autres.** Chacun attrape une classe d'erreur que les autres ratent : la
+désambiguïsation par désaccord attrape la variance de tirage, la
+checklist attrape le biais systématique invisible à cette désambiguïsation,
+la revue humaine attrape tout ce qu'aucun mécanisme automatique ne peut
+formaliser (une règle de gestion correcte en apparence mais fausse dans
+le contexte réel de l'utilisateur). Retirer l'un des trois en pensant que
+les deux autres suffisent reviendrait à réintroduire l'angle mort qu'il
+était seul à couvrir.
+
+### 5. Le `.definition.json` validé reste l'unique porte d'entrée du compilateur
 
 Aucune IA n'écrit jamais directement dans `apps/` ou `libs/`. Après revue
 humaine, le `.definition.json` est validé par `validate-ir.mjs` exactement
 comme un fichier écrit à la main — sans chemin de contournement.
 
-### 5. Deux identifiants distincts, jamais fusionnés
+### 6. Deux identifiants distincts, jamais fusionnés
 
 Chaque page (feature) reçoit :
 
@@ -274,15 +306,15 @@ revision_id`. Ce registre est lui-même un artefact versionné dans ce
 dépôt, cohérent avec le principe « tout est versionné » déjà appliqué au
 catalog (ADR-0005).
 
-### 6. Une modification ciblée est une opération, jamais une réécriture
+### 7. Une modification ciblée est une opération, jamais une réécriture
 
 Quand l'utilisateur cite un `page_id` pour demander un changement, l'IA ne
 régénère pas le `.definition.json` en entier. Elle produit une opération
 d'édition minimale et typée, appliquée par du code déterministe — pas par
 l'IA elle-même — sur le `.definition.json` existant récupéré via le
-registre. Cette opération repasse par les étapes 2 et 3 (désambiguïsation
-puis revue humaine) avant application, exactement comme la génération
-initiale.
+registre. Cette opération repasse par les étapes 2 à 4 (désambiguïsation,
+checklist déterministe, revue humaine) avant application, exactement
+comme la génération initiale.
 
 ## Justification
 
@@ -316,8 +348,9 @@ critiques soulevées en revue :
   autorisés), pas étirés au-delà.
 - **Angle mort de la désambiguïsation** — reste réel et documenté sans
   atténuation rhétorique, mais cesse d'être disqualifiant parce que la
-  revue humaine (étape 3) est le filet qui ne dépend pas de cette
-  méthode.
+  checklist déterministe (étape 3) et la revue humaine (étape 4) sont
+  deux filets indépendants de cette méthode, chacun couvrant une part de
+  son angle mort.
 
 ## Conséquences
 
@@ -345,8 +378,12 @@ critiques soulevées en revue :
 - Le nouveau `kind: natural_language_prompt` et le registre d'identifiants
   n'existent pas encore ; ce document ne livre pas de code, seulement le
   contrat.
-- Le format exact de l'opération d'édition typée (étape 6) reste à
+- Le format exact de l'opération d'édition typée (étape 7) reste à
   concevoir en détail.
+- La checklist métier fixe (étape 3) n'existe pas encore ; ce document ne
+  fournit que son principe (règles écrites d'avance, aucun appel LLM), pas
+  la liste exacte des règles à vérifier — à dériver de
+  `creer-une-action-request.md` §2 lors de l'implémentation.
 - La question du support multi-page avec dépendances croisées entre
   `page_id` n'est pas traitée ici et devra faire l'objet d'un ADR dédié si
   le besoin se confirme.
@@ -371,8 +408,11 @@ critiques soulevées en revue :
   exprimées comme des opérations localisées.
 - Si ADR-0038 est un jour tranché favorablement, ce document devra être
   révisé (pas juste étendu) pour retirer la dépendance à la revue humaine
-  systématique de l'étape 3, ce qui réactivera intégralement l'angle mort
-  documenté en section Recherche — ce n'est pas une extension mineure.
+  systématique de l'étape 4, ce qui laisserait la checklist déterministe
+  (étape 3) seule face à l'angle mort documenté en section Recherche — la
+  checklist ne le couvre que partiellement, puisqu'elle ne détecte que ce
+  qu'un humain a explicitement anticipé et écrit d'avance, pas une erreur
+  de gestion nouvelle et imprévue. Ce n'est pas une extension mineure.
 
 ## Références
 
@@ -413,6 +453,6 @@ critiques soulevées en revue :
   on Long-Context Problems » (TACL/MIT Press) — faux désaccord possible
   sur entrée longue.
 - RFC 6902 (JSON Patch) — format de référence pour les opérations
-  d'édition localisées, reprises pour l'étape 6.
+  d'édition localisées, reprises pour l'étape 7.
 - Proofpoint — « Cybercriminals Abuse AI Website Creation App For
   Phishing » — précédent d'abus ayant motivé l'extraction d'ADR-0038.
