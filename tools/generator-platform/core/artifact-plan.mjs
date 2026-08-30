@@ -86,10 +86,28 @@ const catalogs = {
             'runtime-binding',
         ]),
     ],
+    // Périmètre restreint (2026-08-30, verbe "query"/List simple, voir
+    // core/list-query-authoring.mjs) : pas d'input à valider (les opérations
+    // en portée n'ont aucun paramètre), pas de slot d'extension after-success
+    // (aucun effet de bord à raccorder pour une lecture pure) — un client
+    // d'intégration minimal, à la différence du catalogue 'semantic-model'
+    // taillé pour des commandes. Rouvrir seulement si un besoin réel
+    // l'exige (même discipline que le reste de ce fichier).
+    'list-query-model': [
+        generated('package-descriptor', 'per-layer'),
+        generated('compiler-configuration', 'per-layer'),
+        generated('domain-model', 'domain'),
+        generated('integration-client', 'data', ['domain-model']),
+        generated('public-api', 'per-layer', [
+            'domain-model',
+            'integration-client',
+        ]),
+    ],
 };
 
 function modelId(model, kind) {
-    if (kind === 'semantic-model') return model.model_id;
+    if (kind === 'semantic-model' || kind === 'list-query-model')
+        return model.model_id;
     return `behavior:${model.domain?.id}`;
 }
 

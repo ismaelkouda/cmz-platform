@@ -41,6 +41,38 @@ const CONFIG_FILES = [
     'bun.lock',
 ];
 
+/**
+ * Périmètre restreint (2026-08-30) — deuxième composition (`list-query`,
+ * verbe "query"/List simple) reconnue par create-module/retire-module, au
+ * même titre qu'`action-request`. Table de dispatch fermée, fail-closed :
+ * un `definition.kind` absent de cette table est refusé explicitement en
+ * lecture (voir readDefinition), jamais interprété par défaut comme
+ * `action-request` — élargir cette table est le seul point d'entrée pour
+ * un futur 3ᵉ verbe.
+ */
+const COMPOSITION_KINDS = {
+    'action-request': {
+        generatorScript: 'tools/generator-platform/generate-action-request.mjs',
+        target: 'angular-layered',
+        layers: ['application', 'data', 'domain'],
+    },
+    'list-query': {
+        generatorScript: 'tools/generator-platform/generate-list-query.mjs',
+        target: 'angular-layered',
+        layers: ['data', 'domain'],
+    },
+};
+
+function expectedLayeredProjects(moduleName, kind) {
+    return COMPOSITION_KINDS[kind].layers
+        .map((layer) => ({
+            name: `@cmz/${moduleName}-${layer}`,
+            projectJson: `libs/${moduleName}/angular-${layer}/project.json`,
+            root: `libs/${moduleName}/angular-${layer}`,
+        }))
+        .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+}
+
 function fail(message) {
     throw new Error(message);
 }
@@ -132,7 +164,13 @@ function readDefinition(path) {
         fail(
             'definition.domain.id doit être identique à definition.feature.id.'
         );
-    return { absolute, content, moduleName };
+    const kind = document?.kind;
+    if (!Object.hasOwn(COMPOSITION_KINDS, kind ?? ''))
+        fail(
+            `definition.kind "${kind}" non reconnu — attendu l'un de : ` +
+                `${Object.keys(COMPOSITION_KINDS).join(', ')}.`
+        );
+    return { absolute, content, moduleName, kind };
 }
 
 function stateDir(moduleName) {
@@ -234,6 +272,7 @@ function validateState(moduleName, state, { allowGitDrift = false } = {}) {
     const keys = [
         'version',
         'module',
+        'kind',
         'status',
         'startedAt',
         'workspaceRoot',
@@ -252,8 +291,9 @@ function validateState(moduleName, state, { allowGitDrift = false } = {}) {
     ];
     if (
         !exactKeys(state, keys) ||
-        state.version !== 1 ||
+        state.version !== 2 ||
         state.module !== moduleName ||
+        !Object.hasOwn(COMPOSITION_KINDS, state.kind ?? '') ||
         !['planned', 'generated', 'configured'].includes(state.status) ||
         typeof state.startedAt !== 'string' ||
         Number.isNaN(Date.parse(state.startedAt)) ||
@@ -284,23 +324,10 @@ function validateState(moduleName, state, { allowGitDrift = false } = {}) {
     )
         fail(`Journal de création incomplet pour "${moduleName}".`);
     if (hasGeneratedMetadata) {
-        const expectedProjects = [
-            {
-                name: `@cmz/${moduleName}-application`,
-                projectJson: `libs/${moduleName}/angular-application/project.json`,
-                root: `libs/${moduleName}/angular-application`,
-            },
-            {
-                name: `@cmz/${moduleName}-data`,
-                projectJson: `libs/${moduleName}/angular-data/project.json`,
-                root: `libs/${moduleName}/angular-data`,
-            },
-            {
-                name: `@cmz/${moduleName}-domain`,
-                projectJson: `libs/${moduleName}/angular-domain/project.json`,
-                root: `libs/${moduleName}/angular-domain`,
-            },
-        ];
+        const expectedProjects = expectedLayeredProjects(
+            moduleName,
+            state.kind
+        );
         if (
             retirementPlanSha256(state.plan) !== state.planSha256 ||
             state.plan.module !== moduleName ||
@@ -343,7 +370,7 @@ function desiredText(state, file) {
     return Buffer.from(state.desiredConfigs[file], 'base64').toString('utf8');
 }
 
-function validateGeneratedRoot(moduleName, expectedHash) {
+function validateGeneratedRoot(moduleName, kind, expectedHash) {
     const output = join(ROOT, 'libs', moduleName);
     const metadata = lstatSync(output);
     if (!metadata.isDirectory() || metadata.isSymbolicLink())
@@ -354,9 +381,9 @@ function validateGeneratedRoot(moduleName, expectedHash) {
         'artifact-plan.json',
         'evidence-model.json',
         'semantic-model.json',
-        'angular-domain/generation-manifest.json',
-        'angular-data/generation-manifest.json',
-        'angular-application/generation-manifest.json',
+        ...COMPOSITION_KINDS[kind].layers.map(
+            (layer) => `angular-${layer}/generation-manifest.json`
+        ),
     ]) {
         const path = join(output, file);
         const item = lstatSync(path);
@@ -366,11 +393,9 @@ function validateGeneratedRoot(moduleName, expectedHash) {
             );
     }
     const { plan, sha256: planSha256 } = createRetirementPlan(ROOT, moduleName);
-    const expectedProjects = [
-        `@cmz/${moduleName}-application`,
-        `@cmz/${moduleName}-data`,
-        `@cmz/${moduleName}-domain`,
-    ];
+    const expectedProjects = expectedLayeredProjects(moduleName, kind).map(
+        ({ name }) => name
+    );
     if (
         JSON.stringify(plan.roots) !== JSON.stringify([`libs/${moduleName}`]) ||
         JSON.stringify(plan.projects.map(({ name }) => name).sort()) !==
@@ -448,14 +473,15 @@ function run(command, args) {
 }
 
 function runGenerator(state, dryRun = false) {
+    const composition = COMPOSITION_KINDS[state.kind];
     const args = [
-        join(ROOT, 'tools/generator-platform/generate-action-request.mjs'),
+        join(ROOT, composition.generatorScript),
         '--definition',
         state.definitionPath,
         '--out',
         join(ROOT, state.outputRoot),
         '--target',
-        'angular-layered',
+        composition.target,
     ];
     if (dryRun) args.push('--dry-run');
     return run(process.execPath, args);
@@ -484,7 +510,7 @@ function runCreationGates(state) {
 function removeOwnedOutput(state) {
     const output = join(ROOT, state.outputRoot);
     if (!existsSync(output)) return;
-    validateGeneratedRoot(state.module, state.generatedTreeSha256);
+    validateGeneratedRoot(state.module, state.kind, state.generatedTreeSha256);
     rmSync(output, { recursive: true, force: true });
     syncDirectory(dirname(output));
 }
@@ -527,11 +553,15 @@ function continueCreate(initialState) {
             }
             state = computeDesiredState(
                 state,
-                validateGeneratedRoot(state.module, null)
+                validateGeneratedRoot(state.module, state.kind, null)
             );
             writeState(state.module, state);
         }
-        validateGeneratedRoot(state.module, state.generatedTreeSha256);
+        validateGeneratedRoot(
+            state.module,
+            state.kind,
+            state.generatedTreeSha256
+        );
         validateConfigForResume(state);
         if (state.status === 'generated') {
             restoreConfigOriginals(
@@ -587,8 +617,9 @@ function runInitial(options) {
     const git = currentGitIdentity(ROOT);
     const originals = captureConfigOriginals(ROOT);
     const state = {
-        version: 1,
+        version: 2,
         module: definition.moduleName,
+        kind: definition.kind,
         status: 'planned',
         startedAt: new Date().toISOString(),
         workspaceRoot: resolve(ROOT),

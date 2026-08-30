@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "action-request",
+  "feature": {
+    "id": "cmz-client-landing",
+    "name": "CMZ Client — Landing",
+    "description": "Inscription newsletter depuis la page d'accueil publique du client CMZ."
+  },
+  "opaque_types": [],
+  "operations": [
+    {
+      "id": "subscribe-newsletter",
+      "description": "Inscrit une adresse email à la newsletter CMZ depuis la page d'accueil.",
+      "input": {
+        "description": "Adresse email à inscrire à la newsletter.",
+        "fields": [
+          {
+            "name": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true,
+            "format": "email"
+          }
+        ]
+      },
+      "output": {
+        "id": "newsletter-subscription-result",
+        "description": "Confirmation renvoyée après inscription réussie.",
+        "fields": [
+          {
+            "name": "message",
+            "type": {
+              "kind": "primitive",
+              "name": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ]
+      },
+      "access": { "mode": "public" },
+      "http": {
+        "method": "POST",
+        "path": "newsletter/subscribe",
+        "authentication": "none"
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Transmet l'adresse email au service newsletter."
+        }
+      ]
+    }
+  ]
+}

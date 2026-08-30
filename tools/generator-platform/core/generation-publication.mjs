@@ -42,6 +42,29 @@ function fail(message) {
  */
 const layeredTargetSuffixes = ['domain', 'data', 'application'];
 
+/**
+ * Périmètre restreint (2026-08-30) : `list-query` (verbe "query"/List
+ * simple) publie un groupe complet à 2 couches (domain, data — jamais
+ * d'application, aucun port/token à raccorder pour une lecture pure), pas
+ * 3 comme action-request/workflow-action. Liste fermée des ensembles de
+ * couches reconnus comme "groupe complet" — pas juste "les 3 couches
+ * historiques sont toutes là" — pour que ce module reste correct sur les
+ * deux familles sans jamais deviner une 3ᵉ couche list-query qui n'existe
+ * pas. Ajouter un 3ᵉ ensemble ici est le seul geste requis pour une future
+ * composition à sa propre forme de couches.
+ */
+const COMPLETE_LAYER_SETS = [
+    ['application', 'data', 'domain'],
+    ['data', 'domain'],
+];
+
+function matchesCompleteLayerSet(layerTargets) {
+    const present = [...layerTargets.keys()].sort();
+    return COMPLETE_LAYER_SETS.some(
+        (candidate) => JSON.stringify(candidate) === JSON.stringify(present)
+    );
+}
+
 function layeredGroupOf(targetId) {
     for (const suffix of layeredTargetSuffixes) {
         if (targetId.endsWith(`-${suffix}`)) {
@@ -262,7 +285,7 @@ async function buildCandidateTarget(
 function typecheckCandidates(candidates) {
     const groups = new Map();
     const standalone = [];
-    for (const [targetId, candidate] of Object.entries(candidates)) {
+    for (const targetId of Object.keys(candidates)) {
         const group = layeredGroupOf(targetId);
         if (!group) {
             standalone.push(targetId);
@@ -272,9 +295,7 @@ function typecheckCandidates(candidates) {
         groups.get(group.family).set(group.layer, targetId);
     }
     for (const [family, layerTargets] of groups) {
-        const isComplete = layeredTargetSuffixes.every((layer) =>
-            layerTargets.has(layer)
-        );
+        const isComplete = matchesCompleteLayerSet(layerTargets);
         if (!isComplete) {
             standalone.push(...layerTargets.values());
             continue;
