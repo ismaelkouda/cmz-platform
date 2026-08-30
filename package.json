@@ -143,7 +143,7 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "@typescript-eslint/utils": "^8.58.0",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
     "@vitest/ui": "~4.1.0",
     "angular-eslint": "^22.0.0",
     "axe-core": "4.13.0",
