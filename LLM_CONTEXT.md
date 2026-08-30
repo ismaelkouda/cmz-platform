@@ -437,12 +437,12 @@ directives suivantes :
 | Indicateur                | Valeur                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Dernière génération       | **2026-08-30** (`bun run generate:status`)                                                                      |
-| Modules livrés            | **19** (voir [`STATUS.md`](./STATUS.md))                                                         |
-| Packages Nx               | **73** (72 libs + 1 app)                                              |
-| Fichiers TypeScript       | **2 727** hors tests / **2 975** total (248 specs)                 |
+| Modules livrés            | **21** (voir [`STATUS.md`](./STATUS.md))                                                         |
+| Packages Nx               | **78** (77 libs + 1 app)                                              |
+| Fichiers TypeScript       | **2 742** hors tests / **2 990** total (248 specs)                 |
 | Corpus SEOS               | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                       |
 | Corpus SEOS — nature (N-6)| **583 correspondances** + **924 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |
-| Corpus SEOS — couverture (N-4) | **918 / 2 727 fichiers libs/ hors tests → 33.7 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
+| Corpus SEOS — couverture (N-4) | **918 / 2 742 fichiers libs/ hors tests → 33.5 %** — 3 modules sans aucune paire (2 `inconnue`, 1 `kernel`), absent sans ce chiffre (P0-12) |
 | Périmètre applicatif (M-7)| **55 / 55 entités** construites (`docs/architecture/scope.json`, 0 manquantes — voir [ADR-0018](./docs/adr/0018-perimetre-team-organization.md)) |
 | Bundle initial (prod, raw)| **526.38 kB** ([`bundle-metrics.json`](./apps/backoffice-angular/bundle-metrics.json), 2026-08-30) |
 | Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                         |

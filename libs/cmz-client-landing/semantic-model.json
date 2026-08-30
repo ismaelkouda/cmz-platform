@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0.0",
+  "model_id": "cmz-client-landing-action-request-semantic",
+  "domain": {
+    "id": "cmz-client-landing",
+    "name": "CMZ Client — Landing",
+    "description": "Inscription newsletter depuis la page d'accueil publique du client CMZ."
+  },
+  "types": [
+    {
+      "id": "subscribe-newsletter-input",
+      "kind": "object",
+      "description": "Adresse email à inscrire à la newsletter.",
+      "fields": [
+        {
+          "name": "email",
+          "type": {
+            "kind": "primitive",
+            "name": "string",
+            "nullable": false
+          },
+          "required": true,
+          "evidence_refs": ["fact.subscribe-newsletter.input"]
+        }
+      ],
+      "evidence_refs": ["fact.subscribe-newsletter.input"]
+    },
+    {
+      "id": "newsletter-subscription-result",
+      "kind": "object",
+      "description": "Confirmation renvoyée après inscription réussie.",
+      "fields": [
+        {
+          "name": "message",
+          "type": {
+            "kind": "primitive",
+            "name": "string",
+            "nullable": false
+          },
+          "required": true,
+          "evidence_refs": ["fact.subscribe-newsletter.output"]
+        }
+      ],
+      "evidence_refs": ["fact.subscribe-newsletter.output"]
+    }
+  ],
+  "operations": [
+    {
+      "id": "subscribe-newsletter",
+      "kind": "command",
+      "description": "Inscrit une adresse email à la newsletter CMZ depuis la page d'accueil.",
+      "input": {
+        "kind": "model",
+        "name": "subscribe-newsletter-input",
+        "nullable": false
+      },
+      "output": {
+        "kind": "model",
+        "name": "newsletter-subscription-result",
+        "nullable": false
+      },
+      "access": {
+        "mode": "public",
+        "evidence_refs": ["fact.subscribe-newsletter.operation"]
+      },
+      "effects": [
+        {
+          "kind": "external_call",
+          "description": "Transmet l'adresse email au service newsletter.",
+          "evidence_refs": ["fact.subscribe-newsletter.effects"]
+        }
+      ],
+      "integration_ref": "integration.subscribe-newsletter",
+      "evidence_refs": [
+        "fact.subscribe-newsletter.operation",
+        "fact.subscribe-newsletter.input",
+        "fact.subscribe-newsletter.output",
+        "fact.subscribe-newsletter.effects"
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "id": "constraint.subscribe-newsletter-email-required",
+      "kind": "required",
+      "target": "subscribe-newsletter-input.email",
+      "parameters": {},
+      "evidence_refs": ["fact.subscribe-newsletter.constraints"]
+    },
+    {
+      "id": "constraint.subscribe-newsletter-email-format",
+      "kind": "format",
+      "target": "subscribe-newsletter-input.email",
+      "parameters": {
+        "format": "email"
+      },
+      "evidence_refs": ["fact.subscribe-newsletter.constraints"]
+    }
+  ],
+  "integrations": [
+    {
+      "id": "integration.subscribe-newsletter",
+      "kind": "http",
+      "method": "POST",
+      "path": "newsletter/subscribe",
+      "authentication": "none",
+      "response_envelope": "none",
+      "evidence_refs": ["fact.subscribe-newsletter.operation"]
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "model_id": "cmz-client-landing-home-list-query-definition-evidence",
+  "sources": [
+    {
+      "id": "source.list-query-definition",
+      "kind": "specification",
+      "uri": "tools/generator-platform/sources/cmz-client-landing-home.definition.json",
+      "sha256": "51d904b4a6d0962cb458099d2a7aab900b752e94ee00c6dda0d26c4b692d8ac9"
+    }
+  ],
+  "facts": [
+    {
+      "id": "fact.cmz-client-landing-home.no-input",
+      "category": "data_shape",
+      "statement": "List queries in this restricted scope take no input parameter.",
+      "evidence_refs": ["source.list-query-definition"],
+      "confidence": 1,
+      "status": "asserted"
+    },
+    {
+      "id": "fact.list-home-block-infos.operation",
+      "category": "operation",
+      "statement": "Récupère les blocs de contenu actifs pour la page d'accueil.",
+      "evidence_refs": ["source.list-query-definition"],
+      "confidence": 1,
+      "status": "asserted"
+    },
+    {
+      "id": "fact.list-home-block-infos.item",
+      "category": "data_shape",
+      "statement": "Un bloc de contenu éditorial de la page d'accueil.",
+      "evidence_refs": ["source.list-query-definition"],
+      "confidence": 1,
+      "status": "asserted"
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "unknown.backend-contract-authority",
+      "question": "Does an independent backend contract confirm this declaration?",
+      "impact": "Generation can verify internal consistency but not the deployed backend.",
+      "blocking": false,
+      "evidence_refs": ["source.list-query-definition"]
+    }
+  ],
+  "decisions": []
+}

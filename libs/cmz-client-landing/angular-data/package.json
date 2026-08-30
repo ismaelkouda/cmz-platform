@@ -1,0 +1,11 @@
+{
+  "name": "@cmz/cmz-client-landing-data",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@cmz/cmz-client-landing-domain": "workspace:*",
+    "@angular/common": "catalog:",
+    "@angular/core": "catalog:",
+    "rxjs": "catalog:"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.1.0",
+  "generator": {
+    "name": "cmz-generator-platform",
+    "version": "1.2.0"
+  },
+  "input": {
+    "model_id": "cmz-client-landing-action-request-semantic",
+    "sha256": "6b0d8f65a5d057f16096e49fca3a7791abb6e115d92e69c234b0de4d3d28713d"
+  },
+  "plan": {
+    "plan_id": "cmz-client-landing-action-request-semantic:artifacts",
+    "sha256": "fd1cf11a8dd5ce87c9e0431b9c2825d0600e48b3e9b376587595c2440a4caa52"
+  },
+  "target": {
+    "profile_id": "angular-nx-layered-domain",
+    "profile_version": "1.0.0",
+    "profile_sha256": "e2da15e33f54b4f3def9217c8ad1de884165f09d8d4700b784b22d3d28b1f1bb"
+  },
+  "files": [
+    {
+      "path": "package.json",
+      "artifact_id": "package-descriptor",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 136,
+      "sha256": "3e38683ad59809b6f868aee015d30f44ce632eca2e679ba7c8020c1d3bfbd91f"
+    },
+    {
+      "path": "project.json",
+      "artifact_id": "package-descriptor",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 555,
+      "sha256": "df24051a2cc85788d62e5b4b834ce61c111ed85867c06bc43f92723bf62a7431"
+    },
+    {
+      "path": "src/action-request-port.ts",
+      "artifact_id": "domain-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 533,
+      "sha256": "b6ef1ccf1a4b323dc13e4abe82a4d96e5945251dda7f76f45802be65c9742aec"
+    },
+    {
+      "path": "src/index.ts",
+      "artifact_id": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 120,
+      "sha256": "6c51aa7d07a94ec782222a407f8e98031a04ff58627c6ffd5f78f860be3a3c0d"
+    },
+    {
+      "path": "src/models.ts",
+      "artifact_id": "domain-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 155,
+      "sha256": "1174d61c810b75f789b03ad29961fd93349be95a718a84e5431e937039e67002"
+    },
+    {
+      "path": "src/validation.ts",
+      "artifact_id": "input-validator",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 604,
+      "sha256": "99f5590c2f6012629defaf5f0bed0a6549a43e25d443b7c4c91e6407dd3c91a7"
+    },
+    {
+      "path": "tsconfig.json",
+      "artifact_id": "compiler-configuration",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 152,
+      "sha256": "d8831dc24cbb78eccc33e24a0246447e00cd9f31ade501dafdbe3ff5d2626964"
+    }
+  ],
+  "tree_sha256": "7b5eb6ab1642fd9707378aeb44a69e2b783de093e546c92207d2a53b5affd380"
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.1.0",
+  "generator": {
+    "name": "cmz-generator-platform",
+    "version": "1.2.0"
+  },
+  "input": {
+    "model_id": "cmz-client-landing-action-request-semantic",
+    "sha256": "6b0d8f65a5d057f16096e49fca3a7791abb6e115d92e69c234b0de4d3d28713d"
+  },
+  "plan": {
+    "plan_id": "cmz-client-landing-action-request-semantic:artifacts",
+    "sha256": "fd1cf11a8dd5ce87c9e0431b9c2825d0600e48b3e9b376587595c2440a4caa52"
+  },
+  "target": {
+    "profile_id": "angular-nx-layered-application",
+    "profile_version": "1.0.0",
+    "profile_sha256": "48ddf457e64acb6dd4b15d3d852f8b15586de80c35b699bd3a27f1e792505a21"
+  },
+  "files": [
+    {
+      "path": "package.json",
+      "artifact_id": "package-descriptor",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 227,
+      "sha256": "f45112f26b6440d232a871c2ac53f03d7bf26d41bf8b9063c80ffdc79c636330"
+    },
+    {
+      "path": "project.json",
+      "artifact_id": "package-descriptor",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 575,
+      "sha256": "74e9ec2fd19851dddc7d9bef30525946d5c938c168eb56bad6d46d2287471c01"
+    },
+    {
+      "path": "src/action-request-commands.ts",
+      "artifact_id": "runtime-binding",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1004,
+      "sha256": "14236a6117c6c5597526585c02d766528dfce6d0a5b8cb516dc9ae18c2cce625"
+    },
+    {
+      "path": "src/action-request-port.token.ts",
+      "artifact_id": "runtime-binding",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 463,
+      "sha256": "dc13c7aee2e72ad77b47fa91cdf865f12f3dc1fde3cdb23be33fb474f59be822"
+    },
+    {
+      "path": "src/after-success.extension.ts",
+      "artifact_id": "after-success-extension",
+      "owner": "human-owned",
+      "write_policy": "preserve",
+      "bytes": 224,
+      "sha256": "aa69da7f7a1e6c507d6710e5cf050faab530101d568011b2c0e04f6c538db3fe"
+    },
+    {
+      "path": "src/extension-contract.ts",
+      "artifact_id": "extension-contract",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 314,
+      "sha256": "74f5898cafa4111b858831a9b14b1bcfc54aa736711e09e58c884bd31b412146"
+    },
+    {
+      "path": "src/index.ts",
+      "artifact_id": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 169,
+      "sha256": "58000c84e1c1dbaa54cd30bf37655def1735084c271ccd30294fe87723156695"
+    },
+    {
+      "path": "tsconfig.json",
+      "artifact_id": "compiler-configuration",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 215,
+      "sha256": "5cc9115b54efa1aa76b529d404b7b80610fccdf34d1742e7e95fd5c85b01baec"
+    }
+  ],
+  "tree_sha256": "9b80a5df8b8f14f6bdde94da800d3f541434eddfbb9e90316d7bdc43fc1d241f"
+}

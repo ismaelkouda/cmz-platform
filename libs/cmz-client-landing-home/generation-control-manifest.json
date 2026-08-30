@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "files": [
+    {
+      "path": "artifact-plan.json",
+      "artifact_id": "artifact-plan",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1434,
+      "sha256": "942750cb0ea1121011e6532a0c781eb8d3bec59d29cf0b0bfd0d88b1ea6c941d"
+    },
+    {
+      "path": "evidence-model.json",
+      "artifact_id": "evidence-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1674,
+      "sha256": "294e9adf8900777df4e4e1b483811336d44f0056e88ac1fabff3864ba2f98f71"
+    },
+    {
+      "path": "semantic-model.json",
+      "artifact_id": "semantic-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 5437,
+      "sha256": "db1d005852e7229b8987ba7ca17a0095df63ef3bf840ec3eb29a0d60145e4414"
+    }
+  ],
+  "tree_sha256": "58164adf3ab6a6e3297a4fcdc58ac116afa51b14fb1ece3b7538f7399e56672e"
+}

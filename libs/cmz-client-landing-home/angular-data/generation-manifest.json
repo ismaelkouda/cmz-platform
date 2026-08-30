@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.1.0",
+  "generator": {
+    "name": "cmz-generator-platform",
+    "version": "1.2.0"
+  },
+  "input": {
+    "model_id": "cmz-client-landing-home-list-query-semantic",
+    "sha256": "a9788e94ea0c9bbc25f465582811f3293744ee6594b54317e79dcee620c0fe7e"
+  },
+  "plan": {
+    "plan_id": "cmz-client-landing-home-list-query-semantic:artifacts",
+    "sha256": "ac1998318d5c4af1ffd2ae508a631ecfbe63d5ee473b27640dacb1699673f846"
+  },
+  "target": {
+    "profile_id": "angular-nx-layered-data",
+    "profile_version": "1.0.0",
+    "profile_sha256": "9dddb7bbc8c00aa5a7dfb4039028c82777b4fc3d02f7897b15b2d814094640da"
+  },
+  "files": [
+    {
+      "path": "package.json",
+      "artifact_id": "package-descriptor",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 265,
+      "sha256": "f6704acdc20aaec85d9c02f80f4e941520aa2729b314407b5a835de987b726bc"
+    },
+    {
+      "path": "project.json",
+      "artifact_id": "package-descriptor",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 567,
+      "sha256": "19291853930d2370c2af857fc72cd7c68bd4592ed337ca48376edd8ee239459f"
+    },
+    {
+      "path": "src/index.ts",
+      "artifact_id": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 37,
+      "sha256": "841b10bd1d97a455da77cb555a725ea12d89a908bd0a412adf764fdbdf18e587"
+    },
+    {
+      "path": "src/list-query-client.ts",
+      "artifact_id": "integration-client",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 2300,
+      "sha256": "7968b2b3b22643a3dbee360804715f048862b9fc9a81ec068496d14b3a423abb"
+    },
+    {
+      "path": "tsconfig.json",
+      "artifact_id": "compiler-configuration",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 215,
+      "sha256": "5cc9115b54efa1aa76b529d404b7b80610fccdf34d1742e7e95fd5c85b01baec"
+    }
+  ],
+  "tree_sha256": "96a4764791609f6f55c6a2dd0e90539c0e06c02b007e8d53359ca70dfac46f76"
+}

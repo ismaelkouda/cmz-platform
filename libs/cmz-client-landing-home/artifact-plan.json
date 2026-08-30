@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "plan_id": "cmz-client-landing-home-list-query-semantic:artifacts",
+  "input": {
+    "kind": "list-query-model",
+    "model_id": "cmz-client-landing-home-list-query-semantic",
+    "sha256": "a9788e94ea0c9bbc25f465582811f3293744ee6594b54317e79dcee620c0fe7e"
+  },
+  "artifacts": [
+    {
+      "id": "package-descriptor",
+      "responsibility": "package-descriptor",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "layer": "per-layer",
+      "depends_on": []
+    },
+    {
+      "id": "compiler-configuration",
+      "responsibility": "compiler-configuration",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "layer": "per-layer",
+      "depends_on": []
+    },
+    {
+      "id": "domain-model",
+      "responsibility": "domain-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "layer": "domain",
+      "depends_on": []
+    },
+    {
+      "id": "integration-client",
+      "responsibility": "integration-client",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "layer": "data",
+      "depends_on": ["domain-model"]
+    },
+    {
+      "id": "public-api",
+      "responsibility": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "layer": "per-layer",
+      "depends_on": ["domain-model", "integration-client"]
+    }
+  ]
+}
