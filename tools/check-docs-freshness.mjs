@@ -6,7 +6,9 @@
  *
  * 1. Relance `generate-status.mjs` (date figée sur celle déjà commitée
  *    pour éviter un faux rouge quotidien).
- * 2. `git diff --exit-code` sur les fichiers générés → doc périmée = exit 1.
+ * 2. Compare les octets avant/après génération → doc périmée = exit 1.
+ *    La preuve reste valide dans un worktree où les blocs corrects sont déjà
+ *    modifiés mais pas encore commités (cas normal d'une transaction locale).
  *
  * Usage :
  *   node tools/check-docs-freshness.mjs
@@ -48,6 +50,9 @@ for (const f of TRACKED) {
 }
 
 const frozenDate = committedStatusDate();
+const before = new Map(
+    TRACKED.map((file) => [file, readFileSync(join(ROOT, file))])
+);
 const env = { ...process.env };
 if (frozenDate) {
     env.STATUS_DATE = frozenDate;
@@ -69,33 +74,23 @@ try {
     process.exit(1);
 }
 
-try {
-    execFileSync('git', ['diff', '--exit-code', '--', ...TRACKED], {
-        cwd: ROOT,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-    });
-} catch (err) {
-    if (err.status === 1) {
-        console.error('');
-        console.error(
-            'FAIL  check:docs-freshness — documents générés périmés (audit E-5 / P1-9)'
-        );
-        console.error('');
-        console.error(String(err.stdout || '').slice(0, 4000));
-        console.error('');
-        console.error('Remède :');
-        console.error('  bun run generate:status');
-        console.error(
-            '  git add STATUS.md README.md LLM_CONTEXT.md docs/architecture/etat-du-socle.md docs/adr/README.md docs/README.md'
-        );
-        console.error(
-            '  # si le bundle a changé : bun run bundle:metrics && git add apps/backoffice-angular/bundle-metrics.json'
-        );
-        process.exit(1);
-    }
+const changed = TRACKED.filter(
+    (file) => !before.get(file).equals(readFileSync(join(ROOT, file)))
+);
+if (changed.length > 0) {
+    console.error('');
     console.error(
-        'FAIL  git diff : ' + String(err.stderr || err.message || err)
+        'FAIL  check:docs-freshness — documents générés périmés (audit E-5 / P1-9)'
+    );
+    console.error(`  modifiés par la régénération : ${changed.join(', ')}`);
+    console.error('');
+    console.error('Remède :');
+    console.error('  bun run generate:status');
+    console.error(
+        '  git add STATUS.md README.md LLM_CONTEXT.md docs/architecture/etat-du-socle.md docs/adr/README.md docs/README.md'
+    );
+    console.error(
+        '  # si le bundle a changé : bun run bundle:metrics && git add apps/backoffice-angular/bundle-metrics.json'
     );
     process.exit(1);
 }

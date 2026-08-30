@@ -2,6 +2,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { buildGenerationManifest } from './core/generation-manifest.mjs';
+import { canonicalizeRenderedLayers } from './core/canonicalize-generated.mjs';
 import { buildArtifactPlan } from './core/artifact-plan.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularListQuery } from './renderers/angular-list-query-renderer.mjs';
@@ -89,10 +90,12 @@ export async function computeListQueryTargetsForSemantic(semantic) {
 export async function computeListQueryLayeredTargetsForSemantic(semantic) {
     const angularLayeredProfile = await loadJson(paths.angularLayeredProfile);
     const artifactPlan = buildArtifactPlan(semantic, 'list-query-model');
-    const layered = renderAngularListQueryLayered(
-        semantic,
-        artifactPlan,
-        angularLayeredProfile
+    const layered = await canonicalizeRenderedLayers(
+        renderAngularListQueryLayered(
+            semantic,
+            artifactPlan,
+            angularLayeredProfile
+        )
     );
     const basePackageName = expandProfileValue(
         angularLayeredProfile.package_name,

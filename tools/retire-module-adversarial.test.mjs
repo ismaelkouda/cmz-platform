@@ -161,3 +161,25 @@ test('NODE_ENV=test ne permet plus de remplacer le graphe ni de sauter les gates
     });
     assert.equal(runPostRemovalNxGate(root).ok, false);
 });
+
+test('le gate post-retrait exclut uniquement les project.json supprimés dans Git', async (t) => {
+    const root = await withFakeBunx(t, {
+        graph: { nodes: {}, dependencies: {} },
+    });
+    const project = join(root, 'libs/removed/project.json');
+    await write(
+        project,
+        JSON.stringify({ name: '@cmz/removed', tags: ['scope:removed'] })
+    );
+    const added = spawnSync('git', ['add', '.'], {
+        cwd: root,
+        encoding: 'utf8',
+    });
+    assert.equal(added.status, 0, added.stderr);
+    await rm(project);
+
+    assert.deepEqual(runPostRemovalNxGate(root), {
+        ok: true,
+        output: 'Graphe Nx post-retrait valide : 0 projet(s).',
+    });
+});

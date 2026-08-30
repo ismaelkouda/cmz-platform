@@ -6,6 +6,7 @@ import {
     existsSync,
     fsyncSync,
     lstatSync,
+    mkdtempSync,
     mkdirSync,
     openSync,
     readFileSync,
@@ -13,6 +14,7 @@ import {
     rmSync,
     writeFileSync,
 } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
 import {
@@ -26,6 +28,7 @@ import {
     currentGitIdentity,
     withTransactionLock,
 } from './retire-module-transaction.mjs';
+import { runNxGraphGate } from './retire-module-nx.mjs';
 import {
     createRetirementPlan,
     retirementPlanSha256,
@@ -79,6 +82,16 @@ function fail(message) {
 
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
+}
+
+function entryExists(path) {
+    try {
+        lstatSync(path);
+        return true;
+    } catch (error) {
+        if (error.code === 'ENOENT') return false;
+        throw error;
+    }
 }
 
 function gitVisibleTreeSha256(relativeRoot) {
@@ -203,7 +216,7 @@ function assertCreateStorage(moduleName) {
         join(ROOT, TRANSACTION_ROOT),
         stateDir(moduleName),
     ]) {
-        if (!existsSync(path)) continue;
+        if (!entryExists(path)) continue;
         const metadata = lstatSync(path);
         if (!metadata.isDirectory() || metadata.isSymbolicLink())
             fail(`${relative(ROOT, path)} doit être un dossier réel.`);
@@ -254,7 +267,12 @@ function readState(moduleName) {
 
 function removeState(moduleName) {
     const directory = stateDir(moduleName);
-    if (!existsSync(directory)) return;
+    if (!entryExists(directory)) return;
+    const metadata = lstatSync(directory);
+    if (!metadata.isDirectory() || metadata.isSymbolicLink())
+        fail(
+            `Journal de création non régulier : ${relative(ROOT, directory)}.`
+        );
     rmSync(directory, { recursive: true, force: true });
     syncDirectory(dirname(directory));
 }
@@ -279,6 +297,7 @@ function validateState(moduleName, state, { allowGitDrift = false } = {}) {
         'gitHead',
         'gitBranch',
         'definitionPath',
+        'definitionBase64',
         'definitionSha256',
         'outputRoot',
         'configOriginals',
@@ -291,7 +310,7 @@ function validateState(moduleName, state, { allowGitDrift = false } = {}) {
     ];
     if (
         !exactKeys(state, keys) ||
-        state.version !== 2 ||
+        state.version !== 3 ||
         state.module !== moduleName ||
         !Object.hasOwn(COMPOSITION_KINDS, state.kind ?? '') ||
         !['planned', 'generated', 'configured'].includes(state.status) ||
@@ -300,6 +319,9 @@ function validateState(moduleName, state, { allowGitDrift = false } = {}) {
         resolve(state.workspaceRoot || '') !== resolve(ROOT) ||
         typeof state.definitionPath !== 'string' ||
         resolve(state.definitionPath) !== state.definitionPath ||
+        typeof state.definitionBase64 !== 'string' ||
+        sha256(Buffer.from(state.definitionBase64, 'base64')) !==
+            state.definitionSha256 ||
         !(state.gitHead === null || typeof state.gitHead === 'string') ||
         !(state.gitBranch === null || typeof state.gitBranch === 'string') ||
         state.outputRoot !== `libs/${moduleName}` ||
@@ -472,24 +494,71 @@ function run(command, args) {
     }
 }
 
+function materializeDefinitionSnapshot(state) {
+    const path = join(stateDir(state.module), 'definition.snapshot.json');
+    const expected = Buffer.from(state.definitionBase64, 'base64');
+    if (entryExists(path)) {
+        const metadata = lstatSync(path);
+        if (
+            !metadata.isFile() ||
+            metadata.isSymbolicLink() ||
+            sha256(readFileSync(path)) !== state.definitionSha256
+        )
+            fail('Le snapshot immuable de la définition a dérivé.');
+        return path;
+    }
+    const temporary = `${path}.tmp-${process.pid}-${randomUUID()}`;
+    let descriptor;
+    try {
+        descriptor = openSync(temporary, 'wx', 0o600);
+        writeFileSync(descriptor, expected);
+        fsyncSync(descriptor);
+        closeSync(descriptor);
+        descriptor = undefined;
+        renameSync(temporary, path);
+        syncDirectory(dirname(path));
+        return path;
+    } finally {
+        if (descriptor !== undefined) closeSync(descriptor);
+        rmSync(temporary, { force: true });
+    }
+}
+
 function runGenerator(state, dryRun = false) {
     const composition = COMPOSITION_KINDS[state.kind];
+    let temporaryRoot;
+    let definitionPath;
+    if (dryRun) {
+        temporaryRoot = mkdtempSync(join(tmpdir(), 'cmz-create-definition-'));
+        definitionPath = join(temporaryRoot, 'definition.snapshot.json');
+        writeFileSync(
+            definitionPath,
+            Buffer.from(state.definitionBase64, 'base64'),
+            { flag: 'wx', mode: 0o600 }
+        );
+    } else {
+        definitionPath = materializeDefinitionSnapshot(state);
+    }
     const args = [
         join(ROOT, composition.generatorScript),
         '--definition',
-        state.definitionPath,
+        definitionPath,
         '--out',
         join(ROOT, state.outputRoot),
         '--target',
         composition.target,
     ];
     if (dryRun) args.push('--dry-run');
-    return run(process.execPath, args);
+    try {
+        return run(process.execPath, args);
+    } finally {
+        if (temporaryRoot)
+            rmSync(temporaryRoot, { recursive: true, force: true });
+    }
 }
 
 function runCreationGates(state) {
     run('bun', ['install']);
-    run('bun', ['install', '--frozen-lockfile']);
     for (const script of [
         'check-project-names.mjs',
         'check-project-targets.mjs',
@@ -505,14 +574,40 @@ function runCreationGates(state) {
         `--projects=${state.plan.projects.map(({ name }) => name).join(',')}`,
         '--parallel=3',
     ]);
+    const nx = runNxGraphGate(ROOT, 'post-création');
+    if (!nx.ok) fail(nx.output);
+    console.log(nx.output);
+    run('bunx', ['prettier', '--check', state.outputRoot]);
+    run('bun', ['install', '--frozen-lockfile']);
 }
 
 function removeOwnedOutput(state) {
     const output = join(ROOT, state.outputRoot);
-    if (!existsSync(output)) return;
+    const discarded = join(stateDir(state.module), 'discarded-output');
+    if (entryExists(output) && entryExists(discarded))
+        fail(
+            `Rollback ambigu : ${state.outputRoot} et sa sortie écartée existent simultanément.`
+        );
+    if (!entryExists(output)) return;
     validateGeneratedRoot(state.module, state.kind, state.generatedTreeSha256);
-    rmSync(output, { recursive: true, force: true });
+    renameSync(output, discarded);
     syncDirectory(dirname(output));
+    syncDirectory(dirname(discarded));
+}
+
+function validateFinalConfigs(state) {
+    for (const file of CONFIG_FILES) {
+        const path = join(ROOT, file);
+        const metadata = lstatSync(path);
+        if (!metadata.isFile() || metadata.isSymbolicLink())
+            fail(`${file} n'est plus un fichier régulier.`);
+        if (file === 'bun.lock') continue;
+        const expected = state.desiredConfigSha256?.[file]
+            ? state.desiredConfigSha256[file]
+            : state.configOriginalSha256[file];
+        if (sha256(readFileSync(path)) !== expected)
+            fail(`${file} a dérivé pendant les gates de création.`);
+    }
 }
 
 function rollback(state, reason, abort = false) {
@@ -544,11 +639,6 @@ function continueCreate(initialState) {
         if (state.status === 'planned') {
             const output = join(ROOT, state.outputRoot);
             if (!existsSync(output)) {
-                if (
-                    sha256(readFileSync(state.definitionPath)) !==
-                    state.definitionSha256
-                )
-                    fail('La définition a dérivé depuis la planification.');
                 process.stdout.write(runGenerator(state));
             }
             state = computeDesiredState(
@@ -581,6 +671,7 @@ function continueCreate(initialState) {
                 fail(`${file} ne correspond pas au câblage journalisé.`);
         }
         runCreationGates(state);
+        validateFinalConfigs(state);
         removeState(state.module);
         console.log(`✅  Module ${state.module} créé, câblé et vérifié.`);
     } catch (error) {
@@ -588,11 +679,10 @@ function continueCreate(initialState) {
     }
 }
 
-function runInitial(options) {
-    const definition = readDefinition(options.definition);
+function runInitial(options, definition) {
     const outputRoot = `libs/${definition.moduleName}`;
     if (
-        existsSync(
+        entryExists(
             join(
                 ROOT,
                 'docs/architecture/removed-modules',
@@ -605,19 +695,19 @@ function runInitial(options) {
                 `sa recréation exige une décision d'architecture explicite.`
         );
     if (
-        existsSync(
+        entryExists(
             join(ROOT, '.cmz/retire-module-transactions', definition.moduleName)
         )
     )
         fail(`Un retrait de ${definition.moduleName} est encore en cours.`);
-    if (existsSync(join(ROOT, outputRoot)))
+    if (entryExists(join(ROOT, outputRoot)))
         fail(`${outputRoot} existe déjà ; aucun écrasement n'est autorisé.`);
-    if (existsSync(stateDir(definition.moduleName)))
+    if (entryExists(stateDir(definition.moduleName)))
         fail(`Une création de ${definition.moduleName} est déjà en cours.`);
     const git = currentGitIdentity(ROOT);
     const originals = captureConfigOriginals(ROOT);
     const state = {
-        version: 2,
+        version: 3,
         module: definition.moduleName,
         kind: definition.kind,
         status: 'planned',
@@ -626,6 +716,7 @@ function runInitial(options) {
         gitHead: git.head,
         gitBranch: git.branch,
         definitionPath: definition.absolute,
+        definitionBase64: definition.content.toString('base64'),
         definitionSha256: sha256(definition.content),
         outputRoot,
         configOriginals: originals,
@@ -662,18 +753,20 @@ function runAbort(moduleName) {
 
 function main() {
     const options = parseArgs(process.argv.slice(2));
-    const moduleName =
-        options.module ?? readDefinition(options.definition).moduleName;
+    const definition = options.module
+        ? null
+        : readDefinition(options.definition);
+    const moduleName = options.module ?? definition.moduleName;
     if (options.dryRun) {
         assertCreateStorage(moduleName);
-        runInitial(options);
+        runInitial(options, definition);
         return;
     }
     withTransactionLock(ROOT, { module: moduleName, command: 'create' }, () => {
         assertCreateStorage(moduleName);
         if (options.resume) runResume(moduleName);
         else if (options.abort) runAbort(moduleName);
-        else runInitial(options);
+        else runInitial(options, definition);
     });
 }
 

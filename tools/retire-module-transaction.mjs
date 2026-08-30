@@ -2,7 +2,6 @@ import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {
     closeSync,
-    existsSync,
     fsyncSync,
     lstatSync,
     mkdirSync,
@@ -21,6 +20,16 @@ import { retirementPlanSha256 } from './retire-module-plan.mjs';
 
 export const TRANSACTION_RELATIVE_ROOT = '.cmz/retire-module-transactions';
 const noop = () => undefined;
+
+export function pathEntryExists(path) {
+    try {
+        lstatSync(path);
+        return true;
+    } catch (error) {
+        if (error.code === 'ENOENT') return false;
+        throw error;
+    }
+}
 
 function transactionRoot(workspaceRoot) {
     return join(workspaceRoot, TRANSACTION_RELATIVE_ROOT);
@@ -72,7 +81,12 @@ export function writeTransactionState(workspaceRoot, moduleName, state) {
 
 export function readTransactionState(workspaceRoot, moduleName) {
     const path = moduleStatePath(workspaceRoot, moduleName);
-    if (!existsSync(path)) return null;
+    if (!pathEntryExists(path)) return null;
+    const metadata = lstatSync(path);
+    if (!metadata.isFile() || metadata.isSymbolicLink())
+        throw new Error(
+            `État de retrait non régulier ${relative(workspaceRoot, path)}.`
+        );
     try {
         return JSON.parse(readFileSync(path, 'utf8'));
     } catch (error) {
@@ -84,7 +98,8 @@ export function readTransactionState(workspaceRoot, moduleName) {
 
 export function removeModuleTransaction(workspaceRoot, moduleName) {
     const path = moduleTransactionDir(workspaceRoot, moduleName);
-    if (!existsSync(path)) return;
+    if (!pathEntryExists(path)) return;
+    assertPlainDirectory(path, relative(workspaceRoot, path));
     rmSync(path, { recursive: true, force: true });
     syncDirectory(dirname(path));
 }
@@ -157,6 +172,7 @@ function processIsAlive(pid) {
 }
 
 function readLockOwner(lockRoot) {
+    assertPlainDirectory(lockRoot, lockRoot);
     let owner;
     try {
         owner = JSON.parse(readFileSync(join(lockRoot, 'owner.json'), 'utf8'));
@@ -240,7 +256,8 @@ function acquireTransactionLock(workspaceRoot, metadata) {
 }
 
 function releaseTransactionLock(lockRoot) {
-    if (!existsSync(lockRoot)) return;
+    if (!pathEntryExists(lockRoot)) return;
+    assertPlainDirectory(lockRoot, lockRoot);
     const parent = dirname(lockRoot);
     rmSync(lockRoot, { recursive: true, force: true });
     syncDirectory(parent);
@@ -251,7 +268,7 @@ export function assertTransactionStorageIgnored(workspaceRoot) {
         join(workspaceRoot, '.cmz'),
         join(workspaceRoot, TRANSACTION_RELATIVE_ROOT),
     ]) {
-        if (existsSync(path))
+        if (pathEntryExists(path))
             assertPlainDirectory(path, relative(workspaceRoot, path));
     }
     const probe = join(TRANSACTION_RELATIVE_ROOT, '.gitignore-probe');
@@ -357,12 +374,14 @@ export function validateTransactionState(
         'configReport',
         'configOriginals',
         'configOriginalSha256',
+        'desiredConfigSha256',
         'tombstoneOriginal',
         'tombstoneOriginalSha256',
+        'tombstoneCreatedSha256',
     ];
     if (
         !hasExactKeys(state, expectedKeys) ||
-        state.version !== 7 ||
+        state.version !== 8 ||
         state.module !== moduleName ||
         !['moving', 'awaiting-finalize'].includes(state.status) ||
         typeof state.startedAt !== 'string' ||
@@ -421,6 +440,15 @@ export function validateTransactionState(
         ) ||
         state.packageJsonHashBefore !==
             state.configOriginalSha256['package.json'] ||
+        !hasExactKeys(state.desiredConfigSha256, [
+            'eslint.config.mjs',
+            'tsconfig.base.json',
+            'knip.json',
+            'package.json',
+        ]) ||
+        Object.values(state.desiredConfigSha256).some(
+            (hash) => !/^[a-f0-9]{64}$/.test(hash)
+        ) ||
         !(
             state.tombstoneOriginal === null ||
             typeof state.tombstoneOriginal === 'string'
@@ -435,6 +463,10 @@ export function validateTransactionState(
             createHash('sha256')
                 .update(Buffer.from(state.tombstoneOriginal, 'base64'))
                 .digest('hex') !== state.tombstoneOriginalSha256) ||
+        !(
+            state.tombstoneCreatedSha256 === null ||
+            /^[a-f0-9]{64}$/.test(state.tombstoneCreatedSha256)
+        ) ||
         !hasExactKeys(state.plan, [
             'version',
             'module',
@@ -526,8 +558,8 @@ export function transactionRootPairs(workspaceRoot, moduleName, state) {
 }
 
 export function inspectTransactionRoot(pair) {
-    const sourceExists = existsSync(pair.root);
-    const backupExists = existsSync(pair.backup);
+    const sourceExists = pathEntryExists(pair.root);
+    const backupExists = pathEntryExists(pair.backup);
     if (sourceExists) assertPlainDirectory(pair.root, pair.relativeRoot);
     if (backupExists)
         assertPlainDirectory(pair.backup, `sauvegarde ${pair.relativeRoot}`);
@@ -561,7 +593,7 @@ export function moveTransactionRoots(
 
     let nextState = state;
     for (const pair of pairs) {
-        if (existsSync(pair.backup)) continue;
+        if (pathEntryExists(pair.backup)) continue;
         mkdirSync(dirname(pair.backup), { recursive: true });
         renameSync(pair.root, pair.backup);
         syncDirectory(dirname(pair.root));
@@ -593,7 +625,7 @@ export function restoreTransactionRoots(
     for (const pair of pairs) inspectTransactionRoot(pair);
 
     for (const pair of [...pairs].reverse()) {
-        if (!existsSync(pair.backup)) continue;
+        if (!pathEntryExists(pair.backup)) continue;
         mkdirSync(dirname(pair.root), { recursive: true });
         renameSync(pair.backup, pair.root);
         syncDirectory(dirname(pair.root));

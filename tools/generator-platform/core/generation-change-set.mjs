@@ -289,7 +289,7 @@ async function loadPreviousControlPlane(outputRoot) {
     return manifest;
 }
 
-async function observeControlPlane(outputRoot, manifest) {
+async function observeControlPlane(outputRoot, manifest, desiredFiles) {
     const observed = new Map();
     for (const artifact of manifest.files) {
         const path = safeOutputPath(outputRoot, artifact.path);
@@ -304,11 +304,22 @@ async function observeControlPlane(outputRoot, manifest) {
         }
         const actual = sha256(content);
         if (actual !== artifact.sha256) {
-            fail(
-                `control-plane artifact drifted: ${artifact.path} (expected ${artifact.sha256}, actual ${actual})`
-            );
+            const desired = desiredFiles?.[artifact.path];
+            const matchesDesired =
+                desired &&
+                sha256(desired.content) === actual &&
+                Buffer.byteLength(desired.content) === content.byteLength;
+            if (!matchesDesired) {
+                fail(
+                    `control-plane artifact drifted: ${artifact.path} (expected ${artifact.sha256}, actual ${actual})`
+                );
+            }
         }
-        if (content.byteLength !== artifact.bytes || content.byteLength === 0) {
+        if (
+            content.byteLength === 0 ||
+            (actual === artifact.sha256 &&
+                content.byteLength !== artifact.bytes)
+        ) {
             fail(`control-plane artifact size drifted: ${artifact.path}`);
         }
         observed.set(artifact.path, content);
@@ -334,8 +345,13 @@ async function planControlPlane(outputRoot, controlFiles) {
     }
     const desired = buildControlPlaneManifest(desiredFiles);
     const previousByPath = new Map();
+    let observed = new Map();
     if (previous) {
-        await observeControlPlane(outputRoot, previous);
+        observed = await observeControlPlane(
+            outputRoot,
+            previous,
+            desiredFiles
+        );
         for (const artifact of previous.files) {
             if (previousByPath.has(artifact.path)) {
                 fail(`duplicate control-plane artifact ${artifact.path}`);
@@ -347,17 +363,20 @@ async function planControlPlane(outputRoot, controlFiles) {
     for (const after of desired.files) {
         const before = previousByPath.get(after.path);
         previousByPath.delete(after.path);
+        const beforeSha256 = before
+            ? sha256(observed.get(after.path))
+            : undefined;
         changes.push({
             path: after.path,
             artifact_id: after.artifact_id,
             owner: after.owner,
             action: !before
                 ? 'create'
-                : before.sha256 === after.sha256 &&
+                : beforeSha256 === after.sha256 &&
                     before.artifact_id === after.artifact_id
                   ? 'unchanged'
                   : 'replace',
-            ...(before ? { before_sha256: before.sha256 } : {}),
+            ...(before ? { before_sha256: beforeSha256 } : {}),
             after_sha256: after.sha256,
         });
     }
@@ -387,7 +406,13 @@ async function planControlPlane(outputRoot, controlFiles) {
     };
 }
 
-async function observePreviousArtifact(targetRoot, targetId, artifact) {
+async function observePreviousArtifact(
+    targetRoot,
+    targetId,
+    artifact,
+    desiredArtifact,
+    desiredContent
+) {
     const path = safeOutputPath(targetRoot, artifact.path);
     let content;
     try {
@@ -400,15 +425,24 @@ async function observePreviousArtifact(targetRoot, targetId, artifact) {
     }
     const actual = sha256(content);
     if (artifact.owner === 'generator-owned' && actual !== artifact.sha256) {
-        fail(
-            `${targetId}:${artifact.path}: generated artifact drifted (expected ${artifact.sha256}, actual ${actual})`
-        );
+        const matchesDesired =
+            desiredArtifact?.owner === 'generator-owned' &&
+            desiredContent !== undefined &&
+            actual === desiredArtifact.sha256 &&
+            content.byteLength === desiredArtifact.bytes &&
+            sha256(desiredContent) === actual;
+        if (!matchesDesired) {
+            fail(
+                `${targetId}:${artifact.path}: generated artifact drifted (expected ${artifact.sha256}, actual ${actual})`
+            );
+        }
     }
     if (content.byteLength === 0) {
         fail(`${targetId}:${artifact.path}: owned artifact is empty`);
     }
     if (
         artifact.owner === 'generator-owned' &&
+        actual === artifact.sha256 &&
         content.byteLength !== artifact.bytes
     ) {
         fail(`${targetId}:${artifact.path}: owned artifact size drifted`);
@@ -471,7 +505,13 @@ async function planTarget(outputRoot, targetId, desired) {
             previousArtifacts.set(artifact.path, artifact);
             observedArtifacts.set(
                 artifact.path,
-                await observePreviousArtifact(targetRoot, targetId, artifact)
+                await observePreviousArtifact(
+                    targetRoot,
+                    targetId,
+                    artifact,
+                    desiredArtifacts.get(artifact.path),
+                    desired.files?.[artifact.path]
+                )
             );
         }
     }
@@ -519,8 +559,9 @@ async function planTarget(outputRoot, targetId, desired) {
             effectiveDesiredArtifacts.push({ ...after, ...observed });
             continue;
         }
+        const observed = observedArtifacts.get(path);
         const unchanged =
-            before.sha256 === after.sha256 &&
+            observed.sha256 === after.sha256 &&
             before.artifact_id === after.artifact_id &&
             before.write_policy === after.write_policy;
         changes.push({
@@ -528,7 +569,7 @@ async function planTarget(outputRoot, targetId, desired) {
             artifact_id: after.artifact_id,
             owner: after.owner,
             action: unchanged ? 'unchanged' : 'replace',
-            before_sha256: before.sha256,
+            before_sha256: observed.sha256,
             after_sha256: after.sha256,
         });
         effectiveDesiredArtifacts.push(after);

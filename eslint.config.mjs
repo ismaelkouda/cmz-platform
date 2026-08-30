@@ -269,20 +269,6 @@ export default [
                             sourceTag: 'scope:app',
                             onlyDependOnLibsWithTags: ['*'],
                         },
-                        {
-                            sourceTag: 'scope:cmz-client-landing',
-                            onlyDependOnLibsWithTags: [
-                                'scope:cmz-client-landing',
-                                'scope:shared',
-                            ],
-                        },
-                        {
-                            sourceTag: 'scope:cmz-client-landing-home',
-                            onlyDependOnLibsWithTags: [
-                                'scope:cmz-client-landing-home',
-                                'scope:shared',
-                            ],
-                        },
                     ],
                 },
             ],

@@ -17,6 +17,7 @@ function toWorkspacePath(workspaceRoot, path) {
 
 function scanProjectJsons(workspaceRoot) {
     let inventory;
+    let deletedInventory;
     try {
         inventory = execFileSync(
             'git',
@@ -32,10 +33,19 @@ function scanProjectJsons(workspaceRoot) {
             ],
             { cwd: workspaceRoot, encoding: 'utf8' }
         );
+        deletedInventory = execFileSync(
+            'git',
+            ['ls-files', '-z', '--deleted', '--', 'apps', 'libs'],
+            { cwd: workspaceRoot, encoding: 'utf8' }
+        );
     } catch {
         fail('La résolution Nx exige un inventaire Git canonique lisible.');
     }
-    const entries = inventory.split('\0').filter(Boolean).sort(compareText);
+    const deletedPaths = new Set(deletedInventory.split('\0').filter(Boolean));
+    const entries = inventory
+        .split('\0')
+        .filter((path) => path && !deletedPaths.has(path))
+        .sort(compareText);
     const results = [];
     for (const path of entries) {
         if (

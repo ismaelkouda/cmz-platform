@@ -42,6 +42,9 @@ export async function createWorkspace(t, { dependencyCheckExit = 0 } = {}) {
         'retire-module-config.mjs',
         'retire-module-nx.mjs',
         'check-no-orphan-references.mjs',
+        'check-removed-module-tombstones.mjs',
+        'orphan-occurrence.mjs',
+        'orphan-tombstone-update.mjs',
     ])
         await copyFile(
             join(REPO_ROOT, 'tools', script),
@@ -68,6 +71,10 @@ export async function createWorkspace(t, { dependencyCheckExit = 0 } = {}) {
     await write(
         join(root, 'tools/check-declared-deps.mjs'),
         `console.log('deps check'); process.exit(${dependencyCheckExit});\n`
+    );
+    await write(
+        join(root, 'tools/generate-status.mjs'),
+        `console.log('docs ok');\n`
     );
     await write(
         join(root, 'package.json'),

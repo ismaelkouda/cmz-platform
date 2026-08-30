@@ -9,6 +9,7 @@ import {
     createGenerationOutput,
     inspectGenerationChangeSet,
 } from './core/generation-publication.mjs';
+import { canonicalizeControlFiles } from './core/canonicalize-generated.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
 import {
     loadJson,
@@ -194,7 +195,7 @@ export async function generateActionRequest({
     // 'angular' — utile pour --target react-domain (ou toute sélection
     // n'incluant pas la sortie plate Angular).
     const referenceSha256 = Object.values(selected)[0].manifest.input.sha256;
-    const controlFiles = {
+    const controlFiles = await canonicalizeControlFiles({
         'artifact-plan.json': {
             artifact_id: 'artifact-plan',
             content: jsonDocument(targets.artifactPlan),
@@ -207,7 +208,7 @@ export async function generateActionRequest({
             artifact_id: 'semantic-model',
             content: jsonDocument(compiled.semantic),
         },
-    };
+    });
     if (dryRun) {
         return {
             feature: definition.feature.id,

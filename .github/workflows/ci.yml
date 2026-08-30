@@ -279,8 +279,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: check:docs-freshness (generate:status + git diff)
-        run: node tools/check-docs-freshness.mjs
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: check:docs-freshness (preuve octets avant/après régénération)
+        run: bun run check:docs-freshness
 
       # T2-2 — gate de fraîcheur schéma↔DTO (docs/architecture/schema/
       # dto.schema.json régénéré en mémoire depuis les 303 DTOs TS et
@@ -302,10 +306,6 @@ jobs:
       # exige node_modules. bun install ajouté ci-dessous pour combler cet
       # angle mort réel, jamais détecté car aucune run CI n'avait encore été
       # observée après l'ajout du step avant OPS-12a.
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: ${{ env.BUN_VERSION }}
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
 

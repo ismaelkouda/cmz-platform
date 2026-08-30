@@ -1,73 +1,47 @@
 #!/usr/bin/env node
-/**
- * check-no-orphan-references.mjs
- *
- * Vérifie qu'un module retiré du repo (apps/libs supprimés) ne laisse
- * aucune référence orpheline dans le code, la config, ou les tests —
- * seules les occurrences exactes enregistrées dans un tombstone versionné
- * sont tolérées.
- *
- * Complément direct de tools/retire-module.mjs (audit staff, 2026-08-29) :
- * la vision du projet est de minimiser l'action humaine, donc une
- * suppression de module ne doit jamais reposer sur un audit manuel (grep
- * ad hoc, relecture fichier par fichier) — elle doit produire une preuve
- * automatique, rejouable en CI, de son exhaustivité.
- *
- * Usage :
- *   node tools/check-no-orphan-references.mjs --module <nom>
- *   node tools/check-no-orphan-references.mjs --module <nom> --tombstone docs/architecture/removed-modules/<nom>.json
- *   node tools/check-no-orphan-references.mjs --module <nom> --create-tombstone docs/architecture/removed-modules/<nom>.json --historical-reference docs/adr/example.md::<occurrence-sha256>::raison
- *
- * Recherche toutes les formes canoniques dérivables de <nom> : kebab-case,
- * snake_case, camelCase et PascalCase, y compris lorsqu'une forme PascalCase
- * est imbriquée dans un identifiant (ex: executeSampleModule). Cela couvre
- * aussi les alias @cmz/<nom>-* et tags Nx scope:<nom>-*.
- *
- * Périmètre : l'inventaire canonique Git, soit tous les fichiers suivis et
- * tous les fichiers non suivis non ignorés. Il n'existe aucun filtre
- * d'extension et aucun dossier métier spécial : corpus, dotfiles, scripts,
- * lockfiles et fichiers binaires sont inspectés. Les fichiers ignorés par Git
- * sont hors preuve par contrat puisqu'ils ne peuvent pas entrer en CI sans
- * changer d'état Git. Les liens symboliques sont inspectés comme liens (chemin
- * + cible) et ne sont jamais suivis.
- *
- * Chaque tombstone identifie une occurrence par motif, texte, index logique et
- * hashes SHA-256 de ligne/contexte. Une nouvelle occurrence dans le même
- * fichier n'est jamais blanchie. Les anciennes allowlists de fichier entier
- * sont refusées. Exit 1 pour toute occurrence nouvelle ou tombstone périmé.
- */
-
-import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { lstatSync, readFileSync, readlinkSync } from 'node:fs';
+import { relative, resolve, sep } from 'node:path';
+
 import {
-    existsSync,
-    closeSync,
-    fsyncSync,
-    lstatSync,
-    linkSync,
-    mkdirSync,
-    openSync,
-    readFileSync,
-    readlinkSync,
-    rmSync,
-    writeFileSync,
-} from 'node:fs';
-import { dirname, relative, resolve, sep } from 'node:path';
+    buildUpdatedTombstone,
+    publishTombstone,
+} from './orphan-tombstone-update.mjs';
+import {
+    buildPatterns,
+    collectOccurrences,
+    decodeFile,
+    occurrenceApprovalId,
+    occurrenceKey,
+    safeExcerpt,
+    sha256,
+} from './orphan-occurrence.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 
 function parseArgs(argv) {
-    const options = { historicalReferences: [], activeReferences: [] };
+    const options = {
+        historicalReferences: [],
+        activeReferences: [],
+        retainSourceDefinition: false,
+    };
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--module') options.module = argv[++i];
         else if (arg === '--tombstone') options.tombstone = argv[++i];
         else if (arg === '--create-tombstone')
             options.createTombstone = argv[++i];
+        else if (arg === '--update-tombstone')
+            options.updateTombstone = argv[++i];
         else if (arg === '--historical-reference')
             options.historicalReferences.push(argv[++i]);
         else if (arg === '--active-reference')
             options.activeReferences.push(argv[++i]);
+        else if (
+            arg === '--retain-source-definition' &&
+            !options.retainSourceDefinition
+        )
+            options.retainSourceDefinition = true;
         else if (arg === '--allow' || arg === '--allow-active-fixture')
             fail(
                 `${arg} est interdit : une allowlist de fichier blanchit des occurrences non relues. ` +
@@ -80,16 +54,25 @@ function parseArgs(argv) {
         fail(
             '--module doit être un identifiant kebab-case (ex: content-management).'
         );
-    if (options.tombstone && options.createTombstone)
-        fail('--tombstone et --create-tombstone sont mutuellement exclusifs.');
+    if (
+        [
+            options.tombstone,
+            options.createTombstone,
+            options.updateTombstone,
+        ].filter(Boolean).length > 1
+    )
+        fail('Les modes de tombstone sont mutuellement exclusifs.');
     if (
         !options.createTombstone &&
+        !options.updateTombstone &&
         (options.historicalReferences.length > 0 ||
             options.activeReferences.length > 0)
     )
         fail(
-            '--historical-reference/--active-reference exigent --create-tombstone.'
+            '--historical-reference/--active-reference exigent --create-tombstone ou --update-tombstone.'
         );
+    if (options.retainSourceDefinition && !options.createTombstone)
+        fail('--retain-source-definition exige --create-tombstone.');
     const specifications = [
         ...options.historicalReferences,
         ...options.activeReferences,
@@ -110,6 +93,7 @@ function parseArgs(argv) {
     const paths = [
         options.tombstone,
         options.createTombstone,
+        options.updateTombstone,
         ...specifications.map((value) => value.split('::')[0]),
     ].filter(Boolean);
     for (const path of paths) {
@@ -154,11 +138,6 @@ function parseNullSeparatedPaths(buffer, label) {
     return paths;
 }
 
-/**
- * Git est l'autorité de périmètre : tracked + untracked non ignoré. Un fichier
- * ignoré ne peut pas contaminer le commit/CI ; un fichier nouvellement suivi
- * entre automatiquement dans cet inventaire, quelle que soit son extension.
- */
 function buildWorkspaceInventory() {
     const topLevel = gitBuffer(['rev-parse', '--show-toplevel'])
         .toString('utf8')
@@ -244,42 +223,6 @@ function buildWorkspaceInventory() {
     return { entries, ignoredEntries, deletedPaths };
 }
 
-function decodeFile(buffer) {
-    if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) {
-        return buffer.subarray(2).toString('utf16le');
-    }
-    if (buffer.length >= 2 && buffer[0] === 0xfe && buffer[1] === 0xff) {
-        const swapped = Buffer.from(buffer.subarray(2));
-        for (let i = 0; i + 1 < swapped.length; i += 2) {
-            const byte = swapped[i];
-            swapped[i] = swapped[i + 1];
-            swapped[i + 1] = byte;
-        }
-        return swapped.toString('utf16le');
-    }
-    if (buffer.length >= 8) {
-        let evenNulls = 0;
-        let oddNulls = 0;
-        for (let i = 0; i < buffer.length; i += 1) {
-            if (buffer[i] === 0) {
-                if (i % 2 === 0) evenNulls += 1;
-                else oddNulls += 1;
-            }
-        }
-        if (oddNulls > buffer.length / 4) return buffer.toString('utf16le');
-        if (evenNulls > buffer.length / 4) {
-            const swapped = Buffer.from(buffer);
-            for (let i = 0; i + 1 < swapped.length; i += 2) {
-                const byte = swapped[i];
-                swapped[i] = swapped[i + 1];
-                swapped[i + 1] = byte;
-            }
-            return swapped.toString('utf16le');
-        }
-    }
-    return buffer.toString('utf8');
-}
-
 function readEntry(entry) {
     try {
         return entry.kind === 'symlink'
@@ -292,147 +235,64 @@ function readEntry(entry) {
     }
 }
 
-/**
- * Construit les motifs de recherche pour un module retiré. On ne peut
- * plus dériver ces alias du filesystem (le module a été supprimé) — on
- * les dérive donc du NOM fourni, en couvrant les formes canoniques que
- * ADR-0003 impose pour tout module (@cmz/<module>-<couche>, scope:<module>).
- */
-function buildPatterns(moduleName) {
-    const words = moduleName.split('-');
-    const capitalize = (word) => `${word[0].toUpperCase()}${word.slice(1)}`;
-    const pascalCase = words.map(capitalize).join('');
-    const camelCase = `${words[0]}${words.slice(1).map(capitalize).join('')}`;
-    const separatorForms = [moduleName, words.join('_')]
-        .map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .join('|');
-    return [
-        {
-            type: 'separator',
-            regex: new RegExp(
-                `(?<![a-z0-9])(?:${separatorForms})(?![a-z0-9])`,
-                'i'
-            ),
-        },
-        {
-            type: 'camel',
-            regex: new RegExp(`(?<![a-z0-9])${camelCase}(?=$|[^a-z0-9]|[A-Z])`),
-        },
-        {
-            type: 'pascal',
-            regex: new RegExp(`${pascalCase}(?=$|[^a-z0-9]|[A-Z])`),
-        },
-    ];
-}
-
-function matchesAny(patterns, value) {
-    return patterns.some((pattern) => pattern.regex.test(value));
-}
-
-function sha256(value) {
-    return createHash('sha256').update(value).digest('hex');
-}
-
-function findMatches(patterns, value) {
-    const matches = [];
-    const positions = new Set();
-    for (const pattern of patterns) {
-        const flags = pattern.regex.flags.includes('g')
-            ? pattern.regex.flags
-            : `${pattern.regex.flags}g`;
-        for (const match of value.matchAll(
-            new RegExp(pattern.regex.source, flags)
-        )) {
-            const key = `${match.index}:${match[0].length}`;
-            if (positions.has(key)) continue;
-            positions.add(key);
-            matches.push({
-                pattern: pattern.type,
-                match: match[0],
-                index: match.index,
-            });
+function discoverLongerModulePatterns(entries, moduleName) {
+    const modules = new Set();
+    for (const entry of entries) {
+        const retired =
+            /^docs\/architecture\/removed-modules\/([a-z][a-z0-9-]*)\.json$/.exec(
+                entry.relativePath
+            )?.[1];
+        if (retired?.startsWith(`${moduleName}-`)) modules.add(retired);
+        if (
+            entry.kind !== 'file' ||
+            !entry.relativePath.endsWith('/project.json')
+        )
+            continue;
+        let document;
+        try {
+            document = JSON.parse(readEntry(entry));
+        } catch {
+            continue;
+        }
+        for (const tag of Array.isArray(document.tags) ? document.tags : []) {
+            const candidate = /^scope:([a-z][a-z0-9-]*)$/.exec(tag)?.[1];
+            if (candidate?.startsWith(`${moduleName}-`)) modules.add(candidate);
         }
     }
-    return matches.sort(
-        (a, b) => a.index - b.index || (a.match < b.match ? -1 : 1)
-    );
+    return [...modules].sort().flatMap(buildPatterns);
 }
 
-function occurrenceKey(occurrence, includeContextOccurrence = true) {
-    const fields = [
-        occurrence.file,
-        occurrence.location,
-        occurrence.pattern,
-        occurrence.match,
-        occurrence.logicalLineSha256,
-        occurrence.contextSha256,
-        occurrence.occurrence,
-    ];
-    if (includeContextOccurrence) fields.push(occurrence.contextOccurrence);
-    return fields.join('\0');
-}
-
-function occurrenceApprovalId(occurrence) {
-    return sha256(occurrenceKey(occurrence));
-}
-
-function collectOccurrences(entry, patterns, content) {
-    const occurrences = [];
-    for (const [occurrence, match] of findMatches(
-        patterns,
-        entry.relativePath
-    ).entries()) {
-        occurrences.push({
-            file: entry.relativePath,
-            location: 'path',
-            pattern: match.pattern,
-            match: match.match,
-            logicalLineSha256: sha256(entry.relativePath),
-            contextSha256: sha256(`path\0${entry.relativePath}`),
-            occurrence,
-            lineHint: null,
-            columnHint: match.index + 1,
-        });
-    }
-
-    const lines = content.split('\n');
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-        const line = lines[lineIndex];
-        const context = [
-            lines[lineIndex - 1]?.trim() || '',
-            line.trim(),
-            lines[lineIndex + 1]?.trim() || '',
-        ].join('\0');
-        for (const [occurrence, match] of findMatches(
-            patterns,
-            line
-        ).entries()) {
-            occurrences.push({
-                file: entry.relativePath,
-                location:
-                    entry.kind === 'symlink' ? 'symlink-target' : 'content',
-                pattern: match.pattern,
-                match: match.match,
-                logicalLineSha256: sha256(line.trim()),
-                contextSha256: sha256(context),
-                occurrence,
-                lineHint: lineIndex + 1,
-                columnHint: match.index + 1,
-            });
+function validateProofEntries(entries, currentTombstonePath) {
+    const prefix = 'docs/architecture/removed-modules/';
+    const proofs = new Set();
+    for (const entry of entries) {
+        if (!entry.relativePath.startsWith(prefix)) continue;
+        if (entry.relativePath === `${prefix}.tombstone-update.lock`) continue;
+        if (
+            entry.relativePath === currentTombstonePath &&
+            entry.kind !== 'file'
+        ) {
+            proofs.add(entry.relativePath);
+            continue;
         }
+        const match =
+            /^docs\/architecture\/removed-modules\/([a-z][a-z0-9-]*)\.json$/.exec(
+                entry.relativePath
+            );
+        if (!match || entry.kind !== 'file')
+            fail(`Entrée de preuve non canonique : ${entry.relativePath}.`);
+        let document;
+        try {
+            document = JSON.parse(readEntry(entry));
+        } catch (error) {
+            fail(
+                `Tombstone illisible ${entry.relativePath} : ${error.message}`
+            );
+        }
+        validateTombstone(document, match[1], entry.relativePath);
+        proofs.add(entry.relativePath);
     }
-
-    const seen = new Map();
-    return occurrences.map((item) => {
-        const baseKey = occurrenceKey(item, false);
-        const contextOccurrence = seen.get(baseKey) || 0;
-        seen.set(baseKey, contextOccurrence + 1);
-        return { ...item, contextOccurrence };
-    });
-}
-
-function safeExcerpt(value) {
-    return JSON.stringify(value.trim().slice(0, 160)).slice(1, -1);
+    return proofs;
 }
 
 function normalizeRepoPath(path) {
@@ -478,6 +338,69 @@ function parseReferenceSpecifications(options, occurrences) {
         }
     }
     return result;
+}
+
+function classifyRetainedSourceDefinition(
+    options,
+    inventoryEntries,
+    occurrences,
+    classifications
+) {
+    if (!options.retainSourceDefinition) return;
+    const owners = [];
+    for (const entry of inventoryEntries) {
+        if (
+            entry.kind !== 'file' ||
+            !/^tools\/generator-platform\/sources\/[a-z0-9-]+\.definition\.json$/.test(
+                entry.relativePath
+            )
+        )
+            continue;
+        let document;
+        try {
+            document = JSON.parse(readEntry(entry));
+        } catch (error) {
+            fail(
+                `Définition source illisible ${entry.relativePath} : ${error.message}`
+            );
+        }
+        if (document?.feature?.id === options.module) owners.push(entry);
+    }
+    if (owners.length === 0) return;
+    if (owners.length > 1)
+        fail(
+            `Au plus une définition source canonique avec feature.id="${options.module}" ` +
+                `est requise ; ${owners.length} trouvée(s).`
+        );
+    const definitionSuffix = owners[0].relativePath.slice(
+        owners[0].relativePath.indexOf('sources/')
+    );
+    const entriesByPath = new Map(
+        inventoryEntries.map((entry) => [entry.relativePath, entry])
+    );
+    for (const occurrence of occurrences) {
+        const key = occurrenceKey(occurrence);
+        if (
+            occurrence.file === owners[0].relativePath &&
+            !classifications.has(key)
+        )
+            classifications.set(key, {
+                category: 'historical',
+                reason: 'définition source canonique conservée comme preuve de conception',
+            });
+        else if (
+            occurrence.file.endsWith('.test.mjs') &&
+            occurrence.lineHint !== null &&
+            readEntry(entriesByPath.get(occurrence.file))
+                .split('\n')
+                [occurrence.lineHint - 1]?.includes(definitionSuffix) &&
+            !classifications.has(key)
+        )
+            classifications.set(key, {
+                category: 'active',
+                reason: 'test actif consommant directement la définition source conservée',
+            });
+    }
 }
 
 const SHA256_RE = /^[a-f0-9]{64}$/;
@@ -581,40 +504,15 @@ function readTombstone(path, moduleName) {
     return validateTombstone(parsed, moduleName, path);
 }
 
-function writeTombstone(path, tombstone) {
-    const absolutePath = resolve(ROOT, path);
-    if (existsSync(absolutePath))
-        fail(`Refus d'écraser le tombstone existant : ${path}.`);
-    const parentPath = dirname(absolutePath);
-    const parentRelative = relative(ROOT, parentPath);
-    let cursor = ROOT;
-    for (const component of parentRelative.split(sep).filter(Boolean)) {
-        cursor = resolve(cursor, component);
-        if (!existsSync(cursor)) mkdirSync(cursor, { mode: 0o755 });
-        const metadata = lstatSync(cursor);
-        if (!metadata.isDirectory() || metadata.isSymbolicLink())
-            fail(
-                `Parent de tombstone non régulier refusé : ${relative(ROOT, cursor)}.`
-            );
-    }
-    const temporary = `${absolutePath}.tmp-${process.pid}-${randomUUID()}`;
-    let fd;
+function writeTombstone(path, tombstone, expectedSha256 = null) {
     try {
-        fd = openSync(temporary, 'wx', 0o600);
-        writeFileSync(fd, `${JSON.stringify(tombstone, null, 2)}\n`);
-        fsyncSync(fd);
-        closeSync(fd);
-        fd = undefined;
-        // link(2) publie sans écrasement : deux créateurs concurrents ne
-        // peuvent jamais gagner tous les deux, contrairement à rename(2).
-        linkSync(temporary, absolutePath);
-        rmSync(temporary);
-        const parent = openSync(parentPath, 'r');
-        fsyncSync(parent);
-        closeSync(parent);
+        publishTombstone({
+            root: ROOT,
+            relativePath: path,
+            tombstone,
+            expectedSha256,
+        });
     } catch (error) {
-        if (fd !== undefined) closeSync(fd);
-        rmSync(temporary, { force: true });
         fail(
             `Écriture atomique du tombstone échouée ${path} : ${error.message}`
         );
@@ -640,20 +538,27 @@ function main() {
     const entriesByPath = new Map(
         inventory.entries.map((entry) => [entry.relativePath, entry])
     );
-
     const tombstonePath = normalizeRepoPath(
         options.tombstone ||
             options.createTombstone ||
+            options.updateTombstone ||
             expectedTombstonePath(options.module)
     );
+    const proofEntries = validateProofEntries(inventory.entries, tombstonePath);
+    const shadowPatterns = discoverLongerModulePatterns(
+        inventory.entries,
+        options.module
+    );
     if (
-        (options.tombstone || options.createTombstone) &&
+        (options.tombstone ||
+            options.createTombstone ||
+            options.updateTombstone) &&
         tombstonePath !== expectedTombstonePath(options.module)
     )
         fail(
             `Emplacement canonique requis : ${expectedTombstonePath(options.module)}.`
         );
-    if (options.tombstone) {
+    if (options.tombstone || options.updateTombstone) {
         const entry = entriesByPath.get(tombstonePath);
         if (!entry || entry.kind !== 'file')
             fail(
@@ -665,18 +570,15 @@ function main() {
     const occurrences = [];
     let scannedEntries = 0;
     for (const entry of inventory.entries) {
-        if (entry.relativePath === tombstonePath) continue;
+        if (proofEntries.has(entry.relativePath)) continue;
         scannedEntries += 1;
         const content = readEntry(entry);
-        occurrences.push(...collectOccurrences(entry, patterns, content));
+        occurrences.push(
+            ...collectOccurrences(entry, patterns, shadowPatterns, content)
+        );
     }
 
-    let tombstone;
-    if (options.createTombstone) {
-        const classifications = parseReferenceSpecifications(
-            options,
-            occurrences
-        );
+    if (options.createTombstone || options.updateTombstone)
         for (const specification of [
             ...options.historicalReferences,
             ...options.activeReferences,
@@ -690,6 +592,19 @@ function main() {
                     `Une référence classifiée doit être un fichier régulier : ${file}.`
                 );
         }
+
+    let tombstone;
+    if (options.createTombstone) {
+        const classifications = parseReferenceSpecifications(
+            options,
+            occurrences
+        );
+        classifyRetainedSourceDefinition(
+            options,
+            inventory.entries,
+            occurrences,
+            classifications
+        );
         const unclassified = occurrences.filter(
             (occurrence) => !classifications.has(occurrenceKey(occurrence))
         );
@@ -721,6 +636,37 @@ function main() {
         console.log(
             `Tombstone créé : ${tombstonePath} (${tombstone.references.length} occurrences exactes).`
         );
+    } else if (options.updateTombstone) {
+        const previousHash = sha256(readFileSync(resolve(ROOT, tombstonePath)));
+        const previous = readTombstone(tombstonePath, options.module);
+        const explicit = parseReferenceSpecifications(options, occurrences);
+        let update;
+        try {
+            update = buildUpdatedTombstone({
+                previous,
+                occurrences,
+                explicit,
+                occurrenceKey,
+            });
+        } catch (error) {
+            fail(error.message);
+        }
+        const { missing } = update;
+        if (missing.length > 0) {
+            for (const occurrence of missing)
+                console.error(
+                    `  NON CLASSIFIÉE ${renderOccurrence(occurrence)}`
+                );
+            fail(
+                `Actualisation refusée : ${missing.length} occurrence(s) nouvelle(s) exigent une classification exacte.`
+            );
+        }
+        tombstone = update.tombstone;
+        validateTombstone(tombstone, options.module, tombstonePath);
+        writeTombstone(tombstonePath, tombstone, previousHash);
+        console.log(
+            `Tombstone actualisé : ${tombstone.references.length} occurrences exactes.`
+        );
     } else if (options.tombstone) {
         tombstone = readTombstone(tombstonePath, options.module);
     }
@@ -745,7 +691,7 @@ function main() {
                 `(${scannedEntries} entrées Git inspectées sans filtre d'extension, ` +
                 `${inventory.deletedPaths.length} suppressions Git prouvées absentes, ` +
                 `${inventory.ignoredEntries.length} entrées ignorées par Git hors preuve, ` +
-                `0 exclusion interne, ` +
+                `${proofEntries.size} tombstone(s) canonique(s) validé(s) hors corpus lexical, ` +
                 `${approved.size} occurrences exactes approuvées)`
         );
         process.exit(0);
@@ -764,7 +710,7 @@ function main() {
         `\nInventaire : ${scannedEntries} entrées Git inspectées sans filtre d'extension ; ` +
             `${inventory.deletedPaths.length} suppressions Git prouvées absentes ; ` +
             `${inventory.ignoredEntries.length} entrées ignorées par Git hors preuve ; ` +
-            `0 exclusion interne.`
+            `${proofEntries.size} tombstone(s) canonique(s) validé(s) hors corpus lexical.`
     );
     console.error(
         `\nNettoie les occurrences non approuvées. Si une occurrence doit survivre, ` +

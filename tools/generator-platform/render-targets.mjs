@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { buildGenerationManifest } from './core/generation-manifest.mjs';
+import { canonicalizeRenderedLayers } from './core/canonicalize-generated.mjs';
 import { buildArtifactPlan } from './core/artifact-plan.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularNx } from './renderers/angular-nx-renderer.mjs';
@@ -119,10 +120,8 @@ export async function computeTargetsForSemantic(semantic) {
     // reactRendered : computed.angular/computed.react restent identiques
     // bit-à-bit à avant cette étape (voir render-targets.test au besoin,
     // et les tree sha256 déjà vérifiés inchangés par ailleurs).
-    const angularLayered = renderAngularNxLayered(
-        semantic,
-        artifactPlan,
-        angularLayeredProfile
+    const angularLayered = await canonicalizeRenderedLayers(
+        renderAngularNxLayered(semantic, artifactPlan, angularLayeredProfile)
     );
     // basePackageName expansé une seule fois ici, avec la même règle
     // d'expansion (expandProfileValue) que celle appliquée en interne par

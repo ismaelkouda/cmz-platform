@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "module": "cmz-client-landing-home",
+  "createdAt": "2026-08-30T22:44:18.128Z",
+  "references": [
+    {
+      "file": "tools/generator-platform/list-query-authoring.test.mjs",
+      "location": "content",
+      "pattern": "separator",
+      "match": "cmz-client-landing-home",
+      "logicalLineSha256": "63c4d8ed0ba6aa552e3b80b17bc2f1debd66ddc2022e06eda896847d24e9d988",
+      "contextSha256": "a01bf5b1737777162b5059ef3271c0cb3a8cc9d2403bced0d0014f08b75689d7",
+      "occurrence": 0,
+      "lineHint": 80,
+      "columnHint": 30,
+      "contextOccurrence": 0,
+      "category": "active",
+      "reason": "test actif consommant directement la définition source conservée"
+    },
+    {
+      "file": "tools/generator-platform/list-query-authoring.test.mjs",
+      "location": "content",
+      "pattern": "separator",
+      "match": "cmz-client-landing-home",
+      "logicalLineSha256": "7d1ba44addd50fe3b2d3c2ed6610fc60195f6e66dce2045de3dae4589c29e799",
+      "contextSha256": "658fccdaec59e58ff33954109fdd3ad7b4d9d85cb1393be8ab6f729a4150b2e7",
+      "occurrence": 0,
+      "lineHint": 90,
+      "columnHint": 29,
+      "contextOccurrence": 0,
+      "category": "active",
+      "reason": "test actif consommant directement la définition source conservée"
+    },
+    {
+      "file": "tools/generator-platform/sources/cmz-client-landing-home.definition.json",
+      "location": "content",
+      "pattern": "separator",
+      "match": "cmz-client-landing-home",
+      "logicalLineSha256": "768e14b57c1a5dee92d97d26a53cff174f79393cfe4abe64ea48fde5708b7e6f",
+      "contextSha256": "d38d180127d71655f29ad46c3cf92a9806f61f7bac9f6a345a10f5d8d392e073",
+      "occurrence": 0,
+      "lineHint": 5,
+      "columnHint": 12,
+      "contextOccurrence": 0,
+      "category": "historical",
+      "reason": "définition source canonique conservée comme preuve de conception"
+    },
+    {
+      "file": "tools/generator-platform/sources/cmz-client-landing-home.definition.json",
+      "location": "path",
+      "pattern": "separator",
+      "match": "cmz-client-landing-home",
+      "logicalLineSha256": "82c4ba6ef09c8c3b60723deabea4c93fd9a536bdba9af51405bf3b1eb23e6f7c",
+      "contextSha256": "16830f1dbbd1e5a0aa9c794c3e6101449e45baf5b76327ebb4aefca0baa9bfa2",
+      "occurrence": 0,
+      "lineHint": null,
+      "columnHint": 34,
+      "contextOccurrence": 0,
+      "category": "historical",
+      "reason": "définition source canonique conservée comme preuve de conception"
+    },
+    {
+      "file": "tools/module-lifecycle.test.mjs",
+      "location": "content",
+      "pattern": "separator",
+      "match": "cmz-client-landing-home",
+      "logicalLineSha256": "d61e7a1805a26f9649cd616941abf9536ed8cbe8d460250c41149d03c4ef2113",
+      "contextSha256": "8ab020444c6e6f19a206f1b7cbf2342303c121b24e21e3eff6d12fe0f074d28f",
+      "occurrence": 0,
+      "lineHint": 453,
+      "columnHint": 47,
+      "contextOccurrence": 0,
+      "category": "active",
+      "reason": "test actif consommant directement la définition source conservée"
+    },
+    {
+      "file": "tools/module-lifecycle.test.mjs",
+      "location": "content",
+      "pattern": "separator",
+      "match": "cmz-client-landing-home",
+      "logicalLineSha256": "d61e7a1805a26f9649cd616941abf9536ed8cbe8d460250c41149d03c4ef2113",
+      "contextSha256": "8ab020444c6e6f19a206f1b7cbf2342303c121b24e21e3eff6d12fe0f074d28f",
+      "occurrence": 0,
+      "lineHint": 532,
+      "columnHint": 47,
+      "contextOccurrence": 1,
+      "category": "active",
+      "reason": "test actif consommant directement la définition source conservée"
+    }
+  ]
+}

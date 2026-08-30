@@ -16,6 +16,8 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { createRetirementPlan } from './retire-module-plan.mjs';
+
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const MODULE = 'obsolete-feature';
 
@@ -45,6 +47,9 @@ async function createWorkspace(t, { dependencyCheckExit = 0 } = {}) {
         'retire-module-config.mjs',
         'retire-module-nx.mjs',
         'check-no-orphan-references.mjs',
+        'check-removed-module-tombstones.mjs',
+        'orphan-occurrence.mjs',
+        'orphan-tombstone-update.mjs',
     ]) {
         await copyFile(
             join(REPO_ROOT, 'tools', script),
@@ -81,7 +86,7 @@ async function createWorkspace(t, { dependencyCheckExit = 0 } = {}) {
     await write(join(root, 'bun.lock'), 'fixture-lock-v1\n');
     await write(
         join(root, 'tools', 'fake-nx-graph.mjs'),
-        `import { execFileSync } from 'node:child_process';\nimport { readFileSync } from 'node:fs';\nconst base = JSON.parse(process.env.CMZ_FAKE_NX_GRAPH);\nconst paths = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', 'apps', 'libs'], { encoding: 'utf8' }).split('\\0').filter((path) => path.endsWith('/project.json'));\nconst names = paths.map((path) => JSON.parse(readFileSync(path, 'utf8')).name).sort();\nconst nodes = Object.fromEntries(names.map((name) => [name, base.graph.nodes[name] || { name }]));\nconst dependencies = Object.fromEntries(names.map((name) => [name, base.graph.dependencies[name] || []]));\nprocess.stdout.write(JSON.stringify({ graph: { nodes, dependencies } }));\n`
+        `import { execFileSync } from 'node:child_process';\nimport { existsSync, readFileSync } from 'node:fs';\nconst base = JSON.parse(process.env.CMZ_FAKE_NX_GRAPH);\nconst paths = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', 'apps', 'libs'], { encoding: 'utf8' }).split('\\0').filter((path) => path.endsWith('/project.json') && existsSync(path));\nconst names = paths.map((path) => JSON.parse(readFileSync(path, 'utf8')).name).sort();\nconst nodes = Object.fromEntries(names.map((name) => [name, base.graph.nodes[name] || { name }]));\nconst dependencies = Object.fromEntries(names.map((name) => [name, base.graph.dependencies[name] || []]));\nprocess.stdout.write(JSON.stringify({ graph: { nodes, dependencies } }));\n`
     );
     const fakeNxBin = join(root, 'fake-nx-bin');
     await write(
@@ -277,6 +282,32 @@ test('ne sélectionne jamais un module voisin par préfixe', async (t) => {
     assert.match(result.stderr, /tag exact "scope:obsolete"/);
     assert.equal(await exists(join(root, 'libs', MODULE)), true);
     assert.equal(await exists(transactionDir(root)), false);
+});
+
+test('ignore uniquement les projets déjà supprimés et prouvés par Git', async (t) => {
+    const root = await createWorkspace(t);
+    const removedRoot = join(root, 'libs', 'previously-removed', 'domain');
+    await write(
+        join(removedRoot, 'project.json'),
+        `${JSON.stringify({
+            name: '@cmz/previously-removed-domain',
+            tags: ['scope:previously-removed', 'type:domain'],
+        })}\n`
+    );
+    const added = spawnSync('git', ['add', '.'], {
+        cwd: root,
+        encoding: 'utf8',
+    });
+    assert.equal(added.status, 0, added.stderr);
+    await rm(join(root, 'libs', 'previously-removed'), {
+        recursive: true,
+    });
+
+    const { plan } = createRetirementPlan(root, MODULE);
+    assert.deepEqual(plan.roots, [`libs/${MODULE}`]);
+    assert.equal(plan.projects.length, 1);
+    const dryRun = runRetire(root, ['--module', MODULE, '--dry-run']);
+    assert.equal(dryRun.status, 0, dryRun.stderr || dryRun.stdout);
 });
 
 test('résout la cible par tag Nx exact, indépendamment du nom de dossier', async (t) => {

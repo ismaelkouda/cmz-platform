@@ -9,6 +9,7 @@ import {
     createGenerationOutput,
     inspectGenerationChangeSet,
 } from './core/generation-publication.mjs';
+import { canonicalizeControlFiles } from './core/canonicalize-generated.mjs';
 import {
     computeListQueryLayeredTargetsForSemantic,
     computeListQueryTargetsForSemantic,
@@ -154,7 +155,7 @@ export async function generateListQuery({
                   : { reactjs: targets.react };
     }
     const referenceSha256 = Object.values(selected)[0].manifest.input.sha256;
-    const controlFiles = {
+    const controlFiles = await canonicalizeControlFiles({
         'artifact-plan.json': {
             artifact_id: 'artifact-plan',
             content: jsonDocument(artifactPlan),
@@ -167,7 +168,7 @@ export async function generateListQuery({
             artifact_id: 'semantic-model',
             content: jsonDocument(compiled.semantic),
         },
-    };
+    });
     if (dryRun) {
         return {
             feature: definition.feature.id,

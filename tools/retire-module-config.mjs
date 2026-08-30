@@ -21,6 +21,12 @@ const CONFIG_FILES = [
     'package.json',
     'bun.lock',
 ];
+const CLEANED_CONFIG_FILES = [
+    'eslint.config.mjs',
+    'tsconfig.base.json',
+    'knip.json',
+    'package.json',
+];
 
 function assertRegularFile(path, label) {
     const metadata = lstatSync(path);
@@ -81,6 +87,65 @@ export function optionalOriginalSha256(original) {
         : createHash('sha256')
               .update(Buffer.from(original, 'base64'))
               .digest('hex');
+}
+
+export function desiredConfigCleanupSha256(configOriginals, moduleName, plan) {
+    const originals = Object.fromEntries(
+        CLEANED_CONFIG_FILES.map((file) => [
+            file,
+            Buffer.from(configOriginals[file], 'base64').toString('utf8'),
+        ])
+    );
+    return Object.fromEntries(
+        Object.entries(computeConfigCleanup(originals, moduleName, plan)).map(
+            ([file, content]) => [
+                file,
+                createHash('sha256').update(content).digest('hex'),
+            ]
+        )
+    );
+}
+
+export function validateTransactionalConfigs(
+    workspaceRoot,
+    state,
+    { requireDesired = false } = {}
+) {
+    for (const file of CLEANED_CONFIG_FILES) {
+        const content = readRegularFile(join(workspaceRoot, file), file);
+        const current = createHash('sha256').update(content).digest('hex');
+        const allowed = requireDesired
+            ? [state.desiredConfigSha256[file]]
+            : [
+                  state.configOriginalSha256[file],
+                  state.desiredConfigSha256[file],
+              ];
+        if (!allowed.includes(current))
+            throw new Error(
+                `${file} a été modifié hors de la transaction de retrait.`
+            );
+    }
+}
+
+export function validateOptionalFileForRestore(
+    workspaceRoot,
+    relativePath,
+    originalSha256,
+    createdSha256
+) {
+    const current = captureOptionalRegularFile(workspaceRoot, relativePath);
+    const currentHash = optionalOriginalSha256(current);
+    if (currentHash === null) {
+        if (originalSha256 !== null)
+            throw new Error(
+                `Le fichier initial ${relativePath} a disparu hors de la transaction.`
+            );
+        return;
+    }
+    if (![originalSha256, createdSha256].filter(Boolean).includes(currentHash))
+        throw new Error(
+            `${relativePath} n’est pas une version journalisée ; restauration automatique refusée.`
+        );
 }
 
 export function restoreOptionalRegularFile(
@@ -525,6 +590,38 @@ function removeJsonPath(source, alias) {
 }
 
 export function applyConfigCleanup(workspaceRoot, moduleName, plan) {
+    const originals = Object.fromEntries(
+        [
+            'eslint.config.mjs',
+            'tsconfig.base.json',
+            'knip.json',
+            'package.json',
+        ].map((file) => [
+            file,
+            readRegularFile(join(workspaceRoot, file), file).toString('utf8'),
+        ])
+    );
+    const desired = computeConfigCleanup(originals, moduleName, plan);
+    const changed = [];
+    for (const [file, after] of Object.entries(desired)) {
+        if (after === originals[file]) continue;
+        writeAtomic(join(workspaceRoot, file), after);
+        changed.push(file);
+    }
+    return changed;
+}
+
+export function computeConfigCleanup(originals, moduleName, plan) {
+    const files = [
+        'eslint.config.mjs',
+        'tsconfig.base.json',
+        'knip.json',
+        'package.json',
+    ];
+    if (files.some((file) => typeof originals?.[file] !== 'string'))
+        throw new Error(
+            'Sources de configuration incomplètes pour le retrait.'
+        );
     const aliases = new Set(plan.projects.map((project) => project.name));
     const forbidden = new Set([
         ...aliases,
@@ -532,39 +629,26 @@ export function applyConfigCleanup(workspaceRoot, moduleName, plan) {
         ...plan.roots,
         ...plan.roots.map((root) => `./${root}`),
     ]);
-    const changed = [];
-
-    const eslintPath = join(workspaceRoot, 'eslint.config.mjs');
-    const eslintBefore = readFileSync(eslintPath, 'utf8');
-    const eslintAfter = removeEslintScopeConstraint(
-        eslintBefore,
-        `scope:${moduleName}`
-    );
-    if (eslintAfter !== eslintBefore) {
-        writeAtomic(eslintPath, eslintAfter);
-        changed.push('eslint.config.mjs');
-    }
-
-    for (const file of ['tsconfig.base.json', 'knip.json', 'package.json']) {
-        const path = join(workspaceRoot, file);
-        const before = readRegularFile(path, file).toString('utf8');
-        if (file === 'tsconfig.base.json') {
-            let after = before;
-            for (const alias of [...aliases].reverse())
-                after = removeJsonPath(after, alias);
-            if (after !== before) {
-                writeAtomic(path, after);
-                changed.push(file);
-            }
-        } else {
-            const result = removeJsonMatchingEntries(before, forbidden, file);
-            if (result.removed > 0) {
-                writeAtomic(path, result.source);
-                changed.push(file);
-            }
-        }
-    }
-    return changed;
+    let tsconfig = originals['tsconfig.base.json'];
+    for (const alias of [...aliases].reverse())
+        tsconfig = removeJsonPath(tsconfig, alias);
+    return {
+        'eslint.config.mjs': removeEslintScopeConstraint(
+            originals['eslint.config.mjs'],
+            `scope:${moduleName}`
+        ),
+        'tsconfig.base.json': tsconfig,
+        'knip.json': removeJsonMatchingEntries(
+            originals['knip.json'],
+            forbidden,
+            'knip.json'
+        ).source,
+        'package.json': removeJsonMatchingEntries(
+            originals['package.json'],
+            forbidden,
+            'package.json'
+        ).source,
+    };
 }
 
 export function applyConfigAddition(workspaceRoot, moduleName, plan) {

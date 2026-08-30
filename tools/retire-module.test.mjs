@@ -45,6 +45,9 @@ async function createWorkspace(t, { dependencyCheckExit = 0 } = {}) {
         'retire-module-config.mjs',
         'retire-module-nx.mjs',
         'check-no-orphan-references.mjs',
+        'check-removed-module-tombstones.mjs',
+        'orphan-occurrence.mjs',
+        'orphan-tombstone-update.mjs',
     ]) {
         await copyFile(
             join(REPO_ROOT, 'tools', script),
@@ -72,6 +75,10 @@ async function createWorkspace(t, { dependencyCheckExit = 0 } = {}) {
     await write(
         join(root, 'tools', 'check-declared-deps.mjs'),
         `console.log('deps check'); process.exit(${dependencyCheckExit});\n`
+    );
+    await write(
+        join(root, 'tools', 'generate-status.mjs'),
+        `import { appendFileSync } from 'node:fs'; appendFileSync('status-generations', '1\\n');\n`
     );
 
     await write(
@@ -264,6 +271,10 @@ test('une commande combine retrait, classifications, bun install et finalisation
         await exists(join(root, '.cmz', 'retire-module-transactions', MODULE)),
         false
     );
+    assert.equal(
+        await readFile(join(root, 'status-generations'), 'utf8'),
+        '1\n'
+    );
     assert.doesNotMatch(
         await readFile(join(root, 'eslint.config.mjs'), 'utf8'),
         new RegExp(`scope:${MODULE}`)
@@ -330,15 +341,6 @@ test('conserve la transaction si la vérification frozen échoue', async (t) => 
     const root = await createWorkspace(t);
     const first = runRetire(root, ['--module', MODULE]);
     assertAwaitingFinalize(first);
-
-    const packageJson = JSON.parse(
-        await readFile(join(root, 'package.json'), 'utf8')
-    );
-    packageJson.devDependencies = { example: '1.0.0' };
-    await write(
-        join(root, 'package.json'),
-        `${JSON.stringify(packageJson, null, 2)}\n`
-    );
 
     const binDir = join(root, 'fake-bin');
     const fakeBun = join(binDir, 'bun');
@@ -428,7 +430,7 @@ test('régénère puis vérifie le lockfile même si package.json est inchangé'
     );
 });
 
-test('abandonne une transaction en restaurant les racines', async (t) => {
+test('abort refuse un tombstone ambigu puis restaure les versions journalisées', async (t) => {
     const root = await createWorkspace(t);
     const first = runRetire(root, ['--module', MODULE]);
     assertAwaitingFinalize(first);
@@ -438,6 +440,14 @@ test('abandonne une transaction en restaurant les racines', async (t) => {
         '{}\n'
     );
 
+    const refused = runRetire(root, ['--abort', '--module', MODULE]);
+
+    assert.equal(refused.status, 1);
+    assert.match(refused.stderr, /n’est pas une version journalisée/);
+    assert.equal(await exists(transactionDir(root)), true);
+    assert.equal(await exists(join(root, 'libs', MODULE)), false);
+
+    await rm(join(root, 'docs/architecture/removed-modules', `${MODULE}.json`));
     const aborted = runRetire(root, ['--abort', '--module', MODULE]);
 
     assert.equal(aborted.status, 0, aborted.stderr || aborted.stdout);
@@ -462,6 +472,27 @@ test('abandonne une transaction en restaurant les racines', async (t) => {
     );
 });
 
+test('abort refuse d’écraser une configuration modifiée hors transaction', async (t) => {
+    const root = await createWorkspace(t);
+    const first = runRetire(root, ['--module', MODULE]);
+    assertAwaitingFinalize(first);
+    const expectedCleanPackage = await readFile(join(root, 'package.json'));
+    await write(join(root, 'package.json'), '{"external":true}\n');
+
+    const refused = runRetire(root, ['--abort', '--module', MODULE]);
+
+    assert.equal(refused.status, 1);
+    assert.match(refused.stderr, /modifié hors de la transaction de retrait/);
+    assert.equal(await exists(transactionDir(root)), true);
+    assert.equal(await exists(join(root, 'libs', MODULE)), false);
+
+    await write(join(root, 'package.json'), expectedCleanPackage);
+    const aborted = runRetire(root, ['--abort', '--module', MODULE]);
+    assert.equal(aborted.status, 0, aborted.stderr || aborted.stdout);
+    assert.equal(await exists(join(root, 'libs', MODULE)), true);
+    assert.equal(await exists(transactionDir(root)), false);
+});
+
 test('reprend un vrai SIGKILL après déplacement et configuration journalisés', async (t) => {
     const root = await createWorkspace(t);
     const binDir = join(root, 'sigkill-bin');
@@ -477,13 +508,35 @@ test('reprend un vrai SIGKILL après déplacement et configuration journalisés'
     assert.equal(state.status, 'awaiting-finalize');
     assert.deepEqual(state.movedRoots, [`libs/${MODULE}`]);
 
-    const resumed = runRetire(root, ['--resume', '--module', MODULE]);
+    const recoveryBin = join(root, 'recovery-bin');
+    await write(join(recoveryBin, 'bun'), '#!/bin/sh\nexit 0\n');
+    await chmod(join(recoveryBin, 'bun'), 0o755);
+    const resumed = runRetire(
+        root,
+        [
+            '--resume',
+            '--module',
+            MODULE,
+            '--historical-reference',
+            exactReference(
+                root,
+                'docs/history.md',
+                1,
+                'historique de retrait revu'
+            ),
+            '--active-reference',
+            exactReference(
+                root,
+                'tools/fixtures/active.json',
+                1,
+                'fixture active du générateur'
+            ),
+        ],
+        { PATH: `${recoveryBin}:${process.env.PATH || ''}` }
+    );
 
     assert.equal(resumed.status, 0, resumed.stderr || resumed.stdout);
-    assert.equal(
-        JSON.parse(await readFile(statePath, 'utf8')).status,
-        'awaiting-finalize'
-    );
+    assert.equal(await exists(statePath), false);
     assert.equal(await exists(join(root, 'libs', MODULE)), false);
     assert.doesNotMatch(
         await readFile(join(root, 'eslint.config.mjs'), 'utf8'),
@@ -510,6 +563,20 @@ test('refuse un verrou vivant détenu par un autre processus', async (t) => {
     assert.equal(result.status, 1);
     assert.match(result.stderr, /détient le verrou/);
     assert.equal(await exists(join(root, 'libs', MODULE)), true);
+});
+
+test('refuse un journal de retrait fourni par lien symbolique', async (t) => {
+    const root = await createWorkspace(t);
+    const externalState = join(root, 'outside-state.json');
+    await write(externalState, '{}\n');
+    const journal = join(transactionDir(root), 'state.json');
+    await mkdir(dirname(journal), { recursive: true });
+    await symlink(externalState, journal, 'file');
+
+    const result = runRetire(root, ['--resume', '--module', MODULE]);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /État de retrait non régulier/);
 });
 
 test('récupère automatiquement un verrou local mort', async (t) => {

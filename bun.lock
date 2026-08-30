@@ -221,46 +221,6 @@
         "@jsverse/transloco": "catalog:",
       },
     },
-    "libs/cmz-client-landing-home/angular-data": {
-      "name": "@cmz/cmz-client-landing-home-data",
-      "version": "0.0.0",
-      "dependencies": {
-        "@angular/common": "catalog:",
-        "@angular/core": "catalog:",
-        "@cmz/cmz-client-landing-home-domain": "workspace:*",
-        "rxjs": "catalog:",
-      },
-    },
-    "libs/cmz-client-landing-home/angular-domain": {
-      "name": "@cmz/cmz-client-landing-home-domain",
-      "version": "0.0.0",
-    },
-    "libs/cmz-client-landing/angular-application": {
-      "name": "@cmz/cmz-client-landing-application",
-      "version": "0.0.0",
-      "dependencies": {
-        "@angular/core": "catalog:",
-        "@cmz/cmz-client-landing-domain": "workspace:*",
-        "rxjs": "catalog:",
-      },
-    },
-    "libs/cmz-client-landing/angular-data": {
-      "name": "@cmz/cmz-client-landing-data",
-      "version": "0.0.0",
-      "dependencies": {
-        "@angular/common": "catalog:",
-        "@angular/core": "catalog:",
-        "@cmz/cmz-client-landing-domain": "workspace:*",
-        "rxjs": "catalog:",
-      },
-    },
-    "libs/cmz-client-landing/angular-domain": {
-      "name": "@cmz/cmz-client-landing-domain",
-      "version": "0.0.0",
-      "dependencies": {
-        "rxjs": "catalog:",
-      },
-    },
     "libs/communication/application": {
       "name": "@cmz/communication-application",
       "version": "0.0.0",
@@ -1422,16 +1382,6 @@
     "@cmz/authentication-domain": ["@cmz/authentication-domain@workspace:libs/authentication/domain"],
 
     "@cmz/authentication-ui": ["@cmz/authentication-ui@workspace:libs/authentication/ui"],
-
-    "@cmz/cmz-client-landing-application": ["@cmz/cmz-client-landing-application@workspace:libs/cmz-client-landing/angular-application"],
-
-    "@cmz/cmz-client-landing-data": ["@cmz/cmz-client-landing-data@workspace:libs/cmz-client-landing/angular-data"],
-
-    "@cmz/cmz-client-landing-domain": ["@cmz/cmz-client-landing-domain@workspace:libs/cmz-client-landing/angular-domain"],
-
-    "@cmz/cmz-client-landing-home-data": ["@cmz/cmz-client-landing-home-data@workspace:libs/cmz-client-landing-home/angular-data"],
-
-    "@cmz/cmz-client-landing-home-domain": ["@cmz/cmz-client-landing-home-domain@workspace:libs/cmz-client-landing-home/angular-domain"],
 
     "@cmz/communication-application": ["@cmz/communication-application@workspace:libs/communication/application"],
 

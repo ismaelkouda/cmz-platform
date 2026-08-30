@@ -153,21 +153,6 @@
       ],
       "@cmz/workflow-details-domain": [
         "./libs/workflow-details/domain/src/index.ts"
-      ],
-      "@cmz/cmz-client-landing-application": [
-        "./libs/cmz-client-landing/angular-application/src/index.ts"
-      ],
-      "@cmz/cmz-client-landing-data": [
-        "./libs/cmz-client-landing/angular-data/src/index.ts"
-      ],
-      "@cmz/cmz-client-landing-domain": [
-        "./libs/cmz-client-landing/angular-domain/src/index.ts"
-      ],
-      "@cmz/cmz-client-landing-home-data": [
-        "./libs/cmz-client-landing-home/angular-data/src/index.ts"
-      ],
-      "@cmz/cmz-client-landing-home-domain": [
-        "./libs/cmz-client-landing-home/angular-domain/src/index.ts"
       ]
     }
   },

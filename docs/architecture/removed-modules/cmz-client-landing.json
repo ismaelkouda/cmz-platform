@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "module": "cmz-client-landing",
+  "createdAt": "2026-08-30T22:29:19.454Z",
+  "references": [
+    {
+      "file": "tools/generator-platform/sources/cmz-client-landing.definition.json",
+      "location": "content",
+      "pattern": "separator",
+      "match": "cmz-client-landing",
+      "logicalLineSha256": "288c51ce7b71d520f5f9acd3884d214d7e963d8e16ef72f889467c0820e86b51",
+      "contextSha256": "ec6ab46350d2d5f72d549e54e0f61048f75f3f6fe8f751c3ce70b885534894ab",
+      "occurrence": 0,
+      "lineHint": 5,
+      "columnHint": 12,
+      "contextOccurrence": 0,
+      "category": "historical",
+      "reason": "définition source canonique conservée comme preuve de conception"
+    },
+    {
+      "file": "tools/generator-platform/sources/cmz-client-landing.definition.json",
+      "location": "path",
+      "pattern": "separator",
+      "match": "cmz-client-landing",
+      "logicalLineSha256": "60789a384cd4f4437fe5a5d5f5e6a3c3476d4834c2cbbd8adeca92d95fc43be7",
+      "contextSha256": "72b6f06ddf97c40edb682e0f14bf7edff4f6d9ea7273d3ed3d6b3ceec3405237",
+      "occurrence": 0,
+      "lineHint": null,
+      "columnHint": 34,
+      "contextOccurrence": 0,
+      "category": "historical",
+      "reason": "définition source canonique conservée comme preuve de conception"
+    }
+  ]
+}

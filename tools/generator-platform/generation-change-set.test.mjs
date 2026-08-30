@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+    access,
+    copyFile,
+    mkdtemp,
+    readFile,
+    rm,
+    writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import test from 'node:test';
@@ -111,6 +118,84 @@ test('dry-run refuses drift in a generator-owned artifact without repairing it',
             /angular:src\/models\.ts: generated artifact drifted/
         );
         assert.equal(await readFile(modelPath, 'utf8'), drifted);
+    } finally {
+        await rm(temporaryRoot, { recursive: true, force: true });
+    }
+});
+
+test('apply reconciles files already equal to the exact deterministic desired output', async () => {
+    const temporaryRoot = await mkdtemp(
+        resolve(tmpdir(), 'cmz-dry-run-exact-desired-')
+    );
+    const outputRoot = resolve(temporaryRoot, 'generated-support');
+    const desiredRoot = resolve(temporaryRoot, 'desired-support');
+    const evolvedPath = resolve(temporaryRoot, 'support-v2.definition.json');
+    try {
+        await generateActionRequest({
+            definitionPath: fileURLToPath(definitionUrl),
+            outputRoot,
+            target: 'all',
+        });
+        const evolved = await loadJson(definitionUrl);
+        evolved.operations[0].input.fields.push({
+            name: 'priority',
+            type: { kind: 'primitive', name: 'string', nullable: false },
+            required: true,
+        });
+        await writeFile(evolvedPath, `${JSON.stringify(evolved, null, 2)}\n`);
+        await generateActionRequest({
+            definitionPath: evolvedPath,
+            outputRoot: desiredRoot,
+            target: 'all',
+        });
+
+        // Simule une migration mécanique interrompue après l'écriture des
+        // bytes, mais avant la publication atomique des manifests. Ces bytes
+        // ne sont acceptables que parce qu'ils égalent exactement la sortie
+        // déterministe désirée ; toute autre dérive reste fail-closed.
+        await copyFile(
+            resolve(desiredRoot, 'semantic-model.json'),
+            resolve(outputRoot, 'semantic-model.json')
+        );
+        await copyFile(
+            resolve(desiredRoot, 'angular/src/models.ts'),
+            resolve(outputRoot, 'angular/src/models.ts')
+        );
+
+        const reviewed = await generateActionRequest({
+            definitionPath: evolvedPath,
+            outputRoot,
+            target: 'all',
+            dryRun: true,
+        });
+        assert.equal(
+            reviewed.changeSet.control_plane.changes.find(
+                ({ path }) => path === 'semantic-model.json'
+            ).action,
+            'unchanged'
+        );
+        assert.equal(
+            reviewed.changeSet.targets
+                .find(({ id }) => id === 'angular')
+                .changes.find(({ path }) => path === 'src/models.ts').action,
+            'unchanged'
+        );
+
+        await generateActionRequest({
+            definitionPath: evolvedPath,
+            outputRoot,
+            target: 'all',
+            applyChangeSetId: reviewed.changeSet.change_set_id,
+        });
+        const settled = await generateActionRequest({
+            definitionPath: evolvedPath,
+            outputRoot,
+            target: 'all',
+            dryRun: true,
+        });
+        assert.equal(settled.changeSet.summary.replace, 0);
+        assert.equal(settled.changeSet.summary.unchanged, 19);
+        assert.equal(settled.changeSet.summary.preserve, 2);
     } finally {
         await rm(temporaryRoot, { recursive: true, force: true });
     }

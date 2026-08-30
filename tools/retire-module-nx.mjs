@@ -61,6 +61,7 @@ function loadNxGraph(workspaceRoot) {
         }
     }
     let inventory;
+    let deletedInventory;
     try {
         inventory = execFileSync(
             'git',
@@ -76,12 +77,20 @@ function loadNxGraph(workspaceRoot) {
             ],
             { cwd: workspaceRoot, encoding: 'utf8' }
         );
+        deletedInventory = execFileSync(
+            'git',
+            ['ls-files', '-z', '--deleted', '--', 'apps', 'libs'],
+            { cwd: workspaceRoot, encoding: 'utf8' }
+        );
     } catch {
         throw new Error('Inventaire Git Nx obligatoire et illisible.');
     }
+    const deletedPaths = new Set(deletedInventory.split('\0').filter(Boolean));
     const projectNames = inventory
         .split('\0')
-        .filter((path) => path.endsWith('/project.json'))
+        .filter(
+            (path) => path.endsWith('/project.json') && !deletedPaths.has(path)
+        )
         .map((path) => {
             const absolute = join(workspaceRoot, path);
             const metadata = lstatSync(absolute);
@@ -134,11 +143,15 @@ export function findNxGraphConsumers(workspaceRoot, scope) {
 }
 
 export function runPostRemovalNxGate(workspaceRoot) {
+    return runNxGraphGate(workspaceRoot, 'post-retrait');
+}
+
+export function runNxGraphGate(workspaceRoot, phase = 'cycle de vie') {
     try {
         const graph = loadNxGraph(workspaceRoot);
         return {
             ok: true,
-            output: `Graphe Nx post-retrait valide : ${Object.keys(graph.nodes).length} projet(s).`,
+            output: `Graphe Nx ${phase} valide : ${Object.keys(graph.nodes).length} projet(s).`,
         };
     } catch (error) {
         return { ok: false, output: error.message };

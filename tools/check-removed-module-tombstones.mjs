@@ -1,18 +1,27 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { lstatSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const DIRECTORY = join(ROOT, 'docs', 'architecture', 'removed-modules');
+const args = process.argv.slice(2);
+if (args.length > 1 || args.some((argument) => argument !== '--prune-stale')) {
+    console.error(`❌  Argument inconnu : ${args.join(' ')}`);
+    process.exit(1);
+}
+const pruneStale = args.includes('--prune-stale');
 
-if (!existsSync(DIRECTORY)) {
+let directoryMetadata;
+try {
+    directoryMetadata = lstatSync(DIRECTORY);
+} catch (error) {
+    if (error.code !== 'ENOENT') throw error;
     console.log('✅  Aucun tombstone de module retiré à valider.');
     process.exit(0);
 }
 
-const directoryMetadata = lstatSync(DIRECTORY);
 if (!directoryMetadata.isDirectory() || directoryMetadata.isSymbolicLink()) {
     console.error(
         '❌  Le répertoire des tombstones doit être un dossier physique.'
@@ -54,7 +63,7 @@ for (const file of files) {
             join(ROOT, 'tools', 'check-no-orphan-references.mjs'),
             '--module',
             document.module,
-            '--tombstone',
+            pruneStale ? '--update-tombstone' : '--tombstone',
             `docs/architecture/removed-modules/${file}`,
         ],
         { cwd: ROOT, encoding: 'utf8' }
@@ -63,4 +72,7 @@ for (const file of files) {
     process.stderr.write(result.stderr || '');
     if (result.status !== 0) process.exit(result.status || 1);
 }
-console.log(`✅  ${files.length} tombstone(s) de modules retirés validé(s).`);
+console.log(
+    `✅  ${files.length} tombstone(s) de modules retirés ` +
+        `${pruneStale ? 'réconcilié(s) puis validé(s)' : 'validé(s)'}.`
+);

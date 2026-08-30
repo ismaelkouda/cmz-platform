@@ -420,14 +420,16 @@ function runFamilyDuplicationCheck({ record }) {
     }
 
     const baseline = JSON.parse(readFileSync(FAMILY_METRICS_FILE, 'utf8'));
+    const tolerance = 0.1;
+    const threshold = Number((baseline.redundancy_rate + tolerance).toFixed(1));
 
     // Bloquant à la hausse seulement (ADR-0020) — l'isolation scope:* des 4
     // modules est un choix assumé, la valeur absolue actuelle n'est pas une
     // dette à zéro. Tolérance 0,1 point pour éviter le bruit d'arrondi.
-    if (measurement.redundancy_rate > baseline.redundancy_rate + 0.1) {
+    if (measurement.redundancy_rate > threshold) {
         console.error(
             `\nFAIL check:duplicates --family — régression : ${measurement.redundancy_rate} % ` +
-                `> baseline ${baseline.redundancy_rate} % (${baseline.measured_at}).`
+                `> seuil ${threshold} % (baseline ${baseline.redundancy_rate} + tolérance ${tolerance}, ${baseline.measured_at}).`
         );
         console.error(
             'ADR-0020 : la duplication de famille workflow-action est acceptée à sa valeur ' +
@@ -445,7 +447,7 @@ function runFamilyDuplicationCheck({ record }) {
 
     console.log(
         `OK  check:duplicates --family — ${measurement.redundancy_rate} % ` +
-            `≤ baseline ${baseline.redundancy_rate} % (${baseline.measured_at})`
+            `≤ seuil ${threshold} % (baseline ${baseline.redundancy_rate} + tolérance ${tolerance}, ${baseline.measured_at})`
     );
     process.exit(0);
 }

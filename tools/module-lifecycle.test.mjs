@@ -4,6 +4,7 @@ import {
     chmod,
     copyFile,
     cp,
+    lstat,
     mkdir,
     mkdtemp,
     readFile,
@@ -64,6 +65,9 @@ async function createWorkspace(
         'retire-module-plan.mjs',
         'retire-module-transaction.mjs',
         'check-no-orphan-references.mjs',
+        'check-removed-module-tombstones.mjs',
+        'orphan-occurrence.mjs',
+        'orphan-tombstone-update.mjs',
     ])
         await copyFile(
             join(REPOSITORY, 'tools', script),
@@ -94,6 +98,10 @@ async function createWorkspace(
             join(root, 'tools', script),
             `console.log('fixture gate ok');\n`
         );
+    await write(
+        join(root, 'tools/generate-status.mjs'),
+        `console.log('fixture docs ok');\n`
+    );
 
     const initialized = spawnSync('git', ['init', '--quiet'], {
         cwd: root,
@@ -115,7 +123,7 @@ async function createWorkspace(
     const bin = join(root, 'bin');
     await write(
         join(root, 'tools/fake-nx-graph.mjs'),
-        `import { execFileSync } from 'node:child_process';\nimport { readFileSync } from 'node:fs';\nconst base = JSON.parse(process.env.CMZ_FAKE_NX_GRAPH);\nconst paths = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', 'apps', 'libs'], { encoding: 'utf8' }).split('\\0').filter((path) => path.endsWith('/project.json'));\nconst names = paths.map((path) => JSON.parse(readFileSync(path, 'utf8')).name).sort();\nconst nodes = Object.fromEntries(names.map((name) => [name, base.graph.nodes[name] || { name }]));\nconst dependencies = Object.fromEntries(names.map((name) => [name, base.graph.dependencies[name] || []]));\nprocess.stdout.write(JSON.stringify({ graph: { nodes, dependencies } }));\n`
+        `import { execFileSync } from 'node:child_process';\nimport { readFileSync } from 'node:fs';\nconst base = JSON.parse(process.env.CMZ_FAKE_NX_GRAPH);\nconst paths = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', 'apps', 'libs'], { encoding: 'utf8' }).split('\\0').filter((path) => path.endsWith('/project.json'));\nconst omitted = process.env.CMZ_FAKE_NX_OMIT;\nconst names = paths.map((path) => JSON.parse(readFileSync(path, 'utf8')).name).filter((name) => name !== omitted).sort();\nconst nodes = Object.fromEntries(names.map((name) => [name, base.graph.nodes[name] || { name }]));\nconst dependencies = Object.fromEntries(names.map((name) => [name, base.graph.dependencies[name] || []]));\nprocess.stdout.write(JSON.stringify({ graph: { nodes, dependencies } }));\n`
     );
     await write(
         join(bin, 'bun'),
@@ -136,6 +144,10 @@ async function createWorkspace(
             'fi',
             'if [ "$1 $2" = "nx run" ] || [ "$1 $2" = "nx run-many" ]; then',
             '  if [ "$CMZ_FAKE_NX_FAIL" = "true" ]; then exit 42; fi',
+            '  exit 0',
+            'fi',
+            'if [ "$1 $2" = "prettier --check" ]; then',
+            '  if [ "$CMZ_FAKE_PRETTIER_FAIL" = "true" ]; then exit 42; fi',
             '  exit 0',
             'fi',
             'exit 64',
@@ -303,6 +315,61 @@ test('un gate Nx en échec restaure sortie, configurations et lockfile', async (
         assert.deepEqual(await readFile(join(root, file)), before.get(file));
 });
 
+test('un graphe Nx qui omet un project.json annule intégralement la création', async (t) => {
+    const { root, definitionPath, bin } = await createWorkspace(t);
+    const before = new Map(
+        await Promise.all(
+            CONFIG_FILES.map(async (file) => [
+                file,
+                await readFile(join(root, file)),
+            ])
+        )
+    );
+    const result = execute(
+        root,
+        bin,
+        'create-module.mjs',
+        ['--definition', definitionPath],
+        { CMZ_FAKE_NX_OMIT: `@cmz/${MODULE}-data` }
+    );
+    assert.equal(result.status, 1);
+    assert.match(
+        result.stderr,
+        /nœuds divergent des project.json Git visibles/
+    );
+    assert.equal(await exists(join(root, 'libs', MODULE)), false);
+    assert.equal(
+        await exists(join(root, '.cmz/create-module-transactions', MODULE)),
+        false
+    );
+    for (const file of CONFIG_FILES)
+        assert.deepEqual(await readFile(join(root, file)), before.get(file));
+});
+
+test('un échec Prettier annule sortie, configurations et lockfile', async (t) => {
+    const { root, definitionPath, bin } = await createWorkspace(t);
+    const before = new Map(
+        await Promise.all(
+            CONFIG_FILES.map(async (file) => [
+                file,
+                await readFile(join(root, file)),
+            ])
+        )
+    );
+    const result = execute(
+        root,
+        bin,
+        'create-module.mjs',
+        ['--definition', definitionPath],
+        { CMZ_FAKE_PRETTIER_FAIL: 'true' }
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /prettier --check/);
+    assert.equal(await exists(join(root, 'libs', MODULE)), false);
+    for (const file of CONFIG_FILES)
+        assert.deepEqual(await readFile(join(root, file)), before.get(file));
+});
+
 test('un tombstone interdit toute recréation implicite', async (t) => {
     const { root, definitionPath, bin } = await createWorkspace(t);
     await write(
@@ -316,6 +383,41 @@ test('un tombstone interdit toute recréation implicite', async (t) => {
     assert.equal(result.status, 1);
     assert.match(result.stderr, /tombstone de retrait/);
     assert.equal(await exists(join(root, 'libs', MODULE)), false);
+});
+
+test('un tombstone lien symbolique cassé interdit aussi la recréation', async (t) => {
+    const { root, definitionPath, bin } = await createWorkspace(t);
+    const tombstone = join(
+        root,
+        'docs/architecture/removed-modules',
+        `${MODULE}.json`
+    );
+    await mkdir(dirname(tombstone), { recursive: true });
+    await symlink(join(root, 'cible-absente'), tombstone);
+    const result = execute(root, bin, 'create-module.mjs', [
+        '--definition',
+        definitionPath,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /tombstone de retrait/);
+    assert.equal((await lstat(tombstone)).isSymbolicLink(), true);
+});
+
+test('une sortie lien symbolique cassé n’est jamais considérée absente', async (t) => {
+    const { root, definitionPath, bin } = await createWorkspace(t);
+    const output = join(root, 'libs', MODULE);
+    await symlink(join(root, 'cible-absente'), output, 'dir');
+    const result = execute(root, bin, 'create-module.mjs', [
+        '--definition',
+        definitionPath,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /libs\/lifecycle-proof existe déjà/);
+    assert.equal((await lstat(output)).isSymbolicLink(), true);
+    assert.equal(
+        await exists(join(root, '.cmz/create-module-transactions', MODULE)),
+        false
+    );
 });
 
 test('le dry-run de création ne crée ni sortie ni stockage transactionnel', async (t) => {
@@ -444,4 +546,40 @@ test('refuse un definition.kind non reconnu avant toute écriture', async (t) =>
     assert.match(result.stderr, /kind "unknown-future-kind" non reconnu/);
     assert.equal(await exists(join(root, 'libs', QUERY_MODULE)), false);
     assert.equal(await exists(join(root, '.cmz')), false);
+});
+
+test('le générateur lit un snapshot immuable journalisé, jamais la définition externe', async (t) => {
+    const { root, definitionPath, bin } = await createWorkspace(t);
+    const probePath = join(root, 'definition-probe.json');
+    const expected = await readFile(definitionPath, 'utf8');
+    await write(
+        join(root, 'tools/generator-platform/generate-action-request.mjs'),
+        [
+            "import { readFileSync, writeFileSync } from 'node:fs';",
+            "const index = process.argv.indexOf('--definition');",
+            'const path = process.argv[index + 1];',
+            "writeFileSync(process.env.CMZ_DEFINITION_PROBE, JSON.stringify({ path, content: readFileSync(path, 'utf8') }));",
+            'process.exit(42);',
+        ].join('\n') + '\n'
+    );
+    const result = execute(
+        root,
+        bin,
+        'create-module.mjs',
+        ['--definition', definitionPath],
+        { CMZ_DEFINITION_PROBE: probePath }
+    );
+    assert.equal(result.status, 1);
+    const observed = JSON.parse(await readFile(probePath, 'utf8'));
+    assert.equal(observed.content, expected);
+    assert.match(
+        observed.path,
+        /\.cmz\/create-module-transactions\/lifecycle-proof\/definition\.snapshot\.json$/
+    );
+    assert.notEqual(observed.path, definitionPath);
+    assert.equal(await exists(join(root, 'libs', MODULE)), false);
+    assert.equal(
+        await exists(join(root, '.cmz/create-module-transactions', MODULE)),
+        false
+    );
 });
