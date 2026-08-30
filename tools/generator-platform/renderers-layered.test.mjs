@@ -63,6 +63,7 @@ test('renderAngularNxLayered produces 3 packages that compile together and respe
 
     // 1. Chaque couche produit exactement les fichiers attendus.
     assert.deepEqual(Object.keys(layered.domain.files).sort(), [
+        'package.json',
         'project.json',
         'src/action-request-port.ts',
         'src/index.ts',
@@ -71,12 +72,14 @@ test('renderAngularNxLayered produces 3 packages that compile together and respe
         'tsconfig.json',
     ]);
     assert.deepEqual(Object.keys(layered.data.files).sort(), [
+        'package.json',
         'project.json',
         'src/action-request-client.ts',
         'src/index.ts',
         'tsconfig.json',
     ]);
     assert.deepEqual(Object.keys(layered.application.files).sort(), [
+        'package.json',
         'project.json',
         'src/action-request-commands.ts',
         'src/action-request-port.token.ts',
@@ -85,23 +88,31 @@ test('renderAngularNxLayered produces 3 packages that compile together and respe
         'src/index.ts',
         'tsconfig.json',
     ]);
+    assert.match(
+        layered.application.files['src/action-request-commands.ts'],
+        /import \{ Service, inject \} from '@angular\/core'/
+    );
+    assert.doesNotMatch(
+        layered.application.files['src/action-request-commands.ts'],
+        /import \{ InjectionToken, Service, inject \}/
+    );
 
     // 2. Boundary structurel — application ne dépend jamais de data.
-    assertNoApplicationToDataImport(layered, '@cmz/newsletter-angular-data');
+    assertNoApplicationToDataImport(layered, '@cmz/newsletter-data');
 
     // 3. Compilation réelle des 3 packages ensemble, alias résolus.
     typecheckLayeredTargets(
         {
             domain: {
-                packageName: '@cmz/newsletter-angular-domain',
+                packageName: '@cmz/newsletter-domain',
                 files: layered.domain.files,
             },
             data: {
-                packageName: '@cmz/newsletter-angular-data',
+                packageName: '@cmz/newsletter-data',
                 files: layered.data.files,
             },
             application: {
-                packageName: '@cmz/newsletter-angular-application',
+                packageName: '@cmz/newsletter-application',
                 files: layered.application.files,
             },
         },

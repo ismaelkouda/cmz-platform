@@ -109,5 +109,9 @@ __screenshots__/
 
 .nx/polygraph
 
+# Transactions durables de retrait de module — jamais versionner les sauvegardes
+/.cmz/retire-module-transactions/
+/.cmz/create-module-transactions/
+
 vite.config.*.timestamp*
 vitest.config.*.timestamp*

@@ -55,6 +55,7 @@ const targetValues = [
     'react',
     'reactjs',
     'all-layered',
+    'angular-layered',
     ...layeredTargetValues,
 ];
 
@@ -175,9 +176,15 @@ export async function generateActionRequest({
             ? Object.fromEntries(
                   layeredTargetValues.map((id) => [id, targets[id]])
               )
-            : layeredTargetValues.includes(normalizedTarget)
-              ? { [normalizedTarget]: targets[normalizedTarget] }
-              : {};
+            : normalizedTarget === 'angular-layered'
+              ? Object.fromEntries(
+                    layeredTargetValues
+                        .filter((id) => id.startsWith('angular-'))
+                        .map((id) => [id, targets[id]])
+                )
+              : layeredTargetValues.includes(normalizedTarget)
+                ? { [normalizedTarget]: targets[normalizedTarget] }
+                : {};
     const selected = { ...flatSelection, ...layeredSelection };
     if (Object.keys(selected).length === 0) {
         throw new Error(`--target ${target}: no matching target found`);

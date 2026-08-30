@@ -1,129 +1,127 @@
-# Retirer un module — `retire-module.mjs` / `check-no-orphan-references.mjs`
+# Cycle de vie automatisé d’un module
 
-## Pourquoi ces scripts existent
+## Contrat
 
-La vision du projet est de minimiser l'action humaine. Avant le 2026-08-29,
-retirer un module du repo (dernier cas réel : `newsletter`, un POC écrit à la
-main pour concevoir le pattern port/token du générateur layered) exigeait un
-audit manuel — grep ad hoc dans `apps/`, `libs/`, `tools/`, `docs/`, puis
-relecture ligne par ligne de `eslint.config.mjs`, `tsconfig.base.json`,
-`knip.json`, `package.json`.
+La création et le retrait d’un module sont des transactions de workspace, pas
+des listes d’étapes humaines. Les commandes nominales sont :
 
-Cet audit manuel a été refait deux fois pour le retrait de `newsletter`, et un
-fichier (`transloco.config.ts`, une référence à
-`apps/newsletter-test/public/i18n/`) est passé au travers les deux fois — trouvé
-seulement après avoir écrit `check-no-orphan-references.mjs` et l'avoir fait
-tourner sur le résultat supposé complet. C'est la preuve directe que l'audit
-manuel, même fait avec soin, n'est pas fiable pour cette opération : elle doit
-produire une preuve mécanique, pas reposer sur la mémoire de qui l'exécute.
+```bash
+bun run create-module --definition <action-request.definition.json>
+bun run retire-module --module <nom>
+```
 
-## `tools/check-no-orphan-references.mjs`
+Le cycle est fermé par `tools/module-lifecycle.test.mjs` : il publie réellement
+les trois projets Angular générés, conserve leurs `project.json`, les câble, les
+retire avec la commande de production, puis exige le retour octet pour octet des
+cinq fichiers protégés. Aucun hook `NODE_ENV=test` ni variable de bypass
+n’existe dans les scripts de production.
 
-Vérifie qu'un nom de module retiré ne laisse plus aucune trace dans le repo,
-hors mentions historiques explicitement documentées.
+## Création — `tools/create-module.mjs`
+
+La source de vérité est une définition `action-request` validée par la
+plateforme de génération. `feature.id` détermine exclusivement le scope Nx, les
+packages `@cmz/<module>-{domain,data,application}` et la racine `libs/<module>`.
+
+```bash
+node tools/create-module.mjs --definition <fichier.json> [--dry-run]
+node tools/create-module.mjs --resume --module <nom>
+node tools/create-module.mjs --abort --module <nom>
+```
+
+La commande :
+
+1. refuse une sortie existante, une transaction de retrait concurrente et la
+   recréation implicite d’un module possédant un tombstone ;
+2. journalise l’identité Git et les contenus/hashes de `eslint.config.mjs`,
+   `tsconfig.base.json`, `knip.json`, `package.json` et `bun.lock` sous
+   `.cmz/create-module-transactions/` ;
+3. publie atomiquement les targets `angular-domain`, `angular-data` et
+   `angular-application` au moyen du moteur de publication durable existant ;
+4. reconstruit le plan depuis les `project.json` réellement publiés et exige
+   exactement une racine, trois identités Nx et le tag `scope:<module>` ;
+5. calcule puis applique des transformations syntaxiques ciblées : une
+   contrainte Nx dans `eslint.config.mjs` et trois aliases dans
+   `tsconfig.base.json`, sans reformater les autres octets ;
+6. exécute `bun install`, `bun install --frozen-lockfile`, les checks de noms,
+   targets et dépendances, puis build et lint sur les trois projets exacts ;
+7. supprime le journal seulement après tous les succès.
+
+Le hash de propriété de la sortie est calculé sur l’inventaire Git canonique
+(fichiers suivis et non suivis non ignorés). Les liens de workspaces créés par
+Bun sous des `node_modules` ignorés ne peuvent donc ni modifier la preuve ni
+être suivis. Un `SIGKILL` laisse un état `planned`, `generated` ou `configured`
+validable et reprenable. Une erreur normale restaure automatiquement sortie,
+configurations et lockfile ; une dérive extérieure ambiguë conserve le journal
+au lieu d’écraser le travail.
+
+## Retrait — `tools/retire-module.mjs`
+
+```bash
+node tools/retire-module.mjs --module <nom> [--dry-run] \
+  [--historical-reference <chemin>::<occurrence-sha256>::<raison>] \
+  [--active-reference <chemin>::<occurrence-sha256>::<raison>]
+node tools/retire-module.mjs --finalize --module <nom>
+node tools/retire-module.mjs --resume --module <nom>
+node tools/retire-module.mjs --abort --module <nom>
+```
+
+Le retrait :
+
+1. construit un plan déterministe depuis l’inventaire Git `apps/`/`libs/` et le
+   tag Nx exact `scope:<module>` ; aucun préfixe de dossier ne sélectionne un
+   projet ;
+2. refuse les métadonnées ambiguës, les entrées Git spéciales, les liens non
+   ignorés et tout conteneur mélangeant plusieurs scopes ;
+3. exige une fermeture entrante vide dans le graphe Nx complet et dans toutes
+   les sources Git visibles hors des racines retirées ;
+4. déplace les racines par renommage sous
+   `.cmz/retire-module-transactions/<module>/removed/`, avec journal atomique et
+   hash de chaque fichier ou lien en tant qu’objet, sans suivre sa cible ;
+5. retire structurellement les attaches de configuration. ESLint et les paths
+   TypeScript sont transformés via l’AST TypeScript ; `knip.json` et
+   `package.json` ne sont réécrits que si une entrée exacte est réellement
+   supprimée ;
+6. relance les checks de noms/dépendances, puis régénère **toujours** `bun.lock`
+   avec `bun install` parce que le graphe des workspaces a changé, même si le
+   `package.json` racine est identique ;
+7. exige ensuite `bun install --frozen-lockfile`, un graphe Nx post-retrait
+   complet et valide, et la preuve indépendante d’absence d’orphelins ;
+8. ne détruit la sauvegarde transactionnelle qu’après le succès final.
+
+Le couple ajout/retrait des attaches ESLint et TypeScript est testé comme une
+inversion octet pour octet. `--abort` restaure également `bun.lock` et le
+tombstone à leur état initial. `--finalize` ne sert qu’à reprendre une preuve
+externe échouée ; le chemin nominal enchaîne toutes les phases.
+
+## Preuve d’orphelins — `tools/check-no-orphan-references.mjs`
 
 ```bash
 node tools/check-no-orphan-references.mjs --module <nom>
 ```
 
-Deux mécanismes d'exemption, volontairement distincts :
+Le check inspecte sans filtre d’extension tous les fichiers suivis et tous les
+fichiers non suivis non ignorés, y compris dotfiles, corpus, lockfiles, contenus
+binaires et UTF-16. Il cherche les formes kebab, snake, camel et Pascal,
+contrôle les liens sans les suivre et échoue fermé si Git ou une entrée de
+l’inventaire est illisible.
 
-- `--allow <chemin>` : le fichier contient une mention **historique** (ex: un
-  ADR qui explique qu'un pattern a été conçu via un POC depuis retiré). Le
-  script vérifie que le fichier contient réellement un mot de justification («
-  retiré », « supprimé », « POC »…) à proximité du nom du module — une allowlist
-  qui ne justifie rien est rejetée.
-- `--allow-active-fixture <chemin>` : le nom reste un **identifiant technique
-  actif** (ex: `sources/newsletter-subscribe.definition.json`, une fixture de
-  test du générateur qui porte ce nom par coïncidence, indépendamment de l'app
-  supprimée). Aucune justification de retrait n'est exigée ici — au contraire,
-  ce mécanisme documente que le nom n'est PAS mort.
+Une référence conservée est approuvée par occurrence, jamais par fichier. Son
+identité SHA-256 lie le chemin, la position logique, le motif, le match, la
+ligne et le contexte. La syntaxe est obligatoirement :
 
-Exit 1 si une référence non exemptée est trouvée. Voir le docstring du script
-pour le détail des motifs recherchés (nom brut, alias `@cmz/<module>-*`, tags
-`scope:<module>*`).
-
-## `tools/retire-module.mjs`
-
-Un retrait complet utilise **deux commandes séparées** parce qu'une étape
-d'édition des configurations écrites à la main reste nécessaire entre les deux.
-Le script conserve automatiquement l'état de l'opération sous
-`.nx/retire-module/<nom>/` : hash initial de `package.json`, exemptions et
-sauvegarde des racines retirées. La seconde commande reprend cet état ; aucun
-argument déjà fourni n'est à ressaisir.
-
-Ce stockage évite deux défauts importants : comparer à `HEAD` pouvait attribuer
-au retrait une modification préexistante et sans rapport de `package.json`, et
-une suppression physique immédiate pouvait perdre des fichiers non suivis par
-git si un garde-fou échouait ensuite.
-
-### Commande 1 — retrait
-
-```bash
-node tools/retire-module.mjs --module <nom> [--dry-run] \
-  [--allow <fichier>] [--allow-active-fixture <fichier>]
+```text
+chemin::occurrence-sha256::raison
 ```
 
-Étapes automatiques (dérivées du filesystem, aucune déclaration séparée à
-maintenir — même principe que `check-project-names.mjs`) :
+Le tombstone canonique `docs/architecture/removed-modules/<module>.json`
+conserve ces identités et leur catégorie (`historical` ou `active`). Une seconde
+occurrence dans le même fichier, un déplacement, une modification de contexte,
+un ID périmé ou une classification dupliquée échoue. Les anciennes allowlists de
+fichier entier sont interdites. Le vérificateur n’exclut même pas son propre
+fichier : le verdict publie donc toujours `0 exclusion interne`.
 
-1. Résout le scope réel (`apps/<nom>*`, `libs/<nom>*`).
-2. Vérifie la fermeture transitive : refuse le retrait si un package HORS de ce
-   scope importe un alias `@cmz/<nom>-*` (le module a un vrai consommateur, ce
-   n'est pas un POC isolé).
-3. Déplace les racines sous `.nx/retire-module/<nom>/removed/`. Pour git, elles
-   sont retirées du workspace, mais restent récupérables jusqu'à la
-   finalisation, y compris si elles n'étaient pas suivies.
-4. Relance `check-project-names`/`check-declared-deps` pour confirmer que le
-   graphe reste cohérent. En cas d'échec, restaure automatiquement les racines
-   avant de sortir en erreur.
-5. Rapporte les lignes de config à traiter à la main, et s'arrête là — n'appelle
-   **pas** `check-no-orphan-references.mjs` (les fichiers de config ne sont pas
-   encore nettoyés, le check échouerait pour rien).
+## Gates permanentes
 
-Étape volontairement **non automatisée** : le nettoyage de `eslint.config.mjs` /
-`tsconfig.base.json` / `knip.json` / `package.json`. Ces fichiers sont du
-JavaScript/JSON à la main sans marqueurs structurés — les éditer par regex
-serait le genre de fragilité qui peut corrompre silencieusement une config
-critique. Le script **rapporte** les lignes concernées (fichier + numéro de
-ligne + contenu) ; l'édition reste un geste humain ciblé, avec diff visible.
-
-Les mentions historiques et fixtures actives peuvent être déclarées avec
-`--allow` et `--allow-active-fixture`. Ces options ont le même contrat que dans
-`check-no-orphan-references.mjs` et sont mémorisées dans l'état du retrait pour
-la commande de finalisation.
-
-### Commande 2 — finalisation
-
-Une fois le rapport de l'étape 5 traité à la main :
-
-```bash
-node tools/retire-module.mjs --finalize --module <nom> [--skip-install]
-```
-
-Ne touche plus au filesystem des apps/libs (déjà mis à l'écart). Trois actions :
-
-1. Compare `package.json` actuel au hash capturé au début de **ce retrait**.
-   S'il a changé (cas typique : une dépendance devenue inutile a été retirée
-   pendant le nettoyage de config), lance `bun install` dans la même commande
-   pour garder `bun.lock` synchronisé — sinon `bun install --frozen-lockfile`
-   casse en CI. `--skip-install` désactive cet appel ; le script avertit alors
-   qu'il faut lancer `bun install` manuellement.
-2. Reprend les exemptions mémorisées, appelle `check-no-orphan-references.mjs`
-   et affiche son verdict. Un retrait n'est jamais « terminé » selon le jugement
-   de `retire-module.mjs` lui-même — c'est un outil indépendant qui tranche.
-3. Supprime la sauvegarde transactionnelle seulement après le succès de la
-   preuve finale. En cas d'échec, l'état et la sauvegarde restent disponibles
-   pour corriger puis relancer `--finalize`.
-
-## Limite connue / piste d'amélioration
-
-Le nettoyage de config reste un geste humain. Une évolution possible, si ce
-genre de retrait devient fréquent : délimiter les blocs générés
-(`depConstraints`, alias `paths`, entrées `knip.json`) par des commentaires
-`// AUTO-GENERATED:<module> START/END` au moment où un module est créé par
-`tools/generator-platform/`, pour que `retire-module.mjs` puisse les retirer
-mécaniquement plutôt que de se contenter de les rapporter. Non fait au
-2026-08-29 : aucun module créé par le générateur ne pose actuellement ces
-marqueurs, et les ajouter rétroactivement à tous les modules existants aurait
-été hors périmètre de ce chantier.
+`bun run check:retire-module` exécute les tests unitaires, adversariaux,
+transactionnels et le cycle création→retrait, puis valide tous les tombstones
+committés. Cette gate fait partie de `check:all`.

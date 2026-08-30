@@ -7,15 +7,10 @@
  * suivant le pattern port/token conçu à l'origine sur un POC écrit à la
  * main (2026-08-27, depuis retiré) — au lieu d'un seul package plat.
  *
- * DÉLIBÉRÉMENT NON BRANCHÉ : ni render-targets.mjs, ni
- * generate-action-request.mjs, ni le pipeline de publication
- * (core/generation-change-set.mjs, core/generation-publication.mjs) ne
- * connaissent cette fonction. Elle n'est exercée que par
- * renderers-layered.test.mjs — garde-fous exécutables (compilation réelle,
- * boundary structurel), PAS une comparaison texte à du code figé (voir
- * docstring de ce fichier de test). Voir le plan associé (audit staff,
- * 2026-08-28) pour les étapes 3+ (brancher réellement au pipeline de
- * publication).
+ * Branché au pipeline de publication sous les targets angular-domain,
+ * angular-data, angular-application et au raccourci angular-layered. Le
+ * workflow create-module publie ces trois targets puis vérifie leur intégration
+ * réelle au workspace.
  *
  * Boundary respectée (ADR-0003 §4, type:application ne dépend jamais de
  * type:data) : le pattern port/token du POC d'origine est reproduit —
@@ -189,7 +184,14 @@ function renderCommands(semantic, domainPkg) {
     const rxjsImports = hasAuthorizedOperation
         ? 'defer, from, map, switchMap, type Observable'
         : 'from, map, switchMap, type Observable';
-    return `import { InjectionToken, Service, inject } from '@angular/core';\nimport { ${rxjsImports} } from 'rxjs';\nimport { ACTION_REQUEST_PORT } from './action-request-port.token';\nimport { afterSuccess } from './after-success.extension';\nimport type { ${[...new Set(imports)].join(', ')} } from '${domainPkg}';\n${sessionContract}${permissionContract}\n// autoProvided:false — dépend de ACTION_REQUEST_PORT, jamais directement de\n// type:data (ADR-0003 §4). Voir action-request-port.token.ts.\n@Service({ autoProvided: false })\nexport class ActionRequestCommands {\n    private readonly client = inject(ACTION_REQUEST_PORT);${sessionInjection}${permissionInjection}\n\n${methods}\n}\n`;
+    const angularImports = [
+        ...(hasSessionEffect || hasAuthorizedOperation
+            ? ['InjectionToken']
+            : []),
+        'Service',
+        'inject',
+    ].join(', ');
+    return `import { ${angularImports} } from '@angular/core';\nimport { ${rxjsImports} } from 'rxjs';\nimport { ACTION_REQUEST_PORT } from './action-request-port.token';\nimport { afterSuccess } from './after-success.extension';\nimport type { ${[...new Set(imports)].join(', ')} } from '${domainPkg}';\n${sessionContract}${permissionContract}\n// autoProvided:false — dépend de ACTION_REQUEST_PORT, jamais directement de\n// type:data (ADR-0003 §4). Voir action-request-port.token.ts.\n@Service({ autoProvided: false })\nexport class ActionRequestCommands {\n    private readonly client = inject(ACTION_REQUEST_PORT);${sessionInjection}${permissionInjection}\n\n${methods}\n}\n`;
 }
 
 function renderExtensionContract(semantic, domainPkg) {
@@ -218,8 +220,24 @@ export type AfterSuccessExtension = (
 }
 
 function projectJson(name, sourceRoot, tags) {
+    const projectRoot = sourceRoot.replace(/\/src$/, '');
     return `${JSON.stringify(
-        { name, projectType: 'library', sourceRoot, tags, targets: {} },
+        {
+            name,
+            $schema: '../../../node_modules/nx/schemas/project-schema.json',
+            projectType: 'library',
+            sourceRoot,
+            tags,
+            targets: {
+                build: {
+                    executor: 'nx:run-commands',
+                    options: {
+                        command: `tsc --noEmit --project ${projectRoot}/tsconfig.json`,
+                        cwd: '{workspaceRoot}',
+                    },
+                },
+            },
+        },
         null,
         2
     )}\n`;
@@ -228,18 +246,25 @@ function projectJson(name, sourceRoot, tags) {
 function tsconfigJson({ experimentalDecorators }) {
     return `${JSON.stringify(
         {
-            compilerOptions: {
-                strict: true,
-                target: 'ES2022',
-                module: 'ESNext',
-                moduleResolution: 'Bundler',
-                ...(experimentalDecorators
-                    ? { experimentalDecorators: true }
-                    : {}),
-                noEmit: true,
-                skipLibCheck: true,
-            },
+            extends: '../../../tsconfig.base.json',
+            ...(experimentalDecorators
+                ? { compilerOptions: { experimentalDecorators: true } }
+                : {}),
             include: ['src/**/*.ts'],
+            exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
+        },
+        null,
+        2
+    )}\n`;
+}
+
+function packageJson(name, dependencies) {
+    return `${JSON.stringify(
+        {
+            name,
+            version: '0.0.0',
+            private: true,
+            dependencies,
         },
         null,
         2
@@ -272,11 +297,17 @@ export function renderAngularNxLayered(semantic, artifactPlan, profile) {
     const applicationPkg = applicationPackageName(basePackageName);
 
     const domainFiles = {
-        'project.json': projectJson(domainPkg, `${outputRoot}/domain/src`, [
-            'type:domain',
-            'platform:angular',
-            'generated:true',
-        ]),
+        'project.json': projectJson(
+            domainPkg,
+            `${outputRoot}/angular-domain/src`,
+            [
+                `scope:${semantic.domain.id}`,
+                'type:domain',
+                'platform:angular',
+                'generated:true',
+            ]
+        ),
+        'package.json': packageJson(domainPkg, { rxjs: 'catalog:' }),
         'src/action-request-port.ts': renderPortInterface(semantic),
         'src/models.ts': renderModels(semantic),
         'src/validation.ts': renderValidation(semantic),
@@ -289,6 +320,7 @@ export function renderAngularNxLayered(semantic, artifactPlan, profile) {
         domainFiles,
         {
             'project.json': 'package-descriptor',
+            'package.json': 'package-descriptor',
             // Le port (interface pure, 0 import framework) est un contrat
             // du domaine au même titre que les types — layer 'domain'
             // dans le catalogue (core/artifact-plan.mjs), donc rattaché à
@@ -303,11 +335,18 @@ export function renderAngularNxLayered(semantic, artifactPlan, profile) {
     );
 
     const dataFiles = {
-        'project.json': projectJson(dataPkg, `${outputRoot}/data/src`, [
+        'project.json': projectJson(dataPkg, `${outputRoot}/angular-data/src`, [
+            `scope:${semantic.domain.id}`,
             'type:data',
             'platform:angular',
             'generated:true',
         ]),
+        'package.json': packageJson(dataPkg, {
+            [domainPkg]: 'workspace:*',
+            '@angular/common': 'catalog:',
+            '@angular/core': 'catalog:',
+            rxjs: 'catalog:',
+        }),
         'src/action-request-client.ts': renderClientImplementation(
             semantic,
             domainPkg
@@ -321,6 +360,7 @@ export function renderAngularNxLayered(semantic, artifactPlan, profile) {
         dataFiles,
         {
             'project.json': 'package-descriptor',
+            'package.json': 'package-descriptor',
             'src/action-request-client.ts': 'integration-client',
             'src/index.ts': 'public-api',
             'tsconfig.json': 'compiler-configuration',
@@ -330,9 +370,19 @@ export function renderAngularNxLayered(semantic, artifactPlan, profile) {
     const applicationFiles = {
         'project.json': projectJson(
             applicationPkg,
-            `${outputRoot}/application/src`,
-            ['type:application', 'platform:angular', 'generated:true']
+            `${outputRoot}/angular-application/src`,
+            [
+                `scope:${semantic.domain.id}`,
+                'type:application',
+                'platform:angular',
+                'generated:true',
+            ]
         ),
+        'package.json': packageJson(applicationPkg, {
+            [domainPkg]: 'workspace:*',
+            '@angular/core': 'catalog:',
+            rxjs: 'catalog:',
+        }),
         'src/action-request-port.token.ts': renderPortToken(domainPkg),
         'src/action-request-commands.ts': renderCommands(semantic, domainPkg),
         'src/after-success.extension.ts': renderAfterSuccessExtension(),
@@ -349,6 +399,7 @@ export function renderAngularNxLayered(semantic, artifactPlan, profile) {
         applicationFiles,
         {
             'project.json': 'package-descriptor',
+            'package.json': 'package-descriptor',
             'src/action-request-port.token.ts': 'runtime-binding',
             'src/action-request-commands.ts': 'runtime-binding',
             'src/after-success.extension.ts': 'after-success-extension',
