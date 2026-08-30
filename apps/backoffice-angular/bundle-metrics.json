@@ -1,27 +1,27 @@
 {
   "schema": 1,
   "configuration": "production",
-  "measured_at": "2026-08-21",
+  "measured_at": "2026-08-30",
   "output_path": "dist/apps/backoffice-angular/browser",
-  "initial_raw_bytes": 629007,
-  "initial_raw_kb": 629.01,
+  "initial_raw_bytes": 534440,
+  "initial_raw_kb": 534.44,
   "initial_files": [
     {
       "file": "env.js",
       "bytes": 692
     },
     {
-      "file": "main-P2HMECZ2.js",
-      "bytes": 599772
+      "file": "main-AH5MCTTM.js",
+      "bytes": 505232
     },
     {
-      "file": "styles-TMYBEDUZ.css",
-      "bytes": 28543
+      "file": "styles-OQGJHJLY.css",
+      "bytes": 28516
     }
   ],
   "exceljs_lazy_raw_bytes": 948323,
   "exceljs_lazy_raw_kb": 948.32,
-  "exceljs_lazy_file": "chunk-DTpNmO7k.js",
+  "exceljs_lazy_file": "chunk-C3E3wPcI.js",
   "budget_initial_warning": "900kb",
   "budget_initial_error": "1mb",
   "command": "bunx nx run backoffice-angular:build:production"
