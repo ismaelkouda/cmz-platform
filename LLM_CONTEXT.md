@@ -444,7 +444,7 @@ directives suivantes :
 | Corpus SEOS — nature (N-6)| **583 correspondances** + **924 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |
 | Corpus SEOS — couverture (N-4) | **918 / 2 727 fichiers libs/ hors tests → 33.7 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
 | Périmètre applicatif (M-7)| **55 / 55 entités** construites (`docs/architecture/scope.json`, 0 manquantes — voir [ADR-0018](./docs/adr/0018-perimetre-team-organization.md)) |
-| Bundle initial (prod, raw)| **534.44 kB** ([`bundle-metrics.json`](./apps/backoffice-angular/bundle-metrics.json), 2026-08-30) |
+| Bundle initial (prod, raw)| **526.38 kB** ([`bundle-metrics.json`](./apps/backoffice-angular/bundle-metrics.json), 2026-08-30) |
 | Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                         |
 | Famille `read-only-view`  | **4/4 IR clôturés** — `monitoring`, `reporting`, `dashboard`, `interactive-map`              |
 | Phase active              | **08** — génération depuis patterns ([ADR-0013](./docs/adr/0013-phases-08-generation-et-09-verification.md) ; Phase 09 = vérification fonctionnelle) |
