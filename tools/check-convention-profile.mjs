@@ -19,7 +19,7 @@
  *   - `injection.forbid` (constructor injection dans les classes
  *     `@Component`/`@Injectable`/`@Service`)
  *   - `typescript.strict`
- *   - `validation.catalogVersionMustMatch`
+ *   - `version_pin` (major du profil ↔ catalog `@angular/core`)
  *
  * Hors périmètre, assumé, pas simulé : `accessibility.axe` (nécessite un
  * outil runtime, ex. `@axe-core/playwright` — absent de ce dépôt, cf.
@@ -41,18 +41,25 @@ const PROFILE_SCHEMA_PATH = 'conventions/profile.schema.json';
 const PACKAGE_JSON_FILE = join(ROOT, 'package.json');
 const TSCONFIG_BASE_FILE = join(ROOT, 'tsconfig.base.json');
 
-// Noms qui trahissent une abstraction cross-platform : un profil doit nommer la
-// lib native de SA plateforme (Angular → transloco, React → i18next), jamais un
-// wrapper maison. Cf. ADR-0036 (retrait de TranslationPort) et conventions/README.md.
-const CROSS_PLATFORM_ABSTRACTION_MARKERS =
-    /\b(port|abstraction|wrapper|cross[\s-]?platform|custom|maison|generic|shared)\b/i;
+// Un `packages[]` de profil nomme une dépendance native concrète (transloco,
+// react-i18next, moko-resources…) — jamais un wrapper conçu pour masquer une
+// différence entre plateformes. Cf. ADR-0036 et conventions/README.md.
+const ABSTRACTION_PACKAGE_MARKERS =
+    /\b(port|abstraction|wrapper|shim|polyfill|adapter)\b/i;
+// Le texte `native` décrit un mécanisme dans les mots de la plateforme — il ne
+// doit jamais se revendiquer inter-plateforme.
+const CROSS_PLATFORM_NATIVE_MARKERS =
+    /\b(cross[\s-]?platform|platform[\s-]?agnostic|multi[\s-]?stack|TranslationPort|I18nPort)\b/i;
 
 /**
- * Valide chaque conventions/*.profile.json contre conventions/profile.schema.json
- * (le schéma était déclaré par `$schema` mais jamais appliqué — fichier vide
- * jusqu'ici), puis applique les règles sémantiques que JSON Schema ne peut pas
- * exprimer : identité de plateforme unique, cohérence version, et interdiction
- * d'une abstraction i18n cross-platform.
+ * Noyau générique — valide chaque conventions/*.profile.json contre
+ * conventions/profile.schema.json (le `$schema` était déclaré mais jamais
+ * appliqué), puis les règles inter-documents que JSON Schema ne peut pas
+ * exprimer : identité de plateforme unique, nom de fichier ↔ identité, et
+ * interdiction d'une abstraction cross-platform dans une convention.
+ *
+ * La STRUCTURE (jeu de préoccupations) est vérifiée ici pour toute stack ;
+ * l'analyse statique du code reste par plateforme (plugin Angular ci-dessous).
  *
  * @returns {{ ok: boolean, checked: string[], errors: string[] }}
  */
@@ -113,18 +120,26 @@ export function validateConventionProfiles(root = ROOT) {
             }
         }
 
-        const i18n = profile.conventions?.i18n;
-        if (i18n) {
-            for (const [key, value] of Object.entries({
-                library: i18n.library,
-                package: i18n.package,
-            })) {
+        for (const [concern, value] of Object.entries(
+            profile.conventions ?? {}
+        )) {
+            if (!value || typeof value !== 'object') continue;
+            const at = `${relativePath} $.conventions.${concern}`;
+            if (
+                typeof value.native === 'string' &&
+                CROSS_PLATFORM_NATIVE_MARKERS.test(value.native)
+            ) {
+                errors.push(
+                    `${at}.native: se revendique inter-plateforme — décrire le mécanisme dans les mots de ${profile.platform}`
+                );
+            }
+            for (const [index, pkg] of (value.packages ?? []).entries()) {
                 if (
-                    typeof value === 'string' &&
-                    CROSS_PLATFORM_ABSTRACTION_MARKERS.test(value)
+                    typeof pkg === 'string' &&
+                    ABSTRACTION_PACKAGE_MARKERS.test(pkg)
                 ) {
                     errors.push(
-                        `${relativePath} $.conventions.i18n.${key}: "${value}" ressemble à une abstraction cross-platform — nommer la lib native de la plateforme`
+                        `${at}.packages[${index}]: "${pkg}" ressemble à un wrapper d'abstraction — nommer une dépendance native`
                     );
                 }
             }
@@ -245,9 +260,10 @@ function checkTypescriptStrict() {
 }
 
 function checkCatalogVersion(profile) {
+    // Plugin Angular : la version épinglée vit dans le catalog bun (ADR-0005).
     const pkg = JSON.parse(readFileSync(PACKAGE_JSON_FILE, 'utf8'));
     const catalogVersion = pkg.workspaces?.catalog?.['@angular/core'];
-    const expected = profile.validation?.catalogVersionMustMatch; // ex. "22.0.x"
+    const expected = profile.version_pin?.must_match; // ex. "22.0.x"
     if (!catalogVersion || !expected) {
         return { ok: false, catalogVersion, expected };
     }
@@ -337,7 +353,7 @@ function main() {
 
     const catalog = checkCatalogVersion(profile);
     report(
-        'validation.catalogVersionMustMatch',
+        'version_pin ↔ catalog @angular/core',
         catalog.ok,
         `profil attend "${catalog.expected}", catalog déclare "${catalog.catalogVersion}"`
     );

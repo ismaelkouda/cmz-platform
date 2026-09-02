@@ -1,10 +1,18 @@
 # Contrats d'archétype
 
+> **Portée : cible Angular / Nx uniquement.** Ces archétypes décrivent des
+> **types de fichier de la sortie Angular** (`@Service`, façade signal, route
+> lazy, mapper DTO…). Ils ne sont **pas** la couche neutre de conception : le
+> « quoi produire » indépendant de la stack vit dans l'IR / l'artefact de
+> conception d'application ([ADR-0030](../docs/adr/0030-ir-canonique-et-profils-cibles.md),
+> [ADR-0031](../docs/adr/0031-graphe-execution-et-manifests-composition.md)).
+> Une cible React / Kotlin / Swift aura ses propres archétypes, jamais ceux-ci.
+
 Entrées de génération spécifiques à ce dépôt
 ([ADR-0010](../docs/adr/0010-flux-de-generation-assistee-par-ia.md), §3).
-Sibling de [`conventions/`](../conventions/README.md) : les conventions disent
-_comment_ écrire pour une version de framework, les contrats disent _quoi_
-produire pour un type de fichier.
+Sibling de [`conventions/`](../conventions/README.md) : le profil de convention
+dit _comment_ écrire pour une version d'une plateforme, les contrats disent
+_quoi_ produire pour un type de fichier Angular.
 
 ## Rôle
 

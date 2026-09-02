@@ -2,6 +2,16 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
+- **Note du 2026-09-02 — portée multi-stack.** Le mécanisme décrit ici n'est
+  pas propre à Angular : il pose « un profil de convention par (plateforme,
+  version), lu et non contenu par le générateur ». Sa forme actuelle est
+  `conventions/profile.schema.json` — un jeu de préoccupations identique pour
+  toute stack (`component_model`, `server_state`, `i18n`, `forms`…), rempli
+  dans les termes natifs de chaque plateforme, sans abstraction cross-platform.
+  Les `contracts/*.contract.md` sont les archétypes de la **cible Angular/Nx** ;
+  la couche de conception neutre est l'IR / l'artefact de conception d'application
+  ([ADR-0029](./0029-perimetre-capacites-plateforme-generation.md),
+  [ADR-0030](./0030-ir-canonique-et-profils-cibles.md)).
 
 ## Contexte
 

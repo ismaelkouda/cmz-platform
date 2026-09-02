@@ -4,88 +4,103 @@
   "platform_version": "22",
   "description": "Profil de convention Angular 22. Source unique des choix de code qui changent d'une version majeure à l'autre. Le générateur et l'IA le LISENT ; ils ne le contiennent pas (ADR-0010). Pour Angular 23, créer angular-23.profile.json — ne pas modifier les générateurs.",
   "source_of_truth": {
-    "origin": "angular.dev/ai/develop-with-ai",
+    "origin": "https://angular.dev/ai/develop-with-ai",
     "verified_for": "22.0.7",
-    "note": "Copie de travail : conventions/best-practices.md. Ce fichier fait foi pour tout ce que tools/check-convention-profile.mjs vérifie en CI ; best-practices.md reste la référence pour le reste (a11y qualitative, forms, organisation des composants)."
+    "note": "Copie de travail narrative : conventions/best-practices.md. Le sous-ensemble mécaniquement vérifiable est appliqué par le plugin Angular de tools/check-convention-profile.mjs."
+  },
+  "version_pin": {
+    "source": "package.json → workspaces.catalog['@angular/core']",
+    "must_match": "22.0.x"
   },
   "conventions": {
-    "service": {
-      "decorator": "@Service",
-      "replaces": "@Injectable({ providedIn: 'root' })",
-      "since": "22",
-      "note": "@Service est la forme recommandée pour un singleton root en v22+. @Injectable reste valide pour les cas non-root."
-    },
-    "injection": {
-      "style": "inject()",
-      "forbid": "constructor injection",
-      "note": "Utiliser la fonction inject() plutôt que l'injection par constructeur."
-    },
-    "component": {
-      "standalone": "implicite",
-      "forbidExplicitStandaloneTrue": true,
-      "changeDetection": "OnPush par défaut, ne pas le déclarer explicitement",
-      "inputs": "input()",
-      "outputs": "output()",
-      "twoWay": "model()",
-      "derivedState": "computed()",
-      "hostBindings": "objet host du décorateur, jamais @HostBinding/@HostListener"
-    },
-    "templates": {
-      "controlFlow": "@if / @for / @switch",
-      "localVariables": "@let",
-      "forbid": ["*ngIf", "*ngFor", "*ngSwitch", "ngClass", "ngStyle"],
-      "bindings": "class et style bindings natifs",
-      "images": "NgOptimizedImage pour les images statiques"
-    },
-    "i18n": {
-      "library": "transloco",
-      "package": "@jsverse/transloco",
-      "template_api": "*transloco / pipe transloco / TranslocoDirective",
-      "runtime_api": "inject(TranslocoService)",
-      "provider": "provideTransloco()",
-      "adr": "ADR-0036",
+    "component_model": {
+      "native": "Composant standalone : `@Component` avec `standalone` implicite ; `changeDetection` non déclaré (OnPush est le défaut v22+) ; entrées `input()`, sorties `output()`, liaison bidirectionnelle `model()` ; état dérivé `computed()` ; host bindings dans l'objet `host` du décorateur ; injection par `inject()`.",
+      "packages": [],
       "forbid": [
-        "@ngx-translate/core",
-        "$localize / @angular/localize pour les chaînes dynamiques d'application",
-        "toute abstraction maison type TranslationPort / I18nPort / provideI18n() — retirées du repo (ADR-0036)"
-      ]
+        "NgModule",
+        "standalone: true explicite",
+        "changeDetection: ChangeDetectionStrategy.OnPush explicite",
+        "@HostBinding / @HostListener",
+        "décorateurs @Input() / @Output()",
+        "injection par constructeur"
+      ],
+      "guidance": "https://angular.dev/ai/develop-with-ai"
     },
-    "async_state": {
-      "server_state": ["httpResource()", "resource()", "rxResource()"],
-      "observable_interop": "toSignal()",
-      "fallback": "loader Observable de la couche data + toSignal(), uniquement quand resource() ne convient pas",
+    "local_state": {
+      "native": "Signals : `signal()`, `computed()`, mise à jour par `set()` / `update()`. Store de formulaire ou de filtre porté par un composant de page/dialog via `@Injectable()` sans options + `providers: [XxxStore]` sur ce composant.",
+      "packages": [],
       "forbid": [
-        "état de vue porté par un BehaviorSubject",
-        "triplet signal loading/error/value écrit à la main quand resource() suffit"
-      ]
+        "mutate()",
+        "BehaviorSubject pour de l'état de vue",
+        "@Injectable({ providedIn: 'root' }) pour un store de composant"
+      ],
+      "guidance": "https://angular.dev/guide/signals"
+    },
+    "server_state": {
+      "native": "`httpResource()` / `resource()` / `rxResource()` — la facade expose `value` / `isLoading` / `error` (signaux) ; interop RxJS par `rxResource({ stream })` ou `toSignal()`.",
+      "packages": ["@angular/core"],
+      "forbid": [
+        "état serveur maintenu à la main dans un signal + loader Observable quand resource() suffit",
+        "subscribe() manuel dans un composant",
+        "BaseFacade/PaginatedFacade comme défaut d'une nouvelle facade"
+      ],
+      "guidance": "https://angular.dev/guide/http/making-requests#httpresource"
+    },
+    "navigation": {
+      "native": "Routes lazy : `export const <MODULE>_ROUTES: Routes` avec `loadComponent: () => import(...)` ; gardes fonctionnelles (`CanActivateFn`) au niveau shell ; `data.breadcrumb` = clé i18n ; `withComponentInputBinding()`.",
+      "packages": ["@angular/router"],
+      "forbid": [
+        "RouterModule.forChild",
+        "import statique d'un composant de page dans le fichier routes",
+        "canActivate déclaré par une classe"
+      ],
+      "guidance": "https://angular.dev/guide/routing"
     },
     "forms": {
-      "preferred": "Signal Forms (@angular/forms/signals)",
-      "since": "22",
-      "fallback": "Reactive Forms",
-      "forbid": "Template-driven Forms pour les nouveaux formulaires"
+      "native": "Signal Forms — état signal, accès typé aux champs.",
+      "packages": ["@angular/forms"],
+      "forbid": [
+        "Template-driven Forms pour un nouveau formulaire",
+        "FormGroup non typé"
+      ],
+      "guidance": "https://angular.dev/guide/forms/signals",
+      "notes": "Reactive Forms toléré uniquement si Signal Forms ne couvre pas le cas."
     },
-    "state": {
-      "local": "signals",
-      "derived": "computed()",
-      "signalUpdate": "update() ou set(), jamais mutate()"
+    "i18n": {
+      "native": "Transloco : `TranslocoDirective` (`*transloco=\"let t\"`) ou pipe `transloco` dans le template ; `inject(TranslocoService)` pour une traduction impérative ; `provideTransloco()` au bootstrap.",
+      "packages": ["@jsverse/transloco"],
+      "forbid": [
+        "@ngx-translate/core",
+        "$localize / @angular/localize pour des chaînes dynamiques d'application",
+        "abstraction maison TranslationPort / I18nPort / provideI18n() (retirées du repo — ADR-0036)"
+      ],
+      "guidance": "ADR-0036"
     },
-    "lazyLoading": {
-      "featureRoutes": "obligatoire",
-      "services": "injectAsync() disponible en v22 pour le chargement de service à la demande"
-    },
-    "typescript": {
-      "strict": true,
-      "preferInference": true,
-      "forbidAny": "utiliser unknown si le type est incertain"
+    "styling": {
+      "native": "Tailwind CSS utilitaire dans les templates ; styles de composant scopés pour le reste ; `NgOptimizedImage` pour les images statiques ; contrôles réutilisables délégués au design system `@cmz/shared-ui`.",
+      "packages": ["tailwindcss"],
+      "forbid": [
+        "ngClass / ngStyle (bindings natifs class / style à la place)",
+        "CSS global hors design system",
+        "librairie de composants tierce (PrimeNG, Angular Material…)"
+      ],
+      "guidance": "https://angular.dev/guide/image-optimization"
     },
     "accessibility": {
-      "axe": "doit passer tous les contrôles AXE",
-      "wcag": "minimums WCAG AA (focus, contraste, ARIA)"
+      "native": "WCAG AA : focus géré, contraste, ARIA ; boutons nommés (texte ou `aria-label`) ; champs avec `<label for>` ; icônes décoratives `aria-hidden=\"true\"` ; groupes de toggle `role=\"group\"` + `aria-pressed`.",
+      "packages": [],
+      "forbid": [
+        "div cliquable sans rôle ni gestion clavier",
+        "bouton icône sans nom accessible"
+      ],
+      "guidance": "https://angular.dev/best-practices/a11y",
+      "notes": "Doit passer tous les contrôles AXE — outil runtime, hors du check statique."
+    },
+    "testing": {
+      "native": "Vitest + `TestBed` (`@angular/core/testing`) pour les composants ; tests de règle unitaires purs pour domain/application ; Playwright pour la navigation bout-en-bout.",
+      "packages": ["vitest", "@analogjs/vitest-angular"],
+      "forbid": ["Karma / Jasmine", "test qui ne couvre que le cas passant"],
+      "guidance": "https://angular.dev/guide/testing"
     }
-  },
-  "validation": {
-    "catalogVersionMustMatch": "22.0.x",
-    "note": "La version majeure de ce profil doit correspondre à @angular/core du catalog (ADR-0005). Un écart est un bug — vérifié en CI par tools/check-convention-profile.mjs."
   }
 }

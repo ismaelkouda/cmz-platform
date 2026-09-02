@@ -34,6 +34,18 @@ function writeProfile(root, name, profile) {
 
 const baseAngular = JSON.parse(readFileSync(ANGULAR_SRC, 'utf8'));
 
+const CONCERNS = [
+    'component_model',
+    'local_state',
+    'server_state',
+    'navigation',
+    'forms',
+    'i18n',
+    'styling',
+    'accessibility',
+    'testing',
+];
+
 test('le profil Angular réel est conforme au schéma', () => {
     const result = validateConventionProfiles(REPO_ROOT);
     assert.deepEqual(result.errors, []);
@@ -41,45 +53,82 @@ test('le profil Angular réel est conforme au schéma', () => {
     assert.ok(result.checked.includes('conventions/angular-22.profile.json'));
 });
 
-test('conventions/profile.schema.json est un JSON non vide', () => {
+test('le schéma exige un jeu de préoccupations fixe et fermé', () => {
     const schema = JSON.parse(readFileSync(SCHEMA_SRC, 'utf8'));
-    assert.equal(schema.type, 'object');
-    assert.ok(schema.required.includes('conventions'));
+    const conventions = schema.properties.conventions;
+    assert.equal(conventions.additionalProperties, false);
+    assert.deepEqual([...conventions.required].sort(), [...CONCERNS].sort());
+    // chaque préoccupation a la même forme neutre
+    assert.deepEqual(schema.$defs.concern.required, [
+        'native',
+        'forbid',
+        'guidance',
+    ]);
 });
 
-test('rejette un profil sans conventions.i18n', () => {
+test('rejette un profil auquel il manque une préoccupation', () => {
     const root = scratchRoot();
     try {
         const profile = structuredClone(baseAngular);
-        delete profile.conventions.i18n;
+        delete profile.conventions.server_state;
         writeProfile(root, 'angular-22.profile.json', profile);
         const { ok, errors } = validateConventionProfiles(root);
         assert.equal(ok, false);
-        assert.match(errors.join('\n'), /conventions\.i18n: is required/);
+        assert.match(
+            errors.join('\n'),
+            /conventions\.server_state: is required/
+        );
     } finally {
         rmSync(root, { recursive: true, force: true });
     }
 });
 
-test('rejette une i18n qui ressemble à une abstraction cross-platform', () => {
+test('rejette une convention qui se revendique inter-plateforme', () => {
     const root = scratchRoot();
     try {
         const profile = structuredClone(baseAngular);
-        profile.conventions.i18n = {
-            library: 'custom-translation-port',
-            package: '@cmz/i18n-abstraction',
-            forbid: ['littéraux en dur'],
-        };
+        profile.conventions.i18n.native =
+            'un TranslationPort cross-platform commun Angular/React';
         writeProfile(root, 'angular-22.profile.json', profile);
         const { ok, errors } = validateConventionProfiles(root);
         assert.equal(ok, false);
         assert.match(
             errors.join('\n'),
-            /i18n\.library:.*abstraction cross-platform/
+            /conventions\.i18n\.native: se revendique inter-plateforme/
         );
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test("rejette un packages[] qui nomme un wrapper d'abstraction", () => {
+    const root = scratchRoot();
+    try {
+        const profile = structuredClone(baseAngular);
+        profile.conventions.i18n.packages = ['@cmz/i18n-port'];
+        writeProfile(root, 'angular-22.profile.json', profile);
+        const { ok, errors } = validateConventionProfiles(root);
+        assert.equal(ok, false);
         assert.match(
             errors.join('\n'),
-            /i18n\.package:.*abstraction cross-platform/
+            /conventions\.i18n\.packages\[0\]:.*wrapper d'abstraction/
+        );
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('exige une guidance par préoccupation', () => {
+    const root = scratchRoot();
+    try {
+        const profile = structuredClone(baseAngular);
+        delete profile.conventions.forms.guidance;
+        writeProfile(root, 'angular-22.profile.json', profile);
+        const { ok, errors } = validateConventionProfiles(root);
+        assert.equal(ok, false);
+        assert.match(
+            errors.join('\n'),
+            /conventions\.forms\.guidance: is required/
         );
     } finally {
         rmSync(root, { recursive: true, force: true });
@@ -116,18 +165,15 @@ test('rejette deux profils pour la même plateforme', () => {
     }
 });
 
-test('rejette un async_state sans primitive de server state', () => {
+test('rejette un profil sans version_pin', () => {
     const root = scratchRoot();
     try {
         const profile = structuredClone(baseAngular);
-        profile.conventions.async_state = { forbid: ['BehaviorSubject'] };
+        delete profile.version_pin;
         writeProfile(root, 'angular-22.profile.json', profile);
         const { ok, errors } = validateConventionProfiles(root);
         assert.equal(ok, false);
-        assert.match(
-            errors.join('\n'),
-            /async_state\.server_state: is required/
-        );
+        assert.match(errors.join('\n'), /\$\.version_pin: is required/);
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cmz.local/schemas/conventions/profile.schema.json",
   "title": "CMZ Convention Profile",
-  "description": "Un profil de convention par (plateforme, version majeure). Décrit les choix de code natifs de CETTE plateforme au moment de la génération. Il ne contient jamais d'abstraction cross-platform : le renderer / LLM d'une cible ne lit que son propre profil. Voir conventions/README.md et ADR-0010.",
+  "description": "Un profil de convention par (plateforme, version majeure). La STRUCTURE est identique pour toute stack : les mêmes préoccupations sont déclarées. Le CONTENU est 100 % natif de la plateforme — jamais une primitive d'un autre framework, jamais une abstraction cross-platform. Le renderer / LLM d'une cible ne lit que son propre profil. Voir conventions/README.md et ADR-0010.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -11,8 +11,8 @@
     "platform_version",
     "description",
     "source_of_truth",
-    "conventions",
-    "validation"
+    "version_pin",
+    "conventions"
   ],
   "properties": {
     "$schema": { "type": "string", "minLength": 1 },
@@ -27,64 +27,88 @@
       "additionalProperties": false,
       "required": ["origin", "verified_for"],
       "properties": {
-        "origin": { "type": "string", "minLength": 1 },
+        "origin": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Guidance officielle de LA plateforme (angular.dev, react.dev, developer.android.com, developer.apple.com…)."
+        },
         "verified_for": { "type": "string", "minLength": 1 },
         "note": { "type": "string", "minLength": 1 }
       }
     },
-    "conventions": {
+    "version_pin": {
       "type": "object",
-      "required": ["i18n", "async_state"],
+      "additionalProperties": false,
+      "required": ["source", "must_match"],
       "properties": {
-        "i18n": { "$ref": "#/$defs/i18n" },
-        "async_state": { "$ref": "#/$defs/asyncState" }
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Fichier + clé où la version de la plateforme est épinglée dans ce dépôt (ex. package.json workspaces.catalog['@angular/core'], gradle/libs.versions.toml, Package.swift)."
+        },
+        "must_match": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Contrainte que la version épinglée doit satisfaire (ex. 22.0.x)."
+        }
       }
     },
-    "validation": {
+    "conventions": {
       "type": "object",
-      "required": ["catalogVersionMustMatch"],
+      "additionalProperties": false,
+      "description": "Une décision par préoccupation que le générateur / LLM d'UI doit prendre, quelle que soit la stack. Le jeu de clés est fixe ; la valeur de chacune est native.",
+      "required": [
+        "component_model",
+        "local_state",
+        "server_state",
+        "navigation",
+        "forms",
+        "i18n",
+        "styling",
+        "accessibility",
+        "testing"
+      ],
       "properties": {
-        "catalogVersionMustMatch": { "type": "string", "minLength": 1 },
-        "note": { "type": "string", "minLength": 1 }
+        "component_model": { "$ref": "#/$defs/concern" },
+        "local_state": { "$ref": "#/$defs/concern" },
+        "server_state": { "$ref": "#/$defs/concern" },
+        "navigation": { "$ref": "#/$defs/concern" },
+        "forms": { "$ref": "#/$defs/concern" },
+        "i18n": { "$ref": "#/$defs/concern" },
+        "styling": { "$ref": "#/$defs/concern" },
+        "accessibility": { "$ref": "#/$defs/concern" },
+        "testing": { "$ref": "#/$defs/concern" }
       }
     }
   },
   "$defs": {
-    "i18n": {
+    "concern": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["library", "package", "forbid"],
+      "required": ["native", "forbid", "guidance"],
       "properties": {
-        "library": { "type": "string", "minLength": 1 },
-        "package": { "type": "string", "minLength": 1 },
-        "template_api": { "type": "string", "minLength": 1 },
-        "runtime_api": { "type": "string", "minLength": 1 },
-        "provider": { "type": "string", "minLength": 1 },
-        "adr": { "type": "string", "pattern": "^ADR-[0-9]{4}$" },
-        "forbid": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
-        }
-      }
-    },
-    "asyncState": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["server_state", "forbid"],
-      "properties": {
-        "server_state": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+        "native": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Le mécanisme recommandé, décrit dans les termes de la plateforme."
         },
-        "observable_interop": { "type": "string", "minLength": 1 },
-        "fallback": { "type": "string", "minLength": 1 },
+        "packages": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Dépendances qui portent ce mécanisme. Tableau vide si natif au langage / SDK."
+        },
         "forbid": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
-        }
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Alternatives explicitement proscrites, y compris toute abstraction cross-platform."
+        },
+        "guidance": {
+          "type": "string",
+          "minLength": 1,
+          "description": "URL de doc officielle de la plateforme, ou ADR-XXXX."
+        },
+        "notes": { "type": "string", "minLength": 1 }
       }
     }
   }

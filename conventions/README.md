@@ -1,64 +1,80 @@
 # Profils de convention
 
-Source unique des choix de code qui **changent d'une version majeure à l'autre**
-d'une plateforme cible. Le générateur et l'IA les **lisent** au moment de la
-génération ; ils ne les contiennent jamais
+Source unique des choix de code d'une plateforme cible, au moment de la
+génération. Le générateur et l'IA les **lisent** ; ils ne les contiennent jamais
 ([ADR-0010](../docs/adr/0010-flux-de-generation-assistee-par-ia.md)).
 
-## Principe — un profil par (plateforme, version majeure)
+## Structure identique pour toute stack, contenu 100 % natif
 
-Quand une convention change — par exemple `@Injectable({providedIn:'root'})` →
-`@Service` entre Angular v20 et v22 — on écrit un **nouveau profil**, on ne
-touche pas aux générateurs. C'est le catalog de versions
-([ADR-0005](../docs/adr/0005-versions-du-socle.md)) appliqué aux conventions de
-code : un seul endroit à modifier.
+`conventions/profile.schema.json` fixe **le même jeu de préoccupations** pour
+Angular, React, Kotlin ou Swift :
 
-Chaque profil décrit les choix **natifs de sa plateforme**, tirés de la
-guidance officielle de cette plateforme (angular.dev, react.dev, Android/Kotlin
-+ Compose, Apple HIG/Swift). Le renderer ou le LLM d'une cible ne lit **que son
-propre profil**.
+| Préoccupation | La décision qu'elle tranche |
+| --- | --- |
+| `component_model` | l'unité d'UI et sa déclaration |
+| `local_state` | l'état d'un écran / composant |
+| `server_state` | comment la donnée distante est chargée, mise en cache, exposée |
+| `navigation` | comment les écrans / routes sont déclarés |
+| `forms` | saisie + validation |
+| `i18n` | externalisation des chaînes visibles |
+| `styling` | application du style visuel |
+| `accessibility` | le seuil a11y et sa vérification |
+| `testing` | comment l'UI générée est testée |
+
+Chaque préoccupation a la **même forme neutre** —
+`{ native, packages, forbid, guidance }` — mais sa valeur est écrite **dans les
+mots de la plateforme**, tirée de sa guidance officielle (`angular.dev`,
+`react.dev`, `developer.android.com`, `developer.apple.com`). Aucune primitive
+d'un autre framework, aucun terme du schéma qui présuppose une stack.
+
+Exemple `i18n` :
+
+| Plateforme | `native` | `packages` |
+| --- | --- | --- |
+| Angular | `TranslocoDirective` / pipe `transloco` | `@jsverse/transloco` |
+| React | hook `useTranslation` de react-i18next | `react-i18next` |
+| Kotlin | ressources `strings.xml` + `stringResource()` | — |
+| Swift | String Catalogs + `LocalizedStringKey` | — |
 
 ### Zéro abstraction cross-platform
 
-Un profil nomme la lib native de sa plateforme, jamais un wrapper maison conçu
-pour masquer une différence entre plateformes. Exemple concret : l'i18n est
-**Transloco** côté Angular ([ADR-0036](../docs/adr/0036-convergence-transloco-angular.md)) et
-**react-i18next** côté React — pas une interface commune `TranslationPort`
-(retirée du repo). `tools/check-convention-profile.mjs` échoue si un profil
-déclare une `i18n.library`/`i18n.package` dont le nom trahit une abstraction
-(`port`, `wrapper`, `abstraction`, `custom`, `shared`, `cross-platform`…).
+Un profil nomme le mécanisme natif de sa plateforme, jamais un wrapper conçu
+pour masquer une différence entre plateformes (l'anti-pattern `TranslationPort`,
+retiré du repo — [ADR-0036](../docs/adr/0036-convergence-transloco-angular.md)).
+`tools/check-convention-profile.mjs` échoue si un `native` se revendique
+inter-plateforme ou si un `packages[]` nomme un `*-port` / `*-wrapper` /
+`*-abstraction`.
+
+## Un profil par (plateforme, version majeure)
+
+Quand une convention change — `@Injectable({providedIn:'root'})` → `@Service`
+entre Angular v20 et v22 — on écrit un **nouveau profil**
+(`angular-23.profile.json`), on ne touche pas aux générateurs. Le nom de fichier
+reflète `platform` + version majeure ; `version_pin` dit où la version est
+épinglée dans le dépôt (`package.json` catalog, `libs.versions.toml`,
+`Package.swift`…) et la contrainte que le major du profil doit satisfaire.
+
+## Vérification
+
+`check:convention-profile` (dans `check:all` + CI) a deux couches :
+
+1. **noyau générique** — schéma, identité unique, nom de fichier, guidance par
+   préoccupation, anti-abstraction — pour **tout** profil ;
+2. **plugin par plateforme** — analyse statique du code réel contre le profil.
+   Le plugin Angular existe ; React/Kotlin/Swift s'ajoutent quand la stack est
+   réellement construite.
 
 ## Fichiers
 
-`conventions/profile.schema.json` définit la forme d'un profil ; chaque
-`conventions/<plateforme>-<version-majeure>.profile.json` est validé contre lui
-en CI (`check:convention-profile`).
-
-| Profil                                                 | Plateforme | Vérifié pour |
-| ------------------------------------------------------ | ---------- | ------------ |
-| [`angular-22.profile.json`](./angular-22.profile.json) | Angular    | v22.0.7      |
-
-À ajouter quand une cible est réellement construite : `react-*.profile.json`,
-`kotlin-*.profile.json`, `swift-*.profile.json` — même schéma, même règle de
-nommage, guidance officielle de chaque plateforme.
+| Profil | Plateforme | Vérifié pour |
+| --- | --- | --- |
+| [`angular-22.profile.json`](./angular-22.profile.json) | Angular | v22.0.7 |
 
 Convention transverse (indépendante de la plateforme) :
-
-| Convention                   | Portée                              |
-| ---------------------------- | ----------------------------------- |
-| [`nommage.md`](./nommage.md) | Nommage dossiers/fichiers intra-lib |
-
-## Règle de cohérence
-
-La version majeure d'un profil doit correspondre à la version de la plateforme
-dans le catalog. `angular-22.profile.json` va avec `@angular/core: 22.x` du
-catalog. Le nom de fichier doit refléter `platform` + `platform_version`
-majeure. Ces deux écarts sont des bugs — vérifiés en CI par
-`tools/check-convention-profile.mjs`.
+[`nommage.md`](./nommage.md) — nommage dossiers/fichiers intra-lib.
 
 ## Emplacement
 
-Les profils vivent **dans ce monorepo** (pas dans le dépôt tiers des outils
-SEOS) : ils sont spécifiques au dépôt — ils disent « ici on cible Angular 22 ».
-Les outils SEOS, eux, sont génériques et versionnés séparément
+Les profils vivent **dans ce monorepo** — ils disent « ici on cible Angular
+22 ». Les outils SEOS, eux, sont génériques et versionnés séparément
 ([ADR-0009](../docs/adr/0009-reconstruction-pilotee-par-patterns.md)).
