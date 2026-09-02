@@ -1,9 +1,13 @@
 {
   "$schema": "./profile.schema.json",
-  "framework": "angular",
-  "version": "22",
+  "platform": "angular",
+  "platform_version": "22",
   "description": "Profil de convention Angular 22. Source unique des choix de code qui changent d'une version majeure à l'autre. Le générateur et l'IA le LISENT ; ils ne le contiennent pas (ADR-0010). Pour Angular 23, créer angular-23.profile.json — ne pas modifier les générateurs.",
-  "source": "angular.dev/ai/develop-with-ai — copie de travail : conventions/best-practices.md, vérifié pour v22.0.7. Extrait mécaniquement vérifiable uniquement (audit 2026-08-02-addendum, J-12) : ce fichier fait foi pour tout ce que tools/check-convention-profile.mjs vérifie en CI ; best-practices.md reste la référence pour le reste (a11y qualitative, forms, organisation des composants).",
+  "source_of_truth": {
+    "origin": "angular.dev/ai/develop-with-ai",
+    "verified_for": "22.0.7",
+    "note": "Copie de travail : conventions/best-practices.md. Ce fichier fait foi pour tout ce que tools/check-convention-profile.mjs vérifie en CI ; best-practices.md reste la référence pour le reste (a11y qualitative, forms, organisation des composants)."
+  },
   "conventions": {
     "service": {
       "decorator": "@Service",
@@ -22,14 +26,38 @@
       "changeDetection": "OnPush par défaut, ne pas le déclarer explicitement",
       "inputs": "input()",
       "outputs": "output()",
+      "twoWay": "model()",
       "derivedState": "computed()",
       "hostBindings": "objet host du décorateur, jamais @HostBinding/@HostListener"
     },
     "templates": {
       "controlFlow": "@if / @for / @switch",
+      "localVariables": "@let",
       "forbid": ["*ngIf", "*ngFor", "*ngSwitch", "ngClass", "ngStyle"],
       "bindings": "class et style bindings natifs",
       "images": "NgOptimizedImage pour les images statiques"
+    },
+    "i18n": {
+      "library": "transloco",
+      "package": "@jsverse/transloco",
+      "template_api": "*transloco / pipe transloco / TranslocoDirective",
+      "runtime_api": "inject(TranslocoService)",
+      "provider": "provideTransloco()",
+      "adr": "ADR-0036",
+      "forbid": [
+        "@ngx-translate/core",
+        "$localize / @angular/localize pour les chaînes dynamiques d'application",
+        "toute abstraction maison type TranslationPort / I18nPort / provideI18n() — retirées du repo (ADR-0036)"
+      ]
+    },
+    "async_state": {
+      "server_state": ["httpResource()", "resource()", "rxResource()"],
+      "observable_interop": "toSignal()",
+      "fallback": "loader Observable de la couche data + toSignal(), uniquement quand resource() ne convient pas",
+      "forbid": [
+        "état de vue porté par un BehaviorSubject",
+        "triplet signal loading/error/value écrit à la main quand resource() suffit"
+      ]
     },
     "forms": {
       "preferred": "Signal Forms (@angular/forms/signals)",
@@ -58,6 +86,6 @@
   },
   "validation": {
     "catalogVersionMustMatch": "22.0.x",
-    "note": "La version majeure de ce profil doit correspondre à @angular/core du catalog (ADR-0005). Un écart est un bug — à vérifier en CI (Phase 06)."
+    "note": "La version majeure de ce profil doit correspondre à @angular/core du catalog (ADR-0005). Un écart est un bug — vérifié en CI par tools/check-convention-profile.mjs."
   }
 }

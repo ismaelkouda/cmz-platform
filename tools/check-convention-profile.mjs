@@ -30,11 +30,109 @@
 import { readFileSync } from 'node:fs';
 import { globSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { validateJsonSchema } from './generator-platform/validate-ir.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const PROFILE_FILE = join(ROOT, 'conventions/angular-22.profile.json');
+const PROFILE_GLOB = 'conventions/*.profile.json';
+const PROFILE_SCHEMA_PATH = 'conventions/profile.schema.json';
 const PACKAGE_JSON_FILE = join(ROOT, 'package.json');
 const TSCONFIG_BASE_FILE = join(ROOT, 'tsconfig.base.json');
+
+// Noms qui trahissent une abstraction cross-platform : un profil doit nommer la
+// lib native de SA plateforme (Angular → transloco, React → i18next), jamais un
+// wrapper maison. Cf. ADR-0036 (retrait de TranslationPort) et conventions/README.md.
+const CROSS_PLATFORM_ABSTRACTION_MARKERS =
+    /\b(port|abstraction|wrapper|cross[\s-]?platform|custom|maison|generic|shared)\b/i;
+
+/**
+ * Valide chaque conventions/*.profile.json contre conventions/profile.schema.json
+ * (le schéma était déclaré par `$schema` mais jamais appliqué — fichier vide
+ * jusqu'ici), puis applique les règles sémantiques que JSON Schema ne peut pas
+ * exprimer : identité de plateforme unique, cohérence version, et interdiction
+ * d'une abstraction i18n cross-platform.
+ *
+ * @returns {{ ok: boolean, checked: string[], errors: string[] }}
+ */
+export function validateConventionProfiles(root = ROOT) {
+    const errors = [];
+    let schema;
+    try {
+        schema = JSON.parse(
+            readFileSync(join(root, PROFILE_SCHEMA_PATH), 'utf8')
+        );
+    } catch (error) {
+        return {
+            ok: false,
+            checked: [],
+            errors: [`${PROFILE_SCHEMA_PATH} illisible : ${error.message}`],
+        };
+    }
+
+    const files = globSync(PROFILE_GLOB, { cwd: root }).sort();
+    if (files.length === 0) {
+        errors.push(`aucun profil trouvé (${PROFILE_GLOB})`);
+    }
+
+    const seenPlatforms = new Map();
+    for (const relativePath of files) {
+        let profile;
+        try {
+            profile = JSON.parse(
+                readFileSync(join(root, relativePath), 'utf8')
+            );
+        } catch (error) {
+            errors.push(`${relativePath}: JSON invalide (${error.message})`);
+            continue;
+        }
+
+        for (const violation of validateJsonSchema(profile, schema)) {
+            errors.push(`${relativePath} ${violation}`);
+        }
+
+        // Un profil par (plateforme, version majeure) — pas deux fichiers pour
+        // la même plateforme, et le nom de fichier reflète l'identité déclarée.
+        if (typeof profile.platform === 'string') {
+            const previous = seenPlatforms.get(profile.platform);
+            if (previous) {
+                errors.push(
+                    `${relativePath}: plateforme "${profile.platform}" déjà déclarée par ${previous}`
+                );
+            } else {
+                seenPlatforms.set(profile.platform, relativePath);
+            }
+            const expectedName = `conventions/${profile.platform}-${
+                String(profile.platform_version ?? '').split('.')[0]
+            }.profile.json`;
+            if (relativePath !== expectedName) {
+                errors.push(
+                    `${relativePath}: nom attendu ${expectedName} (plateforme + version majeure déclarées)`
+                );
+            }
+        }
+
+        const i18n = profile.conventions?.i18n;
+        if (i18n) {
+            for (const [key, value] of Object.entries({
+                library: i18n.library,
+                package: i18n.package,
+            })) {
+                if (
+                    typeof value === 'string' &&
+                    CROSS_PLATFORM_ABSTRACTION_MARKERS.test(value)
+                ) {
+                    errors.push(
+                        `${relativePath} $.conventions.i18n.${key}: "${value}" ressemble à une abstraction cross-platform — nommer la lib native de la plateforme`
+                    );
+                }
+            }
+        }
+    }
+
+    return { ok: errors.length === 0, checked: files, errors };
+}
 
 const SCAN_GLOBS = ['apps/**/*.ts', 'libs/**/*.ts'];
 const EXCLUDE_SEGMENTS = ['node_modules', '.spec.ts', '.test.ts'];
@@ -172,6 +270,20 @@ function main() {
 
     let failed = false;
 
+    const profileValidation = validateConventionProfiles();
+    report(
+        'profils ↔ conventions/profile.schema.json',
+        profileValidation.ok,
+        profileValidation.ok
+            ? `${profileValidation.checked.length} profil(s) conforme(s) au schéma`
+            : `${profileValidation.errors.length} violation(s)`
+    );
+    if (!profileValidation.ok) {
+        for (const error of profileValidation.errors)
+            console.log(`   ↳ ${error}`);
+        failed = true;
+    }
+
     const standaloneViolations = checkStandalone(files);
     report(
         'component.forbidExplicitStandaloneTrue',
@@ -279,4 +391,6 @@ function printVerbose({
     section('constructor injection', ctorViolations);
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main();
+}
