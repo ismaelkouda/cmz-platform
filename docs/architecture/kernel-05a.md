@@ -77,7 +77,7 @@ fichiers) est le meilleur banc d'essai de la boucle après `shared-constants`.
 
 1. Pour chaque fichier, déterminer son archétype.
 2. Générer sous le contrat d'archétype
-   ([`contracts/`](../../contracts/README.md)) = rôle + règle mécanique +
+   ([`conventions/archetypes/angular/`](../../conventions/archetypes/angular/README.md)) = rôle + règle mécanique +
    exemplaire de référence + profil Angular 22 + données métier issues du
    source.
 3. Portail de validation : `tsc --noEmit`, ESLint, revue du contenu métier.

@@ -29,7 +29,7 @@ reste passif, le domaine ignore l'API.
 - **Décorateur** : `@Service()` — **pas** `@Injectable({ providedIn: 'root' })`.
   Le source, écrit en Angular ≤ 21, utilise l'ancienne forme ; la génération
   applique la convention Angular 22 du
-  [profil](../conventions/angular-22.profile.json).
+  [profil](../../angular-22.profile.json).
 - Injection éventuelle par `inject()`, pas par constructeur.
 
 ## Exemplaire de référence
@@ -99,7 +99,7 @@ Non-reproduction appliquée : les deux bases mortes ne sont pas portées.
 (Phase 07). La duplication du `validateResponse` (copié × 4, levait un
 `ApiError` non affichable) a été **résolue** : la validation d'enveloppe est
 extraite dans un dé-emballeur unique `unwrapResponse` / `assertResponseOk`
-([`api-response-handling`](../docs/architecture/api-response-handling.md)), qui
+([`api-response-handling`](../../../docs/architecture/api-response-handling.md)), qui
 lève des `domain-error` (`ServerResponseError`/`UnknownError`). Les bases sont
 donc **pures** : `mapFromDto(dto) → mapItemFromDto(unwrapResponse(dto))`. Plus
 de `console.log`, plus d'`ApiError` dans les mappers.

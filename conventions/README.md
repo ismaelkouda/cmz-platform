@@ -70,6 +70,11 @@ reflète `platform` + version majeure ; `version_pin` dit où la version est
 | --- | --- | --- |
 | [`angular-22.profile.json`](./angular-22.profile.json) | Angular | v22.0.7 |
 
+Le profil dit _comment_ écrire. Les **archétypes de types de fichier** d'une
+cible — _quoi_ produire par type de fichier — sont un jeu par stack sous
+[`archetypes/<stack>/`](./archetypes/angular/README.md) (Angular pour l'instant).
+Ils ne sont pas neutres : la neutralité vit dans l'IR / les compositions.
+
 Convention transverse (indépendante de la plateforme) :
 [`nommage.md`](./nommage.md) — nommage dossiers/fichiers intra-lib.
 

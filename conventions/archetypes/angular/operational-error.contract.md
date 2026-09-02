@@ -13,7 +13,7 @@ Là où l'erreur est **levée** : `ApiError` (transport) est destinée aux **sou
 de données** (`data`, ex. `ApiError.fetchFailed` sur échec réseau) — plus à la
 validation d'enveloppe, qui lève désormais des `domain-error` via
 `unwrapResponse` (cf.
-[`api-response-handling`](../docs/architecture/api-response-handling.md)) ;
+[`api-response-handling`](../../../docs/architecture/api-response-handling.md)) ;
 `InvalidFilterError` est levée par un VO de module. À placer au plus près de ses
 consommateurs (Phase 07).
 

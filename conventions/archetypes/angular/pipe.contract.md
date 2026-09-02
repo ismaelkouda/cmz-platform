@@ -14,7 +14,7 @@ Transformation **présentationnelle** appelée dans un template
 - **Une `class` exportée** `<Nom>Pipe implements PipeTransform`, décorée `@Pipe`
   (le décorateur **n'est pas** renommé en v22, contrairement à `@Injectable`).
 - **`standalone` implicite** — ne jamais écrire `standalone: true`
-  ([profil Angular 22](../conventions/angular-22.profile.json)).
+  ([profil Angular 22](../../angular-22.profile.json)).
 - `name` en `camelCase`, **sans** le suffixe `Pipe` (`separatorThousands`, pas
   `separatorThousandsPipe`).
 - `transform()` **typée** (aucun `any`) et **pure** (pas d'effet de bord).

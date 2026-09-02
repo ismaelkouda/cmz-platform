@@ -12,7 +12,7 @@ un helper métier transverse.
 `domain` → `@cmz/shared-domain`. **Ne pas confondre** avec les utils qui
 dépendent de `HttpClient`, `moment`, `@angular/*` : ceux-là sont
 `data`/`ui`/`infra` (cf.
-[`docs/architecture/domain-scope.md`](../docs/architecture/domain-scope.md)).
+[`docs/architecture/domain-scope.md`](../../../docs/architecture/domain-scope.md)).
 
 ## Règle mécanique
 

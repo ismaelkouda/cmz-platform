@@ -16,7 +16,7 @@ dépendances**, jamais par défaut au domaine :
 > Un service qui importe `HttpClient`, `ngx-toastr`, `primeng`,
 > `@angular/router`, `crypto-js`, `ExcelJS`… **n'est pas** un service de
 > domaine. Cf.
-> [`docs/architecture/services-classification.md`](../docs/architecture/services-classification.md).
+> [`docs/architecture/services-classification.md`](../../../docs/architecture/services-classification.md).
 
 ## Règle mécanique
 
@@ -30,7 +30,7 @@ dépendances**, jamais par défaut au domaine :
 ## Convention (depuis le profil, jamais codée en dur)
 
 `@Injectable({ providedIn: 'root' })` → **`@Service()`**
-([profil Angular 22](../conventions/angular-22.profile.json)).
+([profil Angular 22](../../angular-22.profile.json)).
 
 ## Exemplaire (application)
 

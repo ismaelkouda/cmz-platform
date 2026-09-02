@@ -42,5 +42,5 @@ ce simple **bon placement**.
   quand on bâtit `@cmz/shared-application`, `@cmz/shared-ui`,
   `@cmz/shared-browser` comme **tranches de couche cohérentes** (une lib par
   couche, ADR-0003 / Phase 4), chacune sous le contrat
-  [`service`](../../contracts/service.contract.md). Cette table est la feuille
+  [`service`](../../conventions/archetypes/angular/service.contract.md). Cette table est la feuille
   de route de ces tranches.

@@ -24,7 +24,7 @@ peut porter des accesseurs et, plus tard, des invariants. Le DTO reste étranger
   (`props/<nom>.props.ts`), que l'entité **importe et `implements`**. Jamais
   d'interface _inline_, et **jamais dans `interfaces/`** (réservé aux formes
   qu'aucune classe n'implémente — cf.
-  [`conventions/nommage.md`](../conventions/nommage.md)).
+  [`conventions/nommage.md`](../../nommage.md)).
 - Deux variantes observées, toutes deux admises :
     - **champs plats** : chaque donnée est un `readonly` du constructeur, typé
       par la props (`ActorEntity implements ActorProps`, `ActorProps` dans

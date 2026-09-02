@@ -55,4 +55,4 @@ Règle : dès qu'une `interface` est `implements`ée par une classe (ou sert de
 type au `props` d'une entité), c'est une **props** → `props/<nom>.props.ts`,
 type `<Nom>Props`. Les `interfaces/` ne contiennent que des formes qu'aucune
 classe n'implémente (cf.
-[`contracts/entity.contract.md`](../contracts/entity.contract.md)).
+[`archetypes/angular/entity.contract.md`](./archetypes/angular/entity.contract.md)).

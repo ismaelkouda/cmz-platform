@@ -2,16 +2,22 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-07-21
-- **Note du 2026-09-02 — portée multi-stack.** Le mécanisme décrit ici n'est
-  pas propre à Angular : il pose « un profil de convention par (plateforme,
-  version), lu et non contenu par le générateur ». Sa forme actuelle est
-  `conventions/profile.schema.json` — un jeu de préoccupations identique pour
-  toute stack (`component_model`, `server_state`, `i18n`, `forms`…), rempli
-  dans les termes natifs de chaque plateforme, sans abstraction cross-platform.
-  Les `contracts/*.contract.md` sont les archétypes de la **cible Angular/Nx** ;
-  la couche de conception neutre est l'IR / l'artefact de conception d'application
-  ([ADR-0029](./0029-perimetre-capacites-plateforme-generation.md),
-  [ADR-0030](./0030-ir-canonique-et-profils-cibles.md)).
+- **Note du 2026-09-02 — modèle de couches multi-stack.** Le mécanisme décrit
+  ici n'est pas propre à Angular. Il se répartit en couches :
+    - **neutre** — les compositions (`action-request`, `list-query`…) et l'IR /
+      artefact de conception d'application
+      ([ADR-0029](./0029-perimetre-capacites-plateforme-generation.md),
+      [ADR-0030](./0030-ir-canonique-et-profils-cibles.md)) disent _quoi_
+      produire, sans référence à une stack ;
+    - **par (plateforme, version)** — `conventions/profile.schema.json` : un jeu
+      de préoccupations identique pour toute stack (`component_model`,
+      `server_state`, `i18n`, `forms`…), rempli dans les termes natifs de la
+      plateforme, sans abstraction cross-platform ;
+    - **par plateforme** — les archétypes de types de fichier. Le §3 ci-dessous
+      décrit ceux d'Angular ; ils vivent désormais sous
+      `conventions/archetypes/angular/` (déplacés de `contracts/` le 2026-09-02,
+      pour ne plus occuper la racine comme s'ils étaient neutres). Une cible
+      React / Kotlin / Swift aura son propre jeu, jamais celui-ci.
 
 ## Contexte
 
@@ -90,10 +96,14 @@ outils SEOS), parce qu'il est spécifique au dépôt : il dit « ici on cible
 Angular 22 ». Les outils SEOS, eux, sont génériques et publiés séparément
 ([ADR-0009](./0009-reconstruction-pilotee-par-patterns.md)).
 
-### 3. Contrats d'archétype pour le contenu des fichiers
+### 3. Archétypes de types de fichier (cible Angular) pour le contenu
+
+> Ces archétypes sont **spécifiques à la sortie Angular/Nx** et vivent sous
+> [`conventions/archetypes/angular/`](../../conventions/archetypes/angular/README.md).
+> Voir la note de tête pour le modèle de couches (neutre / par-version / par-plateforme).
 
 `check-pattern.js` vérifie _quels_ fichiers existent. Le contenu de _chaque_
-fichier est cadré par un **contrat d'archétype**.
+fichier est cadré par un **archétype**.
 
 Les 106 fichiers canoniques ne relèvent que d'une quinzaine d'archétypes
 (`command-mapper`, `use-case`, `entity-vo`, `handler`, `facade`, `repository`,

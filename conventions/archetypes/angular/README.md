@@ -1,37 +1,46 @@
-# Contrats d'archétype
+# Archétypes de la cible Angular / Nx
 
-> **Portée : cible Angular / Nx uniquement.** Ces archétypes décrivent des
-> **types de fichier de la sortie Angular** (`@Service`, façade signal, route
-> lazy, mapper DTO…). Ils ne sont **pas** la couche neutre de conception : le
-> « quoi produire » indépendant de la stack vit dans l'IR / l'artefact de
-> conception d'application ([ADR-0030](../docs/adr/0030-ir-canonique-et-profils-cibles.md),
-> [ADR-0031](../docs/adr/0031-graphe-execution-et-manifests-composition.md)).
-> Une cible React / Kotlin / Swift aura ses propres archétypes, jamais ceux-ci.
+> **Un jeu d'archétypes par stack — celui-ci décrit la sortie Angular/Nx.**
+> Ces fichiers cadrent des **types de fichier de la sortie Angular**
+> (`@Service`, façade signal, route lazy, mapper DTO…). Une cible React,
+> Kotlin ou Swift aura son propre jeu sous `conventions/archetypes/<stack>/`,
+> structurellement parallèle mais rédigé depuis la doc officielle de cette
+> plateforme — **jamais fusionné avec celui-ci** (les taxonomies de fichiers
+> ne se correspondent pas 1:1 : un mapper Angular ≈ rien d'explicite en React
+> ≈ une extension function en Kotlin).
 
-Entrées de génération spécifiques à ce dépôt
-([ADR-0010](../docs/adr/0010-flux-de-generation-assistee-par-ia.md), §3).
-Sibling de [`conventions/`](../conventions/README.md) : le profil de convention
-dit _comment_ écrire pour une version d'une plateforme, les contrats disent
-_quoi_ produire pour un type de fichier Angular.
+## Ce qui est neutre vit ailleurs
+
+Le « quoi produire » **indépendant de la stack** n'est pas ici :
+
+- **fonctionnalités** : les compositions `action-request`, `list-query`,
+  `crud-entity`, `workflow-action` ;
+- **conception fine** : l'IR / l'artefact de conception d'application
+  ([ADR-0030](../../../docs/adr/0030-ir-canonique-et-profils-cibles.md),
+  [ADR-0031](../../../docs/adr/0031-graphe-execution-et-manifests-composition.md)).
+
+Ce dossier ne fait que **projeter** ces représentations neutres sur les fichiers
+concrets d'Angular. Cf.
+[ADR-0010 §3](../../../docs/adr/0010-flux-de-generation-assistee-par-ia.md).
 
 ## Rôle
 
-`check-pattern.js` vérifie **quels** fichiers existent. Un contrat d'archétype
-cadre **le contenu** de chaque fichier. Un archétype = un type de fichier
-récurrent (`dto`, `mapper`, `service`, `error`, `entity`, `facade`…).
+`check-pattern.js` (`tools/seos/check-pattern.mjs`) vérifie **quels** fichiers
+existent. Un archétype cadre **le contenu** de chaque fichier — un type de
+fichier récurrent (`dto`, `mapper`, `service`, `error`, `entity`, `facade`…).
 
 Le prompt de génération d'un fichier est **assemblé**, jamais libre :
 
 ```
-contrat d'archétype  (rôle + règle mécanique + exemplaire)
-  + profil de convention courant  (conventions/angular-22.profile.json)
-  + données métier  (issues du projet source)
+archétype cible          (rôle + règle mécanique + exemplaire)
+  + profil de convention  (conventions/angular-22.profile.json)
+  + données métier        (issues de l'IR)
   = prompt qui n'ouvre qu'un trou de forme fixe
 ```
 
 L'IA ne réinvente jamais le squelette ; elle remplit le contenu métier dans une
 forme imposée, puis le
-[portail de validation](../docs/adr/0010-flux-de-generation-assistee-par-ia.md)
+[portail de validation](../../../docs/adr/0010-flux-de-generation-assistee-par-ia.md)
 contrôle (tsc, ESLint, check-semantics, revue).
 
 ## Format d'un contrat
