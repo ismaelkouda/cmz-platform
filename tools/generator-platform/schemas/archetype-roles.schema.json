@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/archetype-roles.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "stack", "roles"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "target-archetype-roles" },
+    "stack": { "enum": ["angular"] },
+    "roles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["selector", "archetype"],
+          "properties": {
+            "selector": { "type": "string", "minLength": 1 },
+            "archetype": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

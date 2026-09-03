@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "archetype-role-registry",
+  "roles": [
+    {
+      "id": "screen",
+      "producer": "page-realization-contract",
+      "consumer": "page-realization-work-order",
+      "description": "Réaliser un écran adressable depuis son contrat de page canonique."
+    }
+  ]
+}

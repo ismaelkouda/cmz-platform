@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/page-realization-evidence.schema.json",
+  "title": "CMZ Page Realization Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "page_id",
+    "page_contract_sha256",
+    "states",
+    "controls",
+    "actions",
+    "data_bindings",
+    "regions",
+    "elements"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "page-realization-evidence" },
+    "page_id": { "type": "string", "pattern": "^page_[a-f0-9]{16}$" },
+    "page_contract_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "states": { "$ref": "#/$defs/mappings" },
+    "controls": { "$ref": "#/$defs/mappings" },
+    "actions": { "$ref": "#/$defs/mappings" },
+    "data_bindings": { "$ref": "#/$defs/mappings" },
+    "regions": { "$ref": "#/$defs/mappings" },
+    "elements": { "$ref": "#/$defs/mappings" }
+  },
+  "$defs": {
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "selector"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+        },
+        "selector": {
+          "type": "string",
+          "pattern": "^\\[data-cmz-id=\"[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*\"\\]$"
+        }
+      }
+    },
+    "mappings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mapping" }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/role-node.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "node_id",
+    "role",
+    "source",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "archetype-role-node" },
+    "node_id": { "$ref": "#/$defs/id" },
+    "role": { "const": "screen" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "sha256"],
+      "properties": {
+        "kind": { "const": "page-realization-contract" },
+        "id": { "$ref": "#/$defs/id" },
+        "sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page_id",
+        "path",
+        "access_mode",
+        "state_ids",
+        "control_ids",
+        "action_ids",
+        "region_ids"
+      ],
+      "properties": {
+        "page_id": { "$ref": "#/$defs/id" },
+        "path": { "type": "string", "pattern": "^/" },
+        "access_mode": { "enum": ["public", "authenticated", "authorized"] },
+        "state_ids": { "$ref": "#/$defs/ids" },
+        "control_ids": { "$ref": "#/$defs/ids" },
+        "action_ids": { "$ref": "#/$defs/ids" },
+        "region_ids": { "$ref": "#/$defs/ids" }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$"
+    },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "ids": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/id" }
+    }
+  }
+}

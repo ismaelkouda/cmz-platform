@@ -1,12 +1,26 @@
+---
+archetype: component
+role: screen
+shape:
+    Composant Angular de page standalone implicite, borné au contrat de
+    réalisation et sans accès réseau direct.
+forbid:
+    - 'standalone: true explicite'
+    - "import direct d'une couche data"
+    - 'appel HTTP, fetch, Axios ou XMLHttpRequest'
+    - 'règle métier dans la présentation'
+---
+
 # Contrat d'archétype — `component`
 
 ## Rôle
 
 Un **composant de page / feature UI** orchestre l'affichage et les actions
 utilisateur pour un volet métier. Il lit l'état via une **façade application**
-(signaux), mappe vers un **VM** (presenter) et délègue les contrôles réutilisables
-au design system (`@cmz/shared-ui`). **Zéro** règle métier dans le template ou
-la classe : validation et mapping wire/domaine restent en domain/data.
+(signaux), mappe vers un **VM** (presenter) et délègue les contrôles
+réutilisables au design system (`@cmz/shared-ui`). **Zéro** règle métier dans le
+template ou la classe : validation et mapping wire/domaine restent en
+domain/data.
 
 ## Couche
 
@@ -16,22 +30,22 @@ d'import direct de `data` (DTO/HTTP) ni d'autre `scope:` métier.
 
 ## Règle mécanique
 
-| Invariant | Exigence |
-| --------- | -------- |
-| Standalone | `@Component({ … })` standalone implicite — jamais `standalone: true`, jamais de `NgModule` local |
-| OnPush | Signaux uniquement ; ne pas déclarer `changeDetection` explicitement (OnPush est le défaut v22+) ; pas de `detectChanges` manuel hors tests |
-| DI | `inject()` pour ports/façades — pas de constructeur gonflé de services HTTP |
-| Template | i18n via le **mécanisme du profil actif** (`conventions/<plateforme>-<v>.profile.json` → `conventions.i18n` ; pour Angular : Transloco) / clé `MODULE.VOLET.*` — **pas** de littéraux utilisateur en dur, **pas** d'abstraction i18n maison |
-| A11y | Boutons nommés (texte ou `aria-label`) ; champs filtrés avec `<label for>` ; icônes décoratives `aria-hidden="true"` ; groupes de toggle `role="group"` + `aria-pressed` (cf. T12-8) |
-| Side-effects | Chargement initial dans le constructeur ou `effect` documenté via `facade.load(...)` — **pas** d'HTTP inline |
-| Export | Exporté depuis `libs/<module>/ui/src/index.ts` et référencé en **lazy** par le contrat `route` |
+| Invariant    | Exigence                                                                                                                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Standalone   | `@Component({ … })` standalone implicite — jamais `standalone: true`, jamais de `NgModule` local                                                                                                                                            |
+| OnPush       | Signaux uniquement ; ne pas déclarer `changeDetection` explicitement (OnPush est le défaut v22+) ; pas de `detectChanges` manuel hors tests                                                                                                 |
+| DI           | `inject()` pour ports/façades — pas de constructeur gonflé de services HTTP                                                                                                                                                                 |
+| Template     | i18n via le **mécanisme du profil actif** (`conventions/<plateforme>-<v>.profile.json` → `conventions.i18n` ; pour Angular : Transloco) / clé `MODULE.VOLET.*` — **pas** de littéraux utilisateur en dur, **pas** d'abstraction i18n maison |
+| A11y         | Boutons nommés (texte ou `aria-label`) ; champs filtrés avec `<label for>` ; icônes décoratives `aria-hidden="true"` ; groupes de toggle `role="group"` + `aria-pressed` (cf. T12-8)                                                        |
+| Side-effects | Chargement initial dans le constructeur ou `effect` documenté via `facade.load(...)` — **pas** d'HTTP inline                                                                                                                                |
+| Export       | Exporté depuis `libs/<module>/ui/src/index.ts` et référencé en **lazy** par le contrat `route`                                                                                                                                              |
 
 ## Non-reproduction (défauts source corrigés)
 
 - PrimeNG / `*ngIf` / modules NgModule massifs → components standalone +
   design-system maison.
-- `UiFeedbackService` UI dans la page pour les erreurs HTTP → errors routées
-  par la facade/`ErrorHandlerRegistry` (application).
+- `UiFeedbackService` UI dans la page pour les erreurs HTTP → errors routées par
+  la facade/`ErrorHandlerRegistry` (application).
 - `console.log` de debug (filters, grafana link) → non reproduits.
 - Couplage direct Repository/API depuis le composant → **interdit**.
 
@@ -40,7 +54,6 @@ d'import direct de `data` (DTO/HTTP) ni d'autre `scope:` métier.
 ```ts
 @Component({
     selector: 'cmz-dashboard-page',
-    imports: [DashboardSkeletonComponent],
     imports: [TranslocoDirective, DashboardSkeletonComponent],
     providers: [DashboardFilterStore],
     template: `
@@ -59,7 +72,10 @@ d'import direct de `data` (DTO/HTTP) ni d'autre `scope:` métier.
 })
 export class DashboardPageComponent {
     private readonly facade = inject(DashboardFacade);
+    private readonly presenter = inject(DashboardPresenter);
+    private readonly store = inject(DashboardFilterStore);
 
+    protected readonly ns = 'DASHBOARD';
     protected readonly loading = this.facade.isLoading;
     protected readonly vm = computed(() => {
         const entity = this.facade.value();
