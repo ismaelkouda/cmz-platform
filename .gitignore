@@ -112,6 +112,11 @@ __screenshots__/
 # Transactions durables de retrait de module — jamais versionner les sauvegardes
 /.cmz/retire-module-transactions/
 /.cmz/create-module-transactions/
+/apps/.*.create-app-candidate-*
+/apps/.*.generation-lock/
+/.cmz/retire-app-transactions/
+/.cmz/page-realization-work-orders/
+/.cmz/application-shell-integration/
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
