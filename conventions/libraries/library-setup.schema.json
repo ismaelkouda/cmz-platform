@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/conventions/library-setup.schema.json",
+  "title": "CMZ Library Setup Recipe",
+  "description": "Une recette d'installation par (bibliothèque, plateforme). Elle sépare le STABLE (les invariants qu'un setup correct doit satisfaire + un test d'acceptation réel) du VOLATILE (les commandes exactes pour la version N, déléguées au schematic officiel, à un script reference-derived, ou à un LLM borné dont la sortie est vérifiée contre ces invariants). Voir conventions/README.md et docs/adr/0041-angular-material-tailwind-defaults.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "library",
+    "platform",
+    "packages",
+    "install",
+    "invariants",
+    "guidance"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "library": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "platform": { "enum": ["angular", "react", "kotlin", "swift"] },
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "install": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "notes"],
+      "properties": {
+        "method": {
+          "enum": [
+            "official-schematic",
+            "reference-derived",
+            "llm-then-verified"
+          ]
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "official-schematic uniquement : la commande maintenue par le vendeur (ex. `ng add @angular/material`). Jamais de flags de version figés — les invariants sont le contrat, pas cette ligne."
+        },
+        "reference_tool": {
+          "type": "string",
+          "minLength": 1,
+          "description": "reference-derived uniquement : le script qui dérive la config d'une app de référence vivante (ex. tools/scaffold-tailwind.mjs)."
+        },
+        "notes": { "type": "string", "minLength": 1 }
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/invariant" }
+    },
+    "coexistence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/coexistence" }
+    },
+    "guidance": {
+      "type": "string",
+      "pattern": "^https://[^\\s]+$"
+    }
+  },
+  "$defs": {
+    "invariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "assert"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "assert": { "$ref": "#/$defs/assert" }
+      }
+    },
+    "assert": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "kind"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$",
+          "description": "Chemin POSIX relatif à la racine de l'app cible (dotfiles admis, jamais de segment `..`)."
+        },
+        "kind": {
+          "enum": [
+            "file-exists",
+            "file-contains",
+            "file-not-contains",
+            "file-matches"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Requis sauf pour file-exists. Sous-chaîne littérale (contains/not-contains) ou expression régulière (matches)."
+        }
+      }
+    },
+    "coexistence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["with", "invariants"],
+      "properties": {
+        "with": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+          "description": "Une autre bibliothèque ; ces invariants ne sont vérifiés que si l'app déclare aussi celle-ci."
+        },
+        "invariants": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/invariant" }
+        }
+      }
+    }
+  }
+}

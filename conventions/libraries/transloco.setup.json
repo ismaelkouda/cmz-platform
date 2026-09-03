@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "library": "transloco",
+  "platform": "angular",
+  "packages": ["@jsverse/transloco"],
+  "install": {
+    "method": "official-schematic",
+    "command": "nx g @jsverse/transloco:ng-add",
+    "notes": "i18n par défaut de toute app Angular du workspace (ADR-0036). Le schematic câble `provideTransloco()`, un loader HTTP et l'arborescence `assets/i18n/`. Le renderer de shell (angular-pwa-shell-renderer.mjs) écrit déjà cette configuration ; cette recette la verrouille. Aucune abstraction maison (TranslationPort) — retirée du repo."
+  },
+  "invariants": [
+    {
+      "id": "package",
+      "description": "@jsverse/transloco est déclaré",
+      "assert": {
+        "file": "package.json",
+        "kind": "file-contains",
+        "value": "@jsverse/transloco"
+      }
+    },
+    {
+      "id": "provider",
+      "description": "provideTransloco() est au bootstrap",
+      "assert": {
+        "file": "src/app/app.config.ts",
+        "kind": "file-contains",
+        "value": "provideTransloco"
+      }
+    },
+    {
+      "id": "http-loader",
+      "description": "un loader Transloco existe",
+      "assert": {
+        "file": "src/app/transloco-loader.ts",
+        "kind": "file-contains",
+        "value": "TranslocoLoader"
+      }
+    },
+    {
+      "id": "no-home-grown-abstraction",
+      "description": "aucune abstraction i18n maison (ADR-0036)",
+      "assert": {
+        "file": "src/app/app.config.ts",
+        "kind": "file-not-contains",
+        "value": "TranslationPort"
+      }
+    }
+  ],
+  "guidance": "https://jsverse.gitbook.io/transloco"
+}

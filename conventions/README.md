@@ -78,6 +78,36 @@ Ils ne sont pas neutres : la neutralité vit dans l'IR / les compositions.
 Convention transverse (indépendante de la plateforme) :
 [`nommage.md`](./nommage.md) — nommage dossiers/fichiers intra-lib.
 
+## Recettes de setup de bibliothèque — `libraries/`
+
+Le profil dit _quel_ mécanisme utiliser (`styling` → Angular Material + Tailwind
+pour Angular). Il ne dit pas _comment_ installer et configurer ces bibliothèques
+— et ce « comment » change vite (Tailwind v3 `tailwind.config.js` → v4 `@theme` ;
+flags de `ng add @angular/material` d'une version à l'autre).
+
+`libraries/<lib>.setup.json` sépare les deux
+([ADR-0041](../docs/adr/0041-angular-material-tailwind-defaults.md)) :
+
+| Champ | Rôle | Stabilité |
+| --- | --- | --- |
+| `invariants[]` | ce qu'un setup correct **contient forcément** (`file-exists` / `file-contains` / `file-matches` sur un fichier de l'app) + le test d'acceptation | STABLE — c'est le contrat |
+| `coexistence[]` | invariants supplémentaires actifs seulement si une autre lib est aussi déclarée (ex. frontière Material ↔ reset Tailwind) | STABLE |
+| `install.method` | `official-schematic` (`ng add …`), `reference-derived` (dérivé d'une app vivante par un script) ou `llm-then-verified` | — |
+| `install.command` / `reference_tool` | le « comment » de la version N | VOLATILE — délégué, jamais figé comme source de vérité |
+
+L'installation elle-même est faite par le schematic du vendeur, par un script
+`reference-derived` (`tools/scaffold-tailwind.mjs`) ou par un LLM borné ; sa
+sortie est **revérifiée contre les invariants**. Une app qui adopte des
+bibliothèques les déclare dans `apps/<app>/.cmz/libraries.json`
+(`kind: "app-library-manifest"`) ; `check:library-setup` (dans `check:all` + CI)
+revérifie alors chaque invariant dans l'arbre de cette app à chaque run.
+
+| Recette | `install.method` |
+| --- | --- |
+| [`angular-material.setup.json`](./libraries/angular-material.setup.json) | `official-schematic` |
+| [`tailwind.setup.json`](./libraries/tailwind.setup.json) | `reference-derived` |
+| [`transloco.setup.json`](./libraries/transloco.setup.json) | `official-schematic` |
+
 ## Emplacement
 
 Les profils vivent **dans ce monorepo** — ils disent « ici on cible Angular

@@ -77,14 +77,21 @@
       "guidance": "ADR-0036"
     },
     "styling": {
-      "native": "Tailwind CSS utilitaire dans les templates ; styles de composant scopés pour le reste ; `NgOptimizedImage` pour les images statiques ; contrôles réutilisables délégués au design system `@cmz/shared-ui`.",
-      "packages": ["tailwindcss"],
+      "native": "Deux couches complémentaires (ADR-0041). Primitives de composant interactif (boutons, champs, dialogs, menus, tables, tabs…) : Angular Material standalone, thème M3 via `mat.theme()` dans les styles globaux. Mise en page, espacement, échelle typographique, one-offs : classes utilitaires Tailwind dans les templates. `NgOptimizedImage` pour les images statiques ; styles de composant scopés pour le résiduel.",
+      "packages": [
+        "@angular/material",
+        "@angular/cdk",
+        "tailwindcss",
+        "@tailwindcss/postcss"
+      ],
       "forbid": [
         "ngClass / ngStyle (bindings natifs class / style à la place)",
-        "CSS global hors design system",
-        "librairie de composants tierce (PrimeNG, Angular Material…)"
+        "CSS global hors thème M3 / couche `@theme` Tailwind",
+        "autre librairie de composants (PrimeNG, NG-ZORRO, Nebular…) — Material est la seule",
+        "le reset Tailwind qui réinitialise les composants Material (préserver la frontière ADR-0041)"
       ],
-      "guidance": "https://angular.dev/guide/image-optimization"
+      "guidance": "https://material.angular.dev/guide/theming",
+      "notes": "Setup verrouillé par conventions/libraries/{angular-material,tailwind}.setup.json + check:library-setup. `@cmz/shared-ui` reste le design system de `backoffice-angular` uniquement (gelé, non rétro-porté sur Material — ADR-0041) ; les nouvelles apps composent Material + Tailwind, pas de wrapper maison."
     },
     "accessibility": {
       "native": "WCAG AA : focus géré, contraste, ARIA ; boutons nommés (texte ou `aria-label`) ; champs avec `<label for>` ; icônes décoratives `aria-hidden=\"true\"` ; groupes de toggle `role=\"group\"` + `aria-pressed`.",

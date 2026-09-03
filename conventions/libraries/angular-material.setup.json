@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0.0",
+  "library": "angular-material",
+  "platform": "angular",
+  "packages": ["@angular/material", "@angular/cdk"],
+  "install": {
+    "method": "official-schematic",
+    "command": "ng add @angular/material",
+    "notes": "Schematic maintenu par l'équipe Angular, version-aware : il installe @angular/material + @angular/cdk à la version alignée sur @angular/core, écrit un thème M3 (`mat.theme()`) dans les styles globaux, câble la typographie et le provider d'animations. Les flags exacts (thème, typographie, densité) évoluent version après version — ne jamais les figer ici. Les invariants ci-dessous sont le contrat : après `ng add`, ils doivent tous passer ; sinon un LLM borné complète et la gate revérifie."
+  },
+  "invariants": [
+    {
+      "id": "material-package",
+      "description": "@angular/material est déclaré",
+      "assert": {
+        "file": "package.json",
+        "kind": "file-contains",
+        "value": "@angular/material"
+      }
+    },
+    {
+      "id": "cdk-package",
+      "description": "@angular/cdk est déclaré",
+      "assert": {
+        "file": "package.json",
+        "kind": "file-contains",
+        "value": "@angular/cdk"
+      }
+    },
+    {
+      "id": "m3-theme",
+      "description": "un thème M3 est défini dans les styles globaux via mat.theme()",
+      "assert": {
+        "file": "src/styles.scss",
+        "kind": "file-matches",
+        "value": "mat\\.theme\\("
+      }
+    },
+    {
+      "id": "animations-provider",
+      "description": "le provider d'animations Angular est au bootstrap",
+      "assert": {
+        "file": "src/app/app.config.ts",
+        "kind": "file-matches",
+        "value": "provideAnimations(?:Async)?\\("
+      }
+    },
+    {
+      "id": "no-ngmodule-material",
+      "description": "les composants Material sont importés en standalone, jamais via un NgModule agrégateur",
+      "assert": {
+        "file": "src/app/app.config.ts",
+        "kind": "file-not-contains",
+        "value": "MatModule"
+      }
+    }
+  ],
+  "coexistence": [
+    {
+      "with": "tailwind",
+      "invariants": [
+        {
+          "id": "component-boundary",
+          "description": "règle de coexistence documentée dans les styles : Material pour les composants, Tailwind pour layout/espacement — le reset Tailwind ne doit pas réinitialiser les composants Material",
+          "assert": {
+            "file": "src/styles.scss",
+            "kind": "file-matches",
+            "value": "[Mm]aterial.*[Tt]ailwind|[Tt]ailwind.*[Mm]aterial"
+          }
+        }
+      ]
+    }
+  ],
+  "guidance": "https://material.angular.dev/guide/theming"
+}

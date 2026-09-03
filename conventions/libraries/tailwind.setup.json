@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "library": "tailwind",
+  "platform": "angular",
+  "packages": ["tailwindcss", "@tailwindcss/postcss"],
+  "install": {
+    "method": "reference-derived",
+    "reference_tool": "tools/scaffold-tailwind.mjs",
+    "notes": "Ni @nx/angular:application ni Angular n'ont de schematic Tailwind. Le script dérive `.postcssrc.json`, `src/tailwind.css` (`@import 'tailwindcss'` + `@theme`) et l'entrée du tableau `styles` de `project.json` depuis l'app de référence `backoffice-angular`. Tailwind a déjà changé de mécanisme une fois (v3 tailwind.config.js + @tailwind → v4 @import + @theme) : ne jamais figer la forme ici, dériver."
+  },
+  "invariants": [
+    {
+      "id": "package",
+      "description": "tailwindcss et son plugin PostCSS sont déclarés",
+      "assert": {
+        "file": "package.json",
+        "kind": "file-contains",
+        "value": "@tailwindcss/postcss"
+      }
+    },
+    {
+      "id": "postcss-config",
+      "description": ".postcssrc.json active @tailwindcss/postcss",
+      "assert": {
+        "file": ".postcssrc.json",
+        "kind": "file-contains",
+        "value": "@tailwindcss/postcss"
+      }
+    },
+    {
+      "id": "css-entrypoint",
+      "description": "src/tailwind.css importe tailwindcss",
+      "assert": {
+        "file": "src/tailwind.css",
+        "kind": "file-matches",
+        "value": "@import\\s+['\"]tailwindcss['\"]"
+      }
+    },
+    {
+      "id": "wired-in-build",
+      "description": "project.json injecte src/tailwind.css dans le bundle de styles",
+      "assert": {
+        "file": "project.json",
+        "kind": "file-contains",
+        "value": "src/tailwind.css"
+      }
+    }
+  ],
+  "guidance": "https://tailwindcss.com/docs/installation/framework-guides/angular"
+}

@@ -156,6 +156,16 @@ jobs:
       - name: check:convention-profile (ADR-0010)
         run: bun run check:convention-profile
 
+      # ADR-0041 — les recettes conventions/libraries/*.setup.json figent les
+      # INVARIANTS d'un setup de bibliothèque (Material, Tailwind, Transloco) et
+      # un test d'acceptation ; le COMMENT (commande de la version N) est délégué
+      # au schematic officiel / à un script reference-derived / à un LLM borné
+      # dont la sortie est revérifiée ici. Toute app qui déclare des
+      # bibliothèques (apps/<app>/.cmz/libraries.json) voit ses invariants
+      # revérifiés dans son arbre — empêche la dérive silencieuse du setup.
+      - name: check:library-setup (ADR-0041)
+        run: bun run check:library-setup
+
       # T3-4 / DT-6 — provideDevPermissions confiné à isDevMode() (fail-closed prod)
       - name: check:dev-permissions-prod
         run: bun run check:dev-permissions-prod
