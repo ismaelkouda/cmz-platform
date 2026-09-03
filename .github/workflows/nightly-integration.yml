@@ -80,7 +80,7 @@ jobs:
 
       - name: Publier le rapport de composition du bundle
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bundle-composition-report
           path: bundle-composition-report.html
