@@ -372,41 +372,61 @@ export function detectAppPlatform(appAbsRoot) {
     return matched.size === 1 ? [...matched][0] : 'unknown';
 }
 
-/** Extrait la version d'un identifiant bun.lock `<name>@<version>` (name scopé
- *  admis) ; renvoie la chaîne brute si aucun `@` séparateur. */
-function versionFromLockIdentifier(identifier) {
-    const text = Array.isArray(identifier)
-        ? String(identifier[0])
-        : String(identifier);
-    const at = text.lastIndexOf('@');
-    return at > 0 ? text.slice(at + 1) : text;
+// Une plage qui accepte à la fois une version arbitrairement haute ET une
+// pré-release plancher est « universelle » : elle ne contraint rien. Couvre
+// `*`, `x`, `>=0.0.0`, `>=0.0.0-0`, `>0.0.0`, `>=22` (sans plafond), et toute
+// union dont une branche est universelle.
+const ABSURDLY_HIGH = '9999.9999.9999';
+const PRERELEASE_FLOOR = '0.0.0-0';
+
+/**
+ * Extrait `{ name, version }` d'un record bun.lock v1 `[ "<name>@<version>", … ]`.
+ * @returns {{ name: string, version: string } | { error: string }}
+ */
+function parseLockRecord(packageName, lockRecord) {
+    if (!Array.isArray(lockRecord) || typeof lockRecord[0] !== 'string') {
+        return {
+            error: `${packageName} : record bun.lock non conforme (attendu [ "<name>@<version>", … ])`,
+        };
+    }
+    const identifier = lockRecord[0];
+    const at = identifier.lastIndexOf('@');
+    if (at <= 0) {
+        return {
+            error: `${packageName} : identifiant bun.lock "${identifier}" sans version`,
+        };
+    }
+    return { name: identifier.slice(0, at), version: identifier.slice(at + 1) };
 }
 
 /**
  * Cohérence version : la version résolue (bun.lock) doit satisfaire la valeur du
  * catalog. Résolution SemVer réelle (`semver`, déclaré au dépôt) — pas de
- * parseur maison. Politique pré-release EXPLICITE : `includePrerelease: false`
- * (une pré-release ne satisfait une plage que si la plage la nomme). Sont des
- * erreurs (fail-closed) : valeur de catalog non textuelle, vide, ou qui se
- * normalise en plage non bornée (`*`, `x`, `>=0.0.0` — un catalog DOIT
- * contraindre) ; version résolue non parsable ; valeur ni version ni plage.
+ * parseur maison. Politique pré-release EXPLICITE : `includePrerelease: false`.
+ * Erreurs (fail-closed) : record bun.lock non conforme ou nommant un autre
+ * paquet ; version résolue non parsable ; valeur de catalog non textuelle,
+ * vide, universelle (satisfaite par une version arbitraire), ni version ni
+ * plage.
  * @returns {string[]}
  */
-export function verifyResolvedVersion(
-    packageName,
-    catalogValue,
-    lockIdentifier
-) {
+export function verifyResolvedVersion(packageName, catalogValue, lockRecord) {
+    const parsed = parseLockRecord(packageName, lockRecord);
+    if (parsed.error) return [parsed.error];
+    if (parsed.name !== packageName) {
+        return [
+            `${packageName} : record bun.lock nomme un autre paquet (${parsed.name})`,
+        ];
+    }
+    const resolved = semver.valid(parsed.version);
+    if (!resolved) {
+        return [
+            `${packageName} : version résolue "${parsed.version}" non parsable (bun.lock)`,
+        ];
+    }
+
     if (typeof catalogValue !== 'string' || catalogValue.trim() === '') {
         return [
             `${packageName} : valeur de catalog absente ou non textuelle (${typeof catalogValue})`,
-        ];
-    }
-    const rawVersion = versionFromLockIdentifier(lockIdentifier);
-    const resolved = semver.valid(rawVersion);
-    if (!resolved) {
-        return [
-            `${packageName} : version résolue "${rawVersion}" non parsable (bun.lock)`,
         ];
     }
     const exact = semver.valid(catalogValue);
@@ -423,9 +443,12 @@ export function verifyResolvedVersion(
             `${packageName} : catalog "${catalogValue}" n'est ni une version ni une plage SemVer valide`,
         ];
     }
-    if (range === '*' || range === '') {
+    if (
+        semver.satisfies(ABSURDLY_HIGH, range, { includePrerelease: true }) ||
+        semver.satisfies(PRERELEASE_FLOOR, range, { includePrerelease: true })
+    ) {
         return [
-            `${packageName} : catalog "${catalogValue}" est une plage non bornée — un catalog doit contraindre la version`,
+            `${packageName} : catalog "${catalogValue}" est une plage universelle/non bornée — un catalog doit contraindre la version`,
         ];
     }
     return semver.satisfies(resolved, range, { includePrerelease: false })
@@ -433,6 +456,14 @@ export function verifyResolvedVersion(
         : [
               `${packageName} : version résolue "${resolved}" ne satisfait pas le catalog "${catalogValue}" (bun.lock)`,
           ];
+}
+
+/** Sections de package.json / bun.lock où `packageName` est déclaré. */
+function declaringFields(container, packageName) {
+    return DEP_FIELDS.filter(
+        (field) =>
+            container?.[field] && Object.hasOwn(container[field], packageName)
+    );
 }
 
 /**
@@ -450,16 +481,16 @@ export function verifyWorkspaceDependency(rootAbs, packageName) {
         return [`package.json racine : ${error.message}`];
     }
 
-    let spec;
-    for (const field of DEP_FIELDS) {
-        if (pkg[field] && Object.hasOwn(pkg[field], packageName)) {
-            spec = pkg[field][packageName];
-            break;
-        }
-    }
-    if (spec === undefined) {
+    const pkgFields = declaringFields(pkg, packageName);
+    if (pkgFields.length === 0) {
         return [`${packageName} absent des dépendances de package.json racine`];
     }
+    if (pkgFields.length > 1) {
+        return [
+            `${packageName} déclaré dans plusieurs sections de package.json (${pkgFields.join(', ')})`,
+        ];
+    }
+    const spec = pkg[pkgFields[0]][packageName];
     if (typeof spec !== 'string' || !spec.startsWith('catalog:')) {
         return [
             `${packageName} : doit être déclaré "catalog:" (spec actuel : ${JSON.stringify(spec)})`,
@@ -486,18 +517,16 @@ export function verifyWorkspaceDependency(rootAbs, packageName) {
 
     const errors = [];
     const lockRoot = lock.workspaces?.[''] ?? {};
-    let lockSpec;
-    for (const field of DEP_FIELDS) {
-        if (lockRoot[field] && Object.hasOwn(lockRoot[field], packageName)) {
-            lockSpec = lockRoot[field][packageName];
-            break;
-        }
-    }
-    if (lockSpec === undefined) {
+    const lockFields = declaringFields(lockRoot, packageName);
+    if (lockFields.length === 0) {
         errors.push(`${packageName} absent du manifeste de bun.lock`);
-    } else if (lockSpec !== spec) {
+    } else if (lockFields.length > 1) {
         errors.push(
-            `${packageName} : spec "${spec}" (package.json) ≠ "${lockSpec}" (bun.lock)`
+            `${packageName} déclaré dans plusieurs sections du manifeste bun.lock (${lockFields.join(', ')})`
+        );
+    } else if (lockRoot[lockFields[0]][packageName] !== spec) {
+        errors.push(
+            `${packageName} : spec "${spec}" (package.json) ≠ "${lockRoot[lockFields[0]][packageName]}" (bun.lock)`
         );
     }
 

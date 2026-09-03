@@ -357,6 +357,50 @@ test('BYPASS : version directe (hors catalog:) pour une lib gouvernée → éche
     );
 });
 
+test('BYPASS : paquet déclaré dans deux sections de package.json → échec (ambiguïté)', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage: {
+            dependencies: { 'demo-pkg': 'catalog:' },
+            devDependencies: { 'demo-pkg': 'catalog:' },
+            workspaces: { catalog: { 'demo-pkg': '1.0.0' } },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /déclaré dans plusieurs sections de package\.json/.test(e)
+        )
+    );
+});
+
+test('BYPASS : record bun.lock qui nomme un autre paquet → échec (via la gate)', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': 'catalog:' } } },
+            packages: { 'demo-pkg': ['imposteur@1.0.0', '', {}, 'sha'] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /nomme un autre paquet \(imposteur\)/.test(e)
+        )
+    );
+});
+
 test('static_invariant non satisfait dans l’arbre de l’app → échec', async (t) => {
     const root = await scaffold(t, {
         recipes: working(),
@@ -509,31 +553,51 @@ test('detectAppPlatform : un seul résultat, sinon unknown (jamais "premier gagn
     assert.equal(detectAppPlatform(join(root, 'absent')), null);
 });
 
-test('verifyResolvedVersion : les 5 contre-tests SemVer de la revue + plages', () => {
+test('verifyResolvedVersion : contre-tests SemVer (revues 4 et 5)', () => {
     const has = (r) => r.length > 0;
-    // 1. pré-release contre version stable → refusée
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', 'p@1.2.3-beta.1')));
-    // 2. version résolue invalide (suffixe parasite) → refusée
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', 'p@1.2.3garbage')));
-    // 3. identifiant lockfile impossible à parser → refusé
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', 'malformed')));
-    // 4. valeur de catalog non textuelle → refusée
-    assert.ok(has(verifyResolvedVersion('p', 123, 'p@1.2.3')));
-    // 5. (spec directe hors catalog:) — couverte par verifyWorkspaceDependency
-    // exact conforme
-    assert.deepEqual(verifyResolvedVersion('p', '1.2.3', 'p@1.2.3'), []);
-    // plages SemVer réelles via `semver`
-    assert.deepEqual(verifyResolvedVersion('p', '^1.2.0', 'p@1.9.9'), []);
-    assert.ok(has(verifyResolvedVersion('p', '^1.2.0', 'p@2.0.0')));
-    assert.deepEqual(verifyResolvedVersion('p', '>=22 <23', 'p@22.5.0'), []);
-    assert.ok(has(verifyResolvedVersion('p', '>=22 <23', 'p@23.0.0')));
-    assert.deepEqual(verifyResolvedVersion('@a/b', '1.2.3', '@a/b@1.2.3'), []);
-    // catalog ni version ni plage valide → refusé
-    assert.ok(has(verifyResolvedVersion('p', 'not-a-version', 'p@1.2.3')));
-    // catalog vide / plage non bornée → refusé (un catalog doit contraindre)
-    assert.ok(has(verifyResolvedVersion('p', '', 'p@1.2.3')));
-    assert.ok(has(verifyResolvedVersion('p', '*', 'p@9.9.9')));
-    assert.ok(has(verifyResolvedVersion('p', '>=0.0.0', 'p@9.9.9')));
+    const rec = (id) => [id, '', {}, 'sha'];
+
+    // revue 4 — les 5 exemples
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', rec('p@1.2.3-beta.1'))));
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', rec('p@1.2.3garbage'))));
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', rec('malformed'))));
+    assert.ok(has(verifyResolvedVersion('p', 123, rec('p@1.2.3'))));
+    // (spec directe hors catalog: → verifyWorkspaceDependency)
+
+    // revue 5 — contournements adjacents
+    // identité de paquet falsifiée dans bun.lock
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', rec('autre@1.2.3'))));
+    // record bun.lock non conforme (chaîne au lieu de tableau)
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', 'p@1.2.3')));
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', [])));
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', [123])));
+    // plages universelles déguisées (y compris en union)
+    assert.ok(has(verifyResolvedVersion('p', '>=0.0.0-0', rec('p@1.2.3'))));
+    assert.ok(has(verifyResolvedVersion('p', '>0.0.0', rec('p@1.2.3'))));
+    assert.ok(has(verifyResolvedVersion('p', '>=22', rec('p@22.5.0'))));
+    assert.ok(
+        has(
+            verifyResolvedVersion(
+                'p',
+                '>=1.2.3 <2.0.0-0||>=0.0.0-0',
+                rec('p@1.5.0')
+            )
+        )
+    );
+
+    // formes légitimes
+    assert.deepEqual(verifyResolvedVersion('p', '1.2.3', rec('p@1.2.3')), []);
+    assert.deepEqual(verifyResolvedVersion('p', '^1.2.0', rec('p@1.9.9')), []);
+    assert.ok(has(verifyResolvedVersion('p', '^1.2.0', rec('p@2.0.0'))));
+    assert.deepEqual(
+        verifyResolvedVersion('p', '>=22 <23', rec('p@22.5.0')),
+        []
+    );
+    assert.deepEqual(
+        verifyResolvedVersion('@a/b', '1.2.3', rec('@a/b@1.2.3')),
+        []
+    );
+    assert.ok(has(verifyResolvedVersion('p', 'not-a-version', rec('p@1.2.3'))));
 });
 
 test('verifyWorkspaceDependency : chaîne complète + cohérence version', async (t) => {
