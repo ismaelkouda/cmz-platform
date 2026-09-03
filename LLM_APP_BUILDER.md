@@ -44,6 +44,111 @@ Ne commence jamais à construire toutes les pages en une seule fois.
 10. Ne contourne jamais une gate en supprimant un test, en élargissant une
     allowlist ou en affaiblissant une règle.
 
+## Chaîne exécutable obligatoire
+
+L’utilisateur valide les décisions et exécute les commandes. Il ne rédige ni
+JSON, ni YAML, ni TypeScript, ni HTML, ni configuration. La LLM de conception
+écrit les artefacts source ; la LLM de réalisation écrit l’interface dans le
+périmètre borné de chaque page ; les scripts calculent les plans, publient et
+vérifient.
+
+```text
+entretien produit
+→ source backend immuable
+→ contrat backend canonique
+→ source de conception applicative
+→ conception canonique validée
+→ shell Angular/PWA
+→ work order d’une page
+→ réalisation UI par la LLM
+→ oracles
+→ page suivante
+```
+
+Chaque publication est en deux temps : `--dry-run` produit un identifiant de
+plan sans écrire, puis `--apply <identifiant>` recalcule tout et refuse une
+source modifiée depuis la revue.
+
+### 1. Compiler le contrat backend
+
+Choisir exactement un adaptateur :
+
+```bash
+bun run compile:backend-contract -- --adapter structured --definition <source.json> --out <contrat.json> --dry-run
+bun run compile:backend-contract -- --adapter openapi --definition <openapi.json|yaml> --out <contrat.json> --dry-run
+bun run compile:backend-contract -- --adapter postman --definition <collection.json> --out <contrat-reference.json> --dry-run
+```
+
+Après revue, remplacer `--dry-run` par `--apply <plan_id>`. Une collection
+Postman est toujours une observation `reference`. Une spécification OpenAPI
+cible `planned` doit être distincte de toute API analogue.
+
+### 2. Compiler la conception complète
+
+La LLM écrit une source JSON ou YAML conforme à
+`tools/generator-platform/schemas/application-design.schema.json`. Elle y
+déclare les sources immuables, contrats backend, audiences, expériences web /
+Android / iOS, pages, états, contrôles, actions, données et preuves.
+
+```bash
+bun run compile:application-design -- --source <conception.json|yaml> --out designs/<app>.application-design.json --dry-run
+bun run compile:application-design -- --source <conception.json|yaml> --out designs/<app>.application-design.json --apply <plan_id>
+bun run check:application-designs
+```
+
+Une conception `approved` échoue si une inconnue subsiste, si une page est
+inaccessible, si un champ ou endpoint n’existe pas dans le contrat cible, ou si
+une source `reference` pilote l’implémentation.
+
+### 3. Créer le shell de l’application
+
+```bash
+bun run create-app -- --design designs/<app>.application-design.json --experience <experience-id> --app <app> --dry-run
+bun run create-app -- --design designs/<app>.application-design.json --experience <experience-id> --app <app> --apply <plan_id>
+```
+
+Le publisher vérifie réellement `ngc`, le build Angular de production et le
+lint, puis restaure un candidat reprenable en cas d’échec.
+
+### 4. Réaliser une page par LLM
+
+```bash
+bun run prepare:page-realization -- --app <app> --page <page_id> --dry-run
+bun run prepare:page-realization -- --app <app> --page <page_id> --apply <work_order_id>
+```
+
+La LLM lit le work order publié, y compris le nœud de rôle `screen` et le
+contrat d'archétype Angular hashé (`shape` + `forbid`), puis écrit uniquement
+les cinq fichiers autorisés sous la racine indiquée. Elle ne fait aucun appel
+HTTP direct et mappe chaque identifiant du contrat vers un sélecteur
+`data-cmz-id` exact. Ensuite :
+
+```bash
+bun run verify:page-realization -- --app <app> --page <page_id> --work-order <work_order_id>
+```
+
+En cas d’échec, la LLM corrige seulement cette page et relance le même oracle.
+Le rapport exécute compilation, build de production, lint et tests. Le passage à
+la page suivante exige un nouveau work order.
+
+Cette chaîne automatise aujourd’hui le shell Angular/PWA et les compositions
+`action-request` et `list-query`. Une autre composition n’est jamais simulée :
+elle doit d’abord entrer dans le registre avec des cas métier probants et un
+générateur testé. Kotlin, iOS et le backend cible sont des profils futurs, pas
+des capacités prétendument livrées.
+
+Le fonctionnement du moteur est prouvé par une fixture technique versionnée,
+distincte de tout projet métier :
+
+```bash
+bun run check:application-pipeline
+```
+
+Cette gate reconstruit la chaîne Postman `reference` → cible `planned` →
+conception → shell → page, interdit de lier l’analogue à une action, puis lance
+les vrais oracles Angular. Elle ne constitue jamais une validation implicite des
+champs ou endpoints de ton projet.
+
 ## 1. Prendre connaissance du workspace
 
 Avant le premier entretien, lis au minimum :
@@ -120,14 +225,14 @@ Pour chaque élément, indique son statut :
 Demande à l’utilisateur de corriger ou valider cette fiche. Ne construis pas la
 carte des pages avant cette validation.
 
-Après validation, conserve la fiche sous :
+Après validation, conserve la fiche comme source de preuve sous :
 
 ```text
 docs/projects/<nom-projet>/project-brief.md
 ```
 
-Ne crée ce document que si l’utilisateur a demandé de matérialiser la conception
-dans le dépôt.
+La LLM crée elle-même ce document lorsque l’utilisateur demande de matérialiser
+la conception ; l’utilisateur n’en saisit jamais le contenu manuellement.
 
 ## 4. Construire la carte des pages
 
@@ -168,7 +273,7 @@ Vérifie les cas transversaux :
 - fonctionnement mobile.
 
 Demande une validation explicite de la carte et de l’ordre de construction.
-Après validation, la carte peut être enregistrée sous :
+Après validation, la carte est enregistrée par la LLM sous :
 
 ```text
 docs/projects/<nom-projet>/page-map.md
@@ -275,12 +380,30 @@ Recherche les contrats existants avant de proposer du code :
 - traductions ;
 - modules réutilisables.
 
-Si le backend n’existe pas, ne fabrique pas silencieusement un faux contrat.
-Présente explicitement l’une de ces options :
+Si le backend n’existe pas, ne fabrique pas silencieusement un faux contrat. Un
+backend analogue ne prouve jamais le backend cible. Classe les informations avec
+le cycle suivant :
+
+- `reference` : comportement observé dans un produit analogue ; inspiration
+  uniquement, interdit comme dépendance directe d’une page cible ;
+- `planned` : contrat cible explicitement validé pour le futur backend ; une
+  page peut le consommer avec un avertissement visible ;
+- `implemented` : contrat corroboré par le code du backend cible ;
+- `verified-live` : contrat vérifié contre un déploiement cible réel.
+
+Ne requalifie jamais une source `reference` en `planned`, `implemented` ou
+`verified-live`. Crée une spécification cible séparée, avec sa propre identité
+et sa propre provenance. Présente explicitement l’une de ces options :
 
 - attendre le contrat backend ;
 - définir un contrat à faire valider par l’équipe backend ;
 - utiliser temporairement un mock clairement isolé.
+
+La conception produit reste agnostique de la cible. Angular/PWA, Kotlin et iOS
+sont des profils de réalisation distincts. Les variantes citoyenne et traitante
+partagent le domaine, mais déclarent séparément audiences, capacités, routes et
+permissions ; une page validée pour une variante ne l’est pas implicitement pour
+une autre.
 
 ### 6.7 Traduction vers les instruments du workspace
 
@@ -337,7 +460,8 @@ Demande : « Valides-tu ce contrat de page avant son implémentation ? »
 Une réponse ambiguë n’est pas une validation. Résous les désaccords ou inconnues
 avant de coder.
 
-Le contrat validé peut être enregistré sous :
+Le contrat validé est encodé par la LLM dans la source de conception canonique.
+Une vue Markdown de lecture peut aussi être enregistrée sous :
 
 ```text
 docs/projects/<nom-projet>/pages/<nom-page>.md
@@ -352,12 +476,13 @@ Une fois la page validée :
 3. génère les modules supportés avec un dry-run ;
 4. présente le résumé du Change Set si une décision reste nécessaire ;
 5. crée ou fait évoluer les modules ;
-6. implémente la route, le composant et le câblage applicatif ;
-7. ajoute les tests des comportements validés ;
-8. vérifie la page ;
+6. prépare le work order borné de la page ;
+7. laisse la LLM de réalisation écrire l’interface et ses tests dans les seuls
+   fichiers autorisés ;
+8. exécute l’oracle et fait corriger la page en boucle ;
 9. présente le résultat avant de passer à la suivante.
 
-Pour un module supporté :
+Pour un module supporté, la LLM écrit sa définition puis l’utilisateur exécute :
 
 ```bash
 bun run create-module --definition <definition.json> --dry-run
@@ -366,7 +491,9 @@ bun run create-module --definition <definition.json>
 
 Ne modifie pas manuellement les fichiers `generator-owned`. Place les
 personnalisations dans les extensions `human-owned` ou dans les composants
-applicatifs prévus.
+applicatifs prévus. « human-owned » désigne la propriété et la stabilité du
+fichier ; cela n’oblige jamais l’utilisateur à coder lui-même, la LLM peut le
+réaliser sous contrôle du work order.
 
 ## 9. Vérifier chaque page
 
@@ -482,6 +609,16 @@ bun run retire-module --module <nom>
 
 N’efface jamais manuellement un module généré. Les références conservées après
 un retrait doivent être classifiées par occurrence exacte dans son tombstone.
+
+Pour retirer une application générée :
+
+```bash
+bun run retire-app -- --app <nom> --dry-run
+bun run retire-app -- --app <nom> --apply <plan_id>
+```
+
+Une interruption se traite uniquement par `--resume` ou `--abort` avec
+`--app <nom>` ; aucune suppression manuelle n’est admise.
 
 ## Première réponse attendue de la LLM
 

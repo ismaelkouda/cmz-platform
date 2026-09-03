@@ -79,6 +79,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0036](./adr/0036-convergence-transloco-angular.md)         | Convergence de tout l'Angular du repo sur Transloco      |
 | [0037](./adr/0037-plateforme-intention-utilisateur-vers-application.md) | Génération assistée par langage naturel pour un utilisateur du dépôt |
 | [0038](./adr/0038-nature-produit-public-multi-locataire.md) | Nature de produit : exposition publique et multi-location |
+| [0039](./adr/0039-frontiere-contractuelle-conception-realisation-llm.md) | Frontière contractuelle entre conception et réalisation par LLM |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

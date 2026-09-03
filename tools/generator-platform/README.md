@@ -5,6 +5,207 @@ ADR-0029, ADR-0030, and ADR-0031. It is deliberately outside any Nx target
 profile: these files define the portable contract that source adapters produce
 and target adapters consume.
 
+## Canonical backend contract
+
+`schemas/backend-contract.schema.json` defines the closed, source-independent
+contract consumed by future application and page specifications. OpenAPI,
+Postman, manually authored declarations, and bounded legacy inspection are
+inputs to adapters; none gets a source-specific escape hatch in the canonical
+model. Every service, security scheme, model, field, parameter, body, response,
+and operation carries evidence pointing to an immutable source snapshot.
+
+`core/backend-contract.mjs` adds the cross-document invariants that JSON Schema
+alone cannot prove: unique identities, resolved references, exact recursive
+type shapes, access/security consistency, path-parameter equivalence, at least
+one success response, closed envelope shapes, used sources, workspace-contained
+regular snapshots, and exact SHA-256 provenance. This is the P0.1 vocabulary;
+the three publication adapters below are its only current ingestion paths.
+
+Named backend models preserve their real top-level shape (`object`, `array`, or
+`scalar`) so normalization never invents an `items` wrapper around an array.
+Typed validation constraints are accepted only where meaningful;
+contradictory bounds and invalid regular expressions fail closed.
+
+Lifecycle is evidence-backed and monotonic: an analogue remains `reference`;
+the target contract starts `planned`, becomes `implemented` only with target
+implementation evidence, and reaches `verified-live` only with corresponding
+evidence. A reference source cannot be re-labelled to satisfy a planned target,
+and the contract status always equals its least mature target entity.
+
+### Compile a structured backend definition
+
+`compile-backend-contract.mjs` is the first source adapter. It consumes a
+LLM-authored JSON definition whose entities contain business facts but no
+hand-written evidence or lifecycle duplication. The adapter attaches exact JSON
+Pointer locations, hashes the source snapshot byte-for-byte, projects every
+entity to the canonical contract, and runs all canonical invariants.
+
+Manual input can create only `reference` or `planned` contracts. It can never
+self-promote to `implemented` or `verified-live`; those transitions require
+future implementation and runtime adapters.
+
+Publication requires an immutable reviewed plan:
+
+```bash
+bun run compile:backend-contract -- \
+  --adapter structured \
+  --definition contracts/clean-street.definition.json \
+  --out contracts/clean-street.backend.json \
+  --dry-run
+
+bun run compile:backend-contract -- \
+  --adapter structured \
+  --definition contracts/clean-street.definition.json \
+  --out contracts/clean-street.backend.json \
+  --apply <plan_id_du_dry_run>
+```
+
+The dry-run writes nothing. Apply recomputes the complete plan, refuses stale
+input, publishes a fully synchronized candidate through a no-overwrite hard
+link, and resumes an interrupted complete candidate. Definitions, output
+parents, and every path component must remain regular and inside the workspace.
+
+### OpenAPI and Postman adapters
+
+`--adapter openapi` accepts a strict JSON/YAML subset of OpenAPI 3.0, 3.1, or
+3.2. The root must contain closed CMZ metadata:
+
+```yaml
+x-cmz-contract:
+  authority: declared
+  contract_id: clean-street-api
+  lifecycle: planned
+  service_id: public-api
+  source_id: clean-street-openapi
+```
+
+Each server carries `x-cmz-environment`. Local component references,
+descriptions, explicit object closure, exact security and explicit success
+responses are required. External/chained references, ambiguous unions, inline
+bodies, callbacks, webhooks, generic statuses and operation-level servers fail
+closed. Lifecycle and authority are exact pairs: `reference/observational`,
+`planned/declared`, or `implemented/authoritative`. OpenAPI cannot claim
+`verified-live` without a future runtime adapter.
+
+`--adapter postman` accepts only Collection v2.1 and requires the standard
+collection variables `baseUrl`, `cmz_contract_id`, `cmz_contract_version`,
+`cmz_environment`, `cmz_service_id`, and `cmz_source_id`. It always emits an
+observational `reference` contract. Example request/response bodies become
+opaque scalar JSON models; the adapter deliberately never infers fields or
+types from examples. At least one saved success response per request is
+required.
+
+```bash
+bun run compile:backend-contract -- --adapter openapi \
+  --definition contracts/target.openapi.yaml \
+  --out contracts/target.backend.json --dry-run
+
+bun run compile:backend-contract -- --adapter postman \
+  --definition contracts/analogue.postman.json \
+  --out contracts/analogue-reference.backend.json --dry-run
+```
+
+### Application design, shell, and page realization
+
+`schemas/application-design.schema.json` is target-neutral. It connects
+immutable project evidence and canonical backend contracts to audiences,
+web/Android/iOS experiences, pages, states, controls, actions, loads, bindings,
+regions and accessible elements. `core/application-design.mjs` checks exact
+field/operation references, parameter and body bindings, access strength,
+permissions, navigation reachability, offline states and symmetric experience
+membership. An approved design cannot contain unknowns or use a `reference`
+backend as its implementation target.
+
+```bash
+bun run compile:application-design -- \
+  --source design-sources/my-app.yaml \
+  --out designs/my-app.application-design.json --dry-run
+
+bun run compile:application-design -- \
+  --source design-sources/my-app.yaml \
+  --out designs/my-app.application-design.json --apply <plan_id>
+
+bun run check:application-designs
+```
+
+`create-app` renders an approved web experience as an Angular 22/PWA shell. It
+publishes only after an immutable plan is reviewed, compiles the candidate with
+`ngc`, then executes a no-cache production build and lint in the real Nx graph.
+Failure rolls the output back to a hash-verified candidate.
+
+```bash
+bun run create-app -- --design designs/my-app.application-design.json \
+  --experience citizen-web --app my-app --dry-run
+bun run create-app -- --design designs/my-app.application-design.json \
+  --experience citizen-web --app my-app --apply <plan_id>
+```
+
+Page realization is delegated without giving the LLM repository-wide write
+authority. `prepare:page-realization` binds one page contract and the protected
+workspace inventory to a work order. The LLM may write exactly the listed page
+files. The work order also carries the closed `screen` role node and the
+selected Angular archetype contract (`shape`, `forbid`, path and SHA-256); the
+LLM cannot choose or rewrite that form. `verify:page-realization` rejects
+external drift, extra files, direct network calls, backend endpoint literals,
+incomplete evidence, or missing exact `data-cmz-id` mappings before running
+compilation, production build, lint, and tests.
+
+```bash
+bun run prepare:page-realization -- --app my-app --page <page_id> --dry-run
+bun run prepare:page-realization -- --app my-app --page <page_id> --apply <work_order_id>
+bun run verify:page-realization -- --app my-app --page <page_id> --work-order <work_order_id>
+```
+
+Applications have the same plan/apply and recovery discipline on removal:
+
+```bash
+bun run retire-app -- --app my-app --dry-run
+bun run retire-app -- --app my-app --apply <plan_id>
+bun run retire-app -- --app my-app --resume
+# or, to restore the journaled app:
+bun run retire-app -- --app my-app --abort
+```
+
+### Versioned end-to-end proof
+
+`examples/application-conception-proof/` is a technical fixture, not a product
+specification. It retains a raw Postman analogue, its canonical `reference`
+contract, a distinct declared `planned` target, the source and canonical
+application design, and one bounded page realization. The design is also
+published under `designs/`, so `check:application-designs` can never pass over
+an empty set unnoticed.
+
+```bash
+bun run check:application-pipeline
+```
+
+The gate recompiles and byte-compares both backend contracts and the design,
+asserts that no action binds the analogue, publishes a disposable Angular/PWA
+shell, prepares a real work order, installs the reviewed page output, then runs
+`ngc`, production build, lint, and tests. It removes all disposable output in a
+`finally` block. This proof does not validate any Clean Street field: that
+product remains blocked until its own target contract is confirmed.
+
+### Demand-driven composition registry
+
+`composition-registry.json` replaces dispatch code edited by hand. Every entry
+names one generator, canonical layers, maturity, and real definition evidence.
+An experimental composition requires one readable case; a proven composition
+requires at least two distinct feature cases. Paths must be regular,
+workspace-contained and non-symbolic. A registry change during `create-module`
+invalidates resume, while `--abort` remains able to restore from the journaled
+composition snapshot.
+
+```bash
+bun run check:composition-registry
+```
+
+The registry is intentionally not a feature wish list. New compositions enter
+only after their generator and business cases exist; unsupported kinds remain
+rejected rather than approximated. `list-query` remains experimental: its sole
+case is the retained source of a removed POC, and promotion requires a separate
+active case that has not been retired.
+
 PLAT-2 adds two independent, fail-closed ingestion paths:
 
 - `adapters/structured-spec-adapter.mjs` consumes the versioned JSON source in
