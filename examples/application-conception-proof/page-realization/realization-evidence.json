@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "page-realization-evidence",
+  "page_id": "page_a11ca71000000001",
+  "page_contract_sha256": "3c5e96d07673b410674981900267904e17a080c66a0d6c8be9d0b521c27b4cb6",
+  "states": [
+    { "id": "ready", "selector": "[data-cmz-id=\"ready\"]" },
+    { "id": "submitted", "selector": "[data-cmz-id=\"submitted\"]" },
+    { "id": "failed", "selector": "[data-cmz-id=\"failed\"]" },
+    { "id": "offline", "selector": "[data-cmz-id=\"offline\"]" }
+  ],
+  "controls": [{ "id": "message", "selector": "[data-cmz-id=\"message\"]" }],
+  "actions": [
+    { "id": "submit-note", "selector": "[data-cmz-id=\"submit-note\"]" }
+  ],
+  "data_bindings": [],
+  "regions": [{ "id": "main", "selector": "[data-cmz-id=\"main\"]" }],
+  "elements": [
+    {
+      "id": "page-heading",
+      "selector": "[data-cmz-id=\"page-heading\"]"
+    },
+    { "id": "note-form", "selector": "[data-cmz-id=\"note-form\"]" }
+  ]
+}

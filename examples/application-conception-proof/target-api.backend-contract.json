@@ -1,0 +1,170 @@
+{
+  "contract": {
+    "description": "Explicit target contract declared only for the conception pipeline proof.",
+    "id": "planned-note-api",
+    "status": "planned",
+    "title": "Planned note API",
+    "version": "1.0.0"
+  },
+  "kind": "backend-contract",
+  "models": [
+    {
+      "description": "Planned note submission.",
+      "evidence": [
+        {
+          "locator": "/models/0",
+          "source_id": "planned-note-decision"
+        }
+      ],
+      "fields": [
+        {
+          "constraints": {
+            "max_length": 500,
+            "min_length": 1
+          },
+          "description": "Text explicitly entered by the visitor.",
+          "evidence": [
+            {
+              "locator": "/models/0/fields/0",
+              "source_id": "planned-note-decision"
+            }
+          ],
+          "name": "message",
+          "nullable": false,
+          "required": true,
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          }
+        }
+      ],
+      "id": "note-input",
+      "kind": "object",
+      "status": "planned"
+    },
+    {
+      "description": "Planned submission receipt.",
+      "evidence": [
+        {
+          "locator": "/models/1",
+          "source_id": "planned-note-decision"
+        }
+      ],
+      "fields": [
+        {
+          "description": "Stable planned receipt identifier.",
+          "evidence": [
+            {
+              "locator": "/models/1/fields/0",
+              "source_id": "planned-note-decision"
+            }
+          ],
+          "name": "id",
+          "nullable": false,
+          "required": true,
+          "type": {
+            "kind": "primitive",
+            "name": "uuid"
+          }
+        }
+      ],
+      "id": "note-receipt",
+      "kind": "object",
+      "status": "planned"
+    }
+  ],
+  "operations": [
+    {
+      "access": {
+        "mode": "public",
+        "permissions": [],
+        "security_scheme_ids": []
+      },
+      "description": "Submit one note to the planned target.",
+      "evidence": [
+        {
+          "locator": "/operations/0",
+          "source_id": "planned-note-decision"
+        }
+      ],
+      "id": "notes.submit",
+      "method": "POST",
+      "path": "/notes",
+      "request": {
+        "body": {
+          "evidence": [
+            {
+              "locator": "/operations/0/request/body",
+              "source_id": "planned-note-decision"
+            }
+          ],
+          "media_types": [
+            "application/json"
+          ],
+          "model_id": "note-input",
+          "required": true
+        },
+        "parameters": []
+      },
+      "responses": [
+        {
+          "body": {
+            "envelope": {
+              "kind": "none"
+            },
+            "evidence": [
+              {
+                "locator": "/operations/0/responses/0/body",
+                "source_id": "planned-note-decision"
+              }
+            ],
+            "media_type": "application/json",
+            "model_id": "note-receipt"
+          },
+          "description": "Planned receipt returned.",
+          "evidence": [
+            {
+              "locator": "/operations/0/responses/0",
+              "source_id": "planned-note-decision"
+            }
+          ],
+          "outcome": "success",
+          "status": 201
+        }
+      ],
+      "service_id": "public-service",
+      "status": "planned"
+    }
+  ],
+  "schema_version": "1.0.0",
+  "security_schemes": [],
+  "services": [
+    {
+      "base_urls": [
+        {
+          "environment": "development",
+          "url": "https://planned.invalid/api/"
+        }
+      ],
+      "description": "Planned public note service.",
+      "evidence": [
+        {
+          "locator": "/services/0",
+          "source_id": "planned-note-decision"
+        }
+      ],
+      "id": "public-service",
+      "status": "planned"
+    }
+  ],
+  "sources": [
+    {
+      "authority": "declared",
+      "id": "planned-note-decision",
+      "kind": "manual",
+      "sha256": "e71783ce47c5398ce89ee83b9f5f7ff9faa7042bcc2b0f81ebe3466bc7029bda",
+      "snapshot_uri": "examples/application-conception-proof/target-api.definition.json",
+      "status": "planned"
+    }
+  ]
+}

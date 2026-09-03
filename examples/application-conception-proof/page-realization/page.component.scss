@@ -1,0 +1,60 @@
+:host {
+    display: block;
+    min-height: 100%;
+    background: #f3f7f5;
+    color: #15372b;
+}
+
+main {
+    box-sizing: border-box;
+    width: min(100% - 2rem, 42rem);
+    margin: 0 auto;
+    padding: 4rem 0;
+}
+
+.eyebrow {
+    color: #3d6657;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+form {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #b9cec6;
+    border-radius: 1rem;
+    background: #ffffff;
+}
+
+label {
+    font-weight: 700;
+}
+
+textarea {
+    min-height: 9rem;
+    resize: vertical;
+    padding: 0.75rem;
+    border: 1px solid #527567;
+    border-radius: 0.5rem;
+    font: inherit;
+}
+
+button {
+    justify-self: start;
+    padding: 0.75rem 1rem;
+    border: 0;
+    border-radius: 999px;
+    background: #0b5d3b;
+    color: #ffffff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #08482e;
+}

@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "backend-contract-definition",
+  "contract": {
+    "id": "planned-note-api",
+    "title": "Planned note API",
+    "version": "1.0.0",
+    "status": "planned",
+    "description": "Explicit target contract declared only for the conception pipeline proof."
+  },
+  "source": {
+    "id": "planned-note-decision",
+    "authority": "declared"
+  },
+  "services": [
+    {
+      "id": "public-service",
+      "description": "Planned public note service.",
+      "base_urls": [
+        {
+          "environment": "development",
+          "url": "https://planned.invalid/api/"
+        }
+      ]
+    }
+  ],
+  "security_schemes": [],
+  "models": [
+    {
+      "id": "note-input",
+      "kind": "object",
+      "description": "Planned note submission.",
+      "fields": [
+        {
+          "name": "message",
+          "description": "Text explicitly entered by the visitor.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "constraints": { "min_length": 1, "max_length": 500 }
+        }
+      ]
+    },
+    {
+      "id": "note-receipt",
+      "kind": "object",
+      "description": "Planned submission receipt.",
+      "fields": [
+        {
+          "name": "id",
+          "description": "Stable planned receipt identifier.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "uuid" }
+        }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "id": "notes.submit",
+      "service_id": "public-service",
+      "description": "Submit one note to the planned target.",
+      "method": "POST",
+      "path": "/notes",
+      "access": {
+        "mode": "public",
+        "security_scheme_ids": [],
+        "permissions": []
+      },
+      "request": {
+        "parameters": [],
+        "body": {
+          "required": true,
+          "media_types": ["application/json"],
+          "model_id": "note-input"
+        }
+      },
+      "responses": [
+        {
+          "status": 201,
+          "outcome": "success",
+          "description": "Planned receipt returned.",
+          "body": {
+            "media_type": "application/json",
+            "model_id": "note-receipt",
+            "envelope": { "kind": "none" }
+          }
+        }
+      ]
+    }
+  ]
+}

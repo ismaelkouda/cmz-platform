@@ -1,0 +1,164 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "application-design",
+  "design": {
+    "id": "application-conception-proof",
+    "title": "Application conception proof",
+    "version": "1.0.0",
+    "status": "approved",
+    "problem": "The generic conception pipeline needs one durable end-to-end proof.",
+    "primary_outcome": "A visitor submits one note through a contract-bound page.",
+    "description": "Technical proof of reference ingestion, target declaration, design validation, shell generation and bounded page realization.",
+    "evidence": [
+      { "source_id": "conception-proof-brief", "locator": "project-brief" }
+    ]
+  },
+  "sources": [
+    {
+      "id": "conception-proof-brief",
+      "kind": "project-brief",
+      "snapshot_uri": "examples/application-conception-proof/project-brief.md",
+      "sha256": "122329fa56932608b0bb91fbe3cfd67aeeb5429ca5686243650d7416884fdbe5"
+    }
+  ],
+  "backend_contracts": [
+    {
+      "id": "reference-note-api",
+      "role": "reference",
+      "snapshot_uri": "examples/application-conception-proof/reference-api.backend-contract.json",
+            "sha256": "208511b936508567b246807036c305dde012ec53332c361be9b28c3ce20a9938"
+    },
+    {
+      "id": "planned-note-api",
+      "role": "target",
+      "snapshot_uri": "examples/application-conception-proof/target-api.backend-contract.json",
+      "sha256": "0fff1a803c3980182fdcdf2ab4e64e63ec5d46d7df610fe53d24614c2afad901"
+    }
+  ],
+  "audiences": [
+    {
+      "id": "visitor",
+      "title": "Visitor",
+      "description": "Anonymous visitor of the technical proof.",
+      "evidence": [
+        { "source_id": "conception-proof-brief", "locator": "visitor" }
+      ]
+    }
+  ],
+  "experiences": [
+    {
+      "id": "visitor-web",
+      "title": "Visitor web proof",
+      "description": "Installable web proof with explicit offline behavior.",
+      "channel": "web",
+      "audience_ids": ["visitor"],
+      "entry_page_id": "page_a11ca71000000001",
+      "page_ids": ["page_a11ca71000000001"],
+      "offline_policy": "shell-only",
+      "evidence": [
+        { "source_id": "conception-proof-brief", "locator": "web-proof" }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "page_a11ca71000000001",
+      "title": "Submit a note",
+      "purpose": "Collect and submit one visitor-authored note.",
+      "path": "/",
+      "experience_ids": ["visitor-web"],
+      "access": { "mode": "public", "permissions": [] },
+      "initial_state_id": "ready",
+      "states": [
+        {
+          "id": "ready",
+          "kind": "ready",
+          "description": "The note form is ready.",
+          "announcement": "Note form ready."
+        },
+        {
+          "id": "submitted",
+          "kind": "success",
+          "description": "The planned target accepted the note.",
+          "announcement": "Note submitted."
+        },
+        {
+          "id": "failed",
+          "kind": "error",
+          "description": "The planned submission failed.",
+          "announcement": "Note submission failed."
+        },
+        {
+          "id": "offline",
+          "kind": "offline",
+          "description": "The visitor cannot reach the planned target.",
+          "announcement": "You are offline."
+        }
+      ],
+      "controls": [
+        {
+          "id": "message",
+          "kind": "multiline-text",
+          "label": "Note",
+          "description": "Text sent by the visitor.",
+          "required": true
+        }
+      ],
+      "actions": [
+        {
+          "id": "submit-note",
+          "kind": "backend",
+          "label": "Submit note",
+          "description": "Submit the note to the explicitly planned target contract.",
+          "available_in_state_ids": ["ready"],
+          "input_bindings": [
+            {
+              "control_id": "message",
+              "target_kind": "body-field",
+              "target_name": "message"
+            }
+          ],
+          "operation_ref": {
+            "contract_id": "planned-note-api",
+            "operation_id": "notes.submit"
+          },
+          "success_state_id": "submitted",
+          "error_state_id": "failed"
+        }
+      ],
+      "loads": [],
+      "data_bindings": [],
+      "regions": [
+        {
+          "id": "main",
+          "role": "main",
+          "accessible_name": "Note submission",
+          "elements": [
+            {
+              "id": "page-heading",
+              "kind": "heading",
+              "accessible_name": "Note submission heading",
+              "content": "Submit a note",
+              "control_ids": [],
+              "action_ids": [],
+              "data_binding_ids": []
+            },
+            {
+              "id": "note-form",
+              "kind": "form",
+              "accessible_name": "Note submission form",
+              "content": "Note field and submission action",
+              "control_ids": ["message"],
+              "action_ids": ["submit-note"],
+              "data_binding_ids": []
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        { "source_id": "conception-proof-brief", "locator": "note-page" }
+      ]
+    }
+  ],
+  "unknowns": []
+}

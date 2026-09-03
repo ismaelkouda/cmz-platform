@@ -126,6 +126,26 @@ jobs:
       - name: check:generator-platform (Evidence + Semantic IR + renderers)
         run: bun run check:generator-platform
 
+      # Conception sans code manuel — chaque artefact versionné doit rester
+      # complet, target-neutral et traçable vers un contrat backend exact.
+      - name: check:application-designs (contrats de conception)
+        run: bun run check:application-designs
+
+      # Preuve versionnée non simulée : Postman analogue reste reference, le
+      # contrat cible planned autorise seul la conception, puis le renderer et
+      # le harnais de page passent ngc, Nx build, ESLint et les tests réels.
+      - name: check:application-pipeline (preuve bout-en-bout réelle)
+        run: bun run check:application-pipeline
+
+      # Une composition n'est automatisée qu'après des preuves métier relisibles.
+      - name: check:composition-registry (maturité fondée sur les cas)
+        run: bun run check:composition-registry
+
+      # Un rôle n'existe que s'il a un producteur IR, un consommateur réel et
+      # une forme cible validée. La première tranche verticale couvre `screen`.
+      - name: check:target-archetype-coverage (rôles réellement consommés)
+        run: bun run check:target-archetype-coverage
+
       # J-2 (audit-workspace-2026-08-03.md, chantier J) — ADR-0010 fait de
       # conventions/angular-22.profile.json la source unique lisible par
       # machine des conventions de code ; J-1 l'a rendu vérifiable

@@ -1,0 +1,43 @@
+{
+  "info": {
+    "name": "Reference note API",
+    "description": "Observed API from an analogous technical example.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://reference.example/api" },
+    { "key": "cmz_contract_id", "value": "reference-note-api" },
+    { "key": "cmz_contract_version", "value": "1.0.0" },
+    { "key": "cmz_environment", "value": "reference" },
+    { "key": "cmz_service_id", "value": "reference-service" },
+    { "key": "cmz_source_id", "value": "reference-note-postman" }
+  ],
+  "auth": { "type": "noauth" },
+  "item": [
+    {
+      "name": "Read note",
+      "request": {
+        "method": "GET",
+        "description": "Read one note observed in the analogous API.",
+        "url": {
+          "raw": "{{baseUrl}}/notes/:id",
+          "variable": [
+            {
+              "key": "id",
+              "description": "Observed note identifier."
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "OK",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\"id\":\"note-1\",\"message\":\"example\"}"
+        }
+      ]
+    }
+  ]
+}

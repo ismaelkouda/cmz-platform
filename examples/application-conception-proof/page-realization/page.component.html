@@ -1,0 +1,38 @@
+<main data-cmz-id="main" aria-labelledby="proof-title">
+    <p class="eyebrow">Contract-bound demonstration</p>
+    <h1 id="proof-title" data-cmz-id="page-heading">Submit a note</h1>
+    <p>
+        This page emits a typed presentation event. Backend orchestration stays outside the page and remains bound to
+        the planned target contract.
+    </p>
+
+    @switch (state()) {
+        @case ('ready') {
+            <p data-cmz-id="ready" role="status">The note form is ready.</p>
+        }
+        @case ('submitted') {
+            <p data-cmz-id="submitted" role="status">Note submitted.</p>
+        }
+        @case ('failed') {
+            <p data-cmz-id="failed" role="alert">Note submission failed.</p>
+        }
+        @case ('offline') {
+            <p data-cmz-id="offline" role="status">You are offline.</p>
+        }
+    }
+
+    <form data-cmz-id="note-form" aria-labelledby="proof-title" (submit)="submit($event, message.value)">
+        <label for="proof-message">Note</label>
+        <textarea
+            #message
+            id="proof-message"
+            data-cmz-id="message"
+            name="message"
+            required
+            maxlength="500"
+            aria-describedby="message-help"
+        ></textarea>
+        <small id="message-help">Enter between 1 and 500 characters.</small>
+        <button data-cmz-id="submit-note" type="submit">Submit note</button>
+    </form>
+</main>

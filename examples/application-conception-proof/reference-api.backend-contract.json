@@ -1,0 +1,126 @@
+{
+  "contract": {
+    "description": "Observed API from an analogous technical example.",
+    "id": "reference-note-api",
+    "status": "reference",
+    "title": "Reference note API",
+    "version": "1.0.0"
+  },
+  "kind": "backend-contract",
+  "models": [
+    {
+      "description": "Opaque json response body observed in Postman.",
+      "evidence": [
+        {
+          "locator": "#/item/0/response/0/body",
+          "source_id": "reference-note-postman"
+        }
+      ],
+      "id": "read-note-response-200",
+      "kind": "scalar",
+      "status": "reference",
+      "type": {
+        "kind": "primitive",
+        "name": "json"
+      }
+    }
+  ],
+  "operations": [
+    {
+      "access": {
+        "mode": "public",
+        "permissions": [],
+        "security_scheme_ids": []
+      },
+      "description": "Read one note observed in the analogous API.",
+      "evidence": [
+        {
+          "locator": "#/item/0",
+          "source_id": "reference-note-postman"
+        }
+      ],
+      "id": "read-note",
+      "method": "GET",
+      "path": "/notes/{id}",
+      "request": {
+        "parameters": [
+          {
+            "description": "Observed note identifier.",
+            "evidence": [
+              {
+                "locator": "#/item/0/request/url/variable/id",
+                "source_id": "reference-note-postman"
+              }
+            ],
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "body": {
+            "envelope": {
+              "kind": "none"
+            },
+            "evidence": [
+              {
+                "locator": "#/item/0/response/0/body",
+                "source_id": "reference-note-postman"
+              }
+            ],
+            "media_type": "application/json",
+            "model_id": "read-note-response-200"
+          },
+          "description": "OK",
+          "evidence": [
+            {
+              "locator": "#/item/0/response/0",
+              "source_id": "reference-note-postman"
+            }
+          ],
+          "outcome": "success",
+          "status": 200
+        }
+      ],
+      "service_id": "reference-service",
+      "status": "reference"
+    }
+  ],
+  "schema_version": "1.0.0",
+  "security_schemes": [],
+  "services": [
+    {
+      "base_urls": [
+        {
+          "environment": "reference",
+          "url": "https://reference.example/api/"
+        }
+      ],
+      "description": "Observed API from an analogous technical example.",
+      "evidence": [
+        {
+          "locator": "#/variable/baseUrl",
+          "source_id": "reference-note-postman"
+        }
+      ],
+      "id": "reference-service",
+      "status": "reference"
+    }
+  ],
+  "sources": [
+    {
+      "authority": "observational",
+      "id": "reference-note-postman",
+      "kind": "postman",
+      "sha256": "5d68f8294f7f6b1b1e91eaa107b17642f9ee5a92f8d7333207f44ba66c9201c9",
+      "snapshot_uri": "examples/application-conception-proof/reference-api.postman.json",
+      "status": "reference"
+    }
+  ]
+}
