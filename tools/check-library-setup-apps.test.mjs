@@ -8,8 +8,8 @@ import {
     detectAppPlatform,
     validateRecipes,
     verifyApps,
+    verifyResolvedVersion,
     verifyWorkspaceDependency,
-    versionSatisfies,
 } from './check-library-setup.mjs';
 import {
     manifest,
@@ -248,9 +248,7 @@ test('BYPASS : lockfile incohérent (spec + version) → échec', async (t) => {
     assert.ok(errors.some((e) => /spec "catalog:".*≠ "catalog:WRONG"/.test(e)));
     assert.ok(
         errors.some((e) =>
-            /version résolue "9\.9\.9" ne satisfait pas le catalog "1\.0\.0"/.test(
-                e
-            )
+            /version résolue "9\.9\.9" ≠ catalog exact "1\.0\.0"/.test(e)
         )
     );
 });
@@ -285,12 +283,34 @@ test('catalog en plage caret : version résolue qui satisfait → ok ; sinon →
     );
 });
 
-test('catalog en forme non interprétable → échec explicite', async (t) => {
+test('catalog en plage SemVer valide (>=22 <23) : respecté → ok', async (t) => {
     const root = await scaffold(t, {
         recipes: working(),
         rootPackage: {
             dependencies: { 'demo-pkg': 'catalog:' },
-            workspaces: { catalog: { 'demo-pkg': '>=1 <2' } },
+            workspaces: { catalog: { 'demo-pkg': '>=22 <23' } },
+        },
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': 'catalog:' } } },
+            packages: { 'demo-pkg': ['demo-pkg@22.5.1'] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.deepEqual(verifyApps(root, recipesOf(root)).errors, []);
+});
+
+test('catalog ni version ni plage SemVer valide → échec explicite', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage: {
+            dependencies: { 'demo-pkg': 'catalog:' },
+            workspaces: { catalog: { 'demo-pkg': 'not-a-version' } },
         },
         bunLock: {
             lockfileVersion: 1,
@@ -306,7 +326,33 @@ test('catalog en forme non interprétable → échec explicite', async (t) => {
     });
     assert.ok(
         verifyApps(root, recipesOf(root)).errors.some((e) =>
-            /non interprétable/.test(e)
+            /n'est ni une version ni une plage SemVer valide/.test(e)
+        )
+    );
+});
+
+test('BYPASS : version directe (hors catalog:) pour une lib gouvernée → échec', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage: {
+            dependencies: { 'demo-pkg': '1.2.3' },
+            workspaces: { catalog: {} },
+        },
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': '1.2.3' } } },
+            packages: { 'demo-pkg': ['demo-pkg@9.9.9'] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /doit être déclaré "catalog:"/.test(e)
         )
     );
 });
@@ -463,20 +509,31 @@ test('detectAppPlatform : un seul résultat, sinon unknown (jamais "premier gagn
     assert.equal(detectAppPlatform(join(root, 'absent')), null);
 });
 
-test('versionSatisfies : exact / caret / tilde ; formes non interprétables → null', () => {
-    assert.equal(versionSatisfies('1.2.3', '1.2.3'), true);
-    assert.equal(versionSatisfies('1.2.4', '1.2.3'), false);
-    assert.equal(versionSatisfies('1.2.3', '^1.2.0'), true); // cas `ol:^10.9.0`
-    assert.equal(versionSatisfies('1.9.9', '^1.2.0'), true);
-    assert.equal(versionSatisfies('2.0.0', '^1.2.0'), false);
-    assert.equal(versionSatisfies('1.1.0', '^1.2.0'), false);
-    assert.equal(versionSatisfies('0.9.5', '^0.9.0'), true);
-    assert.equal(versionSatisfies('0.10.0', '^0.9.0'), false);
-    assert.equal(versionSatisfies('10.9.5', '~10.9.0'), true);
-    assert.equal(versionSatisfies('10.10.0', '~10.9.0'), false);
-    assert.equal(versionSatisfies('1.2.3', '>=1 <2'), null);
-    assert.equal(versionSatisfies('1.2.3', '1.x'), null);
-    assert.equal(versionSatisfies('pas-une-version', '1.2.3'), null);
+test('verifyResolvedVersion : les 5 contre-tests SemVer de la revue + plages', () => {
+    const has = (r) => r.length > 0;
+    // 1. pré-release contre version stable → refusée
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', 'p@1.2.3-beta.1')));
+    // 2. version résolue invalide (suffixe parasite) → refusée
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', 'p@1.2.3garbage')));
+    // 3. identifiant lockfile impossible à parser → refusé
+    assert.ok(has(verifyResolvedVersion('p', '1.2.3', 'malformed')));
+    // 4. valeur de catalog non textuelle → refusée
+    assert.ok(has(verifyResolvedVersion('p', 123, 'p@1.2.3')));
+    // 5. (spec directe hors catalog:) — couverte par verifyWorkspaceDependency
+    // exact conforme
+    assert.deepEqual(verifyResolvedVersion('p', '1.2.3', 'p@1.2.3'), []);
+    // plages SemVer réelles via `semver`
+    assert.deepEqual(verifyResolvedVersion('p', '^1.2.0', 'p@1.9.9'), []);
+    assert.ok(has(verifyResolvedVersion('p', '^1.2.0', 'p@2.0.0')));
+    assert.deepEqual(verifyResolvedVersion('p', '>=22 <23', 'p@22.5.0'), []);
+    assert.ok(has(verifyResolvedVersion('p', '>=22 <23', 'p@23.0.0')));
+    assert.deepEqual(verifyResolvedVersion('@a/b', '1.2.3', '@a/b@1.2.3'), []);
+    // catalog ni version ni plage valide → refusé
+    assert.ok(has(verifyResolvedVersion('p', 'not-a-version', 'p@1.2.3')));
+    // catalog vide / plage non bornée → refusé (un catalog doit contraindre)
+    assert.ok(has(verifyResolvedVersion('p', '', 'p@1.2.3')));
+    assert.ok(has(verifyResolvedVersion('p', '*', 'p@9.9.9')));
+    assert.ok(has(verifyResolvedVersion('p', '>=0.0.0', 'p@9.9.9')));
 });
 
 test('verifyWorkspaceDependency : chaîne complète + cohérence version', async (t) => {

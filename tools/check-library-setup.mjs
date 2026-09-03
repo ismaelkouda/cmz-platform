@@ -33,6 +33,8 @@ import {
 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import semver from 'semver';
+
 import { validateJsonSchema } from './generator-platform/validate-ir.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -370,69 +372,77 @@ export function detectAppPlatform(appAbsRoot) {
     return matched.size === 1 ? [...matched][0] : 'unknown';
 }
 
-/**
- * `resolved` (version concrète du lockfile) satisfait-il `spec` (du catalog) ?
- * Formes gérées : exacte (`1.2.3`), `^1.2.3`, `~1.2.3`. Toute autre forme
- * (`>=`, `||`, `x`, `*`, plage) → `null` = non interprétable (le caller échoue,
- * fail-closed). Le catalog du dépôt est quasi exclusivement exact (ADR-0005).
- * @returns {boolean | null}
- */
-export function versionSatisfies(resolved, spec) {
-    const parse = (value) => {
-        const match = /^v?(\d+)\.(\d+)\.(\d+)/.exec(String(value).trim());
-        return match
-            ? { major: +match[1], minor: +match[2], patch: +match[3] }
-            : null;
-    };
-    const target = parse(resolved);
-    if (!target) return null;
-    const text = String(spec).trim();
-
-    if (/^v?\d/.test(text)) {
-        // Forme exacte attendue : `x.y.z` strict. `1`, `1.2`, `1.x` → non
-        // interprétable (null), pas « ne satisfait pas » (false).
-        if (!/^v?\d+\.\d+\.\d+$/.test(text)) return null;
-        const exact = parse(text);
-        return (
-            exact.major === target.major &&
-            exact.minor === target.minor &&
-            exact.patch === target.patch
-        );
-    }
-
-    const range = /^([\^~])v?(\d+)\.(\d+)\.(\d+)\s*$/.exec(text);
-    if (!range) return null;
-    const [, operator, majorText, minorText, patchText] = range;
-    const base = { major: +majorText, minor: +minorText, patch: +patchText };
-
-    const atLeastBase =
-        target.major > base.major ||
-        (target.major === base.major &&
-            (target.minor > base.minor ||
-                (target.minor === base.minor && target.patch >= base.patch)));
-    if (!atLeastBase) return false;
-
-    if (operator === '~') {
-        return target.major === base.major && target.minor === base.minor;
-    }
-    if (base.major > 0) return target.major === base.major;
-    if (base.minor > 0)
-        return target.major === 0 && target.minor === base.minor;
-    return (
-        target.major === 0 && target.minor === 0 && target.patch === base.patch
-    );
+/** Extrait la version d'un identifiant bun.lock `<name>@<version>` (name scopé
+ *  admis) ; renvoie la chaîne brute si aucun `@` séparateur. */
+function versionFromLockIdentifier(identifier) {
+    const text = Array.isArray(identifier)
+        ? String(identifier[0])
+        : String(identifier);
+    const at = text.lastIndexOf('@');
+    return at > 0 ? text.slice(at + 1) : text;
 }
 
 /**
- * Une dépendance doit être : déclarée dans package.json racine ; si `catalog:`,
- * présente au catalog correspondant ; verrouillée dans bun.lock avec un spec
- * IDENTIQUE à celui de package.json et une version résolue qui SATISFAIT la
- * version/plage du catalog (`versionSatisfies` — fail-closed sur les formes non
- * interprétables).
+ * Cohérence version : la version résolue (bun.lock) doit satisfaire la valeur du
+ * catalog. Résolution SemVer réelle (`semver`, déclaré au dépôt) — pas de
+ * parseur maison. Politique pré-release EXPLICITE : `includePrerelease: false`
+ * (une pré-release ne satisfait une plage que si la plage la nomme). Sont des
+ * erreurs (fail-closed) : valeur de catalog non textuelle, vide, ou qui se
+ * normalise en plage non bornée (`*`, `x`, `>=0.0.0` — un catalog DOIT
+ * contraindre) ; version résolue non parsable ; valeur ni version ni plage.
+ * @returns {string[]}
+ */
+export function verifyResolvedVersion(
+    packageName,
+    catalogValue,
+    lockIdentifier
+) {
+    if (typeof catalogValue !== 'string' || catalogValue.trim() === '') {
+        return [
+            `${packageName} : valeur de catalog absente ou non textuelle (${typeof catalogValue})`,
+        ];
+    }
+    const rawVersion = versionFromLockIdentifier(lockIdentifier);
+    const resolved = semver.valid(rawVersion);
+    if (!resolved) {
+        return [
+            `${packageName} : version résolue "${rawVersion}" non parsable (bun.lock)`,
+        ];
+    }
+    const exact = semver.valid(catalogValue);
+    if (exact) {
+        return semver.eq(resolved, exact)
+            ? []
+            : [
+                  `${packageName} : version résolue "${resolved}" ≠ catalog exact "${exact}" (bun.lock)`,
+              ];
+    }
+    const range = semver.validRange(catalogValue);
+    if (range === null) {
+        return [
+            `${packageName} : catalog "${catalogValue}" n'est ni une version ni une plage SemVer valide`,
+        ];
+    }
+    if (range === '*' || range === '') {
+        return [
+            `${packageName} : catalog "${catalogValue}" est une plage non bornée — un catalog doit contraindre la version`,
+        ];
+    }
+    return semver.satisfies(resolved, range, { includePrerelease: false })
+        ? []
+        : [
+              `${packageName} : version résolue "${resolved}" ne satisfait pas le catalog "${catalogValue}" (bun.lock)`,
+          ];
+}
+
+/**
+ * Une dépendance de bibliothèque gouvernée doit être : déclarée `catalog:` dans
+ * package.json racine (jamais une version directe — ADR-0005) ; présente au
+ * catalog correspondant ; verrouillée dans bun.lock avec un spec IDENTIQUE à
+ * celui de package.json et une version résolue cohérente (`verifyResolvedVersion`).
  */
 export function verifyWorkspaceDependency(rootAbs, packageName) {
     const root = resolve(rootAbs);
-    const errors = [];
     let pkg;
     try {
         pkg = readJsonUnder(root, 'package.json');
@@ -450,28 +460,31 @@ export function verifyWorkspaceDependency(rootAbs, packageName) {
     if (spec === undefined) {
         return [`${packageName} absent des dépendances de package.json racine`];
     }
-
-    let catalogVersion;
-    if (typeof spec === 'string' && spec.startsWith('catalog:')) {
-        const catalogName = spec.slice('catalog:'.length);
-        const catalog = catalogName
-            ? pkg.workspaces?.catalogs?.[catalogName]
-            : pkg.workspaces?.catalog;
-        if (!catalog || !Object.hasOwn(catalog, packageName)) {
-            errors.push(
-                `${packageName} référence "${spec}" mais absent du catalog correspondant`
-            );
-        } else {
-            catalogVersion = catalog[packageName];
-        }
+    if (typeof spec !== 'string' || !spec.startsWith('catalog:')) {
+        return [
+            `${packageName} : doit être déclaré "catalog:" (spec actuel : ${JSON.stringify(spec)})`,
+        ];
     }
+
+    const catalogName = spec.slice('catalog:'.length);
+    const catalog = catalogName
+        ? pkg.workspaces?.catalogs?.[catalogName]
+        : pkg.workspaces?.catalog;
+    if (!catalog || !Object.hasOwn(catalog, packageName)) {
+        return [
+            `${packageName} référence "${spec}" mais absent du catalog correspondant`,
+        ];
+    }
+    const catalogValue = catalog[packageName];
 
     let lock;
     try {
         lock = parseJsonc(readTextUnder(root, 'bun.lock'));
     } catch (error) {
-        return [...errors, `bun.lock : ${error.message}`];
+        return [`bun.lock : ${error.message}`];
     }
+
+    const errors = [];
     const lockRoot = lock.workspaces?.[''] ?? {};
     let lockSpec;
     for (const field of DEP_FIELDS) {
@@ -491,24 +504,10 @@ export function verifyWorkspaceDependency(rootAbs, packageName) {
     const locked = lock.packages?.[packageName];
     if (!locked) {
         errors.push(`${packageName} non résolu dans bun.lock (packages)`);
-    } else if (typeof catalogVersion === 'string') {
-        const identifier = Array.isArray(locked)
-            ? String(locked[0])
-            : String(locked);
-        const at = identifier.lastIndexOf('@');
-        const resolvedVersion = at > 0 ? identifier.slice(at + 1) : '';
-        if (resolvedVersion) {
-            const satisfied = versionSatisfies(resolvedVersion, catalogVersion);
-            if (satisfied === null) {
-                errors.push(
-                    `${packageName} : version catalog "${catalogVersion}" non interprétable (formes admises : exacte, ^, ~)`
-                );
-            } else if (!satisfied) {
-                errors.push(
-                    `${packageName} : version résolue "${resolvedVersion}" ne satisfait pas le catalog "${catalogVersion}" (bun.lock)`
-                );
-            }
-        }
+    } else {
+        errors.push(
+            ...verifyResolvedVersion(packageName, catalogValue, locked)
+        );
     }
     return errors;
 }
