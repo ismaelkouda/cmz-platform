@@ -33,6 +33,10 @@ import {
     createRetirementPlan,
     retirementPlanSha256,
 } from './retire-module-plan.mjs';
+import {
+    compositionSha256,
+    loadCompositionRegistry,
+} from './generator-platform/core/composition-registry.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const TRANSACTION_ROOT = '.cmz/create-module-transactions';
@@ -44,30 +48,10 @@ const CONFIG_FILES = [
     'bun.lock',
 ];
 
-/**
- * Périmètre restreint (2026-08-30) — deuxième composition (`list-query`,
- * verbe "query"/List simple) reconnue par create-module/retire-module, au
- * même titre qu'`action-request`. Table de dispatch fermée, fail-closed :
- * un `definition.kind` absent de cette table est refusé explicitement en
- * lecture (voir readDefinition), jamais interprété par défaut comme
- * `action-request` — élargir cette table est le seul point d'entrée pour
- * un futur 3ᵉ verbe.
- */
-const COMPOSITION_KINDS = {
-    'action-request': {
-        generatorScript: 'tools/generator-platform/generate-action-request.mjs',
-        target: 'angular-layered',
-        layers: ['application', 'data', 'domain'],
-    },
-    'list-query': {
-        generatorScript: 'tools/generator-platform/generate-list-query.mjs',
-        target: 'angular-layered',
-        layers: ['data', 'domain'],
-    },
-};
+const COMPOSITION_KINDS = loadCompositionRegistry(ROOT).byKind;
 
-function expectedLayeredProjects(moduleName, kind) {
-    return COMPOSITION_KINDS[kind].layers
+function expectedLayeredProjects(moduleName, composition) {
+    return composition.layers
         .map((layer) => ({
             name: `@cmz/${moduleName}-${layer}`,
             projectJson: `libs/${moduleName}/angular-${layer}/project.json`,
@@ -286,11 +270,17 @@ function exactKeys(value, keys) {
     );
 }
 
-function validateState(moduleName, state, { allowGitDrift = false } = {}) {
+function validateState(
+    moduleName,
+    state,
+    { allowGitDrift = false, allowCompositionDrift = false } = {}
+) {
     const keys = [
         'version',
         'module',
         'kind',
+        'composition',
+        'compositionSha256',
         'status',
         'startedAt',
         'workspaceRoot',
@@ -310,9 +300,23 @@ function validateState(moduleName, state, { allowGitDrift = false } = {}) {
     ];
     if (
         !exactKeys(state, keys) ||
-        state.version !== 3 ||
+        state.version !== 5 ||
         state.module !== moduleName ||
         !Object.hasOwn(COMPOSITION_KINDS, state.kind ?? '') ||
+        !exactKeys(state.composition, [
+            'kind',
+            'maturity',
+            'maturityNote',
+            'target',
+            'generatorScript',
+            'layers',
+            'evidence',
+        ]) ||
+        state.composition.kind !== state.kind ||
+        compositionSha256(state.composition) !== state.compositionSha256 ||
+        (!allowCompositionDrift &&
+            state.compositionSha256 !==
+                compositionSha256(COMPOSITION_KINDS[state.kind])) ||
         !['planned', 'generated', 'configured'].includes(state.status) ||
         typeof state.startedAt !== 'string' ||
         Number.isNaN(Date.parse(state.startedAt)) ||
@@ -348,7 +352,7 @@ function validateState(moduleName, state, { allowGitDrift = false } = {}) {
     if (hasGeneratedMetadata) {
         const expectedProjects = expectedLayeredProjects(
             moduleName,
-            state.kind
+            state.composition
         );
         if (
             retirementPlanSha256(state.plan) !== state.planSha256 ||
@@ -392,7 +396,7 @@ function desiredText(state, file) {
     return Buffer.from(state.desiredConfigs[file], 'base64').toString('utf8');
 }
 
-function validateGeneratedRoot(moduleName, kind, expectedHash) {
+function validateGeneratedRoot(moduleName, composition, expectedHash) {
     const output = join(ROOT, 'libs', moduleName);
     const metadata = lstatSync(output);
     if (!metadata.isDirectory() || metadata.isSymbolicLink())
@@ -403,7 +407,7 @@ function validateGeneratedRoot(moduleName, kind, expectedHash) {
         'artifact-plan.json',
         'evidence-model.json',
         'semantic-model.json',
-        ...COMPOSITION_KINDS[kind].layers.map(
+        ...composition.layers.map(
             (layer) => `angular-${layer}/generation-manifest.json`
         ),
     ]) {
@@ -415,9 +419,10 @@ function validateGeneratedRoot(moduleName, kind, expectedHash) {
             );
     }
     const { plan, sha256: planSha256 } = createRetirementPlan(ROOT, moduleName);
-    const expectedProjects = expectedLayeredProjects(moduleName, kind).map(
-        ({ name }) => name
-    );
+    const expectedProjects = expectedLayeredProjects(
+        moduleName,
+        composition
+    ).map(({ name }) => name);
     if (
         JSON.stringify(plan.roots) !== JSON.stringify([`libs/${moduleName}`]) ||
         JSON.stringify(plan.projects.map(({ name }) => name).sort()) !==
@@ -525,7 +530,7 @@ function materializeDefinitionSnapshot(state) {
 }
 
 function runGenerator(state, dryRun = false) {
-    const composition = COMPOSITION_KINDS[state.kind];
+    const composition = state.composition;
     let temporaryRoot;
     let definitionPath;
     if (dryRun) {
@@ -589,7 +594,11 @@ function removeOwnedOutput(state) {
             `Rollback ambigu : ${state.outputRoot} et sa sortie écartée existent simultanément.`
         );
     if (!entryExists(output)) return;
-    validateGeneratedRoot(state.module, state.kind, state.generatedTreeSha256);
+    validateGeneratedRoot(
+        state.module,
+        state.composition,
+        state.generatedTreeSha256
+    );
     renameSync(output, discarded);
     syncDirectory(dirname(output));
     syncDirectory(dirname(discarded));
@@ -643,13 +652,13 @@ function continueCreate(initialState) {
             }
             state = computeDesiredState(
                 state,
-                validateGeneratedRoot(state.module, state.kind, null)
+                validateGeneratedRoot(state.module, state.composition, null)
             );
             writeState(state.module, state);
         }
         validateGeneratedRoot(
             state.module,
-            state.kind,
+            state.composition,
             state.generatedTreeSha256
         );
         validateConfigForResume(state);
@@ -707,9 +716,13 @@ function runInitial(options, definition) {
     const git = currentGitIdentity(ROOT);
     const originals = captureConfigOriginals(ROOT);
     const state = {
-        version: 3,
+        version: 5,
         module: definition.moduleName,
         kind: definition.kind,
+        composition: COMPOSITION_KINDS[definition.kind],
+        compositionSha256: compositionSha256(
+            COMPOSITION_KINDS[definition.kind]
+        ),
         status: 'planned',
         startedAt: new Date().toISOString(),
         workspaceRoot: resolve(ROOT),
@@ -745,7 +758,10 @@ function runAbort(moduleName) {
     const state = readState(moduleName);
     if (!state) fail(`Aucune création à abandonner pour ${moduleName}.`);
     rollback(
-        validateState(moduleName, state, { allowGitDrift: true }),
+        validateState(moduleName, state, {
+            allowGitDrift: true,
+            allowCompositionDrift: true,
+        }),
         'Création abandonnée.',
         true
     );

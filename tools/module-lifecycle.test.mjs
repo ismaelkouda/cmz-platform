@@ -287,6 +287,48 @@ test('un SIGKILL pendant Bun laisse une transaction reprenable sans bypass', asy
     );
 });
 
+test('une dérive du registre bloque la reprise mais jamais l’abandon sûr', async (t) => {
+    const { root, definitionPath, bin } = await createWorkspace(t);
+    const interrupted = execute(
+        root,
+        bin,
+        'create-module.mjs',
+        ['--definition', definitionPath],
+        { CMZ_FAKE_BUN_MODE: 'kill' }
+    );
+    assert.equal(interrupted.signal, 'SIGKILL');
+    const registryPath = join(
+        root,
+        'tools/generator-platform/composition-registry.json'
+    );
+    const registry = JSON.parse(await readFile(registryPath, 'utf8'));
+    registry.compositions
+        .find(({ kind }) => kind === 'action-request')
+        .evidence.reverse();
+    await writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`);
+
+    const resumed = execute(root, bin, 'create-module.mjs', [
+        '--resume',
+        '--module',
+        MODULE,
+    ]);
+    assert.equal(resumed.status, 1);
+    assert.match(resumed.stderr, /Journal de création invalide/);
+    assert.equal(await exists(join(root, 'libs', MODULE)), true);
+
+    const aborted = execute(root, bin, 'create-module.mjs', [
+        '--abort',
+        '--module',
+        MODULE,
+    ]);
+    assert.equal(aborted.status, 0, aborted.stderr || aborted.stdout);
+    assert.equal(await exists(join(root, 'libs', MODULE)), false);
+    assert.equal(
+        await exists(join(root, '.cmz/create-module-transactions', MODULE)),
+        false
+    );
+});
+
 test('un gate Nx en échec restaure sortie, configurations et lockfile', async (t) => {
     const { root, definitionPath, bin } = await createWorkspace(t);
     const before = new Map(

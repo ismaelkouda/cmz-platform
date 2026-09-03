@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "compositions": [
+    {
+      "kind": "action-request",
+      "maturity": "proven",
+      "target": "angular-layered",
+      "generator_script": "tools/generator-platform/generate-action-request.mjs",
+      "layers": ["domain", "data", "application"],
+      "evidence": [
+        "tools/generator-platform/sources/inventory-adjustment.definition.json",
+        "tools/generator-platform/sources/sign-in.definition.json",
+        "tools/generator-platform/sources/support-request.definition.json"
+      ]
+    },
+    {
+      "kind": "list-query",
+      "maturity": "experimental",
+      "maturity_note": "Experimental only: its sole evidence is the retained definition of the removed cmz-client-landing-home POC (rollback 6f70743); promotion to proven requires a distinct active, non-retired case.",
+      "target": "angular-layered",
+      "generator_script": "tools/generator-platform/generate-list-query.mjs",
+      "layers": ["domain", "data"],
+      "evidence": [
+        "tools/generator-platform/sources/cmz-client-landing-home.definition.json"
+      ]
+    }
+  ]
+}
