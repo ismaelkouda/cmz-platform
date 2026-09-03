@@ -54,7 +54,7 @@ function getMissingKeys() {
     }
     return out
         .split('\n')
-        .filter((line) => /^  [A-Z]/.test(line))
+        .filter((line) => /^ {2}[A-Z]/.test(line))
         .map((line) => line.trim());
 }
 

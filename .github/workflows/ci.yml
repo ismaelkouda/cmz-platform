@@ -160,6 +160,14 @@ jobs:
       - name: check:dev-permissions-prod
         run: bun run check:dev-permissions-prod
 
+      # `eslint.config.mjs` `files:` ne couvre que .ts/.tsx/.js/.jsx et `tools/`
+      # n'est pas un projet Nx : ~130 tools/**/*.mjs n'étaient lintés par aucune
+      # gate. Ce script couvre tout tools/**/*.mjs sauf trois zones à dette
+      # pré-existante isolée : seos/** (vendored octet-stable), mock-server/**
+      # (sous-package, 51 erreurs) et corpus/** (13 erreurs).
+      - name: check:lint-tools (eslint sur tools/**/*.mjs)
+        run: bun run check:lint-tools
+
       # Audit Big Tech 2026-08-14 — root cause du bug "script dans check:all
       # jamais réellement câblé en CI" (rencontré 3 fois : check:pair-schema/
       # check:corpus-tools en 2026-08-11, check:dto-schema/check:pattern-nx:

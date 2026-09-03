@@ -4,12 +4,10 @@
  * Usage: node tools/scaffold-report-states-volets.mjs
  */
 import {
-    cpSync,
     existsSync,
     mkdirSync,
     readdirSync,
     readFileSync,
-    rmSync,
     statSync,
     writeFileSync,
 } from 'node:fs';

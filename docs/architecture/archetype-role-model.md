@@ -304,7 +304,7 @@ figé + ADR-0039.
 | **T3**  | rôle `navigation-edge` (producteur : nav de `application-design` ; consommateur : renderer shell)                                                  | T2       |
 | **T4**  | rôle `i18n-catalog` (producteur : chaînes de `application-design` ; consommateur : shell + page)                                                   | T2       |
 | **T5**  | rôle `access-guard` → `roles.json` angular = `{ na: … }`                                                                                           | T2       |
-| **T6**  | gate `check:lint-tools` (`eslint 'tools/**/*.mjs'` + `**/*.mjs` dans `eslint.config.mjs`) — orthogonal, attrape la classe « `.mjs` non linté »     | —        |
+| ~~T6~~  | ✅ livré — gate `check:lint-tools` (`eslint tools/**/*.mjs`, hors `seos/` + `mock-server/` + `corpus/` : dette pré-existante isolée à traiter à part) | —        |
 | **T7+** | rôles de code (`mapping`, `remote-query`, `remote-command`, `domain-model`, `server-state-facade`) — **1 par PR**, producteur `artifact-plan` typé | **T1**   |
 
 Différé jusqu'à un vrai besoin : 1er sélecteur conditionnel + harnais fixtures

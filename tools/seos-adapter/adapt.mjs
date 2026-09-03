@@ -160,7 +160,7 @@ for (const abs of allFiles) {
 // ---------------------------------------------------------------------------
 const created = [];
 
-for (const [layerKey, cfg] of Object.entries(LAYERS)) {
+for (const [, cfg] of Object.entries(LAYERS)) {
     const files = perLib[cfg.suffix];
     if (!files || files.length === 0) continue;
 
