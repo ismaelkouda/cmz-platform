@@ -47,19 +47,17 @@ const DEP_FIELDS = [
     'peerDependencies',
     'optionalDependencies',
 ];
+// Exécuteurs SPÉCIFIQUES à une plateforme. Les bundlers génériques (@nx/vite,
+// @nx/rspack, @nx/webpack) ne prouvent aucune plateforme et sont volontairement
+// absents : une app Angular peut utiliser @nx/vite pour ses tests. Une app qui
+// n'expose que des exécuteurs génériques → plateforme indéterminée → échec.
 const PLATFORM_EXECUTOR_PREFIXES = {
     angular: [
         '@angular/build:',
         '@angular-devkit/build-angular:',
         '@nx/angular:',
     ],
-    react: [
-        '@nx/react:',
-        '@nx/next:',
-        '@nx/remix:',
-        '@nx/rspack:',
-        '@nx/vite:',
-    ],
+    react: ['@nx/react:', '@nx/next:', '@nx/remix:'],
 };
 
 // ─── chemins sûrs ────────────────────────────────────────────────────────
@@ -339,7 +337,12 @@ function validateRecipeCoherence(recipe, relativePath, root, errors) {
 
 // ─── plateforme & dépendances ───────────────────────────────────────────
 
-/** Plateforme d'un projet Nx, déduite de ses exécuteurs de targets. */
+/**
+ * Plateforme d'un projet Nx. Collecte TOUTES les preuves : un seul résultat →
+ * cette plateforme ; zéro (rien de spécifique) ou plusieurs (ex. exécuteurs
+ * Angular ET React) → `'unknown'` (le caller échoue). Jamais « premier gagné ».
+ * @returns {'angular' | 'react' | 'unknown' | null} null = project.json illisible
+ */
 export function detectAppPlatform(appAbsRoot) {
     let project;
     try {
@@ -352,6 +355,7 @@ export function detectAppPlatform(appAbsRoot) {
     const executors = Object.values(project.targets ?? {}).map(
         (target) => target?.executor ?? ''
     );
+    const matched = new Set();
     for (const [platform, prefixes] of Object.entries(
         PLATFORM_EXECUTOR_PREFIXES
     )) {
@@ -360,17 +364,71 @@ export function detectAppPlatform(appAbsRoot) {
                 prefixes.some((prefix) => executor.startsWith(prefix))
             )
         ) {
-            return platform;
+            matched.add(platform);
         }
     }
-    return 'unknown';
+    return matched.size === 1 ? [...matched][0] : 'unknown';
+}
+
+/**
+ * `resolved` (version concrète du lockfile) satisfait-il `spec` (du catalog) ?
+ * Formes gérées : exacte (`1.2.3`), `^1.2.3`, `~1.2.3`. Toute autre forme
+ * (`>=`, `||`, `x`, `*`, plage) → `null` = non interprétable (le caller échoue,
+ * fail-closed). Le catalog du dépôt est quasi exclusivement exact (ADR-0005).
+ * @returns {boolean | null}
+ */
+export function versionSatisfies(resolved, spec) {
+    const parse = (value) => {
+        const match = /^v?(\d+)\.(\d+)\.(\d+)/.exec(String(value).trim());
+        return match
+            ? { major: +match[1], minor: +match[2], patch: +match[3] }
+            : null;
+    };
+    const target = parse(resolved);
+    if (!target) return null;
+    const text = String(spec).trim();
+
+    if (/^v?\d/.test(text)) {
+        // Forme exacte attendue : `x.y.z` strict. `1`, `1.2`, `1.x` → non
+        // interprétable (null), pas « ne satisfait pas » (false).
+        if (!/^v?\d+\.\d+\.\d+$/.test(text)) return null;
+        const exact = parse(text);
+        return (
+            exact.major === target.major &&
+            exact.minor === target.minor &&
+            exact.patch === target.patch
+        );
+    }
+
+    const range = /^([\^~])v?(\d+)\.(\d+)\.(\d+)\s*$/.exec(text);
+    if (!range) return null;
+    const [, operator, majorText, minorText, patchText] = range;
+    const base = { major: +majorText, minor: +minorText, patch: +patchText };
+
+    const atLeastBase =
+        target.major > base.major ||
+        (target.major === base.major &&
+            (target.minor > base.minor ||
+                (target.minor === base.minor && target.patch >= base.patch)));
+    if (!atLeastBase) return false;
+
+    if (operator === '~') {
+        return target.major === base.major && target.minor === base.minor;
+    }
+    if (base.major > 0) return target.major === base.major;
+    if (base.minor > 0)
+        return target.major === 0 && target.minor === base.minor;
+    return (
+        target.major === 0 && target.minor === 0 && target.patch === base.patch
+    );
 }
 
 /**
  * Une dépendance doit être : déclarée dans package.json racine ; si `catalog:`,
  * présente au catalog correspondant ; verrouillée dans bun.lock avec un spec
- * IDENTIQUE à celui de package.json et une version résolue égale à celle du
- * catalog.
+ * IDENTIQUE à celui de package.json et une version résolue qui SATISFAIT la
+ * version/plage du catalog (`versionSatisfies` — fail-closed sur les formes non
+ * interprétables).
  */
 export function verifyWorkspaceDependency(rootAbs, packageName) {
     const root = resolve(rootAbs);
@@ -439,10 +497,17 @@ export function verifyWorkspaceDependency(rootAbs, packageName) {
             : String(locked);
         const at = identifier.lastIndexOf('@');
         const resolvedVersion = at > 0 ? identifier.slice(at + 1) : '';
-        if (resolvedVersion && resolvedVersion !== catalogVersion) {
-            errors.push(
-                `${packageName} : catalog "${catalogVersion}" ≠ version résolue "${resolvedVersion}" (bun.lock)`
-            );
+        if (resolvedVersion) {
+            const satisfied = versionSatisfies(resolvedVersion, catalogVersion);
+            if (satisfied === null) {
+                errors.push(
+                    `${packageName} : version catalog "${catalogVersion}" non interprétable (formes admises : exacte, ^, ~)`
+                );
+            } else if (!satisfied) {
+                errors.push(
+                    `${packageName} : version résolue "${resolvedVersion}" ne satisfait pas le catalog "${catalogVersion}" (bun.lock)`
+                );
+            }
         }
     }
     return errors;

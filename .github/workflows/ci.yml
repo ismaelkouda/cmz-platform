@@ -156,13 +156,15 @@ jobs:
       - name: check:convention-profile (ADR-0010)
         run: bun run check:convention-profile
 
-      # ADR-0041 — les recettes conventions/libraries/*.setup.json figent les
-      # INVARIANTS d'un setup de bibliothèque (Material, Tailwind, Transloco) et
-      # un test d'acceptation ; le COMMENT (commande de la version N) est délégué
-      # au schematic officiel / à un script reference-derived / à un LLM borné
-      # dont la sortie est revérifiée ici. Toute app qui déclare des
-      # bibliothèques (apps/<app>/.cmz/libraries.json) voit ses invariants
-      # revérifiés dans son arbre — empêche la dérive silencieuse du setup.
+      # ADR-0041 — garde-fou de DÉRIVE de configuration : les recettes
+      # conventions/libraries/<platform>/<lib>.setup.json figent des
+      # static_invariants structurels (présence de fichiers/fragments), le
+      # schéma fermé du manifeste apps/<app>/.cmz/libraries.json, la cohérence
+      # package.json/catalog/bun.lock, et le confinement de toute lecture (zéro
+      # lien symbolique). Ce N'EST PAS un test d'acceptation : les
+      # runtime_acceptance (compilation, règle CSS, coexistence navigateur) et
+      # le harnais du recours LLM restent à livrer — cf.
+      # docs/architecture/library-setup-runtime-plan.md.
       - name: check:library-setup (ADR-0041)
         run: bun run check:library-setup
 

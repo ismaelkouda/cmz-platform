@@ -26,7 +26,7 @@
   "runtime_acceptance": [
     {
       "id": "material-component-compiles",
-      "description": "un composant standalone qui importe un composant Material représentatif (ex. MatButton), dans une app candidate isolée, compile sous ngc --strictTemplates en import standalone (jamais un NgModule agrégateur) et rend son DOM attendu en test — couvre aussi le câblage d'animations, quel qu'il soit dans la version courante",
+      "description": "dans un workspace candidat autonome : un composant standalone important un composant Material représentatif (ex. MatButton) compile sous ngc --strictTemplates en import standalone (jamais un NgModule agrégateur). Preuve de compilation uniquement — le rendu DOM et le comportement d'animation sont des critères distincts (browser-coexistence + preuve dédiée, à définir).",
       "proof": "compile-component",
       "status": "harness-pending"
     }

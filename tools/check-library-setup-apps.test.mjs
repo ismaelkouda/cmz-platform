@@ -9,6 +9,7 @@ import {
     validateRecipes,
     verifyApps,
     verifyWorkspaceDependency,
+    versionSatisfies,
 } from './check-library-setup.mjs';
 import {
     manifest,
@@ -247,7 +248,65 @@ test('BYPASS : lockfile incohérent (spec + version) → échec', async (t) => {
     assert.ok(errors.some((e) => /spec "catalog:".*≠ "catalog:WRONG"/.test(e)));
     assert.ok(
         errors.some((e) =>
-            /catalog "1\.0\.0" ≠ version résolue "9\.9\.9"/.test(e)
+            /version résolue "9\.9\.9" ne satisfait pas le catalog "1\.0\.0"/.test(
+                e
+            )
+        )
+    );
+});
+
+test('catalog en plage caret : version résolue qui satisfait → ok ; sinon → échec', async (t) => {
+    const base = (lockVersion) => ({
+        recipes: working(),
+        rootPackage: {
+            dependencies: { 'demo-pkg': 'catalog:' },
+            workspaces: { catalog: { 'demo-pkg': '^1.2.0' } },
+        },
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': 'catalog:' } } },
+            packages: { 'demo-pkg': [`demo-pkg@${lockVersion}`] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    const ok = await scaffold(t, base('1.2.9'));
+    assert.deepEqual(verifyApps(ok, recipesOf(ok)).errors, []);
+
+    const bad = await scaffold(t, base('2.0.0'));
+    assert.ok(
+        verifyApps(bad, recipesOf(bad)).errors.some((e) =>
+            /ne satisfait pas le catalog "\^1\.2\.0"/.test(e)
+        )
+    );
+});
+
+test('catalog en forme non interprétable → échec explicite', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage: {
+            dependencies: { 'demo-pkg': 'catalog:' },
+            workspaces: { catalog: { 'demo-pkg': '>=1 <2' } },
+        },
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': 'catalog:' } } },
+            packages: { 'demo-pkg': ['demo-pkg@1.5.0'] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /non interprétable/.test(e)
         )
     );
 });
@@ -307,7 +366,9 @@ test('invariants de coexistence : vérifiés seulement si les deux sont déclar�
     });
     const rootPackage = {
         dependencies: { 'demo-pkg': 'catalog:', 'autre-pkg': 'catalog:' },
-        workspaces: { catalog: { 'demo-pkg': '1', 'autre-pkg': '1' } },
+        workspaces: {
+            catalog: { 'demo-pkg': '1.0.0', 'autre-pkg': '1.0.0' },
+        },
     };
     const bunLock = {
         lockfileVersion: 1,
@@ -319,7 +380,10 @@ test('invariants de coexistence : vérifiés seulement si les deux sont déclar�
                 },
             },
         },
-        packages: { 'demo-pkg': ['demo-pkg@1'], 'autre-pkg': ['autre-pkg@1'] },
+        packages: {
+            'demo-pkg': ['demo-pkg@1.0.0'],
+            'autre-pkg': ['autre-pkg@1.0.0'],
+        },
     };
 
     const solo = await scaffold(t, {
@@ -366,22 +430,53 @@ test('app sans project.json ignorée ; fichier isolé dans apps/ ignoré', async
     assert.equal(result.checkedApps, 0);
 });
 
-test('detectAppPlatform : angular / react / unknown / null', async (t) => {
+test('detectAppPlatform : un seul résultat, sinon unknown (jamais "premier gagné")', async (t) => {
     const root = await mkdtemp(join(tmpdir(), 'cmz-platform-detect-'));
     t.after(() => rm(root, { recursive: true, force: true }));
     await write(join(root, 'ng/project.json'), {
         targets: { build: { executor: '@angular/build:application' } },
     });
     await write(join(root, 'rx/project.json'), {
+        targets: {
+            build: { executor: '@nx/react:module-federation-dev-server' },
+        },
+    });
+    // bundler générique seul → ne prouve rien
+    await write(join(root, 'vite-only/project.json'), {
         targets: { build: { executor: '@nx/vite:build' } },
+    });
+    // Angular ET React → ambigu
+    await write(join(root, 'both/project.json'), {
+        targets: {
+            build: { executor: '@angular/build:application' },
+            e2e: { executor: '@nx/react:webpack' },
+        },
     });
     await write(join(root, 'weird/project.json'), {
         targets: { build: { executor: '@nx/js:tsc' } },
     });
     assert.equal(detectAppPlatform(join(root, 'ng')), 'angular');
     assert.equal(detectAppPlatform(join(root, 'rx')), 'react');
+    assert.equal(detectAppPlatform(join(root, 'vite-only')), 'unknown');
+    assert.equal(detectAppPlatform(join(root, 'both')), 'unknown');
     assert.equal(detectAppPlatform(join(root, 'weird')), 'unknown');
     assert.equal(detectAppPlatform(join(root, 'absent')), null);
+});
+
+test('versionSatisfies : exact / caret / tilde ; formes non interprétables → null', () => {
+    assert.equal(versionSatisfies('1.2.3', '1.2.3'), true);
+    assert.equal(versionSatisfies('1.2.4', '1.2.3'), false);
+    assert.equal(versionSatisfies('1.2.3', '^1.2.0'), true); // cas `ol:^10.9.0`
+    assert.equal(versionSatisfies('1.9.9', '^1.2.0'), true);
+    assert.equal(versionSatisfies('2.0.0', '^1.2.0'), false);
+    assert.equal(versionSatisfies('1.1.0', '^1.2.0'), false);
+    assert.equal(versionSatisfies('0.9.5', '^0.9.0'), true);
+    assert.equal(versionSatisfies('0.10.0', '^0.9.0'), false);
+    assert.equal(versionSatisfies('10.9.5', '~10.9.0'), true);
+    assert.equal(versionSatisfies('10.10.0', '~10.9.0'), false);
+    assert.equal(versionSatisfies('1.2.3', '>=1 <2'), null);
+    assert.equal(versionSatisfies('1.2.3', '1.x'), null);
+    assert.equal(versionSatisfies('pas-une-version', '1.2.3'), null);
 });
 
 test('verifyWorkspaceDependency : chaîne complète + cohérence version', async (t) => {
