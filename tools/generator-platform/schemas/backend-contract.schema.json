@@ -1,0 +1,368 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/backend-contract.schema.json",
+  "title": "CMZ Canonical Backend Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "contract",
+    "sources",
+    "services",
+    "security_schemes",
+    "models",
+    "operations"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "backend-contract" },
+    "contract": { "$ref": "#/$defs/contractIdentity" },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "services": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/service" }
+    },
+    "security_schemes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/securityScheme" }
+    },
+    "models": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/model" }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "status": {
+      "enum": ["reference", "planned", "implemented", "verified-live"]
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "contractIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "version", "status", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "description": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "authority",
+        "status",
+        "snapshot_uri",
+        "sha256"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": {
+          "enum": [
+            "openapi",
+            "postman",
+            "manual",
+            "legacy-code",
+            "runtime-observation"
+          ]
+        },
+        "authority": {
+          "enum": ["authoritative", "declared", "observational"]
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "snapshot_uri": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "original_uri": { "$ref": "#/$defs/nonEmptyString" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "locator"],
+      "properties": {
+        "source_id": { "$ref": "#/$defs/id" },
+        "locator": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    },
+    "baseUrl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environment", "url"],
+      "properties": {
+        "environment": { "$ref": "#/$defs/id" },
+        "url": { "type": "string", "pattern": "^https?://[^\\s]+/$" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "description", "base_urls", "evidence"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "status": { "$ref": "#/$defs/status" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "base_urls": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/baseUrl" }
+        },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "securityScheme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "status", "description", "evidence"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": {
+          "enum": ["bearer", "api-key", "cookie", "basic", "oauth2", "other"]
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "typeRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["primitive", "model", "array"] },
+        "name": {
+          "enum": [
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "date",
+            "datetime",
+            "uuid",
+            "binary",
+            "json"
+          ]
+        },
+        "model_id": { "$ref": "#/$defs/id" },
+        "items": { "$ref": "#/$defs/typeRef" }
+      }
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "required",
+        "nullable",
+        "type",
+        "evidence"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$"
+        },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "required": { "type": "boolean" },
+        "nullable": { "type": "boolean" },
+        "type": { "$ref": "#/$defs/typeRef" },
+        "allowed_values": { "type": "array", "minItems": 1, "items": {} },
+        "constraints": { "$ref": "#/$defs/constraints" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_length": { "type": "integer", "minimum": 0 },
+        "max_length": { "type": "integer", "minimum": 0 },
+        "pattern": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" },
+        "min_items": { "type": "integer", "minimum": 0 },
+        "max_items": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "status", "description", "evidence"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["object", "array", "scalar"] },
+        "status": { "$ref": "#/$defs/status" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "fields": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/field" }
+        },
+        "items": { "$ref": "#/$defs/typeRef" },
+        "type": { "$ref": "#/$defs/typeRef" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "in", "description", "required", "type", "evidence"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$"
+        },
+        "in": { "enum": ["path", "query", "header"] },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "required": { "type": "boolean" },
+        "type": { "$ref": "#/$defs/typeRef" },
+        "constraints": { "$ref": "#/$defs/constraints" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "requestBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "media_types", "model_id", "evidence"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "media_types": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "model_id": { "$ref": "#/$defs/id" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parameters"],
+      "properties": {
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/parameter" }
+        },
+        "body": { "$ref": "#/$defs/requestBody" }
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["none", "object"] },
+        "data_field": { "$ref": "#/$defs/nonEmptyString" },
+        "error_field": { "$ref": "#/$defs/nonEmptyString" },
+        "message_field": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "responseBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["media_type", "model_id", "envelope", "evidence"],
+      "properties": {
+        "media_type": { "$ref": "#/$defs/nonEmptyString" },
+        "model_id": { "$ref": "#/$defs/id" },
+        "envelope": { "$ref": "#/$defs/envelope" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "outcome", "description", "evidence"],
+      "properties": {
+        "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+        "outcome": { "enum": ["success", "error"] },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "body": { "$ref": "#/$defs/responseBody" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "security_scheme_ids", "permissions"],
+      "properties": {
+        "mode": { "enum": ["public", "authenticated", "authorized"] },
+        "security_scheme_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "permissions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "service_id",
+        "status",
+        "description",
+        "method",
+        "path",
+        "access",
+        "request",
+        "responses",
+        "evidence"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "service_id": { "$ref": "#/$defs/id" },
+        "status": { "$ref": "#/$defs/status" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "method": {
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/(?:[A-Za-z0-9._~-]+|\\{[A-Za-z_][A-Za-z0-9_]*\\})(?:/(?:[A-Za-z0-9._~-]+|\\{[A-Za-z_][A-Za-z0-9_]*\\}))*$"
+        },
+        "access": { "$ref": "#/$defs/access" },
+        "request": { "$ref": "#/$defs/request" },
+        "responses": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/response" }
+        },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    }
+  }
+}

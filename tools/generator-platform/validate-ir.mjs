@@ -152,6 +152,14 @@ export function validateJsonSchema(
             );
         }
         if (
+            currentSchema.maxLength !== undefined &&
+            value.length > currentSchema.maxLength
+        ) {
+            errors.push(
+                `${path}: must contain at most ${currentSchema.maxLength} chars`
+            );
+        }
+        if (
             currentSchema.pattern &&
             !new RegExp(currentSchema.pattern).test(value)
         ) {
@@ -167,6 +175,12 @@ export function validateJsonSchema(
             errors.push(
                 `${path}: must contain at least ${currentSchema.minItems} items`
             );
+        }
+        if (currentSchema.uniqueItems === true) {
+            const identities = value.map((item) => JSON.stringify(item));
+            if (new Set(identities).size !== identities.length) {
+                errors.push(`${path}: items must be unique`);
+            }
         }
         if (currentSchema.items) {
             value.forEach((item, index) => {

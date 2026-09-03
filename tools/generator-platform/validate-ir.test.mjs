@@ -5,6 +5,7 @@ import {
     loadJson,
     repositoryRoot,
     validateEvidence,
+    validateJsonSchema,
     validateSemantic,
 } from './validate-ir.mjs';
 
@@ -21,6 +22,20 @@ const [evidence, evidenceSchema, semantic, semanticSchema] = await Promise.all([
 function clone(value) {
     return structuredClone(value);
 }
+
+test('applique chaque mot-clé JSON Schema utilisé par les schémas du moteur', () => {
+    assert.deepEqual(
+        validateJsonSchema('abc', { type: 'string', maxLength: 2 }),
+        ['$: must contain at most 2 chars']
+    );
+    assert.deepEqual(
+        validateJsonSchema(['same', 'same'], {
+            type: 'array',
+            uniqueItems: true,
+        }),
+        ['$: items must be unique']
+    );
+});
 
 test('canonical action-request evidence and semantic models are valid', async () => {
     assert.deepEqual(
