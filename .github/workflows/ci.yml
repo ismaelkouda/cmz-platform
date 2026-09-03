@@ -505,21 +505,17 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # OPS-19 (2026-08-17) : `image-size <=2.0.2` (via `less`, dépendance
-      # optionnelle dormante de @angular/build/@nx/webpack/vite — aucun
-      # fichier .less dans apps/libs, code jamais exécuté) est la dernière
-      # version publiée du paquet, sans correctif amont possible ; `bun`
-      # (contrairement à pnpm) ne supporte ni le sélecteur `"pkg@"` ni `"-"`
-      # dans `overrides` pour neutraliser une dépendance transitive absente
-      # du direct — seule option outillée : `--ignore` par GHSA ID. Risque
-      # documenté en détail dans taches-restantes.md (OPS-12e) : CVSS 8.7
-      # DoS uniquement, EPSS 0.43%, jamais déclenché faute de fichier .less.
-      # Ce job échouait silencieusement depuis OPS-12e (2026-08-17) car
-      # cette exception n'avait jamais été reportée ici, seulement dans la
-      # doc — 0 run ci.yml vert depuis. Les 2 lignes du rapport (deux
-      # workspaces consommateurs) sont la même CVE unique sur le même
-      # image-size@0.5.5 verrouillé (vérifié bun.lock) : 1 seul --ignore
-      # suffit par GHSA ID, pas 2.
+      # Exception étroite et auto-invalidante : avant tout --ignore, ce gate
+      # prouve image-size@0.5.5 + intégrité npm exacte, chaîne optionnelle via
+      # less@4.5.1, absence des parseurs ICNS/JXL/HEIF concernés et absence de
+      # tout fichier .less Git-visible. Une version, un parseur, un usage ou la
+      # date de revue qui dérive fait échouer la CI avant l'audit.
+      - name: check:dependency-audit-exception (preuve image-size)
+        run: bun run check:dependency-audit-exception
+
+      # GitHub ne publie aucun correctif pour ces deux GHSA au 2026-09-03.
+      # L'ignore porte sur leurs identités exactes, après la preuve ci-dessus ;
+      # tous les autres avis high/critical restent bloquants.
       - name: bun audit (high/critical bloquant)
         run: |
           bun audit --audit-level=high \
