@@ -1,0 +1,511 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/application-design.schema.json",
+  "title": "CMZ Target-neutral Application Design",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "design",
+    "sources",
+    "backend_contracts",
+    "audiences",
+    "experiences",
+    "pages",
+    "unknowns"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "application-design" },
+    "design": { "$ref": "#/$defs/design" },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "backend_contracts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/backendContract" }
+    },
+    "audiences": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/audience" }
+    },
+    "experiences": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/experience" }
+    },
+    "pages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/page" }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/unknown" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "pageId": {
+      "type": "string",
+      "pattern": "^page_[a-f0-9]{16}$"
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "locator"],
+      "properties": {
+        "source_id": { "$ref": "#/$defs/id" },
+        "locator": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    },
+    "design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "version",
+        "status",
+        "problem",
+        "primary_outcome",
+        "description",
+        "evidence"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "status": { "enum": ["draft", "approved"] },
+        "problem": { "$ref": "#/$defs/nonEmptyString" },
+        "primary_outcome": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "snapshot_uri", "sha256"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": {
+          "enum": [
+            "project-brief",
+            "human-decision",
+            "research",
+            "runtime-observation"
+          ]
+        },
+        "snapshot_uri": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "backendContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "snapshot_uri", "sha256"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "role": { "enum": ["reference", "target"] },
+        "snapshot_uri": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "audience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "description", "evidence"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "experience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "description",
+        "channel",
+        "audience_ids",
+        "entry_page_id",
+        "page_ids",
+        "offline_policy",
+        "evidence"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "channel": { "enum": ["web", "android", "ios"] },
+        "audience_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "entry_page_id": { "$ref": "#/$defs/pageId" },
+        "page_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/pageId" }
+        },
+        "offline_policy": {
+          "enum": ["none", "shell-only", "read-cache", "write-queue"]
+        },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "permissions"],
+      "properties": {
+        "mode": { "enum": ["public", "authenticated", "authorized"] },
+        "permissions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "description", "announcement"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": {
+          "enum": [
+            "ready",
+            "loading",
+            "empty",
+            "success",
+            "error",
+            "offline",
+            "unauthenticated",
+            "forbidden"
+          ]
+        },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "announcement": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "label", "description", "required"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": {
+          "enum": [
+            "text",
+            "multiline-text",
+            "password",
+            "number",
+            "date",
+            "select",
+            "photo",
+            "geolocation",
+            "toggle"
+          ]
+        },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "backendRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_id", "operation_id"],
+      "properties": {
+        "contract_id": { "$ref": "#/$defs/id" },
+        "operation_id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "inputBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["control_id", "target_kind", "target_name"],
+      "properties": {
+        "control_id": { "$ref": "#/$defs/id" },
+        "target_kind": {
+          "enum": [
+            "body-field",
+            "path-parameter",
+            "query-parameter",
+            "header-parameter"
+          ]
+        },
+        "target_name": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "label",
+        "description",
+        "available_in_state_ids",
+        "input_bindings"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["backend", "navigate"] },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "available_in_state_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "input_bindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/inputBinding" }
+        },
+        "operation_ref": { "$ref": "#/$defs/backendRef" },
+        "destination_page_id": { "$ref": "#/$defs/pageId" },
+        "success_state_id": { "$ref": "#/$defs/id" },
+        "error_state_id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "dataBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "operation_ref",
+        "response_status",
+        "model_id",
+        "field_names",
+        "visible_in_state_ids"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "operation_ref": { "$ref": "#/$defs/backendRef" },
+        "response_status": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "model_id": { "$ref": "#/$defs/id" },
+        "field_names": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "visible_in_state_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "load": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "operation_ref",
+        "parameter_bindings",
+        "loading_state_id",
+        "success_state_id",
+        "error_state_id"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "operation_ref": { "$ref": "#/$defs/backendRef" },
+        "parameter_bindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/loadParameterBinding" }
+        },
+        "loading_state_id": { "$ref": "#/$defs/id" },
+        "success_state_id": { "$ref": "#/$defs/id" },
+        "empty_state_id": { "$ref": "#/$defs/id" },
+        "error_state_id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "loadParameterBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parameter_name",
+        "parameter_in",
+        "source_kind",
+        "source_ref"
+      ],
+      "properties": {
+        "parameter_name": { "$ref": "#/$defs/nonEmptyString" },
+        "parameter_in": { "enum": ["path", "query", "header"] },
+        "source_kind": { "enum": ["route", "session", "constant", "device"] },
+        "source_ref": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "element": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "accessible_name",
+        "content",
+        "control_ids",
+        "action_ids",
+        "data_binding_ids"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": {
+          "enum": [
+            "heading",
+            "text",
+            "image",
+            "list",
+            "form",
+            "status",
+            "action-group"
+          ]
+        },
+        "accessible_name": { "$ref": "#/$defs/nonEmptyString" },
+        "content": { "$ref": "#/$defs/nonEmptyString" },
+        "control_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "action_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "data_binding_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "accessible_name", "elements"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "role": {
+          "enum": [
+            "banner",
+            "navigation",
+            "main",
+            "complementary",
+            "contentinfo"
+          ]
+        },
+        "accessible_name": { "$ref": "#/$defs/nonEmptyString" },
+        "elements": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/element" }
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "purpose",
+        "path",
+        "experience_ids",
+        "access",
+        "initial_state_id",
+        "states",
+        "controls",
+        "actions",
+        "loads",
+        "data_bindings",
+        "regions",
+        "evidence"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/pageId" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "purpose": { "$ref": "#/$defs/nonEmptyString" },
+        "path": {
+          "type": "string",
+          "pattern": "^/(?:[a-z0-9]+(?:-[a-z0-9]+)*/?)*$"
+        },
+        "experience_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "access": { "$ref": "#/$defs/access" },
+        "initial_state_id": { "$ref": "#/$defs/id" },
+        "states": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/state" }
+        },
+        "controls": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/control" }
+        },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/action" }
+        },
+        "loads": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/load" }
+        },
+        "data_bindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/dataBinding" }
+        },
+        "regions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/region" }
+        },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "unknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "question", "blocking", "owner"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "question": { "$ref": "#/$defs/nonEmptyString" },
+        "blocking": { "type": "boolean" },
+        "owner": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    }
+  }
+}
