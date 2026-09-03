@@ -1,187 +1,196 @@
-# Plan B–E — `add-library`, preuves runtime, intégration `create-app`
+# Plan — installation réelle + preuves runtime des bibliothèques
 
-- **Statut :** Proposed — en attente de validation. **Aucun commit B–E avant
-  validation de ce plan.**
+- **Statut :** Proposed — **en attente de validation**. Révisé après la 2ᵉ revue
+  Codex (verrou global, candidat isolé pour tout schematic/probe, rollback
+  atomique des transactions imbriquées, découpage vertical, gouvernance
+  d'upgrade). Aucun commit d'un lot 2–7 avant validation.
 - **Amont :** [ADR-0041](../adr/0041-angular-material-tailwind-defaults.md),
-  commit `94cd645` (cluster A — `check:library-setup` durci).
-- **Suivi :** 7 étapes ; l'étape 1 (audit Codex) et le cluster A sont faits.
+  commits `a34ce65` / `94cd645` (+ le durcissement round 2 encore en revue).
 
 ## Contexte
 
-Le cluster A a rendu `check:library-setup` honnête : `static_invariants`
-(présence structurelle, garde-fou de dérive) est vérifié à chaque run ;
-`runtime_acceptance` (`compile-component`, `compiled-css-rule`,
-`browser-coexistence`) est **déclaré, `status: harness-pending`, jamais
-exécuté**. Il n'existe pas d'outil d'installation : `install.command` /
-`reference_tool` décrivent le « comment » sans que rien ne l'exécute.
+`check:library-setup` est un garde-fou de dérive : `static_invariants` (présence
+structurelle) vérifié à chaque run, `runtime_acceptance` **déclaré mais jamais
+exécuté**. Rien n'installe : `install.command` / `reference_tool` décrivent le «
+comment » sans l'exécuter. Le système n'est donc **pas utilisable en
+production** — l'objectif de ce plan est d'y arriver.
 
-B–E ferment ces deux trous : un outil `add-library` transactionnel qui
-**installe et configure réellement**, un harnais qui **exécute les
-`runtime_acceptance`**, l'intégration dans `create-app`, puis la gouvernance
-d'upgrade.
+## Découpage vertical (7 étapes)
 
-## Découpage
+Pas de découpage horizontal « tout `add-library` » puis « tout le harnais » :
+chaque étape est une tranche verticale **installe → prouve** pour une
+bibliothèque, gatée de bout en bout.
 
-| Lot   | Contenu                                                                                                                                                                             | Dépend de                 |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| **B** | `tools/add-library.mjs` + `core/library-addition.mjs` : `--dry-run` / `--apply <plan-id>`, transaction, verrou, journal, rollback, reprise SIGKILL, idempotence                     | A                         |
-| **C** | Harnais `runtime_acceptance` : `tools/check-library-runtime.mjs` (job CI dédié) — compile Material, règle CSS Tailwind, coexistence navigateur                                      | A                         |
-| **D** | `create-app` écrit `.cmz/libraries.json` + délègue à `add-library` pour les 3 défauts ; test E2E `create-app → add-library → install → frozen → build → lint → test → gate → abort` | B, C, **coord. renderer** |
-| **E** | Gouvernance d'upgrade (bump de version → revalidation) + recours LLM borné quand `add-library` échoue                                                                               | B, C, D                   |
+| #   | Étape                              | Livrable                                                                                                                                             | Preuve exigée pour clore                                                                       |
+| --- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 1   | Durcissement `check:library-setup` | round 2 (verrou symlink racine d'app, plateforme indéterminée = échec, cohérence lockfile, `{{app}}`, périmètre Angular/React)                       | revue Codex sans P0                                                                            |
+| 2   | Material — install + transaction   | `tools/add-library.mjs` + `core/library-addition.mjs` ; `add-library --dry-run` / `--apply <plan-id>` ; Material installé dans une app **candidate** | `material-component-compiles` **enforced** (ngc `--strictTemplates` réel dans le candidat)     |
+| 3   | Tailwind — install + règle CSS     | `add-library` pour `reference-derived` ; Tailwind câblé dans le candidat                                                                             | `sentinel-class-emits-rule` **enforced** (classe sentinelle → règle dans le CSS de build réel) |
+| 4   | Coexistence Material/Tailwind      | page de coexistence + harnais Playwright                                                                                                             | `material-tailwind-render-together` **enforced** (test navigateur)                             |
+| 5   | Transloco + `create-app` atomique  | `add-library` pour Transloco ; `create-app` écrit le manifeste et enchaîne `add-library ×3` sous **une** transaction                                 | E2E `create-app → add-library ×3 → frozen → build → lint → test → gate → abort` vert           |
+| 6   | Gouvernance d'upgrade              | matrice de compat, revalidation sur bump, migration de recette, politique Renovate                                                                   | bump simulé → gate rouge attendu → recette migrée → vert                                       |
+| 7   | Recours LLM borné                  | `install.method: llm-then-verified` outillé                                                                                                          | schematic cassé simulé → LLM complète → `check:library-setup` + harnais verts                  |
 
-Chaque lot = plusieurs commits petits et gatés (convention du dépôt).
+Chaque étape = plusieurs commits petits et gatés.
 
-## B — `add-library` transactionnel
+## Candidat isolé — invariant transverse
 
-### Frontières de transaction
+**Aucun schematic ni probe ne s'exécute sur le workspace réel avant que son diff
+soit connu.** Tout (schematic `ng-add`, probe `compile-component`, probe
+`compiled-css-rule`, page de coexistence) tourne dans un **candidat** :
 
-Une exécution `--apply` est **une** transaction atomique. Périmètre écrit :
+```
+.cmz/library-candidates/<app>-<library>-<planId>/
+```
 
-| Cible                                    | Écriture                                                                                                                               |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `package.json` racine                    | ajout des `packages[]` de la recette (via schematic ou script)                                                                         |
-| `bun.lock`                               | régénéré par `bun install`                                                                                                             |
-| catalog racine (`workspaces.catalog[s]`) | épingle de version si `catalog:`                                                                                                       |
-| `apps/<app>/…`                           | fichiers de config dérivés (`.postcssrc.json`, `src/tailwind.css`, `src/styles.scss`, `src/app/app.config.ts`, entrées `project.json`) |
-| `apps/<app>/.cmz/libraries.json`         | ajout de l'id de bibliothèque au manifeste                                                                                             |
+copie de travail de `apps/<app>` (fichiers réguliers seulement, symlinks
+refusés) + `node_modules` symlinké depuis la racine. Le schematic/probe y écrit,
+son diff est **capturé, hashé, validé** contre les `static_invariants` de la
+recette, puis :
 
-**Hors périmètre, jamais touché :** tout autre `apps/*`, tout `libs/*`, les
-workflows CI, les autres recettes. Un `add-library` qui voudrait écrire hors de
-cette liste échoue avant toute écriture.
+- `--dry-run` : émet le diff + `plan_id` et **jette** le candidat ;
+- `--apply <plan-id>` : recalcule le diff dans un candidat neuf, exige `plan_id`
+  identique, puis **publie le diff** (pas le schematic) sur le vrai `apps/<app>`
+  sous la transaction.
 
-### `--dry-run` / `--apply <plan-id>` (calqué sur `create-app`)
+C'est l'extension du pattern `apps/.{name}.create-app-candidate-<planId>` de
+`tools/generator-platform/core/application-shell-publication.mjs`. Réponse
+directe aux points Codex : le `plan_id` porte le hash d'une sortie de schematic
+**réellement produite**, jamais devinée ; le vrai workspace ne voit que des
+écritures de fichiers déjà diffées.
 
-- `--dry-run` : calcule le plan sans écrire, émet un JSON
-  `{ plan_id, library, app, package_changes[], file_writes[{path, sha256}], reference_shas }`.
-  `plan_id = sha256(library ∥ app ∥ recette_sha ∥ arbre_app_sha ∥ package.json_sha ∥ reference_tool_sha)`.
-- `--apply <plan-id>` : recalcule le plan ; si `plan_id` ≠ celui fourni → refus
-  (l'arbre a bougé depuis le dry-run). Sinon exécute la transaction.
-- Le `plan_id` est le même contrat de fraîcheur que `publishApplicationShell`
-  (`tools/generator-platform/core/application-shell-publication.mjs`).
+## Transactions & verrous
 
-### Transaction, verrou, journal, rollback, reprise SIGKILL
+### Deux niveaux de verrou
 
-Réutilise le mécanisme éprouvé de `create-module` /
-`retire-module-transaction.mjs` (tests : `module-lifecycle.test.mjs`) :
+| Verrou                                                | Protège                                                    | Portée                                                                                                           |
+| ----------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **global** `.cmz/library-transactions/workspace.lock` | `package.json` racine, `bun.lock`, `workspaces.catalog[s]` | tout `add-library` / `create-app` qui installe — **un seul à la fois**, quelle que soit l'app ou la bibliothèque |
+| **par app** `.cmz/library-transactions/<app>.lock`    | `apps/<app>/**`                                            | sérialise les écritures d'une même app                                                                           |
 
-- **Verrou** : `.cmz/add-library-transactions/<app>-<library>.lock`
-  (`{ pid, hostname }`) ; un verrou dont le pid est mort est récupéré. Sérialise
-  les `add-library` concurrents sur la même paire.
-- **Journal** : `.cmz/add-library-transactions/<app>-<library>/state.json`,
-  écrit par `rename` atomique.
-  `status ∈ { planned, packages-installed, app-configured, manifest-updated }`.
-  Snapshot immuable des fichiers cibles (contenu + sha) avant la première
-  écriture.
-- **Rollback** : sur toute erreur (schematic, `bun install`, gate), restaure
-  chaque fichier du snapshot octet pour octet, régénère `bun.lock` par
-  `bun install --frozen-lockfile` sur le `package.json` restauré, supprime le
-  dossier de transaction. Échoue bruyamment si le rollback est incomplet.
-- **Reprise SIGKILL** : `--resume --app <a> --library <l>` relit `state.json`,
-  revalide les snapshots (dérive → refus de reprise, `--abort` seul autorisé),
-  reprend à l'étape suivante. `--abort` restaure et nettoie.
-- **Confinement anti-symlink** : chaque chemin écrit passe le même
-  `safeResolveWithin` que le gate (aucun segment lien symbolique, fichier
-  régulier).
+Un `add-library` prend le verrou global le temps de la mutation `package.json` +
+`bun install`, puis le relâche et prend le verrou d'app pour la config. Deux
+installs concurrentes ne peuvent donc jamais toucher `package.json` / `bun.lock`
+en même temps (point Codex).
 
-### Commandes structurées
+### Journal & rollback
 
-`install.command = { executable, argv }` est exécuté par `execFileSync` (jamais
-`exec` / shell), résolu via `bunx` :
-`execFileSync('bunx', [executable, ...argv])`. Pas d'interpolation, pas de `cwd`
-hors de l'app.
+Réutilise `create-module` / `retire-module-transaction.mjs` (tests
+`module-lifecycle.test.mjs`) :
 
-### Idempotence
+- **Journal** `.cmz/library-transactions/<app>-<library>/state.json`, `rename`
+  atomique,
+  `status ∈ { planned, packages-installed, config-published, manifest-updated }`,
+  snapshot immuable (contenu + sha) de **tous** les fichiers cibles — racine et
+  app — avant la 1ʳᵉ écriture.
+- **Rollback** sur toute erreur : restaure chaque fichier du snapshot octet pour
+  octet, `bun install --frozen-lockfile` sur le `package.json` restauré, purge
+  candidats + dossier de transaction. Échec de rollback = arrêt bruyant.
+- **Reprise SIGKILL** : `--resume` revalide les snapshots (dérive → `--abort`
+  seul) et reprend ; `--abort` restaure et nettoie.
 
-Avant d'agir : si `apps/<app>/.cmz/libraries.json` déclare déjà la bibliothèque
-**et** `check:library-setup` passe pour cette paire → `add-library` sort en
-`no-op` (exit 0, rien d'écrit). Un `--apply` rejoué après succès est donc sûr.
+### Transactions imbriquées (`create-app`)
 
-## C — Harnais `runtime_acceptance`
+`create-app` ouvre **une transaction parente** qui possède : le scaffold du
+shell + 3 transactions `add-library` enfants. Le verrou global est pris **une
+fois** par la parente (pas 3 fois). Toute erreur d'un enfant → rollback de
+l'enfant **puis** de la parente → `apps/<app>` n'existe plus, `package.json` /
+`bun.lock` restaurés. Un seul point de rollback atomique (point Codex).
 
-`tools/check-library-runtime.mjs` — **job CI dédié**, pas dans le job
-`guardrails` (rapide). Précédent : `check:application-pipeline` et le job
-Playwright (`.github/workflows/ci.yml`, `timeout-minutes: 25`) paient déjà de
-vrais builds hors du chemin critique.
+## `--dry-run` / `--apply <plan-id>`
 
-Pour chaque `runtime_acceptance` d'une recette adoptée par une app :
+- `--dry-run --app <a> --library <l>` : construit le candidat, exécute
+  schematic/script, émet
+  `{ plan_id, app, library, platform, package_changes[], file_writes[{path, sha256, patch}], sources: { recipe_sha, app_tree_sha, package_json_sha, catalog_sha } }`,
+  jette le candidat.
+- `plan_id = sha256(sources ∥ file_writes)` — inclut le hash du diff réellement
+  produit.
+- `--apply <plan-id>` : reconstruit, recalcule `plan_id`, **refuse** si ≠
+  (l'arbre a bougé), sinon applique `file_writes` + les `package_changes` sous
+  transaction.
 
-| `proof`               | Preuve exécutée                                                                                                                                                                                                                                   |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compile-component`   | écrit un composant sentinelle sous `apps/<app>/src/app/.library-probe/` qui importe la primitive (ex. `MatButton`, `TranslocoDirective`) ; `bunx ngc -p apps/<app>/tsconfig.app.json --noEmit` ; échec = template/type invalide. Nettoyé ensuite. |
-| `compiled-css-rule`   | ajoute une classe sentinelle unique (`cmz-tw-probe-<rand>` mappée à `text-[#123456]`) dans un template ; `bunx nx run <app>:build:development` ; grep la règle `color:#123456` dans le CSS émis ; échec = Tailwind ne compile pas.                |
-| `browser-coexistence` | page de test dédiée (bouton Material + utilitaires Tailwind) ; Playwright : le bouton garde sa hauteur/ripple/focus Material **et** les utilitaires Tailwind s'appliquent ; assert aucune régression du reset.                                    |
+## Idempotence
 
-Quand un `proof` est outillé et vert en CI, sa recette passe
-`status: "harness-pending"` → `"enforced"` (le gate cluster A refuse déjà
-`enforced` sans harnais — cette bascule est le signal que C est livré pour ce
-proof).
+Avant d'agir : si le manifeste déclare déjà la bibliothèque **et**
+`check:library-setup` passe pour cette paire → `no-op` (exit 0, rien d'écrit,
+aucun verrou pris au-delà de la lecture). `--apply` rejoué après succès est sûr.
 
-### Budget de temps CI
+## Commandes
 
-| Preuve                                      | Coût estimé                                                        | Placement                                       |
-| ------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------- |
-| `compile-component` (ngc `--noEmit`, 1 app) | ~20–40 s                                                           | job `library-runtime` dédié                     |
-| `compiled-css-rule` (1 build dev)           | ~40–90 s                                                           | idem                                            |
-| `browser-coexistence` (Playwright chromium) | ~60–120 s + install navigateur (déjà payé par le job e2e existant) | fusion possible avec le job Playwright existant |
+`install.command = { executable: "nx", argv }` avec un `{{app}}` substitué par
+le nom du projet Nx. Exécuté par `execFileSync('bunx', ['nx', ...argv])` dans le
+candidat — jamais `exec`/shell, jamais d'interpolation ailleurs que `{{app}}`.
 
-Cible : job `library-runtime` **≤ 5 min**, `fail-fast: false`, déclenché sur
-`apps/**` ou `conventions/libraries/**` modifiés (`paths:` filter). Ne bloque
-pas le merge tant que tous les proofs sont `harness-pending` ; devient bloquant
-proof par proof à mesure qu'ils passent `enforced`.
+## Harnais `runtime_acceptance` (`tools/check-library-runtime.mjs`)
 
-## D — Intégration `create-app`
+**Job CI dédié `library-runtime`**, hors du job `guardrails`. Précédent :
+`check:application-pipeline` + le job Playwright (`timeout-minutes: 25`) paient
+déjà de vrais builds hors chemin critique.
 
-**Le renderer
-`tools/generator-platform/renderers/angular-pwa-shell-renderer.mjs` est en cours
-de modification par la session `cmz-platform-42`. Ce lot ne démarre pas avant
-que cette session ait mergé sa tranche, et la conception de l'écriture du
-manifeste sera faite _avec_ elle** (voir Coordination).
+| `proof`               | Exécution (dans un candidat, jamais une vraie app)                                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compile-component`   | candidat = app + composant sentinelle important la primitive ; `bunx nx run <candidat>:build` ou `ngc --noEmit` ; échec = type/template invalide   |
+| `compiled-css-rule`   | candidat + classe sentinelle unique (`text-[#123456]`) ; build ; la règle `color:#123456` doit être dans le CSS émis                               |
+| `browser-coexistence` | candidat + page bouton Material + utilitaires Tailwind ; Playwright : styles Material préservés, utilitaires appliqués, pas de régression du reset |
 
-- `create-app` (`planApplicationShell` / `publishApplicationShell`) écrit
-  `apps/<app>/.cmz/libraries.json` avec les 3 défauts
-  (`["transloco", "angular-material", "tailwind"]` pour le profil
-  `angular-pwa`).
-- Après scaffold du shell, `create-app` invoque `add-library` (mode `--apply`
-  avec le plan calculé) pour chacun, dans sa propre transaction, avec rollback
-  remontant jusqu'à l'annulation du `create-app`.
-- Test E2E (`tools/*.test.mjs`, job dédié) : `create-app` → `add-library ×3` →
-  `bun install --frozen-lockfile` → `nx build` → `nx lint` → `nx test` →
-  `check:library-setup` vert → `retire-app` (abort) restaure l'arbre octet pour
-  octet.
+Bascule `status: harness-pending → enforced` recette par recette quand le proof
+correspondant est vert en CI. `check:library-setup` refuse déjà `enforced` sans
+harnais — la bascule EST le signal de livraison.
 
-## E — Gouvernance d'upgrade + recours LLM
+### Budget CI
 
-- Bump de version (`@angular/material`, `tailwindcss`…) dans le catalog →
-  `check:library-runtime` rejoué ; un `static_invariant` cassé par la nouvelle
-  version signale un changement de mécanisme → mise à jour de la recette (jamais
-  du générateur), consignée.
-- Si `add-library` échoue (schematic cassé, étape manuelle nouvelle) : `install`
-  gagne une branche `llm-then-verified` documentée — un LLM borné complète la
-  config, `check:library-setup` + `check:library-runtime` revérifient, aucun
-  merge sans les deux verts.
+| Preuve                | Coût                         | Placement                       |
+| --------------------- | ---------------------------- | ------------------------------- |
+| `compile-component`   | ~30–60 s / lib               | job `library-runtime`           |
+| `compiled-css-rule`   | ~60–120 s                    | idem                            |
+| `browser-coexistence` | ~90–150 s (chromium partagé) | fusion avec le job e2e existant |
+
+Cible : `library-runtime` **≤ 6 min**, `fail-fast: false`, `paths:` sur
+`apps/**` + `conventions/libraries/**`. Non bloquant tant que tout est
+`harness-pending` ; bloquant proof par proof.
+
+## Gouvernance d'upgrade (étape 6)
+
+- **Matrice de compatibilité**
+  `conventions/libraries/<platform>/<library>.compat.json` :
+  `{ package: "@angular/material", tracks: [{ range: ">=22 <23", recipe_sha, verified_at }] }`.
+  `check:library-setup` échoue si la version résolue sort de tout `range`
+  vérifié.
+- **Renovate/Dependabot** : un bump ouvre une PR ; le job `library-runtime`
+  s'exécute ; s'il casse un `static_invariant` → changement de mécanisme →
+  migration de recette **dans la PR** (nouvelle entrée `tracks`), jamais un
+  générateur touché.
+- **Migration de recette** tracée : un ADR court ou une entrée `tracks` avec la
+  raison (ex. « `provideAnimations` retiré en v23 → `animate.enter` »).
+
+## Recours LLM borné (étape 7)
+
+`install.method: llm-then-verified` : quand un schematic est cassé ou qu'une
+étape manuelle nouvelle apparaît, un LLM borné complète la config **dans le
+candidat**, le diff est validé contre les `static_invariants` +
+`runtime_acceptance`, aucun merge sans les deux verts. Le `prompt_contract` de
+la recette fixe le périmètre autorisé.
 
 ## Points à trancher (utilisateur)
 
-1. **Périmètre `add-library` : par app, ou aussi « workspace-level » ?** Le plan
-   ci-dessus est strictement par app. Les paquets vont au `package.json` racine
-   (monorepo) — assumé.
-2. **`browser-coexistence` : job Playwright séparé ou fusionné** avec le job e2e
-   existant (partage l'install chromium) ?
-3. **`create-app` par défaut = 3 libs** (`transloco` + `angular-material` +
+1. **`create-app` par défaut = 3 libs** (`transloco` + `angular-material` +
    `tailwind`) pour tout profil `angular-pwa` ? Ou Material opt-in ?
-4. **Ordre B→C ou C→B ?** B (add-library) débloque D ; C (preuves) est
-   indépendant. Reco : **C d'abord** (rend `runtime_acceptance` réel sur
-   `backoffice-angular` sans rien installer de neuf), puis B.
+2. **`browser-coexistence`** : job Playwright séparé, ou fusionné avec le job
+   e2e existant (chromium partagé) ?
+3. **Matrice de compat** : fichier `.compat.json` par recette (proposé), ou
+   champ `tracks` **dans** la recette ?
+4. **Candidat** : copie complète de `apps/<app>` (simple, ~lent) ou copie
+   minimale (`src/` + configs, plus rapide, risque de rater un fichier) ?
 
 ## Coordination — session `cmz-platform-42` (renderer)
 
 - Elle possède `angular-pwa-shell-renderer.mjs`, `application-shell.test.mjs`,
-  `core/page-realization.mjs` (non commités au moment de ce plan).
-- **Lots B et C ne touchent aucun de ces fichiers.** B crée
-  `tools/add-library.mjs` + `core/library-addition.mjs` (neufs) ; C crée
-  `tools/check-library-runtime.mjs` (neuf) + une page de test sous
-  `apps/backoffice-angular/`.
-- **Lot D touche le renderer** → séquencé après le merge de `cmz-platform-42`,
-  conçu avec elle (interface : le renderer appelle `planLibraryAddition` ou
-  écrit le manifeste puis laisse `create-app` appeler `add-library`).
-- Ce document est le point de rendez-vous ; le mettre à jour, pas le dupliquer.
+  `core/page-realization.mjs`, `archetype-role-model.md` (non commités).
+- **Étapes 2–4 ne touchent aucun de ces fichiers** : `tools/add-library.mjs`,
+  `tools/generator-platform/core/library-addition.mjs`,
+  `tools/check-library-runtime.mjs` sont neufs ; les candidats et pages de test
+  vivent sous `.cmz/` ou dans un fixture jetable.
+- **Étape 5 touche `create-app`** (mais pas forcément le renderer lui-même :
+  l'écriture du manifeste peut vivre dans `application-shell-publication.mjs`) →
+  séquencée après le merge de `cmz-platform-42`, conçue **avec** elle.
+- Ce document est le point de rendez-vous : le mettre à jour, pas le dupliquer.
