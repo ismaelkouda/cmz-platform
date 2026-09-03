@@ -29,6 +29,11 @@ export async function write(path, content) {
     );
 }
 
+export async function link(target, path) {
+    await mkdir(dirname(path), { recursive: true });
+    await symlink(target, path);
+}
+
 export function validRecipe(overrides = {}) {
     return {
         schema_version: '1.0.0',
@@ -65,7 +70,30 @@ export function validRecipe(overrides = {}) {
     };
 }
 
-/** Racine jetable : vrais schémas + recettes + package.json/bun.lock + apps. */
+export const manifest = (libraries = [], overrides = {}) => ({
+    schema_version: '1.0.0',
+    kind: 'app-library-manifest',
+    platform: 'angular',
+    libraries,
+    ...overrides,
+});
+
+const defaultRootPackage = {
+    dependencies: { 'demo-pkg': 'catalog:' },
+    workspaces: { catalog: { 'demo-pkg': '1.0.0' } },
+};
+const defaultBunLock = {
+    lockfileVersion: 1,
+    workspaces: { '': { dependencies: { 'demo-pkg': 'catalog:' } } },
+    packages: { 'demo-pkg': ['demo-pkg@1.0.0', '', {}, 'sha'] },
+};
+
+/**
+ * Racine jetable : vrais schémas + recettes (rangées sous <platform>/) +
+ * package.json/bun.lock + apps. Chaque `apps[name]` : `{ project?, manifest?,
+ * files?, symlinks?, dirSymlink? }` — `manifest: null` = pas de manifeste,
+ * `dirSymlink: '<target>'` = le dossier d'app est un lien.
+ */
 export async function scaffold(
     t,
     { recipes = {}, rootPackage, bunLock, apps = {} } = {}
@@ -80,61 +108,50 @@ export async function scaffold(
     );
     for (const [stem, recipe] of Object.entries(recipes)) {
         await write(
-            join(root, `conventions/libraries/${stem}.setup.json`),
+            join(
+                root,
+                `conventions/libraries/${recipe.platform ?? 'angular'}/${stem}.setup.json`
+            ),
             recipe
         );
     }
-    await write(
-        join(root, 'package.json'),
-        rootPackage ?? {
-            dependencies: { 'demo-pkg': 'catalog:' },
-            workspaces: { catalog: { 'demo-pkg': '1.0.0' } },
-        }
-    );
+    await write(join(root, 'package.json'), rootPackage ?? defaultRootPackage);
     await write(
         join(root, 'bun.lock'),
         typeof bunLock === 'string'
             ? bunLock
-            : JSON.stringify(
-                  bunLock ?? {
-                      lockfileVersion: 1,
-                      workspaces: {
-                          '': { dependencies: { 'demo-pkg': 'catalog:' } },
-                      },
-                      packages: {
-                          'demo-pkg': ['demo-pkg@1.0.0', '', {}, 'sha'],
-                      },
-                  },
-                  null,
-                  2
-              )
+            : JSON.stringify(bunLock ?? defaultBunLock, null, 2)
     );
+
+    await mkdir(join(root, 'apps'), { recursive: true });
     for (const [appName, spec] of Object.entries(apps)) {
+        if (spec.dirSymlink) {
+            await symlink(spec.dirSymlink, join(root, 'apps', appName));
+            continue;
+        }
         const base = join(root, 'apps', appName);
-        await write(
-            join(base, 'project.json'),
-            spec.project ?? {
-                name: appName,
-                targets: { build: { executor: '@angular/build:application' } },
-            }
-        );
+        if (spec.project !== null) {
+            await write(
+                join(base, 'project.json'),
+                spec.project ?? {
+                    name: appName,
+                    targets: {
+                        build: { executor: '@angular/build:application' },
+                    },
+                }
+            );
+        }
         if (spec.manifest !== null) {
             await write(
                 join(base, '.cmz/libraries.json'),
-                spec.manifest ?? {
-                    schema_version: '1.0.0',
-                    kind: 'app-library-manifest',
-                    platform: 'angular',
-                    libraries: [],
-                }
+                spec.manifest ?? manifest()
             );
         }
         for (const [rel, content] of Object.entries(spec.files ?? {})) {
             await write(join(base, rel), content);
         }
         for (const [rel, target] of Object.entries(spec.symlinks ?? {})) {
-            await mkdir(dirname(join(base, rel)), { recursive: true });
-            await symlink(target, join(base, rel));
+            await link(target, join(base, rel));
         }
     }
     return root;

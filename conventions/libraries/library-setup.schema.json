@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cmz.local/schemas/conventions/library-setup.schema.json",
   "title": "CMZ Library Setup Recipe",
-  "description": "Une recette par (bibliothèque, plateforme). Elle sépare trois choses. (1) `static_invariants` : présence structurelle, vérifiable en lisant des fichiers de l'app — contrôlée à chaque run de check:library-setup ; ce ne sont PAS des tests d'acceptation, seulement des garde-fous contre la dérive de configuration. (2) `runtime_acceptance` : les critères de bon fonctionnement réels (un composant compile, une classe utilitaire produit sa règle CSS, coexistence navigateur) — exécutés par un harnais dédié encore à livrer (plan B/C, ADR-0041) ; tant que `status` vaut `harness-pending`, la gate les liste sans les exécuter et n'en tire aucune garantie. (3) le COMMENT d'installation (commande de la version N), volatile, délégué au schematic officiel / à un script reference-derived / à un LLM borné, et représenté par `{ executable, argv }`, jamais une chaîne shell. Voir conventions/README.md et docs/adr/0041-angular-material-tailwind-defaults.md.",
+  "description": "Une recette par (bibliothèque, plateforme). Le fichier vit sous conventions/libraries/<platform>/<library>.setup.json : le dossier == `platform`, le nom == `library`, et check:library-setup indexe par le couple (platform, library) — deux plateformes peuvent donc avoir chacune leur recette `tailwind`. PÉRIMÈTRE DE CETTE VERSION : paquets npm pour Angular / React, résolus via Bun workspaces (package.json racine + catalog + bun.lock). Kotlin/Swift : hors périmètre. Elle sépare trois choses. (1) `static_invariants` : présence structurelle, vérifiable en lisant des fichiers de l'app — garde-fou de DÉRIVE de configuration, PAS un test d'acceptation ; rien de version-spécifique ici (une API dépréciée d'une version à l'autre appartient à runtime_acceptance). (2) `runtime_acceptance` : les critères de bon fonctionnement réels (un composant compile, une classe utilitaire produit sa règle CSS, coexistence navigateur) — exécutés par un harnais dédié encore à livrer (plan C) ; tant que `status` vaut `harness-pending`, la gate les liste sans les exécuter et n'en tire aucune garantie. (3) le COMMENT d'installation (commande de la version N), volatile, représenté par `{ executable, argv }` avec un jeton `{{app}}` obligatoire pour désigner le projet cible, jamais une chaîne shell. Voir conventions/README.md et docs/adr/0041-angular-material-tailwind-defaults.md.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -21,7 +21,7 @@
       "type": "string",
       "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
     },
-    "platform": { "enum": ["angular", "react", "kotlin", "swift"] },
+    "platform": { "enum": ["angular", "react"] },
     "packages": {
       "type": "array",
       "minItems": 1,
@@ -96,13 +96,18 @@
       "properties": {
         "executable": {
           "type": "string",
-          "pattern": "^[a-z][a-z0-9-]*$",
-          "description": "Nom de binaire seul (ng, nx, npx…). Jamais d'arguments, de pipe, de chemin."
+          "enum": ["nx"],
+          "description": "Résolu via `bunx nx` dans ce dépôt (déterministe : @nx/* est au catalog). `ng` seul n'est pas un binaire du workspace — passer par `nx g <collection>:ng-add`."
         },
         "argv": {
           "type": "array",
-          "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "minItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?:\\{\\{app\\}\\}|[A-Za-z0-9@:/._=-]+)$"
+          },
+          "description": "Exactement un élément doit être le jeton littéral `{{app}}` — l'exécuteur (add-library, lot B) le remplace par le nom du projet Nx cible. check:library-setup refuse une commande official-schematic sans ce jeton."
         }
       }
     },

@@ -5,8 +5,11 @@
   "packages": ["@angular/material", "@angular/cdk"],
   "install": {
     "method": "official-schematic",
-    "command": { "executable": "ng", "argv": ["add", "@angular/material"] },
-    "notes": "Schematic maintenu par l'équipe Angular, version-aware : il installe @angular/material + @angular/cdk alignés sur @angular/core, écrit un thème M3 (`mat.theme()`) dans les styles globaux, câble typographie et provider d'animations. Invoqué via `bunx`/`npx` dans ce dépôt. Les flags exacts (thème, typographie, densité) évoluent version après version — ne jamais les figer ici. Les static_invariants ci-dessous sont le garde-fou de dérive ; la preuve de fonctionnement réelle est `runtime_acceptance` (harnais à livrer)."
+    "command": {
+      "executable": "nx",
+      "argv": ["g", "@angular/material:ng-add", "--project", "{{app}}"]
+    },
+    "notes": "Schematic maintenu par l'équipe Angular, version-aware. L'exécuteur (add-library, lot B) installe d'abord @angular/material + @angular/cdk alignés sur @angular/core, puis lance ce schematic avec `{{app}}` = nom du projet Nx. Il écrit un thème M3 (`mat.theme()`) et la typographie. Les flags exacts et le mécanisme d'animations changent version après version — rien de version-spécifique dans les static_invariants ; la preuve de fonctionnement est runtime_acceptance (harnais lot C)."
   },
   "static_invariants": [
     {
@@ -18,21 +21,12 @@
         "kind": "file-matches",
         "value": "mat\\.theme\\("
       }
-    },
-    {
-      "id": "animations-provider",
-      "description": "le provider d'animations Angular est au bootstrap",
-      "assert": {
-        "file": "src/app/app.config.ts",
-        "kind": "file-matches",
-        "value": "provideAnimations(?:Async)?\\("
-      }
     }
   ],
   "runtime_acceptance": [
     {
       "id": "material-component-compiles",
-      "description": "un composant standalone qui importe un composant Material représentatif (ex. MatButton) compile sous ngc --strictTemplates, en import standalone (jamais un NgModule agrégateur — la compilation le prouve, pas un scan textuel) et rend son DOM attendu en test",
+      "description": "un composant standalone qui importe un composant Material représentatif (ex. MatButton), dans une app candidate isolée, compile sous ngc --strictTemplates en import standalone (jamais un NgModule agrégateur) et rend son DOM attendu en test — couvre aussi le câblage d'animations, quel qu'il soit dans la version courante",
       "proof": "compile-component",
       "status": "harness-pending"
     }
@@ -54,7 +48,7 @@
       "runtime_acceptance": [
         {
           "id": "material-tailwind-render-together",
-          "description": "un bouton Material et des utilitaires Tailwind rendus sur la même page ; test navigateur : le bouton garde ses styles Material (hauteur, ripple, états focus) et les utilitaires Tailwind s'appliquent, sans régression du reset",
+          "description": "dans une app candidate isolée : un bouton Material et des utilitaires Tailwind rendus sur la même page ; test navigateur — le bouton garde ses styles Material (hauteur, ripple, états focus) et les utilitaires Tailwind s'appliquent, sans régression du reset",
           "proof": "browser-coexistence",
           "status": "harness-pending"
         }

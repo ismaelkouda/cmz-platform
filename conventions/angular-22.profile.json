@@ -91,7 +91,7 @@
         "le reset Tailwind qui réinitialise les composants Material (préserver la frontière ADR-0041)"
       ],
       "guidance": "https://material.angular.dev/guide/theming",
-      "notes": "Dérive de setup gardée par conventions/libraries/{angular-material,tailwind}.setup.json + check:library-setup (static_invariants ; les preuves runtime — compilation, règle CSS, coexistence navigateur — restent à outiller). `@cmz/shared-ui` reste le design system de `backoffice-angular` uniquement (gelé, non rétro-porté sur Material — ADR-0041) ; les nouvelles apps composent Material + Tailwind, pas de wrapper maison."
+      "notes": "Dérive de setup gardée par conventions/libraries/angular/{angular-material,tailwind}.setup.json + check:library-setup (static_invariants uniquement ; les preuves runtime — compilation, règle CSS, coexistence navigateur — restent à outiller, lot C). `@cmz/shared-ui` reste le design system de `backoffice-angular` uniquement (gelé, non rétro-porté sur Material — ADR-0041) ; les nouvelles apps composent Material + Tailwind, pas de wrapper maison."
     },
     "accessibility": {
       "native": "WCAG AA : focus géré, contraste, ARIA ; boutons nommés (texte ou `aria-label`) ; champs avec `<label for>` ; icônes décoratives `aria-hidden=\"true\"` ; groupes de toggle `role=\"group\"` + `aria-pressed`.",

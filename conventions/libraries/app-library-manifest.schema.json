@@ -2,14 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cmz.local/schemas/conventions/app-library-manifest.schema.json",
   "title": "CMZ App Library Manifest",
-  "description": "apps/<app>/.cmz/libraries.json — déclare quelles bibliothèques gouvernées (conventions/libraries/*.setup.json) une app adopte. check:library-setup revérifie à chaque run : (1) toute app avec un project.json possède ce fichier ; (2) sa plateforme concorde avec l'exécuteur Nx ; (3) chaque bibliothèque déclarée a ses paquets réellement résolus (package.json racine + catalog + lockfile) et ses static_invariants satisfaits dans l'arbre de l'app ; (4) aucune bibliothèque gouvernée n'est utilisée sans être déclarée (empreinte).",
+  "description": "apps/<app>/.cmz/libraries.json — déclare quelles bibliothèques gouvernées (conventions/libraries/<platform>/<library>.setup.json) une app adopte. check:library-setup revérifie à chaque run : (1) toute app avec un project.json régulier possède ce fichier ; (2) sa plateforme est déterminable depuis l'exécuteur Nx et concorde avec ce champ ; (3) chaque bibliothèque déclarée est résolue par le couple (platform, library) et a ses paquets réellement verrouillés (package.json racine + catalog + bun.lock, cohérents entre eux) et ses static_invariants satisfaits ; (4) aucune bibliothèque gouvernée n'est utilisée sans être déclarée (empreinte). Périmètre : Angular / React.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "kind", "platform", "libraries"],
   "properties": {
     "schema_version": { "const": "1.0.0" },
     "kind": { "const": "app-library-manifest" },
-    "platform": { "enum": ["angular", "react", "kotlin", "swift"] },
+    "platform": { "enum": ["angular", "react"] },
     "libraries": {
       "type": "array",
       "uniqueItems": true,

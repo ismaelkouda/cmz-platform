@@ -61,7 +61,7 @@ d'installation pourrisse en silence ?
   markup accessible. Le « comment installer » (volatile) est délégué au
   schematic officiel, à un script `reference-derived` ou à un LLM borné, et sa
   sortie est revérifiée contre des **invariants stables**
-  (`conventions/libraries/*.setup.json` + `check:library-setup`).
+  (`conventions/libraries/<platform>/*.setup.json` + `check:library-setup`).
 - Inconvénients : deux systèmes de style à faire coexister (frontière entre le
   preflight Tailwind et les composants Material à documenter et tenir) ;
   `@cmz/shared-ui` et Material coexistent dans le dépôt (deux façons de faire un
@@ -98,31 +98,38 @@ responsabilités de style :
 l'importe pas.
 
 Le setup de chaque bibliothèque est décrit par une recette
-`conventions/libraries/<lib>.setup.json` qui sépare trois choses :
+`conventions/libraries/<platform>/<library>.setup.json` — indexée par le couple
+`(platform, library)`, donc deux plateformes peuvent avoir chacune leur recette
+`tailwind`. **Périmètre de cette version : Angular / React, paquets npm résolus
+via Bun.** Elle sépare trois choses :
 
 - `static_invariants` — présence **structurelle** (un fichier existe / contient
   / matche), vérifiée en lisant l'arbre de l'app. Ce sont des **garde-fous de
   dérive de configuration, pas des tests d'acceptation** : un
-  `@import 'tailwindcss'` peut être présent sans que le CSS compile ;
+  `@import 'tailwindcss'` peut être présent sans que le CSS compile — et **rien
+  de version-spécifique** ne va ici (une API dépréciée d'une version à l'autre,
+  comme `provideAnimations`, relève de `runtime_acceptance`) ;
 - `runtime_acceptance` — les **preuves de fonctionnement réelles** (un composant
   Material compile sous `ngc --strictTemplates`, une classe Tailwind sentinelle
   produit sa règle dans le CSS de build, coexistence navigateur). Elles exigent
-  un harnais de build/navigateur **encore à livrer** (suivi B/C) ; jusque-là la
-  gate les **liste sans les exécuter** et n'en tire aucune garantie ;
-- le **VOLATILE** — la commande exacte de la version N, représentée par
-  `{ executable, argv }` (jamais une chaîne shell), déléguée au schematic
-  officiel / à un script `reference-derived` / à un LLM borné.
+  un harnais de build/navigateur **encore à livrer** (lot C) ; jusque-là la gate
+  les **liste sans les exécuter** et n'en tire aucune garantie ;
+- le **VOLATILE** — la commande exacte de la version N,
+  `{ executable: "nx", argv }` avec un jeton `{{app}}` désignant le projet cible
+  (jamais une chaîne shell), déléguée au schematic officiel / à un script
+  `reference-derived` / à un LLM borné.
 
-`check:library-setup` (dans `check:all` + CI) : valide les recettes et le schéma
-fermé de `apps/<app>/.cmz/libraries.json` ; exige qu'**une app avec un
-`project.json` déclare ce manifeste** ; vérifie que sa plateforme concorde avec
-l'exécuteur Nx ; vérifie chaque paquet **structurellement** (`package.json`
-racine + catalog + `bun.lock`, jamais par sous-chaîne) ; rejoue les
-`static_invariants` dans l'arbre de l'app, chaque chemin inspecté confiné et
-sans lien symbolique ; et échoue si une bibliothèque gouvernée est **utilisée
-(empreinte) sans être déclarée**. `apps/backoffice-angular/.cmz/libraries.json`
-déclare `["tailwind", "transloco"]` (pas Material — cf. gel de
-`@cmz/shared-ui`).
+`check:library-setup` (dans `check:all` + CI) : lit tout — recette, schéma,
+fichier d'app, `bun.lock` — **confiné sous la racine du dépôt et sans traverser
+aucun lien symbolique** (le dossier d'app inclus) ; valide les schémas fermés
+des recettes et de `apps/<app>/.cmz/libraries.json` ; exige qu'**une app avec un
+`project.json` régulier déclare ce manifeste** ; **échoue** si la plateforme Nx
+est indéterminable ou ne concorde pas ; vérifie chaque paquet **structurellement
+et de façon cohérente** (`package.json` racine ↔ catalog ↔ `bun.lock` : même
+spec, même version résolue) ; rejoue les `static_invariants` ; et échoue si une
+bibliothèque gouvernée est **utilisée (empreinte) sans être déclarée**.
+`apps/backoffice-angular/.cmz/libraries.json` déclare
+`["tailwind", "transloco"]` (pas Material — cf. gel de `@cmz/shared-ui`).
 
 ## Justification
 
@@ -193,9 +200,11 @@ un fichier qui existe sans être vérifié n'est qu'une intention.
 - `@angular/material` + `@angular/cdk` s'ajoutent aux dépendances de toute
   nouvelle app (versions alignées sur `@angular/core`).
 - Les `runtime_acceptance` sont **déclarés mais pas exécutés** tant que le
-  harnais B/C n'existe pas : à ce stade la gate garantit l'absence de dérive
-  structurelle, pas que Material/Tailwind fonctionnent réellement à l'exécution.
-  C'est la limite explicite de cette étape.
+  harnais du lot C n'existe pas : à ce stade la gate garantit l'absence de
+  dérive structurelle, pas que Material/Tailwind fonctionnent réellement à
+  l'exécution. C'est la limite explicite de cette étape. Voir le plan des lots
+  B–E :
+  [`docs/architecture/library-setup-runtime-plan.md`](../architecture/library-setup-runtime-plan.md).
 
 ### Points à réévaluer
 
@@ -205,12 +214,14 @@ un fichier qui existe sans être vérifié n'est qu'une intention.
   `backoffice-angular`, façon ADR-0036).
 - Si Material M3 s'avère insuffisant pour un besoin d'UI (composant absent), la
   réponse par défaut est un composant applicatif local qui compose
-  `@angular/cdk`
-    - Tailwind — pas une nouvelle librairie tierce, pas un `@cmz/shared-ui`
-      ressuscité.
+  `@angular/cdk` et Tailwind — pas une nouvelle librairie tierce, pas un
+  `@cmz/shared-ui` ressuscité.
 - Si la frontière de coexistence Tailwind ↔ Material génère des régressions
   récurrentes, envisager de désactiver le preflight Tailwind et de n'utiliser
   que ses utilitaires.
+- Étendre le périmètre à React (recettes `react/*`) quand une app React réelle
+  existe ; Kotlin/Swift exigeraient un modèle de dépendances non-npm — hors
+  périmètre tant qu'aucune app native n'est au dépôt.
 
 ## Références
 
@@ -223,8 +234,9 @@ un fichier qui existe sans être vérifié n'est qu'une intention.
   borné de la plateforme ; Angular reste le golden reference frontend.
 - [`conventions/libraries/`](../../conventions/libraries/) —
   `library-setup.schema.json` + `app-library-manifest.schema.json` + les
-  recettes `angular-material` / `tailwind` / `transloco` ; gate
-  `tools/check-library-setup.mjs` (+ `tools/check-library-setup.test.mjs`).
+  recettes `angular/{angular-material,tailwind,transloco}.setup.json` ; gate
+  `tools/check-library-setup.mjs` (+ `.test.mjs` / `-apps.test.mjs` /
+  `-fixture.mjs`).
 - Suivi B–E (non livré) : harnais `runtime_acceptance` (compilation Material,
   règle CSS Tailwind, coexistence navigateur), outil `add-library`
   transactionnel, intégration `create-app`, gouvernance d'upgrade.

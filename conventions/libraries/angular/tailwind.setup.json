@@ -41,7 +41,7 @@
   "runtime_acceptance": [
     {
       "id": "sentinel-class-emits-rule",
-      "description": "une classe utilitaire sentinelle placée dans un template (ex. `text-[#123456]`) produit la règle CSS correspondante dans le CSS de build de l'app",
+      "description": "une classe utilitaire sentinelle unique (ex. `text-[#123456]`) placée dans un template d'une app candidate isolée produit la règle CSS correspondante (`color:#123456`) dans le CSS de build",
       "proof": "compiled-css-rule",
       "status": "harness-pending"
     }

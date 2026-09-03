@@ -83,38 +83,46 @@ Convention transverse (indépendante de la plateforme) :
 Le profil dit _quel_ mécanisme utiliser (`styling` → Angular Material + Tailwind
 pour Angular). Il ne dit pas _comment_ installer et configurer ces bibliothèques
 — et ce « comment » change vite (Tailwind v3 `tailwind.config.js` → v4 `@theme` ;
-flags de `ng add @angular/material` d'une version à l'autre).
+`provideAnimations` déprécié en Angular 20.2 ; flags de schematic d'une version à
+l'autre).
 
-`libraries/<lib>.setup.json` sépare trois niveaux
-([ADR-0041](../docs/adr/0041-angular-material-tailwind-defaults.md)) — schéma
-fermé : [`library-setup.schema.json`](./libraries/library-setup.schema.json).
+**Périmètre de cette version** : paquets npm pour **Angular / React**, résolus
+via Bun workspaces. Kotlin/Swift : hors périmètre.
+
+Une recette vit sous `libraries/<platform>/<library>.setup.json` — le dossier ==
+`platform`, le nom == `library` ; `check:library-setup` indexe par le **couple
+(platform, library)**, donc `angular/tailwind` et `react/tailwind` sont deux
+recettes distinctes. Schéma fermé :
+[`library-setup.schema.json`](./libraries/library-setup.schema.json). Elle sépare
+trois niveaux
+([ADR-0041](../docs/adr/0041-angular-material-tailwind-defaults.md)) :
 
 | Champ | Rôle | Statut |
 | --- | --- | --- |
-| `static_invariants[]` | présence **structurelle** (`file-exists` / `file-contains` / `file-matches` sur un fichier de l'app), dont exactement une `footprint` (l'assertion la plus distinctive). **Garde-fou de dérive, pas une preuve de fonctionnement.** | vérifié à chaque run |
-| `runtime_acceptance[]` | preuve **réelle** (`compile-component`, `compiled-css-rule`, `browser-coexistence`) — exige un harnais de build/navigateur | `harness-pending` : listé, pas exécuté (suivi B/C) |
-| `packages[]` | paquets npm ; vérifiés structurellement (`package.json` racine + catalog + `bun.lock`), jamais par sous-chaîne | vérifié quand une app adopte la lib |
-| `coexistence[]` | invariants actifs seulement si une autre lib est aussi déclarée (frontière Material ↔ preflight Tailwind) | idem |
-| `install` (`oneOf` par `method`) | `official-schematic` → `command: { executable, argv }` ; `reference-derived` → `reference_tool` (confiné à `tools/`, fichier régulier) ; `llm-then-verified` → `prompt_contract` | VOLATILE — délégué, jamais figé comme vérité |
+| `static_invariants[]` | présence **structurelle** (`file-exists` / `file-contains` / `file-matches` sur un fichier de l'app), dont exactement une `footprint` positive. **Garde-fou de dérive, pas une preuve de fonctionnement — rien de version-spécifique ici.** | vérifié à chaque run |
+| `runtime_acceptance[]` | preuve **réelle** (`compile-component`, `compiled-css-rule`, `browser-coexistence`) — exige un harnais de build/navigateur (lot C) | `harness-pending` : listé, **pas exécuté** |
+| `packages[]` | paquets npm ; vérifiés structurellement — présents dans `package.json` racine, résolus au catalog, verrouillés dans `bun.lock` avec un spec et une version **cohérents** entre les trois | vérifié quand une app adopte la lib |
+| `coexistence[]` | invariants actifs seulement si une autre lib **de la même plateforme** est aussi déclarée | idem |
+| `install` (`oneOf` par `method`) | `official-schematic` → `command: { executable: "nx", argv }` avec un jeton `{{app}}` obligatoire ; `reference-derived` → `reference_tool` (confiné à `tools/`, fichier régulier) ; `llm-then-verified` → `prompt_contract` | VOLATILE — délégué, jamais figé comme vérité |
 
-L'installation est faite par le schematic du vendeur, par un script
-`reference-derived` (`tools/scaffold-tailwind.mjs`) ou par un LLM borné ; sa
-sortie est **revérifiée contre les `static_invariants`**.
-
-Chaque app avec un `project.json` **doit** déclarer
+Chaque app avec un `project.json` **régulier doit** déclarer
 [`apps/<app>/.cmz/libraries.json`](./libraries/app-library-manifest.schema.json)
 (`kind: "app-library-manifest"`, schéma fermé). `check:library-setup` (dans
-`check:all` + CI) : rejoue les `static_invariants` dans l'arbre de l'app (chaque
-chemin confiné, aucun lien symbolique), vérifie que la plateforme du manifeste
-concorde avec l'exécuteur Nx, et **échoue si une lib gouvernée est utilisée
-(empreinte détectée) sans être déclarée**. `backoffice-angular` déclare
-`["tailwind", "transloco"]`.
+`check:all` + CI) : lit tout (recette, schéma, fichier d'app, lockfile) confiné
+sous la racine du dépôt, en **traversant zéro lien symbolique** (le dossier
+d'app inclus) ; **échoue** si la plateforme Nx est indéterminable, si le
+manifeste manque, ou si une lib gouvernée est utilisée (empreinte détectée) sans
+être déclarée. `backoffice-angular` déclare `["tailwind", "transloco"]`.
 
 | Recette | `install.method` |
 | --- | --- |
-| [`angular-material.setup.json`](./libraries/angular-material.setup.json) | `official-schematic` |
-| [`tailwind.setup.json`](./libraries/tailwind.setup.json) | `reference-derived` |
-| [`transloco.setup.json`](./libraries/transloco.setup.json) | `official-schematic` |
+| [`angular/angular-material.setup.json`](./libraries/angular/angular-material.setup.json) | `official-schematic` |
+| [`angular/tailwind.setup.json`](./libraries/angular/tailwind.setup.json) | `reference-derived` |
+| [`angular/transloco.setup.json`](./libraries/angular/transloco.setup.json) | `official-schematic` |
+
+Lots suivants (`add-library` transactionnel, harnais `runtime_acceptance`,
+intégration `create-app`) :
+[`docs/architecture/library-setup-runtime-plan.md`](../docs/architecture/library-setup-runtime-plan.md).
 
 ## Emplacement
 

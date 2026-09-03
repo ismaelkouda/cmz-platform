@@ -7,9 +7,9 @@
     "method": "official-schematic",
     "command": {
       "executable": "nx",
-      "argv": ["g", "@jsverse/transloco:ng-add"]
+      "argv": ["g", "@jsverse/transloco:ng-add", "--project", "{{app}}"]
     },
-    "notes": "i18n par défaut de toute app Angular du workspace (ADR-0036). Invoquée via `bunx` dans ce dépôt. Le schematic câble `provideTransloco()`, un loader HTTP et l'arborescence i18n. Le renderer de shell l'écrit déjà ; cette recette garde-fou sa dérive. Aucune abstraction maison (TranslationPort) — retirée du repo (la compilation le prouve, cf. runtime_acceptance ; un scan textuel se ferait piéger par un commentaire de migration)."
+    "notes": "i18n par défaut de toute app Angular du workspace (ADR-0036). L'exécuteur (add-library, lot B) installe d'abord le paquet, puis lance ce schematic avec `{{app}}` = nom du projet Nx. Le schematic câble `provideTransloco()`, un loader HTTP et l'arborescence i18n. Le renderer de shell l'écrit déjà ; cette recette garde-fou sa dérive. Absence de TRANSLATION_PORT / provideI18n : prouvée par compilation (runtime_acceptance), pas par un scan textuel — un commentaire de migration s'y ferait piéger."
   },
   "static_invariants": [
     {
@@ -35,7 +35,7 @@
   "runtime_acceptance": [
     {
       "id": "key-renders-translation",
-      "description": "un composant qui utilise le pipe `transloco` / `TranslocoDirective` compile sous ngc --strictTemplates, ne référence QUE Transloco (aucun TRANSLATION_PORT / provideI18n — un scan textuel ne le prouve pas, la compilation si) et, monté avec TranslocoTestingModule, rend la traduction d'une clé (pas la clé brute)",
+      "description": "un composant qui utilise le pipe `transloco` / `TranslocoDirective` compile sous ngc --strictTemplates dans une app candidate isolée, ne référence que Transloco, et rend la traduction d'une clé (pas la clé brute) monté avec TranslocoTestingModule",
       "proof": "compile-component",
       "status": "harness-pending"
     }
