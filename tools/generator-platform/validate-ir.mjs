@@ -127,6 +127,25 @@ export function validateJsonSchema(
         }
     }
 
+    // oneOf : JSON Schema exige que value valide EXACTEMENT un sous-schéma.
+    // Sans cette branche, un schéma `oneOf` passait quelle que soit la valeur
+    // (même angle mort que `allOf` avant le correctif 2026-08-29). Utilisé par
+    // conventions/libraries/library-setup.schema.json pour discriminer
+    // `install` selon `method` (union fermée : chaque branche a son propre
+    // `additionalProperties:false`, donc une valeur valide n'en matche qu'une).
+    if (Array.isArray(currentSchema.oneOf)) {
+        const matched = currentSchema.oneOf.filter(
+            (subschema) =>
+                validateJsonSchema(value, subschema, rootSchema, path)
+                    .length === 0
+        ).length;
+        if (matched !== 1) {
+            errors.push(
+                `${path}: must match exactly one subschema of oneOf (matched ${matched})`
+            );
+        }
+    }
+
     if (typeof value === 'number') {
         if (
             currentSchema.minimum !== undefined &&

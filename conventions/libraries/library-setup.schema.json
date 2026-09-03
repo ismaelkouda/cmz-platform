@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cmz.local/schemas/conventions/library-setup.schema.json",
   "title": "CMZ Library Setup Recipe",
-  "description": "Une recette d'installation par (bibliothèque, plateforme). Elle sépare le STABLE (les invariants qu'un setup correct doit satisfaire + un test d'acceptation réel) du VOLATILE (les commandes exactes pour la version N, déléguées au schematic officiel, à un script reference-derived, ou à un LLM borné dont la sortie est vérifiée contre ces invariants). Voir conventions/README.md et docs/adr/0041-angular-material-tailwind-defaults.md.",
+  "description": "Une recette par (bibliothèque, plateforme). Elle sépare trois choses. (1) `static_invariants` : présence structurelle, vérifiable en lisant des fichiers de l'app — contrôlée à chaque run de check:library-setup ; ce ne sont PAS des tests d'acceptation, seulement des garde-fous contre la dérive de configuration. (2) `runtime_acceptance` : les critères de bon fonctionnement réels (un composant compile, une classe utilitaire produit sa règle CSS, coexistence navigateur) — exécutés par un harnais dédié encore à livrer (plan B/C, ADR-0041) ; tant que `status` vaut `harness-pending`, la gate les liste sans les exécuter et n'en tire aucune garantie. (3) le COMMENT d'installation (commande de la version N), volatile, délégué au schematic officiel / à un script reference-derived / à un LLM borné, et représenté par `{ executable, argv }`, jamais une chaîne shell. Voir conventions/README.md et docs/adr/0041-angular-material-tailwind-defaults.md.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -11,7 +11,8 @@
     "platform",
     "packages",
     "install",
-    "invariants",
+    "static_invariants",
+    "runtime_acceptance",
     "guidance"
   ],
   "properties": {
@@ -24,37 +25,59 @@
     "packages": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string", "minLength": 1 }
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$"
+      }
     },
     "install": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["method", "notes"],
-      "properties": {
-        "method": {
-          "enum": [
-            "official-schematic",
-            "reference-derived",
-            "llm-then-verified"
-          ]
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "command", "notes"],
+          "properties": {
+            "method": { "const": "official-schematic" },
+            "command": { "$ref": "#/$defs/command" },
+            "notes": { "type": "string", "minLength": 1 }
+          }
         },
-        "command": {
-          "type": "string",
-          "minLength": 1,
-          "description": "official-schematic uniquement : la commande maintenue par le vendeur (ex. `ng add @angular/material`). Jamais de flags de version figés — les invariants sont le contrat, pas cette ligne."
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "reference_tool", "notes"],
+          "properties": {
+            "method": { "const": "reference-derived" },
+            "reference_tool": {
+              "type": "string",
+              "pattern": "^tools/[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*\\.mjs$"
+            },
+            "notes": { "type": "string", "minLength": 1 }
+          }
         },
-        "reference_tool": {
-          "type": "string",
-          "minLength": 1,
-          "description": "reference-derived uniquement : le script qui dérive la config d'une app de référence vivante (ex. tools/scaffold-tailwind.mjs)."
-        },
-        "notes": { "type": "string", "minLength": 1 }
-      }
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "prompt_contract", "notes"],
+          "properties": {
+            "method": { "const": "llm-then-verified" },
+            "prompt_contract": { "type": "string", "minLength": 1 },
+            "notes": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
     },
-    "invariants": {
+    "static_invariants": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/invariant" }
+      "items": { "$ref": "#/$defs/static_invariant" }
+    },
+    "runtime_acceptance": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/runtime_acceptance" }
     },
     "coexistence": {
       "type": "array",
@@ -66,7 +89,24 @@
     }
   },
   "$defs": {
-    "invariant": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable", "argv"],
+      "properties": {
+        "executable": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Nom de binaire seul (ng, nx, npx…). Jamais d'arguments, de pipe, de chemin."
+        },
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "static_invariant": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "description", "assert"],
@@ -76,48 +116,80 @@
           "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
         },
         "description": { "type": "string", "minLength": 1 },
+        "footprint": {
+          "type": "boolean",
+          "description": "Marque l'assertion la plus distinctive et locale à l'app : si elle passe alors que la bibliothèque n'est pas déclarée dans le manifeste de l'app, la gate échoue (bibliothèque utilisée sans déclaration). Exactement une par recette."
+        },
         "assert": { "$ref": "#/$defs/assert" }
       }
     },
     "assert": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["file", "kind"],
-      "properties": {
-        "file": {
-          "type": "string",
-          "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$",
-          "description": "Chemin POSIX relatif à la racine de l'app cible (dotfiles admis, jamais de segment `..`)."
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file", "kind"],
+          "properties": {
+            "file": { "$ref": "#/$defs/appRelativeFile" },
+            "kind": { "const": "file-exists" }
+          }
         },
-        "kind": {
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file", "kind", "value"],
+          "properties": {
+            "file": { "$ref": "#/$defs/appRelativeFile" },
+            "kind": { "enum": ["file-contains", "file-matches"] },
+            "value": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "appRelativeFile": {
+      "type": "string",
+      "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$",
+      "description": "Chemin POSIX relatif à la racine de l'app cible (dotfiles admis, jamais de segment `..`). Le contenu du chemin est aussi vérifié au runtime : aucun segment ne peut être un lien symbolique ni un fichier spécial."
+    },
+    "runtime_acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "proof", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "proof": {
           "enum": [
-            "file-exists",
-            "file-contains",
-            "file-not-contains",
-            "file-matches"
+            "compile-component",
+            "compiled-css-rule",
+            "browser-coexistence"
           ]
         },
-        "value": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Requis sauf pour file-exists. Sous-chaîne littérale (contains/not-contains) ou expression régulière (matches)."
-        }
+        "status": { "enum": ["harness-pending", "enforced"] }
       }
     },
     "coexistence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["with", "invariants"],
+      "required": ["with", "static_invariants"],
       "properties": {
         "with": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
           "description": "Une autre bibliothèque ; ces invariants ne sont vérifiés que si l'app déclare aussi celle-ci."
         },
-        "invariants": {
+        "static_invariants": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/invariant" }
+          "items": { "$ref": "#/$defs/static_invariant" }
+        },
+        "runtime_acceptance": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/runtime_acceptance" }
         }
       }
     }

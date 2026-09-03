@@ -85,22 +85,30 @@ pour Angular). Il ne dit pas _comment_ installer et configurer ces bibliothèque
 — et ce « comment » change vite (Tailwind v3 `tailwind.config.js` → v4 `@theme` ;
 flags de `ng add @angular/material` d'une version à l'autre).
 
-`libraries/<lib>.setup.json` sépare les deux
-([ADR-0041](../docs/adr/0041-angular-material-tailwind-defaults.md)) :
+`libraries/<lib>.setup.json` sépare trois niveaux
+([ADR-0041](../docs/adr/0041-angular-material-tailwind-defaults.md)) — schéma
+fermé : [`library-setup.schema.json`](./libraries/library-setup.schema.json).
 
-| Champ | Rôle | Stabilité |
+| Champ | Rôle | Statut |
 | --- | --- | --- |
-| `invariants[]` | ce qu'un setup correct **contient forcément** (`file-exists` / `file-contains` / `file-matches` sur un fichier de l'app) + le test d'acceptation | STABLE — c'est le contrat |
-| `coexistence[]` | invariants supplémentaires actifs seulement si une autre lib est aussi déclarée (ex. frontière Material ↔ reset Tailwind) | STABLE |
-| `install.method` | `official-schematic` (`ng add …`), `reference-derived` (dérivé d'une app vivante par un script) ou `llm-then-verified` | — |
-| `install.command` / `reference_tool` | le « comment » de la version N | VOLATILE — délégué, jamais figé comme source de vérité |
+| `static_invariants[]` | présence **structurelle** (`file-exists` / `file-contains` / `file-matches` sur un fichier de l'app), dont exactement une `footprint` (l'assertion la plus distinctive). **Garde-fou de dérive, pas une preuve de fonctionnement.** | vérifié à chaque run |
+| `runtime_acceptance[]` | preuve **réelle** (`compile-component`, `compiled-css-rule`, `browser-coexistence`) — exige un harnais de build/navigateur | `harness-pending` : listé, pas exécuté (suivi B/C) |
+| `packages[]` | paquets npm ; vérifiés structurellement (`package.json` racine + catalog + `bun.lock`), jamais par sous-chaîne | vérifié quand une app adopte la lib |
+| `coexistence[]` | invariants actifs seulement si une autre lib est aussi déclarée (frontière Material ↔ preflight Tailwind) | idem |
+| `install` (`oneOf` par `method`) | `official-schematic` → `command: { executable, argv }` ; `reference-derived` → `reference_tool` (confiné à `tools/`, fichier régulier) ; `llm-then-verified` → `prompt_contract` | VOLATILE — délégué, jamais figé comme vérité |
 
-L'installation elle-même est faite par le schematic du vendeur, par un script
+L'installation est faite par le schematic du vendeur, par un script
 `reference-derived` (`tools/scaffold-tailwind.mjs`) ou par un LLM borné ; sa
-sortie est **revérifiée contre les invariants**. Une app qui adopte des
-bibliothèques les déclare dans `apps/<app>/.cmz/libraries.json`
-(`kind: "app-library-manifest"`) ; `check:library-setup` (dans `check:all` + CI)
-revérifie alors chaque invariant dans l'arbre de cette app à chaque run.
+sortie est **revérifiée contre les `static_invariants`**.
+
+Chaque app avec un `project.json` **doit** déclarer
+[`apps/<app>/.cmz/libraries.json`](./libraries/app-library-manifest.schema.json)
+(`kind: "app-library-manifest"`, schéma fermé). `check:library-setup` (dans
+`check:all` + CI) : rejoue les `static_invariants` dans l'arbre de l'app (chaque
+chemin confiné, aucun lien symbolique), vérifie que la plateforme du manifeste
+concorde avec l'exécuteur Nx, et **échoue si une lib gouvernée est utilisée
+(empreinte détectée) sans être déclarée**. `backoffice-angular` déclare
+`["tailwind", "transloco"]`.
 
 | Recette | `install.method` |
 | --- | --- |

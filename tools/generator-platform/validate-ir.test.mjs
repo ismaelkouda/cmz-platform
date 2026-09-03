@@ -37,6 +37,53 @@ test('applique chaque mot-clé JSON Schema utilisé par les schémas du moteur',
     );
 });
 
+test('oneOf exige exactement un sous-schéma satisfait', () => {
+    const schema = {
+        type: 'object',
+        oneOf: [
+            {
+                type: 'object',
+                additionalProperties: false,
+                required: ['method', 'command'],
+                properties: {
+                    method: { const: 'official-schematic' },
+                    command: { type: 'string' },
+                },
+            },
+            {
+                type: 'object',
+                additionalProperties: false,
+                required: ['method', 'reference_tool'],
+                properties: {
+                    method: { const: 'reference-derived' },
+                    reference_tool: { type: 'string' },
+                },
+            },
+        ],
+    };
+    assert.deepEqual(
+        validateJsonSchema(
+            { method: 'official-schematic', command: 'ng add x' },
+            schema
+        ),
+        []
+    );
+    // zéro branche : method inconnue
+    assert.deepEqual(
+        validateJsonSchema({ method: 'llm', command: 'x' }, schema),
+        ['$: must match exactly one subschema of oneOf (matched 0)']
+    );
+    // deux branches : official-schematic sans sa clé command mais avec
+    // reference_tool ne matche qu'une ; on force l'ambiguïté avec un objet vide
+    assert.deepEqual(
+        validateJsonSchema(
+            { method: 'reference-derived', reference_tool: 't', command: 'c' },
+            schema
+        ),
+        ['$: must match exactly one subschema of oneOf (matched 0)']
+    );
+});
+
 test('canonical action-request evidence and semantic models are valid', async () => {
     assert.deepEqual(
         await validateEvidence(evidence, evidenceSchema, {

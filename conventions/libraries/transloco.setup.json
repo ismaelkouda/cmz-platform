@@ -5,22 +5,17 @@
   "packages": ["@jsverse/transloco"],
   "install": {
     "method": "official-schematic",
-    "command": "nx g @jsverse/transloco:ng-add",
-    "notes": "i18n par défaut de toute app Angular du workspace (ADR-0036). Le schematic câble `provideTransloco()`, un loader HTTP et l'arborescence `assets/i18n/`. Le renderer de shell (angular-pwa-shell-renderer.mjs) écrit déjà cette configuration ; cette recette la verrouille. Aucune abstraction maison (TranslationPort) — retirée du repo."
-  },
-  "invariants": [
-    {
-      "id": "package",
-      "description": "@jsverse/transloco est déclaré",
-      "assert": {
-        "file": "package.json",
-        "kind": "file-contains",
-        "value": "@jsverse/transloco"
-      }
+    "command": {
+      "executable": "nx",
+      "argv": ["g", "@jsverse/transloco:ng-add"]
     },
+    "notes": "i18n par défaut de toute app Angular du workspace (ADR-0036). Invoquée via `bunx` dans ce dépôt. Le schematic câble `provideTransloco()`, un loader HTTP et l'arborescence i18n. Le renderer de shell l'écrit déjà ; cette recette garde-fou sa dérive. Aucune abstraction maison (TranslationPort) — retirée du repo (la compilation le prouve, cf. runtime_acceptance ; un scan textuel se ferait piéger par un commentaire de migration)."
+  },
+  "static_invariants": [
     {
       "id": "provider",
       "description": "provideTransloco() est au bootstrap",
+      "footprint": true,
       "assert": {
         "file": "src/app/app.config.ts",
         "kind": "file-contains",
@@ -35,15 +30,14 @@
         "kind": "file-contains",
         "value": "TranslocoLoader"
       }
-    },
+    }
+  ],
+  "runtime_acceptance": [
     {
-      "id": "no-home-grown-abstraction",
-      "description": "aucune abstraction i18n maison (ADR-0036)",
-      "assert": {
-        "file": "src/app/app.config.ts",
-        "kind": "file-not-contains",
-        "value": "TranslationPort"
-      }
+      "id": "key-renders-translation",
+      "description": "un composant qui utilise le pipe `transloco` / `TranslocoDirective` compile sous ngc --strictTemplates, ne référence QUE Transloco (aucun TRANSLATION_PORT / provideI18n — un scan textuel ne le prouve pas, la compilation si) et, monté avec TranslocoTestingModule, rend la traduction d'une clé (pas la clé brute)",
+      "proof": "compile-component",
+      "status": "harness-pending"
     }
   ],
   "guidance": "https://jsverse.gitbook.io/transloco"

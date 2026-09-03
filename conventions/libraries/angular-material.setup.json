@@ -5,31 +5,14 @@
   "packages": ["@angular/material", "@angular/cdk"],
   "install": {
     "method": "official-schematic",
-    "command": "ng add @angular/material",
-    "notes": "Schematic maintenu par l'équipe Angular, version-aware : il installe @angular/material + @angular/cdk à la version alignée sur @angular/core, écrit un thème M3 (`mat.theme()`) dans les styles globaux, câble la typographie et le provider d'animations. Les flags exacts (thème, typographie, densité) évoluent version après version — ne jamais les figer ici. Les invariants ci-dessous sont le contrat : après `ng add`, ils doivent tous passer ; sinon un LLM borné complète et la gate revérifie."
+    "command": { "executable": "ng", "argv": ["add", "@angular/material"] },
+    "notes": "Schematic maintenu par l'équipe Angular, version-aware : il installe @angular/material + @angular/cdk alignés sur @angular/core, écrit un thème M3 (`mat.theme()`) dans les styles globaux, câble typographie et provider d'animations. Invoqué via `bunx`/`npx` dans ce dépôt. Les flags exacts (thème, typographie, densité) évoluent version après version — ne jamais les figer ici. Les static_invariants ci-dessous sont le garde-fou de dérive ; la preuve de fonctionnement réelle est `runtime_acceptance` (harnais à livrer)."
   },
-  "invariants": [
-    {
-      "id": "material-package",
-      "description": "@angular/material est déclaré",
-      "assert": {
-        "file": "package.json",
-        "kind": "file-contains",
-        "value": "@angular/material"
-      }
-    },
-    {
-      "id": "cdk-package",
-      "description": "@angular/cdk est déclaré",
-      "assert": {
-        "file": "package.json",
-        "kind": "file-contains",
-        "value": "@angular/cdk"
-      }
-    },
+  "static_invariants": [
     {
       "id": "m3-theme",
       "description": "un thème M3 est défini dans les styles globaux via mat.theme()",
+      "footprint": true,
       "assert": {
         "file": "src/styles.scss",
         "kind": "file-matches",
@@ -44,29 +27,36 @@
         "kind": "file-matches",
         "value": "provideAnimations(?:Async)?\\("
       }
-    },
+    }
+  ],
+  "runtime_acceptance": [
     {
-      "id": "no-ngmodule-material",
-      "description": "les composants Material sont importés en standalone, jamais via un NgModule agrégateur",
-      "assert": {
-        "file": "src/app/app.config.ts",
-        "kind": "file-not-contains",
-        "value": "MatModule"
-      }
+      "id": "material-component-compiles",
+      "description": "un composant standalone qui importe un composant Material représentatif (ex. MatButton) compile sous ngc --strictTemplates, en import standalone (jamais un NgModule agrégateur — la compilation le prouve, pas un scan textuel) et rend son DOM attendu en test",
+      "proof": "compile-component",
+      "status": "harness-pending"
     }
   ],
   "coexistence": [
     {
       "with": "tailwind",
-      "invariants": [
+      "static_invariants": [
         {
           "id": "component-boundary",
-          "description": "règle de coexistence documentée dans les styles : Material pour les composants, Tailwind pour layout/espacement — le reset Tailwind ne doit pas réinitialiser les composants Material",
+          "description": "les styles globaux documentent la frontière : Material pour les composants, Tailwind pour layout/espacement — le preflight Tailwind ne doit pas réinitialiser les composants Material",
           "assert": {
             "file": "src/styles.scss",
             "kind": "file-matches",
             "value": "[Mm]aterial.*[Tt]ailwind|[Tt]ailwind.*[Mm]aterial"
           }
+        }
+      ],
+      "runtime_acceptance": [
+        {
+          "id": "material-tailwind-render-together",
+          "description": "un bouton Material et des utilitaires Tailwind rendus sur la même page ; test navigateur : le bouton garde ses styles Material (hauteur, ripple, états focus) et les utilitaires Tailwind s'appliquent, sans régression du reset",
+          "proof": "browser-coexistence",
+          "status": "harness-pending"
         }
       ]
     }

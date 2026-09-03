@@ -8,19 +8,11 @@
     "reference_tool": "tools/scaffold-tailwind.mjs",
     "notes": "Ni @nx/angular:application ni Angular n'ont de schematic Tailwind. Le script dérive `.postcssrc.json`, `src/tailwind.css` (`@import 'tailwindcss'` + `@theme`) et l'entrée du tableau `styles` de `project.json` depuis l'app de référence `backoffice-angular`. Tailwind a déjà changé de mécanisme une fois (v3 tailwind.config.js + @tailwind → v4 @import + @theme) : ne jamais figer la forme ici, dériver."
   },
-  "invariants": [
-    {
-      "id": "package",
-      "description": "tailwindcss et son plugin PostCSS sont déclarés",
-      "assert": {
-        "file": "package.json",
-        "kind": "file-contains",
-        "value": "@tailwindcss/postcss"
-      }
-    },
+  "static_invariants": [
     {
       "id": "postcss-config",
       "description": ".postcssrc.json active @tailwindcss/postcss",
+      "footprint": true,
       "assert": {
         "file": ".postcssrc.json",
         "kind": "file-contains",
@@ -44,6 +36,14 @@
         "kind": "file-contains",
         "value": "src/tailwind.css"
       }
+    }
+  ],
+  "runtime_acceptance": [
+    {
+      "id": "sentinel-class-emits-rule",
+      "description": "une classe utilitaire sentinelle placée dans un template (ex. `text-[#123456]`) produit la règle CSS correspondante dans le CSS de build de l'app",
+      "proof": "compiled-css-rule",
+      "status": "harness-pending"
     }
   ],
   "guidance": "https://tailwindcss.com/docs/installation/framework-guides/angular"
