@@ -33,7 +33,15 @@ import {
 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+    declaringFields,
+    parseJsonc,
+    parseWithoutDuplicateKeys,
+    verifyResolvedVersion,
+} from './check-library-setup-deps.mjs';
 import { validateJsonSchema } from './generator-platform/validate-ir.mjs';
+
+export { verifyResolvedVersion } from './check-library-setup-deps.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const RECIPES_GLOB = 'conventions/libraries/*/*.setup.json';
@@ -41,12 +49,6 @@ const RECIPE_SCHEMA_PATH = 'conventions/libraries/library-setup.schema.json';
 const APP_MANIFEST_SCHEMA_PATH =
     'conventions/libraries/app-library-manifest.schema.json';
 const APPS_GLOB = 'apps/*';
-const DEP_FIELDS = [
-    'dependencies',
-    'devDependencies',
-    'peerDependencies',
-    'optionalDependencies',
-];
 // Exécuteurs SPÉCIFIQUES à une plateforme. Les bundlers génériques (@nx/vite,
 // @nx/rspack, @nx/webpack) ne prouvent aucune plateforme et sont volontairement
 // absents : une app Angular peut utiliser @nx/vite pour ses tests. Une app qui
@@ -122,13 +124,9 @@ function readTextUnder(rootAbs, relPath) {
     return readFileSync(resolved.real, 'utf8');
 }
 
+/** JSON strict confiné, clés dupliquées interdites (échec avant toute sémantique). */
 function readJsonUnder(rootAbs, relPath) {
-    return JSON.parse(readTextUnder(rootAbs, relPath));
-}
-
-/** bun.lock est du JSONC (virgules traînantes) — parse tolérant, fichier machine. */
-function parseJsonc(raw) {
-    return JSON.parse(raw.replace(/,(\s*[}\]])/g, '$1'));
+    return parseWithoutDuplicateKeys(readTextUnder(rootAbs, relPath), relPath);
 }
 
 /** @returns {null | string} null = invariant satisfait ; string = raison de l'échec. */
@@ -200,7 +198,10 @@ export function validateRecipes(rootAbs = ROOT) {
 
         let recipe;
         try {
-            recipe = JSON.parse(readFileSync(resolved.real, 'utf8'));
+            recipe = parseWithoutDuplicateKeys(
+                readFileSync(resolved.real, 'utf8'),
+                relativePath
+            );
         } catch (error) {
             errors.push(`${relativePath}: JSON invalide (${error.message})`);
             continue;
@@ -346,8 +347,9 @@ function validateRecipeCoherence(recipe, relativePath, root, errors) {
 export function detectAppPlatform(appAbsRoot) {
     let project;
     try {
-        project = JSON.parse(
-            readFileSync(join(appAbsRoot, 'project.json'), 'utf8')
+        project = parseWithoutDuplicateKeys(
+            readFileSync(join(appAbsRoot, 'project.json'), 'utf8'),
+            'project.json'
         );
     } catch {
         return null;
@@ -371,68 +373,13 @@ export function detectAppPlatform(appAbsRoot) {
 }
 
 /**
- * `resolved` (version concrète du lockfile) satisfait-il `spec` (du catalog) ?
- * Formes gérées : exacte (`1.2.3`), `^1.2.3`, `~1.2.3`. Toute autre forme
- * (`>=`, `||`, `x`, `*`, plage) → `null` = non interprétable (le caller échoue,
- * fail-closed). Le catalog du dépôt est quasi exclusivement exact (ADR-0005).
- * @returns {boolean | null}
- */
-export function versionSatisfies(resolved, spec) {
-    const parse = (value) => {
-        const match = /^v?(\d+)\.(\d+)\.(\d+)/.exec(String(value).trim());
-        return match
-            ? { major: +match[1], minor: +match[2], patch: +match[3] }
-            : null;
-    };
-    const target = parse(resolved);
-    if (!target) return null;
-    const text = String(spec).trim();
-
-    if (/^v?\d/.test(text)) {
-        // Forme exacte attendue : `x.y.z` strict. `1`, `1.2`, `1.x` → non
-        // interprétable (null), pas « ne satisfait pas » (false).
-        if (!/^v?\d+\.\d+\.\d+$/.test(text)) return null;
-        const exact = parse(text);
-        return (
-            exact.major === target.major &&
-            exact.minor === target.minor &&
-            exact.patch === target.patch
-        );
-    }
-
-    const range = /^([\^~])v?(\d+)\.(\d+)\.(\d+)\s*$/.exec(text);
-    if (!range) return null;
-    const [, operator, majorText, minorText, patchText] = range;
-    const base = { major: +majorText, minor: +minorText, patch: +patchText };
-
-    const atLeastBase =
-        target.major > base.major ||
-        (target.major === base.major &&
-            (target.minor > base.minor ||
-                (target.minor === base.minor && target.patch >= base.patch)));
-    if (!atLeastBase) return false;
-
-    if (operator === '~') {
-        return target.major === base.major && target.minor === base.minor;
-    }
-    if (base.major > 0) return target.major === base.major;
-    if (base.minor > 0)
-        return target.major === 0 && target.minor === base.minor;
-    return (
-        target.major === 0 && target.minor === 0 && target.patch === base.patch
-    );
-}
-
-/**
- * Une dépendance doit être : déclarée dans package.json racine ; si `catalog:`,
- * présente au catalog correspondant ; verrouillée dans bun.lock avec un spec
- * IDENTIQUE à celui de package.json et une version résolue qui SATISFAIT la
- * version/plage du catalog (`versionSatisfies` — fail-closed sur les formes non
- * interprétables).
+ * Une dépendance de bibliothèque gouvernée doit être : déclarée `catalog:` dans
+ * package.json racine (jamais une version directe — ADR-0005) ; présente au
+ * catalog correspondant ; verrouillée dans bun.lock avec un spec IDENTIQUE à
+ * celui de package.json et une version résolue cohérente (`verifyResolvedVersion`).
  */
 export function verifyWorkspaceDependency(rootAbs, packageName) {
     const root = resolve(rootAbs);
-    const errors = [];
     let pkg;
     try {
         pkg = readJsonUnder(root, 'package.json');
@@ -440,75 +387,69 @@ export function verifyWorkspaceDependency(rootAbs, packageName) {
         return [`package.json racine : ${error.message}`];
     }
 
-    let spec;
-    for (const field of DEP_FIELDS) {
-        if (pkg[field] && Object.hasOwn(pkg[field], packageName)) {
-            spec = pkg[field][packageName];
-            break;
-        }
-    }
-    if (spec === undefined) {
+    const pkgFields = declaringFields(pkg, packageName);
+    if (pkgFields.length === 0) {
         return [`${packageName} absent des dépendances de package.json racine`];
     }
-
-    let catalogVersion;
-    if (typeof spec === 'string' && spec.startsWith('catalog:')) {
-        const catalogName = spec.slice('catalog:'.length);
-        const catalog = catalogName
-            ? pkg.workspaces?.catalogs?.[catalogName]
-            : pkg.workspaces?.catalog;
-        if (!catalog || !Object.hasOwn(catalog, packageName)) {
-            errors.push(
-                `${packageName} référence "${spec}" mais absent du catalog correspondant`
-            );
-        } else {
-            catalogVersion = catalog[packageName];
-        }
+    if (pkgFields.length > 1) {
+        return [
+            `${packageName} déclaré dans plusieurs sections de package.json (${pkgFields.join(', ')})`,
+        ];
     }
+    const spec = pkg[pkgFields[0]][packageName];
+    if (typeof spec !== 'string' || !spec.startsWith('catalog:')) {
+        return [
+            `${packageName} : doit être déclaré "catalog:" (spec actuel : ${JSON.stringify(spec)})`,
+        ];
+    }
+
+    const catalogName = spec.slice('catalog:'.length);
+    const catalog = catalogName
+        ? pkg.workspaces?.catalogs?.[catalogName]
+        : pkg.workspaces?.catalog;
+    if (!catalog || !Object.hasOwn(catalog, packageName)) {
+        return [
+            `${packageName} référence "${spec}" mais absent du catalog correspondant`,
+        ];
+    }
+    const catalogValue = catalog[packageName];
 
     let lock;
     try {
-        lock = parseJsonc(readTextUnder(root, 'bun.lock'));
+        lock = parseJsonc(readTextUnder(root, 'bun.lock'), 'bun.lock');
     } catch (error) {
-        return [...errors, `bun.lock : ${error.message}`];
+        return [`bun.lock : ${error.message}`];
     }
+
+    const errors = [];
     const lockRoot = lock.workspaces?.[''] ?? {};
-    let lockSpec;
-    for (const field of DEP_FIELDS) {
-        if (lockRoot[field] && Object.hasOwn(lockRoot[field], packageName)) {
-            lockSpec = lockRoot[field][packageName];
-            break;
-        }
-    }
-    if (lockSpec === undefined) {
+    const lockFields = declaringFields(lockRoot, packageName);
+    if (lockFields.length === 0) {
         errors.push(`${packageName} absent du manifeste de bun.lock`);
-    } else if (lockSpec !== spec) {
+    } else if (lockFields.length > 1) {
         errors.push(
-            `${packageName} : spec "${spec}" (package.json) ≠ "${lockSpec}" (bun.lock)`
+            `${packageName} déclaré dans plusieurs sections du manifeste bun.lock (${lockFields.join(', ')})`
         );
+    } else {
+        if (lockFields[0] !== pkgFields[0]) {
+            errors.push(
+                `${packageName} : section "${pkgFields[0]}" (package.json) ≠ "${lockFields[0]}" (bun.lock)`
+            );
+        }
+        if (lockRoot[lockFields[0]][packageName] !== spec) {
+            errors.push(
+                `${packageName} : spec "${spec}" (package.json) ≠ "${lockRoot[lockFields[0]][packageName]}" (bun.lock)`
+            );
+        }
     }
 
     const locked = lock.packages?.[packageName];
     if (!locked) {
         errors.push(`${packageName} non résolu dans bun.lock (packages)`);
-    } else if (typeof catalogVersion === 'string') {
-        const identifier = Array.isArray(locked)
-            ? String(locked[0])
-            : String(locked);
-        const at = identifier.lastIndexOf('@');
-        const resolvedVersion = at > 0 ? identifier.slice(at + 1) : '';
-        if (resolvedVersion) {
-            const satisfied = versionSatisfies(resolvedVersion, catalogVersion);
-            if (satisfied === null) {
-                errors.push(
-                    `${packageName} : version catalog "${catalogVersion}" non interprétable (formes admises : exacte, ^, ~)`
-                );
-            } else if (!satisfied) {
-                errors.push(
-                    `${packageName} : version résolue "${resolvedVersion}" ne satisfait pas le catalog "${catalogVersion}" (bun.lock)`
-                );
-            }
-        }
+    } else {
+        errors.push(
+            ...verifyResolvedVersion(packageName, catalogValue, locked)
+        );
     }
     return errors;
 }
@@ -575,7 +516,10 @@ export function verifyApps(rootAbs = ROOT, recipes) {
 
         let manifest;
         try {
-            manifest = JSON.parse(readFileSync(manifestGuard.real, 'utf8'));
+            manifest = parseWithoutDuplicateKeys(
+                readFileSync(manifestGuard.real, 'utf8'),
+                manifestRelative
+            );
         } catch (error) {
             errors.push(
                 `${manifestRelative}: JSON invalide (${error.message})`

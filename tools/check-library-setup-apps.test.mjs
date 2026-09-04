@@ -9,7 +9,6 @@ import {
     validateRecipes,
     verifyApps,
     verifyWorkspaceDependency,
-    versionSatisfies,
 } from './check-library-setup.mjs';
 import {
     manifest,
@@ -248,9 +247,7 @@ test('BYPASS : lockfile incohérent (spec + version) → échec', async (t) => {
     assert.ok(errors.some((e) => /spec "catalog:".*≠ "catalog:WRONG"/.test(e)));
     assert.ok(
         errors.some((e) =>
-            /version résolue "9\.9\.9" ne satisfait pas le catalog "1\.0\.0"/.test(
-                e
-            )
+            /version résolue "9\.9\.9" ≠ catalog exact "1\.0\.0"/.test(e)
         )
     );
 });
@@ -285,12 +282,34 @@ test('catalog en plage caret : version résolue qui satisfait → ok ; sinon →
     );
 });
 
-test('catalog en forme non interprétable → échec explicite', async (t) => {
+test('catalog en plage SemVer valide (>=22 <23) : respecté → ok', async (t) => {
     const root = await scaffold(t, {
         recipes: working(),
         rootPackage: {
             dependencies: { 'demo-pkg': 'catalog:' },
-            workspaces: { catalog: { 'demo-pkg': '>=1 <2' } },
+            workspaces: { catalog: { 'demo-pkg': '>=22 <23' } },
+        },
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': 'catalog:' } } },
+            packages: { 'demo-pkg': ['demo-pkg@22.5.1'] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.deepEqual(verifyApps(root, recipesOf(root)).errors, []);
+});
+
+test('catalog ni version ni plage SemVer valide → échec explicite', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage: {
+            dependencies: { 'demo-pkg': 'catalog:' },
+            workspaces: { catalog: { 'demo-pkg': 'not-a-version' } },
         },
         bunLock: {
             lockfileVersion: 1,
@@ -306,7 +325,184 @@ test('catalog en forme non interprétable → échec explicite', async (t) => {
     });
     assert.ok(
         verifyApps(root, recipesOf(root)).errors.some((e) =>
-            /non interprétable/.test(e)
+            /n'est ni une version ni une plage SemVer valide/.test(e)
+        )
+    );
+});
+
+test('BYPASS : version directe (hors catalog:) pour une lib gouvernée → échec', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage: {
+            dependencies: { 'demo-pkg': '1.2.3' },
+            workspaces: { catalog: {} },
+        },
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': '1.2.3' } } },
+            packages: { 'demo-pkg': ['demo-pkg@9.9.9'] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /doit être déclaré "catalog:"/.test(e)
+        )
+    );
+});
+
+test('BYPASS : paquet déclaré dans deux sections de package.json → échec (ambiguïté)', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage: {
+            dependencies: { 'demo-pkg': 'catalog:' },
+            devDependencies: { 'demo-pkg': 'catalog:' },
+            workspaces: { catalog: { 'demo-pkg': '1.0.0' } },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /déclaré dans plusieurs sections de package\.json/.test(e)
+        )
+    );
+});
+
+test('BYPASS : record bun.lock qui nomme un autre paquet → échec (via la gate)', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': 'catalog:' } } },
+            packages: { 'demo-pkg': ['imposteur@1.0.0', '', {}, 'sha'] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /nomme un autre paquet \(imposteur\)/.test(e)
+        )
+    );
+});
+
+test('BYPASS : `,}` littéral dans une valeur de bun.lock n’est pas mangé par le parseur', async (t) => {
+    // Un vrai parseur JSONC ne doit pas transformer "catalog:,}" en "catalog:}".
+    const root = await scaffold(t, {
+        recipes: working(),
+        bunLock:
+            '{\n  "workspaces": { "": { "dependencies": { "demo-pkg": "catalog:,}" } } },\n  "packages": { "demo-pkg": ["demo-pkg@1.0.0", "", {}, "sha"] },\n}\n',
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    // spec package.json ("catalog:") ≠ spec bun.lock ("catalog:,}") — détecté,
+    // et surtout pas transformé en "catalog:}" par une regex.
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /≠ "catalog:,\}" \(bun\.lock\)/.test(e)
+        )
+    );
+});
+
+test('BYPASS : clé dupliquée dans package.json (dépendance) → échec avant sémantique', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage:
+            '{\n  "dependencies": { "demo-pkg": "catalog:evil", "demo-pkg": "catalog:" },\n  "workspaces": { "catalog": { "demo-pkg": "1.0.0" } }\n}\n',
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /clé dupliquée "demo-pkg"/.test(e)
+        )
+    );
+});
+
+test('BYPASS : clé structurelle dupliquée (dependencies deux fois) dans package.json → échec', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage:
+            '{\n  "dependencies": { "demo-pkg": "catalog:" },\n  "dependencies": { "demo-pkg": "catalog:evil" },\n  "workspaces": { "catalog": { "demo-pkg": "1.0.0" } }\n}\n',
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /clé dupliquée "dependencies"/.test(e)
+        )
+    );
+});
+
+test('BYPASS : clé dupliquée dans bun.lock → échec avant sémantique', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        bunLock:
+            '{\n  "workspaces": { "": { "dependencies": { "demo-pkg": "catalog:", "demo-pkg": "catalog:evil" } } },\n  "packages": { "demo-pkg": ["demo-pkg@1.0.0", "", {}, "sha"] },\n}\n',
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /bun\.lock.*clé dupliquée "demo-pkg"/.test(e)
+        )
+    );
+});
+
+test('BYPASS : la section diffère entre package.json et bun.lock → échec', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage: {
+            devDependencies: { 'demo-pkg': 'catalog:' },
+            workspaces: { catalog: { 'demo-pkg': '1.0.0' } },
+        },
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': 'catalog:' } } },
+            packages: { 'demo-pkg': ['demo-pkg@1.0.0', '', {}, 'sha'] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /section "devDependencies" \(package\.json\) ≠ "dependencies" \(bun\.lock\)/.test(
+                e
+            )
         )
     );
 });
@@ -463,22 +659,6 @@ test('detectAppPlatform : un seul résultat, sinon unknown (jamais "premier gagn
     assert.equal(detectAppPlatform(join(root, 'absent')), null);
 });
 
-test('versionSatisfies : exact / caret / tilde ; formes non interprétables → null', () => {
-    assert.equal(versionSatisfies('1.2.3', '1.2.3'), true);
-    assert.equal(versionSatisfies('1.2.4', '1.2.3'), false);
-    assert.equal(versionSatisfies('1.2.3', '^1.2.0'), true); // cas `ol:^10.9.0`
-    assert.equal(versionSatisfies('1.9.9', '^1.2.0'), true);
-    assert.equal(versionSatisfies('2.0.0', '^1.2.0'), false);
-    assert.equal(versionSatisfies('1.1.0', '^1.2.0'), false);
-    assert.equal(versionSatisfies('0.9.5', '^0.9.0'), true);
-    assert.equal(versionSatisfies('0.10.0', '^0.9.0'), false);
-    assert.equal(versionSatisfies('10.9.5', '~10.9.0'), true);
-    assert.equal(versionSatisfies('10.10.0', '~10.9.0'), false);
-    assert.equal(versionSatisfies('1.2.3', '>=1 <2'), null);
-    assert.equal(versionSatisfies('1.2.3', '1.x'), null);
-    assert.equal(versionSatisfies('pas-une-version', '1.2.3'), null);
-});
-
 test('verifyWorkspaceDependency : chaîne complète + cohérence version', async (t) => {
     const root = await mkdtemp(join(tmpdir(), 'cmz-dep-'));
     t.after(() => rm(root, { recursive: true, force: true }));
@@ -499,4 +679,36 @@ test('verifyWorkspaceDependency : chaîne complète + cohérence version', async
             'absent des dépendances'
         )
     );
+});
+
+const depRoot = async (t, catalogValue, lockVersion) => {
+    const root = await mkdtemp(join(tmpdir(), 'cmz-dep-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    await write(join(root, 'package.json'), {
+        dependencies: { pkg: 'catalog:' },
+        workspaces: { catalog: { pkg: catalogValue } },
+    });
+    await write(
+        join(root, 'bun.lock'),
+        JSON.stringify({
+            workspaces: { '': { dependencies: { pkg: 'catalog:' } } },
+            packages: { pkg: [`pkg@${lockVersion}`, '', {}, 'sha'] },
+        })
+    );
+    return root;
+};
+
+test('verifyWorkspaceDependency : catalog `>=0.0.0 <23` (borne basse non effective) → échec', async (t) => {
+    // `22.5.1` satisfait `>=0.0.0 <23` — mais ce n'est pas un pin responsable.
+    const root = await depRoot(t, '>=0.0.0 <23', '22.5.1');
+    assert.ok(
+        verifyWorkspaceDependency(root, 'pkg').some((e) =>
+            /sans borne basse effective/.test(e)
+        )
+    );
+});
+
+test('verifyWorkspaceDependency : catalog `1.2.3 >=1` (exact + redondant) → ok', async (t) => {
+    const root = await depRoot(t, '1.2.3 >=1', '1.2.3');
+    assert.deepEqual(verifyWorkspaceDependency(root, 'pkg'), []);
 });
