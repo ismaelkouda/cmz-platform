@@ -97,7 +97,7 @@ avec candidat et contrôle de fraîcheur).
 
 ## Décision
 
-**Option E**, en six invariants indissociables.
+**Option E**, en sept invariants indissociables.
 
 **1. Isolation — matérialisation depuis le tree, ni worktree ni archive.** Tout
 exécutant tiers — schematic, script `reference-derived`, probe
@@ -173,16 +173,25 @@ Si une dépendance exigeait un jour un script de cycle de vie, ce sera une
 **exception nommée, justifiée et confinée** — phase dédiée, sans réseau — jamais
 un assouplissement global.
 
-**3. Confinement OS obligatoire, partout.** Aucun code tiers ne s'exécute sans
-bac à sable du système : **conteneur** en CI, **`sandbox-exec`** en local macOS.
-Aucun backend conforme → la commande **échoue avant** d'exécuter quoi que ce
-soit. « Meilleur effort plus détection » n'est pas un confinement, et une
-fonction ne porte le nom `runConfined` que si un bac à sable réel l'applique. Le
-confinement couvre **aussi `bun install`**. Le dépôt réel n'est jamais monté en
-écriture. Les deux backends passent la **même suite adversariale** : écriture et
-lecture hors candidat, réseau, lien symbolique d'évasion, sous-processus,
-credentials, chemins absolus, et **fixture à `postinstall`** dont le marqueur
-doit rester absent.
+**3. Confinement OS obligatoire, en deux profils.** Aucun code tiers ne
+s'exécute sans bac à sable du système : **conteneur** en CI, **`sandbox-exec`**
+en local macOS. Aucun backend conforme → la commande **échoue avant** d'exécuter
+quoi que ce soit. Deux profils distincts, car un profil unique serait incohérent
+— la résolution doit écrire hors du candidat (cache, `HOME` jetable) : profil
+`resolution` (candidat + cache + `HOME` jetable inscriptibles, réseau ouvert,
+scripts interdits) et profil `execution` (`<lease>/workspace/` seul
+inscriptible, cache absent ou en lecture seule, réseau interdit). Un exécutant
+tiers ne tourne **jamais** sous le profil `resolution`. Tout binaire est résolu
+**explicitement** dans le candidat (`node_modules/.bin/…`), sa version comparée
+au lockfile ; `bunx` est interdit — il installe un paquet absent dans un cache
+global partagé. **Chaque profil a sa propre suite adverse.** « Meilleur effort
+plus détection » n'est pas un confinement, et une fonction ne porte le nom
+`runConfined` que si un bac à sable réel l'applique. Le confinement couvre
+**aussi `bun install`**. Le dépôt réel n'est jamais monté en écriture. Les deux
+backends passent la **même suite adversariale** : écriture et lecture hors
+candidat, réseau, lien symbolique d'évasion, sous-processus, credentials,
+chemins absolus, et **fixture à `postinstall`** dont le marqueur doit rester
+absent.
 
 **4. Cache de paquets — optimisation, jamais frontière.**
 `BUN_INSTALL_CACHE_DIR` dédié, `--backend=copyfile` **obligatoire**, global
@@ -208,7 +217,23 @@ l'index et le worktree restent à `C`, et Git présenterait alors le diff invers
 en modifications locales. Elle est donc journalisée par phase et **reprenable**
 après crash, sous verrous tenus.
 
-**6. Identité du plan et frontière de l'agent LLM.** `plan_id` hashe **toutes**
+**6. Bail du candidat — une machine d'états, pas une promesse.** Un `SIGKILL`
+empêche tout `finally` : le cycle de vie du candidat est donc un **bail**
+journalisé par `rename` atomique, avec des états explicites (`creating`,
+`active`, `releasing`, `released`, `orphaned`, `quarantined`) et un ordre
+d'écritures physiques défini, entre lesquelles un crash reste observable et
+classable. Un candidat n'est promu en `active` qu'après **vérification finale du
+tree** (nombre d'entrées, chemins canoniques, type par `lstat`, mode Git
+normalisé, hash des contenus, cible exacte des liens, aucun fichier inattendu).
+Un propriétaire **vivant** interdit toute action d'un tiers, quel que soit
+l'état ; seul un propriétaire mort fait passer `creating` ou `active` en
+`orphaned`. Journal et marqueur discordants → `quarantined`, signalé et **jamais
+purgé automatiquement**. Le marqueur vit **hors** du répertoire inscriptible par
+l'exécutant (`<lease>/marker` contre `<lease>/workspace/`), faute de quoi un
+exécutant tiers pourrait forcer une quarantaine permanente — un déni de service
+durable sur la racine de bail.
+
+**7. Identité du plan et frontière de l'agent LLM.** `plan_id` hashe **toutes**
 les entrées qui peuvent changer la sortie : recette et schéma, `package.json`,
 `bun.lock`, `nx.json`, `tsconfig.base.json`, `.gitattributes`, l'arbre complet
 de l'app (`path\0mode\0sha256`), les versions d'outillage **lues** (Node, Bun,

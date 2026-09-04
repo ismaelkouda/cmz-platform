@@ -185,27 +185,49 @@ Git, jamais l'arbre de travail local.
 ### Dépendances du candidat — protocole Bun en trois temps
 
 Toutes les installations passent
-`--ignore-scripts --backend=copyfile --cache-dir=<cache dédié>`, **dans le
-candidat**, **sous bac à sable**.
+`--ignore-scripts --backend=copyfile --cache-dir=<cache dédié>`, **sous le
+profil `resolution`**.
 
-| Temps                                 | Commande                                                                                                | Rôle                                                                                 |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 1. base                               | `bun install --frozen-lockfile --ignore-scripts`                                                        | matérialise l'état déterministe du commit. **Exige `bun.lock` présent dans le tree** |
-| 2. génération contrôlée               | versions épinglées écrites dans le catalog du candidat, puis `bun install --ignore-scripts` (non gelée) | régénère `bun.lock`                                                                  |
-| 3. validation + réinstallation propre | diff du lockfile inspecté, puis `bun install --frozen-lockfile --ignore-scripts`                        | prouve que le lockfile produit est réellement installable                            |
+| Temps                       | Où                  | Commande                                                                                                                            | Rôle                                                                                 |
+| --------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1. base                     | candidat            | `bun install --frozen-lockfile --ignore-scripts`                                                                                    | matérialise l'état déterministe du commit. **Exige `bun.lock` présent dans le tree** |
+| 2. génération contrôlée     | candidat            | versions épinglées écrites dans le catalog, puis `bun install --ignore-scripts` (non gelée)                                         | régénère `bun.lock`                                                                  |
+| 3. vérification depuis zéro | **second candidat** | matérialisé depuis le tree, `package.json` et `bun.lock` **finaux** injectés, puis `bun install --frozen-lockfile --ignore-scripts` | prouve qu'un environnement **neuf** est reconstructible depuis le lockfile final     |
+
+Le temps 3 se fait dans un **second candidat de vérification**, pas dans le
+premier. Relancer une installation gelée sur un `node_modules` déjà peuplé ne
+prouve rien : elle constaterait « no changes » sans jamais reconstruire.
+L'alternative — supprimer intégralement le `node_modules` du premier candidat
+puis réinstaller — est acceptable mais plus faible : elle laisse en place tout
+état résiduel produit par le temps 2.
 
 Chaque temps est vérifié, pas supposé :
 
-- **`bun.lock` doit être présent** — avec un lockfile absent,
+- **`bun.lock` doit être présent** au temps 1 — avec un lockfile absent,
   `--frozen-lockfile` **ne échoue pas** : il résout et installe. La « base
-  déterministe » serait alors vide de sens. C'est une condition d'entrée du
-  temps 1, pas un détail.
+  déterministe » serait alors vide de sens. C'est une condition d'entrée.
 - **Le temps 2 est nécessaire** — muter `package.json` puis relancer
   `--frozen-lockfile` échoue : `lockfile had changes, but lockfile is frozen`
   (exit 1, vérifié).
-- **Le temps 3 est nécessaire** — sans revalidation, on publierait un lockfile
-  jamais prouvé installable. Le **diff** est inspecté avant : seuls les paquets
-  attendus doivent apparaître.
+- **Le temps 3 est nécessaire** — sans reconstruction depuis zéro, on publierait
+  un lockfile jamais prouvé installable.
+
+#### Diff de lockfile accepté — définition sémantique
+
+Le diff n'est pas « inspecté » au jugé. Est **accepté** exactement :
+
+| Autorisé                                  | Interdit                                                         |
+| ----------------------------------------- | ---------------------------------------------------------------- |
+| ajout des paquets demandés par la recette | ajout hors fermeture transitive des paquets demandés             |
+| ajout de leur **fermeture transitive**    | **suppression** d'une entrée préexistante                        |
+| —                                         | **downgrade** d'une entrée préexistante                          |
+| —                                         | changement de **source** (registre, tarball, git) hors fermeture |
+| —                                         | changement d'**intégrité** (`sha512`) d'une entrée préexistante  |
+| —                                         | changement de version d'une entrée préexistante hors fermeture   |
+
+Tout écart fait échouer la commande avant publication. La fermeture transitive
+attendue est calculée à partir des paquets déclarés dans la recette, pas déduite
+du diff observé — sinon le contrôle validerait ce qu'il est censé contraindre.
 
 ### Réseau : résolution ouverte, exécution fermée
 
@@ -244,30 +266,38 @@ contrôles correspondants (`check-engines`) sont exécutés par `add-library`
 lui-même, jamais hérités de l'installation. Une dépendance exigeant un script
 sera une **exception nommée, justifiée et confinée**, jamais un assouplissement.
 
-### Confinement OS — obligatoire, partout
+### Confinement OS — deux profils, obligatoires, partout
 
 Aucun code tiers ne s'exécute sans bac à sable du système. Backends conformes :
 **conteneur** (CI) et **`sandbox-exec`** (macOS local). Aucun disponible → la
 commande **échoue avant** toute exécution tierce. Une fonction ne porte le nom
 `runConfined` que si un bac à sable réel l'applique.
 
-| Contrainte    | Mise en œuvre                                                                                                                                                                    |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Écriture      | le répertoire candidat **seul**, imposé par le bac à sable                                                                                                                       |
-| Dépôt réel    | jamais monté en écriture ; hors du `cwd` et de tout chemin transmis                                                                                                              |
-| Réseau        | **limité au registre** pendant l'installation, **coupé** pour schematic / probes / LLM                                                                                           |
-| Environnement | allowlist (`PATH`, `HOME` jetable, `CI`) ; **aucun credential** (`GIT_*`, `GH_TOKEN`, `NPM_TOKEN`, `SSH_AUTH_SOCK`)                                                              |
-| Shell         | jamais : `execFile(executable, argv)`, pas d'interpolation hors `{{app}}`                                                                                                        |
-| Binaires      | résolus **explicitement** dans le candidat (`<cand>/node_modules/.bin/nx`) ; **`bunx` interdit** en phase hors ligne — il installe un paquet absent dans un cache global partagé |
+Un profil unique était incohérent : la résolution doit écrire hors du candidat
+(cache, `HOME` jetable), ce que « candidat seul inscriptible » interdit. Il y a
+donc **deux profils distincts**, et un exécutant ne tourne jamais sous le profil
+de résolution.
+
+|                         | `resolution` (temps 1, 2, 3 du protocole Bun)                                                                                                                | `execution` (schematic, probes, LLM) |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| Écriture                | candidat + `BUN_INSTALL_CACHE_DIR` dédié + `HOME` jetable                                                                                                    | **`<lease>/workspace/` seul**        |
+| Cache Bun               | inscriptible                                                                                                                                                 | **absent ou lecture seule**          |
+| Réseau                  | **ouvert** — aucun code tiers ne s'exécute (`--ignore-scripts`)                                                                                              | **interdit**                         |
+| Scripts de cycle de vie | **interdits** (`--ignore-scripts`, témoins à l'appui)                                                                                                        | sans objet                           |
+| Dépôt réel              | jamais monté en écriture, hors du `cwd` et de tout chemin transmis                                                                                           | idem                                 |
+| Environnement           | allowlist (`PATH`, `HOME` jetable, `CI`), **aucun credential** (`GIT_*`, `GH_TOKEN`, `NPM_TOKEN`, `SSH_AUTH_SOCK`)                                           | idem                                 |
+| Shell                   | jamais : `execFile(executable, argv)`, pas d'interpolation hors `{{app}}`                                                                                    | idem                                 |
+| Binaires                | résolus **explicitement** dans le candidat (`<cand>/node_modules/.bin/nx`) ; **`bunx` interdit** — il installe un paquet absent dans un cache global partagé | idem                                 |
+
+**Chaque profil a sa propre suite adverse** (§ Suite adversariale) : ce qui est
+légitimement inscriptible en `resolution` doit être refusé en `execution`.
 
 `sandbox-exec` a été prouvé sur cette machine : écriture hors candidat →
 `Operation not permitted` ; réseau refusé → `Could not resolve host` ; les deux
 autorisés hors bac à sable. Docker est installé mais **son démon est
-injoignable** ici : exiger Docker en local rendrait la commande inutilisable.
-
-Les **deux** backends passent la même suite adversariale : écriture et lecture
-hors candidat, réseau, lien symbolique d'évasion, sous-processus, credentials,
-chemins absolus.
+injoignable** ici — contrat retenu : `sandbox-exec` prouvé **localement** sur
+macOS, conteneur prouvé par un **check Linux obligatoire en CI**, et la PR de
+code n'est fusionnée que si **les deux matrices** passent.
 
 ### Précondition — dépôt entièrement propre
 
@@ -308,38 +338,84 @@ collection est locale, donc exécutable sans résolution distante.
 ### Cycle de vie du candidat — machine d'états du bail
 
 Un `SIGKILL` empêche tout `finally` ou `dispose()` : « zéro résidu immédiat »
-n'est pas un contrat tenable. Et une liste de conditions n'est pas un protocole
-: elle ne dit pas quoi faire d'un candidat trouvé **en cours de création**. Le
-contrat est donc une **machine d'états**, journalisée par `rename` atomique.
+n'est pas un contrat tenable. Une liste de conditions ne l'est pas davantage :
+elle ne dit ni **où** un crash peut tomber, ni **qui** a le droit d'écrire le
+marqueur.
 
-| État          | Signification                                   | Transition légale                                                |
-| ------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
-| `creating`    | bail écrit, matérialisation en cours            | → `active` (matérialisation complète et vérifiée)                |
-| `active`      | candidat utilisable, propriétaire vivant        | → `releasing`                                                    |
-| `releasing`   | travail terminé, purge en cours                 | → `released`                                                     |
-| `released`    | purge achevée, répertoire absent                | terminal                                                         |
-| `orphaned`    | propriétaire mort, états `creating` ou `active` | → `releasing` **si** toutes les conditions d'identité concordent |
-| `quarantined` | journal et marqueur discordent                  | terminal — **jamais** purgé automatiquement, signalé             |
+#### Disposition — le marqueur hors de portée de l'exécutant
 
-Un candidat trouvé en `creating` est **toujours** incomplet : il part en
-`orphaned` puis en purge, jamais en `active`. Un candidat en `releasing` dont le
-propriétaire est mort reprend la purge, opération idempotente.
+```
+<lease-root>/<id>/marker      <- journal d'identité, JAMAIS inscriptible par un exécutant
+<lease-root>/<id>/workspace/  <- le candidat ; seul répertoire inscriptible en profil `execution`
+```
 
-Conditions **cumulatives** avant toute suppression :
+Le bac à sable ne donne l'écriture que sur `workspace/`. Sans cette séparation,
+un exécutant tiers pourrait altérer le marqueur et forcer une **quarantaine
+permanente** — un déni de service durable sur la racine de bail.
 
-| Condition    | Règle                                                                                                                                                    |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Identité     | identifiant **aléatoire non réutilisable** (≥ 128 bits), jamais dérivé d'un compteur ni d'un PID                                                         |
-| Propriétaire | **PID + instant de démarrage** (`ps -o lstart= -p <pid>` — sortie vide si le PID n'existe pas, vérifié) ; un PID seul ne suffit pas, il est réutilisable |
-| Emplacement  | chemin **canonique** sous une racine temporaire dédiée ; refus si un ancêtre est un lien symbolique                                                      |
-| Propriété    | propriétaire et permissions attendus                                                                                                                     |
-| Marqueur     | fichier d'identité **dans** le candidat, portant l'identifiant du bail                                                                                   |
-| Concordance  | **aucune suppression** si journal et marqueur discordent → `quarantined`                                                                                 |
+#### Ordre exact des écritures, et crash entre chacune
 
-**Les tests injectent un crash à chaque transition**, pas seulement sur le PID
-et le marqueur : `creating → active`, `active → releasing`,
-`releasing → released`. Chaque injection doit laisser un état repris
-correctement au démarrage suivant, sans jamais supprimer le mauvais répertoire.
+| #   | Écriture physique                                                    | Crash juste après → état observé au démarrage suivant                                                                                  |
+| --- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `mkdir <lease-root>/<id>`                                            | dossier sans marqueur ni journal → **inconnu du journal**, purgé par balayage de la racine (propriétaire indéterminable, dossier vide) |
+| 2   | `marker` écrit par `rename` atomique (id, pid, instant de démarrage) | marqueur seul, journal absent → **quarantined**                                                                                        |
+| 3   | entrée `creating` du journal, par `rename` atomique                  | journal + marqueur concordants → `creating`                                                                                            |
+| 4   | `mkdir workspace/` puis matérialisation                              | `creating` incomplet                                                                                                                   |
+| 5   | vérification finale du tree (§ suivante)                             | `creating` vérifié mais non promu                                                                                                      |
+| 6   | passage `creating → active`, par `rename` atomique                   | `active`                                                                                                                               |
+
+Un crash **entre** deux écritures physiques est donc toujours observable et
+classable — c'est ce que les tests injectent, pas seulement les transitions
+d'états.
+
+#### États et transitions
+
+| État          | Signification                                                | Transition légale                                                                       |
+| ------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `creating`    | journal et marqueur concordants, matérialisation non achevée | → `active` (vérification finale du tree réussie) · → `orphaned` (**propriétaire mort**) |
+| `active`      | candidat utilisable                                          | → `releasing` · → `orphaned` (**propriétaire mort**)                                    |
+| `releasing`   | purge en cours                                               | → `released` ; reprise idempotente si le propriétaire meurt                             |
+| `released`    | purge achevée                                                | terminal                                                                                |
+| `orphaned`    | propriétaire mort, depuis `creating` ou `active`             | → `releasing` **si** toutes les conditions d'identité concordent, sinon → `quarantined` |
+| `quarantined` | journal et marqueur discordent, ou conditions non réunies    | terminal — **jamais** purgé automatiquement, signalé                                    |
+
+**Correction d'une contradiction de la version précédente** : un candidat trouvé
+en `creating` ne part **pas** systématiquement en purge. Un second processus
+peut le voir alors que son propriétaire est **vivant** — il doit alors le
+laisser intact. Seul un propriétaire **mort** fait passer `creating` en
+`orphaned`. Et un crash entre les écritures 1 et 3 produit un état sans
+concordance : celui-ci part en `quarantined`, pas en purge.
+
+#### Conditions cumulatives avant toute suppression
+
+| Condition    | Règle                                                                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Identité     | identifiant **aléatoire non réutilisable** (≥ 128 bits), jamais dérivé d'un compteur ni d'un PID                                       |
+| Propriétaire | **PID + instant de démarrage** (`ps -o lstart= -p <pid>` — sortie vide si le PID n'existe pas, vérifié) ; un PID seul est réutilisable |
+| Vivacité     | un propriétaire **vivant** interdit toute action d'un tiers, quel que soit l'état                                                      |
+| Emplacement  | chemin **canonique** sous la racine de bail dédiée ; refus si un ancêtre est un lien symbolique                                        |
+| Propriété    | propriétaire et permissions attendus                                                                                                   |
+| Marqueur     | `<lease-root>/<id>/marker`, **hors** de `workspace/`, jamais inscriptible par un exécutant                                             |
+| Concordance  | journal et marqueur discordants → `quarantined`, jamais de suppression                                                                 |
+
+### Vérification finale du tree — condition de `creating → active`
+
+« Matérialisation complète et vérifiée » n'est pas une formule : c'est une
+comparaison entre l'inventaire attendu (issu de `ls-tree`) et l'état réel sur
+disque, **avant** toute promotion en `active`.
+
+| Contrôle            | Règle                                                                        |
+| ------------------- | ---------------------------------------------------------------------------- |
+| Nombre d'entrées    | **exactement** celui de l'inventaire                                         |
+| Chemins             | canoniques, un pour un avec l'inventaire                                     |
+| Type réel           | par `lstat` — fichier, lien ou répertoire, conforme au mode Git attendu      |
+| Mode                | mode Git normalisé (`100644` / `100755` / `120000`) conforme                 |
+| Contenu             | hash du fichier == OID du blob attendu                                       |
+| Liens               | cible **exactement** égale au contenu du blob, et résolvant dans le candidat |
+| Fichiers inattendus | **aucun** — tout chemin présent hors inventaire fait échouer                 |
+
+Un échec laisse le bail en `creating` : il ne devient jamais `active`, donc
+jamais utilisable par un exécutant.
 
 ## P0 nº 2 — Verrous et transaction
 
@@ -405,9 +481,10 @@ deux plans identiques pouvaient correspondre à des exécutions différentes.
 `plan_id = sha256` de la concaténation canonique de :
 
 1. octets de la recette **et** de son schéma ;
-2. octets de `package.json`, `bun.lock`, `nx.json`, `tsconfig.base.json`,
-   `.gitattributes` (sans effet sur la matérialisation, mais il gouverne le
-   contenu du dépôt et donc le résultat du schematic) ;
+2. octets de `package.json` initial, **`bun.lock` initial** (celui du tree) et
+   **`bun.lock` final** (produit au temps 2, validé au temps 3), `nx.json`,
+   `tsconfig.base.json`, `.gitattributes` (sans effet sur la matérialisation,
+   mais il gouverne le contenu du dépôt et donc le résultat du schematic) ;
 3. commit `C` et arbre complet de `apps/<app>` — liste triée
    `path\0mode\0sha256` ;
 4. outillage **lu, jamais supposé** : version Node, Bun, Nx (depuis
@@ -508,19 +585,27 @@ jobs tournent donc sur **toute PR**, `fail-fast: false`. Budget cible :
 Revue **P0 par P0** ; aucun code d'un lot tant que le P0 dont il dépend n'est
 pas validé.
 
-| #   | Étape                                   | Sortie                                                                          |
-| --- | --------------------------------------- | ------------------------------------------------------------------------------- |
-| 1   | ~~Durcissement `check:library-setup`~~  | **livré**, mergé en `c6b5b64`                                                   |
-| 2   | P0 nº 1 — candidat isolé                | conception validée                                                              |
-| 3   | P0 nº 2 — verrous et transaction        | conception validée                                                              |
-| 4   | P0 nº 3 — `plan_id` / change-set        | conception validée                                                              |
-| 5   | P0 nº 4 — confinement exécutants et LLM | conception validée                                                              |
-| 6   | Tranche verticale Material              | `add-library` + `material-component-compiles` **enforced**                      |
-| 7   | Tranche verticale Tailwind              | `sentinel-class-emits-rule` **enforced**                                        |
-| 8   | Coexistence navigateur                  | `material-tailwind-render-together` **enforced**                                |
-| 9   | Transloco + `create-app` atomique       | E2E `create-app → add-library ×3 → frozen → build → lint → test → gate → abort` |
-| 10  | Gouvernance d'upgrade                   | `.compat.json` + revalidation sur bump                                          |
-| 11  | Recours LLM borné                       | schematic cassé simulé → LLM → gates vertes                                     |
+| #   | Étape                                                       | Statut                      | Sortie                                                                          |
+| --- | ----------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------- |
+| 1   | Durcissement `check:library-setup`                          | **livré**                   | mergé en `c6b5b64`                                                              |
+| 2   | P0 nº 1 — candidat isolé                                    | **soumis à revue**          | conception close                                                                |
+| 3   | P0 nº 2 — verrous et transaction de publication             | non soumis                  | conception close                                                                |
+| 4   | P0 nº 3 — `plan_id` / change-set                            | non soumis                  | conception close                                                                |
+| 5   | P0 nº 4 — confinement des exécutants et du LLM              | non soumis                  | conception close                                                                |
+| 6   | Frontière seule — `library-candidate.mjs` + suites adverses | après validation du P0 nº 1 | matrices macOS **et** Linux vertes                                              |
+| 7   | Schéma `.compat.json` + première entrée de compatibilité    | après 6                     | `check:library-setup` valide le schéma fermé                                    |
+| 8   | Tranche verticale Material                                  | après 7                     | `add-library` + `material-component-compiles` **enforced**                      |
+| 9   | Tranche verticale Tailwind                                  | après 8                     | `sentinel-class-emits-rule` **enforced**                                        |
+| 10  | Coexistence navigateur                                      | après 9                     | `material-tailwind-render-together` **enforced**                                |
+| 11  | Transloco + `create-app` atomique                           | après 10                    | E2E `create-app → add-library ×3 → frozen → build → lint → test → gate → abort` |
+| 12  | Gouvernance d'upgrade                                       | après 11                    | revalidation sur bump, migration de recette                                     |
+| 13  | Recours LLM borné                                           | après 12                    | schematic cassé simulé → LLM → gates vertes                                     |
+
+Aucune ligne n'est marquée « validée » : la validation est un acte de revue, pas
+une déclaration de ce document. Le schéma `.compat.json` et sa première entrée
+passent **avant** la tranche Material (étape 7), puisque celle-ci exige une
+entrée de compatibilité validée — les placer en gouvernance d'upgrade créait une
+dépendance vers l'arrière.
 
 Chaque étape ≥ 6 : branche dédiée, PR, CI verte, revue, validation, puis merge.
 

@@ -97,7 +97,7 @@
         "executable": {
           "type": "string",
           "enum": ["nx"],
-          "description": "Résolu via `bunx nx` dans ce dépôt (déterministe : @nx/* est au catalog). `ng` seul n'est pas un binaire du workspace — passer par `nx g <collection>:ng-add`."
+          "description": "Binaire résolu EXPLICITEMENT dans le workspace cible (`<racine>/node_modules/.bin/nx`), sa version étant comparée à celle du lockfile (`node_modules/nx/package.json`). `bunx` est interdit : il installe automatiquement un paquet absent dans un cache global partagé (ADR-0042). `ng` seul n'est pas un binaire du workspace — passer par `nx g <collection>:ng-add`."
         },
         "argv": {
           "type": "array",
