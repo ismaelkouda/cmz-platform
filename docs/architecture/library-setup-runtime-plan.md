@@ -212,6 +212,39 @@ Chaque temps est vérifié, pas supposé :
 - **Le temps 3 est nécessaire** — sans reconstruction depuis zéro, on publierait
   un lockfile jamais prouvé installable.
 
+#### Sources de résolution — allowlist fermée
+
+`--ignore-scripts` bloque l'**exécution**, pas les **sources**. Bun accepte des
+dépendances Git/SSH, des dépôts privés via credentials SSH, des tarballs depuis
+une URL arbitraire, et lit registres et credentials d'un `.npmrc`. Une
+résolution réseau n'est donc pas sûre du seul fait qu'aucun script ne tourne.
+
+Périmètre V1 (Angular / React, npm uniquement) — **allowlist**, tout le reste
+refusé :
+
+| Autorisé                                                                          | Refusé                                      |
+| --------------------------------------------------------------------------------- | ------------------------------------------- |
+| `catalog:` / `catalog:<nom>` — protocole dominant de ce dépôt                     | `git:`, `git+ssh:`, `git+https:`, `github:` |
+| `workspace:`                                                                      | `file:`, `link:`                            |
+| version ou plage résolue depuis **le registre approuvé**, avec intégrité `sha512` | tarball par URL (`http:`, `https:`)         |
+
+Mesuré aujourd'hui : **2037 paquets, 0 source non-registre, 0 paquet externe
+sans `sha512`** ; les 72 entrées sans intégrité sont les `@cmz/*` du workspace,
+ce qui est normal. L'allowlist est donc atteignable **sans aucune exception**.
+
+En complément, pendant la résolution :
+
+- `.npmrc` et `bunfig.toml` du dépôt, du `HOME` jetable et du système :
+  **neutralisés** (aucun n'existe aujourd'hui — vérifié) ;
+- configurations Git **globale et système** neutralisées
+  (`GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_SYSTEM=/dev/null`) ;
+- **aucun accès** au trousseau SSH ni au credential helper — c'est déjà l'effet
+  du retrait de `SSH_AUTH_SOCK` et des `GIT_*` du profil `resolution`, et c'est
+  ici une exigence explicite, pas un effet de bord.
+
+Chaque **nouvelle** entrée du lockfile voit sa **source** et son **intégrité**
+contrôlées contre cette allowlist, pas seulement sa version.
+
 #### Diff de lockfile accepté — définition sémantique
 
 Le diff n'est pas « inspecté » au jugé. Est **accepté** exactement :
@@ -225,9 +258,14 @@ Le diff n'est pas « inspecté » au jugé. Est **accepté** exactement :
 | —                                         | changement d'**intégrité** (`sha512`) d'une entrée préexistante  |
 | —                                         | changement de version d'une entrée préexistante hors fermeture   |
 
-Tout écart fait échouer la commande avant publication. La fermeture transitive
-attendue est calculée à partir des paquets déclarés dans la recette, pas déduite
-du diff observé — sinon le contrôle validerait ce qu'il est censé contraindre.
+Tout écart fait échouer la commande avant publication.
+
+**La fermeture transitive est une traversée de graphe, pas une observation.** On
+part des paquets **directs attendus** (ceux de la recette), on parcourt le
+graphe de dépendances du **lockfile final**, et l'ensemble atteint constitue la
+fermeture autorisée. Toute entrée ajoutée hors de cet ensemble est refusée. La
+déduire du diff observé reviendrait à faire valider par le contrôle ce qu'il est
+censé contraindre.
 
 ### Réseau : résolution ouverte, exécution fermée
 
@@ -261,10 +299,23 @@ cache en lecture seule pendant schematic / probes / LLM. Le cache **partagé**
 redevient acceptable, ce qui ramène l'installation de 72 s à froid à **19 s à
 chaud**.
 
-`--ignore-scripts` neutralisant aussi `preinstall` / `prepare` du dépôt, les
-contrôles correspondants (`check-engines`) sont exécutés par `add-library`
-lui-même, jamais hérités de l'installation. Une dépendance exigeant un script
-sera une **exception nommée, justifiée et confinée**, jamais un assouplissement.
+#### Scripts de cycle de vie du dépôt — inventaire fail-closed
+
+`--ignore-scripts` neutralise aussi les scripts du dépôt. Rejouer
+`check-engines` « parce qu'on sait qu'il existe » ne tient pas : une
+modification future de `preinstall`, `install`, `postinstall` ou `prepare`
+serait silencieusement ignorée. La règle est donc un **inventaire classifié,
+fail-closed** :
+
+| Script racine                              | Classification                                                                                    | Conséquence                                           |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `preinstall: node tools/check-engines.mjs` | **rejoué explicitement**                                                                          | exécuté par `add-library` avant la résolution         |
+| `prepare: husky`                           | **inutile dans le candidat** — pas de `.git`, donc aucun hook à installer ; omission **déclarée** | non rejoué, et cette omission est une décision écrite |
+
+Tout script de cycle de vie **apparaissant ou modifié** sans classification fait
+**échouer la gate**. L'inventaire est comparé au `package.json` du candidat, pas
+mémorisé dans le code. Une dépendance exigeant un script restera une **exception
+nommée, justifiée et confinée**, jamais un assouplissement.
 
 ### Confinement OS — deux profils, obligatoires, partout
 
@@ -370,14 +421,15 @@ d'états.
 
 #### États et transitions
 
-| État          | Signification                                                | Transition légale                                                                       |
-| ------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `creating`    | journal et marqueur concordants, matérialisation non achevée | → `active` (vérification finale du tree réussie) · → `orphaned` (**propriétaire mort**) |
-| `active`      | candidat utilisable                                          | → `releasing` · → `orphaned` (**propriétaire mort**)                                    |
-| `releasing`   | purge en cours                                               | → `released` ; reprise idempotente si le propriétaire meurt                             |
-| `released`    | purge achevée                                                | terminal                                                                                |
-| `orphaned`    | propriétaire mort, depuis `creating` ou `active`             | → `releasing` **si** toutes les conditions d'identité concordent, sinon → `quarantined` |
-| `quarantined` | journal et marqueur discordent, ou conditions non réunies    | terminal — **jamais** purgé automatiquement, signalé                                    |
+| État          | Signification                                                | Transition légale                                                                                   |
+| ------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `unclaimed`   | dossier nu, sans marqueur ni journal                         | → `rmdir` **si et seulement si** toutes les conditions du contrat concordent, sinon → `quarantined` |
+| `creating`    | journal et marqueur concordants, matérialisation non achevée | → `active` (vérification finale du tree réussie) · → `orphaned` (**propriétaire mort**)             |
+| `active`      | candidat utilisable                                          | → `releasing` · → `orphaned` (**propriétaire mort**)                                                |
+| `releasing`   | purge en cours                                               | → `released` ; reprise idempotente si le propriétaire meurt                                         |
+| `released`    | purge achevée                                                | terminal                                                                                            |
+| `orphaned`    | propriétaire mort, depuis `creating` ou `active`             | → `releasing` **si** toutes les conditions d'identité concordent, sinon → `quarantined`             |
+| `quarantined` | journal et marqueur discordent, ou conditions non réunies    | terminal — **jamais** purgé automatiquement, signalé                                                |
 
 **Correction d'une contradiction de la version précédente** : un candidat trouvé
 en `creating` ne part **pas** systématiquement en purge. Un second processus
@@ -404,15 +456,47 @@ concordance : celui-ci part en `quarantined`, pas en purge.
 comparaison entre l'inventaire attendu (issu de `ls-tree`) et l'état réel sur
 disque, **avant** toute promotion en `active`.
 
+#### L'OID n'est pas le hash du contenu
+
+Un OID Git est le hash de `blob <taille>\0<contenu>`, avec l'algorithme **du
+dépôt**. Vérifié :
+
+|                       |                                            |
+| --------------------- | ------------------------------------------ |
+| sha1 brut de `abc`    | `a9993e364706816aba3e25717850c26c9cd0d89d` |
+| `git hash-object`     | `f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f` |
+| sha1 de `blob 3\0abc` | `f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f` |
+
+La formulation précédente — « hash du fichier == OID du blob attendu » — était
+donc **fausse**. Le contrat est :
+
+- lire l'algorithme par `git rev-parse --show-object-format` (`sha1` ici, mais
+  **jamais supposé**, et **aucune longueur d'OID codée en dur**) ;
+- recalculer l'OID Git **complet** (en-tête incluse) ou passer par
+  `git hash-object` avec les mêmes garde-fous que la matérialisation
+  (`--no-replace-objects`, chemins en octets) ;
+- comparer à l'OID attendu ;
+- **ne jamais** présenter un hash brut comme équivalent.
+
+#### Ce qui est compté, et comment
+
+`git ls-tree -r` inventorie les **feuilles**, pas les répertoires. Le contrôle
+distingue donc trois ensembles :
+
+| Ensemble               | Source                                          | Contrôle                                   |
+| ---------------------- | ----------------------------------------------- | ------------------------------------------ |
+| Feuilles Git attendues | `ls-tree -r`                                    | égalité exacte, une pour une               |
+| Répertoires attendus   | **dérivés** des chemins des feuilles            | égalité exacte — aucun répertoire en trop  |
+| Métadonnées du bail    | `<lease>/marker`, `<lease>/state.json`, `*.tmp` | **hors `workspace/`**, exclues du comptage |
+
 | Contrôle            | Règle                                                                        |
 | ------------------- | ---------------------------------------------------------------------------- |
-| Nombre d'entrées    | **exactement** celui de l'inventaire                                         |
 | Chemins             | canoniques, un pour un avec l'inventaire                                     |
 | Type réel           | par `lstat` — fichier, lien ou répertoire, conforme au mode Git attendu      |
 | Mode                | mode Git normalisé (`100644` / `100755` / `120000`) conforme                 |
-| Contenu             | hash du fichier == OID du blob attendu                                       |
+| Contenu             | **OID Git recalculé** == OID attendu (§ ci-dessus)                           |
 | Liens               | cible **exactement** égale au contenu du blob, et résolvant dans le candidat |
-| Fichiers inattendus | **aucun** — tout chemin présent hors inventaire fait échouer                 |
+| Fichiers inattendus | **aucun** sous `workspace/` hors inventaire                                  |
 
 Un échec laisse le bail en `creating` : il ne devient jamais `active`, donc
 jamais utilisable par un exécutant.
@@ -481,10 +565,12 @@ deux plans identiques pouvaient correspondre à des exécutions différentes.
 `plan_id = sha256` de la concaténation canonique de :
 
 1. octets de la recette **et** de son schéma ;
-2. octets de `package.json` initial, **`bun.lock` initial** (celui du tree) et
-   **`bun.lock` final** (produit au temps 2, validé au temps 3), `nx.json`,
-   `tsconfig.base.json`, `.gitattributes` (sans effet sur la matérialisation,
-   mais il gouverne le contenu du dépôt et donc le résultat du schematic) ;
+2. octets des **quatre** états de dépendances : `package.json` **initial** (du
+   tree) et **final** (après épinglage), `bun.lock` **initial** (du tree) et
+   **final** (produit au temps 2, validé depuis zéro au temps 3) ; puis
+   `nx.json`, `tsconfig.base.json`, `.gitattributes` (sans effet sur la
+   matérialisation, mais il gouverne le contenu du dépôt et donc le résultat du
+   schematic) ;
 3. commit `C` et arbre complet de `apps/<app>` — liste triée
    `path\0mode\0sha256` ;
 4. outillage **lu, jamais supposé** : version Node, Bun, Nx (depuis

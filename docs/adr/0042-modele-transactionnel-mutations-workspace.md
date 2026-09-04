@@ -155,19 +155,35 @@ conteneur ordinaire ni `sandbox-exec` ne sait exprimer, est donc sans objet.
 
 Le protocole Bun se déroule en **trois temps distincts** :
 
-1. **base** — `bun install --frozen-lockfile --ignore-scripts`. Le `bun.lock`
-   **doit être présent dans le tree** : vérifié, avec un lockfile absent
-   `--frozen-lockfile` ne échoue pas, il résout et installe — la « base
+1. **base** — `bun install --frozen-lockfile --ignore-scripts` dans le candidat.
+   Le `bun.lock` **doit être présent dans le tree** : vérifié, avec un lockfile
+   absent `--frozen-lockfile` ne échoue pas, il résout et installe — la « base
    déterministe » serait alors vide de sens ;
 2. **génération contrôlée** — après écriture des versions épinglées dans le
    catalog du candidat, `bun install --ignore-scripts` (non gelée) régénère
    `bun.lock`. Vérifié : muter `package.json` puis relancer `--frozen-lockfile`
    échoue avec `lockfile had changes, but lockfile is frozen` ;
-3. **validation du diff, puis réinstallation propre** — le diff du lockfile est
-   inspecté (seuls les paquets attendus apparaissent), puis
-   `bun install --frozen-lockfile --ignore-scripts` **revalide** le lockfile
-   produit. Sans ce troisième temps, on publierait un lockfile jamais prouvé
-   installable.
+3. **vérification depuis zéro** — un **second candidat** est matérialisé depuis
+   le tree, les `package.json` et `bun.lock` **finaux** y sont injectés, et
+   `bun install --frozen-lockfile --ignore-scripts` reconstruit l'environnement.
+   Relancer une installation gelée sur un `node_modules` déjà peuplé
+   constaterait « no changes » sans rien reconstruire : cela ne prouverait rien.
+
+La résolution n'est pas sûre du seul fait qu'aucun script ne tourne : Bun
+accepte des dépendances Git/SSH, des tarballs par URL, et lit registres et
+credentials d'un `.npmrc`. Les sources obéissent donc à une **allowlist fermée**
+— `catalog:`, `workspace:`, et le registre approuvé avec intégrité `sha512` ;
+tout le reste refusé, source **et** intégrité contrôlées pour chaque nouvelle
+entrée. `.npmrc` / `bunfig.toml` et les configurations Git globale et système
+sont neutralisés, sans accès au trousseau SSH ni au credential helper. La
+fermeture transitive autorisée est une **traversée du graphe du lockfile final**
+depuis les paquets directs attendus, jamais une lecture du diff observé.
+
+Les scripts de cycle de vie du dépôt font l'objet d'un **inventaire classifié,
+fail-closed** : chacun est soit rejoué explicitement (`preinstall` /
+`check-engines`), soit déclaré inutile dans le candidat (`prepare` / `husky`,
+qui n'a pas de `.git` où poser des hooks). Toute apparition ou modification non
+classifiée fait échouer la gate.
 
 Si une dépendance exigeait un jour un script de cycle de vie, ce sera une
 **exception nommée, justifiée et confinée** — phase dédiée, sans réseau — jamais
@@ -223,10 +239,19 @@ journalisé par `rename` atomique, avec des états explicites (`creating`,
 `active`, `releasing`, `released`, `orphaned`, `quarantined`) et un ordre
 d'écritures physiques défini, entre lesquelles un crash reste observable et
 classable. Un candidat n'est promu en `active` qu'après **vérification finale du
-tree** (nombre d'entrées, chemins canoniques, type par `lstat`, mode Git
-normalisé, hash des contenus, cible exacte des liens, aucun fichier inattendu).
-Un propriétaire **vivant** interdit toute action d'un tiers, quel que soit
-l'état ; seul un propriétaire mort fait passer `creating` ou `active` en
+tree** : feuilles Git et répertoires dérivés comptés séparément (les métadonnées
+du bail vivant hors `workspace/`), chemins canoniques, type réel par `lstat`,
+mode Git normalisé, cible exacte des liens, aucun fichier inattendu, et surtout
+**OID Git recalculé** — un OID est le hash de `blob <taille>\0<contenu>` avec
+l'algorithme du dépôt (`git rev-parse --show-object-format`), jamais le hash
+brut du contenu, et aucune longueur d'OID n'est codée en dur. Un dossier nu,
+sans marqueur ni journal, est `unclaimed` : il n'est supprimé que par `rmdir`,
+jamais récursivement, et seulement si type, vacuité, format du nom aléatoire,
+UID, permissions et parent canonique concordent tous — sinon `quarantined`.
+Enfin, « écrit par `rename` atomique » recouvre quatre opérations : un `SIGKILL`
+peut laisser un temporaire orphelin, état qui figure explicitement dans la
+machine. Un propriétaire **vivant** interdit toute action d'un tiers, quel que
+soit l'état ; seul un propriétaire mort fait passer `creating` ou `active` en
 `orphaned`. Journal et marqueur discordants → `quarantined`, signalé et **jamais
 purgé automatiquement**. Le marqueur vit **hors** du répertoire inscriptible par
 l'exécutant (`<lease>/marker` contre `<lease>/workspace/`), faute de quoi un
@@ -234,12 +259,13 @@ exécutant tiers pourrait forcer une quarantaine permanente — un déni de serv
 durable sur la racine de bail.
 
 **7. Identité du plan et frontière de l'agent LLM.** `plan_id` hashe **toutes**
-les entrées qui peuvent changer la sortie : recette et schéma, `package.json`,
-`bun.lock`, `nx.json`, `tsconfig.base.json`, `.gitattributes`, l'arbre complet
-de l'app (`path\0mode\0sha256`), les versions d'outillage **lues** (Node, Bun,
-Nx, paquet du schematic), le hash du module runner, et la valeur substituée à
-`{{app}}`. Il est **toujours** calculé, affiché et journalisé — même sans
-`--dry-run`. Un changement est un **change-set structuré**
+les entrées qui peuvent changer la sortie : recette et schéma, `package.json`
+**initial et final**, `bun.lock` **initial et final**, `nx.json`,
+`tsconfig.base.json`, `.gitattributes`, l'arbre complet de l'app
+(`path\0mode\0sha256`), les versions d'outillage **lues** (Node, Bun, Nx, paquet
+du schematic), le hash du module runner, et la valeur substituée à `{{app}}`. Il
+est **toujours** calculé, affiché et journalisé — même sans `--dry-run`. Un
+changement est un **change-set structuré**
 (`op ∈ {create, modify, delete, rename}`, mode, `sha256` avant/après). Le
 recours `llm-then-verified` hérite intégralement de (1) à (4) et y ajoute une
 allowlist de chemins déclarée dans la recette, une gate de diff à chaque
