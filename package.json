@@ -168,7 +168,7 @@
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "5.0.0",
     "husky": "^9.1.7",
-    "jiti": "2.4.2",
+    "jiti": "2.7.0",
     "jsdom": "^27.1.0",
     "jsonc-parser": "3.3.1",
     "knip": "6.31.0",
