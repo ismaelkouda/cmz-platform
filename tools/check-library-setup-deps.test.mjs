@@ -14,13 +14,16 @@ import {
 const has = (result) => result.length > 0;
 const rec = (identifier) => [identifier, '', {}, 'sha'];
 
-test('catalogRangeIsBounded : via new semver.Range().set, sans sentinelle', () => {
+test('catalogRangeIsBounded : borne basse EFFECTIVE (0.0.0 exclu, sauf exact)', () => {
     for (const bounded of [
+        '0.0.0', // exact : accepté même s'il vaut 0.0.0
+        '1.2.3',
         '^1.2.0',
         '~1.2.0',
-        '1.2.3',
+        '~0.0.5', // >=0.0.5 <0.1.0-0 : 0.0.0 exclu
+        '^0.5.0', // >=0.5.0 <0.6.0-0
         '1.x',
-        '>=1 <10000',
+        '>=1 <10000', // très large mais bornée des deux côtés
         '>=22 <23',
         '1.2.3 - 2.3.4',
         '>=1.0.0 <2.0.0||>=3.0.0 <4.0.0',
@@ -30,10 +33,13 @@ test('catalogRangeIsBounded : via new semver.Range().set, sans sentinelle', () =
     for (const unbounded of [
         '*',
         'x',
-        '>=10000',
-        '>9999.9999.9999',
+        '0', // >=0.0.0 <1.0.0-0 : accepte 0.0.0
+        '0.x', // idem
+        '>=0.0.0 <23', // borne basse non effective
         '>=0.0.0-0 <23', // semver simplifie en `<23`
-        '>=1.0.0 <2.0.0||>=3.0.0',
+        '>=10000', // pas de plafond
+        '>9999.9999.9999',
+        '>=1.0.0 <2.0.0||>=3.0.0', // une branche sans plafond
         'not-a-range',
         '',
     ]) {

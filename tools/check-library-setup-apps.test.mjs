@@ -680,3 +680,26 @@ test('verifyWorkspaceDependency : chaîne complète + cohérence version', async
         )
     );
 });
+
+test('verifyWorkspaceDependency : catalog `>=0.0.0 <23` (borne basse non effective) → échec', async (t) => {
+    const root = await mkdtemp(join(tmpdir(), 'cmz-dep-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    await write(join(root, 'package.json'), {
+        dependencies: { pkg: 'catalog:' },
+        workspaces: { catalog: { pkg: '>=0.0.0 <23' } },
+    });
+    await write(
+        join(root, 'bun.lock'),
+        JSON.stringify({
+            workspaces: { '': { dependencies: { pkg: 'catalog:' } } },
+            packages: { pkg: ['pkg@22.5.1', '', {}, 'sha'] },
+        })
+    );
+    // `22.5.1` satisfait bien `>=0.0.0 <23` — mais la plage n'est pas un pin
+    // responsable : borne basse non effective (accepte 0.0.0).
+    assert.ok(
+        verifyWorkspaceDependency(root, 'pkg').some((e) =>
+            /sans borne basse effective/.test(e)
+        )
+    );
+});

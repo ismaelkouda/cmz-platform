@@ -115,39 +115,46 @@ export function parseLockRecord(packageName, lockRecord) {
     return { name: identifier.slice(0, at), version: identifier.slice(at + 1) };
 }
 
+// La cohérence de version est jugée avec `semver.satisfies(..., BOUND_POLICY)` ;
+// l'analyse de bornage utilise EXACTEMENT la même politique, sur les objets
+// `Comparator` de `new semver.Range(...).set` — pas de re-tokenisation de
+// chaîne, pas de valeur sentinelle.
+const BOUND_POLICY = { includePrerelease: false };
+
 /**
  * Une valeur de catalog en plage est acceptable seulement si CHAQUE branche
- * `||` possède structurellement une borne inférieure ET une borne supérieure
- * (ou est une version exacte). Inspecte directement les objets `Comparator` de
- * `new semver.Range(value).set` — aucune re-tokenisation d'une chaîne, aucune
- * valeur sentinelle, robuste à la sérialisation interne de `semver`. Le
- * comparateur `ANY` (`*`) ou une plage semver ne fixe aucune borne (ex.
- * `>=0.0.0-0 <23` → semver simplifie en `<23`, donc non borné en bas).
+ * `||` :
+ *   - est une version exacte (y compris `0.0.0`), OU
+ *   - possède structurellement une borne HAUTE (`<` / `<=`) ET une borne BASSE
+ *     EFFECTIVE — c.-à-d. `0.0.0` ne satisfait PAS la branche. `>=0.0.0`,
+ *     `>=0.0.0-0`, `0.x`, `0` acceptent `0.0.0` : pas de borne basse réelle.
+ * `*` (`Comparator.ANY`) ou un range invalide → non borné.
  */
 export function catalogRangeIsBounded(catalogValue) {
     let range;
     try {
-        range = new semver.Range(catalogValue, { includePrerelease: true });
+        range = new semver.Range(catalogValue, BOUND_POLICY);
     } catch {
         return false;
     }
     if (range.set.length === 0) return false;
     for (const comparators of range.set) {
-        let hasLower = false;
-        let hasUpper = false;
-        for (const comparator of comparators) {
-            if (comparator.semver === semver.Comparator.ANY) return false;
-            const operator = comparator.operator;
-            if (operator === '') {
-                hasLower = true; // comparateur exact : deux bornes
-                hasUpper = true;
-            } else if (operator === '>' || operator === '>=') {
-                hasLower = true;
-            } else if (operator === '<' || operator === '<=') {
-                hasUpper = true;
-            }
+        const isExactVersion =
+            comparators.length === 1 &&
+            comparators[0].operator === '' &&
+            comparators[0].semver !== semver.Comparator.ANY;
+        if (isExactVersion) continue;
+
+        if (comparators.some((c) => c.semver === semver.Comparator.ANY)) {
+            return false;
         }
-        if (!hasLower || !hasUpper) return false;
+        const hasUpper = comparators.some(
+            (c) => c.operator === '<' || c.operator === '<='
+        );
+        if (!hasUpper) return false;
+
+        const branch = comparators.map((c) => c.value).join(' ');
+        if (semver.satisfies('0.0.0', branch, BOUND_POLICY)) return false;
     }
     return true;
 }
@@ -197,10 +204,10 @@ export function verifyResolvedVersion(packageName, catalogValue, lockRecord) {
     }
     if (!catalogRangeIsBounded(catalogValue)) {
         return [
-            `${packageName} : catalog "${catalogValue}" est une plage non bornée — chaque branche doit avoir une borne basse ET haute (ou être exacte)`,
+            `${packageName} : catalog "${catalogValue}" est une plage sans borne basse effective (accepte 0.0.0) ou sans plafond`,
         ];
     }
-    return semver.satisfies(resolved, range, { includePrerelease: false })
+    return semver.satisfies(resolved, range, BOUND_POLICY)
         ? []
         : [
               `${packageName} : version résolue "${resolved}" ne satisfait pas le catalog "${catalogValue}" (bun.lock)`,
