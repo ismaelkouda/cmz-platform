@@ -76,10 +76,12 @@ adversariale**. Le confinement couvre aussi `bun install`.
 
 ### D6 — Aucun script tiers ; le cache est une optimisation, jamais une frontière
 
-`bun install --ignore-scripts` : aucun code tiers ne s'exécute pendant la
-récupération. Réseau ouvert pour la seule récupération, **coupé** ensuite — plus
+`bun install --ignore-scripts` : aucun code tiers ne s'exécute, ni celui du
+projet ni celui d'une dépendance `trustedDependencies` (vérifié avec témoin).
+Réseau ouvert pendant les phases de **résolution** — le protocole Bun en compte
+trois — et **entièrement coupé** pendant toute phase d'**exécution**. Plus
 besoin d'un « réseau limité au registre », inexprimable dans un conteneur
-ordinaire comme dans `sandbox-exec`, et devenu inutile. `--backend=copyfile`
+ordinaire comme dans `sandbox-exec`, et devenu sans objet. `--backend=copyfile`
 obligatoire, `BUN_INSTALL_CACHE_DIR` dédié, global store désactivé, cache en
 lecture seule pendant schematic / probes / LLM.
 
@@ -116,24 +118,55 @@ placé dans `.git/info/attributes` **retire silencieusement** le fichier de
 l'archive ; `export-subst` en transformerait de même le contenu.
 
 Le candidat est donc matérialisé **depuis le tree** du commit `C`, dans un
-`mkdtemp` hors du dépôt :
+`mkdtemp` hors du dépôt, avec `git --no-replace-objects --no-lazy-fetch` :
 
-- `git ls-tree -r -z <C>` → inventaire complet `(mode, type, OID, chemin)` ;
-- un seul `git cat-file --batch` → contenus ;
-- écriture des **octets exacts du blob**. L'OID **est** l'autorité de contenu :
-  aucune machinerie d'attributs n'intervient, donc `export-ignore`,
-  `export-subst`, `.git/info/attributes` et `core.attributesFile` sont sans
-  effet **par construction**, pas par vérification a posteriori.
+- `ls-tree -r -z <C>` → inventaire complet `(mode, type, OID, chemin)` ;
+- un seul `cat-file --batch` → contenus ;
+- écriture des **octets exacts du blob**.
 
-Règles d'intégrité, appliquées entrée par entrée :
+**Les deux options ne sont pas décoratives.** Sans `--no-replace-objects`, une
+ref `refs/replace/<oid>` détourne `cat-file` — vérifié : `CONTENU FALSIFIE` au
+lieu de `VRAI CONTENU`. Sans `--no-lazy-fetch`, un clone partiel irait chercher
+un objet manquant **sur le réseau** pendant une phase censée être hors ligne.
+`refs/replace`, le lazy-fetch et `.git/info/attributes` sont la même famille :
+des mécanismes **hors commit**. L'affirmation « l'OID est l'autorité de contenu
+» n'est vraie **qu'avec** ces deux options.
 
-| Contrôle        | Règle                                                                                                                                                                                                               |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mode            | `100644`, `100755`, `120000` uniquement. Tout autre — dont `160000` (sous-module) — fait échouer la commande. Ce dépôt : 3897 / 8 / 1, aucun autre.                                                                 |
-| Type            | `blob` seulement ; `commit` (sous-module) et `tree` inattendu refusés                                                                                                                                               |
-| Contenu         | octets du blob écrits tels quels ; aucun fichier créé hors de l'inventaire                                                                                                                                          |
-| Lien symbolique | cible = contenu exact du blob, créée **seulement** si elle résout à l'intérieur du candidat. Ce dépôt en a un (`.claude/skills/angular-developer → ../../.agents/skills/angular-developer`, cible suivie — vérifié) |
-| Chemin          | normalisé, refus de tout segment `..` ou absolu                                                                                                                                                                     |
+### Chemins : des octets, politique fail-closed
+
+Les chemins de `ls-tree -z` sont traités comme des **octets**, jamais comme des
+chaînes. Avant toute écriture :
+
+| Cas                                                           | Règle                                                         |
+| ------------------------------------------------------------- | ------------------------------------------------------------- |
+| UTF-8 invalide                                                | refus                                                         |
+| Deux chemins distincts se normalisant identiquement (NFC/NFD) | refus                                                         |
+| Collision insensible à la casse                               | refus — le système cible peut l'être (**vérifié sur ce Mac**) |
+| Segment `.git` **sous toute casse** ou forme équivalente      | refus                                                         |
+| Mode hors `100644` / `100755` / `120000` — dont `160000`      | refus                                                         |
+| Type autre que `blob` à une feuille                           | refus                                                         |
+| Entrées dupliquées ou conflit nom/type dans un même tree      | refus                                                         |
+| Lien symbolique dont la cible ne résout pas dans le candidat  | refus                                                         |
+
+Ce dépôt aujourd'hui : 3897 `100644`, 8 `100755`, 1 `120000`, aucune collision
+de casse, tous chemins ASCII, 0 entrée sous l'unique lien. Aucun de ces chiffres
+n'est un invariant — `add-library` matérialise un commit **arbitraire**.
+
+Sur le conflit nom/type, une précision qui change le test à écrire : un tel tree
+**n'est pas atteignable par l'index** (vérifié — l'index remplace `x` par
+`x/evil`), mais il **est constructible par plomberie** : `git mktree` accepte
+deux entrées nommées `x`, l'une `120000 blob`, l'autre `040000 tree` ;
+`git fsck` le signale (`duplicateEntries`) mais l'objet existe et est
+référençable. Le refus est donc nécessaire, et c'est un **troisième** cas,
+distinct des deux menaces de lien symbolique.
+
+### Écriture : la traversée, pas seulement la feuille
+
+Chaque répertoire est créé explicitement et tout composant déjà présent en
+non-répertoire fait échouer la matérialisation. `O_EXCL` **ne suffit pas** :
+vérifié, `writeFileSync` à travers un répertoire symlinké **écrit hors du
+candidat** malgré `flag: 'wx'` ; seul `O_NOFOLLOW` protège la dernière
+composante (`EEXIST` sur le lien).
 
 Mesuré sur ce dépôt :
 
@@ -149,40 +182,67 @@ L'affirmation « archive byte-identique à un checkout » est **retirée** : ell
 n'est pas un contrat portable entre systèmes. La source de vérité est le tree
 Git, jamais l'arbre de travail local.
 
-### Dépendances du candidat — sans aucun script tiers
+### Dépendances du candidat — protocole Bun en trois temps
 
-`bun install --frozen-lockfile --ignore-scripts --backend=copyfile --cache-dir=<cache dédié>`,
-dans le candidat, **sous bac à sable**.
+Toutes les installations passent
+`--ignore-scripts --backend=copyfile --cache-dir=<cache dédié>`, **dans le
+candidat**, **sous bac à sable**.
 
-`--ignore-scripts` est l'invariant central : pendant la récupération, **seul le
-code de Bun s'exécute** (téléchargement, extraction). Il n'existe donc **aucune
-phase où du code tiers tourne avec le réseau ou le cache ouverts**. Deux
-exigences antérieures deviennent sans objet :
+| Temps                                 | Commande                                                                                                | Rôle                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1. base                               | `bun install --frozen-lockfile --ignore-scripts`                                                        | matérialise l'état déterministe du commit. **Exige `bun.lock` présent dans le tree** |
+| 2. génération contrôlée               | versions épinglées écrites dans le catalog du candidat, puis `bun install --ignore-scripts` (non gelée) | régénère `bun.lock`                                                                  |
+| 3. validation + réinstallation propre | diff du lockfile inspecté, puis `bun install --frozen-lockfile --ignore-scripts`                        | prouve que le lockfile produit est réellement installable                            |
 
-- « cache inaccessible seulement après l'installation » — le cache n'est jamais
-  atteignable par du code tiers, puisqu'il n'y en a pas qui s'exécute ;
-- « réseau limité au registre » — inexprimable dans un conteneur ordinaire comme
-  dans `sandbox-exec`, et **inutile** : réseau ouvert pour la seule
-  récupération, **entièrement coupé** ensuite.
+Chaque temps est vérifié, pas supposé :
 
-**Vérifié sur ce dépôt, sans aucun script** : `ngc --strictTemplates` sort en 0
-(12 s) et `nx run backoffice-angular:build:development` sort en 0 (16 s) avec
+- **`bun.lock` doit être présent** — avec un lockfile absent,
+  `--frozen-lockfile` **ne échoue pas** : il résout et installe. La « base
+  déterministe » serait alors vide de sens. C'est une condition d'entrée du
+  temps 1, pas un détail.
+- **Le temps 2 est nécessaire** — muter `package.json` puis relancer
+  `--frozen-lockfile` échoue : `lockfile had changes, but lockfile is frozen`
+  (exit 1, vérifié).
+- **Le temps 3 est nécessaire** — sans revalidation, on publierait un lockfile
+  jamais prouvé installable. Le **diff** est inspecté avant : seuls les paquets
+  attendus doivent apparaître.
+
+### Réseau : résolution ouverte, exécution fermée
+
+`--ignore-scripts` neutralise les scripts du projet **et** ceux d'une dépendance
+explicitement listée en `trustedDependencies` — vérifié **avec témoin** :
+
+| Scénario                                             | Marqueur                            |
+| ---------------------------------------------------- | ----------------------------------- |
+| dépendance non fiable, sans le drapeau               | absent (défaut sûr de Bun)          |
+| **témoin** — `trustedDependencies` + sans le drapeau | **présent** : la fixture fonctionne |
+| `trustedDependencies` + `--ignore-scripts`           | **absent**                          |
+
+Sans le témoin, l'absence de marqueur n'aurait rien prouvé.
+
+Il n'existe donc **aucune phase où du code tiers s'exécute**. Le réseau peut
+rester ouvert pendant les phases de **résolution** (temps 1, 2, 3) sans rien
+exposer, et il est **entièrement coupé** pour toute phase d'**exécution** —
+schematic, probes, LLM. La formulation antérieure « réseau ouvert seulement pour
+la récupération initiale » était fausse : le temps 2 rouvre nécessairement la
+résolution. L'exigence « réseau limité au registre », qu'aucun conteneur
+ordinaire ni `sandbox-exec` ne sait exprimer, est sans objet.
+
+**Vérifié sans aucun script** : `ngc --strictTemplates` sort en 0 (12 s) et
+`nx run backoffice-angular:build:development` sort en 0 (16 s) avec
 `dist/apps/backoffice-angular/browser/styles.css` émis — la preuve
-`compiled-css-rule` est donc réalisable dans ces conditions.
+`compiled-css-rule` reste réalisable dans ces conditions.
 
 `--backend=copyfile` reste obligatoire (sans lui Bun relie `node_modules` au
 cache : `hardlink` sous Linux, `clonefile` sous macOS), global store désactivé,
-cache en lecture seule pendant schematic / probes / LLM — défense en profondeur.
-Le cache **partagé** redevient acceptable, ce qui ramène l'installation de 72 s
-à froid à **19 s à chaud**.
+cache en lecture seule pendant schematic / probes / LLM. Le cache **partagé**
+redevient acceptable, ce qui ramène l'installation de 72 s à froid à **19 s à
+chaud**.
 
-`--ignore-scripts` neutralise aussi les scripts du dépôt (`preinstall`,
-`prepare`) : les contrôles correspondants (`check-engines`) sont exécutés par
-`add-library` lui-même, jamais hérités de l'installation. Si une dépendance
-exigeait un jour un script de cycle de vie, ce serait une **exception nommée,
-justifiée et confinée** — phase dédiée, sans réseau — jamais un assouplissement
-global. La suite adversariale contient une fixture à `postinstall` dont le
-marqueur doit rester **absent**.
+`--ignore-scripts` neutralisant aussi `preinstall` / `prepare` du dépôt, les
+contrôles correspondants (`check-engines`) sont exécutés par `add-library`
+lui-même, jamais hérités de l'installation. Une dépendance exigeant un script
+sera une **exception nommée, justifiée et confinée**, jamais un assouplissement.
 
 ### Confinement OS — obligatoire, partout
 
@@ -245,26 +305,41 @@ irréproductible. D'où :
 Les recettes utilisent déjà `nx g @angular/material:ng-add` et non `ng add` : la
 collection est locale, donc exécutable sans résolution distante.
 
-### Cycle de vie du candidat — bail journalisé
+### Cycle de vie du candidat — machine d'états du bail
 
 Un `SIGKILL` empêche tout `finally` ou `dispose()` : « zéro résidu immédiat »
-n'est pas un contrat tenable. Le contrat réel est un **bail**. Et « propriétaire
-mort détecté, purge sûre » n'est pas assez précis : un PID réutilisé ou un
-journal altéré ferait supprimer le mauvais répertoire. Conditions
-**cumulatives** de purge :
+n'est pas un contrat tenable. Et une liste de conditions n'est pas un protocole
+: elle ne dit pas quoi faire d'un candidat trouvé **en cours de création**. Le
+contrat est donc une **machine d'états**, journalisée par `rename` atomique.
 
-| Condition    | Règle                                                                                                                                     |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Identité     | identifiant **aléatoire, non réutilisable** (≥ 128 bits), jamais dérivé d'un compteur ni d'un PID                                         |
-| Propriétaire | **PID + instant de démarrage du processus** (`ps -o lstart= -p <pid>`, vide si le PID n'existe pas — vérifié) ; un PID seul ne suffit pas |
-| Emplacement  | chemin **canonique** sous une racine temporaire dédiée à l'outil ; refus si un ancêtre est un lien symbolique                             |
-| Propriété    | propriétaire et permissions attendus, vérifiés avant toute suppression                                                                    |
-| Marqueur     | fichier d'identité **dans** le candidat, contenant l'identifiant du bail                                                                  |
-| Concordance  | **aucune suppression** si journal et marqueur ne concordent pas — le candidat est alors signalé, jamais effacé                            |
+| État          | Signification                                   | Transition légale                                                |
+| ------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
+| `creating`    | bail écrit, matérialisation en cours            | → `active` (matérialisation complète et vérifiée)                |
+| `active`      | candidat utilisable, propriétaire vivant        | → `releasing`                                                    |
+| `releasing`   | travail terminé, purge en cours                 | → `released`                                                     |
+| `released`    | purge achevée, répertoire absent                | terminal                                                         |
+| `orphaned`    | propriétaire mort, états `creating` ou `active` | → `releasing` **si** toutes les conditions d'identité concordent |
+| `quarantined` | journal et marqueur discordent                  | terminal — **jamais** purgé automatiquement, signalé             |
 
-Un candidat dont le propriétaire est mort et dont toutes les conditions
-concordent est purgé au démarrage suivant. Sinon il est laissé en place et
-rapporté : mieux vaut un résidu qu'une suppression erronée.
+Un candidat trouvé en `creating` est **toujours** incomplet : il part en
+`orphaned` puis en purge, jamais en `active`. Un candidat en `releasing` dont le
+propriétaire est mort reprend la purge, opération idempotente.
+
+Conditions **cumulatives** avant toute suppression :
+
+| Condition    | Règle                                                                                                                                                    |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identité     | identifiant **aléatoire non réutilisable** (≥ 128 bits), jamais dérivé d'un compteur ni d'un PID                                                         |
+| Propriétaire | **PID + instant de démarrage** (`ps -o lstart= -p <pid>` — sortie vide si le PID n'existe pas, vérifié) ; un PID seul ne suffit pas, il est réutilisable |
+| Emplacement  | chemin **canonique** sous une racine temporaire dédiée ; refus si un ancêtre est un lien symbolique                                                      |
+| Propriété    | propriétaire et permissions attendus                                                                                                                     |
+| Marqueur     | fichier d'identité **dans** le candidat, portant l'identifiant du bail                                                                                   |
+| Concordance  | **aucune suppression** si journal et marqueur discordent → `quarantined`                                                                                 |
+
+**Les tests injectent un crash à chaque transition**, pas seulement sur le PID
+et le marqueur : `creating → active`, `active → releasing`,
+`releasing → released`. Chaque injection doit laisser un état repris
+correctement au démarrage suivant, sans jamais supprimer le mauvais répertoire.
 
 ## P0 nº 2 — Verrous et transaction
 
@@ -449,26 +524,72 @@ pas validé.
 
 Chaque étape ≥ 6 : branche dédiée, PR, CI verte, revue, validation, puis merge.
 
-### Suite adversariale du bac à sable (préalable à l'étape 6)
+### Suite adversariale (préalable à toute implémentation d'`add-library`)
 
-Identique pour les deux backends, chaque cas devant **échouer** :
+Chaque cas doit **échouer avant le correctif** et **passer après** — sinon il ne
+prouve rien. Les cas de confinement sont exécutés **à l'identique sur les deux
+backends** (conteneur Linux, `sandbox-exec` macOS).
 
-| Cas                                                     | Attendu                                                |
-| ------------------------------------------------------- | ------------------------------------------------------ |
-| écriture hors candidat (chemin absolu)                  | refusée par l'OS                                       |
-| lecture d'un chemin du dépôt réel                       | refusée ou hors d'atteinte                             |
-| lien symbolique d'évasion créé puis suivi               | refusé                                                 |
-| sous-processus tentant les mêmes accès                  | refusé (le confinement est hérité)                     |
-| accès réseau en phase hors ligne                        | refusé                                                 |
-| lecture d'une variable de credential                    | absente de l'environnement                             |
-| `bunx <paquet-absent>`                                  | refusé — binaire résolu explicitement dans le candidat |
-| cache de paquets pendant schematic / probes             | en lecture seule, jamais inscriptible                  |
-| dépendance fixture à `postinstall` écrivant un marqueur | marqueur **absent** (`--ignore-scripts` effectif)      |
-| entrée de tree en mode `160000` ou type inattendu       | matérialisation refusée                                |
-| lien symbolique dont la cible sort du candidat          | refusé                                                 |
-| `.git/info/attributes` hostile dans le dépôt            | sans effet (matérialisation depuis le tree)            |
-| PID réutilisé pointant sur un autre processus           | purge refusée (instant de démarrage discordant)        |
-| marqueur du candidat ne concordant pas avec le journal  | purge refusée, candidat signalé                        |
+**Matérialisation** — le tree comme autorité :
+
+| Cas                                                         | Attendu                                                                                    |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `refs/replace/<oid>` actif substituant un contenu           | contenu **vrai** matérialisé (`--no-replace-objects`) ; le test doit échouer sans l'option |
+| objet manquant + clone partiel                              | échec, **aucun accès réseau** (`--no-lazy-fetch`)                                          |
+| tree contenant `x → /tmp` (lien d'évasion)                  | refus à la matérialisation                                                                 |
+| tree à entrées dupliquées / conflit nom-type (`git mktree`) | refus à la matérialisation                                                                 |
+| entrée en mode `160000` ou type non-`blob` à une feuille    | refus                                                                                      |
+| chemin en UTF-8 invalide                                    | refus                                                                                      |
+| deux chemins se normalisant identiquement (NFC/NFD)         | refus                                                                                      |
+| collision insensible à la casse                             | refus                                                                                      |
+| segment `.git` sous toute casse                             | refus                                                                                      |
+| `.git/info/attributes` hostile dans le dépôt                | **sans effet** (aucune machinerie d'attributs)                                             |
+
+**Confinement** — l'OS comme frontière :
+
+| Cas                                                                                   | Attendu                                                |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| écriture hors candidat (chemin absolu)                                                | refusée par l'OS                                       |
+| **exécutant créant un lien d'évasion après matérialisation, puis écrivant à travers** | refusé par le bac à sable                              |
+| lecture d'un chemin du dépôt réel                                                     | refusée ou hors d'atteinte                             |
+| sous-processus tentant les mêmes accès                                                | refusé (confinement hérité)                            |
+| accès réseau en phase d'exécution                                                     | refusé                                                 |
+| lecture d'une variable de credential                                                  | absente de l'environnement                             |
+| `bunx <paquet-absent>`                                                                | refusé — binaire résolu explicitement dans le candidat |
+| cache de paquets pendant schematic / probes                                           | en lecture seule                                       |
+| aucun backend de bac à sable disponible                                               | **échec avant** toute exécution tierce                 |
+
+Les deux menaces de lien symbolique sont **deux tests distincts** : un tree
+hostile (refusé à la matérialisation) et un exécutant hostile (refusé par le bac
+à sable). Elles ne se recouvrent pas.
+
+**Scripts de cycle de vie** — discriminant, avec témoins :
+
+| Scénario                                                               | Marqueur attendu     |
+| ---------------------------------------------------------------------- | -------------------- |
+| script `preinstall` / `prepare` du projet, **sans** `--ignore-scripts` | **présent** (témoin) |
+| dépendance `trustedDependencies`, **sans** `--ignore-scripts`          | **présent** (témoin) |
+| les deux, **avec** `--ignore-scripts`                                  | **absents**          |
+
+**Protocole Bun** :
+
+| Cas                                            | Attendu                                                                       |
+| ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| `bun.lock` absent du tree                      | échec explicite au temps 1 (sinon `--frozen-lockfile` résout silencieusement) |
+| `package.json` muté puis `--frozen-lockfile`   | échec `lockfile had changes`                                                  |
+| diff du lockfile contenant un paquet inattendu | refus                                                                         |
+| lockfile régénéré puis revalidé                | succès                                                                        |
+
+**Bail** — crash injecté à **chaque** transition :
+
+| Cas                                      | Attendu                                         |
+| ---------------------------------------- | ----------------------------------------------- |
+| crash en `creating`                      | reprise → `orphaned` → purge ; jamais `active`  |
+| crash en `active`                        | reprise → `orphaned` → purge                    |
+| crash en `releasing`                     | purge reprise (idempotente)                     |
+| PID réutilisé par un autre processus     | purge refusée (instant de démarrage discordant) |
+| marqueur discordant du journal           | `quarantined`, signalé, **jamais** supprimé     |
+| ancêtre du chemin devenu lien symbolique | purge refusée                                   |
 
 ## Coordination — session `cmz-platform-42` (renderer)
 

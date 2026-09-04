@@ -102,31 +102,76 @@ avec candidat et contrôle de fraîcheur).
 **1. Isolation — matérialisation depuis le tree, ni worktree ni archive.** Tout
 exécutant tiers — schematic, script `reference-derived`, probe
 `runtime_acceptance`, agent LLM — s'exécute dans un **workspace complet
-matérialisé hors du dépôt** à partir du tree du commit `C` : `git ls-tree -r -z`
-pour l'inventaire (chemin, **mode**, type, **OID**), un seul
-`git cat-file --batch` pour les contenus, écriture des **octets exacts du
-blob**. Modes admis : `100644`, `100755`, `120000` ; tout autre — dont `160000`
-(sous-module) — fait échouer la commande. Un lien symbolique n'est créé que si
-sa cible résout **à l'intérieur** du candidat. Ni `git worktree` (il écrit dans
-`.git/worktrees` du dépôt réel — écriture invisible à `git status --porcelain` —
-et place dans le candidat un `.git` pointant vers le dépôt), ni `git archive`
-(ses attributs, lisibles depuis `.git/info/attributes` hors commit, peuvent
-omettre ou transformer des entrées). Le candidat a ses **propres dépendances** —
-**aucun `node_modules` partagé, lié ou en lien dur**.
+matérialisé hors du dépôt** à partir du tree du commit `C`, lu avec
+`git --no-replace-objects --no-lazy-fetch` : `ls-tree -r -z` pour l'inventaire
+(chemin, **mode**, type, **OID**), un seul `cat-file --batch` pour les contenus,
+écriture des **octets exacts du blob**.
 
-**2. Aucun script tiers, donc aucun réseau pendant l'exécution.**
-`bun install --frozen-lockfile --ignore-scripts` : pendant la récupération, seul
-le code de Bun s'exécute (téléchargement, extraction). **Il n'y a donc aucune
-phase où du code tiers tourne avec le réseau ouvert**, et l'exigence « réseau
-limité au registre » — qu'aucun conteneur ordinaire ni `sandbox-exec` ne sait
-exprimer — devient inutile : réseau **ouvert** pour la seule récupération,
-**coupé** pour schematic, probes et LLM. Vérifié sur ce dépôt : sans aucun
-script, `ngc --strictTemplates` sort en 0 et `nx run build:development` sort en
-0 avec le CSS émis. `--ignore-scripts` neutralisant aussi les scripts du dépôt
-lui-même (`preinstall`, `prepare`), les contrôles correspondants sont exécutés
-par l'outil, pas hérités de l'installation. Si une dépendance exigeait un jour
-un script de cycle de vie, ce sera une **exception nommée, justifiée et
-confinée** (phase dédiée, sans réseau), jamais un assouplissement global.
+Ces deux options ne sont pas décoratives. Sans `--no-replace-objects`, une ref
+`refs/replace/<oid>` fait renvoyer par `cat-file` un **contenu falsifié** —
+vérifié : `CONTENU FALSIFIE` au lieu de `VRAI CONTENU`. Sans `--no-lazy-fetch`,
+un clone partiel irait chercher un objet manquant **sur le réseau**, pendant une
+phase censée être hors ligne. `refs/replace` et le lazy-fetch appartiennent à la
+même famille que `.git/info/attributes` : des mécanismes **hors commit** qui
+changent silencieusement ce qui est lu. Éliminer cette famille exige de la
+traiter mécanisme par mécanisme, jamais par généralisation.
+
+Ni `git worktree` (il écrit dans `.git/worktrees` du dépôt réel — écriture
+invisible à `git status --porcelain` — et place dans le candidat un `.git`
+pointant vers le dépôt), ni `git archive` (ses attributs, lisibles depuis
+`.git/info/attributes` hors commit, peuvent omettre ou transformer des entrées).
+
+**Les chemins de `ls-tree -z` sont des octets**, jamais des chaînes. Politique
+**fail-closed**, appliquée avant toute écriture :
+
+| Cas                                                            | Règle                                                                                                                 |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| UTF-8 invalide                                                 | refus                                                                                                                 |
+| Deux chemins distincts se normalisant identiquement (NFC/NFD)  | refus                                                                                                                 |
+| Collision insensible à la casse                                | refus — le système de fichiers cible peut l'être (vérifié sur ce Mac)                                                 |
+| Segment `.git` **sous toute casse** ou toute forme équivalente | refus                                                                                                                 |
+| Mode hors `100644` / `100755` / `120000` — dont `160000`       | refus                                                                                                                 |
+| Type autre que `blob` à une feuille                            | refus                                                                                                                 |
+| Entrées dupliquées ou conflit nom/type dans un même tree       | refus — non atteignable par l'index, mais **constructible par plomberie** (`git mktree` l'accepte, `fsck` le signale) |
+| Lien symbolique dont la cible ne résout pas dans le candidat   | refus                                                                                                                 |
+
+L'écriture elle-même crée chaque répertoire explicitement et refuse tout
+composant déjà présent en non-répertoire : `O_EXCL` ne protège que la dernière
+composante, pas la traversée — vérifié, `writeFileSync` à travers un répertoire
+symlinké **écrit hors du candidat** malgré `flag: 'wx'`.
+
+Le candidat a ses **propres dépendances** — **aucun `node_modules` partagé, lié
+ou en lien dur**.
+
+**2. Aucun script tiers ; le réseau n'est ouvert qu'en résolution.** Toute
+installation passe `--ignore-scripts`, ce qui neutralise les scripts du projet
+**et** ceux d'une dépendance explicitement listée en `trustedDependencies` —
+vérifié avec témoin : la fixture s'exécute sans le drapeau, jamais avec. Il
+n'existe donc **aucune phase où du code tiers s'exécute**, et le réseau peut
+rester ouvert pendant les phases de **résolution** sans exposer quoi que ce
+soit. Il est **entièrement coupé** pour toute phase d'**exécution** — schematic,
+probes, LLM. L'exigence antérieure « réseau limité au registre », qu'aucun
+conteneur ordinaire ni `sandbox-exec` ne sait exprimer, est donc sans objet.
+
+Le protocole Bun se déroule en **trois temps distincts** :
+
+1. **base** — `bun install --frozen-lockfile --ignore-scripts`. Le `bun.lock`
+   **doit être présent dans le tree** : vérifié, avec un lockfile absent
+   `--frozen-lockfile` ne échoue pas, il résout et installe — la « base
+   déterministe » serait alors vide de sens ;
+2. **génération contrôlée** — après écriture des versions épinglées dans le
+   catalog du candidat, `bun install --ignore-scripts` (non gelée) régénère
+   `bun.lock`. Vérifié : muter `package.json` puis relancer `--frozen-lockfile`
+   échoue avec `lockfile had changes, but lockfile is frozen` ;
+3. **validation du diff, puis réinstallation propre** — le diff du lockfile est
+   inspecté (seuls les paquets attendus apparaissent), puis
+   `bun install --frozen-lockfile --ignore-scripts` **revalide** le lockfile
+   produit. Sans ce troisième temps, on publierait un lockfile jamais prouvé
+   installable.
+
+Si une dépendance exigeait un jour un script de cycle de vie, ce sera une
+**exception nommée, justifiée et confinée** — phase dédiée, sans réseau — jamais
+un assouplissement global.
 
 **3. Confinement OS obligatoire, partout.** Aucun code tiers ne s'exécute sans
 bac à sable du système : **conteneur** en CI, **`sandbox-exec`** en local macOS.
@@ -192,11 +237,20 @@ vérification a posteriori.
 **Supprimer la menace vaut mieux que la contenir.** Le cache exposé pendant
 l'installation et le « réseau limité au registre » étaient deux faces du même
 fait : du code tiers s'exécutait pendant que le réseau et le cache étaient
-ouverts. `--ignore-scripts` supprime ce fait. La mesure le confirme sur ce dépôt
+ouverts. `--ignore-scripts` supprime ce fait — y compris pour une dépendance
+explicitement `trustedDependencies`, vérifié avec témoin. La mesure le confirme
 : sans aucun script, `ngc --strictTemplates` et `nx run build:development`
 sortent en 0, avec le CSS émis. Il n'y a donc plus de fenêtre à contenir, ni de
 règle réseau fine à exprimer — et le cache partagé redevient acceptable, ce qui
 ramène l'installation de 72 s à froid à 19 s à chaud.
+
+**Une classe de menaces ne se ferme pas par généralisation.** Passer au tree a
+éliminé les attributs Git, et j'en ai conclu à tort que l'OID devenait
+l'autorité de contenu : `refs/replace` la détourne, le lazy-fetch la fait
+dépendre du réseau. Une correction locale ne vaut que pour le mécanisme qu'elle
+vise ; chaque autre mécanisme hors commit doit être fermé nommément, et prouvé
+fermé. Le même raisonnement vaut pour l'écriture : `O_EXCL` protège la dernière
+composante et non la traversée — établi par preuve, pas par intuition.
 
 **Un confinement partiel n'est pas un confinement.** « Prévention en CI,
 meilleur effort en local » laisse un schematic cassé ou hostile corrompre le
@@ -254,9 +308,10 @@ agent est celle que le système de fichiers et le processus imposent. Le
 - **Coût mesuré** : matérialisation 0,6 s, installation gelée
   `--ignore-scripts --backend=copyfile` **19 s à chaud** (72 s si le cache est
   froid), `ngc --strictTemplates` 12 s, `nx build:development` 16 s, auxquels
-  s'ajoutent schematic et preuve navigateur. Une commande qui tient les six
-  promesses se compte en **minutes**, pas en secondes. `add-library` est un
-  outil de dev/CI, jamais interactif.
+  s'ajoutent la génération et la revalidation du lockfile, le schematic et la
+  preuve navigateur. Une commande qui tient les six promesses se compte en
+  **minutes**, pas en secondes. `add-library` est un outil de dev/CI, jamais
+  interactif.
 - **Dépôt entièrement propre exigé** pour la V1 : toute entrée non commitée fait
   échouer la commande. Une fermeture exacte sur les seules entrées du `plan_id`
   pourra venir plus tard ; contrôler « juste l'app » serait faux, car la
