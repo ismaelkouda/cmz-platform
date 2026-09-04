@@ -81,6 +81,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0038](./adr/0038-nature-produit-public-multi-locataire.md) | Nature de produit : exposition publique et multi-location |
 | [0039](./adr/0039-frontiere-contractuelle-conception-realisation-llm.md) | Frontière contractuelle entre conception et réalisation par LLM |
 | [0041](./adr/0041-angular-material-tailwind-defaults.md)    | Angular Material + Tailwind comme défauts d'app Angular  |
+| [0042](./adr/0042-modele-transactionnel-mutations-workspace.md) | Modèle transactionnel et d'isolation des mutations de workspace |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
