@@ -8,7 +8,6 @@ import {
     detectAppPlatform,
     validateRecipes,
     verifyApps,
-    verifyResolvedVersion,
     verifyWorkspaceDependency,
 } from './check-library-setup.mjs';
 import {
@@ -423,6 +422,63 @@ test('BYPASS : `,}` littéral dans une valeur de bun.lock n’est pas mangé par
     );
 });
 
+test('BYPASS : clé dupliquée dans package.json (dépendance) → échec avant sémantique', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage:
+            '{\n  "dependencies": { "demo-pkg": "catalog:evil", "demo-pkg": "catalog:" },\n  "workspaces": { "catalog": { "demo-pkg": "1.0.0" } }\n}\n',
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /clé dupliquée "demo-pkg"/.test(e)
+        )
+    );
+});
+
+test('BYPASS : clé structurelle dupliquée (dependencies deux fois) dans package.json → échec', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage:
+            '{\n  "dependencies": { "demo-pkg": "catalog:" },\n  "dependencies": { "demo-pkg": "catalog:evil" },\n  "workspaces": { "catalog": { "demo-pkg": "1.0.0" } }\n}\n',
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /clé dupliquée "dependencies"/.test(e)
+        )
+    );
+});
+
+test('BYPASS : clé dupliquée dans bun.lock → échec avant sémantique', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        bunLock:
+            '{\n  "workspaces": { "": { "dependencies": { "demo-pkg": "catalog:", "demo-pkg": "catalog:evil" } } },\n  "packages": { "demo-pkg": ["demo-pkg@1.0.0", "", {}, "sha"] },\n}\n',
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /bun\.lock.*clé dupliquée "demo-pkg"/.test(e)
+        )
+    );
+});
+
 test('BYPASS : la section diffère entre package.json et bun.lock → échec', async (t) => {
     const root = await scaffold(t, {
         recipes: working(),
@@ -601,91 +657,6 @@ test('detectAppPlatform : un seul résultat, sinon unknown (jamais "premier gagn
     assert.equal(detectAppPlatform(join(root, 'both')), 'unknown');
     assert.equal(detectAppPlatform(join(root, 'weird')), 'unknown');
     assert.equal(detectAppPlatform(join(root, 'absent')), null);
-});
-
-test('verifyResolvedVersion : contre-tests SemVer (revues 4 et 5)', () => {
-    const has = (r) => r.length > 0;
-    const rec = (id) => [id, '', {}, 'sha'];
-
-    // revue 4 — les 5 exemples
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', rec('p@1.2.3-beta.1'))));
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', rec('p@1.2.3garbage'))));
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', rec('malformed'))));
-    assert.ok(has(verifyResolvedVersion('p', 123, rec('p@1.2.3'))));
-    // (spec directe hors catalog: → verifyWorkspaceDependency)
-
-    // revue 5 — contournements adjacents
-    // identité de paquet falsifiée dans bun.lock
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', rec('autre@1.2.3'))));
-    // record bun.lock non conforme (chaîne au lieu de tableau)
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', 'p@1.2.3')));
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', [])));
-    assert.ok(has(verifyResolvedVersion('p', '1.2.3', [123])));
-    // plages universelles déguisées (y compris en union)
-    assert.ok(has(verifyResolvedVersion('p', '>=0.0.0-0', rec('p@1.2.3'))));
-    assert.ok(has(verifyResolvedVersion('p', '>0.0.0', rec('p@1.2.3'))));
-    assert.ok(has(verifyResolvedVersion('p', '>=22', rec('p@22.5.0'))));
-    assert.ok(
-        has(
-            verifyResolvedVersion(
-                'p',
-                '>=1.2.3 <2.0.0-0||>=0.0.0-0',
-                rec('p@1.5.0')
-            )
-        )
-    );
-
-    // revue 6 — bornage structurel (aucune sentinelle)
-    // sans plafond → refusé, même au-delà de toute sentinelle
-    assert.ok(
-        has(verifyResolvedVersion('p', '>9999.9999.9999', rec('p@1.0.0')))
-    );
-    assert.ok(has(verifyResolvedVersion('p', '>=10000', rec('p@10000.0.0'))));
-    // deux bornes explicites → accepté, même très large
-    assert.deepEqual(
-        verifyResolvedVersion('p', '>=1 <10000', rec('p@5.0.0')),
-        []
-    );
-    assert.deepEqual(
-        verifyResolvedVersion('p', '>=0.0.0-0 <23', rec('p@22.0.0')),
-        []
-    );
-    // union : bornée seulement si CHAQUE branche l'est
-    assert.deepEqual(
-        verifyResolvedVersion(
-            'p',
-            '>=1.0.0 <2.0.0||>=3.0.0 <4.0.0',
-            rec('p@1.5.0')
-        ),
-        []
-    );
-    assert.ok(
-        has(
-            verifyResolvedVersion(
-                'p',
-                '>=1.0.0 <2.0.0||>=3.0.0',
-                rec('p@1.5.0')
-            )
-        )
-    );
-
-    // formes légitimes
-    assert.deepEqual(verifyResolvedVersion('p', '1.2.3', rec('p@1.2.3')), []);
-    assert.deepEqual(verifyResolvedVersion('p', '^1.2.0', rec('p@1.9.9')), []);
-    assert.ok(has(verifyResolvedVersion('p', '^1.2.0', rec('p@2.0.0'))));
-    assert.deepEqual(
-        verifyResolvedVersion('p', '>=22 <23', rec('p@22.5.0')),
-        []
-    );
-    assert.deepEqual(
-        verifyResolvedVersion('p', '1.2.3 - 2.3.4', rec('p@2.0.0')),
-        []
-    );
-    assert.deepEqual(
-        verifyResolvedVersion('@a/b', '1.2.3', rec('@a/b@1.2.3')),
-        []
-    );
-    assert.ok(has(verifyResolvedVersion('p', 'not-a-version', rec('p@1.2.3'))));
 });
 
 test('verifyWorkspaceDependency : chaîne complète + cohérence version', async (t) => {

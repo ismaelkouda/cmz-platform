@@ -9,7 +9,11 @@
  * nom concorde, et une version qui satisfait la version/plage du catalog
  * (bornée). Tout écart → erreur (fail-closed).
  */
-import { parse as parseJsoncSyntax, printParseErrorCode } from 'jsonc-parser';
+import {
+    parse as parseJsoncSyntax,
+    printParseErrorCode,
+    visit as visitJsonc,
+} from 'jsonc-parser';
 import semver from 'semver';
 
 export const DEP_FIELDS = [
@@ -20,13 +24,55 @@ export const DEP_FIELDS = [
 ];
 
 /**
- * bun.lock est du JSONC (virgules traînantes). Parseur syntaxique réel — jamais
- * une regex qui pourrait altérer silencieusement une valeur de chaîne (ex.
- * `"catalog:,}"` → `"catalog:}"`). Toute erreur de syntaxe → exception.
+ * Détecte les clés dupliquées dans TOUT objet du texte, à n'importe quelle
+ * profondeur (`JSON.parse` comme `jsonc-parser` gardent silencieusement la
+ * dernière — un `package.json` / `bun.lock` corrompu ou malveillant peut ainsi
+ * masquer la vraie déclaration). Scope par objet : une même clé dans deux
+ * éléments frères d'un tableau n'est PAS une duplication.
+ * @returns {{ key: string, offset: number }[]}
  */
-export function parseJsonc(raw, label = 'JSONC') {
+export function findDuplicateKeys(
+    rawText,
+    { allowTrailingComma = false } = {}
+) {
+    const found = [];
+    const stack = [];
+    visitJsonc(
+        rawText,
+        {
+            onObjectBegin: () => stack.push(new Set()),
+            onObjectProperty: (key, offset) => {
+                const seen = stack[stack.length - 1];
+                if (seen.has(key)) found.push({ key, offset });
+                else seen.add(key);
+            },
+            onObjectEnd: () => stack.pop(),
+        },
+        { allowTrailingComma }
+    );
+    return found;
+}
+
+/**
+ * Parse strictement, en ÉCHOUANT AVANT toute validation sémantique si :
+ *   - un objet contient une clé dupliquée (récursif) ;
+ *   - la syntaxe est invalide.
+ * Sert pour package.json (`allowTrailingComma: false`) et bun.lock (`true`,
+ * JSONC — jamais une regex qui altérerait une valeur de chaîne).
+ */
+export function parseWithoutDuplicateKeys(
+    rawText,
+    label,
+    { allowTrailingComma = false } = {}
+) {
+    const duplicates = findDuplicateKeys(rawText, { allowTrailingComma });
+    if (duplicates.length > 0) {
+        throw new Error(
+            `${label} : clé dupliquée "${duplicates[0].key}" (offset ${duplicates[0].offset})`
+        );
+    }
     const errors = [];
-    const value = parseJsoncSyntax(raw, errors, { allowTrailingComma: true });
+    const value = parseJsoncSyntax(rawText, errors, { allowTrailingComma });
     if (errors.length > 0) {
         const first = errors[0];
         throw new Error(
@@ -34,6 +80,11 @@ export function parseJsonc(raw, label = 'JSONC') {
         );
     }
     return value;
+}
+
+/** bun.lock : JSONC, clés dupliquées interdites. */
+export function parseJsonc(raw, label = 'JSONC') {
+    return parseWithoutDuplicateKeys(raw, label, { allowTrailingComma: true });
 }
 
 /** Sections de `container` (package.json / manifeste bun.lock) où `packageName` figure. */
@@ -67,30 +118,28 @@ export function parseLockRecord(packageName, lockRecord) {
 /**
  * Une valeur de catalog en plage est acceptable seulement si CHAQUE branche
  * `||` possède structurellement une borne inférieure ET une borne supérieure
- * (ou est une version exacte). Analyse la forme normalisée par
- * `semver.validRange` — qui réécrit tout (`^`, `~`, `1.x`, `A - B`) en
- * comparateurs `>=`/`>`/`<=`/`<` — puis classe chaque comparateur. Aucune
- * valeur sentinelle. `*` (ou `x`) → non borné.
- * @param {string} normalizedRange sortie de `semver.validRange`
+ * (ou est une version exacte). Inspecte directement les objets `Comparator` de
+ * `new semver.Range(value).set` — aucune re-tokenisation d'une chaîne, aucune
+ * valeur sentinelle, robuste à la sérialisation interne de `semver`. Le
+ * comparateur `ANY` (`*`) ou une plage semver ne fixe aucune borne (ex.
+ * `>=0.0.0-0 <23` → semver simplifie en `<23`, donc non borné en bas).
  */
-export function catalogRangeIsBounded(normalizedRange) {
-    if (
-        typeof normalizedRange !== 'string' ||
-        normalizedRange === '' ||
-        normalizedRange === '*'
-    ) {
+export function catalogRangeIsBounded(catalogValue) {
+    let range;
+    try {
+        range = new semver.Range(catalogValue, { includePrerelease: true });
+    } catch {
         return false;
     }
-    for (const branch of normalizedRange.split('||')) {
-        const tokens = branch.trim().split(/\s+/).filter(Boolean);
-        if (tokens.length === 0) return false;
+    if (range.set.length === 0) return false;
+    for (const comparators of range.set) {
         let hasLower = false;
         let hasUpper = false;
-        for (const token of tokens) {
-            if (token === '*') return false;
-            const operator = /^(>=|<=|>|<)/.exec(token)?.[1] ?? '';
+        for (const comparator of comparators) {
+            if (comparator.semver === semver.Comparator.ANY) return false;
+            const operator = comparator.operator;
             if (operator === '') {
-                hasLower = true; // comparateur nu = version exacte : deux bornes
+                hasLower = true; // comparateur exact : deux bornes
                 hasUpper = true;
             } else if (operator === '>' || operator === '>=') {
                 hasLower = true;
@@ -146,7 +195,7 @@ export function verifyResolvedVersion(packageName, catalogValue, lockRecord) {
             `${packageName} : catalog "${catalogValue}" n'est ni une version ni une plage SemVer valide`,
         ];
     }
-    if (!catalogRangeIsBounded(range)) {
+    if (!catalogRangeIsBounded(catalogValue)) {
         return [
             `${packageName} : catalog "${catalogValue}" est une plage non bornée — chaque branche doit avoir une borne basse ET haute (ou être exacte)`,
         ];

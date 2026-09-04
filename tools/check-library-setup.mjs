@@ -36,6 +36,7 @@ import { fileURLToPath } from 'node:url';
 import {
     declaringFields,
     parseJsonc,
+    parseWithoutDuplicateKeys,
     verifyResolvedVersion,
 } from './check-library-setup-deps.mjs';
 import { validateJsonSchema } from './generator-platform/validate-ir.mjs';
@@ -123,8 +124,9 @@ function readTextUnder(rootAbs, relPath) {
     return readFileSync(resolved.real, 'utf8');
 }
 
+/** JSON strict confiné, clés dupliquées interdites (échec avant toute sémantique). */
 function readJsonUnder(rootAbs, relPath) {
-    return JSON.parse(readTextUnder(rootAbs, relPath));
+    return parseWithoutDuplicateKeys(readTextUnder(rootAbs, relPath), relPath);
 }
 
 /** @returns {null | string} null = invariant satisfait ; string = raison de l'échec. */
@@ -196,7 +198,10 @@ export function validateRecipes(rootAbs = ROOT) {
 
         let recipe;
         try {
-            recipe = JSON.parse(readFileSync(resolved.real, 'utf8'));
+            recipe = parseWithoutDuplicateKeys(
+                readFileSync(resolved.real, 'utf8'),
+                relativePath
+            );
         } catch (error) {
             errors.push(`${relativePath}: JSON invalide (${error.message})`);
             continue;
@@ -342,8 +347,9 @@ function validateRecipeCoherence(recipe, relativePath, root, errors) {
 export function detectAppPlatform(appAbsRoot) {
     let project;
     try {
-        project = JSON.parse(
-            readFileSync(join(appAbsRoot, 'project.json'), 'utf8')
+        project = parseWithoutDuplicateKeys(
+            readFileSync(join(appAbsRoot, 'project.json'), 'utf8'),
+            'project.json'
         );
     } catch {
         return null;
@@ -510,7 +516,10 @@ export function verifyApps(rootAbs = ROOT, recipes) {
 
         let manifest;
         try {
-            manifest = JSON.parse(readFileSync(manifestGuard.real, 'utf8'));
+            manifest = parseWithoutDuplicateKeys(
+                readFileSync(manifestGuard.real, 'utf8'),
+                manifestRelative
+            );
         } catch (error) {
             errors.push(
                 `${manifestRelative}: JSON invalide (${error.message})`
