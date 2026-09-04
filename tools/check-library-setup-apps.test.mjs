@@ -401,6 +401,56 @@ test('BYPASS : record bun.lock qui nomme un autre paquet → échec (via la gate
     );
 });
 
+test('BYPASS : `,}` littéral dans une valeur de bun.lock n’est pas mangé par le parseur', async (t) => {
+    // Un vrai parseur JSONC ne doit pas transformer "catalog:,}" en "catalog:}".
+    const root = await scaffold(t, {
+        recipes: working(),
+        bunLock:
+            '{\n  "workspaces": { "": { "dependencies": { "demo-pkg": "catalog:,}" } } },\n  "packages": { "demo-pkg": ["demo-pkg@1.0.0", "", {}, "sha"] },\n}\n',
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    // spec package.json ("catalog:") ≠ spec bun.lock ("catalog:,}") — détecté,
+    // et surtout pas transformé en "catalog:}" par une regex.
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /≠ "catalog:,\}" \(bun\.lock\)/.test(e)
+        )
+    );
+});
+
+test('BYPASS : la section diffère entre package.json et bun.lock → échec', async (t) => {
+    const root = await scaffold(t, {
+        recipes: working(),
+        rootPackage: {
+            devDependencies: { 'demo-pkg': 'catalog:' },
+            workspaces: { catalog: { 'demo-pkg': '1.0.0' } },
+        },
+        bunLock: {
+            lockfileVersion: 1,
+            workspaces: { '': { dependencies: { 'demo-pkg': 'catalog:' } } },
+            packages: { 'demo-pkg': ['demo-pkg@1.0.0', '', {}, 'sha'] },
+        },
+        apps: {
+            'demo-app': {
+                manifest: manifest(['demo']),
+                files: { 'demo.config.ts': 'demoFeature' },
+            },
+        },
+    });
+    assert.ok(
+        verifyApps(root, recipesOf(root)).errors.some((e) =>
+            /section "devDependencies" \(package\.json\) ≠ "dependencies" \(bun\.lock\)/.test(
+                e
+            )
+        )
+    );
+});
+
 test('static_invariant non satisfait dans l’arbre de l’app → échec', async (t) => {
     const root = await scaffold(t, {
         recipes: working(),
@@ -585,12 +635,50 @@ test('verifyResolvedVersion : contre-tests SemVer (revues 4 et 5)', () => {
         )
     );
 
+    // revue 6 — bornage structurel (aucune sentinelle)
+    // sans plafond → refusé, même au-delà de toute sentinelle
+    assert.ok(
+        has(verifyResolvedVersion('p', '>9999.9999.9999', rec('p@1.0.0')))
+    );
+    assert.ok(has(verifyResolvedVersion('p', '>=10000', rec('p@10000.0.0'))));
+    // deux bornes explicites → accepté, même très large
+    assert.deepEqual(
+        verifyResolvedVersion('p', '>=1 <10000', rec('p@5.0.0')),
+        []
+    );
+    assert.deepEqual(
+        verifyResolvedVersion('p', '>=0.0.0-0 <23', rec('p@22.0.0')),
+        []
+    );
+    // union : bornée seulement si CHAQUE branche l'est
+    assert.deepEqual(
+        verifyResolvedVersion(
+            'p',
+            '>=1.0.0 <2.0.0||>=3.0.0 <4.0.0',
+            rec('p@1.5.0')
+        ),
+        []
+    );
+    assert.ok(
+        has(
+            verifyResolvedVersion(
+                'p',
+                '>=1.0.0 <2.0.0||>=3.0.0',
+                rec('p@1.5.0')
+            )
+        )
+    );
+
     // formes légitimes
     assert.deepEqual(verifyResolvedVersion('p', '1.2.3', rec('p@1.2.3')), []);
     assert.deepEqual(verifyResolvedVersion('p', '^1.2.0', rec('p@1.9.9')), []);
     assert.ok(has(verifyResolvedVersion('p', '^1.2.0', rec('p@2.0.0'))));
     assert.deepEqual(
         verifyResolvedVersion('p', '>=22 <23', rec('p@22.5.0')),
+        []
+    );
+    assert.deepEqual(
+        verifyResolvedVersion('p', '1.2.3 - 2.3.4', rec('p@2.0.0')),
         []
     );
     assert.deepEqual(

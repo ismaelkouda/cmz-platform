@@ -33,9 +33,14 @@ import {
 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import semver from 'semver';
-
+import {
+    declaringFields,
+    parseJsonc,
+    verifyResolvedVersion,
+} from './check-library-setup-deps.mjs';
 import { validateJsonSchema } from './generator-platform/validate-ir.mjs';
+
+export { verifyResolvedVersion } from './check-library-setup-deps.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const RECIPES_GLOB = 'conventions/libraries/*/*.setup.json';
@@ -43,12 +48,6 @@ const RECIPE_SCHEMA_PATH = 'conventions/libraries/library-setup.schema.json';
 const APP_MANIFEST_SCHEMA_PATH =
     'conventions/libraries/app-library-manifest.schema.json';
 const APPS_GLOB = 'apps/*';
-const DEP_FIELDS = [
-    'dependencies',
-    'devDependencies',
-    'peerDependencies',
-    'optionalDependencies',
-];
 // Exécuteurs SPÉCIFIQUES à une plateforme. Les bundlers génériques (@nx/vite,
 // @nx/rspack, @nx/webpack) ne prouvent aucune plateforme et sont volontairement
 // absents : une app Angular peut utiliser @nx/vite pour ses tests. Une app qui
@@ -126,11 +125,6 @@ function readTextUnder(rootAbs, relPath) {
 
 function readJsonUnder(rootAbs, relPath) {
     return JSON.parse(readTextUnder(rootAbs, relPath));
-}
-
-/** bun.lock est du JSONC (virgules traînantes) — parse tolérant, fichier machine. */
-function parseJsonc(raw) {
-    return JSON.parse(raw.replace(/,(\s*[}\]])/g, '$1'));
 }
 
 /** @returns {null | string} null = invariant satisfait ; string = raison de l'échec. */
@@ -372,100 +366,6 @@ export function detectAppPlatform(appAbsRoot) {
     return matched.size === 1 ? [...matched][0] : 'unknown';
 }
 
-// Une plage qui accepte à la fois une version arbitrairement haute ET une
-// pré-release plancher est « universelle » : elle ne contraint rien. Couvre
-// `*`, `x`, `>=0.0.0`, `>=0.0.0-0`, `>0.0.0`, `>=22` (sans plafond), et toute
-// union dont une branche est universelle.
-const ABSURDLY_HIGH = '9999.9999.9999';
-const PRERELEASE_FLOOR = '0.0.0-0';
-
-/**
- * Extrait `{ name, version }` d'un record bun.lock v1 `[ "<name>@<version>", … ]`.
- * @returns {{ name: string, version: string } | { error: string }}
- */
-function parseLockRecord(packageName, lockRecord) {
-    if (!Array.isArray(lockRecord) || typeof lockRecord[0] !== 'string') {
-        return {
-            error: `${packageName} : record bun.lock non conforme (attendu [ "<name>@<version>", … ])`,
-        };
-    }
-    const identifier = lockRecord[0];
-    const at = identifier.lastIndexOf('@');
-    if (at <= 0) {
-        return {
-            error: `${packageName} : identifiant bun.lock "${identifier}" sans version`,
-        };
-    }
-    return { name: identifier.slice(0, at), version: identifier.slice(at + 1) };
-}
-
-/**
- * Cohérence version : la version résolue (bun.lock) doit satisfaire la valeur du
- * catalog. Résolution SemVer réelle (`semver`, déclaré au dépôt) — pas de
- * parseur maison. Politique pré-release EXPLICITE : `includePrerelease: false`.
- * Erreurs (fail-closed) : record bun.lock non conforme ou nommant un autre
- * paquet ; version résolue non parsable ; valeur de catalog non textuelle,
- * vide, universelle (satisfaite par une version arbitraire), ni version ni
- * plage.
- * @returns {string[]}
- */
-export function verifyResolvedVersion(packageName, catalogValue, lockRecord) {
-    const parsed = parseLockRecord(packageName, lockRecord);
-    if (parsed.error) return [parsed.error];
-    if (parsed.name !== packageName) {
-        return [
-            `${packageName} : record bun.lock nomme un autre paquet (${parsed.name})`,
-        ];
-    }
-    const resolved = semver.valid(parsed.version);
-    if (!resolved) {
-        return [
-            `${packageName} : version résolue "${parsed.version}" non parsable (bun.lock)`,
-        ];
-    }
-
-    if (typeof catalogValue !== 'string' || catalogValue.trim() === '') {
-        return [
-            `${packageName} : valeur de catalog absente ou non textuelle (${typeof catalogValue})`,
-        ];
-    }
-    const exact = semver.valid(catalogValue);
-    if (exact) {
-        return semver.eq(resolved, exact)
-            ? []
-            : [
-                  `${packageName} : version résolue "${resolved}" ≠ catalog exact "${exact}" (bun.lock)`,
-              ];
-    }
-    const range = semver.validRange(catalogValue);
-    if (range === null) {
-        return [
-            `${packageName} : catalog "${catalogValue}" n'est ni une version ni une plage SemVer valide`,
-        ];
-    }
-    if (
-        semver.satisfies(ABSURDLY_HIGH, range, { includePrerelease: true }) ||
-        semver.satisfies(PRERELEASE_FLOOR, range, { includePrerelease: true })
-    ) {
-        return [
-            `${packageName} : catalog "${catalogValue}" est une plage universelle/non bornée — un catalog doit contraindre la version`,
-        ];
-    }
-    return semver.satisfies(resolved, range, { includePrerelease: false })
-        ? []
-        : [
-              `${packageName} : version résolue "${resolved}" ne satisfait pas le catalog "${catalogValue}" (bun.lock)`,
-          ];
-}
-
-/** Sections de package.json / bun.lock où `packageName` est déclaré. */
-function declaringFields(container, packageName) {
-    return DEP_FIELDS.filter(
-        (field) =>
-            container?.[field] && Object.hasOwn(container[field], packageName)
-    );
-}
-
 /**
  * Une dépendance de bibliothèque gouvernée doit être : déclarée `catalog:` dans
  * package.json racine (jamais une version directe — ADR-0005) ; présente au
@@ -510,7 +410,7 @@ export function verifyWorkspaceDependency(rootAbs, packageName) {
 
     let lock;
     try {
-        lock = parseJsonc(readTextUnder(root, 'bun.lock'));
+        lock = parseJsonc(readTextUnder(root, 'bun.lock'), 'bun.lock');
     } catch (error) {
         return [`bun.lock : ${error.message}`];
     }
@@ -524,10 +424,17 @@ export function verifyWorkspaceDependency(rootAbs, packageName) {
         errors.push(
             `${packageName} déclaré dans plusieurs sections du manifeste bun.lock (${lockFields.join(', ')})`
         );
-    } else if (lockRoot[lockFields[0]][packageName] !== spec) {
-        errors.push(
-            `${packageName} : spec "${spec}" (package.json) ≠ "${lockRoot[lockFields[0]][packageName]}" (bun.lock)`
-        );
+    } else {
+        if (lockFields[0] !== pkgFields[0]) {
+            errors.push(
+                `${packageName} : section "${pkgFields[0]}" (package.json) ≠ "${lockFields[0]}" (bun.lock)`
+            );
+        }
+        if (lockRoot[lockFields[0]][packageName] !== spec) {
+            errors.push(
+                `${packageName} : spec "${spec}" (package.json) ≠ "${lockRoot[lockFields[0]][packageName]}" (bun.lock)`
+            );
+        }
     }
 
     const locked = lock.packages?.[packageName];
