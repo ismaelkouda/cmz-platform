@@ -68,57 +68,88 @@ avec candidat et contrôle de fraîcheur).
   la preuve de non-contamination ne la détecterait pas ; le candidat contient un
   `.git` qui pointe vers le dépôt, offert au schematic et au LLM. Rejetée.
 
-### Option D — Export d'archive hors dépôt, confinement OS obligatoire, transaction de publication journalisée
+### Option D — Export `git archive` hors dépôt
 
-- Avantages : `git archive` n'écrit rien dans le dépôt et ne place aucun `.git`
-  dans le candidat (vérifié) ; le code tiers est confiné par le système, pas par
-  convention ; les états initial et vérifié sont des commits Git, ce qui
-  remplace les snapshots d'octets ; un `plan_id` porte le hash d'une sortie
-  **réellement produite**.
-- Inconvénients : coût mesuré sur ce dépôt — export 1 s, installation gelée avec
-  `--backend=copyfile` et cache dédié **72 s à froid, 19 s à chaud** (contre 8,8
-  s avec `clonefile` et cache partagé, écarté pour la raison donnée en Décision
-  § 3) ; la publication reste une transaction à part entière, car `update-ref`
-  ne synchronise ni l'index ni le worktree.
+- Avantages : n'écrit rien dans le dépôt, ne place aucun `.git` dans le candidat
+  (vérifié) ; workspace Nx cohérent ; 1 s pour 3905 fichiers.
+- Inconvénients : `git archive` applique les **attributs Git**, et les lit aussi
+  depuis `$GIT_DIR/info/attributes` — un fichier **absent du commit**, donc
+  invisible à toute revue de code. Test exécuté : un `export-ignore` placé dans
+  `.git/info/attributes` **retire silencieusement** le fichier de l'archive.
+  `export-subst` transformerait de même le contenu. L'intégrité ne serait alors
+  garantie que par une vérification a posteriori. Rejetée.
+
+### Option E — Matérialisation depuis le tree Git, sans script tiers, confinement OS obligatoire, transaction de publication journalisée
+
+- Avantages : le contenu vient de `git ls-tree -r` + `git cat-file --batch` —
+  **aucune machinerie d'attributs n'intervient**, donc `export-ignore`,
+  `export-subst`, `.git/info/attributes` et `core.attributesFile` sont sans
+  effet **par construction**, pas par détection. L'OID du blob **est**
+  l'autorité de contenu. Mesuré : **0,6 s** pour 3906 entrées, plus rapide que
+  l'archive. Aucune écriture dans le dépôt, aucun `.git` dans le candidat. Avec
+  `--ignore-scripts`, **aucun code tiers ne s'exécute pendant l'installation** —
+  vérifié : le candidat compile (`ngc --strictTemplates`, exit 0) et construit
+  (`nx build:development`, exit 0, CSS émis).
+- Inconvénients : la matérialisation est du code à écrire et à tester (modes,
+  liens, inventaire) plutôt qu'un appel à `git archive` ; si une dépendance
+  future exigeait réellement un script de cycle de vie, il faudrait une
+  exception nommée et confinée.
 
 ## Décision
 
-**Option D**, en cinq invariants indissociables.
+**Option E**, en six invariants indissociables.
 
-**1. Isolation — export d'archive, jamais de worktree.** Tout exécutant tiers —
-schematic, script `reference-derived`, probe `runtime_acceptance`, agent LLM —
-s'exécute dans un **export complet du workspace hors du dépôt**, obtenu par
-`git archive <commit> | tar -x` vers un répertoire temporaire. **Pas**
-`git worktree` : celui-ci écrit dans le dépôt réel (`.git/worktrees/<nom>`, une
-écriture qu'un contrôle par `git status --porcelain` ne verrait pas) et place
-dans le candidat un `.git` qui pointe vers le dépôt — un chemin d'accès offert
-au code tiers. L'export d'archive n'écrit rien dans le dépôt et ne contient
-aucun `.git`. Le candidat a ses **propres dépendances** — **aucun `node_modules`
-partagé, lié ou en lien dur**.
+**1. Isolation — matérialisation depuis le tree, ni worktree ni archive.** Tout
+exécutant tiers — schematic, script `reference-derived`, probe
+`runtime_acceptance`, agent LLM — s'exécute dans un **workspace complet
+matérialisé hors du dépôt** à partir du tree du commit `C` : `git ls-tree -r -z`
+pour l'inventaire (chemin, **mode**, type, **OID**), un seul
+`git cat-file --batch` pour les contenus, écriture des **octets exacts du
+blob**. Modes admis : `100644`, `100755`, `120000` ; tout autre — dont `160000`
+(sous-module) — fait échouer la commande. Un lien symbolique n'est créé que si
+sa cible résout **à l'intérieur** du candidat. Ni `git worktree` (il écrit dans
+`.git/worktrees` du dépôt réel — écriture invisible à `git status --porcelain` —
+et place dans le candidat un `.git` pointant vers le dépôt), ni `git archive`
+(ses attributs, lisibles depuis `.git/info/attributes` hors commit, peuvent
+omettre ou transformer des entrées). Le candidat a ses **propres dépendances** —
+**aucun `node_modules` partagé, lié ou en lien dur**.
 
-**2. Confinement OS obligatoire, partout.** Aucun code tiers ne s'exécute sans
+**2. Aucun script tiers, donc aucun réseau pendant l'exécution.**
+`bun install --frozen-lockfile --ignore-scripts` : pendant la récupération, seul
+le code de Bun s'exécute (téléchargement, extraction). **Il n'y a donc aucune
+phase où du code tiers tourne avec le réseau ouvert**, et l'exigence « réseau
+limité au registre » — qu'aucun conteneur ordinaire ni `sandbox-exec` ne sait
+exprimer — devient inutile : réseau **ouvert** pour la seule récupération,
+**coupé** pour schematic, probes et LLM. Vérifié sur ce dépôt : sans aucun
+script, `ngc --strictTemplates` sort en 0 et `nx run build:development` sort en
+0 avec le CSS émis. `--ignore-scripts` neutralisant aussi les scripts du dépôt
+lui-même (`preinstall`, `prepare`), les contrôles correspondants sont exécutés
+par l'outil, pas hérités de l'installation. Si une dépendance exigeait un jour
+un script de cycle de vie, ce sera une **exception nommée, justifiée et
+confinée** (phase dédiée, sans réseau), jamais un assouplissement global.
+
+**3. Confinement OS obligatoire, partout.** Aucun code tiers ne s'exécute sans
 bac à sable du système : **conteneur** en CI, **`sandbox-exec`** en local macOS.
-Aucun backend conforme disponible → la commande **échoue avant** d'exécuter quoi
-que ce soit. « Meilleur effort plus détection » n'est pas un confinement, et une
+Aucun backend conforme → la commande **échoue avant** d'exécuter quoi que ce
+soit. « Meilleur effort plus détection » n'est pas un confinement, et une
 fonction ne porte le nom `runConfined` que si un bac à sable réel l'applique. Le
-confinement couvre **aussi `bun install`** : Bun exécute les scripts de cycle de
-vie du projet (ce dépôt a `preinstall` et `prepare`) et ceux des dépendances
-autorisées. Phases : installation avec réseau **limité au registre**, puis
-schematic / probes / LLM **réseau coupé**. Le dépôt réel n'est jamais monté en
+confinement couvre **aussi `bun install`**. Le dépôt réel n'est jamais monté en
 écriture. Les deux backends passent la **même suite adversariale** : écriture et
 lecture hors candidat, réseau, lien symbolique d'évasion, sous-processus,
-credentials, chemins absolus.
+credentials, chemins absolus, et **fixture à `postinstall`** dont le marqueur
+doit rester absent.
 
-**3. Cache de paquets — optimisation, jamais frontière.**
+**4. Cache de paquets — optimisation, jamais frontière.**
 `BUN_INSTALL_CACHE_DIR` dédié, `--backend=copyfile` **obligatoire**, global
-store désactivé, cache rendu **inaccessible** pendant schematic / probes / LLM.
-Sans cela, Bun relie `node_modules` au cache (`hardlink` par défaut sous Linux,
-`clonefile` sous macOS) : un exécutant qui modifie un fichier de `node_modules`
-corromprait le cache partagé, donc toutes les installations ultérieures. Le
-cache est indexé par nom/version, **pas** adressé par contenu : sa présence ne
-prouve rien.
+store désactivé, cache **inaccessible** pendant schematic / probes / LLM. Sans
+`copyfile`, Bun relie `node_modules` au cache (`hardlink` sous Linux,
+`clonefile` sous macOS) : un exécutant modifiant `node_modules` corromprait le
+cache partagé. Le cache est indexé par nom/version, **pas** adressé par contenu
+: sa présence ne prouve rien. Un cache partagé reste acceptable **parce que**
+l'invariant 2 garantit qu'aucun code tiers ne s'exécute pendant qu'il est
+inscriptible ; à défaut de cet invariant, il devrait être jetable par candidat.
 
-**4. Transaction de publication — les commits remplacent les snapshots d'octets,
+**5. Transaction de publication — les commits remplacent les snapshots d'octets,
 pas la transaction.** Les verrous sont pris dans l'ordre canonique **global →
 app** et **conservés jusqu'à la synchronisation complète ref + index +
 worktree**. Une transaction parente (`create-app`) possède les verrous et les
@@ -132,7 +163,7 @@ l'index et le worktree restent à `C`, et Git présenterait alors le diff invers
 en modifications locales. Elle est donc journalisée par phase et **reprenable**
 après crash, sous verrous tenus.
 
-**5. Identité du plan et frontière de l'agent LLM.** `plan_id` hashe **toutes**
+**6. Identité du plan et frontière de l'agent LLM.** `plan_id` hashe **toutes**
 les entrées qui peuvent changer la sortie : recette et schéma, `package.json`,
 `bun.lock`, `nx.json`, `tsconfig.base.json`, `.gitattributes`, l'arbre complet
 de l'app (`path\0mode\0sha256`), les versions d'outillage **lues** (Node, Bun,
@@ -140,19 +171,32 @@ Nx, paquet du schematic), le hash du module runner, et la valeur substituée à
 `{{app}}`. Il est **toujours** calculé, affiché et journalisé — même sans
 `--dry-run`. Un changement est un **change-set structuré**
 (`op ∈ {create, modify, delete, rename}`, mode, `sha256` avant/après). Le
-recours `llm-then-verified` hérite intégralement de (1) à (3) et y ajoute une
+recours `llm-then-verified` hérite intégralement de (1) à (4) et y ajoute une
 allowlist de chemins déclarée dans la recette, une gate de diff à chaque
 itération, un maximum de 3 itérations, un journal complet des prompts / réponses
 / diffs, et **zéro publication directe**.
 
 ## Justification
 
-**L'isolation est une propriété prouvée, pas déclarée.** Deux options
-successives ont été écartées par contre-preuve exécutée, pas par raisonnement :
-B (Nx remonte à la racine réelle depuis `.cmz/`) et C (`git worktree` écrit dans
-`.git/worktrees`, invisible à `git status`). L'export d'archive a été vérifié
-sur ce dépôt : zéro écriture dans le dépôt, aucun `.git` dans le candidat,
-workspace Nx complet, et `nx` y résout la racine **du candidat**.
+**L'isolation est une propriété prouvée, pas déclarée.** Trois options ont été
+écartées par contre-preuve exécutée, pas par raisonnement : B (Nx remonte à la
+racine réelle depuis `.cmz/`), C (`git worktree` écrit dans `.git/worktrees`,
+invisible à `git status`) et D (`git archive` honore `.git/info/attributes`, un
+fichier hors commit — test exécuté : un `export-ignore` y retire silencieusement
+un fichier de l'archive). La matérialisation depuis le tree a été vérifiée sur
+ce dépôt : zéro écriture dans le dépôt, aucun `.git` dans le candidat, workspace
+Nx complet, `nx` y résout la racine **du candidat**, et **aucune machinerie
+d'attributs n'intervient** — la propriété est obtenue par construction, pas par
+vérification a posteriori.
+
+**Supprimer la menace vaut mieux que la contenir.** Le cache exposé pendant
+l'installation et le « réseau limité au registre » étaient deux faces du même
+fait : du code tiers s'exécutait pendant que le réseau et le cache étaient
+ouverts. `--ignore-scripts` supprime ce fait. La mesure le confirme sur ce dépôt
+: sans aucun script, `ngc --strictTemplates` et `nx run build:development`
+sortent en 0, avec le CSS émis. Il n'y a donc plus de fenêtre à contenir, ni de
+règle réseau fine à exprimer — et le cache partagé redevient acceptable, ce qui
+ramène l'installation de 72 s à froid à 19 s à chaud.
 
 **Un confinement partiel n'est pas un confinement.** « Prévention en CI,
 meilleur effort en local » laisse un schematic cassé ou hostile corrompre le
@@ -207,10 +251,12 @@ agent est celle que le système de fichiers et le processus imposent. Le
 
 ### Négatives / dette acceptée
 
-- **Coût mesuré** : export 1 s, installation gelée `--backend=copyfile` **72 s à
-  froid, 19 s à chaud**, auxquels s'ajoutent schematic et preuves. Une commande
-  qui tient les six promesses se compte en **minutes**, pas en secondes.
-  `add-library` est un outil de dev/CI, jamais interactif.
+- **Coût mesuré** : matérialisation 0,6 s, installation gelée
+  `--ignore-scripts --backend=copyfile` **19 s à chaud** (72 s si le cache est
+  froid), `ngc --strictTemplates` 12 s, `nx build:development` 16 s, auxquels
+  s'ajoutent schematic et preuve navigateur. Une commande qui tient les six
+  promesses se compte en **minutes**, pas en secondes. `add-library` est un
+  outil de dev/CI, jamais interactif.
 - **Dépôt entièrement propre exigé** pour la V1 : toute entrée non commitée fait
   échouer la commande. Une fermeture exacte sur les seules entrées du `plan_id`
   pourra venir plus tard ; contrôler « juste l'app » serait faux, car la

@@ -64,8 +64,9 @@ Champs référencés par chaque entrée :
 
 ### D4 — Le candidat est un workspace complet, hors du dépôt
 
-Pas de copie minimale, **aucun `node_modules` partagé**. Forme retenue : export
-`git archive`, pas `git worktree` (P0 nº 1).
+Pas de copie minimale, **aucun `node_modules` partagé**. Forme retenue :
+matérialisation **depuis le tree Git** — ni `git worktree`, ni `git archive` (P0
+nº 1).
 
 ### D5 — Confinement OS obligatoire, partout
 
@@ -73,10 +74,14 @@ Conteneur en CI, `sandbox-exec` en local macOS, **échec avant toute exécution
 tierce** si aucun backend conforme. Les deux backends passent la **même suite
 adversariale**. Le confinement couvre aussi `bun install`.
 
-### D6 — Le cache de paquets est une optimisation, jamais une frontière
+### D6 — Aucun script tiers ; le cache est une optimisation, jamais une frontière
 
-`BUN_INSTALL_CACHE_DIR` dédié, `--backend=copyfile` obligatoire, global store
-désactivé, cache inaccessible pendant schematic / probes / LLM.
+`bun install --ignore-scripts` : aucun code tiers ne s'exécute pendant la
+récupération. Réseau ouvert pour la seule récupération, **coupé** ensuite — plus
+besoin d'un « réseau limité au registre », inexprimable dans un conteneur
+ordinaire comme dans `sandbox-exec`, et devenu inutile. `--backend=copyfile`
+obligatoire, `BUN_INSTALL_CACHE_DIR` dédié, global store désactivé, cache en
+lecture seule pendant schematic / probes / LLM.
 
 ### D7 — Les commits Git remplacent les snapshots d'octets, pas la transaction
 
@@ -102,56 +107,82 @@ Une seconde forme a ensuite été écartée, elle aussi sur preuve :
 — écriture qu'un contrôle par `git status --porcelain` ne verrait pas) et place
 dans le candidat un `.git` pointant vers le dépôt, offert au code tiers.
 
-### Forme retenue — export d'archive
+### Forme retenue — matérialisation depuis le tree Git
 
-`git archive <commit> | tar -x` vers un `mkdtemp` **hors du dépôt**. Le candidat
-est un workspace Nx cohérent et complet, figé à un commit, sans aucun lien vers
-le dépôt d'origine.
+Une troisième forme a été écartée sur preuve : `git archive` applique les
+attributs Git, **et les lit aussi depuis `.git/info/attributes`**, un fichier
+absent du commit donc invisible à toute revue. Test exécuté : un `export-ignore`
+placé dans `.git/info/attributes` **retire silencieusement** le fichier de
+l'archive ; `export-subst` en transformerait de même le contenu.
+
+Le candidat est donc matérialisé **depuis le tree** du commit `C`, dans un
+`mkdtemp` hors du dépôt :
+
+- `git ls-tree -r -z <C>` → inventaire complet `(mode, type, OID, chemin)` ;
+- un seul `git cat-file --batch` → contenus ;
+- écriture des **octets exacts du blob**. L'OID **est** l'autorité de contenu :
+  aucune machinerie d'attributs n'intervient, donc `export-ignore`,
+  `export-subst`, `.git/info/attributes` et `core.attributesFile` sont sans
+  effet **par construction**, pas par vérification a posteriori.
+
+Règles d'intégrité, appliquées entrée par entrée :
+
+| Contrôle        | Règle                                                                                                                                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mode            | `100644`, `100755`, `120000` uniquement. Tout autre — dont `160000` (sous-module) — fait échouer la commande. Ce dépôt : 3897 / 8 / 1, aucun autre.                                                                 |
+| Type            | `blob` seulement ; `commit` (sous-module) et `tree` inattendu refusés                                                                                                                                               |
+| Contenu         | octets du blob écrits tels quels ; aucun fichier créé hors de l'inventaire                                                                                                                                          |
+| Lien symbolique | cible = contenu exact du blob, créée **seulement** si elle résout à l'intérieur du candidat. Ce dépôt en a un (`.claude/skills/angular-developer → ../../.agents/skills/angular-developer`, cible suivie — vérifié) |
+| Chemin          | normalisé, refus de tout segment `..` ou absolu                                                                                                                                                                     |
 
 Mesuré sur ce dépôt :
 
-| Contrôle                                     | Résultat                                                                                    |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Export `git archive HEAD` → `tar -x`         | **1 s**, 3905 fichiers                                                                      |
-| `.git` dans le candidat                      | **absent**                                                                                  |
-| Écriture dans le dépôt réel                  | **aucune** (`.git/worktrees` absent)                                                        |
-| Workspace complet                            | `nx.json`, `package.json`, `tsconfig.base.json`, `bun.lock`, `apps/*/project.json` présents |
-| `nx workspaceRoot` depuis le candidat        | **= le candidat** (plus de remontée vers le dépôt)                                          |
-| Archive ≡ arbre de travail, octet pour octet | **oui**, y compris les 4 fichiers à attributs `eol` — **sauf** les entrées non commitées    |
+| Contrôle                              | Résultat                                                                           |
+| ------------------------------------- | ---------------------------------------------------------------------------------- |
+| Matérialisation depuis le tree        | **0,6 s**, 3906 entrées — plus rapide que `git archive` (1 s)                      |
+| `.git` dans le candidat               | **absent**                                                                         |
+| Écriture dans le dépôt réel           | **aucune**                                                                         |
+| Workspace complet                     | `nx.json`, `package.json`, `tsconfig.base.json`, `bun.lock`, `apps/*/project.json` |
+| `nx workspaceRoot` depuis le candidat | **= le candidat**                                                                  |
 
-### Contrôles obligatoires sur l'archive
+L'affirmation « archive byte-identique à un checkout » est **retirée** : elle
+n'est pas un contrat portable entre systèmes. La source de vérité est le tree
+Git, jamais l'arbre de travail local.
 
-`git archive` peut omettre ou transformer des entrées, et conserve les liens
-symboliques. Avant toute exécution :
+### Dépendances du candidat — sans aucun script tiers
 
-- **`export-ignore` / `export-subst` interdits** dans `.gitattributes` (aucun
-  aujourd'hui ; l'apparition d'un seul doit faire échouer la commande), ou à
-  défaut vérification de l'archive contre le tree Git ;
-- **inventaire complet** : chaque entrée extraite comparée au tree Git (chemin
-  normalisé, mode, présence) ;
-- **fichiers spéciaux refusés** ; **liens symboliques** acceptés seulement si
-  leur cible résout **à l'intérieur** du candidat. Ce dépôt en contient un
-  (`.claude/skills/angular-developer → ../../.agents/skills/angular-developer`,
-  cible suivie, résolue dans le candidat — vérifié) ;
-- les attributs `eol` de `.gitattributes` sont appliqués par `git archive`
-  exactement comme au checkout : l'archive est donc byte-identique à un arbre de
-  travail propre — ce qui a été vérifié, et ce qui rend le contrôle « dépôt
-  propre » indispensable.
+`bun install --frozen-lockfile --ignore-scripts --backend=copyfile --cache-dir=<cache dédié>`,
+dans le candidat, **sous bac à sable**.
 
-### Dépendances du candidat
+`--ignore-scripts` est l'invariant central : pendant la récupération, **seul le
+code de Bun s'exécute** (téléchargement, extraction). Il n'existe donc **aucune
+phase où du code tiers tourne avec le réseau ou le cache ouverts**. Deux
+exigences antérieures deviennent sans objet :
 
-`bun install --frozen-lockfile --backend=copyfile --cache-dir=<cache dédié>`,
-**dans le candidat**, **sous bac à sable** — Bun exécute les scripts de cycle de
-vie du projet (`preinstall`, `prepare` ici) et des dépendances autorisées.
+- « cache inaccessible seulement après l'installation » — le cache n'est jamais
+  atteignable par du code tiers, puisqu'il n'y en a pas qui s'exécute ;
+- « réseau limité au registre » — inexprimable dans un conteneur ordinaire comme
+  dans `sandbox-exec`, et **inutile** : réseau ouvert pour la seule
+  récupération, **entièrement coupé** ensuite.
 
-`--backend=copyfile` est **obligatoire** : par défaut Bun relie `node_modules`
-au cache (`hardlink` sous Linux, `clonefile` sous macOS), donc un exécutant qui
-modifie un fichier de `node_modules` corromprait le cache partagé. Le cache est
-indexé par nom/version, **pas** adressé par contenu ; global store désactivé ;
-cache rendu **inaccessible** pendant schematic / probes / LLM.
+**Vérifié sur ce dépôt, sans aucun script** : `ngc --strictTemplates` sort en 0
+(12 s) et `nx run backoffice-angular:build:development` sort en 0 (16 s) avec
+`dist/apps/backoffice-angular/browser/styles.css` émis — la preuve
+`compiled-css-rule` est donc réalisable dans ces conditions.
 
-Coût mesuré : **72 s à froid, 19 s à chaud** (contre 8,8 s avec `clonefile` et
-cache partagé — écarté).
+`--backend=copyfile` reste obligatoire (sans lui Bun relie `node_modules` au
+cache : `hardlink` sous Linux, `clonefile` sous macOS), global store désactivé,
+cache en lecture seule pendant schematic / probes / LLM — défense en profondeur.
+Le cache **partagé** redevient acceptable, ce qui ramène l'installation de 72 s
+à froid à **19 s à chaud**.
+
+`--ignore-scripts` neutralise aussi les scripts du dépôt (`preinstall`,
+`prepare`) : les contrôles correspondants (`check-engines`) sont exécutés par
+`add-library` lui-même, jamais hérités de l'installation. Si une dépendance
+exigeait un jour un script de cycle de vie, ce serait une **exception nommée,
+justifiée et confinée** — phase dédiée, sans réseau — jamais un assouplissement
+global. La suite adversariale contient une fixture à `postinstall` dont le
+marqueur doit rester **absent**.
 
 ### Confinement OS — obligatoire, partout
 
@@ -214,12 +245,26 @@ irréproductible. D'où :
 Les recettes utilisent déjà `nx g @angular/material:ng-add` et non `ng add` : la
 collection est locale, donc exécutable sans résolution distante.
 
-### Cycle de vie du candidat
+### Cycle de vie du candidat — bail journalisé
 
 Un `SIGKILL` empêche tout `finally` ou `dispose()` : « zéro résidu immédiat »
-n'est pas un contrat tenable. Le contrat réel est un **bail journalisé** —
-candidat identifié dans le journal, propriétaire mort détecté, purge sûre au
-démarrage suivant, aucune confusion avec le candidat d'une autre transaction.
+n'est pas un contrat tenable. Le contrat réel est un **bail**. Et « propriétaire
+mort détecté, purge sûre » n'est pas assez précis : un PID réutilisé ou un
+journal altéré ferait supprimer le mauvais répertoire. Conditions
+**cumulatives** de purge :
+
+| Condition    | Règle                                                                                                                                     |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Identité     | identifiant **aléatoire, non réutilisable** (≥ 128 bits), jamais dérivé d'un compteur ni d'un PID                                         |
+| Propriétaire | **PID + instant de démarrage du processus** (`ps -o lstart= -p <pid>`, vide si le PID n'existe pas — vérifié) ; un PID seul ne suffit pas |
+| Emplacement  | chemin **canonique** sous une racine temporaire dédiée à l'outil ; refus si un ancêtre est un lien symbolique                             |
+| Propriété    | propriétaire et permissions attendus, vérifiés avant toute suppression                                                                    |
+| Marqueur     | fichier d'identité **dans** le candidat, contenant l'identifiant du bail                                                                  |
+| Concordance  | **aucune suppression** si journal et marqueur ne concordent pas — le candidat est alors signalé, jamais effacé                            |
+
+Un candidat dont le propriétaire est mort et dont toutes les conditions
+concordent est purgé au démarrage suivant. Sinon il est laissé en place et
+rapporté : mieux vaut un résidu qu'une suppression erronée.
 
 ## P0 nº 2 — Verrous et transaction
 
@@ -286,7 +331,8 @@ deux plans identiques pouvaient correspondre à des exécutions différentes.
 
 1. octets de la recette **et** de son schéma ;
 2. octets de `package.json`, `bun.lock`, `nx.json`, `tsconfig.base.json`,
-   `.gitattributes` (il gouverne le contenu même de l'archive) ;
+   `.gitattributes` (sans effet sur la matérialisation, mais il gouverne le
+   contenu du dépôt et donc le résultat du schematic) ;
 3. commit `C` et arbre complet de `apps/<app>` — liste triée
    `path\0mode\0sha256` ;
 4. outillage **lu, jamais supposé** : version Node, Bun, Nx (depuis
@@ -407,16 +453,22 @@ Chaque étape ≥ 6 : branche dédiée, PR, CI verte, revue, validation, puis me
 
 Identique pour les deux backends, chaque cas devant **échouer** :
 
-| Cas                                         | Attendu                                                |
-| ------------------------------------------- | ------------------------------------------------------ |
-| écriture hors candidat (chemin absolu)      | refusée par l'OS                                       |
-| lecture d'un chemin du dépôt réel           | refusée ou hors d'atteinte                             |
-| lien symbolique d'évasion créé puis suivi   | refusé                                                 |
-| sous-processus tentant les mêmes accès      | refusé (le confinement est hérité)                     |
-| accès réseau en phase hors ligne            | refusé                                                 |
-| lecture d'une variable de credential        | absente de l'environnement                             |
-| `bunx <paquet-absent>`                      | refusé — binaire résolu explicitement dans le candidat |
-| cache de paquets pendant schematic / probes | inaccessible                                           |
+| Cas                                                     | Attendu                                                |
+| ------------------------------------------------------- | ------------------------------------------------------ |
+| écriture hors candidat (chemin absolu)                  | refusée par l'OS                                       |
+| lecture d'un chemin du dépôt réel                       | refusée ou hors d'atteinte                             |
+| lien symbolique d'évasion créé puis suivi               | refusé                                                 |
+| sous-processus tentant les mêmes accès                  | refusé (le confinement est hérité)                     |
+| accès réseau en phase hors ligne                        | refusé                                                 |
+| lecture d'une variable de credential                    | absente de l'environnement                             |
+| `bunx <paquet-absent>`                                  | refusé — binaire résolu explicitement dans le candidat |
+| cache de paquets pendant schematic / probes             | en lecture seule, jamais inscriptible                  |
+| dépendance fixture à `postinstall` écrivant un marqueur | marqueur **absent** (`--ignore-scripts` effectif)      |
+| entrée de tree en mode `160000` ou type inattendu       | matérialisation refusée                                |
+| lien symbolique dont la cible sort du candidat          | refusé                                                 |
+| `.git/info/attributes` hostile dans le dépôt            | sans effet (matérialisation depuis le tree)            |
+| PID réutilisé pointant sur un autre processus           | purge refusée (instant de démarrage discordant)        |
+| marqueur du candidat ne concordant pas avec le journal  | purge refusée, candidat signalé                        |
 
 ## Coordination — session `cmz-platform-42` (renderer)
 
