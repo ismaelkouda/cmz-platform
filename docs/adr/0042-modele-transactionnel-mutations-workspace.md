@@ -164,26 +164,40 @@ Le protocole Bun se déroule en **trois temps distincts** :
    `bun.lock`. Vérifié : muter `package.json` puis relancer `--frozen-lockfile`
    échoue avec `lockfile had changes, but lockfile is frozen` ;
 3. **vérification depuis zéro** — un **second candidat** est matérialisé depuis
-   le tree, les `package.json` et `bun.lock` **finaux** y sont injectés, et
-   `bun install --frozen-lockfile --ignore-scripts` reconstruit l'environnement.
-   Relancer une installation gelée sur un `node_modules` déjà peuplé
-   constaterait « no changes » sans rien reconstruire : cela ne prouverait rien.
+   le même tree et vérifié, puis reçoit un **overlay clos et ordonné** : le
+   `package.json` **racine** (seul porteur des versions épinglées et du catalog)
+   puis `bun.lock`, chacun avec son mode et son OID final attendu. Les 72 autres
+   `package.json` du workspace en sont exclus, comme les fichiers écrits par le
+   schematic. Le candidat est **re-vérifié** après overlay — toute entrée doit
+   correspondre au tree sauf ces deux chemins — avant
+   `bun install --frozen-lockfile --ignore-scripts`. Relancer une installation
+   gelée sur un `node_modules` déjà peuplé constaterait « no changes » sans rien
+   reconstruire : cela ne prouverait rien.
 
 La résolution n'est pas sûre du seul fait qu'aucun script ne tourne : Bun
 accepte des dépendances Git/SSH, des tarballs par URL, et lit registres et
 credentials d'un `.npmrc`. Les sources obéissent donc à une **allowlist fermée**
-— `catalog:`, `workspace:`, et le registre approuvé avec intégrité `sha512` ;
-tout le reste refusé, source **et** intégrité contrôlées pour chaque nouvelle
-entrée. `.npmrc` / `bunfig.toml` et les configurations Git globale et système
-sont neutralisés, sans accès au trousseau SSH ni au credential helper. La
-fermeture transitive autorisée est une **traversée du graphe du lockfile final**
-depuis les paquets directs attendus, jamais une lecture du diff observé.
+— `catalog:`, `workspace:`, et le registre approuvé avec intégrité `sha512`. Le
+contrôle a lieu **avant le premier appel à Bun**, sur les 73 `package.json` du
+workspace et sur l'intégralité du `bun.lock` initial, puis à nouveau
+**intégralement sur l'état final**. Contrôler « chaque nouvelle entrée »
+arriverait trop tard : un état initial contenant déjà une source hors politique
+la verrait résolue, réseau ouvert, avant tout rejet. `.npmrc` / `bunfig.toml` et
+les configurations Git globale et système sont neutralisés, sans accès au
+trousseau SSH ni au credential helper. La fermeture transitive autorisée est une
+**traversée du graphe du lockfile final** depuis les paquets directs attendus,
+jamais une lecture du diff observé.
 
-Les scripts de cycle de vie du dépôt font l'objet d'un **inventaire classifié,
-fail-closed** : chacun est soit rejoué explicitement (`preinstall` /
-`check-engines`), soit déclaré inutile dans le candidat (`prepare` / `husky`,
-qui n'a pas de `.git` où poser des hooks). Toute apparition ou modification non
-classifiée fait échouer la gate.
+Ces règles ne vivent pas dans de la prose : elles sont déclarées dans
+`conventions/libraries/resolution-policy.json`, artefact **versionné à schéma
+fermé** — scripts de cycle de vie avec commande exacte et classification
+`replay` / `omit` / `reject`, registres autorisés, protocoles autorisés, règles
+d'intégrité, exceptions nommées. Un inventaire en Markdown serait impossible à
+consommer sans coder les règles en dur ou analyser du texte. Le **hash de la
+politique entre dans le `plan_id`**. Aujourd'hui : `preinstall` /
+`check-engines` en `replay`, `prepare` / `husky` en `omit` (pas de `.git` dans
+le candidat). Tout script apparaissant, disparaissant ou dont la commande change
+sans entrée correspondante fait échouer la gate.
 
 Si une dépendance exigeait un jour un script de cycle de vie, ce sera une
 **exception nommée, justifiée et confinée** — phase dédiée, sans réseau — jamais
@@ -259,8 +273,9 @@ exécutant tiers pourrait forcer une quarantaine permanente — un déni de serv
 durable sur la racine de bail.
 
 **7. Identité du plan et frontière de l'agent LLM.** `plan_id` hashe **toutes**
-les entrées qui peuvent changer la sortie : recette et schéma, `package.json`
-**initial et final**, `bun.lock` **initial et final**, `nx.json`,
+les entrées qui peuvent changer la sortie : recette et schéma, **l'overlay
+structuré** (`package.json` racine et `bun.lock`, initiaux et finaux, avec mode
+et OID), le **hash de la politique de résolution**, `nx.json`,
 `tsconfig.base.json`, `.gitattributes`, l'arbre complet de l'app
 (`path\0mode\0sha256`), les versions d'outillage **lues** (Node, Bun, Nx, paquet
 du schematic), le hash du module runner, et la valeur substituée à `{{app}}`. Il

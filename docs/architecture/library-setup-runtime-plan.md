@@ -98,24 +98,15 @@ facultatifs ; le `plan_id` est **toujours** affiché et journalisé.
 
 ## P0 nº 1 — Candidat isolé (workspace complet hors dépôt)
 
-**Défaut corrigé.** La version précédente de ce document plaçait le candidat
-sous `.cmz/library-candidates/…` avec un `node_modules` symlinké. Contre-preuve
-exécutée en revue : Nx lancé depuis `.cmz/` **remonte à la racine réelle** et
-charge le vrai `nx.json` et le vrai projet. Un schematic exécuté ainsi pouvait
-écrire dans le vrai `package.json`. L'isolation annoncée était fausse.
-
-Une seconde forme a ensuite été écartée, elle aussi sur preuve :
-`git worktree add --detach` **écrit dans le dépôt réel** (`.git/worktrees/<nom>`
-— écriture qu'un contrôle par `git status --porcelain` ne verrait pas) et place
-dans le candidat un `.git` pointant vers le dépôt, offert au code tiers.
+Trois formes ont été écartées **sur contre-preuve exécutée** : candidat sous
+`.cmz/` (Nx remonte à la racine réelle), `git worktree` (écrit dans
+`.git/worktrees` du dépôt, invisible à `git status`), `git archive` (honore
+`.git/info/attributes`, fichier hors commit). Le détail des options et leur
+justification sont dans
+[ADR-0042 § Options](../adr/0042-modele-transactionnel-mutations-workspace.md) —
+ce document ne les redit pas.
 
 ### Forme retenue — matérialisation depuis le tree Git
-
-Une troisième forme a été écartée sur preuve : `git archive` applique les
-attributs Git, **et les lit aussi depuis `.git/info/attributes`**, un fichier
-absent du commit donc invisible à toute revue. Test exécuté : un `export-ignore`
-placé dans `.git/info/attributes` **retire silencieusement** le fichier de
-l'archive ; `export-subst` en transformerait de même le contenu.
 
 Le candidat est donc matérialisé **depuis le tree** du commit `C`, dans un
 `mkdtemp` hors du dépôt, avec `git --no-replace-objects --no-lazy-fetch` :
@@ -212,38 +203,107 @@ Chaque temps est vérifié, pas supposé :
 - **Le temps 3 est nécessaire** — sans reconstruction depuis zéro, on publierait
   un lockfile jamais prouvé installable.
 
-#### Sources de résolution — allowlist fermée
+#### Overlay du second candidat — ensemble clos et ordonné
+
+« Injecter les `package.json` et `bun.lock` finaux » est trop vague : ce dépôt
+compte **73 `package.json`**. L'overlay est donc un ensemble **clos, ordonné et
+inventorié**.
+
+| Ordre | Chemin                  | Mode     | Peut changer ?                                                                                                 |
+| ----- | ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| 1     | `package.json` (racine) | `100644` | **oui** — `dependencies` / `devDependencies` et `workspaces.catalog[s]`, seuls porteurs des versions épinglées |
+| 2     | `bun.lock`              | `100644` | **oui** — produit au temps 2                                                                                   |
+
+Les **72 autres** `package.json` (`libs/*`, `apps/*`) sont **hors overlay** :
+`add-library` ne les touche pas. Les fichiers modifiés par le schematic
+(`project.json`, `app.config.ts`, styles…) sont hors overlay eux aussi — ils
+appartiennent au change-set publié, pas à la vérification de résolution.
+
+**Périmètre assumé** : le second candidat prouve qu'un environnement de
+dépendances neuf est reconstructible depuis le lockfile final. Il ne rejoue ni
+le schematic ni les probes — ce n'est pas son rôle.
+
+Déroulé, sans ambiguïté :
+
+1. matérialiser un candidat neuf depuis le **même tree `C`**, avec les mêmes
+   contrôles (§ Chemins, § Écriture) ;
+2. **vérification finale du tree** — identique à celle du premier candidat ;
+3. appliquer l'overlay dans l'ordre canonique ci-dessus, chaque écriture donnant
+   un OID Git recalculé qui doit égaler l'OID du blob final attendu ;
+4. **re-vérifier** : toute entrée doit correspondre au tree `C`, **sauf** les
+   deux chemins de l'overlay, qui doivent correspondre à leurs OID finaux —
+   aucun autre écart toléré ;
+5. `bun install --frozen-lockfile --ignore-scripts`, sous profil `resolution`.
+
+L'overlay entre dans le `plan_id` sous forme structurée — la liste ordonnée
+`{ path, mode, oid_final }` — et non comme deux fichiers cités en prose.
+
+#### Sources de résolution — contrôle AVANT tout appel à Bun
 
 `--ignore-scripts` bloque l'**exécution**, pas les **sources**. Bun accepte des
-dépendances Git/SSH, des dépôts privés via credentials SSH, des tarballs depuis
-une URL arbitraire, et lit registres et credentials d'un `.npmrc`. Une
-résolution réseau n'est donc pas sûre du seul fait qu'aucun script ne tourne.
+dépendances Git/SSH, des tarballs par URL, et lit registres et credentials d'un
+`.npmrc`. Contrôler « chaque nouvelle entrée du lockfile » arriverait **trop
+tard** : un dépôt dont l'état **initial** contient déjà une dépendance
+`git+ssh:` la verrait résolue au temps 1, réseau ouvert, avant tout rejet.
 
-Périmètre V1 (Angular / React, npm uniquement) — **allowlist**, tout le reste
-refusé :
+L'ordre est donc inversé. **Avant le premier appel à Bun** :
 
-| Autorisé                                                                          | Refusé                                      |
-| --------------------------------------------------------------------------------- | ------------------------------------------- |
-| `catalog:` / `catalog:<nom>` — protocole dominant de ce dépôt                     | `git:`, `git+ssh:`, `git+https:`, `github:` |
-| `workspace:`                                                                      | `file:`, `link:`                            |
-| version ou plage résolue depuis **le registre approuvé**, avec intégrité `sha512` | tarball par URL (`http:`, `https:`)         |
+1. analyser **tous** les `package.json` du workspace (73 aujourd'hui) — pas
+   seulement celui de la racine ;
+2. analyser **l'intégralité** du `bun.lock` initial, entrée par entrée ;
+3. refuser toute source hors politique — **la commande échoue sans avoir lancé
+   Bun** ;
+4. imposer explicitement l'origine du registre approuvé ;
+5. refaire **le même contrôle complet sur l'état final**, pas seulement sur le
+   diff.
+
+| Autorisé                                                                     | Refusé                                      |
+| ---------------------------------------------------------------------------- | ------------------------------------------- |
+| `catalog:` / `catalog:<nom>` — protocole dominant de ce dépôt                | `git:`, `git+ssh:`, `git+https:`, `github:` |
+| `workspace:`                                                                 | `file:`, `link:`                            |
+| version ou plage résolue depuis **le registre approuvé**, intégrité `sha512` | tarball par URL (`http:`, `https:`)         |
 
 Mesuré aujourd'hui : **2037 paquets, 0 source non-registre, 0 paquet externe
 sans `sha512`** ; les 72 entrées sans intégrité sont les `@cmz/*` du workspace,
-ce qui est normal. L'allowlist est donc atteignable **sans aucune exception**.
+ce qui est normal. L'allowlist passe **sans aucune exception**.
 
-En complément, pendant la résolution :
+Pendant la résolution : `.npmrc` et `bunfig.toml` du dépôt, du `HOME` jetable et
+du système **neutralisés** (aucun n'existe — vérifié) ; configurations Git
+globale et système neutralisées (`GIT_CONFIG_GLOBAL` / `GIT_CONFIG_SYSTEM` vers
+`/dev/null`) ; **aucun accès** au trousseau SSH ni au credential helper.
 
-- `.npmrc` et `bunfig.toml` du dépôt, du `HOME` jetable et du système :
-  **neutralisés** (aucun n'existe aujourd'hui — vérifié) ;
-- configurations Git **globale et système** neutralisées
-  (`GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_SYSTEM=/dev/null`) ;
-- **aucun accès** au trousseau SSH ni au credential helper — c'est déjà l'effet
-  du retrait de `SSH_AUTH_SOCK` et des `GIT_*` du profil `resolution`, et c'est
-  ici une exigence explicite, pas un effet de bord.
+#### La politique est un artefact, pas un tableau
 
-Chaque **nouvelle** entrée du lockfile voit sa **source** et son **intégrité**
-contrôlées contre cette allowlist, pas seulement sa version.
+Un inventaire en Markdown ne peut être ni consommé ni comparé : « comparé au
+`package.json`, pas mémorisé dans le code » serait impossible sans coder les
+règles en dur ou analyser de la prose. La politique vit donc dans un fichier
+**JSON versionné et à schéma fermé**, validé par `check:library-setup` :
+
+```
+conventions/libraries/resolution-policy.json
+```
+
+| Champ                  | Contenu                                                                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `schema_version`       | version de la politique                                                                                                            |
+| `lifecycle_scripts[]`  | `{ name, command, classification }` — `classification ∈ { replay, omit, reject }`, `command` étant la commande **exacte** attendue |
+| `allowed_registries[]` | origine(s) exacte(s) approuvée(s)                                                                                                  |
+| `allowed_protocols[]`  | `catalog:`, `workspace:`                                                                                                           |
+| `integrity`            | algorithme exigé (`sha512`) et portée (toute entrée non-workspace)                                                                 |
+| `exceptions[]`         | **nommées**, avec raison et date de revue ; vide aujourd'hui                                                                       |
+
+Son **hash entre dans le `plan_id`** : changer la politique invalide les plans
+antérieurs. Contenu initial dérivé de l'état réel du dépôt :
+
+| Script racine                                 | `classification` | Raison                                                  |
+| --------------------------------------------- | ---------------- | ------------------------------------------------------- |
+| `preinstall` = `node tools/check-engines.mjs` | `replay`         | exécuté par `add-library` avant la résolution           |
+| `prepare` = `husky`                           | `omit`           | pas de `.git` dans le candidat, donc aucun hook à poser |
+
+Tout script **apparaissant, disparaissant ou dont la commande change** sans
+entrée correspondante fait **échouer la gate** : la comparaison porte sur le
+`package.json` du candidat **contre la politique**, jamais contre une constante
+du code.
 
 #### Diff de lockfile accepté — définition sémantique
 
@@ -260,7 +320,7 @@ Le diff n'est pas « inspecté » au jugé. Est **accepté** exactement :
 
 Tout écart fait échouer la commande avant publication.
 
-**La fermeture transitive est une traversée de graphe, pas une observation.** On
+**La fermeture transitive est une traversée du graphe, pas une observation.** On
 part des paquets **directs attendus** (ceux de la recette), on parcourt le
 graphe de dépendances du **lockfile final**, et l'ensemble atteint constitue la
 fermeture autorisée. Toute entrée ajoutée hors de cet ensemble est refusée. La
@@ -298,24 +358,6 @@ cache : `hardlink` sous Linux, `clonefile` sous macOS), global store désactivé
 cache en lecture seule pendant schematic / probes / LLM. Le cache **partagé**
 redevient acceptable, ce qui ramène l'installation de 72 s à froid à **19 s à
 chaud**.
-
-#### Scripts de cycle de vie du dépôt — inventaire fail-closed
-
-`--ignore-scripts` neutralise aussi les scripts du dépôt. Rejouer
-`check-engines` « parce qu'on sait qu'il existe » ne tient pas : une
-modification future de `preinstall`, `install`, `postinstall` ou `prepare`
-serait silencieusement ignorée. La règle est donc un **inventaire classifié,
-fail-closed** :
-
-| Script racine                              | Classification                                                                                    | Conséquence                                           |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `preinstall: node tools/check-engines.mjs` | **rejoué explicitement**                                                                          | exécuté par `add-library` avant la résolution         |
-| `prepare: husky`                           | **inutile dans le candidat** — pas de `.git`, donc aucun hook à installer ; omission **déclarée** | non rejoué, et cette omission est une décision écrite |
-
-Tout script de cycle de vie **apparaissant ou modifié** sans classification fait
-**échouer la gate**. L'inventaire est comparé au `package.json` du candidat, pas
-mémorisé dans le code. Une dépendance exigeant un script restera une **exception
-nommée, justifiée et confinée**, jamais un assouplissement.
 
 ### Confinement OS — deux profils, obligatoires, partout
 
@@ -404,39 +446,56 @@ Le bac à sable ne donne l'écriture que sur `workspace/`. Sans cette séparatio
 un exécutant tiers pourrait altérer le marqueur et forcer une **quarantaine
 permanente** — un déni de service durable sur la racine de bail.
 
-#### Ordre exact des écritures, et crash entre chacune
+#### Opérations réelles, et état de récupération après chacune
 
-| #   | Écriture physique                                                    | Crash juste après → état observé au démarrage suivant                                                                                  |
-| --- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `mkdir <lease-root>/<id>`                                            | dossier sans marqueur ni journal → **inconnu du journal**, purgé par balayage de la racine (propriétaire indéterminable, dossier vide) |
-| 2   | `marker` écrit par `rename` atomique (id, pid, instant de démarrage) | marqueur seul, journal absent → **quarantined**                                                                                        |
-| 3   | entrée `creating` du journal, par `rename` atomique                  | journal + marqueur concordants → `creating`                                                                                            |
-| 4   | `mkdir workspace/` puis matérialisation                              | `creating` incomplet                                                                                                                   |
-| 5   | vérification finale du tree (§ suivante)                             | `creating` vérifié mais non promu                                                                                                      |
-| 6   | passage `creating → active`, par `rename` atomique                   | `active`                                                                                                                               |
+Aucun « `rename` atomique » ni aucune « matérialisation » ne masque plusieurs
+points de crash : chaque ligne est **une** opération, et chaque crash a **un
+seul** état de récupération.
 
-Un crash **entre** deux écritures physiques est donc toujours observable et
-classable — c'est ce que les tests injectent, pas seulement les transitions
-d'états.
+| #   | Opération réelle                                 | État de récupération                                     |
+| --- | ------------------------------------------------ | -------------------------------------------------------- |
+| 1   | `mkdir <lease>/<id>`                             | `unclaimed`                                              |
+| 2   | `open`+`write`+`close` `<lease>/<id>/marker.tmp` | `unclaimed-with-temp`                                    |
+| 3   | `rename marker.tmp → marker`                     | `quarantined` (marqueur sans journal)                    |
+| 4   | `open`+`write`+`close` `<lease>/<id>/state.tmp`  | `quarantined` (idem — le temporaire ne vaut pas journal) |
+| 5   | `rename state.tmp → state.json` = `creating`     | `creating`                                               |
+| 6   | `mkdir <lease>/<id>/workspace/`                  | `creating`                                               |
+| 7   | matérialisation, entrée par entrée               | `creating`                                               |
+| 8   | vérification finale du tree                      | `creating` (vérifié, non promu)                          |
+| 9   | `open`+`write`+`close` `state.tmp` (= `active`)  | `creating`                                               |
+| 10  | `rename state.tmp → state.json`                  | `active`                                                 |
+
+Deux règles rendent ce tableau non ambigu :
+
+- un **temporaire** ne fait jamais avancer un état ; sa seule présence distingue
+  `unclaimed` de `unclaimed-with-temp` ;
+- le **journal** (`state.json`) est la seule autorité d'état ; le marqueur ne
+  sert qu'à prouver l'identité.
+
+`unclaimed-with-temp` n'est **pas** purgeable par `rmdir` (le dossier n'est pas
+vide). Il n'est pas non plus `quarantined` — aucun marqueur n'existe encore,
+donc aucune discordance. Il a son propre contrat : suppression du seul
+`marker.tmp` puis `rmdir`, sous les mêmes conditions cumulatives que
+`unclaimed`, et `quarantined` au moindre écart.
 
 #### États et transitions
 
-| État          | Signification                                                | Transition légale                                                                                   |
-| ------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `unclaimed`   | dossier nu, sans marqueur ni journal                         | → `rmdir` **si et seulement si** toutes les conditions du contrat concordent, sinon → `quarantined` |
-| `creating`    | journal et marqueur concordants, matérialisation non achevée | → `active` (vérification finale du tree réussie) · → `orphaned` (**propriétaire mort**)             |
-| `active`      | candidat utilisable                                          | → `releasing` · → `orphaned` (**propriétaire mort**)                                                |
-| `releasing`   | purge en cours                                               | → `released` ; reprise idempotente si le propriétaire meurt                                         |
-| `released`    | purge achevée                                                | terminal                                                                                            |
-| `orphaned`    | propriétaire mort, depuis `creating` ou `active`             | → `releasing` **si** toutes les conditions d'identité concordent, sinon → `quarantined`             |
-| `quarantined` | journal et marqueur discordent, ou conditions non réunies    | terminal — **jamais** purgé automatiquement, signalé                                                |
+| État                  | Signification                                                | Transition légale                                                                                   |
+| --------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `unclaimed`           | dossier nu, sans marqueur ni journal                         | → `rmdir` **si et seulement si** toutes les conditions du contrat concordent, sinon → `quarantined` |
+| `unclaimed-with-temp` | dossier nu + `marker.tmp` seul                               | → suppression du temporaire puis `rmdir`, **mêmes conditions cumulatives**, sinon → `quarantined`   |
+| `creating`            | journal et marqueur concordants, matérialisation non achevée | → `active` (vérification finale du tree réussie) · → `orphaned` (**propriétaire mort**)             |
+| `active`              | candidat utilisable                                          | → `releasing` · → `orphaned` (**propriétaire mort**)                                                |
+| `releasing`           | purge en cours                                               | → `released` ; reprise idempotente si le propriétaire meurt                                         |
+| `released`            | purge achevée                                                | terminal                                                                                            |
+| `orphaned`            | propriétaire mort, depuis `creating` ou `active`             | → `releasing` **si** toutes les conditions d'identité concordent, sinon → `quarantined`             |
+| `quarantined`         | journal et marqueur discordent, ou conditions non réunies    | terminal — **jamais** purgé automatiquement, signalé                                                |
 
 **Correction d'une contradiction de la version précédente** : un candidat trouvé
 en `creating` ne part **pas** systématiquement en purge. Un second processus
 peut le voir alors que son propriétaire est **vivant** — il doit alors le
 laisser intact. Seul un propriétaire **mort** fait passer `creating` en
-`orphaned`. Et un crash entre les écritures 1 et 3 produit un état sans
-concordance : celui-ci part en `quarantined`, pas en purge.
+`orphaned`.
 
 #### Conditions cumulatives avant toute suppression
 
@@ -565,20 +624,23 @@ deux plans identiques pouvaient correspondre à des exécutions différentes.
 `plan_id = sha256` de la concaténation canonique de :
 
 1. octets de la recette **et** de son schéma ;
-2. octets des **quatre** états de dépendances : `package.json` **initial** (du
-   tree) et **final** (après épinglage), `bun.lock` **initial** (du tree) et
-   **final** (produit au temps 2, validé depuis zéro au temps 3) ; puis
-   `nx.json`, `tsconfig.base.json`, `.gitattributes` (sans effet sur la
-   matérialisation, mais il gouverne le contenu du dépôt et donc le résultat du
-   schematic) ;
-3. commit `C` et arbre complet de `apps/<app>` — liste triée
-   `path\0mode\0sha256` ;
-4. outillage **lu, jamais supposé** : version Node, Bun, Nx (depuis
-   `node_modules/nx/package.json`), et du paquet fournissant le schematic ;
-5. hash du module runner (`library-addition.mjs`) — un changement de runner
+2. les **quatre** états de dépendances : `package.json` racine **initial** (du
+   tree) et **final**, `bun.lock` **initial** et **final** ; exprimés par
+   l'**overlay structuré** `{ path, mode, oid_final }` ordonné canoniquement,
+   plus les OID initiaux correspondants ;
+3. hash de `conventions/libraries/resolution-policy.json` — changer la politique
    invalide les plans antérieurs ;
-6. valeur substituée à `{{app}}` ;
-7. entrée `.compat.json` retenue (versions épinglées avant le schematic).
+4. octets de `nx.json`, `tsconfig.base.json`, `.gitattributes` (sans effet sur
+   la matérialisation, mais il gouverne le contenu du dépôt et donc le résultat
+   du schematic) ;
+5. commit `C` et arbre complet de `apps/<app>` — liste triée
+   `path\0mode\0sha256` ;
+6. outillage **lu, jamais supposé** : version Node, Bun, Nx (depuis
+   `node_modules/nx/package.json`), et du paquet fournissant le schematic ;
+7. hash du module runner (`library-addition.mjs`) — un changement de runner
+   invalide les plans antérieurs ;
+8. valeur substituée à `{{app}}` ;
+9. entrée `.compat.json` retenue (versions épinglées avant le schematic).
 
 Le `plan_id` est **toujours** calculé, affiché et journalisé — même sans
 `--dry-run`. `--expect-plan <plan_id>` le rend contraignant en CI.
