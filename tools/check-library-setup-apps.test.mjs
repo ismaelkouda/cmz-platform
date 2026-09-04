@@ -681,25 +681,34 @@ test('verifyWorkspaceDependency : chaîne complète + cohérence version', async
     );
 });
 
-test('verifyWorkspaceDependency : catalog `>=0.0.0 <23` (borne basse non effective) → échec', async (t) => {
+const depRoot = async (t, catalogValue, lockVersion) => {
     const root = await mkdtemp(join(tmpdir(), 'cmz-dep-'));
     t.after(() => rm(root, { recursive: true, force: true }));
     await write(join(root, 'package.json'), {
         dependencies: { pkg: 'catalog:' },
-        workspaces: { catalog: { pkg: '>=0.0.0 <23' } },
+        workspaces: { catalog: { pkg: catalogValue } },
     });
     await write(
         join(root, 'bun.lock'),
         JSON.stringify({
             workspaces: { '': { dependencies: { pkg: 'catalog:' } } },
-            packages: { pkg: ['pkg@22.5.1', '', {}, 'sha'] },
+            packages: { pkg: [`pkg@${lockVersion}`, '', {}, 'sha'] },
         })
     );
-    // `22.5.1` satisfait bien `>=0.0.0 <23` — mais la plage n'est pas un pin
-    // responsable : borne basse non effective (accepte 0.0.0).
+    return root;
+};
+
+test('verifyWorkspaceDependency : catalog `>=0.0.0 <23` (borne basse non effective) → échec', async (t) => {
+    // `22.5.1` satisfait `>=0.0.0 <23` — mais ce n'est pas un pin responsable.
+    const root = await depRoot(t, '>=0.0.0 <23', '22.5.1');
     assert.ok(
         verifyWorkspaceDependency(root, 'pkg').some((e) =>
             /sans borne basse effective/.test(e)
         )
     );
+});
+
+test('verifyWorkspaceDependency : catalog `1.2.3 >=1` (exact + redondant) → ok', async (t) => {
+    const root = await depRoot(t, '1.2.3 >=1', '1.2.3');
+    assert.deepEqual(verifyWorkspaceDependency(root, 'pkg'), []);
 });

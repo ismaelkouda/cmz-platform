@@ -27,6 +27,9 @@ test('catalogRangeIsBounded : borne basse EFFECTIVE (0.0.0 exclu, sauf exact)', 
         '>=22 <23',
         '1.2.3 - 2.3.4',
         '>=1.0.0 <2.0.0||>=3.0.0 <4.0.0',
+        '1.2.3 >=1', // exact + comparateur redondant : borné
+        '>=1 1.2.3',
+        '1.2.3 >=1 || >=3 <4', // union : exact d'un côté, bornée de l'autre
     ]) {
         assert.equal(catalogRangeIsBounded(bounded), true, bounded);
     }

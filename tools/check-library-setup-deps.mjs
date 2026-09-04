@@ -124,7 +124,8 @@ const BOUND_POLICY = { includePrerelease: false };
 /**
  * Une valeur de catalog en plage est acceptable seulement si CHAQUE branche
  * `||` :
- *   - est une version exacte (y compris `0.0.0`), OU
+ *   - contient un comparateur EXACT non-`ANY` (`1.2.3`, `1.2.3 >=1`, …) — il
+ *     fixe les deux bornes à lui seul, comparateurs redondants inclus ; OU
  *   - possède structurellement une borne HAUTE (`<` / `<=`) ET une borne BASSE
  *     EFFECTIVE — c.-à-d. `0.0.0` ne satisfait PAS la branche. `>=0.0.0`,
  *     `>=0.0.0-0`, `0.x`, `0` acceptent `0.0.0` : pas de borne basse réelle.
@@ -139,11 +140,10 @@ export function catalogRangeIsBounded(catalogValue) {
     }
     if (range.set.length === 0) return false;
     for (const comparators of range.set) {
-        const isExactVersion =
-            comparators.length === 1 &&
-            comparators[0].operator === '' &&
-            comparators[0].semver !== semver.Comparator.ANY;
-        if (isExactVersion) continue;
+        const hasExact = comparators.some(
+            (c) => c.operator === '' && c.semver !== semver.Comparator.ANY
+        );
+        if (hasExact) continue;
 
         if (comparators.some((c) => c.semver === semver.Comparator.ANY)) {
             return false;
