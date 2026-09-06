@@ -231,3 +231,115 @@ test('refuse credentials, argv NUL et image Docker flottante', async (t) => {
         /non épinglée/
     );
 });
+
+// Défaut réel du 2026-09-06 : l'oracle navigateur écrivait des chemins HÔTE
+// dans `argv` et dans l'exécutable conteneur. Sur macOS c'était juste, dans le
+// conteneur — où le candidat est monté sur `/workspace` et la lecture seule sur
+// `/cmz-readonly-<n>` — c'était faux. Les tests Docker mockés ne voyaient rien :
+// ils vérifiaient des drapeaux, jamais la cohérence des chemins.
+test('les jetons de chemin sont résolus selon le backend', async (t) => {
+    const value = await paths(t);
+    const readOnly = join(value.home, '..', 'lecture-seule');
+    await mkdir(readOnly, { mode: 0o700 });
+    const argv = [
+        '--user-data-dir={{candidate}}/node_modules/.profil',
+        'file://{{candidate}}/dist/probe.html',
+    ];
+    const base = {
+        profile: 'execution',
+        ...value,
+        readOnlyPaths: [readOnly],
+        argv,
+        policy: {
+            sandbox: {
+                ...policy.sandbox,
+                container_images: {
+                    ...policy.sandbox.container_images,
+                    execution_renderer: `renderer@sha256:${'c'.repeat(64)}`,
+                },
+            },
+        },
+    };
+    let observed;
+    const spawn = (executable, args, options) => {
+        observed = { executable, args, options };
+        return { status: 0, stdout: '', stderr: '', signal: null };
+    };
+
+    runConfined({
+        ...base,
+        backend: 'macos',
+        hostExecutable: '{{readonly:0}}/moteur',
+        containerExecutable: '{{readonly:0}}/moteur',
+        renderer: true,
+        spawn,
+    });
+    assert.ok(
+        observed.args.includes(`${readOnly}/moteur`),
+        'macOS : chemin hôte du moteur'
+    );
+    assert.ok(
+        observed.args.includes(
+            `--user-data-dir=${value.candidate}/node_modules/.profil`
+        ),
+        'macOS : candidat en chemin hôte'
+    );
+    assert.ok(!observed.args.some((argument) => argument.includes('{{')));
+
+    runConfined({
+        ...base,
+        backend: 'docker',
+        hostExecutable: '{{readonly:0}}/moteur',
+        containerExecutable: '{{readonly:0}}/moteur',
+        renderer: true,
+        spawn,
+    });
+    assert.ok(
+        observed.args.includes('/cmz-readonly-0/moteur'),
+        'docker : moteur au point de montage'
+    );
+    assert.ok(
+        observed.args.includes(
+            '--user-data-dir=/workspace/node_modules/.profil'
+        ),
+        'docker : candidat sur /workspace'
+    );
+    assert.ok(
+        observed.args.includes('file:///workspace/dist/probe.html'),
+        'docker : URL file:// traduite'
+    );
+    assert.ok(!observed.args.some((argument) => argument.includes('{{')));
+
+    assert.throws(
+        () =>
+            runConfined({
+                ...base,
+                backend: 'docker',
+                hostExecutable: '/x',
+                containerExecutable: '{{readonly:9}}/moteur',
+                spawn,
+            }),
+        /jeton de chemin inconnu/
+    );
+});
+
+// Sans image de rendu épinglée, une invocation Docker du moteur produirait une
+// commande qui échouerait obscurément en CI (l'image `node` n'a pas les
+// bibliothèques de Chromium). On refuse en le nommant.
+test('le moteur de rendu est refusé sur Docker sans image épinglée', async (t) => {
+    const value = await paths(t);
+    assert.throws(
+        () =>
+            runConfined({
+                backend: 'docker',
+                profile: 'execution',
+                ...value,
+                hostExecutable: '/usr/bin/node',
+                containerExecutable: '/usr/local/bin/node',
+                renderer: true,
+                policy,
+                spawn: () => ({ status: 0, stdout: '', stderr: '' }),
+            }),
+        /aucune image de rendu épinglée/
+    );
+});

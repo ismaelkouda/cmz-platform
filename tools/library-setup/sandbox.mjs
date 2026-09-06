@@ -141,6 +141,41 @@ function validateInvocation({
     return paths;
 }
 
+/**
+ * Les deux backends n'ont PAS la même arborescence : sur macOS le processus voit
+ * les chemins de l'hôte, dans le conteneur il voit `/workspace` et
+ * `/cmz-readonly-<n>`. Tout appelant qui écrit un chemin ABSOLU dans `argv`
+ * fabrique donc une commande juste sur un backend et fausse sur l'autre —
+ * défaut réel : l'oracle navigateur émettait des chemins hôte dans le
+ * conteneur, invisible aux tests mockés qui ne vérifiaient que des drapeaux.
+ *
+ * Les appelants écrivent donc des jetons, et c'est `runConfined` — seul à
+ * connaître la correspondance — qui les résout. Les chemins RELATIFS restent le
+ * moyen le plus sûr (le cwd est toujours la racine du candidat) : ces jetons ne
+ * servent qu'aux cas qui exigent un chemin absolu, comme une URL `file://`.
+ */
+export function resolveSandboxTokens(value, mapping) {
+    if (typeof value !== 'string') return value;
+    return value.replaceAll(/\{\{(candidate|readonly:\d+)\}\}/g, (_, token) => {
+        const resolved = mapping[token];
+        if (resolved === undefined) fail(`jeton de chemin inconnu : ${token}`);
+        return resolved;
+    });
+}
+
+function sandboxTokenMapping(backend, paths, readOnlyPaths) {
+    const mapping = {
+        candidate: backend === 'docker' ? '/workspace' : paths.candidate,
+    };
+    readOnlyPaths.forEach((path, index) => {
+        mapping[`readonly:${index}`] =
+            backend === 'docker'
+                ? `/cmz-readonly-${index}`
+                : realpathSync(resolve(path));
+    });
+    return mapping;
+}
+
 function escapedSandboxPath(path) {
     if (
         [...path].some((character) => {
@@ -320,15 +355,17 @@ export function runConfined({
         assertDisjoint(resolved, paths.candidate, 'lecture seule et candidat');
     }
     const selected = backend ?? selectSandboxBackend({ spawn });
+    const mapping = sandboxTokenMapping(selected, paths, readOnlyPaths);
+    const resolvedArgv = argv.map((argument) =>
+        resolveSandboxTokens(argument, mapping)
+    );
     const env = cleanEnvironment(paths, profile, extraEnv);
     if (selected === 'macos') {
         if (policy.sandbox?.macos_executable !== '/usr/bin/sandbox-exec') {
             fail('exécutable sandbox macOS non approuvé');
         }
-        if (
-            typeof hostExecutable !== 'string' ||
-            !hostExecutable.startsWith('/')
-        ) {
+        const executable = resolveSandboxTokens(hostExecutable, mapping);
+        if (typeof executable !== 'string' || !executable.startsWith('/')) {
             fail('exécutable hôte absolu requis');
         }
         return checkedSpawn(
@@ -337,27 +374,41 @@ export function runConfined({
                 '-p',
                 macSandboxProfile({
                     profile,
-                    hostExecutable,
+                    hostExecutable: executable,
                     readOnlyPaths,
                     renderer,
                     ...paths,
                 }),
-                hostExecutable,
-                ...argv,
+                executable,
+                ...resolvedArgv,
             ],
             { cwd: paths.candidate, env, timeout: timeoutMs },
             spawn
         );
     }
     if (selected !== 'docker') fail(`backend inconnu : ${selected}`);
+    // Un moteur de rendu ne tourne pas dans une image quelconque : il lui faut
+    // les bibliothèques partagées de Chromium (nss, atk, gbm, alsa…), absentes
+    // de l'image `node` du profil d'exécution. Aucune image de rendu n'est
+    // encore épinglée ni prouvée côté conteneur : on refuse explicitement
+    // plutôt que d'émettre une commande qui échouerait obscurément en CI.
+    // L'oracle navigateur est donc, à ce jour, macOS uniquement — et le dire
+    // vaut mieux que le laisser croire.
+    if (renderer) {
+        const rendererImage =
+            policy.sandbox?.container_images?.execution_renderer;
+        if (!rendererImage) {
+            fail(
+                "backend docker : aucune image de rendu épinglée (sandbox.container_images.execution_renderer) — l'oracle navigateur n'est pas encore prouvé sur ce backend"
+            );
+        }
+    }
     const image = policy.sandbox?.container_images?.[profile];
     if (!/^[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$/.test(image ?? '')) {
         fail(`image ${profile} absente ou non épinglée par digest`);
     }
-    if (
-        typeof containerExecutable !== 'string' ||
-        !containerExecutable.startsWith('/')
-    ) {
+    const executable = resolveSandboxTokens(containerExecutable, mapping);
+    if (typeof executable !== 'string' || !executable.startsWith('/')) {
         fail('exécutable conteneur absolu requis');
     }
     const uid = typeof process.getuid === 'function' ? process.getuid() : 65534;
@@ -413,7 +464,7 @@ export function runConfined({
             'BUN_INSTALL_CACHE_DIR=/cmz-cache'
         );
     }
-    dockerArgs.push(image, containerExecutable, ...argv);
+    dockerArgs.push(image, executable, ...resolvedArgv);
     return checkedSpawn(
         'docker',
         dockerArgs,

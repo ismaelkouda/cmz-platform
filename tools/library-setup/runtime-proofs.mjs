@@ -354,8 +354,14 @@ function proveMaterialTailwindBrowser(context, app) {
             cache: context.cache,
             home: context.home,
             repository: context.repository,
+            // Jetons, jamais de chemins hôte : le conteneur voit `/workspace`
+            // et `/cmz-readonly-0`, pas l'arborescence de la machine. C'est
+            // `runConfined` qui traduit, lui seul connaît la correspondance.
             hostExecutable: context.browserExecutable,
-            containerExecutable: context.browserExecutable,
+            containerExecutable: `{{readonly:0}}/${relative(
+                context.browserRoot,
+                context.browserExecutable
+            )}`,
             readOnlyPaths: [context.browserRoot],
             renderer: true,
             argv: [
@@ -363,9 +369,9 @@ function proveMaterialTailwindBrowser(context, app) {
                 '--disable-gpu',
                 '--no-sandbox',
                 '--disable-dev-shm-usage',
-                `--user-data-dir=${join(context.workspace, 'node_modules/.cmz-browser-profile')}`,
+                '--user-data-dir={{candidate}}/node_modules/.cmz-browser-profile',
                 '--dump-dom',
-                `file://${probe}`,
+                `file://{{candidate}}/${relative(context.workspace, probe)}`,
             ],
             policy: context.policy,
             timeoutMs: 5 * 60_000,

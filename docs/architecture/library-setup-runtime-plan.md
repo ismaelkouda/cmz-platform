@@ -75,6 +75,24 @@ s'applique encore. Ce qu'elle ne couvre pas : mise en page, peinture, états
 focus/ripple — une app fraîchement équipée n'utilise encore aucun composant
 Material, donc le bundle n'en contient aucune règle.
 
+**Limite assumée au 2026-09-06 : l'oracle navigateur est macOS uniquement.**
+L'image `execution` du backend conteneur est une image `node` nue, dépourvue des
+bibliothèques partagées de Chromium (nss, atk, gbm, alsa). Tant qu'aucune image
+de rendu n'est épinglée dans `sandbox.container_images.execution_renderer` ET
+prouvée sur ce backend, `runConfined` **refuse** le profil `renderer` sur Docker
+en le nommant, plutôt que d'émettre une commande qui échouerait obscurément en
+CI. Les deux backends ne portent donc pas encore la même suite : c'est une dette
+déclarée, pas un oubli.
+
+Défaut trouvé au passage, et corrigé : les deux backends n'ont pas la même
+arborescence (`/workspace` et `/cmz-readonly-<n>` dans le conteneur, chemins
+hôte sur macOS). Tout appelant écrivant un chemin absolu dans `argv` fabriquait
+donc une commande juste d'un côté et fausse de l'autre — ce que les tests Docker
+mockés ne pouvaient pas voir, faute de vérifier autre chose que des drapeaux.
+Les chemins absolus passent désormais par des jetons (`{{candidate}}`,
+`{{readonly:<n>}}`) résolus par `runConfined`, seul à connaître la
+correspondance.
+
 ### D3 — La matrice de compatibilité est un fichier séparé
 
 `conventions/libraries/<platform>/<library>.compat.json`, **schéma fermé et

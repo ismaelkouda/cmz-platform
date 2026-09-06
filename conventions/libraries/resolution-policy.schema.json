@@ -87,7 +87,11 @@
           "required": ["resolution", "execution"],
           "properties": {
             "resolution": { "$ref": "#/$defs/digestedImage" },
-            "execution": { "$ref": "#/$defs/digestedImage" }
+            "execution": { "$ref": "#/$defs/digestedImage" },
+            "execution_renderer": {
+              "$ref": "#/$defs/digestedImage",
+              "description": "Image portant les bibliothèques partagées de Chromium (nss, atk, gbm, alsa…), absentes de l'image `execution`. Optionnelle : tant qu'elle manque, runConfined REFUSE le profil renderer sur Docker plutôt que d'émettre une commande qui échouerait obscurément — l'oracle navigateur est alors macOS uniquement."
+            }
           }
         }
       }
