@@ -34,17 +34,46 @@ Transloco + Angular Material + Tailwind pour toute nouvelle application Angular.
 Material ne peut pas redevenir opt-in sans un ADR qui **supersède** formellement
 ADR-0041. Ce plan ne rouvre pas la question.
 
-### D2 — La coexistence navigateur est un job CI dédié et obligatoire
+### D2 — La coexistence navigateur exige un moteur, donc une extension de confiance
 
-Un check **`library-runtime-browser`**, distinct du smoke test de connexion. Il
-peut partager le cache Playwright/Chromium, mais conserve :
+**Révisé le 2026-09-06, à la livraison.** La formulation initiale supposait
+Playwright et un job CI séparé. Deux faits mesurés l'ont écartée.
 
-| Attribut     | Exigence                                                            |
-| ------------ | ------------------------------------------------------------------- |
-| Diagnostic   | le sien (artefacts, trace, capture — jamais mêlés à l'e2e login)    |
-| Déclencheurs | les siens (voir §Déclenchement CI)                                  |
-| Timeout      | le sien                                                             |
-| Statut       | **obligatoire** (required check), dès que le proof passe `enforced` |
+D'abord, aucun moteur de rendu n'est atteignable dans la politique de résolution
+telle qu'écrite : `allowed_registries` ne contient que `registry.npmjs.org`, et
+Playwright comme Puppeteer téléchargent leur binaire **hors bande** depuis un
+CDN, via un `postinstall` que `--ignore-scripts` coupe volontairement. Le moteur
+n'était donc pas indisponible par accident, mais **par politique**.
+
+Ensuite, un oracle sans moteur a été envisagé puis écarté sur mesure : jsdom ne
+résout ni `var(--mat-*)` ni `@layer` — les deux moitiés exactes de la question —
+et aurait passé quoi qu'il arrive. Un oracle fail-open est pire que pas
+d'oracle.
+
+**Décision.** La frontière de confiance est étendue explicitement, et uniquement
+pour cet usage :
+
+| Attribut          | Exigence                                                                                                        |
+| ----------------- | --------------------------------------------------------------------------------------------------------------- |
+| Moteur            | `chrome-headless-shell` (Chrome for Testing), version épinglée dans `resolution-policy.json`                    |
+| Origine           | un seul hôte, `download_host`, distinct de `allowed_registries` pour rester visible                             |
+| Intégrité         | empreinte `sha256` par plateforme, vérifiée **avant extraction** — une archive divergente n'est jamais dézippée |
+| Traçabilité       | le hash de la politique entre dans le `plan_id` : changer de moteur change l'identité du plan                   |
+| Approvisionnement | phase de **résolution** seule (unique phase en réseau), une fois par version, mis en cache hors candidat        |
+| Exécution         | binaire monté en **lecture seule** ; réseau, dépôt, cache Bun et HOME réel restent refusés                      |
+| Extraction        | `--dump-dom` — **ni CDP, ni websocket, ni socket local**                                                        |
+
+Le profil d'exécution est élargi aux services système que Chromium exige (mach,
+mémoire partagée, sysctl, IOKit) : sans eux il meurt en `SIGSEGV`, mesuré. Cet
+élargissement ne rouvre rien d'autre, et c'est vérifié sur le backend réel par
+`sandbox.integration.test.mjs` (profil `renderer`) : HOME réel, dépôt, écriture
+hors candidat et réseau restent refusés, **y compris pour Chromium lui-même**.
+
+Ce que la preuve couvre : les jetons `--mat-*` se résolvent, une règle hors
+couche n'est pas écrasée par le preflight Tailwind, une utilitaire Tailwind
+s'applique encore. Ce qu'elle ne couvre pas : mise en page, peinture, états
+focus/ripple — une app fraîchement équipée n'utilise encore aucun composant
+Material, donc le bundle n'en contient aucune règle.
 
 ### D3 — La matrice de compatibilité est un fichier séparé
 
@@ -446,11 +475,12 @@ Le bac à sable ne donne l'écriture que sur `workspace/`. Sans cette séparatio
 un exécutant tiers pourrait altérer le marqueur et forcer une **quarantaine
 permanente** — un déni de service durable sur la racine de bail.
 
-#### Opérations réelles, et état de récupération après chacune
+#### Frontières observables, et état de récupération après chacune
 
 Aucun « `rename` atomique » ni aucune « matérialisation » ne masque plusieurs
-points de crash : chaque ligne est **une** opération, et chaque crash a **un
-seul** état de récupération.
+**états observables**. Une ligne peut regrouper des appels système dont tous les
+résultats intermédiaires ont la même classification (par exemple un temporaire
+absent, vide ou partiel), mais chaque crash a **un seul** état de récupération.
 
 | #   | Opération réelle                                 | État de récupération                                     |
 | --- | ------------------------------------------------ | -------------------------------------------------------- |
@@ -472,24 +502,29 @@ Deux règles rendent ce tableau non ambigu :
 - le **journal** (`state.json`) est la seule autorité d'état ; le marqueur ne
   sert qu'à prouver l'identité.
 
-`unclaimed-with-temp` n'est **pas** purgeable par `rmdir` (le dossier n'est pas
-vide). Il n'est pas non plus `quarantined` — aucun marqueur n'existe encore,
-donc aucune discordance. Il a son propre contrat : suppression du seul
-`marker.tmp` puis `rmdir`, sous les mêmes conditions cumulatives que
-`unclaimed`, et `quarantined` au moindre écart.
+`unclaimed-with-temp` n'est **pas** purgeable directement par `rmdir` (le
+dossier n'est pas vide). Il n'est pas non plus `quarantined` — aucun marqueur
+n'existe encore, donc aucune discordance. Les états pré-identité ont un contrat
+propre : nom aléatoire conforme, parent canonique, vrai dossier possédé par
+l'UID attendu, permissions exactes et inventaire strictement vide (`unclaimed`)
+ou réduit au seul fichier régulier `marker.tmp` (`unclaimed-with-temp`). Dans le
+second cas, seuls `unlink(marker.tmp)` puis `rmdir` sont permis. PID, instant de
+démarrage et vivacité ne sont vérifiables qu'après publication du marqueur et ne
+sont donc jamais prétendus pour ces deux états. Tout écart devient
+`quarantined`.
 
 #### États et transitions
 
-| État                  | Signification                                                | Transition légale                                                                                   |
-| --------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `unclaimed`           | dossier nu, sans marqueur ni journal                         | → `rmdir` **si et seulement si** toutes les conditions du contrat concordent, sinon → `quarantined` |
-| `unclaimed-with-temp` | dossier nu + `marker.tmp` seul                               | → suppression du temporaire puis `rmdir`, **mêmes conditions cumulatives**, sinon → `quarantined`   |
-| `creating`            | journal et marqueur concordants, matérialisation non achevée | → `active` (vérification finale du tree réussie) · → `orphaned` (**propriétaire mort**)             |
-| `active`              | candidat utilisable                                          | → `releasing` · → `orphaned` (**propriétaire mort**)                                                |
-| `releasing`           | purge en cours                                               | → `released` ; reprise idempotente si le propriétaire meurt                                         |
-| `released`            | purge achevée                                                | terminal                                                                                            |
-| `orphaned`            | propriétaire mort, depuis `creating` ou `active`             | → `releasing` **si** toutes les conditions d'identité concordent, sinon → `quarantined`             |
-| `quarantined`         | journal et marqueur discordent, ou conditions non réunies    | terminal — **jamais** purgé automatiquement, signalé                                                |
+| État                  | Signification                                                | Transition légale                                                                       |
+| --------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `unclaimed`           | dossier nu, sans marqueur ni journal                         | → `rmdir` seulement sous le contrat pré-identité, sinon → `quarantined`                 |
+| `unclaimed-with-temp` | dossier nu + `marker.tmp` seul                               | → `unlink` ciblé puis `rmdir` sous le contrat pré-identité, sinon → `quarantined`       |
+| `creating`            | journal et marqueur concordants, matérialisation non achevée | → `active` (vérification finale du tree réussie) · → `orphaned` (**propriétaire mort**) |
+| `active`              | candidat utilisable                                          | → `releasing` · → `orphaned` (**propriétaire mort**)                                    |
+| `releasing`           | purge en cours                                               | → `released` ; reprise idempotente si le propriétaire meurt                             |
+| `released`            | purge achevée                                                | terminal                                                                                |
+| `orphaned`            | propriétaire mort, depuis `creating` ou `active`             | → `releasing` **si** toutes les conditions d'identité concordent, sinon → `quarantined` |
+| `quarantined`         | journal et marqueur discordent, ou conditions non réunies    | terminal — **jamais** purgé automatiquement, signalé                                    |
 
 **Correction d'une contradiction de la version précédente** : un candidat trouvé
 en `creating` ne part **pas** systématiquement en purge. Un second processus
@@ -497,7 +532,7 @@ peut le voir alors que son propriétaire est **vivant** — il doit alors le
 laisser intact. Seul un propriétaire **mort** fait passer `creating` en
 `orphaned`.
 
-#### Conditions cumulatives avant toute suppression
+#### Conditions cumulatives après publication du marqueur
 
 | Condition    | Règle                                                                                                                                  |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -691,15 +726,17 @@ au-delà de la lecture). Un `--apply` rejoué après succès est sûr.
 `tools/check-library-runtime.mjs`. Toute preuve s'exécute **dans un candidat**,
 jamais dans une vraie app.
 
-| `proof`               | Exécution                                                                                                                                           |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compile-component`   | candidat + composant sentinelle important la primitive ; `ngc --strictTemplates` / build Nx ; échec = type ou template invalide                     |
-| `compiled-css-rule`   | candidat + classe sentinelle unique (`text-[#123456]`) ; build ; la règle `color:#123456` doit figurer dans le CSS émis                             |
-| `browser-coexistence` | candidat + page bouton Material et utilitaires Tailwind ; Playwright : styles Material préservés, utilitaires appliqués, pas de régression du reset |
+| `proof`               | Exécution                                                                                                                                                                                                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compile-component`   | candidat + composant sentinelle important la primitive ; `ngc --strictTemplates` / build Nx ; échec = type ou template invalide                                                                                                                                      |
+| `compiled-css-rule`   | candidat + classe sentinelle unique (`text-[#123456]`) ; build ; la règle `color:#123456` doit figurer dans le CSS émis                                                                                                                                              |
+| `browser-coexistence` | candidat + page portant le CSS **réellement compilé** de l'app ; `chrome-headless-shell` épinglé par empreinte, résultat extrait par `--dump-dom` : jetons `--mat-*` résolus, règle hors couche non écrasée par le preflight, utilitaire Tailwind toujours appliquée |
 
-Bascule `harness-pending → enforced` recette par recette quand le proof est vert
-en CI. `check:library-setup` refuse déjà `enforced` sans harnais : **la bascule
-EST le signal de livraison**.
+`status` n'est pas une promesse : `check:library-setup` le confronte au registre
+d'oracles de `library-setup/runtime-proofs.mjs`, **dans les deux sens**.
+`enforced` sans oracle est une garantie creuse ; `harness-pending` avec oracle
+cache une preuve déjà livrée — c'est ce second cas qui masquait trois oracles
+réels jusqu'au 2026-09-06. La correspondance EST le signal de livraison.
 
 ### Jobs et déclenchement CI
 

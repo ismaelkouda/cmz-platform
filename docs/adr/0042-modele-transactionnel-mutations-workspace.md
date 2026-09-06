@@ -223,6 +223,21 @@ candidat, réseau, lien symbolique d'évasion, sous-processus, credentials,
 chemins absolus, et **fixture à `postinstall`** dont le marqueur doit rester
 absent.
 
+**Amendement du 2026-09-06 — variante `renderer` du profil `execution`.** La
+preuve de coexistence navigateur exige un moteur de rendu, et un moteur n'est
+pas un script : sous le profil nu, Chromium meurt en `SIGSEGV` avant d'ouvrir
+quoi que ce soit. Le profil `execution` accepte donc une variante qui ouvre les
+services système du moteur — mach, mémoire partagée, sysctl, IOKit, lecture des
+bibliothèques du système — **et rien d'autre**. Elle reste refusée au profil
+`resolution` : jamais de moteur là où le réseau est ouvert. Ce qui est protégé
+l'est toujours, et c'est vérifié sur le backend réel avec la variante active :
+HOME réel, dépôt, cache Bun, écriture hors candidat et réseau restent refusés,
+**y compris pour Chromium lui-même**. Le binaire du moteur est monté en
+**lecture seule**, hors du candidat, après vérification de son empreinte
+`sha256` déclarée par la politique (§ D2 du plan) — le seul artefact du système
+qui ne vienne pas du registre npm, et donc le seul dont l'intégrité ne repose
+pas sur `bun.lock`.
+
 **4. Cache de paquets — optimisation, jamais frontière.**
 `BUN_INSTALL_CACHE_DIR` dédié, `--backend=copyfile` **obligatoire**, global
 store désactivé, cache **inaccessible** pendant schematic / probes / LLM. Sans
@@ -261,16 +276,19 @@ l'algorithme du dépôt (`git rev-parse --show-object-format`), jamais le hash
 brut du contenu, et aucune longueur d'OID n'est codée en dur. Un dossier nu,
 sans marqueur ni journal, est `unclaimed` : il n'est supprimé que par `rmdir`,
 jamais récursivement, et seulement si type, vacuité, format du nom aléatoire,
-UID, permissions et parent canonique concordent tous — sinon `quarantined`.
-Enfin, « écrit par `rename` atomique » recouvre quatre opérations : un `SIGKILL`
-peut laisser un temporaire orphelin, état qui figure explicitement dans la
-machine. Un propriétaire **vivant** interdit toute action d'un tiers, quel que
-soit l'état ; seul un propriétaire mort fait passer `creating` ou `active` en
-`orphaned`. Journal et marqueur discordants → `quarantined`, signalé et **jamais
-purgé automatiquement**. Le marqueur vit **hors** du répertoire inscriptible par
-l'exécutant (`<lease>/marker` contre `<lease>/workspace/`), faute de quoi un
-exécutant tiers pourrait forcer une quarantaine permanente — un déni de service
-durable sur la racine de bail.
+UID, permissions et parent canonique concordent tous — sinon `quarantined`. Un
+`marker.tmp` seul autorise uniquement son `unlink` ciblé puis `rmdir` sous les
+mêmes contrôles structurels. PID, instant de démarrage et vivacité ne sont
+exigés qu'après publication du marqueur : les prétendre avant serait
+invérifiable. Enfin, « écrit par `rename` atomique » recouvre quatre opérations
+: un `SIGKILL` peut laisser un temporaire orphelin, état qui figure
+explicitement dans la machine. Un propriétaire **vivant** interdit toute action
+d'un tiers, quel que soit l'état ; seul un propriétaire mort fait passer
+`creating` ou `active` en `orphaned`. Journal et marqueur discordants →
+`quarantined`, signalé et **jamais purgé automatiquement**. Le marqueur vit
+**hors** du répertoire inscriptible par l'exécutant (`<lease>/marker` contre
+`<lease>/workspace/`), faute de quoi un exécutant tiers pourrait forcer une
+quarantaine permanente — un déni de service durable sur la racine de bail.
 
 **7. Identité du plan et frontière de l'agent LLM.** `plan_id` hashe **toutes**
 les entrées qui peuvent changer la sortie : recette et schéma, **l'overlay
