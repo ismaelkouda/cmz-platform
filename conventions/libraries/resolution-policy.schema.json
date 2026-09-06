@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/conventions/library-resolution-policy.schema.json",
+  "title": "CMZ library resolution policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "allowed_registries",
+    "allowed_manifest_protocols",
+    "integrity",
+    "lifecycle_scripts",
+    "sandbox",
+    "browser",
+    "exceptions"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "allowed_registries": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^https://[^/\\s]+$" }
+    },
+    "allowed_manifest_protocols": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "enum": ["catalog:", "workspace:"] }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "scope"],
+      "properties": {
+        "algorithm": { "const": "sha512" },
+        "scope": { "const": "all-external-packages" }
+      }
+    },
+    "lifecycle_scripts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "command",
+              "classification",
+              "runner",
+              "reason"
+            ],
+            "properties": {
+              "name": { "$ref": "#/$defs/lifecycleName" },
+              "command": { "$ref": "#/$defs/nonEmpty" },
+              "classification": { "const": "replay" },
+              "runner": { "$ref": "#/$defs/runner" },
+              "reason": { "$ref": "#/$defs/nonEmpty" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "command", "classification", "reason"],
+            "properties": {
+              "name": { "$ref": "#/$defs/lifecycleName" },
+              "command": { "$ref": "#/$defs/nonEmpty" },
+              "classification": { "enum": ["omit", "reject"] },
+              "reason": { "$ref": "#/$defs/nonEmpty" }
+            }
+          }
+        ]
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["macos_executable", "container_images"],
+      "properties": {
+        "macos_executable": { "const": "/usr/bin/sandbox-exec" },
+        "container_images": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["resolution", "execution"],
+          "properties": {
+            "resolution": { "$ref": "#/$defs/digestedImage" },
+            "execution": { "$ref": "#/$defs/digestedImage" }
+          }
+        }
+      }
+    },
+    "browser": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Extension EXPLICITE de la frontière de confiance : le moteur de rendu ne vient pas du registre npm, il est téléchargé hors bande. Chaque archive est donc épinglée par empreinte sha256, vérifiée AVANT extraction, et l'hôte est limité à `download_host`. Le hash de cette politique entre dans le plan_id : changer de version de navigateur change l'identité du plan.",
+      "required": ["distribution", "version", "download_host", "archives"],
+      "properties": {
+        "distribution": { "const": "chrome-headless-shell" },
+        "version": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.(?:0|[1-9][0-9]*)){3}$"
+        },
+        "download_host": { "const": "https://storage.googleapis.com" },
+        "archives": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "darwin-arm64": { "$ref": "#/$defs/pinnedArchive" },
+            "linux-x64": { "$ref": "#/$defs/pinnedArchive" }
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "maxItems": 0,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "reason", "review_on"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "reason": { "$ref": "#/$defs/nonEmpty" },
+          "review_on": { "type": "string", "format": "date" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "pinnedArchive": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "sha256", "executable"],
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^https://storage\\.googleapis\\.com/chrome-for-testing-public/[0-9.]+/[a-z0-9-]+/chrome-headless-shell-[a-z0-9-]+\\.zip$"
+        },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "executable": {
+          "type": "string",
+          "pattern": "^chrome-headless-shell-[a-z0-9-]+/chrome-headless-shell$"
+        }
+      }
+    },
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "lifecycleName": {
+      "enum": ["preinstall", "install", "postinstall", "prepare"]
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable", "argv"],
+      "properties": {
+        "executable": {
+          "const": "node"
+        },
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9@:/._=-]+$"
+          }
+        }
+      }
+    },
+    "digestedImage": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$"
+    }
+  }
+}

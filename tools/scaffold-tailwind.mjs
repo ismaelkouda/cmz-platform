@@ -31,7 +31,6 @@
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { execFileSync } from 'node:child_process';
 
 const REPO_ROOT = process.cwd();
 
@@ -64,10 +63,24 @@ function parseArguments(argv) {
             index += 1;
             continue;
         }
+        if (argument === '--tailwind-version') {
+            options.tailwindVersion = argv[index + 1];
+            index += 1;
+            continue;
+        }
     }
-    if (!options.app) fail('--app <nom-app> est requis');
+    if (!/^[a-z][a-z0-9-]*$/.test(options.app ?? '')) {
+        fail('--app exige un nom kebab-case sûr');
+    }
     if (!['angular', 'react'].includes(options.reference)) {
         fail('--reference doit être "angular" ou "react"');
+    }
+    if (
+        !/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/.test(
+            options.tailwindVersion ?? ''
+        )
+    ) {
+        fail('--tailwind-version exige une version SemVer exacte');
     }
     return options;
 }
@@ -92,45 +105,7 @@ function assertNotAlreadyConfigured(appDir) {
 }
 
 /**
- * Étape 2 — le vrai garde-fou contre la dérive de conception : si Tailwind
- * est un jour supporté nativement par le tooling Nx/Angular/Vite, ou par une
- * nouvelle version de Tailwind qui ne nécessite plus ce mécanisme, une classe
- * Tailwind arbitraire pourrait déjà fonctionner SANS .postcssrc.json. Ce
- * script doit détecter ce cas et s'arrêter, plutôt que d'empiler une config
- * PostCSS redondante ou conflictuelle sur un mécanisme déjà actif.
- *
- * Test : on lance `nx build` sur l'app cible et on observe si ça passe déjà.
- * Ce n'est pas une preuve formelle que Tailwind est actif (l'app peut juste
- * ne pas encore utiliser de classe Tailwind) — c'est un signal best-effort.
- *
- * NOTE : ce test est best-effort. S'il échoue pour une raison inattendue
- * (app introuvable, build cassé pour une autre raison), on ne bloque pas le
- * scaffolding pour autant — on log un avertissement et on continue, car le
- * risque de faux négatif ici est plus faible que le risque de bloquer tout
- * usage légitime du script à cause d'un environnement de build instable.
- */
-function warnIfTailwindAlreadyActive(app) {
-    console.log(
-        `→ Vérification : Tailwind est-il déjà actif nativement dans ${app} (sans notre config) ?`
-    );
-    try {
-        execFileSync('npx', ['nx', 'build', app], {
-            cwd: REPO_ROOT,
-            stdio: 'pipe',
-            timeout: 120_000,
-        });
-        console.log(
-            `  build ${app} déjà vert avant toute modification — ce n'est pas une preuve suffisante que Tailwind est actif (l'app peut juste ne pas encore utiliser de classe Tailwind). Poursuite du scaffolding.`
-        );
-    } catch {
-        console.log(
-            `  build ${app} échoue ou app non encore buildable en l'état — normal pour une app fraîchement générée. Poursuite du scaffolding.`
-        );
-    }
-}
-
-/**
- * Étape 3 — anti-drift entre sources de référence candidates : si deux apps
+ * Étape 2 — anti-drift entre sources de référence candidates : si deux apps
  * de référence pour le même framework ont des .postcssrc.json différents,
  * ce script ne doit PAS choisir silencieusement l'une des deux. C'est un
  * signal que quelqu'un a fait évoluer une référence sans répercuter l'autre
@@ -167,53 +142,10 @@ function resolveReference(referenceKind) {
 }
 
 /**
- * Étape 4 — traçabilité de version : on inscrit la version de tailwindcss
- * RÉELLEMENT résolue (pas le placeholder catalog) dans le fichier généré,
- * pour qu'un futur audit puisse détecter un décalage entre ce que ce script
- * a produit et la version effectivement utilisée au moment de l'exécution.
- *
- * NE PAS lire package.json seul : ce repo utilise les "catalogs" Bun
- * workspaces, où package.json contient littéralement la chaîne "catalog:"
- * plutôt qu'un numéro de version (vérifié 2026-08-27 — un premier essai de
- * ce script a produit "tailwindcss@catalog:" dans un fichier généré, un
- * défaut de traçabilité silencieux qu'un futur audit n'aurait pas pu
- * exploiter). La version réellement résolue vit dans bun.lock.
+ * Étape 3 — la version exacte vient de la piste de compatibilité déjà validée
+ * par add-library. Le script ne reparcourt jamais bun.lock avec un regex et ne
+ * résout rien lui-même.
  */
-function readInstalledTailwindVersion() {
-    const packageJson = readJsonFile(join(REPO_ROOT, 'package.json'));
-    const declared =
-        packageJson.devDependencies?.tailwindcss ??
-        packageJson.dependencies?.tailwindcss;
-    if (!declared) {
-        fail(
-            'tailwindcss introuvable dans package.json (devDependencies/dependencies). Installe-le avant de lancer ce script.'
-        );
-    }
-    if (declared !== 'catalog:') {
-        // Cas simple : package.json contient déjà un numéro de version exploitable.
-        return declared;
-    }
-    const lockPath = join(REPO_ROOT, 'bun.lock');
-    if (!existsSync(lockPath)) {
-        fail(
-            `package.json déclare tailwindcss: "catalog:" (Bun workspaces catalog) mais bun.lock est introuvable pour résoudre la vraie version. Résous manuellement, ou adapte cette fonction si le mécanisme de lock a changé.`
-        );
-    }
-    const lockContent = readFileSync(lockPath, 'utf8');
-    // Le format bun.lock n'est pas garanti stable entre versions de Bun — on
-    // cherche l'entrée du package racine, pas une dépendance transitive
-    // d'un autre paquet qui pourrait epingler une version différente.
-    const match = lockContent.match(
-        /"tailwindcss":\s*\[\s*"tailwindcss@([\d.]+)"/
-    );
-    if (!match) {
-        fail(
-            `Impossible de résoudre la version réelle de tailwindcss depuis bun.lock (motif attendu introuvable — le format de bun.lock a peut-être changé). Corrige cette fonction avant de faire confiance à la traçabilité de version de ce script.`
-        );
-    }
-    return match[1];
-}
-
 function deriveTailwindCss(referenceName, appName, tailwindVersion) {
     const referenceCssPath = join(
         REPO_ROOT,
@@ -240,12 +172,12 @@ function deriveTailwindCss(referenceName, appName, tailwindVersion) {
         referenceSourcePattern,
         generatedSourcePattern
     );
-    const header = `/* Généré par tools/scaffold-tailwind.mjs depuis apps/${referenceName}/src/tailwind.css, tailwindcss@${tailwindVersion}, ${new Date().toISOString().slice(0, 10)}. */\n`;
+    const header = `/* Généré par tools/scaffold-tailwind.mjs depuis apps/${referenceName}/src/tailwind.css, tailwindcss@${tailwindVersion}. */\n`;
     return header + body;
 }
 
 /**
- * Étape 5a — câblage Angular : édite project.json en JSON réel (jamais de
+ * Étape 4a — câblage Angular : édite project.json en JSON réel (jamais de
  * remplacement texte fragile), échoue explicitement si la structure attendue
  * (targets.build.options.styles, un tableau) n'est pas trouvée.
  */
@@ -276,7 +208,7 @@ function wireAngular(appName) {
 }
 
 /**
- * Étape 5b — câblage React : ancre l'insertion sur le motif stable
+ * Étape 4b — câblage React : ancre l'insertion sur le motif stable
  * "import App from" (le composant racine, présent dans tout générateur
  * @nx/react:application observé à ce jour) plutôt que "le dernier import",
  * qui est sensible à l'ordre et peut varier selon les options du générateur
@@ -322,10 +254,8 @@ function main() {
     }
 
     assertNotAlreadyConfigured(appDir);
-    warnIfTailwindAlreadyActive(options.app);
-
     const reference = resolveReference(options.reference);
-    const tailwindVersion = readInstalledTailwindVersion();
+    const tailwindVersion = options.tailwindVersion;
 
     const postcssPath = join(appDir, '.postcssrc.json');
     writeFileSync(postcssPath, reference.postcssContent);

@@ -318,7 +318,11 @@ test('regex file-matches invalide signalée', async (t) => {
     );
 });
 
-test('runtime_acceptance status "enforced" rejeté tant qu’aucun harnais n’existe', async (t) => {
+// `status` doit correspondre à l'existence d'un oracle enregistré, dans les
+// DEUX sens : « enforced » sans oracle est une garantie creuse, et
+// « harness-pending » avec oracle cache une preuve déjà livrée — c'est ce
+// second cas qui masquait trois oracles réels jusqu'au 2026-09-06.
+test('runtime_acceptance "enforced" exige un oracle enregistré', async (t) => {
     const root = await scaffold(t, {
         recipes: {
             demo: validRecipe({
@@ -334,7 +338,33 @@ test('runtime_acceptance status "enforced" rejeté tant qu’aucun harnais n’e
         },
     });
     assert.ok(
-        validateRecipes(root).errors.some((e) => /"enforced".*harnais/.test(e))
+        validateRecipes(root).errors.some((e) =>
+            /"enforced" sans oracle enregistré/.test(e)
+        )
+    );
+});
+
+test('un oracle enregistré interdit de rester "harness-pending"', () => {
+    const recipes = validateRecipes(REPO_ROOT);
+    assert.equal(recipes.ok, true, recipes.errors.join(' ; '));
+    const material = recipes.recipes.get('angular/angular-material');
+    assert.equal(
+        material.runtime_acceptance.find(
+            (entry) => entry.id === 'material-component-compiles'
+        ).status,
+        'enforced'
+    );
+    const coexistence = material.coexistence.find(
+        (block) => block.with === 'tailwind'
+    ).runtime_acceptance;
+    assert.deepEqual(
+        coexistence.map(
+            (entry) => `${entry.id}:${entry.proof}:${entry.status}`
+        ),
+        [
+            'material-tailwind-cascade-order:compiled-css-rule:enforced',
+            'material-tailwind-render-together:browser-coexistence:enforced',
+        ]
     );
 });
 
@@ -389,6 +419,7 @@ test('coexistence.with inconnue / avec soi-même → erreurs', async (t) => {
                 coexistence: [
                     {
                         with: 'demo',
+                        intent: 'frontière documentée',
                         static_invariants: [
                             {
                                 id: 'x',
@@ -399,6 +430,7 @@ test('coexistence.with inconnue / avec soi-même → erreurs', async (t) => {
                     },
                     {
                         with: 'fantome',
+                        intent: 'frontière documentée',
                         static_invariants: [
                             {
                                 id: 'y',
@@ -414,6 +446,79 @@ test('coexistence.with inconnue / avec soi-même → erreurs', async (t) => {
     const errors = validateRecipes(root).errors;
     assert.ok(errors.some((e) => /coexistence avec elle-même/.test(e)));
     assert.ok(errors.some((e) => /n'a pas de recette pour angular/.test(e)));
+});
+
+// Décision du 2026-09-06 : l'invariant en prose `component-boundary` est
+// retiré (un regex cherchant deux mots dans un commentaire ne peut pas
+// régresser et passe sur n'importe quel `// TODO`). En contrepartie, un bloc de
+// coexistence ne peut pas devenir décoratif : il doit porter au moins un
+// contrôle réel. Sans la branche `anyOf` du validateur — absente jusqu'à ce
+// jour, donc fail-open — cette contrainte ne contraindrait rien.
+test('un bloc de coexistence sans aucun contrôle est refusé', async (t) => {
+    const sansControle = await scaffold(t, {
+        recipes: {
+            demo: validRecipe({
+                coexistence: [{ with: 'autre', intent: 'décoratif' }],
+            }),
+            autre: validRecipe({ library: 'autre' }),
+        },
+    });
+    assert.ok(
+        validateRecipes(sansControle).errors.some((e) =>
+            /must match at least one subschema of anyOf/.test(e)
+        )
+    );
+
+    const sansIntention = await scaffold(t, {
+        recipes: {
+            demo: validRecipe({
+                coexistence: [
+                    {
+                        with: 'autre',
+                        runtime_acceptance: [
+                            {
+                                id: 'preuve',
+                                description: 'd',
+                                proof: 'browser-coexistence',
+                                status: 'harness-pending',
+                            },
+                        ],
+                    },
+                ],
+            }),
+            autre: validRecipe({ library: 'autre' }),
+        },
+    });
+    assert.ok(
+        validateRecipes(sansIntention).errors.some((e) =>
+            /\.intent: is required/.test(e)
+        )
+    );
+
+    // Porter uniquement des acceptances runtime reste valide : c'est
+    // exactement la forme du bloc Material+Tailwind après la décision.
+    const acceptancesSeules = await scaffold(t, {
+        recipes: {
+            demo: validRecipe({
+                coexistence: [
+                    {
+                        with: 'autre',
+                        intent: 'ce que la coexistence garantit',
+                        runtime_acceptance: [
+                            {
+                                id: 'preuve',
+                                description: 'd',
+                                proof: 'browser-coexistence',
+                                status: 'harness-pending',
+                            },
+                        ],
+                    },
+                ],
+            }),
+            autre: validRecipe({ library: 'autre' }),
+        },
+    });
+    assert.deepEqual(validateRecipes(acceptancesSeules).errors, []);
 });
 
 test('BYPASS : recette fournie par lien symbolique → rejetée', async (t) => {

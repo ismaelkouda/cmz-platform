@@ -233,6 +233,38 @@ jobs:
           CMZ_PUBLICATION_PLATFORM: ${{ matrix.platform }}
         run: bun run check:publication-durability
 
+  # ADR-0042 — la frontière du candidat est prouvée sur les deux backends,
+  # avec la même suite hostile. Aucun résultat add-library n'est autorisé si
+  # l'un des OS permet réseau, credentials ou accès hors candidat.
+  library-candidate-isolation:
+    name: Library candidate isolation (${{ matrix.profile }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: linux-docker
+            runner: ubuntu-24.04
+          - profile: macos-sandbox
+            runner: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: check:library-candidate-isolation (${{ matrix.profile }})
+        run: bun run check:library-candidate-isolation
+
   # ─── Job T4-5 : secret scanning (gitleaks) ───────────────────────────────
   # ADR-0006 : même contrôle que husky pre-push (`check:secrets -- --pre-push`).
   # Ici scan **complet** de l'historique git (detect, blocking).

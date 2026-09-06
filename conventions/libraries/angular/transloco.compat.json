@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "library": "transloco",
+  "platform": "angular",
+  "tracks": [
+    {
+      "id": "angular-22-transloco-8",
+      "status": "candidate",
+      "requirements": {
+        "node": ">=22.22.3 <23",
+        "bun": ">=1.3.14 <2",
+        "nx": ">=23.1.0 <24",
+        "framework": ">=22.0.0 <23"
+      },
+      "packages": {
+        "@jsverse/transloco": "8.4.0"
+      },
+      "dependency_section": "dependencies",
+      "catalog": "default",
+      "verified_commit": null,
+      "reason": "Piste initiale Transloco 8 ; passe en verified après compilation et rendu d’une traduction."
+    }
+  ]
+}

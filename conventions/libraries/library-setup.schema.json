@@ -180,12 +180,22 @@
     "coexistence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["with", "static_invariants"],
+      "required": ["with", "intent"],
+      "description": "Un bloc de coexistence doit porter AU MOINS un contrôle : un invariant statique, une acceptance runtime, ou les deux (`anyOf`). Un bloc sans aucun contrôle serait une déclaration décorative. L'intention, elle, est de la prose relue par un humain — jamais une assertion textuelle sur un fichier de l'app : un regex qui cherche des mots dans un commentaire ne peut pas régresser, passe sur n'importe quel `// TODO`, et donne une fausse confiance (invariant `component-boundary` retiré le 2026-09-06 pour cette raison, sa propriété étant désormais prouvée par `material-tailwind-cascade-order` sur le CSS compilé et par `material-tailwind-render-together` dans un vrai moteur).",
+      "anyOf": [
+        { "type": "object", "required": ["static_invariants"] },
+        { "type": "object", "required": ["runtime_acceptance"] }
+      ],
       "properties": {
         "with": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
-          "description": "Une autre bibliothèque ; ces invariants ne sont vérifiés que si l'app déclare aussi celle-ci."
+          "description": "Une autre bibliothèque ; ces contrôles ne sont vérifiés que si l'app déclare aussi celle-ci."
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Ce que la coexistence doit garantir, en clair, pour la relecture humaine. N'est vérifié par aucune machine — ce qui est vérifié vit dans static_invariants et runtime_acceptance."
         },
         "static_invariants": {
           "type": "array",
@@ -194,6 +204,7 @@
         },
         "runtime_acceptance": {
           "type": "array",
+          "minItems": 1,
           "items": { "$ref": "#/$defs/runtime_acceptance" }
         }
       }

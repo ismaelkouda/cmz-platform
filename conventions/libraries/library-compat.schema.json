@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/conventions/library-compat.schema.json",
+  "title": "CMZ library compatibility matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "library", "platform", "tracks"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "library": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "platform": { "enum": ["angular", "react"] },
+    "tracks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status",
+          "requirements",
+          "packages",
+          "dependency_section",
+          "catalog",
+          "verified_commit",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+          },
+          "status": { "enum": ["candidate", "verified"] },
+          "requirements": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["node", "bun", "nx", "framework"],
+            "properties": {
+              "node": { "type": "string", "minLength": 1 },
+              "bun": { "type": "string", "minLength": 1 },
+              "nx": { "type": "string", "minLength": 1 },
+              "framework": { "type": "string", "minLength": 1 }
+            }
+          },
+          "packages": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
+            }
+          },
+          "dependency_section": {
+            "enum": ["dependencies", "devDependencies"]
+          },
+          "catalog": { "enum": ["default", "tooling"] },
+          "verified_commit": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }
+            ]
+          },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

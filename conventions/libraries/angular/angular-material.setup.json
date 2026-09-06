@@ -7,7 +7,19 @@
     "method": "official-schematic",
     "command": {
       "executable": "nx",
-      "argv": ["g", "@angular/material:ng-add", "--project", "{{app}}"]
+      "argv": [
+        "g",
+        "@angular/material:ng-add",
+        "--project",
+        "{{app}}",
+        "--theme",
+        "azure-blue",
+        "--typography",
+        "true",
+        "--animations",
+        "enabled",
+        "--skip-confirmation"
+      ]
     },
     "notes": "Schematic maintenu par l'équipe Angular, version-aware. L'exécuteur (add-library, lot B) installe d'abord @angular/material + @angular/cdk alignés sur @angular/core, puis lance ce schematic avec `{{app}}` = nom du projet Nx. Il écrit un thème M3 (`mat.theme()`) et la typographie. Les flags exacts et le mécanisme d'animations changent version après version — rien de version-spécifique dans les static_invariants ; la preuve de fonctionnement est runtime_acceptance (harnais lot C)."
   },
@@ -28,29 +40,25 @@
       "id": "material-component-compiles",
       "description": "dans un workspace candidat autonome : un composant standalone important un composant Material représentatif (ex. MatButton) compile sous ngc --strictTemplates en import standalone (jamais un NgModule agrégateur). Preuve de compilation uniquement — le rendu DOM et le comportement d'animation sont des critères distincts (browser-coexistence + preuve dédiée, à définir).",
       "proof": "compile-component",
-      "status": "harness-pending"
+      "status": "enforced"
     }
   ],
   "coexistence": [
     {
       "with": "tailwind",
-      "static_invariants": [
-        {
-          "id": "component-boundary",
-          "description": "les styles globaux documentent la frontière : Material pour les composants, Tailwind pour layout/espacement — le preflight Tailwind ne doit pas réinitialiser les composants Material",
-          "assert": {
-            "file": "src/styles.scss",
-            "kind": "file-matches",
-            "value": "[Mm]aterial.*[Tt]ailwind|[Tt]ailwind.*[Mm]aterial"
-          }
-        }
-      ],
+      "intent": "Material possède l'apparence des composants ; Tailwind possède la mise en page et l'espacement. Le preflight Tailwind ne doit jamais réinitialiser un composant Material — garanti mécaniquement par la relation de couche : le preflight est confiné dans @layer, Material émet ses jetons hors couche, et une couche perd toujours contre du CSS hors couche. Corollaire assumé : une utilitaire Tailwind ne surcharge pas non plus un composant Material ; il faut du CSS applicatif hors couche pour cela.",
       "runtime_acceptance": [
         {
+          "id": "material-tailwind-cascade-order",
+          "description": "sur le CSS réellement compilé de l'app : les jetons de design `--mat-*` émis par mat.theme() sont hors couche et le preflight Tailwind est confiné dans @layer. Une couche perd toujours contre du CSS hors couche, donc le reset ne peut effacer ni les jetons ni les composants qui les lisent, quelle que soit la spécificité. À l'installation le bundle ne contient encore aucune règle .mat-* (aucun composant Material utilisé) : cette preuve porte sur la relation de cascade, pas sur un rendu — la mise en page, la peinture et les états focus restent couverts par l'acceptance navigateur.",
+          "proof": "compiled-css-rule",
+          "status": "enforced"
+        },
+        {
           "id": "material-tailwind-render-together",
-          "description": "dans une app candidate isolée : un bouton Material et des utilitaires Tailwind rendus sur la même page ; test navigateur — le bouton garde ses styles Material (hauteur, ripple, états focus) et les utilitaires Tailwind s'appliquent, sans régression du reset",
+          "description": "dans le candidat isolé, un moteur Chromium épinglé par empreinte (politique de résolution) charge le CSS RÉELLEMENT compilé de l'app et rend une page portant un bouton et une utilitaire Tailwind. Le moteur — et non une lecture du texte CSS — confirme trois faits calculés : les jetons --mat-* se résolvent sur <html>, une règle hors couche n'est PAS écrasée par le preflight Tailwind, et une utilitaire Tailwind produit toujours sa couleur. Aucun accès réseau : le résultat est extrait par --dump-dom, sans CDP ni socket.",
           "proof": "browser-coexistence",
-          "status": "harness-pending"
+          "status": "enforced"
         }
       ]
     }
