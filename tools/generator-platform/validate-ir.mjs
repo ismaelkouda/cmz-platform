@@ -45,6 +45,7 @@ function describe(value) {
 }
 
 function schemaTypeMatches(value, expected) {
+    if (expected === 'null') return value === null;
     if (expected === 'array') return Array.isArray(value);
     if (expected === 'object') {
         return (
@@ -143,6 +144,24 @@ export function validateJsonSchema(
             errors.push(
                 `${path}: must match exactly one subschema of oneOf (matched ${matched})`
             );
+        }
+    }
+
+    // Audit staff 2026-09-06 : `anyOf` était le dernier combinateur non lu —
+    // même angle mort fail-open que `allOf` (2026-08-29) et `oneOf`. Un schéma
+    // `anyOf` passait quelle que soit la valeur. Utilisé par
+    // conventions/libraries/library-setup.schema.json pour exiger qu'un bloc
+    // `coexistence` porte AU MOINS un contrôle (invariant statique ou
+    // acceptance runtime), sans interdire d'en porter les deux — ce que `oneOf`
+    // refuserait à tort.
+    if (Array.isArray(currentSchema.anyOf)) {
+        const matched = currentSchema.anyOf.some(
+            (subschema) =>
+                validateJsonSchema(value, subschema, rootSchema, path)
+                    .length === 0
+        );
+        if (!matched) {
+            errors.push(`${path}: must match at least one subschema of anyOf`);
         }
     }
 
