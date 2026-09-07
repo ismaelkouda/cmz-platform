@@ -78,4 +78,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0042](./0042-modele-transactionnel-mutations-workspace.md) | Modèle transactionnel et d'isolation des mutations de workspace | Accepted |
 | [0043](./0043-discipline-de-preuve-des-agents.md)         | Discipline de preuve des agents                          | Proposed |
 | [0044](./0044-bibliotheques-ui-opt-in-apres-create-app.md) | Bibliothèques UI ajoutées à la demande après `create-app` | Accepted |
+| [0045](./0045-realisation-ecran-multi-noeuds-independants.md) | Réalisation d'écran multi-nœuds indépendants             | Accepted |
 <!-- END:GENERATED:adr-index -->

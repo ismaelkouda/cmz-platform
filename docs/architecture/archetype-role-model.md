@@ -111,14 +111,20 @@ rôle reste une projection hashée, jamais une troisième source de vérité. Ce
 autorise la famille `artifact-plan` ; il n'autorise toujours aucun rôle de code
 sans tranche producteur → sélection → consommateur réellement prouvée.
 
-**Versioning** : `schema_version` semver. Les schémas actifs n'acceptent
-actuellement que `1.0.0` ; une nouvelle version doit donc être ajoutée
-explicitement aux producteurs, consommateurs, validateurs et tests dans la même
-modification.
+**Versioning** : `schema_version` semver. `role-registry.schema.json` et
+`archetype-roles.schema.json` n'acceptent que `1.0.0` ; `role-node.schema.json`
+est en `1.1.0` depuis
+[ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md) (le
+payload `screen` a gagné `load_ids` + `data_binding_ids`, ajout additif :
+producteur `role-production.mjs`, consommateur `page-realization.mjs`,
+validateur et tests livrés dans la même modification). Une nouvelle version doit
+toujours être ajoutée explicitement aux producteurs, consommateurs, validateurs
+et tests dans la même modification.
 
-- Ajout rétrocompatible d'un rôle → **MINOR**. La gate reste _fail-closed_ : le
-  producteur, le consommateur et chaque cible supportée doivent être livrés
-  atomiquement dans la même PR. Il n'existe aucun mode transitoire _warn_.
+- Ajout rétrocompatible d'un rôle ou d'un champ de payload → **MINOR**. La gate
+  reste _fail-closed_ : le producteur, le consommateur et chaque cible supportée
+  doivent être livrés atomiquement dans la même PR. Il n'existe aucun mode
+  transitoire _warn_.
 - Renommage / retrait → **MAJOR** + ADR.
 
 ## 4. Les sélecteurs de forme

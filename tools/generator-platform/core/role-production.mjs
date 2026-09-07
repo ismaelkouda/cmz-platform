@@ -16,7 +16,7 @@ export function producePageRoleNode(pageContract, pageContractSha256, schema) {
 
     const page = pageContract.page;
     const node = {
-        schema_version: '1.0.0',
+        schema_version: '1.1.0',
         kind: 'archetype-role-node',
         node_id: `${pageContract.design.id}:${page.id}:screen`,
         role: 'screen',
@@ -32,6 +32,8 @@ export function producePageRoleNode(pageContract, pageContractSha256, schema) {
             state_ids: sortedIds(page.states),
             control_ids: sortedIds(page.controls),
             action_ids: sortedIds(page.actions),
+            load_ids: sortedIds(page.loads),
+            data_binding_ids: sortedIds(page.data_bindings),
             region_ids: sortedIds(page.regions),
         },
     };

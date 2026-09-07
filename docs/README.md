@@ -85,6 +85,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0042](./adr/0042-modele-transactionnel-mutations-workspace.md) | Modèle transactionnel et d'isolation des mutations de workspace |
 | [0043](./adr/0043-discipline-de-preuve-des-agents.md)       | Discipline de preuve des agents                          |
 | [0044](./adr/0044-bibliotheques-ui-opt-in-apres-create-app.md) | Bibliothèques UI ajoutées à la demande après `create-app` |
+| [0045](./adr/0045-realisation-ecran-multi-noeuds-independants.md) | Réalisation d'écran multi-nœuds indépendants             |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

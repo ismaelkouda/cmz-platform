@@ -58,6 +58,8 @@ test('un contrat de page produit un nœud fermé réellement sélectionné', () 
         state_ids: ['ready'],
         control_ids: ['message'],
         action_ids: ['submit'],
+        load_ids: [],
+        data_binding_ids: [],
         region_ids: ['main'],
     });
     const selected = selectArchetype(system, produced);

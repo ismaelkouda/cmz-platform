@@ -59,20 +59,21 @@ produit jamais directement des chemins ou classes d'une cible.
 
 ## 4. Noyau et orchestration
 
-| Capacité                              | État réel                                                         | Niveau |
-| ------------------------------------- | ----------------------------------------------------------------- | :----: |
-| Evidence model avec provenance/fusion | auth + workflow, preuves séparées par source, CI verte 2026-08-17 |   M4   |
-| Semantic model source/cible neutre    | auth + `support`, validés et câblés en CI, verte 2026-08-17       |   M4   |
-| Behavior graph typé                   | `requests` : états, gardes, branches, topologies, CI verte        |   M4   |
-| Presentation intent neutre            | conception Figma uniquement                                       |   M1   |
-| Manifest de génération                | responsabilités, ownership, politiques, CI verte 2026-08-17       |   M4   |
-| Planner déterministe                  | Artifact Plan neutre partagé, CI verte 2026-08-17                 |   M4   |
-| Change Set / dry-run                  | create/replace/preserve/delete/unchanged + drift, CI verte        |   M4   |
-| Publication sur sortie existante      | apply lié au Change Set + verrou + rollback, CI verte             |   M4   |
-| Reprise après interruption            | matrice CI APFS/ext4 verte 2026-08-17                             |   M3   |
-| Extension humaine typée               | `after-success`, runtime + conservation par hash, CI verte        |   M4   |
-| Garde runtime de permissions          | Angular + ReactJS, refus avant effet externe, CI verte            |   M4   |
-| Repair sous contraintes               | méthode documentée, partiellement exercée                         |   M2   |
+| Capacité                               | État réel                                                                          | Niveau |
+| -------------------------------------- | ---------------------------------------------------------------------------------- | :----: |
+| Evidence model avec provenance/fusion  | auth + workflow, preuves séparées par source, CI verte 2026-08-17                  |   M4   |
+| Semantic model source/cible neutre     | auth + `support`, validés et câblés en CI, verte 2026-08-17                        |   M4   |
+| Behavior graph typé                    | `requests` : états, gardes, branches, topologies, CI verte                         |   M4   |
+| Presentation intent neutre             | conception Figma uniquement                                                        |   M1   |
+| Manifest de génération                 | responsabilités, ownership, politiques, CI verte 2026-08-17                        |   M4   |
+| Planner déterministe                   | Artifact Plan neutre partagé, CI verte 2026-08-17                                  |   M4   |
+| Change Set / dry-run                   | create/replace/preserve/delete/unchanged + drift, CI verte                         |   M4   |
+| Publication sur sortie existante       | apply lié au Change Set + verrou + rollback, CI verte                              |   M4   |
+| Reprise après interruption             | matrice CI APFS/ext4 verte 2026-08-17                                              |   M3   |
+| Extension humaine typée                | `after-success`, runtime + conservation par hash, CI verte                         |   M4   |
+| Garde runtime de permissions           | Angular + ReactJS, refus avant effet externe, CI verte                             |   M4   |
+| Réalisation d'écran multi-nœuds indép. | nœud `screen` porte N `load`/`data_binding`, invariant conception + `multi-node-screen.test.mjs` + 2 mutants, CI verte ; oracle Angular réel à venir avec la 1re app multi-nœuds (PLAT-9, ADR-0045) |   M3   |
+| Repair sous contraintes                | méthode documentée, partiellement exercée                                          |   M2   |
 
 `docs/architecture/patterns/pattern-core.schema.json` est un profil structurel
 Angular/Nx transitoire, pas le semantic model de cette table.

@@ -315,6 +315,13 @@ function validateDataBinding(page, binding, index, context, errors) {
         errors
     );
     assertPageAccess(page, operation, path, errors);
+    if (binding.operation_ref) {
+        const key = `${binding.operation_ref.contract_id}:${binding.operation_ref.operation_id}`;
+        if (!context.triggeredOperations.has(key))
+            errors.push(
+                `${path}.operation_ref: no page load or backend action triggers ${key}`
+            );
+    }
     for (const stateId of binding.visible_in_state_ids ?? [])
         stateReference(
             errors,
@@ -440,7 +447,28 @@ function validatePage(page, index, context, errors) {
         page.initial_state_id,
         `${path}.initial_state_id`
     );
-    const local = { ...context, path, states, controls, actions, dataBindings };
+    const triggeredOperations = new Set();
+    for (const load of page.loads ?? []) {
+        if (load.operation_ref)
+            triggeredOperations.add(
+                `${load.operation_ref.contract_id}:${load.operation_ref.operation_id}`
+            );
+    }
+    for (const action of page.actions ?? []) {
+        if (action.kind === 'backend' && action.operation_ref)
+            triggeredOperations.add(
+                `${action.operation_ref.contract_id}:${action.operation_ref.operation_id}`
+            );
+    }
+    const local = {
+        ...context,
+        path,
+        states,
+        controls,
+        actions,
+        dataBindings,
+        triggeredOperations,
+    };
     for (const [actionIndex, action] of (page.actions ?? []).entries())
         validateAction(page, action, actionIndex, local, errors);
     for (const [loadIndex, load] of (page.loads ?? []).entries())
