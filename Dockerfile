@@ -25,7 +25,7 @@
 # sans elle, l'iframe Grafana sera bloquée par la CSP générée à l'entrypoint.
 
 # ─── deps + build ────────────────────────────────────────────────────────────
-FROM oven/bun:1.4.0-debian AS build
+FROM oven/bun:1.4.2-debian AS build
 
 WORKDIR /app
 
