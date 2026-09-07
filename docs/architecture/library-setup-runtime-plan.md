@@ -101,14 +101,26 @@ Une divergence est assumée et documentée dans la suite : le conteneur monte
 `/tmp` en tmpfs inscriptible, donc l'invariant « `tmpdir` fermé » — qui protège
 du chargement natif de Nx — n'a de sens que sur macOS.
 
-**Limite restante : l'oracle navigateur est macOS uniquement.** L'image
-`execution` du backend conteneur est une image `node` nue, dépourvue des
-bibliothèques partagées de Chromium (nss, atk, gbm, alsa). Tant qu'aucune image
-de rendu n'est épinglée dans `sandbox.container_images.execution_renderer` ET
-prouvée sur ce backend, `runConfined` **refuse** le profil `renderer` sur Docker
-en le nommant, plutôt que d'émettre une commande qui échouerait obscurément en
-CI. Les deux backends ne portent donc pas encore la même suite : c'est une dette
-déclarée, pas un oubli.
+**L'oracle navigateur tourne aussi en conteneur depuis le 2026-09-07.** L'image
+`execution` est un `node` nu : mesuré, il y manque **21 bibliothèques
+partagées** (glib, nss, atk, X11, gbm, alsa…) et le binaire refuse de se
+charger. Le profil `renderer` a donc sa propre image, épinglée par digest dans
+`sandbox.container_images.execution_renderer` (`mcr.microsoft.com/playwright`,
+**3,55 Go** — coût assumé). Sans elle, `runConfined` **refuse** en le nommant
+plutôt que d'émettre une commande qui échouerait obscurément ; ce refus est
+lui-même testé, en retirant l'image de la politique.
+
+Le conteneur de rendu est lancé en `--platform linux/amd64` : Chrome for Testing
+ne publie **aucun** build linux-arm64, l'archive épinglée est x86-64. Sur un
+runner amd64 c'est un no-op ; sur un hôte arm64 c'est de l'émulation. Pour la
+même raison l'archive suit le **backend** et non la machine hôte — laisser
+l'hôte décider marcherait par coïncidence sur un runner Linux et casserait
+ailleurs.
+
+Vérifié via le vrai code, sur le CSS réellement compilé, verdict **identique sur
+les deux backends** : 165 jetons `--mat-*`, jeton résolu par le moteur, règle
+hors couche à `7px` (donc non écrasée par le preflight), utilitaire Tailwind à
+`rgb(18, 52, 86)`.
 
 Défaut trouvé au passage, et corrigé : les deux backends n'ont pas la même
 arborescence (`/workspace` et `/cmz-readonly-<n>` dans le conteneur, chemins

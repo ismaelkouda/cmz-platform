@@ -176,6 +176,16 @@ test('empreinte et plateformes couvertes sont explicites', () => {
         browserPlatformKey({ osPlatform: 'linux', osArch: 'x64' }),
         'linux-x64'
     );
+    // Le moteur tourne DANS le conteneur : l'archive suit le backend, pas
+    // l'hôte. Un Mac pilotant Docker doit donc prendre l'archive Linux.
+    assert.equal(
+        browserPlatformKey({
+            backend: 'docker',
+            osPlatform: 'darwin',
+            osArch: 'arm64',
+        }),
+        'linux-x64'
+    );
     assert.throws(
         () => browserPlatformKey({ osPlatform: 'win32', osArch: 'x64' }),
         /non couverte par la politique/

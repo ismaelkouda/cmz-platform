@@ -368,7 +368,7 @@ export async function addLibrary({
         const browser = requiredAcceptances(recipe, libraries).some(
             (entry) => entry.proof === 'browser-coexistence'
         )
-            ? await provisionBrowser({ policy })
+            ? await provisionBrowser({ policy, backend })
             : undefined;
         onProgress({ step: 5, total: 8, id: 'recipe' });
         executeLibraryRecipe({

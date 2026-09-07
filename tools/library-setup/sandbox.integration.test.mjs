@@ -235,9 +235,13 @@ forEachBackend(
         const paths = await fixture(t);
         const { policy, errors } = loadResolutionPolicy(repositoryRoot);
         assert.deepEqual(errors, []);
+        // Retirer l'image de rendu de la politique doit ramener le refus
+        // explicite : l'image `execution` est un `node` nu où il manque 21
+        // bibliothèques partagées, et le binaire refuse de se charger (mesuré).
         if (backend === 'docker') {
-            // Aucune image de rendu n'est encore épinglée : le refus explicite EST
-            // le comportement attendu, et il doit être vérifié, pas contourné.
+            const { execution_renderer, ...sansRendu } =
+                policy.sandbox.container_images;
+            assert.ok(execution_renderer, 'image de rendu épinglée attendue');
             assert.throws(
                 () =>
                     runConfined({
@@ -247,19 +251,34 @@ forEachBackend(
                         hostExecutable: process.execPath,
                         containerExecutable: '/usr/local/bin/node',
                         argv: ['-e', ''],
-                        policy,
+                        policy: {
+                            ...policy,
+                            sandbox: {
+                                ...policy.sandbox,
+                                container_images: sansRendu,
+                            },
+                        },
                         renderer: true,
                     }),
                 /aucune image de rendu épinglée/
             );
-            return;
         }
+        const forbiddenHome =
+            backend === 'docker' ? '/host-home-not-mounted' : homedir();
+        const forbiddenRepository =
+            backend === 'docker'
+                ? '/host-repository-not-mounted'
+                : repositoryRoot;
+        const outsideTarget =
+            backend === 'docker'
+                ? '/etc/cmz-escape'
+                : '/tmp/cmz-renderer-escape';
         const child = String.raw`
 const fs = require('node:fs');
 const result = {};
-try { fs.readdirSync(${JSON.stringify(homedir())}); result.realHomeRead = true; } catch (error) { result.realHomeRead = error.code; }
-try { fs.readdirSync(${JSON.stringify(repositoryRoot)}); result.repositoryRead = true; } catch (error) { result.repositoryRead = error.code; }
-try { fs.writeFileSync('/tmp/cmz-renderer-escape', 'x'); result.outsideWrite = true; } catch (error) { result.outsideWrite = error.code; }
+try { fs.readdirSync(${JSON.stringify(forbiddenHome)}); result.realHomeRead = true; } catch (error) { result.realHomeRead = error.code; }
+try { fs.readdirSync(${JSON.stringify(forbiddenRepository)}); result.repositoryRead = true; } catch (error) { result.repositoryRead = error.code; }
+try { fs.writeFileSync(${JSON.stringify(outsideTarget)}, 'x'); result.outsideWrite = true; } catch (error) { result.outsideWrite = error.code; }
 try { fs.writeFileSync(process.cwd() + '/allowed', 'ok'); result.candidateWrite = true; } catch (error) { result.candidateWrite = error.code; }
 const timer = setTimeout(() => { result.network = 'timeout'; console.log(JSON.stringify(result)); }, 5000);
 fetch('https://registry.npmjs.org/bun').then((response) => { clearTimeout(timer); result.network = response.status; console.log(JSON.stringify(result)); }).catch((error) => { clearTimeout(timer); result.network = error.cause?.code || error.name; console.log(JSON.stringify(result)); });
@@ -269,7 +288,9 @@ fetch('https://registry.npmjs.org/bun').then((response) => { clearTimeout(timer)
             profile: 'execution',
             ...paths,
             hostExecutable: process.execPath,
-            containerExecutable: '/usr/local/bin/node',
+            // L'image de rendu n'est pas l'image d'exécution : son node vit
+            // dans /usr/bin, pas /usr/local/bin.
+            containerExecutable: '/usr/bin/node',
             argv: ['-e', child],
             policy,
             renderer: true,

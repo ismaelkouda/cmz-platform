@@ -409,25 +409,21 @@ export function runConfined({
         );
     }
     if (selected !== 'docker') fail(`backend inconnu : ${selected}`);
-    // Un moteur de rendu ne tourne pas dans une image quelconque : il lui faut
-    // les bibliothèques partagées de Chromium (nss, atk, gbm, alsa…), absentes
-    // de l'image `node` du profil d'exécution. Aucune image de rendu n'est
-    // encore épinglée ni prouvée côté conteneur : on refuse explicitement
-    // plutôt que d'émettre une commande qui échouerait obscurément en CI.
-    // L'oracle navigateur est donc, à ce jour, macOS uniquement — et le dire
-    // vaut mieux que le laisser croire.
-    if (renderer) {
-        const rendererImage =
-            policy.sandbox?.container_images?.execution_renderer;
-        if (!rendererImage) {
-            fail(
-                "backend docker : aucune image de rendu épinglée (sandbox.container_images.execution_renderer) — l'oracle navigateur n'est pas encore prouvé sur ce backend"
-            );
-        }
+    // Un moteur de rendu ne tourne pas dans une image quelconque : mesuré dans
+    // l'image `node` du profil d'exécution, il manque **21 bibliothèques**
+    // partagées (glib, nss, atk, X11, gbm, alsa…) et le binaire refuse de se
+    // charger. Le profil `renderer` exige donc sa propre image, épinglée par
+    // digest ; sans elle on refuse plutôt que d'émettre une commande qui
+    // échouerait obscurément en CI.
+    const imageKey = renderer ? 'execution_renderer' : profile;
+    if (renderer && !policy.sandbox?.container_images?.execution_renderer) {
+        fail(
+            "backend docker : aucune image de rendu épinglée (sandbox.container_images.execution_renderer) — l'oracle navigateur n'est pas prouvé sur ce backend"
+        );
     }
-    const image = policy.sandbox?.container_images?.[profile];
+    const image = policy.sandbox?.container_images?.[imageKey];
     if (!/^[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$/.test(image ?? '')) {
-        fail(`image ${profile} absente ou non épinglée par digest`);
+        fail(`image ${imageKey} absente ou non épinglée par digest`);
     }
     const executable = resolveSandboxTokens(containerExecutable, mapping);
     if (typeof executable !== 'string' || !executable.startsWith('/')) {
@@ -438,6 +434,13 @@ export function runConfined({
     const dockerArgs = [
         'run',
         '--rm',
+        // Chrome for Testing ne publie AUCUN build linux-arm64 : l'archive
+        // épinglée est x86-64. L'architecture du conteneur doit donc être
+        // imposée, sinon un hôte arm64 démarrerait une image arm64 dans
+        // laquelle notre binaire ne peut pas se charger. Sur un runner amd64
+        // c'est un no-op ; sur un Mac arm64 c'est de l'émulation, plus lente
+        // mais fidèle.
+        ...(renderer ? ['--platform', 'linux/amd64'] : []),
         '--read-only',
         '--cap-drop',
         'ALL',

@@ -13,10 +13,6 @@ import {
 import { arch, platform, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-function fail(message) {
-    throw new Error(`library browser: ${message}`);
-}
-
 /**
  * Le moteur de rendu est la SEULE dépendance qui ne vient pas du registre npm :
  * il est téléchargé hors bande, donc hors du modèle d'intégrité de bun.lock.
@@ -29,13 +25,33 @@ function fail(message) {
  * Linux : le recopier à chaque exécution serait absurde) et n'est monté qu'en
  * LECTURE dans le profil d'exécution.
  */
+
+function fail(message) {
+    throw new Error(`library browser: ${message}`);
+}
+
+/**
+ * L'archive suit le BACKEND, pas la machine hôte : le moteur tourne dans le
+ * conteneur, pas sur l'hôte. Sous Docker c'est donc toujours l'archive Linux
+ * x86-64 — Chrome for Testing ne publie aucun build linux-arm64, et le
+ * conteneur est lancé en `--platform linux/amd64` pour cette raison. Laisser
+ * l'hôte décider marcherait par coïncidence sur un runner Linux et casserait
+ * ailleurs.
+ */
 export function browserPlatformKey({
+    backend,
     osPlatform = platform(),
     osArch = arch(),
 } = {}) {
-    if (osPlatform === 'darwin' && osArch === 'arm64') return 'darwin-arm64';
-    if (osPlatform === 'linux' && osArch === 'x64') return 'linux-x64';
-    fail(`plateforme non couverte par la politique : ${osPlatform}/${osArch}`);
+    if (backend === 'docker') return 'linux-x64';
+    if (backend === 'macos' || backend === undefined) {
+        if (osPlatform === 'darwin' && osArch === 'arm64')
+            return 'darwin-arm64';
+        if (osPlatform === 'linux' && osArch === 'x64') return 'linux-x64';
+    }
+    fail(
+        `plateforme non couverte par la politique : ${backend ?? 'hôte'} ${osPlatform}/${osArch}`
+    );
 }
 
 export function browserCacheRoot(requestedRoot) {
@@ -104,7 +120,8 @@ export function browserExecutablePath(policy, cacheRoot, platformKey) {
 export async function provisionBrowser({
     policy,
     cacheRoot,
-    platformKey = browserPlatformKey(),
+    backend,
+    platformKey = browserPlatformKey({ backend }),
     download = defaultDownload,
     unzip = defaultUnzip,
 }) {
