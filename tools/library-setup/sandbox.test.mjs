@@ -190,7 +190,9 @@ test('Docker est sans shell, sans réseau en exécution et utilise une image dig
     );
     assert.ok(observed.argv.includes('/usr/local/bin/node'));
     assert.ok(
-        observed.argv.includes(`type=bind,src=${value.home},dst=/cmz-home,ro`)
+        observed.argv.includes(
+            `type=bind,src=${value.home},dst=/cmz-home,readonly`
+        )
     );
     assert.ok(!observed.argv.some((arg) => arg.includes('dst=/cmz-cache')));
 });

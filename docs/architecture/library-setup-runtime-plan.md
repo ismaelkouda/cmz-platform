@@ -75,8 +75,34 @@ s'applique encore. Ce qu'elle ne couvre pas : mise en page, peinture, états
 focus/ripple — une app fraîchement équipée n'utilise encore aucun composant
 Material, donc le bundle n'en contient aucune règle.
 
-**Limite assumée au 2026-09-06 : l'oracle navigateur est macOS uniquement.**
-L'image `execution` du backend conteneur est une image `node` nue, dépourvue des
+**Le backend conteneur est exercé depuis le 2026-09-07.** Il ne l'avait jamais
+été : `selectSandboxBackend` ne rend qu'un backend — sur un Mac, toujours
+`macos` — donc le chemin Docker n'était vérifié que par des tests mockés. Ils
+asseyaient la chaîne `--mount type=bind,…,dst=/workspace,rw`, que Docker refuse
+en **code 125 avant tout démarrage de conteneur** : `rw` n'est pas un champ
+valide, seul `readonly` l'est comme champ nu. Le backend conteneur ne
+fonctionnait donc **pour aucun profil**, et le test encodait le défaut au lieu
+de l'attraper.
+
+Corrigé, et la suite adversariale itère désormais sur **tous** les backends
+disponibles (`availableSandboxBackends`), pas seulement sur celui que la
+production choisirait : « les deux backends passent la même suite » devient un
+mécanisme. Mesuré ici, Docker démarré sur macOS : **10 épreuves, 5 par backend,
+toutes vertes** ; en réintroduisant la syntaxe fautive, les 4 épreuves Docker
+tombent.
+
+Résultats mesurés côté conteneur — profil d'exécution : écriture candidat
+autorisée, dépôt et cache Bun **non montés** (`ENOENT`), HOME et rootfs en
+lecture seule (`EROFS`), sous-processus bloqué, réseau coupé (`EAI_AGAIN`),
+aucun credential, uid non-root. Profil de résolution : HOME jetable et cache
+inscriptibles, dépôt inaccessible, registre joignable (`200`).
+
+Une divergence est assumée et documentée dans la suite : le conteneur monte
+`/tmp` en tmpfs inscriptible, donc l'invariant « `tmpdir` fermé » — qui protège
+du chargement natif de Nx — n'a de sens que sur macOS.
+
+**Limite restante : l'oracle navigateur est macOS uniquement.** L'image
+`execution` du backend conteneur est une image `node` nue, dépourvue des
 bibliothèques partagées de Chromium (nss, atk, gbm, alsa). Tant qu'aucune image
 de rendu n'est épinglée dans `sandbox.container_images.execution_renderer` ET
 prouvée sur ce backend, `runConfined` **refuse** le profil `renderer` sur Docker

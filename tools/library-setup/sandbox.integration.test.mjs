@@ -7,9 +7,24 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 import { loadResolutionPolicy } from './resolution-policy.mjs';
-import { runConfined, selectSandboxBackend } from './sandbox.mjs';
+import { availableSandboxBackends, runConfined } from './sandbox.mjs';
 
 const repositoryRoot = new URL('../..', import.meta.url).pathname;
+
+// Chaque épreuve tourne sur CHAQUE backend disponible ici. Sur un Mac avec
+// Docker démarré, cela veut dire les deux — et c'est justement ce qui manquait
+// quand le chemin conteneur, jamais exercé en local, a laissé passer une
+// syntaxe `--mount` invalide.
+const backends = availableSandboxBackends();
+if (backends.length === 0) {
+    throw new Error('aucun backend de confinement disponible pour la suite');
+}
+
+function forEachBackend(title, body) {
+    for (const backend of backends) {
+        test(`[${backend}] ${title}`, (t) => body(t, backend));
+    }
+}
 
 async function fixture(t) {
     const root = await realpath(
@@ -28,24 +43,25 @@ async function fixture(t) {
     return paths;
 }
 
-test('les attaques sont bloquées par le backend OS réel', async (t) => {
-    const paths = await fixture(t);
-    const { policy, errors } = loadResolutionPolicy(repositoryRoot);
-    assert.deepEqual(errors, []);
-    const backend = selectSandboxBackend();
-    const forbiddenRepository =
-        backend === 'docker'
-            ? '/host-repository-not-mounted/package.json'
-            : join(paths.repository, 'package.json');
-    const forbiddenCache =
-        backend === 'docker'
-            ? '/cmz-cache/secret'
-            : join(paths.cache, 'secret');
-    const repositoryTarget =
-        backend === 'docker'
-            ? '/host-repository-not-mounted'
-            : paths.repository;
-    const child = String.raw`
+forEachBackend(
+    'les attaques sont bloquées par le backend OS réel',
+    async (t, backend) => {
+        const paths = await fixture(t);
+        const { policy, errors } = loadResolutionPolicy(repositoryRoot);
+        assert.deepEqual(errors, []);
+        const forbiddenRepository =
+            backend === 'docker'
+                ? '/host-repository-not-mounted/package.json'
+                : join(paths.repository, 'package.json');
+        const forbiddenCache =
+            backend === 'docker'
+                ? '/cmz-cache/secret'
+                : join(paths.cache, 'secret');
+        const repositoryTarget =
+            backend === 'docker'
+                ? '/host-repository-not-mounted'
+                : paths.repository;
+        const child = String.raw`
 const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
 const result = { credentials: Object.keys(process.env).filter((key) => /(TOKEN|SECRET|PASSWORD|AUTH|SSH|GIT_|NPM_)/i.test(key)) };
@@ -60,58 +76,64 @@ result.subprocessWrite = nested.status === 0;
 const timer = setTimeout(() => { result.network = 'timeout'; console.log(JSON.stringify(result)); }, 5000);
 fetch('https://example.com').then(() => { clearTimeout(timer); result.network = true; console.log(JSON.stringify(result)); }).catch((error) => { clearTimeout(timer); result.network = error.cause?.code || error.name; console.log(JSON.stringify(result)); });
 `;
-    const execution = runConfined({
-        backend,
-        profile: 'execution',
-        ...paths,
-        hostExecutable: process.execPath,
-        containerExecutable: '/usr/local/bin/node',
-        argv: ['-e', child],
-        policy,
-    });
-    assert.equal(execution.status, 0, execution.stderr);
-    const observed = JSON.parse(execution.stdout.trim());
-    assert.equal(observed.candidateWrite, true);
-    assert.notEqual(observed.repositoryRead, true);
-    assert.notEqual(observed.repositoryWrite, true);
-    assert.notEqual(observed.cacheRead, true);
-    assert.notEqual(observed.homeWrite, true);
-    assert.notEqual(observed.symlinkRead, true);
-    assert.equal(observed.subprocessWrite, false);
-    assert.notEqual(observed.network, true);
-    assert.deepEqual(observed.credentials, []);
-});
+        const execution = runConfined({
+            backend,
+            profile: 'execution',
+            ...paths,
+            hostExecutable: process.execPath,
+            containerExecutable: '/usr/local/bin/node',
+            argv: ['-e', child],
+            policy,
+        });
+        assert.equal(execution.status, 0, execution.stderr);
+        const observed = JSON.parse(execution.stdout.trim());
+        assert.equal(observed.candidateWrite, true);
+        assert.notEqual(observed.repositoryRead, true);
+        assert.notEqual(observed.repositoryWrite, true);
+        assert.notEqual(observed.cacheRead, true);
+        assert.notEqual(observed.homeWrite, true);
+        assert.notEqual(observed.symlinkRead, true);
+        assert.equal(observed.subprocessWrite, false);
+        assert.notEqual(observed.network, true);
+        assert.deepEqual(observed.credentials, []);
+    }
+);
 
-test('le profil de résolution exécute uniquement le Bun épinglé', async (t) => {
-    const paths = await fixture(t);
-    const { policy, errors } = loadResolutionPolicy(repositoryRoot);
-    assert.deepEqual(errors, []);
-    const backend = selectSandboxBackend();
-    const resolution = runConfined({
-        backend,
-        profile: 'resolution',
-        ...paths,
-        hostExecutable: realpathSync(
-            execFileSync('which', ['bun'], { encoding: 'utf8' }).trim()
-        ),
-        containerExecutable: '/usr/local/bin/bun',
-        argv: ['--version'],
-        policy,
-    });
-    assert.equal(resolution.status, 0, resolution.stderr);
-    assert.equal(resolution.stdout.trim(), '1.3.14');
-});
+forEachBackend(
+    'le profil de résolution exécute uniquement le Bun épinglé',
+    async (t, backend) => {
+        const paths = await fixture(t);
+        const { policy, errors } = loadResolutionPolicy(repositoryRoot);
+        assert.deepEqual(errors, []);
+        const resolution = runConfined({
+            backend,
+            profile: 'resolution',
+            ...paths,
+            hostExecutable: realpathSync(
+                execFileSync('which', ['bun'], { encoding: 'utf8' }).trim()
+            ),
+            containerExecutable: '/usr/local/bin/bun',
+            argv: ['--version'],
+            policy,
+        });
+        assert.equal(resolution.status, 0, resolution.stderr);
+        assert.equal(resolution.stdout.trim(), '1.3.14');
+    }
+);
 
-test('le profil de résolution refuse le vrai HOME et le vrai dépôt malgré le réseau ouvert', async (t) => {
-    const paths = await fixture(t);
-    const { policy, errors } = loadResolutionPolicy(repositoryRoot);
-    assert.deepEqual(errors, []);
-    const backend = selectSandboxBackend();
-    const forbiddenHome =
-        backend === 'docker' ? '/host-home-not-mounted' : homedir();
-    const forbiddenRepository =
-        backend === 'docker' ? '/host-repository-not-mounted' : repositoryRoot;
-    const child = String.raw`
+forEachBackend(
+    'le profil de résolution refuse le vrai HOME et le vrai dépôt malgré le réseau ouvert',
+    async (t, backend) => {
+        const paths = await fixture(t);
+        const { policy, errors } = loadResolutionPolicy(repositoryRoot);
+        assert.deepEqual(errors, []);
+        const forbiddenHome =
+            backend === 'docker' ? '/host-home-not-mounted' : homedir();
+        const forbiddenRepository =
+            backend === 'docker'
+                ? '/host-repository-not-mounted'
+                : repositoryRoot;
+        const child = String.raw`
 const fs = require('node:fs');
 const result = {};
 try { fs.readdirSync(${JSON.stringify(forbiddenHome)}); result.realHomeRead = true; } catch (error) { result.realHomeRead = error.code; }
@@ -120,24 +142,25 @@ try { fs.writeFileSync(process.env.HOME + '/allowed', 'ok'); result.disposableHo
 try { const response = await fetch('https://registry.npmjs.org/bun'); result.network = response.status; } catch (error) { result.network = error.cause?.code || error.name; }
 console.log(JSON.stringify(result));
 `;
-    const resolution = runConfined({
-        backend,
-        profile: 'resolution',
-        ...paths,
-        hostExecutable: realpathSync(
-            execFileSync('which', ['bun'], { encoding: 'utf8' }).trim()
-        ),
-        containerExecutable: '/usr/local/bin/bun',
-        argv: ['-e', child],
-        policy,
-    });
-    assert.equal(resolution.status, 0, resolution.stderr);
-    const observed = JSON.parse(resolution.stdout.trim());
-    assert.notEqual(observed.realHomeRead, true);
-    assert.notEqual(observed.realRepositoryRead, true);
-    assert.equal(observed.disposableHomeWrite, true);
-    assert.equal(observed.network, 200);
-});
+        const resolution = runConfined({
+            backend,
+            profile: 'resolution',
+            ...paths,
+            hostExecutable: realpathSync(
+                execFileSync('which', ['bun'], { encoding: 'utf8' }).trim()
+            ),
+            containerExecutable: '/usr/local/bin/bun',
+            argv: ['-e', child],
+            policy,
+        });
+        assert.equal(resolution.status, 0, resolution.stderr);
+        const observed = JSON.parse(resolution.stdout.trim());
+        assert.notEqual(observed.realHomeRead, true);
+        assert.notEqual(observed.realRepositoryRead, true);
+        assert.equal(observed.disposableHomeWrite, true);
+        assert.equal(observed.network, 200);
+    }
+);
 
 // Contre-épreuve du 2026-09-05. Nx recopie son binaire natif dans os.tmpdir()
 // avant de le charger, et n'échoue PAS bruyamment quand la copie est refusée :
@@ -147,12 +170,13 @@ console.log(JSON.stringify(result));
 // profil d'exécution, et chaque emplacement que l'on désigne à Nx doit, lui,
 // être réellement inscriptible depuis l'intérieur du bac à sable — vérifié sur
 // le backend réel, pas sur un mock.
-test('sous le profil d’exécution, tmpdir est fermé et les emplacements Nx sont ouverts', async (t) => {
-    const paths = await fixture(t);
-    const { policy, errors } = loadResolutionPolicy(repositoryRoot);
-    assert.deepEqual(errors, []);
-    const backend = selectSandboxBackend();
-    const child = String.raw`
+forEachBackend(
+    'les emplacements Nx déclarés sont réellement inscriptibles',
+    async (t, backend) => {
+        const paths = await fixture(t);
+        const { policy, errors } = loadResolutionPolicy(repositoryRoot);
+        assert.deepEqual(errors, []);
+        const child = String.raw`
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -172,40 +196,65 @@ for (const key of ['NX_CACHE_DIRECTORY', 'NX_WORKSPACE_DATA_DIRECTORY', 'NX_NATI
 }
 console.log(JSON.stringify(result));
 `;
-    const execution = runConfined({
-        backend,
-        profile: 'execution',
-        ...paths,
-        hostExecutable: process.execPath,
-        containerExecutable: '/usr/local/bin/node',
-        argv: ['-e', child],
-        policy,
-    });
-    assert.equal(execution.status, 0, execution.stderr);
-    const observed = JSON.parse(execution.stdout.trim());
-    assert.notEqual(
-        observed.tmpdirWrite,
-        true,
-        'tmpdir doit rester non inscriptible'
-    );
-    assert.deepEqual(observed.directories, {
-        NX_CACHE_DIRECTORY: true,
-        NX_WORKSPACE_DATA_DIRECTORY: true,
-        NX_NATIVE_FILE_CACHE_DIRECTORY: true,
-    });
-});
+        const execution = runConfined({
+            backend,
+            profile: 'execution',
+            ...paths,
+            hostExecutable: process.execPath,
+            containerExecutable: '/usr/local/bin/node',
+            argv: ['-e', child],
+            policy,
+        });
+        assert.equal(execution.status, 0, execution.stderr);
+        const observed = JSON.parse(execution.stdout.trim());
+        if (backend === 'macos') {
+            // Divergence assumée : le conteneur monte /tmp en tmpfs inscriptible,
+            // donc la panne du cache natif Nx n'existe pas là-bas. Sur macOS, où
+            // seul le candidat est inscriptible, l'invariant est réel.
+            assert.notEqual(
+                observed.tmpdirWrite,
+                true,
+                'tmpdir doit rester non inscriptible sur macOS'
+            );
+        }
+        assert.deepEqual(observed.directories, {
+            NX_CACHE_DIRECTORY: true,
+            NX_WORKSPACE_DATA_DIRECTORY: true,
+            NX_NATIVE_FILE_CACHE_DIRECTORY: true,
+        });
+    }
+);
 
 // Le moteur de rendu exige des services système que le profil nu refuse — sans
 // eux Chromium meurt en SIGSEGV. Ces permissions ne doivent RIEN rouvrir
 // d'autre : ce test le vérifie sur le backend réel, avec le profil `renderer`
 // activé, en tentant les mêmes attaques que la suite principale.
-test('le profil moteur de rendu n’ouvre ni réseau, ni HOME réel, ni dépôt', async (t) => {
-    const paths = await fixture(t);
-    const { policy, errors } = loadResolutionPolicy(repositoryRoot);
-    assert.deepEqual(errors, []);
-    const backend = selectSandboxBackend();
-    if (backend !== 'macos') return;
-    const child = String.raw`
+forEachBackend(
+    'le profil moteur de rendu n’ouvre ni réseau, ni HOME réel, ni dépôt',
+    async (t, backend) => {
+        const paths = await fixture(t);
+        const { policy, errors } = loadResolutionPolicy(repositoryRoot);
+        assert.deepEqual(errors, []);
+        if (backend === 'docker') {
+            // Aucune image de rendu n'est encore épinglée : le refus explicite EST
+            // le comportement attendu, et il doit être vérifié, pas contourné.
+            assert.throws(
+                () =>
+                    runConfined({
+                        backend,
+                        profile: 'execution',
+                        ...paths,
+                        hostExecutable: process.execPath,
+                        containerExecutable: '/usr/local/bin/node',
+                        argv: ['-e', ''],
+                        policy,
+                        renderer: true,
+                    }),
+                /aucune image de rendu épinglée/
+            );
+            return;
+        }
+        const child = String.raw`
 const fs = require('node:fs');
 const result = {};
 try { fs.readdirSync(${JSON.stringify(homedir())}); result.realHomeRead = true; } catch (error) { result.realHomeRead = error.code; }
@@ -215,21 +264,22 @@ try { fs.writeFileSync(process.cwd() + '/allowed', 'ok'); result.candidateWrite 
 const timer = setTimeout(() => { result.network = 'timeout'; console.log(JSON.stringify(result)); }, 5000);
 fetch('https://registry.npmjs.org/bun').then((response) => { clearTimeout(timer); result.network = response.status; console.log(JSON.stringify(result)); }).catch((error) => { clearTimeout(timer); result.network = error.cause?.code || error.name; console.log(JSON.stringify(result)); });
 `;
-    const execution = runConfined({
-        backend,
-        profile: 'execution',
-        ...paths,
-        hostExecutable: process.execPath,
-        containerExecutable: '/usr/local/bin/node',
-        argv: ['-e', child],
-        policy,
-        renderer: true,
-    });
-    assert.equal(execution.status, 0, execution.stderr);
-    const observed = JSON.parse(execution.stdout.trim());
-    assert.notEqual(observed.realHomeRead, true, 'HOME réel lisible');
-    assert.notEqual(observed.repositoryRead, true, 'dépôt lisible');
-    assert.notEqual(observed.outsideWrite, true, 'écriture hors candidat');
-    assert.notEqual(observed.network, 200, 'réseau joignable');
-    assert.equal(observed.candidateWrite, true);
-});
+        const execution = runConfined({
+            backend,
+            profile: 'execution',
+            ...paths,
+            hostExecutable: process.execPath,
+            containerExecutable: '/usr/local/bin/node',
+            argv: ['-e', child],
+            policy,
+            renderer: true,
+        });
+        assert.equal(execution.status, 0, execution.stderr);
+        const observed = JSON.parse(execution.stdout.trim());
+        assert.notEqual(observed.realHomeRead, true, 'HOME réel lisible');
+        assert.notEqual(observed.repositoryRead, true, 'dépôt lisible');
+        assert.notEqual(observed.outsideWrite, true, 'écriture hors candidat');
+        assert.notEqual(observed.network, 200, 'réseau joignable');
+        assert.equal(observed.candidateWrite, true);
+    }
+);

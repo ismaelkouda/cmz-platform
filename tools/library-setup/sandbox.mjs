@@ -312,6 +312,28 @@ export function sandboxBackendAvailable(backend, { spawn = spawnSync } = {}) {
     }
 }
 
+/**
+ * TOUS les backends utilisables ici, pas seulement celui que la production
+ * choisirait. `selectSandboxBackend` n'en rend qu'un — sur un Mac, toujours
+ * `macos` — si bien que le chemin conteneur n'était jamais exercé en local.
+ * C'est ainsi qu'une syntaxe `--mount` invalide (`,rw`, refusée par Docker en
+ * code 125 avant tout démarrage) a survécu : les tests mockés asseyaient la
+ * chaîne fautive. La suite adversariale itère donc sur cette liste, pour que
+ * « les deux backends passent la même suite » soit un mécanisme et non une
+ * intention.
+ */
+export function availableSandboxBackends({
+    platform = process.platform,
+    spawn = spawnSync,
+} = {}) {
+    const backends = [];
+    if (platform === 'darwin' && sandboxBackendAvailable('macos', { spawn })) {
+        backends.push('macos');
+    }
+    if (sandboxBackendAvailable('docker', { spawn })) backends.push('docker');
+    return backends;
+}
+
 export function selectSandboxBackend({
     platform = process.platform,
     spawn = spawnSync,
@@ -427,16 +449,22 @@ export function runConfined({
         `${uid}:${gid}`,
         '--network',
         profile === 'execution' ? 'none' : 'bridge',
+        // `--mount` n'accepte comme champ nu que `readonly` : un `,rw` ou un
+        // `,ro` fait échouer `docker run` en code 125 AVANT tout démarrage de
+        // conteneur. Défaut trouvé en exécutant réellement Docker le
+        // 2026-09-07 — les tests mockés asseyaient la chaîne malformée, donc
+        // ils encodaient le bug au lieu de l'attraper. La lecture-écriture est
+        // le défaut : elle s'exprime par l'ABSENCE de `readonly`.
         '--mount',
-        `type=bind,src=${paths.candidate},dst=/workspace,rw`,
+        `type=bind,src=${paths.candidate},dst=/workspace`,
         '--mount',
-        `type=bind,src=${paths.home},dst=/cmz-home,${profile === 'resolution' ? 'rw' : 'ro'}`,
+        `type=bind,src=${paths.home},dst=/cmz-home${profile === 'resolution' ? '' : ',readonly'}`,
         // Même frontière que sur macOS : le moteur de rendu est monté en
         // LECTURE SEULE, hors du candidat, et son contenu a déjà été vérifié
         // par empreinte sha256 avant extraction.
         ...readOnlyPaths.flatMap((path, index) => [
             '--mount',
-            `type=bind,src=${realpathSync(resolve(path))},dst=/cmz-readonly-${index},ro`,
+            `type=bind,src=${realpathSync(resolve(path))},dst=/cmz-readonly-${index},readonly`,
         ]),
         '--tmpfs',
         '/tmp:rw,noexec,nosuid,nodev,size=128m',
@@ -459,7 +487,7 @@ export function runConfined({
     if (profile === 'resolution') {
         dockerArgs.push(
             '--mount',
-            `type=bind,src=${paths.cache},dst=/cmz-cache,rw`,
+            `type=bind,src=${paths.cache},dst=/cmz-cache`,
             '--env',
             'BUN_INSTALL_CACHE_DIR=/cmz-cache'
         );
