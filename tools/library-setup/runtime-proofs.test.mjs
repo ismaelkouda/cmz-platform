@@ -142,12 +142,23 @@ test('les acceptances exécutées viennent de la recette, jamais d’une règle 
             },
         ],
     };
+    const registry = new Map([
+        ['angular/angular-material', recipe],
+        [
+            'angular/tailwind',
+            {
+                platform: 'angular',
+                library: 'tailwind',
+                runtime_acceptance: [],
+            },
+        ],
+    ]);
     assert.deepEqual(
         requiredAcceptances(recipe, []).map(({ id }) => id),
         ['material-component-compiles']
     );
     assert.deepEqual(
-        requiredAcceptances(recipe, ['tailwind']).map(
+        requiredAcceptances(recipe, ['tailwind'], registry).map(
             ({ id, scope }) => `${id}@${scope}`
         ),
         [
@@ -159,10 +170,50 @@ test('les acceptances exécutées viennent de la recette, jamais d’une règle 
     // Retirer le bloc de la recette retire l'exigence : c'est ce que l'ancienne
     // règle codée en dur ne faisait pas.
     assert.deepEqual(
-        requiredAcceptances({ ...recipe, coexistence: [] }, ['tailwind']).map(
-            ({ id }) => id
-        ),
+        requiredAcceptances(
+            { ...recipe, coexistence: [] },
+            ['tailwind'],
+            registry
+        ).map(({ id }) => id),
         ['material-component-compiles']
+    );
+});
+
+test('la coexistence est exigée quel que soit l’ordre d’installation', () => {
+    const material = {
+        platform: 'angular',
+        library: 'angular-material',
+        runtime_acceptance: [{ id: 'material-component-compiles' }],
+        coexistence: [
+            {
+                with: 'tailwind',
+                runtime_acceptance: [
+                    { id: 'material-tailwind-render-together' },
+                ],
+            },
+        ],
+    };
+    const tailwind = {
+        platform: 'angular',
+        library: 'tailwind',
+        runtime_acceptance: [{ id: 'sentinel-class-emits-rule' }],
+    };
+    const recipes = new Map([
+        ['angular/angular-material', material],
+        ['angular/tailwind', tailwind],
+    ]);
+    assert.deepEqual(
+        requiredAcceptances(tailwind, ['angular-material'], recipes).map(
+            ({ ownerLibrary, id }) => `${ownerLibrary}#${id}`
+        ),
+        [
+            'tailwind#sentinel-class-emits-rule',
+            'angular-material#material-tailwind-render-together',
+        ]
+    );
+    assert.throws(
+        () => requiredAcceptances(tailwind, ['bibliotheque-inconnue'], recipes),
+        /recette installée absente/
     );
 });
 

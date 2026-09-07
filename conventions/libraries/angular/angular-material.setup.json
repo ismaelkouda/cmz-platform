@@ -14,14 +14,47 @@
         "{{app}}",
         "--theme",
         "azure-blue",
-        "--typography",
-        "true",
-        "--animations",
-        "enabled",
         "--skip-confirmation"
       ]
     },
-    "notes": "Schematic maintenu par l'équipe Angular, version-aware. L'exécuteur (add-library, lot B) installe d'abord @angular/material + @angular/cdk alignés sur @angular/core, puis lance ce schematic avec `{{app}}` = nom du projet Nx. Il écrit un thème M3 (`mat.theme()`) et la typographie. Les flags exacts et le mécanisme d'animations changent version après version — rien de version-spécifique dans les static_invariants ; la preuve de fonctionnement est runtime_acceptance (harnais lot C)."
+    "normalizations": [
+      {
+        "kind": "exact-replacement",
+        "file": "src/index.html",
+        "search": "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">",
+        "replacement": "",
+        "occurrences": 1
+      },
+      {
+        "kind": "exact-replacement",
+        "file": "src/index.html",
+        "search": "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>",
+        "replacement": "",
+        "occurrences": 1
+      },
+      {
+        "kind": "exact-replacement",
+        "file": "src/index.html",
+        "search": "<link href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap\" rel=\"stylesheet\">",
+        "replacement": "",
+        "occurrences": 1
+      },
+      {
+        "kind": "exact-replacement",
+        "file": "src/index.html",
+        "search": "<link href=\"https://fonts.googleapis.com/icon?family=Material+Icons\" rel=\"stylesheet\">",
+        "replacement": "",
+        "occurrences": 1
+      },
+      {
+        "kind": "exact-replacement",
+        "file": "src/styles.scss",
+        "search": "typography: Roboto,",
+        "replacement": "typography: (plain-family: system-ui, brand-family: system-ui),",
+        "occurrences": 1
+      }
+    ],
+    "notes": "Schematic maintenu par l'équipe Angular, version-aware. L'exécuteur installe d'abord @angular/material + @angular/cdk alignés sur @angular/core, puis lance le schematic avec `{{app}}` = nom du projet Nx. Material 22 injecte encore des polices Google distantes et `typography: Roboto`; les normalisations exactes, versionnées avec cette recette, retirent ces dépendances réseau et sélectionnent les polices système. Toute dérive de la sortie du vendeur fait échouer la recette. Le build de production hors réseau en apporte la preuve fonctionnelle."
   },
   "static_invariants": [
     {
@@ -40,6 +73,12 @@
       "id": "material-component-compiles",
       "description": "dans un workspace candidat autonome : un composant standalone important un composant Material représentatif (ex. MatButton) compile sous ngc --strictTemplates en import standalone (jamais un NgModule agrégateur). Preuve de compilation uniquement — le rendu DOM et le comportement d'animation sont des critères distincts (browser-coexistence + preuve dédiée, à définir).",
       "proof": "compile-component",
+      "status": "enforced"
+    },
+    {
+      "id": "offline-production-build",
+      "description": "la build de production complète réussit dans le candidat sans accès réseau ; aucune police, feuille de style ou ressource distante ajoutée par le schematic ne peut être requise à la compilation",
+      "proof": "production-build",
       "status": "enforced"
     }
   ],

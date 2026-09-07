@@ -41,6 +41,11 @@
           "properties": {
             "method": { "const": "official-schematic" },
             "command": { "$ref": "#/$defs/command" },
+            "normalizations": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/exactReplacement" }
+            },
             "notes": { "type": "string", "minLength": 1 }
           }
         },
@@ -111,6 +116,19 @@
         }
       }
     },
+    "exactReplacement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "file", "search", "replacement", "occurrences"],
+      "properties": {
+        "kind": { "const": "exact-replacement" },
+        "file": { "$ref": "#/$defs/appRelativeFile" },
+        "search": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "replacement": { "type": "string", "maxLength": 4096 },
+        "occurrences": { "const": 1 }
+      },
+      "description": "Normalisation versionnée et fail-closed d'une sortie volatile du schematic. Le remplacement n'est appliqué que si le fragment exact apparaît le nombre déclaré de fois."
+    },
     "static_invariant": {
       "type": "object",
       "additionalProperties": false,
@@ -171,7 +189,8 @@
           "enum": [
             "compile-component",
             "compiled-css-rule",
-            "browser-coexistence"
+            "browser-coexistence",
+            "production-build"
           ]
         },
         "status": { "enum": ["harness-pending", "enforced"] }

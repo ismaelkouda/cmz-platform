@@ -146,6 +146,72 @@ test('le contrôle consomme le vrai bun.lock JSONC du dépôt', async () => {
     assert.deepEqual(result.added, []);
 });
 
+test('lockfile : résout une dépendance dans le contexte Bun de son ancêtre exact', () => {
+    const initial = JSON.stringify({
+        workspaces: { '': { dependencies: {} } },
+        catalog: {},
+        packages: {
+            '@emnapi/wasi-threads': [
+                '@emnapi/wasi-threads@1.0.4',
+                '',
+                {},
+                'sha512-old',
+            ],
+            'unrelated/@emnapi/wasi-threads': [
+                '@emnapi/wasi-threads@1.2.2',
+                '',
+                {},
+                'sha512-unrelated',
+            ],
+        },
+    });
+    const final = JSON.stringify({
+        workspaces: {
+            '': {
+                dependencies: { '@tailwindcss/oxide-wasm32-wasi': 'catalog:' },
+            },
+        },
+        catalog: { '@tailwindcss/oxide-wasm32-wasi': '4.1.13' },
+        packages: {
+            ...JSON.parse(initial).packages,
+            '@tailwindcss/oxide-wasm32-wasi': [
+                '@tailwindcss/oxide-wasm32-wasi@4.1.13',
+                '',
+                { dependencies: { '@emnapi/core': '^1.4.5' } },
+                'sha512-root',
+            ],
+            '@tailwindcss/oxide-wasm32-wasi/@emnapi/core': [
+                '@emnapi/core@1.11.2',
+                '',
+                { dependencies: { '@emnapi/wasi-threads': '1.2.2' } },
+                'sha512-core',
+            ],
+            '@tailwindcss/oxide-wasm32-wasi/@emnapi/wasi-threads': [
+                '@emnapi/wasi-threads@1.2.2',
+                '',
+                {},
+                'sha512-contextual',
+            ],
+        },
+    });
+    const result = validateLockEvolution(initial, final, {
+        catalog: 'default',
+        dependency_section: 'dependencies',
+        packages: { '@tailwindcss/oxide-wasm32-wasi': '4.1.13' },
+    });
+    assert.deepEqual(result.added, [
+        '@tailwindcss/oxide-wasm32-wasi',
+        '@tailwindcss/oxide-wasm32-wasi/@emnapi/core',
+        '@tailwindcss/oxide-wasm32-wasi/@emnapi/wasi-threads',
+    ]);
+    assert.ok(
+        result.reachable.includes(
+            '@tailwindcss/oxide-wasm32-wasi/@emnapi/wasi-threads'
+        )
+    );
+    assert.ok(!result.reachable.includes('unrelated/@emnapi/wasi-threads'));
+});
+
 test('overlay clos remplace uniquement package.json et bun.lock puis revérifie le tree', async (t) => {
     const root = await mkdtemp(join(tmpdir(), 'cmz-overlay-'));
     t.after(() => rm(root, { recursive: true, force: true }));

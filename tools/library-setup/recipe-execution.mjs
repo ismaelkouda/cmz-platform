@@ -19,6 +19,70 @@ function regularFile(workspace, path) {
     return absolute;
 }
 
+function regularAppFile(workspace, appRoot, relativePath) {
+    const segments = `${appRoot}/${relativePath}`.split('/');
+    let current = workspace;
+    for (const [index, segment] of segments.entries()) {
+        current = join(current, segment);
+        const stats = lstatSync(current);
+        if (stats.isSymbolicLink()) {
+            fail(`${appRoot}/${relativePath}: ancêtre ou cible symbolique`);
+        }
+        if (index < segments.length - 1 && !stats.isDirectory()) {
+            fail(`${appRoot}/${relativePath}: ancêtre non répertoire`);
+        }
+        if (index === segments.length - 1 && !stats.isFile()) {
+            fail(`${appRoot}/${relativePath}: cible non régulière`);
+        }
+    }
+    return current;
+}
+
+function validateRecipeChanges(changeSet, appRoot, allowDependencies) {
+    for (const change of changeSet.changes) {
+        const dependencyRewrite = DEPENDENCY_ARTEFACTS.includes(change.path);
+        if (
+            dependencyRewrite &&
+            allowDependencies &&
+            change.op === 'modify' &&
+            change.mode === '100644'
+        ) {
+            continue;
+        }
+        if (
+            !change.path.startsWith(`${appRoot}/`) ||
+            !['create', 'modify'].includes(change.op) ||
+            !['100644', '100755'].includes(change.mode)
+        ) {
+            fail(
+                `écriture hors périmètre, destructive ou non régulière : ${change.op} ${change.path}`
+            );
+        }
+    }
+}
+
+function applyNormalizations(workspace, appRoot, normalizations = []) {
+    for (const normalization of normalizations) {
+        if (normalization.kind !== 'exact-replacement') {
+            fail(`normalisation inconnue : ${normalization.kind}`);
+        }
+        const path = `${appRoot}/${normalization.file}`;
+        const absolute = regularAppFile(workspace, appRoot, normalization.file);
+        const before = readFileSync(absolute, 'utf8');
+        const occurrences = before.split(normalization.search).length - 1;
+        if (occurrences !== normalization.occurrences) {
+            fail(
+                `${path}: normalisation attend ${normalization.occurrences} occurrence(s), ${occurrences} trouvée(s)`
+            );
+        }
+        replaceRegularFile(
+            workspace,
+            path,
+            before.replaceAll(normalization.search, normalization.replacement)
+        );
+    }
+}
+
 function safeApp(workspace, app) {
     if (!/^[a-z][a-z0-9-]*$/.test(app)) fail(`nom d'app invalide : ${app}`);
     const appPath = resolve(workspace, 'apps', app);
@@ -175,21 +239,24 @@ export function executeLibraryRecipe({
     });
     if (result.status !== 0)
         fail(`recette en échec (code ${result.status}) : ${result.stderr}`);
+    const rawRecipeChanges = buildLibraryChangeSet(
+        before,
+        snapshotFilesystem(candidate.workspace, {
+            excludedDirectories: ['node_modules'],
+        })
+    );
+    validateRecipeChanges(rawRecipeChanges, appRoot, true);
+    applyNormalizations(
+        candidate.workspace,
+        appRoot,
+        recipe.install.normalizations
+    );
     restoreCosmeticDependencyWrites(candidate.workspace, dependencyBytes);
     const afterRecipe = snapshotFilesystem(candidate.workspace, {
         excludedDirectories: ['node_modules'],
     });
     const recipeChanges = buildLibraryChangeSet(before, afterRecipe);
-    for (const change of recipeChanges.changes) {
-        if (
-            !change.path.startsWith(`${appRoot}/`) ||
-            ['delete', 'rename'].includes(change.op)
-        ) {
-            fail(
-                `écriture hors périmètre ou destructive : ${change.op} ${change.path}`
-            );
-        }
-    }
+    validateRecipeChanges(recipeChanges, appRoot, false);
     addLibraryManifestEntry(
         candidate.workspace,
         app,

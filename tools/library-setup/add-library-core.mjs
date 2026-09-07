@@ -365,9 +365,11 @@ export async function addLibrary({
         // seule phase où le réseau est ouvert, et uniquement si une acceptance
         // déclarée en a besoin. L'archive est vérifiée par empreinte avant
         // extraction ; ensuite il n'est plus monté qu'en lecture.
-        const browser = requiredAcceptances(recipe, libraries).some(
-            (entry) => entry.proof === 'browser-coexistence'
-        )
+        const browser = requiredAcceptances(
+            recipe,
+            libraries,
+            recipeResult.recipes
+        ).some((entry) => entry.proof === 'browser-coexistence')
             ? await provisionBrowser({ policy, backend })
             : undefined;
         onProgress({ step: 5, total: 8, id: 'recipe' });
@@ -393,6 +395,7 @@ export async function addLibrary({
             cache,
             home: candidate.homes.execution,
             installedLibraries: libraries,
+            recipeRegistry: recipeResult.recipes,
             browserExecutable: browser?.executable,
             browserRoot: browser?.root,
         });

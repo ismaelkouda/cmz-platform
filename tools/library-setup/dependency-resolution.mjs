@@ -134,30 +134,48 @@ function dependencyMaps(record) {
     );
 }
 
+function owningContext(packages, key) {
+    const identity = packageNameFromRecord(packages[key]);
+    if (!identity) fail(`record de paquet invalide : ${key}`);
+    if (key === identity.name) return '';
+    const suffix = `/${identity.name}`;
+    if (!key.endsWith(suffix)) {
+        fail(`clé de paquet incohérente avec son identité : ${key}`);
+    }
+    return key.slice(0, -suffix.length);
+}
+
 function resolveLockKey(packages, parentKey, name, spec) {
-    const preferred = [`${parentKey}/${name}`, name];
-    const candidates = [
-        ...new Set([
-            ...preferred.filter((key) => packages[key]),
-            ...Object.keys(packages).filter((key) => key.endsWith(`/${name}`)),
-        ]),
-    ].filter((key) => {
-        const identity = packageNameFromRecord(packages[key]);
-        if (!identity || identity.name !== name) return false;
-        const range = semver.validRange(spec);
-        return (
-            !range ||
-            semver.satisfies(identity.version, range, {
-                includePrerelease: true,
-            })
-        );
-    });
-    if (candidates.length === 0) return null;
-    const firstPreferred = preferred.find((key) => candidates.includes(key));
-    if (firstPreferred) return firstPreferred;
-    if (candidates.length !== 1)
-        fail(`résolution ambiguë de ${name} depuis ${parentKey}`);
-    return candidates[0];
+    const range = semver.validRange(spec);
+    let context = parentKey;
+    const visited = new Set();
+    while (true) {
+        if (visited.has(context)) {
+            fail(`cycle de contextes dans le lockfile depuis ${parentKey}`);
+        }
+        visited.add(context);
+        const key = context ? `${context}/${name}` : name;
+        const record = packages[key];
+        if (record) {
+            const identity = packageNameFromRecord(record);
+            if (!identity || identity.name !== name) {
+                fail(`clé de paquet incohérente avec son record : ${key}`);
+            }
+            if (
+                range &&
+                !semver.satisfies(identity.version, range, {
+                    includePrerelease: true,
+                })
+            ) {
+                fail(
+                    `${key}@${identity.version} ne satisfait pas ${name}@${spec}`
+                );
+            }
+            return key;
+        }
+        if (!context) return null;
+        context = owningContext(packages, context);
+    }
 }
 
 export function validateLockEvolution(initialRaw, finalRaw, track) {

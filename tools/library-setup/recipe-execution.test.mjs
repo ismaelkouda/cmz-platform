@@ -168,3 +168,69 @@ test('refuse une écriture racine ou une suppression même si la commande réuss
         /hors périmètre/
     );
 });
+
+test('normalise exactement la sortie volatile du schematic et refuse toute dérive', async (t) => {
+    const root = await fixture(t);
+    await put(
+        root,
+        'candidate/apps/demo/src/index.html',
+        '<head>remote</head>\n'
+    );
+    const normalizedRecipe = {
+        ...recipe,
+        install: {
+            ...recipe.install,
+            normalizations: [
+                {
+                    kind: 'exact-replacement',
+                    file: 'src/index.html',
+                    search: 'remote',
+                    replacement: 'local',
+                    occurrences: 1,
+                },
+            ],
+        },
+    };
+    executeLibraryRecipe({
+        repository: join(root, 'repo'),
+        candidate: { workspace: join(root, 'candidate') },
+        recipe: normalizedRecipe,
+        track: { packages: {} },
+        app: 'demo',
+        policy: {},
+        backend: 'test',
+        cache: join(root, 'cache'),
+        home: join(root, 'home'),
+        run: () => ({ status: 0, stdout: '', stderr: '' }),
+    });
+    assert.equal(
+        await readFile(
+            join(root, 'candidate/apps/demo/src/index.html'),
+            'utf8'
+        ),
+        '<head>local</head>\n'
+    );
+
+    const second = await fixture(t);
+    await put(
+        second,
+        'candidate/apps/demo/src/index.html',
+        '<head>changed</head>\n'
+    );
+    assert.throws(
+        () =>
+            executeLibraryRecipe({
+                repository: join(second, 'repo'),
+                candidate: { workspace: join(second, 'candidate') },
+                recipe: normalizedRecipe,
+                track: { packages: {} },
+                app: 'demo',
+                policy: {},
+                backend: 'test',
+                cache: join(second, 'cache'),
+                home: join(second, 'home'),
+                run: () => ({ status: 0, stdout: '', stderr: '' }),
+            }),
+        /normalisation attend 1 occurrence\(s\), 0 trouvée\(s\)/
+    );
+});

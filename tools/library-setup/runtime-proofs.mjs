@@ -84,17 +84,30 @@ function cssFiles(root) {
     return found;
 }
 
-function nxBuild(context, app) {
+function nxBuild(context, app, configuration = 'development') {
     runNode(
         context,
         [
             'node_modules/nx/dist/bin/nx.js',
             'run',
-            `${app}:build:development`,
+            `${app}:build:${configuration}`,
             '--skip-nx-cache',
         ],
         `build Angular ${app}`
     );
+}
+
+function proveProductionBuild(context, app) {
+    const output = projectOutputPath(context.workspace, app);
+    if (existsSync(output)) fail('sortie de build préexistante');
+    try {
+        nxBuild(context, app, 'production');
+        if (!existsSync(output) || !lstatSync(output).isDirectory()) {
+            fail(`la build de production de ${app} n'a produit aucune sortie`);
+        }
+    } finally {
+        removeTree(output);
+    }
 }
 
 function buildAndClean(context, app) {
@@ -401,12 +414,24 @@ const RUNTIME_ORACLES = new Map([
         (context) => proveMaterial(context),
     ],
     [
+        'angular/angular-material#offline-production-build',
+        (context) => proveProductionBuild(context, context.app),
+    ],
+    [
         'angular/tailwind#sentinel-class-emits-rule',
         (context) => proveTailwind(context, context.app),
     ],
     [
+        'angular/tailwind#offline-production-build',
+        (context) => proveProductionBuild(context, context.app),
+    ],
+    [
         'angular/transloco#key-renders-translation',
         (context) => proveTransloco(context),
+    ],
+    [
+        'angular/transloco#offline-production-build',
+        (context) => proveProductionBuild(context, context.app),
     ],
     [
         'angular/angular-material#material-tailwind-cascade-order',
@@ -421,15 +446,51 @@ const RUNTIME_ORACLES = new Map([
 /** Clés lisibles par le gate statique, sans exécuter aucun oracle. */
 export const RUNTIME_ORACLE_KEYS = new Set(RUNTIME_ORACLES.keys());
 
-export function requiredAcceptances(recipe, installedLibraries = []) {
-    const entries = (recipe.runtime_acceptance ?? []).map((entry) => ({
+function acceptanceOwner(recipe, entry, scope) {
+    return {
         ...entry,
-        scope: 'library',
-    }));
+        scope,
+        ownerPlatform: recipe.platform,
+        ownerLibrary: recipe.library,
+    };
+}
+
+export function requiredAcceptances(
+    recipe,
+    installedLibraries = [],
+    recipeRegistry = new Map()
+) {
+    const entries = (recipe.runtime_acceptance ?? []).map((entry) =>
+        acceptanceOwner(recipe, entry, 'library')
+    );
     for (const block of recipe.coexistence ?? []) {
         if (!installedLibraries.includes(block.with)) continue;
         for (const entry of block.runtime_acceptance ?? []) {
-            entries.push({ ...entry, scope: `coexistence:${block.with}` });
+            entries.push(
+                acceptanceOwner(recipe, entry, `coexistence:${block.with}`)
+            );
+        }
+    }
+    for (const installedLibrary of installedLibraries) {
+        const installedRecipe = recipeRegistry.get(
+            `${recipe.platform}/${installedLibrary}`
+        );
+        if (!installedRecipe) {
+            fail(
+                `recette installée absente du registre : ${recipe.platform}/${installedLibrary}`
+            );
+        }
+        for (const block of installedRecipe.coexistence ?? []) {
+            if (block.with !== recipe.library) continue;
+            for (const entry of block.runtime_acceptance ?? []) {
+                entries.push(
+                    acceptanceOwner(
+                        installedRecipe,
+                        entry,
+                        `coexistence:${recipe.library}`
+                    )
+                );
+            }
         }
     }
     return entries;
@@ -447,6 +508,7 @@ export function proveLibraryRuntime({
     installedLibraries = [],
     browserExecutable,
     browserRoot,
+    recipeRegistry = new Map(),
     run = runConfined,
 }) {
     const before = snapshotFilesystem(candidate.workspace, {
@@ -464,7 +526,11 @@ export function proveLibraryRuntime({
         browserRoot,
         run,
     };
-    const required = requiredAcceptances(recipe, installedLibraries);
+    const required = requiredAcceptances(
+        recipe,
+        installedLibraries,
+        recipeRegistry
+    );
     if (required.length === 0) {
         fail(
             `aucune acceptance runtime déclarée pour ${recipe.platform}/${recipe.library}`
@@ -473,7 +539,7 @@ export function proveLibraryRuntime({
     buildAndClean(context, app);
     const executed = [];
     for (const entry of required) {
-        const key = `${recipe.platform}/${recipe.library}#${entry.id}`;
+        const key = `${entry.ownerPlatform}/${entry.ownerLibrary}#${entry.id}`;
         const oracle = RUNTIME_ORACLES.get(key);
         if (!oracle) {
             fail(
