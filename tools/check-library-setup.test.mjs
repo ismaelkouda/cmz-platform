@@ -199,6 +199,38 @@ test('reference_tool inexistant → erreur runtime', async (t) => {
     );
 });
 
+test('llm-then-verified exige une allowlist, trois tours et une taille bornée', async (t) => {
+    const validLlm = {
+        method: 'llm-then-verified',
+        prompt_contract: 'Configure uniquement les chemins autorisés.',
+        llm_write_paths: ['src/config.ts'],
+        max_iterations: 3,
+        iteration_timeout_ms: 120000,
+        max_context_bytes: 262144,
+        max_response_bytes: 65536,
+        notes: 'fallback borné',
+    };
+    const root = await scaffold(t, {
+        recipes: { demo: validRecipe({ install: validLlm }) },
+    });
+    assert.deepEqual(validateRecipes(root).errors, []);
+
+    for (const install of [
+        { ...validLlm, llm_write_paths: ['../secret'] },
+        { ...validLlm, max_iterations: 4 },
+        { ...validLlm, iteration_timeout_ms: 999 },
+        { ...validLlm, max_context_bytes: 2_000_000 },
+        { ...validLlm, max_response_bytes: 2_000_000 },
+    ]) {
+        const invalid = await scaffold(t, {
+            recipes: { demo: validRecipe({ install }) },
+        });
+        assert.ok(
+            validateRecipes(invalid).errors.some((error) => /oneOf/.test(error))
+        );
+    }
+});
+
 test('zéro / deux empreintes → erreur', async (t) => {
     const zero = await scaffold(t, {
         recipes: {

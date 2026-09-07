@@ -10,7 +10,7 @@ import {
     readdirSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 
 import {
     detectAppPlatform,
@@ -28,13 +28,17 @@ import {
 import { gitBlobOid } from './git-tree.mjs';
 import { resolveLibraryDependencies } from './install-protocol.mjs';
 import { buildLibraryChangeSet, buildLibraryPlan } from './library-plan.mjs';
+import { executeBoundedLlm } from './llm-execution.mjs';
 import {
     assertPublishableRepository,
     createCandidateCommit,
     publishCandidateCommit,
     recoverLibraryPublication,
 } from './publication-transaction.mjs';
-import { executeLibraryRecipe } from './recipe-execution.mjs';
+import {
+    addLibraryManifestEntry,
+    executeLibraryRecipe,
+} from './recipe-execution.mjs';
 import {
     loadResolutionPolicy,
     resolutionPolicySha256,
@@ -199,6 +203,7 @@ function planInputs({
     dependencyResult,
     changeSet,
     versions,
+    llmResult,
 }) {
     const before = governedSnapshotFromTree(candidate.tree);
     const appPrefix = `apps/${app}/`;
@@ -252,6 +257,7 @@ function planInputs({
             .map(([name, version]) => `${name}@${version}`)
             .join(','),
         change_set_id: changeSet.change_set_id,
+        ...(llmResult ? { llm_audit_sha256: llmResult.auditSha256 } : {}),
     };
 }
 
@@ -311,6 +317,7 @@ export async function addLibrary({
     library,
     dryRun = false,
     expectPlan,
+    llmAdapter,
     runtimeProver = proveLibraryRuntime,
     onProgress = () => undefined,
 }) {
@@ -332,6 +339,12 @@ export async function addLibrary({
     onProgress({ step: 2, total: 8, id: 'contracts' });
     const { platform, recipe, track, policy, versions } =
         loadLibraryConfiguration(root, app, library);
+    if (
+        recipe.install.method === 'llm-then-verified' &&
+        typeof llmAdapter !== 'function'
+    ) {
+        fail('recette LLM refusée : aucun adaptateur approuvé injecté');
+    }
     const recipeResult = validateRecipes(root);
     const backend = selectSandboxBackend();
     const cache = ensureCache();
@@ -372,20 +385,7 @@ export async function addLibrary({
         ).some((entry) => entry.proof === 'browser-coexistence')
             ? await provisionBrowser({ policy, backend })
             : undefined;
-        onProgress({ step: 5, total: 8, id: 'recipe' });
-        executeLibraryRecipe({
-            repository: root,
-            candidate,
-            recipe,
-            track,
-            app,
-            policy,
-            backend,
-            cache,
-            home: candidate.homes.execution,
-        });
-        onProgress({ step: 6, total: 8, id: 'runtime-proofs' });
-        runtimeProver({
+        const runtimeOptions = {
             repository: root,
             candidate,
             recipe,
@@ -398,7 +398,54 @@ export async function addLibrary({
             recipeRegistry: recipeResult.recipes,
             browserExecutable: browser?.executable,
             browserRoot: browser?.root,
-        });
+        };
+        onProgress({ step: 5, total: 8, id: 'recipe' });
+        let llmResult;
+        if (recipe.install.method === 'llm-then-verified') {
+            addLibraryManifestEntry(
+                candidate.workspace,
+                app,
+                recipe.platform,
+                recipe.library
+            );
+            llmResult = await executeBoundedLlm({
+                repository: root,
+                candidate,
+                recipe,
+                app,
+                installedLibraries: libraries,
+                adapter: llmAdapter,
+                verify: () => {
+                    const appCheck = verifyApps(
+                        candidate.workspace,
+                        recipeResult.recipes
+                    );
+                    if (!appCheck.ok) {
+                        return { ok: false, failures: appCheck.errors };
+                    }
+                    try {
+                        runtimeProver(runtimeOptions);
+                        return { ok: true, failures: [] };
+                    } catch (error) {
+                        return { ok: false, failures: [error.message] };
+                    }
+                },
+            });
+        } else {
+            executeLibraryRecipe({
+                repository: root,
+                candidate,
+                recipe,
+                track,
+                app,
+                policy,
+                backend,
+                cache,
+                home: candidate.homes.execution,
+            });
+        }
+        onProgress({ step: 6, total: 8, id: 'runtime-proofs' });
+        if (!llmResult) runtimeProver(runtimeOptions);
         const appCheck = verifyApps(candidate.workspace, recipeResult.recipes);
         if (!appCheck.ok)
             fail(`gate applicative candidate : ${appCheck.errors.join(' ; ')}`);
@@ -415,6 +462,7 @@ export async function addLibrary({
                 dependencyResult,
                 changeSet,
                 versions,
+                llmResult,
             })
         );
         if (expectPlan && expectPlan !== plan.plan_id) {
@@ -422,7 +470,19 @@ export async function addLibrary({
         }
         if (dryRun) {
             onProgress({ step: 8, total: 8, id: 'dry-run-complete' });
-            return { plan, changeSet, published: false };
+            return {
+                plan,
+                changeSet,
+                ...(llmResult
+                    ? {
+                          llmAudit: {
+                              path: relative(root, llmResult.auditPath),
+                              sha256: llmResult.auditSha256,
+                          },
+                      }
+                    : {}),
+                published: false,
+            };
         }
         onProgress({ step: 8, total: 8, id: 'publication' });
         const commit = createCandidateCommit({
@@ -440,7 +500,20 @@ export async function addLibrary({
             changeSet,
             planId: plan.plan_id,
         });
-        return { plan, changeSet, publication, published: true };
+        return {
+            plan,
+            changeSet,
+            ...(llmResult
+                ? {
+                      llmAudit: {
+                          path: relative(root, llmResult.auditPath),
+                          sha256: llmResult.auditSha256,
+                      },
+                  }
+                : {}),
+            publication,
+            published: true,
+        };
     } finally {
         if (candidate) releaseCandidateLease(candidate);
     }
