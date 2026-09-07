@@ -2,10 +2,10 @@
 
 ## Rôle
 
-Un fichier **`*.routes.ts`** déclare l'arbre de navigation d'un module UI : paths
-stables, `loadComponent` lazy, éventuels enfants, `data` (breadcrumb, garde).
-C'est le **contrat de composition** entre l'app shell (`app.routes.ts`) et les
-pages du module — pas de logique métier, pas de providers globaux.
+Un fichier **`*.routes.ts`** déclare l'arbre de navigation d'un module UI :
+paths stables, `loadComponent` lazy, éventuels enfants, `data` (breadcrumb,
+garde). C'est le **contrat de composition** entre l'app shell (`app.routes.ts`)
+et les pages du module — pas de logique métier, pas de providers globaux.
 
 ## Couche
 
@@ -15,15 +15,15 @@ par pattern). Importé en lazy depuis `apps/backoffice-angular` via
 
 ## Règle mécanique
 
-| Invariant | Exigence |
-| --------- | -------- |
-| Type | `export const <MODULE>_ROUTES: Routes = [ … ]` |
-| Lazy pages | **Toujours** `loadComponent: () => import(…).then(m => m.XxxComponent)` — pas d'import statique de page lourde dans le routes file (sauf redirect shell) |
-| Redirects | `path: ''` avec `redirectTo` + `pathMatch: 'full'` quand le module a un volet par défaut |
-| `data` | Breadcrumb i18n (`data.breadcrumb = 'MODULE.VOLET.BREADCRUMB.LABEL'`) quand le shell lit les miettes |
-| Guards | Auth/path au **niveau shell** (`authGuard`, `pathsGuard`) — pas de re-copie dans chaque lib sauf exception documentée |
-| Naming paths | Kebab-case wire-stable (`queues`, `tasks/actions`) — aligné legacy et `PermissionActionsService` |
-| Export | Réexporté depuis `src/index.ts` du package ui |
+| Invariant    | Exigence                                                                                                                                                 |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type         | `export const <MODULE>_ROUTES: Routes = [ … ]`                                                                                                           |
+| Lazy pages   | **Toujours** `loadComponent: () => import(…).then(m => m.XxxComponent)` — pas d'import statique de page lourde dans le routes file (sauf redirect shell) |
+| Redirects    | `path: ''` avec `redirectTo` + `pathMatch: 'full'` quand le module a un volet par défaut                                                                 |
+| `data`       | Breadcrumb i18n (`data.breadcrumb = 'MODULE.VOLET.BREADCRUMB.LABEL'`) quand le shell lit les miettes                                                     |
+| Guards       | Auth/path au **niveau shell** (`authGuard`, `pathsGuard`) — pas de re-copie dans chaque lib sauf exception documentée                                    |
+| Naming paths | Kebab-case wire-stable (`queues`, `tasks/actions`) — aligné legacy et `PermissionActionsService`                                                         |
+| Export       | Réexporté depuis `src/index.ts` du package ui                                                                                                            |
 
 ## Non-reproduction (défauts source corrigés)
 

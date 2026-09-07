@@ -90,7 +90,7 @@ Le registre est aujourd'hui **1 entrée + `ROLE_PIPELINES`** : c'est un
 échafaudage assumé, pas encore une table riche. Il le devient à mesure que des
 rôles réels s'y ajoutent (§9, annexe A).
 
-### La décision qui bloque les rôles de code — `application-design` vs `artifact-plan`
+### Décision D1 — `application-design` et `artifact-plan` restent séparés
 
 `application-design` (ADR-0030/0039) émet les concepts **d'orchestration**
 (`screen`, `navigation`, `access`, `state`). `artifact-plan` émet les
@@ -98,7 +98,7 @@ rôles réels s'y ajoutent (§9, annexe A).
 `integration-client`, `runtime-binding`, `public-api`). Aucun des deux n'émet
 aujourd'hui de nœud typé `mapping` / `remote-query` / `remote-command`.
 
-Avant tout rôle de code (T7+), trancher **D1** — trois options :
+ADR-0040 a tranché **D1**. Les trois options évaluées étaient :
 
 | Option | Idée                                                                                       | Coût   | Risque                                       |
 | ------ | ------------------------------------------------------------------------------------------ | ------ | -------------------------------------------- |
@@ -106,8 +106,10 @@ Avant tout rôle de code (T7+), trancher **D1** — trois options :
 | **b**  | IR jointe unique orchestration + code                                                      | élevé  | refonte ADR-0030                             |
 | **c**  | statu quo — `artifact-plan` reste le contrat des renderers de code, hors registre de rôles | nul    | le modèle de rôles ne couvre jamais que l'UI |
 
-Recommandation à documenter en ADR : **(a)**, en gardant `role.producer` comme
-discriminant de famille. **Aucun code de rôle n'est écrit avant cet ADR.**
+La décision est **(a)** : `role.producer` discrimine la famille et un nœud de
+rôle reste une projection hashée, jamais une troisième source de vérité. Cet ADR
+autorise la famille `artifact-plan` ; il n'autorise toujours aucun rôle de code
+sans tranche producteur → sélection → consommateur réellement prouvée.
 
 **Versioning** : `schema_version` semver. Les schémas actifs n'acceptent
 actuellement que `1.0.0` ; une nouvelle version doit donc être ajoutée
@@ -187,13 +189,12 @@ illustre une extension future et n'est pas une configuration acceptée actuelle.
   le schéma v1 n'admet ni `{na}`, ni omission silencieuse.
 - première correspondance gagne (comme un `switch` avec `default`).
 
-> **Gap connu — `{na}` (tâche T2).** Certains rôles n'ont **aucun fichier de
-> lib** sur une cible : `access-guard` et `navigation-edge` sont rendus au
-> niveau du shell (garde fonctionnelle, fichier de routes), pas un
-> `*.contract.md`. Le schéma actuel force pourtant une liste
-> `{selector, archetype}`. Avant `navigation-edge` / `access-guard`,
-> `archetype-roles.schema.json` doit accepter `{ "na": "<raison non vide>" }`
-> comme valeur de rôle, avec test adverse (`na` vide → rejet).
+> **Décision de couverture — `{na}` rejeté.** Un rôle rendu inline ou au niveau
+> du shell possède tout de même une forme cible : fichier de routes, garde
+> fonctionnel, provider ou fragment de configuration. Il doit donc résoudre un
+> contrat d'archétype avec `shape`, `forbid` et oracle. Une cible incapable de
+> consommer un rôle est déclarée non supportée ; elle ne peut pas blanchir cette
+> absence avec `{na}`.
 
 **Schéma** (`archetype-roles.schema.json`) : `stack` ∈ enum des plateformes ;
 chaque valeur est une liste non vide. Le validateur complète JSON Schema en
@@ -297,15 +298,15 @@ figé + ADR-0039.
 
 **Reste — chaque tâche petite, indépendante, gatée :**
 
-| Tâche   | Contenu                                                                                                                                            | Précond. |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| **T1**  | ADR tranchant **D1** (§3) — recommandation : option (a)                                                                                            | —        |
-| **T2**  | schéma `archetype-roles` accepte `{ na: "<raison>" }` + test adverse                                                                               | —        |
-| **T3**  | rôle `navigation-edge` (producteur : nav de `application-design` ; consommateur : renderer shell)                                                  | T2       |
-| **T4**  | rôle `i18n-catalog` (producteur : chaînes de `application-design` ; consommateur : shell + page)                                                   | T2       |
-| **T5**  | rôle `access-guard` → `roles.json` angular = `{ na: … }`                                                                                           | T2       |
-| ~~T6~~  | ✅ livré — gate `check:lint-tools` (`eslint tools/**/*.mjs`, hors `seos/` + `mock-server/` + `corpus/` : dette pré-existante isolée à traiter à part) | —        |
-| **T7+** | rôles de code (`mapping`, `remote-query`, `remote-command`, `domain-model`, `server-state-facade`) — **1 par PR**, producteur `artifact-plan` typé | **T1**   |
+| Tâche   | Contenu                                                                                                                                                       | Précond. |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| ~~T1~~  | ✅ livré — [ADR-0040](../adr/0040-production-des-roles-de-code-depuis-artifact-plan.md) retient deux familles de producteurs, sans ajouter de rôle spéculatif | —        |
+| ~~T2~~  | rejeté — `{na}` masquerait une responsabilité non contractualisée ; toute forme inline doit avoir un archétype réel                                           | —        |
+| **T3**  | rôle `navigation-edge` (producteur : nav de `application-design` ; consommateur : renderer shell)                                                             | —        |
+| **T4**  | rôle `i18n-catalog` (producteur : chaînes de `application-design` ; consommateur : shell + page)                                                              | —        |
+| **T5**  | rôle `access-guard` → contrat de garde fonctionnel Angular ; consommateur : renderer shell deny-by-default                                                    | —        |
+| ~~T6~~  | ✅ livré — gate `check:lint-tools` (`eslint tools/**/*.mjs`, hors `seos/` + `mock-server/` + `corpus/` : dette pré-existante isolée à traiter à part)         | —        |
+| **T7+** | rôles de code (`mapping`, `remote-query`, `remote-command`, `domain-model`, `server-state-facade`) — **1 par PR**, producteur `artifact-plan` typé            | ADR-0040 |
 
 Différé jusqu'à un vrai besoin : 1er sélecteur conditionnel + harnais fixtures
 (arrive avec `mapping`) ; frontmatter `mapper` (idem) ; `entity` reste non

@@ -73,6 +73,7 @@ envisagées, le choix retenu et ses conséquences.
 | [0037](./0037-plateforme-intention-utilisateur-vers-application.md) | Génération assistée par langage naturel pour un utilisateur du dépôt | Proposed |
 | [0038](./0038-nature-produit-public-multi-locataire.md)   | Nature de produit : exposition publique et multi-location | Proposed |
 | [0039](./0039-frontiere-contractuelle-conception-realisation-llm.md) | Frontière contractuelle entre conception et réalisation par LLM | Accepted |
+| [0040](./0040-production-des-roles-de-code-depuis-artifact-plan.md) | Produire les rôles de code depuis `artifact-plan`        | Accepted |
 | [0041](./0041-angular-material-tailwind-defaults.md)      | Angular Material + Tailwind comme défauts d'app Angular  | Accepted |
 | [0042](./0042-modele-transactionnel-mutations-workspace.md) | Modèle transactionnel et d'isolation des mutations de workspace | Accepted |
 | [0043](./0043-discipline-de-preuve-des-agents.md)         | Discipline de preuve des agents                          | Proposed |
