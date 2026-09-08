@@ -135,12 +135,7 @@ function proveMaterial(context) {
 function proveTransloco(context) {
     runNode(
         context,
-        [
-            'node_modules/vitest/vitest.mjs',
-            'run',
-            '--config',
-            'tools/library-setup/vitest.runtime.config.mjs',
-        ],
+        ['tools/library-setup/runtime-fixtures/transloco-runtime-probe.mjs'],
         'rendu réel Transloco'
     );
 }

@@ -74,6 +74,69 @@ test('Tailwind exige une vraie règle CSS issue du build et nettoie sa sonde', a
     assert.equal(builds, 2);
 });
 
+test('Transloco s’exécute directement sous Node sans serveur Vite ni DNS local', async (t) => {
+    const root = await realpath(
+        await mkdtemp(join(tmpdir(), 'cmz-transloco-proof-'))
+    );
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const workspace = join(root, 'candidate');
+    for (const path of ['candidate', 'repo', 'cache', 'home'])
+        await mkdir(join(root, path));
+    await mkdir(join(workspace, 'apps/demo/src'), { recursive: true });
+    await put(
+        root,
+        'candidate/apps/demo/project.json',
+        JSON.stringify({
+            targets: { build: { options: { outputPath: 'dist/apps/demo' } } },
+        })
+    );
+    const invocations = [];
+    const result = proveLibraryRuntime({
+        repository: join(root, 'repo'),
+        candidate: { workspace },
+        recipe: {
+            platform: 'angular',
+            library: 'transloco',
+            runtime_acceptance: [
+                { id: 'key-renders-translation' },
+                { id: 'offline-production-build' },
+            ],
+        },
+        app: 'demo',
+        policy: {},
+        backend: 'test',
+        cache: join(root, 'cache'),
+        home: join(root, 'home'),
+        run: ({ argv }) => {
+            invocations.push(argv);
+            if (argv.some((entry) => entry.startsWith('demo:build:'))) {
+                mkdirSync(join(workspace, 'dist/apps/demo'), {
+                    recursive: true,
+                });
+            }
+            return { status: 0, stdout: '', stderr: '' };
+        },
+    });
+    assert.deepEqual(result.proofs, [
+        'key-renders-translation',
+        'offline-production-build',
+    ]);
+    assert.deepEqual(
+        invocations.find((argv) =>
+            argv.includes(
+                'tools/library-setup/runtime-fixtures/transloco-runtime-probe.mjs'
+            )
+        ),
+        ['tools/library-setup/runtime-fixtures/transloco-runtime-probe.mjs']
+    );
+    assert.equal(
+        invocations.some((argv) =>
+            argv.some((entry) => /vitest|localhost/.test(entry))
+        ),
+        false
+    );
+});
+
 // L'enjeu de la coexistence n'est pas « les deux CSS sont là » : une couche
 // perd toujours contre du CSS hors couche. Le preflight Tailwind doit donc être
 // dans `@layer`, et les règles Material hors couche. Les quatre combinaisons
