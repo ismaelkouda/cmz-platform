@@ -383,7 +383,11 @@ export async function addLibrary({
             libraries,
             recipeResult.recipes
         ).some((entry) => entry.proof === 'browser-coexistence')
-            ? await provisionBrowser({ policy, backend })
+            ? await provisionBrowser({
+                  policy,
+                  backend,
+                  extractionRoot: join(candidate.resources, 'browser'),
+              })
             : undefined;
         const runtimeOptions = {
             repository: root,

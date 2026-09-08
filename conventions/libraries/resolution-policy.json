@@ -36,6 +36,10 @@
     "distribution": "chrome-headless-shell",
     "version": "152.0.7977.82",
     "download_host": "https://storage.googleapis.com",
+    "download_timeout_ms": 300000,
+    "max_archive_bytes": 262144000,
+    "max_extracted_bytes": 536870912,
+    "max_archive_entries": 10000,
     "archives": {
       "darwin-arm64": {
         "url": "https://storage.googleapis.com/chrome-for-testing-public/152.0.7977.82/mac-arm64/chrome-headless-shell-mac-arm64.zip",
