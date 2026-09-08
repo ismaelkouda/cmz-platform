@@ -10,7 +10,7 @@
 
 | Indicateur | Valeur |
 |:---|---:|
-| Packages Nx | **72 libs + 1 app** (73 `project.json`) |
+| Packages Nx | **72 libs + 2 app** (74 `project.json`) |
 | Fichiers TypeScript (`libs/`) | **2 727 fichiers hors tests** (2 975 au total, dont 248 specs) |
 | Modules détectés | **19** |
 | Périmètre applicatif (`scope.json`, M-7) | **55 / 55 entités construites** (1 fixture SEOS hors périmètre) — [détail](./docs/architecture/scope.json) |
