@@ -265,6 +265,33 @@ jobs:
       - name: check:library-candidate-isolation (${{ matrix.profile }})
         run: bun run check:library-candidate-isolation
 
+  # Gate END-TO-END : la seule qui exerce la commande nominale. Les autres
+  # valident des contrats ou attaquent le bac à sable ; aucune n'installait
+  # réellement une bibliothèque. Tous les défauts sérieux du lot ont été trouvés
+  # en exécutant, pas par les tests unitaires — d'où ce job, malgré son coût.
+  # Sur ubuntu (amd64) le moteur de rendu tourne nativement, sans émulation.
+  # NON exercé ici : la transaction de publication (--dry-run s'arrête avant).
+  library-end-to-end:
+    name: Library end-to-end (add-library --dry-run)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: check:add-library-e2e
+        run: bun run check:add-library-e2e
+
   # ─── Job T4-5 : secret scanning (gitleaks) ───────────────────────────────
   # ADR-0006 : même contrôle que husky pre-push (`check:secrets -- --pre-push`).
   # Ici scan **complet** de l'historique git (detect, blocking).
