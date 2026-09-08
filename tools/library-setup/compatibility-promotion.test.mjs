@@ -22,6 +22,11 @@ import {
 } from './compatibility-promotion.mjs';
 import { buildLibraryPlan, stableJson } from './library-plan.mjs';
 import {
+    dependencyClosureSha256,
+    dependencyProjectionSha256,
+} from './dependency-resolution.mjs';
+import { gitBlobOid } from './git-tree.mjs';
+import {
     compatibilityTrackDigest,
     libraryRunnerDigest,
 } from './tooling-fingerprint.mjs';
@@ -31,12 +36,29 @@ const HEAD = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], {
     encoding: 'utf8',
 }).trim();
 
+function git(root, args) {
+    return execFileSync('git', ['-C', root, ...args], {
+        encoding: 'utf8',
+        env: {
+            ...process.env,
+            GIT_AUTHOR_NAME: 'CMZ Test',
+            GIT_AUTHOR_EMAIL: 'cmz-test@example.invalid',
+            GIT_COMMITTER_NAME: 'CMZ Test',
+            GIT_COMMITTER_EMAIL: 'cmz-test@example.invalid',
+        },
+    }).trim();
+}
+
 function sha256(value) {
     return createHash('sha256').update(value).digest('hex');
 }
 
 function recipe() {
-    return validateRecipes(ROOT).recipes.get('angular/angular-material');
+    return recipes().get('angular/angular-material');
+}
+
+function recipes() {
+    return validateRecipes(ROOT).recipes;
 }
 
 function track() {
@@ -71,6 +93,11 @@ function execution(overrides = {}) {
         ...changePayload,
         change_set_id: `changes:${sha256(stableJson(changePayload))}`,
     };
+    const format = execFileSync(
+        'git',
+        ['-C', ROOT, 'rev-parse', '--show-object-format'],
+        { encoding: 'utf8' }
+    ).trim();
     const planInputs = {
         app: 'backoffice-angular',
         library: sourceRecipe.library,
@@ -94,10 +121,22 @@ function execution(overrides = {}) {
         tsconfig_sha256: inputs.tsconfig,
         gitattributes_sha256: inputs.gitattributes,
         app_tree_sha256: '2'.repeat(64),
-        package_json_initial_oid: '3'.repeat(40),
-        package_json_final_oid: '4'.repeat(40),
-        bun_lock_initial_oid: '5'.repeat(40),
-        bun_lock_final_oid: '6'.repeat(40),
+        package_json_initial_oid: gitBlobOid(
+            readFileSync(join(ROOT, 'package.json')),
+            format
+        ),
+        package_json_final_oid: '4'.repeat(format === 'sha1' ? 40 : 64),
+        bun_lock_initial_oid: gitBlobOid(
+            readFileSync(join(ROOT, 'bun.lock')),
+            format
+        ),
+        bun_lock_final_oid: '6'.repeat(format === 'sha1' ? 40 : 64),
+        dependency_initial_sha256: dependencyProjectionSha256(
+            readFileSync(join(ROOT, 'package.json')),
+            readFileSync(join(ROOT, 'bun.lock')),
+            sourceTrack
+        ),
+        dependency_final_sha256: '7'.repeat(64),
         node_version: '22.22.3',
         bun_version: '1.3.14',
         nx_version: '23.1.0',
@@ -112,7 +151,7 @@ function execution(overrides = {}) {
         published: false,
         changeSet,
         plan: buildLibraryPlan({ ...planInputs, ...planOverrides }),
-        runtimeProofs: requiredProofIds(sourceRecipe),
+        runtimeProofs: requiredProofIds(sourceRecipe, recipes()),
         ...executionOverrides,
     };
 }
@@ -121,6 +160,7 @@ function verification() {
     return buildVerificationFromExecution({
         root: ROOT,
         recipe: recipe(),
+        recipeRegistry: recipes(),
         track: track(),
         app: 'backoffice-angular',
         execution: execution(),
@@ -143,15 +183,31 @@ function fixture(t) {
     ]) {
         cpSync(join(ROOT, path), join(root, path));
     }
+    git(root, ['init', '--quiet']);
+    git(root, ['add', '.']);
+    git(root, ['commit', '--quiet', '-m', 'fixture']);
     return root;
+}
+
+function rebindCommit(root, evidence) {
+    const rebound = structuredClone(evidence);
+    rebound.commit = git(root, ['rev-parse', 'HEAD']);
+    const { evidence_sha256: _ignored, ...payload } = rebound;
+    rebound.evidence_sha256 = sha256(stableJson(payload));
+    return rebound;
 }
 
 test('la preuve vient d’un résultat complet dont plan et change-set sont recalculés', () => {
     const built = verification();
     assert.equal(built.commit, HEAD);
     assert.equal(built.track_sha256, compatibilityTrackDigest(track()));
-    assert.deepEqual(built.proofs, requiredProofIds(recipe()));
-    assert.deepEqual(verificationFailures(ROOT, recipe(), track(), built), []);
+    assert.deepEqual(built.proofs, requiredProofIds(recipe(), recipes()));
+    assert.deepEqual(
+        verificationFailures(ROOT, recipe(), track(), built, {
+            recipeRegistry: recipes(),
+        }),
+        []
+    );
 
     const forgedPlan = execution();
     forgedPlan.plan.plan_id = `library-plan:${'0'.repeat(64)}`;
@@ -160,6 +216,7 @@ test('la preuve vient d’un résultat complet dont plan et change-set sont reca
             buildVerificationFromExecution({
                 root: ROOT,
                 recipe: recipe(),
+                recipeRegistry: recipes(),
                 track: track(),
                 app: 'backoffice-angular',
                 execution: forgedPlan,
@@ -174,6 +231,7 @@ test('la preuve vient d’un résultat complet dont plan et change-set sont reca
             buildVerificationFromExecution({
                 root: ROOT,
                 recipe: recipe(),
+                recipeRegistry: recipes(),
                 track: track(),
                 app: 'backoffice-angular',
                 execution: forgedChangeSet,
@@ -184,18 +242,27 @@ test('la preuve vient d’un résultat complet dont plan et change-set sont reca
 
 test('aucune liste déclarative ne remplace les oracles, coexistence comprise', () => {
     assert.ok(
-        requiredProofIds(recipe()).includes('material-tailwind-render-together')
+        requiredProofIds(recipe(), recipes()).includes(
+            'material-tailwind-render-together'
+        )
+    );
+    assert.ok(
+        requiredProofIds(recipes().get('angular/tailwind'), recipes()).includes(
+            'material-tailwind-render-together'
+        ),
+        'la qualification Tailwind doit aussi prouver la règle possédée par Material'
     );
     for (const runtimeProofs of [
         [],
         ['material-component-compiles'],
-        [...requiredProofIds(recipe()), 'preuve-inventee'],
+        [...requiredProofIds(recipe(), recipes()), 'preuve-inventee'],
     ]) {
         assert.throws(
             () =>
                 buildVerificationFromExecution({
                     root: ROOT,
                     recipe: recipe(),
+                    recipeRegistry: recipes(),
                     track: track(),
                     app: 'backoffice-angular',
                     execution: { ...execution(), runtimeProofs },
@@ -211,6 +278,7 @@ test('app, publication, commit, runner et vecteur de versions sont liés', () =>
             buildVerificationFromExecution({
                 root: ROOT,
                 recipe: recipe(),
+                recipeRegistry: recipes(),
                 track: track(),
                 app: 'app-qui-n-existe-pas',
                 execution: execution(),
@@ -222,6 +290,7 @@ test('app, publication, commit, runner et vecteur de versions sont liés', () =>
             buildVerificationFromExecution({
                 root: ROOT,
                 recipe: recipe(),
+                recipeRegistry: recipes(),
                 track: track(),
                 app: 'backoffice-angular',
                 execution: execution({ published: true }),
@@ -233,6 +302,7 @@ test('app, publication, commit, runner et vecteur de versions sont liés', () =>
             buildVerificationFromExecution({
                 root: ROOT,
                 recipe: recipe(),
+                recipeRegistry: recipes(),
                 track: track(),
                 app: 'backoffice-angular',
                 execution: execution({ plan: { framework_version: '23.0.0' } }),
@@ -241,11 +311,13 @@ test('app, publication, commit, runner et vecteur de versions sont liés', () =>
     );
 });
 
-test('modifier la piste, la politique, le lockfile ou le runner périme la preuve', (t) => {
-    const built = verification();
+test('modifier la piste, la politique ou le runner périme la preuve', (t) => {
     const root = fixture(t);
+    const built = rebindCommit(root, verification());
     assert.deepEqual(
-        verificationFailures(root, recipe(), track(), built, { gitRoot: ROOT }),
+        verificationFailures(root, recipe(), track(), built, {
+            recipeRegistry: recipes(),
+        }),
         []
     );
 
@@ -253,27 +325,120 @@ test('modifier la piste, la politique, le lockfile ou le runner périme la preuv
     changedTrack.dependency_section = 'devDependencies';
     assert.ok(
         verificationFailures(root, recipe(), changedTrack, built, {
-            gitRoot: ROOT,
+            recipeRegistry: recipes(),
         }).some((failure) => /piste a changé/.test(failure))
     );
 
     for (const [path, expected] of [
         ['conventions/libraries/resolution-policy.json', /policy a changé/],
-        ['bun.lock', /bun_lock a changé/],
         ['tools/library-setup/sandbox.mjs', /runner a changé/],
     ]) {
         const isolated = fixture(t);
+        const isolatedEvidence = rebindCommit(isolated, verification());
         writeFileSync(
             join(isolated, path),
             `${readFileSync(join(isolated, path), 'utf8')}\n`
         );
         assert.ok(
-            verificationFailures(isolated, recipe(), track(), built, {
-                gitRoot: ROOT,
-            }).some((failure) => expected.test(failure)),
+            verificationFailures(
+                isolated,
+                recipe(),
+                track(),
+                isolatedEvidence,
+                {
+                    recipeRegistry: recipes(),
+                }
+            ).some((failure) => expected.test(failure)),
             path
         );
     }
+});
+
+test('une bibliothèque indépendante ne périme ni la projection initiale ni la fermeture finale', (t) => {
+    const root = fixture(t);
+    const built = rebindCommit(root, verification());
+    const lock = readFileSync(join(root, 'bun.lock'), 'utf8');
+    writeFileSync(
+        join(root, 'bun.lock'),
+        lock.replace(
+            '"packages": {',
+            '"packages": {\n    "independent-proof": ["independent-proof@1.0.0", "", {}, "sha512-eA=="],'
+        )
+    );
+    assert.deepEqual(
+        verificationFailures(root, recipe(), track(), built, {
+            recipeRegistry: recipes(),
+        }),
+        []
+    );
+
+    const manifest = JSON.parse(readFileSync(join(root, 'package.json')));
+    manifest.dependencies['@angular/material'] = 'catalog:';
+    manifest.dependencies['@angular/cdk'] = 'catalog:';
+    manifest.workspaces.catalog['@angular/material'] = '22.0.5';
+    manifest.workspaces.catalog['@angular/cdk'] = '22.0.5';
+    const finalLock = {
+        workspaces: {
+            '': {
+                dependencies: {
+                    '@angular/material': 'catalog:',
+                    '@angular/cdk': 'catalog:',
+                },
+            },
+        },
+        catalog: {
+            '@angular/material': '22.0.5',
+            '@angular/cdk': '22.0.5',
+        },
+        packages: {
+            '@angular/material': [
+                '@angular/material@22.0.5',
+                '',
+                { dependencies: { '@angular/cdk': '22.0.5' } },
+                'sha512-material',
+            ],
+            '@angular/cdk': ['@angular/cdk@22.0.5', '', {}, 'sha512-cdk'],
+        },
+    };
+    writeFileSync(join(root, 'package.json'), `${JSON.stringify(manifest)}\n`);
+    writeFileSync(join(root, 'bun.lock'), `${JSON.stringify(finalLock)}\n`);
+    const qualified = structuredClone(built);
+    qualified.dependency_state_sha256.initial = '0'.repeat(64);
+    qualified.dependency_state_sha256.final = dependencyClosureSha256(
+        readFileSync(join(root, 'package.json')),
+        readFileSync(join(root, 'bun.lock')),
+        track()
+    );
+    const { evidence_sha256: _ignored, ...payload } = qualified;
+    qualified.evidence_sha256 = sha256(stableJson(payload));
+    assert.deepEqual(
+        verificationFailures(root, recipe(), track(), qualified, {
+            recipeRegistry: recipes(),
+        }),
+        []
+    );
+
+    finalLock.packages.independent = [
+        'independent@1.0.0',
+        '',
+        {},
+        'sha512-independent',
+    ];
+    writeFileSync(join(root, 'bun.lock'), `${JSON.stringify(finalLock)}\n`);
+    assert.deepEqual(
+        verificationFailures(root, recipe(), track(), qualified, {
+            recipeRegistry: recipes(),
+        }),
+        []
+    );
+
+    finalLock.packages['@angular/cdk'][0] = '@angular/cdk@22.0.6';
+    writeFileSync(join(root, 'bun.lock'), `${JSON.stringify(finalLock)}\n`);
+    assert.ok(
+        verificationFailures(root, recipe(), track(), qualified, {
+            recipeRegistry: recipes(),
+        }).some((failure) => /projection initiale/.test(failure))
+    );
 });
 
 test('la gate refuse les promotions inventées et les états contradictoires', (t) => {
@@ -285,22 +450,20 @@ test('la gate refuse les promotions inventées et les états contradictoires', (
     const matrix = JSON.parse(readFileSync(path, 'utf8'));
     matrix.tracks[0].status = 'verified';
     matrix.tracks[0].verification = {
-        ...verification(),
+        ...rebindCommit(root, verification()),
         commit: '0'.repeat(40),
     };
     writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
     const recipes = validateRecipes(root);
-    const result = validateCompatibilityMatrices(root, recipes.recipes, {
-        gitRoot: ROOT,
-    });
+    const result = validateCompatibilityMatrices(root, recipes.recipes);
     assert.equal(result.ok, false);
     assert.ok(result.errors.some((error) => /absent du dépôt/.test(error)));
 
     matrix.tracks[0].status = 'candidate';
     writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
     assert.ok(
-        validateCompatibilityMatrices(root, recipes.recipes, {
-            gitRoot: ROOT,
-        }).errors.some((error) => /candidate avec une vérification/.test(error))
+        validateCompatibilityMatrices(root, recipes.recipes).errors.some(
+            (error) => /candidate avec une vérification/.test(error)
+        )
     );
 });

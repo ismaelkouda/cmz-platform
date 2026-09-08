@@ -125,13 +125,30 @@ function packageNameFromRecord(record) {
     return match ? { name: match[1], version: match[2] } : null;
 }
 
-function dependencyMaps(record) {
+function dependencyEdges(record) {
     const metadata = Array.isArray(record) ? record[2] : null;
     if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata))
         return [];
-    return [metadata.dependencies, metadata.optionalDependencies].filter(
-        (value) => value && typeof value === 'object' && !Array.isArray(value)
+    const optionalPeers = new Set(
+        Array.isArray(metadata.optionalPeers) ? metadata.optionalPeers : []
     );
+    return [
+        ...Object.entries(metadata.dependencies ?? {}).map(([name, spec]) => ({
+            name,
+            spec,
+            optional: false,
+        })),
+        ...Object.entries(metadata.optionalDependencies ?? {}).map(
+            ([name, spec]) => ({ name, spec, optional: true })
+        ),
+        ...Object.entries(metadata.peerDependencies ?? {}).map(
+            ([name, spec]) => ({
+                name,
+                spec,
+                optional: optionalPeers.has(name),
+            })
+        ),
+    ];
 }
 
 function owningContext(packages, key) {
@@ -176,6 +193,184 @@ function resolveLockKey(packages, parentKey, name, spec) {
         if (!context) return null;
         context = owningContext(packages, context);
     }
+}
+
+/**
+ * État sémantique minimal d'une bibliothèque dans package.json + bun.lock.
+ *
+ * Contrairement à une empreinte des deux fichiers entiers, cet état reste
+ * valable lorsqu'une bibliothèque indépendante est ajoutée. Il devient en
+ * revanche périmé dès qu'une déclaration directe ou un record réellement
+ * atteignable (dépendance, dépendance optionnelle présente ou peer requis)
+ * change.
+ */
+export function dependencyClosureState(manifestRaw, lockRaw, track) {
+    const manifest = parseWithoutDuplicateKeys(
+        Buffer.from(manifestRaw).toString('utf8'),
+        'package.json'
+    );
+    const lock = parseJsonc(Buffer.from(lockRaw).toString('utf8'), 'bun.lock');
+    if (!lock.packages || typeof lock.packages !== 'object') {
+        fail('table packages absente du lockfile');
+    }
+    if (
+        !track ||
+        !['default', 'tooling'].includes(track.catalog) ||
+        !['dependencies', 'devDependencies'].includes(track.dependency_section)
+    ) {
+        fail('piste absente ou invalide pour calculer la fermeture');
+    }
+    const manifestCatalog =
+        track.catalog === 'default'
+            ? manifest.workspaces?.catalog
+            : manifest.workspaces?.catalogs?.tooling;
+    const lockCatalog =
+        track.catalog === 'default' ? lock.catalog : lock.catalogs?.tooling;
+    const lockWorkspace = lock.workspaces?.[''];
+    if (!manifestCatalog || !lockCatalog || !lockWorkspace) {
+        fail('catalog ou workspace racine absent');
+    }
+
+    const direct = {};
+    const roots = [];
+    for (const [name, version] of Object.entries(track.packages).sort()) {
+        if (!semver.valid(version)) fail(`${name}: version directe non exacte`);
+        for (const section of [
+            'dependencies',
+            'devDependencies',
+            'peerDependencies',
+            'optionalDependencies',
+        ]) {
+            const spec = manifest[section]?.[name];
+            if (
+                section === track.dependency_section
+                    ? spec !== 'catalog:'
+                    : spec !== undefined
+            ) {
+                fail(
+                    `${name}: déclaration directe incompatible dans ${section}`
+                );
+            }
+        }
+        if (
+            manifestCatalog[name] !== version ||
+            lockCatalog[name] !== version ||
+            lockWorkspace[track.dependency_section]?.[name] !== 'catalog:'
+        ) {
+            fail(`${name}: manifest/catalog/lockfile non concordants`);
+        }
+        const key = resolveLockKey(lock.packages, '', name, version);
+        if (!key) fail(`paquet demandé absent du lockfile : ${name}`);
+        direct[name] = { version, key };
+        roots.push(key);
+    }
+
+    const reachable = new Set();
+    const queue = [...roots];
+    while (queue.length) {
+        const key = queue.shift();
+        if (reachable.has(key)) continue;
+        const record = lock.packages[key];
+        if (!record) fail(`record atteignable absent : ${key}`);
+        reachable.add(key);
+        for (const { name, spec, optional } of dependencyEdges(record)) {
+            const child = resolveLockKey(lock.packages, key, name, spec);
+            if (!child && !optional) {
+                fail(`${key}: dépendance requise absente ${name}@${spec}`);
+            }
+            if (child) queue.push(child);
+        }
+    }
+    const records = Object.fromEntries(
+        [...reachable]
+            .sort()
+            .map((key) => [key, structuredClone(lock.packages[key])])
+    );
+    return {
+        schema_version: '1.0.0',
+        dependency_section: track.dependency_section,
+        catalog: track.catalog,
+        direct,
+        records,
+    };
+}
+
+export function dependencyClosureSha256(manifestRaw, lockRaw, track) {
+    return createHash('sha256')
+        .update(
+            JSON.stringify(
+                stable(dependencyClosureState(manifestRaw, lockRaw, track))
+            )
+        )
+        .digest('hex');
+}
+
+function fieldValue(object, key) {
+    return object && Object.hasOwn(object, key)
+        ? { present: true, value: structuredClone(object[key]) }
+        : { present: false };
+}
+
+/** Projection des seules entrées susceptibles d'influencer l'ajout demandé. */
+export function dependencyProjectionSha256(manifestRaw, lockRaw, track) {
+    const manifest = parseWithoutDuplicateKeys(
+        Buffer.from(manifestRaw).toString('utf8'),
+        'package.json'
+    );
+    const lock = parseJsonc(Buffer.from(lockRaw).toString('utf8'), 'bun.lock');
+    if (!lock.packages || typeof lock.packages !== 'object') {
+        fail('table packages absente du lockfile');
+    }
+    const manifestCatalog =
+        track.catalog === 'default'
+            ? manifest.workspaces?.catalog
+            : manifest.workspaces?.catalogs?.tooling;
+    const lockCatalog =
+        track.catalog === 'default' ? lock.catalog : lock.catalogs?.tooling;
+    const lockWorkspace = lock.workspaces?.[''];
+    const names = Object.keys(track.packages).sort();
+    const records = Object.fromEntries(
+        Object.entries(lock.packages)
+            .filter(([, record]) => {
+                const identity = packageNameFromRecord(record);
+                return identity && names.includes(identity.name);
+            })
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([key, record]) => [key, structuredClone(record)])
+    );
+    const projection = {
+        schema_version: '1.0.0',
+        dependency_section: track.dependency_section,
+        catalog: track.catalog,
+        packages: Object.fromEntries(
+            names.map((name) => [
+                name,
+                {
+                    manifest: Object.fromEntries(
+                        [
+                            'dependencies',
+                            'devDependencies',
+                            'peerDependencies',
+                            'optionalDependencies',
+                        ].map((section) => [
+                            section,
+                            fieldValue(manifest[section], name),
+                        ])
+                    ),
+                    manifest_catalog: fieldValue(manifestCatalog, name),
+                    lock_workspace: fieldValue(
+                        lockWorkspace?.[track.dependency_section],
+                        name
+                    ),
+                    lock_catalog: fieldValue(lockCatalog, name),
+                },
+            ])
+        ),
+        records,
+    };
+    return createHash('sha256')
+        .update(JSON.stringify(stable(projection)))
+        .digest('hex');
 }
 
 export function validateLockEvolution(initialRaw, finalRaw, track) {
@@ -241,11 +436,14 @@ export function validateLockEvolution(initialRaw, finalRaw, track) {
         const key = queue.shift();
         if (reachable.has(key)) continue;
         reachable.add(key);
-        for (const dependencies of dependencyMaps(final.packages[key])) {
-            for (const [name, spec] of Object.entries(dependencies)) {
-                const child = resolveLockKey(final.packages, key, name, spec);
-                if (child) queue.push(child);
+        for (const { name, spec, optional } of dependencyEdges(
+            final.packages[key]
+        )) {
+            const child = resolveLockKey(final.packages, key, name, spec);
+            if (!child && !optional) {
+                fail(`${key}: dépendance requise absente ${name}@${spec}`);
             }
+            if (child) queue.push(child);
         }
     }
     const unrelated = [...added].filter((key) => !reachable.has(key)).sort();

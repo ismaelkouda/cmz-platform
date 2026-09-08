@@ -146,8 +146,13 @@ Champs référencés par chaque entrée :
 - vecteur **exact** Node, Bun, Nx, framework et paquets réellement testé ;
 - `plan_id`, `change_set_id`, empreinte de l'arbre applicatif et preuves runtime
   réellement retournés par `add-library` ;
-- empreintes de la recette, des schémas, de la politique, du lockfile, du
-  manifeste racine, de la configuration Nx/TypeScript et du runner partagé ;
+- empreintes de la recette, des schémas, de la politique, de la configuration
+  Nx/TypeScript et du runner partagé ;
+- deux états sémantiques des dépendances : la projection initiale des seuls
+  paquets demandés, puis leur fermeture transitive finale exacte dans `bun.lock`
+  (dépendances, optionnelles présentes et peers requis). Une autre bibliothèque
+  peut ainsi être ajoutée sans périmer cette preuve ; toute dérive d'un record
+  réellement atteignable la périme ;
 - commit Git de qualification, selon le format d'objet du dépôt.
 
 Le chemin nominal sélectionne uniquement `verified`. Le chemin de qualification

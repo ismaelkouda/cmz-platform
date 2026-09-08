@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 import {
     applyDependencyOverlay,
     bunInstallArgv,
+    dependencyClosureSha256,
+    dependencyProjectionSha256,
     updateRootManifest,
     validateLockEvolution,
 } from './dependency-resolution.mjs';
@@ -132,6 +134,111 @@ test('lockfile : conserve chaque record existant et n’accepte que la fermeture
                 materialTrack
             ),
         /métadonnées du lockfile/
+    );
+});
+
+test('empreinte de dépendance ignore les paquets indépendants mais couvre transitives et peers requis', () => {
+    const manifest = JSON.stringify({
+        dependencies: { target: 'catalog:' },
+        devDependencies: {},
+        workspaces: { catalog: { target: '1.0.0' } },
+    });
+    const source = {
+        workspaces: { '': { dependencies: { target: 'catalog:' } } },
+        catalog: { target: '1.0.0' },
+        packages: {
+            target: [
+                'target@1.0.0',
+                '',
+                {
+                    dependencies: { child: '1.0.0' },
+                    peerDependencies: {
+                        peer: '^2.0.0',
+                        optional: '^3.0.0',
+                    },
+                    optionalPeers: ['optional'],
+                },
+                'sha512-target',
+            ],
+            child: ['child@1.0.0', '', {}, 'sha512-child'],
+            peer: ['peer@2.1.0', '', {}, 'sha512-peer'],
+        },
+    };
+    const targetTrack = {
+        catalog: 'default',
+        dependency_section: 'dependencies',
+        packages: { target: '1.0.0' },
+    };
+    const baseline = dependencyClosureSha256(
+        manifest,
+        JSON.stringify(source),
+        targetTrack
+    );
+    const independent = structuredClone(source);
+    independent.packages.unrelated = [
+        'unrelated@9.0.0',
+        '',
+        {},
+        'sha512-unrelated',
+    ];
+    assert.equal(
+        dependencyClosureSha256(
+            manifest,
+            JSON.stringify(independent),
+            targetTrack
+        ),
+        baseline
+    );
+    const changed = structuredClone(source);
+    changed.packages.child[3] = 'sha512-changed';
+    assert.notEqual(
+        dependencyClosureSha256(manifest, JSON.stringify(changed), targetTrack),
+        baseline
+    );
+    const missing = structuredClone(source);
+    delete missing.packages.peer;
+    assert.throws(
+        () =>
+            dependencyClosureSha256(
+                manifest,
+                JSON.stringify(missing),
+                targetTrack
+            ),
+        /dépendance requise absente peer/
+    );
+});
+
+test('projection initiale ne dépend que des entrées du paquet cible', () => {
+    const manifest = JSON.stringify({
+        dependencies: { existing: '1.0.0' },
+        workspaces: { catalog: {} },
+    });
+    const lock = {
+        workspaces: { '': { dependencies: { existing: '1.0.0' } } },
+        catalog: {},
+        packages: {
+            existing: ['existing@1.0.0', '', {}, 'sha512-existing'],
+        },
+    };
+    const targetTrack = {
+        catalog: 'default',
+        dependency_section: 'dependencies',
+        packages: { target: '1.0.0' },
+    };
+    const baseline = dependencyProjectionSha256(
+        manifest,
+        JSON.stringify(lock),
+        targetTrack
+    );
+    lock.packages.unrelated = ['unrelated@1.0.0', '', {}, 'sha512-unrelated'];
+    assert.equal(
+        dependencyProjectionSha256(manifest, JSON.stringify(lock), targetTrack),
+        baseline
+    );
+    lock.packages.target = ['target@1.0.0', '', {}, 'sha512-target'];
+    assert.notEqual(
+        dependencyProjectionSha256(manifest, JSON.stringify(lock), targetTrack),
+        baseline
     );
 });
 

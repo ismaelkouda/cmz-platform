@@ -74,6 +74,8 @@ test('plan_id change pour chaque entrée gouvernante', () => {
             'package_json_final_oid',
             'bun_lock_initial_oid',
             'bun_lock_final_oid',
+            'dependency_initial_sha256',
+            'dependency_final_sha256',
             'node_version',
             'bun_version',
             'nx_version',

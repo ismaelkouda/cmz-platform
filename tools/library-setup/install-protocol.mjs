@@ -9,6 +9,8 @@ import {
 import {
     applyDependencyOverlay,
     bunInstallArgv,
+    dependencyClosureSha256,
+    dependencyProjectionSha256,
     replaceRegularFile,
     updateRootManifest,
     validateLockEvolution,
@@ -321,5 +323,15 @@ export async function resolveLibraryDependencies({
         packageJsonFinal: finalManifest,
         bunLockInitial: initialLock,
         bunLockFinal: finalLock,
+        dependencyInitialSha256: dependencyProjectionSha256(
+            initialManifest,
+            initialLock,
+            track
+        ),
+        dependencyFinalSha256: dependencyClosureSha256(
+            finalManifest,
+            finalLock,
+            track
+        ),
     };
 }

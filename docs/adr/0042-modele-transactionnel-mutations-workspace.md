@@ -173,6 +173,15 @@ Le protocole Bun se déroule en **trois temps distincts** :
    gelée sur un `node_modules` déjà peuplé constaterait « no changes » sans rien
    reconstruire : cela ne prouverait rien.
 
+La promotion d'une piste ne mémorise pas une empreinte globale de `package.json`
+et `bun.lock` : elle deviendrait faussement périmée dès l'ajout d'une
+bibliothèque indépendante. Elle lie à la place deux états sémantiques : la
+projection initiale de toutes les entrées concernant les paquets demandés, puis
+la fermeture transitive finale exacte de ces paquets dans le lockfile, peers
+requis compris. Le contrôle accepte l'un ou l'autre état, jamais un mélange ; un
+ajout indépendant reste valide, mais toute modification d'un record atteignable
+force une nouvelle qualification.
+
 La résolution n'est pas sûre du seul fait qu'aucun script ne tourne : Bun
 accepte des dépendances Git/SSH, des tarballs par URL, et lit registres et
 credentials d'un `.npmrc`. Les sources obéissent donc à une **allowlist fermée**

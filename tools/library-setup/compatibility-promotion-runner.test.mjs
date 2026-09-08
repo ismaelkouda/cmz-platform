@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
+import { validateRecipes } from '../check-library-setup.mjs';
 import { loadLibraryConfiguration } from './add-library-core.mjs';
 import {
     verificationInputs,
@@ -19,6 +20,8 @@ import {
 } from './compatibility-promotion.mjs';
 import { promoteCompatibilityTrack } from './compatibility-promotion-runner.mjs';
 import { buildLibraryPlan, stableJson } from './library-plan.mjs';
+import { dependencyProjectionSha256 } from './dependency-resolution.mjs';
+import { gitBlobOid } from './git-tree.mjs';
 import { libraryRunnerDigest } from './tooling-fingerprint.mjs';
 
 const SOURCE = new URL('../..', import.meta.url).pathname;
@@ -100,6 +103,7 @@ function fakeExecution(root, app, library, runtimeProofs) {
             `conventions/libraries/${recipe.platform}/${library}.compat.json`
         )
     );
+    const format = git(root, ['rev-parse', '--show-object-format']);
     const plan = buildLibraryPlan({
         app,
         library,
@@ -116,10 +120,22 @@ function fakeExecution(root, app, library, runtimeProofs) {
         tsconfig_sha256: inputs.tsconfig,
         gitattributes_sha256: inputs.gitattributes,
         app_tree_sha256: '2'.repeat(64),
-        package_json_initial_oid: '3'.repeat(40),
-        package_json_final_oid: '4'.repeat(40),
-        bun_lock_initial_oid: '5'.repeat(40),
-        bun_lock_final_oid: '6'.repeat(40),
+        package_json_initial_oid: gitBlobOid(
+            readFileSync(join(root, 'package.json')),
+            format
+        ),
+        package_json_final_oid: '4'.repeat(format === 'sha1' ? 40 : 64),
+        bun_lock_initial_oid: gitBlobOid(
+            readFileSync(join(root, 'bun.lock')),
+            format
+        ),
+        bun_lock_final_oid: '6'.repeat(format === 'sha1' ? 40 : 64),
+        dependency_initial_sha256: dependencyProjectionSha256(
+            readFileSync(join(root, 'package.json')),
+            readFileSync(join(root, 'bun.lock')),
+            track
+        ),
+        dependency_final_sha256: '7'.repeat(64),
         node_version: versions.node,
         bun_version: versions.bun,
         nx_version: versions.nx,
@@ -155,7 +171,7 @@ test('la commande promeut uniquement la piste réellement qualifiée', async (t)
                 root,
                 'backoffice-angular',
                 'angular-material',
-                requiredProofIds(source.recipe)
+                requiredProofIds(source.recipe, validateRecipes(root).recipes)
             ),
     });
     assert.equal(result.verification.track_sha256.length, 64);

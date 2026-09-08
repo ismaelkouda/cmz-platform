@@ -22,11 +22,7 @@ function safeRead(root, path) {
     return readFileSync(absolute, 'utf8');
 }
 
-export function validateCompatibilityMatrices(
-    rootAbs,
-    recipes,
-    { gitRoot } = {}
-) {
+export function validateCompatibilityMatrices(rootAbs, recipes) {
     const root = resolve(rootAbs);
     const errors = [];
     let schema;
@@ -119,7 +115,9 @@ export function validateCompatibilityMatrices(
                         recipe,
                         track,
                         track.verification,
-                        { gitRoot: gitRoot ?? root }
+                        {
+                            recipeRegistry: recipes,
+                        }
                     )) {
                         errors.push(`${path}#${track.id}: ${failure}`);
                     }

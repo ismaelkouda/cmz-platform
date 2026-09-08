@@ -5,6 +5,10 @@ import { join, resolve } from 'node:path';
 
 import semver from 'semver';
 
+import {
+    dependencyClosureSha256,
+    dependencyProjectionSha256,
+} from './dependency-resolution.mjs';
 import { buildLibraryPlan, stableJson } from './library-plan.mjs';
 import {
     compatibilityTrackDigest,
@@ -108,8 +112,6 @@ export function verificationInputs(root, recipe) {
                 'conventions/libraries/resolution-policy.schema.json'
             )
         ),
-        package_json: sha256(regularFile(root, 'package.json')),
-        bun_lock: sha256(regularFile(root, 'bun.lock')),
         nx_json: sha256(regularFile(root, 'nx.json')),
         tsconfig: sha256(regularFile(root, 'tsconfig.base.json')),
         gitattributes: sha256(regularFile(root, '.gitattributes')),
@@ -117,12 +119,30 @@ export function verificationInputs(root, recipe) {
     };
 }
 
-/** Toutes les acceptances déclarées, y compris chaque composition. */
-export function requiredProofIds(recipe) {
+/**
+ * Toutes les acceptances de la bibliothèque et de chaque composition dans les
+ * deux sens. Une règle Material→Tailwind doit aussi être prouvée quand la piste
+ * Tailwind est qualifiée.
+ */
+export function requiredProofIds(recipe, recipeRegistry) {
+    if (!(recipeRegistry instanceof Map)) {
+        fail('registre de recettes requis pour calculer les preuves');
+    }
     const ids = [
         ...(recipe.runtime_acceptance ?? []).map((entry) => entry.id),
         ...(recipe.coexistence ?? []).flatMap((block) =>
             (block.runtime_acceptance ?? []).map((entry) => entry.id)
+        ),
+        ...[...recipeRegistry.values()].flatMap((candidate) =>
+            candidate.platform === recipe.platform
+                ? (candidate.coexistence ?? [])
+                      .filter((block) => block.with === recipe.library)
+                      .flatMap((block) =>
+                          (block.runtime_acceptance ?? []).map(
+                              (entry) => entry.id
+                          )
+                      )
+                : []
         ),
     ].sort();
     if (new Set(ids).size !== ids.length) {
@@ -131,8 +151,8 @@ export function requiredProofIds(recipe) {
     return ids;
 }
 
-function assertExactProofs(recipe, proofs) {
-    const required = requiredProofIds(recipe);
+function assertExactProofs(recipe, recipeRegistry, proofs) {
+    const required = requiredProofIds(recipe, recipeRegistry);
     const observed = [...(proofs ?? [])].sort();
     if (JSON.stringify(observed) !== JSON.stringify(required)) {
         fail(
@@ -205,6 +225,25 @@ function validatePlan(plan, { app, recipe, track, changeSetId, root }) {
     if (plan.commit !== head) {
         fail(`le plan ne porte pas le HEAD courant ${head}`);
     }
+    const oidLength = objectFormat(root) === 'sha1' ? 40 : 64;
+    for (const key of [
+        'package_json_initial_oid',
+        'package_json_final_oid',
+        'bun_lock_initial_oid',
+        'bun_lock_final_oid',
+    ]) {
+        if (!new RegExp(`^[a-f0-9]{${oidLength}}$`).test(plan[key] ?? '')) {
+            fail(`${key} invalide pour le format d'objet du dépôt`);
+        }
+    }
+    for (const key of [
+        'dependency_initial_sha256',
+        'dependency_final_sha256',
+    ]) {
+        if (!/^[a-f0-9]{64}$/.test(plan[key] ?? '')) {
+            fail(`${key} absent ou invalide`);
+        }
+    }
     const packages = Object.fromEntries(
         Object.entries(track.packages).sort(([left], [right]) =>
             left.localeCompare(right)
@@ -233,13 +272,21 @@ function validatePlan(plan, { app, recipe, track, changeSetId, root }) {
             fail(`${tool} ${tested[tool]} hors de la piste ${track.id}`);
         }
     }
-    return { planId: observedId, tested };
+    return {
+        planId: observedId,
+        tested,
+        dependencyStateSha256: {
+            initial: plan.dependency_initial_sha256,
+            final: plan.dependency_final_sha256,
+        },
+    };
 }
 
 /** Valide une sortie complète de l'exécuteur de qualification. */
 export function buildVerificationFromExecution({
     root,
     recipe,
+    recipeRegistry,
     track,
     app,
     execution,
@@ -248,14 +295,21 @@ export function buildVerificationFromExecution({
         fail('la qualification doit être un dry-run non publié');
     }
     const changeSetId = validateChangeSet(execution.changeSet);
-    const { planId, tested } = validatePlan(execution.plan, {
-        app,
+    const { planId, tested, dependencyStateSha256 } = validatePlan(
+        execution.plan,
+        {
+            app,
+            recipe,
+            track,
+            changeSetId,
+            root,
+        }
+    );
+    const proofs = assertExactProofs(
         recipe,
-        track,
-        changeSetId,
-        root,
-    });
-    const proofs = assertExactProofs(recipe, execution.runtimeProofs);
+        recipeRegistry,
+        execution.runtimeProofs
+    );
     const payload = {
         schema_version: '1.0.0',
         commit: execution.plan.commit,
@@ -265,6 +319,7 @@ export function buildVerificationFromExecution({
         app_tree_sha256: execution.plan.app_tree_sha256,
         track_sha256: compatibilityTrackDigest(track),
         tested_versions: tested,
+        dependency_state_sha256: dependencyStateSha256,
         proofs,
         inputs_sha256: verificationInputs(root, recipe),
     };
@@ -279,7 +334,7 @@ export function verificationFailures(
     recipe,
     track,
     verification,
-    { gitRoot = root } = {}
+    { recipeRegistry } = {}
 ) {
     const failures = [];
     const { evidence_sha256: observedEvidence, ...evidencePayload } =
@@ -289,13 +344,13 @@ export function verificationFailures(
             "l'empreinte de l'attestation ne correspond pas à son contenu"
         );
     }
-    if (!commitExists(gitRoot, verification.commit)) {
+    if (!commitExists(root, verification.commit)) {
         failures.push(
             `commit ${verification.commit} absent du dépôt : vérification invérifiable`
         );
     }
     try {
-        assertExactProofs(recipe, verification.proofs);
+        assertExactProofs(recipe, recipeRegistry, verification.proofs);
     } catch (error) {
         failures.push(error.message);
     }
@@ -323,6 +378,27 @@ export function verificationFailures(
         ) {
             failures.push(`${tool} testé absent, invalide ou hors piste`);
         }
+    }
+    try {
+        const manifest = regularFile(root, 'package.json');
+        const lock = regularFile(root, 'bun.lock');
+        const initial = dependencyProjectionSha256(manifest, lock, track);
+        let final;
+        try {
+            final = dependencyClosureSha256(manifest, lock, track);
+        } catch {
+            final = undefined;
+        }
+        if (
+            initial !== verification.dependency_state_sha256?.initial &&
+            final !== verification.dependency_state_sha256?.final
+        ) {
+            failures.push(
+                'l’état des dépendances ne correspond ni à la projection initiale ni à la fermeture finale qualifiée'
+            );
+        }
+    } catch (error) {
+        failures.push(error.message);
     }
     let current;
     try {

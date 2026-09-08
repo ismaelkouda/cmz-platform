@@ -120,6 +120,7 @@ export async function promoteCompatibilityTrack({
     const verification = buildVerificationFromExecution({
         root,
         recipe: configuration.recipe,
+        recipeRegistry: validateRecipes(root).recipes,
         track: configuration.track,
         app,
         execution,

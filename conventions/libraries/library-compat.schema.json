@@ -99,6 +99,7 @@
                   "app_tree_sha256",
                   "track_sha256",
                   "tested_versions",
+                  "dependency_state_sha256",
                   "proofs",
                   "inputs_sha256",
                   "evidence_sha256"
@@ -153,6 +154,21 @@
                       }
                     }
                   },
+                  "dependency_state_sha256": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["initial", "final"],
+                    "properties": {
+                      "initial": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "final": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  },
                   "proofs": {
                     "type": "array",
                     "minItems": 1,
@@ -171,8 +187,6 @@
                       "compat_schema",
                       "policy",
                       "policy_schema",
-                      "package_json",
-                      "bun_lock",
                       "nx_json",
                       "tsconfig",
                       "gitattributes",
@@ -196,14 +210,6 @@
                         "pattern": "^[a-f0-9]{64}$"
                       },
                       "policy_schema": {
-                        "type": "string",
-                        "pattern": "^[a-f0-9]{64}$"
-                      },
-                      "package_json": {
-                        "type": "string",
-                        "pattern": "^[a-f0-9]{64}$"
-                      },
-                      "bun_lock": {
                         "type": "string",
                         "pattern": "^[a-f0-9]{64}$"
                       },

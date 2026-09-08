@@ -215,6 +215,8 @@ function planInputs({
             dependencyResult.bunLockFinal,
             candidate.tree.objectFormat
         ),
+        dependency_initial_sha256: dependencyResult.dependencyInitialSha256,
+        dependency_final_sha256: dependencyResult.dependencyFinalSha256,
         node_version: versions.node,
         bun_version: dependencyResult.bunVersion,
         nx_version: versions.nx,
