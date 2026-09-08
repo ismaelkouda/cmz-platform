@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import {
     mkdir,
     mkdtemp,
     readFile,
     realpath,
     rm,
+    symlink,
     writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -14,7 +15,10 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 
 import { materializeGitTree, readGitTree } from './git-tree.mjs';
-import { resolveLibraryDependencies } from './install-protocol.mjs';
+import {
+    resolveLibraryDependencies,
+    verifyInstalledPackages,
+} from './install-protocol.mjs';
 
 const realRoot = new URL('../..', import.meta.url).pathname;
 
@@ -125,6 +129,22 @@ test('exécute base, génération et vérification neuve sans script de cycle de
                 `${JSON.stringify(finalLock, null, 2)}\n`
             );
         }
+        if (invocation.argv[0] === 'install') {
+            const currentManifest = JSON.parse(
+                readFileSync(join(invocation.candidate, 'package.json'), 'utf8')
+            );
+            if (currentManifest.dependencies?.material === 'catalog:') {
+                const installed = join(
+                    invocation.candidate,
+                    'node_modules/material'
+                );
+                mkdirSync(installed, { recursive: true });
+                writeFileSync(
+                    join(installed, 'package.json'),
+                    JSON.stringify({ name: 'material', version: '1.0.0' })
+                );
+            }
+        }
         return { status: 0, signal: null, stdout: '', stderr: '' };
     };
     let verificationReleased = false;
@@ -175,4 +195,45 @@ test('exécute base, génération et vérification neuve sans script de cycle de
     assert.equal(calls[0].profile, 'execution');
     assert.equal(calls[1].profile, 'resolution');
     assert.ok(calls.every(({ argv }) => !argv.includes('--trust')));
+});
+
+test('refuse un paquet direct absent, faux ou résolu hors du node_modules candidat', async (t) => {
+    const root = await realpath(
+        await mkdtemp(join(tmpdir(), 'cmz-installed-packages-'))
+    );
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const workspace = join(root, 'workspace');
+    const nodeModules = join(workspace, 'node_modules');
+    const outside = join(root, 'outside');
+    await mkdir(nodeModules, { recursive: true });
+    await mkdir(outside);
+    const track = { packages: { material: '1.0.0' } };
+    assert.throws(
+        () => verifyInstalledPackages(workspace, track),
+        /package.json installé introuvable/
+    );
+    await writeFile(
+        join(outside, 'package.json'),
+        JSON.stringify({ name: 'material', version: '1.0.0' })
+    );
+    await symlink(outside, join(nodeModules, 'material'));
+    assert.throws(
+        () => verifyInstalledPackages(workspace, track),
+        /hors node_modules/
+    );
+    await rm(join(nodeModules, 'material'));
+    await mkdir(join(nodeModules, 'material'));
+    await writeFile(
+        join(nodeModules, 'material/package.json'),
+        JSON.stringify({ name: 'material', version: '9.9.9' })
+    );
+    assert.throws(
+        () => verifyInstalledPackages(workspace, track),
+        /9\.9\.9 au lieu de material@1\.0\.0/
+    );
+    await writeFile(
+        join(nodeModules, 'material/package.json'),
+        JSON.stringify({ name: 'material', version: '1.0.0' })
+    );
+    assert.doesNotThrow(() => verifyInstalledPackages(workspace, track));
 });

@@ -1,6 +1,6 @@
-import { lstatSync } from 'node:fs';
+import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import {
     createCandidateLease,
@@ -111,6 +111,64 @@ function verifyPolicy(workspace, label) {
         fail(`${label} hors politique : ${result.errors.join(' ; ')}`);
 }
 
+export function verifyInstalledPackages(workspace, track) {
+    const nodeModules = resolve(workspace, 'node_modules');
+    let nodeModulesStats;
+    try {
+        nodeModulesStats = lstatSync(nodeModules);
+    } catch {
+        fail('node_modules racine absent, symbolique ou non répertoire');
+    }
+    if (nodeModulesStats.isSymbolicLink() || !nodeModulesStats.isDirectory()) {
+        fail('node_modules racine absent, symbolique ou non répertoire');
+    }
+    const canonicalNodeModules = realpathSync(nodeModules);
+    for (const [name, expectedVersion] of Object.entries(
+        track.packages ?? {}
+    ).sort()) {
+        if (!/^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/.test(name)) {
+            fail(`nom de paquet direct invalide : ${name}`);
+        }
+        const manifestPath = join(
+            nodeModules,
+            ...name.split('/'),
+            'package.json'
+        );
+        let stats;
+        let canonicalManifest;
+        try {
+            stats = lstatSync(manifestPath);
+            canonicalManifest = realpathSync(manifestPath);
+        } catch {
+            fail(`${name}: package.json installé introuvable`);
+        }
+        const within = relative(canonicalNodeModules, canonicalManifest);
+        if (
+            stats.isSymbolicLink() ||
+            !stats.isFile() ||
+            within === '' ||
+            within === '..' ||
+            within.startsWith(`..${sep}`) ||
+            isAbsolute(within)
+        ) {
+            fail(
+                `${name}: package.json installé hors node_modules ou non régulier`
+            );
+        }
+        let manifest;
+        try {
+            manifest = JSON.parse(readFileSync(canonicalManifest, 'utf8'));
+        } catch {
+            fail(`${name}: package.json installé illisible`);
+        }
+        if (manifest.name !== name || manifest.version !== expectedVersion) {
+            fail(
+                `${name}: paquet installé ${manifest.name ?? '?'}@${manifest.version ?? '?'} au lieu de ${name}@${expectedVersion}`
+            );
+        }
+    }
+}
+
 /**
  * Exécute exclusivement les trois temps de résolution. Aucun schematic ni LLM
  * n'est autorisé ici. Le second candidat est toujours libéré par finally.
@@ -191,6 +249,7 @@ export async function resolveLibraryDependencies({
             registry: policy.allowed_registries[0],
         })
     );
+    verifyInstalledPackages(workspace, track);
     const finalLock = await readFile(join(workspace, 'bun.lock'));
     validateLockEvolution(
         initialLock.toString('utf8'),
@@ -240,6 +299,7 @@ export async function resolveLibraryDependencies({
                 registry: policy.allowed_registries[0],
             })
         );
+        verifyInstalledPackages(verification.workspace, track);
         const manifestAfter = await readFile(
             join(verification.workspace, 'package.json')
         );
