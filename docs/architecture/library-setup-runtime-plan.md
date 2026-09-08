@@ -1,14 +1,13 @@
 # Plan — installation réelle + preuves runtime des bibliothèques
 
-- **Statut :** En implémentation. Sont livrés : le cœur `add-library` et ses
+- **Statut :** Livré et qualifié. Sont livrés : le cœur `add-library` et ses
   neuf étapes, les quatre P0, les oracles runtime, le confinement macOS **et**
   conteneur, le recours LLM borné, l'intégration `create-app`, la gate
-  d'intégration en CI, et la promotion gouvernée des matrices. **État de ce lot
-  :** les trois pistes sont temporairement `candidate` parce que l'audit du
+  d'intégration en CI, et la promotion gouvernée des matrices. L'audit du
   2026-09-08 a étendu la transaction à la neuvième étape, borné Prettier au
-  change-set et ajouté l'empreinte des preuves réciproques. Elles ne seront
-  requalifiées qu'après gel et revue de cet outillage ; toute modification
-  ultérieure le périmerait mécaniquement (ADR-0042 § invariants 8 à 10).
+  change-set et ajouté l'empreinte des preuves réciproques. Les trois pistes ont
+  ensuite été requalifiées contre le runner gelé ; toute modification future de
+  cet outillage les périmera mécaniquement (ADR-0042 § invariants 8 à 10).
 - **Objectif servi :** créer une application sans écrire de code, puis ajouter
   une bibliothèque par **une seule commande** —
   `bun run add-library --app clean-street --library angular-material` — qui
@@ -1002,11 +1001,12 @@ hostile (refusé à la matérialisation) et un exécutant hostile (refusé par l
 - Les profils macOS et conteneur sont attaqués par la suite d'isolation. La gate
   bout-en-bout est câblée dans la CI ; `check:ci-wiring` analyse le YAML plutôt
   que son texte brut et refuse qu'un commentaire tienne lieu d'exécution.
-- Pendant une modification du runner, les trois pistes restent `candidate`.
-  Leur dernière promotion exécute
+- Pendant une modification du runner, les pistes concernées repassent
+  explicitement `candidate`. Leur promotion finale exécute
   `bun run promote-library-compatibility --app <référence> --library <lib>`, le
   vrai pipeline en candidat et toutes les preuves de la recette — coexistences
   réciproques comprises — puis ne modifie que la matrice ciblée. Le bloc JSON
   est une attestation de contenu vérifiable et périssable, **pas une signature
   ni une preuve cryptographique de CI** : l'approbation demeure portée par la
-  revue et les checks obligatoires du commit.
+  revue et les checks obligatoires du commit. Les trois pistes livrées sont
+  actuellement `verified` contre ce protocole.
