@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {
     cpSync,
@@ -14,215 +15,292 @@ import { test } from 'node:test';
 import { validateRecipes } from '../check-library-setup.mjs';
 import { validateCompatibilityMatrices } from './compatibility.mjs';
 import {
-    buildVerification,
+    buildVerificationFromExecution,
     requiredProofIds,
     verificationFailures,
     verificationInputs,
 } from './compatibility-promotion.mjs';
+import { buildLibraryPlan, stableJson } from './library-plan.mjs';
+import {
+    compatibilityTrackDigest,
+    libraryRunnerDigest,
+} from './tooling-fingerprint.mjs';
 
-const REPO_ROOT = new URL('../..', import.meta.url).pathname;
-const HEAD = execFileSync('git', ['-C', REPO_ROOT, 'rev-parse', 'HEAD'], {
+const ROOT = new URL('../..', import.meta.url).pathname;
+const HEAD = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], {
     encoding: 'utf8',
 }).trim();
 
-/** Racine jetable portant les contrats réellement consommés par la gate. */
+function sha256(value) {
+    return createHash('sha256').update(value).digest('hex');
+}
+
+function recipe() {
+    return validateRecipes(ROOT).recipes.get('angular/angular-material');
+}
+
+function track() {
+    return JSON.parse(
+        readFileSync(
+            join(
+                ROOT,
+                'conventions/libraries/angular/angular-material.compat.json'
+            ),
+            'utf8'
+        )
+    ).tracks[0];
+}
+
+function execution(overrides = {}) {
+    const { plan: planOverrides = {}, ...executionOverrides } = overrides;
+    const sourceRecipe = recipe();
+    const sourceTrack = track();
+    const inputs = verificationInputs(ROOT, sourceRecipe);
+    const changePayload = {
+        schema_version: '1.0.0',
+        changes: [
+            {
+                op: 'create',
+                path: 'apps/backoffice-angular/proof',
+                mode: '100644',
+                sha256_after: '1'.repeat(64),
+            },
+        ],
+    };
+    const changeSet = {
+        ...changePayload,
+        change_set_id: `changes:${sha256(stableJson(changePayload))}`,
+    };
+    const planInputs = {
+        app: 'backoffice-angular',
+        library: sourceRecipe.library,
+        platform: sourceRecipe.platform,
+        commit: HEAD,
+        recipe_sha256: inputs.recipe,
+        recipe_schema_sha256: inputs.recipe_schema,
+        policy_sha256: inputs.policy,
+        policy_schema_sha256: inputs.policy_schema,
+        compat_sha256: sha256(
+            readFileSync(
+                join(
+                    ROOT,
+                    'conventions/libraries/angular/angular-material.compat.json'
+                )
+            )
+        ),
+        compat_schema_sha256: inputs.compat_schema,
+        runner_sha256: libraryRunnerDigest(ROOT),
+        nx_json_sha256: inputs.nx_json,
+        tsconfig_sha256: inputs.tsconfig,
+        gitattributes_sha256: inputs.gitattributes,
+        app_tree_sha256: '2'.repeat(64),
+        package_json_initial_oid: '3'.repeat(40),
+        package_json_final_oid: '4'.repeat(40),
+        bun_lock_initial_oid: '5'.repeat(40),
+        bun_lock_final_oid: '6'.repeat(40),
+        node_version: '22.22.3',
+        bun_version: '1.3.14',
+        nx_version: '23.1.0',
+        framework_version: '22.0.7',
+        schematic_version: Object.entries(sourceTrack.packages)
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([name, version]) => `${name}@${version}`)
+            .join(','),
+        change_set_id: changeSet.change_set_id,
+    };
+    return {
+        published: false,
+        changeSet,
+        plan: buildLibraryPlan({ ...planInputs, ...planOverrides }),
+        runtimeProofs: requiredProofIds(sourceRecipe),
+        ...executionOverrides,
+    };
+}
+
+function verification() {
+    return buildVerificationFromExecution({
+        root: ROOT,
+        recipe: recipe(),
+        track: track(),
+        app: 'backoffice-angular',
+        execution: execution(),
+    });
+}
+
 function fixture(t) {
     const root = mkdtempSync(join(tmpdir(), 'cmz-promotion-'));
     t.after(() => rmSync(root, { recursive: true, force: true }));
-    cpSync(join(REPO_ROOT, 'conventions'), join(root, 'conventions'), {
+    cpSync(join(ROOT, 'conventions'), join(root, 'conventions'), {
         recursive: true,
     });
-    cpSync(
-        join(REPO_ROOT, 'tools/library-setup'),
-        join(root, 'tools/library-setup'),
-        { recursive: true }
-    );
-    for (const file of ['nx.json', 'tsconfig.base.json']) {
-        cpSync(join(REPO_ROOT, file), join(root, file));
+    cpSync(join(ROOT, 'tools'), join(root, 'tools'), { recursive: true });
+    for (const path of [
+        'package.json',
+        'bun.lock',
+        'nx.json',
+        'tsconfig.base.json',
+        '.gitattributes',
+    ]) {
+        cpSync(join(ROOT, path), join(root, path));
     }
-    cpSync(
-        join(REPO_ROOT, 'tools/scaffold-tailwind.mjs'),
-        join(root, 'tools/scaffold-tailwind.mjs')
-    );
-    // Le dépôt Git réel sert d'autorité pour l'existence des commits ; la
-    // racine jetable n'en est pas un, donc les contrôles de commit s'y font
-    // contre REPO_ROOT.
     return root;
 }
 
-function matrixPath(root) {
-    return join(
+test('la preuve vient d’un résultat complet dont plan et change-set sont recalculés', () => {
+    const built = verification();
+    assert.equal(built.commit, HEAD);
+    assert.equal(built.track_sha256, compatibilityTrackDigest(track()));
+    assert.deepEqual(built.proofs, requiredProofIds(recipe()));
+    assert.deepEqual(verificationFailures(ROOT, recipe(), track(), built), []);
+
+    const forgedPlan = execution();
+    forgedPlan.plan.plan_id = `library-plan:${'0'.repeat(64)}`;
+    assert.throws(
+        () =>
+            buildVerificationFromExecution({
+                root: ROOT,
+                recipe: recipe(),
+                track: track(),
+                app: 'backoffice-angular',
+                execution: forgedPlan,
+            }),
+        /plan_id ne correspond pas/
+    );
+
+    const forgedChangeSet = execution();
+    forgedChangeSet.changeSet.change_set_id = `changes:${'0'.repeat(64)}`;
+    assert.throws(
+        () =>
+            buildVerificationFromExecution({
+                root: ROOT,
+                recipe: recipe(),
+                track: track(),
+                app: 'backoffice-angular',
+                execution: forgedChangeSet,
+            }),
+        /change_set_id ne correspond pas/
+    );
+});
+
+test('aucune liste déclarative ne remplace les oracles, coexistence comprise', () => {
+    assert.ok(
+        requiredProofIds(recipe()).includes('material-tailwind-render-together')
+    );
+    for (const runtimeProofs of [
+        [],
+        ['material-component-compiles'],
+        [...requiredProofIds(recipe()), 'preuve-inventee'],
+    ]) {
+        assert.throws(
+            () =>
+                buildVerificationFromExecution({
+                    root: ROOT,
+                    recipe: recipe(),
+                    track: track(),
+                    app: 'backoffice-angular',
+                    execution: { ...execution(), runtimeProofs },
+                }),
+            /preuves exécutées/
+        );
+    }
+});
+
+test('app, publication, commit, runner et vecteur de versions sont liés', () => {
+    assert.throws(
+        () =>
+            buildVerificationFromExecution({
+                root: ROOT,
+                recipe: recipe(),
+                track: track(),
+                app: 'app-qui-n-existe-pas',
+                execution: execution(),
+            }),
+        /concordance app/
+    );
+    assert.throws(
+        () =>
+            buildVerificationFromExecution({
+                root: ROOT,
+                recipe: recipe(),
+                track: track(),
+                app: 'backoffice-angular',
+                execution: execution({ published: true }),
+            }),
+        /dry-run non publié/
+    );
+    assert.throws(
+        () =>
+            buildVerificationFromExecution({
+                root: ROOT,
+                recipe: recipe(),
+                track: track(),
+                app: 'backoffice-angular',
+                execution: execution({ plan: { framework_version: '23.0.0' } }),
+            }),
+        /framework 23.0.0 hors/
+    );
+});
+
+test('modifier la piste, la politique, le lockfile ou le runner périme la preuve', (t) => {
+    const built = verification();
+    const root = fixture(t);
+    assert.deepEqual(
+        verificationFailures(root, recipe(), track(), built, { gitRoot: ROOT }),
+        []
+    );
+
+    const changedTrack = structuredClone(track());
+    changedTrack.dependency_section = 'devDependencies';
+    assert.ok(
+        verificationFailures(root, recipe(), changedTrack, built, {
+            gitRoot: ROOT,
+        }).some((failure) => /piste a changé/.test(failure))
+    );
+
+    for (const [path, expected] of [
+        ['conventions/libraries/resolution-policy.json', /policy a changé/],
+        ['bun.lock', /bun_lock a changé/],
+        ['tools/library-setup/sandbox.mjs', /runner a changé/],
+    ]) {
+        const isolated = fixture(t);
+        writeFileSync(
+            join(isolated, path),
+            `${readFileSync(join(isolated, path), 'utf8')}\n`
+        );
+        assert.ok(
+            verificationFailures(isolated, recipe(), track(), built, {
+                gitRoot: ROOT,
+            }).some((failure) => expected.test(failure)),
+            path
+        );
+    }
+});
+
+test('la gate refuse les promotions inventées et les états contradictoires', (t) => {
+    const root = fixture(t);
+    const path = join(
         root,
         'conventions/libraries/angular/angular-material.compat.json'
     );
-}
-
-function promote(root, verification) {
-    const path = matrixPath(root);
     const matrix = JSON.parse(readFileSync(path, 'utf8'));
     matrix.tracks[0].status = 'verified';
-    matrix.tracks[0].verification = verification;
-    writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
-}
-
-function gate(root) {
-    const recipes = validateRecipes(root);
-    assert.deepEqual(recipes.errors, []);
-    return validateCompatibilityMatrices(root, recipes.recipes, {
-        gitRoot: REPO_ROOT,
-    });
-}
-
-function materialRecipe() {
-    return validateRecipes(REPO_ROOT).recipes.get('angular/angular-material');
-}
-
-test('une promotion inventée est refusée : SHA inexistant, aucune preuve', (t) => {
-    const root = fixture(t);
-    // Exactement l'attaque qui PASSAIT avant ce lot, vérifiée le 2026-09-08.
-    promote(root, {
-        commit: '0'.repeat(40),
-        app: 'backoffice-angular',
-        plan_id: `library-plan:${'a'.repeat(64)}`,
-        proofs: ['material-component-compiles'],
-        inputs_sha256: verificationInputs(root, materialRecipe()),
-    });
-    const result = gate(root);
-    assert.equal(result.ok, false);
-    assert.ok(
-        result.errors.some((error) => /absent du dépôt/.test(error)),
-        result.errors.join(' ; ')
-    );
-});
-
-test('une vérification devient caduque dès qu’une entrée change', (t) => {
-    const root = fixture(t);
-    const recipe = materialRecipe();
-    const verification = buildVerification({
-        root,
-        recipe,
-        commit: HEAD,
-        gitRoot: REPO_ROOT,
-        app: 'backoffice-angular',
-        planId: `library-plan:${'b'.repeat(64)}`,
-        proofs: requiredProofIds(recipe),
-    });
-    promote(root, verification);
-    assert.deepEqual(gate(root).errors, [], 'vérification fraîche acceptée');
-
-    // Une seule entrée bouge : la politique de résolution.
-    const policy = join(root, 'conventions/libraries/resolution-policy.json');
-    const document = JSON.parse(readFileSync(policy, 'utf8'));
-    document.browser.version = '1.0.0.0';
-    writeFileSync(policy, `${JSON.stringify(document, null, 2)}\n`);
-
-    const stale = gate(root);
-    assert.equal(stale.ok, false);
-    assert.ok(
-        stale.errors.some((error) =>
-            /policy a changé depuis la vérification/.test(error)
-        ),
-        stale.errors.join(' ; ')
-    );
-});
-
-test('l’outillage compte : toucher un module du runner périme la piste', (t) => {
-    const root = fixture(t);
-    const recipe = materialRecipe();
-    promote(
-        root,
-        buildVerification({
-            root,
-            recipe,
-            commit: HEAD,
-            gitRoot: REPO_ROOT,
-            app: 'backoffice-angular',
-            planId: `library-plan:${'c'.repeat(64)}`,
-            proofs: requiredProofIds(recipe),
-        })
-    );
-    assert.deepEqual(gate(root).errors, []);
-
-    const module = join(root, 'tools/library-setup/sandbox.mjs');
-    writeFileSync(module, `${readFileSync(module, 'utf8')}\n// dérive\n`);
-
-    assert.ok(
-        gate(root).errors.some((error) =>
-            /runner a changé depuis la vérification/.test(error)
-        )
-    );
-});
-
-test('les preuves déclarées doivent être exactement celles de la recette', (t) => {
-    const root = fixture(t);
-    const recipe = materialRecipe();
-    assert.throws(
-        () =>
-            buildVerification({
-                root,
-                recipe,
-                commit: HEAD,
-                gitRoot: REPO_ROOT,
-                app: 'backoffice-angular',
-                planId: `library-plan:${'d'.repeat(64)}`,
-                proofs: [],
-            }),
-        /preuves exécutées \(aucune\)/
-    );
-    assert.throws(
-        () =>
-            buildVerification({
-                root,
-                recipe,
-                commit: HEAD,
-                gitRoot: REPO_ROOT,
-                app: 'backoffice-angular',
-                planId: `library-plan:${'d'.repeat(64)}`,
-                proofs: ['preuve-inventee'],
-            }),
-        /≠ acceptances déclarées/
-    );
-    const complete = buildVerification({
-        root,
-        recipe,
-        commit: HEAD,
-        gitRoot: REPO_ROOT,
-        app: 'backoffice-angular',
-        planId: `library-plan:${'d'.repeat(64)}`,
-        proofs: requiredProofIds(recipe),
-    });
-    assert.deepEqual(
-        verificationFailures(root, recipe, complete, { gitRoot: REPO_ROOT }),
-        [],
-        'un bloc produit par buildVerification doit être accepté par la gate'
-    );
-});
-
-test('candidate et verified sont exclusifs, dans les deux sens', (t) => {
-    const root = fixture(t);
-    const path = matrixPath(root);
-    const matrix = JSON.parse(readFileSync(path, 'utf8'));
     matrix.tracks[0].verification = {
-        commit: HEAD,
-        gitRoot: REPO_ROOT,
-        app: 'backoffice-angular',
-        plan_id: `library-plan:${'e'.repeat(64)}`,
-        proofs: requiredProofIds(materialRecipe()),
-        inputs_sha256: verificationInputs(root, materialRecipe()),
+        ...verification(),
+        commit: '0'.repeat(40),
     };
     writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
-    assert.ok(
-        gate(root).errors.some((error) =>
-            /candidate avec une vérification/.test(error)
-        )
-    );
+    const recipes = validateRecipes(root);
+    const result = validateCompatibilityMatrices(root, recipes.recipes, {
+        gitRoot: ROOT,
+    });
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => /absent du dépôt/.test(error)));
 
-    matrix.tracks[0].status = 'verified';
-    matrix.tracks[0].verification = null;
+    matrix.tracks[0].status = 'candidate';
     writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
     assert.ok(
-        gate(root).errors.some((error) =>
-            /verified sans bloc de vérification/.test(error)
-        )
+        validateCompatibilityMatrices(root, recipes.recipes, {
+            gitRoot: ROOT,
+        }).errors.some((error) => /candidate avec une vérification/.test(error))
     );
 });

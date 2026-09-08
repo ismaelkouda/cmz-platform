@@ -82,7 +82,7 @@
             "minLength": 1
           },
           "verification": {
-            "description": "Preuve qu'une piste a été MÉRITÉE, pas déclarée. Écrit par compatibility-promotion.mjs à l'issue d'une exécution réussie, jamais à la main. `null` tant que la piste est `candidate`. Les empreintes figent ce contre quoi la vérification vaut : si l'une change, la piste est périmée et doit repasser en `candidate` — une vérification n'est pas éternelle.",
+            "description": "Attestation de qualification produite par promote-library-compatibility après un dry-run complet. `null` tant que la piste est `candidate`. Elle lie les résultats et entrées contrôlables, mais ne constitue ni une signature ni une preuve cryptographique de CI ; l'approbation relève des checks et de la revue du commit. Toute dérive d'une empreinte impose un retour à `candidate`.",
             "oneOf": [
               {
                 "type": "null"
@@ -92,15 +92,24 @@
                 "additionalProperties": false,
                 "required": [
                   "commit",
+                  "schema_version",
                   "app",
                   "plan_id",
+                  "change_set_id",
+                  "app_tree_sha256",
+                  "track_sha256",
+                  "tested_versions",
                   "proofs",
-                  "inputs_sha256"
+                  "inputs_sha256",
+                  "evidence_sha256"
                 ],
                 "properties": {
+                  "schema_version": {
+                    "const": "1.0.0"
+                  },
                   "commit": {
                     "type": "string",
-                    "pattern": "^[a-f0-9]{40}$"
+                    "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
                   },
                   "app": {
                     "type": "string",
@@ -109,6 +118,40 @@
                   "plan_id": {
                     "type": "string",
                     "pattern": "^library-plan:[a-f0-9]{64}$"
+                  },
+                  "change_set_id": {
+                    "type": "string",
+                    "pattern": "^changes:[a-f0-9]{64}$"
+                  },
+                  "app_tree_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "track_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "evidence_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "tested_versions": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["node", "bun", "nx", "framework", "packages"],
+                    "properties": {
+                      "node": { "$ref": "#/$defs/exact_semver" },
+                      "bun": { "$ref": "#/$defs/exact_semver" },
+                      "nx": { "$ref": "#/$defs/exact_semver" },
+                      "framework": { "$ref": "#/$defs/exact_semver" },
+                      "packages": {
+                        "type": "object",
+                        "minProperties": 1,
+                        "additionalProperties": {
+                          "$ref": "#/$defs/exact_semver"
+                        }
+                      }
+                    }
                   },
                   "proofs": {
                     "type": "array",
@@ -128,8 +171,11 @@
                       "compat_schema",
                       "policy",
                       "policy_schema",
+                      "package_json",
+                      "bun_lock",
                       "nx_json",
                       "tsconfig",
+                      "gitattributes",
                       "runner"
                     ],
                     "properties": {
@@ -153,11 +199,23 @@
                         "type": "string",
                         "pattern": "^[a-f0-9]{64}$"
                       },
+                      "package_json": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "bun_lock": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
                       "nx_json": {
                         "type": "string",
                         "pattern": "^[a-f0-9]{64}$"
                       },
                       "tsconfig": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "gitattributes": {
                         "type": "string",
                         "pattern": "^[a-f0-9]{64}$"
                       },
@@ -173,6 +231,12 @@
           }
         }
       }
+    }
+  },
+  "$defs": {
+    "exact_semver": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
     }
   }
 }

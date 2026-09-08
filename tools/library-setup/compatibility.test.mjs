@@ -27,7 +27,8 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
     const result = validateCompatibilityMatrices(root, recipes.recipes);
     const track = selectCompatibilityTrack(
         result.matrices.get('angular/angular-material'),
-        { node: '22.22.3', bun: '1.3.14', nx: '23.1.0', framework: '22.0.7' }
+        { node: '22.22.3', bun: '1.3.14', nx: '23.1.0', framework: '22.0.7' },
+        { requiredStatus: 'candidate' }
     );
     assert.equal(track.id, 'angular-22');
     assert.throws(
@@ -39,9 +40,10 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
                     bun: '1.3.14',
                     nx: '23.1.0',
                     framework: '22.0.7',
-                }
+                },
+                { requiredStatus: 'candidate' }
             ),
-        /0 piste compatible/
+        /0 piste candidate compatible/
     );
     assert.throws(
         () =>
@@ -52,9 +54,10 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
                     bun: '1.3.14',
                     nx: '23.1.0',
                     framework: '22.0.7',
-                }
+                },
+                { requiredStatus: 'candidate' }
             ),
-        /0 piste compatible/
+        /0 piste candidate compatible/
     );
     assert.throws(
         () =>
@@ -64,6 +67,7 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
                     library: 'ambiguous',
                     tracks: [
                         {
+                            status: 'candidate',
                             requirements: {
                                 node: '>=22 <23',
                                 bun: '>=1 <2',
@@ -72,6 +76,7 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
                             },
                         },
                         {
+                            status: 'candidate',
                             requirements: {
                                 node: '>=22.1 <23',
                                 bun: '>=1 <2',
@@ -86,8 +91,27 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
                     bun: '1.3.14',
                     nx: '23.1.0',
                     framework: '22.0.7',
+                },
+                { requiredStatus: 'candidate' }
+            ),
+        /2 piste candidate compatible/
+    );
+});
+
+test('une piste candidate ne peut jamais servir au chemin nominal', () => {
+    const recipes = validateRecipes(root);
+    const result = validateCompatibilityMatrices(root, recipes.recipes);
+    assert.throws(
+        () =>
+            selectCompatibilityTrack(
+                result.matrices.get('angular/angular-material'),
+                {
+                    node: '22.22.3',
+                    bun: '1.3.14',
+                    nx: '23.1.0',
+                    framework: '22.0.7',
                 }
             ),
-        /2 piste compatible/
+        /0 piste verified compatible/
     );
 });

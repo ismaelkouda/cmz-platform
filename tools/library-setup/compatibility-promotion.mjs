@@ -1,7 +1,15 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { lstatSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { lstatSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+
+import semver from 'semver';
+
+import { buildLibraryPlan, stableJson } from './library-plan.mjs';
+import {
+    compatibilityTrackDigest,
+    libraryRunnerDigest,
+} from './tooling-fingerprint.mjs';
 
 function fail(message) {
     throw new Error(`library compatibility promotion: ${message}`);
@@ -20,53 +28,67 @@ function regularFile(root, relativePath) {
     return readFileSync(absolute);
 }
 
-/**
- * Empreinte de l'outillage qui a produit une vérification : tout
- * `tools/library-setup/*.mjs` hors tests, dans un ordre stable.
- *
- * `add-library-core` calcule aujourd'hui une empreinte équivalente pour le
- * `plan_id`. La duplication est assumée et temporaire : ce module appartient au
- * lot « promotion des matrices », `add-library-core` au lot « processus LLM »,
- * et le protocole de duo interdit d'écrire hors de sa propriété avant le SHA
- * gelé. La convergence attendue est que `add-library-core` importe CETTE
- * fonction — l'inverse créerait une dépendance du contrôle vers l'exécutant.
- */
-export function runnerDigest(root) {
-    const directory = join(root, 'tools/library-setup');
-    const hash = createHash('sha256');
-    for (const name of readdirSync(directory).sort()) {
-        if (!name.endsWith('.mjs') || name.endsWith('.test.mjs')) continue;
-        const stats = lstatSync(join(directory, name));
-        if (stats.isSymbolicLink())
-            fail(`lien symbolique dans le runner : ${name}`);
-        if (!stats.isFile()) continue;
-        hash.update(name)
-            .update('\0')
-            .update(readFileSync(join(directory, name)))
-            .update('\0');
+function git(root, args, { ignoreFailure = false } = {}) {
+    try {
+        return execFileSync(
+            'git',
+            [
+                '-C',
+                resolve(root),
+                '--no-replace-objects',
+                '--no-lazy-fetch',
+                ...args,
+            ],
+            {
+                encoding: 'utf8',
+                stdio: ['ignore', 'pipe', 'pipe'],
+                env: {
+                    PATH: process.env.PATH,
+                    LANG: 'C',
+                    LC_ALL: 'C',
+                    GIT_CONFIG_NOSYSTEM: '1',
+                    GIT_CONFIG_GLOBAL: '/dev/null',
+                    GIT_CONFIG_SYSTEM: '/dev/null',
+                    GIT_OPTIONAL_LOCKS: '0',
+                    GIT_TERMINAL_PROMPT: '0',
+                },
+            }
+        ).trim();
+    } catch {
+        if (ignoreFailure) return undefined;
+        fail(`git ${args[0]} a échoué`);
     }
-    return hash.digest('hex');
 }
 
-/**
- * Entrées GLOBALES au dépôt dont dépend le sens d'une vérification. Y figure
- * tout ce qui, en changeant, rend caduque la phrase « cette piste a été
- * vérifiée » — sans y figurer ce qui dépend de l'application choisie, qui n'est
- * pas reproductible par une gate statique.
- *
- * Conséquence assumée : pendant une phase de construction active, toute
- * modification de l'outillage périme les pistes vérifiées. C'est la vérité, pas
- * un défaut — `verified` signifie « vérifié contre exactement cet outillage ».
- */
+function objectFormat(root) {
+    const format = git(root, ['rev-parse', '--show-object-format']);
+    if (!['sha1', 'sha256'].includes(format)) {
+        fail(`format d'objet Git non supporté : ${format}`);
+    }
+    return format;
+}
+
+export function commitExists(root, commit) {
+    let format;
+    try {
+        format = objectFormat(root);
+    } catch {
+        return false;
+    }
+    const length = format === 'sha1' ? 40 : 64;
+    if (!new RegExp(`^[a-f0-9]{${length}}$`).test(commit ?? '')) return false;
+    return (
+        git(root, ['cat-file', '-e', `${commit}^{commit}`], {
+            ignoreFailure: true,
+        }) !== undefined
+    );
+}
+
 export function verificationInputs(root, recipe) {
-    const platform = recipe.platform;
-    const library = recipe.library;
+    const prefix = `conventions/libraries/${recipe.platform}`;
     return {
         recipe: sha256(
-            regularFile(
-                root,
-                `conventions/libraries/${platform}/${library}.setup.json`
-            )
+            regularFile(root, `${prefix}/${recipe.library}.setup.json`)
         ),
         recipe_schema: sha256(
             regularFile(root, 'conventions/libraries/library-setup.schema.json')
@@ -86,60 +108,30 @@ export function verificationInputs(root, recipe) {
                 'conventions/libraries/resolution-policy.schema.json'
             )
         ),
+        package_json: sha256(regularFile(root, 'package.json')),
+        bun_lock: sha256(regularFile(root, 'bun.lock')),
         nx_json: sha256(regularFile(root, 'nx.json')),
         tsconfig: sha256(regularFile(root, 'tsconfig.base.json')),
-        runner: runnerDigest(root),
+        gitattributes: sha256(regularFile(root, '.gitattributes')),
+        runner: libraryRunnerDigest(root),
     };
 }
 
-/** Identifiants des acceptances que la recette impose, hors coexistence. */
+/** Toutes les acceptances déclarées, y compris chaque composition. */
 export function requiredProofIds(recipe) {
-    return (recipe.runtime_acceptance ?? []).map((entry) => entry.id).sort();
+    const ids = [
+        ...(recipe.runtime_acceptance ?? []).map((entry) => entry.id),
+        ...(recipe.coexistence ?? []).flatMap((block) =>
+            (block.runtime_acceptance ?? []).map((entry) => entry.id)
+        ),
+    ].sort();
+    if (new Set(ids).size !== ids.length) {
+        fail(`identifiant de preuve dupliqué pour ${recipe.library}`);
+    }
+    return ids;
 }
 
-/**
- * `gitRoot` est l'AUTORITÉ Git, distincte de la racine de contenu inspectée.
- * En production les deux coïncident. Les tests inspectent une racine jetable
- * qui n'est pas un dépôt : ils désignent alors le dépôt réel, faute de quoi le
- * contrôle échouerait pour une raison sans rapport avec ce qu'il vérifie.
- */
-export function commitExists(root, commit) {
-    if (!/^[a-f0-9]{40}$/.test(commit ?? '')) return false;
-    try {
-        execFileSync(
-            'git',
-            ['-C', root, 'cat-file', '-e', `${commit}^{commit}`],
-            {
-                stdio: 'ignore',
-                env: { PATH: process.env.PATH, GIT_TERMINAL_PROMPT: '0' },
-            }
-        );
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-/**
- * Construit le bloc de vérification à partir d'une exécution RÉUSSIE. Aucune
- * promotion ne doit être écrite à la main : c'est cette fonction qui est
- * l'autorité, et la gate refuse tout bloc qu'elle n'aurait pas pu produire.
- */
-export function buildVerification({
-    root,
-    recipe,
-    commit,
-    app,
-    planId,
-    proofs,
-    gitRoot = root,
-}) {
-    if (!commitExists(gitRoot, commit))
-        fail(`commit inconnu du dépôt : ${commit}`);
-    if (!/^[a-z][a-z0-9-]*$/.test(app ?? '')) fail(`app invalide : ${app}`);
-    if (!/^library-plan:[a-f0-9]{64}$/.test(planId ?? '')) {
-        fail(`plan_id invalide : ${planId}`);
-    }
+function assertExactProofs(recipe, proofs) {
     const required = requiredProofIds(recipe);
     const observed = [...(proofs ?? [])].sort();
     if (JSON.stringify(observed) !== JSON.stringify(required)) {
@@ -147,37 +139,190 @@ export function buildVerification({
             `preuves exécutées ${observed.join(',') || '(aucune)'} ≠ acceptances déclarées ${required.join(',')}`
         );
     }
-    return {
-        commit,
+    return required;
+}
+
+function validateChangeSet(changeSet) {
+    if (
+        changeSet?.schema_version !== '1.0.0' ||
+        !Array.isArray(changeSet.changes)
+    ) {
+        fail('change-set absent ou invalide');
+    }
+    if (changeSet.changes.length === 0) {
+        fail("la qualification n'a produit aucun changement");
+    }
+    const payload = {
+        schema_version: changeSet.schema_version,
+        changes: changeSet.changes,
+    };
+    const expected = `changes:${sha256(stableJson(payload))}`;
+    if (changeSet.change_set_id !== expected) {
+        fail('change_set_id ne correspond pas au contenu du change-set');
+    }
+    return expected;
+}
+
+function validatePlan(plan, { app, recipe, track, changeSetId, root }) {
+    if (!plan || typeof plan !== 'object') fail('plan absent');
+    const { plan_id: observedId, ...inputs } = plan;
+    const rebuilt = buildLibraryPlan(inputs);
+    if (observedId !== rebuilt.plan_id) {
+        fail('plan_id ne correspond pas au contenu du plan');
+    }
+    if (
+        plan.app !== app ||
+        plan.library !== recipe.library ||
+        plan.platform !== recipe.platform ||
+        plan.change_set_id !== changeSetId
+    ) {
+        fail('plan sans concordance app/bibliothèque/plateforme/change-set');
+    }
+    if (plan.runner_sha256 !== libraryRunnerDigest(root)) {
+        fail('plan produit par un runner différent du runner courant');
+    }
+    const currentInputs = verificationInputs(root, recipe);
+    const planInputs = {
+        recipe_sha256: currentInputs.recipe,
+        recipe_schema_sha256: currentInputs.recipe_schema,
+        policy_sha256: currentInputs.policy,
+        policy_schema_sha256: currentInputs.policy_schema,
+        compat_schema_sha256: currentInputs.compat_schema,
+        runner_sha256: currentInputs.runner,
+        nx_json_sha256: currentInputs.nx_json,
+        tsconfig_sha256: currentInputs.tsconfig,
+        gitattributes_sha256: currentInputs.gitattributes,
+    };
+    for (const [key, expected] of Object.entries(planInputs)) {
+        if (plan[key] !== expected) {
+            fail(`${key} du plan différent de l'entrée courante`);
+        }
+    }
+    if (!commitExists(root, plan.commit)) {
+        fail(`commit du plan absent : ${plan.commit}`);
+    }
+    const head = git(root, ['rev-parse', '--verify', 'HEAD']);
+    if (plan.commit !== head) {
+        fail(`le plan ne porte pas le HEAD courant ${head}`);
+    }
+    const packages = Object.fromEntries(
+        Object.entries(track.packages).sort(([left], [right]) =>
+            left.localeCompare(right)
+        )
+    );
+    const expectedSchematic = Object.entries(packages)
+        .map(([name, version]) => `${name}@${version}`)
+        .join(',');
+    if (plan.schematic_version !== expectedSchematic) {
+        fail('versions de paquets du plan différentes de la piste');
+    }
+    const tested = {
+        node: plan.node_version,
+        bun: plan.bun_version,
+        nx: plan.nx_version,
+        framework: plan.framework_version,
+        packages,
+    };
+    for (const tool of ['node', 'bun', 'nx', 'framework']) {
+        if (
+            !semver.valid(tested[tool]) ||
+            !semver.satisfies(tested[tool], track.requirements[tool], {
+                includePrerelease: false,
+            })
+        ) {
+            fail(`${tool} ${tested[tool]} hors de la piste ${track.id}`);
+        }
+    }
+    return { planId: observedId, tested };
+}
+
+/** Valide une sortie complète de l'exécuteur de qualification. */
+export function buildVerificationFromExecution({
+    root,
+    recipe,
+    track,
+    app,
+    execution,
+}) {
+    if (execution?.published !== false) {
+        fail('la qualification doit être un dry-run non publié');
+    }
+    const changeSetId = validateChangeSet(execution.changeSet);
+    const { planId, tested } = validatePlan(execution.plan, {
+        app,
+        recipe,
+        track,
+        changeSetId,
+        root,
+    });
+    const proofs = assertExactProofs(recipe, execution.runtimeProofs);
+    const payload = {
+        schema_version: '1.0.0',
+        commit: execution.plan.commit,
         app,
         plan_id: planId,
-        proofs: required,
+        change_set_id: changeSetId,
+        app_tree_sha256: execution.plan.app_tree_sha256,
+        track_sha256: compatibilityTrackDigest(track),
+        tested_versions: tested,
+        proofs,
         inputs_sha256: verificationInputs(root, recipe),
+    };
+    return {
+        ...payload,
+        evidence_sha256: sha256(stableJson(payload)),
     };
 }
 
-/**
- * @returns {string[]} raisons pour lesquelles la vérification ne tient plus.
- * Vide = la piste peut rester `verified`.
- */
 export function verificationFailures(
     root,
     recipe,
+    track,
     verification,
     { gitRoot = root } = {}
 ) {
     const failures = [];
+    const { evidence_sha256: observedEvidence, ...evidencePayload } =
+        verification;
+    if (observedEvidence !== sha256(stableJson(evidencePayload))) {
+        failures.push(
+            "l'empreinte de l'attestation ne correspond pas à son contenu"
+        );
+    }
     if (!commitExists(gitRoot, verification.commit)) {
         failures.push(
             `commit ${verification.commit} absent du dépôt : vérification invérifiable`
         );
     }
-    const required = requiredProofIds(recipe);
-    const observed = [...(verification.proofs ?? [])].sort();
-    if (JSON.stringify(observed) !== JSON.stringify(required)) {
-        failures.push(
-            `preuves ${observed.join(',') || '(aucune)'} ≠ acceptances déclarées ${required.join(',')}`
-        );
+    try {
+        assertExactProofs(recipe, verification.proofs);
+    } catch (error) {
+        failures.push(error.message);
+    }
+    if (verification.track_sha256 !== compatibilityTrackDigest(track)) {
+        failures.push('la piste a changé depuis sa qualification');
+    }
+    const exactPackages = Object.fromEntries(
+        Object.entries(track.packages).sort(([left], [right]) =>
+            left.localeCompare(right)
+        )
+    );
+    if (
+        JSON.stringify(verification.tested_versions?.packages) !==
+        JSON.stringify(exactPackages)
+    ) {
+        failures.push('les versions de paquets testées diffèrent de la piste');
+    }
+    for (const tool of ['node', 'bun', 'nx', 'framework']) {
+        const version = verification.tested_versions?.[tool];
+        if (
+            !semver.valid(version) ||
+            !semver.satisfies(version, track.requirements[tool], {
+                includePrerelease: false,
+            })
+        ) {
+            failures.push(`${tool} testé absent, invalide ou hors piste`);
+        }
     }
     let current;
     try {

@@ -77,6 +77,7 @@ test('plan_id change pour chaque entrée gouvernante', () => {
             'node_version',
             'bun_version',
             'nx_version',
+            'framework_version',
             'schematic_version',
             'change_set_id',
         ].map((key) => [key, key])

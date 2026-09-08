@@ -7,7 +7,6 @@ import {
     mkdirSync,
     readFileSync,
     realpathSync,
-    readdirSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
@@ -50,6 +49,7 @@ import { proveLibraryRuntime, requiredAcceptances } from './runtime-proofs.mjs';
 import { provisionBrowser } from './browser-provisioning.mjs';
 import { selectSandboxBackend } from './sandbox.mjs';
 import { snapshotFilesystem, snapshotSha256 } from './filesystem-snapshot.mjs';
+import { libraryRunnerDigest } from './tooling-fingerprint.mjs';
 
 function fail(message) {
     throw new Error(`add-library: ${message}`);
@@ -70,43 +70,6 @@ function fileHash(root, path) {
     const stats = lstatSync(absolute);
     if (stats.isSymbolicLink() || !stats.isFile()) fail(`${path} non régulier`);
     return sha256(readFileSync(absolute));
-}
-
-const RUNNER_INPUTS = [
-    'tools/add-library.mjs',
-    'tools/check-library-setup.mjs',
-    'tools/check-library-setup-deps.mjs',
-    'tools/scaffold-tailwind.mjs',
-    'tools/generator-platform/validate-ir.mjs',
-];
-
-function runnerHash(root) {
-    const hash = createHash('sha256');
-    function add(path) {
-        const absolute = join(root, path);
-        const stats = lstatSync(absolute);
-        if (stats.isSymbolicLink() || !stats.isFile()) {
-            fail(`entrée du runner non régulière : ${path}`);
-        }
-        hash.update(path)
-            .update('\0')
-            .update(readFileSync(absolute))
-            .update('\0');
-    }
-    function visit(directory, prefix) {
-        for (const name of readdirSync(directory).sort()) {
-            const absolute = join(directory, name);
-            const path = `${prefix}/${name}`;
-            const stats = lstatSync(absolute);
-            if (stats.isSymbolicLink())
-                fail(`runner contient un lien : ${path}`);
-            if (stats.isDirectory()) visit(absolute, path);
-            else if (stats.isFile() && !path.endsWith('.test.mjs')) add(path);
-        }
-    }
-    visit(join(root, 'tools/library-setup'), 'tools/library-setup');
-    for (const path of RUNNER_INPUTS) add(path);
-    return hash.digest('hex');
 }
 
 function ensureCache() {
@@ -231,7 +194,7 @@ function planInputs({
             root,
             'conventions/libraries/library-compat.schema.json'
         ),
-        runner_sha256: runnerHash(root),
+        runner_sha256: libraryRunnerDigest(root),
         nx_json_sha256: fileHash(root, 'nx.json'),
         tsconfig_sha256: fileHash(root, 'tsconfig.base.json'),
         gitattributes_sha256: fileHash(root, '.gitattributes'),
@@ -255,6 +218,7 @@ function planInputs({
         node_version: versions.node,
         bun_version: dependencyResult.bunVersion,
         nx_version: versions.nx,
+        framework_version: versions[recipe.platform],
         schematic_version: Object.entries(track.packages)
             .sort()
             .map(([name, version]) => `${name}@${version}`)
@@ -273,7 +237,12 @@ function governedSnapshotFromTree(tree) {
     }));
 }
 
-export function loadLibraryConfiguration(root, app, library) {
+export function loadLibraryConfiguration(
+    root,
+    app,
+    library,
+    { requiredTrackStatus = 'verified' } = {}
+) {
     const recipeResult = validateRecipes(root);
     if (!recipeResult.ok) fail(recipeResult.errors.join(' ; '));
     const initialApps = verifyApps(root, recipeResult.recipes);
@@ -299,12 +268,16 @@ export function loadLibraryConfiguration(root, app, library) {
         readFileSync(join(root, 'package.json'), 'utf8')
     );
     const versions = workspaceVersions(manifest, platform);
-    const track = selectCompatibilityTrack(compatibility.matrices.get(key), {
-        node: versions.node,
-        bun: versions.bun,
-        nx: versions.nx,
-        framework: versions[platform],
-    });
+    const track = selectCompatibilityTrack(
+        compatibility.matrices.get(key),
+        {
+            node: versions.node,
+            bun: versions.bun,
+            nx: versions.nx,
+            framework: versions[platform],
+        },
+        { requiredStatus: requiredTrackStatus }
+    );
     return {
         platform,
         recipe,
@@ -314,7 +287,7 @@ export function loadLibraryConfiguration(root, app, library) {
     };
 }
 
-export async function addLibrary({
+async function executeLibraryAddition({
     repository,
     app,
     library,
@@ -323,6 +296,7 @@ export async function addLibrary({
     llmAdapter,
     runtimeProver = proveLibraryRuntime,
     onProgress = () => undefined,
+    requiredTrackStatus,
 }) {
     assertIdentifier(app, 'app');
     assertIdentifier(library, 'library');
@@ -341,7 +315,9 @@ export async function addLibrary({
     assertPublishableRepository(root, head);
     onProgress({ step: 2, total: 8, id: 'contracts' });
     const { platform, recipe, track, policy, versions } =
-        loadLibraryConfiguration(root, app, library);
+        loadLibraryConfiguration(root, app, library, {
+            requiredTrackStatus,
+        });
     if (recipe.install.method === 'llm-then-verified') {
         try {
             validateLlmProcessAdapter(llmAdapter);
@@ -453,7 +429,10 @@ export async function addLibrary({
             });
         }
         onProgress({ step: 6, total: 8, id: 'runtime-proofs' });
-        if (!llmResult) runtimeProver(runtimeOptions);
+        // Même après une boucle LLM réussie, les preuves sont rejouées une fois
+        // et leur résultat explicite devient une sortie gouvernée. Une simple
+        // affirmation de l'adaptateur ne peut donc jamais tenir lieu de preuve.
+        const runtimeResult = runtimeProver(runtimeOptions);
         const appCheck = verifyApps(candidate.workspace, recipeResult.recipes);
         if (!appCheck.ok)
             fail(`gate applicative candidate : ${appCheck.errors.join(' ; ')}`);
@@ -481,6 +460,7 @@ export async function addLibrary({
             return {
                 plan,
                 changeSet,
+                runtimeProofs: [...runtimeResult.proofs],
                 ...(llmResult
                     ? {
                           llmAudit: {
@@ -511,6 +491,7 @@ export async function addLibrary({
         return {
             plan,
             changeSet,
+            runtimeProofs: [...runtimeResult.proofs],
             ...(llmResult
                 ? {
                       llmAudit: {
@@ -525,4 +506,25 @@ export async function addLibrary({
     } finally {
         if (candidate) releaseCandidateLease(candidate);
     }
+}
+
+/** Chemin produit : une piste candidate n'est jamais consommable. */
+export function addLibrary(options) {
+    return executeLibraryAddition({
+        ...options,
+        requiredTrackStatus: 'verified',
+    });
+}
+
+/**
+ * Chemin de qualification interne. Il n'est exposé par aucune option de la CLI
+ * add-library et ne publie jamais : la promotion consomme son dry-run prouvé.
+ */
+export function executeCandidateLibraryForPromotion(options) {
+    return executeLibraryAddition({
+        ...options,
+        dryRun: true,
+        expectPlan: undefined,
+        requiredTrackStatus: 'candidate',
+    });
 }

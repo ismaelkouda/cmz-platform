@@ -134,17 +134,27 @@ correspondance.
 
 `conventions/libraries/<platform>/<library>.compat.json`, **schéma fermé et
 validé** par `check:library-setup`. Mettre `tracks` **dans** la recette créerait
-une auto-référence : une entrée porte le `recipe_sha`, qui changerait à chaque
-ajout d'entrée.
+une auto-référence : une entrée porte l'empreinte de la recette, qui changerait
+à chaque ajout d'entrée.
 
 Champs référencés par chaque entrée :
 
 - `platform` + `library` ;
 - versions des paquets (`packages[]` résolus) ;
 - versions d'outillage pertinentes : Angular, Nx, Bun, Node ;
-- `recipe_sha` (hash de la recette validée) ;
-- `runtime_proofs[]` réellement exécutés pour cette entrée ;
-- `verified_at` (date) + `verified_commit` (SHA de validation).
+- empreinte complète de la piste hors `status` et `verification` ;
+- vecteur **exact** Node, Bun, Nx, framework et paquets réellement testé ;
+- `plan_id`, `change_set_id`, empreinte de l'arbre applicatif et preuves runtime
+  réellement retournés par `add-library` ;
+- empreintes de la recette, des schémas, de la politique, du lockfile, du
+  manifeste racine, de la configuration Nx/TypeScript et du runner partagé ;
+- commit Git de qualification, selon le format d'objet du dépôt.
+
+Le chemin nominal sélectionne uniquement `verified`. Le chemin de qualification
+est distinct et sélectionne uniquement `candidate`; aucune option cachée de
+`add-library` ne permet de franchir cette frontière. En V1, une preuve ne vaut
+que pour le vecteur exact testé : les plages de `requirements` décrivent les
+versions candidates, pas une généralisation de la preuve.
 
 ### D4 — Le candidat est un workspace complet, hors du dépôt
 
@@ -763,17 +773,17 @@ canonique et exécutable ; son `argv` suit un schéma fermé. Il reçoit la requ
 sur `stdin` et ne retourne que la réponse JSON sur `stdout`, sous un
 environnement minimal sans `PATH` ni secret hérité. Le contrôleur reste une
 partie de confiance à auditer séparément : ce contrat borne l’autorité du
-**modèle**, il ne prétend pas transformer un binaire fournisseur hostile en
-code sûr.
+**modèle**, il ne prétend pas transformer un binaire fournisseur hostile en code
+sûr.
 
-Le passage hors processus est nécessaire pour rendre le timeout exécutoire :
-un `Promise.race` avec `AbortSignal` rend la main mais ne peut pas arrêter un
+Le passage hors processus est nécessaire pour rendre le timeout exécutoire : un
+`Promise.race` avec `AbortSignal` rend la main mais ne peut pas arrêter un
 adaptateur qui ignore le signal. Sur les hôtes POSIX supportés, chaque appel
 possède son groupe de processus ; timeout, `stdout` ou `stderr` hors borne
 provoquent un `SIGKILL` du groupe et la fermeture est attendue avant de rendre
 la main. La réponse doit être UTF-8 strict, JSON strict et sans clé dupliquée ;
-le `stderr`, potentiellement sensible, n’est jamais recopié dans les
-diagnostics (taille et empreinte seulement).
+le `stderr`, potentiellement sensible, n’est jamais recopié dans les diagnostics
+(taille et empreinte seulement).
 
 La boucle conserve ensuite les garanties suivantes :
 
@@ -847,28 +857,29 @@ jobs tournent donc sur **toute PR**, `fail-fast: false`. Budget cible :
   changement de mécanisme → **migration de la recette dans la PR**, avec une
   nouvelle entrée `compat` — jamais un générateur touché.
 - **Traçabilité** : chaque migration porte sa raison (ex. « `provideAnimations`
-  retiré en v23 → `animate.enter` ») et un `verified_commit`.
+  retiré en v23 → `animate.enter` »), son commit, ses identités de plan et de
+  change-set, ses versions exactes et les empreintes de ses entrées.
 
 ## Ordre de revue et de livraison
 
 Revue **P0 par P0** ; aucun code d'un lot tant que le P0 dont il dépend n'est
 pas validé.
 
-| #   | Étape                                           | Statut                     | Sortie                                                             |
-| --- | ----------------------------------------------- | -------------------------- | ------------------------------------------------------------------ |
-| 1   | Durcissement `check:library-setup`              | **livré**                  | mergé en `c6b5b64`                                                 |
-| 2   | P0 nº 1 — candidat isolé                        | **livré**                  | matérialisation tree + baux vérifiés                               |
-| 3   | P0 nº 2 — verrous et transaction de publication | **livré**                  | reprise SIGKILL et rollback adverse                                |
-| 4   | P0 nº 3 — `plan_id` / change-set                | **livré**                  | identité et change-set déterministes                               |
-| 5   | P0 nº 4 — confinement des exécutants et du LLM  | **livré**                  | sandbox macOS/Docker + frontière LLM data-only                     |
-| 6   | Frontière candidate + suites adverses           | **livré**                  | 10/10 attaques réelles macOS et Docker                             |
-| 7   | Schéma `.compat.json` + premières pistes        | **livré**                  | schéma fermé et trois matrices candidates                          |
-| 8   | Tranche verticale Material                      | **livré**                  | compilation stricte + build production                             |
-| 9   | Tranche verticale Tailwind                      | **livré**                  | règle CSS compilée + build production                              |
-| 10  | Coexistence navigateur                          | **livré**                  | résultat identique macOS/Docker, ordre inverse couvert             |
-| 11  | `create-app → add-library`                      | **livré**                  | E2E réel : shell puis Material/Tailwind, zéro édition manuelle      |
-| 12  | Gouvernance d'upgrade                           | **partiel**                | validation livrée ; promotion `candidate → verified` à formaliser  |
-| 13  | Recours LLM borné                               | **livré sans fournisseur** | boucle adverse couverte ; CLI fail-closed sans adaptateur approuvé |
+| #   | Étape                                           | Statut                      | Sortie                                                             |
+| --- | ----------------------------------------------- | --------------------------- | ------------------------------------------------------------------ |
+| 1   | Durcissement `check:library-setup`              | **livré**                   | mergé en `c6b5b64`                                                 |
+| 2   | P0 nº 1 — candidat isolé                        | **livré**                   | matérialisation tree + baux vérifiés                               |
+| 3   | P0 nº 2 — verrous et transaction de publication | **livré**                   | reprise SIGKILL et rollback adverse                                |
+| 4   | P0 nº 3 — `plan_id` / change-set                | **livré**                   | identité et change-set déterministes                               |
+| 5   | P0 nº 4 — confinement des exécutants et du LLM  | **livré**                   | sandbox macOS/Docker + frontière LLM data-only                     |
+| 6   | Frontière candidate + suites adverses           | **livré**                   | 10/10 attaques réelles macOS et Docker                             |
+| 7   | Schéma `.compat.json` + premières pistes        | **livré**                   | schéma fermé et trois matrices candidates                          |
+| 8   | Tranche verticale Material                      | **livré**                   | compilation stricte + build production                             |
+| 9   | Tranche verticale Tailwind                      | **livré**                   | règle CSS compilée + build production                              |
+| 10  | Coexistence navigateur                          | **livré**                   | résultat identique macOS/Docker, ordre inverse couvert             |
+| 11  | `create-app → add-library`                      | **livré**                   | E2E réel : shell puis Material/Tailwind, zéro édition manuelle     |
+| 12  | Gouvernance d'upgrade                           | **implémentation en revue** | sélection fail-closed + promotion transactionnelle et périssable   |
+| 13  | Recours LLM borné                               | **livré sans fournisseur**  | boucle adverse couverte ; CLI fail-closed sans adaptateur approuvé |
 
 Aucune ligne n'est marquée « validée » : la validation est un acte de revue, pas
 une déclaration de ce document. Le schéma `.compat.json` et sa première entrée
@@ -952,6 +963,10 @@ hostile (refusé à la matérialisation) et un exécutant hostile (refusé par l
   dépôt fixture, puis lui ajouter Material et Tailwind sans édition manuelle.
 - La CI doit exécuter un vrai `add-library --dry-run` dans un environnement
   Docker, et vérifier que le worktree reste inchangé.
-- Les trois pistes de compatibilité sont encore `candidate`. Leur promotion en
-  `verified` doit être liée à une preuve end-to-end et à un commit exact, sans
-  mécanisme d’auto-approbation par le code qu’elles autorisent.
+- Les trois pistes de compatibilité restent `candidate` jusqu'à l'exécution de
+  `bun run promote-library-compatibility --app <référence> --library <lib>`. La
+  commande exécute le vrai pipeline en candidat, exige toutes les preuves de la
+  recette — coexistences comprises — puis ne modifie que la matrice ciblée. Le
+  bloc JSON est une attestation de contenu vérifiable et périssable, **pas une
+  signature ni une preuve cryptographique de CI** : l'approbation demeure portée
+  par la revue et les checks obligatoires du commit.

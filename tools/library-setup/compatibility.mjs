@@ -117,6 +117,7 @@ export function validateCompatibilityMatrices(
                     for (const failure of verificationFailures(
                         root,
                         recipe,
+                        track,
                         track.verification,
                         { gitRoot: gitRoot ?? root }
                     )) {
@@ -151,21 +152,36 @@ export function validateCompatibilityMatrices(
     return { ok: errors.length === 0, matrices, errors };
 }
 
-export function selectCompatibilityTrack(matrix, versions) {
-    const matches = (matrix.tracks ?? []).filter((track) =>
-        Object.entries(track.requirements).every(([tool, range]) => {
-            const version = versions[tool];
-            return (
-                semver.valid(version) &&
-                semver.satisfies(version, range, {
-                    includePrerelease: false,
-                })
-            );
-        })
+export function selectCompatibilityTrack(
+    matrix,
+    versions,
+    { requiredStatus = 'verified' } = {}
+) {
+    if (!['candidate', 'verified'].includes(requiredStatus)) {
+        throw new Error(`statut de sélection interdit : ${requiredStatus}`);
+    }
+    const matches = (matrix.tracks ?? []).filter(
+        (track) =>
+            track.status === requiredStatus &&
+            Object.entries(track.requirements).every(([tool, range]) => {
+                const version = versions[tool];
+                return (
+                    semver.valid(version) &&
+                    semver.satisfies(version, range, {
+                        includePrerelease: false,
+                    })
+                );
+            }) &&
+            (requiredStatus !== 'verified' ||
+                ['node', 'bun', 'nx', 'framework'].every(
+                    (tool) =>
+                        versions[tool] ===
+                        track.verification?.tested_versions?.[tool]
+                ))
     );
     if (matches.length !== 1) {
         throw new Error(
-            `${matrix.platform}/${matrix.library}: ${matches.length} piste compatible (attendu exactement 1)`
+            `${matrix.platform}/${matrix.library}: ${matches.length} piste ${requiredStatus} compatible (attendu exactement 1)`
         );
     }
     return matches[0];

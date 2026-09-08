@@ -143,6 +143,7 @@ export function buildLibraryPlan(inputs) {
         'node_version',
         'bun_version',
         'nx_version',
+        'framework_version',
         'schematic_version',
         'change_set_id',
     ];

@@ -313,11 +313,24 @@ ne repose jamais sur la coopération d’un `AbortSignal` : le groupe de process
 est tué et sa fermeture attendue ; les sorties sont bornées et le `stderr`
 n’apparaît qu’en taille et empreinte dans le diagnostic. Le contrôleur
 fournisseur demeure une partie de confiance distincte du modèle et devra être
-audité lors de son intégration. Chaque tour est ensuite contrôlé par diff et
-par les oracles ; trois tours maximum. Le journal fsynced
+audité lors de son intégration. Chaque tour est ensuite contrôlé par diff et par
+les oracles ; trois tours maximum. Le journal fsynced
 `.cmz/library-llm-audit/<candidate-id>.jsonl` entre par son hash dans le
 `plan_id`. Aucun adaptateur fournisseur n’est livré : le CLI échoue avant la
 création du candidat tant qu’un adaptateur approuvé n’est pas injecté.
+
+**8. Promotion de compatibilité — qualification distincte et exacte.** La
+commande produit `add-library` ne sélectionne que des pistes `verified`. Une
+piste `candidate` n'est accessible que par `promote-library-compatibility`, qui
+force un dry-run isolé, recalcule les identités du plan et du change-set, exige
+toutes les acceptances de la recette — coexistences comprises — puis remplace
+atomiquement la seule matrice ciblée. En V1, `verified` vaut uniquement pour le
+vecteur exact Node/Bun/Nx/framework testé. Les plages de la piste restent une
+présélection de qualification, jamais une preuve par extrapolation.
+L'attestation lie la piste, les versions, le commit, l'arbre applicatif et
+l'ensemble des entrées de l'outillage. Elle est périmée dès qu'une de ces
+entrées change. Elle n'est pas présentée comme une signature de CI : l'autorité
+d'approbation reste la protection de branche et la revue du commit qui la porte.
 
 ## Justification
 
@@ -425,8 +438,8 @@ première écriture.
 - Ces garanties sont exercées par les suites unitaires, adversariales et par
   `check:library-candidate-isolation` sur macOS et Docker. Les quatre familles
   de `runtime_acceptance` sont enregistrées et exécutées par `add-library`.
-  L’intégration `create-app → add-library` et la promotion des matrices de
-  compatibilité restent suivies séparément.
+  L’intégration `create-app → add-library` et la qualification réelle des
+  matrices restent suivies séparément.
 
 ### Points à réévaluer
 

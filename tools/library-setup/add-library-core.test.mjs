@@ -9,7 +9,8 @@ test('sélectionne la recette par plateforme Nx et ne mute jamais le registre pa
     const first = loadLibraryConfiguration(
         repository,
         'backoffice-angular',
-        'tailwind'
+        'tailwind',
+        { requiredTrackStatus: 'candidate' }
     );
     assert.equal(first.platform, 'angular');
     assert.equal(first.recipe.platform, 'angular');
@@ -21,10 +22,23 @@ test('sélectionne la recette par plateforme Nx et ne mute jamais le registre pa
     const second = loadLibraryConfiguration(
         repository,
         'backoffice-angular',
-        'tailwind'
+        'tailwind',
+        { requiredTrackStatus: 'candidate' }
     );
     assert.equal(second.recipe.library, 'tailwind');
     assert.equal(second.track.packages.tailwindcss, '4.1.13');
+});
+
+test('le chemin nominal refuse toute piste seulement candidate', () => {
+    assert.throws(
+        () =>
+            loadLibraryConfiguration(
+                repository,
+                'backoffice-angular',
+                'tailwind'
+            ),
+        /0 piste verified compatible/
+    );
 });
 
 test('échoue pour une app dont la plateforme est indéterminable', () => {
