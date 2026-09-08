@@ -9,7 +9,6 @@ import {
     readFileSync,
     realpathSync,
     rmSync,
-    symlinkSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -84,15 +83,32 @@ function assertInitialCommitOwnsOnlyApp(repository, commit) {
     }
 }
 
-function assertLibraryResult(result, library) {
+function assertLibraryResult(repository, result, library) {
     if (
         result?.published !== true ||
+        result?.dependencySynchronization?.synchronized !== true ||
         result?.plan?.app !== APP ||
         result?.plan?.library !== library ||
         !/^library-plan:[a-f0-9]{64}$/.test(result.plan.plan_id ?? '') ||
         !/^changes:[a-f0-9]{64}$/.test(result.changeSet?.change_set_id ?? '')
     ) {
         fail(`résultat de publication invalide pour ${library}`);
+    }
+    const packageName =
+        library === 'angular-material' ? '@angular/material' : 'tailwindcss';
+    const installed = JSON.parse(
+        readFileSync(
+            join(
+                repository,
+                'node_modules',
+                ...packageName.split('/'),
+                'package.json'
+            ),
+            'utf8'
+        )
+    );
+    if (installed.name !== packageName) {
+        fail(`${packageName} absent du node_modules publié`);
     }
 }
 
@@ -137,19 +153,13 @@ function assertFinalState(repository, baseCommit) {
 
 function main() {
     assertClean(SOURCE, 'dépôt source');
-    const sourceNodeModules = join(SOURCE, 'node_modules');
-    const dependencyStats = lstatSync(sourceNodeModules);
-    if (dependencyStats.isSymbolicLink() || !dependencyStats.isDirectory()) {
-        fail('node_modules source doit être un dossier réel préparé par CI');
-    }
-
     const temporaryRoot = mkdtempSync(
         join(realpathSync(tmpdir()), 'cmz-create-app-library-')
     );
     chmodSync(temporaryRoot, 0o700);
     const repository = join(temporaryRoot, 'repository');
     try {
-        console.error('[1/6] clone Git local indépendant');
+        console.error('[1/7] clone Git local indépendant');
         run(
             'git',
             ['clone', '--quiet', '--no-hardlinks', SOURCE, repository],
@@ -162,10 +172,31 @@ function main() {
         }
         git(repository, ['config', 'user.name', 'CMZ Integration Proof']);
         git(repository, ['config', 'user.email', 'cmz-proof@example.invalid']);
-        symlinkSync(sourceNodeModules, join(repository, 'node_modules'));
         assertClean(repository, 'clone initial');
 
-        console.error('[2/6] create-app : plan déterministe');
+        console.error('[2/7] dépendances propres du clone');
+        run(
+            'bun',
+            [
+                'install',
+                '--frozen-lockfile',
+                '--ignore-scripts',
+                '--backend=copyfile',
+                '--registry=https://registry.npmjs.org',
+            ],
+            repository,
+            { stdio: 'inherit' }
+        );
+        const dependencyStats = lstatSync(join(repository, 'node_modules'));
+        if (
+            dependencyStats.isSymbolicLink() ||
+            !dependencyStats.isDirectory()
+        ) {
+            fail('node_modules du clone doit être un dossier réel et isolé');
+        }
+        assertClean(repository, 'clone après installation gelée');
+
+        console.error('[3/7] create-app : plan déterministe');
         const shellPlan = runNode(
             repository,
             'tools/create-app.mjs',
@@ -184,7 +215,7 @@ function main() {
             fail('create-app n’a pas produit de plan_id SHA-256');
         }
 
-        console.error('[3/6] create-app : publication et commit automatique');
+        console.error('[4/7] create-app : publication et commit automatique');
         runNode(repository, 'tools/create-app.mjs', [
             '--design',
             DESIGN,
@@ -206,25 +237,25 @@ function main() {
         assertInitialCommitOwnsOnlyApp(repository, shellCommit);
         assertClean(repository, 'dépôt après create-app');
 
-        console.error('[4/6] add-library : Angular Material');
+        console.error('[5/7] add-library : Angular Material');
         const material = runNode(
             repository,
             'tools/add-library.mjs',
             ['--app', APP, '--library', 'angular-material'],
             { json: true }
         );
-        assertLibraryResult(material, 'angular-material');
+        assertLibraryResult(repository, material, 'angular-material');
 
-        console.error('[5/6] add-library : Tailwind + coexistence navigateur');
+        console.error('[6/7] add-library : Tailwind + coexistence navigateur');
         const tailwind = runNode(
             repository,
             'tools/add-library.mjs',
             ['--app', APP, '--library', 'tailwind'],
             { json: true }
         );
-        assertLibraryResult(tailwind, 'tailwind');
+        assertLibraryResult(repository, tailwind, 'tailwind');
 
-        console.error('[6/6] état publié, gate et historique');
+        console.error('[7/7] état publié, gate et historique');
         assertFinalState(repository, baseCommit);
         const gitDirectory = git(repository, [
             'rev-parse',

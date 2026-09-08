@@ -347,6 +347,37 @@ l'ensemble des entrées de l'outillage. Elle est périmée dès qu'une de ces
 entrées change. Elle n'est pas présentée comme une signature de CI : l'autorité
 d'approbation reste la protection de branche et la revue du commit qui la porte.
 
+**9. La sortie d'une recette est canonisée avant d'être jugée.** Un schematic ne
+produit pas du texte canonique : mesuré, `@angular/material:ng-add` version 22
+laisse des lignes blanches à espaces résiduels dans `index.html` après le
+retrait déclaratif de ses liens de polices. Le commit publié doit être canonique
+comme n'importe quel fichier du dépôt. Le Prettier **du candidat** — celui que
+le lockfile épingle, jamais celui de l'hôte — est donc exécuté sous le profil
+d'exécution sur `apps/<app>` seul, après les normalisations et **avant** le
+contrôle de périmètre final : une écriture de Prettier hors de l'app serait donc
+refusée comme n'importe quelle autre. Conséquence assumée : la sortie d'une
+recette devient stable d'une version de schematic à l'autre pour tout ce qui
+relève de la seule mise en forme.
+
+**10. La commande ne rend la main qu'après avoir synchronisé les dépendances
+locales.** Défaut P0 mesuré : `add-library` publiait `package.json`, `bun.lock`
+et la configuration de l'app, mais laissait le `node_modules` local dans son
+état antérieur — la commande annonçait donc un succès pendant que le build local
+échouait. Le succès exige désormais, **après** la transaction de publication, un
+`bun install --frozen-lockfile --ignore-scripts` réel dans le dépôt, suivi de
+trois contrôles : `package.json` et `bun.lock` **identiques octet pour octet**
+après l'installation, politique de résolution revérifiée sur l'état publié, et
+chaque paquet direct de la piste présent à sa version exacte, résolu **dans**
+`node_modules` sans évasion par lien symbolique.
+
+C'est le seul point du système où une installation s'exécute hors bac à sable,
+dans le dépôt réel. C'est assumé — muter ce `node_modules` est précisément
+l'objet de l'opération, et aucun code tiers ne s'exécute puisque
+`--ignore-scripts` tient. `--dry-run` s'arrête **avant** : il compte huit
+étapes, le chemin nominal en compte neuf. Par cohérence, le harnais
+d'intégration n'utilise plus de `node_modules` symbolique partagé : une
+synchronisation testée contre un lien partagé ne prouverait rien.
+
 ## Justification
 
 **L'isolation est une propriété prouvée, pas déclarée.** Trois options ont été

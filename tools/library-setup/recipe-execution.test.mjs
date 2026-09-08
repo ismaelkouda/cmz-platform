@@ -31,6 +31,7 @@ async function fixture(t) {
         '{"schema_version":"1.0.0","kind":"app-library-manifest","platform":"angular","libraries":[]}\n'
     );
     await put(root, 'candidate/node_modules/nx/dist/bin/nx.js', '');
+    await put(root, 'candidate/node_modules/prettier/bin/prettier.cjs', '');
     return root;
 }
 
@@ -59,11 +60,13 @@ test('borne toutes les écritures de recette à l’app et ajoute le manifeste',
         cache: join(root, 'cache'),
         home: join(root, 'home'),
         run: ({ candidate, argv }) => {
-            assert.equal(argv.at(-1), 'demo');
-            writeFileSync(
-                join(candidate, 'apps/demo/material.txt'),
-                'configured\n'
-            );
+            if (argv[0] === 'node_modules/nx/dist/bin/nx.js') {
+                assert.equal(argv.at(-1), 'demo');
+                writeFileSync(
+                    join(candidate, 'apps/demo/material.txt'),
+                    'configured\n'
+                );
+            }
             return { status: 0, stdout: '', stderr: '' };
         },
     });
@@ -232,5 +235,49 @@ test('normalise exactement la sortie volatile du schematic et refuse toute déri
                 run: () => ({ status: 0, stdout: '', stderr: '' }),
             }),
         /normalisation attend 1 occurrence\(s\), 0 trouvée\(s\)/
+    );
+});
+
+test('canonise toute sortie de recette avec Prettier dans le bac à sable', async (t) => {
+    const root = await fixture(t);
+    await put(root, 'candidate/apps/demo/src/index.html', '<head></head>\n');
+    const invocations = [];
+    executeLibraryRecipe({
+        repository: join(root, 'repo'),
+        candidate: { workspace: join(root, 'candidate') },
+        recipe,
+        track: { packages: {} },
+        app: 'demo',
+        policy: {},
+        backend: 'test',
+        cache: join(root, 'cache'),
+        home: join(root, 'home'),
+        run: ({ candidate, argv }) => {
+            invocations.push(argv);
+            if (argv[0] === 'node_modules/nx/dist/bin/nx.js') {
+                writeFileSync(
+                    join(candidate, 'apps/demo/src/index.html'),
+                    '<head>     </head>\n'
+                );
+            } else if (argv[0] === 'node_modules/prettier/bin/prettier.cjs') {
+                writeFileSync(
+                    join(candidate, 'apps/demo/src/index.html'),
+                    '<head></head>\n'
+                );
+            }
+            return { status: 0, stdout: '', stderr: '' };
+        },
+    });
+    assert.deepEqual(invocations.at(-1), [
+        'node_modules/prettier/bin/prettier.cjs',
+        '--write',
+        'apps/demo',
+    ]);
+    assert.equal(
+        await readFile(
+            join(root, 'candidate/apps/demo/src/index.html'),
+            'utf8'
+        ),
+        '<head></head>\n'
     );
 });

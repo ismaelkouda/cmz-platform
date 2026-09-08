@@ -25,7 +25,10 @@ import {
     validateCompatibilityMatrices,
 } from './compatibility.mjs';
 import { gitBlobOid } from './git-tree.mjs';
-import { resolveLibraryDependencies } from './install-protocol.mjs';
+import {
+    resolveLibraryDependencies,
+    synchronizePublishedDependencies,
+} from './install-protocol.mjs';
 import { buildLibraryChangeSet, buildLibraryPlan } from './library-plan.mjs';
 import {
     executeBoundedLlm,
@@ -299,13 +302,15 @@ async function executeLibraryAddition({
     runtimeProver = proveLibraryRuntime,
     onProgress = () => undefined,
     requiredTrackStatus,
+    dependencySynchronizer = synchronizePublishedDependencies,
 }) {
     assertIdentifier(app, 'app');
     assertIdentifier(library, 'library');
     if (typeof onProgress !== 'function')
         fail('onProgress doit être une fonction');
     const root = resolve(repository);
-    onProgress({ step: 1, total: 8, id: 'preconditions' });
+    const totalSteps = dryRun ? 8 : 9;
+    onProgress({ step: 1, total: totalSteps, id: 'preconditions' });
     recoverLibraryPublication(root);
     const head = execFileSync(
         'git',
@@ -315,7 +320,7 @@ async function executeLibraryAddition({
         }
     ).trim();
     assertPublishableRepository(root, head);
-    onProgress({ step: 2, total: 8, id: 'contracts' });
+    onProgress({ step: 2, total: totalSteps, id: 'contracts' });
     const { platform, recipe, track, policy, versions } =
         loadLibraryConfiguration(root, app, library, {
             requiredTrackStatus,
@@ -335,7 +340,7 @@ async function executeLibraryAddition({
     );
     let candidate;
     try {
-        onProgress({ step: 3, total: 8, id: 'candidate' });
+        onProgress({ step: 3, total: totalSteps, id: 'candidate' });
         candidate = createCandidateLease({ repository: root, commit: head });
         const libraries = installedLibraries(
             candidate.workspace,
@@ -345,7 +350,7 @@ async function executeLibraryAddition({
         if (libraries.includes(library))
             fail(`${library} est déjà installée dans ${app}`);
         const before = governedSnapshotFromTree(candidate.tree);
-        onProgress({ step: 4, total: 8, id: 'dependencies' });
+        onProgress({ step: 4, total: totalSteps, id: 'dependencies' });
         const dependencyResult = await resolveLibraryDependencies({
             repository: root,
             candidate,
@@ -385,7 +390,7 @@ async function executeLibraryAddition({
             browserExecutable: browser?.executable,
             browserRoot: browser?.root,
         };
-        onProgress({ step: 5, total: 8, id: 'recipe' });
+        onProgress({ step: 5, total: totalSteps, id: 'recipe' });
         let llmResult;
         if (recipe.install.method === 'llm-then-verified') {
             addLibraryManifestEntry(
@@ -430,7 +435,7 @@ async function executeLibraryAddition({
                 home: candidate.homes.execution,
             });
         }
-        onProgress({ step: 6, total: 8, id: 'runtime-proofs' });
+        onProgress({ step: 6, total: totalSteps, id: 'runtime-proofs' });
         // Même après une boucle LLM réussie, les preuves sont rejouées une fois
         // et leur résultat explicite devient une sortie gouvernée. Une simple
         // affirmation de l'adaptateur ne peut donc jamais tenir lieu de preuve.
@@ -440,7 +445,7 @@ async function executeLibraryAddition({
             fail(`gate applicative candidate : ${appCheck.errors.join(' ; ')}`);
         const after = governedSnapshot(candidate.workspace);
         const changeSet = buildLibraryChangeSet(before, after);
-        onProgress({ step: 7, total: 8, id: 'plan' });
+        onProgress({ step: 7, total: totalSteps, id: 'plan' });
         const plan = buildLibraryPlan(
             planInputs({
                 root,
@@ -458,7 +463,7 @@ async function executeLibraryAddition({
             fail(`plan attendu ${expectPlan}, obtenu ${plan.plan_id}`);
         }
         if (dryRun) {
-            onProgress({ step: 8, total: 8, id: 'dry-run-complete' });
+            onProgress({ step: 8, total: totalSteps, id: 'dry-run-complete' });
             return {
                 plan,
                 changeSet,
@@ -474,7 +479,7 @@ async function executeLibraryAddition({
                 published: false,
             };
         }
-        onProgress({ step: 8, total: 8, id: 'publication' });
+        onProgress({ step: 8, total: totalSteps, id: 'publication' });
         const commit = createCandidateCommit({
             repository: root,
             candidate: candidate.workspace,
@@ -490,6 +495,19 @@ async function executeLibraryAddition({
             changeSet,
             planId: plan.plan_id,
         });
+        onProgress({
+            step: 9,
+            total: totalSteps,
+            id: 'dependency-synchronization',
+        });
+        const dependencySynchronization = dependencySynchronizer({
+            repository: root,
+            track,
+            policy,
+            cache,
+            home: candidate.homes.verification,
+            bunExecutable,
+        });
         return {
             plan,
             changeSet,
@@ -503,6 +521,7 @@ async function executeLibraryAddition({
                   }
                 : {}),
             publication,
+            dependencySynchronization,
             published: true,
         };
     } finally {

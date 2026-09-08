@@ -17,6 +17,7 @@ import { test } from 'node:test';
 import { materializeGitTree, readGitTree } from './git-tree.mjs';
 import {
     resolveLibraryDependencies,
+    synchronizePublishedDependencies,
     verifyInstalledPackages,
 } from './install-protocol.mjs';
 
@@ -195,6 +196,100 @@ test('exécute base, génération et vérification neuve sans script de cycle de
     assert.equal(calls[0].profile, 'execution');
     assert.equal(calls[1].profile, 'resolution');
     assert.ok(calls.every(({ argv }) => !argv.includes('--trust')));
+});
+
+test('synchronise node_modules publié sans muter manifeste ni lockfile', async (t) => {
+    const root = await realpath(
+        await mkdtemp(join(tmpdir(), 'cmz-published-dependencies-'))
+    );
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const repository = join(root, 'repo');
+    const cache = join(root, 'cache');
+    const home = join(root, 'home');
+    for (const path of [repository, cache, home]) await mkdir(path);
+    const manifest = '{"name":"fixture"}\n';
+    const lock = '{"lockfileVersion":1}\n';
+    await put(repository, 'package.json', manifest);
+    await put(repository, 'bun.lock', lock);
+    let verified = false;
+    const result = synchronizePublishedDependencies({
+        repository,
+        track: { packages: { material: '1.0.0' } },
+        policy: { allowed_registries: ['https://registry.npmjs.org'] },
+        cache,
+        home,
+        bunExecutable: '/usr/local/bin/bun',
+        spawn: (executable, argv, options) => {
+            assert.equal(executable, '/usr/local/bin/bun');
+            assert.deepEqual(argv, [
+                'install',
+                '--frozen-lockfile',
+                '--ignore-scripts',
+                '--backend=copyfile',
+                '--registry=https://registry.npmjs.org',
+            ]);
+            assert.equal(options.cwd, repository);
+            assert.equal(options.env.HOME, home);
+            assert.equal(options.env.BUN_INSTALL_CACHE_DIR, cache);
+            assert.equal(
+                Object.keys(options.env).some((key) =>
+                    /TOKEN|SECRET|PASSWORD|AUTH|SSH|NPM_/.test(key)
+                ),
+                false
+            );
+            return { status: 0, signal: null, stdout: '', stderr: '' };
+        },
+        verifyResolution: () => ({ ok: true, errors: [] }),
+        verifyPackages: (_workspace, track) => {
+            assert.deepEqual(track.packages, { material: '1.0.0' });
+            verified = true;
+        },
+    });
+    assert.deepEqual(result, { synchronized: true });
+    assert.equal(verified, true);
+    assert.equal(
+        await readFile(join(repository, 'package.json'), 'utf8'),
+        manifest
+    );
+    assert.equal(await readFile(join(repository, 'bun.lock'), 'utf8'), lock);
+});
+
+test('refuse une synchronisation locale qui réécrit le lockfile gelé', async (t) => {
+    const root = await realpath(
+        await mkdtemp(join(tmpdir(), 'cmz-published-drift-'))
+    );
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const repository = join(root, 'repo');
+    const cache = join(root, 'cache');
+    const home = join(root, 'home');
+    for (const path of [repository, cache, home]) await mkdir(path);
+    await put(repository, 'package.json', '{}\n');
+    await put(repository, 'bun.lock', '{"lockfileVersion":1}\n');
+    assert.throws(
+        () =>
+            synchronizePublishedDependencies({
+                repository,
+                track: { packages: {} },
+                policy: {
+                    allowed_registries: ['https://registry.npmjs.org'],
+                },
+                cache,
+                home,
+                bunExecutable: '/usr/local/bin/bun',
+                spawn: () => {
+                    writeFileSync(join(repository, 'bun.lock'), 'muté\n');
+                    return {
+                        status: 0,
+                        signal: null,
+                        stdout: '',
+                        stderr: '',
+                    };
+                },
+                verifyResolution: () => ({ ok: true, errors: [] }),
+                verifyPackages: () => undefined,
+            }),
+        /a muté package.json ou bun.lock/
+    );
 });
 
 test('refuse un paquet direct absent, faux ou résolu hors du node_modules candidat', async (t) => {

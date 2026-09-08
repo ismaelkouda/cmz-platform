@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
@@ -111,6 +112,70 @@ function verifyPolicy(workspace, label) {
     const result = verifyRepositoryResolution(workspace);
     if (!result.ok)
         fail(`${label} hors politique : ${result.errors.join(' ; ')}`);
+}
+
+/**
+ * Synchronise l'état dérivé `node_modules` APRÈS publication. Le code tiers
+ * reste désactivé (`--ignore-scripts`) et les deux artefacts gouvernés doivent
+ * rester strictement identiques. Une commande `add-library` ne peut donc pas
+ * annoncer son succès tout en laissant le workspace local inutilisable.
+ */
+export function synchronizePublishedDependencies({
+    repository,
+    track,
+    policy,
+    cache,
+    home,
+    bunExecutable,
+    spawn = spawnSync,
+    verifyResolution = verifyRepositoryResolution,
+    verifyPackages = verifyInstalledPackages,
+}) {
+    const manifestPath = join(repository, 'package.json');
+    const lockPath = join(repository, 'bun.lock');
+    const manifestBefore = readFileSync(manifestPath);
+    const lockBefore = readFileSync(lockPath);
+    const argv = bunInstallArgv({
+        frozen: true,
+        registry: policy.allowed_registries[0],
+    });
+    const result = spawn(bunExecutable, argv, {
+        cwd: repository,
+        shell: false,
+        encoding: 'utf8',
+        timeout: 10 * 60_000,
+        maxBuffer: 64 * 1024 * 1024,
+        env: {
+            PATH: process.env.PATH,
+            HOME: home,
+            LANG: 'C',
+            LC_ALL: 'C',
+            BUN_INSTALL_CACHE_DIR: cache,
+            GIT_CONFIG_NOSYSTEM: '1',
+            GIT_CONFIG_GLOBAL: '/dev/null',
+            GIT_CONFIG_SYSTEM: '/dev/null',
+            GIT_OPTIONAL_LOCKS: '0',
+            GIT_TERMINAL_PROMPT: '0',
+        },
+    });
+    if (result.error) {
+        fail(`synchronisation locale impossible (${result.error.message})`);
+    }
+    assertSuccess(result, `bun ${argv.join(' ')}`);
+    if (
+        !readFileSync(manifestPath).equals(manifestBefore) ||
+        !readFileSync(lockPath).equals(lockBefore)
+    ) {
+        fail('synchronisation locale a muté package.json ou bun.lock');
+    }
+    const resolution = verifyResolution(repository);
+    if (!resolution.ok) {
+        fail(
+            `workspace publié hors politique : ${resolution.errors.join(' ; ')}`
+        );
+    }
+    verifyPackages(repository, track);
+    return { synchronized: true };
 }
 
 export function verifyInstalledPackages(workspace, track) {

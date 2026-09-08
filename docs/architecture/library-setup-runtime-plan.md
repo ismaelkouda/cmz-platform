@@ -1,9 +1,14 @@
 # Plan — installation réelle + preuves runtime des bibliothèques
 
-- **Statut :** En implémentation. Le cœur `add-library`, les quatre P0, les
-  oracles runtime, le confinement macOS/Docker et le recours LLM borné sont
-  livrés. Restent l’intégration `create-app`, la gate end-to-end CI et la
-  promotion gouvernée des matrices de compatibilité.
+- **Statut :** En implémentation. Sont livrés : le cœur `add-library` et ses
+  neuf étapes, les quatre P0, les oracles runtime, le confinement macOS **et**
+  conteneur, le recours LLM borné, l'intégration `create-app`, la gate
+  d'intégration en CI, et la promotion gouvernée des matrices. **Reste** :
+  requalifier les trois pistes — toutes `candidate` depuis que l'outillage a
+  changé, donc `add-library` refuse actuellement toute bibliothèque, par
+  construction. La qualification doit être la **dernière** opération : elle
+  coûte plusieurs dizaines de minutes d'oracles réels et toute modification
+  ultérieure du runner la périme (ADR-0042 § invariant 8).
 - **Objectif servi :** créer une application sans écrire de code, puis ajouter
   une bibliothèque par **une seule commande** —
   `bun run add-library --app clean-street --library angular-material` — qui
@@ -198,8 +203,28 @@ transaction verrouillée, journalisée par phase et reprenable (P0 nº 2).
 ### D8 — Une seule commande nominale
 
 `bun run add-library --app <app> --library <lib>` fait candidat → installation →
-schematic → preuves → publication. `--dry-run` et `--expect-plan <plan_id>` sont
-facultatifs ; le `plan_id` est **toujours** affiché et journalisé.
+schematic → preuves → publication → **synchronisation locale**. `--dry-run` et
+`--expect-plan <plan_id>` sont facultatifs ; le `plan_id` est **toujours**
+affiché et journalisé.
+
+Le décompte des étapes distingue les deux chemins, et ce n'est pas cosmétique :
+
+| chemin      | étapes | dernière étape                              |
+| ----------- | ------ | ------------------------------------------- |
+| `--dry-run` | 8      | `dry-run-complete`, aucune écriture publiée |
+| nominal     | 9      | synchronisation du `node_modules` local     |
+
+La neuvième étape existe parce qu'une publication sans elle **ment** : le dépôt
+porte le nouveau `package.json` et le nouveau `bun.lock`, mais son
+`node_modules` est resté à l'état antérieur, donc le build local échoue alors
+que la commande a annoncé un succès. Le contrat complet est en
+[ADR-0042 § invariant 10](../adr/0042-modele-transactionnel-mutations-workspace.md).
+
+La sortie du schematic est par ailleurs canonisée par le Prettier **du
+candidat** avant le contrôle de périmètre final
+([ADR-0042 § invariant 9](../adr/0042-modele-transactionnel-mutations-workspace.md))
+: un schematic ne produit pas du texte canonique, et un commit publié doit
+l'être.
 
 ## P0 nº 1 — Candidat isolé (workspace complet hors dépôt)
 

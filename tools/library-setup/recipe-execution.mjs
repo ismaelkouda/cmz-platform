@@ -83,6 +83,36 @@ function applyNormalizations(workspace, appRoot, normalizations = []) {
     }
 }
 
+function formatApp({
+    repository,
+    workspace,
+    appRoot,
+    policy,
+    backend,
+    cache,
+    home,
+    run,
+}) {
+    regularFile(workspace, 'node_modules/prettier/bin/prettier.cjs');
+    const result = run({
+        backend,
+        profile: 'execution',
+        candidate: workspace,
+        cache,
+        home,
+        repository,
+        hostExecutable: process.execPath,
+        containerExecutable: '/usr/local/bin/node',
+        argv: ['node_modules/prettier/bin/prettier.cjs', '--write', appRoot],
+        policy,
+    });
+    if (result.status !== 0) {
+        fail(
+            `formatage canonique en échec (code ${result.status}) : ${result.stderr}`
+        );
+    }
+}
+
 function safeApp(workspace, app) {
     if (!/^[a-z][a-z0-9-]*$/.test(app)) fail(`nom d'app invalide : ${app}`);
     const appPath = resolve(workspace, 'apps', app);
@@ -251,6 +281,16 @@ export function executeLibraryRecipe({
         appRoot,
         recipe.install.normalizations
     );
+    formatApp({
+        repository,
+        workspace: candidate.workspace,
+        appRoot,
+        policy,
+        backend,
+        cache,
+        home,
+        run,
+    });
     restoreCosmeticDependencyWrites(candidate.workspace, dependencyBytes);
     const afterRecipe = snapshotFilesystem(candidate.workspace, {
         excludedDirectories: ['node_modules'],
