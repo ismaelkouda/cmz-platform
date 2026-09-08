@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import {
     mkdir,
     mkdtemp,
@@ -279,5 +279,42 @@ test('canonise toute sortie de recette avec Prettier dans le bac à sable', asyn
             'utf8'
         ),
         '<head></head>\n'
+    );
+});
+
+test('le manifeste de l’app est écrit avant Prettier, donc canonisé', async (t) => {
+    const root = await fixture(t);
+    let manifestAtFormatTime;
+    const changeSet = executeLibraryRecipe({
+        repository: join(root, 'repo'),
+        candidate: { workspace: join(root, 'candidate') },
+        recipe,
+        track: { packages: {} },
+        app: 'demo',
+        policy: {},
+        backend: 'test',
+        cache: join(root, 'cache'),
+        home: join(root, 'home'),
+        run: ({ candidate, argv }) => {
+            if (argv[0] === 'node_modules/prettier/bin/prettier.cjs') {
+                manifestAtFormatTime = readFileSync(
+                    join(candidate, 'apps/demo/.cmz/libraries.json'),
+                    'utf8'
+                );
+            }
+            return { status: 0, stdout: '', stderr: '' };
+        },
+    });
+    // Écrit après le formatage, le manifeste serait encore vide ici — et sa
+    // sérialisation JSON.stringify partirait telle quelle dans le commit.
+    assert.deepEqual(JSON.parse(manifestAtFormatTime).libraries, [
+        'angular-material',
+    ]);
+    // Il doit aussi tomber sous le contrôle de périmètre final, donc figurer
+    // dans le change-set validé et non dans un supplément non contrôlé.
+    assert.ok(
+        changeSet.changes.some(
+            (change) => change.path === 'apps/demo/.cmz/libraries.json'
+        )
     );
 });

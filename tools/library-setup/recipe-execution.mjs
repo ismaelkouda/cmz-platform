@@ -281,6 +281,17 @@ export function executeLibraryRecipe({
         appRoot,
         recipe.install.normalizations
     );
+    // Le manifeste est écrit AVANT la canonisation, jamais après : mesuré,
+    // JSON.stringify(…, 2) et Prettier divergent dès que le tableau tient sur
+    // une ligne, et Prettier descend bien dans `.cmz/`. Écrit après, ce fichier
+    // échappait à la fois au formatage canonique et au contrôle de périmètre
+    // final — une application équipée rendait alors `format:check` rouge.
+    addLibraryManifestEntry(
+        candidate.workspace,
+        app,
+        recipe.platform,
+        recipe.library
+    );
     formatApp({
         repository,
         workspace: candidate.workspace,
@@ -292,19 +303,12 @@ export function executeLibraryRecipe({
         run,
     });
     restoreCosmeticDependencyWrites(candidate.workspace, dependencyBytes);
-    const afterRecipe = snapshotFilesystem(candidate.workspace, {
-        excludedDirectories: ['node_modules'],
-    });
-    const recipeChanges = buildLibraryChangeSet(before, afterRecipe);
-    validateRecipeChanges(recipeChanges, appRoot, false);
-    addLibraryManifestEntry(
-        candidate.workspace,
-        app,
-        recipe.platform,
-        recipe.library
+    const recipeChanges = buildLibraryChangeSet(
+        before,
+        snapshotFilesystem(candidate.workspace, {
+            excludedDirectories: ['node_modules'],
+        })
     );
-    const afterManifest = snapshotFilesystem(candidate.workspace, {
-        excludedDirectories: ['node_modules'],
-    });
-    return buildLibraryChangeSet(before, afterManifest);
+    validateRecipeChanges(recipeChanges, appRoot, false);
+    return recipeChanges;
 }

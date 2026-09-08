@@ -112,8 +112,40 @@ function assertLibraryResult(repository, result, library) {
     }
 }
 
+// La gate ne vérifiait que l'historique, le manifeste et l'absence de résidu :
+// elle a donc laissé publier une application dont `.cmz/libraries.json` n'était
+// pas canonique, et c'est `format:check` — bien plus loin, au niveau du dépôt —
+// qui l'a révélé. Le mécanisme manquant est ici : ce que la commande publie
+// doit être canonique là où elle le publie, sinon toute application équipée
+// rend la CI rouge.
+function assertPublishedTreeIsCanonical(repository) {
+    const prettier = join(
+        repository,
+        'node_modules',
+        'prettier',
+        'bin',
+        'prettier.cjs'
+    );
+    if (!existsSync(prettier)) fail('Prettier absent du dépôt d’intégration');
+    try {
+        run(
+            process.execPath,
+            [prettier, '--check', join('apps', APP)],
+            repository,
+            {
+                stdio: ['ignore', 'pipe', 'pipe'],
+            }
+        );
+    } catch (error) {
+        fail(
+            `l'application publiée n'est pas canonique :\n${error.stderr || error.stdout}`
+        );
+    }
+}
+
 function assertFinalState(repository, baseCommit) {
     assertClean(repository, 'dépôt final');
+    assertPublishedTreeIsCanonical(repository);
     const commits = git(repository, [
         'log',
         '--format=%s',

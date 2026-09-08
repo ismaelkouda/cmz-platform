@@ -359,6 +359,19 @@ refusée comme n'importe quelle autre. Conséquence assumée : la sortie d'une
 recette devient stable d'une version de schematic à l'autre pour tout ce qui
 relève de la seule mise en forme.
 
+La canonisation porte sur **tout ce que la commande écrit dans l'app, y compris
+son propre manifeste** `.cmz/libraries.json`. La première rédaction l'écrivait
+après le formatage : mesuré, `JSON.stringify(…, 2)` et Prettier divergent dès
+que le tableau des bibliothèques tient sur une ligne, et Prettier descend bien
+dans un répertoire commençant par un point. Ce fichier échappait donc à la fois
+au formatage et au contrôle de périmètre final, et **toute** application équipée
+par `add-library` rendait `format:check` rouge au niveau du dépôt. L'ordre est
+désormais : recette → normalisations → manifeste → Prettier → contrôle de
+périmètre. Un invariant qui vaut « pour la sortie de la recette » mais pas pour
+les écritures de l'outil lui-même n'est pas un invariant ; la gate d'intégration
+vérifie en conséquence que l'arbre publié est canonique **là où elle le
+publie**, au lieu d'attendre qu'une gate de dépôt le découvre.
+
 **10. La commande ne rend la main qu'après avoir synchronisé les dépendances
 locales.** Défaut P0 mesuré : `add-library` publiait `package.json`, `bun.lock`
 et la configuration de l'app, mais laissait le `node_modules` local dans son
