@@ -424,6 +424,17 @@ self.addEventListener('fetch', (event) => {
             pageContract(design, experience, page, designPath, designSha256)
         );
     }
+    // Toute app gérée doit déclarer ses bibliothèques (ADR-0041) : sans ce
+    // manifeste, `check:library-setup` refuse une app fraîchement créée. Le
+    // shell livre Transloco et rien d'autre — Material et Tailwind sont opt-in
+    // via `add-library` (ADR-0044). Ce fichier est donc le point de départ que
+    // `add-library` fera ensuite évoluer, jamais une copie de leur config.
+    files['.cmz/libraries.json'] = json({
+        schema_version: '1.0.0',
+        kind: 'app-library-manifest',
+        platform: 'angular',
+        libraries: ['transloco'],
+    });
     const artifacts = Object.entries(files)
         .map(([path, content]) => ({
             path,
