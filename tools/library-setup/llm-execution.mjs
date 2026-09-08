@@ -162,9 +162,12 @@ function validateResponse(response, recipe, workspace, app) {
             !['create', 'modify'].includes(mutation.op) ||
             !allowed.has(mutation.path) ||
             seen.has(mutation.path) ||
-            typeof mutation.content_utf8 !== 'string'
+            typeof mutation.content_utf8 !== 'string' ||
+            !mutation.content_utf8.isWellFormed()
         ) {
-            fail('mutation dupliquée, destructive ou hors allowlist');
+            fail(
+                'mutation dupliquée, destructive ou hors allowlist, ou Unicode non bien formé'
+            );
         }
         seen.add(mutation.path);
         const expectedKeys =
@@ -329,7 +332,11 @@ function killProcessTree(child) {
     } catch (error) {
         if (error.code === 'ESRCH') return;
         try {
-            child.kill('SIGKILL');
+            if (!child.kill('SIGKILL')) {
+                return new Error(
+                    `arrêt forcé impossible (${error.code ?? error.message}; signal non délivré)`
+                );
+            }
         } catch (fallbackError) {
             if (fallbackError.code !== 'ESRCH') {
                 return new Error(

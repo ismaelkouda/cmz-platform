@@ -391,6 +391,14 @@ test('borne et valide strictement le protocole du processus adaptateur', async (
             error: /sortie JSON.*invalide/,
         },
         {
+            name: 'chaîne Unicode non bien formée',
+            config: {
+                raw_stdout:
+                    '{"schema_version":"1.0.0","mutations":[{"op":"create","path":"src/one.ts","content_utf8":"\\ud800"}]}',
+            },
+            error: /Unicode non bien formé/,
+        },
+        {
             name: 'code de sortie non nul',
             config: { stderr_bytes: 32, exit_code: 7 },
             error: /code 7.*stderr=32 octets sha256=[a-f0-9]{64}/,
