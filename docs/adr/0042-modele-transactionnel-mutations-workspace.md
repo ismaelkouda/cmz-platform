@@ -305,9 +305,16 @@ changement est un **change-set structuré**
 `llm-then-verified`, le modèle ne reçoit ni chemin du candidat, ni système de
 fichiers, ni shell, ni réseau. Un adaptateur de confiance transmet uniquement
 les octets des chemins allowlistés et soumet une réponse à schéma fermé
-(`create` / `modify`, avec précondition SHA pour modifier). Chaque tour est
-borné en temps, contexte et sortie, puis contrôlé par diff et par les oracles ;
-trois tours maximum. Le journal fsynced
+(`create` / `modify`, avec précondition SHA pour modifier). Cet adaptateur est
+un processus explicitement approuvé : exécutable absolu et canonique, `argv`
+fermé, aucun shell, environnement minimal sans secret hérité, requête par
+`stdin`, réponse UTF-8/JSON stricte sans clé dupliquée par `stdout`. Un timeout
+ne repose jamais sur la coopération d’un `AbortSignal` : le groupe de processus
+est tué et sa fermeture attendue ; les sorties sont bornées et le `stderr`
+n’apparaît qu’en taille et empreinte dans le diagnostic. Le contrôleur
+fournisseur demeure une partie de confiance distincte du modèle et devra être
+audité lors de son intégration. Chaque tour est ensuite contrôlé par diff et
+par les oracles ; trois tours maximum. Le journal fsynced
 `.cmz/library-llm-audit/<candidate-id>.jsonl` entre par son hash dans le
 `plan_id`. Aucun adaptateur fournisseur n’est livré : le CLI échoue avant la
 création du candidat tant qu’un adaptateur approuvé n’est pas injecté.

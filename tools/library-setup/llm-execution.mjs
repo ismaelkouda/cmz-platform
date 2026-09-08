@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { spawn } from 'node:child_process';
 import {
     chmodSync,
     closeSync,
@@ -13,7 +14,9 @@ import {
     writeFileSync,
     writeSync,
 } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+
+import { visit as visitJsonc } from 'jsonc-parser';
 
 import { buildLibraryChangeSet } from './library-plan.mjs';
 import { replaceRegularFile } from './dependency-resolution.mjs';
@@ -280,31 +283,187 @@ function verificationResult(verify) {
     return result;
 }
 
-async function requestWithTimeout(adapter, request, timeoutMs) {
-    const controller = new AbortController();
-    let timeout;
-    try {
-        return await Promise.race([
-            Promise.resolve().then(() =>
-                adapter(structuredClone(request), {
-                    signal: controller.signal,
-                })
-            ),
-            new Promise((_, reject) => {
-                timeout = setTimeout(() => {
-                    controller.abort();
-                    reject(
-                        new Error(
-                            `adaptateur LLM timeout après ${timeoutMs} ms`
-                        )
-                    );
-                }, timeoutMs);
-            }),
-        ]);
-    } finally {
-        clearTimeout(timeout);
-        controller.abort();
+export function validateLlmProcessAdapter(adapter) {
+    if (!exactKeys(adapter, ['executable', 'argv'])) {
+        fail('adaptateur LLM doit être un processus à schéma fermé');
     }
+    if (!isAbsolute(adapter.executable)) {
+        fail('exécutable adaptateur LLM doit être absolu');
+    }
+    let stats;
+    try {
+        stats = lstatSync(adapter.executable);
+    } catch (error) {
+        fail(
+            `exécutable adaptateur LLM inaccessible (${error.code ?? error.message})`
+        );
+    }
+    if (
+        stats.isSymbolicLink() ||
+        !stats.isFile() ||
+        realpathSync(adapter.executable) !== adapter.executable ||
+        (stats.mode & 0o111) === 0
+    ) {
+        fail('exécutable adaptateur LLM non canonique ou non exécutable');
+    }
+    if (
+        !Array.isArray(adapter.argv) ||
+        adapter.argv.length > 32 ||
+        adapter.argv.some(
+            (argument) =>
+                typeof argument !== 'string' ||
+                argument.length > 4096 ||
+                argument.includes('\0')
+        )
+    ) {
+        fail('argv adaptateur LLM invalide');
+    }
+    return adapter;
+}
+
+function killProcessTree(child) {
+    if (!child.pid) return;
+    try {
+        if (process.platform === 'win32') child.kill('SIGKILL');
+        else process.kill(-child.pid, 'SIGKILL');
+    } catch (error) {
+        if (error.code === 'ESRCH') return;
+        try {
+            child.kill('SIGKILL');
+        } catch (fallbackError) {
+            if (fallbackError.code !== 'ESRCH') {
+                return new Error(
+                    `arrêt forcé impossible (${error.code ?? error.message}; ${fallbackError.code ?? fallbackError.message})`
+                );
+            }
+        }
+    }
+}
+
+function parseAdapterResponse(chunks) {
+    let text;
+    try {
+        text = new TextDecoder('utf-8', { fatal: true }).decode(
+            Buffer.concat(chunks)
+        );
+    } catch {
+        throw new Error('sortie adaptateur LLM non UTF-8');
+    }
+    let parsed;
+    try {
+        parsed = JSON.parse(text);
+    } catch (error) {
+        throw new Error(
+            `sortie JSON adaptateur LLM invalide : ${error.message}`
+        );
+    }
+    const scopes = [];
+    let duplicate;
+    visitJsonc(text, {
+        onObjectBegin: () => scopes.push(new Set()),
+        onObjectProperty: (key) => {
+            const scope = scopes.at(-1);
+            if (scope.has(key)) duplicate ??= key;
+            else scope.add(key);
+        },
+        onObjectEnd: () => scopes.pop(),
+    });
+    if (duplicate !== undefined) {
+        throw new Error(
+            `sortie JSON adaptateur LLM ambiguë : clé dupliquée ${JSON.stringify(duplicate)}`
+        );
+    }
+    return parsed;
+}
+
+async function requestProcess(adapter, request, timeoutMs, maxResponseBytes) {
+    const definition = validateLlmProcessAdapter(adapter);
+    return new Promise((resolveRequest, rejectRequest) => {
+        const child = spawn(definition.executable, definition.argv, {
+            cwd: realpathSync('/tmp'),
+            detached: process.platform !== 'win32',
+            env: {
+                LANG: 'C.UTF-8',
+                LC_ALL: 'C.UTF-8',
+            },
+            stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        const stdout = [];
+        const stderr = [];
+        let stdoutBytes = 0;
+        let stderrBytes = 0;
+        let forcedError;
+        let settled = false;
+        const force = (error) => {
+            if (forcedError) return;
+            forcedError = error;
+            const killError = killProcessTree(child);
+            if (killError) {
+                forcedError = new AggregateError(
+                    [error, killError],
+                    `${error.message}; ${killError.message}`
+                );
+            }
+        };
+        const timer = setTimeout(
+            () =>
+                force(
+                    new Error(`adaptateur LLM timeout après ${timeoutMs} ms`)
+                ),
+            timeoutMs
+        );
+        child.stdout.on('data', (chunk) => {
+            stdoutBytes += chunk.length;
+            if (stdoutBytes > maxResponseBytes) {
+                force(
+                    new Error(
+                        `réponse adaptateur au-delà de ${maxResponseBytes} octets`
+                    )
+                );
+                return;
+            }
+            stdout.push(chunk);
+        });
+        child.stderr.on('data', (chunk) => {
+            stderrBytes += chunk.length;
+            if (stderrBytes <= 65536) stderr.push(chunk);
+            else
+                force(
+                    new Error('stderr adaptateur LLM au-delà de 65536 octets')
+                );
+        });
+        child.on('error', (error) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            rejectRequest(error);
+        });
+        child.on('close', (code, signal) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            if (forcedError) {
+                rejectRequest(forcedError);
+                return;
+            }
+            if (code !== 0) {
+                const stderrBuffer = Buffer.concat(stderr);
+                rejectRequest(
+                    new Error(
+                        `adaptateur LLM terminé avec code ${code ?? 'null'} signal ${signal ?? 'null'} ; stderr=${stderrBytes} octets sha256=${sha256(stderrBuffer)}`
+                    )
+                );
+                return;
+            }
+            try {
+                resolveRequest(parseAdapterResponse(stdout));
+            } catch (error) {
+                rejectRequest(error);
+            }
+        });
+        child.stdin.on('error', (error) => force(error));
+        child.stdin.end(JSON.stringify(request));
+    });
 }
 
 export async function executeBoundedLlm({
@@ -319,7 +478,7 @@ export async function executeBoundedLlm({
     if (recipe.install.method !== 'llm-then-verified') {
         fail('méthode de recette différente de llm-then-verified');
     }
-    if (typeof adapter !== 'function') fail('adaptateur LLM approuvé absent');
+    validateLlmProcessAdapter(adapter);
     if (typeof verify !== 'function') fail('vérificateur de candidat absent');
     const audit = ensureAudit(repository, candidate.id);
     try {
@@ -379,10 +538,11 @@ export async function executeBoundedLlm({
             });
             let response;
             try {
-                response = await requestWithTimeout(
+                response = await requestProcess(
                     adapter,
                     request,
-                    recipe.install.iteration_timeout_ms
+                    recipe.install.iteration_timeout_ms,
+                    recipe.install.max_response_bytes
                 );
             } catch (error) {
                 appendAudit(audit, {

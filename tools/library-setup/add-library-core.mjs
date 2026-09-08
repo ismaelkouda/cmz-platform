@@ -28,7 +28,10 @@ import {
 import { gitBlobOid } from './git-tree.mjs';
 import { resolveLibraryDependencies } from './install-protocol.mjs';
 import { buildLibraryChangeSet, buildLibraryPlan } from './library-plan.mjs';
-import { executeBoundedLlm } from './llm-execution.mjs';
+import {
+    executeBoundedLlm,
+    validateLlmProcessAdapter,
+} from './llm-execution.mjs';
 import {
     assertPublishableRepository,
     createCandidateCommit,
@@ -339,11 +342,12 @@ export async function addLibrary({
     onProgress({ step: 2, total: 8, id: 'contracts' });
     const { platform, recipe, track, policy, versions } =
         loadLibraryConfiguration(root, app, library);
-    if (
-        recipe.install.method === 'llm-then-verified' &&
-        typeof llmAdapter !== 'function'
-    ) {
-        fail('recette LLM refusée : aucun adaptateur approuvé injecté');
+    if (recipe.install.method === 'llm-then-verified') {
+        try {
+            validateLlmProcessAdapter(llmAdapter);
+        } catch (error) {
+            fail(`recette LLM refusée avant candidat : ${error.message}`);
+        }
     }
     const recipeResult = validateRecipes(root);
     const backend = selectSandboxBackend();

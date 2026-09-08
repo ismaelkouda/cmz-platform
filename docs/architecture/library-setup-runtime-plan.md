@@ -758,7 +758,24 @@ prompt n'est pas une frontière d'exécution.
 Le recours LLM (`install.method: llm-then-verified`) est plus étroit que le
 confinement OS : le modèle ne reçoit jamais le chemin du candidat, aucun accès
 fichier, aucun shell et aucun outil réseau. L’adaptateur fournisseur est un
-contrôleur de confiance qui ne reçoit et ne retourne que des données bornées :
+**contrôleur de confiance hors processus**. Son exécutable doit être absolu,
+canonique et exécutable ; son `argv` suit un schéma fermé. Il reçoit la requête
+sur `stdin` et ne retourne que la réponse JSON sur `stdout`, sous un
+environnement minimal sans `PATH` ni secret hérité. Le contrôleur reste une
+partie de confiance à auditer séparément : ce contrat borne l’autorité du
+**modèle**, il ne prétend pas transformer un binaire fournisseur hostile en
+code sûr.
+
+Le passage hors processus est nécessaire pour rendre le timeout exécutoire :
+un `Promise.race` avec `AbortSignal` rend la main mais ne peut pas arrêter un
+adaptateur qui ignore le signal. Sur les hôtes POSIX supportés, chaque appel
+possède son groupe de processus ; timeout, `stdout` ou `stderr` hors borne
+provoquent un `SIGKILL` du groupe et la fermeture est attendue avant de rendre
+la main. La réponse doit être UTF-8 strict, JSON strict et sans clé dupliquée ;
+le `stderr`, potentiellement sensible, n’est jamais recopié dans les
+diagnostics (taille et empreinte seulement).
+
+La boucle conserve ensuite les garanties suivantes :
 
 - **Allowlist de chemins** déclarée dans la recette (`llm_write_paths[]`) —
   toute écriture hors liste rejette l'itération ;
