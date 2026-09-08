@@ -88,7 +88,38 @@ export function commitExists(root, commit) {
     );
 }
 
-export function verificationInputs(root, recipe) {
+function requiredProofContracts(recipe, recipeRegistry) {
+    if (!(recipeRegistry instanceof Map)) {
+        fail('registre de recettes requis pour empreindre les preuves');
+    }
+    const contracts = [];
+    const append = (owner, scope, entries = []) => {
+        for (const entry of entries) {
+            contracts.push({ owner, scope, contract: entry });
+        }
+    };
+    const owner = `${recipe.platform}/${recipe.library}`;
+    append(owner, 'runtime', recipe.runtime_acceptance);
+    for (const block of recipe.coexistence ?? []) {
+        append(owner, `coexistence:${block.with}`, block.runtime_acceptance);
+    }
+    for (const candidate of recipeRegistry.values()) {
+        if (candidate.platform !== recipe.platform) continue;
+        for (const block of candidate.coexistence ?? []) {
+            if (block.with !== recipe.library) continue;
+            append(
+                `${candidate.platform}/${candidate.library}`,
+                `coexistence:${block.with}`,
+                block.runtime_acceptance
+            );
+        }
+    }
+    return contracts.sort((left, right) =>
+        stableJson(left).localeCompare(stableJson(right))
+    );
+}
+
+export function verificationInputs(root, recipe, recipeRegistry) {
     const prefix = `conventions/libraries/${recipe.platform}`;
     return {
         recipe: sha256(
@@ -115,6 +146,9 @@ export function verificationInputs(root, recipe) {
         nx_json: sha256(regularFile(root, 'nx.json')),
         tsconfig: sha256(regularFile(root, 'tsconfig.base.json')),
         gitattributes: sha256(regularFile(root, '.gitattributes')),
+        proof_contracts: sha256(
+            stableJson(requiredProofContracts(recipe, recipeRegistry))
+        ),
         runner: libraryRunnerDigest(root),
     };
 }
@@ -125,26 +159,9 @@ export function verificationInputs(root, recipe) {
  * Tailwind est qualifiée.
  */
 export function requiredProofIds(recipe, recipeRegistry) {
-    if (!(recipeRegistry instanceof Map)) {
-        fail('registre de recettes requis pour calculer les preuves');
-    }
-    const ids = [
-        ...(recipe.runtime_acceptance ?? []).map((entry) => entry.id),
-        ...(recipe.coexistence ?? []).flatMap((block) =>
-            (block.runtime_acceptance ?? []).map((entry) => entry.id)
-        ),
-        ...[...recipeRegistry.values()].flatMap((candidate) =>
-            candidate.platform === recipe.platform
-                ? (candidate.coexistence ?? [])
-                      .filter((block) => block.with === recipe.library)
-                      .flatMap((block) =>
-                          (block.runtime_acceptance ?? []).map(
-                              (entry) => entry.id
-                          )
-                      )
-                : []
-        ),
-    ].sort();
+    const ids = requiredProofContracts(recipe, recipeRegistry)
+        .map(({ contract }) => contract.id)
+        .sort();
     if (new Set(ids).size !== ids.length) {
         fail(`identifiant de preuve dupliqué pour ${recipe.library}`);
     }
@@ -183,7 +200,10 @@ function validateChangeSet(changeSet) {
     return expected;
 }
 
-function validatePlan(plan, { app, recipe, track, changeSetId, root }) {
+function validatePlan(
+    plan,
+    { app, recipe, recipeRegistry, track, changeSetId, root }
+) {
     if (!plan || typeof plan !== 'object') fail('plan absent');
     const { plan_id: observedId, ...inputs } = plan;
     const rebuilt = buildLibraryPlan(inputs);
@@ -201,7 +221,7 @@ function validatePlan(plan, { app, recipe, track, changeSetId, root }) {
     if (plan.runner_sha256 !== libraryRunnerDigest(root)) {
         fail('plan produit par un runner différent du runner courant');
     }
-    const currentInputs = verificationInputs(root, recipe);
+    const currentInputs = verificationInputs(root, recipe, recipeRegistry);
     const planInputs = {
         recipe_sha256: currentInputs.recipe,
         recipe_schema_sha256: currentInputs.recipe_schema,
@@ -300,6 +320,7 @@ export function buildVerificationFromExecution({
         {
             app,
             recipe,
+            recipeRegistry,
             track,
             changeSetId,
             root,
@@ -321,7 +342,7 @@ export function buildVerificationFromExecution({
         tested_versions: tested,
         dependency_state_sha256: dependencyStateSha256,
         proofs,
-        inputs_sha256: verificationInputs(root, recipe),
+        inputs_sha256: verificationInputs(root, recipe, recipeRegistry),
     };
     return {
         ...payload,
@@ -402,7 +423,7 @@ export function verificationFailures(
     }
     let current;
     try {
-        current = verificationInputs(root, recipe);
+        current = verificationInputs(root, recipe, recipeRegistry);
     } catch (error) {
         failures.push(error.message);
         return failures;

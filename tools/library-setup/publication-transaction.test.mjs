@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
+    access,
     mkdir,
     mkdtemp,
     readFile,
@@ -67,7 +68,12 @@ async function fixture(t) {
     };
 }
 
-function crashPublication(value, created, planId) {
+function crashPublication(
+    value,
+    created,
+    planId,
+    { phase = 'worktree-published', postPublish = null } = {}
+) {
     const moduleUrl = pathToFileURL(
         join(import.meta.dirname, 'publication-transaction.mjs')
     ).href;
@@ -78,8 +84,9 @@ publishCandidateCommit({
   ...payload,
   processProbe: () => ${JSON.stringify(START)},
   afterPhase(phase) {
-    if (phase === 'worktree-published') process.kill(process.pid, 'SIGKILL');
-  }
+    if (phase === ${JSON.stringify(phase)}) process.kill(process.pid, 'SIGKILL');
+  },
+  finalizePublishedState: () => ({ synchronized: true })
 });
 `;
     return spawnSync(
@@ -95,6 +102,7 @@ publishCandidateCommit({
                 candidateCommit: created.commit,
                 changeSet: value.changeSet,
                 planId,
+                postPublish,
             }),
         ],
         { encoding: 'utf8' }
@@ -236,4 +244,137 @@ test('un journal sans verrou est ambigu et n’est jamais repris', async (t) => 
         () => recoverLibraryPublication(value.repository),
         /journal de publication présent sans verrou/
     );
+});
+
+test('conserve la transaction si la finalisation post-publication échoue puis la reprend', async (t) => {
+    const value = await fixture(t);
+    const created = createCandidateCommit({
+        ...value,
+        baseCommit: value.base,
+        message: 'chore: durable post publish',
+    });
+    const postPublish = {
+        kind: 'dependency-synchronization',
+        app: 'demo',
+        library: 'angular-material',
+        platform: 'angular',
+        track_id: 'angular-22',
+        track_sha256: 'e'.repeat(64),
+    };
+    assert.throws(
+        () =>
+            publishCandidateCommit({
+                ...value,
+                baseCommit: value.base,
+                candidateCommit: created.commit,
+                planId: `library-plan:${'e'.repeat(64)}`,
+                postPublish,
+                processProbe: () => START,
+                finalizePublishedState: () => {
+                    throw new Error('synchronisation indisponible');
+                },
+            }),
+        /synchronisation indisponible/
+    );
+    assert.equal(git(value.repository, 'rev-parse', 'HEAD'), created.commit);
+    assert.equal(git(value.repository, 'status', '--porcelain'), '');
+    await assert.doesNotReject(
+        access(join(value.repository, '.git/cmz-library.lock'))
+    );
+    await assert.doesNotReject(
+        access(join(value.repository, '.git/cmz-library-transaction.json'))
+    );
+    // Le verrou et le journal doivent réellement survivre. Le premier appel
+    // sans finaliseur est donc refusé, jamais blanchi comme "completed".
+    assert.throws(
+        () =>
+            recoverLibraryPublication(value.repository, {
+                processProbe: () => '',
+            }),
+        /synchronisation locale en attente/
+    );
+    let calls = 0;
+    const recovered = recoverLibraryPublication(value.repository, {
+        processProbe: () => '',
+        finalizePublishedState: (descriptor) => {
+            calls += 1;
+            assert.deepEqual(descriptor, postPublish);
+            return { synchronized: true };
+        },
+    });
+    assert.equal(calls, 1);
+    assert.equal(recovered.action, 'completed-post-publish');
+    assert.deepEqual(recovered.postPublishResult, { synchronized: true });
+    await assert.rejects(
+        readFile(join(value.repository, '.git/cmz-library.lock')),
+        /ENOENT/
+    );
+    await assert.rejects(
+        readFile(join(value.repository, '.git/cmz-library-transaction.json')),
+        /ENOENT/
+    );
+});
+
+test('refuse une finalisation non gouvernée avant toute publication', async (t) => {
+    const value = await fixture(t);
+    const created = createCandidateCommit({
+        ...value,
+        baseCommit: value.base,
+        message: 'chore: invalid post publish',
+    });
+    assert.throws(
+        () =>
+            publishCandidateCommit({
+                ...value,
+                baseCommit: value.base,
+                candidateCommit: created.commit,
+                planId: `library-plan:${'f'.repeat(64)}`,
+                postPublish: { kind: 'arbitrary-command' },
+                processProbe: () => START,
+            }),
+        /finalisation post-publication invalide/
+    );
+    assert.equal(git(value.repository, 'rev-parse', 'HEAD'), value.base);
+    assert.equal(git(value.repository, 'status', '--porcelain'), '');
+    await assert.rejects(
+        access(join(value.repository, '.git/cmz-library.lock')),
+        /ENOENT/
+    );
+});
+
+test('un SIGKILL après le CAS de branche reprend la synchronisation avant de nettoyer', async (t) => {
+    const value = await fixture(t);
+    const created = createCandidateCommit({
+        ...value,
+        baseCommit: value.base,
+        message: 'chore: crash after ref',
+    });
+    const postPublish = {
+        kind: 'dependency-synchronization',
+        app: 'demo',
+        library: 'tailwind',
+        platform: 'angular',
+        track_id: 'angular-22-tailwind-4',
+        track_sha256: 'a'.repeat(64),
+    };
+    const result = crashPublication(
+        value,
+        created,
+        `library-plan:${'1'.repeat(64)}`,
+        { phase: 'ref-published', postPublish }
+    );
+    assert.equal(result.signal, 'SIGKILL', result.stderr || result.stdout);
+    assert.equal(git(value.repository, 'rev-parse', 'HEAD'), created.commit);
+    let synchronized = false;
+    const recovered = recoverLibraryPublication(value.repository, {
+        processProbe: () => '',
+        finalizePublishedState: (descriptor) => {
+            assert.deepEqual(descriptor, postPublish);
+            synchronized = true;
+            return { synchronized: true };
+        },
+    });
+    assert.equal(synchronized, true);
+    assert.equal(recovered.action, 'completed-post-publish');
+    assert.equal(git(value.repository, 'status', '--porcelain'), '');
 });

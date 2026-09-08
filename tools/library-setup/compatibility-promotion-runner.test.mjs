@@ -90,7 +90,11 @@ function fakeExecution(root, app, library, runtimeProofs) {
         requiredTrackStatus: 'candidate',
     });
     const { recipe, track, versions } = configuration;
-    const inputs = verificationInputs(root, recipe);
+    const inputs = verificationInputs(
+        root,
+        recipe,
+        validateRecipes(root).recipes
+    );
     const changePayload = {
         schema_version: '1.0.0',
         changes: [

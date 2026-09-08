@@ -100,11 +100,13 @@ test('une réécriture cosmétique du package.json est restaurée à l’octet p
         backend: 'test',
         cache: join(root, 'cache'),
         home: join(root, 'home'),
-        run: ({ candidate }) => {
-            writeFileSync(
-                join(candidate, 'package.json'),
-                '{"name":"candidat","dependencies":{}}'
-            );
+        run: ({ candidate, argv }) => {
+            if (argv[0] === 'node_modules/nx/dist/bin/nx.js') {
+                writeFileSync(
+                    join(candidate, 'package.json'),
+                    '{"name":"candidat","dependencies":{}}'
+                );
+            }
             return { status: 0, stdout: '', stderr: '' };
         },
     });
@@ -271,7 +273,9 @@ test('canonise toute sortie de recette avec Prettier dans le bac à sable', asyn
     assert.deepEqual(invocations.at(-1), [
         'node_modules/prettier/bin/prettier.cjs',
         '--write',
-        'apps/demo',
+        '--ignore-unknown',
+        'apps/demo/.cmz/libraries.json',
+        'apps/demo/src/index.html',
     ]);
     assert.equal(
         await readFile(
@@ -279,6 +283,49 @@ test('canonise toute sortie de recette avec Prettier dans le bac à sable', asyn
             'utf8'
         ),
         '<head></head>\n'
+    );
+});
+
+test('ne reformate jamais un fichier applicatif étranger à la recette', async (t) => {
+    const root = await fixture(t);
+    await put(
+        root,
+        'candidate/apps/demo/src/unrelated.ts',
+        'const   untouched=true\n'
+    );
+    let formattedPaths;
+    executeLibraryRecipe({
+        repository: join(root, 'repo'),
+        candidate: { workspace: join(root, 'candidate') },
+        recipe,
+        track: { packages: {} },
+        app: 'demo',
+        policy: {},
+        backend: 'test',
+        cache: join(root, 'cache'),
+        home: join(root, 'home'),
+        run: ({ candidate, argv }) => {
+            if (argv[0] === 'node_modules/nx/dist/bin/nx.js') {
+                writeFileSync(
+                    join(candidate, 'apps/demo/generated.ts'),
+                    'export const generated=true\n'
+                );
+            } else if (argv[0] === 'node_modules/prettier/bin/prettier.cjs') {
+                formattedPaths = argv.slice(3);
+            }
+            return { status: 0, stdout: '', stderr: '' };
+        },
+    });
+    assert.deepEqual(formattedPaths, [
+        'apps/demo/.cmz/libraries.json',
+        'apps/demo/generated.ts',
+    ]);
+    assert.equal(
+        await readFile(
+            join(root, 'candidate/apps/demo/src/unrelated.ts'),
+            'utf8'
+        ),
+        'const   untouched=true\n'
     );
 });
 

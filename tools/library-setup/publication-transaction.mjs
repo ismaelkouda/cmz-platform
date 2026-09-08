@@ -189,6 +189,7 @@ function validateLock(lock) {
 }
 
 function validateJournal(journal) {
+    const legacy = journal?.schema_version === '1.0.0';
     if (
         !exactKeys(journal, [
             'schema_version',
@@ -199,13 +200,15 @@ function validateJournal(journal) {
             'transaction_ref',
             'plan_id',
             'changes',
+            ...(legacy ? [] : ['post_publish']),
         ]) ||
-        journal.schema_version !== '1.0.0' ||
+        !['1.0.0', '1.1.0'].includes(journal.schema_version) ||
         ![
             'prepared',
             'worktree-published',
             'index-published',
             'ref-published',
+            'post-publish-complete',
         ].includes(journal.phase) ||
         !/^[a-f0-9]{40,64}$/.test(journal.base_commit ?? '') ||
         !/^[a-f0-9]{40,64}$/.test(journal.candidate_commit ?? '') ||
@@ -231,7 +234,35 @@ function validateJournal(journal) {
             fail('changement journalisé invalide');
         }
     }
-    return journal;
+    const postPublish = legacy ? null : journal.post_publish;
+    if (postPublish !== null) {
+        if (
+            !exactKeys(postPublish, [
+                'kind',
+                'app',
+                'library',
+                'platform',
+                'track_id',
+                'track_sha256',
+            ]) ||
+            postPublish.kind !== 'dependency-synchronization' ||
+            !/^[a-z][a-z0-9-]*$/.test(postPublish.app ?? '') ||
+            !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(
+                postPublish.library ?? ''
+            ) ||
+            !['angular', 'react'].includes(postPublish.platform) ||
+            !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(
+                postPublish.track_id ?? ''
+            ) ||
+            !/^[a-f0-9]{64}$/.test(postPublish.track_sha256 ?? '')
+        ) {
+            fail('finalisation post-publication invalide');
+        }
+    }
+    if (postPublish === null && journal.phase === 'post-publish-complete') {
+        fail('phase post-publication sans finalisation déclarée');
+    }
+    return { ...journal, post_publish: postPublish };
 }
 
 function controlPaths(repository) {
@@ -546,7 +577,7 @@ function writePublishedFile(target, content, mode) {
 
 export function recoverLibraryPublication(
     repository,
-    { processProbe = processStart } = {}
+    { processProbe = processStart, finalizePublishedState } = {}
 ) {
     const paths = controlPaths(repository);
     if (!existsSync(paths.lock)) {
@@ -566,6 +597,7 @@ export function recoverLibraryPublication(
     }
     const journal = validateJournal(readDocument(paths.journal));
     const current = git(repository, ['rev-parse', '--verify', journal.branch]);
+    let postPublishResult;
     if (current === journal.candidate_commit) {
         if (
             git(repository, [
@@ -578,6 +610,19 @@ export function recoverLibraryPublication(
             fail('commit candidat publié mais worktree ou index divergent');
         }
         git(repository, ['read-tree', journal.candidate_commit]);
+        if (
+            journal.post_publish !== null &&
+            journal.phase !== 'post-publish-complete'
+        ) {
+            if (typeof finalizePublishedState !== 'function') {
+                fail(
+                    'publication source achevée mais synchronisation locale en attente'
+                );
+            }
+            postPublishResult = finalizePublishedState(journal.post_publish);
+            journal.phase = 'post-publish-complete';
+            writeAtomic(paths.journal, document(journal));
+        }
     } else if (current === journal.base_commit) {
         restoreBase(repository, journal);
     } else {
@@ -593,7 +638,22 @@ export function recoverLibraryPublication(
     unlinkDurable(paths.lock);
     return {
         action:
-            current === journal.candidate_commit ? 'completed' : 'rolled-back',
+            current === journal.candidate_commit
+                ? journal.post_publish === null
+                    ? 'completed'
+                    : 'completed-post-publish'
+                : 'rolled-back',
+        ...(current === journal.candidate_commit &&
+        journal.post_publish !== null
+            ? {
+                  postPublish: journal.post_publish,
+                  postPublishResult,
+                  planId: journal.plan_id,
+                  commit: journal.candidate_commit,
+                  branch: journal.branch,
+                  changes: journal.changes,
+              }
+            : {}),
     };
 }
 
@@ -604,15 +664,16 @@ export function publishCandidateCommit({
     candidateCommit,
     changeSet,
     planId,
+    postPublish = null,
+    finalizePublishedState,
     processProbe = processStart,
     afterPhase = () => undefined,
 }) {
     recoverLibraryPublication(repository, { processProbe });
     const { branch } = assertPublishableRepository(repository, baseCommit);
-    const control = acquireLock(repository, processProbe);
     const transactionRef = `refs/cmz/library-transactions/${planId.replace('library-plan:', '')}`;
-    const journal = {
-        schema_version: '1.0.0',
+    const journal = validateJournal({
+        schema_version: '1.1.0',
         phase: 'prepared',
         base_commit: baseCommit,
         candidate_commit: candidateCommit,
@@ -620,7 +681,18 @@ export function publishCandidateCommit({
         transaction_ref: transactionRef,
         plan_id: planId,
         changes: changeSet.changes,
-    };
+        post_publish: postPublish,
+    });
+    if (
+        journal.post_publish !== null &&
+        typeof finalizePublishedState !== 'function'
+    ) {
+        fail('finalisation post-publication absente');
+    }
+    // Toute validation qui peut échouer précède la première écriture. Un
+    // descripteur invalide ne doit jamais laisser un verrou orphelin.
+    const control = acquireLock(repository, processProbe);
+    let refPublished = false;
     try {
         git(repository, [
             'update-ref',
@@ -644,16 +716,36 @@ export function publishCandidateCommit({
         git(repository, ['update-ref', branch, candidateCommit, baseCommit]);
         journal.phase = 'ref-published';
         writeAtomic(control.journal, document(journal));
+        refPublished = true;
         afterPhase(journal.phase);
+        let postPublishResult;
+        if (journal.post_publish !== null) {
+            postPublishResult = finalizePublishedState(journal.post_publish);
+            journal.phase = 'post-publish-complete';
+            writeAtomic(control.journal, document(journal));
+            afterPhase(journal.phase);
+        }
         git(repository, ['update-ref', '-d', transactionRef, candidateCommit]);
         unlinkDurable(control.journal);
         unlinkDurable(control.lock);
-        return { commit: candidateCommit, branch };
+        return {
+            commit: candidateCommit,
+            branch,
+            ...(journal.post_publish !== null ? { postPublishResult } : {}),
+        };
     } catch (error) {
-        try {
-            recoverLibraryPublication(repository, { processProbe: () => '' });
-        } catch (recoveryError) {
-            error.recoveryError = recoveryError;
+        // Après le CAS de branche, l'état source voulu est déjà publié. Le
+        // journal et le verrou doivent survivre afin que la prochaine commande
+        // reprenne la finalisation dérivée ; les supprimer ici rendrait un
+        // échec ou SIGKILL pendant `bun install` irrécupérable.
+        if (!refPublished) {
+            try {
+                recoverLibraryPublication(repository, {
+                    processProbe: () => '',
+                });
+            } catch (recoveryError) {
+                error.recoveryError = recoveryError;
+            }
         }
         throw error;
     }

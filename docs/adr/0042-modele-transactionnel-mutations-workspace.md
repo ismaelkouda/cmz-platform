@@ -342,10 +342,14 @@ toutes les acceptances de la recette — coexistences comprises — puis remplac
 atomiquement la seule matrice ciblée. En V1, `verified` vaut uniquement pour le
 vecteur exact Node/Bun/Nx/framework testé. Les plages de la piste restent une
 présélection de qualification, jamais une preuve par extrapolation.
-L'attestation lie la piste, les versions, le commit, l'arbre applicatif et
-l'ensemble des entrées de l'outillage. Elle est périmée dès qu'une de ces
-entrées change. Elle n'est pas présentée comme une signature de CI : l'autorité
-d'approbation reste la protection de branche et la revue du commit qui la porte.
+L'attestation lie la piste, les versions, le commit, l'arbre applicatif,
+l'ensemble des entrées de l'outillage et le contenu complet des contrats de
+preuve exécutés. Ce dernier ensemble comprend les preuves réciproques déclarées
+par une autre recette : conserver le même identifiant tout en modifiant sa
+description, son oracle ou son statut périme donc aussi l'attestation. Elle est
+périmée dès qu'une de ces entrées change. Elle n'est pas présentée comme une
+signature de CI : l'autorité d'approbation reste la protection de branche et la
+revue du commit qui la porte.
 
 **9. La sortie d'une recette est canonisée avant d'être jugée.** Un schematic ne
 produit pas du texte canonique : mesuré, `@angular/material:ng-add` version 22
@@ -353,11 +357,12 @@ laisse des lignes blanches à espaces résiduels dans `index.html` après le
 retrait déclaratif de ses liens de polices. Le commit publié doit être canonique
 comme n'importe quel fichier du dépôt. Le Prettier **du candidat** — celui que
 le lockfile épingle, jamais celui de l'hôte — est donc exécuté sous le profil
-d'exécution sur `apps/<app>` seul, après les normalisations et **avant** le
-contrôle de périmètre final : une écriture de Prettier hors de l'app serait donc
-refusée comme n'importe quelle autre. Conséquence assumée : la sortie d'une
-recette devient stable d'une version de schematic à l'autre pour tout ce qui
-relève de la seule mise en forme.
+d'exécution, après les normalisations et **avant** le contrôle de périmètre
+final. Ses arguments sont la liste fermée des fichiers créés ou modifiés par la
+recette et le manifeste ; il ne reçoit jamais le répertoire applicatif entier.
+Une bibliothèque ne peut donc pas reformater silencieusement une page sans
+rapport, même si cette page était déjà non canonique. Une écriture du processus
+hors du change-set attendu reste refusée par le contrôle final.
 
 La canonisation porte sur **tout ce que la commande écrit dans l'app, y compris
 son propre manifeste** `.cmz/libraries.json`. La première rédaction l'écrivait
@@ -376,8 +381,8 @@ publie**, au lieu d'attendre qu'une gate de dépôt le découvre.
 locales.** Défaut P0 mesuré : `add-library` publiait `package.json`, `bun.lock`
 et la configuration de l'app, mais laissait le `node_modules` local dans son
 état antérieur — la commande annonçait donc un succès pendant que le build local
-échouait. Le succès exige désormais, **après** la transaction de publication, un
-`bun install --frozen-lockfile --ignore-scripts` réel dans le dépôt, suivi de
+échouait. Le succès exige désormais, comme **phase finale** de la transaction de
+publication, un `bun install --frozen-lockfile --ignore-scripts` réel dans le dépôt, suivi de
 trois contrôles : `package.json` et `bun.lock` **identiques octet pour octet**
 après l'installation, politique de résolution revérifiée sur l'état publié, et
 chaque paquet direct de la piste présent à sa version exacte, résolu **dans**
@@ -385,11 +390,23 @@ chaque paquet direct de la piste présent à sa version exacte, résolu **dans**
 
 C'est le seul point du système où une installation s'exécute hors bac à sable,
 dans le dépôt réel. C'est assumé — muter ce `node_modules` est précisément
-l'objet de l'opération, et aucun code tiers ne s'exécute puisque
-`--ignore-scripts` tient. `--dry-run` s'arrête **avant** : il compte huit
+l'objet de l'opération. Aucun script de cycle de vie d'une dépendance ne
+s'exécute puisque `--ignore-scripts` tient ; seul le Bun épinglé interprète le
+manifeste et le lockfile. `--dry-run` s'arrête **avant** : il compte huit
 étapes, le chemin nominal en compte neuf. Par cohérence, le harnais
 d'intégration n'utilise plus de `node_modules` symbolique partagé : une
 synchronisation testée contre un lien partagé ne prouverait rien.
+
+Cette neuvième étape appartient à la transaction, elle ne lui succède pas. Le
+journal porte un descripteur fermé de finalisation (app, bibliothèque,
+plateforme, piste et empreinte de piste) et n'est supprimé qu'après la
+synchronisation. Une erreur ordinaire ou un `SIGKILL` après le déplacement de la
+branche conserve donc le commit publié, la ref de transaction, le journal et le
+verrou. La prochaine invocation revalide le descripteur contre les contrats du
+commit publié, rejoue l'installation gelée de façon idempotente, puis seulement
+nettoie la transaction. Sans finaliseur reconnu, la récupération échoue fermée :
+elle ne peut jamais déclarer la publication complète en ignorant un
+`node_modules` obsolète.
 
 ## Justification
 

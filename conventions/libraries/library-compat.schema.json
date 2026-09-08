@@ -190,6 +190,7 @@
                       "nx_json",
                       "tsconfig",
                       "gitattributes",
+                      "proof_contracts",
                       "runner"
                     ],
                     "properties": {
@@ -222,6 +223,11 @@
                         "pattern": "^[a-f0-9]{64}$"
                       },
                       "gitattributes": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "proof_contracts": {
+                        "description": "Empreinte des contrats de preuve propres et réciproques réellement exigés. Une modification sémantique d'une recette partenaire périme l'attestation même si l'identifiant de preuve reste stable.",
                         "type": "string",
                         "pattern": "^[a-f0-9]{64}$"
                       },

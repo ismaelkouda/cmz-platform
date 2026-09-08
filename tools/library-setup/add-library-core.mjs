@@ -4,9 +4,11 @@ import {
     chmodSync,
     existsSync,
     lstatSync,
+    mkdtempSync,
     mkdirSync,
     readFileSync,
     realpathSync,
+    rmSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
@@ -52,7 +54,10 @@ import { proveLibraryRuntime, requiredAcceptances } from './runtime-proofs.mjs';
 import { provisionBrowser } from './browser-provisioning.mjs';
 import { selectSandboxBackend } from './sandbox.mjs';
 import { snapshotFilesystem, snapshotSha256 } from './filesystem-snapshot.mjs';
-import { libraryRunnerDigest } from './tooling-fingerprint.mjs';
+import {
+    compatibilityTrackDigest,
+    libraryRunnerDigest,
+} from './tooling-fingerprint.mjs';
 
 function fail(message) {
     throw new Error(`add-library: ${message}`);
@@ -95,6 +100,26 @@ function ensureCache() {
         );
     }
     return cache;
+}
+
+function withSynchronizationHome(operation) {
+    const home = mkdtempSync(
+        join(realpathSync(tmpdir()), 'cmz-library-sync-home-')
+    );
+    chmodSync(home, 0o700);
+    try {
+        return operation(home);
+    } finally {
+        rmSync(home, { recursive: true, force: true });
+    }
+}
+
+function requireSynchronization(operation) {
+    const result = operation();
+    if (!result || typeof result !== 'object' || result.synchronized !== true) {
+        fail('la synchronisation locale n’a pas produit sa preuve de succès');
+    }
+    return result;
 }
 
 function workspaceVersions(manifest, platform) {
@@ -311,7 +336,59 @@ async function executeLibraryAddition({
     const root = resolve(repository);
     const totalSteps = dryRun ? 8 : 9;
     onProgress({ step: 1, total: totalSteps, id: 'preconditions' });
-    recoverLibraryPublication(root);
+    const cache = ensureCache();
+    const bunExecutable = realpathSync(
+        execFileSync('which', ['bun'], { encoding: 'utf8' }).trim()
+    );
+    const finalizePendingPublication = (descriptor) => {
+        const configuration = loadLibraryConfiguration(
+            root,
+            descriptor.app,
+            descriptor.library,
+            { requiredTrackStatus: 'verified' }
+        );
+        if (
+            configuration.platform !== descriptor.platform ||
+            configuration.track.id !== descriptor.track_id ||
+            compatibilityTrackDigest(configuration.track) !==
+                descriptor.track_sha256
+        ) {
+            fail(
+                'la piste publiée ne correspond plus à la finalisation journalisée'
+            );
+        }
+        return withSynchronizationHome((home) =>
+            requireSynchronization(() =>
+                dependencySynchronizer({
+                    repository: root,
+                    track: configuration.track,
+                    policy: configuration.policy,
+                    cache,
+                    home,
+                    bunExecutable,
+                })
+            )
+        );
+    };
+    const recovery = recoverLibraryPublication(root, {
+        finalizePublishedState: finalizePendingPublication,
+    });
+    if (
+        recovery.action === 'completed-post-publish' &&
+        recovery.postPublish.app === app &&
+        recovery.postPublish.library === library
+    ) {
+        return {
+            recovered: true,
+            published: true,
+            recovery: {
+                plan_id: recovery.planId,
+                commit: recovery.commit,
+                branch: recovery.branch,
+            },
+            dependencySynchronization: recovery.postPublishResult,
+        };
+    }
     const head = execFileSync(
         'git',
         ['-C', root, 'rev-parse', '--verify', 'HEAD'],
@@ -334,10 +411,6 @@ async function executeLibraryAddition({
     }
     const recipeResult = validateRecipes(root);
     const backend = selectSandboxBackend();
-    const cache = ensureCache();
-    const bunExecutable = realpathSync(
-        execFileSync('which', ['bun'], { encoding: 'utf8' }).trim()
-    );
     let candidate;
     try {
         onProgress({ step: 3, total: totalSteps, id: 'candidate' });
@@ -487,6 +560,14 @@ async function executeLibraryAddition({
             changeSet,
             message: `chore(${app}): add ${library}`,
         });
+        const postPublish = {
+            kind: 'dependency-synchronization',
+            app,
+            library,
+            platform,
+            track_id: track.id,
+            track_sha256: compatibilityTrackDigest(track),
+        };
         const publication = publishCandidateCommit({
             repository: root,
             candidate: candidate.workspace,
@@ -494,20 +575,26 @@ async function executeLibraryAddition({
             candidateCommit: commit.commit,
             changeSet,
             planId: plan.plan_id,
+            postPublish,
+            finalizePublishedState: () => {
+                onProgress({
+                    step: 9,
+                    total: totalSteps,
+                    id: 'dependency-synchronization',
+                });
+                return requireSynchronization(() =>
+                    dependencySynchronizer({
+                        repository: root,
+                        track,
+                        policy,
+                        cache,
+                        home: candidate.homes.verification,
+                        bunExecutable,
+                    })
+                );
+            },
         });
-        onProgress({
-            step: 9,
-            total: totalSteps,
-            id: 'dependency-synchronization',
-        });
-        const dependencySynchronization = dependencySynchronizer({
-            repository: root,
-            track,
-            policy,
-            cache,
-            home: candidate.homes.verification,
-            bunExecutable,
-        });
+        const dependencySynchronization = publication.postPublishResult;
         return {
             plan,
             changeSet,

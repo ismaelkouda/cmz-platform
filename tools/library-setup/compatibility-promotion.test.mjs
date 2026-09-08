@@ -77,7 +77,7 @@ function execution(overrides = {}) {
     const { plan: planOverrides = {}, ...executionOverrides } = overrides;
     const sourceRecipe = recipe();
     const sourceTrack = track();
-    const inputs = verificationInputs(ROOT, sourceRecipe);
+    const inputs = verificationInputs(ROOT, sourceRecipe, recipes());
     const changePayload = {
         schema_version: '1.0.0',
         changes: [
@@ -352,6 +352,36 @@ test('modifier la piste, la politique ou le runner périme la preuve', (t) => {
             path
         );
     }
+});
+
+test('modifier le contrat de coexistence réciproque périme aussi la preuve', (t) => {
+    const root = fixture(t);
+    const initialRegistry = validateRecipes(root).recipes;
+    const tailwind = initialRegistry.get('angular/tailwind');
+    const before = verificationInputs(root, tailwind, initialRegistry);
+
+    const materialPath = join(
+        root,
+        'conventions/libraries/angular/angular-material.setup.json'
+    );
+    const materialDocument = JSON.parse(readFileSync(materialPath, 'utf8'));
+    const reciprocal = materialDocument.coexistence.find(
+        ({ with: library }) => library === 'tailwind'
+    );
+    reciprocal.runtime_acceptance[0].description +=
+        ' Contrat modifié sans renommer la preuve.';
+    writeFileSync(
+        materialPath,
+        `${JSON.stringify(materialDocument, null, 2)}\n`
+    );
+    const changedRegistry = validateRecipes(root).recipes;
+    const after = verificationInputs(
+        root,
+        changedRegistry.get('angular/tailwind'),
+        changedRegistry
+    );
+    assert.equal(after.recipe, before.recipe);
+    assert.notEqual(after.proof_contracts, before.proof_contracts);
 });
 
 test('une bibliothèque indépendante ne périme ni la projection initiale ni la fermeture finale', (t) => {

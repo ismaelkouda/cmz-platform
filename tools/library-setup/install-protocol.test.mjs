@@ -290,6 +290,58 @@ test('refuse une synchronisation locale qui réécrit le lockfile gelé', async 
             }),
         /a muté package.json ou bun.lock/
     );
+    assert.equal(
+        await readFile(join(repository, 'package.json'), 'utf8'),
+        '{}\n'
+    );
+    assert.equal(
+        await readFile(join(repository, 'bun.lock'), 'utf8'),
+        '{"lockfileVersion":1}\n'
+    );
+});
+
+test('restaure manifeste et lockfile même si Bun échoue après les avoir écrits', async (t) => {
+    const root = await realpath(
+        await mkdtemp(join(tmpdir(), 'cmz-published-failed-write-'))
+    );
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const repository = join(root, 'repo');
+    const cache = join(root, 'cache');
+    const home = join(root, 'home');
+    for (const path of [repository, cache, home]) await mkdir(path);
+    const manifest = '{"name":"before"}\n';
+    const lock = '{"lockfileVersion":1}\n';
+    await put(repository, 'package.json', manifest);
+    await put(repository, 'bun.lock', lock);
+    assert.throws(
+        () =>
+            synchronizePublishedDependencies({
+                repository,
+                track: { packages: {} },
+                policy: {
+                    allowed_registries: ['https://registry.npmjs.org'],
+                },
+                cache,
+                home,
+                bunExecutable: '/usr/local/bin/bun',
+                spawn: () => {
+                    writeFileSync(join(repository, 'package.json'), 'bad\n');
+                    writeFileSync(join(repository, 'bun.lock'), 'bad\n');
+                    return {
+                        status: 1,
+                        signal: null,
+                        stdout: '',
+                        stderr: 'failure',
+                    };
+                },
+            }),
+        /bun install .* a échoué/
+    );
+    assert.equal(
+        await readFile(join(repository, 'package.json'), 'utf8'),
+        manifest
+    );
+    assert.equal(await readFile(join(repository, 'bun.lock'), 'utf8'), lock);
 });
 
 test('refuse un paquet direct absent, faux ou résolu hors du node_modules candidat', async (t) => {

@@ -3,12 +3,12 @@
 - **Statut :** En implémentation. Sont livrés : le cœur `add-library` et ses
   neuf étapes, les quatre P0, les oracles runtime, le confinement macOS **et**
   conteneur, le recours LLM borné, l'intégration `create-app`, la gate
-  d'intégration en CI, et la promotion gouvernée des matrices. **Reste** :
-  requalifier les trois pistes — toutes `candidate` depuis que l'outillage a
-  changé, donc `add-library` refuse actuellement toute bibliothèque, par
-  construction. La qualification doit être la **dernière** opération : elle
-  coûte plusieurs dizaines de minutes d'oracles réels et toute modification
-  ultérieure du runner la périme (ADR-0042 § invariant 8).
+  d'intégration en CI, et la promotion gouvernée des matrices. **État de ce lot
+  :** les trois pistes sont temporairement `candidate` parce que l'audit du
+  2026-09-08 a étendu la transaction à la neuvième étape, borné Prettier au
+  change-set et ajouté l'empreinte des preuves réciproques. Elles ne seront
+  requalifiées qu'après gel et revue de cet outillage ; toute modification
+  ultérieure le périmerait mécaniquement (ADR-0042 § invariants 8 à 10).
 - **Objectif servi :** créer une application sans écrire de code, puis ajouter
   une bibliothèque par **une seule commande** —
   `bun run add-library --app clean-street --library angular-material` — qui
@@ -221,7 +221,8 @@ que la commande a annoncé un succès. Le contrat complet est en
 [ADR-0042 § invariant 10](../adr/0042-modele-transactionnel-mutations-workspace.md).
 
 La sortie du schematic est par ailleurs canonisée par le Prettier **du
-candidat** avant le contrôle de périmètre final
+candidat**, uniquement sur les fichiers du change-set, avant le contrôle de
+périmètre final
 ([ADR-0042 § invariant 9](../adr/0042-modele-transactionnel-mutations-workspace.md))
 : un schematic ne produit pas du texte canonique, et un commit publié doit
 l'être.
@@ -992,17 +993,20 @@ hostile (refusé à la matérialisation) et un exécutant hostile (refusé par l
 | marqueur discordant du journal           | `quarantined`, signalé, **jamais** supprimé     |
 | ancêtre du chemin devenu lien symbolique | purge refusée                                   |
 
-## État de livraison restant
+## État de livraison du lot
 
-- Le renderer `create-app` produit déjà un manifeste valide déclarant Transloco.
-  La preuve bout-en-bout doit encore créer un vrai shell, le committer dans le
-  dépôt fixture, puis lui ajouter Material et Tailwind sans édition manuelle.
-- La CI doit exécuter un vrai `add-library --dry-run` dans un environnement
-  Docker, et vérifier que le worktree reste inchangé.
-- Les trois pistes de compatibilité restent `candidate` jusqu'à l'exécution de
-  `bun run promote-library-compatibility --app <référence> --library <lib>`. La
-  commande exécute le vrai pipeline en candidat, exige toutes les preuves de la
-  recette — coexistences comprises — puis ne modifie que la matrice ciblée. Le
-  bloc JSON est une attestation de contenu vérifiable et périssable, **pas une
-  signature ni une preuve cryptographique de CI** : l'approbation demeure portée
-  par la revue et les checks obligatoires du commit.
+- Le renderer `create-app` produit un manifeste valide déclarant Transloco. La
+  gate bout-en-bout crée un vrai shell, le committe dans son dépôt isolé, puis
+  lui ajoute Material et Tailwind par deux publications réelles, sans édition
+  manuelle.
+- Les profils macOS et conteneur sont attaqués par la suite d'isolation. La gate
+  bout-en-bout est câblée dans la CI ; `check:ci-wiring` analyse le YAML plutôt
+  que son texte brut et refuse qu'un commentaire tienne lieu d'exécution.
+- Pendant une modification du runner, les trois pistes restent `candidate`.
+  Leur dernière promotion exécute
+  `bun run promote-library-compatibility --app <référence> --library <lib>`, le
+  vrai pipeline en candidat et toutes les preuves de la recette — coexistences
+  réciproques comprises — puis ne modifie que la matrice ciblée. Le bloc JSON
+  est une attestation de contenu vérifiable et périssable, **pas une signature
+  ni une preuve cryptographique de CI** : l'approbation demeure portée par la
+  revue et les checks obligatoires du commit.

@@ -86,7 +86,7 @@ function applyNormalizations(workspace, appRoot, normalizations = []) {
 function formatApp({
     repository,
     workspace,
-    appRoot,
+    paths,
     policy,
     backend,
     cache,
@@ -94,6 +94,10 @@ function formatApp({
     run,
 }) {
     regularFile(workspace, 'node_modules/prettier/bin/prettier.cjs');
+    if (!Array.isArray(paths) || paths.length === 0) {
+        fail('aucun fichier produit à canoniser');
+    }
+    for (const path of paths) regularFile(workspace, path);
     const result = run({
         backend,
         profile: 'execution',
@@ -103,7 +107,12 @@ function formatApp({
         repository,
         hostExecutable: process.execPath,
         containerExecutable: '/usr/local/bin/node',
-        argv: ['node_modules/prettier/bin/prettier.cjs', '--write', appRoot],
+        argv: [
+            'node_modules/prettier/bin/prettier.cjs',
+            '--write',
+            '--ignore-unknown',
+            ...[...paths].sort(),
+        ],
         policy,
     });
     if (result.status !== 0) {
@@ -281,6 +290,7 @@ export function executeLibraryRecipe({
         appRoot,
         recipe.install.normalizations
     );
+    restoreCosmeticDependencyWrites(candidate.workspace, dependencyBytes);
     // Le manifeste est écrit AVANT la canonisation, jamais après : mesuré,
     // JSON.stringify(…, 2) et Prettier divergent dès que le tableau tient sur
     // une ligne, et Prettier descend bien dans `.cmz/`. Écrit après, ce fichier
@@ -292,17 +302,23 @@ export function executeLibraryRecipe({
         recipe.platform,
         recipe.library
     );
+    const beforeFormat = buildLibraryChangeSet(
+        before,
+        snapshotFilesystem(candidate.workspace, {
+            excludedDirectories: ['node_modules'],
+        })
+    );
+    validateRecipeChanges(beforeFormat, appRoot, false);
     formatApp({
         repository,
         workspace: candidate.workspace,
-        appRoot,
+        paths: beforeFormat.changes.map(({ path }) => path),
         policy,
         backend,
         cache,
         home,
         run,
     });
-    restoreCosmeticDependencyWrites(candidate.workspace, dependencyBytes);
     const recipeChanges = buildLibraryChangeSet(
         before,
         snapshotFilesystem(candidate.workspace, {

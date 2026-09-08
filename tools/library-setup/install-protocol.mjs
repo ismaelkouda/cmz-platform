@@ -158,15 +158,26 @@ export function synchronizePublishedDependencies({
             GIT_TERMINAL_PROMPT: '0',
         },
     });
+    const manifestChanged = !readFileSync(manifestPath).equals(manifestBefore);
+    const lockChanged = !readFileSync(lockPath).equals(lockBefore);
+    // La vérification doit précéder toute propagation d'erreur du processus :
+    // Bun peut échouer ou expirer après une écriture. Laisser ces deux fichiers
+    // gouvernés modifiés rendrait précisément la transaction durable impossible
+    // à reprendre, car la récupération refuse à juste titre un worktree sale.
+    if (manifestChanged) {
+        replaceRegularFile(repository, 'package.json', manifestBefore);
+    }
+    if (lockChanged) {
+        replaceRegularFile(repository, 'bun.lock', lockBefore);
+    }
     if (result.error) {
         fail(`synchronisation locale impossible (${result.error.message})`);
     }
     assertSuccess(result, `bun ${argv.join(' ')}`);
-    if (
-        !readFileSync(manifestPath).equals(manifestBefore) ||
-        !readFileSync(lockPath).equals(lockBefore)
-    ) {
-        fail('synchronisation locale a muté package.json ou bun.lock');
+    if (manifestChanged || lockChanged) {
+        fail(
+            'synchronisation locale a muté package.json ou bun.lock ; octets restaurés'
+        );
     }
     const resolution = verifyResolution(repository);
     if (!resolution.ok) {
