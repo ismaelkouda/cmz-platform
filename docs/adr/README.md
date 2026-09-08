@@ -75,4 +75,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0039](./0039-frontiere-contractuelle-conception-realisation-llm.md) | Frontière contractuelle entre conception et réalisation par LLM | Accepted |
 | [0041](./0041-angular-material-tailwind-defaults.md)      | Angular Material + Tailwind comme défauts d'app Angular  | Accepted |
 | [0042](./0042-modele-transactionnel-mutations-workspace.md) | Modèle transactionnel et d'isolation des mutations de workspace | Proposed |
+| [0043](./0043-discipline-de-preuve-des-agents.md)         | Discipline de preuve des agents                          | Proposed |
 <!-- END:GENERATED:adr-index -->
