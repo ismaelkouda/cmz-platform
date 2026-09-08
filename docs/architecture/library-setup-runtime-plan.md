@@ -1,9 +1,9 @@
 # Plan — installation réelle + preuves runtime des bibliothèques
 
-- **Statut :** Proposed. Les **arbitrages D1–D8 sont tranchés** (revues du
-  2026-09-04) ; les quatre prérequis P0 sont **soumis à revue un par un**, dans
-  l'ordre §« Ordre de revue ». **Aucun code `add-library` avant validation P0
-  par P0.**
+- **Statut :** En implémentation. Le cœur `add-library`, les quatre P0, les
+  oracles runtime, le confinement macOS/Docker et le recours LLM borné sont
+  livrés. Restent l’intégration `create-app`, la gate end-to-end CI et la
+  promotion gouvernée des matrices de compatibilité.
 - **Objectif servi :** créer une application sans écrire de code, puis ajouter
   une bibliothèque par **une seule commande** —
   `bun run add-library --app clean-street --library angular-material` — qui
@@ -18,21 +18,20 @@
 
 ## Contexte
 
-`check:library-setup` est un garde-fou de **dérive de configuration** :
-`static_invariants` vérifié à chaque run, `runtime_acceptance` **déclaré mais
-jamais exécuté**. Rien n'installe : `install.command` / `reference_tool`
-décrivent le « comment » sans l'exécuter. Le système n'est donc **pas utilisable
-en production** — l'objectif de ce plan est d'y arriver.
+`check:library-setup` garde la dérive structurelle. `add-library` exécute le «
+comment » de la recette dans un candidat isolé puis ses `runtime_acceptance`. La
+commande est fonctionnelle ; ce plan conserve les preuves acquises et les
+derniers écarts nécessaires à son usage systématique.
 
 ## Décisions arbitrées
 
-### D1 — `create-app` installe les trois bibliothèques par défaut
+### D1 — `create-app` reste minimal ; les bibliothèques UI sont opt-in
 
-Transloco + Angular Material + Tailwind pour toute nouvelle application Angular.
-**Déjà décidé** par
-[ADR-0041 §Décision](../adr/0041-angular-material-tailwind-defaults.md).
-Material ne peut pas redevenir opt-in sans un ADR qui **supersède** formellement
-ADR-0041. Ce plan ne rouvre pas la question.
+`create-app` livre le shell et Transloco. Material et Tailwind sont ajoutés à la
+demande par `add-library`, conformément à
+[ADR-0044](../adr/0044-bibliotheques-ui-opt-in-apres-create-app.md), qui
+supersède uniquement leur installation par défaut décidée dans ADR-0041. Leur
+coexistence reste automatiquement prouvée lorsqu’ils sont tous deux présents.
 
 ### D2 — La coexistence navigateur exige un moteur, donc une extension de confiance
 
@@ -59,8 +58,8 @@ pour cet usage :
 | Origine           | un seul hôte, `download_host`, distinct de `allowed_registries` pour rester visible                             |
 | Intégrité         | empreinte `sha256` par plateforme, vérifiée **avant extraction** — une archive divergente n'est jamais dézippée |
 | Traçabilité       | le hash de la politique entre dans le `plan_id` : changer de moteur change l'identité du plan                   |
-| Approvisionnement | phase de **résolution** seule (unique phase en réseau), une fois par version, mis en cache hors candidat        |
-| Exécution         | binaire monté en **lecture seule** ; réseau, dépôt, cache Bun et HOME réel restent refusés                      |
+| Approvisionnement | phase de **résolution** seule ; archive immuable mise en cache et rehashée à chaque usage                       |
+| Exécution         | extraction neuve dans le bail, montée en **lecture seule** ; réseau, dépôt, cache Bun et HOME réel refusés      |
 | Extraction        | `--dump-dom` — **ni CDP, ni websocket, ni socket local**                                                        |
 
 Le profil d'exécution est élargi aux services système que Chromium exige (mach,
@@ -756,36 +755,48 @@ serait réinterprété (encodage, fins de ligne) ; des blobs Git ne le sont pas.
 **Défaut corrigé.** La version précédente ne posait qu'un `prompt_contract` : un
 prompt n'est pas une frontière d'exécution.
 
-Le recours LLM (`install.method: llm-then-verified`) hérite **intégralement** du
-confinement OS du P0 nº 1 — bac à sable obligatoire, candidat seul inscriptible,
-réseau coupé, cache inaccessible, pas de shell, aucun credential — et y ajoute :
+Le recours LLM (`install.method: llm-then-verified`) est plus étroit que le
+confinement OS : le modèle ne reçoit jamais le chemin du candidat, aucun accès
+fichier, aucun shell et aucun outil réseau. L’adaptateur fournisseur est un
+contrôleur de confiance qui ne reçoit et ne retourne que des données bornées :
 
 - **Allowlist de chemins** déclarée dans la recette (`llm_write_paths[]`) —
   toute écriture hors liste rejette l'itération ;
-- **Gate de diff par itération** : après chaque tour, le diff du candidat doit
-  rester dans l'allowlist **et** progresser vers les `static_invariants` ;
-- **Maximum 3 itérations**, puis échec dur ;
-- **Journal complet** `<txn-root>/<txn>/llm-log.jsonl` : prompt, réponse et diff
-  de chaque tour ;
+- **Réponse à schéma fermé** : opérations `create` / `modify` uniquement,
+  précondition SHA obligatoire pour une modification, validation de toute la
+  réponse avant la première écriture ;
+- **Gate de diff et oracles par itération** : le diff doit rester dans
+  l'allowlist et progresser vers les invariants ; un vérificateur qui mute le
+  candidat est lui-même refusé ;
+- **Contexte, réponse, timeout et nombre de tours bornés** ; maximum 3
+  itérations, puis échec dur ;
+- **Journal complet et durable** `.cmz/library-llm-audit/<candidate-id>.jsonl`,
+  mode privé, append-only et fsyncé ; son hash entre dans le `plan_id` ;
 - **Zéro publication directe** : sa sortie est un change-set candidat qui
   repasse par la publication normale (`plan_id`, transaction,
-  `check:library-setup` + `check:library-runtime` verts).
+  `check:library-setup` + oracles runtime verts).
+
+Aucun adaptateur OpenAI, Anthropic ou autre n’est livré ni choisi par ce lot.
+Sans adaptateur explicitement injecté, le CLI refuse une recette
+`llm-then-verified` **avant** de créer le candidat. La frontière est donc
+implémentée et testée ; l’intégration fournisseur reste volontairement absente.
 
 ## Idempotence
 
-Si le manifeste déclare déjà la bibliothèque **et** que `check:library-setup`
-passe pour cette paire → `no-op` (exit 0, rien d'écrit, aucun verrou pris
-au-delà de la lecture). Un `--apply` rejoué après succès est sûr.
+Si le manifeste déclare déjà la bibliothèque, la commande refuse explicitement
+de la réinstaller. Elle ne masque donc ni dérive ni intention ambiguë sous un
+`no-op`. La gate structurelle reste le moyen de vérifier une app déjà équipée.
 
 ## Harnais `runtime_acceptance`
 
-`tools/check-library-runtime.mjs`. Toute preuve s'exécute **dans un candidat**,
-jamais dans une vraie app.
+`tools/library-setup/runtime-proofs.mjs`, appelé par `add-library`. Toute preuve
+s'exécute **dans un candidat**, jamais dans le worktree réel.
 
 | `proof`               | Exécution                                                                                                                                                                                                                                                            |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `compile-component`   | candidat + composant sentinelle important la primitive ; `ngc --strictTemplates` / build Nx ; échec = type ou template invalide                                                                                                                                      |
 | `compiled-css-rule`   | candidat + classe sentinelle unique (`text-[#123456]`) ; build ; la règle `color:#123456` doit figurer dans le CSS émis                                                                                                                                              |
+| `production-build`    | build Nx de production hors réseau ; toute ressource distante ou configuration réservée au développement provoque un échec                                                                                                                                           |
 | `browser-coexistence` | candidat + page portant le CSS **réellement compilé** de l'app ; `chrome-headless-shell` épinglé par empreinte, résultat extrait par `--dump-dom` : jetons `--mat-*` résolus, règle hors couche non écrasée par le preflight, utilitaire Tailwind toujours appliquée |
 
 `status` n'est pas une promesse : `check:library-setup` le confronte au registre
@@ -826,21 +837,21 @@ jobs tournent donc sur **toute PR**, `fail-fast: false`. Budget cible :
 Revue **P0 par P0** ; aucun code d'un lot tant que le P0 dont il dépend n'est
 pas validé.
 
-| #   | Étape                                                       | Statut                      | Sortie                                                                          |
-| --- | ----------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------- |
-| 1   | Durcissement `check:library-setup`                          | **livré**                   | mergé en `c6b5b64`                                                              |
-| 2   | P0 nº 1 — candidat isolé                                    | **soumis à revue**          | conception close                                                                |
-| 3   | P0 nº 2 — verrous et transaction de publication             | non soumis                  | conception close                                                                |
-| 4   | P0 nº 3 — `plan_id` / change-set                            | non soumis                  | conception close                                                                |
-| 5   | P0 nº 4 — confinement des exécutants et du LLM              | non soumis                  | conception close                                                                |
-| 6   | Frontière seule — `library-candidate.mjs` + suites adverses | après validation du P0 nº 1 | matrices macOS **et** Linux vertes                                              |
-| 7   | Schéma `.compat.json` + première entrée de compatibilité    | après 6                     | `check:library-setup` valide le schéma fermé                                    |
-| 8   | Tranche verticale Material                                  | après 7                     | `add-library` + `material-component-compiles` **enforced**                      |
-| 9   | Tranche verticale Tailwind                                  | après 8                     | `sentinel-class-emits-rule` **enforced**                                        |
-| 10  | Coexistence navigateur                                      | après 9                     | `material-tailwind-render-together` **enforced**                                |
-| 11  | Transloco + `create-app` atomique                           | après 10                    | E2E `create-app → add-library ×3 → frozen → build → lint → test → gate → abort` |
-| 12  | Gouvernance d'upgrade                                       | après 11                    | revalidation sur bump, migration de recette                                     |
-| 13  | Recours LLM borné                                           | après 12                    | schematic cassé simulé → LLM → gates vertes                                     |
+| #   | Étape                                           | Statut                     | Sortie                                                             |
+| --- | ----------------------------------------------- | -------------------------- | ------------------------------------------------------------------ |
+| 1   | Durcissement `check:library-setup`              | **livré**                  | mergé en `c6b5b64`                                                 |
+| 2   | P0 nº 1 — candidat isolé                        | **livré**                  | matérialisation tree + baux vérifiés                               |
+| 3   | P0 nº 2 — verrous et transaction de publication | **livré**                  | reprise SIGKILL et rollback adverse                                |
+| 4   | P0 nº 3 — `plan_id` / change-set                | **livré**                  | identité et change-set déterministes                               |
+| 5   | P0 nº 4 — confinement des exécutants et du LLM  | **livré**                  | sandbox macOS/Docker + frontière LLM data-only                     |
+| 6   | Frontière candidate + suites adverses           | **livré**                  | 10/10 attaques réelles macOS et Docker                             |
+| 7   | Schéma `.compat.json` + premières pistes        | **livré**                  | schéma fermé et trois matrices candidates                          |
+| 8   | Tranche verticale Material                      | **livré**                  | compilation stricte + build production                             |
+| 9   | Tranche verticale Tailwind                      | **livré**                  | règle CSS compilée + build production                              |
+| 10  | Coexistence navigateur                          | **livré**                  | résultat identique macOS/Docker, ordre inverse couvert             |
+| 11  | `create-app → add-library`                      | **en cours**               | E2E réel sans édition manuelle                                     |
+| 12  | Gouvernance d'upgrade                           | **partiel**                | validation livrée ; promotion `candidate → verified` à formaliser  |
+| 13  | Recours LLM borné                               | **livré sans fournisseur** | boucle adverse couverte ; CLI fail-closed sans adaptateur approuvé |
 
 Aucune ligne n'est marquée « validée » : la validation est un acte de revue, pas
 une déclaration de ce document. Le schéma `.compat.json` et sa première entrée
@@ -917,16 +928,13 @@ hostile (refusé à la matérialisation) et un exécutant hostile (refusé par l
 | marqueur discordant du journal           | `quarantined`, signalé, **jamais** supprimé     |
 | ancêtre du chemin devenu lien symbolique | purge refusée                                   |
 
-## Coordination — session `cmz-platform-42` (renderer)
+## État de livraison restant
 
-- Elle possède `angular-pwa-shell-renderer.mjs`, `application-shell.test.mjs`,
-  `core/page-realization.mjs`, `archetype-role-model.md`, `docs/adr/0040-*` (non
-  commités).
-- **Étapes 6–8 ne touchent aucun de ces fichiers** : `tools/add-library.mjs`,
-  `tools/generator-platform/core/library-addition.mjs` et
-  `tools/check-library-runtime.mjs` sont neufs ; candidats et pages de test
-  vivent hors dépôt ou dans un fixture jetable.
-- **Étape 9 touche `create-app`** — pas forcément le renderer : l'écriture du
-  manifeste peut vivre dans `application-shell-publication.mjs`. Séquencée après
-  le merge de `cmz-platform-42`, conçue **avec** elle.
-- Ce document est le point de rendez-vous : le mettre à jour, pas le dupliquer.
+- Le renderer `create-app` produit déjà un manifeste valide déclarant Transloco.
+  La preuve bout-en-bout doit encore créer un vrai shell, le committer dans le
+  dépôt fixture, puis lui ajouter Material et Tailwind sans édition manuelle.
+- La CI doit exécuter un vrai `add-library --dry-run` dans un environnement
+  Docker, et vérifier que le worktree reste inchangé.
+- Les trois pistes de compatibilité sont encore `candidate`. Leur promotion en
+  `verified` doit être liée à une preuve end-to-end et à un commit exact, sans
+  mécanisme d’auto-approbation par le code qu’elles autorisent.

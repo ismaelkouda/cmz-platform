@@ -1,19 +1,18 @@
 # ADR-0042 — Modèle transactionnel et d'isolation des mutations de workspace
 
-- **Statut :** Proposed
+- **Statut :** Accepted et implémenté pour `add-library`
 - **Date :** 2026-09-04
 
 ## Contexte
 
-[ADR-0041](./0041-angular-material-tailwind-defaults.md) fait de Transloco +
-Angular Material + Tailwind les défauts de toute nouvelle application Angular,
-et décrit le setup de chaque bibliothèque par une recette
+[ADR-0041](./0041-angular-material-tailwind-defaults.md) définit la composition
+Transloco + Angular Material + Tailwind et décrit le setup de chaque
+bibliothèque par une recette
 `conventions/libraries/<platform>/<library>.setup.json`. `check:library-setup`
 (mergé en `c6b5b64`) vérifie que ces recettes ne dérivent pas.
 
-Rien n'**installe** encore. Le pas suivant — un outil `add-library` qui exécute
-réellement le schematic du vendeur ou le script `reference-derived`, puis un
-harnais qui exécute les `runtime_acceptance` — mute le workspace :
+L’outil `add-library` exécute le schematic du vendeur ou le script
+`reference-derived`, puis les `runtime_acceptance`, avant de publier. Il mute :
 `package.json` racine, `bun.lock`, le catalog, l'arborescence de l'app, son
 manifeste. Il fait en outre exécuter du **code tiers** (schematic `ng add`), et,
 en dernier recours, un **agent LLM**.
@@ -233,10 +232,13 @@ bibliothèques du système — **et rien d'autre**. Elle reste refusée au profi
 l'est toujours, et c'est vérifié sur le backend réel avec la variante active :
 HOME réel, dépôt, cache Bun, écriture hors candidat et réseau restent refusés,
 **y compris pour Chromium lui-même**. Le binaire du moteur est monté en
-**lecture seule**, hors du candidat, après vérification de son empreinte
-`sha256` déclarée par la politique (§ D2 du plan) — le seul artefact du système
-qui ne vienne pas du registre npm, et donc le seul dont l'intégrité ne repose
-pas sur `bun.lock`.
+**lecture seule** après une extraction neuve dans les ressources éphémères du
+bail. Seule l’archive `sha256` déclarée par la politique est persistée : elle
+est rehashée à chaque usage, inspectée en binaire (chemins, types, tailles,
+en-têtes locaux), copiée privativement avant `unzip`, puis l’arbre extrait est
+comparé à l’inventaire ZIP. Une extraction antérieure n’est jamais réutilisée
+comme autorité. C’est le seul artefact du système qui ne vienne pas du registre
+npm, et donc le seul dont l'intégrité ne repose pas sur `bun.lock`.
 
 **4. Cache de paquets — optimisation, jamais frontière.**
 `BUN_INSTALL_CACHE_DIR` dédié, `--backend=copyfile` **obligatoire**, global
@@ -299,11 +301,16 @@ et OID), le **hash de la politique de résolution**, `nx.json`,
 du schematic), le hash du module runner, et la valeur substituée à `{{app}}`. Il
 est **toujours** calculé, affiché et journalisé — même sans `--dry-run`. Un
 changement est un **change-set structuré**
-(`op ∈ {create, modify, delete, rename}`, mode, `sha256` avant/après). Le
-recours `llm-then-verified` hérite intégralement de (1) à (4) et y ajoute une
-allowlist de chemins déclarée dans la recette, une gate de diff à chaque
-itération, un maximum de 3 itérations, un journal complet des prompts / réponses
-/ diffs, et **zéro publication directe**.
+(`op ∈ {create, modify, delete, rename}`, mode, `sha256` avant/après). Pour
+`llm-then-verified`, le modèle ne reçoit ni chemin du candidat, ni système de
+fichiers, ni shell, ni réseau. Un adaptateur de confiance transmet uniquement
+les octets des chemins allowlistés et soumet une réponse à schéma fermé
+(`create` / `modify`, avec précondition SHA pour modifier). Chaque tour est
+borné en temps, contexte et sortie, puis contrôlé par diff et par les oracles ;
+trois tours maximum. Le journal fsynced
+`.cmz/library-llm-audit/<candidate-id>.jsonl` entre par son hash dans le
+`plan_id`. Aucun adaptateur fournisseur n’est livré : le CLI échoue avant la
+création du candidat tant qu’un adaptateur approuvé n’est pas injecté.
 
 ## Justification
 
@@ -366,9 +373,11 @@ autre agent de toucher au worktree pendant les minutes de génération. D'où de
 verrous tenus jusqu'à la synchronisation complète, et un journal de phase
 reprenable.
 
-**Un prompt n'est pas une frontière de sécurité.** La seule borne fiable pour un
-agent est celle que le système de fichiers et le processus imposent. Le
-`prompt_contract` reste utile comme cadrage, jamais comme garantie.
+**Un prompt n'est pas une frontière de sécurité.** Le `prompt_contract` cadre la
+tâche mais ne porte aucune autorité. La frontière réelle est l’API de données
+fermée entre l’adaptateur et le moteur : le modèle ne reçoit aucun handle de
+processus ou de fichier, et le contrôleur valide toute la réponse avant la
+première écriture.
 
 ## Conséquences
 
@@ -384,8 +393,8 @@ agent est celle que le système de fichiers et le processus imposent. Le
 - Deux exécutions concurrentes sont impossibles ; un crash pendant la
   publication est **reprenable**, `C` et `C'` étant retenus par une ref
   temporaire.
-- La même frontière d'exécution sert au schematic, aux probes et au LLM — une
-  seule mécanique à écrire, à tester et à auditer.
+- Le schematic et les probes utilisent le confinement OS ; le LLM est encore
+  plus borné et ne voit qu’un contrat de données allowlisté.
 
 ### Négatives / dette acceptée
 
@@ -406,9 +415,11 @@ agent est celle que le système de fichiers et le processus imposent. Le
   l'installation elle-même.
 - `refs/cmz/transactions/*` et `.cmz/` doivent être purgés après succès ; une
   ref temporaire oubliée retient des objets indéfiniment.
-- Aucune de ces garanties n'est acquise tant que le code n'existe pas : cet ADR
-  décide un modèle, il ne le livre pas. Les quatre `runtime_acceptance` de
-  ADR-0041 restent `harness-pending`.
+- Ces garanties sont exercées par les suites unitaires, adversariales et par
+  `check:library-candidate-isolation` sur macOS et Docker. Les quatre familles
+  de `runtime_acceptance` sont enregistrées et exécutées par `add-library`.
+  L’intégration `create-app → add-library` et la promotion des matrices de
+  compatibilité restent suivies séparément.
 
 ### Points à réévaluer
 

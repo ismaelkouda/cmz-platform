@@ -1,6 +1,7 @@
 # ADR-0041 — Angular Material + Tailwind comme défauts d'app Angular
 
-- **Statut :** Accepted
+- **Statut :** Accepted — installation automatique par défaut supersédée par
+  [ADR-0044](./0044-bibliotheques-ui-opt-in-apres-create-app.md)
 - **Date :** 2026-09-03
 
 ## Contexte
@@ -82,9 +83,10 @@ d'installation pourrisse en silence ?
 
 **Option B.**
 
-Toute nouvelle app Angular du workspace part avec Transloco (ADR-0036) + Angular
-Material (thème M3 via `mat.theme()`) + Tailwind v4. Répartition des
-responsabilités de style :
+La composition Angular supportée est Transloco (ADR-0036) + Angular Material
+(thème M3 via `mat.theme()`) + Tailwind v4. ADR-0044 rend Material et Tailwind
+opt-in après `create-app` ; leur choix et leur frontière de coexistence restent
+ceux décidés ici. Répartition des responsabilités de style :
 
 - **Material** — primitives de composant interactif : boutons, champs, dialogs,
   menus, listbox, tabs, snackbars, tables interactives.
@@ -112,8 +114,8 @@ via Bun.** Elle sépare trois choses :
 - `runtime_acceptance` — les **preuves de fonctionnement réelles** (un composant
   Material compile sous `ngc --strictTemplates`, une classe Tailwind sentinelle
   produit sa règle dans le CSS de build, coexistence navigateur). Elles exigent
-  un harnais de build/navigateur **encore à livrer** (lot C) ; jusque-là la gate
-  les **liste sans les exécuter** et n'en tire aucune garantie ;
+  le harnais `tools/library-setup/runtime-proofs.mjs`, exécuté par `add-library`
+  dans le candidat isolé ;
 - le **VOLATILE** — la commande exacte de la version N,
   `{ executable: "nx", argv }` avec un jeton `{{app}}` désignant le projet cible
   (jamais une chaîne shell), déléguée au schematic officiel / à un script
@@ -196,14 +198,14 @@ un fichier qui existe sans être vérifié n'est qu'une intention.
   styles de composant Material. La frontière doit être documentée dans les
   styles globaux de chaque app — c'est le bloc `coexistence` de la recette
   `angular-material` avec `tailwind` (un `static_invariant` de forme + un
-  `runtime_acceptance` navigateur, ce dernier en attente de harnais).
-- `@angular/material` + `@angular/cdk` s'ajoutent aux dépendances de toute
-  nouvelle app (versions alignées sur `@angular/core`).
-- Les `runtime_acceptance` sont **déclarés mais pas exécutés** tant que le
-  harnais du lot C n'existe pas : à ce stade la gate garantit l'absence de
-  dérive structurelle, pas que Material/Tailwind fonctionnent réellement à
-  l'exécution. C'est la limite explicite de cette étape. Voir le plan des lots
-  B–E :
+  `runtime_acceptance` navigateur, exécuté dans Chrome épinglé et hors réseau).
+- `@angular/material` + `@angular/cdk` s'ajoutent seulement lorsqu’une app
+  adopte Material (versions alignées sur `@angular/core`).
+- Les `runtime_acceptance` sont exécutées par `add-library` : compilation
+  stricte, CSS réellement produit, build de production et coexistence dans un
+  moteur de rendu. `check:library-setup` refuse dans les deux sens une
+  acceptance `enforced` sans oracle ou un oracle livré encore marqué
+  `harness-pending`. Voir le plan d’implémentation :
   [`docs/architecture/library-setup-runtime-plan.md`](../architecture/library-setup-runtime-plan.md).
 
 ### Points à réévaluer
@@ -237,9 +239,9 @@ un fichier qui existe sans être vérifié n'est qu'une intention.
   recettes `angular/{angular-material,tailwind,transloco}.setup.json` ; gate
   `tools/check-library-setup.mjs` (+ `.test.mjs` / `-apps.test.mjs` /
   `-fixture.mjs`).
-- Suivi B–E (non livré) : harnais `runtime_acceptance` (compilation Material,
-  règle CSS Tailwind, coexistence navigateur), outil `add-library`
-  transactionnel, intégration `create-app`, gouvernance d'upgrade.
+- Livré : harnais `runtime_acceptance`, outil `add-library` transactionnel et
+  confinement macOS/Docker. Restent suivis : intégration bout-en-bout
+  `create-app → add-library` et gouvernance de promotion des upgrades.
 - [Angular Material — theming M3](https://material.angular.dev/guide/theming)
 - [Angular CDK](https://material.angular.dev/cdk/categories)
 - [Tailwind CSS — Angular](https://tailwindcss.com/docs/installation/framework-guides/angular)

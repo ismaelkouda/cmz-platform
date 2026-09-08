@@ -100,7 +100,7 @@ trois niveaux
 | Champ | Rôle | Statut |
 | --- | --- | --- |
 | `static_invariants[]` | présence **structurelle** (`file-exists` / `file-contains` / `file-matches` sur un fichier de l'app), dont exactement une `footprint` positive. **Garde-fou de dérive, pas une preuve de fonctionnement — rien de version-spécifique ici.** | vérifié à chaque run |
-| `runtime_acceptance[]` | preuve **réelle** (`compile-component`, `compiled-css-rule`, `browser-coexistence`) — exige un harnais de build/navigateur (lot C) | `harness-pending` : listé, **pas exécuté** |
+| `runtime_acceptance[]` | preuve **réelle** (`compile-component`, `compiled-css-rule`, `production-build`, `browser-coexistence`) exécutée dans un candidat isolé | `enforced` exige un oracle enregistré ; la gate refuse aussi un oracle livré encore marqué `harness-pending` |
 | `packages[]` | paquets npm ; vérifiés structurellement — présents dans `package.json` racine, résolus au catalog, verrouillés dans `bun.lock` avec un spec et une version **cohérents** entre les trois | vérifié quand une app adopte la lib |
 | `coexistence[]` | invariants actifs seulement si une autre lib **de la même plateforme** est aussi déclarée | idem |
 | `install` (`oneOf` par `method`) | `official-schematic` → `command: { executable: "nx", argv }` avec un jeton `{{app}}` obligatoire ; `reference-derived` → `reference_tool` (confiné à `tools/`, fichier régulier) ; `llm-then-verified` → `prompt_contract` | VOLATILE — délégué, jamais figé comme vérité |
@@ -120,8 +120,8 @@ manifeste manque, ou si une lib gouvernée est utilisée (empreinte détectée) 
 | [`angular/tailwind.setup.json`](./libraries/angular/tailwind.setup.json) | `reference-derived` |
 | [`angular/transloco.setup.json`](./libraries/angular/transloco.setup.json) | `official-schematic` |
 
-Lots suivants (`add-library` transactionnel, harnais `runtime_acceptance`,
-intégration `create-app`) :
+`add-library` transactionnel et le harnais `runtime_acceptance` sont livrés.
+Intégration `create-app` et gouvernance d’upgrade :
 [`docs/architecture/library-setup-runtime-plan.md`](../docs/architecture/library-setup-runtime-plan.md).
 
 ## Emplacement
