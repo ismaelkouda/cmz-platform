@@ -6,12 +6,16 @@
   "additionalProperties": false,
   "required": ["schema_version", "library", "platform", "tracks"],
   "properties": {
-    "schema_version": { "const": "1.0.0" },
+    "schema_version": {
+      "const": "1.0.0"
+    },
     "library": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
     },
-    "platform": { "enum": ["angular", "react"] },
+    "platform": {
+      "enum": ["angular", "react"]
+    },
     "tracks": {
       "type": "array",
       "minItems": 1,
@@ -25,7 +29,7 @@
           "packages",
           "dependency_section",
           "catalog",
-          "verified_commit",
+          "verification",
           "reason"
         ],
         "properties": {
@@ -33,16 +37,30 @@
             "type": "string",
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
           },
-          "status": { "enum": ["candidate", "verified"] },
+          "status": {
+            "enum": ["candidate", "verified"]
+          },
           "requirements": {
             "type": "object",
             "additionalProperties": false,
             "required": ["node", "bun", "nx", "framework"],
             "properties": {
-              "node": { "type": "string", "minLength": 1 },
-              "bun": { "type": "string", "minLength": 1 },
-              "nx": { "type": "string", "minLength": 1 },
-              "framework": { "type": "string", "minLength": 1 }
+              "node": {
+                "type": "string",
+                "minLength": 1
+              },
+              "bun": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nx": {
+                "type": "string",
+                "minLength": 1
+              },
+              "framework": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           },
           "packages": {
@@ -56,14 +74,103 @@
           "dependency_section": {
             "enum": ["dependencies", "devDependencies"]
           },
-          "catalog": { "enum": ["default", "tooling"] },
-          "verified_commit": {
-            "oneOf": [
-              { "type": "null" },
-              { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }
-            ]
+          "catalog": {
+            "enum": ["default", "tooling"]
           },
-          "reason": { "type": "string", "minLength": 1 }
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verification": {
+            "description": "Preuve qu'une piste a été MÉRITÉE, pas déclarée. Écrit par compatibility-promotion.mjs à l'issue d'une exécution réussie, jamais à la main. `null` tant que la piste est `candidate`. Les empreintes figent ce contre quoi la vérification vaut : si l'une change, la piste est périmée et doit repasser en `candidate` — une vérification n'est pas éternelle.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "commit",
+                  "app",
+                  "plan_id",
+                  "proofs",
+                  "inputs_sha256"
+                ],
+                "properties": {
+                  "commit": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{40}$"
+                  },
+                  "app": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*$"
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^library-plan:[a-f0-9]{64}$"
+                  },
+                  "proofs": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    }
+                  },
+                  "inputs_sha256": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "recipe",
+                      "recipe_schema",
+                      "compat_schema",
+                      "policy",
+                      "policy_schema",
+                      "nx_json",
+                      "tsconfig",
+                      "runner"
+                    ],
+                    "properties": {
+                      "recipe": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "recipe_schema": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "compat_schema": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "policy": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "policy_schema": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "nx_json": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "tsconfig": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "runner": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
         }
       }
     }

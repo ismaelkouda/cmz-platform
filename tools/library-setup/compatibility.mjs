@@ -7,6 +7,7 @@ import {
     catalogRangeIsBounded,
     parseWithoutDuplicateKeys,
 } from '../check-library-setup-deps.mjs';
+import { verificationFailures } from './compatibility-promotion.mjs';
 import { validateJsonSchema } from '../generator-platform/validate-ir.mjs';
 
 const SCHEMA_PATH = 'conventions/libraries/library-compat.schema.json';
@@ -21,7 +22,11 @@ function safeRead(root, path) {
     return readFileSync(absolute, 'utf8');
 }
 
-export function validateCompatibilityMatrices(rootAbs, recipes) {
+export function validateCompatibilityMatrices(
+    rootAbs,
+    recipes,
+    { gitRoot } = {}
+) {
     const root = resolve(rootAbs);
     const errors = [];
     let schema;
@@ -91,18 +96,33 @@ export function validateCompatibilityMatrices(rootAbs, recipes) {
                     );
                 }
             }
-            if (track.status === 'verified' && !track.verified_commit) {
+            // Une promotion doit être MÉRITÉE, pas déclarée. Le contrôle
+            // précédent tenait en deux lignes et acceptait une piste
+            // `verified` portant un SHA inexistant, sans qu'aucune preuve
+            // n'ait jamais été exécutée — vérifié le 2026-09-08. Il exige
+            // désormais un bloc produit par compatibility-promotion.mjs, et
+            // il le confronte à l'état COURANT du dépôt : une vérification
+            // n'est pas éternelle.
+            if (track.status === 'candidate' && track.verification !== null) {
                 errors.push(
-                    `${path}#${track.id}: verified sans verified_commit`
+                    `${path}#${track.id}: candidate avec une vérification`
                 );
             }
-            if (
-                track.status === 'candidate' &&
-                track.verified_commit !== null
-            ) {
-                errors.push(
-                    `${path}#${track.id}: candidate avec verified_commit`
-                );
+            if (track.status === 'verified') {
+                if (!track.verification) {
+                    errors.push(
+                        `${path}#${track.id}: verified sans bloc de vérification`
+                    );
+                } else {
+                    for (const failure of verificationFailures(
+                        root,
+                        recipe,
+                        track.verification,
+                        { gitRoot: gitRoot ?? root }
+                    )) {
+                        errors.push(`${path}#${track.id}: ${failure}`);
+                    }
+                }
             }
         }
         const tracks = matrix.tracks ?? [];

@@ -18,8 +18,8 @@
       },
       "dependency_section": "dependencies",
       "catalog": "default",
-      "verified_commit": null,
-      "reason": "Piste initiale alignée sur Angular 22 ; passe en verified seulement après la preuve compile-component."
+      "reason": "Piste initiale alignée sur Angular 22 ; passe en verified seulement après la preuve compile-component.",
+      "verification": null
     }
   ]
 }

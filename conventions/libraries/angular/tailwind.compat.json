@@ -18,8 +18,8 @@
       },
       "dependency_section": "devDependencies",
       "catalog": "default",
-      "verified_commit": null,
-      "reason": "Piste initiale Tailwind 4 ; passe en verified après règle CSS compilée."
+      "reason": "Piste initiale Tailwind 4 ; passe en verified après règle CSS compilée.",
+      "verification": null
     }
   ]
 }

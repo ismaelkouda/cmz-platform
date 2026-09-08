@@ -17,8 +17,8 @@
       },
       "dependency_section": "dependencies",
       "catalog": "default",
-      "verified_commit": null,
-      "reason": "Piste initiale Transloco 8 ; passe en verified après compilation et rendu d’une traduction."
+      "reason": "Piste initiale Transloco 8 ; passe en verified après compilation et rendu d’une traduction.",
+      "verification": null
     }
   ]
 }
