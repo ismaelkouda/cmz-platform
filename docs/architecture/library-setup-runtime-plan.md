@@ -849,7 +849,7 @@ pas validé.
 | 8   | Tranche verticale Material                      | **livré**                  | compilation stricte + build production                             |
 | 9   | Tranche verticale Tailwind                      | **livré**                  | règle CSS compilée + build production                              |
 | 10  | Coexistence navigateur                          | **livré**                  | résultat identique macOS/Docker, ordre inverse couvert             |
-| 11  | `create-app → add-library`                      | **en cours**               | E2E réel sans édition manuelle                                     |
+| 11  | `create-app → add-library`                      | **livré**                  | E2E réel : shell puis Material/Tailwind, zéro édition manuelle      |
 | 12  | Gouvernance d'upgrade                           | **partiel**                | validation livrée ; promotion `candidate → verified` à formaliser  |
 | 13  | Recours LLM borné                               | **livré sans fournisseur** | boucle adverse couverte ; CLI fail-closed sans adaptateur approuvé |
 

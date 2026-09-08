@@ -160,6 +160,8 @@ function main() {
         if (baseCommit !== git(SOURCE, ['rev-parse', 'HEAD'])) {
             fail('le clone local ne pointe pas sur le HEAD source');
         }
+        git(repository, ['config', 'user.name', 'CMZ Integration Proof']);
+        git(repository, ['config', 'user.email', 'cmz-proof@example.invalid']);
         symlinkSync(sourceNodeModules, join(repository, 'node_modules'));
         assertClean(repository, 'clone initial');
 
@@ -194,22 +196,12 @@ function main() {
             shellPlan.plan_id,
         ]);
         git(repository, ['add', '--', `apps/${APP}`]);
-        const identity = {
-            GIT_AUTHOR_NAME: 'CMZ Integration Proof',
-            GIT_AUTHOR_EMAIL: 'cmz-proof@example.invalid',
-            GIT_COMMITTER_NAME: 'CMZ Integration Proof',
-            GIT_COMMITTER_EMAIL: 'cmz-proof@example.invalid',
-        };
-        git(
-            repository,
-            [
-                'commit',
-                '--quiet',
-                '-m',
-                `chore(${APP}): create generated shell`,
-            ],
-            { env: { ...process.env, ...identity } }
-        );
+        git(repository, [
+            'commit',
+            '--quiet',
+            '-m',
+            `chore(${APP}): create generated shell`,
+        ]);
         const shellCommit = git(repository, ['rev-parse', 'HEAD']);
         assertInitialCommitOwnsOnlyApp(repository, shellCommit);
         assertClean(repository, 'dépôt après create-app');
@@ -234,14 +226,25 @@ function main() {
 
         console.error('[6/6] état publié, gate et historique');
         assertFinalState(repository, baseCommit);
+        const gitDirectory = git(repository, [
+            'rev-parse',
+            '--absolute-git-dir',
+        ]);
+        const transactionRefs = git(repository, [
+            'for-each-ref',
+            '--format=%(refname)',
+            'refs/cmz/library-transactions/',
+        ]);
         if (
-            existsSync(join(repository, `.cmz/library-transactions`)) ||
-            existsSync(join(repository, `apps/.${APP}.create-app.lock`))
+            existsSync(join(repository, `apps/.${APP}.generation-lock`)) ||
+            existsSync(join(gitDirectory, 'cmz-library.lock')) ||
+            existsSync(join(gitDirectory, 'cmz-library-transaction.json')) ||
+            transactionRefs
         ) {
             fail('résidu transactionnel dans le dépôt final');
         }
         console.log(
-            '✅ create-app → Angular Material → Tailwind : trois commandes de génération, zéro édition manuelle, publications et oracles réels.'
+            '✅ create-app plan/apply → Angular Material → Tailwind : zéro édition manuelle, publications et oracles réels.'
         );
     } finally {
         rmSync(temporaryRoot, { recursive: true, force: true });

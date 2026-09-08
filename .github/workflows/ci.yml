@@ -161,10 +161,9 @@ jobs:
       # static_invariants structurels (présence de fichiers/fragments), le
       # schéma fermé du manifeste apps/<app>/.cmz/libraries.json, la cohérence
       # package.json/catalog/bun.lock, et le confinement de toute lecture (zéro
-      # lien symbolique). Ce N'EST PAS un test d'acceptation : les
-      # runtime_acceptance (compilation, règle CSS, coexistence navigateur) et
-      # le harnais du recours LLM restent à livrer — cf.
-      # docs/architecture/library-setup-runtime-plan.md.
+      # lien symbolique). Cette step vérifie les contrats ; leurs acceptances
+      # réelles sont exécutées par le job `library-end-to-end`. Le recours LLM
+      # est borné et fail-closed sans adaptateur approuvé — cf. ADR-0042.
       - name: check:library-setup (ADR-0041)
         run: bun run check:library-setup
 
@@ -189,7 +188,7 @@ jobs:
       # step CI ou un hook husky dédié — se garde donc elle-même de devenir,
       # un jour, le prochain script orphelin non détecté.
       - name: check:ci-wiring (angle mort — gate déclaré vs gate exécuté)
-        run: node tools/check-ci-wiring.mjs
+        run: bun run check:ci-wiring
 
       - name: Format check (Prettier)
         run: bun run format:check
@@ -265,14 +264,13 @@ jobs:
       - name: check:library-candidate-isolation (${{ matrix.profile }})
         run: bun run check:library-candidate-isolation
 
-  # Gate END-TO-END : la seule qui exerce la commande nominale. Les autres
-  # valident des contrats ou attaquent le bac à sable ; aucune n'installait
-  # réellement une bibliothèque. Tous les défauts sérieux du lot ont été trouvés
-  # en exécutant, pas par les tests unitaires — d'où ce job, malgré son coût.
-  # Sur ubuntu (amd64) le moteur de rendu tourne nativement, sans émulation.
-  # NON exercé ici : la transaction de publication (--dry-run s'arrête avant).
+  # Gate END-TO-END : part d'un dépôt temporaire, crée une app depuis le design
+  # versionné, committe automatiquement le shell puis publie réellement Material
+  # et Tailwind. Résolution Bun, schematics, compilation/build, navigateur,
+  # transactions Git et état final sont donc exercés ensemble, sans édition
+  # applicative par le harnais. Sur ubuntu (amd64), Chromium tourne nativement.
   library-end-to-end:
-    name: Library end-to-end (add-library --dry-run)
+    name: Library integration (create-app → Material → Tailwind)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -289,8 +287,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: check:add-library-e2e
-        run: bun run check:add-library-e2e
+      - name: check:library-setup-integration
+        run: bun run check:library-setup-integration
 
   # ─── Job T4-5 : secret scanning (gitleaks) ───────────────────────────────
   # ADR-0006 : même contrôle que husky pre-push (`check:secrets -- --pre-push`).
