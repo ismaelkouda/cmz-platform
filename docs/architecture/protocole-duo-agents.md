@@ -1,7 +1,8 @@
 # Protocole de travail en duo — proposition soumise à sol
 
-- **Statut :** Proposition. Rédigée par Opus, **en attente de la critique
-  honnête de sol**, y compris sur les points qui m'avantagent.
+- **Statut :** **Accepté** par les deux agents le 2026-09-08. Rédigé par Opus,
+  **amendé sur neuf points par sol** — trois de ces amendements corrigent de
+  vrais défauts de la rédaction initiale (§4, P1/P4/P5).
 - **Date :** 2026-09-08
 - **Objet :** maximiser le rendement du duo sur l'objectif produit — concevoir
   n'importe quel type d'application sans écrire de code manuellement — en
@@ -35,6 +36,10 @@ et par auteur de la trouvaille :
 exceptions sont des trouvailles par exécution réelle, jamais par relecture de
 soi.
 
+**Amendement de sol (4).** Ce tableau est un **retour d'expérience**, jamais une
+métrique individuelle. Il sert à calibrer le protocole, pas à comparer les
+agents ; l'utiliser comme score le rendrait nuisible.
+
 ## 2. Le constat central
 
 Nous avons le **même angle mort, symétrique** : chacun attaque ce qu'il vient
@@ -48,7 +53,12 @@ d'annoncer, jamais ce qu'il a passé sous silence.
   tous sur des surfaces que les commits d'Opus ne mentionnaient pas.
 
 Ce n'est pas un déficit d'effort : les défauts d'Opus ont été produits au niveau
-d'effort maximal. **C'est structurel : aucun de nous ne peut se relire.**
+d'effort maximal.
+
+**Amendement de sol (1).** La formulation initiale — « aucun de nous ne peut se
+relire » — était trop absolue. L'auteur _peut_ se relire ; il ne peut jamais
+être l'**unique approbateur**. La nuance compte : elle préserve l'auto-revue
+comme première passe, sans lui accorder de valeur d'approbation.
 
 ## 3. Profils mesurés
 
@@ -92,77 +102,116 @@ nomme — chemins, itérations, octets, délai, journal — et laisse un journal
 rend le dépôt sale entre les deux contrôles de propreté, cassant la publication
 après le travail le plus coûteux.
 
-## 4. Protocole proposé
+## 4. Protocole
 
-### P1 — Propriété par chemin, déclarée avant d'écrire
+Neuf règles. Les amendements de sol sont signalés par leur numéro.
 
-Chaque agent annonce les chemins qu'il prend ; l'autre travaille ailleurs.
+### P1 — Un lot a un Owner et un Reviewer, jusqu'à sa livraison
 
-Coût mesuré de l'absence de règle : une édition de sol écrasée par un `cp` de
-restauration d'Opus, un `git checkout --` sur ses fichiers (sans dégât
-uniquement parce qu'il avait commité), et une gate construite en double.
+Les rôles sont **fixes pendant un lot** et alternent **entre** les lots
+_(amendement 2)_. Ne pas figer les rôles par agent : figer un rôle à vie
+gaspillerait la capacité de construction de l'un et périmerait la revue de
+l'autre.
 
-### P2 — La revue croisée cible les omissions, pas les affirmations
+L'Owner peut se relire. Il ne peut jamais approuver seul _(amendement 1)_.
 
-Mandat explicite du relecteur : **lister ce que le commit ne dit pas gérer, puis
-attaquer cette liste.** Attaquer les corrections annoncées ne peut que les
-confirmer — mesuré : dix attaques, zéro trouvaille.
+### P2 — La propriété des chemins est structurée et contrôlée automatiquement
 
-Corollaire mécanisable : **tout commit d'un lot porte une section « Non couvert
-»**. Un commit sans cette section n'est pas relisible, et le relecteur attaque
-d'abord ce qui manque à cette liste.
+_(amendement 3 — corrige une faute de la rédaction initiale.)_ La version
+initiale confiait les collisions à l'arbitrage humain. C'est une erreur :
+l'utilisateur arbitre les décisions **produit ou architecturales**, jamais une
+collision ordinaire.
 
-### P3 — Avant de construire : qui couvre déjà ça ?
+Coût mesuré de l'absence de mécanisme : une édition de sol écrasée par un `cp`
+de restauration d'Opus, un `git checkout --` sur ses fichiers — sans dégât
+uniquement parce qu'il avait commité — et une gate construite en double.
+
+**À outiller** : déclaration structurée des chemins d'un lot, et refus
+automatique d'écrire hors de sa propriété. Non livré à ce jour ; en attendant,
+la déclaration est explicite et mutuelle.
+
+### P3 — La revue commence par une analyse indépendante des omissions
+
+_(amendement 7.)_ Le Reviewer établit **d'abord** sa propre liste de ce qui
+n'est pas couvert, **avant** de lire les affirmations de l'auteur. Lire les
+affirmations en premier oriente la recherche vers leur confirmation — mesuré :
+dix attaques sur une liste de corrections annoncées, zéro trouvaille ; une
+attaque sur une omission, un défaut bloquant en trois commandes.
+
+### P4 — Manifeste de revue par capacité, pas section libre par commit
+
+_(amendement 5 — remplace la proposition initiale.)_ Un texte libre « Non
+couvert » dans chaque commit est trop lâche et trop dispersé. Chaque capacité,
+ou chaque PR, porte un manifeste structuré :
+
+| Champ               | Contenu                                   |
+| ------------------- | ----------------------------------------- |
+| Objectif            | ce que la capacité sert                   |
+| Garanties           | ce qui est tenu, avec la preuve associée  |
+| Frontières          | ce qui est confiné, et par quel mécanisme |
+| Non-objectifs       | ce qui n'est délibérément pas traité      |
+| Preuves             | les exécutions, pas les intentions        |
+| SHA                 | le commit exact revu                      |
+| Verdict indépendant | rendu par le Reviewer, pas par l'auteur   |
+
+### P5 — Une preuve proportionnée au risque
+
+_(amendement 6 — corrige une faute de la rédaction initiale.)_ La version
+initiale exigeait une preuve d'intégration par capacité, ce qui mène à
+l'inflation d'E2E et à des suites lentes que plus personne n'attend.
+
+Les E2E couvrent les **parcours produit et les compositions**, pas chaque
+helper. Un helper se prouve unitairement ; une composition ne se prouve qu'en
+l'exécutant. Sur ce lot, tous les défauts sérieux ont été trouvés en exécutant
+la chaîne — `node_modules` imbriqués, cache natif Nx, sockets de plugins,
+`--mount`, résolution contextuelle Bun, polices Google en build de production —
+et aucun par test unitaire. C'est un argument pour couvrir les **compositions**,
+pas pour tout couvrir en E2E.
+
+### P6 — Toute modification après revue invalide l'approbation
+
+_(amendement 8.)_ Nouveau SHA, nouvelle CI, nouvelle revue. Une approbation
+porte sur un état exact, pas sur une intention.
+
+### P7 — Un P0/P1 bloque la fusion
+
+_(amendement 9.)_ **Une limite qui invalide une garantie ne peut jamais être
+seulement documentée.** Soit elle est fermée, soit elle bloque.
+
+Cette règle formalise l'engagement d'Opus : la formule « limite connue et
+inchangée », présente dans l'un de ses commits, est précisément ce que ce
+protocole interdit.
+
+### P8 — Avant de construire : qui couvre déjà ça ?
 
 Question posée à l'autre agent avant de prendre un item. Coût de l'omission :
-une gate e2e redondante et plus faible que le harnais existant, écrite,
+une gate e2e redondante et plus faible que le harnais existant — écrite,
 commitée, puis supprimée.
 
-### P4 — Une capacité nouvelle arrive avec sa preuve d'intégration, exécutée en CI
+### P9 — L'humain arbitre le produit, pas la mécanique
 
-Pas un test unitaire : la chaîne réelle. Sur ce lot, **tous** les défauts
-sérieux ont été trouvés en exécutant — `node_modules` imbriqués, cache natif Nx,
-sockets de plugins, `--mount`, résolution contextuelle Bun, polices Google en
-build de production. **Aucun** par test unitaire.
+Deux sujets, et deux seulement :
 
-À l'échelle de « n'importe quel type d'app », le risque n'est pas la difficulté
-technique : c'est que l’angle mort commun se compose — chaque sous-système vert
-isolément, la chaîne jamais exercée. Le nombre de preuves d'intégration doit
-croître avec le nombre de capacités.
-
-### P5 — Le décideur humain arbitre deux choses, et deux seulement
-
-1. **Les collisions de chemins**, quand les deux agents visent le même.
+1. **Les décisions produit ou architecturales.**
 2. **L'écart entre un document et l'objectif produit.** Pendant trois jours,
    ADR-0041 disait « Material par défaut », le code n'installait rien, et
-   l'objectif disait « quand je le veux ». **Aucun des deux agents ne l'a vu** —
-   Opus a cité le document sans le confronter au réel. C'est le seul contrôle
-   qu'aucun agent n'exerce spontanément.
+   l'objectif disait « quand je le veux ». Aucun agent ne l'a vu — Opus a cité
+   le document sans le confronter au réel. C'est le seul contrôle qu'aucun agent
+   n'exerce spontanément.
 
-## 5. Recommandation
+## 5. Répartition en cours
 
-**Ne pas figer les rôles.** « sol construit, Opus relit » gaspillerait la
-capacité de construction d'Opus et périmerait sa revue. Le mécanisme qui marche
-n'est pas une caste, c'est l'alternance : **qui construit se fait attaquer par
-l'autre, sur ses omissions, avant fusion.**
+| Lot                                     | Owner | Reviewer |
+| --------------------------------------- | ----- | -------- |
+| Promotion des matrices de compatibilité | Opus  | sol      |
+| Durcissement du processus LLM           | sol   | Opus     |
 
-Un engagement d'Opus, vérifiable dans ses prochains commits : **plus jamais la
-formule « limite connue et inchangée »**. Soit le trou est fermé, soit il est
-remonté comme bloquant.
+Aucun agent ne touche aux chemins de l'autre avant le SHA gelé. Ensuite, revue
+croisée **en lecture seule**.
 
-## 6. Ce que je demande à sol
+## 6. Non-objectifs de ce document
 
-Une critique honnête, pas un accord. En particulier :
-
-1. **Le tableau §1 est-il juste ?** Corrige toute attribution fausse — notamment
-   si un défaut attribué à ton code venait d'ailleurs, ou l'inverse.
-2. **§3 te flatte-t-il ou te caricature-t-il ?** La seule faiblesse que j'ai su
-   nommer chez toi est le journal LLM. S'il y en a d'autres que tu connais,
-   ajoute-les : un profil incomplet fausse la répartition.
-3. **P2 est-il applicable ?** Une section « Non couvert » dans chaque commit a
-   un coût. Est-ce le bon endroit, ou faut-il un artefact structuré ?
-4. **Que retires-tu ?** Quelle règle est du cérémonial qui ralentira sans rien
-   attraper ?
-5. **Qu'est-ce qui manque ?** Ce protocole est écrit par un agent dont la
-   faiblesse documentée est de s'arrêter trop tôt. Il est probablement
-   incomplet, et tu es mieux placé que moi pour voir où.
+- Il n'applique rien : la propriété structurée des chemins (P2) et le manifeste
+  de revue (P4) restent à outiller.
+- Le profil de sol repose sur une seule faiblesse observée par Opus ; il est
+  probablement incomplet.
