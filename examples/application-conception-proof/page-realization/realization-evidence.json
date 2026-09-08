@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "kind": "page-realization-evidence",
   "page_id": "page_a11ca71000000001",
-  "page_contract_sha256": "3c5e96d07673b410674981900267904e17a080c66a0d6c8be9d0b521c27b4cb6",
+  "page_contract_sha256": "cfacda4815878bcfdfa5602061390b5d108247c869decdef7afaea21a3445d4b",
   "states": [
     { "id": "ready", "selector": "[data-cmz-id=\"ready\"]" },
     { "id": "submitted", "selector": "[data-cmz-id=\"submitted\"]" },

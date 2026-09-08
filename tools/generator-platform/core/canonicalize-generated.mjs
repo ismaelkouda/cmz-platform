@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { format, resolveConfig } from 'prettier';
+import { format, getFileInfo, resolveConfig } from 'prettier';
 
 import { repositoryRoot } from '../validate-ir.mjs';
 
@@ -18,6 +18,10 @@ export async function canonicalizeGeneratedFiles(files) {
         await Promise.all(
             Object.entries(files).map(async ([path, content]) => {
                 const filepath = resolve(repositoryRoot, path);
+                const { inferredParser } = await getFileInfo(filepath, {
+                    ignorePath: null,
+                });
+                if (inferredParser === null) return [path, content];
                 const config = (await resolveConfig(filepath)) || {};
                 return [
                     path,

@@ -262,7 +262,7 @@ export async function planApplicationShell({
     });
     if (errors.length > 0) fail(`design rejected:\n${errors.join('\n')}`);
     const designSha256 = sha256(source.content);
-    const rendered = renderAngularPwaShell({
+    const rendered = await renderAngularPwaShell({
         design: source.design,
         experienceId,
         appName,

@@ -12,6 +12,7 @@ import {
     planApplicationShell,
     publishApplicationShell,
 } from './core/application-shell-publication.mjs';
+import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
 import { renderAngularPwaShell } from './renderers/angular-pwa-shell-renderer.mjs';
 
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
@@ -84,7 +85,7 @@ test('la CLI create-app est explicitement planifiée puis appliquée', () => {
 
 test('le renderer produit routing, i18n, PWA et un contrat borné par page', async () => {
     const options = await fixture();
-    const rendered = renderAngularPwaShell({
+    const rendered = await renderAngularPwaShell({
         design: options.data.design,
         experienceId: options.experienceId,
         appName: options.appName,
@@ -117,10 +118,49 @@ test('le renderer produit routing, i18n, PWA et un contrat borné par page', asy
     );
 });
 
+test('le renderer produit directement des octets canoniques et les atteste', async () => {
+    const options = await fixture();
+    const rendered = await renderAngularPwaShell({
+        design: options.data.design,
+        experienceId: options.experienceId,
+        appName: options.appName,
+        designPath: options.designPath,
+        designSha256: sha256(options.designContent),
+    });
+    const prefixed = Object.fromEntries(
+        Object.entries(rendered.files).map(([path, content]) => [
+            `apps/${options.appName}/${path}`,
+            content,
+        ])
+    );
+    assert.deepEqual(await canonicalizeGeneratedFiles(prefixed), prefixed);
+
+    const manifest = JSON.parse(rendered.files['.cmz/app-manifest.json']);
+    assert.deepEqual(
+        manifest.generated_files,
+        Object.entries(rendered.files)
+            .filter(([path]) => path !== '.cmz/app-manifest.json')
+            .map(([path, content]) => ({
+                path,
+                bytes: Buffer.byteLength(content),
+                sha256: sha256(content),
+            }))
+            .sort((left, right) => left.path.localeCompare(right.path))
+    );
+    assert.equal(
+        manifest.tree_sha256,
+        sha256(
+            manifest.generated_files
+                .map((entry) => `${entry.path}\0${entry.sha256}`)
+                .join('\0')
+        )
+    );
+});
+
 test('échappe le titre métier dans chaque contexte HTML et SVG', async () => {
     const options = await fixture();
     options.data.design.design.title = '<script>"unsafe" & test</script>';
-    const rendered = renderAngularPwaShell({
+    const rendered = await renderAngularPwaShell({
         design: options.data.design,
         experienceId: options.experienceId,
         appName: options.appName,
@@ -138,7 +178,7 @@ test('échappe le titre métier dans chaque contexte HTML et SVG', async () => {
 
 test('le service worker ne capture jamais API ni origine externe', async () => {
     const options = await fixture();
-    const rendered = renderAngularPwaShell({
+    const rendered = await renderAngularPwaShell({
         design: options.data.design,
         experienceId: options.experienceId,
         appName: options.appName,
@@ -304,7 +344,7 @@ test('une modification de conception invalide le plan revu', async () => {
 // gate, recettes réelles du dépôt comprises.
 test('une app fraîchement rendue passe la gate library-setup', async (t) => {
     const options = await fixture();
-    const rendered = renderAngularPwaShell({
+    const rendered = await renderAngularPwaShell({
         design: options.data.design,
         experienceId: options.experienceId,
         appName: options.appName,

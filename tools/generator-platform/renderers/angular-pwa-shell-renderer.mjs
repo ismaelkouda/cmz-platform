@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
+
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
 }
@@ -98,7 +100,7 @@ function translations(pages) {
     );
 }
 
-export function renderAngularPwaShell({
+export async function renderAngularPwaShell({
     design,
     experienceId,
     appName,
@@ -435,6 +437,17 @@ self.addEventListener('fetch', (event) => {
         platform: 'angular',
         libraries: ['transloco'],
     });
+    const canonicalFiles = await canonicalizeGeneratedFiles(
+        Object.fromEntries(
+            Object.entries(files).map(([path, content]) => [
+                `${root}/${path}`,
+                content,
+            ])
+        )
+    );
+    for (const path of Object.keys(files)) {
+        files[path] = canonicalFiles[`${root}/${path}`];
+    }
     const artifacts = Object.entries(files)
         .map(([path, content]) => ({
             path,
@@ -456,6 +469,10 @@ self.addEventListener('fetch', (event) => {
                 .join('\0')
         ),
     };
-    files['.cmz/app-manifest.json'] = json(manifest);
+    const canonicalManifest = await canonicalizeGeneratedFiles({
+        [`${root}/.cmz/app-manifest.json`]: json(manifest),
+    });
+    files['.cmz/app-manifest.json'] =
+        canonicalManifest[`${root}/.cmz/app-manifest.json`];
     return { files, manifest, experience, pages };
 }
