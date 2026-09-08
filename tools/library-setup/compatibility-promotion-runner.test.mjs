@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+    cpSync,
+    mkdtempSync,
+    readFileSync,
+    rmSync,
+    writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -48,6 +54,18 @@ function repository(t) {
         '.gitattributes',
     ]) {
         cpSync(join(SOURCE, path), join(root, path));
+    }
+    for (const library of ['angular-material', 'tailwind', 'transloco']) {
+        const path = join(
+            root,
+            `conventions/libraries/angular/${library}.compat.json`
+        );
+        const matrix = JSON.parse(readFileSync(path, 'utf8'));
+        for (const track of matrix.tracks) {
+            track.status = 'candidate';
+            track.verification = null;
+        }
+        writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
     }
     git(root, ['init', '--quiet']);
     git(root, ['add', '.']);

@@ -25,8 +25,15 @@ test('chaque recette réelle possède une matrice fermée cohérente', () => {
 test('sélectionne exactement une piste avec les quatre versions réelles', () => {
     const recipes = validateRecipes(root);
     const result = validateCompatibilityMatrices(root, recipes.recipes);
+    const matrix = structuredClone(
+        result.matrices.get('angular/angular-material')
+    );
+    for (const entry of matrix.tracks) {
+        entry.status = 'candidate';
+        entry.verification = null;
+    }
     const track = selectCompatibilityTrack(
-        result.matrices.get('angular/angular-material'),
+        matrix,
         { node: '22.22.3', bun: '1.3.14', nx: '23.1.0', framework: '22.0.7' },
         { requiredStatus: 'candidate' }
     );
@@ -34,7 +41,7 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
     assert.throws(
         () =>
             selectCompatibilityTrack(
-                result.matrices.get('angular/angular-material'),
+                matrix,
                 {
                     node: '24.0.0',
                     bun: '1.3.14',
@@ -48,7 +55,7 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
     assert.throws(
         () =>
             selectCompatibilityTrack(
-                result.matrices.get('angular/angular-material'),
+                matrix,
                 {
                     node: '22.22.3-rc.1',
                     bun: '1.3.14',
@@ -101,17 +108,21 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
 test('une piste candidate ne peut jamais servir au chemin nominal', () => {
     const recipes = validateRecipes(root);
     const result = validateCompatibilityMatrices(root, recipes.recipes);
+    const matrix = structuredClone(
+        result.matrices.get('angular/angular-material')
+    );
+    for (const entry of matrix.tracks) {
+        entry.status = 'candidate';
+        entry.verification = null;
+    }
     assert.throws(
         () =>
-            selectCompatibilityTrack(
-                result.matrices.get('angular/angular-material'),
-                {
-                    node: '22.22.3',
-                    bun: '1.3.14',
-                    nx: '23.1.0',
-                    framework: '22.0.7',
-                }
-            ),
+            selectCompatibilityTrack(matrix, {
+                node: '22.22.3',
+                bun: '1.3.14',
+                nx: '23.1.0',
+                framework: '22.0.7',
+            }),
         /0 piste verified compatible/
     );
 });
