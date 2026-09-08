@@ -118,10 +118,12 @@
     "e2e:ui": "bunx playwright test -c apps/backoffice-angular/playwright.config.mjs --ui"
   },
   "dependencies": {
+    "@angular/cdk": "catalog:",
     "@angular/common": "catalog:",
     "@angular/compiler": "catalog:",
     "@angular/core": "catalog:",
     "@angular/forms": "catalog:",
+    "@angular/material": "catalog:",
     "@angular/platform-browser": "catalog:",
     "@angular/router": "catalog:",
     "@jsverse/transloco": "catalog:",
@@ -207,6 +209,7 @@
       "@angular/core": "22.0.7",
       "@angular/forms": "22.0.7",
       "@angular/localize": "22.0.7",
+      "@angular/material": "22.0.5",
       "@angular/platform-browser": "22.0.7",
       "@angular/router": "22.0.7",
       "@angular/service-worker": "22.0.7",

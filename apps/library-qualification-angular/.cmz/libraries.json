@@ -2,5 +2,7 @@
   "schema_version": "1.0.0",
   "kind": "app-library-manifest",
   "platform": "angular",
-  "libraries": []
+  "libraries": [
+    "angular-material"
+  ]
 }
