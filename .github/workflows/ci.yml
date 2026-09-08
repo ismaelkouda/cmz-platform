@@ -75,6 +75,12 @@ jobs:
       - name: check:weight (poids + plafond lignes, tools/ inclus)
         run: node tools/check-file-weight.mjs --all
 
+      # Un journal d'outil non ignoré rend le dépôt sale et fait échouer la
+      # publication d'add-library APRÈS le travail coûteux. Défaut réel :
+      # .cmz/library-llm-audit/ manquait à .gitignore.
+      - name: check:cmz-journals-ignored (journaux d'outil hors index)
+        run: bun run check:cmz-journals-ignored
+
       - name: check:project-names (ADR-0003 nommage @cmz/)
         run: node tools/check-project-names.mjs
 
