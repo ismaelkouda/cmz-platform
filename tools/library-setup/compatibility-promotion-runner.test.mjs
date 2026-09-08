@@ -5,6 +5,7 @@ import {
     cpSync,
     mkdtempSync,
     readFileSync,
+    realpathSync,
     rmSync,
     writeFileSync,
 } from 'node:fs';
@@ -18,13 +19,19 @@ import {
     verificationInputs,
     requiredProofIds,
 } from './compatibility-promotion.mjs';
-import { promoteCompatibilityTrack } from './compatibility-promotion-runner.mjs';
+import {
+    acquirePromotionLock,
+    promoteCompatibilityTrack,
+    releasePromotionLock,
+} from './compatibility-promotion-runner.mjs';
 import { buildLibraryPlan, stableJson } from './library-plan.mjs';
 import { dependencyProjectionSha256 } from './dependency-resolution.mjs';
 import { gitBlobOid } from './git-tree.mjs';
 import { libraryRunnerDigest } from './tooling-fingerprint.mjs';
 
 const SOURCE = new URL('../..', import.meta.url).pathname;
+const LIVE_START = 'Mon Sep  8 00:00:00 2026';
+const processProbe = (pid) => (pid === process.pid ? LIVE_START : '');
 
 function sha256(value) {
     return createHash('sha256').update(value).digest('hex');
@@ -44,7 +51,9 @@ function git(root, args) {
 }
 
 function repository(t) {
-    const root = mkdtempSync(join(tmpdir(), 'cmz-promotion-runner-'));
+    const root = realpathSync(
+        mkdtempSync(join(tmpdir(), 'cmz-promotion-runner-'))
+    );
     t.after(() => rmSync(root, { recursive: true, force: true }));
     for (const path of ['conventions', 'tools', 'apps/backoffice-angular']) {
         cpSync(join(SOURCE, path), join(root, path), { recursive: true });
@@ -173,6 +182,7 @@ test('la commande promeut uniquement la piste réellement qualifiée', async (t)
                 'angular-material',
                 requiredProofIds(source.recipe, validateRecipes(root).recipes)
             ),
+        processProbe,
     });
     assert.equal(result.verification.track_sha256.length, 64);
     const selected = loadLibraryConfiguration(
@@ -206,9 +216,85 @@ test('une preuve incomplète restaure la matrice octet pour octet', async (t) =>
                         'angular-material',
                         ['material-component-compiles']
                     ),
+                processProbe,
             }),
         /preuves exécutées/
     );
     assert.deepEqual(readFileSync(path), before);
     assert.equal(git(root, ['status', '--porcelain']), '');
+});
+
+test('le verrou sérialise les promotions et récupère un propriétaire mort', async (t) => {
+    const root = repository(t);
+    const first = acquirePromotionLock(root, { processProbe });
+    let executed = false;
+    try {
+        await assert.rejects(
+            () =>
+                promoteCompatibilityTrack({
+                    repository: root,
+                    app: 'backoffice-angular',
+                    library: 'angular-material',
+                    execute: async () => {
+                        executed = true;
+                    },
+                    processProbe,
+                }),
+            /promotion déjà active/
+        );
+        assert.equal(executed, false);
+    } finally {
+        releasePromotionLock(first);
+    }
+
+    const stale = acquirePromotionLock(root, { processProbe });
+    writeFileSync(
+        stale.path,
+        `${JSON.stringify({
+            ...stale.document,
+            pid: 2_147_483_647,
+            started_at: 'processus-mort',
+        })}\n`,
+        { mode: 0o600 }
+    );
+    const recovered = acquirePromotionLock(root, { processProbe });
+    releasePromotionLock(recovered);
+});
+
+test('une édition concurrente de matrice est conservée et bloque la promotion', async (t) => {
+    const root = repository(t);
+    const path = join(
+        root,
+        'conventions/libraries/angular/angular-material.compat.json'
+    );
+    const edited = `${readFileSync(path, 'utf8')}\n`;
+    await assert.rejects(
+        () =>
+            promoteCompatibilityTrack({
+                repository: root,
+                app: 'backoffice-angular',
+                library: 'angular-material',
+                execute: async () => {
+                    writeFileSync(path, edited);
+                    const source = loadLibraryConfiguration(
+                        root,
+                        'backoffice-angular',
+                        'angular-material',
+                        { requiredTrackStatus: 'candidate' }
+                    );
+                    return fakeExecution(
+                        root,
+                        'backoffice-angular',
+                        'angular-material',
+                        requiredProofIds(
+                            source.recipe,
+                            validateRecipes(root).recipes
+                        )
+                    );
+                },
+                processProbe,
+            }),
+        /a changé pendant la qualification/
+    );
+    assert.equal(readFileSync(path, 'utf8'), edited);
 });

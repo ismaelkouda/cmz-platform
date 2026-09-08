@@ -182,6 +182,12 @@ requis compris. Le contrôle accepte l'un ou l'autre état, jamais un mélange ;
 ajout indépendant reste valide, mais toute modification d'un record atteignable
 force une nouvelle qualification.
 
+La qualification et la publication de sa matrice sont sérialisées par un verrou
+exclusif durable dans `.git`. Le verrou est tenu pendant l'exécution des preuves
+; la matrice doit encore être identique octet pour octet à sa lecture initiale
+avant remplacement atomique. Une promotion concurrente ou une édition humaine
+provoque donc un refus sans écrasement.
+
 La résolution n'est pas sûre du seul fait qu'aucun script ne tourne : Bun
 accepte des dépendances Git/SSH, des tarballs par URL, et lit registres et
 credentials d'un `.npmrc`. Les sources obéissent donc à une **allowlist fermée**

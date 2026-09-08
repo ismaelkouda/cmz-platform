@@ -161,6 +161,12 @@ est distinct et sélectionne uniquement `candidate`; aucune option cachée de
 que pour le vecteur exact testé : les plages de `requirements` décrivent les
 versions candidates, pas une généralisation de la preuve.
 
+Une promotion tient un verrou exclusif durable dans `.git` pendant toute la
+qualification. Un propriétaire vivant fait échouer immédiatement une seconde
+commande ; un propriétaire local prouvé mort est récupéré. Les octets de la
+matrice sont relus avant publication : une édition concurrente est conservée et
+fait échouer la promotion, elle n'est jamais écrasée.
+
 ### D4 — Le candidat est un workspace complet, hors du dépôt
 
 Pas de copie minimale, **aucun `node_modules` partagé**. Forme retenue :
