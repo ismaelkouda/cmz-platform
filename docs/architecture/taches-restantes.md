@@ -74,6 +74,38 @@
   `NX_CLOUD_ACCESS_TOKEN`). Smoke local OK. Nx Cloud : login + id OK, fin de
   setup VCS en cours (OPS-3/T6-4).
 
+### Passage immédiat à une application métier réelle
+
+**Décision opérationnelle : le backlog complet de plateforme ne bloque plus le
+démarrage d'une application.** La chaîne technique est déjà prouvée par
+`bun run check:application-pipeline`, mais
+`examples/application-conception-proof/` reste une fixture et ne constitue pas
+une spécification produit. Le prochain chemin critique part donc d'un besoin
+métier explicite ; il ne consiste pas à ajouter un nouveau mécanisme générique
+au socle.
+
+| Id      | État          | Travail restant                                                                                                                                                  | Critère de sortie                                                                                                            |
+| ------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `APP-1` | bloqué-humain | Écrire le brief de la vraie application : identité, utilisateurs, problème, résultat principal, premier parcours, critères d'acceptation et nature d'accès.      | Brief versionné et relu ; si le produit est public ou multi-locataire, ADR-0038 tranché avant toute implémentation associée. |
+| `APP-2` | bloqué-humain | Fournir ou approuver le contrat backend **cible** de la première tranche : opérations, authentification, entrées, sorties et erreurs.                            | Contrat canonique `target` sans champ inventé ; un analogue ou une collection Postman d'observation reste `reference`.       |
+| `APP-3` | en attente    | Compiler le brief et le contrat cible en conception applicative ; fermer les inconnues, accès, permissions, navigation, états d'erreur et comportement offline.  | `bun run compile:application-design -- ... --dry-run`, puis `--apply <plan_id>` et `bun run check:application-designs`.      |
+| `APP-4` | en attente    | Générer le shell Angular/PWA de l'expérience retenue ; ajouter Material, Tailwind ou une autre bibliothèque seulement si le besoin approuvé l'exige.             | `bun run create-app -- ... --dry-run`, puis `--apply <plan_id>` ; build et lint du candidat verts.                           |
+| `APP-5` | en attente    | Réaliser une première page verticale, bornée par son contrat, avec ses états nominal, chargement, vide, erreur, accès refusé et offline lorsqu'ils s'appliquent. | `prepare:page-realization`, réalisation des seuls fichiers autorisés, puis `verify:page-realization` vert.                   |
+| `APP-6` | en attente    | Brancher le backend réel ou un mock explicitement provisoire et couvrir le parcours accepté de bout en bout.                                                     | Test d'acceptation du parcours vert, build production vert, puis `bun run check:all`.                                        |
+
+`APP-1` et `APP-2` sont les seuls préalables à obtenir du porteur produit avant
+de lancer la première tranche. `APP-3` à `APP-6` forment ensuite le cycle de
+construction. Le premier incrément est livrable lorsque `APP-6` est satisfait ;
+la fermeture préalable de tous les items ORACLE, PIPELINE, SEOS et OPS de ce
+document n'est pas requise.
+
+Ne remontent dans ce chemin critique que les items déclenchés par la nature de
+l'application choisie : exposition publique/multi-location (ADR-0038), données
+personnelles (§4.4), déploiement réel (`OPS-8`/`T4-1`) ou besoin produit P2
+explicitement inclus dans le premier parcours (§3.7). Figma, les nouvelles
+cibles, le fine-tuning et la parité exhaustive du legacy restent différés tant
+qu'ils ne servent pas ce parcours.
+
 ### Cartographie 13 audits ⇄ outillage déjà en place (baseline 2026-08-06)
 
 | #   | Audit Big Tech                    | Instrumentation monorepo (déjà là)                                                                              | Score baseline |
@@ -1571,12 +1603,11 @@ Figma, désormais source partielle différée :
   périmètre de ce chantier.
 - **PLAT-8** — différé, L, P1 (renommé depuis « PLAT-6 », en collision avec
   l'entrée PLAT-6 ci-dessus « fait, 2026-08-17, vérification CI » — deux
-  chantiers distincts partageaient le même identifiant, corrigé le
-  2026-08-21). Ajouter Figma comme source de Presentation intent après
-  clôture de PLAT-1 à PLAT-5. **Condition de déblocage désormais remplie** :
-  PLAT-1 à PLAT-5 (K variantes incluses) sont tous fait/fait localement,
-  confirmés CI verte (voir PLAT-6 ci-dessus et §6 promotion M4) — ce
-  chantier peut être engagé.
+  chantiers distincts partageaient le même identifiant, corrigé le 2026-08-21).
+  Ajouter Figma comme source de Presentation intent après clôture de PLAT-1 à
+  PLAT-5. **Condition de déblocage désormais remplie** : PLAT-1 à PLAT-5 (K
+  variantes incluses) sont tous fait/fait localement, confirmés CI verte (voir
+  PLAT-6 ci-dessus et §6 promotion M4) — ce chantier peut être engagé.
 
 ### 2.1 Preuves empiriques déjà produites
 
@@ -2642,7 +2673,10 @@ gouvernance, sécurité, licences.
   distinctes dans le fichier source, non fusionnées pour ne pas perdre la trace
   des deux ids.)_
 - **T4-2** — partiel, S, P1, alias `CI-4`. Pipeline Dependabot : absorber PR
-  sécu, maintenir `bun audit --high` = 0.
+  sécu, maintenir `bun audit --high` = 0. Les overrides `js-yaml@4.3.2` et
+  `svgo@4.1.0` sont matérialisés dans le lockfile ; `check:security-overrides`
+  exécute les deux consommateurs réels de SVGO et invalide la preuve si leur
+  résolution ou leurs plages amont dérivent.
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
 - **T4-5** — fait, S, P1, alias `Big Tech gap`. Secret scanning pre-push + CI

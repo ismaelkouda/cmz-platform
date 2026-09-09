@@ -43,7 +43,13 @@
       "id": "sentinel-class-emits-rule",
       "description": "une classe utilitaire sentinelle unique (ex. `text-[#123456]`) placée dans un template d'une app candidate isolée produit la règle CSS correspondante (`color:#123456`) dans le CSS de build",
       "proof": "compiled-css-rule",
-      "status": "harness-pending"
+      "status": "enforced"
+    },
+    {
+      "id": "offline-production-build",
+      "description": "la build de production complète réussit dans le candidat sans accès réseau",
+      "proof": "production-build",
+      "status": "enforced"
     }
   ],
   "guidance": "https://tailwindcss.com/docs/installation/framework-guides/angular"

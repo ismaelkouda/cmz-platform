@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/conventions/library-compat.schema.json",
+  "title": "CMZ library compatibility matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "library", "platform", "tracks"],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "library": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "platform": {
+      "enum": ["angular", "react"]
+    },
+    "tracks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status",
+          "requirements",
+          "packages",
+          "dependency_section",
+          "catalog",
+          "verification",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+          },
+          "status": {
+            "enum": ["candidate", "verified"]
+          },
+          "requirements": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["node", "bun", "nx", "framework"],
+            "properties": {
+              "node": {
+                "type": "string",
+                "minLength": 1
+              },
+              "bun": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nx": {
+                "type": "string",
+                "minLength": 1
+              },
+              "framework": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "packages": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
+            }
+          },
+          "dependency_section": {
+            "enum": ["dependencies", "devDependencies"]
+          },
+          "catalog": {
+            "enum": ["default", "tooling"]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verification": {
+            "description": "Attestation de qualification produite par promote-library-compatibility après un dry-run complet. `null` tant que la piste est `candidate`. Elle lie les résultats et entrées contrôlables, mais ne constitue ni une signature ni une preuve cryptographique de CI ; l'approbation relève des checks et de la revue du commit. Toute dérive d'une empreinte impose un retour à `candidate`.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "commit",
+                  "schema_version",
+                  "app",
+                  "plan_id",
+                  "change_set_id",
+                  "app_tree_sha256",
+                  "track_sha256",
+                  "tested_versions",
+                  "dependency_state_sha256",
+                  "proofs",
+                  "inputs_sha256",
+                  "evidence_sha256"
+                ],
+                "properties": {
+                  "schema_version": {
+                    "const": "1.0.0"
+                  },
+                  "commit": {
+                    "type": "string",
+                    "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+                  },
+                  "app": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*$"
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^library-plan:[a-f0-9]{64}$"
+                  },
+                  "change_set_id": {
+                    "type": "string",
+                    "pattern": "^changes:[a-f0-9]{64}$"
+                  },
+                  "app_tree_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "track_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "evidence_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "tested_versions": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["node", "bun", "nx", "framework", "packages"],
+                    "properties": {
+                      "node": { "$ref": "#/$defs/exact_semver" },
+                      "bun": { "$ref": "#/$defs/exact_semver" },
+                      "nx": { "$ref": "#/$defs/exact_semver" },
+                      "framework": { "$ref": "#/$defs/exact_semver" },
+                      "packages": {
+                        "type": "object",
+                        "minProperties": 1,
+                        "additionalProperties": {
+                          "$ref": "#/$defs/exact_semver"
+                        }
+                      }
+                    }
+                  },
+                  "dependency_state_sha256": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["initial", "final"],
+                    "properties": {
+                      "initial": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "final": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  },
+                  "proofs": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    }
+                  },
+                  "inputs_sha256": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "recipe",
+                      "recipe_schema",
+                      "compat_schema",
+                      "policy",
+                      "policy_schema",
+                      "nx_json",
+                      "tsconfig",
+                      "gitattributes",
+                      "proof_contracts",
+                      "runner"
+                    ],
+                    "properties": {
+                      "recipe": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "recipe_schema": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "compat_schema": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "policy": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "policy_schema": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "nx_json": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "tsconfig": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "gitattributes": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "proof_contracts": {
+                        "description": "Empreinte des contrats de preuve propres et réciproques réellement exigés. Une modification sémantique d'une recette partenaire périme l'attestation même si l'identifiant de preuve reste stable.",
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "runner": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "exact_semver": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
+    }
+  }
+}

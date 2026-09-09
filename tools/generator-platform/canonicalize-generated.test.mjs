@@ -16,3 +16,10 @@ export function run(client: any, input: CreateWidgetInput): WidgetCreationResult
     const twice = await canonicalizeGeneratedFiles(once);
     assert.equal(once[path], twice[path]);
 });
+
+test('un format inconnu de Prettier conserve exactement ses octets', async () => {
+    const path = 'apps/demo/public/icon.svg';
+    const source = '<svg>  <path /></svg>\n';
+    const canonical = await canonicalizeGeneratedFiles({ [path]: source });
+    assert.equal(canonical[path], source);
+});

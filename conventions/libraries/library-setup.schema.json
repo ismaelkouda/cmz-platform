@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cmz.local/schemas/conventions/library-setup.schema.json",
   "title": "CMZ Library Setup Recipe",
-  "description": "Une recette par (bibliothèque, plateforme). Le fichier vit sous conventions/libraries/<platform>/<library>.setup.json : le dossier == `platform`, le nom == `library`, et check:library-setup indexe par le couple (platform, library) — deux plateformes peuvent donc avoir chacune leur recette `tailwind`. PÉRIMÈTRE DE CETTE VERSION : paquets npm pour Angular / React, résolus via Bun workspaces (package.json racine + catalog + bun.lock). Kotlin/Swift : hors périmètre. Elle sépare trois choses. (1) `static_invariants` : présence structurelle, vérifiable en lisant des fichiers de l'app — garde-fou de DÉRIVE de configuration, PAS un test d'acceptation ; rien de version-spécifique ici (une API dépréciée d'une version à l'autre appartient à runtime_acceptance). (2) `runtime_acceptance` : les critères de bon fonctionnement réels (un composant compile, une classe utilitaire produit sa règle CSS, coexistence navigateur) — exécutés par un harnais dédié encore à livrer (plan C) ; tant que `status` vaut `harness-pending`, la gate les liste sans les exécuter et n'en tire aucune garantie. (3) le COMMENT d'installation (commande de la version N), volatile, représenté par `{ executable, argv }` avec un jeton `{{app}}` obligatoire pour désigner le projet cible, jamais une chaîne shell. Voir conventions/README.md et docs/adr/0041-angular-material-tailwind-defaults.md.",
+  "description": "Une recette par (bibliothèque, plateforme). Le fichier vit sous conventions/libraries/<platform>/<library>.setup.json : le dossier == `platform`, le nom == `library`, et check:library-setup indexe par le couple (platform, library) — deux plateformes peuvent donc avoir chacune leur recette `tailwind`. PÉRIMÈTRE DE CETTE VERSION : paquets npm pour Angular / React, résolus via Bun workspaces (package.json racine + catalog + bun.lock). Kotlin/Swift : hors périmètre. Elle sépare trois choses. (1) `static_invariants` : présence structurelle, vérifiable en lisant des fichiers de l'app — garde-fou de DÉRIVE de configuration, PAS un test d'acceptation. (2) `runtime_acceptance` : critères de fonctionnement réels exécutés par tools/library-setup/runtime-proofs.mjs dans le candidat isolé ; le registre d'oracles et le status de la recette doivent concorder dans les deux sens. (3) le COMMENT d'installation, volatile, représenté par une commande structurée, un outil de référence ou un adaptateur LLM borné ; jamais une chaîne shell. Voir conventions/README.md et docs/adr/0041-angular-material-tailwind-defaults.md.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -41,6 +41,11 @@
           "properties": {
             "method": { "const": "official-schematic" },
             "command": { "$ref": "#/$defs/command" },
+            "normalizations": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/exactReplacement" }
+            },
             "notes": { "type": "string", "minLength": 1 }
           }
         },
@@ -60,10 +65,46 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["method", "prompt_contract", "notes"],
+          "required": [
+            "method",
+            "prompt_contract",
+            "llm_write_paths",
+            "max_iterations",
+            "iteration_timeout_ms",
+            "max_context_bytes",
+            "max_response_bytes",
+            "notes"
+          ],
           "properties": {
             "method": { "const": "llm-then-verified" },
-            "prompt_contract": { "type": "string", "minLength": 1 },
+            "prompt_contract": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8192
+            },
+            "llm_write_paths": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/appRelativeFile" }
+            },
+            "max_iterations": { "const": 3 },
+            "iteration_timeout_ms": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 300000
+            },
+            "max_context_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            },
+            "max_response_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            },
             "notes": { "type": "string", "minLength": 1 }
           }
         }
@@ -97,7 +138,7 @@
         "executable": {
           "type": "string",
           "enum": ["nx"],
-          "description": "Résolu via `bunx nx` dans ce dépôt (déterministe : @nx/* est au catalog). `ng` seul n'est pas un binaire du workspace — passer par `nx g <collection>:ng-add`."
+          "description": "Binaire résolu EXPLICITEMENT dans le workspace cible (`<racine>/node_modules/.bin/nx`), sa version étant comparée à celle du lockfile (`node_modules/nx/package.json`). `bunx` et les gestionnaires de paquets ne peuvent pas être résolus par leur nom pendant l'exécution : PATH est vide sur les deux backends (ADR-0042). `ng` seul n'est pas un binaire du workspace — passer par un schematic local qui ne planifie aucune installation de dépendances."
         },
         "argv": {
           "type": "array",
@@ -110,6 +151,19 @@
           "description": "Exactement un élément doit être le jeton littéral `{{app}}` — l'exécuteur (add-library, lot B) le remplace par le nom du projet Nx cible. check:library-setup refuse une commande official-schematic sans ce jeton."
         }
       }
+    },
+    "exactReplacement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "file", "search", "replacement", "occurrences"],
+      "properties": {
+        "kind": { "const": "exact-replacement" },
+        "file": { "$ref": "#/$defs/appRelativeFile" },
+        "search": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "replacement": { "type": "string", "maxLength": 4096 },
+        "occurrences": { "const": 1 }
+      },
+      "description": "Normalisation versionnée et fail-closed d'une sortie volatile du schematic. Le remplacement n'est appliqué que si le fragment exact apparaît le nombre déclaré de fois."
     },
     "static_invariant": {
       "type": "object",
@@ -171,7 +225,8 @@
           "enum": [
             "compile-component",
             "compiled-css-rule",
-            "browser-coexistence"
+            "browser-coexistence",
+            "production-build"
           ]
         },
         "status": { "enum": ["harness-pending", "enforced"] }
@@ -180,12 +235,22 @@
     "coexistence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["with", "static_invariants"],
+      "required": ["with", "intent"],
+      "description": "Un bloc de coexistence doit porter AU MOINS un contrôle : un invariant statique, une acceptance runtime, ou les deux (`anyOf`). Un bloc sans aucun contrôle serait une déclaration décorative. L'intention, elle, est de la prose relue par un humain — jamais une assertion textuelle sur un fichier de l'app : un regex qui cherche des mots dans un commentaire ne peut pas régresser, passe sur n'importe quel `// TODO`, et donne une fausse confiance (invariant `component-boundary` retiré le 2026-09-06 pour cette raison, sa propriété étant désormais prouvée par `material-tailwind-cascade-order` sur le CSS compilé et par `material-tailwind-render-together` dans un vrai moteur).",
+      "anyOf": [
+        { "type": "object", "required": ["static_invariants"] },
+        { "type": "object", "required": ["runtime_acceptance"] }
+      ],
       "properties": {
         "with": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
-          "description": "Une autre bibliothèque ; ces invariants ne sont vérifiés que si l'app déclare aussi celle-ci."
+          "description": "Une autre bibliothèque ; ces contrôles ne sont vérifiés que si l'app déclare aussi celle-ci."
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Ce que la coexistence doit garantir, en clair, pour la relecture humaine. N'est vérifié par aucune machine — ce qui est vérifié vit dans static_invariants et runtime_acceptance."
         },
         "static_invariants": {
           "type": "array",
@@ -194,6 +259,7 @@
         },
         "runtime_acceptance": {
           "type": "array",
+          "minItems": 1,
           "items": { "$ref": "#/$defs/runtime_acceptance" }
         }
       }

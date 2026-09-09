@@ -14,8 +14,9 @@
  *
  * Ce script comble l'angle mort à la racine plutôt que de re-découvrir
  * chaque instance a posteriori par audit manuel : pour CHAQUE script
- * `check:*` référencé dans `check:all` (package.json), il vérifie qu'il
- * apparaît AUSSI dans au moins un des deux mécanismes d'exécution
+ * `check:*` référencé dans `check:all` (package.json), plus les gates coûteuses
+ * explicitement obligatoires hors agrégateur, il vérifie que le script est
+ * réellement invoqué par au moins un des deux mécanismes d'exécution
  * automatique réels du dépôt :
  *   1. Une step `run:` de `.github/workflows/ci.yml` (ou tout autre workflow
  *      sous `.github/workflows/`) qui invoque ce script — directement
@@ -32,7 +33,56 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { parse as parseYaml } from 'yaml';
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const REQUIRED_STANDALONE_SCRIPTS = [
+    'check:library-candidate-isolation',
+    'check:library-setup-integration',
+];
+
+export function workflowRunCommands(content, label = 'workflow') {
+    let workflow;
+    try {
+        workflow = parseYaml(content);
+    } catch (error) {
+        throw new Error(`${label}: YAML invalide (${error.message})`);
+    }
+    const commands = [];
+    for (const job of Object.values(workflow?.jobs ?? {})) {
+        for (const step of job?.steps ?? []) {
+            if (typeof step?.run === 'string') commands.push(step.run);
+        }
+    }
+    return commands;
+}
+
+export function hookCommands(content) {
+    return content
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'));
+}
+
+export function commandInvokes(command, invocation) {
+    return command
+        .split(/\r?\n/)
+        .flatMap((line) => line.split(/\s*(?:&&|\|\||;)\s*/))
+        .map((segment) => segment.trim())
+        .some(
+            (segment) =>
+                segment === invocation || segment.startsWith(`${invocation} `)
+        );
+}
+
+export function packageToolInvocations(definition) {
+    return definition
+        .split(/\s*&&\s*/)
+        .map((command) => command.trim())
+        .filter((command) =>
+            /^node(?:\s+--test)?\s+tools\/.+\.mjs(?:\s|$)/.test(command)
+        );
+}
 
 function loadCheckAllScripts() {
     const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
@@ -72,9 +122,13 @@ function loadAutomationSources() {
         // dossier absent — pas fatal ici, juste aucune source CI.
     }
     for (const file of workflowFiles) {
+        const label = `.github/workflows/${file}`;
         sources.push({
-            label: `.github/workflows/${file}`,
-            content: readFileSync(join(workflowsDir, file), 'utf8'),
+            label,
+            commands: workflowRunCommands(
+                readFileSync(join(workflowsDir, file), 'utf8'),
+                label
+            ),
         });
     }
 
@@ -83,7 +137,7 @@ function loadAutomationSources() {
         try {
             sources.push({
                 label: `.husky/${hook}`,
-                content: readFileSync(path, 'utf8'),
+                commands: hookCommands(readFileSync(path, 'utf8')),
             });
         } catch {
             // hook absent — pas fatal, juste aucune source pour celui-là.
@@ -103,32 +157,56 @@ function loadAutomationSources() {
  * `docs-freshness`/`secrets` existants).
  */
 function isWired(scriptName, pkgScripts, sources) {
-    for (const { content } of sources) {
-        if (content.includes(`bun run ${scriptName}`)) return true;
-        if (content.includes(`bunx nx run ${scriptName}`)) return true;
+    for (const { commands } of sources) {
+        if (
+            commands.some((command) =>
+                commandInvokes(command, `bun run ${scriptName}`)
+            )
+        )
+            return true;
+        if (
+            commands.some((command) =>
+                commandInvokes(command, `bunx nx run ${scriptName}`)
+            )
+        )
+            return true;
     }
-    // Repli : le script package.json appelle-t-il directement un fichier
-    // tools/*.mjs dont le nom de fichier est mentionné dans une source ?
+    // Repli : lorsqu'une step développe le script package.json au lieu de
+    // l'appeler par son nom, TOUTES ses commandes Node feuilles doivent être
+    // réellement exécutées. Une seule mention de fichier ne suffit pas.
     const def = pkgScripts[scriptName] ?? '';
-    const fileMatch = def.match(/tools\/[a-zA-Z0-9/_.-]+\.mjs/);
-    if (fileMatch) {
-        const toolPath = fileMatch[0];
-        for (const { content } of sources) {
-            if (content.includes(toolPath)) return true;
-        }
+    const leaves = packageToolInvocations(def);
+    if (leaves.length > 0) {
+        return leaves.every((leaf) =>
+            sources.some(({ commands }) =>
+                commands.some((command) => commandInvokes(command, leaf))
+            )
+        );
     }
     return false;
 }
 
 function main() {
-    const scripts = loadCheckAllScripts();
+    const scripts = [
+        ...new Set([...loadCheckAllScripts(), ...REQUIRED_STANDALONE_SCRIPTS]),
+    ];
     const sources = loadAutomationSources();
     const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+
+    const undefinedScripts = REQUIRED_STANDALONE_SCRIPTS.filter(
+        (script) => typeof pkg.scripts?.[script] !== 'string'
+    );
+    if (undefinedScripts.length) {
+        console.error(
+            `✖ Gate(s) CI obligatoire(s) absente(s) de package.json : ${undefinedScripts.join(', ')}`
+        );
+        process.exit(1);
+    }
 
     const orphans = scripts.filter((s) => !isWired(s, pkg.scripts, sources));
 
     console.log(
-        `[check:ci-wiring] ${scripts.length} script(s) déclaré(s) dans check:all, sources d'automatisation scannées : ${sources.map((s) => s.label).join(', ')}.`
+        `[check:ci-wiring] ${scripts.length} gate(s) obligatoire(s), dont ${REQUIRED_STANDALONE_SCRIPTS.length} hors check:all ; sources d'automatisation scannées : ${sources.map((s) => s.label).join(', ')}.`
     );
 
     if (orphans.length > 0) {
@@ -147,8 +225,8 @@ function main() {
     }
 
     console.log(
-        "\n✔ Tous les scripts de check:all sont câblés à au moins un mécanisme d'exécution automatique (CI ou husky)."
+        "\n✔ Toutes les gates obligatoires sont câblées à au moins un mécanisme d'exécution automatique (CI ou husky)."
     );
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) main();

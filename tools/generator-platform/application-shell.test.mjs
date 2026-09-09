@@ -1,16 +1,21 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 
+import { validateRecipes, verifyApps } from '../check-library-setup.mjs';
 import { parseArgs } from '../create-app.mjs';
 import {
     planApplicationShell,
     publishApplicationShell,
 } from './core/application-shell-publication.mjs';
+import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
 import { renderAngularPwaShell } from './renderers/angular-pwa-shell-renderer.mjs';
+
+const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 import {
     sha256,
     writeApplicationDesignFixture,
@@ -80,7 +85,7 @@ test('la CLI create-app est explicitement planifiée puis appliquée', () => {
 
 test('le renderer produit routing, i18n, PWA et un contrat borné par page', async () => {
     const options = await fixture();
-    const rendered = renderAngularPwaShell({
+    const rendered = await renderAngularPwaShell({
         design: options.data.design,
         experienceId: options.experienceId,
         appName: options.appName,
@@ -93,6 +98,7 @@ test('le renderer produit routing, i18n, PWA et un contrat borné par page', asy
         'src/app/transloco-loader.ts',
         'public/manifest.webmanifest',
         'public/sw.js',
+        '.cmz/libraries.json',
         '.cmz/app-manifest.json',
         '.cmz/pages/page_1111111111111111.json',
         '.cmz/pages/page_2222222222222222.json',
@@ -100,16 +106,61 @@ test('le renderer produit routing, i18n, PWA et un contrat borné par page', asy
         assert.ok(rendered.files[path], `missing ${path}`);
     }
     assert.match(rendered.files['src/app/app.routes.ts'], /loadComponent/);
+    assert.deepEqual(JSON.parse(rendered.files['.cmz/libraries.json']), {
+        schema_version: '1.0.0',
+        kind: 'app-library-manifest',
+        platform: 'angular',
+        libraries: ['transloco'],
+    });
     assert.doesNotMatch(
         rendered.files['.cmz/pages/page_1111111111111111.json'],
         /angular/i
     );
 });
 
+test('le renderer produit directement des octets canoniques et les atteste', async () => {
+    const options = await fixture();
+    const rendered = await renderAngularPwaShell({
+        design: options.data.design,
+        experienceId: options.experienceId,
+        appName: options.appName,
+        designPath: options.designPath,
+        designSha256: sha256(options.designContent),
+    });
+    const prefixed = Object.fromEntries(
+        Object.entries(rendered.files).map(([path, content]) => [
+            `apps/${options.appName}/${path}`,
+            content,
+        ])
+    );
+    assert.deepEqual(await canonicalizeGeneratedFiles(prefixed), prefixed);
+
+    const manifest = JSON.parse(rendered.files['.cmz/app-manifest.json']);
+    assert.deepEqual(
+        manifest.generated_files,
+        Object.entries(rendered.files)
+            .filter(([path]) => path !== '.cmz/app-manifest.json')
+            .map(([path, content]) => ({
+                path,
+                bytes: Buffer.byteLength(content),
+                sha256: sha256(content),
+            }))
+            .sort((left, right) => left.path.localeCompare(right.path))
+    );
+    assert.equal(
+        manifest.tree_sha256,
+        sha256(
+            manifest.generated_files
+                .map((entry) => `${entry.path}\0${entry.sha256}`)
+                .join('\0')
+        )
+    );
+});
+
 test('échappe le titre métier dans chaque contexte HTML et SVG', async () => {
     const options = await fixture();
     options.data.design.design.title = '<script>"unsafe" & test</script>';
-    const rendered = renderAngularPwaShell({
+    const rendered = await renderAngularPwaShell({
         design: options.data.design,
         experienceId: options.experienceId,
         appName: options.appName,
@@ -127,7 +178,7 @@ test('échappe le titre métier dans chaque contexte HTML et SVG', async () => {
 
 test('le service worker ne capture jamais API ni origine externe', async () => {
     const options = await fixture();
-    const rendered = renderAngularPwaShell({
+    const rendered = await renderAngularPwaShell({
         design: options.data.design,
         experienceId: options.experienceId,
         appName: options.appName,
@@ -284,4 +335,52 @@ test('une modification de conception invalide le plan revu', async () => {
             ),
         /reviewed plan id is stale/
     );
+});
+
+// Critère d'acceptation : une app fraîchement créée doit passer la gate
+// applicative, pas seulement contenir un fichier. Avant ce correctif,
+// `verifyApps` refusait toute app générée — « project.json régulier mais pas de
+// .cmz/libraries.json ». Le test matérialise donc le rendu et exécute la VRAIE
+// gate, recettes réelles du dépôt comprises.
+test('une app fraîchement rendue passe la gate library-setup', async (t) => {
+    const options = await fixture();
+    const rendered = await renderAngularPwaShell({
+        design: options.data.design,
+        experienceId: options.experienceId,
+        appName: options.appName,
+        designPath: options.designPath,
+        designSha256: sha256(options.designContent),
+    });
+
+    const manifest = JSON.parse(rendered.files['.cmz/libraries.json']);
+    assert.deepEqual(manifest, {
+        schema_version: '1.0.0',
+        kind: 'app-library-manifest',
+        platform: 'angular',
+        // ADR-0044 : Material et Tailwind sont opt-in, jamais recopiés ici.
+        libraries: ['transloco'],
+    });
+
+    const root = await mkdtemp(join(tmpdir(), 'cmz-shell-gate-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    // verifyApps lit le schéma de manifeste sous la racine inspectée.
+    await cp(join(REPO_ROOT, 'conventions'), join(root, 'conventions'), {
+        recursive: true,
+    });
+    await Promise.all([
+        cp(join(REPO_ROOT, 'package.json'), join(root, 'package.json')),
+        cp(join(REPO_ROOT, 'bun.lock'), join(root, 'bun.lock')),
+    ]);
+    for (const [path, content] of Object.entries(rendered.files)) {
+        const target = join(root, 'apps', options.appName, path);
+        await mkdir(dirname(target), { recursive: true });
+        await writeFile(target, content);
+    }
+
+    // Recettes RÉELLES du dépôt, app générée : c'est le couple qui échouait.
+    const recipes = validateRecipes(REPO_ROOT);
+    assert.deepEqual(recipes.errors, []);
+    const apps = verifyApps(root, recipes.recipes);
+    assert.deepEqual(apps.errors, []);
+    assert.equal(apps.ok, true);
 });

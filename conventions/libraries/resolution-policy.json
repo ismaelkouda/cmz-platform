@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0.0",
+  "allowed_registries": ["https://registry.npmjs.org"],
+  "allowed_manifest_protocols": ["catalog:", "workspace:"],
+  "integrity": {
+    "algorithm": "sha512",
+    "scope": "all-external-packages"
+  },
+  "lifecycle_scripts": [
+    {
+      "name": "preinstall",
+      "command": "node tools/check-engines.mjs",
+      "classification": "replay",
+      "runner": {
+        "executable": "node",
+        "argv": ["tools/check-engines.mjs"]
+      },
+      "reason": "Vérifie les versions Node et Bun avant toute résolution."
+    },
+    {
+      "name": "prepare",
+      "command": "husky",
+      "classification": "omit",
+      "reason": "Le candidat ne contient aucun répertoire .git où installer des hooks."
+    }
+  ],
+  "sandbox": {
+    "macos_executable": "/usr/bin/sandbox-exec",
+    "container_images": {
+      "resolution": "oven/bun@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4",
+      "execution": "node@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752",
+      "execution_renderer": "mcr.microsoft.com/playwright@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27"
+    }
+  },
+  "browser": {
+    "distribution": "chrome-headless-shell",
+    "version": "152.0.7977.82",
+    "download_host": "https://storage.googleapis.com",
+    "download_timeout_ms": 300000,
+    "max_archive_bytes": 262144000,
+    "max_extracted_bytes": 536870912,
+    "max_archive_entries": 10000,
+    "archives": {
+      "darwin-arm64": {
+        "url": "https://storage.googleapis.com/chrome-for-testing-public/152.0.7977.82/mac-arm64/chrome-headless-shell-mac-arm64.zip",
+        "sha256": "1615f063c894aa824fd55c89f8f05e9904f63cce0c95d0cbce7394d77884fba5",
+        "executable": "chrome-headless-shell-mac-arm64/chrome-headless-shell"
+      },
+      "linux-x64": {
+        "url": "https://storage.googleapis.com/chrome-for-testing-public/152.0.7977.82/linux64/chrome-headless-shell-linux64.zip",
+        "sha256": "0ca12ea26b502a83e32db334a17883c315348845efc071d908de7a6d94a97eff",
+        "executable": "chrome-headless-shell-linux64/chrome-headless-shell"
+      }
+    }
+  },
+  "exceptions": []
+}

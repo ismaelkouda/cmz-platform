@@ -13,7 +13,11 @@
  *     preuve de fonctionnement — un `@import 'tailwindcss'` peut exister sans
  *     que le CSS compile ; rien de version-spécifique ici) ;
  *   - `runtime_acceptance` : preuves réelles (compilation, règle CSS, coexistence
- *     navigateur), `status: harness-pending` = listé sans être exécuté (lot C).
+ *     navigateur). `status` doit refléter l'existence d'un oracle enregistré
+ *     dans library-setup/runtime-proofs.mjs : `enforced` = un oracle existe et
+ *     add-library l'exécute en fermeture ; `harness-pending` = aucun oracle,
+ *     donc add-library refuse d'aboutir tant que l'acceptance est applicable.
+ *     Ce gate reste statique : il vérifie la correspondance, il n'exécute rien.
  *
  * Sécurité : toute lecture — recette, schéma, fichier d'app, lockfile — est
  * confinée sous la racine du dépôt et traverse ZÉRO lien symbolique (lstat par
@@ -40,6 +44,7 @@ import {
     verifyResolvedVersion,
 } from './check-library-setup-deps.mjs';
 import { validateJsonSchema } from './generator-platform/validate-ir.mjs';
+import { RUNTIME_ORACLE_KEYS } from './library-setup/runtime-proofs.mjs';
 
 export { verifyResolvedVersion } from './check-library-setup-deps.mjs';
 
@@ -303,10 +308,24 @@ function validateRecipeCoherence(recipe, relativePath, root, errors) {
         }
     }
 
+    // `status` n'est plus une promesse invérifiable : il doit correspondre à la
+    // présence d'un oracle réellement enregistré dans runtime-proofs.mjs, dans
+    // les deux sens. `enforced` sans oracle serait une garantie creuse ;
+    // `harness-pending` avec oracle cacherait une preuve déjà disponible. Ce
+    // gate reste statique — c'est add-library qui exécute les oracles, et il
+    // échoue en fermeture sur toute acceptance déclarée sans oracle.
     for (const acceptance of runtime) {
-        if (acceptance?.status === 'enforced') {
+        if (!acceptance?.id) continue;
+        const key = `${recipe.platform}/${recipe.library}#${acceptance.id}`;
+        const registered = RUNTIME_ORACLE_KEYS.has(key);
+        if (acceptance.status === 'enforced' && !registered) {
             errors.push(
-                `${relativePath}: runtime_acceptance "${acceptance.id}" est "enforced" mais aucun harnais n'exécute les preuves (lot C non livré)`
+                `${relativePath}: runtime_acceptance "${acceptance.id}" est "enforced" sans oracle enregistré (${key})`
+            );
+        }
+        if (acceptance.status === 'harness-pending' && registered) {
+            errors.push(
+                `${relativePath}: runtime_acceptance "${acceptance.id}" a un oracle enregistré mais reste "harness-pending" (${key})`
             );
         }
     }
@@ -584,7 +603,9 @@ function verifyAppManifest(root, appRelative, manifest, recipes, errors) {
         }
         for (const block of recipe.coexistence ?? []) {
             if (!declared.has(block.with)) continue;
-            for (const invariant of block.static_invariants) {
+            // `static_invariants` est optionnel depuis le 2026-09-06 : un bloc
+            // de coexistence peut ne porter que des acceptances runtime.
+            for (const invariant of block.static_invariants ?? []) {
                 const failure = runAssertion(
                     root,
                     appRelative,
@@ -647,14 +668,17 @@ function main() {
         return;
     }
 
-    const runtimeDeclared = [...recipeResult.recipes.values()].reduce(
-        (total, recipe) => total + invariantsOf(recipe).runtime.length,
-        0
+    const runtime = [...recipeResult.recipes.values()].flatMap(
+        (recipe) => invariantsOf(recipe).runtime
     );
+    const withOracle = runtime.filter(
+        (acceptance) => acceptance?.status === 'enforced'
+    ).length;
     console.log(
         `✔ check:library-setup — ${recipeResult.recipes.size} recette(s) (platform/library), ` +
             `${appResult.checkedApps} app(s) vérifiée(s), ` +
-            `${runtimeDeclared} runtime_acceptance déclaré(s) sans harnais (lot C).`
+            `${withOracle}/${runtime.length} runtime_acceptance avec oracle (add-library les exécute ; ` +
+            `${runtime.length - withOracle} encore sans oracle, donc bloquante(s)).`
     );
 }
 

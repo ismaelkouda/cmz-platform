@@ -436,9 +436,9 @@ directives suivantes :
 <!-- BEGIN:GENERATED:monorepo-status -->
 | Indicateur                | Valeur                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Dernière génération       | **2026-08-30** (`bun run generate:status`)                                                                      |
+| Dernière génération       | **2026-09-08** (`bun run generate:status`)                                                                      |
 | Modules livrés            | **19** (voir [`STATUS.md`](./STATUS.md))                                                         |
-| Packages Nx               | **73** (72 libs + 1 app)                                              |
+| Packages Nx               | **74** (72 libs + 2 app)                                              |
 | Fichiers TypeScript       | **2 727** hors tests / **2 975** total (248 specs)                 |
 | Corpus SEOS               | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                       |
 | Corpus SEOS — nature (N-6)| **583 correspondances** + **924 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |

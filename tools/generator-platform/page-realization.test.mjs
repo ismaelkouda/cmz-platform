@@ -6,6 +6,7 @@ import {
     mkdir,
     mkdtemp,
     readFile,
+    rename,
     rm,
     symlink,
     unlink,
@@ -362,4 +363,139 @@ test('inventorie un lien Git sans le suivre et détecte tout changement de cible
     assert.ok(
         report.violations.some((entry) => entry.includes('outside the allowed'))
     );
+});
+
+test('refuse un work order modifié sans exécuter les oracles', async () => {
+    const data = await fixture();
+    const common = {
+        workspaceRoot: data.root,
+        appName: 'clean-street',
+        pageId: data.pageId,
+    };
+    const plan = planPageRealization(common);
+    await publishPageRealizationWorkOrder({
+        ...common,
+        workOrderId: plan.work_order_id,
+    });
+    await realize(data, plan.pageContractHash);
+    const workOrder = JSON.parse(await readFile(plan.state.workOrder, 'utf8'));
+    workOrder.allowed_files = [];
+    await writeFile(
+        plan.state.workOrder,
+        `${JSON.stringify(workOrder, null, 2)}\n`
+    );
+
+    let called = false;
+    const report = verifyPageRealization(
+        {
+            ...common,
+            workOrderId: plan.work_order_id,
+            evidenceSchema,
+        },
+        { run: () => (called = true) }
+    );
+    assert.equal(report.ok, false);
+    assert.ok(
+        report.violations.some((entry) =>
+            entry.includes('content-addressed id')
+        )
+    );
+    assert.equal(called, false);
+});
+
+test('refuse une racine de page symbolique sans suivre sa cible', async () => {
+    const data = await fixture();
+    const common = {
+        workspaceRoot: data.root,
+        appName: 'clean-street',
+        pageId: data.pageId,
+    };
+    const plan = planPageRealization(common);
+    await publishPageRealizationWorkOrder({
+        ...common,
+        workOrderId: plan.work_order_id,
+    });
+    await realize(data, plan.pageContractHash);
+    const externalRoot = await mkdtemp(join(tmpdir(), 'page-output-target-'));
+    const externalPage = join(externalRoot, 'page');
+    try {
+        await rename(data.pageRoot, externalPage);
+        await symlink(externalPage, data.pageRoot, 'dir');
+        let called = false;
+        const report = verifyPageRealization(
+            {
+                ...common,
+                workOrderId: plan.work_order_id,
+                evidenceSchema,
+            },
+            { run: () => (called = true) }
+        );
+        assert.equal(report.ok, false);
+        assert.equal(called, false);
+        assert.ok(
+            report.violations.some((entry) =>
+                entry.includes(
+                    'page output root must not traverse a symbolic link'
+                )
+            )
+        );
+    } finally {
+        await rm(data.pageRoot, { recursive: true, force: true });
+        await rm(externalRoot, { recursive: true, force: true });
+    }
+});
+
+test('valide les identités avant de résoudre un chemin de vérification', () => {
+    assert.throws(
+        () =>
+            verifyPageRealization({
+                workspaceRoot: '/',
+                appName: '../escape',
+                pageId: 'page_2222222222222222',
+                workOrderId: 'a'.repeat(64),
+                evidenceSchema,
+            }),
+        /app name must be kebab-case/
+    );
+    assert.throws(
+        () =>
+            verifyPageRealization({
+                workspaceRoot: '/',
+                appName: 'clean-street',
+                pageId: '../../escape',
+                workOrderId: 'a'.repeat(64),
+                evidenceSchema,
+            }),
+        /invalid stable page id/
+    );
+});
+
+test('refuse un design de manifeste hors workspace avant de le lire', async () => {
+    const data = await fixture();
+    const externalRoot = await mkdtemp(join(tmpdir(), 'external-design-'));
+    const externalDesign = join(externalRoot, 'design.json');
+    try {
+        await writeFile(externalDesign, '{}\n');
+        const manifestPath = join(
+            data.root,
+            'apps/clean-street/.cmz/app-manifest.json'
+        );
+        const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+        manifest.design_ref = {
+            path: externalDesign,
+            sha256: sha256(await readFile(externalDesign)),
+        };
+        await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+        assert.throws(
+            () =>
+                planPageRealization({
+                    workspaceRoot: data.root,
+                    appName: 'clean-street',
+                    pageId: data.pageId,
+                }),
+            /published design must be inside the workspace/
+        );
+    } finally {
+        await rm(externalRoot, { recursive: true, force: true });
+    }
 });

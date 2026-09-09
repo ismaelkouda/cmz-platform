@@ -74,4 +74,7 @@ envisagées, le choix retenu et ses conséquences.
 | [0038](./0038-nature-produit-public-multi-locataire.md)   | Nature de produit : exposition publique et multi-location | Proposed |
 | [0039](./0039-frontiere-contractuelle-conception-realisation-llm.md) | Frontière contractuelle entre conception et réalisation par LLM | Accepted |
 | [0041](./0041-angular-material-tailwind-defaults.md)      | Angular Material + Tailwind comme défauts d'app Angular  | Accepted |
+| [0042](./0042-modele-transactionnel-mutations-workspace.md) | Modèle transactionnel et d'isolation des mutations de workspace | Accepted |
+| [0043](./0043-discipline-de-preuve-des-agents.md)         | Discipline de preuve des agents                          | Proposed |
+| [0044](./0044-bibliotheques-ui-opt-in-apres-create-app.md) | Bibliothèques UI ajoutées à la demande après `create-app` | Accepted |
 <!-- END:GENERATED:adr-index -->

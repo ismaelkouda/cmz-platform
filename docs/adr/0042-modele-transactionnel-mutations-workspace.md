@@ -1,0 +1,563 @@
+# ADR-0042 — Modèle transactionnel et d'isolation des mutations de workspace
+
+- **Statut :** Accepted et implémenté pour `add-library`
+- **Date :** 2026-09-04
+
+## Contexte
+
+[ADR-0041](./0041-angular-material-tailwind-defaults.md) définit la composition
+Transloco + Angular Material + Tailwind et décrit le setup de chaque
+bibliothèque par une recette
+`conventions/libraries/<platform>/<library>.setup.json`. `check:library-setup`
+(mergé en `c6b5b64`) vérifie que ces recettes ne dérivent pas.
+
+L’outil `add-library` exécute le schematic du vendeur ou le script
+`reference-derived`, puis les `runtime_acceptance`, avant de publier. Il mute :
+`package.json` racine, `bun.lock`, le catalog, l'arborescence de l'app, son
+manifeste. Il fait en outre exécuter du **code tiers** (schematic `ng add`), et,
+en dernier recours, un **agent LLM**.
+
+Quatre propriétés doivent être décidées **avant** d'écrire cet outil, parce
+qu'elles ne peuvent pas être ajoutées après coup sans réécrire son cœur :
+
+1. où s'exécute le code tiers, et ce qu'il peut atteindre ;
+2. comment les mutations concurrentes sont sérialisées, et jusqu'où le rollback
+   est atomique ;
+3. ce qui identifie un plan, et sous quelle forme un changement est appliqué ;
+4. ce qui borne un agent LLM — au-delà d'une consigne textuelle.
+
+Une première rédaction de ces propriétés (dans
+[`library-setup-runtime-plan.md`](../architecture/library-setup-runtime-plan.md))
+a été invalidée par contre-preuve : un « candidat » placé sous `.cmz/` avec un
+`node_modules` symlinké **n'isole rien** — Nx remonte jusqu'à la racine réelle
+du workspace et charge le vrai projet. Un schematic exécuté ainsi pouvait écrire
+dans le vrai `package.json`.
+
+Le dépôt possède déjà un précédent applicable : `create-module` /
+`retire-module` (transaction journalisée, verrou avec récupération de pid mort,
+rollback octet pour octet, reprise après SIGKILL — testés par
+`module-lifecycle.test.mjs`), et `create-app` (`--dry-run` / `--apply <plan-id>`
+avec candidat et contrôle de fraîcheur).
+
+## Options envisagées
+
+### Option A — Exécuter le schematic dans le workspace réel, puis relire le diff
+
+- Avantages : aucun outillage d'isolation ; rapide à écrire ; le résultat est
+  immédiatement celui qu'on veut.
+- Inconvénients : le code tiers écrit **avant** qu'on sache ce qu'il écrit ; un
+  schematic cassé ou hostile corrompt le dépôt ; le rollback doit deviner ce qui
+  a bougé ; un `--dry-run` honnête est impossible (on ne connaît la sortie d'un
+  schematic qu'en l'exécutant).
+
+### Option B — « Candidat » local sous `.cmz/`, `node_modules` partagé
+
+- Avantages : léger, rapide ; réutilise le cache d'installation.
+- Inconvénients : **isolation fausse** — contre-preuve exécutée, Nx découvre la
+  racine réelle depuis `.cmz/` et charge le vrai projet ; le `node_modules`
+  partagé offre en outre un chemin d'écriture indirect vers le dépôt réel.
+  Rejetée sur preuve.
+
+### Option C — `git worktree` hors dépôt
+
+- Avantages : workspace Nx cohérent, hors arborescence ; Nx ne remonte plus au
+  vrai dépôt.
+- Inconvénients : `git worktree add` **écrit dans le dépôt réel**
+  (`.git/worktrees/<nom>`) — écriture invisible à `git status --porcelain`, donc
+  la preuve de non-contamination ne la détecterait pas ; le candidat contient un
+  `.git` qui pointe vers le dépôt, offert au schematic et au LLM. Rejetée.
+
+### Option D — Export `git archive` hors dépôt
+
+- Avantages : n'écrit rien dans le dépôt, ne place aucun `.git` dans le candidat
+  (vérifié) ; workspace Nx cohérent ; 1 s pour 3905 fichiers.
+- Inconvénients : `git archive` applique les **attributs Git**, et les lit aussi
+  depuis `$GIT_DIR/info/attributes` — un fichier **absent du commit**, donc
+  invisible à toute revue de code. Test exécuté : un `export-ignore` placé dans
+  `.git/info/attributes` **retire silencieusement** le fichier de l'archive.
+  `export-subst` transformerait de même le contenu. L'intégrité ne serait alors
+  garantie que par une vérification a posteriori. Rejetée.
+
+### Option E — Matérialisation depuis le tree Git, sans script tiers, confinement OS obligatoire, transaction de publication journalisée
+
+- Avantages : le contenu vient de `git ls-tree -r` + `git cat-file --batch` —
+  **aucune machinerie d'attributs n'intervient**, donc `export-ignore`,
+  `export-subst`, `.git/info/attributes` et `core.attributesFile` sont sans
+  effet **par construction**, pas par détection. L'OID du blob **est**
+  l'autorité de contenu. Mesuré : **0,6 s** pour 3906 entrées, plus rapide que
+  l'archive. Aucune écriture dans le dépôt, aucun `.git` dans le candidat. Avec
+  `--ignore-scripts`, **aucun code tiers ne s'exécute pendant l'installation** —
+  vérifié : le candidat compile (`ngc --strictTemplates`, exit 0) et construit
+  (`nx build:development`, exit 0, CSS émis).
+- Inconvénients : la matérialisation est du code à écrire et à tester (modes,
+  liens, inventaire) plutôt qu'un appel à `git archive` ; si une dépendance
+  future exigeait réellement un script de cycle de vie, il faudrait une
+  exception nommée et confinée.
+
+## Décision
+
+**Option E**, en sept invariants indissociables.
+
+**1. Isolation — matérialisation depuis le tree, ni worktree ni archive.** Tout
+exécutant tiers — schematic, script `reference-derived`, probe
+`runtime_acceptance`, agent LLM — s'exécute dans un **workspace complet
+matérialisé hors du dépôt** à partir du tree du commit `C`, lu avec
+`git --no-replace-objects --no-lazy-fetch` : `ls-tree -r -z` pour l'inventaire
+(chemin, **mode**, type, **OID**), un seul `cat-file --batch` pour les contenus,
+écriture des **octets exacts du blob**.
+
+Ces deux options ne sont pas décoratives. Sans `--no-replace-objects`, une ref
+`refs/replace/<oid>` fait renvoyer par `cat-file` un **contenu falsifié** —
+vérifié : `CONTENU FALSIFIE` au lieu de `VRAI CONTENU`. Sans `--no-lazy-fetch`,
+un clone partiel irait chercher un objet manquant **sur le réseau**, pendant une
+phase censée être hors ligne. `refs/replace` et le lazy-fetch appartiennent à la
+même famille que `.git/info/attributes` : des mécanismes **hors commit** qui
+changent silencieusement ce qui est lu. Éliminer cette famille exige de la
+traiter mécanisme par mécanisme, jamais par généralisation.
+
+Ni `git worktree` (il écrit dans `.git/worktrees` du dépôt réel — écriture
+invisible à `git status --porcelain` — et place dans le candidat un `.git`
+pointant vers le dépôt), ni `git archive` (ses attributs, lisibles depuis
+`.git/info/attributes` hors commit, peuvent omettre ou transformer des entrées).
+
+**Les chemins de `ls-tree -z` sont des octets**, jamais des chaînes. Politique
+**fail-closed**, appliquée avant toute écriture :
+
+| Cas                                                            | Règle                                                                                                                 |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| UTF-8 invalide                                                 | refus                                                                                                                 |
+| Deux chemins distincts se normalisant identiquement (NFC/NFD)  | refus                                                                                                                 |
+| Collision insensible à la casse                                | refus — le système de fichiers cible peut l'être (vérifié sur ce Mac)                                                 |
+| Segment `.git` **sous toute casse** ou toute forme équivalente | refus                                                                                                                 |
+| Mode hors `100644` / `100755` / `120000` — dont `160000`       | refus                                                                                                                 |
+| Type autre que `blob` à une feuille                            | refus                                                                                                                 |
+| Entrées dupliquées ou conflit nom/type dans un même tree       | refus — non atteignable par l'index, mais **constructible par plomberie** (`git mktree` l'accepte, `fsck` le signale) |
+| Lien symbolique dont la cible ne résout pas dans le candidat   | refus                                                                                                                 |
+
+L'écriture elle-même crée chaque répertoire explicitement et refuse tout
+composant déjà présent en non-répertoire : `O_EXCL` ne protège que la dernière
+composante, pas la traversée — vérifié, `writeFileSync` à travers un répertoire
+symlinké **écrit hors du candidat** malgré `flag: 'wx'`.
+
+Le candidat a ses **propres dépendances** — **aucun `node_modules` partagé, lié
+ou en lien dur**.
+
+**2. Aucun script tiers ; le réseau n'est ouvert qu'en résolution.** Toute
+installation passe `--ignore-scripts`, ce qui neutralise les scripts du projet
+**et** ceux d'une dépendance explicitement listée en `trustedDependencies` —
+vérifié avec témoin : la fixture s'exécute sans le drapeau, jamais avec. Il
+n'existe donc **aucune phase où du code tiers s'exécute**, et le réseau peut
+rester ouvert pendant les phases de **résolution** sans exposer quoi que ce
+soit. Il est **entièrement coupé** pour toute phase d'**exécution** — schematic,
+probes, LLM. L'exigence antérieure « réseau limité au registre », qu'aucun
+conteneur ordinaire ni `sandbox-exec` ne sait exprimer, est donc sans objet.
+
+Le protocole Bun se déroule en **trois temps distincts** :
+
+1. **base** — `bun install --frozen-lockfile --ignore-scripts` dans le candidat.
+   Le `bun.lock` **doit être présent dans le tree** : vérifié, avec un lockfile
+   absent `--frozen-lockfile` ne échoue pas, il résout et installe — la « base
+   déterministe » serait alors vide de sens ;
+2. **génération contrôlée** — après écriture des versions épinglées dans le
+   catalog du candidat, `bun install --ignore-scripts` (non gelée) régénère
+   `bun.lock`. Vérifié : muter `package.json` puis relancer `--frozen-lockfile`
+   échoue avec `lockfile had changes, but lockfile is frozen` ;
+3. **vérification depuis zéro** — un **second candidat** est matérialisé depuis
+   le même tree et vérifié, puis reçoit un **overlay clos et ordonné** : le
+   `package.json` **racine** (seul porteur des versions épinglées et du catalog)
+   puis `bun.lock`, chacun avec son mode et son OID final attendu. Les 72 autres
+   `package.json` du workspace en sont exclus, comme les fichiers écrits par le
+   schematic. Le candidat est **re-vérifié** après overlay — toute entrée doit
+   correspondre au tree sauf ces deux chemins — avant
+   `bun install --frozen-lockfile --ignore-scripts`. Relancer une installation
+   gelée sur un `node_modules` déjà peuplé constaterait « no changes » sans rien
+   reconstruire : cela ne prouverait rien.
+
+La promotion d'une piste ne mémorise pas une empreinte globale de `package.json`
+et `bun.lock` : elle deviendrait faussement périmée dès l'ajout d'une
+bibliothèque indépendante. Elle lie à la place deux états sémantiques : la
+projection initiale de toutes les entrées concernant les paquets demandés, puis
+la fermeture transitive finale exacte de ces paquets dans le lockfile, peers
+requis compris. Le contrôle accepte l'un ou l'autre état, jamais un mélange ; un
+ajout indépendant reste valide, mais toute modification d'un record atteignable
+force une nouvelle qualification.
+
+La qualification et la publication de sa matrice sont sérialisées par un verrou
+exclusif durable dans `.git`. Le verrou est tenu pendant l'exécution des preuves
+; la matrice doit encore être identique octet pour octet à sa lecture initiale
+avant remplacement atomique. Une promotion concurrente ou une édition humaine
+provoque donc un refus sans écrasement.
+
+La résolution n'est pas sûre du seul fait qu'aucun script ne tourne : Bun
+accepte des dépendances Git/SSH, des tarballs par URL, et lit registres et
+credentials d'un `.npmrc`. Les sources obéissent donc à une **allowlist fermée**
+— `catalog:`, `workspace:`, et le registre approuvé avec intégrité `sha512`. Le
+contrôle a lieu **avant le premier appel à Bun**, sur les 73 `package.json` du
+workspace et sur l'intégralité du `bun.lock` initial, puis à nouveau
+**intégralement sur l'état final**. Contrôler « chaque nouvelle entrée »
+arriverait trop tard : un état initial contenant déjà une source hors politique
+la verrait résolue, réseau ouvert, avant tout rejet. `.npmrc` / `bunfig.toml` et
+les configurations Git globale et système sont neutralisés, sans accès au
+trousseau SSH ni au credential helper. La fermeture transitive autorisée est une
+**traversée du graphe du lockfile final** depuis les paquets directs attendus,
+jamais une lecture du diff observé.
+
+Ces règles ne vivent pas dans de la prose : elles sont déclarées dans
+`conventions/libraries/resolution-policy.json`, artefact **versionné à schéma
+fermé** — scripts de cycle de vie avec commande exacte et classification
+`replay` / `omit` / `reject`, registres autorisés, protocoles autorisés, règles
+d'intégrité, exceptions nommées. Un inventaire en Markdown serait impossible à
+consommer sans coder les règles en dur ou analyser du texte. Le **hash de la
+politique entre dans le `plan_id`**. Aujourd'hui : `preinstall` /
+`check-engines` en `replay`, `prepare` / `husky` en `omit` (pas de `.git` dans
+le candidat). Tout script apparaissant, disparaissant ou dont la commande change
+sans entrée correspondante fait échouer la gate.
+
+Si une dépendance exigeait un jour un script de cycle de vie, ce sera une
+**exception nommée, justifiée et confinée** — phase dédiée, sans réseau — jamais
+un assouplissement global.
+
+**3. Confinement OS obligatoire, en deux profils.** Aucun code tiers ne
+s'exécute sans bac à sable du système : **conteneur** en CI, **`sandbox-exec`**
+en local macOS. Aucun backend conforme → la commande **échoue avant** d'exécuter
+quoi que ce soit. Deux profils distincts, car un profil unique serait incohérent
+— la résolution doit écrire hors du candidat (cache, `HOME` jetable) : profil
+`resolution` (candidat + cache + `HOME` jetable inscriptibles, réseau ouvert,
+scripts interdits) et profil `execution` (`<lease>/workspace/` seul
+inscriptible, cache absent ou en lecture seule, réseau interdit). Un exécutant
+tiers ne tourne **jamais** sous le profil `resolution`. Tout binaire est résolu
+**explicitement** dans le candidat (`node_modules/.bin/…`), sa version comparée
+au lockfile ; `bunx` est interdit — il installe un paquet absent dans un cache
+global partagé. **Chaque profil a sa propre suite adverse.** « Meilleur effort
+plus détection » n'est pas un confinement, et une fonction ne porte le nom
+`runConfined` que si un bac à sable réel l'applique. Le confinement couvre
+**aussi `bun install`**. Le dépôt réel n'est jamais monté en écriture. Les deux
+backends passent la **même suite adversariale** : écriture et lecture hors
+candidat, réseau, lien symbolique d'évasion, sous-processus, credentials,
+chemins absolus, et **fixture à `postinstall`** dont le marqueur doit rester
+absent.
+
+**Amendement du 2026-09-06 — variante `renderer` du profil `execution`.** La
+preuve de coexistence navigateur exige un moteur de rendu, et un moteur n'est
+pas un script : sous le profil nu, Chromium meurt en `SIGSEGV` avant d'ouvrir
+quoi que ce soit. Le profil `execution` accepte donc une variante qui ouvre les
+services système du moteur — mach, mémoire partagée, sysctl, IOKit, lecture des
+bibliothèques du système — **et rien d'autre**. Elle reste refusée au profil
+`resolution` : jamais de moteur là où le réseau est ouvert. Ce qui est protégé
+l'est toujours, et c'est vérifié sur le backend réel avec la variante active :
+HOME réel, dépôt, cache Bun, écriture hors candidat et réseau restent refusés,
+**y compris pour Chromium lui-même**. Le binaire du moteur est monté en
+**lecture seule** après une extraction neuve dans les ressources éphémères du
+bail. Seule l’archive `sha256` déclarée par la politique est persistée : elle
+est rehashée à chaque usage, inspectée en binaire (chemins, types, tailles,
+en-têtes locaux), copiée privativement avant `unzip`, puis l’arbre extrait est
+comparé à l’inventaire ZIP. Une extraction antérieure n’est jamais réutilisée
+comme autorité. C’est le seul artefact du système qui ne vienne pas du registre
+npm, et donc le seul dont l'intégrité ne repose pas sur `bun.lock`.
+
+**4. Cache de paquets — optimisation, jamais frontière.**
+`BUN_INSTALL_CACHE_DIR` dédié, `--backend=copyfile` **obligatoire**, global
+store désactivé, cache **inaccessible** pendant schematic / probes / LLM. Sans
+`copyfile`, Bun relie `node_modules` au cache (`hardlink` sous Linux,
+`clonefile` sous macOS) : un exécutant modifiant `node_modules` corromprait le
+cache partagé. Le cache est indexé par nom/version, **pas** adressé par contenu
+: sa présence ne prouve rien. Un cache partagé reste acceptable **parce que**
+l'invariant 2 garantit qu'aucun code tiers ne s'exécute pendant qu'il est
+inscriptible ; à défaut de cet invariant, il devrait être jetable par candidat.
+
+**5. Transaction de publication — les commits remplacent les snapshots d'octets,
+pas la transaction.** Les verrous sont pris dans l'ordre canonique **global →
+app** et **conservés jusqu'à la synchronisation complète ref + index +
+worktree**. Une transaction parente (`create-app`) possède les verrous et les
+transmet par contexte explicite à ses enfants (`add-library`), qui ne les
+ré-acquièrent ni ne les relâchent. L'état initial `C` et l'état vérifié `C'`
+sont des **commits Git**, retenus par une ref temporaire
+`refs/cmz/transactions/<id>` qui empêche leur ramassage ; le journal ne conserve
+donc que `{ état, C, C', phase de publication }`, plus de snapshot d'octets. La
+publication **n'est pas atomique** : `git update-ref` ne met à jour que la ref —
+l'index et le worktree restent à `C`, et Git présenterait alors le diff inverse
+en modifications locales. Elle est donc journalisée par phase et **reprenable**
+après crash, sous verrous tenus.
+
+**6. Bail du candidat — une machine d'états, pas une promesse.** Un `SIGKILL`
+empêche tout `finally` : le cycle de vie du candidat est donc un **bail**
+journalisé par `rename` atomique, avec des états explicites (`creating`,
+`active`, `releasing`, `released`, `orphaned`, `quarantined`) et un ordre
+d'écritures physiques défini, entre lesquelles un crash reste observable et
+classable. Un candidat n'est promu en `active` qu'après **vérification finale du
+tree** : feuilles Git et répertoires dérivés comptés séparément (les métadonnées
+du bail vivant hors `workspace/`), chemins canoniques, type réel par `lstat`,
+mode Git normalisé, cible exacte des liens, aucun fichier inattendu, et surtout
+**OID Git recalculé** — un OID est le hash de `blob <taille>\0<contenu>` avec
+l'algorithme du dépôt (`git rev-parse --show-object-format`), jamais le hash
+brut du contenu, et aucune longueur d'OID n'est codée en dur. Un dossier nu,
+sans marqueur ni journal, est `unclaimed` : il n'est supprimé que par `rmdir`,
+jamais récursivement, et seulement si type, vacuité, format du nom aléatoire,
+UID, permissions et parent canonique concordent tous — sinon `quarantined`. Un
+`marker.tmp` seul autorise uniquement son `unlink` ciblé puis `rmdir` sous les
+mêmes contrôles structurels. PID, instant de démarrage et vivacité ne sont
+exigés qu'après publication du marqueur : les prétendre avant serait
+invérifiable. Enfin, « écrit par `rename` atomique » recouvre quatre opérations
+: un `SIGKILL` peut laisser un temporaire orphelin, état qui figure
+explicitement dans la machine. Un propriétaire **vivant** interdit toute action
+d'un tiers, quel que soit l'état ; seul un propriétaire mort fait passer
+`creating` ou `active` en `orphaned`. Journal et marqueur discordants →
+`quarantined`, signalé et **jamais purgé automatiquement**. Le marqueur vit
+**hors** du répertoire inscriptible par l'exécutant (`<lease>/marker` contre
+`<lease>/workspace/`), faute de quoi un exécutant tiers pourrait forcer une
+quarantaine permanente — un déni de service durable sur la racine de bail.
+
+**7. Identité du plan et frontière de l'agent LLM.** `plan_id` hashe **toutes**
+les entrées qui peuvent changer la sortie : recette et schéma, **l'overlay
+structuré** (`package.json` racine et `bun.lock`, initiaux et finaux, avec mode
+et OID), le **hash de la politique de résolution**, `nx.json`,
+`tsconfig.base.json`, `.gitattributes`, l'arbre complet de l'app
+(`path\0mode\0sha256`), les versions d'outillage **lues** (Node, Bun, Nx, paquet
+du schematic), le hash du module runner, et la valeur substituée à `{{app}}`. Il
+est **toujours** calculé, affiché et journalisé — même sans `--dry-run`. Un
+changement est un **change-set structuré**
+(`op ∈ {create, modify, delete, rename}`, mode, `sha256` avant/après). Pour
+`llm-then-verified`, le modèle ne reçoit ni chemin du candidat, ni système de
+fichiers, ni shell, ni réseau. Un adaptateur de confiance transmet uniquement
+les octets des chemins allowlistés et soumet une réponse à schéma fermé
+(`create` / `modify`, avec précondition SHA pour modifier). Cet adaptateur est
+un processus explicitement approuvé : exécutable absolu et canonique, `argv`
+fermé, aucun shell, environnement minimal sans secret hérité, requête par
+`stdin`, réponse UTF-8/JSON stricte sans clé dupliquée par `stdout`. Un timeout
+ne repose jamais sur la coopération d’un `AbortSignal` : le groupe de processus
+est tué et sa fermeture attendue ; les sorties sont bornées et le `stderr`
+n’apparaît qu’en taille et empreinte dans le diagnostic. Le contrôleur
+fournisseur demeure une partie de confiance distincte du modèle et devra être
+audité lors de son intégration. Chaque tour est ensuite contrôlé par diff et par
+les oracles ; trois tours maximum. Le journal fsynced
+`.cmz/library-llm-audit/<candidate-id>.jsonl` entre par son hash dans le
+`plan_id`. Aucun adaptateur fournisseur n’est livré : le CLI échoue avant la
+création du candidat tant qu’un adaptateur approuvé n’est pas injecté.
+
+**8. Promotion de compatibilité — qualification distincte et exacte.** La
+commande produit `add-library` ne sélectionne que des pistes `verified`. Une
+piste `candidate` n'est accessible que par `promote-library-compatibility`, qui
+force un dry-run isolé, recalcule les identités du plan et du change-set, exige
+toutes les acceptances de la recette — coexistences comprises — puis remplace
+atomiquement la seule matrice ciblée. En V1, `verified` vaut uniquement pour le
+vecteur exact Node/Bun/Nx/framework testé. Les plages de la piste restent une
+présélection de qualification, jamais une preuve par extrapolation.
+L'attestation lie la piste, les versions, le commit, l'arbre applicatif,
+l'ensemble des entrées de l'outillage et le contenu complet des contrats de
+preuve exécutés. Ce dernier ensemble comprend les preuves réciproques déclarées
+par une autre recette : conserver le même identifiant tout en modifiant sa
+description, son oracle ou son statut périme donc aussi l'attestation. Elle est
+périmée dès qu'une de ces entrées change. Elle n'est pas présentée comme une
+signature de CI : l'autorité d'approbation reste la protection de branche et la
+revue du commit qui la porte.
+
+**9. La sortie d'une recette est canonisée avant d'être jugée.** Un schematic ne
+produit pas du texte canonique : mesuré, le setup Material version 22 laisse des
+lignes blanches à espaces résiduels dans `index.html` après le retrait
+déclaratif de ses liens de polices. Le commit publié doit être canonique comme
+n'importe quel fichier du dépôt. Le Prettier **du candidat** — celui que le
+lockfile épingle, jamais celui de l'hôte — est donc exécuté sous le profil
+d'exécution, après les normalisations et **avant** le contrôle de périmètre
+final. Ses arguments sont la liste fermée des fichiers créés ou modifiés par la
+recette et le manifeste ; il ne reçoit jamais le répertoire applicatif entier.
+Une bibliothèque ne peut donc pas reformater silencieusement une page sans
+rapport, même si cette page était déjà non canonique. Une écriture du processus
+hors du change-set attendu reste refusée par le contrôle final.
+
+La canonisation porte sur **tout ce que la commande écrit dans l'app, y compris
+son propre manifeste** `.cmz/libraries.json`. La première rédaction l'écrivait
+après le formatage : mesuré, `JSON.stringify(…, 2)` et Prettier divergent dès
+que le tableau des bibliothèques tient sur une ligne, et Prettier descend bien
+dans un répertoire commençant par un point. Ce fichier échappait donc à la fois
+au formatage et au contrôle de périmètre final, et **toute** application équipée
+par `add-library` rendait `format:check` rouge au niveau du dépôt. L'ordre est
+désormais : recette → normalisations → manifeste → Prettier → contrôle de
+périmètre. Un invariant qui vaut « pour la sortie de la recette » mais pas pour
+les écritures de l'outil lui-même n'est pas un invariant ; la gate d'intégration
+vérifie en conséquence que l'arbre publié est canonique **là où elle le
+publie**, au lieu d'attendre qu'une gate de dépôt le découvre.
+
+**9 bis. Une tâche d'installation implicite échoue en phase d'exécution.** Le
+réseau et le cache y étaient déjà fermés, mais le `PATH` hôte restait transmis
+sur macOS. Cela a masqué un défaut que Docker a révélé :
+`@angular/material:ng-add` 22.0.5 planifie toujours un `NodePackageInstallTask`,
+qui trouvait Bun sur l'hôte et échouait seulement dans l'image Linux. Le `PATH`
+est désormais vide dans les deux backends ; les exécutables de confiance (Node,
+Nx, Prettier, moteur de rendu) sont invoqués par chemin absolu. La recette
+Material appelle l'entrée locale `ng-add-setup-project`, liée à la version
+exacte de sa piste, après que le protocole de résolution a installé et vérifié
+les paquets. Une tâche qui tente encore de résoudre par son nom `bun`, `npm`,
+`npx`, `pnpm`, `yarn` ou `corepack` échoue donc avant publication. Cette règle
+ne prétend pas empêcher un code tiers hostile d'implémenter lui-même des
+écritures avec Node ; celles-ci restent bornées par le bac à sable et le
+contrôle du change-set.
+
+**10. La commande ne rend la main qu'après avoir synchronisé les dépendances
+locales.** Défaut P0 mesuré : `add-library` publiait `package.json`, `bun.lock`
+et la configuration de l'app, mais laissait le `node_modules` local dans son
+état antérieur — la commande annonçait donc un succès pendant que le build local
+échouait. Le succès exige désormais, comme **phase finale** de la transaction de
+publication, un `bun install --frozen-lockfile --ignore-scripts` réel dans le
+dépôt, suivi de trois contrôles : `package.json` et `bun.lock` **identiques
+octet pour octet** après l'installation, politique de résolution revérifiée sur
+l'état publié, et chaque paquet direct de la piste présent à sa version exacte,
+résolu **dans** `node_modules` sans évasion par lien symbolique.
+
+C'est le seul point du système où une installation s'exécute hors bac à sable,
+dans le dépôt réel. C'est assumé — muter ce `node_modules` est précisément
+l'objet de l'opération. Aucun script de cycle de vie d'une dépendance ne
+s'exécute puisque `--ignore-scripts` tient ; seul le Bun épinglé interprète le
+manifeste et le lockfile. `--dry-run` s'arrête **avant** : il compte huit
+étapes, le chemin nominal en compte neuf. Par cohérence, le harnais
+d'intégration n'utilise plus de `node_modules` symbolique partagé : une
+synchronisation testée contre un lien partagé ne prouverait rien.
+
+Cette neuvième étape appartient à la transaction, elle ne lui succède pas. Le
+journal porte un descripteur fermé de finalisation (app, bibliothèque,
+plateforme, piste et empreinte de piste) et n'est supprimé qu'après la
+synchronisation. Une erreur ordinaire ou un `SIGKILL` après le déplacement de la
+branche conserve donc le commit publié, la ref de transaction, le journal et le
+verrou. La prochaine invocation revalide le descripteur contre les contrats du
+commit publié, rejoue l'installation gelée de façon idempotente, puis seulement
+nettoie la transaction. Sans finaliseur reconnu, la récupération échoue fermée :
+elle ne peut jamais déclarer la publication complète en ignorant un
+`node_modules` obsolète.
+
+## Justification
+
+**L'isolation est une propriété prouvée, pas déclarée.** Trois options ont été
+écartées par contre-preuve exécutée, pas par raisonnement : B (Nx remonte à la
+racine réelle depuis `.cmz/`), C (`git worktree` écrit dans `.git/worktrees`,
+invisible à `git status`) et D (`git archive` honore `.git/info/attributes`, un
+fichier hors commit — test exécuté : un `export-ignore` y retire silencieusement
+un fichier de l'archive). La matérialisation depuis le tree a été vérifiée sur
+ce dépôt : zéro écriture dans le dépôt, aucun `.git` dans le candidat, workspace
+Nx complet, `nx` y résout la racine **du candidat**, et **aucune machinerie
+d'attributs n'intervient** — la propriété est obtenue par construction, pas par
+vérification a posteriori.
+
+**Supprimer la menace vaut mieux que la contenir.** Le cache exposé pendant
+l'installation et le « réseau limité au registre » étaient deux faces du même
+fait : du code tiers s'exécutait pendant que le réseau et le cache étaient
+ouverts. `--ignore-scripts` supprime ce fait — y compris pour une dépendance
+explicitement `trustedDependencies`, vérifié avec témoin. La mesure le confirme
+: sans aucun script, `ngc --strictTemplates` et `nx run build:development`
+sortent en 0, avec le CSS émis. Il n'y a donc plus de fenêtre à contenir, ni de
+règle réseau fine à exprimer — et le cache partagé redevient acceptable, ce qui
+ramène l'installation de 72 s à froid à 19 s à chaud.
+
+**Une classe de menaces ne se ferme pas par généralisation.** Passer au tree a
+éliminé les attributs Git, et j'en ai conclu à tort que l'OID devenait
+l'autorité de contenu : `refs/replace` la détourne, le lazy-fetch la fait
+dépendre du réseau. Une correction locale ne vaut que pour le mécanisme qu'elle
+vise ; chaque autre mécanisme hors commit doit être fermé nommément, et prouvé
+fermé. Le même raisonnement vaut pour l'écriture : `O_EXCL` protège la dernière
+composante et non la traversée — établi par preuve, pas par intuition.
+
+**Un confinement partiel n'est pas un confinement.** « Prévention en CI,
+meilleur effort en local » laisse un schematic cassé ou hostile corrompre le
+dépôt local avant toute détection. Puisque `sandbox-exec` est disponible sur
+macOS et a été prouvé capable de refuser une écriture hors candidat comme un
+accès réseau, il n'y a pas de raison d'accepter moins. Un backend manquant doit
+donc faire échouer la commande, pas la dégrader silencieusement.
+
+**Le cache de paquets n'est pas une frontière.** Il est indexé par nom/version,
+pas adressé par contenu, et Bun relie par défaut `node_modules` au cache. Un
+répertoire de cache distinct ne garantit donc pas des octets indépendants : seul
+`--backend=copyfile` le fait. Le surcoût mesuré (19 s à chaud contre 8,8 s) est
+le prix d'une frontière réelle.
+
+**Un `--dry-run` doit porter une sortie réelle.** On ne peut pas prédire ce
+qu'écrit un schematic sans l'exécuter. Le seul `--dry-run` honnête l'exécute
+donc — d'où l'obligation d'un lieu d'exécution sûr, et d'un `plan_id` qui hashe
+le diff produit plutôt qu'une intention. Corollaire : le `plan_id` n'a de sens
+que si le schematic est déterministe, ce qui impose d'**épingler les versions
+avant** de le lancer (voir § Conséquences).
+
+**Les commits remplacent les snapshots, mais pas la transaction.** `C` et `C'`
+sont des états Git complets et vérifiables : reconstruire un snapshot d'octets
+par-dessus serait redondant. En revanche `git update-ref` ne met à jour que la
+ref — l'index et le worktree restent en arrière, et Git afficherait le diff
+inverse en modifications locales. Synchroniser les trois est une seconde
+opération, non atomique avec la première ; et rien n'empêche un humain ou un
+autre agent de toucher au worktree pendant les minutes de génération. D'où des
+verrous tenus jusqu'à la synchronisation complète, et un journal de phase
+reprenable.
+
+**Un prompt n'est pas une frontière de sécurité.** Le `prompt_contract` cadre la
+tâche mais ne porte aucune autorité. La frontière réelle est l’API de données
+fermée entre l’adaptateur et le moteur : le modèle ne reçoit aucun handle de
+processus ou de fichier, et le contrôleur valide toute la réponse avant la
+première écriture.
+
+## Conséquences
+
+### Positives
+
+- Le dépôt réel ne voit jamais s'exécuter un schematic, un probe ou un LLM :
+  seulement une publication journalisée d'un état déjà vérifié.
+- La commande nominale est **unique** :
+  `bun run add-library --app <app> --library <lib>` enchaîne candidat →
+  installation → schematic → preuves → publication. `--dry-run` et
+  `--expect-plan <plan_id>` restent facultatifs ; le `plan_id` est **toujours**
+  affiché et journalisé.
+- Deux exécutions concurrentes sont impossibles ; un crash pendant la
+  publication est **reprenable**, `C` et `C'` étant retenus par une ref
+  temporaire.
+- Le schematic et les probes utilisent le confinement OS ; le LLM est encore
+  plus borné et ne voit qu’un contrat de données allowlisté.
+
+### Négatives / dette acceptée
+
+- **Coût mesuré** : matérialisation 0,6 s, installation gelée
+  `--ignore-scripts --backend=copyfile` **19 s à chaud** (72 s si le cache est
+  froid), `ngc --strictTemplates` 12 s, `nx build:development` 16 s, auxquels
+  s'ajoutent la génération et la revalidation du lockfile, le schematic et la
+  preuve navigateur. Une commande qui tient les six promesses se compte en
+  **minutes**, pas en secondes. `add-library` est un outil de dev/CI, jamais
+  interactif.
+- **Dépôt entièrement propre exigé** pour la V1 : toute entrée non commitée fait
+  échouer la commande. Une fermeture exacte sur les seules entrées du `plan_id`
+  pourra venir plus tard ; contrôler « juste l'app » serait faux, car la
+  recette, son schéma, le runner et `.gitattributes` influencent aussi le
+  résultat.
+- **Volume d'outillage** : confinement, transaction de publication, journal,
+  change-set et harnais représentent l'essentiel du travail — bien plus que
+  l'installation elle-même.
+- `refs/cmz/transactions/*` et `.cmz/` doivent être purgés après succès ; une
+  ref temporaire oubliée retient des objets indéfiniment.
+- Ces garanties sont exercées par les suites unitaires, adversariales et par
+  `check:library-candidate-isolation` sur macOS et Docker. Les quatre familles
+  de `runtime_acceptance` sont enregistrées et exécutées par `add-library`.
+  L’intégration `create-app → add-library` et la qualification réelle des
+  matrices restent suivies séparément.
+
+### Points à réévaluer
+
+- Si le coût du candidat devient prohibitif en CI, envisager une **réutilisation
+  contrôlée** (candidat conservé entre deux preuves d'une même exécution, purgé
+  entre deux exécutions) — jamais un retour au `node_modules` ou au cache
+  partagé en `hardlink`.
+- Si un schematic exige réellement le réseau après l'installation, il faudra une
+  exception **nommée, justifiée et bornée** dans la recette — pas un
+  assouplissement global.
+- `sandbox-exec` est déprécié par Apple. S'il disparaît, le backend local devra
+  être remplacé (conteneur exigé en local), pas contourné.
+- Si un exécutant tiers doit un jour écrire hors du candidat (cas non identifié
+  aujourd'hui), cet ADR doit être remplacé, pas contourné.
+
+## Références
+
+- [ADR-0041](./0041-angular-material-tailwind-defaults.md) — défauts
+  Material/Tailwind, recettes et séparation `static_invariants` /
+  `runtime_acceptance`.
+- [ADR-0035](./0035-contrat-durabilite-publication-generation.md) — contrat de
+  durabilité de la publication générée (même exigence de reprise vérifiable).
+- [ADR-0033](./0033-propriete-artefacts-regeneration-non-destructive.md) —
+  régénération non destructive.
+- [`library-setup-runtime-plan.md`](../architecture/library-setup-runtime-plan.md)
+  — plan d'exécution, ordre de revue P0 par P0, budget CI.
+- Précédents dans le dépôt : `tools/retire-module-transaction.mjs`,
+  `tools/create-module.mjs` (transaction, verrou, reprise SIGKILL),
+  `tools/generator-platform/core/application-shell-publication.mjs` (`--dry-run`
+  / `--apply <plan-id>`).

@@ -75,6 +75,12 @@ jobs:
       - name: check:weight (poids + plafond lignes, tools/ inclus)
         run: node tools/check-file-weight.mjs --all
 
+      # Un journal d'outil non ignoré rend le dépôt sale et fait échouer la
+      # publication d'add-library APRÈS le travail coûteux. Défaut réel :
+      # .cmz/library-llm-audit/ manquait à .gitignore.
+      - name: check:cmz-journals-ignored (journaux d'outil hors index)
+        run: bun run check:cmz-journals-ignored
+
       - name: check:project-names (ADR-0003 nommage @cmz/)
         run: node tools/check-project-names.mjs
 
@@ -161,10 +167,9 @@ jobs:
       # static_invariants structurels (présence de fichiers/fragments), le
       # schéma fermé du manifeste apps/<app>/.cmz/libraries.json, la cohérence
       # package.json/catalog/bun.lock, et le confinement de toute lecture (zéro
-      # lien symbolique). Ce N'EST PAS un test d'acceptation : les
-      # runtime_acceptance (compilation, règle CSS, coexistence navigateur) et
-      # le harnais du recours LLM restent à livrer — cf.
-      # docs/architecture/library-setup-runtime-plan.md.
+      # lien symbolique). Cette step vérifie les contrats ; leurs acceptances
+      # réelles sont exécutées par le job `library-end-to-end`. Le recours LLM
+      # est borné et fail-closed sans adaptateur approuvé — cf. ADR-0042.
       - name: check:library-setup (ADR-0041)
         run: bun run check:library-setup
 
@@ -189,7 +194,7 @@ jobs:
       # step CI ou un hook husky dédié — se garde donc elle-même de devenir,
       # un jour, le prochain script orphelin non détecté.
       - name: check:ci-wiring (angle mort — gate déclaré vs gate exécuté)
-        run: node tools/check-ci-wiring.mjs
+        run: bun run check:ci-wiring
 
       - name: Format check (Prettier)
         run: bun run format:check
@@ -232,6 +237,69 @@ jobs:
         env:
           CMZ_PUBLICATION_PLATFORM: ${{ matrix.platform }}
         run: bun run check:publication-durability
+
+  # ADR-0042 — la frontière du candidat est prouvée sur les deux backends,
+  # avec la même suite hostile. Aucun résultat add-library n'est autorisé si
+  # l'un des OS permet réseau, credentials ou accès hors candidat.
+  library-candidate-isolation:
+    name: Library candidate isolation (${{ matrix.profile }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: linux-docker
+            runner: ubuntu-24.04
+          - profile: macos-sandbox
+            runner: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: check:library-candidate-isolation (${{ matrix.profile }})
+        run: bun run check:library-candidate-isolation
+
+  # Gate END-TO-END : part d'un dépôt temporaire, crée une app depuis le design
+  # versionné, committe automatiquement le shell puis publie réellement Material
+  # et Tailwind. Résolution Bun, schematics, compilation/build, navigateur,
+  # transactions Git et état final sont donc exercés ensemble, sans édition
+  # applicative par le harnais. Sur ubuntu (amd64), Chromium tourne nativement.
+  library-end-to-end:
+    name: Library integration (create-app → Material → Tailwind)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Les attestations de compatibilité référencent le commit exact qui
+          # a produit leurs preuves. Un checkout shallow rendrait ces commits
+          # invisibles et transformerait une preuve valide en faux négatif.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: check:library-setup-integration
+        run: bun run check:library-setup-integration
 
   # ─── Job T4-5 : secret scanning (gitleaks) ───────────────────────────────
   # ADR-0006 : même contrôle que husky pre-push (`check:secrets -- --pre-push`).
@@ -531,6 +599,14 @@ jobs:
   # direct d'`axios` dans `apps/`/`libs/` (grep, 0 résultat — usage nx interne
   # uniquement) ; build/lint/`check:boundary-negative` rejoués après le bump,
   # 0 régression.
+  #
+  # Le 2026-09-09, l'audit a ensuite détecté js-yaml<4.3.2 et svgo 4.0.x.
+  # Les overrides racine imposent les premières versions corrigées observées.
+  # L'override SVGO traverse toutefois la plage déclarée par
+  # @svgr/plugin-svgo@8 (^3.0.2). `check:security-overrides` ne l'accepte pas
+  # sur la seule foi du lockfile : il vérifie les deux résolutions installées
+  # puis exécute de vraies transformations via postcss-svgo et SVGR. Toute
+  # dérive des plages amont invalide cette preuve et impose une nouvelle revue.
   security-audit:
     name: Dependency audit (bun audit)
     runs-on: ubuntu-latest
@@ -544,6 +620,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: check:security-overrides (compatibilité exécutable)
+        run: bun run check:security-overrides
 
       # Exception étroite et auto-invalidante : avant tout --ignore, ce gate
       # prouve image-size@0.5.5 + intégrité npm exacte, chaîne optionnelle via

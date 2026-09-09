@@ -528,8 +528,26 @@ test('invariants de coexistence : vérifiés seulement si les deux sont déclar�
     const paired = validRecipe({
         library: 'demo',
         coexistence: [
+            // Bloc sans invariant statique : depuis le 2026-09-06 un bloc peut
+            // ne porter que des acceptances runtime. `verifyApps` itérait
+            // `block.static_invariants` sans garde et plantait sur
+            // « is not iterable » — défaut trouvé par le run réel, pas par les
+            // tests unitaires, d'où ce bloc dans la fixture.
             {
                 with: 'autre',
+                intent: 'acceptances runtime seules',
+                runtime_acceptance: [
+                    {
+                        id: 'rendu-commun',
+                        description: 'd',
+                        proof: 'browser-coexistence',
+                        status: 'harness-pending',
+                    },
+                ],
+            },
+            {
+                with: 'autre',
+                intent: 'frontière vérifiée statiquement',
                 static_invariants: [
                     {
                         id: 'frontiere',

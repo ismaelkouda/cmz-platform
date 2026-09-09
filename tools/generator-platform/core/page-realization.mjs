@@ -35,6 +35,65 @@ function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
 }
 
+function assertAppPageIdentity(appName, pageId) {
+    if (!/^[a-z][a-z0-9-]*$/.test(appName ?? ''))
+        fail('app name must be kebab-case');
+    if (!/^page_[a-f0-9]{16}$/.test(pageId ?? ''))
+        fail('invalid stable page id');
+}
+
+function deriveWorkOrderId({
+    appName,
+    pageId,
+    pageContractHash,
+    protectedWorkspaceHash,
+    realizationContract,
+}) {
+    return sha256(
+        JSON.stringify({
+            app_name: appName,
+            page_id: pageId,
+            page_contract_sha256: pageContractHash,
+            protected_workspace_sha256: protectedWorkspaceHash,
+            allowed_files: ALLOWED_FILES,
+            realization_contract: realizationContract,
+        })
+    );
+}
+
+function assertWorkspaceEntry(root, path, label, expectedKind) {
+    const rel = relative(root, path);
+    if (!rel || rel === '..' || rel.startsWith(`..${sep}`))
+        fail(`${label} must be inside the workspace`);
+    const rootMetadata = lstatSync(root);
+    if (!rootMetadata.isDirectory() || rootMetadata.isSymbolicLink())
+        fail('workspace root must be a real directory');
+    const segments = rel.split(sep);
+    let current = root;
+    for (const [index, segment] of segments.entries()) {
+        current = resolve(current, segment);
+        const metadata = lstatSync(current);
+        if (metadata.isSymbolicLink())
+            fail(`${label} must not traverse a symbolic link`);
+        const leaf = index === segments.length - 1;
+        if (!leaf && !metadata.isDirectory())
+            fail(`${label} has a non-directory parent`);
+        if (
+            leaf &&
+            ((expectedKind === 'file' && !metadata.isFile()) ||
+                (expectedKind === 'directory' && !metadata.isDirectory()))
+        ) {
+            fail(`${label} must be a regular ${expectedKind}`);
+        }
+    }
+    return path;
+}
+
+function resolveWorkspaceFile(root, declaredPath, label) {
+    const absolute = resolve(root, declaredPath);
+    return assertWorkspaceEntry(root, absolute, label, 'file');
+}
+
 function appPaths(root, appName, pageId) {
     const app = resolve(root, `apps/${appName}`);
     return {
@@ -225,12 +284,11 @@ async function writeAtomic(path, document) {
 }
 
 export function planPageRealization({ workspaceRoot, appName, pageId }) {
-    if (!/^[a-z][a-z0-9-]*$/.test(appName ?? ''))
-        fail('app name must be kebab-case');
-    if (!/^page_[a-f0-9]{16}$/.test(pageId ?? ''))
-        fail('invalid stable page id');
+    assertAppPageIdentity(appName, pageId);
     const root = resolve(workspaceRoot);
     const paths = appPaths(root, appName, pageId);
+    assertWorkspaceEntry(root, paths.manifest, 'app manifest', 'file');
+    assertWorkspaceEntry(root, paths.pageContract, 'page contract', 'file');
     const manifest = readJsonFile(paths.manifest, 'app manifest');
     const pageContract = readJsonFile(paths.pageContract, 'page contract');
     if (
@@ -241,7 +299,11 @@ export function planPageRealization({ workspaceRoot, appName, pageId }) {
     ) {
         fail('app/page ownership identity mismatch');
     }
-    const designAbsolute = resolve(root, manifest.design_ref.path);
+    const designAbsolute = resolveWorkspaceFile(
+        root,
+        manifest.design_ref.path,
+        'published design'
+    );
     const designContent = readFileSync(designAbsolute);
     if (sha256(designContent) !== manifest.design_ref.sha256)
         fail('published design drifted since app creation');
@@ -260,16 +322,13 @@ export function planPageRealization({ workspaceRoot, appName, pageId }) {
     const pageContractPath = relative(root, paths.pageContract)
         .split(sep)
         .join('/');
-    const workOrderId = sha256(
-        JSON.stringify({
-            app_name: appName,
-            page_id: pageId,
-            page_contract_sha256: pageContractHash,
-            protected_workspace_sha256: protectedHash,
-            allowed_files: ALLOWED_FILES,
-            realization_contract: realizationContract,
-        })
-    );
+    const workOrderId = deriveWorkOrderId({
+        appName,
+        pageId,
+        pageContractHash,
+        protectedWorkspaceHash: protectedHash,
+        realizationContract,
+    });
     const state = statePaths(root, appName, pageId, workOrderId);
     const workOrder = publicWorkOrder({
         workOrderId,
@@ -343,6 +402,9 @@ export async function publishPageRealizationWorkOrder(options) {
 }
 
 function directoryFiles(root) {
+    const rootMetadata = lstatSync(root);
+    if (!rootMetadata.isDirectory() || rootMetadata.isSymbolicLink())
+        fail('page output root must be a real directory');
     const files = [];
     for (const entry of readdirSync(root, { withFileTypes: true })) {
         if (entry.isSymbolicLink() || !entry.isFile())
@@ -414,8 +476,13 @@ export function verifyPageRealization(
     { workspaceRoot, appName, pageId, workOrderId, evidenceSchema },
     dependencies = {}
 ) {
+    assertAppPageIdentity(appName, pageId);
+    if (!/^[a-f0-9]{64}$/.test(workOrderId ?? ''))
+        fail('work order id must be SHA-256');
     const root = resolve(workspaceRoot);
     const state = statePaths(root, appName, pageId, workOrderId);
+    assertWorkspaceEntry(root, state.workOrder, 'work order', 'file');
+    assertWorkspaceEntry(root, state.baseline, 'work order baseline', 'file');
     const workOrder = readJsonFile(state.workOrder, 'work order');
     const baseline = readJsonFile(state.baseline, 'work order baseline');
     if (
@@ -426,6 +493,7 @@ export function verifyPageRealization(
         fail('work order state integrity failure');
     }
     const paths = appPaths(root, appName, pageId);
+    assertWorkspaceEntry(root, paths.pageContract, 'page contract', 'file');
     const pageContractContent = readFileSync(paths.pageContract);
     const pageContractHash = sha256(pageContractContent);
     const pageContract = JSON.parse(pageContractContent.toString('utf8'));
@@ -434,11 +502,42 @@ export function verifyPageRealization(
         pageContract,
         pageContractHash
     );
+    const relativeWriteRoot = relative(root, paths.writeRoot)
+        .split(sep)
+        .join('/');
+    const pageContractPath = relative(root, paths.pageContract)
+        .split(sep)
+        .join('/');
+    const expectedWorkOrderId = deriveWorkOrderId({
+        appName,
+        pageId,
+        pageContractHash,
+        protectedWorkspaceHash: workOrder.protected_workspace_sha256,
+        realizationContract: expectedRealizationContract,
+    });
+    const expectedWorkOrder = publicWorkOrder({
+        workOrderId: expectedWorkOrderId,
+        appName,
+        pageId,
+        pageContractPath,
+        pageContractHash,
+        writeRoot: relativeWriteRoot,
+        baselineSha256: workOrder.protected_workspace_sha256,
+        realizationContract: expectedRealizationContract,
+    });
+    const violations = [];
+    if (
+        expectedWorkOrderId !== workOrderId ||
+        JSON.stringify(workOrder) !== JSON.stringify(expectedWorkOrder)
+    ) {
+        violations.push(
+            'work order content does not match its content-addressed id'
+        );
+    }
     const currentBaseline = (dependencies.inventory ?? gitInventory)(
         root,
-        workOrder.allowed_write_root
+        relativeWriteRoot
     );
-    const violations = [];
     if (
         JSON.stringify(workOrder.realization_contract) !==
         JSON.stringify(expectedRealizationContract)
@@ -449,6 +548,12 @@ export function verifyPageRealization(
         violations.push('workspace changed outside the allowed page root');
     let actualFiles = [];
     try {
+        assertWorkspaceEntry(
+            root,
+            paths.writeRoot,
+            'page output root',
+            'directory'
+        );
         actualFiles = directoryFiles(paths.writeRoot);
     } catch (error) {
         violations.push(error.message);
@@ -467,9 +572,12 @@ export function verifyPageRealization(
             violations.push(`direct network access forbidden by ${pattern}`);
     }
     for (const contract of pageContract.backend_contracts ?? []) {
-        const backend = JSON.parse(
-            readFileSync(resolve(root, contract.snapshot_uri), 'utf8')
+        const snapshot = resolveWorkspaceFile(
+            root,
+            contract.snapshot_uri,
+            `backend contract ${contract.id}`
         );
+        const backend = JSON.parse(readFileSync(snapshot, 'utf8'));
         for (const operation of backend.operations ?? []) {
             if (source.includes(operation.path))
                 violations.push(

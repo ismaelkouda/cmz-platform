@@ -35,6 +35,10 @@ test('applique chaque mot-clé JSON Schema utilisé par les schémas du moteur',
         }),
         ['$: items must be unique']
     );
+    assert.deepEqual(validateJsonSchema(null, { type: 'null' }), []);
+    assert.deepEqual(validateJsonSchema('null', { type: 'null' }), [
+        '$: expected null, received string',
+    ]);
 });
 
 test('oneOf exige exactement un sous-schéma satisfait', () => {
@@ -82,6 +86,35 @@ test('oneOf exige exactement un sous-schéma satisfait', () => {
         ),
         ['$: must match exactly one subschema of oneOf (matched 0)']
     );
+});
+
+test('anyOf exige au moins un sous-schéma satisfait', () => {
+    // Même angle mort fail-open que allOf et oneOf avant leurs correctifs :
+    // sans cette branche, tout passait. Un bloc de coexistence doit porter au
+    // moins un contrôle, sans que porter les deux soit une faute.
+    const schema = {
+        type: 'object',
+        anyOf: [
+            { type: 'object', required: ['static_invariants'] },
+            { type: 'object', required: ['runtime_acceptance'] },
+        ],
+    };
+    assert.deepEqual(validateJsonSchema({ static_invariants: [] }, schema), []);
+    assert.deepEqual(
+        validateJsonSchema({ runtime_acceptance: [] }, schema),
+        []
+    );
+    assert.deepEqual(
+        validateJsonSchema(
+            { static_invariants: [], runtime_acceptance: [] },
+            schema
+        ),
+        [],
+        'porter les deux reste valide'
+    );
+    assert.deepEqual(validateJsonSchema({ with: 'tailwind' }, schema), [
+        '$: must match at least one subschema of anyOf',
+    ]);
 });
 
 test('canonical action-request evidence and semantic models are valid', async () => {

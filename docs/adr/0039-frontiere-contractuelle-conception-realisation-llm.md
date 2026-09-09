@@ -101,6 +101,13 @@ Une conception `approved` ne contient aucune inconnue. Toute référence backend
 page, état, action, audience ou permission doit se résoudre exactement. Les
 incohérences échouent fermées avant toute création d'application.
 
+Le renderer du shell canonise chaque format reconnu par le Prettier épinglé du
+workspace **avant** de calculer les hashes, le manifeste d'application et le
+`plan_id`. Les formats que Prettier ne reconnaît pas conservent exactement leurs
+octets. Une canonisation postérieure serait interdite : elle ferait attester au
+plan un arbre différent de celui que les gates de dépôt acceptent et
+invaliderait silencieusement les contrats de réalisation de page.
+
 ### 3. Le registre de compositions gouverne le choix du générateur
 
 Le choix d'une composition n'est pas une branche codée en dur et n'appartient

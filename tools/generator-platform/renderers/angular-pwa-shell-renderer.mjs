@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
+
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
 }
@@ -98,7 +100,7 @@ function translations(pages) {
     );
 }
 
-export function renderAngularPwaShell({
+export async function renderAngularPwaShell({
     design,
     experienceId,
     appName,
@@ -424,6 +426,28 @@ self.addEventListener('fetch', (event) => {
             pageContract(design, experience, page, designPath, designSha256)
         );
     }
+    // Toute app gérée doit déclarer ses bibliothèques (ADR-0041) : sans ce
+    // manifeste, `check:library-setup` refuse une app fraîchement créée. Le
+    // shell livre Transloco et rien d'autre — Material et Tailwind sont opt-in
+    // via `add-library` (ADR-0044). Ce fichier est donc le point de départ que
+    // `add-library` fera ensuite évoluer, jamais une copie de leur config.
+    files['.cmz/libraries.json'] = json({
+        schema_version: '1.0.0',
+        kind: 'app-library-manifest',
+        platform: 'angular',
+        libraries: ['transloco'],
+    });
+    const canonicalFiles = await canonicalizeGeneratedFiles(
+        Object.fromEntries(
+            Object.entries(files).map(([path, content]) => [
+                `${root}/${path}`,
+                content,
+            ])
+        )
+    );
+    for (const path of Object.keys(files)) {
+        files[path] = canonicalFiles[`${root}/${path}`];
+    }
     const artifacts = Object.entries(files)
         .map(([path, content]) => ({
             path,
@@ -445,6 +469,10 @@ self.addEventListener('fetch', (event) => {
                 .join('\0')
         ),
     };
-    files['.cmz/app-manifest.json'] = json(manifest);
+    const canonicalManifest = await canonicalizeGeneratedFiles({
+        [`${root}/.cmz/app-manifest.json`]: json(manifest),
+    });
+    files['.cmz/app-manifest.json'] =
+        canonicalManifest[`${root}/.cmz/app-manifest.json`];
     return { files, manifest, experience, pages };
 }

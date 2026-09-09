@@ -37,7 +37,13 @@
       "id": "key-renders-translation",
       "description": "un composant qui utilise le pipe `transloco` / `TranslocoDirective` compile sous ngc --strictTemplates dans une app candidate isolée, ne référence que Transloco, et rend la traduction d'une clé (pas la clé brute) monté avec TranslocoTestingModule",
       "proof": "compile-component",
-      "status": "harness-pending"
+      "status": "enforced"
+    },
+    {
+      "id": "offline-production-build",
+      "description": "la build de production complète réussit dans le candidat sans accès réseau",
+      "proof": "production-build",
+      "status": "enforced"
     }
   ],
   "guidance": "https://jsverse.gitbook.io/transloco"

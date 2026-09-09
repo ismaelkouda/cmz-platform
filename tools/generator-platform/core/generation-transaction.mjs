@@ -23,6 +23,14 @@ import {
     stableStringify,
 } from './generation-manifest.mjs';
 
+// `os.hostname()` n'est pas une identité immuable sur macOS : il peut changer
+// au gré de la configuration réseau pendant une génération longue. Le relire
+// à l'acquisition puis à la récupération transformait alors un verrou local
+// mort en verrou « distant ». L'identité reste volontairement bornée au
+// processus : un processus suivant dont le hostname diffère refuse toujours la
+// récupération (fail-closed), mais une opération en cours ne se contredit plus.
+export const GENERATION_PROCESS_HOSTNAME = hostname();
+
 function fail(message) {
     throw new Error(`generation publication: ${message}`);
 }
@@ -414,7 +422,7 @@ async function acquireGenerationLock(outputRoot) {
                 `${JSON.stringify({
                     schema_version: '1.0.0',
                     pid: process.pid,
-                    hostname: hostname(),
+                    hostname: GENERATION_PROCESS_HOSTNAME,
                     started_at: new Date().toISOString(),
                 })}\n`
             );
@@ -453,7 +461,7 @@ async function acquireGenerationLock(outputRoot) {
                     `generation lock ${lockRoot} has an invalid owner; manual inspection required`
                 );
             }
-            const sameHost = owner.hostname === hostname();
+            const sameHost = owner.hostname === GENERATION_PROCESS_HOSTNAME;
             if (!sameHost || processIsAlive(owner.pid)) {
                 fail(
                     `another generation owns ${outputRoot} (${JSON.stringify(owner)})`

@@ -1,0 +1,11 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true
+  },
+  "files": ["material-probe.ts"],
+  "angularCompilerOptions": {
+    "strictTemplates": true
+  }
+}

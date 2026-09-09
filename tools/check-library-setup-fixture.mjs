@@ -43,6 +43,11 @@ export function validRecipe(overrides = {}) {
         install: {
             method: 'llm-then-verified',
             prompt_contract: 'installe demo puis vérifie',
+            llm_write_paths: ['src/demo.ts'],
+            max_iterations: 3,
+            iteration_timeout_ms: 120000,
+            max_context_bytes: 262144,
+            max_response_bytes: 65536,
             notes: 'installé puis vérifié',
         },
         static_invariants: [
