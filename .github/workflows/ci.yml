@@ -599,6 +599,14 @@ jobs:
   # direct d'`axios` dans `apps/`/`libs/` (grep, 0 résultat — usage nx interne
   # uniquement) ; build/lint/`check:boundary-negative` rejoués après le bump,
   # 0 régression.
+  #
+  # Le 2026-09-09, l'audit a ensuite détecté js-yaml<4.3.2 et svgo 4.0.x.
+  # Les overrides racine imposent les premières versions corrigées observées.
+  # L'override SVGO traverse toutefois la plage déclarée par
+  # @svgr/plugin-svgo@8 (^3.0.2). `check:security-overrides` ne l'accepte pas
+  # sur la seule foi du lockfile : il vérifie les deux résolutions installées
+  # puis exécute de vraies transformations via postcss-svgo et SVGR. Toute
+  # dérive des plages amont invalide cette preuve et impose une nouvelle revue.
   security-audit:
     name: Dependency audit (bun audit)
     runs-on: ubuntu-latest
@@ -612,6 +620,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: check:security-overrides (compatibilité exécutable)
+        run: bun run check:security-overrides
 
       # Exception étroite et auto-invalidante : avant tout --ignore, ce gate
       # prouve image-size@0.5.5 + intégrité npm exacte, chaîne optionnelle via

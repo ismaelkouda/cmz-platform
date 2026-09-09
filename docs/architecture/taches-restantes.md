@@ -2642,7 +2642,10 @@ gouvernance, sécurité, licences.
   distinctes dans le fichier source, non fusionnées pour ne pas perdre la trace
   des deux ids.)_
 - **T4-2** — partiel, S, P1, alias `CI-4`. Pipeline Dependabot : absorber PR
-  sécu, maintenir `bun audit --high` = 0.
+  sécu, maintenir `bun audit --high` = 0. Les overrides `js-yaml@4.3.2` et
+  `svgo@4.1.0` sont matérialisés dans le lockfile ; `check:security-overrides`
+  exécute les deux consommateurs réels de SVGO et invalide la preuve si leur
+  résolution ou leurs plages amont dérivent.
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
 - **T4-5** — fait, S, P1, alias `Big Tech gap`. Secret scanning pre-push + CI
