@@ -5,7 +5,7 @@
   "tracks": [
     {
       "id": "angular-22-transloco-8",
-      "status": "candidate",
+      "status": "verified",
       "requirements": {
         "node": ">=22.22.3 <23",
         "bun": ">=1.3.14 <2",
@@ -18,7 +18,45 @@
       "dependency_section": "dependencies",
       "catalog": "default",
       "reason": "Piste initiale Transloco 8 ; passe en verified après compilation et rendu d’une traduction.",
-      "verification": null
+      "verification": {
+        "schema_version": "1.0.0",
+        "commit": "ab4ddec65aca2f3ef7ff4cd0c731ba23ca593eba",
+        "app": "library-qualification-angular",
+        "plan_id": "library-plan:6bfcb07d03bdc8f1b4f1cf95b40e5c82c5a8313650268dcd45e8b5fd8990dd24",
+        "change_set_id": "changes:899d6ba28202c58beb6477e6ca47abe5298a60ba1f2550ae5fd8d6e8ad45efe8",
+        "app_tree_sha256": "e258093c3fe1c4ded44ed01700b0f91e91622d23046bc0bf1b1219c9dab2afb3",
+        "track_sha256": "d4d58f974bd586023fe5017e91a21cd95b3da3addbfcad29097831a31a2db6bf",
+        "tested_versions": {
+          "node": "22.22.3",
+          "bun": "1.3.14",
+          "nx": "23.1.0",
+          "framework": "22.0.7",
+          "packages": {
+            "@jsverse/transloco": "8.4.0"
+          }
+        },
+        "dependency_state_sha256": {
+          "initial": "7745a58265b80852d0da33adfc8d467ce8d5503400bc79ef37af423a6f20ab45",
+          "final": "ffd496a5dc860a969e1e6ced069d55ff6cfe6dc49b625289e64f6f8a39026b5b"
+        },
+        "proofs": [
+          "key-renders-translation",
+          "offline-production-build"
+        ],
+        "inputs_sha256": {
+          "recipe": "b8c36f601a0d6c17e1f74bcad1ebb14cdd5dd6bd1f8e21d3ed7e17def9caaab2",
+          "recipe_schema": "d73a46a4cc33ec3d907c48faae27031d10448342be6600cf553bc1919064ad23",
+          "compat_schema": "2ffc59094ed77445afe494642b3e4d767fa7f6793cb5a91bdc6493319e5ba85f",
+          "policy": "ca3429863614bb7592a153300a44e7b7006428cc1fd826823062c8759fde77c7",
+          "policy_schema": "a71cc60b0692e3704ac8f09847b202af9da92453c7de486f09d0106ff3db0c96",
+          "nx_json": "3403357296b1a3ccbab58dbe602d10d50849775a60ba548526f64bebe83dd4bc",
+          "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
+          "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
+          "proof_contracts": "ae90b709d40b3445a4ac22621755e2441ff78b79927c143da646013b12b63f27",
+          "runner": "40cfbc0d2e3a24718e661f67ded2e84f808f7b0486422238106a550cce19aa21"
+        },
+        "evidence_sha256": "875ab647010deaff19c1e964a6ab35f268e1602c9106cc8c9aac25aabe05f7ca"
+      }
     }
   ]
 }
