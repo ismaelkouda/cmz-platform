@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {
     cpSync,
+    existsSync,
     mkdtempSync,
     readFileSync,
     realpathSync,
@@ -54,7 +55,24 @@ function repository(t) {
     const root = realpathSync(
         mkdtempSync(join(tmpdir(), 'cmz-promotion-runner-'))
     );
-    t.after(() => rmSync(root, { recursive: true, force: true }));
+    t.after(() => {
+        // Le verrou est le seul résidu métier susceptible de survivre au
+        // scénario : sa présence après le test serait un défaut, jamais un
+        // flake à masquer. Une fois cette absence prouvée, les retries bornés de
+        // `fs.rm` absorbent uniquement les ENOTEMPTY transitoires observés sur
+        // le filesystem du runner Linux pendant le teardown de `.git`.
+        assert.equal(
+            existsSync(join(root, '.git/cmz-library-promotion.lock')),
+            false,
+            'le verrou de promotion doit être libéré avant le teardown'
+        );
+        rmSync(root, {
+            recursive: true,
+            force: true,
+            maxRetries: 5,
+            retryDelay: 100,
+        });
+    });
     for (const path of ['conventions', 'tools', 'apps/backoffice-angular']) {
         cpSync(join(SOURCE, path), join(root, path), { recursive: true });
     }

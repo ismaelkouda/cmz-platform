@@ -202,6 +202,22 @@ function main() {
         if (baseCommit !== git(SOURCE, ['rev-parse', 'HEAD'])) {
             fail('le clone local ne pointe pas sur le HEAD source');
         }
+        // `actions/checkout` laisse volontairement HEAD détaché. Un clone
+        // local de ce dépôt hérite alors de cet état et ne représente pas le
+        // contrat réel d’add-library, dont la publication transactionnelle
+        // exige une branche locale. La preuve crée donc sa propre branche,
+        // sans assouplir le garde-fou du moteur de publication.
+        git(repository, [
+            'switch',
+            '--create',
+            'cmz/library-integration-proof',
+        ]);
+        const proofBranch = git(repository, ['symbolic-ref', '-q', 'HEAD']);
+        if (proofBranch !== 'refs/heads/cmz/library-integration-proof') {
+            fail(
+                `branche de preuve inattendue : ${proofBranch || '(détachée)'}`
+            );
+        }
         git(repository, ['config', 'user.name', 'CMZ Integration Proof']);
         git(repository, ['config', 'user.email', 'cmz-proof@example.invalid']);
         assertClean(repository, 'clone initial');

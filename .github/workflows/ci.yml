@@ -281,6 +281,11 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Les attestations de compatibilité référencent le commit exact qui
+          # a produit leurs preuves. Un checkout shallow rendrait ces commits
+          # invisibles et transformerait une preuve valide en faux négatif.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
