@@ -73,6 +73,13 @@ try { fs.writeFileSync(process.env.HOME + '/forbidden', 'bad'); result.homeWrite
 try { fs.symlinkSync(${JSON.stringify(repositoryTarget)}, process.cwd() + '/escape'); fs.readFileSync(process.cwd() + '/escape/secret'); result.symlinkRead = true; } catch (error) { result.symlinkRead = error.code; }
 const nested = spawnSync(process.execPath, ['-e', ${JSON.stringify(`require('node:fs').writeFileSync(${JSON.stringify(forbiddenRepository)}, 'nested')`)}]);
 result.subprocessWrite = nested.status === 0;
+result.path = process.env.PATH;
+result.packageManagers = Object.fromEntries(
+    ['bun', 'npm', 'npx', 'pnpm', 'yarn', 'corepack'].map((name) => {
+        const attempt = spawnSync(name, ['--version']);
+        return [name, attempt.status === 0];
+    })
+);
 const timer = setTimeout(() => { result.network = 'timeout'; console.log(JSON.stringify(result)); }, 5000);
 fetch('https://example.com').then(() => { clearTimeout(timer); result.network = true; console.log(JSON.stringify(result)); }).catch((error) => { clearTimeout(timer); result.network = error.cause?.code || error.name; console.log(JSON.stringify(result)); });
 `;
@@ -94,6 +101,15 @@ fetch('https://example.com').then(() => { clearTimeout(timer); result.network = 
         assert.notEqual(observed.homeWrite, true);
         assert.notEqual(observed.symlinkRead, true);
         assert.equal(observed.subprocessWrite, false);
+        assert.equal(observed.path, '');
+        assert.deepEqual(observed.packageManagers, {
+            bun: false,
+            npm: false,
+            npx: false,
+            pnpm: false,
+            yarn: false,
+            corepack: false,
+        });
         assert.notEqual(observed.network, true);
         assert.deepEqual(observed.credentials, []);
     }

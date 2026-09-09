@@ -352,11 +352,11 @@ signature de CI : l'autorité d'approbation reste la protection de branche et la
 revue du commit qui la porte.
 
 **9. La sortie d'une recette est canonisée avant d'être jugée.** Un schematic ne
-produit pas du texte canonique : mesuré, `@angular/material:ng-add` version 22
-laisse des lignes blanches à espaces résiduels dans `index.html` après le
-retrait déclaratif de ses liens de polices. Le commit publié doit être canonique
-comme n'importe quel fichier du dépôt. Le Prettier **du candidat** — celui que
-le lockfile épingle, jamais celui de l'hôte — est donc exécuté sous le profil
+produit pas du texte canonique : mesuré, le setup Material version 22 laisse des
+lignes blanches à espaces résiduels dans `index.html` après le retrait
+déclaratif de ses liens de polices. Le commit publié doit être canonique comme
+n'importe quel fichier du dépôt. Le Prettier **du candidat** — celui que le
+lockfile épingle, jamais celui de l'hôte — est donc exécuté sous le profil
 d'exécution, après les normalisations et **avant** le contrôle de périmètre
 final. Ses arguments sont la liste fermée des fichiers créés ou modifiés par la
 recette et le manifeste ; il ne reçoit jamais le répertoire applicatif entier.
@@ -377,16 +377,31 @@ les écritures de l'outil lui-même n'est pas un invariant ; la gate d'intégrat
 vérifie en conséquence que l'arbre publié est canonique **là où elle le
 publie**, au lieu d'attendre qu'une gate de dépôt le découvre.
 
+**9 bis. Une tâche d'installation implicite échoue en phase d'exécution.** Le
+réseau et le cache y étaient déjà fermés, mais le `PATH` hôte restait transmis
+sur macOS. Cela a masqué un défaut que Docker a révélé :
+`@angular/material:ng-add` 22.0.5 planifie toujours un `NodePackageInstallTask`,
+qui trouvait Bun sur l'hôte et échouait seulement dans l'image Linux. Le `PATH`
+est désormais vide dans les deux backends ; les exécutables de confiance (Node,
+Nx, Prettier, moteur de rendu) sont invoqués par chemin absolu. La recette
+Material appelle l'entrée locale `ng-add-setup-project`, liée à la version
+exacte de sa piste, après que le protocole de résolution a installé et vérifié
+les paquets. Une tâche qui tente encore de résoudre par son nom `bun`, `npm`,
+`npx`, `pnpm`, `yarn` ou `corepack` échoue donc avant publication. Cette règle
+ne prétend pas empêcher un code tiers hostile d'implémenter lui-même des
+écritures avec Node ; celles-ci restent bornées par le bac à sable et le
+contrôle du change-set.
+
 **10. La commande ne rend la main qu'après avoir synchronisé les dépendances
 locales.** Défaut P0 mesuré : `add-library` publiait `package.json`, `bun.lock`
 et la configuration de l'app, mais laissait le `node_modules` local dans son
 état antérieur — la commande annonçait donc un succès pendant que le build local
 échouait. Le succès exige désormais, comme **phase finale** de la transaction de
-publication, un `bun install --frozen-lockfile --ignore-scripts` réel dans le dépôt, suivi de
-trois contrôles : `package.json` et `bun.lock` **identiques octet pour octet**
-après l'installation, politique de résolution revérifiée sur l'état publié, et
-chaque paquet direct de la piste présent à sa version exacte, résolu **dans**
-`node_modules` sans évasion par lien symbolique.
+publication, un `bun install --frozen-lockfile --ignore-scripts` réel dans le
+dépôt, suivi de trois contrôles : `package.json` et `bun.lock` **identiques
+octet pour octet** après l'installation, politique de résolution revérifiée sur
+l'état publié, et chaque paquet direct de la piste présent à sa version exacte,
+résolu **dans** `node_modules` sans évasion par lien symbolique.
 
 C'est le seul point du système où une installation s'exécute hors bac à sable,
 dans le dépôt réel. C'est assumé — muter ce `node_modules` est précisément

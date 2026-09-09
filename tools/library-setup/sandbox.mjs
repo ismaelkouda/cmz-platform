@@ -257,7 +257,14 @@ export function macSandboxProfile({
 
 function cleanEnvironment(paths, profile, extraEnv) {
     return {
-        PATH: process.env.PATH,
+        // La phase d'exécution reçoit déjà l'exécutable approuvé par chemin
+        // absolu. Elle n'a donc aucun besoin légitime de résolution via PATH.
+        // Un PATH hôte avait masqué sur macOS un NodePackageInstallTask lancé
+        // par le schematic Material : Bun y était trouvé, alors que le même
+        // candidat échouait dans l'image Docker. PATH vide interdit par
+        // construction la résolution par nom de bun/npm/npx/pnpm/yarn/corepack
+        // sur LES DEUX backends.
+        PATH: profile === 'execution' ? '' : process.env.PATH,
         HOME: paths.home,
         LANG: 'C',
         LC_ALL: 'C',
@@ -452,6 +459,13 @@ export function runConfined({
         `${uid}:${gid}`,
         '--network',
         profile === 'execution' ? 'none' : 'bridge',
+        // Ne jamais déléguer à l'ENTRYPOINT de l'image : l'image Node utilise
+        // `docker-entrypoint.sh`, résolu via PATH, et un PATH vide le rend
+        // justement inaccessible. L'exécutable approuvé est déjà absolu ; le
+        // fixer comme entrypoint supprime cette dépendance implicite et rend
+        // la commande identique à l'invocation macOS.
+        '--entrypoint',
+        executable,
         // `--mount` n'accepte comme champ nu que `readonly` : un `,rw` ou un
         // `,ro` fait échouer `docker run` en code 125 AVANT tout démarrage de
         // conteneur. Défaut trouvé en exécutant réellement Docker le
@@ -479,6 +493,7 @@ export function runConfined({
         'CI=1',
         '--env',
         'NX_NO_CLOUD=true',
+        ...(profile === 'execution' ? ['--env', 'PATH='] : []),
         // Mêmes réglages que sur macOS : les deux backends doivent offrir la
         // même frontière, sans quoi la suite hostile ne prouve pas la même
         // chose des deux côtés. Le conteneur monte /tmp en tmpfs inscriptible,
@@ -495,11 +510,18 @@ export function runConfined({
             'BUN_INSTALL_CACHE_DIR=/cmz-cache'
         );
     }
-    dockerArgs.push(image, executable, ...resolvedArgv);
+    dockerArgs.push(image, ...resolvedArgv);
     return checkedSpawn(
         'docker',
         dockerArgs,
-        { cwd: paths.home, env, timeout: timeoutMs },
+        // PATH n'est requis que par le client Docker de confiance pour trouver
+        // ses propres helpers. Le processus confiné reçoit, lui, PATH= via
+        // l'argument --env ci-dessus.
+        {
+            cwd: paths.home,
+            env: { ...env, PATH: process.env.PATH },
+            timeout: timeoutMs,
+        },
         spawn
     );
 }

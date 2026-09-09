@@ -551,12 +551,18 @@ irréproductible. D'où :
 2. écrire les versions exactes dans le catalog **du candidat** ;
 3. produire et vérifier son lockfile ;
 4. **couper le réseau** ;
-5. exécuter le générateur **déjà installé**, via le binaire Nx du candidat, en
-   échouant si sa version ne correspond pas au lockfile (lue dans
-   `node_modules/nx/package.json`, pas par analyse d'une sortie `--version`).
+5. exécuter le générateur **déjà installé**, via le binaire Nx du candidat, avec
+   un `PATH` vide sur les deux backends, en échouant si sa version ne correspond
+   pas au lockfile (lue dans `node_modules/nx/package.json`, pas par analyse
+   d'une sortie `--version`).
 
-Les recettes utilisent déjà `nx g @angular/material:ng-add` et non `ng add` : la
-collection est locale, donc exécutable sans résolution distante.
+La collection locale ne suffit pas à garantir l'absence d'installation : mesuré,
+`@angular/material:ng-add` 22.0.5 planifie systématiquement un
+`NodePackageInstallTask`. La recette appelle donc son entrée
+`ng-add-setup-project`, liée à la piste exacte, après l'installation gouvernée.
+Le `PATH` vide empêche en plus toute tâche implicite de résoudre par son nom un
+gestionnaire de paquets (`bun`, `npm`, `npx`, `pnpm`, `yarn`, `corepack`)
+pendant schematic et preuves.
 
 ### Cycle de vie du candidat — machine d'états du bail
 
@@ -955,9 +961,10 @@ backends** (conteneur Linux, `sandbox-exec` macOS).
 | lecture d'un chemin du dépôt réel                                                     | refusée ou hors d'atteinte                             |
 | sous-processus tentant les mêmes accès                                                | refusé (confinement hérité)                            |
 | accès réseau en phase d'exécution                                                     | refusé                                                 |
+| gestionnaire appelé par son nom en phase d'exécution                                  | introuvable (`PATH` vide sur les deux backends)        |
 | lecture d'une variable de credential                                                  | absente de l'environnement                             |
 | `bunx <paquet-absent>`                                                                | refusé — binaire résolu explicitement dans le candidat |
-| cache de paquets pendant schematic / probes                                           | en lecture seule                                       |
+| cache de paquets pendant schematic / probes                                           | inaccessible                                           |
 | aucun backend de bac à sable disponible                                               | **échec avant** toute exécution tierce                 |
 
 Les deux menaces de lien symbolique sont **deux tests distincts** : un tree

@@ -130,6 +130,11 @@ test('les réglages Nx de confinement sont identiques sur les deux backends', as
                 `${profile}/macos: ${key} doit être absolu dans le candidat`
             );
         }
+        assert.equal(
+            observed.options.env.PATH,
+            profile === 'execution' ? '' : process.env.PATH,
+            `${profile}/macos: PATH`
+        );
 
         runConfined({
             backend: 'docker',
@@ -148,6 +153,17 @@ test('les réglages Nx de confinement sont identiques sur les deux backends', as
                 `${profile}/docker: ${key}`
             );
         }
+        if (profile === 'execution') {
+            assert.ok(
+                observed.argv.includes('PATH='),
+                'execution/docker : PATH doit être vide dans le conteneur'
+            );
+        }
+        assert.equal(
+            observed.options.env.PATH,
+            process.env.PATH,
+            `${profile}/docker : le client Docker conserve son PATH hôte`
+        );
     }
 });
 
@@ -189,6 +205,15 @@ test('Docker est sans shell, sans réseau en exécution et utilise une image dig
         observed.argv.includes(policy.sandbox.container_images.execution)
     );
     assert.ok(observed.argv.includes('/usr/local/bin/node'));
+    assert.equal(
+        observed.argv[observed.argv.indexOf('--entrypoint') + 1],
+        '/usr/local/bin/node'
+    );
+    assert.equal(
+        observed.argv.filter((arg) => arg === '/usr/local/bin/node').length,
+        1,
+        "l'exécutable ne doit pas être répété après l'image"
+    );
     assert.ok(
         observed.argv.includes(
             `type=bind,src=${value.home},dst=/cmz-home,readonly`

@@ -9,7 +9,7 @@
       "executable": "nx",
       "argv": [
         "g",
-        "@angular/material:ng-add",
+        "@angular/material:ng-add-setup-project",
         "--project",
         "{{app}}",
         "--theme",
@@ -54,7 +54,7 @@
         "occurrences": 1
       }
     ],
-    "notes": "Schematic maintenu par l'équipe Angular, version-aware. L'exécuteur installe d'abord @angular/material + @angular/cdk alignés sur @angular/core, puis lance le schematic avec `{{app}}` = nom du projet Nx. Material 22 injecte encore des polices Google distantes et `typography: Roboto`; les normalisations exactes, versionnées avec cette recette, retirent ces dépendances réseau et sélectionnent les polices système. Toute dérive de la sortie du vendeur fait échouer la recette. Le build de production hors réseau en apporte la preuve fonctionnelle."
+    "notes": "Entrée setup-only fournie par le paquet Angular Material 22.0.5 et liée à cette piste exacte. Le point d'entrée public `ng-add` est volontairement interdit ici : il planifie toujours un NodePackageInstallTask, alors que les dépendances sont déjà épinglées, installées et vérifiées par le protocole gouverné. L'exécution se fait sans PATH : une tâche implicite ne peut résoudre aucun gestionnaire de paquets par son nom. Le schematic reçoit `{{app}}` = nom du projet Nx cible. Material 22 injecte encore des polices Google distantes et `typography: Roboto`; les normalisations exactes retirent ces dépendances réseau et sélectionnent les polices système. Toute dérive de la sortie du vendeur fait échouer la recette. Le build de production hors réseau en apporte la preuve fonctionnelle."
   },
   "static_invariants": [
     {
