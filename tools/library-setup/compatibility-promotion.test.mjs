@@ -25,24 +25,15 @@ import {
     libraryRunnerDigest,
 } from './tooling-fingerprint.mjs';
 import { removeTemporaryFixture } from '../test-support/remove-temporary-fixture.mjs';
+import {
+    fixtureGit as git,
+    initFixtureRepo,
+} from '../test-support/fixture-git.mjs';
 
 const ROOT = new URL('../..', import.meta.url).pathname;
 const HEAD = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], {
     encoding: 'utf8',
 }).trim();
-
-function git(root, args) {
-    return execFileSync('git', ['-C', root, ...args], {
-        encoding: 'utf8',
-        env: {
-            ...process.env,
-            GIT_AUTHOR_NAME: 'CMZ Test',
-            GIT_AUTHOR_EMAIL: 'cmz-test@example.invalid',
-            GIT_COMMITTER_NAME: 'CMZ Test',
-            GIT_COMMITTER_EMAIL: 'cmz-test@example.invalid',
-        },
-    }).trim();
-}
 
 function sha256(value) {
     return createHash('sha256').update(value).digest('hex');
@@ -178,7 +169,7 @@ function fixture(t) {
     ]) {
         cpSync(join(ROOT, path), join(root, path));
     }
-    git(root, ['init', '--quiet']);
+    initFixtureRepo(root);
     git(root, ['add', '.']);
     git(root, ['commit', '--quiet', '-m', 'fixture']);
     return root;

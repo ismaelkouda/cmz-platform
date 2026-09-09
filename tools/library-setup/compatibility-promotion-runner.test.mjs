@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 import {
     cpSync,
     existsSync,
@@ -29,6 +28,10 @@ import { dependencyProjectionSha256 } from './dependency-resolution.mjs';
 import { gitBlobOid } from './git-tree.mjs';
 import { libraryRunnerDigest } from './tooling-fingerprint.mjs';
 import { removeTemporaryFixture } from '../test-support/remove-temporary-fixture.mjs';
+import {
+    fixtureGit as git,
+    initFixtureRepo,
+} from '../test-support/fixture-git.mjs';
 
 const SOURCE = new URL('../..', import.meta.url).pathname;
 const LIVE_START = 'Mon Sep  8 00:00:00 2026';
@@ -36,19 +39,6 @@ const processProbe = (pid) => (pid === process.pid ? LIVE_START : '');
 
 function sha256(value) {
     return createHash('sha256').update(value).digest('hex');
-}
-
-function git(root, args) {
-    return execFileSync('git', ['-C', root, ...args], {
-        encoding: 'utf8',
-        env: {
-            ...process.env,
-            GIT_AUTHOR_NAME: 'CMZ Test',
-            GIT_AUTHOR_EMAIL: 'cmz-test@example.invalid',
-            GIT_COMMITTER_NAME: 'CMZ Test',
-            GIT_COMMITTER_EMAIL: 'cmz-test@example.invalid',
-        },
-    }).trim();
 }
 
 function repository(t) {
@@ -92,7 +82,7 @@ function repository(t) {
         }
         writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
     }
-    git(root, ['init', '--quiet']);
+    initFixtureRepo(root);
     git(root, ['add', '.']);
     git(root, ['commit', '--quiet', '-m', 'fixture']);
     return root;
