@@ -7,7 +7,6 @@ import {
     mkdtempSync,
     readFileSync,
     realpathSync,
-    rmSync,
     writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -29,6 +28,7 @@ import { buildLibraryPlan, stableJson } from './library-plan.mjs';
 import { dependencyProjectionSha256 } from './dependency-resolution.mjs';
 import { gitBlobOid } from './git-tree.mjs';
 import { libraryRunnerDigest } from './tooling-fingerprint.mjs';
+import { removeTemporaryFixture } from '../test-support/remove-temporary-fixture.mjs';
 
 const SOURCE = new URL('../..', import.meta.url).pathname;
 const LIVE_START = 'Mon Sep  8 00:00:00 2026';
@@ -66,12 +66,7 @@ function repository(t) {
             false,
             'le verrou de promotion doit être libéré avant le teardown'
         );
-        rmSync(root, {
-            recursive: true,
-            force: true,
-            maxRetries: 5,
-            retryDelay: 100,
-        });
+        removeTemporaryFixture(root, 'cmz-promotion-runner-');
     });
     for (const path of ['conventions', 'tools', 'apps/backoffice-angular']) {
         cpSync(join(SOURCE, path), join(root, path), { recursive: true });

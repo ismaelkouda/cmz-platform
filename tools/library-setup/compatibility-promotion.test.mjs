@@ -1,13 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import {
-    cpSync,
-    mkdtempSync,
-    readFileSync,
-    rmSync,
-    writeFileSync,
-} from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -30,6 +24,7 @@ import {
     compatibilityTrackDigest,
     libraryRunnerDigest,
 } from './tooling-fingerprint.mjs';
+import { removeTemporaryFixture } from '../test-support/remove-temporary-fixture.mjs';
 
 const ROOT = new URL('../..', import.meta.url).pathname;
 const HEAD = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], {
@@ -169,7 +164,7 @@ function verification() {
 
 function fixture(t) {
     const root = mkdtempSync(join(tmpdir(), 'cmz-promotion-'));
-    t.after(() => rmSync(root, { recursive: true, force: true }));
+    t.after(() => removeTemporaryFixture(root, 'cmz-promotion-'));
     cpSync(join(ROOT, 'conventions'), join(root, 'conventions'), {
         recursive: true,
     });
