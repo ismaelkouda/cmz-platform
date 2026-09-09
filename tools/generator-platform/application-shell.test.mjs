@@ -93,7 +93,10 @@ test('le renderer produit routing, i18n, PWA et un contrat borné par page', asy
         designSha256: sha256(options.designContent),
     });
     for (const path of [
+        '.cmz/libraries.json',
         'project.json',
+        'src/app/access.guard.ts',
+        'src/app/access.guard.spec.ts',
         'src/app/app.routes.ts',
         'src/app/transloco-loader.ts',
         'public/manifest.webmanifest',
@@ -105,13 +108,27 @@ test('le renderer produit routing, i18n, PWA et un contrat borné par page', asy
     ]) {
         assert.ok(rendered.files[path], `missing ${path}`);
     }
-    assert.match(rendered.files['src/app/app.routes.ts'], /loadComponent/);
     assert.deepEqual(JSON.parse(rendered.files['.cmz/libraries.json']), {
         schema_version: '1.0.0',
         kind: 'app-library-manifest',
         platform: 'angular',
         libraries: ['transloco'],
     });
+    assert.match(rendered.files['src/app/app.routes.ts'], /loadComponent/);
+    assert.match(
+        rendered.files['src/app/app.routes.ts'],
+        /canActivate: \[appAccessGuard\]/
+    );
+    assert.equal(
+        [...rendered.files['src/app/app.routes.ts'].matchAll(/canActivate:/g)]
+            .length,
+        1,
+        'only the single protected fixture page must receive a guard'
+    );
+    assert.match(
+        rendered.files['src/app/access.guard.ts'],
+        /if \(!decision\?\.isAuthenticated\(\)\) return false/
+    );
     assert.doesNotMatch(
         rendered.files['.cmz/pages/page_1111111111111111.json'],
         /angular/i

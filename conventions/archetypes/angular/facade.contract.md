@@ -14,15 +14,16 @@ rendu.
 
 ## Règle mécanique
 
-- **État serveur = primitive du profil actif** (`conventions/<plateforme>-<v>.profile.json`
-  → `conventions.async_state`). Pour Angular v22 : `httpResource()` /
-  `resource()` / `rxResource()` — la facade expose directement `resource.value`,
-  `resource.isLoading`, `resource.error` (signaux), le rechargement est
-  `resource.reload()` ou un `params` réactif.
-- **Interop** : un `Observable` de la couche `data` est adapté par `rxResource()`
-  ou `toSignal()`. Un loader `Observable` brut n'est un **fallback** que lorsque
-  `resource()` ne convient pas (ex. write suivi d'un refetch orchestré à la
-  main).
+- **État serveur = primitive du profil actif**
+  (`conventions/<plateforme>-<v>.profile.json` → `conventions.async_state`).
+  Pour Angular v22 : `httpResource()` / `resource()` / `rxResource()` — la
+  facade expose directement `resource.value`, `resource.isLoading`,
+  `resource.error` (signaux), le rechargement est `resource.reload()` ou un
+  `params` réactif.
+- **Interop** : un `Observable` de la couche `data` est adapté par
+  `rxResource()` ou `toSignal()`. Un loader `Observable` brut n'est un
+  **fallback** que lorsque `resource()` ne convient pas (ex. write suivi d'un
+  refetch orchestré à la main).
 - Base **abstraite sans décorateur** ; la facade **concrète** de module est
   décorée `@Service()`.
 - Sur erreur : dispatch via **`ErrorHandlerRegistry`** (application) — jamais un

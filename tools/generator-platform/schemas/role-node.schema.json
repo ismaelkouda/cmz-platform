@@ -12,7 +12,7 @@
     "payload"
   ],
   "properties": {
-    "schema_version": { "const": "1.0.0" },
+    "schema_version": { "const": "1.1.0" },
     "kind": { "const": "archetype-role-node" },
     "node_id": { "$ref": "#/$defs/id" },
     "role": { "const": "screen" },
@@ -36,6 +36,8 @@
         "state_ids",
         "control_ids",
         "action_ids",
+        "load_ids",
+        "data_binding_ids",
         "region_ids"
       ],
       "properties": {
@@ -45,6 +47,8 @@
         "state_ids": { "$ref": "#/$defs/ids" },
         "control_ids": { "$ref": "#/$defs/ids" },
         "action_ids": { "$ref": "#/$defs/ids" },
+        "load_ids": { "$ref": "#/$defs/ids" },
+        "data_binding_ids": { "$ref": "#/$defs/ids" },
         "region_ids": { "$ref": "#/$defs/ids" }
       }
     }

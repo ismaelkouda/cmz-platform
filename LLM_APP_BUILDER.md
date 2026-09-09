@@ -132,10 +132,14 @@ Le rapport exécute compilation, build de production, lint et tests. Le passage 
 la page suivante exige un nouveau work order.
 
 Cette chaîne automatise aujourd’hui le shell Angular/PWA et les compositions
-`action-request` et `list-query`. Une autre composition n’est jamais simulée :
-elle doit d’abord entrer dans le registre avec des cas métier probants et un
-générateur testé. Kotlin, iOS et le backend cible sont des profils futurs, pas
-des capacités prétendument livrées.
+`action-request` et `list-query`. Une page peut porter **plusieurs `list-query`
+et plusieurs `action-request` indépendants** (chargements sur entrée + actions,
+sans dépendance ni ordre entre eux — ADR-0045). Une dépendance ordonnée entre
+nœuds ou une livraison asynchrone relève du graphe d’exécution typé (ADR-0031),
+non implémenté. Une autre composition n’est jamais simulée : elle doit d’abord
+entrer dans le registre avec des cas métier probants et un générateur testé.
+Kotlin, iOS et le backend cible sont des profils futurs, pas des capacités
+prétendument livrées.
 
 Le fonctionnement du moteur est prouvé par une fixture technique versionnée,
 distincte de tout projet métier :

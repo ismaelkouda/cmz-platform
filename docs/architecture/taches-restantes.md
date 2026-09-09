@@ -1608,6 +1608,38 @@ Figma, désormais source partielle différée :
   PLAT-5. **Condition de déblocage désormais remplie** : PLAT-1 à PLAT-5 (K
   variantes incluses) sont tous fait/fait localement, confirmés CI verte (voir
   PLAT-6 ci-dessus et §6 promotion M4) — ce chantier peut être engagé.
+- **PLAT-9** — **fait localement** (2026-09-07), M, P1, alias
+  `réalisation d'écran multi-nœuds indépendants`.
+  [ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md). La
+  chaîne app-builder n'avait été prouvée que sur une page à une seule opération
+  (`application-conception-proof`, un `action-request` sans lecture).
+  **Investigation avant tout code** (discipline PLAT-4bis) :
+  `application-design.schema.json` modélise déjà N `loads` + N `actions` + N
+  `data_bindings` en tableaux indépendants, `application-design.mjs` les valide
+  déjà un par un (aucune contrainte « une composition par page »), le shell
+  renderer embarque déjà l'objet `page` complet, `page-realization.mjs`
+  `expectedMappings` couvre déjà toutes les catégories. Seul manque réel : le
+  nœud de rôle `screen` de `core/role-production.mjs` **omettait `loads` et
+  `data_bindings`** de son payload. Corrigé : `role-node.schema.json` →
+  `schema_version` `1.1.0`, payload gagne `load_ids` + `data_binding_ids`
+  (requis) ; `role-production.mjs` les émet triés ; nouvel invariant dans
+  `application-design.mjs` — tout `data_binding.operation_ref` doit correspondre
+  à l'opération d'un `load` ou d'une `action` backend de la page. Preuves de
+  non-régression : `multi-node-screen.test.mjs` (4 tests : nœud de rôle `1.1.0`,
+  page mixte réalisée + 4 oracles mockés, data_binding orphelin refusé à la
+  conception, réalisation sans sélecteur du data_binding refusée),
+  `multi-node-screen-mutations.test.mjs` (2 mutants tués : retrait de
+  `load_ids`/`data_binding_ids` du payload → `producePageRoleNode` lève),
+  `role-archetype.test.mjs` mis à jour. Suite core 291/291. **Preuve à oracle
+  réel** : à produire avec la première application multi-nœuds réelle (voir
+  « Passage immédiat à une application métier réelle » plus haut) ; la capacité
+  repose pour l'instant sur `multi-node-screen.test.mjs` + les 2 mutants.
+  **Limite explicite** : nœuds indépendants seulement — aucune arête, aucune
+  précondition inter-nœuds, aucune livraison asynchrone (relève du lot graphe
+  d'exécution typé, ADR-0031, non engagé). Un `load` reste comportemental (pas
+  de sélecteur `data-cmz-id` exigé). Condition de sortie pour rouvrir le lot
+  graphe typé : un cas réel où un nœud dépend du succès d'un autre (« Déposer un
+  signalement » : charger les catégories puis soumettre).
 
 ### 2.1 Preuves empiriques déjà produites
 

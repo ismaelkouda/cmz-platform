@@ -28,11 +28,15 @@ function routePath(page) {
 }
 
 function renderRoutes(pages) {
+    const guardImport = pages.some((page) => page.access.mode !== 'public')
+        ? "\nimport { appAccessGuard } from './access.guard';\n"
+        : '';
     const routes = pages
         .map(
             (page) => `    {
         path: ${quoted(routePath(page))},
-        loadComponent: () =>
+        data: { access: ${JSON.stringify(page.access)} },
+${page.access.mode === 'public' ? '' : '        canActivate: [appAccessGuard],\n'}        loadComponent: () =>
             import('./pages/${page.id}/page.component').then(
                 (module) => module.PageComponent
             ),
@@ -40,11 +44,94 @@ function renderRoutes(pages) {
         )
         .join('\n');
     return `import { Routes } from '@angular/router';
+${guardImport}
 
 export const appRoutes: Routes = [
 ${routes}
     { path: '**', redirectTo: '' },
 ];
+`;
+}
+
+function accessGuard() {
+    return `import { inject, InjectionToken } from '@angular/core';
+import { CanActivateFn } from '@angular/router';
+
+export interface AppAccessDecisionPort {
+    isAuthenticated(): boolean;
+    hasPermission(permission: string): boolean;
+}
+
+export interface AppAccessPolicy {
+    mode: 'public' | 'authenticated' | 'authorized';
+    permissions: readonly string[];
+}
+
+export const APP_ACCESS_DECISION = new InjectionToken<AppAccessDecisionPort>(
+    'APP_ACCESS_DECISION'
+);
+
+export function evaluateAppAccess(
+    policy: AppAccessPolicy | null | undefined,
+    decision: AppAccessDecisionPort | null
+): boolean {
+    if (!policy || !Array.isArray(policy.permissions)) return false;
+    if (policy.mode === 'public') return policy.permissions.length === 0;
+    if (!decision?.isAuthenticated()) return false;
+    if (policy.mode === 'authenticated') return policy.permissions.length === 0;
+    if (policy.mode !== 'authorized') return false;
+    if (policy.permissions.length === 0) return false;
+    return policy.permissions.every((permission) =>
+        permission.length > 0 && decision.hasPermission(permission)
+    );
+}
+
+export const appAccessGuard: CanActivateFn = (route) =>
+    evaluateAppAccess(
+        route.data['access'] as AppAccessPolicy,
+        inject(APP_ACCESS_DECISION, { optional: true })
+    );
+`;
+}
+
+function accessGuardSpec() {
+    return `import { describe, expect, it } from 'vitest';
+
+import { evaluateAppAccess } from './access.guard';
+import type { AppAccessDecisionPort } from './access.guard';
+
+function decision(
+    authenticated: boolean,
+    granted: readonly string[] = []
+): AppAccessDecisionPort {
+    return {
+        isAuthenticated: () => authenticated,
+        hasPermission: (permission) => granted.includes(permission),
+    };
+}
+
+describe('evaluateAppAccess', () => {
+    it('autorise une page publique sans port', () => {
+        expect(evaluateAppAccess({ mode: 'public', permissions: [] }, null)).toBe(true);
+    });
+
+    it('refuse une page connectée sans session', () => {
+        expect(evaluateAppAccess({ mode: 'authenticated', permissions: [] }, null)).toBe(false);
+        expect(evaluateAppAccess({ mode: 'authenticated', permissions: [] }, decision(false))).toBe(false);
+    });
+
+    it('exige toutes les permissions d’une page autorisée', () => {
+        const policy = { mode: 'authorized' as const, permissions: ['reports.read', 'reports.write'] };
+        expect(evaluateAppAccess({ mode: 'authorized', permissions: [] }, decision(true))).toBe(false);
+        expect(evaluateAppAccess(policy, decision(true, ['reports.read']))).toBe(false);
+        expect(evaluateAppAccess(policy, decision(true, policy.permissions))).toBe(true);
+    });
+
+    it('refuse une politique absente ou incohérente', () => {
+        expect(evaluateAppAccess(undefined, decision(true))).toBe(false);
+        expect(evaluateAppAccess({ mode: 'public', permissions: ['unexpected'] }, null)).toBe(false);
+    });
+});
 `;
 }
 
@@ -132,6 +219,12 @@ export async function renderAngularPwaShell({
     const root = `apps/${appName}`;
     const escapedTitle = escapedMarkup(design.design.title);
     const files = {
+        '.cmz/libraries.json': json({
+            schema_version: '1.0.0',
+            kind: 'app-library-manifest',
+            platform: 'angular',
+            libraries: ['transloco'],
+        }),
         'project.json': json({
             name: appName,
             $schema: '../../node_modules/nx/schemas/project-schema.json',
@@ -335,6 +428,8 @@ export const appConfig: ApplicationConfig = {
     ],
 };
 `,
+        'src/app/access.guard.ts': accessGuard(),
+        'src/app/access.guard.spec.ts': accessGuardSpec(),
         'src/app/app.routes.ts': renderRoutes(pages),
         'src/app/transloco-loader.ts': `import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';

@@ -133,6 +133,13 @@ publishes only after an immutable plan is reviewed, compiles the candidate with
 `ngc`, then executes a no-cache production build and lint in the real Nx graph.
 Failure rolls the output back to a hash-verified candidate.
 
+Every shell contains a generated access-decision port and a pure access policy.
+Public routes stay public; `authenticated` and `authorized` routes receive a
+functional guard. With no host identity provider the decision is deny, and an
+authorized route requires every declared permission. This is a safe shell
+boundary, not a claim that the future Clean Street identity backend already
+exists.
+
 ```bash
 bun run create-app -- --design designs/my-app.application-design.json \
   --experience citizen-web --app my-app --dry-run

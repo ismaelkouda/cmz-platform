@@ -80,10 +80,12 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0037](./adr/0037-plateforme-intention-utilisateur-vers-application.md) | Génération assistée par langage naturel pour un utilisateur du dépôt |
 | [0038](./adr/0038-nature-produit-public-multi-locataire.md) | Nature de produit : exposition publique et multi-location |
 | [0039](./adr/0039-frontiere-contractuelle-conception-realisation-llm.md) | Frontière contractuelle entre conception et réalisation par LLM |
+| [0040](./adr/0040-production-des-roles-de-code-depuis-artifact-plan.md) | Produire les rôles de code depuis `artifact-plan`        |
 | [0041](./adr/0041-angular-material-tailwind-defaults.md)    | Angular Material + Tailwind comme défauts d'app Angular  |
 | [0042](./adr/0042-modele-transactionnel-mutations-workspace.md) | Modèle transactionnel et d'isolation des mutations de workspace |
 | [0043](./adr/0043-discipline-de-preuve-des-agents.md)       | Discipline de preuve des agents                          |
 | [0044](./adr/0044-bibliotheques-ui-opt-in-apres-create-app.md) | Bibliothèques UI ajoutées à la demande après `create-app` |
+| [0045](./adr/0045-realisation-ecran-multi-noeuds-independants.md) | Réalisation d'écran multi-nœuds indépendants             |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
