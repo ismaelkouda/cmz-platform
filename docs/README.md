@@ -161,5 +161,6 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 | Qu'est-ce qui existe déjà ?         | [État du socle](./architecture/etat-du-socle.md)                                                                                                                                |
 | Pourquoi ce choix ?                 | L'ADR correspondant                                                                                                                                                             |
 | Qu'est-ce qui vient ensuite ?       | [Feuille de route](./architecture/feuille-de-route.md)                                                                                                                          |
+| Comment démarrer une vraie app ?    | [Passage immédiat à une application métier](./architecture/taches-restantes.md#passage-immédiat-à-une-application-métier-réelle)                                               |
 | Comment on s'y prend concrètement ? | [Plan d'exécution](./architecture/plan-d-execution.md)                                                                                                                          |
 | Que contient l'application source ? | [Analyse du projet source](./architecture/analyse-du-projet-source.md)                                                                                                          |
