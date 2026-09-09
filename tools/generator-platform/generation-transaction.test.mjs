@@ -9,7 +9,7 @@ import {
     rm,
     writeFile,
 } from 'node:fs/promises';
-import { hostname, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { sha256, stableStringify } from './core/generation-manifest.mjs';
 import {
     commitDirectoryTransaction,
+    GENERATION_PROCESS_HOSTNAME,
     recoverInterruptedTransactions,
 } from './core/generation-transaction.mjs';
 import { generateActionRequest } from './generate-action-request.mjs';
@@ -111,7 +112,7 @@ test('a stale local lock is reclaimed but a live lock is never stolen', async ()
             `${JSON.stringify({
                 schema_version: '1.0.0',
                 pid: 99999999,
-                hostname: hostname(),
+                hostname: GENERATION_PROCESS_HOSTNAME,
                 started_at: new Date(0).toISOString(),
             })}\n`
         );
@@ -135,7 +136,7 @@ test('a stale local lock is reclaimed but a live lock is never stolen', async ()
             `${JSON.stringify({
                 schema_version: '1.0.0',
                 pid: process.pid,
-                hostname: hostname(),
+                hostname: GENERATION_PROCESS_HOSTNAME,
                 started_at: new Date().toISOString(),
             })}\n`
         );
