@@ -5,7 +5,7 @@
   "tracks": [
     {
       "id": "angular-22",
-      "status": "candidate",
+      "status": "verified",
       "requirements": {
         "node": ">=22.22.3 <23",
         "bun": ">=1.3.14 <2",
@@ -19,7 +19,48 @@
       "dependency_section": "dependencies",
       "catalog": "default",
       "reason": "Piste initiale alignée sur Angular 22 ; passe en verified seulement après la preuve compile-component.",
-      "verification": null
+      "verification": {
+        "schema_version": "1.0.0",
+        "commit": "151adc8d1d05899760e98593e1c779213a73d4ca",
+        "app": "backoffice-angular",
+        "plan_id": "library-plan:9b147c64e94b0043eac57016e243457296392ff5fd42e371622c89530cdb9bb1",
+        "change_set_id": "changes:7f8b14f6ef447133ff6c3cd69a1b20a5ee05dafdf11dbd743c757625deb5e87c",
+        "app_tree_sha256": "4b5f07b4b845763d5c49a01aca62a49ea1a9a1159846267b51bedf470f8532b2",
+        "track_sha256": "838fec6ce3a84e3165204ffa42a74521a6461b205c6d8507f7ad9346af64c160",
+        "tested_versions": {
+          "node": "22.22.3",
+          "bun": "1.3.14",
+          "nx": "23.2.0",
+          "framework": "22.0.7",
+          "packages": {
+            "@angular/cdk": "22.0.5",
+            "@angular/material": "22.0.5"
+          }
+        },
+        "dependency_state_sha256": {
+          "initial": "fc54e23cc154384718adde6a55434b830caa9fa34250e715aeacf7f1d7035b72",
+          "final": "ee4625895b54ca994df7155bdfcb655a634b07744aa440121f95317e83a91866"
+        },
+        "proofs": [
+          "material-component-compiles",
+          "material-tailwind-cascade-order",
+          "material-tailwind-render-together",
+          "offline-production-build"
+        ],
+        "inputs_sha256": {
+          "recipe": "c8e5507b9a76e73840014eb096f1902c566b70be7fc27c06be528f4eaa44b635",
+          "recipe_schema": "d73a46a4cc33ec3d907c48faae27031d10448342be6600cf553bc1919064ad23",
+          "compat_schema": "2ffc59094ed77445afe494642b3e4d767fa7f6793cb5a91bdc6493319e5ba85f",
+          "policy": "ca3429863614bb7592a153300a44e7b7006428cc1fd826823062c8759fde77c7",
+          "policy_schema": "a71cc60b0692e3704ac8f09847b202af9da92453c7de486f09d0106ff3db0c96",
+          "nx_json": "3403357296b1a3ccbab58dbe602d10d50849775a60ba548526f64bebe83dd4bc",
+          "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
+          "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
+          "proof_contracts": "9b72d4629573fa351cc5ab209df549d7cef942f3a9061ca04a2e3a4ac15dc496",
+          "runner": "40cfbc0d2e3a24718e661f67ded2e84f808f7b0486422238106a550cce19aa21"
+        },
+        "evidence_sha256": "d29b8a47583bf1021ba23559c14cebc6b97ab5d68ef2f7dea220be606bbc15e7"
+      }
     }
   ]
 }
