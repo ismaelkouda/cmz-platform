@@ -2705,10 +2705,14 @@ gouvernance, sécurité, licences.
   distinctes dans le fichier source, non fusionnées pour ne pas perdre la trace
   des deux ids.)_
 - **T4-2** — partiel, S, P1, alias `CI-4`. Pipeline Dependabot : absorber PR
-  sécu, maintenir `bun audit --high` = 0. Les overrides `js-yaml@4.3.2` et
-  `svgo@4.1.0` sont matérialisés dans le lockfile ; `check:security-overrides`
-  exécute les deux consommateurs réels de SVGO et invalide la preuve si leur
-  résolution ou leurs plages amont dérivent.
+  sécu, maintenir `bun audit --high` = 0. L'override racine `js-yaml@4.3.2` est
+  matérialisé dans le lockfile. **2026-09-10** : l'override `svgo@4.1.0` et sa
+  preuve exécutable `check:security-overrides` (+ test + step CI) ont été
+  retirés — `@nx/react@23.2.0` a supprimé `@svgr/webpack` de ses dépendances
+  (confirmé registre npm : deps 23.1.0 → 23.2.0), le dépôt n'a aucun build
+  webpack (`@angular/build` esbuild uniquement), donc `@svgr/plugin-svgo` /
+  `postcss-svgo` / `svgo` ont entièrement quitté l'arbre (`grep svgo bun.lock`
+  = 0, `bun audit` = 0 vuln). Voir OPS-26 (bump nx via lockfile régénéré).
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
 - **T4-5** — fait, S, P1, alias `Big Tech gap`. Secret scanning pre-push + CI
