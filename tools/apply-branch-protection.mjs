@@ -2,10 +2,13 @@
 /**
  * apply-branch-protection.mjs — audit G-2 / P1-13
  *
- * Applique la protection de branche `main` depuis
- * `.github/branch-protection.main.json` via `gh api` :
+ * Applique la protection de branche `main` et les réglages de fusion depuis
+ * `.github/branch-protection.main.json` et `.github/repository-settings.json`
+ * via `gh api` :
  * - status checks requis = jobs bloquants de `ci.yml`
- * - 1 approbation + relecture CODEOWNERS
+ * - 1 approbation CODEOWNERS indépendante du dernier push
+ * - historique linéaire et fusion par squash uniquement
+ * - suppression automatique des branches après fusion
  * - pas de force-push / pas de suppression de branche
  * - enforce_admins : true (la règle s'applique aussi aux admins)
  *
@@ -27,6 +30,7 @@ import { join } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const CONFIG_PATH = join(ROOT, '.github/branch-protection.main.json');
+const REPOSITORY_CONFIG_PATH = join(ROOT, '.github/repository-settings.json');
 const dryRun = process.argv.includes('--dry-run');
 
 function gh(args, { input, ignoreFail = false } = {}) {
@@ -70,9 +74,14 @@ function resolveRepo() {
     }
 }
 
-const raw = readFileSync(CONFIG_PATH, 'utf8');
-const payload = JSON.parse(raw);
-delete payload.$comment;
+function readPayload(path) {
+    const payload = JSON.parse(readFileSync(path, 'utf8'));
+    delete payload.$comment;
+    return payload;
+}
+
+const payload = readPayload(CONFIG_PATH);
+const repositoryPayload = readPayload(REPOSITORY_CONFIG_PATH);
 
 console.log(`Branche  : main`);
 console.log(`Config   : ${CONFIG_PATH}`);
@@ -86,10 +95,18 @@ console.log(
     `Force-push : ${payload.allow_force_pushes ? 'autorisé' : 'interdit'}`
 );
 console.log(`Admins liés : ${payload.enforce_admins}`);
+console.log(
+    `Fusion   : squash=${repositoryPayload.allow_squash_merge}, merge=${repositoryPayload.allow_merge_commit}, rebase=${repositoryPayload.allow_rebase_merge}`
+);
+console.log(
+    `Branches : suppression après fusion=${repositoryPayload.delete_branch_on_merge}`
+);
 
 if (dryRun) {
-    console.log('\n--dry-run : payload qui serait envoyé :\n');
+    console.log('\n--dry-run : protection de main qui serait envoyée :\n');
     console.log(JSON.stringify(payload, null, 2));
+    console.log('\n--dry-run : réglages du dépôt qui seraient envoyés :\n');
+    console.log(JSON.stringify(repositoryPayload, null, 2));
     process.exit(0);
 }
 
@@ -122,13 +139,28 @@ gh(
     { input: body }
 );
 
-console.log('\n✔ Protection de `main` appliquée.');
+gh(
+    [
+        'api',
+        '--method',
+        'PATCH',
+        '-H',
+        'Accept: application/vnd.github+json',
+        '-H',
+        'X-GitHub-Api-Version: 2022-11-28',
+        `repos/${repo}`,
+        '--input',
+        '-',
+    ],
+    { input: JSON.stringify(repositoryPayload) }
+);
+
+console.log('\n✔ Protection de `main` et réglages du dépôt appliqués.');
 console.log(
     `  Vérifier : gh api repos/${repo}/branches/main/protection --jq '{checks:.required_status_checks.contexts,reviews:.required_pull_request_reviews.required_approving_review_count,force:.allow_force_pushes}'`
 );
 console.log(
-    '\nNote solo : avec 1 approbation requise, un second compte (ou une\n' +
-        'revue croisée) est nécessaire pour merger — vous ne pouvez pas\n' +
-        'approuver votre propre PR. Contournement temporaire : désactiver\n' +
-        '`enforce_admins` dans branch-protection.main.json (non recommandé).'
+    '\nNote : 1 approbation CODEOWNERS est requise et `enforce_admins` est\n' +
+        'actif — personne ne peut approuver sa propre PR. La fusion dépend\n' +
+        "donc d'au moins deux CODEOWNERS actifs (voir .github/CODEOWNERS)."
 );
