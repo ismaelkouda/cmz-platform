@@ -361,7 +361,8 @@ function parseAdapterResponse(chunks) {
         parsed = JSON.parse(text);
     } catch (error) {
         throw new Error(
-            `sortie JSON adaptateur LLM invalide : ${error.message}`
+            `sortie JSON adaptateur LLM invalide : ${error.message}`,
+            { cause: error }
         );
     }
     const scopes = [];

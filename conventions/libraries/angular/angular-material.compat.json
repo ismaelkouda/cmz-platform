@@ -21,11 +21,11 @@
       "reason": "Piste initiale alignée sur Angular 22 ; passe en verified seulement après la preuve compile-component.",
       "verification": {
         "schema_version": "1.0.0",
-        "commit": "151adc8d1d05899760e98593e1c779213a73d4ca",
+        "commit": "c9b04f2b8631f4f80e7208d42eec6b4cc9614f99",
         "app": "backoffice-angular",
-        "plan_id": "library-plan:9b147c64e94b0043eac57016e243457296392ff5fd42e371622c89530cdb9bb1",
+        "plan_id": "library-plan:42b34187916677a1bb67a0c358cbb38018ff98a1994214a7fc5134693d491578",
         "change_set_id": "changes:7f8b14f6ef447133ff6c3cd69a1b20a5ee05dafdf11dbd743c757625deb5e87c",
-        "app_tree_sha256": "4b5f07b4b845763d5c49a01aca62a49ea1a9a1159846267b51bedf470f8532b2",
+        "app_tree_sha256": "7766488c42ddeb1a28fb16fc845508107c4adfab5781639babc615ae55535a4d",
         "track_sha256": "838fec6ce3a84e3165204ffa42a74521a6461b205c6d8507f7ad9346af64c160",
         "tested_versions": {
           "node": "22.22.3",
@@ -57,9 +57,9 @@
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
           "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
           "proof_contracts": "9b72d4629573fa351cc5ab209df549d7cef942f3a9061ca04a2e3a4ac15dc496",
-          "runner": "40cfbc0d2e3a24718e661f67ded2e84f808f7b0486422238106a550cce19aa21"
+          "runner": "7534d34fb22baccbcd341194b1c92db75720be41f72133107563675dbdaa9dc7"
         },
-        "evidence_sha256": "d29b8a47583bf1021ba23559c14cebc6b97ab5d68ef2f7dea220be606bbc15e7"
+        "evidence_sha256": "4e50eed92942737a49e6dc00be55d0c0bb37f24b2092086219a46b7571eb1c1b"
       }
     }
   ]

@@ -163,7 +163,9 @@ export function expectedContexts(workflowContent, label = 'ci.yml') {
     try {
         workflow = parseYaml(workflowContent);
     } catch (error) {
-        throw new Error(`${label} : YAML invalide (${error.message})`);
+        throw new Error(`${label} : YAML invalide (${error.message})`, {
+            cause: error,
+        });
     }
     assertPullRequestToMain(workflow, label);
 
@@ -195,7 +197,9 @@ export function declaredContexts(
     try {
         json = JSON.parse(protectionContent);
     } catch (error) {
-        throw new Error(`${label} : JSON invalide (${error.message})`);
+        throw new Error(`${label} : JSON invalide (${error.message})`, {
+            cause: error,
+        });
     }
     const contexts = json?.required_status_checks?.contexts;
     if (!Array.isArray(contexts)) {

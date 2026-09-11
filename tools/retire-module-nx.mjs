@@ -18,14 +18,17 @@ function loadNxGraph(workspaceRoot) {
         });
     } catch (error) {
         throw new Error(
-            `Graphe Nx obligatoire indisponible : ${error.stderr || error.message}`
+            `Graphe Nx obligatoire indisponible : ${error.stderr || error.message}`,
+            { cause: error }
         );
     }
     let document;
     try {
         document = JSON.parse(output);
     } catch (error) {
-        throw new Error(`Graphe Nx invalide : ${error.message}`);
+        throw new Error(`Graphe Nx invalide : ${error.message}`, {
+            cause: error,
+        });
     }
     if (
         !document?.graph?.nodes ||

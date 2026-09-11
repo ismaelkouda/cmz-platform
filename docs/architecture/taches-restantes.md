@@ -1331,6 +1331,35 @@ Figma, désormais source partielle différée :
   pas une mesure locale. `check:ci-wiring` : 40 gates (nouveau
   `check:bundle-metrics-freshness` dans `REQUIRED_STANDALONE_SCRIPTS`, ci-wiring
   confirme la step nightly qui l'appelle).
+- **OPS-30** — **fait** (2026-09-11), M, P1, alias `OPS-26 suite`. `eslint`
+  9→10 (ferme #11+#24, indissociables : `@eslint/js@10` exige `eslint
+  ^10.0.0` en peer). Sur les 5 paquets du groupe, seul `eslint` est
+  réellement chargé par `eslint.config.mjs` — `@eslint/js`,
+  `eslint-plugin-import`, `eslint-plugin-jsx-a11y`,
+  `eslint-plugin-react-hooks` sont tous dans l'`ignoreDependencies` de
+  `knip.json`, jamais importés nulle part (vérifié par `grep` avant tout
+  bump). `eslint-plugin-react-hooks` bumpé directement `5.0.0 → 7.1.1` sans
+  palier (dormant, aucun code ne l'exerce, pas de major `6` stable ayant de
+  sens à isoler).
+  - `nx lint` (74 projets) : **0 impact**.
+  - `check:lint-tools` (`tools/**/*.mjs`, hors périmètre `nx lint`) :
+    **15 erreurs réelles, 2 règles nouvellement actives.** Corrigées, pas
+    désactivées : `preserve-caught-error` (13×, 9 fichiers — `throw` dans
+    un `catch` sans `{ cause: error }`, corrigé partout, préserve l'erreur
+    d'origine) et `no-useless-assignment` (2×,
+    `generation-publication.mjs` — initialiseur `let
+    preserveTransactionRoot = false` mort, les deux branches try/catch le
+    réassignent avant lecture, initialiseur retiré).
+  - **Effet de bord découvert en le vivant** : le correctif de
+    `llm-execution.mjs` (sous `tools/library-setup/`) a périmé les 3
+    attestations de compatibilité — `tooling-fingerprint.mjs` hache tout
+    le contenu non-test de `tools/library-setup/` comme empreinte
+    « runner », et cette empreinte fait partie de `verification` (cf.
+    OPS-26/PR #37, même mécanisme). Cycle périmer → requalifier rejoué à
+    l'identique (10/10 preuves vertes), confirme que le garde ADR-0041 n'a
+    aucun angle mort même pour un correctif de lint sans rapport
+    fonctionnel avec `add-library`.
+  `check:all` vert. `bun audit --audit-level=high` : 0 vulnérabilité.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

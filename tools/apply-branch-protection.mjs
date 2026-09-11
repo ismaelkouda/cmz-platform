@@ -48,7 +48,9 @@ function gh(args, { input, ignoreFail = false } = {}) {
             String(err.stderr || '') ||
             String(err.stdout || '') ||
             String(err.message || '');
-        throw new Error(`gh ${args.join(' ')} failed:\n${detail}`);
+        throw new Error(`gh ${args.join(' ')} failed:\n${detail}`, {
+            cause: err,
+        });
     }
 }
 
