@@ -1233,6 +1233,59 @@ Figma, désormais source partielle différée :
   `-27.9 %`), marge sous le seuil d'alerte `900 kB` passée de `~1 kB` (cause de
   la dérive nightly) à `~271 kB`. `nx build backoffice-angular:build:production`
   et `nx lint --max-warnings=0` verts sur le résultat final.
+- **OPS-26** — ouvert, L, P1. Constaté le 2026-09-10 en marge du
+  durcissement de `main` (PR #34) : **Dependabot ne régénère pas `bun.lock`**.
+  Le robot met à jour `package.json` (versions, groupes `angular`/`nx`/
+  `lint-format` de `.github/dependabot.yml`) mais ne recalcule pas le lockfile
+  Bun sauf pour un bump trivial d'une seule dépendance sans mouvement d'arbre.
+  Toutes les autres PR échouent d'entrée à l'étape `bun install
+  --frozen-lockfile` avec `error: lockfile had changes, but lockfile is
+  frozen`. **Preuve** : PR #21 (`@types/node`), #22 (`jiti`), #23
+  (`@types/react-dom`), #24 (`lint-format` ×4), #25 (`knip`), #26 (`@swc/core`),
+  #27 (`nx` ×9), #28 (`@testing-library/react`) modifient toutes `package.json`
+  seul → CI rouge ; PR #20 (`@vitest/coverage-v8`) modifie `package.json` **et**
+  `bun.lock` → CI verte (`mergeStateStatus: CLEAN`). Backlog Dependabot rouge
+  depuis la dernière fusion du robot (~2026-08-28). Le commentaire de
+  `.github/dependabot.yml` affirme à tort « Dependabot ouvre une PR de mise à
+  jour du lockfile racine » — hypothèse fausse pour l'écosystème Bun.
+  **Aggravant après OPS-27** : une fois `main` protégée avec les 16 contextes
+  requis, ces PR deviennent réellement infusionnables (aujourd'hui elles ne le
+  sont que par un merge forcé, `main` étant encore non protégée). **Décision
+  humaine requise avant exécution** — 3 options, ne pas trancher à la place de
+  l'humain : (1) **étape CI d'auto-réparation** : sur les PR de l'acteur
+  `dependabot[bot]`, lancer `bun install` sans `--frozen-lockfile` et
+  committer `bun.lock` en retour vers la branche de la PR (nécessite un token
+  en écriture, précautions `pull_request_target` / permissions `contents:
+  write`, et vérifier que `check:versions` / catalog ne dérive pas) — corrige
+  tout le futur ; (2) **manuel groupé** : fermer les PR non souhaitées, et pour
+  chaque bump voulu (nx 23.2.0, knip 6.34.0, …) ouvrir une PR normale =
+  `bun install` local + revue « build/lint/test verts » ; (3) **réduire
+  Dependabot npm** (`.github/dependabot.yml`) et s'appuyer sur le gate
+  `bun audit` déjà bloquant + `bun update` manuel périodique. Détail de
+  raisonnement complet + forme exécutable : `docs/architecture/backlog-llm.md`
+  (section P1). Aucune action prise le 2026-09-10 sur demande explicite de
+  l'utilisateur (« on y reviendra plus tard »).
+- **OPS-27** — en pause, M, P1, alias `G-2 · P1-13`. Durcissement de la
+  protection de `main` **préparé mais non appliqué**, sur décision explicite de
+  l'utilisateur le 2026-09-10 (« laisse `main` non protégée, on y reviendra »).
+  État forge vérifié : `main` = `protected: false`, aucun ruleset. La **PR #34**
+  (`chore/harden-main-governance`, verte 17/17) porte : `.github/
+  branch-protection.main.json` à 16 contextes requis (= jobs bloquants de
+  `ci.yml`, matrices dépliées) + `require_last_push_approval` +
+  `required_linear_history` ; `@soumailakouda` 2ᵉ CODEOWNER sur chaque zone ;
+  `.github/repository-settings.json` (squash-only, merge/rebase off,
+  `delete_branch_on_merge`) ; garde de dérive `check:branch-protection-contexts`
+  (job `Garde-fous socle` + `check:all`, cf. section 1.7). La **PR #35**
+  (`smol-toml` 1.7.1, GHSA-7w5x-hrqm-74c2) est **déjà fusionnée** dans `main`.
+  **Reste à faire quand l'utilisateur rouvre le sujet** : (a) faire relire +
+  fusionner PR #34 par `@soumailakouda` ; (b) `bun run protect:main` (applique
+  protection de branche + réglages de fusion via `gh api`, compte GitHub actif
+  déjà `admin: true` sur le dépôt) ; (c) vérifier réellement — push direct sur
+  `main` refusé, PR sans approbation bloquée, approbation périmée après nouveau
+  push (`dismiss_stale_reviews` + `require_last_push_approval`), CI rouge
+  bloquante, `gh api repos/<owner>/cmz-platform/branches/main/protection`
+  confirme les 16 contextes. Dépendance : traiter OPS-26 en parallèle ou juste
+  après, sinon le backlog Dependabot reste bloqué net.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
