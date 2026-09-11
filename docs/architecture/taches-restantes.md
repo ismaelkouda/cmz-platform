@@ -1312,12 +1312,23 @@ Figma, désormais source partielle différée :
      fichier absent → rouge explicite). La step nightly appelle maintenant
      `bun run check:docs-freshness && bun run check:bundle-metrics-freshness`
      au lieu du `git diff` à la main.
+  3. Validation du correctif par `workflow_dispatch` réel (pas seulement
+     local) : le build production **n'est pas garanti bit-à-bit identique
+     macOS/ubuntu-latest** — `main-*.js` identique (505 232 octets, même
+     hash), mais `styles-*.css` diffère (28 549 vs 28 621 octets, hash
+     différent), sans changement de code. `bundle-metrics.json` doit donc
+     toujours être (re)mesuré et committé depuis un run CI réel, jamais
+     depuis un poste de dev — documenté dans `record-bundle-metrics.mjs` et
+     le commentaire du job. Step `Publier bundle-metrics.json mesuré
+     (debug drift)` ajoutée (`if: failure()`) pour récupérer les octets
+     réels sans deviner.
   **Drift réel détecté au passage** (pas seulement l'outillage) : le bundle
-  initial est passé de `526.38 kB` (commit du 2026-08-30) à `534.47 kB`
-  (mesuré le 2026-09-11, après le bump nx 23.2.0 — cf. OPS-26/PR #37), sous
-  le seuil d'avertissement `900 kB` (ADR-0016). `bundle-metrics.json` +
+  initial est passé de `526.38 kB` (commit du 2026-08-30) à `534.54 kB`
+  (mesuré en CI le 2026-09-11, après le bump nx 23.2.0 — cf. OPS-26/PR #37),
+  sous le seuil d'avertissement `900 kB` (ADR-0016). `bundle-metrics.json` +
   `STATUS.md`/`README.md`/`LLM_CONTEXT.md`/`etat-du-socle.md` recommittés à
-  jour dans le même changement. `check:ci-wiring` : 40 gates (nouveau
+  jour, avec la mesure CI réelle (`gh run download … -n bundle-metrics-measured`),
+  pas une mesure locale. `check:ci-wiring` : 40 gates (nouveau
   `check:bundle-metrics-freshness` dans `REQUIRED_STANDALONE_SCRIPTS`, ci-wiring
   confirme la step nightly qui l'appelle).
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
