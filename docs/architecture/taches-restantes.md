@@ -1265,27 +1265,22 @@ Figma, désormais source partielle différée :
   raisonnement complet + forme exécutable : `docs/architecture/backlog-llm.md`
   (section P1). Aucune action prise le 2026-09-10 sur demande explicite de
   l'utilisateur (« on y reviendra plus tard »).
-- **OPS-27** — en pause, M, P1, alias `G-2 · P1-13`. Durcissement de la
-  protection de `main` **préparé mais non appliqué**, sur décision explicite de
-  l'utilisateur le 2026-09-10 (« laisse `main` non protégée, on y reviendra »).
-  État forge vérifié : `main` = `protected: false`, aucun ruleset. La **PR #34**
-  (`chore/harden-main-governance`, verte 17/17) porte : `.github/
-  branch-protection.main.json` à 16 contextes requis (= jobs bloquants de
-  `ci.yml`, matrices dépliées) + `require_last_push_approval` +
-  `required_linear_history` ; `@soumailakouda` 2ᵉ CODEOWNER sur chaque zone ;
-  `.github/repository-settings.json` (squash-only, merge/rebase off,
-  `delete_branch_on_merge`) ; garde de dérive `check:branch-protection-contexts`
-  (job `Garde-fous socle` + `check:all`, cf. section 1.7). La **PR #35**
-  (`smol-toml` 1.7.1, GHSA-7w5x-hrqm-74c2) est **déjà fusionnée** dans `main`.
-  **Reste à faire quand l'utilisateur rouvre le sujet** : (a) faire relire +
-  fusionner PR #34 par `@soumailakouda` ; (b) `bun run protect:main` (applique
-  protection de branche + réglages de fusion via `gh api`, compte GitHub actif
-  déjà `admin: true` sur le dépôt) ; (c) vérifier réellement — push direct sur
-  `main` refusé, PR sans approbation bloquée, approbation périmée après nouveau
-  push (`dismiss_stale_reviews` + `require_last_push_approval`), CI rouge
-  bloquante, `gh api repos/<owner>/cmz-platform/branches/main/protection`
-  confirme les 16 contextes. Dépendance : traiter OPS-26 en parallèle ou juste
-  après, sinon le backlog Dependabot reste bloqué net.
+- **OPS-27** — **fait** (2026-09-11), M, P1, alias `G-2 · P1-13`. Durcissement
+  de la protection de `main`, appliqué et vérifié en conditions réelles (mis en
+  pause le 2026-09-10, repris et terminé le 2026-09-11 sur décision explicite).
+  PR #34 (gouvernance) fusionnée. `bun run protect:main` exécuté : `gh api
+  repos/ismaelkouda/cmz-platform/branches/main/protection` confirme
+  `protected: true`, les 16 contextes requis, `enforce_admins: true`,
+  1 approbation CODEOWNERS avec `dismiss_stale_reviews` +
+  `require_last_push_approval`, `required_linear_history`, force-push et
+  suppression interdits. Réglages de fusion du dépôt : squash uniquement,
+  `delete_branch_on_merge: true`. **Vérifié empiriquement, pas seulement
+  configuré** : un push direct (commit vide de test, jamais arrivé sur `main`)
+  refusé par GitHub (`GH006: Protected branch update failed... Changes must
+  be made through a pull request`) ; la PR #45 (patch `@types/react-dom`),
+  17/17 checks verts, restée `mergeStateStatus: BLOCKED` /
+  `reviewDecision: REVIEW_REQUIRED` jusqu'à l'approbation de
+  `@soumailakouda` — la CI verte seule ne suffit plus à fusionner.
 - **OPS-28** — **fait** (2026-09-11), M, P1, alias `OPS-25 suite`. Le job
   nightly `Oracle Tier 2 — backoffice-angular` était rouge **19 des 20
   derniers runs** (`gh run list --workflow=nightly-integration.yml`,
