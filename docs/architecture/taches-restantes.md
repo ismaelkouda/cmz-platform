@@ -1360,6 +1360,39 @@ Figma, désormais source partielle différée :
     aucun angle mort même pour un correctif de lint sans rapport
     fonctionnel avec `add-library`.
   `check:all` vert. `bun audit --audit-level=high` : 0 vulnérabilité.
+- **OPS-31** — **fait** (2026-09-11), S, P2, alias `OPS-26 suite`. Bumps
+  `ci(deps:)`/`docker` restants, tous périmés depuis plusieurs semaines
+  chez Dependabot (`mergeStateStatus` non recalculé) :
+  - `actions/checkout` v4→v7, `actions/setup-node` v4→v7,
+    `actions/upload-artifact` v4→v7, `actions/setup-python` v5→v7 (ferme
+    #5, #6, #7, #16) — appliqués aux 3 workflows, notes de version
+    officielles relues avant application (migration ESM interne sans
+    impact consommateur ; `setup-python` retire l'input `pip-install`,
+    non utilisé ici, vérifié par `grep`). Preuve : run CI réel de la PR,
+    17/17 verts — les 4 actions exercées sur tous les jobs bloquants.
+  - `nginx` 1.27→1.31-alpine, `oven/bun` 1.4.0→1.4.2-debian (ferme #4,
+    #31). **Aucun workflow ne construit jamais `Dockerfile`** — seule
+    vérification possible : build local réel. Bloqué une première fois
+    par un backend Docker Desktop dégradé (accepte la connexion socket
+    puis `EOF` immédiat sur `docker ps`/`buildx`/`curl --unix-socket`,
+    process backend pourtant vivant) — résolu par redémarrage complet de
+    Docker Desktop (kill des process `com.docker.backend` + relance),
+    sur autorisation explicite.
+  - **Bug réel trouvé en construisant, indépendant des bumps de
+    version** : le build échoue sur `NX Cloud: Workspace is unable to be
+    authorized` — `Dockerfile` ne définissait jamais `NX_NO_CLOUD`,
+    contrairement aux 3 workflows CI qui portent ce fallback depuis
+    OPS-22/OPS-23 (2026-08-19). Confirmé pré-existant sur `main` (`git
+    show main:Dockerfile`, même absence). Invisible depuis 3 semaines
+    faute de tout CI qui construise l'image. Corrigé : `ENV
+    NX_NO_CLOUD=true` ajouté.
+  - Vérification complète en exécution réelle après correction : build
+    image → run conteneur (`docker run` avec les variables `CMZ_*`
+    documentées dans `Dockerfile`) → `HEALTHCHECK` passe (`Up … (healthy)`)
+    → `curl` sur `/` → `200` → `env.js` inspecté dans le conteneur :
+    substitution `envsubst` correcte (URLs, `enableDebug: false`,
+    `trustedFrameOrigins` converti en tableau JSON) — pas une supposition,
+    le pipeline `docker-entrypoint.sh` complet a tourné.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

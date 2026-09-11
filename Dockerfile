@@ -25,12 +25,18 @@
 # sans elle, l'iframe Grafana sera bloquée par la CSP générée à l'entrypoint.
 
 # ─── deps + build ────────────────────────────────────────────────────────────
-FROM oven/bun:1.4.0-debian AS build
+FROM oven/bun:1.4.2-debian AS build
 
 WORKDIR /app
 
+# NX_NO_CLOUD : ce build n'a pas de NX_CLOUD_ACCESS_TOKEN (aucun --build-arg
+# câblé) — sans ce fallback, Nx 23+ échoue avec « Invalid Credentials (Nx
+# Cloud ID) » (OPS-22/OPS-23, .github/workflows/ci.yml). Ce Dockerfile n'était
+# construit par aucun CI (aucun job ne l'exerce) : le bug était invisible
+# jusqu'à un build local réel, 2026-09-11.
 ENV HUSKY=0 \
-    CI=true
+    CI=true \
+    NX_NO_CLOUD=true
 
 COPY package.json bun.lock ./
 COPY tools/ ./tools/
@@ -43,7 +49,7 @@ RUN bun install --frozen-lockfile
 RUN bunx nx run backoffice-angular:build:production
 
 # ─── runtime nginx ───────────────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 
 # envsubst (gettext) — substitution du template à l'entrypoint
 RUN apk add --no-cache gettext \
