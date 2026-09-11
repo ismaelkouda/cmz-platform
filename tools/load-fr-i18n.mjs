@@ -39,7 +39,8 @@ export function loadFrModule() {
         throw new Error(
             `Entrée i18n introuvable : ${FR_TRANSLATION_ENTRY} (${
                 /** @type {Error} */ (error).message
-            })`
+            })`,
+            { cause: error }
         );
     }
     let FR;
@@ -49,7 +50,8 @@ export function loadFrModule() {
         throw new Error(
             `Entrée i18n invalide (JSON malformé) : ${FR_TRANSLATION_ENTRY} (${
                 /** @type {Error} */ (error).message
-            })`
+            })`,
+            { cause: error }
         );
     }
     if (!FR || typeof FR !== 'object' || Array.isArray(FR)) {

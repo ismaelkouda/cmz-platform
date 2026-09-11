@@ -1331,38 +1331,35 @@ Figma, désormais source partielle différée :
   pas une mesure locale. `check:ci-wiring` : 40 gates (nouveau
   `check:bundle-metrics-freshness` dans `REQUIRED_STANDALONE_SCRIPTS`, ci-wiring
   confirme la step nightly qui l'appelle).
-- **OPS-29** — **fait** (2026-09-11), M, P1, alias `OPS-26 suite`. `jsdom`
-  monté palier par palier `27 → 28 → 29 → 30` (ferme #10) : aucun major 27→30
-  intermédiaire absent côté npm (contrairement à `@types/node`/OPS-26, les 4
-  majors 27/28/29/30 existent tous). Boucle impact/correction/vérification
-  (`build` 74/74, `lint` 74/74, `test` 47/47, `ngc --strictTemplates`,
-  `bun audit`) à chaque palier :
-  - **27 → 28 : 1 impact réel**, `@cmz/shared-application:test` et
-    `backoffice-angular:test` en échec — `Cannot find module
-    'undici/lib/handler/wrap-handler.js'`. Cause : `jsdom@28` exige
-    `undici@^7.21.0` en dépendance interne, alors que l'override sécurité
-    racine (OPS-12e, CVE-2026-16728) le forçait à `6.28.0` — fichier interne
-    absent de cette ligne majeure. Corrigé en deux temps : `7.21.0` d'abord
-    (résout le crash), puis `bun audit` révèle 5 CVE high propres à
-    `undici >=7.0.0 <7.24.0` (WebSocket/cache) → override remonté à la
-    dernière `7.29.1`. Vérifié que le seul autre consommateur (`node-gyp`,
-    chaîne `@angular/cli` build-time, jamais invoqué dans ce dépôt — aucune
-    dépendance native) n'est pas impacté. `bun audit` : 0 vulnérabilité
-    après correction.
-  - **28 → 29 : aucun impact.**
-  - **29 → 30 (cible finale) : aucune correction nécessaire**, malgré un
-    nouveau saut de dépendance interne (`jsdom@30` exige désormais
-    `undici@^8.9.0`, toujours au-delà de l'override `7.29.1`) — bun résout
-    cette fois `undici@8.10.0` en copie non hoistée propre à `jsdom`, sans
-    forcer l'override dessus (mécanisme différent d'avec le palier 27→28,
-    non élucidé mais vérifié empiriquement : `test` 47/47 vert dès le
-    premier essai, `bun audit` 0 vulnérabilité sur les 3 résolutions undici
-    coexistantes — `6.28.0` sous `node-gyp`, `7.29.1` à la racine, `8.10.0`
-    sous `jsdom`).
-  Override `undici` documenté dans `package.json` : `6.28.0` (OPS-12e,
-  patch CVE dans la ligne 6.x) → `7.29.1` (OPS-29, `jsdom` ≥28 exige la
-  ligne majeure 7.x ; `7.29.1` reste au-dessus de la plage vulnérable
-  `>=7.0.0 <7.24.0`, `bun audit` confirme 0 vulnérabilité résiduelle).
+- **OPS-30** — **fait** (2026-09-11), M, P1, alias `OPS-26 suite`. `eslint`
+  9→10 (ferme #11+#24, indissociables : `@eslint/js@10` exige `eslint
+  ^10.0.0` en peer). Sur les 5 paquets du groupe, seul `eslint` est
+  réellement chargé par `eslint.config.mjs` — `@eslint/js`,
+  `eslint-plugin-import`, `eslint-plugin-jsx-a11y`,
+  `eslint-plugin-react-hooks` sont tous dans l'`ignoreDependencies` de
+  `knip.json`, jamais importés nulle part (vérifié par `grep` avant tout
+  bump). `eslint-plugin-react-hooks` bumpé directement `5.0.0 → 7.1.1` sans
+  palier (dormant, aucun code ne l'exerce, pas de major `6` stable ayant de
+  sens à isoler).
+  - `nx lint` (74 projets) : **0 impact**.
+  - `check:lint-tools` (`tools/**/*.mjs`, hors périmètre `nx lint`) :
+    **15 erreurs réelles, 2 règles nouvellement actives.** Corrigées, pas
+    désactivées : `preserve-caught-error` (13×, 9 fichiers — `throw` dans
+    un `catch` sans `{ cause: error }`, corrigé partout, préserve l'erreur
+    d'origine) et `no-useless-assignment` (2×,
+    `generation-publication.mjs` — initialiseur `let
+    preserveTransactionRoot = false` mort, les deux branches try/catch le
+    réassignent avant lecture, initialiseur retiré).
+  - **Effet de bord découvert en le vivant** : le correctif de
+    `llm-execution.mjs` (sous `tools/library-setup/`) a périmé les 3
+    attestations de compatibilité — `tooling-fingerprint.mjs` hache tout
+    le contenu non-test de `tools/library-setup/` comme empreinte
+    « runner », et cette empreinte fait partie de `verification` (cf.
+    OPS-26/PR #37, même mécanisme). Cycle périmer → requalifier rejoué à
+    l'identique (10/10 preuves vertes), confirme que le garde ADR-0041 n'a
+    aucun angle mort même pour un correctif de lint sans rapport
+    fonctionnel avec `add-library`.
+  `check:all` vert. `bun audit --audit-level=high` : 0 vulnérabilité.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

@@ -663,7 +663,8 @@ export async function finishTransaction({
         if (operationError) {
             throw new AggregateError(
                 [operationError, cleanupError],
-                `generation publication: operation and transaction cleanup failed; inspect ${transactionRoot}`
+                `generation publication: operation and transaction cleanup failed; inspect ${transactionRoot}`,
+                { cause: cleanupError }
             );
         }
         return {

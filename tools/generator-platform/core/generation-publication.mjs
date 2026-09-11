@@ -485,7 +485,7 @@ export async function createGenerationOutput({
             changeSet,
             hadPrevious: false,
         });
-        let preserveTransactionRoot = false;
+        let preserveTransactionRoot;
         let publication;
         let operationError;
         try {
@@ -562,7 +562,7 @@ export async function applyGenerationChangeSet({
             changeSet,
             hadPrevious: true,
         });
-        let preserveTransactionRoot = false;
+        let preserveTransactionRoot;
         let publication;
         let operationError;
         try {
