@@ -42,9 +42,9 @@ jobs:
     name: Oracle Tier 2 — backoffice-angular
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -98,7 +98,7 @@ jobs:
       # constaté 2026-09-11 : macOS 534 473 octets vs CI 534 545 octets).
       - name: Publier bundle-metrics.json mesuré (debug drift)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bundle-metrics-measured
           path: apps/backoffice-angular/bundle-metrics.json
@@ -122,7 +122,7 @@ jobs:
 
       - name: Publier le rapport de composition du bundle
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bundle-composition-report
           path: bundle-composition-report.html
