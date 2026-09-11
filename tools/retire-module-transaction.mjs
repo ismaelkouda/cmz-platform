@@ -91,7 +91,8 @@ export function readTransactionState(workspaceRoot, moduleName) {
         return JSON.parse(readFileSync(path, 'utf8'));
     } catch (error) {
         throw new Error(
-            `État de retrait illisible ${relative(workspaceRoot, path)} : ${error.message}`
+            `État de retrait illisible ${relative(workspaceRoot, path)} : ${error.message}`,
+            { cause: error }
         );
     }
 }
@@ -109,7 +110,9 @@ export function assertPlainDirectory(path, label) {
     try {
         metadata = lstatSync(path);
     } catch (error) {
-        throw new Error(`${label} est inaccessible : ${error.message}`);
+        throw new Error(`${label} est inaccessible : ${error.message}`, {
+            cause: error,
+        });
     }
     if (metadata.isSymbolicLink() || !metadata.isDirectory()) {
         throw new Error(`${label} doit être un vrai dossier, jamais un lien.`);
@@ -178,7 +181,8 @@ function readLockOwner(lockRoot) {
         owner = JSON.parse(readFileSync(join(lockRoot, 'owner.json'), 'utf8'));
     } catch (error) {
         throw new Error(
-            `Verrou de retrait incomplet ${lockRoot} : ${error.message}`
+            `Verrou de retrait incomplet ${lockRoot} : ${error.message}`,
+            { cause: error }
         );
     }
     const keys = Object.keys(owner).sort().join('\0');

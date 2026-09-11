@@ -47,7 +47,9 @@ export function workflowRunCommands(content, label = 'workflow') {
     try {
         workflow = parseYaml(content);
     } catch (error) {
-        throw new Error(`${label}: YAML invalide (${error.message})`);
+        throw new Error(`${label}: YAML invalide (${error.message})`, {
+            cause: error,
+        });
     }
     const commands = [];
     for (const job of Object.values(workflow?.jobs ?? {})) {
