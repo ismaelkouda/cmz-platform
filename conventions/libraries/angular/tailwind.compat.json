@@ -21,16 +21,16 @@
       "reason": "Piste initiale Tailwind 4 ; passe en verified après règle CSS compilée.",
       "verification": {
         "schema_version": "1.0.0",
-        "commit": "d4051299a317ef078bb394e61121afa8a4c40611",
+        "commit": "4d2f795b8cee874c8168b419c7245f0728289499",
         "app": "library-qualification-angular",
-        "plan_id": "library-plan:a8c006124ad2e2dc8dd4d74a25643e949b713f48d009d724633e4141d70dbbc7",
+        "plan_id": "library-plan:4f2cb84c310695ddfe8f11e578bf2be44dc31f7c0c0466f5d8f81c9d7dfac497",
         "change_set_id": "changes:1af3c2595670bc7273ecfba26e82b841e8f1ab4a34d795d9e468a17d3a71b1ce",
         "app_tree_sha256": "e258093c3fe1c4ded44ed01700b0f91e91622d23046bc0bf1b1219c9dab2afb3",
         "track_sha256": "3981808faf08c915f19f81f10c72f84c674323e40a2a83076f2a1b2c4d96923e",
         "tested_versions": {
           "node": "22.22.3",
           "bun": "1.3.14",
-          "nx": "23.1.0",
+          "nx": "23.2.0",
           "framework": "22.0.7",
           "packages": {
             "@tailwindcss/postcss": "4.1.13",
@@ -59,7 +59,7 @@
           "proof_contracts": "e5c4d6939a4c98f31513581d29ea91c1d9a99049330ab4b72f8e86b63c7fb97a",
           "runner": "40cfbc0d2e3a24718e661f67ded2e84f808f7b0486422238106a550cce19aa21"
         },
-        "evidence_sha256": "40ea1fb727fe93a7db36ccd8b534f2f1c3d9e012d90ecfed0ffa863b3663bf51"
+        "evidence_sha256": "9c1316117d4618f48a5a6962c1a47cdc07df7879a06ebb34d85db7db613c0dff"
       }
     }
   ]
