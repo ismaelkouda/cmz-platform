@@ -185,6 +185,14 @@ jobs:
       - name: check:lint-tools (eslint sur tools/**/*.mjs)
         run: bun run check:lint-tools
 
+      # Gouvernance `main` — même classe de bug côté forge : la liste
+      # `required_status_checks.contexts` de .github/branch-protection.main.json
+      # est maintenue à la main et peut dériver des jobs bloquants réels de ce
+      # fichier (job ajouté non exigé → fusion sans ce check ; contexte obsolète
+      # → GitHub attend un check qui n'arrive jamais, toute PR bloquée).
+      - name: check:branch-protection-contexts (JSON de protection ↔ jobs ci.yml)
+        run: bun run check:branch-protection-contexts
+
       # Audit Big Tech 2026-08-14 — root cause du bug "script dans check:all
       # jamais réellement câblé en CI" (rencontré 3 fois : check:pair-schema/
       # check:corpus-tools en 2026-08-11, check:dto-schema/check:pattern-nx:
