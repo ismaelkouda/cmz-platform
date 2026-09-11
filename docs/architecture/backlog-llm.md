@@ -484,7 +484,7 @@ requests-domain:test` passent.
 
 ---
 
-### P1-6 — Débloquer les PR Dependabot (lockfile Bun non régénéré) — [MÉMO puis exécution]
+### P1-6 — Débloquer les PR Dependabot (lockfile Bun non régénéré) — [Décidé, exécution différée]
 
 **Constat (vérifié le 2026-09-10) :** presque toutes les PR ouvertes par
 `dependabot[bot]` sur l'écosystème npm échouent immédiatement à l'étape
@@ -516,54 +516,44 @@ bump trivial d'une seule dépendance sans mouvement d'arbre de résolution.
   ouvre une PR de mise à jour du lockfile racine » — **hypothèse fausse** pour
   Bun, à corriger quelle que soit l'option retenue.
 
-**Contexte de priorité :** tant que `main` n'est pas protégée (voir OPS-27 /
-PR #34 dans `taches-restantes.md`), ces PR peuvent encore être fusionnées par
-un merge forcé. Une fois `main` protégée avec ses 16 contextes requis, elles
-deviennent réellement infusionnables. Backlog rouge depuis ~2026-08-28.
+**Contexte de priorité :** `main` est protégée depuis le 2026-09-11 (OPS-27,
+16 contextes requis) — ces PR sont donc réellement infusionnables tant que
+leur lockfile n'est pas régénéré, pas seulement en théorie.
 
-**Fichiers concernés :**
+**Mise à jour 2026-09-11 — décidé, pas un mémo à produire :** le backlog
+existant au moment du constat (#10, #11, #20-28) a été traité **à la main**
+(option 2 ci-dessous), une PR dédiée par sujet — voir `taches-restantes.md`
+OPS-26 pour le détail. Pour la récurrence future (Dependabot revient chaque
+semaine), la décision a été prise **directement en session** avec
+l'utilisateur plutôt que via un mémo séparé : **Option 1 (CI
+auto-réparatrice)**, avec **exécution volontairement différée** (« on le
+fera plus tard »). Ce n'est donc plus un choix à trois voies ouvert — ne pas
+reproduire les options 2/3 ci-dessous, elles sont conservées seulement comme
+trace du raisonnement qui a mené à l'option 1.
 
-- `.github/dependabot.yml` (corriger le commentaire trompeur ; selon l'option,
-  ajuster la configuration)
-- `.github/workflows/` (option 1 uniquement : nouveau workflow ou step)
-- `bun.lock` + `package.json` (option 2 : par PR, jamais éditer à la main —
-  toujours via `bun install`)
+**Fichiers concernés (quand l'exécution reprendra) :**
 
-**Instruction [MÉMO] :** produire
-`docs/architecture/memo-dependabot-bun-lockfile.md` avec (1) le constat
-ci-dessus reformulé et l'état exact du backlog au moment de la rédaction
-(`gh pr list --author "app/dependabot" --state open --json
-number,title,mergeStateStatus`) ; (2) les trois options ci-dessous décrites
-factuellement, avantages/inconvénients, **sans en recommander une** :
+- `.github/workflows/dependabot-lockfile-fix.yml` (nouveau)
+- `tools/fix-dependabot-lockfile.mjs` + `.test.mjs` (nouveaux)
+- `.github/dependabot.yml` (corriger le commentaire trompeur qui affirme que
+  Dependabot régénère lui-même le lockfile — toujours faux)
 
-- **Option 1 — étape CI d'auto-réparation.** Un workflow déclenché sur les PR
-  dont l'acteur est `dependabot[bot]` : `bun install` (sans
-  `--frozen-lockfile`), puis si `bun.lock` a changé, commit + push sur la
-  branche de la PR. Décrire précisément : permissions requises
-  (`contents: write`), risque `pull_request_target` (exécution de code de la
-  PR avec un token privilégié — à éviter ; préférer `pull_request` +
-  `workflow_run`, ou un PAT/GitHub App dédié), interaction avec
-  `check:versions` (le catalog Bun ADR-0005 reste la source de version — le
-  lockfile régénéré ne doit pas réintroduire de dérive), et le fait que
-  Dependabot cesse de rebaser une PR qu'un tiers a modifiée.
-- **Option 2 — traitement manuel groupé.** Fermer les PR non souhaitées ; pour
-  chaque bump voulu, `git fetch origin <branche-dependabot>`, `bun install`,
-  vérifier `bunx nx run-many -t build lint test` + `bun audit
-  --audit-level=high`, committer `bun.lock`, pousser. Coût : récurrent, ~1
-  passage par semaine.
-- **Option 3 — réduire le périmètre Dependabot npm.** Retirer ou espacer
-  l'écosystème `npm` de `.github/dependabot.yml` ; s'appuyer sur le job
-  bloquant `Dependency audit (bun audit)` (déjà en CI) pour la sécurité et un
-  `bun update` manuel périodique pour la fraîcheur. Décrire ce qu'on perd
-  (PR de fraîcheur non-sécurité automatiques).
+**Plan d'exécution complet** (contraintes GitHub identifiées, conception,
+check-list sécurité, actions bloquées sur un geste humain — créer et
+enregistrer un jeton à grain fin) : `docs/architecture/taches-restantes.md`,
+entrée **OPS-26**. Ne pas redériver ce plan depuis zéro — le reprendre tel
+quel.
 
-(3) une section « état actuel du bun.lock » : confirmer par
-`grep -c '"' bun.lock` / `bun pm ls --all | wc -l` que le lockfile committé
-sur `main` est cohérent (`bun install --frozen-lockfile` vert sur `main`).
+Options historiques (raisonnement qui a mené à la décision, non
+actionnables telles quelles) :
 
-**Critère de succès du mémo :** le fichier existe avec les 3 sections, aucune
-option cochée comme « recommandée », et la liste des PR Dependabot ouvertes
-avec leur `mergeStateStatus` au moment de la rédaction.
+- **Option 1 — étape CI d'auto-réparation.** Retenue — voir plan complet
+  dans OPS-26 (`taches-restantes.md`).
+- **Option 2 — traitement manuel groupé.** Appliquée pour le backlog
+  existant au 2026-09-10/11 (voir OPS-26). Reste l'option de repli tant que
+  l'option 1 n'est pas implémentée.
+- **Option 3 — réduire le périmètre Dependabot npm.** Écartée (perte de
+  fraîcheur jugée plus coûteuse que le ménage hebdomadaire).
 
 **Exécution après décision humaine :** appliquer l'option choisie ; critère de
 succès final = une PR Dependabot npm de test (ou la prochaine ouverte
@@ -990,13 +980,15 @@ runbook-csp-grafana.md`.
   ~320 traductions automatiques, second relecteur CODEOWNERS) : retirées
   de ce backlog, un agent ne peut pas les exécuter. Elles restent
   documentées dans `taches-restantes.md` sous OPS-4, T5-1, T12-7, T13-7.
-- **Application de la protection de `main`** (OPS-27) : préparée dans la
-  PR #34 (verte), mais mise en pause sur décision explicite de l'utilisateur
-  le 2026-09-10, et l'étape finale (`bun run protect:main` + fusion par
-  `@soumailakouda`) requiert une action humaine. Ne pas exécuter tant que
-  l'utilisateur n'a pas rouvert le sujet. Détail dans `taches-restantes.md`
-  sous OPS-27. Lié : P1-6 ci-dessus (le backlog Dependabot doit être traité
-  en parallèle, sinon il reste bloqué net une fois `main` protégée).
+- **Application de la protection de `main`** (OPS-27) : **fait** le
+  2026-09-11 — `bun run protect:main` exécuté et vérifié en conditions
+  réelles (push direct refusé, PR sans approbation bloquée malgré CI verte).
+  Détail dans `taches-restantes.md` sous OPS-27.
+- **CI auto-réparatrice pour Dependabot** (P1-6 / OPS-26, décision retenue
+  Option 1) : bloquée sur une action humaine — créer un jeton d'accès
+  personnel à grain fin et l'enregistrer comme secret du dépôt (un agent ne
+  peut pas créer de identifiant de compte). Ne pas exécuter tant que ce
+  jeton n'existe pas. Plan complet dans `taches-restantes.md` sous OPS-26.
 - **Items produit hors socle technique** (parité fonctionnelle
   multi-onglets, export Excel, carte interactive avancée, etc., section
   "P2 métier" de `taches-restantes.md`) : hors du périmètre de rigueur
