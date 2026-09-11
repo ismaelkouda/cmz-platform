@@ -39,6 +39,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REQUIRED_STANDALONE_SCRIPTS = [
     'check:library-candidate-isolation',
     'check:library-setup-integration',
+    'check:bundle-metrics-freshness',
 ];
 
 export function workflowRunCommands(content, label = 'workflow') {

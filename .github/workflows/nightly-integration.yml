@@ -61,14 +61,36 @@ jobs:
       - name: Build production
         run: bunx nx run backoffice-angular:build:production
 
+      # Audit E-8 — métrique commitée = vérité ; dérive = CI rouge. Doit
+      # tourner ICI, juste après le build production propre ci-dessus —
+      # JAMAIS après le rebuild --source-map=true plus bas, qui injecte un
+      # commentaire sourceMappingURL dans chaque fichier et change donc ses
+      # octets (et son nom hashé) : mesurer ce dist-là comparait un artefact
+      # non représentatif à la métrique commitée, faux rouge garanti.
+      #
+      # 2026-09-11 (OPS-25 suite) : root cause des 19/20 derniers runs rouges.
+      # Deux causes cumulées, toutes deux corrigées ici :
+      #  1. l'ordre ci-dessus (dist pollué par les sourcemaps) ;
+      #  2. `check:docs-freshness`/`check:bundle-metrics-freshness`
+      #     remplacent un `git diff` brut post-régénération : sans date figée
+      #     (STATUS_DATE / BUNDLE_METRICS_DATE), `generate-status.mjs` et
+      #     `record-bundle-metrics.mjs` tamponnent la date du jour même quand
+      #     le contenu mesuré n'a pas bougé — faux rouge quotidien garanti,
+      #     schedule sans rapport avec la dernière fusion de docs. Les deux
+      #     scripts figent maintenant la date déjà commitée avant de mesurer :
+      #     seul un octet réellement différent fait encore échouer ce step.
+      - name: check:docs-freshness + check:bundle-metrics-freshness
+        run: |
+          bun run check:docs-freshness
+          bun run check:bundle-metrics-freshness
+
       # Audit P-5 (audit-workspace-2026-08-02-revue-finale.md) : composition
       # réelle du bundle initial (main-*.js, 882,18 kB au 2026-08-03, marge
       # de 17,82 kB avant le seuil d'avertissement 900 kB — P1-27). Rebuild
       # dédié avec sourcemaps (jamais dans la config `production` par défaut
       # — on ne veut pas les livrer en production) ; informationnel,
-      # `continue-on-error` — ne bloque jamais la CI sur la composition,
-      # seulement sur le budget absolu (déjà couvert par `budgets` dans
-      # `project.json`, ADR-0016) et la régression déclarée (bundle-metrics.json).
+      # `continue-on-error` — ne bloque jamais la CI sur la composition, le
+      # step précédent a déjà statué sur le budget et la régression réels.
       - name: Analyse de composition du bundle (source-map-explorer)
         continue-on-error: true
         run: |
@@ -86,23 +108,3 @@ jobs:
           path: bundle-composition-report.html
           retention-days: 30
           if-no-files-found: ignore
-
-      # Audit E-8 — métrique commitée = vérité ; dérive = CI rouge
-      - name: Record + verify bundle-metrics.json
-        run: |
-          bun run bundle:record
-          bun run generate:status
-          git diff --exit-code -- \
-            apps/backoffice-angular/bundle-metrics.json \
-            docs/architecture/etat-du-socle.md \
-            LLM_CONTEXT.md \
-            STATUS.md \
-            README.md \
-            docs/adr/README.md \
-            docs/README.md \
-            || {
-              echo "::error::Bundle ou docs dérivés périmés — relancer localement :"
-              echo "  bun run bundle:metrics && bun run generate:status"
-              echo "  puis committer bundle-metrics.json + docs générés"
-              exit 1
-            }

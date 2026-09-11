@@ -14,6 +14,11 @@
  *
  * Métrique canonique : Initial total (raw) = main-*.js + styles-*.css
  * (identique à la ligne « Initial total » du builder Angular).
+ *
+ * `BUNDLE_METRICS_DATE` (optionnel) fige `measured_at` — même mécanisme que
+ * `STATUS_DATE` dans generate-status.mjs. Utilisé par
+ * check-bundle-metrics-freshness.mjs pour comparer les octets sans faux
+ * positif quotidien sur la seule date (audit E-8, cf. taches-restantes OPS-25).
  */
 
 import {
@@ -115,7 +120,9 @@ function kb(bytes) {
 const metrics = {
     schema: 1,
     configuration: 'production',
-    measured_at: new Date().toISOString().slice(0, 10),
+    measured_at:
+        process.env.BUNDLE_METRICS_DATE?.trim() ||
+        new Date().toISOString().slice(0, 10),
     output_path: 'dist/apps/backoffice-angular/browser',
     /** Métrique canonique docs / CI — raw size « Initial total » Angular. */
     initial_raw_bytes: initialBytes,

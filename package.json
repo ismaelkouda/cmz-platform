@@ -47,6 +47,7 @@
     "check:generator-platform": "bun run check:generator-platform:core && bun run check:generator-platform:angular && bun run check:generator-platform:reactjs",
     "check:publication-durability": "node tools/generator-platform/check-publication-durability.mjs && node --test tools/generator-platform/publication-durability.test.mjs tools/generator-platform/generation-transaction.test.mjs",
     "check:docs-freshness": "node --test tools/check-docs-freshness.test.mjs && node tools/check-docs-freshness.mjs",
+    "check:bundle-metrics-freshness": "node --test tools/check-bundle-metrics-freshness.test.mjs && node tools/check-bundle-metrics-freshness.mjs",
     "legacy:pin": "node tools/corpus/pin-legacy.mjs",
     "legacy:checkout": "node tools/corpus/checkout-legacy.mjs",
     "corpus:backfill-legacy-ref": "node tools/corpus/backfill-legacy-ref.mjs",
