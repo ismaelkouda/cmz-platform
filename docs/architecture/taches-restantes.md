@@ -1286,6 +1286,51 @@ Figma, désormais source partielle différée :
   bloquante, `gh api repos/<owner>/cmz-platform/branches/main/protection`
   confirme les 16 contextes. Dépendance : traiter OPS-26 en parallèle ou juste
   après, sinon le backlog Dependabot reste bloqué net.
+- **OPS-28** — **fait** (2026-09-11), M, P1, alias `OPS-25 suite`. Le job
+  nightly `Oracle Tier 2 — backoffice-angular` était rouge **19 des 20
+  derniers runs** (`gh run list --workflow=nightly-integration.yml`,
+  historique du 2026-08-26 au 2026-09-11). Deux causes cumulées, aucun lien
+  avec une régression de code :
+  1. La step "Record + verify bundle-metrics.json" mesurait le dist du
+     rebuild `--source-map=true` (step suivante à l'époque), pas celui du
+     build production propre — un `sourceMappingURL` injecté change les
+     octets et le hash de nom de chaque fichier. Corrigé : la mesure tourne
+     maintenant immédiatement après "Build production", avant le rebuild
+     sourcemap.
+  2. `generate-status.mjs` (`STATUS_DATE`) et `record-bundle-metrics.mjs`
+     tamponnent la date du jour à chaque régénération. `check:docs-freshness`
+     fige déjà cette date sur celle commitée (mécanisme correct, existant) ;
+     la step nightly, elle, faisait un `git diff --exit-code` brut après un
+     `bun run generate:status` sans figer — la ligne « dernière génération »
+     dérivait donc chaque nuit sans schedule reliée à un commit, même sans
+     aucun octet de contenu différent. **`record-bundle-metrics.mjs` n'avait
+     aucun mécanisme équivalent** pour son `measured_at`. Corrigé :
+     `BUNDLE_METRICS_DATE` (même pattern que `STATUS_DATE`) ajouté à
+     `record-bundle-metrics.mjs` ; nouveau `check:bundle-metrics-freshness.mjs`
+     (miroir de `check-docs-freshness.mjs`) fige cette date avant de mesurer,
+     tests `node:test` dédiés (mesure inchangée → vert, drift réel → rouge,
+     fichier absent → rouge explicite). La step nightly appelle maintenant
+     `bun run check:docs-freshness && bun run check:bundle-metrics-freshness`
+     au lieu du `git diff` à la main.
+  3. Validation du correctif par `workflow_dispatch` réel (pas seulement
+     local) : le build production **n'est pas garanti bit-à-bit identique
+     macOS/ubuntu-latest** — `main-*.js` identique (505 232 octets, même
+     hash), mais `styles-*.css` diffère (28 549 vs 28 621 octets, hash
+     différent), sans changement de code. `bundle-metrics.json` doit donc
+     toujours être (re)mesuré et committé depuis un run CI réel, jamais
+     depuis un poste de dev — documenté dans `record-bundle-metrics.mjs` et
+     le commentaire du job. Step `Publier bundle-metrics.json mesuré
+     (debug drift)` ajoutée (`if: failure()`) pour récupérer les octets
+     réels sans deviner.
+  **Drift réel détecté au passage** (pas seulement l'outillage) : le bundle
+  initial est passé de `526.38 kB` (commit du 2026-08-30) à `534.54 kB`
+  (mesuré en CI le 2026-09-11, après le bump nx 23.2.0 — cf. OPS-26/PR #37),
+  sous le seuil d'avertissement `900 kB` (ADR-0016). `bundle-metrics.json` +
+  `STATUS.md`/`README.md`/`LLM_CONTEXT.md`/`etat-du-socle.md` recommittés à
+  jour, avec la mesure CI réelle (`gh run download … -n bundle-metrics-measured`),
+  pas une mesure locale. `check:ci-wiring` : 40 gates (nouveau
+  `check:bundle-metrics-freshness` dans `REQUIRED_STANDALONE_SCRIPTS`, ci-wiring
+  confirme la step nightly qui l'appelle).
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
