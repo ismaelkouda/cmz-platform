@@ -79,10 +79,30 @@ jobs:
       #     schedule sans rapport avec la dernière fusion de docs. Les deux
       #     scripts figent maintenant la date déjà commitée avant de mesurer :
       #     seul un octet réellement différent fait encore échouer ce step.
+      #  3. Constaté en validant ce correctif par workflow_dispatch réel sur
+      #     cette branche : le build production n'est PAS garanti bit-à-bit
+      #     identique entre un poste local macOS et ubuntu-latest (534 473
+      #     vs 534 545 octets, même chunk ExcelJS). `bundle-metrics.json`
+      #     doit donc toujours être (re)mesuré et committé depuis un run CI
+      #     réel (ce workflow, `workflow_dispatch` si besoin hors schedule),
+      #     jamais depuis `bun run bundle:metrics` sur un poste de dev.
       - name: check:docs-freshness + check:bundle-metrics-freshness
         run: |
           bun run check:docs-freshness
           bun run check:bundle-metrics-freshness
+
+      # record-bundle-metrics.mjs écrit sa mesure fraîche AVANT que le step
+      # ci-dessus échoue sur la comparaison — la publier permet de récupérer
+      # les octets réels mesurés par CI (ubuntu-latest) sans deviner depuis
+      # un poste local (build non garanti bit-à-bit identique cross-OS,
+      # constaté 2026-09-11 : macOS 534 473 octets vs CI 534 545 octets).
+      - name: Publier bundle-metrics.json mesuré (debug drift)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-metrics-measured
+          path: apps/backoffice-angular/bundle-metrics.json
+          retention-days: 7
 
       # Audit P-5 (audit-workspace-2026-08-02-revue-finale.md) : composition
       # réelle du bundle initial (main-*.js, 882,18 kB au 2026-08-03, marge

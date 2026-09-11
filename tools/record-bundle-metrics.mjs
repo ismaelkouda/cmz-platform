@@ -15,6 +15,14 @@
  * Métrique canonique : Initial total (raw) = main-*.js + styles-*.css
  * (identique à la ligne « Initial total » du builder Angular).
  *
+ * ATTENTION — toujours committer une mesure produite par la CI
+ * (`nightly-integration.yml`, `workflow_dispatch` si besoin hors schedule),
+ * jamais depuis un poste de dev : le build production n'est pas garanti
+ * bit-à-bit identique cross-OS (constaté 2026-09-11, macOS vs ubuntu-latest,
+ * quelques dizaines d'octets d'écart sur un bundle par ailleurs inchangé).
+ * Une mesure locale committée dérive donc `check:bundle-metrics-freshness`
+ * dès le run CI suivant, même sans aucun changement de code.
+ *
  * `BUNDLE_METRICS_DATE` (optionnel) fige `measured_at` — même mécanisme que
  * `STATUS_DATE` dans generate-status.mjs. Utilisé par
  * check-bundle-metrics-freshness.mjs pour comparer les octets sans faux
