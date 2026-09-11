@@ -484,6 +484,95 @@ requests-domain:test` passent.
 
 ---
 
+### P1-6 — Débloquer les PR Dependabot (lockfile Bun non régénéré) — [MÉMO puis exécution]
+
+**Constat (vérifié le 2026-09-10) :** presque toutes les PR ouvertes par
+`dependabot[bot]` sur l'écosystème npm échouent immédiatement à l'étape
+`bun install --frozen-lockfile` (première step de chaque job de
+`.github/workflows/ci.yml`) avec :
+
+```
+error: lockfile had changes, but lockfile is frozen
+note: try re-running without --frozen-lockfile and commit the updated lockfile
+```
+
+Cause : Dependabot met à jour `package.json` (numéros de version, y compris
+les groupes `angular` / `nx` / `lint-format` définis dans
+`.github/dependabot.yml`) **mais ne régénère pas `bun.lock`**, sauf pour un
+bump trivial d'une seule dépendance sans mouvement d'arbre de résolution.
+`package.json` et `bun.lock` ne sont alors plus cohérents, et le contrôle
+`--frozen-lockfile` refuse l'installation.
+
+**Preuve (ne pas re-vérifier à l'aveugle, mais reproductible) :**
+
+- `gh pr list --author "app/dependabot" --state open` → PR #21 (`@types/node`),
+  #22 (`jiti`), #23 (`@types/react-dom`), #24 (groupe `lint-format`, 4
+  paquets), #25 (`knip`), #26 (`@swc/core`), #27 (groupe `nx`, 9 paquets),
+  #28 (`@testing-library/react`).
+- `gh pr diff <n> --name-only` pour #21 à #28 → **`package.json` seul**.
+- `gh pr diff 20 --name-only` → `package.json` **et** `bun.lock` ; `gh pr view
+  20 --json mergeStateStatus` → `CLEAN` (seule PR Dependabot npm verte).
+- Le commentaire d'en-tête de `.github/dependabot.yml` affirme « Dependabot
+  ouvre une PR de mise à jour du lockfile racine » — **hypothèse fausse** pour
+  Bun, à corriger quelle que soit l'option retenue.
+
+**Contexte de priorité :** tant que `main` n'est pas protégée (voir OPS-27 /
+PR #34 dans `taches-restantes.md`), ces PR peuvent encore être fusionnées par
+un merge forcé. Une fois `main` protégée avec ses 16 contextes requis, elles
+deviennent réellement infusionnables. Backlog rouge depuis ~2026-08-28.
+
+**Fichiers concernés :**
+
+- `.github/dependabot.yml` (corriger le commentaire trompeur ; selon l'option,
+  ajuster la configuration)
+- `.github/workflows/` (option 1 uniquement : nouveau workflow ou step)
+- `bun.lock` + `package.json` (option 2 : par PR, jamais éditer à la main —
+  toujours via `bun install`)
+
+**Instruction [MÉMO] :** produire
+`docs/architecture/memo-dependabot-bun-lockfile.md` avec (1) le constat
+ci-dessus reformulé et l'état exact du backlog au moment de la rédaction
+(`gh pr list --author "app/dependabot" --state open --json
+number,title,mergeStateStatus`) ; (2) les trois options ci-dessous décrites
+factuellement, avantages/inconvénients, **sans en recommander une** :
+
+- **Option 1 — étape CI d'auto-réparation.** Un workflow déclenché sur les PR
+  dont l'acteur est `dependabot[bot]` : `bun install` (sans
+  `--frozen-lockfile`), puis si `bun.lock` a changé, commit + push sur la
+  branche de la PR. Décrire précisément : permissions requises
+  (`contents: write`), risque `pull_request_target` (exécution de code de la
+  PR avec un token privilégié — à éviter ; préférer `pull_request` +
+  `workflow_run`, ou un PAT/GitHub App dédié), interaction avec
+  `check:versions` (le catalog Bun ADR-0005 reste la source de version — le
+  lockfile régénéré ne doit pas réintroduire de dérive), et le fait que
+  Dependabot cesse de rebaser une PR qu'un tiers a modifiée.
+- **Option 2 — traitement manuel groupé.** Fermer les PR non souhaitées ; pour
+  chaque bump voulu, `git fetch origin <branche-dependabot>`, `bun install`,
+  vérifier `bunx nx run-many -t build lint test` + `bun audit
+  --audit-level=high`, committer `bun.lock`, pousser. Coût : récurrent, ~1
+  passage par semaine.
+- **Option 3 — réduire le périmètre Dependabot npm.** Retirer ou espacer
+  l'écosystème `npm` de `.github/dependabot.yml` ; s'appuyer sur le job
+  bloquant `Dependency audit (bun audit)` (déjà en CI) pour la sécurité et un
+  `bun update` manuel périodique pour la fraîcheur. Décrire ce qu'on perd
+  (PR de fraîcheur non-sécurité automatiques).
+
+(3) une section « état actuel du bun.lock » : confirmer par
+`grep -c '"' bun.lock` / `bun pm ls --all | wc -l` que le lockfile committé
+sur `main` est cohérent (`bun install --frozen-lockfile` vert sur `main`).
+
+**Critère de succès du mémo :** le fichier existe avec les 3 sections, aucune
+option cochée comme « recommandée », et la liste des PR Dependabot ouvertes
+avec leur `mergeStateStatus` au moment de la rédaction.
+
+**Exécution après décision humaine :** appliquer l'option choisie ; critère de
+succès final = une PR Dependabot npm de test (ou la prochaine ouverte
+automatiquement) atteint `mergeStateStatus: CLEAN` sans intervention manuelle
+répétée, et `.github/dependabot.yml` ne contient plus d'affirmation fausse sur
+le lockfile.
+
+---
+
 ## P2 — amélioration, à traiter après P0 et P1
 
 ### P2-1 — Aligner les 3 composants dérogeant à la convention Signal Forms
@@ -901,6 +990,13 @@ runbook-csp-grafana.md`.
   ~320 traductions automatiques, second relecteur CODEOWNERS) : retirées
   de ce backlog, un agent ne peut pas les exécuter. Elles restent
   documentées dans `taches-restantes.md` sous OPS-4, T5-1, T12-7, T13-7.
+- **Application de la protection de `main`** (OPS-27) : préparée dans la
+  PR #34 (verte), mais mise en pause sur décision explicite de l'utilisateur
+  le 2026-09-10, et l'étape finale (`bun run protect:main` + fusion par
+  `@soumailakouda`) requiert une action humaine. Ne pas exécuter tant que
+  l'utilisateur n'a pas rouvert le sujet. Détail dans `taches-restantes.md`
+  sous OPS-27. Lié : P1-6 ci-dessus (le backlog Dependabot doit être traité
+  en parallèle, sinon il reste bloqué net une fois `main` protégée).
 - **Items produit hors socle technique** (parité fonctionnelle
   multi-onglets, export Excel, carte interactive avancée, etc., section
   "P2 métier" de `taches-restantes.md`) : hors du périmètre de rigueur

@@ -76,20 +76,30 @@ Cette convention n'est pas vérifiée par un hook : elle est imposée par la
 | Règle | Valeur |
 | ----- | ------ |
 | Pull request obligatoire | oui |
-| Approbations | **1** (+ relecture CODEOWNERS) |
-| Status checks requis | jobs bloquants de `.github/workflows/ci.yml` (`Garde-fous socle`, `Docs freshness`, `Oracle — …`, `Corpus SEOS — …`) |
+| Approbations | **1** par un autre contributeur, sur le dernier push (+ relecture CODEOWNERS) |
+| Status checks requis | tous les jobs bloquants de `.github/workflows/ci.yml` ; Semgrep reste volontairement en rapport seul |
 | Force-push / suppression de `main` | **interdit** |
 | Applique aux admins | oui (`enforce_admins`) |
+| Méthode de fusion | squash uniquement |
+| Branche source après fusion | suppression automatique |
 
-Source de vérité versionnée : [`.github/branch-protection.main.json`](../../.github/branch-protection.main.json).
+Sources de vérité versionnées : [`.github/branch-protection.main.json`](../../.github/branch-protection.main.json)
+pour la branche et [`.github/repository-settings.json`](../../.github/repository-settings.json)
+pour les méthodes de fusion et la suppression des branches sources.
 Application / resynchronisation forge :
 
 ```bash
 gh auth login
 # remote GitHub requis, ou : export CMZ_GITHUB_REPO=owner/cmz-platform
-bun run protect:main          # applique
+bun run protect:main          # applique branche + réglages de fusion
 bun run protect:main -- --dry-run
 ```
+
+`check:branch-protection-contexts` (job `Garde-fous socle`, `check:all`) impose
+l'égalité stricte entre `required_status_checks.contexts` et les jobs bloquants
+de `ci.yml` : un job ajouté sans contexte requis, ou un contexte requis sans job
+(toute PR alors bloquée par un check fantôme), fait échouer la CI. Après tout
+ajout/retrait de job bloquant : mettre à jour le JSON, puis `bun run protect:main`.
 
 ### Fraîcheur du socle — 24 h maximum hors PR (N1-5)
 
