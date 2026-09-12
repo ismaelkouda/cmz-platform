@@ -188,7 +188,7 @@
     "prettier": "^3.9.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "sass": "^1.97.2",
+    "sass": "^1.104.0",
     "semver": "7.8.5",
     "source-map-explorer": "^2.5.3",
     "tailwindcss": "catalog:",
