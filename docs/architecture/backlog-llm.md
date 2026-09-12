@@ -484,7 +484,7 @@ requests-domain:test` passent.
 
 ---
 
-### P1-6 — Débloquer les PR Dependabot (lockfile Bun non régénéré) — [Décidé, exécution différée]
+### P1-6 — Débloquer les PR Dependabot (lockfile Bun non régénéré) — [En cours : canary Bun natif]
 
 **Constat (vérifié le 2026-09-10) :** presque toutes les PR ouvertes par
 `dependabot[bot]` sur l'écosystème npm échouent immédiatement à l'étape
@@ -520,46 +520,49 @@ bump trivial d'une seule dépendance sans mouvement d'arbre de résolution.
 16 contextes requis) — ces PR sont donc réellement infusionnables tant que
 leur lockfile n'est pas régénéré, pas seulement en théorie.
 
-**Mise à jour 2026-09-11 — décidé, pas un mémo à produire :** le backlog
+**Mise à jour 2026-09-11 :** le backlog
 existant au moment du constat (#10, #11, #20-28) a été traité **à la main**
 (option 2 ci-dessous), une PR dédiée par sujet — voir `taches-restantes.md`
-OPS-26 pour le détail. Pour la récurrence future (Dependabot revient chaque
-semaine), la décision a été prise **directement en session** avec
-l'utilisateur plutôt que via un mémo séparé : **Option 1 (CI
-auto-réparatrice)**, avec **exécution volontairement différée** (« on le
-fera plus tard »). Ce n'est donc plus un choix à trois voies ouvert — ne pas
-reproduire les options 2/3 ci-dessous, elles sont conservées seulement comme
-trace du raisonnement qui a mené à l'option 1.
+OPS-26 pour le détail. Une CI auto-réparatrice avait alors été retenue puis
+différée.
 
-**Fichiers concernés (quand l'exécution reprendra) :**
+**Réévaluation Staff 2026-09-12 — le fait de plateforme a changé :** GitHub
+documente désormais un écosystème Dependabot `bun` natif (Bun >= 1.1.39,
+`bun.lock` texte pris en charge). Le dépôt utilisait toujours
+`package-ecosystem: npm`, donc demandait au mauvais updater de traiter un
+catalog Bun. Décision révisée : **canary natif prioritaire, CI
+auto-réparatrice uniquement en fallback**. Aucun jeton d'écriture permanent
+n'est introduit tant que la voie native n'a pas échoué empiriquement.
 
-- `.github/workflows/dependabot-lockfile-fix.yml` (nouveau)
-- `tools/fix-dependabot-lockfile.mjs` + `.test.mjs` (nouveaux)
-- `.github/dependabot.yml` (corriger le commentaire trompeur qui affirme que
-  Dependabot régénère lui-même le lockfile — toujours faux)
+**Canary implémenté :**
 
-**Plan d'exécution complet** (contraintes GitHub identifiées, conception,
-check-list sécurité, actions bloquées sur un geste humain — créer et
-enregistrer un jeton à grain fin) : `docs/architecture/taches-restantes.md`,
-entrée **OPS-26**. Ne pas redériver ce plan depuis zéro — le reprendre tel
-quel.
+- `.github/dependabot.yml` : `package-ecosystem: bun` ; groupes et cadence
+  hebdomadaire conservés ;
+- `tools/check-bun-lock-catalog-integrity.mjs` + `.test.mjs` : égalité stricte
+  `package.json.workspaces.catalog/catalogs` ↔ `bun.lock.catalog/catalogs`,
+  formats `lockfileVersion/configVersion` figés pour Bun 1.3.14 ;
+- gate câblée à `check:all` et au job bloquant `Garde-fous socle`.
 
-Options historiques (raisonnement qui a mené à la décision, non
-actionnables telles quelles) :
+Ce garde couvre deux risques upstream ouverts qui touchent directement ce
+dépôt : suppression des catalogues du lockfile (dependabot-core#12522) et
+version Bun embarquée par l'updater différente du `packageManager` du dépôt
+(#15897, avec régressions de format observées dans #15848). Une PR bot ne peut
+donc pas fusionner si elle altère silencieusement ces invariants.
 
-- **Option 1 — étape CI d'auto-réparation.** Retenue — voir plan complet
-  dans OPS-26 (`taches-restantes.md`).
+Options conservées comme trace et fallback :
+
+- **Option 1 historique — étape CI d'auto-réparation.** Fallback uniquement
+  si le canary natif échoue ; utiliser alors un token court de GitHub App
+  mono-dépôt plutôt qu'un PAT personnel permanent.
 - **Option 2 — traitement manuel groupé.** Appliquée pour le backlog
-  existant au 2026-09-10/11 (voir OPS-26). Reste l'option de repli tant que
-  l'option 1 n'est pas implémentée.
+  existant au 2026-09-10/11 (voir OPS-26). Reste la procédure d'urgence.
 - **Option 3 — réduire le périmètre Dependabot npm.** Écartée (perte de
   fraîcheur jugée plus coûteuse que le ménage hebdomadaire).
 
-**Exécution après décision humaine :** appliquer l'option choisie ; critère de
-succès final = une PR Dependabot npm de test (ou la prochaine ouverte
-automatiquement) atteint `mergeStateStatus: CLEAN` sans intervention manuelle
-répétée, et `.github/dependabot.yml` ne contient plus d'affirmation fausse sur
-le lockfile.
+**Critère de succès restant :** une vraie PR Dependabot Bun modifie le
+manifeste et `bun.lock`, préserve catalogues et versions de format, passe
+`bun install --frozen-lockfile`, la nouvelle gate et les 16 checks requis sans
+correction humaine. Sinon, revenir à `npm` et ouvrir le fallback GitHub App.
 
 ---
 
@@ -984,11 +987,11 @@ runbook-csp-grafana.md`.
   2026-09-11 — `bun run protect:main` exécuté et vérifié en conditions
   réelles (push direct refusé, PR sans approbation bloquée malgré CI verte).
   Détail dans `taches-restantes.md` sous OPS-27.
-- **CI auto-réparatrice pour Dependabot** (P1-6 / OPS-26, décision retenue
-  Option 1) : bloquée sur une action humaine — créer un jeton d'accès
-  personnel à grain fin et l'enregistrer comme secret du dépôt (un agent ne
-  peut pas créer de identifiant de compte). Ne pas exécuter tant que ce
-  jeton n'existe pas. Plan complet dans `taches-restantes.md` sous OPS-26.
+- **Canary Dependabot Bun natif** (P1-6 / OPS-26) : implémentation en cours,
+  aucun secret requis. Reste bloqué uniquement sur la preuve empirique d'une
+  vraie PR bot après fusion. Le fallback GitHub App ne devient actionnable que
+  si ce canary échoue ; il exigera alors la création humaine de l'App et de sa
+  clé privée. Plan complet dans `taches-restantes.md` sous OPS-26.
 - **Items produit hors socle technique** (parité fonctionnelle
   multi-onglets, export Excel, carte interactive avancée, etc., section
   "P2 métier" de `taches-restantes.md`) : hors du périmètre de rigueur

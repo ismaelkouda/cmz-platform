@@ -1233,7 +1233,7 @@ Figma, désormais source partielle différée :
   `-27.9 %`), marge sous le seuil d'alerte `900 kB` passée de `~1 kB` (cause de
   la dérive nightly) à `~271 kB`. `nx build backoffice-angular:build:production`
   et `nx lint --max-warnings=0` verts sur le résultat final.
-- **OPS-26** — différé (décidé le 2026-09-11, exécution reportée), L, P1.
+- **OPS-26** — en cours (canary Bun natif lancé le 2026-09-12), L, P1.
   Constaté le 2026-09-10 en marge du durcissement de `main` (PR #34) :
   **Dependabot ne régénère pas `bun.lock`**. Le robot met à jour
   `package.json` mais ne recalcule pas le lockfile Bun sauf pour un bump
@@ -1253,45 +1253,48 @@ Figma, désormais source partielle différée :
     effet de bord), `@types/react-dom` patch (PR #45). `ci(deps:)`/`docker`
     restants traités séparément (PR #43, #44 — hors périmètre bun.lock,
     voir OPS-31).
-  - **Décision de fond pour la récurrence future — Option 1 (CI
-    auto-réparatrice) retenue**, exécution **remise à plus tard** sur
-    demande explicite (« on le fera plus tard »). Plan complet déjà
-    conçu, prêt à reprendre sans redérivation :
+  - **Réévaluation Staff 2026-09-12 — canary Bun natif prioritaire.** GitHub
+    documente désormais `package-ecosystem: bun` pour Bun >= 1.1.39 et la
+    prise en charge du `bun.lock` texte. Le dépôt, pourtant épinglé sur Bun
+    1.3.14, utilisait encore l'updater `npm`. Bascule vers l'écosystème `bun`,
+    sans changer les groupes ni la cadence, et ajout d'un garde bloquant :
+    égalité stricte entre les `catalog/catalogs` de `package.json` et de
+    `bun.lock`, plus formats du lockfile figés. Tests purs dédiés et câblage à
+    `check:all`/`Garde-fous socle`. Le canary est accepté seulement lorsqu'une
+    vraie PR bot modifie aussi `bun.lock` et passe les 16 checks sans retouche
+    humaine. Risques upstream explicitement couverts : dependabot-core#12522
+    (catalogues supprimés) et #15897/#15848 (version Bun embarquée/format).
+  - **Fallback seulement — CI auto-réparatrice**, à reprendre si le canary
+    natif échoue. Le plan de sécurité reste utile, avec une correction :
+    préférer un token d'installation court de GitHub App mono-dépôt à un PAT
+    personnel permanent.
     - Contrainte bloquante identifiée : GitHub n'expose **aucun secret**
       aux workflows déclenchés par une PR de `dependabot[bot]`
       (anti-exfiltration, cf. OPS-22/23) → un déclencheur `pull_request`
       classique ne peut jamais avoir les droits d'écriture requis.
-    - Deuxième contrainte : un push fait avec le `GITHUB_TOKEN` par défaut
-      ne redéclenche jamais la CI (anti-boucle) → sans jeton dédié, une PR
-      corrigée resterait affichée rouge.
+    - Deuxième contrainte : une PR mise à jour avec le `GITHUB_TOKEN` peut
+      redéclencher la CI, mais les runs sont placés en attente d'approbation ;
+      l'autonomie exige donc une identité GitHub App dédiée.
     - Conception retenue : workflow **`schedule` (cron, lundi ~06h UTC,
       quelques heures après le passage hebdomadaire de Dependabot) +
       `workflow_dispatch`**, jamais `pull_request`/`pull_request_target`.
       Liste les PR ouvertes de `dependabot[bot]` sur `main` dont la branche
       commence par `dependabot/npm_and_yarn/`, pour chacune : checkout →
-      `bun install --ignore-scripts` (pas d'exécution des scripts
-      postinstall des nouvelles versions, on n'a besoin que du lockfile
-      résolu) → si `bun.lock` a changé, commit + push avec un **jeton
-      d'accès personnel à grain fin dédié** (secret repo, ex.
-      `DEPENDABOT_LOCKFILE_PAT`, portée = ce dépôt uniquement, `Contents:
-      Read and write`) — ce push, authentifié autrement que par le token
-      par défaut, redéclenche naturellement `pull_request: synchronize`.
+      `bun install --lockfile-only --ignore-scripts` → validation que seul
+      `bun.lock` a changé → commit + push avec un **token d'installation
+      GitHub App** limité à ce dépôt et `Contents: write`. Le checkout et la
+      résolution restent sans identifiant d'écriture ; le token court n'est
+      exposé qu'à l'étape finale.
     - Fichiers prévus : `.github/workflows/dependabot-lockfile-fix.yml`,
       `tools/fix-dependabot-lockfile.mjs` + `.test.mjs` (logique de
       filtrage/détection de diff testable en pur), mise à jour du
       commentaire de `.github/dependabot.yml`.
-    - **Bloqué sur une action humaine avant toute implémentation** : créer
-      le PAT à grain fin (ne peut être fait par un agent) et l'ajouter
-      comme secret du dépôt ; confirmer la cadence, le périmètre
-      (`npm_and_yarn` uniquement — `github_actions`/`docker` ne touchent
-      jamais `bun.lock`) et la politique sur les majors (le bot corrige
-      le lockfile même pour un major ; `main` protégée + revue humaine
-      restent le vrai filet de sécurité, le bot ne merge jamais rien).
-    - Check-list sécurité déjà écrite pour la revue au moment de
-      l'implémentation : PAT mono-dépôt et permissions minimales,
-      `--ignore-scripts` systématique, jamais de déclencheur
-      `pull_request`/`pull_request_target`, job qui ne touche que
-      `bun.lock`, filtre strict sur `author == 'dependabot[bot]'`.
+    - **Action humaine seulement si fallback activé** : créer la GitHub App,
+      l'installer sur ce seul dépôt et enregistrer sa clé privée comme secret.
+    - Check-list sécurité du fallback : permissions minimales,
+      `--lockfile-only --ignore-scripts`, `persist-credentials: false`, jamais
+      de `pull_request`/`pull_request_target`, SHA de tête immuable revalidé,
+      job qui ne touche que `bun.lock`, filtre strict sur auteur et branche.
 - **OPS-27** — **fait** (2026-09-11), M, P1, alias `G-2 · P1-13`. Durcissement
   de la protection de `main`, appliqué et vérifié en conditions réelles (mis en
   pause le 2026-09-10, repris et terminé le 2026-09-11 sur décision explicite).
