@@ -177,7 +177,9 @@ export function validatePublicationDurabilityContract(contract) {
     }
     if (
         [...ids].join('\0') !==
-        ['linux-ext4', 'macos-apfs', 'macos-apfs-25'].join('\0')
+        ['linux-ext4', 'macos-apfs', 'macos-apfs-25', 'macos-apfs-27'].join(
+            '\0'
+        )
     ) {
         fail('filesystem profiles do not match the accepted contract');
     }
@@ -198,6 +200,20 @@ export async function detectPublicationFilesystem(root = tmpdir()) {
         statfs_type: Number(statistics.type),
         block_size: Number(statistics.bsize),
     };
+}
+
+export function selectPublicationFilesystemProfile(contract, detected) {
+    const profile = contract.filesystem_profiles.find(
+        (candidate) =>
+            candidate.platform === detected.platform &&
+            candidate.statfs_type === detected.statfs_type
+    );
+    if (!profile) {
+        fail(
+            `unsupported filesystem ${detected.platform}:${detected.statfs_type}`
+        );
+    }
+    return profile;
 }
 
 export async function probePublicationFilesystem(root = tmpdir()) {
@@ -242,16 +258,7 @@ export async function assertSupportedPublicationFilesystem({
 } = {}) {
     const contract = await loadPublicationDurabilityContract();
     const detected = await detectPublicationFilesystem(root);
-    const profile = contract.filesystem_profiles.find(
-        (candidate) =>
-            candidate.platform === detected.platform &&
-            candidate.statfs_type === detected.statfs_type
-    );
-    if (!profile) {
-        fail(
-            `unsupported filesystem ${detected.platform}:${detected.statfs_type}`
-        );
-    }
+    const profile = selectPublicationFilesystemProfile(contract, detected);
     if (expectedProfileId && profile.id !== expectedProfileId) {
         fail(`expected profile ${expectedProfileId}, detected ${profile.id}`);
     }

@@ -484,7 +484,7 @@ requests-domain:test` passent.
 
 ---
 
-### P1-6 — Débloquer les PR Dependabot (lockfile Bun non régénéré) — [En cours : canary Bun natif]
+### P1-6 — Débloquer les PR Dependabot (lockfile Bun non régénéré) — [Fait le 2026-09-12]
 
 **Constat (vérifié le 2026-09-10) :** presque toutes les PR ouvertes par
 `dependabot[bot]` sur l'écosystème npm échouent immédiatement à l'étape
@@ -559,10 +559,13 @@ Options conservées comme trace et fallback :
 - **Option 3 — réduire le périmètre Dependabot npm.** Écartée (perte de
   fraîcheur jugée plus coûteuse que le ménage hebdomadaire).
 
-**Critère de succès restant :** une vraie PR Dependabot Bun modifie le
-manifeste et `bun.lock`, préserve catalogues et versions de format, passe
-`bun install --frozen-lockfile`, la nouvelle gate et les 16 checks requis sans
-correction humaine. Sinon, revenir à `npm` et ouvrir le fallback GitHub App.
+**Canary validé en conditions réelles le 2026-09-12 :** PR #47 fusionnée ;
+Dependabot Bun a créé les PR #48 à #57. La PR #48 constitue la preuve témoin :
+un seul commit du bot modifie `package.json` et `bun.lock`, conserve les
+catalogues, et passe les 16 checks requis plus SAST sans correction humaine.
+La CI post-fusion de `main` est également verte. Le fallback GitHub App reste
+archivé et inactif : aucun secret ni jeton d'écriture supplémentaire n'a été
+créé.
 
 ---
 
@@ -987,11 +990,9 @@ runbook-csp-grafana.md`.
   2026-09-11 — `bun run protect:main` exécuté et vérifié en conditions
   réelles (push direct refusé, PR sans approbation bloquée malgré CI verte).
   Détail dans `taches-restantes.md` sous OPS-27.
-- **Canary Dependabot Bun natif** (P1-6 / OPS-26) : implémentation en cours,
-  aucun secret requis. Reste bloqué uniquement sur la preuve empirique d'une
-  vraie PR bot après fusion. Le fallback GitHub App ne devient actionnable que
-  si ce canary échoue ; il exigera alors la création humaine de l'App et de sa
-  clé privée. Plan complet dans `taches-restantes.md` sous OPS-26.
+- **Canary Dependabot Bun natif** (P1-6 / OPS-26) : **fait** le 2026-09-12,
+  validé par les PR réelles #48 à #57, sans secret. Le fallback GitHub App est
+  conservé uniquement comme plan archivé et reste inactif.
 - **Items produit hors socle technique** (parité fonctionnelle
   multi-onglets, export Excel, carte interactive avancée, etc., section
   "P2 métier" de `taches-restantes.md`) : hors du périmètre de rigueur
