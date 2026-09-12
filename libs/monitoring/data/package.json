@@ -13,6 +13,6 @@
   },
   "devDependencies": {
     "typescript": "catalog:tooling",
-    "vitest": "^4.0.8"
+    "vitest": "^5.0.0"
   }
 }
