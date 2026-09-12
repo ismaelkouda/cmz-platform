@@ -72,6 +72,11 @@ jobs:
       - name: check:versions (catalog sans dérive)
         run: node tools/check-catalog-usage.mjs
 
+      # OPS-26 — le canary Dependabot Bun ne doit jamais supprimer ni
+      # réécrire silencieusement les catalog/catalogs du lockfile.
+      - name: check:bun-lock-catalog-integrity (miroir catalog du lockfile)
+        run: bun run check:bun-lock-catalog-integrity
+
       - name: check:weight (poids + plafond lignes, tools/ inclus)
         run: node tools/check-file-weight.mjs --all
 
