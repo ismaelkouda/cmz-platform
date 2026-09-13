@@ -51,6 +51,12 @@
       "platform": "darwin",
       "statfs_type": 25,
       "ci_runner": "macos-14"
+    },
+    {
+      "id": "macos-apfs-27",
+      "platform": "darwin",
+      "statfs_type": 27,
+      "ci_runner": "macos-14-arm64"
     }
   ],
   "required_evidence": [

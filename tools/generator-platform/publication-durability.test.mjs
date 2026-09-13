@@ -5,6 +5,7 @@ import test from 'node:test';
 import {
     assertSupportedPublicationEnvironment,
     loadPublicationDurabilityContract,
+    selectPublicationFilesystemProfile,
     validatePublicationDurabilityContract,
 } from './core/publication-durability.mjs';
 
@@ -12,7 +13,7 @@ test('publication durability contract is closed, unique, and fail-closed', async
     const contract = await loadPublicationDurabilityContract();
     assert.deepEqual(
         contract.filesystem_profiles.map(({ id }) => id),
-        ['linux-ext4', 'macos-apfs', 'macos-apfs-25']
+        ['linux-ext4', 'macos-apfs', 'macos-apfs-25', 'macos-apfs-27']
     );
     assert.equal(contract.reader_contract.mode, 'offline-activation');
     assert.equal(
@@ -35,12 +36,34 @@ test('publication durability contract is closed, unique, and fail-closed', async
     );
 });
 
+test('known Darwin signatures resolve explicitly and unknown signatures stay rejected', async () => {
+    const contract = await loadPublicationDurabilityContract();
+    assert.deepEqual(
+        [25, 26, 27].map(
+            (statfs_type) =>
+                selectPublicationFilesystemProfile(contract, {
+                    platform: 'darwin',
+                    statfs_type,
+                }).id
+        ),
+        ['macos-apfs-25', 'macos-apfs', 'macos-apfs-27']
+    );
+    assert.throws(
+        () =>
+            selectPublicationFilesystemProfile(contract, {
+                platform: 'darwin',
+                statfs_type: 28,
+            }),
+        /unsupported filesystem darwin:28/
+    );
+});
+
 test('current filesystem matches a supported profile and executes the real publication protocol', async () => {
     const result = await assertSupportedPublicationEnvironment({
         root: tmpdir(),
     });
     assert.ok(
-        ['linux-ext4', 'macos-apfs', 'macos-apfs-25'].includes(
+        ['linux-ext4', 'macos-apfs', 'macos-apfs-25', 'macos-apfs-27'].includes(
             result.profile.id
         )
     );

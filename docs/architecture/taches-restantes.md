@@ -1233,10 +1233,11 @@ Figma, désormais source partielle différée :
   `-27.9 %`), marge sous le seuil d'alerte `900 kB` passée de `~1 kB` (cause de
   la dérive nightly) à `~271 kB`. `nx build backoffice-angular:build:production`
   et `nx lint --max-warnings=0` verts sur le résultat final.
-- **OPS-26** — en cours (canary Bun natif lancé le 2026-09-12), L, P1.
+- **OPS-26** — **fait** (2026-09-12), L, P1.
   Constaté le 2026-09-10 en marge du durcissement de `main` (PR #34) :
-  **Dependabot ne régénère pas `bun.lock`**. Le robot met à jour
-  `package.json` mais ne recalcule pas le lockfile Bun sauf pour un bump
+  **Dependabot npm ne régénérait pas `bun.lock` au moment du constat**. Le
+  robot mettait à jour
+  `package.json` mais ne recalculait pas le lockfile Bun sauf pour un bump
   trivial d'une seule dépendance sans mouvement d'arbre — toutes les autres
   PR échouent d'entrée à `bun install --frozen-lockfile`. Le commentaire de
   `.github/dependabot.yml` affirme toujours à tort « Dependabot ouvre une PR
@@ -1264,8 +1265,17 @@ Figma, désormais source partielle différée :
     vraie PR bot modifie aussi `bun.lock` et passe les 16 checks sans retouche
     humaine. Risques upstream explicitement couverts : dependabot-core#12522
     (catalogues supprimés) et #15897/#15848 (version Bun embarquée/format).
-  - **Fallback seulement — CI auto-réparatrice**, à reprendre si le canary
-    natif échoue. Le plan de sécurité reste utile, avec une correction :
+  - **Validation réelle du canary (2026-09-12).** La PR #47 a été fusionnée,
+    puis Dependabot Bun a ouvert dix vraies PR (#48 à #57), toutes avec
+    `bun.lock`. La PR #48 est le témoin complet : un seul commit du bot,
+    `package.json` + `bun.lock`, catalogues préservés, 16 checks requis + SAST
+    verts, sans retouche humaine. La CI post-fusion de `main` est verte. Les
+    échecs observés ailleurs sont désormais des signaux applicatifs utiles :
+    #52 expose l'incompatibilité réelle de Vitest 5 et #50 a révélé une nouvelle
+    signature Darwin de runner, suivie sous OPS-32.
+  - **Fallback archivé — CI auto-réparatrice**, à reprendre uniquement si
+    l'écosystème Bun régresse. Le plan de sécurité reste utile, avec une
+    correction :
     préférer un token d'installation court de GitHub App mono-dépôt à un PAT
     personnel permanent.
     - Contrainte bloquante identifiée : GitHub n'expose **aucun secret**
@@ -1418,6 +1428,18 @@ Figma, désormais source partielle différée :
     substitution `envsubst` correcte (URLs, `enableDebug: false`,
     `trustedFrameOrigins` converti en tableau JSON) — pas une supposition,
     le pipeline `docker-entrypoint.sh` complet a tourné.
+- **OPS-32** — **fait localement** (2026-09-12), S, P0, alias `OPS-21 suite`.
+  La PR Dependabot #50 a échoué sur `Publication durability (macos-apfs)` avec
+  `unsupported filesystem darwin:27`. Ce n'est ni Vitest ni l'updater Bun : le
+  job s'arrête avant les tests. Preuve croisée : le job vert post-fusion de
+  `main` et le job rouge #50 utilisent exactement le runner `macos-14-arm64`,
+  macOS 14.8.9, image `20260831.0302.1`, mais exposent respectivement
+  `statfs_type` 26 et 27. Le contrat recense donc explicitement le nouveau
+  profil `macos-apfs-27` sans plage ni wildcard ; une fonction pure sélectionne
+  le profil, les tests prouvent 25/26/27 acceptés et 28 toujours rejeté. La
+  sonde réelle de renommage atomique + fsync reste obligatoire après la
+  reconnaissance du profil. Reste à obtenir la preuve CI sur un runner exposant
+  effectivement la signature 27 avant de passer l'item à **fait**.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
