@@ -4,9 +4,11 @@ Ce document décrit **ce qui existe aujourd'hui** dans le monorepo. Il est mis �
 jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
-> Ce socle (Angular/SEOS) est le cas d'usage concret de l'objectif global du
-> dépôt — voir [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md)
-> pour la réorientation vers un système de génération générique multi-source.
+> Ce socle (Angular/SEOS) reste temporairement l'oracle industriel de migration
+> de l'objectif global du dépôt : il doit maintenant être reproduit par les
+> compositions génériques avant tout archivage séparé — voir
+> [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md) et
+> [PLAT-9 / issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64).
 
 <!-- BEGIN:GENERATED:monorepo-status -->
 - **Dernière mise à jour :** 2026-09-11 (généré par `tools/generate-status.mjs`)

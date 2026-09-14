@@ -56,7 +56,9 @@
 - **Objectif réel du dépôt (ADR-0029, 2026-08-14)** : construire une plateforme
   extensible de compilation de spécifications pour applications métier
   data-centric. Une source ou cible est supportée seulement après preuve
-  reproductible. SEOS/Angular est le **golden reference industriel**.
+  reproductible. SEOS/Angular reste temporairement l'**oracle industriel de
+  migration** : il doit servir à prouver les compositions génériques, puis son
+  archivage sera traité séparément.
 - **Ce qui a été prouvé hors Angular** (POC React+TS, ROAD-3c) : le principe
   build/lint/test et certaines règles de couches peuvent être transposés. Ce POC
   hors dépôt ne prouve pas encore un renderer, une IR ou un Oracle multi-stack
@@ -67,8 +69,8 @@
   4 critères de passage à l'implémentation définis en §7 de ce document, aucun
   engagé — trackés individuellement en §2 ci-dessous.
 - **Priorité de lecture de ce fichier** : §1 (Oracle), §2 (preuve plateforme) et
-  la Phase 09 SEOS sont prioritaires. §3 reste le golden reference produit ; §4
-  est transverse et permanent.
+  la preuve réelle PLAT-9 sont prioritaires. §3 conserve SEOS comme référentiel
+  temporaire jusqu'à cette preuve ; §4 est transverse et permanent.
 - **Mesure forge 2026-09-14** : `main` est protégé par 16 checks stricts, une
   approbation CODEOWNERS, l'invalidation des reviews périmées, l'approbation du
   dernier push, l'historique linéaire et l'interdiction des force-pushes et
@@ -1445,6 +1447,18 @@ Figma, désormais source partielle différée :
   sonde réelle de renommage atomique + fsync reste obligatoire après la
   reconnaissance du profil. Reste à obtenir la preuve CI sur un runner exposant
   effectivement la signature 27 avant de passer l'item à **fait**.
+- **OPS-33** — ouvert, M, P0 Ops,
+  [issue #63](https://github.com/ismaelkouda/cmz-platform/issues/63). Rendre les
+  attestations de compatibilité durables après une fusion squash. La PR #62 a
+  réparé les matrices existantes en les ancrant sur le commit squash de #59,
+  mais ce correctif ponctuel ne résout pas la cause racine :
+  `verification.commit` désigne encore un SHA de branche qui disparaît lors de
+  la prochaine fusion squash. La sortie attendue est une provenance stable et
+  adressée par le contenu, qui survit à `branche → squash → main`, invalide
+  toujours toute modification sémantique et n'accorde aucune écriture
+  privilégiée aux PR non fiables. Un test d'intégration doit reproduire le
+  cycle complet ; la politique squash-only, l'historique linéaire et les
+  protections de `main` restent inchangés.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
@@ -1820,7 +1834,8 @@ Figma, désormais source partielle différée :
   PLAT-5. **Condition de déblocage désormais remplie** : PLAT-1 à PLAT-5 (K
   variantes incluses) sont tous fait/fait localement, confirmés CI verte (voir
   PLAT-6 ci-dessus et §6 promotion M4) — ce chantier peut être engagé.
-- **PLAT-9** — **fait localement** (2026-09-07), M, P1, alias
+- **PLAT-9** — partiel (socle local fait le 2026-09-07, preuve réelle ouverte),
+  M, P1, [issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64), alias
   `réalisation d'écran multi-nœuds indépendants`.
   [ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md). La
   chaîne app-builder n'avait été prouvée que sur une page à une seule opération
@@ -1843,9 +1858,17 @@ Figma, désormais source partielle différée :
   `multi-node-screen-mutations.test.mjs` (2 mutants tués : retrait de
   `load_ids`/`data_binding_ids` du payload → `producePageRoleNode` lève),
   `role-archetype.test.mjs` mis à jour. Suite core 291/291. **Preuve à oracle
-  réel** : à produire avec la première application multi-nœuds réelle (voir
-  « Passage immédiat à une application métier réelle » plus haut) ; la capacité
-  repose pour l'instant sur `multi-node-screen.test.mjs` + les 2 mutants.
+  réel** : à produire en reproduisant un périmètre SEOS représentatif uniquement
+  avec les contrats génériques : un `list-query` autonome, un `action-request`
+  autonome, puis une page composée de N `list-query` + N `action-request` et de
+  leurs `data_bindings` indépendants. Les oracles doivent exercer le mock HTTP,
+  lint, build, `ngc` strict et les tests, y compris erreurs partielles,
+  chargements concurrents, permissions et retry. La capacité repose pour
+  l'instant sur `multi-node-screen.test.mjs` + les 2 mutants ; elle ne sera pas
+  considérée prouvée en réel avant la fermeture de l'issue #64. Aucun sélecteur,
+  adaptateur ou branche métier propre à SEOS n'est admis dans le moteur. SEOS
+  reste actif comme oracle de migration jusque-là ; son retrait de la CI et son
+  archivage nécessiteront un changement séparé après revue humaine.
   **Limite explicite** : nœuds indépendants seulement — aucune arête, aucune
   précondition inter-nœuds, aucune livraison asynchrone (relève du lot graphe
   d'exécution typé, ADR-0031, non engagé). Un `load` reste comportemental (pas
