@@ -35,6 +35,12 @@ const workspaceRoot = resolve(import.meta.dirname, '..');
 
 export function defineLibRxResourceTestConfig(libRoot: string) {
     return defineConfig({
+        oxc: {
+            decorator: {
+                legacy: true,
+                emitDecoratorMetadata: true,
+            },
+        },
         test: {
             globals: true,
             environment: 'jsdom',
