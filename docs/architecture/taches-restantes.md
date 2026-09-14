@@ -69,10 +69,15 @@
 - **Priorité de lecture de ce fichier** : §1 (Oracle), §2 (preuve plateforme) et
   la Phase 09 SEOS sont prioritaires. §3 reste le golden reference produit ; §4
   est transverse et permanent.
-- **Mesure git 2026-08-06** (dernière mesure connue) : `main` = post PR #3
-  (sync), #12 (`nxCloudId` claimé), #13 (knip bloquant, corpus, câblage
-  `NX_CLOUD_ACCESS_TOKEN`). Smoke local OK. Nx Cloud : login + id OK, fin de
-  setup VCS en cours (OPS-3/T6-4).
+- **Mesure forge 2026-09-14** : `main` est protégé par 16 checks stricts, une
+  approbation CODEOWNERS, l'invalidation des reviews périmées, l'approbation du
+  dernier push, l'historique linéaire et l'interdiction des force-pushes et
+  suppressions. Les deux relecteurs couvrent toutes les zones. Nx Cloud est
+  connecté avec l'id `69cfa6ba213c8001d0f75641` et son secret CI ; le run
+  `main` [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
+  a servi 41/74 tâches de lint depuis le cache distant (55,41 %), et le nightly
+  [#34823198590](https://github.com/ismaelkouda/cmz-platform/actions/runs/34823198590)
+  est vert. OPS-2, OPS-3/T6-4 et OPS-4 sont clos.
 
 ### Passage immédiat à une application métier réelle
 
@@ -2376,13 +2381,27 @@ gouvernance, sécurité, licences.
 
 ### 4.1 Préalable forge / ARB
 
-- **OPS-2** — partiel, S, P1 Ops, alias `G-2`. Revalider protection `main` UI
-  GitHub.
-- **OPS-3** — en cours, S, P1 Ops, alias `G-7 · T6-4`. Claim compte Nx Cloud
-  (id + PAT login OK) ; reste fin de setup VCS/GitHub wizard + bandeau «
-  complete setup » + token CI secret. _(= T6-4, même item, deux ids
-  historiques.)_
-- **OPS-4** — bloqué-humain, S, P1, alias `P1-13`. Second relecteur CODEOWNERS.
+- **OPS-2** — **fait** (2026-09-14), S, P1 Ops, alias `G-2`. L'API de la forge
+  confirme que `main` applique exactement les 16 checks stricts versionnés,
+  `enforce_admins`, une approbation CODEOWNERS, `dismiss_stale_reviews`,
+  `require_last_push_approval`, l'historique linéaire, la résolution des
+  conversations et l'interdiction des force-pushes/suppressions. Voir OPS-27
+  pour la preuve empirique du refus de push direct et du blocage sans review.
+- **OPS-3** — **fait** (2026-09-14), S, P1 Ops, alias `G-7 · T6-4`. Workspace
+  Nx Cloud connecté (`nxCloudId` `69cfa6ba213c8001d0f75641`), secret GitHub
+  `NX_CLOUD_ACCESS_TOKEN` présent et effectivement injecté masqué. Le CI `main`
+  [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
+  est vert et prouve des `[remote cache]` réels : 41/74 tâches de lint, soit
+  55,41 %. Le nightly
+  [#34823198590](https://github.com/ismaelkouda/cmz-platform/actions/runs/34823198590)
+  est vert. Les trois workflows Nx conservent le fallback sûr
+  `NX_NO_CLOUD=true` lorsque le secret est absent. _(= T6-4, même item, deux
+  ids historiques.)_
+- **OPS-4** — **fait** (2026-09-14), S, P1, alias `P1-13`.
+  `@ismaelkouda` et `@soumailakouda` couvrent chaque zone de `CODEOWNERS` ;
+  `@soumailakouda` dispose de la permission `write` et les PR qui exigent son
+  second regard lui sont assignées avec une demande de review, afin de
+  déclencher les notifications GitHub.
 - **OPS-8** — ouvert, S, P1 Ops, alias `carto #6`. `nginx -t` réel conf + CSP.
   _(recoupe T4-1, même sujet.)_
 - **OPS-9** — **fait localement** (2026-08-16), M, P0 Ops. Cause racine isolée
@@ -2937,7 +2956,8 @@ gouvernance, sécurité, licences.
   MPL-2.0 ajouté 2026-08-04, jamais reporté) — corrigé.
 - **T6-3** — ouvert, M, P2, alias `Big Tech gap`. Générer SBOM cyclonedx/spdx en
   CI artifact.
-- **T6-4** — en cours, S, P1, alias `OPS-3`. _(= OPS-3, voir §4.1.)_
+- **T6-4** — **fait** (2026-09-14), S, P1, alias `OPS-3`. _(= OPS-3, voir
+  §4.1.)_
 
 ### 4.3 IAM/RBAC — mécanisme générique (ex-T5, sous-ensemble)
 
@@ -3021,7 +3041,7 @@ désormais §1 → §2 → §3 → §4 de ce document) :
 ```
 Immédiat   OPS-1 push/PR (quand Actions OK)
            T12-2 settings-security → fait
-           T6-4 / OPS-3 Nx Cloud → en cours (lien VCS)
+           T6-4 / OPS-3 Nx Cloud → fait
            T3-2 / OPS-7 paths (staging) quand accès
            T11-2 check:i18n local = CI → fait
 
@@ -3062,7 +3082,7 @@ T9-1, T12-4, T13-6, factorisation O, multi-stack ROAD-3.
 | daily-goal hors scope                      | **Fermé** 52/52                                                                                                                                                  |
 | H-4                                        | pattern family-dupe ✅ vs **T2-5** contracts UI ✅                                                                                                               |
 | Chantier L                                 | scope ✅ vs tests shared = **T12-3**                                                                                                                             |
-| CODEOWNERS « fait »                        | zoné ✅ ≠ **OPS-4** second regard                                                                                                                                |
+| CODEOWNERS « fait »                        | **Fermé** 2026-09-14 : zonage + second regard `@soumailakouda` effectifs                                                                                        |
 | « 2,2 % tests »                            | Périmé ; unit RO-view ✅ · e2e smoke mock ✅ · staging = T12-7                                                                                                   |
 | Corpus `verified` = comportement           | **T12-11** encore vrai risque                                                                                                                                    |
 | Corpus 18/18 modules couverts (2026-08-10) | **Volume seulement.** 7 modules crud-entity sur 18 ont un `legacy` synthétique non vérifié — **T12-18**. Ne pas rapporter « corpus complet » sans cette réserve. |
