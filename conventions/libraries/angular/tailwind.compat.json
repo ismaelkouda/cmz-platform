@@ -21,7 +21,7 @@
       "reason": "Piste initiale Tailwind 4 ; passe en verified après règle CSS compilée.",
       "verification": {
         "schema_version": "1.0.0",
-        "commit": "a192db4bd7d300cb0eaa967f1d6bdf0f4461660d",
+        "commit": "60fad47a231b3036682920c269f30731fa48ccf6",
         "app": "library-qualification-angular",
         "plan_id": "library-plan:0dd29aec76a50942fce9dde4dcec5f61166e6b2857de6c228639365d8aea7987",
         "change_set_id": "changes:1af3c2595670bc7273ecfba26e82b841e8f1ab4a34d795d9e468a17d3a71b1ce",
@@ -59,7 +59,7 @@
           "proof_contracts": "e5c4d6939a4c98f31513581d29ea91c1d9a99049330ab4b72f8e86b63c7fb97a",
           "runner": "7534d34fb22baccbcd341194b1c92db75720be41f72133107563675dbdaa9dc7"
         },
-        "evidence_sha256": "fbdf1d1f7c8180cd75ef524bc308b6badbac4a5d53cf4e4d92b78c85d7f3bfc2"
+        "evidence_sha256": "742df28b787fde628f85f337676358c012cce59abd7e7f3a3c57185d2dc78d64"
       }
     }
   ]

@@ -21,7 +21,7 @@
       "reason": "Piste initiale alignée sur Angular 22 ; passe en verified seulement après la preuve compile-component.",
       "verification": {
         "schema_version": "1.0.0",
-        "commit": "1f1b03108cbf9de47855fcedf7b00c9ed18aeba2",
+        "commit": "194e2664d7b38a133ab09cc4a96cce8912be578b",
         "app": "backoffice-angular",
         "plan_id": "library-plan:e8289d23cd8e4901f0338bfda29754fff96a60f5d3cf5ef96f01631a0f93da2c",
         "change_set_id": "changes:7f8b14f6ef447133ff6c3cd69a1b20a5ee05dafdf11dbd743c757625deb5e87c",
@@ -59,7 +59,7 @@
           "proof_contracts": "9b72d4629573fa351cc5ab209df549d7cef942f3a9061ca04a2e3a4ac15dc496",
           "runner": "7534d34fb22baccbcd341194b1c92db75720be41f72133107563675dbdaa9dc7"
         },
-        "evidence_sha256": "36d1e81690f57410bd92dd747add813c20ead8a72c0feebad53c1f1b59b87403"
+        "evidence_sha256": "3a696739f6935b433c453bac9b52b9051a450ae7d2c0d99d4e536e4b4502a010"
       }
     }
   ]
