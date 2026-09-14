@@ -56,7 +56,9 @@
 - **Objectif réel du dépôt (ADR-0029, 2026-08-14)** : construire une plateforme
   extensible de compilation de spécifications pour applications métier
   data-centric. Une source ou cible est supportée seulement après preuve
-  reproductible. SEOS/Angular est le **golden reference industriel**.
+  reproductible. SEOS/Angular reste temporairement l'**oracle industriel de
+  migration** : il doit servir à prouver les compositions génériques, puis son
+  archivage sera traité séparément.
 - **Ce qui a été prouvé hors Angular** (POC React+TS, ROAD-3c) : le principe
   build/lint/test et certaines règles de couches peuvent être transposés. Ce POC
   hors dépôt ne prouve pas encore un renderer, une IR ou un Oracle multi-stack
@@ -67,12 +69,17 @@
   4 critères de passage à l'implémentation définis en §7 de ce document, aucun
   engagé — trackés individuellement en §2 ci-dessous.
 - **Priorité de lecture de ce fichier** : §1 (Oracle), §2 (preuve plateforme) et
-  la Phase 09 SEOS sont prioritaires. §3 reste le golden reference produit ; §4
-  est transverse et permanent.
-- **Mesure git 2026-08-06** (dernière mesure connue) : `main` = post PR #3
-  (sync), #12 (`nxCloudId` claimé), #13 (knip bloquant, corpus, câblage
-  `NX_CLOUD_ACCESS_TOKEN`). Smoke local OK. Nx Cloud : login + id OK, fin de
-  setup VCS en cours (OPS-3/T6-4).
+  la preuve réelle PLAT-9 sont prioritaires. §3 conserve SEOS comme référentiel
+  temporaire jusqu'à cette preuve ; §4 est transverse et permanent.
+- **Mesure forge 2026-09-14** : `main` est protégé par 16 checks stricts, une
+  approbation CODEOWNERS, l'invalidation des reviews périmées, l'approbation du
+  dernier push, l'historique linéaire et l'interdiction des force-pushes et
+  suppressions. Les deux relecteurs couvrent toutes les zones. Nx Cloud est
+  connecté avec l'id `69cfa6ba213c8001d0f75641` et son secret CI ; le run
+  `main` [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
+  a servi 41/74 tâches de lint depuis le cache distant (55,41 %), et le nightly
+  [#34823198590](https://github.com/ismaelkouda/cmz-platform/actions/runs/34823198590)
+  est vert. OPS-2, OPS-3/T6-4 et OPS-4 sont clos.
 
 ### Passage immédiat à une application métier réelle
 
@@ -1440,6 +1447,18 @@ Figma, désormais source partielle différée :
   sonde réelle de renommage atomique + fsync reste obligatoire après la
   reconnaissance du profil. Reste à obtenir la preuve CI sur un runner exposant
   effectivement la signature 27 avant de passer l'item à **fait**.
+- **OPS-33** — ouvert, M, P0 Ops,
+  [issue #63](https://github.com/ismaelkouda/cmz-platform/issues/63). Rendre les
+  attestations de compatibilité durables après une fusion squash. La PR #62 a
+  réparé les matrices existantes en les ancrant sur le commit squash de #59,
+  mais ce correctif ponctuel ne résout pas la cause racine :
+  `verification.commit` désigne encore un SHA de branche qui disparaît lors de
+  la prochaine fusion squash. La sortie attendue est une provenance stable et
+  adressée par le contenu, qui survit à `branche → squash → main`, invalide
+  toujours toute modification sémantique et n'accorde aucune écriture
+  privilégiée aux PR non fiables. Un test d'intégration doit reproduire le
+  cycle complet ; la politique squash-only, l'historique linéaire et les
+  protections de `main` restent inchangés.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
@@ -1815,7 +1834,8 @@ Figma, désormais source partielle différée :
   PLAT-5. **Condition de déblocage désormais remplie** : PLAT-1 à PLAT-5 (K
   variantes incluses) sont tous fait/fait localement, confirmés CI verte (voir
   PLAT-6 ci-dessus et §6 promotion M4) — ce chantier peut être engagé.
-- **PLAT-9** — **fait localement** (2026-09-07), M, P1, alias
+- **PLAT-9** — partiel (socle local fait le 2026-09-07, preuve réelle ouverte),
+  M, P1, [issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64), alias
   `réalisation d'écran multi-nœuds indépendants`.
   [ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md). La
   chaîne app-builder n'avait été prouvée que sur une page à une seule opération
@@ -1838,9 +1858,17 @@ Figma, désormais source partielle différée :
   `multi-node-screen-mutations.test.mjs` (2 mutants tués : retrait de
   `load_ids`/`data_binding_ids` du payload → `producePageRoleNode` lève),
   `role-archetype.test.mjs` mis à jour. Suite core 291/291. **Preuve à oracle
-  réel** : à produire avec la première application multi-nœuds réelle (voir
-  « Passage immédiat à une application métier réelle » plus haut) ; la capacité
-  repose pour l'instant sur `multi-node-screen.test.mjs` + les 2 mutants.
+  réel** : à produire en reproduisant un périmètre SEOS représentatif uniquement
+  avec les contrats génériques : un `list-query` autonome, un `action-request`
+  autonome, puis une page composée de N `list-query` + N `action-request` et de
+  leurs `data_bindings` indépendants. Les oracles doivent exercer le mock HTTP,
+  lint, build, `ngc` strict et les tests, y compris erreurs partielles,
+  chargements concurrents, permissions et retry. La capacité repose pour
+  l'instant sur `multi-node-screen.test.mjs` + les 2 mutants ; elle ne sera pas
+  considérée prouvée en réel avant la fermeture de l'issue #64. Aucun sélecteur,
+  adaptateur ou branche métier propre à SEOS n'est admis dans le moteur. SEOS
+  reste actif comme oracle de migration jusque-là ; son retrait de la CI et son
+  archivage nécessiteront un changement séparé après revue humaine.
   **Limite explicite** : nœuds indépendants seulement — aucune arête, aucune
   précondition inter-nœuds, aucune livraison asynchrone (relève du lot graphe
   d'exécution typé, ADR-0031, non engagé). Un `load` reste comportemental (pas
@@ -2376,13 +2404,27 @@ gouvernance, sécurité, licences.
 
 ### 4.1 Préalable forge / ARB
 
-- **OPS-2** — partiel, S, P1 Ops, alias `G-2`. Revalider protection `main` UI
-  GitHub.
-- **OPS-3** — en cours, S, P1 Ops, alias `G-7 · T6-4`. Claim compte Nx Cloud
-  (id + PAT login OK) ; reste fin de setup VCS/GitHub wizard + bandeau «
-  complete setup » + token CI secret. _(= T6-4, même item, deux ids
-  historiques.)_
-- **OPS-4** — bloqué-humain, S, P1, alias `P1-13`. Second relecteur CODEOWNERS.
+- **OPS-2** — **fait** (2026-09-14), S, P1 Ops, alias `G-2`. L'API de la forge
+  confirme que `main` applique exactement les 16 checks stricts versionnés,
+  `enforce_admins`, une approbation CODEOWNERS, `dismiss_stale_reviews`,
+  `require_last_push_approval`, l'historique linéaire, la résolution des
+  conversations et l'interdiction des force-pushes/suppressions. Voir OPS-27
+  pour la preuve empirique du refus de push direct et du blocage sans review.
+- **OPS-3** — **fait** (2026-09-14), S, P1 Ops, alias `G-7 · T6-4`. Workspace
+  Nx Cloud connecté (`nxCloudId` `69cfa6ba213c8001d0f75641`), secret GitHub
+  `NX_CLOUD_ACCESS_TOKEN` présent et effectivement injecté masqué. Le CI `main`
+  [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
+  est vert et prouve des `[remote cache]` réels : 41/74 tâches de lint, soit
+  55,41 %. Le nightly
+  [#34823198590](https://github.com/ismaelkouda/cmz-platform/actions/runs/34823198590)
+  est vert. Les trois workflows Nx conservent le fallback sûr
+  `NX_NO_CLOUD=true` lorsque le secret est absent. _(= T6-4, même item, deux
+  ids historiques.)_
+- **OPS-4** — **fait** (2026-09-14), S, P1, alias `P1-13`.
+  `@ismaelkouda` et `@soumailakouda` couvrent chaque zone de `CODEOWNERS` ;
+  `@soumailakouda` dispose de la permission `write` et les PR qui exigent son
+  second regard lui sont assignées avec une demande de review, afin de
+  déclencher les notifications GitHub.
 - **OPS-8** — ouvert, S, P1 Ops, alias `carto #6`. `nginx -t` réel conf + CSP.
   _(recoupe T4-1, même sujet.)_
 - **OPS-9** — **fait localement** (2026-08-16), M, P0 Ops. Cause racine isolée
@@ -2937,7 +2979,8 @@ gouvernance, sécurité, licences.
   MPL-2.0 ajouté 2026-08-04, jamais reporté) — corrigé.
 - **T6-3** — ouvert, M, P2, alias `Big Tech gap`. Générer SBOM cyclonedx/spdx en
   CI artifact.
-- **T6-4** — en cours, S, P1, alias `OPS-3`. _(= OPS-3, voir §4.1.)_
+- **T6-4** — **fait** (2026-09-14), S, P1, alias `OPS-3`. _(= OPS-3, voir
+  §4.1.)_
 
 ### 4.3 IAM/RBAC — mécanisme générique (ex-T5, sous-ensemble)
 
@@ -3021,7 +3064,7 @@ désormais §1 → §2 → §3 → §4 de ce document) :
 ```
 Immédiat   OPS-1 push/PR (quand Actions OK)
            T12-2 settings-security → fait
-           T6-4 / OPS-3 Nx Cloud → en cours (lien VCS)
+           T6-4 / OPS-3 Nx Cloud → fait
            T3-2 / OPS-7 paths (staging) quand accès
            T11-2 check:i18n local = CI → fait
 
@@ -3062,7 +3105,7 @@ T9-1, T12-4, T13-6, factorisation O, multi-stack ROAD-3.
 | daily-goal hors scope                      | **Fermé** 52/52                                                                                                                                                  |
 | H-4                                        | pattern family-dupe ✅ vs **T2-5** contracts UI ✅                                                                                                               |
 | Chantier L                                 | scope ✅ vs tests shared = **T12-3**                                                                                                                             |
-| CODEOWNERS « fait »                        | zoné ✅ ≠ **OPS-4** second regard                                                                                                                                |
+| CODEOWNERS « fait »                        | **Fermé** 2026-09-14 : zonage + second regard `@soumailakouda` effectifs                                                                                        |
 | « 2,2 % tests »                            | Périmé ; unit RO-view ✅ · e2e smoke mock ✅ · staging = T12-7                                                                                                   |
 | Corpus `verified` = comportement           | **T12-11** encore vrai risque                                                                                                                                    |
 | Corpus 18/18 modules couverts (2026-08-10) | **Volume seulement.** 7 modules crud-entity sur 18 ont un `legacy` synthétique non vérifié — **T12-18**. Ne pas rapporter « corpus complet » sans cette réserve. |

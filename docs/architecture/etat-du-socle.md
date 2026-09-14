@@ -4,9 +4,11 @@ Ce document décrit **ce qui existe aujourd'hui** dans le monorepo. Il est mis �
 jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
-> Ce socle (Angular/SEOS) est le cas d'usage concret de l'objectif global du
-> dépôt — voir [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md)
-> pour la réorientation vers un système de génération générique multi-source.
+> Ce socle (Angular/SEOS) reste temporairement l'oracle industriel de migration
+> de l'objectif global du dépôt : il doit maintenant être reproduit par les
+> compositions génériques avant tout archivage séparé — voir
+> [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md) et
+> [PLAT-9 / issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64).
 
 <!-- BEGIN:GENERATED:monorepo-status -->
 - **Dernière mise à jour :** 2026-09-11 (généré par `tools/generate-status.mjs`)
@@ -150,14 +152,21 @@ bunx nx affected -t build   # ne reconstruit que ce qui a changé depuis main
 | Cadrage IA local (skills Angular, MCP Nx, Web Codegen Scorer)                    | **2026-08-02** | outillage agent   |
 | Narrowing des `catch` dans l'archétype d'erreur (app plus stricte que la source) | **2026-08-02** | contrats Phase 04 |
 
-**Remédiation G-1 (2026-08-02) :** `.github/CODEOWNERS` peuplé par zone (socle /
-kernel / modules / apps / docs / corpus), handles `@ismaelkouda` (équipes de 1)
-— prêt à substituer des équipes GitHub `@cmz/…` sans refactor.
+**Remédiation G-1 (2026-08-02, vérifiée 2026-09-14) :** `.github/CODEOWNERS`
+peuplé par zone (socle / kernel / modules / apps / docs / corpus). Les handles
+`@ismaelkouda` et `@soumailakouda` couvrent chaque zone ; le second dispose de
+la permission `write` et reçoit affectation + demande de review lorsque son
+approbation est requise. Les handles pourront être remplacés par des équipes
+GitHub `@cmz/…` sans refactor lorsque celles-ci existeront.
 
-**Remédiation G-2 (2026-08-02) :** protection `main` versionnée dans
+**Remédiation G-2 (2026-08-02, appliquée et vérifiée 2026-09-14) :** protection
+`main` versionnée dans
 [`.github/branch-protection.main.json`](../../.github/branch-protection.main.json)
-(1 approval, checks CI bloquants, no force-push, `enforce_admins`). Appliquer
-sur la forge : `gh auth login && bun run protect:main`.
+(16 checks stricts, 1 approbation CODEOWNERS, reviews périmées invalidées,
+approbation du dernier push, résolution des conversations, historique linéaire,
+no force-push/suppression, `enforce_admins`). L'API GitHub confirme que la forge
+applique cette source de vérité ; `bun run protect:main` reste la commande de
+réconciliation.
 
 **Remédiation G-4 (2026-08-02) :** [`Dockerfile`](../../Dockerfile) multi-stage
 (`oven/bun` → nginx) : `COPY tools/` avant `bun install` (contrainte
@@ -171,17 +180,17 @@ sur la forge : `gh auth login && bun run protect:main`.
 **Remédiation G-6 (2026-08-02) :** `assertAppConfig` dans `@cmz/core` —
 validation de forme au bootstrap (`APP_CONFIG`) avec diagnostic exploitable.
 
-**Remédiation G-7 (2026-08-02, révisée 2026-08-06) :** `nxCloudId`
-`6a6fc43fcf076738a1d8db2e` écrit via `bunx nx connect` (remote
-`ismaelkouda/cmz-platform`). **Décision produit :** *claim + activer* (pas de
-`neverConnectToCloud` / `NX_NO_CLOUD`). Tant que le workspace n’est pas claimé
-sous 3 jours **ou** que le secret CI `NX_CLOUD_ACCESS_TOKEN` manque, Nx
-loggue encore des **401** / « unconnected » — bruit sans cache, **pas** un
-gate CI. Runbook humain (porteurs) : (1) [cloud.nx.app](https://cloud.nx.app)
-→ claim / rattacher le workspace à l’org ; (2) générer un CI Access Token ;
-(3) secret GitHub `NX_CLOUD_ACCESS_TOKEN` (repo + forks selon politique) ;
-(4) vérifier un `nx` en CI sans message 401 et avec hits de remote cache.
-T6-4 / OPS-3.
+**Remédiation G-7 (2026-08-02, close 2026-09-14) :** `nxCloudId`
+`69cfa6ba213c8001d0f75641` connecté au dépôt `ismaelkouda/cmz-platform` ; le
+secret GitHub `NX_CLOUD_ACCESS_TOKEN` existe et est injecté masqué dans les
+workflows autorisés. Le CI `main`
+[#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
+est vert et prouve 41/74 hits de cache distant sur le lint (55,41 %), avec un
+rapport Nx Cloud consultable. Le nightly
+[#34823198590](https://github.com/ismaelkouda/cmz-platform/actions/runs/34823198590)
+est également vert. Si le secret est indisponible (Dependabot, fork ou
+rotation), les trois workflows Nx posent `NX_NO_CLOUD=true` : seul
+l'accélérateur distant est désactivé, jamais la CI. T6-4 / OPS-3 sont clos.
 
 **Remédiation G-8 (2026-08-02) :** `concurrency: cancel-in-progress` sur
 `ci.yml` (par PR/ref), `nightly-integration.yml` (workflow), `corpus-full.yml`
