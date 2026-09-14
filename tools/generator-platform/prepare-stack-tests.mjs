@@ -47,6 +47,23 @@ const [actionRequest, authorizedActionRequest, workflowAction, contract] =
     ]);
 const sourceKey = target === 'angular' ? 'angular' : 'react';
 const targetRoot = resolve(outputRoot, target);
+const runtimeConfigurationFiles =
+    target === 'angular'
+        ? {
+              'tsconfig.json': `${JSON.stringify(
+                  {
+                      extends: '../../../../tsconfig.base.json',
+                      compilerOptions: {
+                          emitDecoratorMetadata: true,
+                          experimentalDecorators: true,
+                      },
+                      include: ['**/*.ts'],
+                  },
+                  null,
+                  4
+              )}\n`,
+          }
+        : {};
 
 const behaviorGraphEngineSource = renderBehaviorGraphEngine(
     contract.evolution.behavior_graph
@@ -79,6 +96,7 @@ const presentationFlowFiles =
 
 await rm(targetRoot, { recursive: true, force: true });
 await Promise.all([
+    writeTargetFiles(targetRoot, runtimeConfigurationFiles),
     writeTargetFiles(
         resolve(targetRoot, 'action-request'),
         actionRequest[sourceKey].files
