@@ -26,7 +26,7 @@ function regularFile(path, label) {
     return path;
 }
 
-function invocation(oracle, app) {
+export function invocation(oracle, app) {
     if (oracle === 'compile') {
         return {
             script: regularFile(

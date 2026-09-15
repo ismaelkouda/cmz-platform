@@ -389,9 +389,7 @@ test('protège node_modules et déplace les écritures Nx dans une racine dédi�
         argv: [],
         policy,
         readOnlyCandidatePaths: ['node_modules'],
-        repositoryReadOnlyMounts: [
-            { source: 'node_modules', destination: 'node_modules' },
-        ],
+        repositoryReadOnlyPaths: [join(value.repository, 'node_modules')],
         nxRoot: '.cmz-oracle-runtime',
         spawn,
     };
@@ -417,7 +415,7 @@ test('protège node_modules et déplace les écritures Nx dans une racine dédi�
     const docker = calls.at(-1);
     assert.ok(
         docker.argv.includes(
-            `type=bind,src=${value.repository}/node_modules,dst=/workspace/node_modules,readonly`
+            `type=bind,src=${value.repository}/node_modules,dst=/cmz-repository-0,readonly`
         )
     );
     assert.ok(

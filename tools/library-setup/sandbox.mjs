@@ -164,20 +164,15 @@ function protectedCandidateDirectories(candidate, paths = []) {
     });
 }
 
-function repositoryReadOnlyDirectories(repository, candidate, mounts = []) {
-    if (!Array.isArray(mounts)) fail('montages dépôt invalides');
-    return mounts.map((mount) => {
-        if (
-            mount === null ||
-            typeof mount !== 'object' ||
-            typeof mount.source !== 'string' ||
-            typeof mount.destination !== 'string'
-        ) {
-            fail('montage dépôt invalide');
+function repositoryReadOnlyDirectories(repository, paths = []) {
+    if (!Array.isArray(paths)) fail('lectures dépôt invalides');
+    return paths.map((path) => {
+        if (typeof path !== 'string' || path.length === 0) {
+            fail('lecture dépôt invalide');
         }
         const source = plainDirectory(
-            resolve(repository, mount.source),
-            'source du montage dépôt'
+            resolve(repository, path),
+            'chemin du dépôt en lecture seule'
         );
         const sourceRel = relative(repository, source);
         if (
@@ -187,60 +182,7 @@ function repositoryReadOnlyDirectories(repository, candidate, mounts = []) {
         ) {
             fail('source du montage hors dépôt');
         }
-        const destination = plainDirectory(
-            resolve(candidate, mount.destination),
-            'destination du montage dépôt'
-        );
-        const destinationRel = relative(candidate, destination);
-        if (
-            destinationRel === '' ||
-            destinationRel === '..' ||
-            destinationRel.startsWith(`..${sep}`)
-        ) {
-            fail('destination du montage hors candidat');
-        }
-        return {
-            source,
-            destination,
-            destinationRelative: destinationRel.split(sep).join('/'),
-        };
-    });
-}
-
-function candidateDirectoryMounts(candidate, mounts = []) {
-    if (!Array.isArray(mounts)) fail('montages candidat invalides');
-    return mounts.map((mount) => {
-        if (
-            mount === null ||
-            typeof mount !== 'object' ||
-            typeof mount.source !== 'string' ||
-            typeof mount.destination !== 'string'
-        ) {
-            fail('montage candidat invalide');
-        }
-        const source = plainDirectory(
-            resolve(candidate, mount.source),
-            'source du montage candidat'
-        );
-        const destination = plainDirectory(
-            resolve(candidate, mount.destination),
-            'destination du montage candidat'
-        );
-        for (const [label, path] of [
-            ['source', source],
-            ['destination', destination],
-        ]) {
-            const rel = relative(candidate, path);
-            if (rel === '' || rel === '..' || rel.startsWith(`..${sep}`)) {
-                fail(`${label} du montage hors candidat`);
-            }
-        }
-        return {
-            source,
-            destinationRelative: relative(candidate, destination)
-                .split(sep)
-                .join('/'),
-        };
+        return source;
     });
 }
 
@@ -495,8 +437,7 @@ export function runConfined({
     extraEnv = {},
     readOnlyPaths = [],
     readOnlyCandidatePaths = [],
-    repositoryReadOnlyMounts = [],
-    writableCandidateMounts = [],
+    repositoryReadOnlyPaths = [],
     nxRoot,
     allowLoopback = false,
     allowSignals = false,
@@ -523,14 +464,9 @@ export function runConfined({
         paths.candidate,
         readOnlyCandidatePaths
     );
-    const repositoryMounts = repositoryReadOnlyDirectories(
+    const repositoryPaths = repositoryReadOnlyDirectories(
         paths.repository,
-        paths.candidate,
-        repositoryReadOnlyMounts
-    );
-    const writableMounts = candidateDirectoryMounts(
-        paths.candidate,
-        writableCandidateMounts
+        repositoryReadOnlyPaths
     );
     const resolvedNxRoot = nxRoot
         ? plainDirectory(resolve(paths.candidate, nxRoot), 'racine Nx')
@@ -568,9 +504,7 @@ export function runConfined({
                     readOnlyCandidatePaths: protectedPaths.map(
                         ({ absolute }) => absolute
                     ),
-                    repositoryReadOnlyPaths: repositoryMounts.map(
-                        ({ source }) => source
-                    ),
+                    repositoryReadOnlyPaths: repositoryPaths,
                     allowLoopback,
                     allowSignals,
                     renderer,
@@ -649,25 +583,13 @@ export function runConfined({
         // le défaut : elle s'exprime par l'ABSENCE de `readonly`.
         '--mount',
         `type=bind,src=${paths.candidate},dst=/workspace`,
-        ...protectedPaths
-            .filter(
-                ({ relative: protectedPath }) =>
-                    !repositoryMounts.some(
-                        ({ destinationRelative }) =>
-                            destinationRelative === protectedPath
-                    )
-            )
-            .flatMap(({ absolute, relative: protectedPath }) => [
-                '--mount',
-                `type=bind,src=${absolute},dst=/workspace/${protectedPath},readonly`,
-            ]),
-        ...repositoryMounts.flatMap(({ source, destinationRelative }) => [
+        ...protectedPaths.flatMap(({ absolute, relative: protectedPath }) => [
             '--mount',
-            `type=bind,src=${source},dst=/workspace/${destinationRelative},readonly`,
+            `type=bind,src=${absolute},dst=/workspace/${protectedPath},readonly`,
         ]),
-        ...writableMounts.flatMap(({ source, destinationRelative }) => [
+        ...repositoryPaths.flatMap((path, index) => [
             '--mount',
-            `type=bind,src=${source},dst=/workspace/${destinationRelative}`,
+            `type=bind,src=${path},dst=/cmz-repository-${index},readonly`,
         ]),
         '--mount',
         `type=bind,src=${paths.home},dst=/cmz-home${profile === 'resolution' ? '' : ',readonly'}`,

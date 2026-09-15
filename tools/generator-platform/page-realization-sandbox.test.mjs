@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { lstatSync } from 'node:fs';
+import { existsSync, lstatSync, readlinkSync, realpathSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -23,6 +23,9 @@ async function fixture(t) {
     );
     t.after(() => rm(repository, { recursive: true, force: true }));
     await mkdir(join(repository, 'node_modules/tool'), { recursive: true });
+    await mkdir(join(repository, 'node_modules/.vite-temp'), {
+        recursive: true,
+    });
     await mkdir(join(repository, 'tools/generator-platform'), {
         recursive: true,
     });
@@ -31,6 +34,10 @@ async function fixture(t) {
     await writeFile(join(repository, 'untracked.txt'), 'untracked\n');
     await writeFile(join(repository, '.env'), 'TOKEN=must-not-copy\n');
     await writeFile(join(repository, 'node_modules/tool/index.js'), 'module\n');
+    await writeFile(
+        join(repository, 'node_modules/.vite-temp/stale-cache.mjs'),
+        'stale\n'
+    );
     await writeFile(
         join(
             repository,
@@ -51,6 +58,7 @@ test('le candidat ne contient que les fichiers gouvernés et protège ses dépen
     const oracle = createPageRealizationOracle(
         { workspaceRoot: repository, appName: 'demo-app' },
         {
+            backend: 'macos',
             loadPolicy: () => ({ policy, errors: [] }),
             runConfined: (options) => {
                 invocation = options;
@@ -73,18 +81,17 @@ test('le candidat ne contient que les fichiers gouvernés et protège ses dépen
         lstatSync(join(repository, 'node_modules/tool/index.js')).ino,
         lstatSync(join(oracle.candidate, 'node_modules/tool/index.js')).ino
     );
+    assert.equal(
+        existsSync(join(oracle.candidate, 'node_modules/.vite-temp')),
+        false
+    );
 
     assert.equal(oracle.run('test'), 'ok');
     assert.equal(invocation.readOnlyCandidatePaths, undefined);
-    assert.deepEqual(invocation.repositoryReadOnlyMounts, [
-        { source: 'node_modules', destination: 'node_modules' },
+    assert.deepEqual(invocation.repositoryReadOnlyPaths, [
+        realpathSync(join(repository, 'node_modules')),
     ]);
-    assert.deepEqual(invocation.writableCandidateMounts, [
-        {
-            source: '.cmz-oracle-runtime/vite-temp',
-            destination: 'node_modules/.vite-temp',
-        },
-    ]);
+    assert.equal(invocation.writableCandidateMounts, undefined);
     assert.equal(invocation.nxRoot, '.cmz-oracle-runtime');
     assert.deepEqual(invocation.extraEnv, undefined);
     assert.deepEqual(invocation.argv, [
@@ -97,6 +104,33 @@ test('le candidat ne contient que les fichiers gouvernés et protège ses dépen
     assert.throws(() => oracle.run('arbitrary-command'), /non autorisé/);
 });
 
+test('les liens de dépendances ciblent le montage Docker non superposé', async (t) => {
+    const repository = await fixture(t);
+    let invocation;
+    const oracle = createPageRealizationOracle(
+        { workspaceRoot: repository, appName: 'demo-app' },
+        {
+            backend: 'docker',
+            loadPolicy: () => ({ policy, errors: [] }),
+            runConfined: (options) => {
+                invocation = options;
+                return { status: 0, signal: null, stdout: 'ok', stderr: '' };
+            },
+        }
+    );
+    t.after(() => oracle.dispose());
+
+    assert.equal(
+        readlinkSync(join(oracle.candidate, 'node_modules/tool')),
+        '/cmz-repository-0/tool'
+    );
+    assert.equal(oracle.run('build'), 'ok');
+    assert.equal(invocation.backend, 'docker');
+    assert.deepEqual(invocation.repositoryReadOnlyPaths, [
+        realpathSync(join(repository, 'node_modules')),
+    ]);
+});
+
 test('refuse de démarrer si la politique de confinement est invalide', async (t) => {
     const repository = await fixture(t);
     assert.throws(
@@ -104,6 +138,7 @@ test('refuse de démarrer si la politique de confinement est invalide', async (t
             createPageRealizationOracle(
                 { workspaceRoot: repository, appName: 'demo-app' },
                 {
+                    backend: 'macos',
                     loadPolicy: () => ({ policy, errors: ['image absente'] }),
                 }
             ),

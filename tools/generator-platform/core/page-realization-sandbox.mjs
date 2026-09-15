@@ -15,7 +15,10 @@ import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { loadResolutionPolicy } from '../../library-setup/resolution-policy.mjs';
-import { runConfined } from '../../library-setup/sandbox.mjs';
+import {
+    runConfined,
+    selectSandboxBackend,
+} from '../../library-setup/sandbox.mjs';
 
 const ORACLES = new Set(['compile', 'build', 'lint', 'test']);
 
@@ -132,11 +135,14 @@ function copyGovernedFiles(repository, candidate) {
     }
 }
 
-function linkDependencies(source, destination) {
+function linkDependencies(source, destination, targetRoot) {
     mkdirSync(destination, { mode: 0o700 });
     for (const entry of readdirSync(source, { withFileTypes: true })) {
         if (entry.name === '.vite-temp') continue;
-        symlinkSync(join(source, entry.name), join(destination, entry.name));
+        symlinkSync(
+            join(targetRoot, entry.name),
+            join(destination, entry.name)
+        );
     }
 }
 
@@ -167,14 +173,17 @@ export function createPageRealizationOracle(
         for (const path of [candidate, cache, home]) {
             mkdirSync(path, { mode: 0o700 });
         }
+        const backend =
+            dependencies.backend ??
+            (dependencies.selectBackend ?? selectSandboxBackend)();
         copyGovernedFiles(repository, candidate);
-        linkDependencies(nodeModules, join(candidate, 'node_modules'));
+        linkDependencies(
+            nodeModules,
+            join(candidate, 'node_modules'),
+            backend === 'docker' ? '/cmz-repository-0' : nodeModules
+        );
         mkdirSync(join(candidate, '.cmz-oracle-runtime'), { mode: 0o700 });
-        mkdirSync(join(candidate, '.cmz-oracle-runtime/vite-temp'), {
-            mode: 0o700,
-        });
         mkdirSync(join(candidate, '.cmz-oracle-runtime/tmp'), { mode: 0o700 });
-        mkdirSync(join(candidate, 'node_modules/.vite-temp'), { mode: 0o700 });
         const loaded = (dependencies.loadPolicy ?? loadResolutionPolicy)(
             repository
         );
@@ -190,7 +199,7 @@ export function createPageRealizationOracle(
                 if (!ORACLES.has(oracle))
                     fail(`oracle non autorisé : ${oracle}`);
                 const result = run({
-                    backend: dependencies.backend,
+                    backend,
                     profile: 'execution',
                     candidate,
                     cache,
@@ -206,18 +215,7 @@ export function createPageRealizationOracle(
                         appName,
                     ],
                     policy: loaded.policy,
-                    repositoryReadOnlyMounts: [
-                        {
-                            source: 'node_modules',
-                            destination: 'node_modules',
-                        },
-                    ],
-                    writableCandidateMounts: [
-                        {
-                            source: '.cmz-oracle-runtime/vite-temp',
-                            destination: 'node_modules/.vite-temp',
-                        },
-                    ],
+                    repositoryReadOnlyPaths: [nodeModules],
                     nxRoot: '.cmz-oracle-runtime',
                     allowLoopback: true,
                     allowSignals: true,
