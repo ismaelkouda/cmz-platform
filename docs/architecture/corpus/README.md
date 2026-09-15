@@ -1,9 +1,10 @@
 # Corpus SEOS — paires legacy → Nx (Méthode 2)
 
 - **Créé :** 2026-07-30
-- **Objectif :** jeu de données d'apprentissage **annoté et oracle-vérifié**
-  pour la synthèse neurosymbolique ([LLM_CONTEXT.md](../../LLM_CONTEXT.md)
-  §1.2).
+- **Nature réelle :** index de correspondances legacy → Nx et de décisions
+  d'architecture, conservé comme corpus de caractérisation pendant la
+  construction des primitives génériques. Ce n'est pas un jeu d'apprentissage
+  ([ADR-0019](../../adr/0019-nature-du-corpus-seos.md)).
 
 ## Modèle hybride (décision A-2026-07-30-02)
 
@@ -106,7 +107,7 @@ miroir dans
 
 | Tier                     | Périmètre                                                 | Quand                                                                                                              |
 | ------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **Tier 1 — module**      | `@cmz/{module}-*:build\|test` + eslint `libs/{module}/**` | `emit-pairs --verify` (PR)                                                                                         |
+| **Tier 1 — module**      | `@cmz/{module}-*:build\|test` + eslint `libs/{module}/**` | `emit-pairs --verify`, conditionnel aux changements corpus en PR ([ADR-0046](../../adr/0046-corpus-seos-hors-chemin-critique-ci.md)) |
 | **Tier 2 — intégration** | `backoffice-angular:build` + `ngc --strictTemplates`      | Nightly [`nightly-integration.yml`](../../.github/workflows/nightly-integration.yml) + `bun run check:tier2` local |
 
 Les paires corpus n'attachent **pas** `backoffice-angular:build` comme oracle de
@@ -141,7 +142,8 @@ Avant d'écrire `corpus/<module>.pairs.jsonl` (et sous `--verify`),
 
 | Mode | Flag | Legacy paths | Rôle |
 | ---- | ---- | ------------ | ---- |
-| **Structurel** | `--structural-only` (`CORPUS_STRUCTURAL_ONLY=1`) | ignorés | Job PR `corpus` / `bun run corpus:ci` — oracles Nx seulement |
+| **Contrat rapide** | `bun run check:corpus-contract` | ignorés | Chaque PR : schéma, identités, pin et chemins Nx, sans rejouer Nx |
+| **Structurel profond** | `--structural-only` (`CORPUS_STRUCTURAL_ONLY=1`) | ignorés | PR modifiant le corpus : `bun run corpus:ci` — oracles Nx seulement |
 | **Complet** | `--verify` seul | `SEOS_LEGACY_ROOT` obligatoire | Job `corpus-full` / `bun run corpus:full` — structure + présence legacy |
 
 `--structural-only` **n'est pas** une validation de correspondance legacy.
@@ -156,7 +158,7 @@ Alias déprécié : `--oracle-only` / `CORPUS_ORACLE_ONLY`.
 | `bun run legacy:pin` | Réécrit le lock depuis le HEAD courant de `SEOS_LEGACY_ROOT` |
 | `bun run legacy:checkout` | Clone le pin vers `.legacy-cmz-backoffice/` (CI `corpus-full`) |
 | `bun run corpus:full` | `--verify` sur tous les modules **sans** `--structural-only` |
-| [`.github/workflows/corpus-full.yml`](../../../.github/workflows/corpus-full.yml) | Job `corpus-full` sur `main` (audit B-5) |
+| [`.github/workflows/corpus-full.yml`](../../../.github/workflows/corpus-full.yml) | Job `corpus-full` sur changement corpus de `main` ou lancement manuel (audit B-5, ADR-0046) |
 
 ```bash
 export SEOS_LEGACY_ROOT=/chemin/vers/cmz-backoffice-frontend
@@ -214,7 +216,8 @@ bun run corpus:dashboard             # 2 chaînes aggregated_stats_view
 bun run corpus:interactive-map       # 3 chaînes (visualization + SIG v1 + shell)
 bun run corpus:requests            # tranche A — listes + shell (gate rapide)
 bun run corpus:requests:full       # 8 chaînes (listes + details + export + permissions + qualification)
-bun run corpus:ci                  # Tier 1 CI — processing + requests (full) + finalization + report-states
+bun run check:corpus-contract      # contrat rapide toujours bloquant
+bun run corpus:ci                  # Tier 1 profond — conditionnel aux changements corpus
 bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
 ```
 
@@ -222,7 +225,7 @@ bun run corpus:sync-pattern        # push pattern → legacy seos/patterns/
 
 1. ✅ Spec + outillage v0
 2. ✅ Tranche A `processing` + `requests` (100 % verified)
-3. ✅ CI Tier 1 sur PR (job `corpus` — `corpus:ci`)
+3. ✅ CI Tier 1 sur PR (contrat rapide + `corpus:ci` conditionnel, ADR-0046)
 4. ✅ CI Tier 2 intégration — nightly `nightly-integration.yml` +
    `bun run check:tier2`
 5. ✅ Sync legacy `seos/patterns/workflow-action.pattern.json`
