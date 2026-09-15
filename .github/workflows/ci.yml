@@ -538,16 +538,14 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  # ─── Job 4 : Corpus SEOS — structural-only (ADR-0015 / B-6) ───────────────
-  # Vérif. structurelle Nx Tier 1 — PAS de correspondance legacy.
-  # Source de vérité modules : package.json → corpus:ci (audit B-7 / P1-14).
-  # Full verify + legacy : workflow corpus-full.yml (audit B-5), sur main uniquement.
+  # ─── Job 4 : contrat corpus rapide + passe profonde conditionnelle ─────────
+  # Le contexte GitHub reste toujours produit et bloquant. Le contrat rapide
+  # valide les 1 507 paires committées sans réexécuter les builds déjà couverts
+  # par `oracle`/nx affected. La passe historique `corpus:ci` ne tourne que si
+  # une source de vérité corpus change (ADR-0046).
   corpus:
     name: Corpus SEOS — structural-only
     runs-on: ubuntu-latest
-    needs: guardrails
-    env:
-      CORPUS_STRUCTURAL_ONLY: '1'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -557,14 +555,28 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Contrat corpus committé (rapide, toujours bloquant)
+        run: node tools/corpus/check-corpus-contract.mjs
+
+      - name: Déterminer la profondeur de validation
+        id: corpus-impact
+        env:
+          CORPUS_DIFF_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD~1' }}
+        run: node tools/corpus/ci-impact.mjs --base "$CORPUS_DIFF_BASE" >> "$GITHUB_OUTPUT"
+
       - uses: oven-sh/setup-bun@v2
+        if: steps.corpus-impact.outputs.deep == 'true'
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
       - name: Install dependencies
+        if: steps.corpus-impact.outputs.deep == 'true'
         run: bun install --frozen-lockfile
 
-      - name: Corpus structural-only (bun run corpus:ci)
+      - name: Corpus structural-only profond (bun run corpus:ci)
+        if: steps.corpus-impact.outputs.deep == 'true'
+        env:
+          CORPUS_STRUCTURAL_ONLY: '1'
         run: bun run corpus:ci
   dead-code:
     name: Dead-code (knip)
