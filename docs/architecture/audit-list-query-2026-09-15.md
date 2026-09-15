@@ -59,8 +59,8 @@ l'IR représente le backend ni que le résultat satisfait une page.
 fixture dite « payload réel » est copiée dans le test : elle ne peut détecter
 une dérive du backend que si un humain la met d'abord à jour.
 
-Il n'existe par ailleurs aucune référence de la définition
-`cmz-client-landing-home` dans les contrats persistés `backend-contract`, les
+Il n'existe par ailleurs aucune référence de la définition témoin conservée
+pour `list-query` dans les contrats persistés `backend-contract`, les
 `application-designs` ou `page-realization`. La chaîne de preuve s'arrête donc
 au client généré.
 
