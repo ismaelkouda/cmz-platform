@@ -1837,6 +1837,14 @@ Figma, désormais source partielle différée :
 - **PLAT-9** — partiel (socle local fait le 2026-09-07, preuve réelle ouverte),
   M, P1, [issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64), alias
   `réalisation d'écran multi-nœuds indépendants`.
+  **Audit préalable `list-query` (2026-09-15) :**
+  [`audit-list-query-2026-09-15.md`](./audit-list-query-2026-09-15.md). Verdict
+  Staff : infrastructure de génération solide, mais composition interdite en
+  production avant correction des release blockers auth/cache, nullabilité,
+  identité des modèles, validation runtime et raccordement à
+  `application-design`/`page-realization`. La v1 reste `experimental`; toute
+  évolution incompatible suit ADR-0039 (v2 + migrateur), sans promotion ni
+  reproduction de SEOS avant satisfaction des critères de sortie de l'audit.
   [ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md). La
   chaîne app-builder n'avait été prouvée que sur une page à une seule opération
   (`application-conception-proof`, un `action-request` sans lecture).
