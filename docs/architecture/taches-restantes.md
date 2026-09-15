@@ -1837,6 +1837,37 @@ Figma, désormais source partielle différée :
 - **PLAT-9** — partiel (socle local fait le 2026-09-07, preuve réelle ouverte),
   M, P1, [issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64), alias
   `réalisation d'écran multi-nœuds indépendants`.
+  **Audit préalable `list-query` (2026-09-15) :**
+  [`audit-list-query-2026-09-15.md`](./audit-list-query-2026-09-15.md). Verdict
+  Staff : infrastructure de génération solide, mais composition interdite en
+  production avant correction des release blockers auth/cache, nullabilité,
+  identité des modèles, validation runtime et raccordement à
+  `application-design`/`page-realization`. La v1 reste `experimental`; toute
+  évolution incompatible suit ADR-0039 (v2 + migrateur), sans promotion ni
+  reproduction de SEOS avant satisfaction des critères de sortie de l'audit.
+  **Audit préalable `action-request` (2026-09-15) :**
+  [`audit-action-request-2026-09-15.md`](./audit-action-request-2026-09-15.md).
+  Verdict Staff : génération déterministe et oracles isolés solides, mais
+  statut `proven` insuffisant pour autoriser la production. Blockers confirmés :
+  Bearer du host sur actions publiques, validation facultative et incomplète,
+  absence de décodage runtime, verbes/path/media types non réalisés, succès
+  distant transformé en échec local rejouable, absence d'idempotence et
+  d'invalidation déclarative des queries. Toute refonte incompatible suit
+  ADR-0039 (`action-request` v2 + migrateur) et se lie au `backend-contract`.
+  **Audit préalable de la composition N×N (2026-09-15) :**
+  [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
+  Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
+  `data_bindings` jusqu'au work order, mais ne génère, ne raccorde et ne teste
+  aucune composition runtime. La fixture mixte accepte un composant vide et
+  mocke les quatre oracles ; la fixture à oracles réels a zéro load et zéro
+  appel backend. Blockers supplémentaires : data binding sans identité de
+  nœud producteur, état global impropre aux pannes partielles, absence de
+  providers/invalidation/cancellation/concurrence, et exécution du spec réalisé
+  avec tout `process.env`. Le troisième élément sera un
+  `page-execution-plan` target-neutral référençant les primitives v2, pas un
+  troisième générateur métier. Ordre retenu : sécuriser l'oracle, stabiliser
+  les deux primitives, compiler/publier le plan et son composition root, puis
+  reproduire un vertical slice SEOS représentatif avant toute promotion.
   [ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md). La
   chaîne app-builder n'avait été prouvée que sur une page à une seule opération
   (`application-conception-proof`, un `action-request` sans lecture).
