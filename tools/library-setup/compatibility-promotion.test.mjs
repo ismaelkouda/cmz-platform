@@ -10,6 +10,8 @@ import { validateRecipes } from '../check-library-setup.mjs';
 import { validateCompatibilityMatrices } from './compatibility.mjs';
 import {
     buildVerificationFromExecution,
+    commitExists,
+    qualificationSourceSha256,
     requiredProofIds,
     verificationFailures,
     verificationInputs,
@@ -178,6 +180,12 @@ function fixture(t) {
 function rebindCommit(root, evidence) {
     const rebound = structuredClone(evidence);
     rebound.commit = git(root, ['rev-parse', 'HEAD']);
+    rebound.source_context_sha256 = qualificationSourceSha256(
+        root,
+        recipe(),
+        recipes(),
+        track()
+    );
     const { evidence_sha256: _ignored, ...payload } = rebound;
     rebound.evidence_sha256 = sha256(stableJson(payload));
     return rebound;
@@ -186,6 +194,11 @@ function rebindCommit(root, evidence) {
 test('la preuve vient d’un résultat complet dont plan et change-set sont recalculés', () => {
     const built = verification();
     assert.equal(built.commit, HEAD);
+    assert.equal(built.schema_version, '1.1.0');
+    assert.equal(
+        built.source_context_sha256,
+        qualificationSourceSha256(ROOT, recipe(), recipes(), track())
+    );
     assert.equal(built.track_sha256, compatibilityTrackDigest(track()));
     assert.deepEqual(built.proofs, requiredProofIds(recipe(), recipes()));
     assert.deepEqual(
@@ -223,6 +236,41 @@ test('la preuve vient d’un résultat complet dont plan et change-set sont reca
                 execution: forgedChangeSet,
             }),
         /change_set_id ne correspond pas/
+    );
+});
+
+test('l’empreinte source survit au squash et aux changements sans rapport', (t) => {
+    const source = fixture(t);
+    git(source, [
+        'commit',
+        '--quiet',
+        '--allow-empty',
+        '-m',
+        'qualification sur la branche',
+    ]);
+    const built = rebindCommit(source, verification());
+    const squashed = fixture(t);
+
+    assert.equal(commitExists(squashed, built.commit), false);
+    assert.deepEqual(
+        verificationFailures(squashed, recipe(), track(), built, {
+            recipeRegistry: recipes(),
+        }),
+        []
+    );
+
+    const unrelatedTest = 'tools/library-setup/sandbox.test.mjs';
+    writeFileSync(
+        join(squashed, unrelatedTest),
+        `${readFileSync(join(squashed, unrelatedTest), 'utf8')}\n`
+    );
+    git(squashed, ['add', unrelatedTest]);
+    git(squashed, ['commit', '--quiet', '-m', 'dérive après qualification']);
+    assert.deepEqual(
+        verificationFailures(squashed, recipe(), track(), built, {
+            recipeRegistry: recipes(),
+        }),
+        []
     );
 });
 
@@ -457,7 +505,7 @@ test('une bibliothèque indépendante ne périme ni la projection initiale ni la
     );
 });
 
-test('la gate refuse les promotions inventées et les états contradictoires', (t) => {
+test('la gate refuse les empreintes source falsifiées et les états contradictoires', (t) => {
     const root = fixture(t);
     const path = join(
         root,
@@ -468,12 +516,18 @@ test('la gate refuse les promotions inventées et les états contradictoires', (
     matrix.tracks[0].verification = {
         ...rebindCommit(root, verification()),
         commit: '0'.repeat(40),
+        source_context_sha256: '0'.repeat(64),
     };
+    const { evidence_sha256: _evidence, ...payload } =
+        matrix.tracks[0].verification;
+    matrix.tracks[0].verification.evidence_sha256 = sha256(stableJson(payload));
     writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
     const recipes = validateRecipes(root);
     const result = validateCompatibilityMatrices(root, recipes.recipes);
     assert.equal(result.ok, false);
-    assert.ok(result.errors.some((error) => /absent du dépôt/.test(error)));
+    assert.ok(
+        result.errors.some((error) => /contexte source a changé/.test(error))
+    );
 
     matrix.tracks[0].status = 'candidate';
     writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);

@@ -88,6 +88,21 @@ export function commitExists(root, commit) {
     );
 }
 
+/**
+ * Empreinte des entrées gouvernantes de la qualification. Elle est stable quand
+ * GitHub remplace les commits de la branche par un squash et ne périme pas une
+ * preuve pour une évolution applicative sans rapport avec la bibliothèque.
+ */
+export function qualificationSourceSha256(root, recipe, recipeRegistry, track) {
+    return sha256(
+        stableJson({
+            schema_version: '1.0.0',
+            track_sha256: compatibilityTrackDigest(track),
+            inputs_sha256: verificationInputs(root, recipe, recipeRegistry),
+        })
+    );
+}
+
 function requiredProofContracts(recipe, recipeRegistry) {
     if (!(recipeRegistry instanceof Map)) {
         fail('registre de recettes requis pour empreindre les preuves');
@@ -332,8 +347,14 @@ export function buildVerificationFromExecution({
         execution.runtimeProofs
     );
     const payload = {
-        schema_version: '1.0.0',
+        schema_version: '1.1.0',
         commit: execution.plan.commit,
+        source_context_sha256: qualificationSourceSha256(
+            root,
+            recipe,
+            recipeRegistry,
+            track
+        ),
         app,
         plan_id: planId,
         change_set_id: changeSetId,
@@ -365,10 +386,17 @@ export function verificationFailures(
             "l'empreinte de l'attestation ne correspond pas à son contenu"
         );
     }
-    if (!commitExists(root, verification.commit)) {
-        failures.push(
-            `commit ${verification.commit} absent du dépôt : vérification invérifiable`
-        );
+    try {
+        if (
+            verification.source_context_sha256 !==
+            qualificationSourceSha256(root, recipe, recipeRegistry, track)
+        ) {
+            failures.push(
+                'le contexte source a changé depuis la qualification'
+            );
+        }
+    } catch (error) {
+        failures.push(error.message);
     }
     try {
         assertExactProofs(recipe, recipeRegistry, verification.proofs);
