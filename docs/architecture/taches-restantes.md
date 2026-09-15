@@ -1854,6 +1854,20 @@ Figma, désormais source partielle différée :
   distant transformé en échec local rejouable, absence d'idempotence et
   d'invalidation déclarative des queries. Toute refonte incompatible suit
   ADR-0039 (`action-request` v2 + migrateur) et se lie au `backend-contract`.
+  **Audit préalable de la composition N×N (2026-09-15) :**
+  [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
+  Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
+  `data_bindings` jusqu'au work order, mais ne génère, ne raccorde et ne teste
+  aucune composition runtime. La fixture mixte accepte un composant vide et
+  mocke les quatre oracles ; la fixture à oracles réels a zéro load et zéro
+  appel backend. Blockers supplémentaires : data binding sans identité de
+  nœud producteur, état global impropre aux pannes partielles, absence de
+  providers/invalidation/cancellation/concurrence, et exécution du spec réalisé
+  avec tout `process.env`. Le troisième élément sera un
+  `page-execution-plan` target-neutral référençant les primitives v2, pas un
+  troisième générateur métier. Ordre retenu : sécuriser l'oracle, stabiliser
+  les deux primitives, compiler/publier le plan et son composition root, puis
+  reproduire un vertical slice SEOS représentatif avant toute promotion.
   [ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md). La
   chaîne app-builder n'avait été prouvée que sur une page à une seule opération
   (`application-conception-proof`, un `action-request` sans lecture).
