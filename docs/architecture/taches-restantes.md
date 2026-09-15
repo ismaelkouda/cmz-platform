@@ -1845,6 +1845,15 @@ Figma, désormais source partielle différée :
   `application-design`/`page-realization`. La v1 reste `experimental`; toute
   évolution incompatible suit ADR-0039 (v2 + migrateur), sans promotion ni
   reproduction de SEOS avant satisfaction des critères de sortie de l'audit.
+  **Audit préalable `action-request` (2026-09-15) :**
+  [`audit-action-request-2026-09-15.md`](./audit-action-request-2026-09-15.md).
+  Verdict Staff : génération déterministe et oracles isolés solides, mais
+  statut `proven` insuffisant pour autoriser la production. Blockers confirmés :
+  Bearer du host sur actions publiques, validation facultative et incomplète,
+  absence de décodage runtime, verbes/path/media types non réalisés, succès
+  distant transformé en échec local rejouable, absence d'idempotence et
+  d'invalidation déclarative des queries. Toute refonte incompatible suit
+  ADR-0039 (`action-request` v2 + migrateur) et se lie au `backend-contract`.
   [ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md). La
   chaîne app-builder n'avait été prouvée que sur une page à une seule opération
   (`application-conception-proof`, un `action-request` sans lecture).
