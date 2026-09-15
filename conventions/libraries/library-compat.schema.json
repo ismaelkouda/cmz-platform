@@ -92,6 +92,7 @@
                 "additionalProperties": false,
                 "required": [
                   "commit",
+                  "source_context_sha256",
                   "schema_version",
                   "app",
                   "plan_id",
@@ -106,11 +107,16 @@
                 ],
                 "properties": {
                   "schema_version": {
-                    "const": "1.0.0"
+                    "const": "1.1.0"
                   },
                   "commit": {
                     "type": "string",
                     "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+                  },
+                  "source_context_sha256": {
+                    "description": "Empreinte de la piste et de toutes les entrées gouvernantes de la qualification, stable après squash-merge.",
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
                   },
                   "app": {
                     "type": "string",

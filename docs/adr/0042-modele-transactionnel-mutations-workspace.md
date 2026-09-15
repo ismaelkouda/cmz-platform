@@ -342,7 +342,7 @@ toutes les acceptances de la recette — coexistences comprises — puis remplac
 atomiquement la seule matrice ciblée. En V1, `verified` vaut uniquement pour le
 vecteur exact Node/Bun/Nx/framework testé. Les plages de la piste restent une
 présélection de qualification, jamais une preuve par extrapolation.
-L'attestation lie la piste, les versions, le commit, l'arbre applicatif,
+L'attestation lie la piste, les versions, le commit source, l'arbre applicatif,
 l'ensemble des entrées de l'outillage et le contenu complet des contrats de
 preuve exécutés. Ce dernier ensemble comprend les preuves réciproques déclarées
 par une autre recette : conserver le même identifiant tout en modifiant sa
@@ -350,6 +350,17 @@ description, son oracle ou son statut périme donc aussi l'attestation. Elle est
 périmée dès qu'une de ces entrées change. Elle n'est pas présentée comme une
 signature de CI : l'autorité d'approbation reste la protection de branche et la
 revue du commit qui la porte.
+
+Le dépôt impose cependant le squash-merge : le SHA du commit source peut donc
+devenir injoignable après la fusion alors que les entrées qualifiées sont
+conservées à l'octet près. L'attestation `1.1.0` ajoute en conséquence une
+empreinte du contexte source gouverné : contrat de piste, recette, contrats de
+preuve, runner, schémas, politique et configurations structurantes. Le SHA
+source demeure une trace d'audit, mais son absence après squash n'invalide plus
+à elle seule la preuve. Le contexte courant doit produire exactement la même
+empreinte et chaque contrôle spécialisé reste appliqué. Une évolution
+applicative ou documentaire sans rapport ne force donc pas une requalification ;
+toute dérive d'une entrée gouvernante la force toujours.
 
 **9. La sortie d'une recette est canonisée avant d'être jugée.** Un schematic ne
 produit pas du texte canonique : mesuré, le setup Material version 22 laisse des
