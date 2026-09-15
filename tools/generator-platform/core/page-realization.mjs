@@ -10,6 +10,7 @@ import {
     selectArchetype,
 } from './archetype-selection.mjs';
 import { producePageRoleNode } from './role-production.mjs';
+import { createPageRealizationOracle } from './page-realization-sandbox.mjs';
 
 const STATE_ROOT = '.cmz/page-realization-work-orders';
 const ALLOWED_FILES = [
@@ -26,6 +27,14 @@ const FORBIDDEN_NETWORK = [
     /\baxios\b/,
     /https?:\/\//,
 ];
+const ORACLE_POLICY = {
+    executor: 'external-confined',
+    environment: 'allowlist',
+    filesystem: 'disposable-candidate',
+    dependencies: 'read-only',
+    network: 'loopback-only',
+    process: 'fixed-runner-no-shell-empty-path',
+};
 
 function fail(message) {
     throw new Error(`page realization: ${message}`);
@@ -56,6 +65,7 @@ function deriveWorkOrderId({
             page_contract_sha256: pageContractHash,
             protected_workspace_sha256: protectedWorkspaceHash,
             allowed_files: ALLOWED_FILES,
+            oracle_policy: ORACLE_POLICY,
             realization_contract: realizationContract,
         })
     );
@@ -141,8 +151,11 @@ function gitInventory(root, excludedPrefix) {
                 .split('\0')
                 .filter(Boolean)
         );
-    } catch {
-        fail('Git inventory is required to bound LLM writes');
+    } catch (error) {
+        const detail = String(error.stderr ?? error.message ?? '').trim();
+        fail(
+            `Git inventory is required to bound LLM writes${detail ? ` (${detail})` : ''}`
+        );
     }
     return output
         .split('\0')
@@ -227,6 +240,7 @@ function publicWorkOrder({
         allowed_write_root: writeRoot,
         allowed_files: ALLOWED_FILES,
         protected_workspace_sha256: baselineSha256,
+        oracle_policy: ORACLE_POLICY,
         realization_contract: realizationContract,
         rules: [
             'Implement only the validated page contract.',
@@ -234,12 +248,13 @@ function publicWorkOrder({
             'Map every contract id to one exact data-cmz-id selector.',
             'Keep keyboard, screen-reader, loading, error and offline behavior explicit.',
             'Do not write outside allowed_write_root.',
+            'Oracle tests execute in a disposable sandbox without credentials or external network access.',
         ],
         oracle_commands: [
-            `bunx ngc -p apps/${appName}/tsconfig.app.json --noEmit`,
-            `bunx nx run ${appName}:build:production --skipNxCache`,
-            `bunx nx run ${appName}:lint`,
-            `bunx nx run ${appName}:test`,
+            ...['compile', 'build', 'lint', 'test'].map(
+                (oracle) =>
+                    `node tools/generator-platform/page-realization-oracle-runner.mjs --oracle ${oracle} --app ${appName}`
+            ),
         ],
     };
 }
@@ -455,23 +470,6 @@ function validateEvidence(
     return violations;
 }
 
-function defaultRun(command, args, root) {
-    return execFileSync(command, args, {
-        cwd: root,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: {
-            ...process.env,
-            CI: 'true',
-            NX_DAEMON: 'false',
-            NX_TASKS_RUNNER_DYNAMIC_OUTPUT: 'false',
-            ...(!process.env.NX_CLOUD_ACCESS_TOKEN
-                ? { NX_NO_CLOUD: 'true' }
-                : {}),
-        },
-    });
-}
-
 export function verifyPageRealization(
     { workspaceRoot, appName, pageId, workOrderId, evidenceSchema },
     dependencies = {}
@@ -605,36 +603,57 @@ export function verifyPageRealization(
     }
     const oracleResults = [];
     if (violations.length === 0) {
-        const run = dependencies.run ?? defaultRun;
-        for (const [name, command, args] of [
-            [
-                'compile',
-                'bunx',
-                ['ngc', '-p', `apps/${appName}/tsconfig.app.json`, '--noEmit'],
-            ],
-            [
-                'build',
-                'bunx',
-                ['nx', 'run', `${appName}:build:production`, '--skipNxCache'],
-            ],
-            ['lint', 'bunx', ['nx', 'run', `${appName}:lint`]],
-            ['test', 'bunx', ['nx', 'run', `${appName}:test`]],
-        ]) {
-            try {
-                run(command, args, root);
-                oracleResults.push({ name, ok: true });
-            } catch (error) {
-                oracleResults.push({ name, ok: false });
-                violations.push(
-                    `${name} failed: ${[
-                        error.stdout,
-                        error.stderr,
-                        error.message,
-                    ]
-                        .filter(Boolean)
-                        .join('\n')}`
-                );
+        const injectedRun = dependencies.run;
+        const oracle = injectedRun
+            ? null
+            : (dependencies.createOracle ?? createPageRealizationOracle)({
+                  workspaceRoot: root,
+                  appName,
+              });
+        try {
+            for (const [name, command, args] of [
+                [
+                    'compile',
+                    'bunx',
+                    [
+                        'ngc',
+                        '-p',
+                        `apps/${appName}/tsconfig.app.json`,
+                        '--noEmit',
+                    ],
+                ],
+                [
+                    'build',
+                    'bunx',
+                    [
+                        'nx',
+                        'run',
+                        `${appName}:build:production`,
+                        '--skipNxCache',
+                    ],
+                ],
+                ['lint', 'bunx', ['nx', 'run', `${appName}:lint`]],
+                ['test', 'bunx', ['nx', 'run', `${appName}:test`]],
+            ]) {
+                try {
+                    if (injectedRun) injectedRun(command, args, root);
+                    else oracle.run(name);
+                    oracleResults.push({ name, ok: true });
+                } catch (error) {
+                    oracleResults.push({ name, ok: false });
+                    violations.push(
+                        `${name} failed: ${[
+                            error.stdout,
+                            error.stderr,
+                            error.message,
+                        ]
+                            .filter(Boolean)
+                            .join('\n')}`
+                    );
+                }
             }
+        } finally {
+            oracle?.dispose();
         }
     }
     return {
@@ -656,6 +675,7 @@ export function publicPageRealizationPlan(plan) {
         realization_contract: plan.workOrder.realization_contract,
         allowed_write_root: plan.workOrder.allowed_write_root,
         allowed_files: plan.workOrder.allowed_files,
+        oracle_policy: plan.workOrder.oracle_policy,
         protected_workspace_sha256: plan.workOrder.protected_workspace_sha256,
     };
 }

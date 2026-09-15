@@ -141,6 +141,51 @@ function validateInvocation({
     return paths;
 }
 
+function protectedCandidateDirectories(candidate, paths = []) {
+    if (!Array.isArray(paths)) fail('protections candidat invalides');
+    return paths.map((path) => {
+        if (typeof path !== 'string' || path.length === 0) {
+            fail('protection candidat invalide');
+        }
+        const absolute = plainDirectory(
+            resolve(candidate, path),
+            'protection candidat'
+        );
+        const rel = relative(candidate, absolute);
+        if (
+            rel === '' ||
+            rel === '..' ||
+            rel.startsWith(`..${sep}`) ||
+            rel.split(sep).includes('..')
+        ) {
+            fail('protection candidat hors candidat');
+        }
+        return { absolute, relative: rel.split(sep).join('/') };
+    });
+}
+
+function repositoryReadOnlyDirectories(repository, paths = []) {
+    if (!Array.isArray(paths)) fail('lectures dépôt invalides');
+    return paths.map((path) => {
+        if (typeof path !== 'string' || path.length === 0) {
+            fail('lecture dépôt invalide');
+        }
+        const source = plainDirectory(
+            resolve(repository, path),
+            'chemin du dépôt en lecture seule'
+        );
+        const sourceRel = relative(repository, source);
+        if (
+            sourceRel === '' ||
+            sourceRel === '..' ||
+            sourceRel.startsWith(`..${sep}`)
+        ) {
+            fail('source du montage hors dépôt');
+        }
+        return source;
+    });
+}
+
 /**
  * Les deux backends n'ont PAS la même arborescence : sur macOS le processus voit
  * les chemins de l'hôte, dans le conteneur il voit `/workspace` et
@@ -213,6 +258,10 @@ export function macSandboxProfile({
     repository,
     hostExecutable,
     readOnlyPaths = [],
+    readOnlyCandidatePaths = [],
+    repositoryReadOnlyPaths = [],
+    allowLoopback = false,
+    allowSignals = false,
     renderer = false,
 }) {
     if (!['resolution', 'execution'].includes(profile))
@@ -228,6 +277,7 @@ export function macSandboxProfile({
             ? [candidate, cache, home]
             : [candidate, home]),
         ...readOnlyPaths,
+        ...repositoryReadOnlyPaths,
     ];
     const writable =
         profile === 'resolution' ? [candidate, cache, home] : [candidate];
@@ -236,6 +286,7 @@ export function macSandboxProfile({
         '(deny default)',
         '(import "bsd.sb")',
         '(allow process*)',
+        ...(allowSignals ? ['(allow signal)'] : []),
         ...(renderer ? RENDERER_SYSTEM_RULES : []),
         `(allow file-read* (literal "${escapedSandboxPath(hostExecutable)}"))`,
         ...readable.map(
@@ -246,16 +297,29 @@ export function macSandboxProfile({
             (path) =>
                 `(allow file-write* (subpath "${escapedSandboxPath(path)}"))`
         ),
+        ...readOnlyCandidatePaths.map(
+            (path) =>
+                `(deny file-write* (subpath "${escapedSandboxPath(path)}"))`
+        ),
     ];
     if (profile === 'resolution') rules.push('(allow network*)');
+    if (profile === 'execution' && allowLoopback) {
+        rules.push(
+            '(allow network* (local ip "localhost:*") (remote ip "localhost:*"))'
+        );
+    }
+    if (repositoryReadOnlyPaths.length === 0) {
+        rules.push(
+            `(deny file-read* (subpath "${escapedSandboxPath(repository)}"))`
+        );
+    }
     rules.push(
-        `(deny file-read* (subpath "${escapedSandboxPath(repository)}"))`,
         `(deny file-write* (subpath "${escapedSandboxPath(repository)}"))`
     );
     return rules.join(' ');
 }
 
-function cleanEnvironment(paths, profile, extraEnv) {
+function cleanEnvironment(paths, profile, extraEnv, runtimeRoot) {
     return {
         // La phase d'exécution reçoit déjà l'exécutable approuvé par chemin
         // absolu. Elle n'a donc aucun besoin légitime de résolution via PATH.
@@ -270,6 +334,13 @@ function cleanEnvironment(paths, profile, extraEnv) {
         LC_ALL: 'C',
         CI: extraEnv?.CI ?? '1',
         NX_NO_CLOUD: extraEnv?.NX_NO_CLOUD ?? 'true',
+        ...(runtimeRoot
+            ? {
+                  TMPDIR: `${runtimeRoot}/tmp`,
+                  TMP: `${runtimeRoot}/tmp`,
+                  TEMP: `${runtimeRoot}/tmp`,
+              }
+            : {}),
         ...nxConfinementEnvironment(paths.candidate),
         ...(profile === 'resolution'
             ? {
@@ -365,6 +436,11 @@ export function runConfined({
     policy,
     extraEnv = {},
     readOnlyPaths = [],
+    readOnlyCandidatePaths = [],
+    repositoryReadOnlyPaths = [],
+    nxRoot,
+    allowLoopback = false,
+    allowSignals = false,
     renderer = false,
     timeoutMs = profile === 'resolution' ? 10 * 60_000 : 5 * 60_000,
     spawn = spawnSync,
@@ -384,11 +460,31 @@ export function runConfined({
         assertDisjoint(resolved, paths.candidate, 'lecture seule et candidat');
     }
     const selected = backend ?? selectSandboxBackend({ spawn });
+    const protectedPaths = protectedCandidateDirectories(
+        paths.candidate,
+        readOnlyCandidatePaths
+    );
+    const repositoryPaths = repositoryReadOnlyDirectories(
+        paths.repository,
+        repositoryReadOnlyPaths
+    );
+    const resolvedNxRoot = nxRoot
+        ? plainDirectory(resolve(paths.candidate, nxRoot), 'racine Nx')
+        : paths.candidate;
+    const nxRootRelative = relative(paths.candidate, resolvedNxRoot);
+    if (nxRootRelative === '..' || nxRootRelative.startsWith(`..${sep}`)) {
+        fail('racine Nx hors candidat');
+    }
     const mapping = sandboxTokenMapping(selected, paths, readOnlyPaths);
     const resolvedArgv = argv.map((argument) =>
         resolveSandboxTokens(argument, mapping)
     );
-    const env = cleanEnvironment(paths, profile, extraEnv);
+    const env = cleanEnvironment(
+        paths,
+        profile,
+        extraEnv,
+        nxRoot ? resolvedNxRoot : undefined
+    );
     if (selected === 'macos') {
         if (policy.sandbox?.macos_executable !== '/usr/bin/sandbox-exec') {
             fail('exécutable sandbox macOS non approuvé');
@@ -405,13 +501,26 @@ export function runConfined({
                     profile,
                     hostExecutable: executable,
                     readOnlyPaths,
+                    readOnlyCandidatePaths: protectedPaths.map(
+                        ({ absolute }) => absolute
+                    ),
+                    repositoryReadOnlyPaths: repositoryPaths,
+                    allowLoopback,
+                    allowSignals,
                     renderer,
                     ...paths,
                 }),
                 executable,
                 ...resolvedArgv,
             ],
-            { cwd: paths.candidate, env, timeout: timeoutMs },
+            {
+                cwd: paths.candidate,
+                env: {
+                    ...env,
+                    ...nxConfinementEnvironment(resolvedNxRoot),
+                },
+                timeout: timeoutMs,
+            },
             spawn
         );
     }
@@ -474,6 +583,14 @@ export function runConfined({
         // le défaut : elle s'exprime par l'ABSENCE de `readonly`.
         '--mount',
         `type=bind,src=${paths.candidate},dst=/workspace`,
+        ...protectedPaths.flatMap(({ absolute, relative: protectedPath }) => [
+            '--mount',
+            `type=bind,src=${absolute},dst=/workspace/${protectedPath},readonly`,
+        ]),
+        ...repositoryPaths.flatMap((path, index) => [
+            '--mount',
+            `type=bind,src=${path},dst=/cmz-repository-${index},readonly`,
+        ]),
         '--mount',
         `type=bind,src=${paths.home},dst=/cmz-home${profile === 'resolution' ? '' : ',readonly'}`,
         // Même frontière que sur macOS : le moteur de rendu est monté en
@@ -494,13 +611,27 @@ export function runConfined({
         '--env',
         'NX_NO_CLOUD=true',
         ...(profile === 'execution' ? ['--env', 'PATH='] : []),
+        ...(nxRoot
+            ? [
+                  '--env',
+                  `TMPDIR=/workspace/${nxRootRelative.split(sep).join('/')}/tmp`,
+                  '--env',
+                  `TMP=/workspace/${nxRootRelative.split(sep).join('/')}/tmp`,
+                  '--env',
+                  `TEMP=/workspace/${nxRootRelative.split(sep).join('/')}/tmp`,
+              ]
+            : []),
         // Mêmes réglages que sur macOS : les deux backends doivent offrir la
         // même frontière, sans quoi la suite hostile ne prouve pas la même
         // chose des deux côtés. Le conteneur monte /tmp en tmpfs inscriptible,
         // donc l'omission y serait restée invisible.
-        ...Object.entries(nxConfinementEnvironment('/workspace')).flatMap(
-            ([key, value]) => ['--env', `${key}=${value}`]
-        ),
+        ...Object.entries(
+            nxConfinementEnvironment(
+                nxRootRelative
+                    ? `/workspace/${nxRootRelative.split(sep).join('/')}`
+                    : '/workspace'
+            )
+        ).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
     ];
     if (profile === 'resolution') {
         dockerArgs.push(

@@ -21,9 +21,9 @@
       "reason": "Piste initiale alignée sur Angular 22 ; passe en verified seulement après la preuve compile-component.",
       "verification": {
         "schema_version": "1.0.0",
-        "commit": "3d08b9b17a51013f107241527bd1b1fe8440e72a",
+        "commit": "cba05bb8c42a29410d6a6f4d26e0d6aeb577bc86",
         "app": "backoffice-angular",
-        "plan_id": "library-plan:e8289d23cd8e4901f0338bfda29754fff96a60f5d3cf5ef96f01631a0f93da2c",
+        "plan_id": "library-plan:4605f2a7f39f4fd72520d23ae4c396a2eee7b6eb8f095c3b1c06dff26e276b7d",
         "change_set_id": "changes:7f8b14f6ef447133ff6c3cd69a1b20a5ee05dafdf11dbd743c757625deb5e87c",
         "app_tree_sha256": "7766488c42ddeb1a28fb16fc845508107c4adfab5781639babc615ae55535a4d",
         "track_sha256": "838fec6ce3a84e3165204ffa42a74521a6461b205c6d8507f7ad9346af64c160",
@@ -57,9 +57,9 @@
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
           "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
           "proof_contracts": "9b72d4629573fa351cc5ab209df549d7cef942f3a9061ca04a2e3a4ac15dc496",
-          "runner": "7534d34fb22baccbcd341194b1c92db75720be41f72133107563675dbdaa9dc7"
+          "runner": "b92be4158bc8b887a89ad5def5e7bae5df7be036bdf0e00cb9e3ba51813ac77c"
         },
-        "evidence_sha256": "76125794e67c8a672eed643295c704f098a44ec8c5e3cda9619214bacef5fafb"
+        "evidence_sha256": "d56695cfa4793b9316500defbee333362e0314ace106138280d56401edcddfe0"
       }
     }
   ]

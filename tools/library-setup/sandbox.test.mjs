@@ -370,3 +370,57 @@ test('le moteur de rendu est refusé sur Docker sans image épinglée', async (t
         /aucune image de rendu épinglée/
     );
 });
+
+test('protège node_modules et déplace les écritures Nx dans une racine dédiée', async (t) => {
+    const value = await paths(t);
+    await mkdir(join(value.candidate, 'node_modules'));
+    await mkdir(join(value.repository, 'node_modules'));
+    await mkdir(join(value.candidate, '.cmz-oracle-runtime'));
+    const calls = [];
+    const spawn = (executable, argv, options) => {
+        calls.push({ executable, argv, options });
+        return { status: 0, stdout: '', stderr: '', signal: null };
+    };
+    const common = {
+        profile: 'execution',
+        ...value,
+        hostExecutable: '/usr/bin/true',
+        containerExecutable: '/usr/local/bin/node',
+        argv: [],
+        policy,
+        readOnlyCandidatePaths: ['node_modules'],
+        repositoryReadOnlyPaths: [join(value.repository, 'node_modules')],
+        nxRoot: '.cmz-oracle-runtime',
+        spawn,
+    };
+
+    runConfined({ ...common, backend: 'macos' });
+    const mac = calls.at(-1);
+    assert.ok(
+        mac.argv[1].includes(
+            `(deny file-write* (subpath "${value.candidate}/node_modules"))`
+        )
+    );
+    assert.ok(
+        mac.argv[1].includes(
+            `(allow file-read* (subpath "${value.repository}/node_modules"))`
+        )
+    );
+    assert.equal(
+        mac.options.env.NX_CACHE_DIRECTORY,
+        `${value.candidate}/.cmz-oracle-runtime/node_modules/.cmz-nx-cache`
+    );
+
+    runConfined({ ...common, backend: 'docker' });
+    const docker = calls.at(-1);
+    assert.ok(
+        docker.argv.includes(
+            `type=bind,src=${value.repository}/node_modules,dst=/cmz-repository-0,readonly`
+        )
+    );
+    assert.ok(
+        docker.argv.includes(
+            'NX_CACHE_DIRECTORY=/workspace/.cmz-oracle-runtime/node_modules/.cmz-nx-cache'
+        )
+    );
+});

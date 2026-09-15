@@ -21,9 +21,9 @@
       "reason": "Piste initiale Tailwind 4 ; passe en verified après règle CSS compilée.",
       "verification": {
         "schema_version": "1.0.0",
-        "commit": "3d08b9b17a51013f107241527bd1b1fe8440e72a",
+        "commit": "9bc7e0d2bdbee9fa3628a2cb3619a06fb283e861",
         "app": "library-qualification-angular",
-        "plan_id": "library-plan:0dd29aec76a50942fce9dde4dcec5f61166e6b2857de6c228639365d8aea7987",
+        "plan_id": "library-plan:d2ff94e3e602dfc70f5cf2b38dade3d5c580ee2f426bd05edd7f92974e6053d5",
         "change_set_id": "changes:1af3c2595670bc7273ecfba26e82b841e8f1ab4a34d795d9e468a17d3a71b1ce",
         "app_tree_sha256": "e258093c3fe1c4ded44ed01700b0f91e91622d23046bc0bf1b1219c9dab2afb3",
         "track_sha256": "3981808faf08c915f19f81f10c72f84c674323e40a2a83076f2a1b2c4d96923e",
@@ -57,9 +57,9 @@
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
           "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
           "proof_contracts": "e5c4d6939a4c98f31513581d29ea91c1d9a99049330ab4b72f8e86b63c7fb97a",
-          "runner": "7534d34fb22baccbcd341194b1c92db75720be41f72133107563675dbdaa9dc7"
+          "runner": "b92be4158bc8b887a89ad5def5e7bae5df7be036bdf0e00cb9e3ba51813ac77c"
         },
-        "evidence_sha256": "f88f495576215e90e8b9419ef29ec94fbbcc68d0729538577f1a718c1336040b"
+        "evidence_sha256": "e6ebe47b37fe17e73e42694108a25485bea34a769a91b78592e9e364ad54a9ff"
       }
     }
   ]

@@ -1900,6 +1900,15 @@ Figma, désormais source partielle différée :
   adaptateur ou branche métier propre à SEOS n'est admis dans le moteur. SEOS
   reste actif comme oracle de migration jusque-là ; son retrait de la CI et son
   archivage nécessiteront un changement séparé après revue humaine.
+  **C0 — fait localement le 2026-09-15, promotion CI/revue en attente :** les
+  quatre oracles de `verify:page-realization` sont désormais lancés par un
+  runner externe dans un candidat jetable. L'environnement est allowlisté,
+  `node_modules` est en lecture seule, le vrai dépôt n'est pas inscriptible et
+  le réseau externe est coupé ; seule la boucle locale liée à `127.0.0.1` est
+  ouverte pour Vitest. Les mutants hostiles passent sur les backends macOS et
+  Docker, et `check:application-pipeline` est vert avec `ngc`, build, lint et
+  test réellement confinés. Preuve et limites :
+  [`securisation-page-realization-2026-09-15.md`](./securisation-page-realization-2026-09-15.md).
   **Limite explicite** : nœuds indépendants seulement — aucune arête, aucune
   précondition inter-nœuds, aucune livraison asynchrone (relève du lot graphe
   d'exécution typé, ADR-0031, non engagé). Un `load` reste comportemental (pas

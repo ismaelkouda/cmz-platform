@@ -155,7 +155,14 @@ selected Angular archetype contract (`shape`, `forbid`, path and SHA-256); the
 LLM cannot choose or rewrite that form. `verify:page-realization` rejects
 external drift, extra files, direct network calls, backend endpoint literals,
 incomplete evidence, or missing exact `data-cmz-id` mappings before running
-compilation, production build, lint, and tests.
+compilation, production build, lint, and tests. These four commands no longer
+inherit the caller environment or execute in the real workspace: a
+platform-owned runner uses a disposable Git-visible candidate, a strict
+environment allowlist, read-only dependencies, no external network, and the
+available macOS or Docker sandbox. Angular/Vitest receives loopback only and
+binds its internal server to `127.0.0.1`. The security evidence and residual
+limits are recorded in
+[`securisation-page-realization-2026-09-15.md`](../../docs/architecture/securisation-page-realization-2026-09-15.md).
 
 ```bash
 bun run prepare:page-realization -- --app my-app --page <page_id> --dry-run
