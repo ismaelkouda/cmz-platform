@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
-import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
+import {
+    mkdir,
+    mkdtemp,
+    readFile,
+    realpath,
+    rm,
+    writeFile,
+} from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -112,6 +119,71 @@ fetch('https://example.com').then(() => { clearTimeout(timer); result.network = 
         });
         assert.notEqual(observed.network, true);
         assert.deepEqual(observed.credentials, []);
+    }
+);
+
+forEachBackend(
+    'un oracle de page ne reçoit aucun secret et ne peut modifier ses dépendances',
+    async (t, backend) => {
+        const paths = await fixture(t);
+        await mkdir(join(paths.candidate, 'node_modules/protected'), {
+            recursive: true,
+        });
+        await mkdir(join(paths.candidate, '.cmz-oracle-runtime'));
+        await writeFile(
+            join(paths.candidate, 'node_modules/protected/index.js'),
+            'immutable\n'
+        );
+        const { policy, errors } = loadResolutionPolicy(repositoryRoot);
+        assert.deepEqual(errors, []);
+        const forbiddenRepository =
+            backend === 'docker'
+                ? '/host-repository-not-mounted/package.json'
+                : join(paths.repository, 'package.json');
+        const child = String.raw`
+const fs = require('node:fs');
+const result = { credentials: Object.keys(process.env).filter((key) => /(TOKEN|SECRET|PASSWORD|AUTH|SSH|GIT_|NPM_)/i.test(key)) };
+try { fs.writeFileSync(process.cwd() + '/oracle-output', 'ok'); result.candidateWrite = true; } catch (error) { result.candidateWrite = error.code; }
+try { fs.writeFileSync(process.cwd() + '/node_modules/protected/index.js', 'mutated'); result.dependencyWrite = true; } catch (error) { result.dependencyWrite = error.code; }
+try { fs.writeFileSync(${JSON.stringify(forbiddenRepository)}, 'mutated'); result.repositoryWrite = true; } catch (error) { result.repositoryWrite = error.code; }
+const timer = setTimeout(() => { result.network = 'timeout'; console.log(JSON.stringify(result)); }, 5000);
+fetch('https://example.com').then(() => { clearTimeout(timer); result.network = true; console.log(JSON.stringify(result)); }).catch((error) => { clearTimeout(timer); result.network = error.cause?.code || error.name; console.log(JSON.stringify(result)); });
+`;
+        const previous = process.env.CMZ_PAGE_ORACLE_SECRET;
+        process.env.CMZ_PAGE_ORACLE_SECRET = 'must-never-enter-the-sandbox';
+        let execution;
+        try {
+            execution = runConfined({
+                backend,
+                profile: 'execution',
+                ...paths,
+                hostExecutable: process.execPath,
+                containerExecutable: '/usr/local/bin/node',
+                argv: ['-e', child],
+                policy,
+                readOnlyCandidatePaths: ['node_modules'],
+                nxRoot: '.cmz-oracle-runtime',
+                allowLoopback: true,
+            });
+        } finally {
+            if (previous === undefined)
+                delete process.env.CMZ_PAGE_ORACLE_SECRET;
+            else process.env.CMZ_PAGE_ORACLE_SECRET = previous;
+        }
+        assert.equal(execution.status, 0, execution.stderr);
+        const observed = JSON.parse(execution.stdout.trim());
+        assert.deepEqual(observed.credentials, []);
+        assert.equal(observed.candidateWrite, true);
+        assert.notEqual(observed.dependencyWrite, true);
+        assert.notEqual(observed.repositoryWrite, true);
+        assert.notEqual(observed.network, true);
+        assert.equal(
+            await readFile(
+                join(paths.candidate, 'node_modules/protected/index.js'),
+                'utf8'
+            ),
+            'immutable\n'
+        );
     }
 );
 

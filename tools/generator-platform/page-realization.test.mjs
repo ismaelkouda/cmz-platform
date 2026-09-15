@@ -189,6 +189,21 @@ test('prépare un work order immuable et borné à cinq fichiers', async () => {
         'page.component.ts',
         'realization-evidence.json',
     ]);
+    assert.deepEqual(plan.workOrder.oracle_policy, {
+        executor: 'external-confined',
+        environment: 'allowlist',
+        filesystem: 'disposable-candidate',
+        dependencies: 'read-only',
+        network: 'loopback-only',
+        process: 'fixed-runner-no-shell-empty-path',
+    });
+    assert.ok(
+        plan.workOrder.oracle_commands.every((command) =>
+            command.startsWith(
+                'node tools/generator-platform/page-realization-oracle-runner.mjs'
+            )
+        )
+    );
     assert.equal(plan.workOrder.realization_contract.role_node.role, 'screen');
     assert.equal(
         plan.workOrder.realization_contract.selection.archetype,
@@ -237,6 +252,47 @@ test('valide mappings exacts puis exécute les quatre oracles', async () => {
     assert.equal(report.ok, true, report.violations.join('\n'));
     assert.equal(calls.length, 4);
     assert.ok(report.oracle_results.every((entry) => entry.ok));
+});
+
+test('le chemin nominal délègue les quatre contrôles à un oracle externe puis le détruit', async () => {
+    const data = await fixture();
+    const common = {
+        workspaceRoot: data.root,
+        appName: 'clean-street',
+        pageId: data.pageId,
+    };
+    const plan = planPageRealization(common);
+    await publishPageRealizationWorkOrder({
+        ...common,
+        workOrderId: plan.work_order_id,
+    });
+    await realize(data, plan.pageContractHash);
+    const calls = [];
+    let disposed = false;
+    const report = verifyPageRealization(
+        {
+            ...common,
+            workOrderId: plan.work_order_id,
+            evidenceSchema,
+        },
+        {
+            createOracle: (options) => {
+                assert.deepEqual(options, {
+                    workspaceRoot: data.root,
+                    appName: 'clean-street',
+                });
+                return {
+                    run: (name) => calls.push(name),
+                    dispose: () => {
+                        disposed = true;
+                    },
+                };
+            },
+        }
+    );
+    assert.equal(report.ok, true, report.violations.join('\n'));
+    assert.deepEqual(calls, ['compile', 'build', 'lint', 'test']);
+    assert.equal(disposed, true);
 });
 
 test('bloque écriture extérieure, réseau direct et preuve incomplète avant les oracles', async () => {
