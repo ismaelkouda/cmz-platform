@@ -41,14 +41,12 @@ export function validRecipe(overrides = {}) {
         platform: 'angular',
         packages: ['demo-pkg'],
         install: {
-            method: 'llm-then-verified',
-            prompt_contract: 'installe demo puis vérifie',
-            llm_write_paths: ['src/demo.ts'],
-            max_iterations: 3,
-            iteration_timeout_ms: 120000,
-            max_context_bytes: 262144,
-            max_response_bytes: 65536,
-            notes: 'installé puis vérifié',
+            method: 'official-schematic',
+            command: {
+                executable: 'nx',
+                argv: ['generate', 'demo:setup', '--project', '{{app}}'],
+            },
+            notes: 'fixture de recette valide',
         },
         static_invariants: [
             {

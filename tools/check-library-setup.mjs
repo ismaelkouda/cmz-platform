@@ -212,6 +212,12 @@ export function validateRecipes(rootAbs = ROOT) {
             continue;
         }
 
+        if (recipe?.install?.method === 'llm-then-verified') {
+            errors.push(
+                `${relativePath}: install.method "llm-then-verified" a été retiré ; utiliser "official-schematic" ou "reference-derived". Sa réintroduction exige un fournisseur réel et un nouvel ADR`
+            );
+        }
+
         for (const violation of validateJsonSchema(recipe, schema)) {
             errors.push(`${relativePath} ${violation}`);
         }

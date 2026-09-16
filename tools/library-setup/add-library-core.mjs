@@ -11,7 +11,7 @@ import {
     rmSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import {
     detectAppPlatform,
@@ -33,19 +33,12 @@ import {
 } from './install-protocol.mjs';
 import { buildLibraryChangeSet, buildLibraryPlan } from './library-plan.mjs';
 import {
-    executeBoundedLlm,
-    validateLlmProcessAdapter,
-} from './llm-execution.mjs';
-import {
     assertPublishableRepository,
     createCandidateCommit,
     publishCandidateCommit,
     recoverLibraryPublication,
 } from './publication-transaction.mjs';
-import {
-    addLibraryManifestEntry,
-    executeLibraryRecipe,
-} from './recipe-execution.mjs';
+import { executeLibraryRecipe } from './recipe-execution.mjs';
 import {
     loadResolutionPolicy,
     resolutionPolicySha256,
@@ -197,7 +190,6 @@ function planInputs({
     dependencyResult,
     changeSet,
     versions,
-    llmResult,
 }) {
     const before = governedSnapshotFromTree(candidate.tree);
     const appPrefix = `apps/${app}/`;
@@ -254,7 +246,6 @@ function planInputs({
             .map(([name, version]) => `${name}@${version}`)
             .join(','),
         change_set_id: changeSet.change_set_id,
-        ...(llmResult ? { llm_audit_sha256: llmResult.auditSha256 } : {}),
     };
 }
 
@@ -323,7 +314,6 @@ async function executeLibraryAddition({
     library,
     dryRun = false,
     expectPlan,
-    llmAdapter,
     runtimeProver = proveLibraryRuntime,
     onProgress = () => undefined,
     requiredTrackStatus,
@@ -402,13 +392,6 @@ async function executeLibraryAddition({
         loadLibraryConfiguration(root, app, library, {
             requiredTrackStatus,
         });
-    if (recipe.install.method === 'llm-then-verified') {
-        try {
-            validateLlmProcessAdapter(llmAdapter);
-        } catch (error) {
-            fail(`recette LLM refusée avant candidat : ${error.message}`);
-        }
-    }
     const recipeResult = validateRecipes(root);
     const backend = selectSandboxBackend();
     let candidate;
@@ -464,54 +447,18 @@ async function executeLibraryAddition({
             browserRoot: browser?.root,
         };
         onProgress({ step: 5, total: totalSteps, id: 'recipe' });
-        let llmResult;
-        if (recipe.install.method === 'llm-then-verified') {
-            addLibraryManifestEntry(
-                candidate.workspace,
-                app,
-                recipe.platform,
-                recipe.library
-            );
-            llmResult = await executeBoundedLlm({
-                repository: root,
-                candidate,
-                recipe,
-                app,
-                installedLibraries: libraries,
-                adapter: llmAdapter,
-                verify: () => {
-                    const appCheck = verifyApps(
-                        candidate.workspace,
-                        recipeResult.recipes
-                    );
-                    if (!appCheck.ok) {
-                        return { ok: false, failures: appCheck.errors };
-                    }
-                    try {
-                        runtimeProver(runtimeOptions);
-                        return { ok: true, failures: [] };
-                    } catch (error) {
-                        return { ok: false, failures: [error.message] };
-                    }
-                },
-            });
-        } else {
-            executeLibraryRecipe({
-                repository: root,
-                candidate,
-                recipe,
-                track,
-                app,
-                policy,
-                backend,
-                cache,
-                home: candidate.homes.execution,
-            });
-        }
+        executeLibraryRecipe({
+            repository: root,
+            candidate,
+            recipe,
+            track,
+            app,
+            policy,
+            backend,
+            cache,
+            home: candidate.homes.execution,
+        });
         onProgress({ step: 6, total: totalSteps, id: 'runtime-proofs' });
-        // Même après une boucle LLM réussie, les preuves sont rejouées une fois
-        // et leur résultat explicite devient une sortie gouvernée. Une simple
-        // affirmation de l'adaptateur ne peut donc jamais tenir lieu de preuve.
         const runtimeResult = runtimeProver(runtimeOptions);
         const appCheck = verifyApps(candidate.workspace, recipeResult.recipes);
         if (!appCheck.ok)
@@ -529,7 +476,6 @@ async function executeLibraryAddition({
                 dependencyResult,
                 changeSet,
                 versions,
-                llmResult,
             })
         );
         if (expectPlan && expectPlan !== plan.plan_id) {
@@ -541,14 +487,6 @@ async function executeLibraryAddition({
                 plan,
                 changeSet,
                 runtimeProofs: [...runtimeResult.proofs],
-                ...(llmResult
-                    ? {
-                          llmAudit: {
-                              path: relative(root, llmResult.auditPath),
-                              sha256: llmResult.auditSha256,
-                          },
-                      }
-                    : {}),
                 published: false,
             };
         }
@@ -599,14 +537,6 @@ async function executeLibraryAddition({
             plan,
             changeSet,
             runtimeProofs: [...runtimeResult.proofs],
-            ...(llmResult
-                ? {
-                      llmAudit: {
-                          path: relative(root, llmResult.auditPath),
-                          sha256: llmResult.auditSha256,
-                      },
-                  }
-                : {}),
             publication,
             dependencySynchronization,
             published: true,

@@ -116,7 +116,6 @@ __screenshots__/
 /apps/.*.generation-lock/
 /.cmz/retire-app-transactions/
 /.cmz/page-realization-work-orders/
-/.cmz/library-llm-audit/
 /.cmz/application-shell-integration/
 
 vite.config.*.timestamp*
