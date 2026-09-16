@@ -1,7 +1,7 @@
 # Audit de maintenabilité — automatisation de création et d'ajout de bibliothèques
 
 - **Date :** 2026-09-16
-- **Statut :** audit Staff terminé ; SIMPL-1 implémenté ; SIMPL-2…7 ouverts
+- **Statut :** audit Staff terminé ; SIMPL-1…3 implémentés ; SIMPL-4…7 ouverts
 - **Périmètre :** `create-app`, `add-library`, `create-module` et leurs gates CI
 - **Question :** le socle limite-t-il l'action humaine sans devenir opaque,
   incompréhensible ou trop coûteux à maintenir ?
@@ -359,13 +359,29 @@ Les pistes Angular Material, Tailwind et Transloco ont été repassées en
 `candidate`, puis requalifiées une par une par le vrai parcours isolé et leurs
 preuves runtime avant de retrouver `verified`.
 
-### SIMPL-3 — Découpler l'empreinte de qualification — P1, M
+### SIMPL-3 — Découpler l'empreinte de qualification — fait le 2026-09-16
 
 - remplacer le hash global du dossier par la liste fermée des sources qui
   influencent réellement chaque preuve ;
 - tester qu'un changement cosmétique ou un autre oracle ne périme pas une piste
   indépendante ;
 - tester que toute source sémantique pertinente la périme encore.
+
+**Réalisation :** l'empreinte globale de `tools/library-setup/` est remplacée
+par un manifeste fermé et visible dans chaque attestation. Il combine les
+sources communes de la qualification et les seules sources des oracles exigés
+par la piste. Les implémentations Material, Tailwind, Transloco, build et
+coexistence sont isolées par fichier ; changer l'oracle Transloco ne périme donc
+plus Material. Une acceptance sans déclaration de sources échoue avant de
+produire une preuve. Le schéma d'attestation `1.2.0` conserve le digest compact
+`runner` et expose aussi chaque entrée de `runner_sources` avec son SHA-256 pour
+la revue humaine.
+
+Les tests prouvent les deux directions : une source hors exécution ou un oracle
+étranger ne change pas le digest, tandis qu'une fixture propre ou une source
+commune le change. Angular Material, Tailwind et Transloco ont ensuite été
+repassés en `candidate` et requalifiés par leurs vrais builds et oracles isolés
+avant de retrouver `verified`. SIMPL-4 est le prochain lot.
 
 ### SIMPL-4 — Séparer qualification et application — P0, L
 

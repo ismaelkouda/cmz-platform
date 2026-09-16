@@ -129,6 +129,12 @@ manifeste manque, ou si une lib gouvernée est utilisée (empreinte détectée) 
 Intégration `create-app` et gouvernance d’upgrade :
 [`docs/architecture/library-setup-runtime-plan.md`](../docs/architecture/library-setup-runtime-plan.md).
 
+La promotion d'une piste candidate produit une attestation `1.2.0`. Son champ
+`inputs_sha256.runner_sources` expose la liste fermée des sources communes et
+des oracles réellement exécutés. Une source pertinente périme la piste ; un test
+ou l'oracle d'une autre bibliothèque ne force pas une requalification sans
+rapport. Toute acceptance sans surface de sources déclarée est refusée.
+
 ## Emplacement
 
 Les profils vivent **dans ce monorepo** — ils disent « ici on cible Angular

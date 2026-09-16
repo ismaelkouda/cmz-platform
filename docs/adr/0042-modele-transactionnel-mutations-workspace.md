@@ -1,7 +1,23 @@
 # ADR-0042 — Modèle transactionnel et d'isolation des mutations de workspace
 
-- **Statut :** Accepted et implémenté pour `add-library`, amendé par SIMPL-2
+- **Statut :** Accepted et implémenté pour `add-library`, amendé par SIMPL-2 et
+  SIMPL-3
 - **Date :** 2026-09-04
+
+## Amendement du 2026-09-16 — empreintes de qualification découplées
+
+L'attestation `1.2.0` remplace l'empreinte globale de tout
+`tools/library-setup/` par un manifeste fermé de sources. Il contient le cœur
+commun qui influence toute qualification et seulement les fichiers des oracles
+exigés par la piste. Chaque chemin et son SHA-256 sont persistés dans
+`inputs_sha256.runner_sources`; `runner` reste le digest compact dérivé de ce
+manifeste.
+
+La fermeture est fail-closed : toute nouvelle acceptance doit déclarer sa
+surface de sources avant de pouvoir être qualifiée. Une mutation d'une source
+commune ou propre périme toujours la preuve, tandis qu'un test, une
+documentation ou l'oracle d'une bibliothèque indépendante ne la périme plus. Les
+trois pistes réelles ont été requalifiées après cette migration.
 
 ## Amendement du 2026-09-16 — retrait de la voie LLM
 
@@ -366,7 +382,7 @@ revue du commit qui la porte.
 
 Le dépôt impose cependant le squash-merge : le SHA du commit source peut donc
 devenir injoignable après la fusion alors que les entrées qualifiées sont
-conservées à l'octet près. L'attestation `1.1.0` ajoute en conséquence une
+conservées à l'octet près. L'attestation `1.1.0` a ajouté en conséquence une
 empreinte du contexte source gouverné : contrat de piste, recette, contrats de
 preuve, runner, schémas, politique et configurations structurantes. Le SHA
 source demeure une trace d'audit, mais son absence après squash n'invalide plus
@@ -374,6 +390,9 @@ source demeure une trace d'audit, mais son absence après squash n'invalide plus
 empreinte et chaque contrôle spécialisé reste appliqué. Une évolution
 applicative ou documentaire sans rapport ne force donc pas une requalification ;
 toute dérive d'une entrée gouvernante la force toujours.
+
+SIMPL-3 conserve cette propriété en `1.2.0`, mais rend la composante `runner`
+spécifique à la piste et auditable chemin par chemin.
 
 **9. La sortie d'une recette est canonisée avant d'être jugée.** Un schematic ne
 produit pas du texte canonique : mesuré, le setup Material version 22 laisse des

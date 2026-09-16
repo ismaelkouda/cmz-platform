@@ -131,7 +131,11 @@ function fakeExecution(root, app, library, runtimeProofs) {
         policy_schema_sha256: inputs.policy_schema,
         compat_sha256: sha256(matrix),
         compat_schema_sha256: inputs.compat_schema,
-        runner_sha256: libraryRunnerDigest(root),
+        runner_sha256: libraryRunnerDigest(
+            root,
+            recipe,
+            validateRecipes(root).recipes
+        ),
         nx_json_sha256: inputs.nx_json,
         tsconfig_sha256: inputs.tsconfig,
         gitattributes_sha256: inputs.gitattributes,
