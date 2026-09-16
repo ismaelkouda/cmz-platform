@@ -1891,6 +1891,15 @@ Figma, désormais source partielle différée :
   réel, un nouvel audit de sécurité et un nouvel ADR sont requis pour toute
   réintroduction. Angular Material, Tailwind et Transloco ont été périmés puis
   requalifiés par leurs vraies preuves isolées. SIMPL-3 est le prochain lot.
+  **C1e — SIMPL-3 fait le 2026-09-16 :** l'empreinte globale du dossier
+  `tools/library-setup/` est remplacée par une liste fermée de sources communes
+  et de sources propres aux oracles réellement requis par chaque piste. Cette
+  liste et ses SHA-256 sont visibles dans l'attestation `1.2.0`; une acceptance
+  sans surface déclarée échoue fermée. Les tests prouvent qu'un oracle étranger
+  ne périme plus une piste indépendante et qu'une source pertinente la périme
+  toujours. Angular Material, Tailwind et Transloco ont été requalifiés par le
+  parcours réel. SIMPL-4 — séparer qualification et application — est le
+  prochain lot.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

@@ -21,6 +21,11 @@
   Les sections LLM de ce plan sont conservées comme historique, pas comme
   contrat actif. Toute réintroduction exige un fournisseur réel, un audit de
   sécurité actualisé et un nouvel ADR.
+- **Amendement SIMPL-3 du 2026-09-16 :** une piste n'empreint plus tout le
+  dossier `tools/library-setup/`. Son attestation `1.2.0` expose une liste
+  fermée de sources communes et de sources propres aux oracles qu'elle exécute.
+  Une source pertinente la périme toujours ; un test ou un oracle étranger ne
+  force plus de requalification sans rapport.
 - **Objectif servi :** créer une application sans écrire de code, puis ajouter
   une bibliothèque par **une seule commande** —
   `bun run add-library --app clean-street --library angular-material` — qui
@@ -164,7 +169,8 @@ Champs référencés par chaque entrée :
 - `plan_id`, `change_set_id`, empreinte de l'arbre applicatif et preuves runtime
   réellement retournés par `add-library` ;
 - empreintes de la recette, des schémas, de la politique, de la configuration
-  Nx/TypeScript et du runner partagé ;
+  Nx/TypeScript et du manifeste fermé des sources de runner communes et propres
+  aux oracles exigés par la piste ;
 - deux états sémantiques des dépendances : la projection initiale des seuls
   paquets demandés, puis leur fermeture transitive finale exacte dans `bun.lock`
   (dépendances, optionnelles présentes et peers requis). Une autre bibliothèque
