@@ -1882,9 +1882,15 @@ Figma, désormais source partielle différée :
   contrat rapide bloquant dans les garde-fous. La preuve profonde complète est
   conservée chaque nuit sur Linux, macOS et sur le parcours
   `create-app → Material → Tailwind`. Les tests du classifieur et de la
-  politique YAML bloquent les faux négatifs de câblage. SIMPL-2 est le prochain
-  lot et aucune réduction de garantie de sécurité n'a été utilisée pour fermer
-  SIMPL-1.
+  politique YAML bloquent les faux négatifs de câblage. Aucune réduction de
+  garantie de sécurité n'a été utilisée pour fermer SIMPL-1.
+  **C1d — SIMPL-2 fait le 2026-09-16 :** la voie dormante
+  `llm-then-verified` est absente du schéma et du cœur `add-library`; son runner,
+  sa fixture et ses tests dédiés (1 312 lignes) sont supprimés. Le validateur
+  refuse explicitement les anciennes recettes et rappelle qu'un fournisseur
+  réel, un nouvel audit de sécurité et un nouvel ADR sont requis pour toute
+  réintroduction. Angular Material, Tailwind et Transloco ont été périmés puis
+  requalifiés par leurs vraies preuves isolées. SIMPL-3 est le prochain lot.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
