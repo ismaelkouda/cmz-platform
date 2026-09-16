@@ -1875,6 +1875,16 @@ Figma, désormais source partielle différée :
   simplification des commandes, puis budget obligatoire pour les compositions
   v2. Aucune garantie existante n'est supprimée avant remplacement prouvé, mais
   aucune extension du modèle actuel n'est admise.
+  **C1c — SIMPL-1 fait le 2026-09-16 :** les trois contextes GitHub bibliothèque
+  restent stables et exécutent toujours un sélecteur Node fail-closed. Bun,
+  l'installation et les preuves isolation/E2E ne tournent désormais que si le
+  diff touche leur surface de risque déclarée ; `check:library-setup` reste le
+  contrat rapide bloquant dans les garde-fous. La preuve profonde complète est
+  conservée chaque nuit sur Linux, macOS et sur le parcours
+  `create-app → Material → Tailwind`. Les tests du classifieur et de la
+  politique YAML bloquent les faux négatifs de câblage. SIMPL-2 est le prochain
+  lot et aucune réduction de garantie de sécurité n'a été utilisée pour fermer
+  SIMPL-1.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
