@@ -75,8 +75,8 @@
   approbation CODEOWNERS, l'invalidation des reviews périmées, l'approbation du
   dernier push, l'historique linéaire et l'interdiction des force-pushes et
   suppressions. Les deux relecteurs couvrent toutes les zones. Nx Cloud est
-  connecté avec l'id `69cfa6ba213c8001d0f75641` et son secret CI ; le run
-  `main` [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
+  connecté avec l'id `69cfa6ba213c8001d0f75641` et son secret CI ; le run `main`
+  [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
   a servi 41/74 tâches de lint depuis le cache distant (55,41 %), et le nightly
   [#34823198590](https://github.com/ismaelkouda/cmz-platform/actions/runs/34823198590)
   est vert. OPS-2, OPS-3/T6-4 et OPS-4 sont clos.
@@ -1240,203 +1240,199 @@ Figma, désormais source partielle différée :
   `-27.9 %`), marge sous le seuil d'alerte `900 kB` passée de `~1 kB` (cause de
   la dérive nightly) à `~271 kB`. `nx build backoffice-angular:build:production`
   et `nx lint --max-warnings=0` verts sur le résultat final.
-- **OPS-26** — **fait** (2026-09-12), L, P1.
-  Constaté le 2026-09-10 en marge du durcissement de `main` (PR #34) :
-  **Dependabot npm ne régénérait pas `bun.lock` au moment du constat**. Le
-  robot mettait à jour
-  `package.json` mais ne recalculait pas le lockfile Bun sauf pour un bump
-  trivial d'une seule dépendance sans mouvement d'arbre — toutes les autres
-  PR échouent d'entrée à `bun install --frozen-lockfile`. Le commentaire de
-  `.github/dependabot.yml` affirme toujours à tort « Dependabot ouvre une PR
-  de mise à jour du lockfile racine ».
-  - **Backlog existant (2026-09-10/11) : traité manuellement**, option (2)
-    du mémo d'origine — bump + `bun install` + `bun run check:all` local,
-    une PR dédiée par sujet, palier par palier pour les majors. Ferme #10,
-    #11, #20-28 : nx 23.2.0 (PR #37, révèle et corrige au passage la
-    suppression d'`overrides.svgo` devenu mort — voir commit dédié),
-    lot patch/minor (PR #39), `@types/node` 22→26 (PR #40, 3 paliers,
-    0 impact), `jsdom` 27→30 (PR #41, 3 paliers, 1 impact réel — override
-    `undici` — corrigé), `eslint` 9→10 (PR #42, 15 erreurs de lint réelles
-    corrigées + périmage/requalification des attestations de compat comme
-    effet de bord), `@types/react-dom` patch (PR #45). `ci(deps:)`/`docker`
-    restants traités séparément (PR #43, #44 — hors périmètre bun.lock,
-    voir OPS-31).
-  - **Réévaluation Staff 2026-09-12 — canary Bun natif prioritaire.** GitHub
-    documente désormais `package-ecosystem: bun` pour Bun >= 1.1.39 et la
-    prise en charge du `bun.lock` texte. Le dépôt, pourtant épinglé sur Bun
-    1.3.14, utilisait encore l'updater `npm`. Bascule vers l'écosystème `bun`,
-    sans changer les groupes ni la cadence, et ajout d'un garde bloquant :
-    égalité stricte entre les `catalog/catalogs` de `package.json` et de
-    `bun.lock`, plus formats du lockfile figés. Tests purs dédiés et câblage à
-    `check:all`/`Garde-fous socle`. Le canary est accepté seulement lorsqu'une
-    vraie PR bot modifie aussi `bun.lock` et passe les 16 checks sans retouche
-    humaine. Risques upstream explicitement couverts : dependabot-core#12522
-    (catalogues supprimés) et #15897/#15848 (version Bun embarquée/format).
-  - **Validation réelle du canary (2026-09-12).** La PR #47 a été fusionnée,
-    puis Dependabot Bun a ouvert dix vraies PR (#48 à #57), toutes avec
-    `bun.lock`. La PR #48 est le témoin complet : un seul commit du bot,
-    `package.json` + `bun.lock`, catalogues préservés, 16 checks requis + SAST
-    verts, sans retouche humaine. La CI post-fusion de `main` est verte. Les
-    échecs observés ailleurs sont désormais des signaux applicatifs utiles :
-    #52 expose l'incompatibilité réelle de Vitest 5 et #50 a révélé une nouvelle
-    signature Darwin de runner, suivie sous OPS-32.
-  - **Fallback archivé — CI auto-réparatrice**, à reprendre uniquement si
-    l'écosystème Bun régresse. Le plan de sécurité reste utile, avec une
-    correction :
-    préférer un token d'installation court de GitHub App mono-dépôt à un PAT
-    personnel permanent.
-    - Contrainte bloquante identifiée : GitHub n'expose **aucun secret**
-      aux workflows déclenchés par une PR de `dependabot[bot]`
-      (anti-exfiltration, cf. OPS-22/23) → un déclencheur `pull_request`
-      classique ne peut jamais avoir les droits d'écriture requis.
-    - Deuxième contrainte : une PR mise à jour avec le `GITHUB_TOKEN` peut
-      redéclencher la CI, mais les runs sont placés en attente d'approbation ;
-      l'autonomie exige donc une identité GitHub App dédiée.
-    - Conception retenue : workflow **`schedule` (cron, lundi ~06h UTC,
-      quelques heures après le passage hebdomadaire de Dependabot) +
-      `workflow_dispatch`**, jamais `pull_request`/`pull_request_target`.
-      Liste les PR ouvertes de `dependabot[bot]` sur `main` dont la branche
-      commence par `dependabot/npm_and_yarn/`, pour chacune : checkout →
-      `bun install --lockfile-only --ignore-scripts` → validation que seul
-      `bun.lock` a changé → commit + push avec un **token d'installation
-      GitHub App** limité à ce dépôt et `Contents: write`. Le checkout et la
-      résolution restent sans identifiant d'écriture ; le token court n'est
-      exposé qu'à l'étape finale.
-    - Fichiers prévus : `.github/workflows/dependabot-lockfile-fix.yml`,
-      `tools/fix-dependabot-lockfile.mjs` + `.test.mjs` (logique de
-      filtrage/détection de diff testable en pur), mise à jour du
-      commentaire de `.github/dependabot.yml`.
-    - **Action humaine seulement si fallback activé** : créer la GitHub App,
-      l'installer sur ce seul dépôt et enregistrer sa clé privée comme secret.
-    - Check-list sécurité du fallback : permissions minimales,
-      `--lockfile-only --ignore-scripts`, `persist-credentials: false`, jamais
-      de `pull_request`/`pull_request_target`, SHA de tête immuable revalidé,
-      job qui ne touche que `bun.lock`, filtre strict sur auteur et branche.
+- **OPS-26** — **fait** (2026-09-12), L, P1. Constaté le 2026-09-10 en marge du
+  durcissement de `main` (PR #34) : **Dependabot npm ne régénérait pas
+  `bun.lock` au moment du constat**. Le robot mettait à jour `package.json` mais
+  ne recalculait pas le lockfile Bun sauf pour un bump trivial d'une seule
+  dépendance sans mouvement d'arbre — toutes les autres PR échouent d'entrée à
+  `bun install --frozen-lockfile`. Le commentaire de `.github/dependabot.yml`
+  affirme toujours à tort « Dependabot ouvre une PR de mise à jour du lockfile
+  racine ».
+    - **Backlog existant (2026-09-10/11) : traité manuellement**, option (2) du
+      mémo d'origine — bump + `bun install` + `bun run check:all` local, une PR
+      dédiée par sujet, palier par palier pour les majors. Ferme #10, #11,
+      #20-28 : nx 23.2.0 (PR #37, révèle et corrige au passage la suppression
+      d'`overrides.svgo` devenu mort — voir commit dédié), lot patch/minor (PR
+      #39), `@types/node` 22→26 (PR #40, 3 paliers, 0 impact), `jsdom` 27→30 (PR
+      #41, 3 paliers, 1 impact réel — override `undici` — corrigé), `eslint`
+      9→10 (PR #42, 15 erreurs de lint réelles corrigées +
+      périmage/requalification des attestations de compat comme effet de bord),
+      `@types/react-dom` patch (PR #45). `ci(deps:)`/`docker` restants traités
+      séparément (PR #43, #44 — hors périmètre bun.lock, voir OPS-31).
+    - **Réévaluation Staff 2026-09-12 — canary Bun natif prioritaire.** GitHub
+      documente désormais `package-ecosystem: bun` pour Bun >= 1.1.39 et la
+      prise en charge du `bun.lock` texte. Le dépôt, pourtant épinglé sur Bun
+      1.3.14, utilisait encore l'updater `npm`. Bascule vers l'écosystème `bun`,
+      sans changer les groupes ni la cadence, et ajout d'un garde bloquant :
+      égalité stricte entre les `catalog/catalogs` de `package.json` et de
+      `bun.lock`, plus formats du lockfile figés. Tests purs dédiés et câblage à
+      `check:all`/`Garde-fous socle`. Le canary est accepté seulement lorsqu'une
+      vraie PR bot modifie aussi `bun.lock` et passe les 16 checks sans retouche
+      humaine. Risques upstream explicitement couverts : dependabot-core#12522
+      (catalogues supprimés) et #15897/#15848 (version Bun embarquée/format).
+    - **Validation réelle du canary (2026-09-12).** La PR #47 a été fusionnée,
+      puis Dependabot Bun a ouvert dix vraies PR (#48 à #57), toutes avec
+      `bun.lock`. La PR #48 est le témoin complet : un seul commit du bot,
+      `package.json` + `bun.lock`, catalogues préservés, 16 checks requis + SAST
+      verts, sans retouche humaine. La CI post-fusion de `main` est verte. Les
+      échecs observés ailleurs sont désormais des signaux applicatifs utiles :
+      #52 expose l'incompatibilité réelle de Vitest 5 et #50 a révélé une
+      nouvelle signature Darwin de runner, suivie sous OPS-32.
+    - **Fallback archivé — CI auto-réparatrice**, à reprendre uniquement si
+      l'écosystème Bun régresse. Le plan de sécurité reste utile, avec une
+      correction : préférer un token d'installation court de GitHub App
+      mono-dépôt à un PAT personnel permanent.
+        - Contrainte bloquante identifiée : GitHub n'expose **aucun secret** aux
+          workflows déclenchés par une PR de `dependabot[bot]`
+          (anti-exfiltration, cf. OPS-22/23) → un déclencheur `pull_request`
+          classique ne peut jamais avoir les droits d'écriture requis.
+        - Deuxième contrainte : une PR mise à jour avec le `GITHUB_TOKEN` peut
+          redéclencher la CI, mais les runs sont placés en attente d'approbation
+          ; l'autonomie exige donc une identité GitHub App dédiée.
+        - Conception retenue : workflow **`schedule` (cron, lundi ~06h UTC,
+          quelques heures après le passage hebdomadaire de Dependabot) +
+          `workflow_dispatch`**, jamais `pull_request`/`pull_request_target`.
+          Liste les PR ouvertes de `dependabot[bot]` sur `main` dont la branche
+          commence par `dependabot/npm_and_yarn/`, pour chacune : checkout →
+          `bun install --lockfile-only --ignore-scripts` → validation que seul
+          `bun.lock` a changé → commit + push avec un **token d'installation
+          GitHub App** limité à ce dépôt et `Contents: write`. Le checkout et la
+          résolution restent sans identifiant d'écriture ; le token court n'est
+          exposé qu'à l'étape finale.
+        - Fichiers prévus : `.github/workflows/dependabot-lockfile-fix.yml`,
+          `tools/fix-dependabot-lockfile.mjs` + `.test.mjs` (logique de
+          filtrage/détection de diff testable en pur), mise à jour du
+          commentaire de `.github/dependabot.yml`.
+        - **Action humaine seulement si fallback activé** : créer la GitHub App,
+          l'installer sur ce seul dépôt et enregistrer sa clé privée comme
+          secret.
+        - Check-list sécurité du fallback : permissions minimales,
+          `--lockfile-only --ignore-scripts`, `persist-credentials: false`,
+          jamais de `pull_request`/`pull_request_target`, SHA de tête immuable
+          revalidé, job qui ne touche que `bun.lock`, filtre strict sur auteur
+          et branche.
 - **OPS-27** — **fait** (2026-09-11), M, P1, alias `G-2 · P1-13`. Durcissement
   de la protection de `main`, appliqué et vérifié en conditions réelles (mis en
   pause le 2026-09-10, repris et terminé le 2026-09-11 sur décision explicite).
-  PR #34 (gouvernance) fusionnée. `bun run protect:main` exécuté : `gh api
-  repos/ismaelkouda/cmz-platform/branches/main/protection` confirme
-  `protected: true`, les 16 contextes requis, `enforce_admins: true`,
-  1 approbation CODEOWNERS avec `dismiss_stale_reviews` +
+  PR #34 (gouvernance) fusionnée. `bun run protect:main` exécuté :
+  `gh api repos/ismaelkouda/cmz-platform/branches/main/protection` confirme
+  `protected: true`, les 16 contextes requis, `enforce_admins: true`, 1
+  approbation CODEOWNERS avec `dismiss_stale_reviews` +
   `require_last_push_approval`, `required_linear_history`, force-push et
   suppression interdits. Réglages de fusion du dépôt : squash uniquement,
   `delete_branch_on_merge: true`. **Vérifié empiriquement, pas seulement
   configuré** : un push direct (commit vide de test, jamais arrivé sur `main`)
-  refusé par GitHub (`GH006: Protected branch update failed... Changes must
-  be made through a pull request`) ; la PR #45 (patch `@types/react-dom`),
-  17/17 checks verts, restée `mergeStateStatus: BLOCKED` /
-  `reviewDecision: REVIEW_REQUIRED` jusqu'à l'approbation de
-  `@soumailakouda` — la CI verte seule ne suffit plus à fusionner.
+  refusé par GitHub
+  (`GH006: Protected branch update failed... Changes must be made through a pull request`)
+  ; la PR #45 (patch `@types/react-dom`), 17/17 checks verts, restée
+  `mergeStateStatus: BLOCKED` / `reviewDecision: REVIEW_REQUIRED` jusqu'à
+  l'approbation de `@soumailakouda` — la CI verte seule ne suffit plus à
+  fusionner.
 - **OPS-28** — **fait** (2026-09-11), M, P1, alias `OPS-25 suite`. Le job
-  nightly `Oracle Tier 2 — backoffice-angular` était rouge **19 des 20
-  derniers runs** (`gh run list --workflow=nightly-integration.yml`,
-  historique du 2026-08-26 au 2026-09-11). Deux causes cumulées, aucun lien
-  avec une régression de code :
-  1. La step "Record + verify bundle-metrics.json" mesurait le dist du
-     rebuild `--source-map=true` (step suivante à l'époque), pas celui du
-     build production propre — un `sourceMappingURL` injecté change les
-     octets et le hash de nom de chaque fichier. Corrigé : la mesure tourne
-     maintenant immédiatement après "Build production", avant le rebuild
-     sourcemap.
-  2. `generate-status.mjs` (`STATUS_DATE`) et `record-bundle-metrics.mjs`
-     tamponnent la date du jour à chaque régénération. `check:docs-freshness`
-     fige déjà cette date sur celle commitée (mécanisme correct, existant) ;
-     la step nightly, elle, faisait un `git diff --exit-code` brut après un
-     `bun run generate:status` sans figer — la ligne « dernière génération »
-     dérivait donc chaque nuit sans schedule reliée à un commit, même sans
-     aucun octet de contenu différent. **`record-bundle-metrics.mjs` n'avait
-     aucun mécanisme équivalent** pour son `measured_at`. Corrigé :
-     `BUNDLE_METRICS_DATE` (même pattern que `STATUS_DATE`) ajouté à
-     `record-bundle-metrics.mjs` ; nouveau `check:bundle-metrics-freshness.mjs`
-     (miroir de `check-docs-freshness.mjs`) fige cette date avant de mesurer,
-     tests `node:test` dédiés (mesure inchangée → vert, drift réel → rouge,
-     fichier absent → rouge explicite). La step nightly appelle maintenant
-     `bun run check:docs-freshness && bun run check:bundle-metrics-freshness`
-     au lieu du `git diff` à la main.
-  3. Validation du correctif par `workflow_dispatch` réel (pas seulement
-     local) : le build production **n'est pas garanti bit-à-bit identique
-     macOS/ubuntu-latest** — `main-*.js` identique (505 232 octets, même
-     hash), mais `styles-*.css` diffère (28 549 vs 28 621 octets, hash
-     différent), sans changement de code. `bundle-metrics.json` doit donc
-     toujours être (re)mesuré et committé depuis un run CI réel, jamais
-     depuis un poste de dev — documenté dans `record-bundle-metrics.mjs` et
-     le commentaire du job. Step `Publier bundle-metrics.json mesuré
-     (debug drift)` ajoutée (`if: failure()`) pour récupérer les octets
-     réels sans deviner.
-  **Drift réel détecté au passage** (pas seulement l'outillage) : le bundle
-  initial est passé de `526.38 kB` (commit du 2026-08-30) à `534.54 kB`
-  (mesuré en CI le 2026-09-11, après le bump nx 23.2.0 — cf. OPS-26/PR #37),
-  sous le seuil d'avertissement `900 kB` (ADR-0016). `bundle-metrics.json` +
-  `STATUS.md`/`README.md`/`LLM_CONTEXT.md`/`etat-du-socle.md` recommittés à
-  jour, avec la mesure CI réelle (`gh run download … -n bundle-metrics-measured`),
-  pas une mesure locale. `check:ci-wiring` : 40 gates (nouveau
-  `check:bundle-metrics-freshness` dans `REQUIRED_STANDALONE_SCRIPTS`, ci-wiring
-  confirme la step nightly qui l'appelle).
-- **OPS-30** — **fait** (2026-09-11), M, P1, alias `OPS-26 suite`. `eslint`
-  9→10 (ferme #11+#24, indissociables : `@eslint/js@10` exige `eslint
-  ^10.0.0` en peer). Sur les 5 paquets du groupe, seul `eslint` est
-  réellement chargé par `eslint.config.mjs` — `@eslint/js`,
-  `eslint-plugin-import`, `eslint-plugin-jsx-a11y`,
-  `eslint-plugin-react-hooks` sont tous dans l'`ignoreDependencies` de
-  `knip.json`, jamais importés nulle part (vérifié par `grep` avant tout
-  bump). `eslint-plugin-react-hooks` bumpé directement `5.0.0 → 7.1.1` sans
-  palier (dormant, aucun code ne l'exerce, pas de major `6` stable ayant de
-  sens à isoler).
-  - `nx lint` (74 projets) : **0 impact**.
-  - `check:lint-tools` (`tools/**/*.mjs`, hors périmètre `nx lint`) :
-    **15 erreurs réelles, 2 règles nouvellement actives.** Corrigées, pas
-    désactivées : `preserve-caught-error` (13×, 9 fichiers — `throw` dans
-    un `catch` sans `{ cause: error }`, corrigé partout, préserve l'erreur
-    d'origine) et `no-useless-assignment` (2×,
-    `generation-publication.mjs` — initialiseur `let
-    preserveTransactionRoot = false` mort, les deux branches try/catch le
-    réassignent avant lecture, initialiseur retiré).
-  - **Effet de bord découvert en le vivant** : le correctif de
-    `llm-execution.mjs` (sous `tools/library-setup/`) a périmé les 3
-    attestations de compatibilité — `tooling-fingerprint.mjs` hache tout
-    le contenu non-test de `tools/library-setup/` comme empreinte
-    « runner », et cette empreinte fait partie de `verification` (cf.
-    OPS-26/PR #37, même mécanisme). Cycle périmer → requalifier rejoué à
-    l'identique (10/10 preuves vertes), confirme que le garde ADR-0041 n'a
-    aucun angle mort même pour un correctif de lint sans rapport
-    fonctionnel avec `add-library`.
-  `check:all` vert. `bun audit --audit-level=high` : 0 vulnérabilité.
+  nightly `Oracle Tier 2 — backoffice-angular` était rouge **19 des 20 derniers
+  runs** (`gh run list --workflow=nightly-integration.yml`, historique du
+  2026-08-26 au 2026-09-11). Deux causes cumulées, aucun lien avec une
+  régression de code :
+    1. La step "Record + verify bundle-metrics.json" mesurait le dist du rebuild
+       `--source-map=true` (step suivante à l'époque), pas celui du build
+       production propre — un `sourceMappingURL` injecté change les octets et le
+       hash de nom de chaque fichier. Corrigé : la mesure tourne maintenant
+       immédiatement après "Build production", avant le rebuild sourcemap.
+    2. `generate-status.mjs` (`STATUS_DATE`) et `record-bundle-metrics.mjs`
+       tamponnent la date du jour à chaque régénération. `check:docs-freshness`
+       fige déjà cette date sur celle commitée (mécanisme correct, existant) ;
+       la step nightly, elle, faisait un `git diff --exit-code` brut après un
+       `bun run generate:status` sans figer — la ligne « dernière génération »
+       dérivait donc chaque nuit sans schedule reliée à un commit, même sans
+       aucun octet de contenu différent. **`record-bundle-metrics.mjs` n'avait
+       aucun mécanisme équivalent** pour son `measured_at`. Corrigé :
+       `BUNDLE_METRICS_DATE` (même pattern que `STATUS_DATE`) ajouté à
+       `record-bundle-metrics.mjs` ; nouveau
+       `check:bundle-metrics-freshness.mjs` (miroir de
+       `check-docs-freshness.mjs`) fige cette date avant de mesurer, tests
+       `node:test` dédiés (mesure inchangée → vert, drift réel → rouge, fichier
+       absent → rouge explicite). La step nightly appelle maintenant
+       `bun run check:docs-freshness && bun run check:bundle-metrics-freshness`
+       au lieu du `git diff` à la main.
+    3. Validation du correctif par `workflow_dispatch` réel (pas seulement
+       local) : le build production **n'est pas garanti bit-à-bit identique
+       macOS/ubuntu-latest** — `main-*.js` identique (505 232 octets, même
+       hash), mais `styles-*.css` diffère (28 549 vs 28 621 octets, hash
+       différent), sans changement de code. `bundle-metrics.json` doit donc
+       toujours être (re)mesuré et committé depuis un run CI réel, jamais depuis
+       un poste de dev — documenté dans `record-bundle-metrics.mjs` et le
+       commentaire du job. Step
+       `Publier bundle-metrics.json mesuré (debug drift)` ajoutée
+       (`if: failure()`) pour récupérer les octets réels sans deviner. **Drift
+       réel détecté au passage** (pas seulement l'outillage) : le bundle initial
+       est passé de `526.38 kB` (commit du 2026-08-30) à `534.54 kB` (mesuré en
+       CI le 2026-09-11, après le bump nx 23.2.0 — cf. OPS-26/PR #37), sous le
+       seuil d'avertissement `900 kB` (ADR-0016). `bundle-metrics.json` +
+       `STATUS.md`/`README.md`/`LLM_CONTEXT.md`/`etat-du-socle.md` recommittés à
+       jour, avec la mesure CI réelle
+       (`gh run download … -n bundle-metrics-measured`), pas une mesure locale.
+       `check:ci-wiring` : 40 gates (nouveau `check:bundle-metrics-freshness`
+       dans `REQUIRED_STANDALONE_SCRIPTS`, ci-wiring confirme la step nightly
+       qui l'appelle).
+- **OPS-30** — **fait** (2026-09-11), M, P1, alias `OPS-26 suite`. `eslint` 9→10
+  (ferme #11+#24, indissociables : `@eslint/js@10` exige `eslint ^10.0.0` en
+  peer). Sur les 5 paquets du groupe, seul `eslint` est réellement chargé par
+  `eslint.config.mjs` — `@eslint/js`, `eslint-plugin-import`,
+  `eslint-plugin-jsx-a11y`, `eslint-plugin-react-hooks` sont tous dans
+  l'`ignoreDependencies` de `knip.json`, jamais importés nulle part (vérifié par
+  `grep` avant tout bump). `eslint-plugin-react-hooks` bumpé directement
+  `5.0.0 → 7.1.1` sans palier (dormant, aucun code ne l'exerce, pas de major `6`
+  stable ayant de sens à isoler).
+    - `nx lint` (74 projets) : **0 impact**.
+    - `check:lint-tools` (`tools/**/*.mjs`, hors périmètre `nx lint`) : **15
+      erreurs réelles, 2 règles nouvellement actives.** Corrigées, pas
+      désactivées : `preserve-caught-error` (13×, 9 fichiers — `throw` dans un
+      `catch` sans `{ cause: error }`, corrigé partout, préserve l'erreur
+      d'origine) et `no-useless-assignment` (2×, `generation-publication.mjs` —
+      initialiseur `let preserveTransactionRoot = false` mort, les deux branches
+      try/catch le réassignent avant lecture, initialiseur retiré).
+    - **Effet de bord découvert en le vivant** : le correctif de
+      `llm-execution.mjs` (sous `tools/library-setup/`) a périmé les 3
+      attestations de compatibilité — `tooling-fingerprint.mjs` hache tout le
+      contenu non-test de `tools/library-setup/` comme empreinte « runner », et
+      cette empreinte fait partie de `verification` (cf. OPS-26/PR #37, même
+      mécanisme). Cycle périmer → requalifier rejoué à l'identique (10/10
+      preuves vertes), confirme que le garde ADR-0041 n'a aucun angle mort même
+      pour un correctif de lint sans rapport fonctionnel avec `add-library`.
+      `check:all` vert. `bun audit --audit-level=high` : 0 vulnérabilité.
 - **OPS-31** — **fait** (2026-09-11), S, P2, alias `OPS-26 suite`. Bumps
-  `ci(deps:)`/`docker` restants, tous périmés depuis plusieurs semaines
-  chez Dependabot (`mergeStateStatus` non recalculé) :
-  - `actions/checkout` v4→v7, `actions/setup-node` v4→v7,
-    `actions/upload-artifact` v4→v7, `actions/setup-python` v5→v7 (ferme
-    #5, #6, #7, #16) — appliqués aux 3 workflows, notes de version
-    officielles relues avant application (migration ESM interne sans
-    impact consommateur ; `setup-python` retire l'input `pip-install`,
-    non utilisé ici, vérifié par `grep`). Preuve : run CI réel de la PR,
-    17/17 verts — les 4 actions exercées sur tous les jobs bloquants.
-  - `nginx` 1.27→1.31-alpine, `oven/bun` 1.4.0→1.4.2-debian (ferme #4,
-    #31). **Aucun workflow ne construit jamais `Dockerfile`** — seule
-    vérification possible : build local réel. Bloqué une première fois
-    par un backend Docker Desktop dégradé (accepte la connexion socket
-    puis `EOF` immédiat sur `docker ps`/`buildx`/`curl --unix-socket`,
-    process backend pourtant vivant) — résolu par redémarrage complet de
-    Docker Desktop (kill des process `com.docker.backend` + relance),
-    sur autorisation explicite.
-  - **Bug réel trouvé en construisant, indépendant des bumps de
-    version** : le build échoue sur `NX Cloud: Workspace is unable to be
-    authorized` — `Dockerfile` ne définissait jamais `NX_NO_CLOUD`,
-    contrairement aux 3 workflows CI qui portent ce fallback depuis
-    OPS-22/OPS-23 (2026-08-19). Confirmé pré-existant sur `main` (`git
-    show main:Dockerfile`, même absence). Invisible depuis 3 semaines
-    faute de tout CI qui construise l'image. Corrigé : `ENV
-    NX_NO_CLOUD=true` ajouté.
-  - Vérification complète en exécution réelle après correction : build
-    image → run conteneur (`docker run` avec les variables `CMZ_*`
-    documentées dans `Dockerfile`) → `HEALTHCHECK` passe (`Up … (healthy)`)
-    → `curl` sur `/` → `200` → `env.js` inspecté dans le conteneur :
-    substitution `envsubst` correcte (URLs, `enableDebug: false`,
-    `trustedFrameOrigins` converti en tableau JSON) — pas une supposition,
-    le pipeline `docker-entrypoint.sh` complet a tourné.
-- **OPS-32** — **fait localement** (2026-09-12), S, P0, alias `OPS-21 suite`.
-  La PR Dependabot #50 a échoué sur `Publication durability (macos-apfs)` avec
+  `ci(deps:)`/`docker` restants, tous périmés depuis plusieurs semaines chez
+  Dependabot (`mergeStateStatus` non recalculé) :
+    - `actions/checkout` v4→v7, `actions/setup-node` v4→v7,
+      `actions/upload-artifact` v4→v7, `actions/setup-python` v5→v7 (ferme #5,
+      #6, #7, #16) — appliqués aux 3 workflows, notes de version officielles
+      relues avant application (migration ESM interne sans impact consommateur ;
+      `setup-python` retire l'input `pip-install`, non utilisé ici, vérifié par
+      `grep`). Preuve : run CI réel de la PR, 17/17 verts — les 4 actions
+      exercées sur tous les jobs bloquants.
+    - `nginx` 1.27→1.31-alpine, `oven/bun` 1.4.0→1.4.2-debian (ferme #4, #31).
+      **Aucun workflow ne construit jamais `Dockerfile`** — seule vérification
+      possible : build local réel. Bloqué une première fois par un backend
+      Docker Desktop dégradé (accepte la connexion socket puis `EOF` immédiat
+      sur `docker ps`/`buildx`/`curl --unix-socket`, process backend pourtant
+      vivant) — résolu par redémarrage complet de Docker Desktop (kill des
+      process `com.docker.backend` + relance), sur autorisation explicite.
+    - **Bug réel trouvé en construisant, indépendant des bumps de version** : le
+      build échoue sur `NX Cloud: Workspace is unable to be authorized` —
+      `Dockerfile` ne définissait jamais `NX_NO_CLOUD`, contrairement aux 3
+      workflows CI qui portent ce fallback depuis OPS-22/OPS-23 (2026-08-19).
+      Confirmé pré-existant sur `main` (`git show main:Dockerfile`, même
+      absence). Invisible depuis 3 semaines faute de tout CI qui construise
+      l'image. Corrigé : `ENV NX_NO_CLOUD=true` ajouté.
+    - Vérification complète en exécution réelle après correction : build image →
+      run conteneur (`docker run` avec les variables `CMZ_*` documentées dans
+      `Dockerfile`) → `HEALTHCHECK` passe (`Up … (healthy)`) → `curl` sur `/` →
+      `200` → `env.js` inspecté dans le conteneur : substitution `envsubst`
+      correcte (URLs, `enableDebug: false`, `trustedFrameOrigins` converti en
+      tableau JSON) — pas une supposition, le pipeline `docker-entrypoint.sh`
+      complet a tourné.
+- **OPS-32** — **fait localement** (2026-09-12), S, P0, alias `OPS-21 suite`. La
+  PR Dependabot #50 a échoué sur `Publication durability (macos-apfs)` avec
   `unsupported filesystem darwin:27`. Ce n'est ni Vitest ni l'updater Bun : le
   job s'arrête avant les tests. Preuve croisée : le job vert post-fusion de
   `main` et le job rouge #50 utilisent exactement le runner `macos-14-arm64`,
@@ -1456,9 +1452,9 @@ Figma, désormais source partielle différée :
   la prochaine fusion squash. La sortie attendue est une provenance stable et
   adressée par le contenu, qui survit à `branche → squash → main`, invalide
   toujours toute modification sémantique et n'accorde aucune écriture
-  privilégiée aux PR non fiables. Un test d'intégration doit reproduire le
-  cycle complet ; la politique squash-only, l'historique linéaire et les
-  protections de `main` restent inchangés.
+  privilégiée aux PR non fiables. Un test d'intégration doit reproduire le cycle
+  complet ; la politique squash-only, l'historique linéaire et les protections
+  de `main` restent inchangés.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
@@ -1835,9 +1831,9 @@ Figma, désormais source partielle différée :
   variantes incluses) sont tous fait/fait localement, confirmés CI verte (voir
   PLAT-6 ci-dessus et §6 promotion M4) — ce chantier peut être engagé.
 - **PLAT-9** — partiel (socle local fait le 2026-09-07, preuve réelle ouverte),
-  M, P1, [issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64), alias
-  `réalisation d'écran multi-nœuds indépendants`.
-  **Audit préalable `list-query` (2026-09-15) :**
+  M, P1, [issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64),
+  alias `réalisation d'écran multi-nœuds indépendants`. **Audit préalable
+  `list-query` (2026-09-15) :**
   [`audit-list-query-2026-09-15.md`](./audit-list-query-2026-09-15.md). Verdict
   Staff : infrastructure de génération solide, mais composition interdite en
   production avant correction des release blockers auth/cache, nullabilité,
@@ -1847,21 +1843,21 @@ Figma, désormais source partielle différée :
   reproduction de SEOS avant satisfaction des critères de sortie de l'audit.
   **Audit préalable `action-request` (2026-09-15) :**
   [`audit-action-request-2026-09-15.md`](./audit-action-request-2026-09-15.md).
-  Verdict Staff : génération déterministe et oracles isolés solides, mais
-  statut `proven` insuffisant pour autoriser la production. Blockers confirmés :
-  Bearer du host sur actions publiques, validation facultative et incomplète,
-  absence de décodage runtime, verbes/path/media types non réalisés, succès
-  distant transformé en échec local rejouable, absence d'idempotence et
-  d'invalidation déclarative des queries. Toute refonte incompatible suit
-  ADR-0039 (`action-request` v2 + migrateur) et se lie au `backend-contract`.
-  **C1a — confinement v1 fait localement le 2026-09-16 :** le registre reflète
-  désormais le verdict des audits : `list-query` et `action-request` v1 sont
-  tous deux `experimental`. `create-module` les refuse avant toute écriture,
-  sauf consentement initial explicite `--allow-experimental`; ce consentement
-  ne contourne aucun gate et n'est accepté ni en reprise ni en abandon. Les
-  preuves v1 restent lisibles pour construire les migrateurs. Cette tranche ne
-  prétend fermer aucun blocker runtime et ne remplace pas `list-query` 2.0.
-  **C1b — audit de maintenabilité de l'automatisation fait le 2026-09-16 :**
+  Verdict Staff : génération déterministe et oracles isolés solides, mais statut
+  `proven` insuffisant pour autoriser la production. Blockers confirmés : Bearer
+  du host sur actions publiques, validation facultative et incomplète, absence
+  de décodage runtime, verbes/path/media types non réalisés, succès distant
+  transformé en échec local rejouable, absence d'idempotence et d'invalidation
+  déclarative des queries. Toute refonte incompatible suit ADR-0039
+  (`action-request` v2 + migrateur) et se lie au `backend-contract`. **C1a —
+  confinement v1 fait localement le 2026-09-16 :** le registre reflète désormais
+  le verdict des audits : `list-query` et `action-request` v1 sont tous deux
+  `experimental`. `create-module` les refuse avant toute écriture, sauf
+  consentement initial explicite `--allow-experimental`; ce consentement ne
+  contourne aucun gate et n'est accepté ni en reprise ni en abandon. Les preuves
+  v1 restent lisibles pour construire les migrateurs. Cette tranche ne prétend
+  fermer aucun blocker runtime et ne remplace pas `list-query` 2.0. **C1b —
+  audit de maintenabilité de l'automatisation fait le 2026-09-16 :**
   [`audit-maintenable-automatisation-2026-09-16.md`](./audit-maintenable-automatisation-2026-09-16.md)
   mesure le parcours `create-app → add-library → create-module` avant toute
   nouvelle abstraction. Verdict : `create-app` est conservé avec une UX à
@@ -1874,31 +1870,36 @@ Figma, désormais source partielle différée :
   découplées, séparation qualification/application, diagnostics humains,
   simplification des commandes, puis budget obligatoire pour les compositions
   v2. Aucune garantie existante n'est supprimée avant remplacement prouvé, mais
-  aucune extension du modèle actuel n'est admise.
-  **C1c — SIMPL-1 fait le 2026-09-16 :** les trois contextes GitHub bibliothèque
-  restent stables et exécutent toujours un sélecteur Node fail-closed. Bun,
-  l'installation et les preuves isolation/E2E ne tournent désormais que si le
-  diff touche leur surface de risque déclarée ; `check:library-setup` reste le
-  contrat rapide bloquant dans les garde-fous. La preuve profonde complète est
-  conservée chaque nuit sur Linux, macOS et sur le parcours
-  `create-app → Material → Tailwind`. Les tests du classifieur et de la
-  politique YAML bloquent les faux négatifs de câblage. SIMPL-2 est le prochain
-  lot et aucune réduction de garantie de sécurité n'a été utilisée pour fermer
-  SIMPL-1.
-  **Audit préalable de la composition N×N (2026-09-15) :**
+  aucune extension du modèle actuel n'est admise. **C1c — SIMPL-1 fait le
+  2026-09-16 :** les trois contextes GitHub bibliothèque restent stables et
+  exécutent toujours un sélecteur Node fail-closed. Bun, l'installation et les
+  preuves isolation/E2E ne tournent désormais que si le diff touche leur surface
+  de risque déclarée ; `check:library-setup` reste le contrat rapide bloquant
+  dans les garde-fous. La preuve profonde complète est conservée chaque nuit sur
+  Linux, macOS et sur le parcours `create-app → Material → Tailwind`. Les tests
+  du classifieur et de la politique YAML bloquent les faux négatifs de câblage.
+  Aucune réduction de garantie de sécurité n'a été utilisée pour fermer SIMPL-1.
+  **C1d — SIMPL-2 fait le 2026-09-16 :** la voie dormante `llm-then-verified`
+  est absente du schéma et du cœur `add-library`; son runner, sa fixture et ses
+  tests dédiés (1 312 lignes) sont supprimés. Le validateur refuse explicitement
+  les anciennes recettes et rappelle qu'un fournisseur réel, un nouvel audit de
+  sécurité et un nouvel ADR sont requis pour toute réintroduction. Angular
+  Material, Tailwind et Transloco ont été périmés puis requalifiés par leurs
+  vraies preuves isolées. SIMPL-3 est le prochain lot. **Audit préalable de la
+  composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
   `data_bindings` jusqu'au work order, mais ne génère, ne raccorde et ne teste
   aucune composition runtime. La fixture mixte accepte un composant vide et
   mocke les quatre oracles ; la fixture à oracles réels a zéro load et zéro
-  appel backend. Blockers supplémentaires : data binding sans identité de
-  nœud producteur, état global impropre aux pannes partielles, absence de
+  appel backend. Blockers supplémentaires : data binding sans identité de nœud
+  producteur, état global impropre aux pannes partielles, absence de
   providers/invalidation/cancellation/concurrence, et exécution du spec réalisé
-  avec tout `process.env`. Le troisième élément sera un
-  `page-execution-plan` target-neutral référençant les primitives v2, pas un
-  troisième générateur métier. Ordre retenu : sécuriser l'oracle, stabiliser
-  les deux primitives, compiler/publier le plan et son composition root, puis
-  reproduire un vertical slice SEOS représentatif avant toute promotion.
+  avec tout `process.env`. Le troisième élément sera un `page-execution-plan`
+  target-neutral référençant les primitives v2, pas un troisième générateur
+  métier. Ordre retenu : sécuriser l'oracle, stabiliser les deux primitives,
+  compiler/publier le plan et son composition root, puis reproduire un vertical
+  slice SEOS représentatif avant toute promotion.
   [ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md). La
   chaîne app-builder n'avait été prouvée que sur une page à une seule opération
   (`application-conception-proof`, un `action-request` sans lecture).
@@ -1930,15 +1931,15 @@ Figma, désormais source partielle différée :
   considérée prouvée en réel avant la fermeture de l'issue #64. Aucun sélecteur,
   adaptateur ou branche métier propre à SEOS n'est admis dans le moteur. SEOS
   reste actif comme oracle de migration jusque-là ; son retrait de la CI et son
-  archivage nécessiteront un changement séparé après revue humaine.
-  **C0 — fait, relu et fusionné par PR #66 le 2026-09-15 :** les
-  quatre oracles de `verify:page-realization` sont désormais lancés par un
-  runner externe dans un candidat jetable. L'environnement est allowlisté,
-  `node_modules` est en lecture seule, le vrai dépôt n'est pas inscriptible et
-  le réseau externe est coupé ; seule la boucle locale liée à `127.0.0.1` est
-  ouverte pour Vitest. Les mutants hostiles passent sur les backends macOS et
-  Docker, et `check:application-pipeline` est vert avec `ngc`, build, lint et
-  test réellement confinés. Preuve et limites :
+  archivage nécessiteront un changement séparé après revue humaine. **C0 — fait,
+  relu et fusionné par PR #66 le 2026-09-15 :** les quatre oracles de
+  `verify:page-realization` sont désormais lancés par un runner externe dans un
+  candidat jetable. L'environnement est allowlisté, `node_modules` est en
+  lecture seule, le vrai dépôt n'est pas inscriptible et le réseau externe est
+  coupé ; seule la boucle locale liée à `127.0.0.1` est ouverte pour Vitest. Les
+  mutants hostiles passent sur les backends macOS et Docker, et
+  `check:application-pipeline` est vert avec `ngc`, build, lint et test
+  réellement confinés. Preuve et limites :
   [`securisation-page-realization-2026-09-15.md`](./securisation-page-realization-2026-09-15.md).
   **Limite explicite** : nœuds indépendants seulement — aucune arête, aucune
   précondition inter-nœuds, aucune livraison asynchrone (relève du lot graphe
@@ -2481,21 +2482,20 @@ gouvernance, sécurité, licences.
   `require_last_push_approval`, l'historique linéaire, la résolution des
   conversations et l'interdiction des force-pushes/suppressions. Voir OPS-27
   pour la preuve empirique du refus de push direct et du blocage sans review.
-- **OPS-3** — **fait** (2026-09-14), S, P1 Ops, alias `G-7 · T6-4`. Workspace
-  Nx Cloud connecté (`nxCloudId` `69cfa6ba213c8001d0f75641`), secret GitHub
+- **OPS-3** — **fait** (2026-09-14), S, P1 Ops, alias `G-7 · T6-4`. Workspace Nx
+  Cloud connecté (`nxCloudId` `69cfa6ba213c8001d0f75641`), secret GitHub
   `NX_CLOUD_ACCESS_TOKEN` présent et effectivement injecté masqué. Le CI `main`
   [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
   est vert et prouve des `[remote cache]` réels : 41/74 tâches de lint, soit
   55,41 %. Le nightly
   [#34823198590](https://github.com/ismaelkouda/cmz-platform/actions/runs/34823198590)
-  est vert. Les trois workflows Nx conservent le fallback sûr
-  `NX_NO_CLOUD=true` lorsque le secret est absent. _(= T6-4, même item, deux
-  ids historiques.)_
-- **OPS-4** — **fait** (2026-09-14), S, P1, alias `P1-13`.
-  `@ismaelkouda` et `@soumailakouda` couvrent chaque zone de `CODEOWNERS` ;
-  `@soumailakouda` dispose de la permission `write` et les PR qui exigent son
-  second regard lui sont assignées avec une demande de review, afin de
-  déclencher les notifications GitHub.
+  est vert. Les trois workflows Nx conservent le fallback sûr `NX_NO_CLOUD=true`
+  lorsque le secret est absent. _(= T6-4, même item, deux ids historiques.)_
+- **OPS-4** — **fait** (2026-09-14), S, P1, alias `P1-13`. `@ismaelkouda` et
+  `@soumailakouda` couvrent chaque zone de `CODEOWNERS` ; `@soumailakouda`
+  dispose de la permission `write` et les PR qui exigent son second regard lui
+  sont assignées avec une demande de review, afin de déclencher les
+  notifications GitHub.
 - **OPS-8** — ouvert, S, P1 Ops, alias `carto #6`. `nginx -t` réel conf + CSP.
   _(recoupe T4-1, même sujet.)_
 - **OPS-9** — **fait localement** (2026-08-16), M, P0 Ops. Cause racine isolée
@@ -3031,8 +3031,8 @@ gouvernance, sécurité, licences.
   retirés — `@nx/react@23.2.0` a supprimé `@svgr/webpack` de ses dépendances
   (confirmé registre npm : deps 23.1.0 → 23.2.0), le dépôt n'a aucun build
   webpack (`@angular/build` esbuild uniquement), donc `@svgr/plugin-svgo` /
-  `postcss-svgo` / `svgo` ont entièrement quitté l'arbre (`grep svgo bun.lock`
-  = 0, `bun audit` = 0 vuln). Voir OPS-26 (bump nx via lockfile régénéré).
+  `postcss-svgo` / `svgo` ont entièrement quitté l'arbre (`grep svgo bun.lock` =
+  0, `bun audit` = 0 vuln). Voir OPS-26 (bump nx via lockfile régénéré).
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
 - **T4-5** — fait, S, P1, alias `Big Tech gap`. Secret scanning pre-push + CI
@@ -3176,7 +3176,7 @@ T9-1, T12-4, T13-6, factorisation O, multi-stack ROAD-3.
 | daily-goal hors scope                      | **Fermé** 52/52                                                                                                                                                  |
 | H-4                                        | pattern family-dupe ✅ vs **T2-5** contracts UI ✅                                                                                                               |
 | Chantier L                                 | scope ✅ vs tests shared = **T12-3**                                                                                                                             |
-| CODEOWNERS « fait »                        | **Fermé** 2026-09-14 : zonage + second regard `@soumailakouda` effectifs                                                                                        |
+| CODEOWNERS « fait »                        | **Fermé** 2026-09-14 : zonage + second regard `@soumailakouda` effectifs                                                                                         |
 | « 2,2 % tests »                            | Périmé ; unit RO-view ✅ · e2e smoke mock ✅ · staging = T12-7                                                                                                   |
 | Corpus `verified` = comportement           | **T12-11** encore vrai risque                                                                                                                                    |
 | Corpus 18/18 modules couverts (2026-08-10) | **Volume seulement.** 7 modules crud-entity sur 18 ont un `legacy` synthétique non vérifié — **T12-18**. Ne pas rapporter « corpus complet » sans cette réserve. |
