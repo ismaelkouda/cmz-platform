@@ -107,7 +107,7 @@
                 ],
                 "properties": {
                   "schema_version": {
-                    "const": "1.1.0"
+                    "const": "1.2.0"
                   },
                   "commit": {
                     "type": "string",
@@ -197,7 +197,8 @@
                       "tsconfig",
                       "gitattributes",
                       "proof_contracts",
-                      "runner"
+                      "runner",
+                      "runner_sources"
                     ],
                     "properties": {
                       "recipe": {
@@ -240,6 +241,18 @@
                       "runner": {
                         "type": "string",
                         "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "runner_sources": {
+                        "description": "Liste fermée, triée et auditée des sources de production qui influencent cette qualification. Les tests et les oracles étrangers à la piste sont exclus.",
+                        "type": "object",
+                        "minProperties": 1,
+                        "propertyNames": {
+                          "pattern": "^(?:tools|conventions)/[A-Za-z0-9._/-]+$"
+                        },
+                        "additionalProperties": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        }
                       }
                     }
                   }

@@ -51,6 +51,7 @@ function localModuleClosure(entrypoints) {
             if (
                 (ts.isImportDeclaration(node) ||
                     ts.isExportDeclaration(node)) &&
+                node.moduleSpecifier &&
                 ts.isStringLiteral(node.moduleSpecifier) &&
                 node.moduleSpecifier.text.startsWith('.')
             ) {

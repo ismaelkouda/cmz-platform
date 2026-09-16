@@ -104,7 +104,7 @@ function execution(overrides = {}) {
             )
         ),
         compat_schema_sha256: inputs.compat_schema,
-        runner_sha256: libraryRunnerDigest(ROOT),
+        runner_sha256: libraryRunnerDigest(ROOT, sourceRecipe, recipes()),
         nx_json_sha256: inputs.nx_json,
         tsconfig_sha256: inputs.tsconfig,
         gitattributes_sha256: inputs.gitattributes,
@@ -194,7 +194,7 @@ function rebindCommit(root, evidence) {
 test('la preuve vient d’un résultat complet dont plan et change-set sont recalculés', () => {
     const built = verification();
     assert.equal(built.commit, HEAD);
-    assert.equal(built.schema_version, '1.1.0');
+    assert.equal(built.schema_version, '1.2.0');
     assert.equal(
         built.source_context_sha256,
         qualificationSourceSha256(ROOT, recipe(), recipes(), track())
@@ -507,6 +507,20 @@ test('une bibliothèque indépendante ne périme ni la projection initiale ni la
 
 test('la gate refuse les empreintes source falsifiées et les états contradictoires', (t) => {
     const root = fixture(t);
+    const sourceTampered = rebindCommit(root, verification());
+    const [firstSource] = Object.keys(
+        sourceTampered.inputs_sha256.runner_sources
+    );
+    sourceTampered.inputs_sha256.runner_sources[firstSource] = '0'.repeat(64);
+    const { evidence_sha256: _sourceEvidence, ...sourcePayload } =
+        sourceTampered;
+    sourceTampered.evidence_sha256 = sha256(stableJson(sourcePayload));
+    assert.ok(
+        verificationFailures(root, recipe(), track(), sourceTampered, {
+            recipeRegistry: recipes(),
+        }).some((failure) => /runner_sources a changé/.test(failure))
+    );
+
     const path = join(
         root,
         'conventions/libraries/angular/angular-material.compat.json'
@@ -522,8 +536,8 @@ test('la gate refuse les empreintes source falsifiées et les états contradicto
         matrix.tracks[0].verification;
     matrix.tracks[0].verification.evidence_sha256 = sha256(stableJson(payload));
     writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
-    const recipes = validateRecipes(root);
-    const result = validateCompatibilityMatrices(root, recipes.recipes);
+    const recipeResult = validateRecipes(root);
+    const result = validateCompatibilityMatrices(root, recipeResult.recipes);
     assert.equal(result.ok, false);
     assert.ok(
         result.errors.some((error) => /contexte source a changé/.test(error))
@@ -532,7 +546,7 @@ test('la gate refuse les empreintes source falsifiées et les états contradicto
     matrix.tracks[0].status = 'candidate';
     writeFileSync(path, `${JSON.stringify(matrix, null, 2)}\n`);
     assert.ok(
-        validateCompatibilityMatrices(root, recipes.recipes).errors.some(
+        validateCompatibilityMatrices(root, recipeResult.recipes).errors.some(
             (error) => /candidate avec une vérification/.test(error)
         )
     );

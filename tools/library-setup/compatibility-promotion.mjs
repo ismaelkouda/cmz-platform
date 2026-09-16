@@ -10,9 +10,11 @@ import {
     dependencyProjectionSha256,
 } from './dependency-resolution.mjs';
 import { buildLibraryPlan, stableJson } from './library-plan.mjs';
+import { qualificationProofContracts } from './qualification-contracts.mjs';
 import {
     compatibilityTrackDigest,
     libraryRunnerDigest,
+    libraryRunnerSourceHashes,
 } from './tooling-fingerprint.mjs';
 
 function fail(message) {
@@ -103,37 +105,6 @@ export function qualificationSourceSha256(root, recipe, recipeRegistry, track) {
     );
 }
 
-function requiredProofContracts(recipe, recipeRegistry) {
-    if (!(recipeRegistry instanceof Map)) {
-        fail('registre de recettes requis pour empreindre les preuves');
-    }
-    const contracts = [];
-    const append = (owner, scope, entries = []) => {
-        for (const entry of entries) {
-            contracts.push({ owner, scope, contract: entry });
-        }
-    };
-    const owner = `${recipe.platform}/${recipe.library}`;
-    append(owner, 'runtime', recipe.runtime_acceptance);
-    for (const block of recipe.coexistence ?? []) {
-        append(owner, `coexistence:${block.with}`, block.runtime_acceptance);
-    }
-    for (const candidate of recipeRegistry.values()) {
-        if (candidate.platform !== recipe.platform) continue;
-        for (const block of candidate.coexistence ?? []) {
-            if (block.with !== recipe.library) continue;
-            append(
-                `${candidate.platform}/${candidate.library}`,
-                `coexistence:${block.with}`,
-                block.runtime_acceptance
-            );
-        }
-    }
-    return contracts.sort((left, right) =>
-        stableJson(left).localeCompare(stableJson(right))
-    );
-}
-
 export function verificationInputs(root, recipe, recipeRegistry) {
     const prefix = `conventions/libraries/${recipe.platform}`;
     return {
@@ -162,9 +133,10 @@ export function verificationInputs(root, recipe, recipeRegistry) {
         tsconfig: sha256(regularFile(root, 'tsconfig.base.json')),
         gitattributes: sha256(regularFile(root, '.gitattributes')),
         proof_contracts: sha256(
-            stableJson(requiredProofContracts(recipe, recipeRegistry))
+            stableJson(qualificationProofContracts(recipe, recipeRegistry))
         ),
-        runner: libraryRunnerDigest(root),
+        runner: libraryRunnerDigest(root, recipe, recipeRegistry),
+        runner_sources: libraryRunnerSourceHashes(root, recipe, recipeRegistry),
     };
 }
 
@@ -174,7 +146,7 @@ export function verificationInputs(root, recipe, recipeRegistry) {
  * Tailwind est qualifiée.
  */
 export function requiredProofIds(recipe, recipeRegistry) {
-    const ids = requiredProofContracts(recipe, recipeRegistry)
+    const ids = qualificationProofContracts(recipe, recipeRegistry)
         .map(({ contract }) => contract.id)
         .sort();
     if (new Set(ids).size !== ids.length) {
@@ -233,7 +205,9 @@ function validatePlan(
     ) {
         fail('plan sans concordance app/bibliothèque/plateforme/change-set');
     }
-    if (plan.runner_sha256 !== libraryRunnerDigest(root)) {
+    if (
+        plan.runner_sha256 !== libraryRunnerDigest(root, recipe, recipeRegistry)
+    ) {
         fail('plan produit par un runner différent du runner courant');
     }
     const currentInputs = verificationInputs(root, recipe, recipeRegistry);
@@ -347,7 +321,7 @@ export function buildVerificationFromExecution({
         execution.runtimeProofs
     );
     const payload = {
-        schema_version: '1.1.0',
+        schema_version: '1.2.0',
         commit: execution.plan.commit,
         source_context_sha256: qualificationSourceSha256(
             root,
@@ -457,7 +431,9 @@ export function verificationFailures(
         return failures;
     }
     for (const [key, value] of Object.entries(current)) {
-        if (verification.inputs_sha256?.[key] !== value) {
+        if (
+            stableJson(verification.inputs_sha256?.[key]) !== stableJson(value)
+        ) {
             failures.push(
                 `${key} a changé depuis la vérification : la piste doit repasser en candidate`
             );
