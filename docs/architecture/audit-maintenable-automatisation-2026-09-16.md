@@ -339,7 +339,7 @@ le déclenchement manuel/nightly ou une entrée déclarée les fait échouer.
 lance plus les trois preuves profondes ; une mutation ciblée les déclenche et un
 test de politique tue les faux négatifs.
 
-### SIMPL-2 — Retirer la voie LLM dormante — fait le 2026-09-16
+### SIMPL-2 — Retirer la voie LLM dormante — P0, M
 
 - supprimer `llm-then-verified` du schéma ;
 - supprimer runner, fixture et tests dédiés ;
@@ -348,16 +348,6 @@ test de politique tue les faux négatifs.
 
 **Sortie :** aucune recette valide ne référence la voie ; gates et CI vertes ;
 réduction d'au moins 1 263 lignes de code/tests directs.
-
-**Réalisation :** le troisième bras du schéma, le runner, sa fixture fournisseur
-et sa suite dédiée ont été supprimés. Le cœur `add-library` ne possède plus de
-paramètre, de branche, de sortie d'audit ni d'entrée de plan LLM. Une ancienne
-recette est refusée par un diagnostic stable avant exécution, avec les deux
-méthodes encore admises et les conditions de réintroduction. Les trois fichiers
-directs supprimés représentaient **1 312 lignes**, au-delà du seuil de sortie.
-Les pistes Angular Material, Tailwind et Transloco ont été repassées en
-`candidate`, puis requalifiées une par une par le vrai parcours isolé et leurs
-preuves runtime avant de retrouver `verified`.
 
 ### SIMPL-3 — Découpler l'empreinte de qualification — P1, M
 
