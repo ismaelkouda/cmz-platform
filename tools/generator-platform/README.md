@@ -210,15 +210,24 @@ workspace-contained and non-symbolic. A registry change during `create-module`
 invalidates resume, while `--abort` remains able to restore from the journaled
 composition snapshot.
 
+Maturity is an adoption gate, not a documentation label. `create-module`
+rejects an `experimental` entry before any workspace write unless the initial
+command carries `--allow-experimental`. That explicit consent neither promotes
+the composition nor weakens generation, build, lint, graph, formatting, or
+lockfile gates; it is intentionally invalid on `--resume` and `--abort`.
+
 ```bash
 bun run check:composition-registry
 ```
 
 The registry is intentionally not a feature wish list. New compositions enter
 only after their generator and business cases exist; unsupported kinds remain
-rejected rather than approximated. `list-query` remains experimental: its sole
-case is the retained source of a removed POC, and promotion requires a separate
-active case that has not been retired.
+rejected rather than approximated. `list-query` remains experimental because
+its sole case is the retained source of a removed POC. `action-request` is also
+experimental: its generators and isolated runtime proofs are reproducible, but
+the Staff audit of 2026-09-15 identified unresolved production blockers. Their
+v1 evidence remains available for migration work; neither may be adopted by
+default.
 
 PLAT-2 adds two independent, fail-closed ingestion paths:
 

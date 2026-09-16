@@ -6,7 +6,7 @@ La création et le retrait d’un module sont des transactions de workspace, pas
 des listes d’étapes humaines. Les commandes nominales sont :
 
 ```bash
-bun run create-module --definition <action-request.definition.json>
+bun run create-module --definition <action-request.definition.json> --allow-experimental
 bun run retire-module --module <nom>
 ```
 
@@ -19,16 +19,25 @@ n’existe dans les scripts de production.
 ## Création — `tools/create-module.mjs`
 
 La source de vérité est une définition validée par la plateforme de génération.
-La table de composition fermée accepte `action-request`
-(domain/data/application) et `list-query` (domain/data) ; tout `kind` inconnu
-échoue avant écriture. `feature.id` détermine exclusivement le scope Nx, les
-packages et la racine `libs/<module>`.
+La table de composition fermée connaît `action-request`
+(domain/data/application) et `list-query` (domain/data), tous deux confinés au
+statut `experimental` depuis les audits Staff du 2026-09-15 ; tout `kind`
+inconnu échoue avant écriture. `feature.id` détermine exclusivement le scope Nx,
+les packages et la racine `libs/<module>`.
 
 ```bash
-node tools/create-module.mjs --definition <fichier.json> [--dry-run]
+node tools/create-module.mjs --definition <fichier.json> [--dry-run] [--allow-experimental]
 node tools/create-module.mjs --resume --module <nom>
 node tools/create-module.mjs --abort --module <nom>
 ```
+
+`create-module` refuse par défaut toute composition marquée `experimental` dans
+le registre. `--allow-experimental` constitue un consentement explicite à la
+création initiale, après lecture de la limite affichée par la commande. Il ne
+promeut pas la composition, ne contourne aucun gate et ne s'applique ni à
+`--resume` ni à `--abort`. Les générateurs restent utilisables directement en
+`--dry-run` pour construire et vérifier les migrations sans adopter un module
+expérimental dans le workspace.
 
 La commande :
 

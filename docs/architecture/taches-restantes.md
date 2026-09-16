@@ -1854,6 +1854,13 @@ Figma, désormais source partielle différée :
   distant transformé en échec local rejouable, absence d'idempotence et
   d'invalidation déclarative des queries. Toute refonte incompatible suit
   ADR-0039 (`action-request` v2 + migrateur) et se lie au `backend-contract`.
+  **C1a — confinement v1 fait localement le 2026-09-16 :** le registre reflète
+  désormais le verdict des audits : `list-query` et `action-request` v1 sont
+  tous deux `experimental`. `create-module` les refuse avant toute écriture,
+  sauf consentement initial explicite `--allow-experimental`; ce consentement
+  ne contourne aucun gate et n'est accepté ni en reprise ni en abandon. Les
+  preuves v1 restent lisibles pour construire les migrateurs. Cette tranche ne
+  prétend fermer aucun blocker runtime et ne remplace pas `list-query` 2.0.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
@@ -1900,7 +1907,7 @@ Figma, désormais source partielle différée :
   adaptateur ou branche métier propre à SEOS n'est admis dans le moteur. SEOS
   reste actif comme oracle de migration jusque-là ; son retrait de la CI et son
   archivage nécessiteront un changement séparé après revue humaine.
-  **C0 — fait localement le 2026-09-15, promotion CI/revue en attente :** les
+  **C0 — fait, relu et fusionné par PR #66 le 2026-09-15 :** les
   quatre oracles de `verify:page-realization` sont désormais lancés par un
   runner externe dans un candidat jetable. L'environnement est allowlisté,
   `node_modules` est en lecture seule, le vrai dépôt n'est pas inscriptible et

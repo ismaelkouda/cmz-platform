@@ -28,6 +28,10 @@ import {
     currentGitIdentity,
     withTransactionLock,
 } from './retire-module-transaction.mjs';
+import {
+    assertCompositionAdoption,
+    parseCreateModuleArgs,
+} from './create-module-policy.mjs';
 import { runNxGraphGate } from './retire-module-nx.mjs';
 import {
     createRetirementPlan,
@@ -112,34 +116,6 @@ function gitVisibleTreeSha256(relativeRoot) {
         hash.update('\0');
     }
     return hash.digest('hex');
-}
-
-function parseArgs(argv) {
-    const options = { abort: false, dryRun: false, resume: false };
-    for (let index = 0; index < argv.length; index += 1) {
-        const argument = argv[index];
-        if (argument === '--definition') options.definition = argv[++index];
-        else if (argument === '--module') options.module = argv[++index];
-        else if (argument === '--dry-run') options.dryRun = true;
-        else if (argument === '--resume') options.resume = true;
-        else if (argument === '--abort') options.abort = true;
-        else fail(`Argument inconnu : ${argument}`);
-    }
-    if (options.resume || options.abort) {
-        if (!options.module || !/^[a-z][a-z0-9-]*$/.test(options.module))
-            fail('--resume/--abort exige --module <kebab-case>.');
-        if (
-            options.definition ||
-            options.dryRun ||
-            (options.resume && options.abort)
-        )
-            fail(
-                '--resume et --abort sont exclusifs de --definition/--dry-run.'
-            );
-    } else if (!options.definition) {
-        fail('--definition <fichier.json> est requis.');
-    }
-    return options;
 }
 
 function readDefinition(path) {
@@ -768,10 +744,16 @@ function runAbort(moduleName) {
 }
 
 function main() {
-    const options = parseArgs(process.argv.slice(2));
+    const options = parseCreateModuleArgs(process.argv.slice(2));
     const definition = options.module
         ? null
         : readDefinition(options.definition);
+    if (definition)
+        assertCompositionAdoption(
+            options,
+            definition,
+            COMPOSITION_KINDS[definition.kind]
+        );
     const moduleName = options.module ?? definition.moduleName;
     if (options.dryRun) {
         assertCreateStorage(moduleName);
