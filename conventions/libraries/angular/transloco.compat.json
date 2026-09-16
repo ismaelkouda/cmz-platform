@@ -5,7 +5,7 @@
   "tracks": [
     {
       "id": "angular-22-transloco-8",
-      "status": "candidate",
+      "status": "verified",
       "requirements": {
         "node": ">=22.22.3 <23",
         "bun": ">=1.3.14 <2",
@@ -18,7 +18,72 @@
       "dependency_section": "dependencies",
       "catalog": "default",
       "reason": "Piste initiale Transloco 8 ; passe en verified après compilation et rendu d’une traduction.",
-      "verification": null
+      "verification": {
+        "schema_version": "1.2.0",
+        "commit": "988b73a62aeb37fdb95b2777ce10292616b5dccc",
+        "source_context_sha256": "f9c03b5312eb595b10d2e925f2481066d533ad482747ef995b4d763e924ba161",
+        "app": "library-qualification-angular",
+        "plan_id": "library-plan:a3a565442772f5b278b8662c4d14a289fe5bb9237431e56a9a5784a34f2e0544",
+        "change_set_id": "changes:899d6ba28202c58beb6477e6ca47abe5298a60ba1f2550ae5fd8d6e8ad45efe8",
+        "app_tree_sha256": "e258093c3fe1c4ded44ed01700b0f91e91622d23046bc0bf1b1219c9dab2afb3",
+        "track_sha256": "d4d58f974bd586023fe5017e91a21cd95b3da3addbfcad29097831a31a2db6bf",
+        "tested_versions": {
+          "node": "22.22.3",
+          "bun": "1.3.14",
+          "nx": "23.2.1",
+          "framework": "22.0.7",
+          "packages": {
+            "@jsverse/transloco": "8.4.0"
+          }
+        },
+        "dependency_state_sha256": {
+          "initial": "7745a58265b80852d0da33adfc8d467ce8d5503400bc79ef37af423a6f20ab45",
+          "final": "6529fd8905c9439790997967858ee6c5091efcbb28aa162d2283e1a0d2ab552b"
+        },
+        "proofs": [
+          "key-renders-translation",
+          "offline-production-build"
+        ],
+        "inputs_sha256": {
+          "recipe": "b8c36f601a0d6c17e1f74bcad1ebb14cdd5dd6bd1f8e21d3ed7e17def9caaab2",
+          "recipe_schema": "b741a753ddb9d3df1266a9bd615bca6f00fb5b5b6e4576c45b7b285056987b11",
+          "compat_schema": "a5648df224bc896a32d506f84baf7bf317db2ef2d20fbc8e8246ecdce31d6be3",
+          "policy": "ca3429863614bb7592a153300a44e7b7006428cc1fd826823062c8759fde77c7",
+          "policy_schema": "a71cc60b0692e3704ac8f09847b202af9da92453c7de486f09d0106ff3db0c96",
+          "nx_json": "3403357296b1a3ccbab58dbe602d10d50849775a60ba548526f64bebe83dd4bc",
+          "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
+          "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
+          "proof_contracts": "ae90b709d40b3445a4ac22621755e2441ff78b79927c143da646013b12b63f27",
+          "runner": "ab41d596725c5340bf1cd97ddac422ef1dae519ae0aab826b69bc7d2dbe98754",
+          "runner_sources": {
+            "tools/check-library-setup-deps.mjs": "3fd82a88564c9e29174f3d6310eabafe3d327fded02d323a8f2e1a9567514b05",
+            "tools/check-library-setup.mjs": "9f50a53b4d40b6228569b73792d0c84bbc5fde8424abfed292205e2b15c4b2ac",
+            "tools/generator-platform/validate-ir.mjs": "afa3e1e6037f48d8647d0b29b0da48eed605a429499d879afa9a04ab3a7ca682",
+            "tools/library-setup/add-library-core.mjs": "d3008288bc7ba588d05460b7d3e287d2d07fff1101652b0ec9e1f115cdf485d8",
+            "tools/library-setup/candidate-lease.mjs": "309d571289839a3d50683ba91221d03af959f1d1af1238a2fb87e64d2cadefa4",
+            "tools/library-setup/compatibility-promotion-runner.mjs": "826b0b8e5358651b3ae68b8fbbd8361ab5452e3a123efa978889f0a980c1f7c6",
+            "tools/library-setup/compatibility-promotion.mjs": "d42689b0592bf4fa4d50917b2c8fc6e1974ac3bf07e4d758e5259b5242ee9df6",
+            "tools/library-setup/compatibility.mjs": "4da95d700d280f36b5f3243dcdaa49bc6eb626704d7a7ff4140c2e5b07a25a2c",
+            "tools/library-setup/dependency-resolution.mjs": "079dd875146201ebfff2a76b17cfb35da64298ea8cf593ab39f181ea4e7d67e8",
+            "tools/library-setup/filesystem-snapshot.mjs": "5811c240d74f7b9f3cb355f3cba1b4a8de966f575fbb9ef632ff89149401fd2b",
+            "tools/library-setup/git-tree.mjs": "85f94f5f09adc9eee6798af4859766f9192443cf05ea7e0811b07dc2005f74c8",
+            "tools/library-setup/install-protocol.mjs": "a9bba03808b743b7df6c7c646ced2b138e03828e142fdae35dacbc8db69aa0ce",
+            "tools/library-setup/library-plan.mjs": "1505b63ac1e2524ef492b74e510e9e3011f179c888a8a9f354467c8414052990",
+            "tools/library-setup/publication-transaction.mjs": "c321fabf31846425530ef845527c0fa5a58610c49a12cc32326f58f81b140790",
+            "tools/library-setup/qualification-contracts.mjs": "02819658acf19c890e8fda535100aa63ca57ac6ef6a03c094933dfee79756955",
+            "tools/library-setup/recipe-execution.mjs": "30030b387fcae33662e7a5d2758b3e597cc5a3b5a30664024854e6c0b9477a14",
+            "tools/library-setup/resolution-policy.mjs": "b78cccdb1db18b9c3de3af958c5ca0844245525a9a6cd9d995b2d24f06db1da4",
+            "tools/library-setup/runtime-fixtures/transloco-runtime-probe.mjs": "281f400e2786eadb49868edb4bbcd955e6f39376ba312da77d2c27db848a701d",
+            "tools/library-setup/runtime-oracles/production-build.mjs": "a4e323a13b60236100ebc40605e937083e29784d38d4055f0109db17caafd3ea",
+            "tools/library-setup/runtime-oracles/support.mjs": "5388a7d2d487dd66bbb6c49631cef6f6b6bdef4c72282979074b8f2757ec0651",
+            "tools/library-setup/runtime-oracles/transloco-render.mjs": "bf8050cf34fc0cbec85ffc254499c51ffe733c7b159d74f5849380a10b7af64a",
+            "tools/library-setup/runtime-proofs.mjs": "dc7a53a387168a3fe7609b789178219c8968a3b468c6555f7c84a865aada9078",
+            "tools/library-setup/sandbox.mjs": "6f6622c4362046c31fa1e7e770d9ac6f92c8984998e588a07a5675b6c2c198af",
+            "tools/library-setup/tooling-fingerprint.mjs": "27e223b262363702b953bea39d78fbffa443651da5e62555772ca4a2d59588d3"
+          }
+        },
+        "evidence_sha256": "845f4e34d6c3b410b42a09b9b1dff886d66c8a5087c9c86b4ed66a0d5fd5e316"
+      }
     }
   ]
 }
