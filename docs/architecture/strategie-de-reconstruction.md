@@ -1,7 +1,7 @@
 # Stratégie de reconstruction de cmz-backoffice-frontend
 
 - **Statut :** Cadrage — appliqué à partir de la Phase 07
-- **Dernière mise à jour :** 2026-07-22
+- **Dernière mise à jour :** 2026-09-16
 - **ADR associés :** [ADR-0005](../adr/0005-versions-du-socle.md),
   [ADR-0009](../adr/0009-reconstruction-pilotee-par-patterns.md),
   [ADR-0010](../adr/0010-flux-de-generation-assistee-par-ia.md),
@@ -9,6 +9,11 @@
 - **Portée (précision 2026-08-13) :** ce document couvre strictement le cas
   d'usage `cmz-backoffice-frontend`, un sous-ensemble de l'objectif global du
   dépôt depuis [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md).
+- **Précision de maturité (2026-09-16) :** le mot « prouvé » employé dans les
+  mesures historiques ci-dessous signifiait « structure extraite du corpus
+  SEOS ». Il ne signifie pas « autorisé en production » au sens du registre de
+  compositions. Les audits Staff du 2026-09-15 classent désormais
+  `action-request` v1 et `list-query` v1 comme `experimental`.
 
 ## Nature du travail
 
@@ -30,9 +35,9 @@
 | Domaines fonctionnels                      | 18 (16 portant des entités)             |
 | Fichiers canoniques par entité CRUD        | 106 (schéma v23)                        |
 | Fichiers canoniques par opération          | 34 (schéma v6)                          |
-| Patterns **prouvés** aujourd'hui           | 2 (`crud-entity`, `action-request`)     |
+| Patterns structurels extraits en Phase 03  | 2 (`crud-entity`, `action-request`)     |
 | Patterns **à extraire**                    | 2 (`read-only-view`, `workflow-action`) |
-| Couverture par les patterns prouvés        | **41 %** (22/53)                        |
+| Couverture structurelle mesurée en Phase 03 | **41 %** (22/53)                        |
 | Couverture générable après extraction      | **> 90 %**                              |
 
 La couverture — et non le nombre de patterns — guide le séquencement. Elle a été
@@ -46,12 +51,12 @@ La mesure a été faite sur les 53 entités (détail et table complète dans
 
 | Famille           |       Entités | Couverture                                                                                      |
 | ----------------- | ------------: | ----------------------------------------------------------------------------------------------- |
-| Conforme + Proche | **22 (41 %)** | Les deux patterns prouvés (`crud-entity`, `action-request`), directement ou après normalisation |
+| Conforme + Proche | **22 (41 %)** | Les deux formes structurelles (`crud-entity`, `action-request`), directement ou après normalisation |
 | Workflow-action   |     19 (36 %) | Un pattern **à extraire** (vues + transitions d'état sur file de tâches)                        |
 | Lecture seule     |      9 (17 %) | Pattern **`read-only-view` à extraire** (D4)                                                    |
 | Divers            |       3 (6 %) | Au cas par cas                                                                                  |
 
-**Verdict : l'approche générative tient.** La couverture par les deux patterns
+**Verdict historique : l'approche générative est structurellement plausible.** La couverture par les deux patterns
 existants est de 41 % — bande « moyenne » du plan, dont la conséquence est
 d'**extraire davantage de patterns**. Or les 59 % non couverts ne sont pas
 dispersés : ce sont **deux familles régulières** (workflow-action, lecture
@@ -77,7 +82,7 @@ il vaut mieux le découvrir sur une entité que sur cinquante.
 
 Résultat ci-dessus et dans
 [l'analyse du projet source](./analyse-du-projet-source.md) : 41 % couvert par
-les 2 patterns prouvés, 2 patterns à extraire (`read-only-view`,
+les 2 formes structurelles, 2 patterns à extraire (`read-only-view`,
 `workflow-action`) pour dépasser 90 %.
 
 ### Étape 2 — Adapter les générateurs au monorepo

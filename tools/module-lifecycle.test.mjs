@@ -19,6 +19,7 @@ import { test } from 'node:test';
 
 const REPOSITORY = fileURLToPath(new URL('..', import.meta.url));
 const MODULE = 'lifecycle-proof';
+const QUERY_MODULE = 'lifecycle-proof-query';
 const CONFIG_FILES = [
     'eslint.config.mjs',
     'tsconfig.base.json',
@@ -59,6 +60,7 @@ async function createWorkspace(
     await mkdir(join(root, 'libs'), { recursive: true });
     for (const script of [
         'create-module.mjs',
+        'create-module-policy.mjs',
         'retire-module.mjs',
         'retire-module-config.mjs',
         'retire-module-nx.mjs',
@@ -197,6 +199,7 @@ test('création puis retrait réels sont inverses sans altérer les project.json
     const creation = execute(root, bin, 'create-module.mjs', [
         '--definition',
         definitionPath,
+        '--allow-experimental',
     ]);
     assert.equal(creation.status, 0, creation.stderr || creation.stdout);
     for (const layer of [
@@ -245,7 +248,7 @@ test('un SIGKILL pendant Bun laisse une transaction reprenable sans bypass', asy
         root,
         bin,
         'create-module.mjs',
-        ['--definition', definitionPath],
+        ['--definition', definitionPath, '--allow-experimental'],
         { CMZ_FAKE_BUN_MODE: 'kill' }
     );
     assert.equal(interrupted.signal, 'SIGKILL');
@@ -293,7 +296,7 @@ test('une dérive du registre bloque la reprise mais jamais l’abandon sûr', a
         root,
         bin,
         'create-module.mjs',
-        ['--definition', definitionPath],
+        ['--definition', definitionPath, '--allow-experimental'],
         { CMZ_FAKE_BUN_MODE: 'kill' }
     );
     assert.equal(interrupted.signal, 'SIGKILL');
@@ -343,7 +346,7 @@ test('un gate Nx en échec restaure sortie, configurations et lockfile', async (
         root,
         bin,
         'create-module.mjs',
-        ['--definition', definitionPath],
+        ['--definition', definitionPath, '--allow-experimental'],
         { CMZ_FAKE_NX_FAIL: 'true' }
     );
     assert.equal(result.status, 1);
@@ -371,7 +374,7 @@ test('un graphe Nx qui omet un project.json annule intégralement la création',
         root,
         bin,
         'create-module.mjs',
-        ['--definition', definitionPath],
+        ['--definition', definitionPath, '--allow-experimental'],
         { CMZ_FAKE_NX_OMIT: `@cmz/${MODULE}-data` }
     );
     assert.equal(result.status, 1);
@@ -402,7 +405,7 @@ test('un échec Prettier annule sortie, configurations et lockfile', async (t) =
         root,
         bin,
         'create-module.mjs',
-        ['--definition', definitionPath],
+        ['--definition', definitionPath, '--allow-experimental'],
         { CMZ_FAKE_PRETTIER_FAIL: 'true' }
     );
     assert.equal(result.status, 1);
@@ -421,6 +424,7 @@ test('un tombstone interdit toute recréation implicite', async (t) => {
     const result = execute(root, bin, 'create-module.mjs', [
         '--definition',
         definitionPath,
+        '--allow-experimental',
     ]);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /tombstone de retrait/);
@@ -439,6 +443,7 @@ test('un tombstone lien symbolique cassé interdit aussi la recréation', async 
     const result = execute(root, bin, 'create-module.mjs', [
         '--definition',
         definitionPath,
+        '--allow-experimental',
     ]);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /tombstone de retrait/);
@@ -452,6 +457,7 @@ test('une sortie lien symbolique cassé n’est jamais considérée absente', as
     const result = execute(root, bin, 'create-module.mjs', [
         '--definition',
         definitionPath,
+        '--allow-experimental',
     ]);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /libs\/lifecycle-proof existe déjà/);
@@ -462,12 +468,55 @@ test('une sortie lien symbolique cassé n’est jamais considérée absente', as
     );
 });
 
+test('les compositions expérimentales sont refusées sans consentement explicite avant toute écriture', async (t) => {
+    for (const kind of ['action-request', 'list-query']) {
+        const { root, definitionPath, bin } = await createWorkspace(t);
+        if (kind === 'list-query') {
+            const definition = JSON.parse(
+                await readFile(definitionPath, 'utf8')
+            );
+            definition.kind = kind;
+            await write(
+                definitionPath,
+                `${JSON.stringify(definition, null, 2)}\n`
+            );
+        }
+        const result = execute(root, bin, 'create-module.mjs', [
+            '--definition',
+            definitionPath,
+        ]);
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, new RegExp(`composition "${kind}"`));
+        assert.match(result.stderr, /expérimentale et interdite par défaut/);
+        assert.match(result.stderr, /--allow-experimental/);
+        assert.equal(await exists(join(root, 'libs', MODULE)), false);
+        assert.equal(await exists(join(root, '.cmz')), false);
+    }
+});
+
+test('le consentement expérimental ne peut pas être ajouté à une reprise', async (t) => {
+    const { root, bin } = await createWorkspace(t);
+    const result = execute(root, bin, 'create-module.mjs', [
+        '--resume',
+        '--module',
+        MODULE,
+        '--allow-experimental',
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(
+        result.stderr,
+        /--resume et --abort sont exclusifs.*--allow-experimental/
+    );
+    assert.equal(await exists(join(root, '.cmz')), false);
+});
+
 test('le dry-run de création ne crée ni sortie ni stockage transactionnel', async (t) => {
     const { root, definitionPath, bin } = await createWorkspace(t);
     const result = execute(root, bin, 'create-module.mjs', [
         '--definition',
         definitionPath,
         '--dry-run',
+        '--allow-experimental',
     ]);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.equal(await exists(join(root, 'libs', MODULE)), false);
@@ -486,8 +535,6 @@ test('le dry-run de création ne crée ni sortie ni stockage transactionnel', as
  * pas 3) pour ne pas dépendre d'un `-application` que list-query n'émet
  * jamais.
  */
-const QUERY_MODULE = 'lifecycle-proof-query';
-
 test('création puis retrait réels sont inverses pour list-query (2 couches, pas 3)', async (t) => {
     const { root, definitionPath, bin } = await createWorkspace(t, {
         moduleName: QUERY_MODULE,
@@ -507,7 +554,7 @@ test('création puis retrait réels sont inverses pour list-query (2 couches, pa
         root,
         bin,
         'create-module.mjs',
-        ['--definition', definitionPath],
+        ['--definition', definitionPath, '--allow-experimental'],
         {},
         { moduleName: QUERY_MODULE, layers: ['data', 'domain'] }
     );
@@ -580,7 +627,7 @@ test('refuse un definition.kind non reconnu avant toute écriture', async (t) =>
         root,
         bin,
         'create-module.mjs',
-        ['--definition', definitionPath],
+        ['--definition', definitionPath, '--allow-experimental'],
         {},
         { moduleName: QUERY_MODULE, layers: ['data', 'domain'] }
     );
@@ -608,7 +655,7 @@ test('le générateur lit un snapshot immuable journalisé, jamais la définitio
         root,
         bin,
         'create-module.mjs',
-        ['--definition', definitionPath],
+        ['--definition', definitionPath, '--allow-experimental'],
         { CMZ_DEFINITION_PROBE: probePath }
     );
     assert.equal(result.status, 1);

@@ -56,8 +56,16 @@ test('le registre réel est fermé, trié et fondé sur des preuves relisibles',
         registry.entries.map(({ kind }) => kind),
         ['action-request', 'list-query']
     );
-    assert.equal(registry.byKind['action-request'].maturity, 'proven');
+    assert.equal(registry.byKind['action-request'].maturity, 'experimental');
     assert.equal(registry.byKind['list-query'].maturity, 'experimental');
+    assert.match(
+        registry.byKind['action-request'].maturityNote,
+        /2026-09-15 Staff audit.*production blockers/
+    );
+    assert.match(
+        registry.byKind['action-request'].maturityNote,
+        /requires action-request 2\.0.*migration path/
+    );
     assert.match(
         registry.byKind['list-query'].maturityNote,
         /removed cmz-client-landing-home POC \(rollback 6f70743\)/

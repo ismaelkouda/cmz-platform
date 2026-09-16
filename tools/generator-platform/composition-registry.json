@@ -3,7 +3,8 @@
   "compositions": [
     {
       "kind": "action-request",
-      "maturity": "proven",
+      "maturity": "experimental",
+      "maturity_note": "Experimental only: generation and isolated runtime behavior are reproducible, but the 2026-09-15 Staff audit found production blockers in host authentication, mandatory runtime validation, transport fidelity, idempotency, post-commit state, and query invalidation. Production adoption requires action-request 2.0 and its audited migration path.",
       "target": "angular-layered",
       "generator_script": "tools/generator-platform/generate-action-request.mjs",
       "layers": ["domain", "data", "application"],
