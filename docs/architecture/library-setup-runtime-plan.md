@@ -8,6 +8,14 @@
   change-set et ajouté l'empreinte des preuves réciproques. Les trois pistes ont
   ensuite été requalifiées contre le runner gelé ; toute modification future de
   cet outillage les périmera mécaniquement (ADR-0042 § invariants 8 à 10).
+- **Revue de maintenabilité 2026-09-16 :** les garanties décrites ici restent
+  applicables à l'implémentation actuelle, mais ce plan ne doit plus servir de
+  modèle aux nouveaux parcours courants. L'audit
+  [`audit-maintenable-automatisation-2026-09-16.md`](./audit-maintenable-automatisation-2026-09-16.md)
+  constate que qualification rare et application d'une recette vérifiée sont
+  excessivement couplées. Il gèle toute extension de cette architecture et
+  ordonne leur séparation, le retrait de la voie LLM dormante et une CI
+  proportionnelle à l'impact.
 - **Objectif servi :** créer une application sans écrire de code, puis ajouter
   une bibliothèque par **une seule commande** —
   `bun run add-library --app clean-street --library angular-material` — qui
