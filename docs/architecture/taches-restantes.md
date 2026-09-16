@@ -1861,6 +1861,20 @@ Figma, désormais source partielle différée :
   ne contourne aucun gate et n'est accepté ni en reprise ni en abandon. Les
   preuves v1 restent lisibles pour construire les migrateurs. Cette tranche ne
   prétend fermer aucun blocker runtime et ne remplace pas `list-query` 2.0.
+  **C1b — audit de maintenabilité de l'automatisation fait le 2026-09-16 :**
+  [`audit-maintenable-automatisation-2026-09-16.md`](./audit-maintenable-automatisation-2026-09-16.md)
+  mesure le parcours `create-app → add-library → create-module` avant toute
+  nouvelle abstraction. Verdict : `create-app` est conservé avec une UX à
+  simplifier ; le rollback de `create-module` reste justifié mais ses gates
+  doivent être bornées ; `add-library` couple à tort qualification hostile et
+  application d'une recette déjà approuvée. Son périmètre direct représente au
+  moins 19 496 lignes de code/tests/contrats/docs pour trois bibliothèques. La
+  voie LLM compte 1 263 lignes de code/tests directs sans recette réelle. Sept
+  lots `SIMPL-1…7` sont ordonnés : CI conditionnelle, retrait LLM, empreintes
+  découplées, séparation qualification/application, diagnostics humains,
+  simplification des commandes, puis budget obligatoire pour les compositions
+  v2. Aucune garantie existante n'est supprimée avant remplacement prouvé, mais
+  aucune extension du modèle actuel n'est admise.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
