@@ -103,7 +103,12 @@ trois niveaux
 | `runtime_acceptance[]` | preuve **réelle** (`compile-component`, `compiled-css-rule`, `production-build`, `browser-coexistence`) exécutée dans un candidat isolé | `enforced` exige un oracle enregistré ; la gate refuse aussi un oracle livré encore marqué `harness-pending` |
 | `packages[]` | paquets npm ; vérifiés structurellement — présents dans `package.json` racine, résolus au catalog, verrouillés dans `bun.lock` avec un spec et une version **cohérents** entre les trois | vérifié quand une app adopte la lib |
 | `coexistence[]` | invariants actifs seulement si une autre lib **de la même plateforme** est aussi déclarée | idem |
-| `install` (`oneOf` par `method`) | `official-schematic` → `command: { executable: "nx", argv }` avec un jeton `{{app}}` obligatoire ; `reference-derived` → `reference_tool` (confiné à `tools/`, fichier régulier) ; `llm-then-verified` → `prompt_contract` | VOLATILE — délégué, jamais figé comme vérité |
+| `install` (`oneOf` par `method`) | `official-schematic` → `command: { executable: "nx", argv }` avec un jeton `{{app}}` obligatoire ; `reference-derived` → `reference_tool` (confiné à `tools/`, fichier régulier) | VOLATILE — délégué, jamais figé comme vérité |
+
+La méthode historique `llm-then-verified` est retirée et rejetée explicitement
+par `check:library-setup`. Sa réintroduction exige un fournisseur réellement
+intégré, un nouvel audit de sécurité et un nouvel ADR ; une recette anticipant
+un fournisseur futur n'est pas valide.
 
 Chaque app avec un `project.json` **régulier doit** déclarer
 [`apps/<app>/.cmz/libraries.json`](./libraries/app-library-manifest.schema.json)

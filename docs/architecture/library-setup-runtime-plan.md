@@ -1,13 +1,13 @@
 # Plan — installation réelle + preuves runtime des bibliothèques
 
 - **Statut :** Livré et qualifié. Sont livrés : le cœur `add-library` et ses
-  neuf étapes, les quatre P0, les oracles runtime, le confinement macOS **et**
-  conteneur, le recours LLM borné, l'intégration `create-app`, la gate
-  d'intégration en CI, et la promotion gouvernée des matrices. L'audit du
-  2026-09-08 a étendu la transaction à la neuvième étape, borné Prettier au
-  change-set et ajouté l'empreinte des preuves réciproques. Les trois pistes ont
-  ensuite été requalifiées contre le runner gelé ; toute modification future de
-  cet outillage les périmera mécaniquement (ADR-0042 § invariants 8 à 10).
+  neuf étapes, les oracles runtime, le confinement macOS **et** conteneur,
+  l'intégration `create-app`, la gate d'intégration en CI, et la promotion
+  gouvernée des matrices. L'audit du 2026-09-08 a étendu la transaction à la
+  neuvième étape, borné Prettier au change-set et ajouté l'empreinte des preuves
+  réciproques. Les trois pistes ont ensuite été requalifiées contre le runner
+  gelé ; toute modification future de cet outillage les périmera mécaniquement
+  (ADR-0042 § invariants 8 à 10).
 - **Revue de maintenabilité 2026-09-16 :** les garanties décrites ici restent
   applicables à l'implémentation actuelle, mais ce plan ne doit plus servir de
   modèle aux nouveaux parcours courants. L'audit
@@ -16,6 +16,11 @@
   excessivement couplées. Il gèle toute extension de cette architecture et
   ordonne leur séparation, le retrait de la voie LLM dormante et une CI
   proportionnelle à l'impact.
+- **Amendement SIMPL-2 du 2026-09-16 :** la voie `llm-then-verified`, sans
+  recette ni fournisseur réel, est retirée du schéma, du runner et des tests.
+  Les sections LLM de ce plan sont conservées comme historique, pas comme
+  contrat actif. Toute réintroduction exige un fournisseur réel, un audit de
+  sécurité actualisé et un nouvel ADR.
 - **Objectif servi :** créer une application sans écrire de code, puis ajouter
   une bibliothèque par **une seule commande** —
   `bun run add-library --app clean-street --library angular-material` — qui
@@ -810,7 +815,7 @@ changement de mode. Le contenu n'est pas dupliqué dans le journal : il est déj
 dans les objets Git de `C'`, retenus par la ref temporaire. Un patch textuel
 serait réinterprété (encodage, fins de ligne) ; des blobs Git ne le sont pas.
 
-## P0 nº 4 — Confinement de l'exécutant LLM
+## Historique — ancien P0 nº 4, exécutant LLM retiré par SIMPL-2
 
 **Défaut corrigé.** La version précédente ne posait qu'un `prompt_contract` : un
 prompt n'est pas une frontière d'exécution.
@@ -915,21 +920,21 @@ jobs tournent donc sur **toute PR**, `fail-fast: false`. Budget cible :
 Revue **P0 par P0** ; aucun code d'un lot tant que le P0 dont il dépend n'est
 pas validé.
 
-| #   | Étape                                           | Statut                      | Sortie                                                             |
-| --- | ----------------------------------------------- | --------------------------- | ------------------------------------------------------------------ |
-| 1   | Durcissement `check:library-setup`              | **livré**                   | mergé en `c6b5b64`                                                 |
-| 2   | P0 nº 1 — candidat isolé                        | **livré**                   | matérialisation tree + baux vérifiés                               |
-| 3   | P0 nº 2 — verrous et transaction de publication | **livré**                   | reprise SIGKILL et rollback adverse                                |
-| 4   | P0 nº 3 — `plan_id` / change-set                | **livré**                   | identité et change-set déterministes                               |
-| 5   | P0 nº 4 — confinement des exécutants et du LLM  | **livré**                   | sandbox macOS/Docker + frontière LLM data-only                     |
-| 6   | Frontière candidate + suites adverses           | **livré**                   | 10/10 attaques réelles macOS et Docker                             |
-| 7   | Schéma `.compat.json` + premières pistes        | **livré**                   | schéma fermé et trois matrices candidates                          |
-| 8   | Tranche verticale Material                      | **livré**                   | compilation stricte + build production                             |
-| 9   | Tranche verticale Tailwind                      | **livré**                   | règle CSS compilée + build production                              |
-| 10  | Coexistence navigateur                          | **livré**                   | résultat identique macOS/Docker, ordre inverse couvert             |
-| 11  | `create-app → add-library`                      | **livré**                   | E2E réel : shell puis Material/Tailwind, zéro édition manuelle     |
-| 12  | Gouvernance d'upgrade                           | **implémentation en revue** | sélection fail-closed + promotion transactionnelle et périssable   |
-| 13  | Recours LLM borné                               | **livré sans fournisseur**  | boucle adverse couverte ; CLI fail-closed sans adaptateur approuvé |
+| #   | Étape                                           | Statut                      | Sortie                                                                   |
+| --- | ----------------------------------------------- | --------------------------- | ------------------------------------------------------------------------ |
+| 1   | Durcissement `check:library-setup`              | **livré**                   | mergé en `c6b5b64`                                                       |
+| 2   | P0 nº 1 — candidat isolé                        | **livré**                   | matérialisation tree + baux vérifiés                                     |
+| 3   | P0 nº 2 — verrous et transaction de publication | **livré**                   | reprise SIGKILL et rollback adverse                                      |
+| 4   | P0 nº 3 — `plan_id` / change-set                | **livré**                   | identité et change-set déterministes                                     |
+| 5   | P0 nº 4 — confinement des exécutants et du LLM  | **livré**                   | sandbox macOS/Docker + frontière LLM data-only                           |
+| 6   | Frontière candidate + suites adverses           | **livré**                   | 10/10 attaques réelles macOS et Docker                                   |
+| 7   | Schéma `.compat.json` + premières pistes        | **livré**                   | schéma fermé et trois matrices candidates                                |
+| 8   | Tranche verticale Material                      | **livré**                   | compilation stricte + build production                                   |
+| 9   | Tranche verticale Tailwind                      | **livré**                   | règle CSS compilée + build production                                    |
+| 10  | Coexistence navigateur                          | **livré**                   | résultat identique macOS/Docker, ordre inverse couvert                   |
+| 11  | `create-app → add-library`                      | **livré**                   | E2E réel : shell puis Material/Tailwind, zéro édition manuelle           |
+| 12  | Gouvernance d'upgrade                           | **implémentation en revue** | sélection fail-closed + promotion transactionnelle et périssable         |
+| 13  | Recours LLM borné                               | **retiré (SIMPL-2)**        | aucune recette/fournisseur réel ; réintroduction soumise à un nouvel ADR |
 
 Aucune ligne n'est marquée « validée » : la validation est un acte de revue, pas
 une déclaration de ce document. Le schéma `.compat.json` et sa première entrée

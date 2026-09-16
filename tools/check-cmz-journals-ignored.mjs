@@ -3,16 +3,9 @@
  * check:cmz-journals-ignored — tout journal d'outil sous `<dépôt>/.cmz/` doit
  * être ignoré par Git.
  *
- * Défaut réel trouvé le 2026-09-08 : `.cmz/library-llm-audit/` n'était pas dans
- * `.gitignore`, alors que ses cinq voisins y étaient. Conséquence mesurée — le
- * journal écrit par le harnais LLM rend le dépôt sale, et `add-library` exige un
- * dépôt **entièrement propre** avant de publier. Le contrôle initial (ligne 338)
- * passait, le journal était écrit (ligne 415), puis la publication (ligne 499)
- * échouait : l'échec arrivait au moment le plus coûteux, après le modèle, les
- * itérations et les preuves.
- *
- * Ajouter la ligne manquante n'aurait fermé que ce cas. Ce contrôle dérive la
- * liste depuis le CODE — les segments `.cmz/<nom>` littéraux des outils — et
+ * Un journal d'exécution non ignoré rend le dépôt sale et peut faire échouer une
+ * publication transactionnelle après les étapes coûteuses. Ce contrôle dérive
+ * donc la liste depuis le CODE — les segments `.cmz/<nom>` littéraux des outils — et
  * exige que chacun soit ignoré, sauf ceux qui sont relatifs à une app et donc
  * gouvernés, listés ici explicitement. Un nouveau journal non ignoré échoue
  * sans que personne ait à y penser.

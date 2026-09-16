@@ -1,7 +1,20 @@
 # ADR-0042 — Modèle transactionnel et d'isolation des mutations de workspace
 
-- **Statut :** Accepted et implémenté pour `add-library`
+- **Statut :** Accepted et implémenté pour `add-library`, amendé par SIMPL-2
 - **Date :** 2026-09-04
+
+## Amendement du 2026-09-16 — retrait de la voie LLM
+
+La voie `llm-then-verified` décrite historiquement dans cet ADR est retirée du
+schéma et de l'exécuteur. Aucune recette ni aucun fournisseur réel ne
+l'utilisait ; maintenir son runner et sa frontière de sécurité créait donc une
+complexité sans capacité produit. Les passages LLM ci-dessous restent comme
+trace de la décision initiale, mais ne décrivent plus une fonctionnalité
+disponible.
+
+Toute réintroduction exige cumulativement un fournisseur réel, une menace et un
+besoin produit démontrés, un audit de sécurité actualisé et un **nouvel ADR**.
+Elle ne peut pas réactiver silencieusement l'ancien contrat.
 
 ## Contexte
 
