@@ -5,7 +5,9 @@
 #   - ci.yml / corpus:ci  → --structural-only (oracles Nx, PAS de correspondance legacy)
 #   - ce workflow         → --verify sans --structural-only (chemins legacy requis)
 #
-# Déclenchement : push sur main + manuel. Pas sur chaque PR (coût + auth legacy).
+# Déclenchement : push pertinent sur main + manuel. Un changement applicatif
+# ordinaire ne modifie pas l'index de correspondances et ne justifie pas ~20 min
+# de validation legacy (ADR-0046).
 #
 # Secrets requis :
 #   LEGACY_CHECKOUT_TOKEN — PAT / deploy token lecture sur lock.repo (GitLab),
@@ -36,6 +38,12 @@ name: Corpus full — verify + legacy
 on:
   push:
     branches: [main]
+    paths:
+      - 'corpus/**'
+      - 'tools/corpus/**'
+      - 'docs/architecture/corpus/pair.schema.json'
+      - 'legacy.lock.json'
+      - '.github/workflows/corpus-full.yml'
   workflow_dispatch:
 
 # Audit G-8 : un seul run actif sur main / dispatch.
