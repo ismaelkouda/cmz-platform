@@ -2,6 +2,8 @@
 #
 # Tier 1 (corpus:ci, job `corpus` / --structural-only — ADR-0015) : modules isolés.
 # Tier 2 (ce workflow) : builds app development + production (coûteux).
+# SIMPL-1 : filet de sécurité profond quotidien pour les deux preuves
+# bibliothèque, même lorsqu'aucun diff PR n'en déclenche l'exécution.
 # strictTemplates (ngc) est bloquant en PR — job `oracle` de ci.yml (A-10).
 #
 # Déclenchement : nightly 03:00 UTC + manuel (workflow_dispatch).
@@ -128,3 +130,55 @@ jobs:
           path: bundle-composition-report.html
           retention-days: 30
           if-no-files-found: ignore
+
+  library-candidate-isolation:
+    name: Library candidate isolation nightly (${{ matrix.profile }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: linux-docker
+            runner: ubuntu-24.04
+          - profile: macos-sandbox
+            runner: macos-14
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: check:library-candidate-isolation (${{ matrix.profile }})
+        run: bun run check:library-candidate-isolation
+
+  library-end-to-end:
+    name: Library integration nightly (create-app → Material → Tailwind)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: check:library-setup-integration
+        run: bun run check:library-setup-integration

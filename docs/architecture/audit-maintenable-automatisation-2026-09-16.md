@@ -1,7 +1,7 @@
 # Audit de maintenabilité — automatisation de création et d'ajout de bibliothèques
 
 - **Date :** 2026-09-16
-- **Statut :** audit Staff terminé ; décisions d'exécution ouvertes
+- **Statut :** audit Staff terminé ; SIMPL-1 implémenté ; SIMPL-2…7 ouverts
 - **Périmètre :** `create-app`, `add-library`, `create-module` et leurs gates CI
 - **Question :** le socle limite-t-il l'action humaine sans devenir opaque,
   incompréhensible ou trop coûteux à maintenir ?
@@ -309,6 +309,23 @@ la complexité correspond à une menace ou un besoin actuel, pas hypothétique.
 ## Plan d'exécution ordonné
 
 ### SIMPL-1 — CI proportionnelle à l'impact — P0, S
+
+**Implémenté le 2026-09-16.** Les trois contextes requis conservent exactement
+leurs noms et existent sur toute PR. Un sélecteur Node sans dépendance calcule
+séparément l'impact `isolation` et `integration` depuis le diff Git ; une erreur
+de diff échoue au lieu d'autoriser silencieusement un skip. Checkout et
+sélection restent toujours exécutés, tandis que Bun, l'installation et les
+preuves profondes sont conditionnés. Le contrat statique `check:library-setup`
+reste toujours bloquant dans `Garde-fous socle`.
+
+La surface est fermée sur les fichiers unitaires de `create-app`, ouverte par
+préfixe sur toute nouvelle recette, matrice ou source de `tools/library-setup/`,
+et inclut les versions (`package.json`, `bun.lock`), la politique, la
+configuration Nx/TypeScript/formatage et les deux workflows qui portent cette
+décision. Une matrice Linux/macOS et l'E2E complet sont ajoutés au nightly
+existant sans condition d'impact. Deux suites machine vérifient le classifieur
+et la structure des workflows ; retirer une condition, un contexte, un profil,
+le déclenchement manuel/nightly ou une entrée déclarée les fait échouer.
 
 - garder les trois contextes GitHub stables ;
 - ajouter un détecteur d'impact comme celui du corpus ;

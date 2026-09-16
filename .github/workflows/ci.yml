@@ -267,20 +267,33 @@ jobs:
           - profile: macos-sandbox
             runner: macos-14
     steps:
+      # SIMPL-1 — le contexte requis existe sur toute PR, mais la preuve OS
+      # coûteuse ne tourne que si sa fermeture de dépendances a changé.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Contrat rapide — impact de la preuve d'isolation
+        id: library-impact
+        env:
+          LIBRARY_DIFF_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD~1' }}
+        run: node tools/library-ci-impact.mjs --base "$LIBRARY_DIFF_BASE" >> "$GITHUB_OUTPUT"
+
       - uses: oven-sh/setup-bun@v2
+        if: steps.library-impact.outputs.isolation == 'true'
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
       - name: Install dependencies
+        if: steps.library-impact.outputs.isolation == 'true'
         run: bun install --frozen-lockfile
 
       - name: check:library-candidate-isolation (${{ matrix.profile }})
+        if: steps.library-impact.outputs.isolation == 'true'
         run: bun run check:library-candidate-isolation
 
   # Gate END-TO-END : part d'un dépôt temporaire, crée une app depuis le design
@@ -304,14 +317,23 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Contrat rapide — impact de la preuve d'intégration
+        id: library-impact
+        env:
+          LIBRARY_DIFF_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD~1' }}
+        run: node tools/library-ci-impact.mjs --base "$LIBRARY_DIFF_BASE" >> "$GITHUB_OUTPUT"
+
       - uses: oven-sh/setup-bun@v2
+        if: steps.library-impact.outputs.integration == 'true'
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
       - name: Install dependencies
+        if: steps.library-impact.outputs.integration == 'true'
         run: bun install --frozen-lockfile
 
       - name: check:library-setup-integration
+        if: steps.library-impact.outputs.integration == 'true'
         run: bun run check:library-setup-integration
 
   # ─── Job T4-5 : secret scanning (gitleaks) ───────────────────────────────
