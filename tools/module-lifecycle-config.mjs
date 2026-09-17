@@ -46,7 +46,7 @@ function writeAtomic(path, content) {
     mkdirSync(dirname(path), { recursive: true });
     const temporary = join(
         dirname(path),
-        `.retire-config-${process.pid}-${randomUUID()}`
+        `.module-lifecycle-config-${process.pid}-${randomUUID()}`
     );
     let fd;
     try {

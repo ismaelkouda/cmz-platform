@@ -17,8 +17,8 @@ import { dirname, relative, resolve, sep } from 'node:path';
 import {
     findNxGraphConsumers,
     runNxGraphGate,
-} from '../../retire-module-nx.mjs';
-import { currentGitIdentity } from '../../retire-module-transaction.mjs';
+} from '../../module-lifecycle-nx.mjs';
+import { currentGitIdentity } from '../../workspace-transaction.mjs';
 import { withGenerationLock } from './generation-transaction.mjs';
 
 const TRANSACTION_ROOT = '.cmz/retire-app-transactions';

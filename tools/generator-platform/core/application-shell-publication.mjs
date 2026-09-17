@@ -306,7 +306,10 @@ export async function planApplicationShell({
 
 export async function publishApplicationShell(options, dependencies = {}) {
     const plan = await planApplicationShell(options);
-    if (options.planId !== plan.plan_id)
+    if (
+        options.expectedPlanId !== undefined &&
+        options.expectedPlanId !== plan.plan_id
+    )
         fail('reviewed plan id is stale or invalid');
     const run = dependencies.run ?? defaultRun;
     return withGenerationLock(plan.outputAbsolute, async () => {
@@ -355,5 +358,30 @@ export function publicApplicationShellPlan(plan) {
         experience_id: plan.experience_id,
         profile: plan.profile,
         tree_sha256: plan.tree_sha256,
+    };
+}
+
+export function publicApplicationShellResult(result) {
+    const { plan, recovered } = result;
+    return {
+        schema_version: '1.0.0',
+        status: recovered ? 'recovered' : 'created',
+        phase: 'finalized',
+        plan_id: plan.plan_id,
+        output: plan.output,
+        files: Object.keys(plan.files)
+            .sort()
+            .map((path) => `${plan.output}/${path}`),
+        validations: [
+            'application-design',
+            'candidate-tree-sha256',
+            'angular-ngc',
+            'nx-build-production',
+            'nx-lint',
+            'published-tree-sha256',
+        ],
+        recovery: recovered
+            ? 'La sortie existante exacte a été revérifiée.'
+            : 'Aucune action : publication terminée. En cas d’échec avant succès, relancer la même commande.',
     };
 }

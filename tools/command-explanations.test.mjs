@@ -28,11 +28,9 @@ const TOP_LEVEL_KEYS = [
 const EXPECTED_PHASES = {
     'create-app': [
         'preconditions',
-        'plan',
-        'candidate',
-        'compile',
+        'render',
+        'candidate-checks',
         'publication',
-        'targeted-checks',
     ],
     'add-library': [
         'preconditions',
@@ -46,13 +44,9 @@ const EXPECTED_PHASES = {
     ],
     'create-module': [
         'preconditions',
-        'journal-planned',
-        'generation',
-        'journal-generated',
+        'journal-and-generation',
         'configuration',
-        'journal-configured',
-        'gates',
-        'completion',
+        'targeted-checks-and-completion',
     ],
 };
 
@@ -87,6 +81,12 @@ test('le contrat explain est fermé, versionné et complet pour les trois comman
             explanation.phases.map(({ id }) => id),
             EXPECTED_PHASES[command]
         );
+        if (command !== 'add-library') {
+            assert.ok(
+                explanation.phases.length <= 4,
+                `${command} dépasse le budget de quatre phases visibles`
+            );
+        }
         assert.equal(
             explanation.phases.every(
                 (phase) =>

@@ -96,7 +96,7 @@ au socle.
 | `APP-1` | bloqué-humain | Écrire le brief de la vraie application : identité, utilisateurs, problème, résultat principal, premier parcours, critères d'acceptation et nature d'accès.      | Brief versionné et relu ; si le produit est public ou multi-locataire, ADR-0038 tranché avant toute implémentation associée. |
 | `APP-2` | bloqué-humain | Fournir ou approuver le contrat backend **cible** de la première tranche : opérations, authentification, entrées, sorties et erreurs.                            | Contrat canonique `target` sans champ inventé ; un analogue ou une collection Postman d'observation reste `reference`.       |
 | `APP-3` | en attente    | Compiler le brief et le contrat cible en conception applicative ; fermer les inconnues, accès, permissions, navigation, états d'erreur et comportement offline.  | `bun run compile:application-design -- ... --dry-run`, puis `--apply <plan_id>` et `bun run check:application-designs`.      |
-| `APP-4` | en attente    | Générer le shell Angular/PWA de l'expérience retenue ; ajouter Material, Tailwind ou une autre bibliothèque seulement si le besoin approuvé l'exige.             | `bun run create-app -- ... --dry-run`, puis `--apply <plan_id>` ; build et lint du candidat verts.                           |
+| `APP-4` | en attente    | Générer le shell Angular/PWA de l'expérience retenue ; ajouter Material, Tailwind ou une autre bibliothèque seulement si le besoin approuvé l'exige.             | `bun run create-app -- ...` directement ; `--dry-run` et `--expect-plan <plan_id>` restent facultatifs ; build et lint verts. |
 | `APP-5` | en attente    | Réaliser une première page verticale, bornée par son contrat, avec ses états nominal, chargement, vide, erreur, accès refusé et offline lorsqu'ils s'appliquent. | `prepare:page-realization`, réalisation des seuls fichiers autorisés, puis `verify:page-realization` vert.                   |
 | `APP-6` | en attente    | Brancher le backend réel ou un mock explicitement provisoire et couvrir le parcours accepté de bout en bout.                                                     | Test d'acceptation du parcours vert, build production vert, puis `bun run check:all`.                                        |
 
@@ -1913,8 +1913,16 @@ Figma, désormais source partielle différée :
   écriture. Le contrat JSON fermé `1.0.0` affiche propriété, phases, checks,
   temporaires, journal, verrou et reprise. Sa gate dédiée exécute les trois CLI
   hors workspace et vérifie leur innocuité. Le runbook humain commun reste
-  borné à 138 lignes par test. SIMPL-6 — application directe de `create-app` et
-  bornage de `create-module` — est le prochain lot.
+  borné à 138 lignes par test.
+  **C1h — SIMPL-6 fait localement le 2026-09-17 :** `create-app` publie
+  directement ; `--dry-run` et `--expect-plan` sont des options, et le résultat
+  JSON rend la publication observable. Les primitives partagées de cycle de vie
+  ont un nom neutre sans migrer le stockage historique récupérable.
+  `create-module` conserve son journal à trois états et son rollback, mais son
+  chemin nominal n'exécute qu'une installation sans scripts, les builds/lint
+  des projets créés et leur formatage. Un test prouve que les audits globaux
+  noms, targets et dépendances restent directement bloquants dans la CI.
+  SIMPL-7 — budget de complexité des compositions v2 — est le prochain lot.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

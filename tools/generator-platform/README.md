@@ -128,10 +128,12 @@ bun run compile:application-design -- \
 bun run check:application-designs
 ```
 
-`create-app` renders an approved web experience as an Angular 22/PWA shell. It
-publishes only after an immutable plan is reviewed, compiles the candidate with
-`ngc`, then executes a no-cache production build and lint in the real Nx graph.
-Failure rolls the output back to a hash-verified candidate.
+`create-app` renders an approved web experience as an Angular 22/PWA shell. Its
+nominal command computes and publishes the immutable plan directly, compiles
+the candidate with `ngc`, then executes a no-cache production build and lint in
+the real Nx graph. `--dry-run` remains available for inspection and
+`--expect-plan` makes prior plan review enforceable when needed. Failure rolls
+the output back to a hash-verified candidate.
 
 Every shell contains a generated access-decision port and a pure access policy.
 Public routes stay public; `authenticated` and `authorized` routes receive a
@@ -142,9 +144,11 @@ exists.
 
 ```bash
 bun run create-app -- --design designs/my-app.application-design.json \
+  --experience citizen-web --app my-app
+bun run create-app -- --design designs/my-app.application-design.json \
   --experience citizen-web --app my-app --dry-run
 bun run create-app -- --design designs/my-app.application-design.json \
-  --experience citizen-web --app my-app --apply <plan_id>
+  --experience citizen-web --app my-app --expect-plan <plan_id>
 ```
 
 Page realization is delegated without giving the LLM repository-wide write

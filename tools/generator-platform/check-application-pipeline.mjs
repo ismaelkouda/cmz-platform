@@ -12,10 +12,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { planApplicationDesignPublication } from './core/application-design-publication.mjs';
-import {
-    planApplicationShell,
-    publishApplicationShell,
-} from './core/application-shell-publication.mjs';
+import { publishApplicationShell } from './core/application-shell-publication.mjs';
 import {
     planPageRealization,
     publishPageRealizationWorkOrder,
@@ -203,11 +200,8 @@ async function main() {
             applicationDesignSchema,
             backendContractSchema,
         };
-        shellPlan = await planApplicationShell(shellOptions);
-        await publishApplicationShell({
-            ...shellOptions,
-            planId: shellPlan.plan_id,
-        });
+        const shellPublication = await publishApplicationShell(shellOptions);
+        shellPlan = shellPublication.plan;
 
         const pageOptions = { workspaceRoot, appName, pageId };
         const pagePlan = planPageRealization(pageOptions);

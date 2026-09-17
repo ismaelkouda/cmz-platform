@@ -31,10 +31,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import {
-    planApplicationShell,
-    publishApplicationShell,
-} from './core/application-shell-publication.mjs';
+import { publishApplicationShell } from './core/application-shell-publication.mjs';
 import { validateApplicationDesignWithDependencies } from './core/application-design.mjs';
 import {
     planPageRealization,
@@ -500,11 +497,7 @@ async function shell(root) {
         applicationDesignSchema,
         backendContractSchema,
     };
-    const plan = await planApplicationShell(options);
-    await publishApplicationShell(
-        { ...options, planId: plan.plan_id },
-        { run: () => '' }
-    );
+    await publishApplicationShell(options, { run: () => '' });
     execFileSync('git', ['init', '-q'], { cwd: root });
     execFileSync('git', ['add', '.'], { cwd: root });
     return join(root, 'apps/multi-node/src/app/pages', PAGE_ID);

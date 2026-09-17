@@ -8,8 +8,9 @@ const explanations = {
             "Crée un shell Angular/PWA à partir d'un application design validé.",
         runbook: RUNBOOK,
         invocations: [
+            'bun run create-app --design <design.json> --experience <id> --app <nom>',
             'bun run create-app --design <design.json> --experience <id> --app <nom> --dry-run',
-            'bun run create-app --design <design.json> --experience <id> --app <nom> --apply <plan_id>',
+            'bun run create-app --design <design.json> --experience <id> --app <nom> --expect-plan <plan_id>',
         ],
         ownership: {
             creates: ['apps/<app>/**'],
@@ -30,28 +31,19 @@ const explanations = {
                     'Valider les arguments, le profil, le tombstone et le design avec ses contrats.',
             },
             {
-                id: 'plan',
+                id: 'render',
                 description:
-                    'Rendre tous les fichiers et calculer les empreintes et le plan déterministe.',
+                    'Rendre les fichiers, calculer leur plan et vérifier le plan attendu s’il est fourni.',
             },
             {
-                id: 'candidate',
+                id: 'candidate-checks',
                 description:
-                    'Écrire ou vérifier le candidat complet hors de apps/<app>/.',
-            },
-            {
-                id: 'compile',
-                description: 'Compiler le candidat avec Angular ngc.',
+                    'Écrire le candidat exact, compiler avec Angular ngc et refuser toute dérive.',
             },
             {
                 id: 'publication',
                 description:
-                    'Publier le dossier par renommage seulement si le candidat est exact.',
-            },
-            {
-                id: 'targeted-checks',
-                description:
-                    'Construire en production, lint puis revérifier tous les octets publiés.',
+                    'Publier atomiquement, puis exécuter build et lint ciblés avant la confirmation finale.',
             },
         ],
         checks: [
@@ -65,7 +57,7 @@ const explanations = {
             journal: null,
             lock: 'apps/.<app>.generation-lock/',
             recovery:
-                'Relancer le même --apply : le verrou mort est récupéré et un candidat ou une sortie exacts sont revérifiés.',
+                'Relancer la même commande directe : le verrou mort est récupéré et un candidat ou une sortie exacts sont revérifiés.',
             resume_command: null,
             abort_command: null,
         },
@@ -191,50 +183,29 @@ const explanations = {
                     'Valider définition, composition, tombstone, transactions et identité Git.',
             },
             {
-                id: 'journal-planned',
+                id: 'journal-and-generation',
                 description:
-                    'Journaliser les sources, configurations protégées et leurs empreintes.',
-            },
-            {
-                id: 'generation',
-                description:
-                    'Générer le module depuis le snapshot immuable de la définition.',
-            },
-            {
-                id: 'journal-generated',
-                description:
-                    'Vérifier la propriété, le plan Nx et journaliser la sortie exacte.',
+                    'Journaliser les entrées protégées, générer depuis leur snapshot et vérifier la sortie.',
             },
             {
                 id: 'configuration',
                 description:
-                    'Ajouter les attaches ESLint et TypeScript par mutations ciblées.',
+                    'Ajouter les attaches ESLint et TypeScript ciblées puis journaliser leur état.',
             },
             {
-                id: 'journal-configured',
+                id: 'targeted-checks-and-completion',
                 description:
-                    'Journaliser la configuration appliquée avant les commandes externes.',
-            },
-            {
-                id: 'gates',
-                description:
-                    'Installer, construire, lint, vérifier le graphe et le formatage.',
-            },
-            {
-                id: 'completion',
-                description:
-                    'Revérifier les fichiers protégés puis supprimer le journal.',
+                    'Installer sans scripts, vérifier les projets créés, revérifier les fichiers protégés et clore le journal.',
             },
         ],
         checks: [
             'composition connue et consentement experimental explicite',
             'propriété et SHA-256 de la sortie générée',
-            'noms, targets et dépendances déclarées',
+            'bun install --ignore-scripts',
             'Nx build de chaque projet créé',
             'Nx lint de chaque projet créé',
-            'graphe Nx post-création complet',
             'Prettier sur libs/<module>',
-            'bun install --frozen-lockfile final',
+            'gates globales noms, targets et dépendances déléguées à la CI bloquante',
         ],
         transaction: {
             journal: '.cmz/create-module-transactions/<module>/state.json',

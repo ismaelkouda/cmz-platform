@@ -91,8 +91,8 @@ dans le vrai `package.json`.
 Le dépôt possède déjà un précédent applicable : `create-module` /
 `retire-module` (transaction journalisée, verrou avec récupération de pid mort,
 rollback octet pour octet, reprise après SIGKILL — testés par
-`module-lifecycle.test.mjs`), et `create-app` (`--dry-run` / `--apply <plan-id>`
-avec candidat et contrôle de fraîcheur).
+`module-lifecycle.test.mjs`), et `create-app` (publication directe, `--dry-run`
+facultatif et `--expect-plan <plan-id>` pour imposer un contrôle de fraîcheur).
 
 ## Options envisagées
 
@@ -626,7 +626,7 @@ première écriture.
   régénération non destructive.
 - [`library-setup-runtime-plan.md`](../architecture/library-setup-runtime-plan.md)
   — plan d'exécution, ordre de revue P0 par P0, budget CI.
-- Précédents dans le dépôt : `tools/retire-module-transaction.mjs`,
+- Précédents dans le dépôt : `tools/workspace-transaction.mjs`,
   `tools/create-module.mjs` (transaction, verrou, reprise SIGKILL),
-  `tools/generator-platform/core/application-shell-publication.mjs` (`--dry-run`
-  / `--apply <plan-id>`).
+  `tools/generator-platform/core/application-shell-publication.mjs` (publication
+  directe, `--dry-run` et `--expect-plan <plan-id>` facultatifs).

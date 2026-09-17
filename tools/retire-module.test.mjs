@@ -40,10 +40,11 @@ async function createWorkspace(t, { dependencyCheckExit = 0 } = {}) {
     await mkdir(join(root, 'tools'), { recursive: true });
     for (const script of [
         'retire-module.mjs',
-        'retire-module-plan.mjs',
+        'module-lifecycle-plan.mjs',
         'retire-module-transaction.mjs',
-        'retire-module-config.mjs',
-        'retire-module-nx.mjs',
+        'workspace-transaction.mjs',
+        'module-lifecycle-config.mjs',
+        'module-lifecycle-nx.mjs',
         'check-no-orphan-references.mjs',
         'check-removed-module-tombstones.mjs',
         'orphan-occurrence.mjs',

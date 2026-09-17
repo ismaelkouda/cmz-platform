@@ -17,7 +17,7 @@
     "check:declared-deps": "node tools/check-declared-deps.mjs",
     "check:no-orphan-references": "node tools/check-no-orphan-references.mjs",
     "check:removed-modules": "node tools/check-removed-module-tombstones.mjs",
-    "check:retire-module": "node --test tools/retire-module.test.mjs tools/retire-module-plan.test.mjs tools/retire-module-recovery.test.mjs tools/retire-module-adversarial.test.mjs tools/retire-module-config.test.mjs tools/check-no-orphan-references.test.mjs tools/check-removed-module-tombstones.test.mjs tools/module-lifecycle.test.mjs && bun run check:removed-modules",
+    "check:retire-module": "node --test tools/retire-module.test.mjs tools/module-lifecycle-plan.test.mjs tools/retire-module-recovery.test.mjs tools/retire-module-adversarial.test.mjs tools/module-lifecycle-config.test.mjs tools/create-module-gates.test.mjs tools/check-no-orphan-references.test.mjs tools/check-removed-module-tombstones.test.mjs tools/module-lifecycle.test.mjs && bun run check:removed-modules",
     "create-module": "node tools/create-module.mjs",
     "create-app": "node tools/create-app.mjs",
     "add-library": "node tools/add-library.mjs",

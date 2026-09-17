@@ -91,6 +91,8 @@ jobs:
       - name: check:command-explanations (CLI explicables)
         run: bun run check:command-explanations
 
+      # SIMPL-6 — ces trois audits globaux restent directement bloquants ici ;
+      # create-module ne répète localement que les checks de ses sorties.
       - name: check:project-names (ADR-0003 nommage @cmz/)
         run: node tools/check-project-names.mjs
 
