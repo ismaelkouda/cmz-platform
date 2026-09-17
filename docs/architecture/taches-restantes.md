@@ -1907,8 +1907,14 @@ Figma, désormais source partielle différée :
   fast-forward ; elle ne charge ni sandbox, ni navigateur, ni promotion. Les
   trois pistes ont été réellement requalifiées. Le harnais
   `create-app → Material → Tailwind` passe de 2 min 58 s à 1 min 44 s, environ
-  42 % de temps mur en moins. SIMPL-5 — diagnostics et runbook humains — est le
-  prochain lot.
+  42 % de temps mur en moins.
+  **C1g — SIMPL-5 fait localement le 2026-09-17 :** `create-app`,
+  `add-library` et `create-module` exposent `--explain` sans précondition ni
+  écriture. Le contrat JSON fermé `1.0.0` affiche propriété, phases, checks,
+  temporaires, journal, verrou et reprise. Sa gate dédiée exécute les trois CLI
+  hors workspace et vérifie leur innocuité. Le runbook humain commun reste
+  borné à 138 lignes par test. SIMPL-6 — application directe de `create-app` et
+  bornage de `create-module` — est le prochain lot.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

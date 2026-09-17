@@ -1,7 +1,7 @@
 # Audit de maintenabilité — automatisation de création et d'ajout de bibliothèques
 
 - **Date :** 2026-09-16
-- **Statut :** audit Staff terminé ; SIMPL-1…4 implémentés ; SIMPL-5…7 ouverts
+- **Statut :** audit Staff terminé ; SIMPL-1…5 implémentés ; SIMPL-6…7 ouverts
 - **Périmètre :** `create-app`, `add-library`, `create-module` et leurs gates CI
 - **Question :** le socle limite-t-il l'action humaine sans devenir opaque,
   incompréhensible ou trop coûteux à maintenir ?
@@ -414,11 +414,22 @@ ciblés par ajout. Les diagnostics visibles passent de 9 phases mêlant deux
 niveaux de risque à 8 phases linéaires, dont aucune ne concerne un sandbox, un
 navigateur ou une promotion.
 
-### SIMPL-5 — Rendre les commandes explicables — P1, S
+### SIMPL-5 — Rendre les commandes explicables — fait le 2026-09-17
 
-- ajouter une sortie stable `--explain` ou équivalente ;
-- afficher fichiers possédés, phases, checks, journaux éventuels et reprise ;
-- écrire un runbook humain de moins de 200 lignes pour les trois commandes.
+`create-app`, `add-library` et `create-module` acceptent désormais `--explain`
+seul. La commande imprime un contrat JSON fermé `1.0.0` sans demander les
+arguments nominaux, sans inspecter le workspace et sans écrire. Une source de
+vérité commune décrit pour chaque commande : invocations, fichiers créés,
+modifiés, protégés et temporaires, phases ordonnées, checks, journal, verrou et
+stratégie de reprise ou d'abandon.
+
+La gate `check:command-explanations`, câblée directement dans la CI et dans
+`check:all`, exécute les trois CLI depuis un dossier vide, exige la sortie
+déterministe issue de cette source versionnée, vérifie l'absence d'effet de bord,
+le schéma fermé, les phases et la cohérence de la reprise. Le
+[runbook humain](./runbook-commandes-creation.md) couvre les trois parcours en
+138 lignes ; un test bloque tout dépassement de 200 lignes. SIMPL-6 devient le
+prochain lot.
 
 ### SIMPL-6 — Simplifier `create-app` et borner `create-module` — P1, M
 
