@@ -16,6 +16,7 @@ import {
     libraryRunnerDigest,
     libraryRunnerSourceHashes,
 } from './tooling-fingerprint.mjs';
+import { qualifiedAdapterDescriptor } from './qualified-adapters.mjs';
 
 function fail(message) {
     throw new Error(`library compatibility promotion: ${message}`);
@@ -320,8 +321,21 @@ export function buildVerificationFromExecution({
         recipeRegistry,
         execution.runtimeProofs
     );
+    const currentAdapter = qualifiedAdapterDescriptor(
+        root,
+        recipe.platform,
+        recipe.library
+    );
+    const { change_set_id: adapterChangeSetId, ...executedAdapter } =
+        execution.qualifiedAdapter ?? {};
+    if (
+        stableJson(executedAdapter) !== stableJson(currentAdapter) ||
+        !/^changes:[a-f0-9]{64}$/.test(adapterChangeSetId ?? '')
+    ) {
+        fail('adaptateur qualifié absent, invalide ou différent de la source');
+    }
     const payload = {
-        schema_version: '1.2.0',
+        schema_version: '1.3.0',
         commit: execution.plan.commit,
         source_context_sha256: qualificationSourceSha256(
             root,
@@ -337,6 +351,10 @@ export function buildVerificationFromExecution({
         tested_versions: tested,
         dependency_state_sha256: dependencyStateSha256,
         proofs,
+        qualified_adapter: {
+            ...currentAdapter,
+            change_set_id: adapterChangeSetId,
+        },
         inputs_sha256: verificationInputs(root, recipe, recipeRegistry),
     };
     return {
@@ -379,6 +397,23 @@ export function verificationFailures(
     }
     if (verification.track_sha256 !== compatibilityTrackDigest(track)) {
         failures.push('la piste a changé depuis sa qualification');
+    }
+    try {
+        const currentAdapter = qualifiedAdapterDescriptor(
+            root,
+            recipe.platform,
+            recipe.library
+        );
+        const { change_set_id: adapterChangeSetId, ...verifiedAdapter } =
+            verification.qualified_adapter ?? {};
+        if (
+            stableJson(verifiedAdapter) !== stableJson(currentAdapter) ||
+            !/^changes:[a-f0-9]{64}$/.test(adapterChangeSetId ?? '')
+        ) {
+            failures.push("l'adaptateur qualifié a changé ou est invalide");
+        }
+    } catch (error) {
+        failures.push(error.message);
     }
     const exactPackages = Object.fromEntries(
         Object.entries(track.packages).sort(([left], [right]) =>

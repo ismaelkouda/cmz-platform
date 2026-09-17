@@ -27,6 +27,7 @@ import { buildLibraryPlan, stableJson } from './library-plan.mjs';
 import { dependencyProjectionSha256 } from './dependency-resolution.mjs';
 import { gitBlobOid } from './git-tree.mjs';
 import { libraryRunnerDigest } from './tooling-fingerprint.mjs';
+import { qualifiedAdapterDescriptor } from './qualified-adapters.mjs';
 import { removeTemporaryFixture } from '../test-support/remove-temporary-fixture.mjs';
 import {
     fixtureGit as git,
@@ -171,6 +172,10 @@ function fakeExecution(root, app, library, runtimeProofs) {
         plan,
         changeSet,
         runtimeProofs,
+        qualifiedAdapter: {
+            ...qualifiedAdapterDescriptor(root, recipe.platform, library),
+            change_set_id: changeSet.change_set_id,
+        },
     };
 }
 

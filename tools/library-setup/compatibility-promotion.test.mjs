@@ -26,6 +26,7 @@ import {
     compatibilityTrackDigest,
     libraryRunnerDigest,
 } from './tooling-fingerprint.mjs';
+import { qualifiedAdapterDescriptor } from './qualified-adapters.mjs';
 import { removeTemporaryFixture } from '../test-support/remove-temporary-fixture.mjs';
 import {
     fixtureGit as git,
@@ -140,6 +141,14 @@ function execution(overrides = {}) {
         changeSet,
         plan: buildLibraryPlan({ ...planInputs, ...planOverrides }),
         runtimeProofs: requiredProofIds(sourceRecipe, recipes()),
+        qualifiedAdapter: {
+            ...qualifiedAdapterDescriptor(
+                ROOT,
+                sourceRecipe.platform,
+                sourceRecipe.library
+            ),
+            change_set_id: changeSet.change_set_id,
+        },
         ...executionOverrides,
     };
 }
@@ -194,7 +203,7 @@ function rebindCommit(root, evidence) {
 test('la preuve vient d’un résultat complet dont plan et change-set sont recalculés', () => {
     const built = verification();
     assert.equal(built.commit, HEAD);
-    assert.equal(built.schema_version, '1.2.0');
+    assert.equal(built.schema_version, '1.3.0');
     assert.equal(
         built.source_context_sha256,
         qualificationSourceSha256(ROOT, recipe(), recipes(), track())
@@ -236,6 +245,21 @@ test('la preuve vient d’un résultat complet dont plan et change-set sont reca
                 execution: forgedChangeSet,
             }),
         /change_set_id ne correspond pas/
+    );
+
+    const forgedAdapter = execution();
+    forgedAdapter.qualifiedAdapter.digest_sha256 = '0'.repeat(64);
+    assert.throws(
+        () =>
+            buildVerificationFromExecution({
+                root: ROOT,
+                recipe: recipe(),
+                recipeRegistry: recipes(),
+                track: track(),
+                app: 'backoffice-angular',
+                execution: forgedAdapter,
+            }),
+        /adaptateur qualifié absent, invalide ou différent/
     );
 });
 

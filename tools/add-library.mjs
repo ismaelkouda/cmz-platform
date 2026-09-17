@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { pathToFileURL } from 'node:url';
 
-import { addLibrary } from './library-setup/add-library-core.mjs';
+import { applyQualifiedLibrary } from './library-setup/library-application.mjs';
 
 export function parseArgs(argv) {
     const options = { dryRun: false };
@@ -35,7 +35,7 @@ export function parseArgs(argv) {
 
 export async function main(argv = process.argv.slice(2)) {
     const options = parseArgs(argv);
-    const result = await addLibrary({
+    const result = await applyQualifiedLibrary({
         repository: process.cwd(),
         ...options,
         onProgress: ({ step, total, id }) =>
