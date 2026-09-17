@@ -150,10 +150,12 @@ async function stageCandidate(candidate, files) {
     }
 }
 
-function defaultRun(command, args, root) {
+export function runApplicationShellCommand(command, args, root) {
     execFileSync(command, args, {
         cwd: root,
-        stdio: ['ignore', 'inherit', 'inherit'],
+        // stdout appartient au contrat JSON de create-app. Les diagnostics des
+        // sous-commandes restent visibles, mais uniquement sur stderr.
+        stdio: ['ignore', process.stderr, process.stderr],
         env: {
             ...process.env,
             CI: 'true',
@@ -311,7 +313,7 @@ export async function publishApplicationShell(options, dependencies = {}) {
         options.expectedPlanId !== plan.plan_id
     )
         fail('reviewed plan id is stale or invalid');
-    const run = dependencies.run ?? defaultRun;
+    const run = dependencies.run ?? runApplicationShellCommand;
     return withGenerationLock(plan.outputAbsolute, async () => {
         if (await exists(plan.outputAbsolute)) {
             // Ne jamais déplacer un arbre préexistant avant d’avoir prouvé

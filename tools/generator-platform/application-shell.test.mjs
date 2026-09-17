@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -112,6 +113,30 @@ test('la CLI create-app applique directement, avec dry-run et plan attendu facul
             ]),
         /exclusifs/
     );
+});
+
+test('le runner réserve stdout au JSON et redirige les diagnostics enfants vers stderr', () => {
+    const moduleUrl = new URL(
+        './core/application-shell-publication.mjs',
+        import.meta.url
+    ).href;
+    const script = `
+        import { runApplicationShellCommand } from ${JSON.stringify(moduleUrl)};
+        runApplicationShellCommand(
+            process.execPath,
+            ['--eval', "process.stdout.write('diagnostic nx\\\\n')"],
+            process.cwd()
+        );
+        process.stdout.write(JSON.stringify({ status: 'created' }));
+    `;
+    const result = spawnSync(
+        process.execPath,
+        ['--input-type=module', '--eval', script],
+        { encoding: 'utf8' }
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { status: 'created' });
+    assert.match(result.stderr, /diagnostic nx/);
 });
 
 test('le renderer produit routing, i18n, PWA et un contrat borné par page', async () => {
