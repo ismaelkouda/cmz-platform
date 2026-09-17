@@ -86,6 +86,11 @@ jobs:
       - name: check:cmz-journals-ignored (journaux d'outil hors index)
         run: bun run check:cmz-journals-ignored
 
+      # SIMPL-5 — les trois commandes de construction exposent une explication
+      # JSON stable et un runbook court, sans précondition ni écriture.
+      - name: check:command-explanations (CLI explicables)
+        run: bun run check:command-explanations
+
       - name: check:project-names (ADR-0003 nommage @cmz/)
         run: node tools/check-project-names.mjs
 

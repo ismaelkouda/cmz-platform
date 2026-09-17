@@ -4,6 +4,13 @@ import { pathToFileURL } from 'node:url';
 import { applyQualifiedLibrary } from './library-setup/library-application.mjs';
 
 export function parseArgs(argv) {
+    if (argv.includes('--explain')) {
+        if (argv.length !== 1)
+            throw new Error(
+                '--explain doit être utilisé seul, sans autre argument.'
+            );
+        return { explain: true };
+    }
     const options = { dryRun: false };
     const seen = new Set();
     for (let index = 0; index < argv.length; index += 1) {
@@ -35,6 +42,12 @@ export function parseArgs(argv) {
 
 export async function main(argv = process.argv.slice(2)) {
     const options = parseArgs(argv);
+    if (options.explain) {
+        const { formatCommandExplanation } =
+            await import('./command-explanations.mjs');
+        process.stdout.write(formatCommandExplanation('add-library'));
+        return;
+    }
     const result = await applyQualifiedLibrary({
         repository: process.cwd(),
         ...options,

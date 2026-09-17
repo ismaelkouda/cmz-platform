@@ -3,6 +3,11 @@ function fail(message) {
 }
 
 export function parseCreateModuleArgs(argv) {
+    if (argv.includes('--explain')) {
+        if (argv.length !== 1)
+            fail('--explain doit être utilisé seul, sans autre argument.');
+        return { explain: true };
+    }
     const options = {
         abort: false,
         allowExperimental: false,

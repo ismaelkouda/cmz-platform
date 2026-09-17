@@ -743,8 +743,14 @@ function runAbort(moduleName) {
     );
 }
 
-function main() {
+async function main() {
     const options = parseCreateModuleArgs(process.argv.slice(2));
+    if (options.explain) {
+        const { formatCommandExplanation } =
+            await import('./command-explanations.mjs');
+        process.stdout.write(formatCommandExplanation('create-module'));
+        return;
+    }
     const definition = options.module
         ? null
         : readDefinition(options.definition);
@@ -768,9 +774,7 @@ function main() {
     });
 }
 
-try {
-    main();
-} catch (error) {
+main().catch((error) => {
     console.error(`❌  ${error.message}`);
     process.exitCode = 1;
-}
+});

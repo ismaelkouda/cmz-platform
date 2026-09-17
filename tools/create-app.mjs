@@ -13,6 +13,11 @@ function fail(message) {
 }
 
 export function parseArgs(argv) {
+    if (argv.includes('--explain')) {
+        if (argv.length !== 1)
+            fail('--explain doit être utilisé seul, sans autre argument.');
+        return { explain: true };
+    }
     const options = { dryRun: false, profile: 'angular-pwa' };
     for (let index = 0; index < argv.length; index += 1) {
         const argument = argv[index];
@@ -53,6 +58,12 @@ async function schemas() {
 
 export async function main(argv = process.argv.slice(2)) {
     const options = parseArgs(argv);
+    if (options.explain) {
+        const { formatCommandExplanation } =
+            await import('./command-explanations.mjs');
+        process.stdout.write(formatCommandExplanation('create-app'));
+        return;
+    }
     const [applicationDesignSchema, backendContractSchema] = await schemas();
     const common = {
         workspaceRoot: repositoryRoot,
