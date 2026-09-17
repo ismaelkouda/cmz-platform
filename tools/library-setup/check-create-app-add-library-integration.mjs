@@ -86,9 +86,11 @@ function assertInitialCommitOwnsOnlyApp(repository, commit) {
 function assertLibraryResult(repository, result, library) {
     if (
         result?.published !== true ||
-        result?.dependencySynchronization?.synchronized !== true ||
         result?.plan?.app !== APP ||
         result?.plan?.library !== library ||
+        result?.plan?.kind !== 'qualified-library-application' ||
+        JSON.stringify(result?.checks) !==
+            JSON.stringify(['build', 'lint', 'test']) ||
         !/^library-plan:[a-f0-9]{64}$/.test(result.plan.plan_id ?? '') ||
         !/^changes:[a-f0-9]{64}$/.test(result.changeSet?.change_set_id ?? '')
     ) {
@@ -285,7 +287,7 @@ function main() {
         assertInitialCommitOwnsOnlyApp(repository, shellCommit);
         assertClean(repository, 'dépôt après create-app');
 
-        console.error('[5/7] add-library : Angular Material');
+        console.error('[5/7] application qualifiée : Angular Material');
         const material = runNode(
             repository,
             'tools/add-library.mjs',
@@ -294,7 +296,7 @@ function main() {
         );
         assertLibraryResult(repository, material, 'angular-material');
 
-        console.error('[6/7] add-library : Tailwind + coexistence navigateur');
+        console.error('[6/7] application qualifiée : Tailwind');
         const tailwind = runNode(
             repository,
             'tools/add-library.mjs',
@@ -323,7 +325,7 @@ function main() {
             fail('résidu transactionnel dans le dépôt final');
         }
         console.log(
-            '✅ create-app plan/apply → Angular Material → Tailwind : zéro édition manuelle, publications et oracles réels.'
+            '✅ create-app plan/apply → adaptateurs Material → Tailwind : zéro édition manuelle, builds/lint/tests ciblés et publications Git.'
         );
     } finally {
         rmSync(temporaryRoot, { recursive: true, force: true });
