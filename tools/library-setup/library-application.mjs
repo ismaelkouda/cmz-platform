@@ -335,7 +335,16 @@ function createCandidate(root, head) {
     chmodSync(parent, 0o700);
     const workspace = join(parent, 'workspace');
     try {
-        git(root, ['worktree', 'add', '--quiet', '--detach', workspace, head]);
+        git(root, [
+            '-c',
+            'core.hooksPath=/dev/null',
+            'worktree',
+            'add',
+            '--quiet',
+            '--detach',
+            workspace,
+            head,
+        ]);
     } catch (error) {
         rmSync(parent, { recursive: true, force: true });
         throw error;

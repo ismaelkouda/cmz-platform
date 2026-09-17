@@ -1,7 +1,7 @@
 # Audit de maintenabilité — automatisation de création et d'ajout de bibliothèques
 
 - **Date :** 2026-09-16
-- **Statut :** audit Staff terminé ; SIMPL-1…3 implémentés ; SIMPL-4…7 ouverts
+- **Statut :** audit Staff terminé ; SIMPL-1…4 implémentés ; SIMPL-5…7 ouverts
 - **Périmètre :** `create-app`, `add-library`, `create-module` et leurs gates CI
 - **Question :** le socle limite-t-il l'action humaine sans devenir opaque,
   incompréhensible ou trop coûteux à maintenir ?
@@ -381,7 +381,7 @@ Les tests prouvent les deux directions : une source hors exécution ou un oracle
 étranger ne change pas le digest, tandis qu'une fixture propre ou une source
 commune le change. Angular Material, Tailwind et Transloco ont ensuite été
 repassés en `candidate` et requalifiés par leurs vrais builds et oracles isolés
-avant de retrouver `verified`. SIMPL-4 est le prochain lot.
+avant de retrouver `verified`.
 
 ### SIMPL-4 — Séparer qualification et application — P0, L
 
@@ -392,6 +392,27 @@ avant de retrouver `verified`. SIMPL-4 est le prochain lot.
 
 **Sortie :** le chemin courant dépend d'au plus six modules de production et ne
 lance ni sandbox, ni navigateur, ni promotion.
+
+**Réalisation (2026-09-17) :** la promotion exécute encore la recette vendeuse
+confinée, mais elle construit aussi un candidat distinct avec l'adaptateur
+plateforme et fait porter les preuves runtime sur cette sortie réellement
+consommée. L'attestation `1.3.0` lie l'adaptateur, ses entrées et le change-set
+observé. Les trois pistes ont été requalifiées par leurs vrais oracles Angular
+22 avant de redevenir `verified`.
+
+La CLI courante traverse exactement **3 modules de production** (test statique
+fail-closed), contre au moins 18 auparavant. Elle ne charge ni recette, sandbox,
+navigateur, runtime proof, ni promotion. Elle travaille dans un worktree Git
+jetable, exécute une installation gelée sans scripts, puis les targets
+build/lint/test de l'app et ne publie que son diff par fast-forward. Un échec
+avant publication laisse la branche et le worktree principal intacts.
+
+Mesure comparable du harnais `create-app → Material → Tailwind` sur la même
+machine : **2 min 58 s avant**, **1 min 44 s après**, soit environ **42 %** de
+temps mur en moins. Le chemin après séparation exécute pourtant trois checks
+ciblés par ajout. Les diagnostics visibles passent de 9 phases mêlant deux
+niveaux de risque à 8 phases linéaires, dont aucune ne concerne un sandbox, un
+navigateur ou une promotion.
 
 ### SIMPL-5 — Rendre les commandes explicables — P1, S
 

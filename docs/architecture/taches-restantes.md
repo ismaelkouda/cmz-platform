@@ -1898,7 +1898,16 @@ Figma, désormais source partielle différée :
   sans surface déclarée échoue fermée. Les tests prouvent qu'un oracle étranger
   ne périme plus une piste indépendante et qu'une source pertinente la périme
   toujours. Angular Material, Tailwind et Transloco ont été requalifiés par le
-  parcours réel. SIMPL-4 — séparer qualification et application — est le
+  parcours réel.
+  **C1f — SIMPL-4 fait localement le 2026-09-17 :** la qualification rare
+  conserve recette vendeuse, confinement et oracles, mais prouve désormais un
+  adaptateur plateforme distinct porté par l'attestation `1.3.0`. La CLI
+  courante traverse trois modules, applique cet adaptateur dans un worktree Git
+  jetable, installe sans scripts et exécute build/lint/test ciblés avant un
+  fast-forward ; elle ne charge ni sandbox, ni navigateur, ni promotion. Les
+  trois pistes ont été réellement requalifiées. Le harnais
+  `create-app → Material → Tailwind` passe de 2 min 58 s à 1 min 44 s, environ
+  42 % de temps mur en moins. SIMPL-5 — diagnostics et runbook humains — est le
   prochain lot.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).

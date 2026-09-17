@@ -5,7 +5,7 @@
   "tracks": [
     {
       "id": "angular-22",
-      "status": "verified",
+      "status": "candidate",
       "requirements": {
         "node": ">=22.22.3 <23",
         "bun": ">=1.3.14 <2",
@@ -19,89 +19,7 @@
       "dependency_section": "dependencies",
       "catalog": "default",
       "reason": "Piste initiale alignée sur Angular 22 ; passe en verified seulement après la preuve compile-component.",
-      "verification": {
-        "schema_version": "1.3.0",
-        "commit": "72567fdd8ad78d4b9eee71c60d49957dc8fc60f4",
-        "source_context_sha256": "ddc4f2d25b09c44677402e5fa528d78aac87210679e38bd52719dbf20e73bc6a",
-        "app": "backoffice-angular",
-        "plan_id": "library-plan:9d10a93bc5969c7c18d9ed77e551236277f36561be869103d0246c2235ed4e8d",
-        "change_set_id": "changes:7f8b14f6ef447133ff6c3cd69a1b20a5ee05dafdf11dbd743c757625deb5e87c",
-        "app_tree_sha256": "7766488c42ddeb1a28fb16fc845508107c4adfab5781639babc615ae55535a4d",
-        "track_sha256": "838fec6ce3a84e3165204ffa42a74521a6461b205c6d8507f7ad9346af64c160",
-        "tested_versions": {
-          "node": "22.22.3",
-          "bun": "1.3.14",
-          "nx": "23.2.1",
-          "framework": "22.0.7",
-          "packages": {
-            "@angular/cdk": "22.0.5",
-            "@angular/material": "22.0.5"
-          }
-        },
-        "dependency_state_sha256": {
-          "initial": "fc54e23cc154384718adde6a55434b830caa9fa34250e715aeacf7f1d7035b72",
-          "final": "ee4625895b54ca994df7155bdfcb655a634b07744aa440121f95317e83a91866"
-        },
-        "proofs": [
-          "material-component-compiles",
-          "material-tailwind-cascade-order",
-          "material-tailwind-render-together",
-          "offline-production-build"
-        ],
-        "qualified_adapter": {
-          "schema_version": "1.0.0",
-          "id": "angular/angular-material@1",
-          "inputs_sha256": {
-            "tools/library-setup/qualified-adapters.mjs": "0dc457986116ae91a66dcb6085c576d48f83bcc0453aad8f0e623cd9e85738db"
-          },
-          "digest_sha256": "cf24cfcbcc99de205d83055aab8876d18a675b1ee00a8807dbb38c972cb0074f",
-          "change_set_id": "changes:f99ab9ff596a26323804813bdc749925ce9cfa25258986bf05b0414e6b53e971"
-        },
-        "inputs_sha256": {
-          "recipe": "c8e5507b9a76e73840014eb096f1902c566b70be7fc27c06be528f4eaa44b635",
-          "recipe_schema": "b741a753ddb9d3df1266a9bd615bca6f00fb5b5b6e4576c45b7b285056987b11",
-          "compat_schema": "086134ad4b213328416aacaa2e96d845b8ba74773052238d3bee877e9bb22245",
-          "policy": "ca3429863614bb7592a153300a44e7b7006428cc1fd826823062c8759fde77c7",
-          "policy_schema": "a71cc60b0692e3704ac8f09847b202af9da92453c7de486f09d0106ff3db0c96",
-          "nx_json": "3403357296b1a3ccbab58dbe602d10d50849775a60ba548526f64bebe83dd4bc",
-          "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
-          "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
-          "proof_contracts": "9b72d4629573fa351cc5ab209df549d7cef942f3a9061ca04a2e3a4ac15dc496",
-          "runner": "29f2ec1825b8e6bfb73c942771f4633dd4ba2e6e9257a5564c85e6f7f00f4c0b",
-          "runner_sources": {
-            "tools/check-library-setup-deps.mjs": "3fd82a88564c9e29174f3d6310eabafe3d327fded02d323a8f2e1a9567514b05",
-            "tools/check-library-setup.mjs": "9f50a53b4d40b6228569b73792d0c84bbc5fde8424abfed292205e2b15c4b2ac",
-            "tools/generator-platform/validate-ir.mjs": "afa3e1e6037f48d8647d0b29b0da48eed605a429499d879afa9a04ab3a7ca682",
-            "tools/library-setup/add-library-core.mjs": "225e3a64db4b31de1a3bb8113b3d3a528bd7945b7f0a92f6f7c2db5f171c8db3",
-            "tools/library-setup/browser-provisioning.mjs": "2c503123129bcf45cf5c6b8cda9eadd6c3028c426abdef333e21d8ec6481e18a",
-            "tools/library-setup/candidate-lease.mjs": "309d571289839a3d50683ba91221d03af959f1d1af1238a2fb87e64d2cadefa4",
-            "tools/library-setup/compatibility-promotion-runner.mjs": "826b0b8e5358651b3ae68b8fbbd8361ab5452e3a123efa978889f0a980c1f7c6",
-            "tools/library-setup/compatibility-promotion.mjs": "a16e528e6fd2ca22257cd5c45c7186264416489f6b20ffc6d895825cf3dad16f",
-            "tools/library-setup/compatibility.mjs": "4da95d700d280f36b5f3243dcdaa49bc6eb626704d7a7ff4140c2e5b07a25a2c",
-            "tools/library-setup/dependency-resolution.mjs": "079dd875146201ebfff2a76b17cfb35da64298ea8cf593ab39f181ea4e7d67e8",
-            "tools/library-setup/filesystem-snapshot.mjs": "5811c240d74f7b9f3cb355f3cba1b4a8de966f575fbb9ef632ff89149401fd2b",
-            "tools/library-setup/git-tree.mjs": "85f94f5f09adc9eee6798af4859766f9192443cf05ea7e0811b07dc2005f74c8",
-            "tools/library-setup/install-protocol.mjs": "a9bba03808b743b7df6c7c646ced2b138e03828e142fdae35dacbc8db69aa0ce",
-            "tools/library-setup/library-plan.mjs": "1505b63ac1e2524ef492b74e510e9e3011f179c888a8a9f354467c8414052990",
-            "tools/library-setup/publication-transaction.mjs": "c321fabf31846425530ef845527c0fa5a58610c49a12cc32326f58f81b140790",
-            "tools/library-setup/qualification-contracts.mjs": "02819658acf19c890e8fda535100aa63ca57ac6ef6a03c094933dfee79756955",
-            "tools/library-setup/qualified-adapters.mjs": "0dc457986116ae91a66dcb6085c576d48f83bcc0453aad8f0e623cd9e85738db",
-            "tools/library-setup/recipe-execution.mjs": "02428e8149e3fee79eb9a2a982b99962af2e6ab31004f7907823febdc39f22d6",
-            "tools/library-setup/resolution-policy.mjs": "b78cccdb1db18b9c3de3af958c5ca0844245525a9a6cd9d995b2d24f06db1da4",
-            "tools/library-setup/runtime-fixtures/material-probe.ts": "57e9a08bc1c53a8191030d4d0cb1b48acca989b0c555dd6acbf6196472e15266",
-            "tools/library-setup/runtime-fixtures/tsconfig.material.json": "2b01448591a8e7e367e745fc3056459d737aed1ee4ffc4a3c26d4152c62429d3",
-            "tools/library-setup/runtime-oracles/material-component.mjs": "f457dbacadc6e89ee98cf643ff81399c4b9e217d30700899085675b27fa2ae75",
-            "tools/library-setup/runtime-oracles/material-tailwind-browser.mjs": "dff3bb2dc9b732198c89b447e430703bd4c17c21fecca3b860bfd332b9c40556",
-            "tools/library-setup/runtime-oracles/material-tailwind-cascade.mjs": "53f3953e421762417a32019d130ea85ec8f4a20a90617c6b7ab5ad59a43362a0",
-            "tools/library-setup/runtime-oracles/production-build.mjs": "a4e323a13b60236100ebc40605e937083e29784d38d4055f0109db17caafd3ea",
-            "tools/library-setup/runtime-oracles/support.mjs": "5388a7d2d487dd66bbb6c49631cef6f6b6bdef4c72282979074b8f2757ec0651",
-            "tools/library-setup/runtime-proofs.mjs": "dc7a53a387168a3fe7609b789178219c8968a3b468c6555f7c84a865aada9078",
-            "tools/library-setup/sandbox.mjs": "6f6622c4362046c31fa1e7e770d9ac6f92c8984998e588a07a5675b6c2c198af",
-            "tools/library-setup/tooling-fingerprint.mjs": "c53807d81dad3d7e5c25f714ffcac9f572ee21e6c1b3233c53f202fae77fb462"
-          }
-        },
-        "evidence_sha256": "bbea03fa824d07c09db80f8062474573b3d32926ca66e9c42d3e1828ee82374a"
-      }
+      "verification": null
     }
   ]
 }
