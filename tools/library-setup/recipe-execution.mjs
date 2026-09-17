@@ -83,7 +83,7 @@ function applyNormalizations(workspace, appRoot, normalizations = []) {
     }
 }
 
-function formatApp({
+export function formatApp({
     repository,
     workspace,
     paths,
@@ -91,7 +91,7 @@ function formatApp({
     backend,
     cache,
     home,
-    run,
+    run = runConfined,
 }) {
     regularFile(workspace, 'node_modules/prettier/bin/prettier.cjs');
     if (!Array.isArray(paths) || paths.length === 0) {

@@ -1,8 +1,34 @@
 # ADR-0042 — Modèle transactionnel et d'isolation des mutations de workspace
 
-- **Statut :** Accepted et implémenté pour `add-library`, amendé par SIMPL-2 et
-  SIMPL-3
+- **Statut :** Accepted ; voie de qualification conservée, voie courante
+  remplacée par SIMPL-4
 - **Date :** 2026-09-04
+
+## Amendement du 2026-09-17 — qualification et application séparées
+
+Les sections historiques ci-dessous restent le contrat de la **qualification
+rare**. Elles ne décrivent plus le chemin nominal `add-library`.
+
+`promote-library-compatibility` exécute toujours la recette vendeuse dans le
+confinement, puis applique séparément l'adaptateur possédé par la plateforme et
+fait porter les preuves runtime sur ce second candidat. L'attestation `1.3.0`
+lie l'identité de cet adaptateur, ses sources, son digest et le change-set
+observé. Material, Tailwind et Transloco ont été requalifiés ainsi.
+
+La commande courante ne charge que trois modules de production : sa CLI, son
+orchestrateur et les adaptateurs fermés. Elle crée un worktree Git détaché,
+applique l'adaptateur sans schematic, installe avec
+`--frozen-lockfile --ignore-scripts`, exécute les targets build/lint/test
+disponibles, calcule un diff limité à l'app, puis publie par fast-forward. Avant
+ce fast-forward, tout échec ou arrêt ne touche que le worktree jetable ; les
+hooks Git sont désactivés pour sa création et sa publication. La racine doit
+déjà contenir la fermeture de dépendances qualifiée : une application courante
+ne résout jamais une nouvelle version.
+
+Le harnais réel `create-app → Material → Tailwind` passe en 1 min 44 s contre 2
+min 58 s avant séparation, sans sandbox, navigateur ni promotion dans la voie
+courante. La baisse mesurée est d'environ 42 %, avec build, lint et test ciblés
+pour chaque ajout.
 
 ## Amendement du 2026-09-16 — empreintes de qualification découplées
 

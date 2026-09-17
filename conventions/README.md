@@ -125,15 +125,20 @@ manifeste manque, ou si une lib gouvernée est utilisée (empreinte détectée) 
 | [`angular/tailwind.setup.json`](./libraries/angular/tailwind.setup.json) | `reference-derived` |
 | [`angular/transloco.setup.json`](./libraries/angular/transloco.setup.json) | `official-schematic` |
 
-`add-library` transactionnel et le harnais `runtime_acceptance` sont livrés.
+`add-library` applique désormais un adaptateur plateforme qualifié dans un
+worktree Git jetable. Le schematic, le sandbox, le navigateur et le harnais
+`runtime_acceptance` restent dans `promote-library-compatibility`, la voie rare
+de qualification.
 Intégration `create-app` et gouvernance d’upgrade :
 [`docs/architecture/library-setup-runtime-plan.md`](../docs/architecture/library-setup-runtime-plan.md).
 
-La promotion d'une piste candidate produit une attestation `1.2.0`. Son champ
+La promotion d'une piste candidate produit une attestation `1.3.0`. Son champ
 `inputs_sha256.runner_sources` expose la liste fermée des sources communes et
 des oracles réellement exécutés. Une source pertinente périme la piste ; un test
 ou l'oracle d'une autre bibliothèque ne force pas une requalification sans
-rapport. Toute acceptance sans surface de sources déclarée est refusée.
+rapport. `qualified_adapter` lie en plus l'identité, les sources et le
+change-set observé de la transformation rejouée par la voie courante. Toute
+acceptance sans surface de sources déclarée est refusée.
 
 ## Emplacement
 

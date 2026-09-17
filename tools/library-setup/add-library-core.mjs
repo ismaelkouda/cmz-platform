@@ -38,7 +38,7 @@ import {
     publishCandidateCommit,
     recoverLibraryPublication,
 } from './publication-transaction.mjs';
-import { executeLibraryRecipe } from './recipe-execution.mjs';
+import { executeLibraryRecipe, formatApp } from './recipe-execution.mjs';
 import {
     loadResolutionPolicy,
     resolutionPolicySha256,
@@ -51,6 +51,10 @@ import {
     compatibilityTrackDigest,
     libraryRunnerDigest,
 } from './tooling-fingerprint.mjs';
+import {
+    applyQualifiedAdapter,
+    qualifiedAdapterDescriptor,
+} from './qualified-adapters.mjs';
 
 function fail(message) {
     throw new Error(`add-library: ${message}`);
@@ -396,6 +400,7 @@ async function executeLibraryAddition({
     const recipeResult = validateRecipes(root);
     const backend = selectSandboxBackend();
     let candidate;
+    let adapterCandidate;
     try {
         onProgress({ step: 3, total: totalSteps, id: 'candidate' });
         candidate = createCandidateLease({ repository: root, commit: head });
@@ -418,35 +423,6 @@ async function executeLibraryAddition({
             homes: candidate.homes,
             bunExecutable,
         });
-        // Le moteur de rendu est approvisionné PENDANT la phase de résolution,
-        // seule phase où le réseau est ouvert, et uniquement si une acceptance
-        // déclarée en a besoin. L'archive est vérifiée par empreinte avant
-        // extraction ; ensuite il n'est plus monté qu'en lecture.
-        const browser = requiredAcceptances(
-            recipe,
-            libraries,
-            recipeResult.recipes
-        ).some((entry) => entry.proof === 'browser-coexistence')
-            ? await provisionBrowser({
-                  policy,
-                  backend,
-                  extractionRoot: join(candidate.resources, 'browser'),
-              })
-            : undefined;
-        const runtimeOptions = {
-            repository: root,
-            candidate,
-            recipe,
-            app,
-            policy,
-            backend,
-            cache,
-            home: candidate.homes.execution,
-            installedLibraries: libraries,
-            recipeRegistry: recipeResult.recipes,
-            browserExecutable: browser?.executable,
-            browserRoot: browser?.root,
-        };
         onProgress({ step: 5, total: totalSteps, id: 'recipe' });
         executeLibraryRecipe({
             repository: root,
@@ -459,13 +435,99 @@ async function executeLibraryAddition({
             cache,
             home: candidate.homes.execution,
         });
-        onProgress({ step: 6, total: totalSteps, id: 'runtime-proofs' });
-        const runtimeResult = runtimeProver(runtimeOptions);
         const appCheck = verifyApps(candidate.workspace, recipeResult.recipes);
         if (!appCheck.ok)
             fail(`gate applicative candidate : ${appCheck.errors.join(' ; ')}`);
         const after = governedSnapshot(candidate.workspace);
         const changeSet = buildLibraryChangeSet(before, after);
+        // La recette vendeuse reste exécutée dans sa sandbox pour détecter sa
+        // dérive, mais les preuves de promotion portent désormais sur
+        // l'adaptateur que la voie courante rejouera réellement. Les deux
+        // chemins ne partagent donc aucune exécution implicite.
+        adapterCandidate = createCandidateLease({
+            repository: root,
+            commit: head,
+        });
+        await resolveLibraryDependencies({
+            repository: root,
+            candidate: adapterCandidate,
+            track,
+            policy,
+            backend,
+            cache,
+            homes: adapterCandidate.homes,
+            bunExecutable,
+        });
+        const adapterBefore = governedSnapshot(adapterCandidate.workspace);
+        applyQualifiedAdapter({
+            workspace: adapterCandidate.workspace,
+            app,
+            platform,
+            library,
+            track,
+        });
+        const adapterBeforeFormat = buildLibraryChangeSet(
+            adapterBefore,
+            governedSnapshot(adapterCandidate.workspace)
+        );
+        formatApp({
+            repository: root,
+            workspace: adapterCandidate.workspace,
+            paths: adapterBeforeFormat.changes.map(({ path }) => path),
+            policy,
+            backend,
+            cache,
+            home: adapterCandidate.homes.execution,
+        });
+        const adapterChangeSet = buildLibraryChangeSet(
+            adapterBefore,
+            governedSnapshot(adapterCandidate.workspace)
+        );
+        const adapterAppCheck = verifyApps(
+            adapterCandidate.workspace,
+            recipeResult.recipes
+        );
+        if (!adapterAppCheck.ok) {
+            fail(
+                `gate applicative adaptateur : ${adapterAppCheck.errors.join(' ; ')}`
+            );
+        }
+        // Le navigateur est approvisionné seulement dans la voie rare et les
+        // preuves utilisent le candidat issu de l'adaptateur qualifié.
+        const browser = requiredAcceptances(
+            recipe,
+            libraries,
+            recipeResult.recipes
+        ).some((entry) => entry.proof === 'browser-coexistence')
+            ? await provisionBrowser({
+                  policy,
+                  backend,
+                  extractionRoot: join(adapterCandidate.resources, 'browser'),
+              })
+            : undefined;
+        onProgress({
+            step: 6,
+            total: totalSteps,
+            id: 'adapter-runtime-proofs',
+        });
+        const runtimeResult = runtimeProver({
+            repository: root,
+            candidate: adapterCandidate,
+            recipe,
+            app,
+            policy,
+            backend,
+            cache,
+            home: adapterCandidate.homes.execution,
+            installedLibraries: libraries,
+            recipeRegistry: recipeResult.recipes,
+            browserExecutable: browser?.executable,
+            browserRoot: browser?.root,
+        });
+        const qualifiedAdapter = {
+            ...qualifiedAdapterDescriptor(root, platform, library),
+            change_set_id: adapterChangeSet.change_set_id,
+        };
         onProgress({ step: 7, total: totalSteps, id: 'plan' });
         const plan = buildLibraryPlan(
             planInputs({
@@ -489,6 +551,7 @@ async function executeLibraryAddition({
                 plan,
                 changeSet,
                 runtimeProofs: [...runtimeResult.proofs],
+                qualifiedAdapter,
                 published: false,
             };
         }
@@ -544,6 +607,7 @@ async function executeLibraryAddition({
             published: true,
         };
     } finally {
+        if (adapterCandidate) releaseCandidateLease(adapterCandidate);
         if (candidate) releaseCandidateLease(candidate);
     }
 }

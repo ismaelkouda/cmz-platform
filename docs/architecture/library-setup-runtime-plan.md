@@ -1,13 +1,13 @@
 # Plan — installation réelle + preuves runtime des bibliothèques
 
-- **Statut :** Livré et qualifié. Sont livrés : le cœur `add-library` et ses
-  neuf étapes, les oracles runtime, le confinement macOS **et** conteneur,
-  l'intégration `create-app`, la gate d'intégration en CI, et la promotion
-  gouvernée des matrices. L'audit du 2026-09-08 a étendu la transaction à la
-  neuvième étape, borné Prettier au change-set et ajouté l'empreinte des preuves
-  réciproques. Les trois pistes ont ensuite été requalifiées contre le runner
-  gelé ; toute modification future de cet outillage les périmera mécaniquement
-  (ADR-0042 § invariants 8 à 10).
+- **Statut :** Livré et qualifié. Depuis SIMPL-4, ce document décrit la voie
+  rare de qualification : ses neuf étapes, les oracles runtime, le confinement
+  macOS **et** conteneur, l'intégration `create-app`, la gate d'intégration en
+  CI, et la promotion gouvernée des matrices. L'audit du 2026-09-08 a étendu la
+  transaction à la neuvième étape, borné Prettier au change-set et ajouté
+  l'empreinte des preuves réciproques. Les trois pistes ont ensuite été
+  requalifiées contre le runner gelé ; toute modification future de cet
+  outillage les périmera mécaniquement (ADR-0042 § invariants 8 à 10).
 - **Revue de maintenabilité 2026-09-16 :** les garanties décrites ici restent
   applicables à l'implémentation actuelle, mais ce plan ne doit plus servir de
   modèle aux nouveaux parcours courants. L'audit
@@ -26,6 +26,12 @@
   fermée de sources communes et de sources propres aux oracles qu'elle exécute.
   Une source pertinente la périme toujours ; un test ou un oracle étranger ne
   force plus de requalification sans rapport.
+- **Amendement SIMPL-4 du 2026-09-17 :** la CLI `add-library` n'exécute plus ce
+  moteur. La promotion prouve un adaptateur plateforme déterministe et
+  l'attestation `1.3.0` le lie à ses sources. La voie courante applique cet
+  adaptateur dans un worktree Git jetable, installe sans scripts, puis lance
+  build/lint/test ciblés avant un fast-forward. Son graphe est fermé à trois
+  modules et ne charge ni sandbox, ni navigateur, ni promotion.
 - **Objectif servi :** créer une application sans écrire de code, puis ajouter
   une bibliothèque par **une seule commande** —
   `bun run add-library --app clean-street --library angular-material` — qui

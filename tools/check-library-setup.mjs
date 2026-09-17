@@ -14,9 +14,9 @@
  *     que le CSS compile ; rien de version-spécifique ici) ;
  *   - `runtime_acceptance` : preuves réelles (compilation, règle CSS, coexistence
  *     navigateur). `status` doit refléter l'existence d'un oracle enregistré
- *     dans library-setup/runtime-proofs.mjs : `enforced` = un oracle existe et
- *     add-library l'exécute en fermeture ; `harness-pending` = aucun oracle,
- *     donc add-library refuse d'aboutir tant que l'acceptance est applicable.
+ *     dans library-setup/runtime-proofs.mjs : `enforced` = la qualification
+ *     rare l'exécute avant de promouvoir l'adaptateur ; `harness-pending` =
+ *     aucun oracle, donc la promotion reste impossible.
  *     Ce gate reste statique : il vérifie la correspondance, il n'exécute rien.
  *
  * Sécurité : toute lecture — recette, schéma, fichier d'app, lockfile — est
@@ -683,7 +683,7 @@ function main() {
     console.log(
         `✔ check:library-setup — ${recipeResult.recipes.size} recette(s) (platform/library), ` +
             `${appResult.checkedApps} app(s) vérifiée(s), ` +
-            `${withOracle}/${runtime.length} runtime_acceptance avec oracle (add-library les exécute ; ` +
+            `${withOracle}/${runtime.length} runtime_acceptance avec oracle (la qualification les exécute ; ` +
             `${runtime.length - withOracle} encore sans oracle, donc bloquante(s)).`
     );
 }

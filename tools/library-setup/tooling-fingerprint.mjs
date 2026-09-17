@@ -20,6 +20,7 @@ const COMMON_QUALIFICATION_SOURCES = [
     'tools/library-setup/install-protocol.mjs',
     'tools/library-setup/library-plan.mjs',
     'tools/library-setup/publication-transaction.mjs',
+    'tools/library-setup/qualified-adapters.mjs',
     'tools/library-setup/qualification-contracts.mjs',
     'tools/library-setup/recipe-execution.mjs',
     'tools/library-setup/resolution-policy.mjs',
