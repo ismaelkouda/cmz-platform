@@ -193,7 +193,7 @@ function main() {
     chmodSync(temporaryRoot, 0o700);
     const repository = join(temporaryRoot, 'repository');
     try {
-        console.error('[1/7] clone Git local indépendant');
+        console.error('[1/6] clone Git local indépendant');
         run(
             'git',
             ['clone', '--quiet', '--no-hardlinks', SOURCE, repository],
@@ -224,7 +224,7 @@ function main() {
         git(repository, ['config', 'user.email', 'cmz-proof@example.invalid']);
         assertClean(repository, 'clone initial');
 
-        console.error('[2/7] dépendances propres du clone');
+        console.error('[2/6] dépendances propres du clone');
         run(
             'bun',
             [
@@ -246,36 +246,28 @@ function main() {
         }
         assertClean(repository, 'clone après installation gelée');
 
-        console.error('[3/7] create-app : plan déterministe');
-        const shellPlan = runNode(
+        console.error('[3/6] create-app : publication directe et commit');
+        const shell = runNode(
             repository,
             'tools/create-app.mjs',
-            [
-                '--design',
-                DESIGN,
-                '--experience',
-                EXPERIENCE,
-                '--app',
-                APP,
-                '--dry-run',
-            ],
+            ['--design', DESIGN, '--experience', EXPERIENCE, '--app', APP],
             { json: true }
         );
-        if (!/^[a-f0-9]{64}$/.test(shellPlan?.plan_id ?? '')) {
-            fail('create-app n’a pas produit de plan_id SHA-256');
-        }
-
-        console.error('[4/7] create-app : publication et commit automatique');
-        runNode(repository, 'tools/create-app.mjs', [
-            '--design',
-            DESIGN,
-            '--experience',
-            EXPERIENCE,
-            '--app',
-            APP,
-            '--apply',
-            shellPlan.plan_id,
-        ]);
+        if (
+            shell?.status !== 'created' ||
+            shell?.phase !== 'finalized' ||
+            shell?.output !== `apps/${APP}` ||
+            !/^[a-f0-9]{64}$/.test(shell?.plan_id ?? '') ||
+            !Array.isArray(shell?.files) ||
+            shell.files.length === 0 ||
+            !shell.files.every((path) => path.startsWith(`apps/${APP}/`)) ||
+            !Array.isArray(shell?.validations) ||
+            !shell.validations.includes('nx-build-production') ||
+            !shell.validations.includes('published-tree-sha256') ||
+            typeof shell?.recovery !== 'string' ||
+            shell.recovery.length === 0
+        )
+            fail('create-app n’a pas publié un résultat direct et borné');
         git(repository, ['add', '--', `apps/${APP}`]);
         git(repository, [
             'commit',
@@ -287,7 +279,7 @@ function main() {
         assertInitialCommitOwnsOnlyApp(repository, shellCommit);
         assertClean(repository, 'dépôt après create-app');
 
-        console.error('[5/7] application qualifiée : Angular Material');
+        console.error('[4/6] application qualifiée : Angular Material');
         const material = runNode(
             repository,
             'tools/add-library.mjs',
@@ -296,7 +288,7 @@ function main() {
         );
         assertLibraryResult(repository, material, 'angular-material');
 
-        console.error('[6/7] application qualifiée : Tailwind');
+        console.error('[5/6] application qualifiée : Tailwind');
         const tailwind = runNode(
             repository,
             'tools/add-library.mjs',
@@ -305,7 +297,7 @@ function main() {
         );
         assertLibraryResult(repository, tailwind, 'tailwind');
 
-        console.error('[7/7] état publié, gate et historique');
+        console.error('[6/6] état publié, gate et historique');
         assertFinalState(repository, baseCommit);
         const gitDirectory = git(repository, [
             'rev-parse',
@@ -325,7 +317,7 @@ function main() {
             fail('résidu transactionnel dans le dépôt final');
         }
         console.log(
-            '✅ create-app plan/apply → adaptateurs Material → Tailwind : zéro édition manuelle, builds/lint/tests ciblés et publications Git.'
+            '✅ create-app direct → adaptateurs Material → Tailwind : zéro édition manuelle, builds/lint/tests ciblés et publications Git.'
         );
     } finally {
         rmSync(temporaryRoot, { recursive: true, force: true });

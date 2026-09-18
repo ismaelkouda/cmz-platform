@@ -67,11 +67,7 @@ async function fixture() {
         applicationDesignSchema,
         backendContractSchema,
     };
-    const shellPlan = await planApplicationShell(shellOptions);
-    await publishApplicationShell(
-        { ...shellOptions, planId: shellPlan.plan_id },
-        { run: () => '' }
-    );
+    await publishApplicationShell(shellOptions, { run: () => '' });
     const dependencies = {
         findConsumers: () => [],
         findReferences: () => [],

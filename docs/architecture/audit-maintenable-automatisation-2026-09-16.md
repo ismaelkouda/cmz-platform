@@ -1,7 +1,7 @@
 # Audit de maintenabilité — automatisation de création et d'ajout de bibliothèques
 
 - **Date :** 2026-09-16
-- **Statut :** audit Staff terminé ; SIMPL-1…5 implémentés ; SIMPL-6…7 ouverts
+- **Statut :** audit Staff terminé ; SIMPL-1…6 implémentés ; SIMPL-7 ouvert
 - **Périmètre :** `create-app`, `add-library`, `create-module` et leurs gates CI
 - **Question :** le socle limite-t-il l'action humaine sans devenir opaque,
   incompréhensible ou trop coûteux à maintenir ?
@@ -425,19 +425,33 @@ stratégie de reprise ou d'abandon.
 
 La gate `check:command-explanations`, câblée directement dans la CI et dans
 `check:all`, exécute les trois CLI depuis un dossier vide, exige la sortie
-déterministe issue de cette source versionnée, vérifie l'absence d'effet de bord,
-le schéma fermé, les phases et la cohérence de la reprise. Le
+déterministe issue de cette source versionnée, vérifie l'absence d'effet de
+bord, le schéma fermé, les phases et la cohérence de la reprise. Le
 [runbook humain](./runbook-commandes-creation.md) couvre les trois parcours en
-138 lignes ; un test bloque tout dépassement de 200 lignes. SIMPL-6 devient le
-prochain lot.
+138 lignes ; un test bloque tout dépassement de 200 lignes.
 
-### SIMPL-6 — Simplifier `create-app` et borner `create-module` — P1, M
+### SIMPL-6 — Simplifier `create-app` et borner `create-module` — fait le 2026-09-17
 
-- rendre l'application directe nominale dans `create-app` ;
-- conserver la vérification de plan en option ;
-- renommer les primitives transactionnelles partagées de `create-module` ;
-- déplacer les gates globales hors de son chemin nominal après preuve que la CI
-  les couvre.
+`create-app` publie désormais directement dans sa voie nominale. `--dry-run`
+reste disponible sans écriture et `--expect-plan <plan_id>` permet d'imposer la
+fraîcheur d'un plan préalablement relu ; l'ancien détour obligatoire par
+`--apply` est rejeté explicitement. Le résultat nominal est un JSON fermé qui
+expose statut, phase finale, plan, sortie, fichiers, validations et reprise.
+
+Les primitives de verrouillage et d'identité Git partagées sont extraites dans
+`workspace-transaction.mjs`. Le chemin historique du verrou reste inchangé afin
+de préserver la reprise des transactions interrompues. Les modules communs de
+configuration, plan et graphe portent désormais le vocabulaire neutre
+`module-lifecycle-*` ; `create-module` ne dépend plus d'un fichier nommé pour le
+retrait.
+
+Le chemin nominal de `create-module` installe une seule fois avec
+`--ignore-scripts`, puis limite build, lint et Prettier aux projets et fichiers
+créés. Les audits globaux de noms, targets et dépendances ne sont plus répétés
+localement : un test fail-closed prouve qu'ils restent des steps directes et
+bloquantes de la CI. Les états durables `planned`, `generated`, `configured`, le
+rollback et les reprises `--resume` / `--abort` sont conservés. Les deux
+commandes respectent désormais un budget de quatre phases visibles.
 
 ### SIMPL-7 — Appliquer le budget aux compositions v2 — P0, continu
 

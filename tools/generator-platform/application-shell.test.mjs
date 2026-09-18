@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -10,6 +11,7 @@ import { validateRecipes, verifyApps } from '../check-library-setup.mjs';
 import { parseArgs } from '../create-app.mjs';
 import {
     planApplicationShell,
+    publicApplicationShellResult,
     publishApplicationShell,
 } from './core/application-shell-publication.mjs';
 import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
@@ -62,25 +64,79 @@ async function fixture() {
     };
 }
 
-test('la CLI create-app est explicitement planifiée puis appliquée', () => {
-    assert.deepEqual(
-        parseArgs([
-            '--design',
-            'design.json',
-            '--experience',
-            'citizen-web',
-            '--app',
-            'clean-street',
-            '--dry-run',
-        ]),
-        {
-            dryRun: true,
-            profile: 'angular-pwa',
-            designPath: 'design.json',
-            experienceId: 'citizen-web',
-            appName: 'clean-street',
-        }
+test('la CLI create-app applique directement, avec dry-run et plan attendu facultatifs', () => {
+    const nominal = [
+        '--design',
+        'design.json',
+        '--experience',
+        'citizen-web',
+        '--app',
+        'clean-street',
+    ];
+    assert.deepEqual(parseArgs(nominal), {
+        dryRun: false,
+        profile: 'angular-pwa',
+        designPath: 'design.json',
+        experienceId: 'citizen-web',
+        appName: 'clean-street',
+    });
+    assert.deepEqual(parseArgs([...nominal, '--dry-run']), {
+        dryRun: true,
+        profile: 'angular-pwa',
+        designPath: 'design.json',
+        experienceId: 'citizen-web',
+        appName: 'clean-street',
+    });
+    assert.deepEqual(parseArgs([...nominal, '--expect-plan', 'a'.repeat(64)]), {
+        dryRun: false,
+        profile: 'angular-pwa',
+        designPath: 'design.json',
+        experienceId: 'citizen-web',
+        appName: 'clean-street',
+        expectedPlanId: 'a'.repeat(64),
+    });
+    assert.throws(
+        () => parseArgs([...nominal, '--apply', 'a'.repeat(64)]),
+        /--apply a été retiré/
     );
+    assert.throws(
+        () => parseArgs([...nominal, '--expect-plan']),
+        /exige un plan_id SHA-256/
+    );
+    assert.throws(
+        () =>
+            parseArgs([
+                ...nominal,
+                '--dry-run',
+                '--expect-plan',
+                'a'.repeat(64),
+            ]),
+        /exclusifs/
+    );
+});
+
+test('le runner réserve stdout au JSON et redirige les diagnostics enfants vers stderr', () => {
+    const moduleUrl = new URL(
+        './core/application-shell-publication.mjs',
+        import.meta.url
+    ).href;
+    const script = `
+        import { runApplicationShellCommand } from ${JSON.stringify(moduleUrl)};
+        runApplicationShellCommand(
+            process.execPath,
+            ['--eval', "process.stdout.write('diagnostic nx\\\\n')"],
+            process.cwd()
+        );
+        process.stdout.write(JSON.stringify({ status: 'created' }));
+    `;
+    const result = spawnSync(
+        process.execPath,
+        ['--input-type=module', '--eval', script],
+        { encoding: 'utf8' }
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { status: 'created' });
+    assert.match(result.stderr, /diagnostic nx/);
 });
 
 test('le renderer produit routing, i18n, PWA et un contrat borné par page', async () => {
@@ -249,7 +305,7 @@ test('le service worker ne capture jamais API ni origine externe', async () => {
     assert.equal(fetchCalls, 0);
 });
 
-test('dry-run n’écrit rien puis apply vérifie compilation, build et lint', async () => {
+test('dry-run n’écrit rien puis la publication directe vérifie compilation, build et lint', async () => {
     const options = await fixture();
     const plan = await planApplicationShell(options);
     await assert.rejects(
@@ -262,10 +318,7 @@ test('dry-run n’écrit rien puis apply vérifie compilation, build et lint', a
         calls.push([command, args]);
         return '';
     };
-    const result = await publishApplicationShell(
-        { ...options, planId: plan.plan_id },
-        { run }
-    );
+    const result = await publishApplicationShell(options, { run });
     assert.equal(result.recovered, false);
     assert.deepEqual(
         calls.map((entry) => entry[1][0]),
@@ -280,6 +333,26 @@ test('dry-run n’écrit rien puis apply vérifie compilation, build et lint', a
         ).name,
         'clean-street'
     );
+    assert.deepEqual(publicApplicationShellResult(result), {
+        schema_version: '1.0.0',
+        status: 'created',
+        phase: 'finalized',
+        plan_id: plan.plan_id,
+        output: plan.output,
+        files: Object.keys(plan.files)
+            .sort()
+            .map((path) => `${plan.output}/${path}`),
+        validations: [
+            'application-design',
+            'candidate-tree-sha256',
+            'angular-ngc',
+            'nx-build-production',
+            'nx-lint',
+            'published-tree-sha256',
+        ],
+        recovery:
+            'Aucune action : publication terminée. En cas d’échec avant succès, relancer la même commande.',
+    });
 });
 
 test('un échec de build retire la sortie et conserve un candidat reprenable', async () => {
@@ -292,11 +365,7 @@ test('un échec de build retire la sortie et conserve un candidat reprenable', a
         return '';
     };
     await assert.rejects(
-        () =>
-            publishApplicationShell(
-                { ...options, planId: plan.plan_id },
-                { run }
-            ),
+        () => publishApplicationShell(options, { run }),
         /rolled back/
     );
     await assert.rejects(
@@ -319,11 +388,7 @@ test('ne déplace jamais une application étrangère préexistante', async () =>
         'owned by user\n'
     );
     await assert.rejects(
-        () =>
-            publishApplicationShell(
-                { ...options, planId: plan.plan_id },
-                { run: () => '' }
-            ),
+        () => publishApplicationShell(options, { run: () => '' }),
         /inventory drifted/
     );
     assert.equal(
@@ -347,7 +412,7 @@ test('une modification de conception invalide le plan revu', async () => {
     await assert.rejects(
         () =>
             publishApplicationShell(
-                { ...options, planId: plan.plan_id },
+                { ...options, expectedPlanId: plan.plan_id },
                 { run: () => '' }
             ),
         /reviewed plan id is stale/

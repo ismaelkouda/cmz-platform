@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import {
     planApplicationShell,
     publicApplicationShellPlan,
+    publicApplicationShellResult,
     publishApplicationShell,
 } from './generator-platform/core/application-shell-publication.mjs';
 import { loadJson, repositoryRoot } from './generator-platform/validate-ir.mjs';
@@ -27,15 +28,25 @@ export function parseArgs(argv) {
         else if (argument === '--app') options.appName = argv[++index];
         else if (argument === '--profile') options.profile = argv[++index];
         else if (argument === '--dry-run') options.dryRun = true;
-        else if (argument === '--apply') options.planId = argv[++index];
+        else if (argument === '--expect-plan') {
+            options.expectedPlanId = argv[++index];
+            if (!options.expectedPlanId)
+                fail('--expect-plan exige un plan_id SHA-256.');
+        } else if (argument === '--apply')
+            fail(
+                '--apply a été retiré : la création est directe. Utiliser --expect-plan <plan_id> pour vérifier un plan revu.'
+            );
         else fail(`Argument inconnu : ${argument}`);
     }
     if (!options.designPath || !options.experienceId || !options.appName)
         fail('--design, --experience et --app sont requis.');
-    if (options.dryRun === Boolean(options.planId))
-        fail('Utiliser exactement --dry-run ou --apply <plan_id>.');
-    if (options.planId && !/^[a-f0-9]{64}$/.test(options.planId))
-        fail('--apply exige un plan_id SHA-256 valide.');
+    if (options.dryRun && options.expectedPlanId)
+        fail('--dry-run et --expect-plan sont exclusifs.');
+    if (
+        options.expectedPlanId !== undefined &&
+        !/^[a-f0-9]{64}$/.test(options.expectedPlanId)
+    )
+        fail('--expect-plan exige un plan_id SHA-256 valide.');
     return options;
 }
 
@@ -86,11 +97,9 @@ export async function main(argv = process.argv.slice(2)) {
     }
     const result = await publishApplicationShell({
         ...common,
-        planId: options.planId,
+        expectedPlanId: options.expectedPlanId,
     });
-    console.log(
-        `${result.recovered ? 'Reprise vérifiée' : 'Application créée'} : ${result.plan.output}`
-    );
+    console.log(JSON.stringify(publicApplicationShellResult(result), null, 2));
 }
 
 if (

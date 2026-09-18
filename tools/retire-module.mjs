@@ -18,7 +18,6 @@ import { join, relative, resolve, sep } from 'node:path';
 import {
     TRANSACTION_RELATIVE_ROOT,
     assertPlainDirectory,
-    currentGitIdentity,
     inspectTransactionRoot,
     moduleTransactionDir,
     moveTransactionRoots,
@@ -32,6 +31,7 @@ import {
     withTransactionLock,
     writeTransactionState,
 } from './retire-module-transaction.mjs';
+import { currentGitIdentity } from './workspace-transaction.mjs';
 import {
     applyConfigCleanup,
     captureConfigOriginals,
@@ -43,12 +43,12 @@ import {
     restoreOptionalRegularFile,
     validateOptionalFileForRestore,
     validateTransactionalConfigs,
-} from './retire-module-config.mjs';
+} from './module-lifecycle-config.mjs';
 import {
     findNxGraphConsumers,
     runPostRemovalNxGate,
-} from './retire-module-nx.mjs';
-import { createRetirementPlan } from './retire-module-plan.mjs';
+} from './module-lifecycle-nx.mjs';
+import { createRetirementPlan } from './module-lifecycle-plan.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const CONFIG_FILES_TO_SCAN = [

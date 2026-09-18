@@ -21,10 +21,7 @@ import {
     publishPageRealizationWorkOrder,
     verifyPageRealization,
 } from './core/page-realization.mjs';
-import {
-    planApplicationShell,
-    publishApplicationShell,
-} from './core/application-shell-publication.mjs';
+import { publishApplicationShell } from './core/application-shell-publication.mjs';
 import { writeApplicationDesignFixture } from './test-support/application-design-fixture.mjs';
 
 const applicationDesignSchema = JSON.parse(
@@ -98,11 +95,7 @@ async function fixture() {
         applicationDesignSchema,
         backendContractSchema,
     };
-    const shellPlan = await planApplicationShell(shellOptions);
-    await publishApplicationShell(
-        { ...shellOptions, planId: shellPlan.plan_id },
-        { run: () => '' }
-    );
+    await publishApplicationShell(shellOptions, { run: () => '' });
     execFileSync('git', ['init', '-q'], { cwd: root });
     execFileSync('git', ['add', '.'], { cwd: root });
     return {

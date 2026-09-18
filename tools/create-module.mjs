@@ -23,20 +23,21 @@ import {
     computeConfigAddition,
     configOriginalsSha256,
     restoreConfigOriginals,
-} from './retire-module-config.mjs';
+} from './module-lifecycle-config.mjs';
 import {
+    MODULE_LIFECYCLE_TRANSACTION_ROOT,
     currentGitIdentity,
-    withTransactionLock,
-} from './retire-module-transaction.mjs';
+    withModuleLifecycleLock,
+} from './workspace-transaction.mjs';
 import {
     assertCompositionAdoption,
     parseCreateModuleArgs,
 } from './create-module-policy.mjs';
-import { runNxGraphGate } from './retire-module-nx.mjs';
+import { createModuleLocalGateCommands } from './create-module-gates.mjs';
 import {
     createRetirementPlan,
     retirementPlanSha256,
-} from './retire-module-plan.mjs';
+} from './module-lifecycle-plan.mjs';
 import {
     compositionSha256,
     loadCompositionRegistry,
@@ -539,27 +540,12 @@ function runGenerator(state, dryRun = false) {
 }
 
 function runCreationGates(state) {
-    run('bun', ['install']);
-    for (const script of [
-        'check-project-names.mjs',
-        'check-project-targets.mjs',
-        'check-declared-deps.mjs',
-    ])
-        run(process.execPath, [join(ROOT, 'tools', script)]);
-    for (const project of state.plan.projects)
-        run('bunx', ['nx', 'run', `${project.name}:build`]);
-    run('bunx', [
-        'nx',
-        'run-many',
-        '--target=lint',
-        `--projects=${state.plan.projects.map(({ name }) => name).join(',')}`,
-        '--parallel=3',
-    ]);
-    const nx = runNxGraphGate(ROOT, 'post-création');
-    if (!nx.ok) fail(nx.output);
-    console.log(nx.output);
-    run('bunx', ['prettier', '--check', state.outputRoot]);
-    run('bun', ['install', '--frozen-lockfile']);
+    const projects = state.plan.projects.map(({ name }) => name);
+    for (const gate of createModuleLocalGateCommands(
+        projects,
+        state.outputRoot
+    ))
+        run(gate.command, gate.args);
 }
 
 function removeOwnedOutput(state) {
@@ -681,7 +667,7 @@ function runInitial(options, definition) {
         );
     if (
         entryExists(
-            join(ROOT, '.cmz/retire-module-transactions', definition.moduleName)
+            join(ROOT, MODULE_LIFECYCLE_TRANSACTION_ROOT, definition.moduleName)
         )
     )
         fail(`Un retrait de ${definition.moduleName} est encore en cours.`);
@@ -766,12 +752,16 @@ async function main() {
         runInitial(options, definition);
         return;
     }
-    withTransactionLock(ROOT, { module: moduleName, command: 'create' }, () => {
-        assertCreateStorage(moduleName);
-        if (options.resume) runResume(moduleName);
-        else if (options.abort) runAbort(moduleName);
-        else runInitial(options, definition);
-    });
+    withModuleLifecycleLock(
+        ROOT,
+        { module: moduleName, command: 'create' },
+        () => {
+            assertCreateStorage(moduleName);
+            if (options.resume) runResume(moduleName);
+            else if (options.abort) runAbort(moduleName);
+            else runInitial(options, definition);
+        }
+    );
 }
 
 main().catch((error) => {

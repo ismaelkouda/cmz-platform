@@ -27,11 +27,17 @@ Ne jamais supprimer un journal à la main avant d'avoir compris son état.
 But : produire un shell Angular/PWA autonome depuis un application design.
 
 ```bash
+bun run create-app --design <design.json> --experience <id> --app <nom>
 bun run create-app --design <design.json> --experience <id> \
   --app <nom> --dry-run
 bun run create-app --design <design.json> --experience <id> \
-  --app <nom> --apply <plan_id>
+  --app <nom> --expect-plan <plan_id>
 ```
+
+La première commande est la voie nominale : elle calcule, vérifie et publie
+directement. `--dry-run` affiche le plan sans écrire. `--expect-plan` conserve
+une revue préalable facultative et refuse la publication si le plan a changé.
+`--apply` n'existe plus afin d'éviter une seconde commande obligatoire.
 
 Ce qui peut changer : uniquement `apps/<nom>/**`. La commande n'ajoute aucune
 bibliothèque UI optionnelle et ne modifie aucune configuration racine.
@@ -43,13 +49,14 @@ En cas d'échec :
 
 1. avant publication, le candidat reste sous
    `apps/.<nom>.create-app-candidate-<plan_id>/` ;
-2. une relance avec les mêmes entrées revérifie et réutilise ce candidat exact ;
+2. une relance directe avec les mêmes entrées revérifie ce candidat exact ;
 3. un verrou mort `apps/.<nom>.generation-lock/` est récupéré automatiquement ;
 4. si `apps/<nom>/` existe, la commande n'accepte que l'arbre exact du plan ;
 5. ne jamais fusionner manuellement candidat et sortie.
 
 Il n'existe ni `--resume` ni `--abort` : la reprise est automatique et fondée
-sur les empreintes. Un plan devenu obsolète doit être recalculé par `--dry-run`.
+sur les empreintes. Un plan attendu devenu obsolète doit être recalculé par
+`--dry-run`, ou omis si aucune revue préalable n'est nécessaire.
 
 ## 2. `add-library`
 
@@ -64,8 +71,8 @@ bun run add-library --app <nom> --library <id> \
 
 Préconditions : dépôt entièrement propre, branche locale attachée, bibliothèque
 provisionnée à la racine et piste `verified` compatible avec les versions
-réelles. `--dry-run` exécute aussi l'installation et les checks dans le candidat,
-mais ne publie pas de commit.
+réelles. `--dry-run` exécute aussi l'installation et les checks dans le
+candidat, mais ne publie pas de commit.
 
 Ce qui peut changer : uniquement `apps/<nom>/**`, dans un unique commit
 fast-forward. `package.json`, `bun.lock` et le reste du dépôt sont hors portée.
@@ -82,7 +89,8 @@ En cas d'échec :
 3. si `HEAD` a bougé pendant les checks, la publication est refusée ;
 4. après le fast-forward, le commit entier constitue le résultat : il n'existe
    pas d'état partiellement publié ni de commande `--resume` ;
-5. un dépôt sale doit être examiné avec `git status`, jamais nettoyé à l'aveugle.
+5. un dépôt sale doit être examiné avec `git status`, jamais nettoyé à
+   l'aveugle.
 
 Une erreur `qualified-track` signifie que la qualification est absente ou
 périmée. Elle se corrige dans le chantier de qualification, pas en contournant
@@ -107,7 +115,15 @@ sont protégés par le journal pour permettre une restauration sûre.
 Journal : `.cmz/create-module-transactions/<nom>/state.json`. Ses états sont
 `planned`, `generated` et `configured`. Il conserve aussi un snapshot immuable
 de la définition. Le verrou de cycle de vie partagé est actuellement sous
-`.cmz/retire-module-transactions/.lock/`.
+`.cmz/retire-module-transactions/.lock/`. Ce nom historique est conservé pour la
+reprise des transactions existantes ; le code partagé porte désormais le nom
+neutre `workspace-transaction`.
+
+Le chemin nominal n'exécute que les validations utiles aux sorties touchées :
+installation Bun sans scripts, build de chaque projet créé, lint de cette liste
+et Prettier sous `libs/<nom>`. Les audits globaux des noms, targets et
+dépendances restent des steps directes et bloquantes de la CI ; ils ne sont pas
+répétés pendant chaque création locale.
 
 En cas d'échec normal, la commande tente un rollback complet. Si le message dit
 que le journal est conservé, ou après un arrêt brutal :

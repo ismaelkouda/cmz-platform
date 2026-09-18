@@ -8,8 +8,8 @@ import { test } from 'node:test';
 import {
     findNxGraphConsumers,
     runPostRemovalNxGate,
-} from './retire-module-nx.mjs';
-import { createRetirementPlan } from './retire-module-plan.mjs';
+} from './module-lifecycle-nx.mjs';
+import { createRetirementPlan } from './module-lifecycle-plan.mjs';
 
 async function write(path, content) {
     await mkdir(dirname(path), { recursive: true });

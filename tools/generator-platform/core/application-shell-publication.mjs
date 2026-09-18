@@ -150,10 +150,12 @@ async function stageCandidate(candidate, files) {
     }
 }
 
-function defaultRun(command, args, root) {
+export function runApplicationShellCommand(command, args, root) {
     execFileSync(command, args, {
         cwd: root,
-        stdio: ['ignore', 'inherit', 'inherit'],
+        // stdout appartient au contrat JSON de create-app. Les diagnostics des
+        // sous-commandes restent visibles, mais uniquement sur stderr.
+        stdio: ['ignore', process.stderr, process.stderr],
         env: {
             ...process.env,
             CI: 'true',
@@ -306,9 +308,12 @@ export async function planApplicationShell({
 
 export async function publishApplicationShell(options, dependencies = {}) {
     const plan = await planApplicationShell(options);
-    if (options.planId !== plan.plan_id)
+    if (
+        options.expectedPlanId !== undefined &&
+        options.expectedPlanId !== plan.plan_id
+    )
         fail('reviewed plan id is stale or invalid');
-    const run = dependencies.run ?? defaultRun;
+    const run = dependencies.run ?? runApplicationShellCommand;
     return withGenerationLock(plan.outputAbsolute, async () => {
         if (await exists(plan.outputAbsolute)) {
             // Ne jamais déplacer un arbre préexistant avant d’avoir prouvé
@@ -355,5 +360,30 @@ export function publicApplicationShellPlan(plan) {
         experience_id: plan.experience_id,
         profile: plan.profile,
         tree_sha256: plan.tree_sha256,
+    };
+}
+
+export function publicApplicationShellResult(result) {
+    const { plan, recovered } = result;
+    return {
+        schema_version: '1.0.0',
+        status: recovered ? 'recovered' : 'created',
+        phase: 'finalized',
+        plan_id: plan.plan_id,
+        output: plan.output,
+        files: Object.keys(plan.files)
+            .sort()
+            .map((path) => `${plan.output}/${path}`),
+        validations: [
+            'application-design',
+            'candidate-tree-sha256',
+            'angular-ngc',
+            'nx-build-production',
+            'nx-lint',
+            'published-tree-sha256',
+        ],
+        recovery: recovered
+            ? 'La sortie existante exacte a été revérifiée.'
+            : 'Aucune action : publication terminée. En cas d’échec avant succès, relancer la même commande.',
     };
 }

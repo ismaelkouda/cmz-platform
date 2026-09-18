@@ -60,12 +60,14 @@ async function createWorkspace(
     await mkdir(join(root, 'libs'), { recursive: true });
     for (const script of [
         'create-module.mjs',
+        'create-module-gates.mjs',
         'create-module-policy.mjs',
         'retire-module.mjs',
-        'retire-module-config.mjs',
-        'retire-module-nx.mjs',
-        'retire-module-plan.mjs',
+        'module-lifecycle-config.mjs',
+        'module-lifecycle-nx.mjs',
+        'module-lifecycle-plan.mjs',
         'retire-module-transaction.mjs',
+        'workspace-transaction.mjs',
         'check-no-orphan-references.mjs',
         'check-removed-module-tombstones.mjs',
         'orphan-occurrence.mjs',
@@ -91,6 +93,8 @@ async function createWorkspace(
         join(root, '.gitignore'),
         '/node_modules\n/.cmz/create-module-transactions/\n/.cmz/retire-module-transactions/\n'
     );
+    // retire-module conserve les gates globales post-retrait. La portée réduite
+    // de create-module est prouvée séparément par create-module-gates.test.
     for (const script of [
         'check-project-names.mjs',
         'check-project-targets.mjs',
@@ -360,16 +364,8 @@ test('un gate Nx en échec restaure sortie, configurations et lockfile', async (
         assert.deepEqual(await readFile(join(root, file)), before.get(file));
 });
 
-test('un graphe Nx qui omet un project.json annule intégralement la création', async (t) => {
+test('une dérive du graphe global est différée à la CI sans élargir la validation locale', async (t) => {
     const { root, definitionPath, bin } = await createWorkspace(t);
-    const before = new Map(
-        await Promise.all(
-            CONFIG_FILES.map(async (file) => [
-                file,
-                await readFile(join(root, file)),
-            ])
-        )
-    );
     const result = execute(
         root,
         bin,
@@ -377,18 +373,12 @@ test('un graphe Nx qui omet un project.json annule intégralement la création',
         ['--definition', definitionPath, '--allow-experimental'],
         { CMZ_FAKE_NX_OMIT: `@cmz/${MODULE}-data` }
     );
-    assert.equal(result.status, 1);
-    assert.match(
-        result.stderr,
-        /nœuds divergent des project.json Git visibles/
-    );
-    assert.equal(await exists(join(root, 'libs', MODULE)), false);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.equal(await exists(join(root, 'libs', MODULE)), true);
     assert.equal(
         await exists(join(root, '.cmz/create-module-transactions', MODULE)),
         false
     );
-    for (const file of CONFIG_FILES)
-        assert.deepEqual(await readFile(join(root, file)), before.get(file));
 });
 
 test('un échec Prettier annule sortie, configurations et lockfile', async (t) => {

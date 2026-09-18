@@ -14,7 +14,7 @@ import { test } from 'node:test';
 import {
     applyConfigAddition,
     applyConfigCleanup,
-} from './retire-module-config.mjs';
+} from './module-lifecycle-config.mjs';
 
 const CONFIG_FILES = [
     'eslint.config.mjs',
