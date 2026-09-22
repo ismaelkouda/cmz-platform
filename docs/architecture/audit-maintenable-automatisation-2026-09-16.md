@@ -484,6 +484,15 @@ ou cinq modules de production ; les 972 autres lignes sont les fixtures
 avant/décisions/backend/après, les tests mutants et la documentation de
 décision. Cette mesure devra être recalculée à chaque incrément v2.
 
+Deuxième incrément engagé le 2026-09-22 : la v2 compile désormais vers un modèle
+d'exécution interne target-neutral qui sépare port, transport, DTO wire,
+décodage strict, read model, contrôleur et échecs. La migration appelle ce
+compilateur avant écriture ; il ne reste donc pas un outil dormant. La surface
+de production v2 cumulée atteint **1 233 lignes** et déclenche la revue de
+simplification exigée par le budget. ADR-0048 conserve trois modules et un
+schéma, refuse paramètres et modèles imbriqués faute de second cas réel, et
+n'ajoute ni CLI, ni renderer, ni journal, ni runtime framework.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

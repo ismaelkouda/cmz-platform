@@ -255,6 +255,13 @@ decisions, backend, and expected-after fixtures make the transformation
 reviewable without running the command. This is a migration boundary only:
 v2 has no production renderer or runtime yet and remains experimental.
 
+The migration also compiles its result into one internal, target-neutral
+execution model before writing. That model resolves the query port, transport,
+strict wire decoder, read mapping, controller states, execution policies, and
+failure propagation once for every future target. Parameterized endpoints and
+nested wire models fail closed until a real second case proves their contract.
+No additional CLI or persisted intermediate file is introduced.
+
 PLAT-2 adds two independent, fail-closed ingestion paths:
 
 - `adapters/structured-spec-adapter.mjs` consumes the versioned JSON source in

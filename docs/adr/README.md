@@ -81,4 +81,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0045](./0045-realisation-ecran-multi-noeuds-independants.md) | Réalisation d'écran multi-nœuds indépendants             | Accepted |
 | [0046](./0046-corpus-seos-hors-chemin-critique-ci.md)     | Corpus SEOS hors du chemin critique des changements ordinaires | Accepted |
 | [0047](./0047-list-query-v2-reference-backend-et-migration-explicite.md) | `list-query` v2 référence le backend et migre sans inventer | Accepted |
+| [0048](./0048-list-query-v2-modele-execution-neutre.md)   | `list-query` v2 compile un modèle d'exécution neutre     | Accepted |
 <!-- END:GENERATED:adr-index -->

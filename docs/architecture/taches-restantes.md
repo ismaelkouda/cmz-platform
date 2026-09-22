@@ -1947,9 +1947,19 @@ Figma, désormais source partielle différée :
   le backend, est idempotent et écrit un seul fichier sans écrasement, journal
   ni runtime propriétaire. Le contrat représente le mapping connu du cas actif
   `site-group-select` (`id → value` / `name → label`) sans le revendiquer encore
-  comme oracle runtime. ADR-0047 documente la frontière. Restent :
+  comme oracle runtime. ADR-0047 documente la frontière. À ce stade restaient :
   compilation v2, décodage runtime, contrôleur de query, adaptateur host réel,
   second cas imbriqué puis réalisation de page.
+  **C1j — compilateur v2 engagé localement le 2026-09-22 :** la définition et
+  les octets backend sont résolus en un modèle d'exécution neutre séparant
+  port, transport, DTO wire, read model, contrôleur et échecs. Le SHA-256 est
+  calculé sur les octets réellement compilés et la migration refuse désormais
+  toute sortie qu'elle ne peut pas compiler. La revue SIMPL obligatoire est
+  consignée dans ADR-0048 : 1 233 lignes de production v2 cumulées, trois
+  modules et un schéma ; aucun second schéma, CLI, journal ou renderer ajouté.
+  Paramètres, modèles imbriqués et annulation manuelle restent bloqués jusqu'à
+  leurs preuves réelles. Restent le décodage exécuté, l'adaptateur host Angular
+  et l'oracle actif `site-group-select`.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

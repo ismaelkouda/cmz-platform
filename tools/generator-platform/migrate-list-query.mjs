@@ -7,10 +7,8 @@ import {
     validateBackendContract,
     verifyBackendContractSnapshots,
 } from './core/backend-contract.mjs';
-import {
-    migrateListQueryV1Definition,
-    validateListQueryV2Definition,
-} from './core/list-query-v2.mjs';
+import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
+import { migrateListQueryV1Definition } from './core/list-query-v2.mjs';
 import {
     loadJson,
     repositoryRoot,
@@ -141,17 +139,15 @@ export async function migrateListQueryFile({
         'invalid migrated list-query definition',
         validateJsonSchema(migrated, v2Schema)
     );
-    failOnErrors(
-        'invalid migrated list-query semantics',
-        validateListQueryV2Definition(migrated, backendDocument.value, {
-            backendContractSha256,
-            backendContractUri,
-        })
-    );
+    const executionModel = compileListQueryV2ExecutionModel({
+        definition: migrated,
+        backendContractDocument: backendDocument.content,
+        backendContractUri,
+    });
     await writeFile(absoluteOutput, `${JSON.stringify(migrated, null, 2)}\n`, {
         flag: 'wx',
     });
-    return { output: absoluteOutput, definition: migrated };
+    return { output: absoluteOutput, definition: migrated, executionModel };
 }
 
 function usage() {

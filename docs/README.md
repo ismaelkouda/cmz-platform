@@ -88,6 +88,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0045](./adr/0045-realisation-ecran-multi-noeuds-independants.md) | Réalisation d'écran multi-nœuds indépendants             |
 | [0046](./adr/0046-corpus-seos-hors-chemin-critique-ci.md)   | Corpus SEOS hors du chemin critique des changements ordinaires |
 | [0047](./adr/0047-list-query-v2-reference-backend-et-migration-explicite.md) | `list-query` v2 référence le backend et migre sans inventer |
+| [0048](./adr/0048-list-query-v2-modele-execution-neutre.md) | `list-query` v2 compile un modèle d'exécution neutre     |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
