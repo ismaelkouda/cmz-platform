@@ -1,0 +1,58 @@
+{
+  "schema_version": "2.0.0",
+  "kind": "list-query",
+  "feature": {
+    "id": "cmz-client-landing-home",
+    "name": "CMZ Client — Landing home blocks",
+    "description": "Blocs de contenu éditorial actifs affichés sur la page d'accueil publique du client CMZ."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/list-query-v1.backend-contract.json",
+    "id": "cmz-settings-api",
+    "version": "1.0.0",
+    "sha256": "2accf0509adf53f04cb4127906f4a52d5ef296409fd6e5f688606c0f794df4c2"
+  },
+  "operations": [
+    {
+      "id": "list-home-block-infos",
+      "operation_ref": {
+        "operation_id": "cms.list-home-block-infos"
+      },
+      "success_response_status": 200,
+      "read_model": {
+        "id": "home-block-info",
+        "description": "Un bloc de contenu éditorial de la page d'accueil.",
+        "fields": [
+          { "name": "id", "source_field": "id" },
+          { "name": "title", "source_field": "title" },
+          { "name": "slug", "source_field": "slug" },
+          { "name": "resume", "source_field": "resume" },
+          { "name": "content", "source_field": "content" },
+          { "name": "type", "source_field": "type" },
+          { "name": "image_url", "source_field": "image_url" },
+          { "name": "video_url", "source_field": "video_url" },
+          { "name": "button_label", "source_field": "button_label" },
+          { "name": "button_url", "source_field": "button_url" },
+          { "name": "updated_at", "source_field": "updated_at" }
+        ]
+      },
+      "execution": {
+        "cache": {
+          "mode": "host",
+          "scope": "public",
+          "refresh": "bypass"
+        },
+        "concurrency": "latest-wins",
+        "cancellation": {
+          "on_superseded": true,
+          "on_destroy": true
+        },
+        "retry": { "mode": "none" },
+        "stale_data": {
+          "on_reload": "preserve",
+          "on_error": "preserve"
+        }
+      }
+    }
+  ]
+}

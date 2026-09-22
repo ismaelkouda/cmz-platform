@@ -1,7 +1,7 @@
 # Audit de maintenabilité — automatisation de création et d'ajout de bibliothèques
 
 - **Date :** 2026-09-16
-- **Statut :** audit Staff terminé ; SIMPL-1…6 implémentés ; SIMPL-7 ouvert
+- **Statut :** audit Staff terminé ; SIMPL-1…6 implémentés ; SIMPL-7 engagé
 - **Périmètre :** `create-app`, `add-library`, `create-module` et leurs gates CI
 - **Question :** le socle limite-t-il l'action humaine sans devenir opaque,
   incompréhensible ou trop coûteux à maintenir ?
@@ -468,6 +468,21 @@ La conception de `list-query` 2.0 commence par le contrat backend et son
 migrateur. Elle ne doit pas répliquer le modèle `add-library` : pas de nouveau
 framework transactionnel, pas de voie LLM, pas de preuve profonde sur PR sans
 impact, pas de runtime propriétaire dans le code généré.
+
+Premier incrément engagé le 2026-09-22 : schéma fermé `list-query` `2.0.0`,
+référence content-addressed au `backend-contract`, mapping DTO → read model et
+politiques d'exécution explicites. Le migrateur v1 → v2 est une transformation
+pure à une commande, idempotente, sans journal et sans écrasement ; il bloque
+sur toute décision absente ou divergence avec l'autorité backend. Ce lot ne
+promet pas encore de runtime v2 : compilation, adaptateur host et oracles des
+deux cas actifs restent les prochains incréments.
+
+Mesure avant review : **1 916 lignes ajoutées au total**, dont **858 lignes de
+production contractuelle** (`core` 467 + CLI 181 + schéma 210) réparties sur
+deux modules exécutables. Le lot reste donc sous le seuil SIMPL de 1 000 lignes
+ou cinq modules de production ; les 1 058 autres lignes sont les fixtures
+avant/décisions/backend/après, les tests mutants et la documentation de
+décision. Cette mesure devra être recalculée à chaque incrément v2.
 
 ## Ce qui n'est pas décidé par cet audit
 

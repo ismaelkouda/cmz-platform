@@ -84,6 +84,7 @@
     "generate:adr-index": "node tools/generate-adr-index.mjs",
     "generate:action-request": "node tools/generator-platform/generate-action-request.mjs",
     "generate:workflow-action": "node tools/generator-platform/generate-workflow-action.mjs",
+    "migrate:list-query": "node tools/generator-platform/migrate-list-query.mjs",
     "probe:composition-evolution": "node tools/generator-platform/check-evolvable-composition.mjs",
     "bundle:record": "node tools/record-bundle-metrics.mjs",
     "bundle:metrics": "bunx nx run backoffice-angular:build:production && bun run bundle:record",

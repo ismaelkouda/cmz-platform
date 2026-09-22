@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/list-query-definition-v2.schema.json",
+  "title": "CMZ List Query Authoring Definition v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "feature",
+    "backend_contract",
+    "operations"
+  ],
+  "properties": {
+    "schema_version": { "const": "2.0.0" },
+    "kind": { "const": "list-query" },
+    "feature": { "$ref": "#/$defs/feature" },
+    "backend_contract": { "$ref": "#/$defs/backendContractRef" },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "backendId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "fieldName": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "backendContractRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uri", "id", "version", "sha256"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "id": { "$ref": "#/$defs/backendId" },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "operationRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id"],
+      "properties": {
+        "operation_id": { "$ref": "#/$defs/backendId" }
+      }
+    },
+    "readField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "source_field"],
+      "properties": {
+        "name": { "$ref": "#/$defs/fieldName" },
+        "source_field": { "$ref": "#/$defs/fieldName" }
+      }
+    },
+    "readModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/readField" }
+        }
+      }
+    },
+    "cacheBypass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "const": "bypass" } }
+    },
+    "cacheHost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "scope", "refresh"],
+      "properties": {
+        "mode": { "const": "host" },
+        "scope": { "enum": ["public", "principal", "tenant"] },
+        "refresh": { "const": "bypass" }
+      }
+    },
+    "retryNone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "const": "none" } }
+    },
+    "retryAutomatic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "max_attempts", "on"],
+      "properties": {
+        "mode": { "const": "automatic" },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "on": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["network", "server-unavailable", "rate-limited"]
+          }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cache",
+        "concurrency",
+        "cancellation",
+        "retry",
+        "stale_data"
+      ],
+      "properties": {
+        "cache": {
+          "oneOf": [
+            { "$ref": "#/$defs/cacheBypass" },
+            { "$ref": "#/$defs/cacheHost" }
+          ]
+        },
+        "concurrency": {
+          "enum": ["latest-wins", "deduplicate", "parallel"]
+        },
+        "cancellation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["on_superseded", "on_destroy"],
+          "properties": {
+            "on_superseded": { "type": "boolean" },
+            "on_destroy": { "type": "boolean" }
+          }
+        },
+        "retry": {
+          "oneOf": [
+            { "$ref": "#/$defs/retryNone" },
+            { "$ref": "#/$defs/retryAutomatic" }
+          ]
+        },
+        "stale_data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["on_reload", "on_error"],
+          "properties": {
+            "on_reload": { "enum": ["preserve", "clear"] },
+            "on_error": { "enum": ["preserve", "clear"] }
+          }
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "operation_ref",
+        "success_response_status",
+        "read_model",
+        "execution"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "operation_ref": { "$ref": "#/$defs/operationRef" },
+        "success_response_status": {
+          "type": "integer",
+          "minimum": 200,
+          "maximum": 299
+        },
+        "read_model": { "$ref": "#/$defs/readModel" },
+        "execution": { "$ref": "#/$defs/execution" }
+      }
+    }
+  }
+}
