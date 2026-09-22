@@ -243,10 +243,10 @@ never guesses these policies.
 
 ```bash
 bun run migrate:list-query -- \
-  --definition tools/generator-platform/sources/cmz-client-landing-home.definition.json \
+  --definition tools/generator-platform/fixtures/editorial-blocks.v1.definition.json \
   --backend-contract tools/generator-platform/fixtures/list-query-v1.backend-contract.json \
   --decisions tools/generator-platform/fixtures/list-query-v1.migration-decisions.json \
-  --out /tmp/cmz-client-landing-home.v2.json
+  --out /tmp/editorial-blocks.v2.json
 ```
 
 The command validates both inputs, refuses any v1/backend disagreement, writes

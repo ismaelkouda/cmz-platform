@@ -3,7 +3,7 @@
   "kind": "backend-contract",
   "contract": {
     "id": "cmz-settings-api",
-    "title": "CMZ Settings API migration fixture",
+    "title": "Generic settings API migration fixture",
     "version": "1.0.0",
     "status": "planned",
     "description": "Backend authority fixture used only to prove the list-query v1 to v2 migration."
@@ -14,15 +14,15 @@
       "kind": "manual",
       "authority": "declared",
       "status": "planned",
-      "snapshot_uri": "tools/generator-platform/sources/cmz-client-landing-home.definition.json",
-      "sha256": "51d904b4a6d0962cb458099d2a7aab900b752e94ee00c6dda0d26c4b692d8ac9"
+      "snapshot_uri": "tools/generator-platform/fixtures/editorial-blocks.v1.definition.json",
+      "sha256": "600fcf0341b266caa3cb20f4b160b4a0d458c3d13110a138d79945397ed39546"
     }
   ],
   "services": [
     {
       "id": "settings-api",
       "status": "planned",
-      "description": "Settings service used by the retained migration fixture.",
+      "description": "Settings service used by the generic migration fixture.",
       "base_urls": [
         {
           "environment": "production",
@@ -30,10 +30,7 @@
         }
       ],
       "evidence": [
-        {
-          "source_id": "list-query-v1-source",
-          "locator": "$.feature"
-        }
+        { "source_id": "list-query-v1-source", "locator": "$.feature" }
       ]
     }
   ],
@@ -43,7 +40,7 @@
       "id": "home-block-info-wire",
       "kind": "object",
       "status": "planned",
-      "description": "Wire item retained solely for the migration proof.",
+      "description": "Generic wire item retained solely for the migration proof.",
       "fields": [
         {
           "name": "id",
@@ -70,123 +67,6 @@
               "locator": "$.operations[0].item.fields[1]"
             }
           ]
-        },
-        {
-          "name": "slug",
-          "description": "Wire field slug.",
-          "required": true,
-          "nullable": false,
-          "type": { "kind": "primitive", "name": "string" },
-          "evidence": [
-            {
-              "source_id": "list-query-v1-source",
-              "locator": "$.operations[0].item.fields[2]"
-            }
-          ]
-        },
-        {
-          "name": "resume",
-          "description": "Wire field resume.",
-          "required": true,
-          "nullable": true,
-          "type": { "kind": "primitive", "name": "string" },
-          "evidence": [
-            {
-              "source_id": "list-query-v1-source",
-              "locator": "$.operations[0].item.fields[3]"
-            }
-          ]
-        },
-        {
-          "name": "content",
-          "description": "Wire field content.",
-          "required": true,
-          "nullable": false,
-          "type": { "kind": "primitive", "name": "string" },
-          "evidence": [
-            {
-              "source_id": "list-query-v1-source",
-              "locator": "$.operations[0].item.fields[4]"
-            }
-          ]
-        },
-        {
-          "name": "type",
-          "description": "Wire field type.",
-          "required": true,
-          "nullable": false,
-          "type": { "kind": "primitive", "name": "string" },
-          "evidence": [
-            {
-              "source_id": "list-query-v1-source",
-              "locator": "$.operations[0].item.fields[5]"
-            }
-          ]
-        },
-        {
-          "name": "image_url",
-          "description": "Wire field image URL.",
-          "required": true,
-          "nullable": true,
-          "type": { "kind": "primitive", "name": "string" },
-          "evidence": [
-            {
-              "source_id": "list-query-v1-source",
-              "locator": "$.operations[0].item.fields[6]"
-            }
-          ]
-        },
-        {
-          "name": "video_url",
-          "description": "Wire field video URL.",
-          "required": true,
-          "nullable": true,
-          "type": { "kind": "primitive", "name": "string" },
-          "evidence": [
-            {
-              "source_id": "list-query-v1-source",
-              "locator": "$.operations[0].item.fields[7]"
-            }
-          ]
-        },
-        {
-          "name": "button_label",
-          "description": "Wire field button label.",
-          "required": true,
-          "nullable": true,
-          "type": { "kind": "primitive", "name": "string" },
-          "evidence": [
-            {
-              "source_id": "list-query-v1-source",
-              "locator": "$.operations[0].item.fields[8]"
-            }
-          ]
-        },
-        {
-          "name": "button_url",
-          "description": "Wire field button URL.",
-          "required": true,
-          "nullable": true,
-          "type": { "kind": "primitive", "name": "string" },
-          "evidence": [
-            {
-              "source_id": "list-query-v1-source",
-              "locator": "$.operations[0].item.fields[9]"
-            }
-          ]
-        },
-        {
-          "name": "updated_at",
-          "description": "Wire field update timestamp.",
-          "required": true,
-          "nullable": false,
-          "type": { "kind": "primitive", "name": "string" },
-          "evidence": [
-            {
-              "source_id": "list-query-v1-source",
-              "locator": "$.operations[0].item.fields[10]"
-            }
-          ]
         }
       ],
       "evidence": [
@@ -200,11 +80,8 @@
       "id": "home-block-info-list-wire",
       "kind": "array",
       "status": "planned",
-      "description": "Wire collection retained solely for the migration proof.",
-      "items": {
-        "kind": "model",
-        "model_id": "home-block-info-wire"
-      },
+      "description": "Generic wire collection retained solely for the migration proof.",
+      "items": { "kind": "model", "model_id": "home-block-info-wire" },
       "evidence": [
         {
           "source_id": "list-query-v1-source",
@@ -218,7 +95,7 @@
       "id": "cms.list-home-block-infos",
       "service_id": "settings-api",
       "status": "planned",
-      "description": "Loads the retained list-query migration fixture.",
+      "description": "Loads the generic list-query migration fixture.",
       "method": "GET",
       "path": "/cms/home-block-infos/actives/pwa",
       "access": {

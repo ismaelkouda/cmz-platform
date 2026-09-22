@@ -477,10 +477,10 @@ sur toute décision absente ou divergence avec l'autorité backend. Ce lot ne
 promet pas encore de runtime v2 : compilation, adaptateur host et oracles des
 deux cas actifs restent les prochains incréments.
 
-Mesure avant review : **1 916 lignes ajoutées au total**, dont **858 lignes de
+Mesure avant review : **1 830 lignes ajoutées au total**, dont **858 lignes de
 production contractuelle** (`core` 467 + CLI 181 + schéma 210) réparties sur
 deux modules exécutables. Le lot reste donc sous le seuil SIMPL de 1 000 lignes
-ou cinq modules de production ; les 1 058 autres lignes sont les fixtures
+ou cinq modules de production ; les 972 autres lignes sont les fixtures
 avant/décisions/backend/après, les tests mutants et la documentation de
 décision. Cette mesure devra être recalculée à chaque incrément v2.
 

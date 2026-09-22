@@ -28,7 +28,7 @@ const [backendSchema, v1Schema, v2Schema] = await Promise.all([
 ]);
 const legacyDefinition = JSON.parse(
     await readFile(
-        new URL('sources/cmz-client-landing-home.definition.json', root),
+        new URL('fixtures/editorial-blocks.v1.definition.json', root),
         'utf8'
     )
 );
@@ -37,7 +37,7 @@ const [persistedBackendContract, persistedDecisions, expectedV2Definition] =
         [
             'fixtures/list-query-v1.backend-contract.json',
             'fixtures/list-query-v1.migration-decisions.json',
-            'fixtures/cmz-client-landing-home.v2.definition.json',
+            'fixtures/editorial-blocks.v2.definition.json',
         ].map(async (path) =>
             JSON.parse(await readFile(new URL(path, root), 'utf8'))
         )
@@ -492,7 +492,7 @@ test('la commande écrit une seule sortie et refuse de l’écraser', async () =
     try {
         const definitionPath = join(
             repositoryRoot,
-            'tools/generator-platform/sources/cmz-client-landing-home.definition.json'
+            'tools/generator-platform/fixtures/editorial-blocks.v1.definition.json'
         );
         const backendPath = join(
             repositoryRoot,

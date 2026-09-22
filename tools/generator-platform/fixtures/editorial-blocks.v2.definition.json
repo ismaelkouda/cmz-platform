@@ -2,15 +2,15 @@
   "schema_version": "2.0.0",
   "kind": "list-query",
   "feature": {
-    "id": "cmz-client-landing-home",
-    "name": "CMZ Client — Landing home blocks",
-    "description": "Blocs de contenu éditorial actifs affichés sur la page d'accueil publique du client CMZ."
+    "id": "editorial-blocks",
+    "name": "Editorial blocks",
+    "description": "Generic retained input used only to prove migration from list-query v1."
   },
   "backend_contract": {
     "uri": "tools/generator-platform/fixtures/list-query-v1.backend-contract.json",
     "id": "cmz-settings-api",
     "version": "1.0.0",
-    "sha256": "2accf0509adf53f04cb4127906f4a52d5ef296409fd6e5f688606c0f794df4c2"
+    "sha256": "f371c4fc11941472a74b5edd1ef78c0342f2dc3c876a8df4ff9a275ef8e0f1df"
   },
   "operations": [
     {
@@ -21,19 +21,10 @@
       "success_response_status": 200,
       "read_model": {
         "id": "home-block-info",
-        "description": "Un bloc de contenu éditorial de la page d'accueil.",
+        "description": "A generic editorial block.",
         "fields": [
           { "name": "id", "source_field": "id" },
-          { "name": "title", "source_field": "title" },
-          { "name": "slug", "source_field": "slug" },
-          { "name": "resume", "source_field": "resume" },
-          { "name": "content", "source_field": "content" },
-          { "name": "type", "source_field": "type" },
-          { "name": "image_url", "source_field": "image_url" },
-          { "name": "video_url", "source_field": "video_url" },
-          { "name": "button_label", "source_field": "button_label" },
-          { "name": "button_url", "source_field": "button_url" },
-          { "name": "updated_at", "source_field": "updated_at" }
+          { "name": "title", "source_field": "title" }
         ]
       },
       "execution": {
