@@ -233,6 +233,28 @@ the Staff audit of 2026-09-15 identified unresolved production blockers. Their
 v1 evidence remains available for migration work; neither may be adopted by
 default.
 
+### Migrate a frozen list-query v1 definition
+
+The v2 contract does not repeat HTTP, authentication, or wire DTO facts. It
+content-addresses one canonical backend contract, maps its wire fields to a
+read model, and makes cache, concurrency, cancellation, retry, and stale-data
+behavior explicit. Migration therefore requires a reviewed decisions file; it
+never guesses these policies.
+
+```bash
+bun run migrate:list-query -- \
+  --definition tools/generator-platform/fixtures/editorial-blocks.v1.definition.json \
+  --backend-contract tools/generator-platform/fixtures/list-query-v1.backend-contract.json \
+  --decisions tools/generator-platform/fixtures/list-query-v1.migration-decisions.json \
+  --out /tmp/editorial-blocks.v2.json
+```
+
+The command validates both inputs, refuses any v1/backend disagreement, writes
+one new file, and never overwrites an existing output. The versioned before,
+decisions, backend, and expected-after fixtures make the transformation
+reviewable without running the command. This is a migration boundary only:
+v2 has no production renderer or runtime yet and remains experimental.
+
 PLAT-2 adds two independent, fail-closed ingestion paths:
 
 - `adapters/structured-spec-adapter.mjs` consumes the versioned JSON source in

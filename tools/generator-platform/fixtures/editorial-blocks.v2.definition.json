@@ -1,0 +1,49 @@
+{
+  "schema_version": "2.0.0",
+  "kind": "list-query",
+  "feature": {
+    "id": "editorial-blocks",
+    "name": "Editorial blocks",
+    "description": "Generic retained input used only to prove migration from list-query v1."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/list-query-v1.backend-contract.json",
+    "id": "cmz-settings-api",
+    "version": "1.0.0",
+    "sha256": "f371c4fc11941472a74b5edd1ef78c0342f2dc3c876a8df4ff9a275ef8e0f1df"
+  },
+  "operations": [
+    {
+      "id": "list-home-block-infos",
+      "operation_ref": {
+        "operation_id": "cms.list-home-block-infos"
+      },
+      "success_response_status": 200,
+      "read_model": {
+        "id": "home-block-info",
+        "description": "A generic editorial block.",
+        "fields": [
+          { "name": "id", "source_field": "id" },
+          { "name": "title", "source_field": "title" }
+        ]
+      },
+      "execution": {
+        "cache": {
+          "mode": "host",
+          "scope": "public",
+          "refresh": "bypass"
+        },
+        "concurrency": "latest-wins",
+        "cancellation": {
+          "on_superseded": true,
+          "on_destroy": true
+        },
+        "retry": { "mode": "none" },
+        "stale_data": {
+          "on_reload": "preserve",
+          "on_error": "preserve"
+        }
+      }
+    }
+  ]
+}

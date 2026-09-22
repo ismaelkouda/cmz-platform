@@ -1938,7 +1938,18 @@ Figma, désormais source partielle différée :
   chemin nominal n'exécute qu'une installation sans scripts, les builds/lint
   des projets créés et leur formatage. Un test prouve que les audits globaux
   noms, targets et dépendances restent directement bloquants dans la CI.
-  SIMPL-7 — budget de complexité des compositions v2 — est le prochain lot.
+  **C1i — SIMPL-7 engagé localement le 2026-09-22 :** le premier incrément de
+  `list-query` 2.0 introduit un contrat fermé qui référence le
+  `backend-contract` par identité, version et SHA-256 au lieu de redéclarer
+  HTTP, auth et DTO. Le mapping wire → read model et les politiques cache,
+  concurrence, annulation, retry et données obsolètes restent explicites. Le
+  migrateur v1 → v2 exige les décisions non déductibles, vérifie la parité avec
+  le backend, est idempotent et écrit un seul fichier sans écrasement, journal
+  ni runtime propriétaire. Le contrat représente le mapping connu du cas actif
+  `site-group-select` (`id → value` / `name → label`) sans le revendiquer encore
+  comme oracle runtime. ADR-0047 documente la frontière. Restent :
+  compilation v2, décodage runtime, contrôleur de query, adaptateur host réel,
+  second cas imbriqué puis réalisation de page.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

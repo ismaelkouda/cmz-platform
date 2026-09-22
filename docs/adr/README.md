@@ -80,4 +80,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0044](./0044-bibliotheques-ui-opt-in-apres-create-app.md) | Bibliothèques UI ajoutées à la demande après `create-app` | Accepted |
 | [0045](./0045-realisation-ecran-multi-noeuds-independants.md) | Réalisation d'écran multi-nœuds indépendants             | Accepted |
 | [0046](./0046-corpus-seos-hors-chemin-critique-ci.md)     | Corpus SEOS hors du chemin critique des changements ordinaires | Accepted |
+| [0047](./0047-list-query-v2-reference-backend-et-migration-explicite.md) | `list-query` v2 référence le backend et migre sans inventer | Accepted |
 <!-- END:GENERATED:adr-index -->

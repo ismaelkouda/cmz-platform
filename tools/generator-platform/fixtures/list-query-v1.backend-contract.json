@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "backend-contract",
+  "contract": {
+    "id": "cmz-settings-api",
+    "title": "Generic settings API migration fixture",
+    "version": "1.0.0",
+    "status": "planned",
+    "description": "Backend authority fixture used only to prove the list-query v1 to v2 migration."
+  },
+  "sources": [
+    {
+      "id": "list-query-v1-source",
+      "kind": "manual",
+      "authority": "declared",
+      "status": "planned",
+      "snapshot_uri": "tools/generator-platform/fixtures/editorial-blocks.v1.definition.json",
+      "sha256": "600fcf0341b266caa3cb20f4b160b4a0d458c3d13110a138d79945397ed39546"
+    }
+  ],
+  "services": [
+    {
+      "id": "settings-api",
+      "status": "planned",
+      "description": "Settings service used by the generic migration fixture.",
+      "base_urls": [
+        {
+          "environment": "production",
+          "url": "https://settings.example/api/"
+        }
+      ],
+      "evidence": [
+        { "source_id": "list-query-v1-source", "locator": "$.feature" }
+      ]
+    }
+  ],
+  "security_schemes": [],
+  "models": [
+    {
+      "id": "home-block-info-wire",
+      "kind": "object",
+      "status": "planned",
+      "description": "Generic wire item retained solely for the migration proof.",
+      "fields": [
+        {
+          "name": "id",
+          "description": "Wire field id.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "integer" },
+          "evidence": [
+            {
+              "source_id": "list-query-v1-source",
+              "locator": "$.operations[0].item.fields[0]"
+            }
+          ]
+        },
+        {
+          "name": "title",
+          "description": "Wire field title.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "list-query-v1-source",
+              "locator": "$.operations[0].item.fields[1]"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "list-query-v1-source",
+          "locator": "$.operations[0].item"
+        }
+      ]
+    },
+    {
+      "id": "home-block-info-list-wire",
+      "kind": "array",
+      "status": "planned",
+      "description": "Generic wire collection retained solely for the migration proof.",
+      "items": { "kind": "model", "model_id": "home-block-info-wire" },
+      "evidence": [
+        {
+          "source_id": "list-query-v1-source",
+          "locator": "$.operations[0].item"
+        }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "id": "cms.list-home-block-infos",
+      "service_id": "settings-api",
+      "status": "planned",
+      "description": "Loads the generic list-query migration fixture.",
+      "method": "GET",
+      "path": "/cms/home-block-infos/actives/pwa",
+      "access": {
+        "mode": "public",
+        "security_scheme_ids": [],
+        "permissions": []
+      },
+      "request": { "parameters": [] },
+      "responses": [
+        {
+          "status": 200,
+          "outcome": "success",
+          "description": "List available.",
+          "body": {
+            "media_type": "application/json",
+            "model_id": "home-block-info-list-wire",
+            "envelope": {
+              "kind": "object",
+              "data_field": "data",
+              "error_field": "error",
+              "message_field": "message"
+            },
+            "evidence": [
+              {
+                "source_id": "list-query-v1-source",
+                "locator": "$.operations[0].http.response_envelope"
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "source_id": "list-query-v1-source",
+              "locator": "$.operations[0].http"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "list-query-v1-source",
+          "locator": "$.operations[0]"
+        }
+      ]
+    }
+  ]
+}
