@@ -1,6 +1,7 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
 
-/* Scan restreint aux libs UI réellement utilisées (évite le sur-scan monorepo). */
+/* L'auto-détection Tailwind est désactivée ci-dessus : seuls ces chemins
+   applicatifs peuvent influencer le CSS de production. */
 @source '../../../libs/shared/ui/src';
 @source '../../../libs/*/ui/src';
 @source '../../../apps/backoffice-angular/src';

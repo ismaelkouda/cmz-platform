@@ -133,6 +133,7 @@ test('Tailwind dérive les fichiers relus et câble exactement l’app cible', (
     });
     const css = readFileSync(join(root, 'apps/demo/src/tailwind.css'), 'utf8');
     assert.match(css, /Adaptateur qualifié CMZ, tailwindcss@4\.1\.13/);
+    assert.match(css, /@import 'tailwindcss' source\(none\)/);
     assert.match(css, /@source '\.\.\/\.\.\/\.\.\/apps\/demo\/src'/);
     assert.doesNotMatch(css, /apps\/backoffice-angular\/src/);
     const project = JSON.parse(
