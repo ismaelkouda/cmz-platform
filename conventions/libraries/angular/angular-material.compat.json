@@ -21,12 +21,12 @@
       "reason": "Piste initiale alignée sur Angular 22 ; passe en verified seulement après la preuve compile-component.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "34e48b8fadb80a109b7d85d79b9f94d84d71ba56",
-        "source_context_sha256": "b270e0a87b1d41df8308ce38756ea0021b6c84b2666110e3e8b3a1d924e99783",
+        "commit": "31319debc1b0609593776ff7846438d5fab774bd",
+        "source_context_sha256": "e2a7e72b17db8063a638dececb48c28a0fd225cb38b73671e25705c15ae1dff2",
         "app": "backoffice-angular",
-        "plan_id": "library-plan:4f408ebcf81082c0fc9fd61afcbd2f460183da7f30507dcd0d789d488b1f488c",
+        "plan_id": "library-plan:574062a43ce084a8b34f58437cd274ea2a8e6eb54c3479d5bd9a338c4656a5fc",
         "change_set_id": "changes:7f8b14f6ef447133ff6c3cd69a1b20a5ee05dafdf11dbd743c757625deb5e87c",
-        "app_tree_sha256": "7766488c42ddeb1a28fb16fc845508107c4adfab5781639babc615ae55535a4d",
+        "app_tree_sha256": "2e728afe500415f1ea5090dac64ab34f5017926e03f1466ccae5e89463077716",
         "track_sha256": "838fec6ce3a84e3165204ffa42a74521a6461b205c6d8507f7ad9346af64c160",
         "tested_versions": {
           "node": "22.22.3",
@@ -67,7 +67,7 @@
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
           "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
           "proof_contracts": "9b72d4629573fa351cc5ab209df549d7cef942f3a9061ca04a2e3a4ac15dc496",
-          "runner": "bd905c5a4d2181a7ca8a6f8f808c9ae3ce6ed898fd7e2896cd76bc9896e8b8af",
+          "runner": "b90e8b9c0c2d1c8f25c6260a372cf32ec25fcf317ae2b2cdfdd32daa68a9f8c5",
           "runner_sources": {
             "tools/check-library-setup-deps.mjs": "3fd82a88564c9e29174f3d6310eabafe3d327fded02d323a8f2e1a9567514b05",
             "tools/check-library-setup.mjs": "f9dc1940aa2ee098c03b374f7523569e8b9bb021366469e4ffb53a9441e23245",
@@ -91,7 +91,7 @@
             "tools/library-setup/runtime-fixtures/material-probe.ts": "57e9a08bc1c53a8191030d4d0cb1b48acca989b0c555dd6acbf6196472e15266",
             "tools/library-setup/runtime-fixtures/tsconfig.material.json": "2b01448591a8e7e367e745fc3056459d737aed1ee4ffc4a3c26d4152c62429d3",
             "tools/library-setup/runtime-oracles/material-component.mjs": "f457dbacadc6e89ee98cf643ff81399c4b9e217d30700899085675b27fa2ae75",
-            "tools/library-setup/runtime-oracles/material-tailwind-browser.mjs": "dff3bb2dc9b732198c89b447e430703bd4c17c21fecca3b860bfd332b9c40556",
+            "tools/library-setup/runtime-oracles/material-tailwind-browser.mjs": "b1058606dea239e0e8b09d0c4dfe46a747b2e3daeebc61b277d1918d26fe07e2",
             "tools/library-setup/runtime-oracles/material-tailwind-cascade.mjs": "53f3953e421762417a32019d130ea85ec8f4a20a90617c6b7ab5ad59a43362a0",
             "tools/library-setup/runtime-oracles/production-build.mjs": "a4e323a13b60236100ebc40605e937083e29784d38d4055f0109db17caafd3ea",
             "tools/library-setup/runtime-oracles/support.mjs": "5388a7d2d487dd66bbb6c49631cef6f6b6bdef4c72282979074b8f2757ec0651",
@@ -100,7 +100,7 @@
             "tools/library-setup/tooling-fingerprint.mjs": "c53807d81dad3d7e5c25f714ffcac9f572ee21e6c1b3233c53f202fae77fb462"
           }
         },
-        "evidence_sha256": "e1dc087846917792970f970b29a479cb3607d122d8480fdc8e2aec21ec139efa"
+        "evidence_sha256": "a031974498798f30a68e2f512f78d184177e23370c2f7b5ee40f85001d7913ba"
       }
     }
   ]

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -14,6 +14,7 @@ import {
     proveLibraryRuntime,
     requiredAcceptances,
 } from './runtime-proofs.mjs';
+import { proveMaterialTailwindBrowser } from './runtime-oracles/material-tailwind-browser.mjs';
 
 // Forme réellement observée sur un candidat après `ng-add` : les jetons dans
 // une règle `html` hors couche, le preflight confiné dans `@layer base`.
@@ -389,4 +390,72 @@ test('la page sonde intègre le CSS compilé et n’appelle aucun réseau', () =
         () => browserProbeHtml('a{}</style><script>x()</script>'),
         /fermeture de balise style/
     );
+});
+
+test('l’oracle navigateur place sa classe Tailwind dans la source puis la nettoie', async (t) => {
+    const root = await realpath(
+        await mkdtemp(join(tmpdir(), 'cmz-browser-source-proof-'))
+    );
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const workspace = join(root, 'candidate');
+    for (const path of ['candidate', 'repo', 'cache', 'home'])
+        await mkdir(join(root, path));
+    await mkdir(join(workspace, 'apps/demo/src'), { recursive: true });
+    await put(
+        root,
+        'candidate/apps/demo/project.json',
+        JSON.stringify({
+            targets: { build: { options: { outputPath: 'dist/apps/demo' } } },
+        })
+    );
+    const sourceProbe = join(
+        workspace,
+        'apps/demo/src/cmz-coexistence-source-probe.html'
+    );
+    const output = join(workspace, 'dist/apps/demo');
+    let builds = 0;
+    let renders = 0;
+    const observed = proveMaterialTailwindBrowser({
+        repository: join(root, 'repo'),
+        workspace,
+        app: 'demo',
+        policy: {},
+        backend: 'test',
+        cache: join(root, 'cache'),
+        home: join(root, 'home'),
+        browserExecutable: '/browser/chrome',
+        browserRoot: '/browser',
+        run: ({ renderer }) => {
+            if (!renderer) {
+                builds += 1;
+                assert.equal(existsSync(sourceProbe), true);
+                assert.match(
+                    readFileSync(sourceProbe, 'utf8'),
+                    /text-\[#123456\]/
+                );
+                mkdirSync(output, { recursive: true });
+                writeFileSync(
+                    join(output, 'styles.css'),
+                    `${TAILWIND_PREFLIGHT_LAYERED}${MATERIAL_TOKENS_UNLAYERED}.text\\-\\[\\#123456\\]{color:#123456}`
+                );
+                return { status: 0, stdout: '', stderr: '' };
+            }
+            renders += 1;
+            return {
+                status: 0,
+                stdout: `<pre id="cmz-result">${JSON.stringify({
+                    tokenCount: 2,
+                    tokenResolved: '#005cbb',
+                    unlayeredBorderWidth: '7px',
+                    utilityColor: 'rgb(18, 52, 86)',
+                })}</pre>`,
+                stderr: '',
+            };
+        },
+    });
+    assert.equal(observed.utilityColor, 'rgb(18, 52, 86)');
+    assert.equal(builds, 1);
+    assert.equal(renders, 1);
+    assert.equal(existsSync(sourceProbe), false);
+    assert.equal(existsSync(output), false);
 });

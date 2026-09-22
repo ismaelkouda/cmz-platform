@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import {
@@ -6,9 +6,11 @@ import {
     nxBuild,
     projectOutputPath,
     removeTree,
+    safePath,
 } from './support.mjs';
 
 const BROWSER_PROBE = 'cmz-coexistence-probe.html';
+const SOURCE_PROBE = 'cmz-coexistence-source-probe.html';
 
 function fail(message) {
     throw new Error(`library runtime proof: ${message}`);
@@ -85,8 +87,18 @@ export function proveMaterialTailwindBrowser(context) {
     const output = projectOutputPath(context.workspace, context.app);
     if (existsSync(output)) fail('sortie de build préexistante');
     const probe = join(output, BROWSER_PROBE);
-    nxBuild(context, context.app);
+    const sourceProbe = safePath(
+        context.workspace,
+        `apps/${context.app}/src/${SOURCE_PROBE}`
+    );
+    if (existsSync(sourceProbe)) fail('fixture de coexistence déjà présente');
+    writeFileSync(
+        sourceProbe,
+        '<div class="text-[#123456]">preuve coexistence</div>\n',
+        { flag: 'wx' }
+    );
     try {
+        nxBuild(context, context.app);
         const compiledCss = cssFiles(output)
             .map((path) => readFileSync(path, 'utf8'))
             .join('\n');
@@ -124,6 +136,7 @@ export function proveMaterialTailwindBrowser(context) {
         }
         return assertBrowserCoexistence(result.stdout);
     } finally {
+        if (existsSync(sourceProbe)) unlinkSync(sourceProbe);
         removeTree(output);
     }
 }

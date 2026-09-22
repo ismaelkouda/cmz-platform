@@ -1373,6 +1373,22 @@ Figma, désormais source partielle différée :
   pas une mesure locale. `check:ci-wiring` : 40 gates (nouveau
   `check:bundle-metrics-freshness` dans `REQUIRED_STANDALONE_SCRIPTS`, ci-wiring
   confirme la step nightly qui l'appelle).
+  **Revalidation du 2026-09-22 :** deux échecs Nightly successifs ont révélé
+  une troisième cause, distincte d'OPS-28 : Tailwind 4 conservait sa détection
+  automatique des sources malgré les `@source` explicites. Des fichiers
+  d'outillage étrangers à l'application pouvaient donc modifier le CSS de
+  production et faire dériver la mesure sans changement d'UI. Le point
+  d'entrée utilise désormais `source(none)` ; seuls les périmètres `@source`
+  déclarés sont compilés. L'oracle navigateur Material/Tailwind place sa classe
+  sentinelle dans la source de l'app **avant** le build, puis la nettoie, au
+  lieu de dépendre du scan implicite. Les pistes Tailwind et Angular Material,
+  seules consommatrices de cet oracle, ont été requalifiées intégralement.
+  Mesure Linux autoritative du run `35741311471` : `521 154` octets
+  (`521.15 kB`), JavaScript inchangé à `505 232` octets, CSS réduit de
+  `28 621` à `15 230` octets. Le run final `35741801394` est vert sur les
+  quatre jobs (oracle applicatif, intégration bibliothèques, isolation Linux et
+  isolation macOS). Le Nightly retrouve ainsi sa fonction de signal : il ne
+  dépend plus des noms ou contenus des fichiers d'outillage du dépôt.
 - **OPS-30** — **fait** (2026-09-11), M, P1, alias `OPS-26 suite`. `eslint`
   9→10 (ferme #11+#24, indissociables : `@eslint/js@10` exige `eslint
   ^10.0.0` en peer). Sur les 5 paquets du groupe, seul `eslint` est

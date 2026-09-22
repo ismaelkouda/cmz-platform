@@ -455,6 +455,15 @@ commandes respectent désormais un budget de quatre phases visibles.
 
 ### SIMPL-7 — Appliquer le budget aux compositions v2 — P0, continu
 
+Précondition opérationnelle soldée le 2026-09-22 : le Nightly ne scanne plus
+implicitement tout le dépôt avec Tailwind. Le CSS de production est borné aux
+`@source` applicatifs explicites, l'oracle de coexistence Material/Tailwind crée
+et nettoie sa sonde dans la source avant compilation, et les deux pistes ont été
+requalifiées. Le run GitHub Actions `35741801394` est vert sur ses quatre jobs.
+Cette correction préserve la séparation décidée par l'audit : le build courant
+reste simple ; les preuves navigateur et d'isolation restent dans la
+qualification rare et le Nightly.
+
 La conception de `list-query` 2.0 commence par le contrat backend et son
 migrateur. Elle ne doit pas répliquer le modèle `add-library` : pas de nouveau
 framework transactionnel, pas de voie LLM, pas de preuve profonde sur PR sans
