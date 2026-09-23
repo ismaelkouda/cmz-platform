@@ -128,6 +128,52 @@ function validateExecution(execution, access, path, errors) {
     }
 }
 
+function validateInputBindings(query, operation, path, errors) {
+    const parameters = operation.request?.parameters ?? [];
+    const fields = query.input?.fields ?? [];
+    errors.push(
+        ...duplicateErrors(
+            fields,
+            (field) => field?.name,
+            `${path}.input.fields`
+        ),
+        ...duplicateErrors(
+            fields,
+            (field) =>
+                `${field?.parameter_ref?.in}:${field?.parameter_ref?.name}`,
+            `${path}.input.fields.parameter_ref`
+        )
+    );
+    for (const [fieldIndex, field] of fields.entries()) {
+        const reference = field?.parameter_ref;
+        const parameter = parameters.find(
+            (candidate) =>
+                candidate.in === reference?.in &&
+                candidate.name === reference?.name
+        );
+        if (!parameter) {
+            errors.push(
+                `${path}.input.fields[${fieldIndex}].parameter_ref: unresolved backend parameter ${reference?.in}:${reference?.name}`
+            );
+        }
+    }
+    for (const parameter of parameters) {
+        const matches = fields.filter(
+            (field) =>
+                field?.parameter_ref?.in === parameter.in &&
+                field?.parameter_ref?.name === parameter.name
+        );
+        if (matches.length !== 1) {
+            errors.push(
+                `${path}.input.fields: backend parameter ${parameter.in}:${parameter.name} requires exactly one input binding`
+            );
+        }
+    }
+    if (parameters.length === 0 && query.input !== undefined) {
+        errors.push(`${path}.input: operation has no backend parameters`);
+    }
+}
+
 export function validateListQueryV2Definition(
     definition,
     backendContract,
@@ -170,6 +216,7 @@ export function validateListQueryV2Definition(
             path,
             errors
         );
+        validateInputBindings(query, operation, path, errors);
         validateExecution(query.execution, operation.access, path, errors);
         if (!resolved) continue;
         errors.push(

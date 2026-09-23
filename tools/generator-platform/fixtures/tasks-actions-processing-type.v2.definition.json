@@ -1,0 +1,58 @@
+{
+  "schema_version": "2.0.0",
+  "kind": "list-query",
+  "feature": {
+    "id": "tasks-actions-processing-types",
+    "name": "Report action type options",
+    "description": "Action types and allowed operators used by the active processing form."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/tasks-actions-processing-type.backend-contract.json",
+    "id": "cmz-tasks-actions-processing-type",
+    "version": "1.0.0",
+    "sha256": "b17e19112af141b45e6d2d5ef76e138b31c673c3365195ef1e9f3308a109706d"
+  },
+  "operations": [
+    {
+      "id": "list-report-action-types",
+      "operation_ref": {
+        "operation_id": "processing.list-report-action-types"
+      },
+      "success_response_status": 200,
+      "input": {
+        "fields": [
+          {
+            "name": "reportUniqId",
+            "parameter_ref": { "name": "id", "in": "path" }
+          }
+        ]
+      },
+      "read_model": {
+        "id": "report-action-type-option",
+        "description": "Action type option with the telecom operators allowed for it.",
+        "fields": [
+          { "name": "value", "source_field": "code" },
+          { "name": "label", "source_field": "name" },
+          { "name": "operators", "source_field": "operators" }
+        ]
+      },
+      "execution": {
+        "cache": {
+          "mode": "host",
+          "scope": "principal",
+          "refresh": "bypass"
+        },
+        "concurrency": "latest-wins",
+        "cancellation": {
+          "on_superseded": true,
+          "on_destroy": true
+        },
+        "retry": { "mode": "none" },
+        "stale_data": {
+          "on_reload": "preserve",
+          "on_error": "preserve"
+        }
+      }
+    }
+  ]
+}

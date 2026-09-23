@@ -15,8 +15,29 @@ const [definition, backendDocument] = await Promise.all([
     readFile(new URL('fixtures/editorial-blocks.v2.definition.json', root)),
     readFile(new URL('fixtures/list-query-v1.backend-contract.json', root)),
 ]);
+const [parameterizedDefinitionDocument, parameterizedBackendDocument] =
+    await Promise.all([
+        readFile(
+            new URL(
+                'fixtures/tasks-actions-processing-type.v2.definition.json',
+                root
+            )
+        ),
+        readFile(
+            new URL(
+                'fixtures/tasks-actions-processing-type.backend-contract.json',
+                root
+            )
+        ),
+    ]);
 const canonicalDefinition = JSON.parse(definition.toString('utf8'));
 const canonicalBackend = JSON.parse(backendDocument.toString('utf8'));
+const parameterizedDefinition = JSON.parse(
+    parameterizedDefinitionDocument.toString('utf8')
+);
+const parameterizedBackend = JSON.parse(
+    parameterizedBackendDocument.toString('utf8')
+);
 
 function compile(overrides = {}) {
     const backendContract = overrides.backendContract ?? canonicalBackend;
@@ -33,6 +54,27 @@ function compile(overrides = {}) {
         definition,
         backendContractDocument,
         backendContractUri: backendUri,
+    });
+}
+
+function compileParameterized(overrides = {}) {
+    const backendContract = structuredClone(
+        overrides.backendContract ?? parameterizedBackend
+    );
+    const backendContractDocument = Buffer.from(
+        `${JSON.stringify(backendContract, null, 2)}\n`
+    );
+    const definition = structuredClone(
+        overrides.definition ?? parameterizedDefinition
+    );
+    definition.backend_contract.sha256 = createHash('sha256')
+        .update(backendContractDocument)
+        .digest('hex');
+    return compileListQueryV2ExecutionModel({
+        definition,
+        backendContractDocument,
+        backendContractUri:
+            'tools/generator-platform/fixtures/tasks-actions-processing-type.backend-contract.json',
     });
 }
 
@@ -72,6 +114,7 @@ test('compile un contrat v2 en modèle d’exécution neutre et déterministe', 
             error_field: 'error',
             message_field: 'message',
         },
+        parameters: [],
     });
     assert.deepEqual(query.wire_model.fields, [
         {
@@ -179,6 +222,197 @@ test('conserve séparément le DTO wire et le read model renommé', () => {
     );
 });
 
+test('compile le cas réel avec un path lié et un tableau enum imbriqué', () => {
+    const query = compileParameterized().queries[0];
+
+    assert.deepEqual(query.port.input, {
+        kind: 'object',
+        fields: [
+            {
+                name: 'reportUniqId',
+                type: { kind: 'primitive', name: 'string' },
+                required: true,
+                constraints: { min_length: 1 },
+            },
+        ],
+    });
+    assert.deepEqual(query.transport.parameters, [
+        {
+            name: 'id',
+            in: 'path',
+            source_field: 'reportUniqId',
+            type: { kind: 'primitive', name: 'string' },
+            required: true,
+            constraints: { min_length: 1 },
+        },
+    ]);
+    assert.deepEqual(query.wire_model.fields[2], {
+        name: 'operators',
+        type: {
+            kind: 'array',
+            items: { kind: 'primitive', name: 'string' },
+        },
+        required: true,
+        nullable: false,
+        allowed_values: ['mtn', 'orange', 'moov'],
+    });
+    assert.deepEqual(
+        query.read_model.fields.map(({ name, source_field, type }) => ({
+            name,
+            source_field,
+            type,
+        })),
+        [
+            {
+                name: 'value',
+                source_field: 'code',
+                type: { kind: 'primitive', name: 'string' },
+            },
+            {
+                name: 'label',
+                source_field: 'name',
+                type: { kind: 'primitive', name: 'string' },
+            },
+            {
+                name: 'operators',
+                source_field: 'operators',
+                type: {
+                    kind: 'array',
+                    items: { kind: 'primitive', name: 'string' },
+                },
+            },
+        ]
+    );
+});
+
+test('refuse une liaison path absente, renommée ou élargie à query', () => {
+    const absent = structuredClone(parameterizedDefinition);
+    delete absent.operations[0].input;
+    assert.throws(
+        () => compileParameterized({ definition: absent }),
+        /path:id requires exactly one input binding/
+    );
+
+    const renamed = structuredClone(parameterizedDefinition);
+    renamed.operations[0].input.fields[0].parameter_ref.name = 'other';
+    assert.throws(
+        () => compileParameterized({ definition: renamed }),
+        /unresolved backend parameter path:other/
+    );
+
+    const queryParameter = structuredClone(parameterizedBackend);
+    queryParameter.operations[0].path = '/processing-actions/report-types';
+    queryParameter.operations[0].request.parameters[0].in = 'query';
+    const queryDefinition = structuredClone(parameterizedDefinition);
+    queryDefinition.operations[0].input.fields[0].parameter_ref.in = 'query';
+    assert.throws(
+        () =>
+            compileParameterized({
+                backendContract: queryParameter,
+                definition: queryDefinition,
+            }),
+        /requires an unsupported parameter; only required string path parameters are proven/
+    );
+
+    const twoParameters = structuredClone(parameterizedBackend);
+    twoParameters.operations[0].path =
+        '/processing-actions/{id}/{kind}/report-types';
+    twoParameters.operations[0].request.parameters.push({
+        ...structuredClone(twoParameters.operations[0].request.parameters[0]),
+        name: 'kind',
+    });
+    const twoInputs = structuredClone(parameterizedDefinition);
+    twoInputs.operations[0].input.fields.push({
+        name: 'kind',
+        parameter_ref: { name: 'kind', in: 'path' },
+    });
+    assert.throws(
+        () =>
+            compileParameterized({
+                backendContract: twoParameters,
+                definition: twoInputs,
+            }),
+        /only one required string path parameter is proven/
+    );
+
+    const repeatedPlaceholder = structuredClone(parameterizedBackend);
+    repeatedPlaceholder.operations[0].path =
+        '/processing-actions/{id}/report-types/{id}';
+    assert.throws(
+        () =>
+            compileParameterized({
+                backendContract: repeatedPlaceholder,
+            }),
+        /only required string path parameters are proven/
+    );
+});
+
+test('refuse les objets et tableaux récursifs au-delà du cas imbriqué prouvé', () => {
+    const objectArray = structuredClone(parameterizedBackend);
+    objectArray.models[0].fields[2].type.items = {
+        kind: 'model',
+        model_id: 'tasks-actions-processing-type-wire',
+    };
+    delete objectArray.models[0].fields[2].allowed_values;
+    assert.throws(
+        () => compileParameterized({ backendContract: objectArray }),
+        /requires the proven enum string-array shape/
+    );
+
+    const nestedArray = structuredClone(parameterizedBackend);
+    nestedArray.models[0].fields[2].type.items = {
+        kind: 'array',
+        items: { kind: 'primitive', name: 'string' },
+    };
+    delete nestedArray.models[0].fields[2].allowed_values;
+    assert.throws(
+        () => compileParameterized({ backendContract: nestedArray }),
+        /requires the proven enum string-array shape/
+    );
+
+    const openStringArray = structuredClone(parameterizedBackend);
+    delete openStringArray.models[0].fields[2].allowed_values;
+    assert.throws(
+        () => compileParameterized({ backendContract: openStringArray }),
+        /requires the proven enum string-array shape/
+    );
+});
+
+test('le validateur tue les mutants de binding path et de tableau enum', () => {
+    const model = compileParameterized();
+
+    const driftedInput = structuredClone(model);
+    driftedInput.queries[0].port.input.fields[0].constraints = {
+        min_length: 2,
+    };
+    assert.match(
+        validateListQueryV2ExecutionModel(driftedInput).join('\n'),
+        /invalid path binding id/
+    );
+
+    const unboundPath = structuredClone(model);
+    unboundPath.queries[0].transport.path = '/processing-actions/report-types';
+    assert.match(
+        validateListQueryV2ExecutionModel(unboundPath).join('\n'),
+        /invalid path binding id/
+    );
+
+    const repeatedPlaceholder = structuredClone(model);
+    repeatedPlaceholder.queries[0].transport.path =
+        '/processing-actions/{id}/report-types/{id}';
+    assert.match(
+        validateListQueryV2ExecutionModel(repeatedPlaceholder).join('\n'),
+        /invalid path binding id/
+    );
+
+    const openArray = structuredClone(model);
+    delete openArray.queries[0].wire_model.fields[2].allowed_values;
+    assert.match(
+        validateListQueryV2ExecutionModel(openArray).join('\n'),
+        /unsupported nested decoder shape/
+    );
+});
+
 test('résout une query authentifiée vers le schéma exact fourni par le host', () => {
     const definition = structuredClone(canonicalDefinition);
     const backendContract = structuredClone(canonicalBackend);
@@ -238,12 +472,12 @@ test('projette les échecs backend sans inventer leur modèle métier', () => {
     });
 });
 
-test('refuse paramètres et modèles imbriqués tant que leurs cas ne sont pas prouvés', () => {
+test('refuse les paramètres non liés et les modèles imbriqués non prouvés', () => {
     const parameterized = structuredClone(canonicalBackend);
     parameterized.operations[0].request.parameters.push({ id: 'site-id' });
     assert.throws(
         () => compile({ backendContract: parameterized }),
-        /typed path\/query bindings require a proven parameterized case/
+        /requires exactly one input binding/
     );
 
     const nested = structuredClone(canonicalBackend);
@@ -253,7 +487,7 @@ test('refuse paramètres et modèles imbriqués tant que leurs cas ne sont pas p
     };
     assert.throws(
         () => compile({ backendContract: nested }),
-        /nested models require a proven second case/
+        /only one-dimensional primitive arrays are proven/
     );
 });
 

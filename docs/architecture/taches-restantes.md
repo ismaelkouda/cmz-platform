@@ -1389,6 +1389,16 @@ Figma, désormais source partielle différée :
   quatre jobs (oracle applicatif, intégration bibliothèques, isolation Linux et
   isolation macOS). Le Nightly retrouve ainsi sa fonction de signal : il ne
   dépend plus des noms ou contenus des fichiers d'outillage du dépôt.
+  **Revalidation du 2026-09-23 après PR #91 :** la CI post-fusion
+  `35831788863` est verte. Le Nightly `35836133198` a correctement détecté un
+  drift réel limité au JavaScript initial : `521 154 → 521 220` octets au
+  total, `main` `505 232 → 505 298` octets, CSS inchangé à `15 230` octets et
+  ExcelJS inchangé à `948 323` octets. Les trois autres jobs Nightly sont
+  verts. `bundle-metrics.json` a été remplacé par l'artefact Ubuntu
+  `bundle-metrics-measured` du run (artifact `10739651377`), jamais par une
+  mesure locale ; le build production local reproduit ensuite les mêmes noms
+  de chunks et `check:bundle-metrics-freshness` repasse au vert. Les budgets
+  `900kb/1mb` restent très largement respectés.
 - **OPS-30** — **fait** (2026-09-11), M, P1, alias `OPS-26 suite`. `eslint`
   9→10 (ferme #11+#24, indissociables : `@eslint/js@10` exige `eslint
   ^10.0.0` en peer). Sur les 5 paquets du groupe, seul `eslint` est
@@ -1974,6 +1984,18 @@ Figma, désormais source partielle différée :
   (3) la publication durable de la sortie, puis (4) la réalisation d'une page
   composée N `list-query` + N `action-request`. La v2 reste `experimental`
   jusque-là.
+  **C1l — second oracle réel SIMPL-7 engagé localement le 2026-09-23 :**
+  `tasks-actions-processing-type` passe désormais par le même pipeline v2. La
+  définition lie explicitement `reportUniqId` au path backend `{id}` ; le
+  renderer valide la chaîne non vide, l'encode comme un segment unique et
+  décode strictement `operators` comme un tableau de valeurs
+  `mtn|orange|moov`. L'oracle natif Angular couvre l'URL, le host auth/cache,
+  le mapping, le rejet avant domaine, le reload et l'annulation lors d'un
+  changement d'identifiant. Les capacités voisines non prouvées restent
+  fermées. ADR-0050 mesure 2 231 lignes de surface v2 (+391), plus 9 lignes
+  nettes dans le validateur backend existant, sans nouveau module de production.
+  Restent : (1) décision et oracle de parité React, (2) publication durable,
+  puis (3) réalisation d'une page N `list-query` + N `action-request`.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

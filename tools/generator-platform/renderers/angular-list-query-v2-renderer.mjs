@@ -28,9 +28,16 @@ function typeScriptPrimitive(type) {
 }
 
 function fieldType(field) {
-    const base = typeScriptPrimitive(field.type);
+    const base =
+        field.type.kind === 'array'
+            ? `readonly ${typeScriptPrimitive(field.type.items)}[]`
+            : typeScriptPrimitive(field.type);
     const nullable = field.nullable ? `${base} | null` : base;
     return field.required ? nullable : `${nullable} | undefined`;
+}
+
+function occurrenceCount(value, token) {
+    return value.split(token).length - 1;
 }
 
 function property(name) {
@@ -48,7 +55,21 @@ function renderInterface(model) {
 }
 
 function renderModels(query) {
-    return `${renderInterface(query.wire_model)}\n\n${renderInterface(query.read_model)}\n`;
+    const input =
+        query.port.input.kind === 'object'
+            ? `\n\n${renderInputInterface(query)}`
+            : '';
+    return `${renderInterface(query.wire_model)}\n\n${renderInterface(query.read_model)}${input}\n`;
+}
+
+function renderInputInterface(query) {
+    const fields = query.port.input.fields
+        .map(
+            (field) =>
+                `    readonly ${property(field.name)}: ${typeScriptPrimitive(field.type)};`
+        )
+        .join('\n');
+    return `export interface ${pascalCase(query.id)}Input {\n${fields}\n}`;
 }
 
 function primitiveCheck(field, variable) {
@@ -87,7 +108,17 @@ function renderConstraintChecks(field) {
             `    if (value > ${constraints.maximum}) invalid(path, 'maximum ${constraints.maximum}');`
         );
     }
-    if (field.allowed_values) {
+    if (constraints.min_items !== undefined) {
+        checks.push(
+            `    if (value.length < ${constraints.min_items}) invalid(path, 'min items ${constraints.min_items}');`
+        );
+    }
+    if (constraints.max_items !== undefined) {
+        checks.push(
+            `    if (value.length > ${constraints.max_items}) invalid(path, 'max items ${constraints.max_items}');`
+        );
+    }
+    if (field.type.kind === 'primitive' && field.allowed_values) {
         checks.push(
             `    if (!${JSON.stringify(field.allowed_values)}.some((allowed) => Object.is(allowed, value))) invalid(path, 'declared value');`
         );
@@ -98,13 +129,33 @@ function renderConstraintChecks(field) {
 function renderFieldDecoder(field, index) {
     const name = `decodeField${index}`;
     const returnType = fieldType(field);
+    const expectedType =
+        field.type.kind === 'array' ? 'array' : field.type.name;
     const absent = field.required
-        ? `invalid(path, '${field.type.name}');`
+        ? `invalid(path, '${expectedType}');`
         : 'return undefined;';
     const nullable = field.nullable
         ? 'return null;'
-        : `invalid(path, '${field.type.name}');`;
+        : `invalid(path, '${expectedType}');`;
     const constraints = renderConstraintChecks(field);
+    if (field.type.kind === 'array') {
+        const itemCheck = primitiveCheck({ type: field.type.items }, 'item');
+        const allowed = field.allowed_values
+            ? `\n        if (!${JSON.stringify(field.allowed_values)}.some((allowed) => Object.is(allowed, item))) invalid(\`\${path}[\${itemIndex}]\`, 'declared value');`
+            : '';
+        return `function ${name}(record: Readonly<Record<string, unknown>>, basePath: string): ${returnType} {
+    const path = \`\${basePath}.${field.name}\`;
+    const value = record[${property(field.name)}];
+    if (value === undefined) ${absent}
+    if (value === null) ${nullable}
+    if (!Array.isArray(value)) invalid(path, 'array');
+${constraints}
+    return value.map((item, itemIndex) => {
+        if (!(${itemCheck})) invalid(\`\${path}[\${itemIndex}]\`, '${field.type.items.name}');${allowed}
+        return item;
+    });
+}`;
+    }
     return `function ${name}(record: Readonly<Record<string, unknown>>, basePath: string): ${returnType} {
     const path = \`\${basePath}.${field.name}\`;
     const value = record[${property(field.name)}];
@@ -196,6 +247,17 @@ function renderSource(query, binding) {
     const className = `${pascalCase(query.id)}Source`;
     const decoderName = `decode${pascalCase(query.id)}Response`;
     const readName = pascalCase(query.read_model.id);
+    const hasInput = query.port.input.kind === 'object';
+    const inputName = `${pascalCase(query.id)}Input`;
+    const modelImports = hasInput ? `${inputName}, ${readName}` : readName;
+    const inputParameter = hasInput ? `input: ${inputName}, ` : '';
+    const path = hasInput
+        ? 'requestPath(input)'
+        : JSON.stringify(query.transport.path);
+    const requestPath = hasInput ? renderRequestPath(query, inputName) : '';
+    const invalidPayloadImport = hasInput
+        ? "import { InvalidPayloadError } from '@cmz/shared-domain';\n"
+        : '';
     const policy = JSON.stringify(
         {
             authentication: {
@@ -209,10 +271,10 @@ function renderSource(query, binding) {
     return `import { HttpClient } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 import { createListQueryRequestContext, ${binding.token}, type ListQueryRequestPolicy } from '${binding.module}';
-import { map, type Observable } from 'rxjs';
+${invalidPayloadImport}import { map, type Observable } from 'rxjs';
 
 import { ${decoderName} } from './${query.id}.decoder';
-import type { ${readName} } from './models';
+import type { ${modelImports} } from './models';
 
 const REQUEST_POLICY: ListQueryRequestPolicy = ${policy};
 
@@ -220,31 +282,72 @@ function joinUrl(baseUrl: string, path: string): string {
     return [baseUrl.replace(/\\/$/, ''), path.replace(/^\\//, '')].join('/');
 }
 
+${requestPath}
+
 @Service({ autoProvided: false })
 export class ${className} {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = inject(${binding.token});
 
-    readAll(isRefresh: boolean): Observable<readonly ${readName}[]> {
+    readAll(${inputParameter}isRefresh: boolean): Observable<readonly ${readName}[]> {
         const context = createListQueryRequestContext(REQUEST_POLICY, { isRefresh });
         return this.http
-            .get<unknown>(joinUrl(this.baseUrl, ${JSON.stringify(query.transport.path)}), { context })
+            .get<unknown>(joinUrl(this.baseUrl, ${path}), { context })
             .pipe(map(${decoderName}));
     }
 }
 `;
 }
 
+function renderRequestPath(query, inputName) {
+    const checks = query.transport.parameters
+        .map((binding, index) => {
+            const constraints = binding.constraints ?? {};
+            const lines = [
+                `    const parameter${index} = input[${property(binding.source_field)}];`,
+                `    if (typeof parameter${index} !== 'string') invalidInput('$.${binding.source_field}', 'string');`,
+            ];
+            if (constraints.min_length !== undefined) {
+                lines.push(
+                    `    if (parameter${index}.length < ${constraints.min_length}) invalidInput('$.${binding.source_field}', 'min length ${constraints.min_length}');`
+                );
+            }
+            lines.push(
+                `    path = path.replace(${JSON.stringify(`{${binding.name}}`)}, encodeURIComponent(parameter${index}));`
+            );
+            return lines.join('\n');
+        })
+        .join('\n');
+    return `function invalidInput(path: string, expected: string): never {
+    throw new InvalidPayloadError(path, expected);
+}
+
+function requestPath(input: ${inputName}): string {
+    let path = ${JSON.stringify(query.transport.path)};
+${checks}
+    return path;
+}`;
+}
+
 function renderFacade(query) {
     const className = `${pascalCase(query.id)}Facade`;
     const sourceName = `${pascalCase(query.id)}Source`;
     const readName = pascalCase(query.read_model.id);
+    const hasInput = query.port.input.kind === 'object';
+    const inputName = `${pascalCase(query.id)}Input`;
+    const modelImports = hasInput ? `${inputName}, ${readName}` : readName;
+    const queryInputField = hasInput
+        ? `\n    readonly input: ${inputName};`
+        : '';
+    const sourceInput = hasInput ? 'params.input, ' : '';
+    const loadInputParameter = hasInput ? `input: ${inputName}, ` : '';
+    const loadInputValue = hasInput ? ' input,' : '';
     return `import { Service, computed, effect, inject, signal } from '@angular/core';
 import { ResourceFacade, type ResourceStreamContext } from '@cmz/shared-application';
 import { type Observable } from 'rxjs';
 
 import { ${sourceName} } from './${query.id}.source';
-import type { ${readName} } from './models';
+import type { ${modelImports} } from './models';
 
 interface LoadOptions {
     readonly forceRefresh?: boolean;
@@ -252,6 +355,7 @@ interface LoadOptions {
 
 interface QueryParams {
     readonly forceRefresh: boolean;
+${queryInputField}
 }
 
 export type ${pascalCase(query.id)}State = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'reloading';
@@ -289,17 +393,41 @@ export class ${className} extends ResourceFacade<readonly ${readName}[], QueryPa
     ): Observable<readonly ${readName}[]> {
         const isRefresh =
             params.forceRefresh || context.previousStatus !== 'idle';
-        return this.source.readAll(isRefresh);
+        return this.source.readAll(${sourceInput}isRefresh);
     }
 
-    load(options: LoadOptions = {}): void {
-        this.setParams({ forceRefresh: options.forceRefresh ?? false });
+    load(${loadInputParameter}options: LoadOptions = {}): void {
+        this.setParams({${loadInputValue} forceRefresh: options.forceRefresh ?? false });
     }
 }
 `;
 }
 
 function validateField(field, queryId) {
+    if (field.type?.kind === 'array') {
+        if (
+            field.type.items?.kind !== 'primitive' ||
+            field.type.items.name !== 'string' ||
+            field.required !== true ||
+            field.nullable !== false ||
+            !Array.isArray(field.allowed_values) ||
+            field.allowed_values.length === 0 ||
+            field.allowed_values.some((value) => typeof value !== 'string')
+        ) {
+            fail(
+                `${queryId}.${field.name} requires the proven required enum string-array shape`
+            );
+        }
+        const constraints = field.constraints ?? {};
+        for (const key of Object.keys(constraints)) {
+            if (!['max_items', 'min_items'].includes(key)) {
+                fail(
+                    `${queryId}.${field.name} has unsupported array constraint ${key}`
+                );
+            }
+        }
+        return;
+    }
     typeScriptPrimitive(field.type);
     const primitive = field.type.name;
     const constraints = field.constraints ?? {};
@@ -370,7 +498,34 @@ function validateInput(model, hostBindings) {
     if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(query.id)) {
         fail(`unsafe query id ${query.id}`);
     }
-    if (query.port?.input?.kind !== 'none') {
+    const parameterBindings = query.transport?.parameters;
+    if (query.port?.input?.kind === 'none') {
+        if (!Array.isArray(parameterBindings) || parameterBindings.length > 0) {
+            fail(`${query.id} has parameters without business input`);
+        }
+    } else if (query.port?.input?.kind === 'object') {
+        const fields = query.port.input.fields ?? [];
+        if (
+            fields.length !== 1 ||
+            parameterBindings?.length !== 1 ||
+            fields[0].name !== parameterBindings[0].source_field ||
+            fields[0].type?.kind !== 'primitive' ||
+            fields[0].type.name !== 'string' ||
+            fields[0].required !== true ||
+            parameterBindings[0].in !== 'path' ||
+            parameterBindings[0].required !== true ||
+            occurrenceCount(
+                query.transport.path,
+                `{${parameterBindings[0].name}}`
+            ) !== 1 ||
+            JSON.stringify(parameterBindings[0].constraints ?? {}) !==
+                JSON.stringify({ min_length: 1 })
+        ) {
+            fail(
+                `${query.id} requires the proven single non-empty string path input`
+            );
+        }
+    } else {
         fail(`${query.id} requires unsupported business input`);
     }
     if (query.transport?.method !== 'GET') {

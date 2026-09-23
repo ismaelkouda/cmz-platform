@@ -81,6 +81,36 @@
         "source_field": { "$ref": "#/$defs/fieldName" }
       }
     },
+    "parameterRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "in"],
+      "properties": {
+        "name": { "$ref": "#/$defs/fieldName" },
+        "in": { "const": "path" }
+      }
+    },
+    "inputField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "parameter_ref"],
+      "properties": {
+        "name": { "$ref": "#/$defs/fieldName" },
+        "parameter_ref": { "$ref": "#/$defs/parameterRef" }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/inputField" }
+        }
+      }
+    },
     "readModel": {
       "type": "object",
       "additionalProperties": false,
@@ -202,6 +232,7 @@
           "minimum": 200,
           "maximum": 299
         },
+        "input": { "$ref": "#/$defs/input" },
         "read_model": { "$ref": "#/$defs/readModel" },
         "execution": { "$ref": "#/$defs/execution" }
       }
