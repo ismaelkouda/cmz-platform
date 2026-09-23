@@ -103,10 +103,36 @@ const catalogs = {
             'integration-client',
         ]),
     ],
+    // `list-query` v2 publie le code déjà prouvé par les oracles natifs,
+    // sans lui inventer les descripteurs de package de la v1. Le même plan
+    // logique couvre les deux cibles ; plusieurs fichiers peuvent matérialiser
+    // une responsabilité (par exemple decoder + erreurs côté React).
+    'list-query-execution-model': [
+        generated('domain-model', 'domain'),
+        generated('response-decoder', 'domain', ['domain-model']),
+        generated('integration-client', 'data', [
+            'domain-model',
+            'response-decoder',
+        ]),
+        generated('execution-controller', 'application', [
+            'domain-model',
+            'integration-client',
+        ]),
+        generated('public-api', 'per-layer', [
+            'domain-model',
+            'response-decoder',
+            'integration-client',
+            'execution-controller',
+        ]),
+    ],
 };
 
 function modelId(model, kind) {
-    if (kind === 'semantic-model' || kind === 'list-query-model')
+    if (
+        kind === 'semantic-model' ||
+        kind === 'list-query-model' ||
+        kind === 'list-query-execution-model'
+    )
         return model.model_id;
     return `behavior:${model.domain?.id}`;
 }

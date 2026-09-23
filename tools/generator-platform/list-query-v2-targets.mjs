@@ -5,8 +5,14 @@ import {
     validateBackendContract,
     verifyBackendContractSnapshots,
 } from './core/backend-contract.mjs';
+import {
+    bindRenderedArtifacts,
+    buildArtifactPlan,
+} from './core/artifact-plan.mjs';
 import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
+import { buildGenerationManifest } from './core/generation-manifest.mjs';
 import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
+import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularListQueryV2 } from './renderers/angular-list-query-v2-renderer.mjs';
 import { renderReactListQueryV2 } from './renderers/react-list-query-v2-renderer.mjs';
 import {
@@ -25,6 +31,14 @@ const BACKEND_SCHEMA = new URL(
 );
 const DEFINITION_SCHEMA = new URL(
     './schemas/list-query-definition-v2.schema.json',
+    import.meta.url
+);
+const ANGULAR_PROFILE = new URL(
+    './profiles/angular-nx.profile.json',
+    import.meta.url
+);
+const REACT_PROFILE = new URL(
+    './profiles/react-typescript.profile.json',
     import.meta.url
 );
 
@@ -84,8 +98,8 @@ async function readBackendDocument(uri) {
     return readFile(canonicalPath);
 }
 
-async function computeListQueryV2Model(definitionPath) {
-    const definitionDocument = await readFile(definitionPath);
+async function computeListQueryV2Model(definitionPath, definitionDocument) {
+    definitionDocument ??= await readFile(definitionPath);
     const definition = JSON.parse(definitionDocument.toString('utf8'));
     const [backendSchema, definitionSchema] = await Promise.all([
         loadJson(BACKEND_SCHEMA),
@@ -115,17 +129,73 @@ async function computeListQueryV2Model(definitionPath) {
     return { definition, model };
 }
 
+async function materializeAngularTarget(model, artifactPlan, hostBindings) {
+    const profile = await loadJson(ANGULAR_PROFILE);
+    const rendered = renderAngularListQueryV2(model, hostBindings);
+    const files = await canonicalizeGeneratedFiles(rendered.files);
+    const bound = bindRenderedArtifacts(artifactPlan, files, {
+        'src/index.ts': 'public-api',
+        [`src/${rendered.queryId}.decoder.ts`]: 'response-decoder',
+        [`src/${rendered.queryId}.facade.ts`]: 'execution-controller',
+        [`src/${rendered.queryId}.source.ts`]: 'integration-client',
+        'src/models.ts': 'domain-model',
+    });
+    typecheckGenerated(bound.files, profile.id, repositoryRoot);
+    return {
+        ...rendered,
+        ...bound,
+        manifest: buildGenerationManifest(model, artifactPlan, profile, bound),
+    };
+}
+
+async function materializeReactTarget(model, artifactPlan) {
+    const profile = await loadJson(REACT_PROFILE);
+    const rendered = renderReactListQueryV2(model);
+    const files = await canonicalizeGeneratedFiles(rendered.files);
+    const bound = bindRenderedArtifacts(artifactPlan, files, {
+        'src/errors.ts': 'response-decoder',
+        'src/index.ts': 'public-api',
+        [`src/${rendered.queryId}.client.ts`]: 'integration-client',
+        [`src/${rendered.queryId}.decoder.ts`]: 'response-decoder',
+        [`src/use-${rendered.queryId}.ts`]: 'execution-controller',
+        'src/models.ts': 'domain-model',
+    });
+    typecheckGenerated(bound.files, profile.id, repositoryRoot);
+    return {
+        ...rendered,
+        ...bound,
+        manifest: buildGenerationManifest(model, artifactPlan, profile, bound),
+    };
+}
+
+export async function computeListQueryV2Targets({
+    definitionPath = DEFAULT_DEFINITION,
+    definitionDocument,
+    hostBindings = cmzAngularListQueryHostBindings,
+} = {}) {
+    const { definition, model } = await computeListQueryV2Model(
+        definitionPath,
+        definitionDocument
+    );
+    const artifactPlan = buildArtifactPlan(model, 'list-query-execution-model');
+    const [angular, react] = await Promise.all([
+        materializeAngularTarget(model, artifactPlan, hostBindings),
+        materializeReactTarget(model, artifactPlan),
+    ]);
+    return { definition, model, artifactPlan, angular, react };
+}
+
 export async function computeAngularListQueryV2Target({
     definitionPath = DEFAULT_DEFINITION,
     hostBindings = cmzAngularListQueryHostBindings,
 } = {}) {
     const { definition, model } = await computeListQueryV2Model(definitionPath);
-    const rendered = renderAngularListQueryV2(model, hostBindings);
+    const artifactPlan = buildArtifactPlan(model, 'list-query-execution-model');
     return {
         definition,
         model,
-        ...rendered,
-        files: await canonicalizeGeneratedFiles(rendered.files),
+        artifactPlan,
+        ...(await materializeAngularTarget(model, artifactPlan, hostBindings)),
     };
 }
 
@@ -133,11 +203,11 @@ export async function computeReactListQueryV2Target({
     definitionPath = DEFAULT_DEFINITION,
 } = {}) {
     const { definition, model } = await computeListQueryV2Model(definitionPath);
-    const rendered = renderReactListQueryV2(model);
+    const artifactPlan = buildArtifactPlan(model, 'list-query-execution-model');
     return {
         definition,
         model,
-        ...rendered,
-        files: await canonicalizeGeneratedFiles(rendered.files),
+        artifactPlan,
+        ...(await materializeReactTarget(model, artifactPlan)),
     };
 }

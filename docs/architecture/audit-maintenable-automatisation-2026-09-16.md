@@ -543,6 +543,23 @@ n'est ajouté. ADR-0051 consigne la décision et la revue. `list-query` v2 reste
 `experimental` : restent la publication durable, puis la réalisation d'une
 page composée N `list-query` + N `action-request`.
 
+Sixième incrément engagé le 2026-09-23 : la sortie v2 existante est désormais
+publiée par l'unique commande `generate:list-query` et le moteur transactionnel
+historique. Le schéma auteur sélectionne explicitement le chemin v1 ou v2 ; le
+control plane v2 persiste le vrai modèle d'exécution et son plan, jamais un IR
+v1 factice. Les deux cibles partagent le même hash d'entrée et de plan, puis
+reçoivent leurs manifests d'ownership et de contenu.
+
+Le type-check de publication résout maintenant les alias officiels du
+`tsconfig.base.json`, ce qui vérifie les vrais ports Angular sans alias privé et
+refuse toujours une dépendance inconnue. Une évolution exige le change-set exact
+d'un dry-run ; verrou, journal, rollback, reprise et limites APFS/ext4 restent
+ceux d'ADR-0035. L'incrément ajoute **210 lignes nettes de production** sans
+nouveau module exécutable, schéma, CLI, journal ou runtime ; la surface v2
+cumulée atteint **2 859 lignes**. ADR-0052 consigne la décision. Reste la page
+composée N `list-query` + N `action-request` ; la capacité reste
+`experimental`.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

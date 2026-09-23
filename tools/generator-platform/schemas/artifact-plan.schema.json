@@ -13,7 +13,14 @@
       "additionalProperties": false,
       "required": ["kind", "model_id", "sha256"],
       "properties": {
-        "kind": { "enum": ["semantic-model", "behavior-model"] },
+        "kind": {
+          "enum": [
+            "semantic-model",
+            "behavior-model",
+            "list-query-model",
+            "list-query-execution-model"
+          ]
+        },
         "model_id": { "$ref": "#/$defs/id" },
         "sha256": { "$ref": "#/$defs/hash" }
       }
@@ -45,6 +52,7 @@
               "integration-client",
               "package-descriptor",
               "public-api",
+              "response-decoder",
               "runtime-binding"
             ]
           },

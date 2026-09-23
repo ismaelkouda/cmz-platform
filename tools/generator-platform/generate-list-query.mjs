@@ -14,6 +14,7 @@ import {
     computeListQueryLayeredTargetsForSemantic,
     computeListQueryTargetsForSemantic,
 } from './render-list-query-targets.mjs';
+import { computeListQueryV2Targets } from './list-query-v2-targets.mjs';
 import {
     loadJson,
     repositoryRoot,
@@ -77,20 +78,7 @@ function jsonDocument(value) {
     return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-export async function generateListQuery({
-    definitionPath,
-    outputRoot,
-    target = 'all',
-    dryRun = false,
-    applyChangeSetId,
-}) {
-    if (dryRun && applyChangeSetId) {
-        throw new Error('dryRun and applyChangeSetId are mutually exclusive');
-    }
-    const absoluteDefinition = resolve(definitionPath);
-    const absoluteOutput = resolve(outputRoot);
-    const content = await readFile(absoluteDefinition);
-    const definition = JSON.parse(content.toString('utf8'));
+async function prepareV1Generation({ definition, content, target }) {
     const [definitionSchema, evidenceSchema, semanticSchema] =
         await Promise.all([
             loadJson(schemaPaths.definition),
@@ -103,13 +91,11 @@ export async function generateListQuery({
             `invalid list-query definition:\n${definitionErrors.join('\n')}`
         );
     }
-    const sourceUri = relative(repositoryRoot, absoluteDefinition).replaceAll(
-        '\\',
-        '/'
-    );
     const compiled = compileListQueryDefinition(definition, {
-        sourceUri,
-        sourceSha256: createHash('sha256').update(content).digest('hex'),
+        sourceUri: relative(repositoryRoot, content.path).replaceAll('\\', '/'),
+        sourceSha256: createHash('sha256')
+            .update(content.document)
+            .digest('hex'),
     });
     const evidenceErrors = await validateEvidence(
         compiled.evidence,
@@ -130,10 +116,9 @@ export async function generateListQuery({
         );
     }
 
-    const normalizedTarget = target === 'react' ? 'reactjs' : target;
     let artifactPlan;
     let selected;
-    if (normalizedTarget === 'angular-layered') {
+    if (target === 'angular-layered') {
         const targets = await computeListQueryLayeredTargetsForSemantic(
             compiled.semantic
         );
@@ -148,65 +133,143 @@ export async function generateListQuery({
         );
         artifactPlan = targets.artifactPlan;
         selected =
-            normalizedTarget === 'all'
+            target === 'all'
                 ? { angular: targets.angular, reactjs: targets.react }
-                : normalizedTarget === 'angular'
+                : target === 'angular'
                   ? { angular: targets.angular }
                   : { reactjs: targets.react };
     }
-    const referenceSha256 = Object.values(selected)[0].manifest.input.sha256;
-    const controlFiles = await canonicalizeControlFiles({
-        'artifact-plan.json': {
-            artifact_id: 'artifact-plan',
-            content: jsonDocument(artifactPlan),
+    return {
+        selected,
+        controlFiles: await canonicalizeControlFiles({
+            'artifact-plan.json': {
+                artifact_id: 'artifact-plan',
+                content: jsonDocument(artifactPlan),
+            },
+            'evidence-model.json': {
+                artifact_id: 'evidence-model',
+                content: jsonDocument(compiled.evidence),
+            },
+            'semantic-model.json': {
+                artifact_id: 'semantic-model',
+                content: jsonDocument(compiled.semantic),
+            },
+        }),
+        modelKind: 'semantic-model',
+        modelSha256: Object.values(selected)[0].manifest.input.sha256,
+        legacyHash: {
+            semanticSha256: Object.values(selected)[0].manifest.input.sha256,
         },
-        'evidence-model.json': {
-            artifact_id: 'evidence-model',
-            content: jsonDocument(compiled.evidence),
-        },
-        'semantic-model.json': {
-            artifact_id: 'semantic-model',
-            content: jsonDocument(compiled.semantic),
-        },
+    };
+}
+
+async function prepareV2Generation({ definitionPath, content, target }) {
+    if (target === 'angular-layered') {
+        throw new Error(
+            'list-query v2 does not support --target angular-layered; use angular, reactjs, or all'
+        );
+    }
+    const targets = await computeListQueryV2Targets({
+        definitionPath,
+        definitionDocument: content,
     });
+    const selected =
+        target === 'all'
+            ? { angular: targets.angular, reactjs: targets.react }
+            : target === 'angular'
+              ? { angular: targets.angular }
+              : { reactjs: targets.react };
+    const modelSha256 = Object.values(selected)[0].manifest.input.sha256;
+    return {
+        selected,
+        controlFiles: await canonicalizeControlFiles({
+            'artifact-plan.json': {
+                artifact_id: 'artifact-plan',
+                content: jsonDocument(targets.artifactPlan),
+            },
+            'list-query-execution-model.json': {
+                artifact_id: 'list-query-execution-model',
+                content: jsonDocument(targets.model),
+            },
+        }),
+        modelKind: 'list-query-execution-model',
+        modelSha256,
+        legacyHash: { executionModelSha256: modelSha256 },
+    };
+}
+
+export async function generateListQuery({
+    definitionPath,
+    outputRoot,
+    target = 'all',
+    dryRun = false,
+    applyChangeSetId,
+}) {
+    if (dryRun && applyChangeSetId) {
+        throw new Error('dryRun and applyChangeSetId are mutually exclusive');
+    }
+    const absoluteDefinition = resolve(definitionPath);
+    const absoluteOutput = resolve(outputRoot);
+    const content = await readFile(absoluteDefinition);
+    const definition = JSON.parse(content.toString('utf8'));
+    const normalizedTarget = target === 'react' ? 'reactjs' : target;
+    if (!targetValues.includes(normalizedTarget)) {
+        throw new Error(`target must be one of: ${targetValues.join(', ')}`);
+    }
+    if (!['1.0.0', '2.0.0'].includes(definition.schema_version)) {
+        throw new Error(
+            `unsupported list-query definition schema_version ${definition.schema_version ?? '<missing>'}`
+        );
+    }
+    const prepared =
+        definition.schema_version === '2.0.0'
+            ? await prepareV2Generation({
+                  definitionPath: absoluteDefinition,
+                  content,
+                  target: normalizedTarget,
+              })
+            : await prepareV1Generation({
+                  definition,
+                  content: { path: absoluteDefinition, document: content },
+                  target: normalizedTarget,
+              });
+    const commonResult = {
+        feature: definition.feature.id,
+        outputRoot: absoluteOutput,
+        targets: Object.keys(prepared.selected),
+        modelKind: prepared.modelKind,
+        modelSha256: prepared.modelSha256,
+        ...prepared.legacyHash,
+    };
     if (dryRun) {
         return {
-            feature: definition.feature.id,
-            outputRoot: absoluteOutput,
-            targets: Object.keys(selected),
-            semanticSha256: referenceSha256,
+            ...commonResult,
             changeSet: await inspectGenerationChangeSet({
                 outputRoot: absoluteOutput,
-                targets: selected,
-                controlFiles,
+                targets: prepared.selected,
+                controlFiles: prepared.controlFiles,
             }),
         };
     }
     if (applyChangeSetId) {
         const publication = await applyGenerationChangeSet({
             outputRoot: absoluteOutput,
-            targets: selected,
-            controlFiles,
+            targets: prepared.selected,
+            controlFiles: prepared.controlFiles,
             expectedChangeSetId: applyChangeSetId,
         });
         return {
-            feature: definition.feature.id,
-            outputRoot: absoluteOutput,
-            targets: Object.keys(selected),
-            semanticSha256: referenceSha256,
+            ...commonResult,
             publication,
         };
     }
     const publication = await createGenerationOutput({
         outputRoot: absoluteOutput,
-        targets: selected,
-        controlFiles,
+        targets: prepared.selected,
+        controlFiles: prepared.controlFiles,
     });
     return {
-        feature: definition.feature.id,
-        outputRoot: absoluteOutput,
-        targets: Object.keys(selected),
-        semanticSha256: referenceSha256,
+        ...commonResult,
         publication,
     };
 }
@@ -238,7 +301,7 @@ async function main() {
         );
         console.log(`  change set: ${result.publication.change_set_id}`);
         console.log(`  targets: ${result.targets.join(', ')}`);
-        console.log(`  semantic sha256: ${result.semanticSha256}`);
+        console.log(`  ${result.modelKind} sha256: ${result.modelSha256}`);
         console.log(`  output: ${result.outputRoot}`);
         if (result.publication.recovery_pending) {
             console.warn(
