@@ -511,6 +511,7 @@ test('la commande écrit une seule sortie et refuse de l’écraser', async () =
             workspaceRoot: repositoryRoot,
         });
         assert.equal(result.definition.schema_version, '2.0.0');
+        assert.equal(result.executionModel.kind, 'list-query-execution-model');
         await assert.rejects(
             migrateListQueryFile({
                 definitionPath,
