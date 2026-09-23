@@ -4,7 +4,7 @@ import { DomainError, UnknownError } from '@cmz/shared-domain';
 import { Observable, Subject, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { ErrorHandlerRegistry } from '../services/error-handler-registry.service';
-import { ResourceFacade } from './resource.facade';
+import { ResourceFacade, type ResourceStreamContext } from './resource.facade';
 
 /**
  * T12-3 (cartographie 2026-08-12) — jamais testé, aucun précédent
@@ -25,11 +25,16 @@ class FakeError extends DomainError {
 
 @Injectable()
 class TestResourceFacade extends ResourceFacade<string, { id: number }> {
-    streamFn: (params: { id: number }) => Observable<string> = () =>
-        new Subject<string>();
+    streamFn: (
+        params: { id: number },
+        context: ResourceStreamContext
+    ) => Observable<string> = () => new Subject<string>();
 
-    protected stream(params: { id: number }): Observable<string> {
-        return this.streamFn(params);
+    protected stream(
+        params: { id: number },
+        context: ResourceStreamContext
+    ): Observable<string> {
+        return this.streamFn(params, context);
     }
 
     triggerLoad(id: number): void {
@@ -112,7 +117,9 @@ describe('ResourceFacade', () => {
     it('reload() relance le stream avec les mêmes paramètres', async () => {
         const { facade } = setup();
         let callCount = 0;
-        facade.streamFn = () => {
+        const contexts: ResourceStreamContext[] = [];
+        facade.streamFn = (_params, context) => {
+            contexts.push(context);
             callCount++;
             const s = new Subject<string>();
             queueMicrotask(() => {
@@ -125,10 +132,14 @@ describe('ResourceFacade', () => {
         facade.triggerLoad(1);
         await flush();
         expect(facade.value()).toBe('call-1');
+        expect(contexts[0].previousStatus).toBe('idle');
+        expect(contexts[0].abortSignal).toBeInstanceOf(AbortSignal);
 
         facade.reload();
         await flush();
         expect(facade.value()).toBe('call-2');
         expect(callCount).toBe(2);
+        expect(contexts[1].previousStatus).toBe('resolved');
+        expect(contexts[1].abortSignal).toBeInstanceOf(AbortSignal);
     });
 });

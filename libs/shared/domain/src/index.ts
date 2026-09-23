@@ -37,6 +37,7 @@ export * from './lib/errors/http/unauthorized.error';
 export * from './lib/errors/http/unknown.error';
 export * from './lib/errors/http/validation.error';
 export * from './lib/errors/http/server-response.error';
+export * from './lib/errors/http/invalid-payload.error';
 export * from './lib/errors/validation/date-range-invalid.error';
 export * from './lib/errors/validation/generic.error';
 export * from './lib/errors/date-period/invalid-date-range.error';

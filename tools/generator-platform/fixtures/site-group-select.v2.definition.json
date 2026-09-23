@@ -1,0 +1,49 @@
+{
+  "schema_version": "2.0.0",
+  "kind": "list-query",
+  "feature": {
+    "id": "coverage-area-site-groups",
+    "name": "Site group options",
+    "description": "Options used by active coverage-area forms."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/site-group-select.backend-contract.json",
+    "id": "cmz-site-group-select",
+    "version": "1.0.0",
+    "sha256": "79dcdf2f1fb5738d78975a97264b617bf2b85a4d86598c61de577d632a0b79cd"
+  },
+  "operations": [
+    {
+      "id": "list-site-groups",
+      "operation_ref": {
+        "operation_id": "coverage-areas.list-site-groups"
+      },
+      "success_response_status": 200,
+      "read_model": {
+        "id": "select-option",
+        "description": "Generic option consumed by select controls.",
+        "fields": [
+          { "name": "value", "source_field": "id" },
+          { "name": "label", "source_field": "name" }
+        ]
+      },
+      "execution": {
+        "cache": {
+          "mode": "host",
+          "scope": "principal",
+          "refresh": "bypass"
+        },
+        "concurrency": "latest-wins",
+        "cancellation": {
+          "on_superseded": true,
+          "on_destroy": true
+        },
+        "retry": { "mode": "none" },
+        "stale_data": {
+          "on_reload": "preserve",
+          "on_error": "preserve"
+        }
+      }
+    }
+  ]
+}

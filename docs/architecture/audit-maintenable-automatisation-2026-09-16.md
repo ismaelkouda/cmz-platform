@@ -493,6 +493,22 @@ simplification exigée par le budget. ADR-0048 conserve trois modules et un
 schéma, refuse paramètres et modèles imbriqués faute de second cas réel, et
 n'ajoute ni CLI, ni renderer, ni journal, ni runtime framework.
 
+Troisième incrément engagé le 2026-09-23 : le renderer Angular est exécuté par
+un oracle natif contre le vrai `ResourceFacade` et les vrais intercepteurs
+d'authentification, d'erreur et de cache du backoffice. Le cas actif
+`site-group-select` prouve le mapping DTO wire → read model, le décodage strict,
+les six états, le reload avec bypass cache, la conservation des données après un
+échec et l'annulation latest-wins. Une deuxième query publique prouve qu'aucun
+Bearer n'est envoyé. Le renderer refuse tout type ou politique sans oracle au
+lieu d'annoncer une généralité hypothétique.
+
+La mesure cumulée atteint **1 840 lignes de production**, sept modules
+exécutables et un schéma. ADR-0049 consigne la revue obligatoire : aucun runtime
+propriétaire, CLI, journal ou état persistant supplémentaire ; les sorties
+Angular restent éphémères et compilées. `list-query` reste `experimental` :
+paramètres et modèles imbriqués, parité React, publication durable et
+réalisation de page restent à prouver.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

@@ -8,6 +8,7 @@ import {
     directorContractPath,
 } from './check-evolvable-composition.mjs';
 import { computeWorkflowTargets } from './workflow-targets.mjs';
+import { computeAngularListQueryV2Target } from './list-query-v2-targets.mjs';
 import { renderBehaviorGraphEngine } from './renderers/behavior-graph-renderer.mjs';
 import {
     renderAngularBehaviorGraphService,
@@ -38,13 +39,30 @@ async function writeTargetFiles(root, files) {
     }
 }
 
-const [actionRequest, authorizedActionRequest, workflowAction, contract] =
-    await Promise.all([
-        computeTargets(),
-        computeEvolvableCompositionTargets(),
-        computeWorkflowTargets(),
-        loadJson(directorContractPath),
-    ]);
+const [
+    actionRequest,
+    authorizedActionRequest,
+    workflowAction,
+    contract,
+    listQueryV2,
+    publicListQueryV2,
+] = await Promise.all([
+    computeTargets(),
+    computeEvolvableCompositionTargets(),
+    computeWorkflowTargets(),
+    loadJson(directorContractPath),
+    target === 'angular'
+        ? computeAngularListQueryV2Target()
+        : Promise.resolve(undefined),
+    target === 'angular'
+        ? computeAngularListQueryV2Target({
+              definitionPath: resolve(
+                  generatorRoot,
+                  'fixtures/editorial-blocks.v2.definition.json'
+              ),
+          })
+        : Promise.resolve(undefined),
+]);
 const sourceKey = target === 'angular' ? 'angular' : 'react';
 const targetRoot = resolve(outputRoot, target);
 const runtimeConfigurationFiles =
@@ -109,6 +127,22 @@ await Promise.all([
         resolve(targetRoot, 'workflow-action'),
         workflowAction[sourceKey].files
     ),
+    ...(listQueryV2
+        ? [
+              writeTargetFiles(
+                  resolve(targetRoot, 'list-query-v2'),
+                  listQueryV2.files
+              ),
+          ]
+        : []),
+    ...(publicListQueryV2
+        ? [
+              writeTargetFiles(
+                  resolve(targetRoot, 'list-query-v2-public'),
+                  publicListQueryV2.files
+              ),
+          ]
+        : []),
     writeTargetFiles(resolve(targetRoot, 'behavior-graph'), behaviorGraphFiles),
     writeTargetFiles(
         resolve(targetRoot, 'presentation-flow'),
