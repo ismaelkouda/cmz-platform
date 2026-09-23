@@ -3,16 +3,16 @@
   "configuration": "production",
   "measured_at": "2026-09-11",
   "output_path": "dist/apps/backoffice-angular/browser",
-  "initial_raw_bytes": 521154,
-  "initial_raw_kb": 521.15,
+  "initial_raw_bytes": 521220,
+  "initial_raw_kb": 521.22,
   "initial_files": [
     {
       "file": "env.js",
       "bytes": 692
     },
     {
-      "file": "main-AH5MCTTM.js",
-      "bytes": 505232
+      "file": "main-EDK7OQGY.js",
+      "bytes": 505298
     },
     {
       "file": "styles-TRK3CLVU.css",
@@ -21,7 +21,7 @@
   ],
   "exceljs_lazy_raw_bytes": 948323,
   "exceljs_lazy_raw_kb": 948.32,
-  "exceljs_lazy_file": "chunk-C3E3wPcI.js",
+  "exceljs_lazy_file": "chunk-C9K243RV.js",
   "budget_initial_warning": "900kb",
   "budget_initial_error": "1mb",
   "command": "bunx nx run backoffice-angular:build:production"
