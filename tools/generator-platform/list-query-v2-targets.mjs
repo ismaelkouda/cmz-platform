@@ -5,8 +5,10 @@ import {
     validateBackendContract,
     verifyBackendContractSnapshots,
 } from './core/backend-contract.mjs';
+import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
 import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
 import { renderAngularListQueryV2 } from './renderers/angular-list-query-v2-renderer.mjs';
+import { renderReactListQueryV2 } from './renderers/react-list-query-v2-renderer.mjs';
 import {
     loadJson,
     repositoryRoot,
@@ -82,10 +84,7 @@ async function readBackendDocument(uri) {
     return readFile(canonicalPath);
 }
 
-export async function computeAngularListQueryV2Target({
-    definitionPath = DEFAULT_DEFINITION,
-    hostBindings = cmzAngularListQueryHostBindings,
-} = {}) {
+async function computeListQueryV2Model(definitionPath) {
     const definitionDocument = await readFile(definitionPath);
     const definition = JSON.parse(definitionDocument.toString('utf8'));
     const [backendSchema, definitionSchema] = await Promise.all([
@@ -113,9 +112,32 @@ export async function computeAngularListQueryV2Target({
         backendContractDocument: backendDocument,
         backendContractUri: definition.backend_contract.uri,
     });
+    return { definition, model };
+}
+
+export async function computeAngularListQueryV2Target({
+    definitionPath = DEFAULT_DEFINITION,
+    hostBindings = cmzAngularListQueryHostBindings,
+} = {}) {
+    const { definition, model } = await computeListQueryV2Model(definitionPath);
+    const rendered = renderAngularListQueryV2(model, hostBindings);
     return {
         definition,
         model,
-        ...renderAngularListQueryV2(model, hostBindings),
+        ...rendered,
+        files: await canonicalizeGeneratedFiles(rendered.files),
+    };
+}
+
+export async function computeReactListQueryV2Target({
+    definitionPath = DEFAULT_DEFINITION,
+} = {}) {
+    const { definition, model } = await computeListQueryV2Model(definitionPath);
+    const rendered = renderReactListQueryV2(model);
+    return {
+        definition,
+        model,
+        ...rendered,
+        files: await canonicalizeGeneratedFiles(rendered.files),
     };
 }

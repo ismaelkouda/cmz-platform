@@ -509,7 +509,7 @@ Angular restent éphémères et compilées. `list-query` reste `experimental` :
 paramètres et modèles imbriqués, parité React, publication durable et
 réalisation de page restent à prouver.
 
-Quatrième incrément engagé le 2026-09-23 : le second cas actif
+Quatrième incrément livré le 2026-09-23 : le second cas actif
 `tasks-actions-processing-type` ouvre uniquement la forme réellement observée :
 un binding `reportUniqId → path:id`, chaîne obligatoire non vide et encodée
 comme un segment, ainsi qu'un tableau non nullable de chaînes bornées à
@@ -523,8 +523,25 @@ reload et annulation latest-wins lors d'un changement d'identifiant. La surface
 v2 cumulée mesurée sur le même périmètre atteint **2 231 lignes de production**
 (+391) ; le validateur backend existant reçoit +9 lignes nettes et aucun module,
 schéma, CLI ou runtime supplémentaire n'est créé. ADR-0050 consigne la revue.
-Restent la décision/parité React, la publication durable et la réalisation de
-page composée.
+À ce stade restaient la décision/parité React, la publication durable et la
+réalisation de page composée.
+
+Cinquième incrément engagé le 2026-09-23 : les deux cas actifs et la query
+publique sont désormais rendus et exécutés sous React 19 depuis le même modèle
+compilé. Faute de host React réel dans le dépôt, le client généré délègue URL,
+authentification, cache et transport à un port hôte explicite ; il ne crée ni
+intercepteur, ni token, ni cache parallèle. Les hooks générés prouvent les six
+états, le reload, la conservation des données, les erreurs métier et HTTP,
+l'annulation latest-wins et l'annulation au démontage.
+
+L'arrivée du second renderer justifie seulement maintenant l'extraction des
+modèles, du décodeur, du path et des validations fail-closed dans un module
+target-neutral. Les cycles de vie restent propres à Angular et React. La
+surface v2 cumulée atteint **2 649 lignes de production** (+418 nettes) et neuf
+modules exécutables ; aucun schéma, CLI, journal, cache ou runtime propriétaire
+n'est ajouté. ADR-0051 consigne la décision et la revue. `list-query` v2 reste
+`experimental` : restent la publication durable, puis la réalisation d'une
+page composée N `list-query` + N `action-request`.
 
 ## Ce qui n'est pas décidé par cet audit
 

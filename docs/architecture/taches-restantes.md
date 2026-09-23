@@ -1994,8 +1994,21 @@ Figma, désormais source partielle différée :
   changement d'identifiant. Les capacités voisines non prouvées restent
   fermées. ADR-0050 mesure 2 231 lignes de surface v2 (+391), plus 9 lignes
   nettes dans le validateur backend existant, sans nouveau module de production.
-  Restent : (1) décision et oracle de parité React, (2) publication durable,
-  puis (3) réalisation d'une page N `list-query` + N `action-request`.
+  À ce stade restaient : (1) décision et oracle de parité React, (2)
+  publication durable, puis (3) réalisation d'une page N `list-query` + N
+  `action-request`.
+  **C1m — parité React `list-query` v2 engagée localement le 2026-09-23 :** les
+  trois définitions de preuve sont compilées vers six fichiers React standard
+  et exécutées sous React 19. Le client ne possède ni auth, ni cache, ni
+  configuration : il transmet la politique et l'`AbortSignal` à un port hôte
+  explicite. Les hooks couvrent états, reload, stale data, erreurs, latest-wins
+  et démontage. Les règles communes de modèles, décodage, path et validation
+  ont été extraites seulement après ce second consommateur ; Angular garde son
+  cycle `ResourceFacade`, React son cycle hooks. ADR-0051 mesure **2 649 lignes
+  de production v2** (+418 nettes), neuf modules et un schéma, sans nouveau
+  runtime propriétaire. Restent : (1) publier durablement une sortie existante,
+  puis (2) réaliser une page N `list-query` + N `action-request`. La capacité
+  reste `experimental` jusque-là.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

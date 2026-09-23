@@ -46,7 +46,7 @@ test('rend le cas actif site-group de façon déterministe et sans runtime priv�
     const models = activeTarget.files['src/models.ts'];
     assert.match(models, /interface SiteGroupSelectWire/);
     assert.match(models, /interface SelectOption/);
-    assert.match(models, /readonly "description": string/);
+    assert.match(models, /readonly description: string/);
     assert.doesNotMatch(
         models.match(/interface SelectOption[\s\S]*$/)?.[0] ?? '',
         /description/
@@ -70,7 +70,7 @@ test('rend le cas actif site-group de façon déterministe et sans runtime priv�
 test('traduit une query publique vers le token exact du host sans bearer généré', () => {
     const source = publicTarget.files['src/list-home-block-infos.source.ts'];
 
-    assert.match(source, /"authentication": \{\s*"mode": "omit"/);
+    assert.match(source, /authentication: \{\s*mode: 'omit'/);
     assert.doesNotMatch(source, /bearer|Authorization/i);
     assert.match(source, /createListQueryRequestContext/);
 });
@@ -78,21 +78,21 @@ test('traduit une query publique vers le token exact du host sans bearer génér
 test('rend le cas actif paramétré et son tableau enum sans mécanisme parallèle', () => {
     const models = parameterizedTarget.files['src/models.ts'];
     assert.match(models, /interface ListReportActionTypesInput/);
-    assert.match(models, /readonly "reportUniqId": string/);
-    assert.match(models, /readonly "operators": readonly string\[\]/);
+    assert.match(models, /readonly reportUniqId: string/);
+    assert.match(models, /readonly operators: readonly string\[\]/);
 
     const source =
         parameterizedTarget.files['src/list-report-action-types.source.ts'];
     assert.match(source, /inject\(REPORT_API_URL\)/);
     assert.match(source, /encodeURIComponent\(parameter0\)/);
-    assert.match(source, /path\.replace\("\{id\}"/);
+    assert.match(source, /path\.replace\('\{id\}'/);
     assert.match(source, /parameter0\.length < 1/);
     assert.doesNotMatch(source, /Authorization|Bearer|new HttpContextToken/);
 
     const decoder =
         parameterizedTarget.files['src/list-report-action-types.decoder.ts'];
     assert.match(decoder, /Array\.isArray\(value\)/);
-    assert.match(decoder, /\["mtn","orange","moov"\]/);
+    assert.match(decoder, /\['mtn', 'orange', 'moov'\]/);
     assert.match(decoder, /\$\{path\}\[\$\{itemIndex\}\]/);
 
     const facade =

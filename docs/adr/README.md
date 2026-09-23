@@ -84,4 +84,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0048](./0048-list-query-v2-modele-execution-neutre.md)   | `list-query` v2 compile un modèle d'exécution neutre     | Accepted |
 | [0049](./0049-list-query-v2-angular-reutilise-le-runtime-host.md) | `list-query` v2 Angular réutilise le runtime du host     | Accepted |
 | [0050](./0050-list-query-v2-borne-path-et-tableau-enum.md) | `list-query` v2 borne le path et le tableau enum par un cas réel | Accepted |
+| [0051](./0051-list-query-v2-react-utilise-un-port-hote-explicite.md) | `list-query` v2 React utilise un port hôte explicite     | Accepted |
 <!-- END:GENERATED:adr-index -->

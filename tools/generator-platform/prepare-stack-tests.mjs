@@ -8,7 +8,10 @@ import {
     directorContractPath,
 } from './check-evolvable-composition.mjs';
 import { computeWorkflowTargets } from './workflow-targets.mjs';
-import { computeAngularListQueryV2Target } from './list-query-v2-targets.mjs';
+import {
+    computeAngularListQueryV2Target,
+    computeReactListQueryV2Target,
+} from './list-query-v2-targets.mjs';
 import { renderBehaviorGraphEngine } from './renderers/behavior-graph-renderer.mjs';
 import {
     renderAngularBehaviorGraphService,
@@ -31,6 +34,11 @@ if (!['angular', 'reactjs'].includes(target)) {
     );
 }
 
+const computeListQueryV2Target =
+    target === 'angular'
+        ? computeAngularListQueryV2Target
+        : computeReactListQueryV2Target;
+
 async function writeTargetFiles(root, files) {
     for (const [relativePath, content] of Object.entries(files)) {
         const outputPath = resolve(root, relativePath);
@@ -52,25 +60,19 @@ const [
     computeEvolvableCompositionTargets(),
     computeWorkflowTargets(),
     loadJson(directorContractPath),
-    target === 'angular'
-        ? computeAngularListQueryV2Target()
-        : Promise.resolve(undefined),
-    target === 'angular'
-        ? computeAngularListQueryV2Target({
-              definitionPath: resolve(
-                  generatorRoot,
-                  'fixtures/editorial-blocks.v2.definition.json'
-              ),
-          })
-        : Promise.resolve(undefined),
-    target === 'angular'
-        ? computeAngularListQueryV2Target({
-              definitionPath: resolve(
-                  generatorRoot,
-                  'fixtures/tasks-actions-processing-type.v2.definition.json'
-              ),
-          })
-        : Promise.resolve(undefined),
+    computeListQueryV2Target(),
+    computeListQueryV2Target({
+        definitionPath: resolve(
+            generatorRoot,
+            'fixtures/editorial-blocks.v2.definition.json'
+        ),
+    }),
+    computeListQueryV2Target({
+        definitionPath: resolve(
+            generatorRoot,
+            'fixtures/tasks-actions-processing-type.v2.definition.json'
+        ),
+    }),
 ]);
 const sourceKey = target === 'angular' ? 'angular' : 'react';
 const targetRoot = resolve(outputRoot, target);
@@ -136,33 +138,15 @@ await Promise.all([
         resolve(targetRoot, 'workflow-action'),
         workflowAction[sourceKey].files
     ),
-    ...(listQueryV2
-        ? [
-              writeTargetFiles(
-                  resolve(targetRoot, 'list-query-v2'),
-                  listQueryV2.files
-              ),
-          ]
-        : []),
-    ...(publicListQueryV2
-        ? [
-              writeTargetFiles(
-                  resolve(targetRoot, 'list-query-v2-public'),
-                  publicListQueryV2.files
-              ),
-          ]
-        : []),
-    ...(parameterizedListQueryV2
-        ? [
-              writeTargetFiles(
-                  resolve(
-                      targetRoot,
-                      'list-query-v2-tasks-actions-processing-type'
-                  ),
-                  parameterizedListQueryV2.files
-              ),
-          ]
-        : []),
+    writeTargetFiles(resolve(targetRoot, 'list-query-v2'), listQueryV2.files),
+    writeTargetFiles(
+        resolve(targetRoot, 'list-query-v2-public'),
+        publicListQueryV2.files
+    ),
+    writeTargetFiles(
+        resolve(targetRoot, 'list-query-v2-tasks-actions-processing-type'),
+        parameterizedListQueryV2.files
+    ),
     writeTargetFiles(resolve(targetRoot, 'behavior-graph'), behaviorGraphFiles),
     writeTargetFiles(
         resolve(targetRoot, 'presentation-flow'),
