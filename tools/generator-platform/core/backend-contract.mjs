@@ -218,6 +218,13 @@ function validateFields(
                     `${path}[${index}].allowed_values`
                 )
             );
+            const allowedValueType =
+                field.type?.kind === 'primitive'
+                    ? field.type
+                    : field.type?.kind === 'array' &&
+                        field.type.items?.kind === 'primitive'
+                      ? field.type.items
+                      : undefined;
             for (const [valueIndex, value] of field.allowed_values.entries()) {
                 if (
                     value === null ||
@@ -227,13 +234,15 @@ function validateFields(
                         `${path}[${index}].allowed_values[${valueIndex}]: expected scalar value`
                     );
                 }
-                if (field.type?.kind !== 'primitive') {
+                if (!allowedValueType) {
                     errors.push(
-                        `${path}[${index}].allowed_values: only primitive fields may declare values`
+                        `${path}[${index}].allowed_values: only primitive fields or primitive array items may declare values`
                     );
-                } else if (!allowedValueMatchesType(value, field.type.name)) {
+                } else if (
+                    !allowedValueMatchesType(value, allowedValueType.name)
+                ) {
                     errors.push(
-                        `${path}[${index}].allowed_values[${valueIndex}]: value does not match ${field.type.name}`
+                        `${path}[${index}].allowed_values[${valueIndex}]: value does not match ${allowedValueType.name}`
                     );
                 }
             }

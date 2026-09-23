@@ -90,6 +90,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0047](./adr/0047-list-query-v2-reference-backend-et-migration-explicite.md) | `list-query` v2 référence le backend et migre sans inventer |
 | [0048](./adr/0048-list-query-v2-modele-execution-neutre.md) | `list-query` v2 compile un modèle d'exécution neutre     |
 | [0049](./adr/0049-list-query-v2-angular-reutilise-le-runtime-host.md) | `list-query` v2 Angular réutilise le runtime du host     |
+| [0050](./adr/0050-list-query-v2-borne-path-et-tableau-enum.md) | `list-query` v2 borne le path et le tableau enum par un cas réel |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

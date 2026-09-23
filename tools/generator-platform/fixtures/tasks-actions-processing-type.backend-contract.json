@@ -1,0 +1,269 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "backend-contract",
+  "contract": {
+    "id": "cmz-tasks-actions-processing-type",
+    "title": "Tasks actions processing type client-observed contract",
+    "version": "1.0.0",
+    "status": "implemented",
+    "description": "Implemented workspace contract for the active report action-type query; not a verified-live backend claim."
+  },
+  "sources": [
+    {
+      "id": "tasks-actions-processing-type-api",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/processing/data/src/lib/sources/tasks-actions-processing-type.api.ts",
+      "sha256": "6ed4b27409a2eacd774567821c2eba286445d575aa12576e09fe87e7d20bcaa3"
+    },
+    {
+      "id": "processing-endpoints",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/processing/data/src/lib/endpoints/processing.endpoints.ts",
+      "sha256": "3dc77879380fc62d407bc8abfc92616df5a9a7dbb6f20f04a7081fa41b613a77"
+    },
+    {
+      "id": "tasks-actions-processing-dto",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/processing/data/src/lib/dtos/tasks-actions-processing-api.dto.ts",
+      "sha256": "0527c0842e97af15c1dc0910733a86c037f3706740286d4cde0bc5471789ae46"
+    },
+    {
+      "id": "tasks-actions-processing-type-filter-mapper",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/processing/data/src/lib/mappers/tasks-actions-processing-type-filter.mapper.ts",
+      "sha256": "04c4dc99ddb1a6fa1b97d910ddf56a5f8fe2a15070d5122675922e4df83e6994"
+    },
+    {
+      "id": "tasks-actions-processing-type-mapper",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/processing/data/src/lib/mappers/tasks-actions-processing-type.mapper.ts",
+      "sha256": "720ff38ddfbba1b7ec583e276094c2f32cfe647d60779d2fcd44be18360a96b2"
+    },
+    {
+      "id": "telecom-operator-dto",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/shared/data/src/lib/dtos/telecom-operator.dto.ts",
+      "sha256": "9931c86ab8102bc1d3c86e1ef02ce16a4dd2c17aae8767045e4a74eeac6fcacd"
+    },
+    {
+      "id": "backoffice-auth-interceptor",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "apps/backoffice-angular/src/app/interceptors/auth.interceptor.ts",
+      "sha256": "27649aacfb12f0ad945f48bf25081d349ea1ebdcb3ac35a0bc9af57c3de6909e"
+    }
+  ],
+  "services": [
+    {
+      "id": "report-api",
+      "status": "implemented",
+      "description": "Report API selected by the REPORT_API_URL host token.",
+      "base_urls": [
+        {
+          "environment": "test",
+          "url": "https://report.example.test/"
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "tasks-actions-processing-type-api",
+          "locator": "inject(REPORT_API_URL)"
+        }
+      ]
+    }
+  ],
+  "security_schemes": [
+    {
+      "id": "backoffice-session-bearer",
+      "kind": "bearer",
+      "status": "implemented",
+      "description": "Bearer attached by the backoffice host unless SKIP_AUTH is true.",
+      "evidence": [
+        {
+          "source_id": "backoffice-auth-interceptor",
+          "locator": "Authorization: Bearer"
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "id": "tasks-actions-processing-type-wire",
+      "kind": "object",
+      "status": "implemented",
+      "description": "Wire action type and the telecom operators allowed for that type.",
+      "fields": [
+        {
+          "name": "code",
+          "description": "Stable action-type code.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "tasks-actions-processing-dto",
+              "locator": "TasksActionsTypeItemApiDto.code"
+            },
+            {
+              "source_id": "tasks-actions-processing-type-mapper",
+              "locator": "value: dto.code"
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "description": "Human-readable action-type name.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "tasks-actions-processing-dto",
+              "locator": "TasksActionsTypeItemApiDto.name"
+            },
+            {
+              "source_id": "tasks-actions-processing-type-mapper",
+              "locator": "label: dto.name"
+            }
+          ]
+        },
+        {
+          "name": "operators",
+          "description": "Telecom operator codes allowed for this action type.",
+          "required": true,
+          "nullable": false,
+          "type": {
+            "kind": "array",
+            "items": { "kind": "primitive", "name": "string" }
+          },
+          "allowed_values": ["mtn", "orange", "moov"],
+          "evidence": [
+            {
+              "source_id": "tasks-actions-processing-dto",
+              "locator": "TasksActionsTypeItemApiDto.operators"
+            },
+            {
+              "source_id": "tasks-actions-processing-type-mapper",
+              "locator": "operators: (dto.operators ?? []).map"
+            },
+            {
+              "source_id": "telecom-operator-dto",
+              "locator": "TelecomOperatorDto"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "tasks-actions-processing-dto",
+          "locator": "TasksActionsTypeItemApiDto"
+        }
+      ]
+    },
+    {
+      "id": "tasks-actions-processing-type-list-wire",
+      "kind": "array",
+      "status": "implemented",
+      "description": "Collection carried by the simple response envelope.",
+      "items": {
+        "kind": "model",
+        "model_id": "tasks-actions-processing-type-wire"
+      },
+      "evidence": [
+        {
+          "source_id": "tasks-actions-processing-dto",
+          "locator": "TasksActionsTypeResponseDto"
+        }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "id": "processing.list-report-action-types",
+      "service_id": "report-api",
+      "status": "implemented",
+      "description": "Loads the action types available for one report.",
+      "method": "GET",
+      "path": "/processing-actions/{id}/report-types",
+      "access": {
+        "mode": "authenticated",
+        "security_scheme_ids": ["backoffice-session-bearer"],
+        "permissions": []
+      },
+      "request": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Report unique identifier, encoded as one path segment.",
+            "required": true,
+            "type": { "kind": "primitive", "name": "string" },
+            "constraints": { "min_length": 1 },
+            "evidence": [
+              {
+                "source_id": "tasks-actions-processing-type-api",
+                "locator": "/${dto.id}/report-types"
+              },
+              {
+                "source_id": "tasks-actions-processing-type-filter-mapper",
+                "locator": "id: contract.reportUniqId"
+              }
+            ]
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "outcome": "success",
+          "description": "Report action types available.",
+          "body": {
+            "media_type": "application/json",
+            "model_id": "tasks-actions-processing-type-list-wire",
+            "envelope": {
+              "kind": "object",
+              "data_field": "data",
+              "error_field": "error",
+              "message_field": "message"
+            },
+            "evidence": [
+              {
+                "source_id": "tasks-actions-processing-dto",
+                "locator": "SimpleResponseDto<TasksActionsTypeItemApiDto[]>"
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "source_id": "tasks-actions-processing-type-api",
+              "locator": "HttpClient.get<TasksActionsTypeResponseDto>"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "processing-endpoints",
+          "locator": "PROCESSING: processing-actions"
+        },
+        {
+          "source_id": "tasks-actions-processing-type-api",
+          "locator": "TasksActionsTypeProcessingApi.readAll"
+        }
+      ]
+    }
+  ]
+}

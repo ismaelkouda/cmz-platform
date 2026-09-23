@@ -33,15 +33,42 @@ function exactKeys(value, expected) {
     );
 }
 
+function occurrenceCount(value, token) {
+    return value.split(token).length - 1;
+}
+
+function decoderType(type, fieldName) {
+    if (type?.kind === 'primitive') return structuredClone(type);
+    if (type?.kind === 'array' && type.items?.kind === 'primitive') {
+        return {
+            kind: 'array',
+            items: structuredClone(type.items),
+        };
+    }
+    fail(
+        `wire field ${fieldName} uses unsupported ${type?.kind ?? 'unknown'} type; only one-dimensional primitive arrays are proven`
+    );
+}
+
 function decoderField(field) {
-    if (field.type?.kind !== 'primitive') {
+    if (!field.type) {
+        fail(`wire field ${field.name} has no decodable type`);
+    }
+    if (
+        field.type.kind === 'array' &&
+        (field.type.items?.kind !== 'primitive' ||
+            field.type.items.name !== 'string' ||
+            !Array.isArray(field.allowed_values) ||
+            field.allowed_values.length === 0 ||
+            field.allowed_values.some((value) => typeof value !== 'string'))
+    ) {
         fail(
-            `wire field ${field.name} uses unsupported ${field.type?.kind ?? 'unknown'} type; nested models require a proven second case`
+            `wire field ${field.name} requires the proven enum string-array shape`
         );
     }
     return {
         name: field.name,
-        type: structuredClone(field.type),
+        type: decoderType(field.type, field.name),
         required: field.required,
         nullable: field.nullable,
         ...(field.allowed_values
@@ -50,6 +77,71 @@ function decoderField(field) {
         ...(field.constraints
             ? { constraints: structuredClone(field.constraints) }
             : {}),
+    };
+}
+
+function compileInput(definitionOperation, operation) {
+    const parameters = operation.request?.parameters ?? [];
+    if (parameters.length === 0) {
+        return {
+            portInput: { kind: 'none' },
+            parameterBindings: [],
+        };
+    }
+    if (parameters.length !== 1) {
+        fail(
+            `${definitionOperation.id} requires unsupported parameters; only one required string path parameter is proven`
+        );
+    }
+    const fields = definitionOperation.input?.fields ?? [];
+    const parameterBindings = fields.map((field) => {
+        const parameter = parameters.find(
+            (candidate) =>
+                candidate.in === field.parameter_ref.in &&
+                candidate.name === field.parameter_ref.name
+        );
+        if (!parameter) {
+            fail(
+                `${definitionOperation.id}.${field.name} references an unresolved backend parameter`
+            );
+        }
+        if (
+            parameter.in !== 'path' ||
+            parameter.required !== true ||
+            parameter.type?.kind !== 'primitive' ||
+            parameter.type.name !== 'string' ||
+            JSON.stringify(parameter.constraints ?? {}) !==
+                JSON.stringify({ min_length: 1 }) ||
+            occurrenceCount(operation.path, `{${parameter.name}}`) !== 1
+        ) {
+            fail(
+                `${definitionOperation.id}.${field.name} requires an unsupported parameter; only required string path parameters are proven`
+            );
+        }
+        return {
+            name: parameter.name,
+            in: parameter.in,
+            source_field: field.name,
+            type: structuredClone(parameter.type),
+            required: parameter.required,
+            ...(parameter.constraints
+                ? { constraints: structuredClone(parameter.constraints) }
+                : {}),
+        };
+    });
+    return {
+        portInput: {
+            kind: 'object',
+            fields: parameterBindings.map((binding) => ({
+                name: binding.source_field,
+                type: structuredClone(binding.type),
+                required: binding.required,
+                ...(binding.constraints
+                    ? { constraints: structuredClone(binding.constraints) }
+                    : {}),
+            })),
+        },
+        parameterBindings,
     };
 }
 
@@ -110,11 +202,10 @@ function compileQuery(definitionOperation, backendContract) {
         definitionOperation.operation_ref.operation_id,
         'backend operation'
     );
-    if ((operation.request?.parameters ?? []).length > 0) {
-        fail(
-            `${definitionOperation.id} has backend parameters; typed path/query bindings require a proven parameterized case`
-        );
-    }
+    const { portInput, parameterBindings } = compileInput(
+        definitionOperation,
+        operation
+    );
     const response = operation.responses.find(
         (candidate) =>
             candidate.status === definitionOperation.success_response_status &&
@@ -160,7 +251,7 @@ function compileQuery(definitionOperation, backendContract) {
         id: definitionOperation.id,
         description: operation.description,
         port: {
-            input: { kind: 'none' },
+            input: portInput,
             output: {
                 kind: 'list',
                 item_model_id: definitionOperation.read_model.id,
@@ -181,6 +272,7 @@ function compileQuery(definitionOperation, backendContract) {
             media_type: response.body.media_type,
             collection_model_id: collection.id,
             envelope: structuredClone(response.body.envelope),
+            parameters: parameterBindings,
         },
         wire_model: {
             id: wireItem.id,
@@ -223,8 +315,8 @@ export function validateListQueryV2ExecutionModel(model) {
     ) {
         errors.push('$: execution model must use the closed root shape');
     }
-    if (model?.schema_version !== '1.0.0') {
-        errors.push('$.schema_version: expected 1.0.0');
+    if (model?.schema_version !== '1.1.0') {
+        errors.push('$.schema_version: expected 1.1.0');
     }
     if (model?.kind !== 'list-query-execution-model') {
         errors.push('$.kind: expected list-query-execution-model');
@@ -287,7 +379,53 @@ export function validateListQueryV2ExecutionModel(model) {
         ) {
             errors.push(`${path}.port.output: does not match read model`);
         }
-        if (query.port?.input?.kind !== 'none') {
+        const input = query.port?.input;
+        const parameterBindings = query.transport?.parameters;
+        if (input?.kind === 'none') {
+            if (!Array.isArray(parameterBindings) || parameterBindings.length) {
+                errors.push(
+                    `${path}.transport.parameters: parameterless port must have no bindings`
+                );
+            }
+        } else if (input?.kind === 'object' && Array.isArray(input.fields)) {
+            const inputNames = new Set(input.fields.map((field) => field.name));
+            if (
+                input.fields.length !== 1 ||
+                !Array.isArray(parameterBindings) ||
+                parameterBindings.length !== 1
+            ) {
+                errors.push(
+                    `${path}.transport.parameters: must match port input fields`
+                );
+            }
+            for (const binding of parameterBindings ?? []) {
+                const inputField = input.fields.find(
+                    (field) => field.name === binding.source_field
+                );
+                if (
+                    binding.in !== 'path' ||
+                    binding.required !== true ||
+                    binding.type?.kind !== 'primitive' ||
+                    binding.type.name !== 'string' ||
+                    !inputNames.has(binding.source_field) ||
+                    occurrenceCount(
+                        query.transport.path,
+                        `{${binding.name}}`
+                    ) !== 1 ||
+                    JSON.stringify(binding.constraints ?? {}) !==
+                        JSON.stringify({ min_length: 1 }) ||
+                    JSON.stringify(inputField?.type) !==
+                        JSON.stringify(binding.type) ||
+                    inputField?.required !== binding.required ||
+                    JSON.stringify(inputField?.constraints ?? {}) !==
+                        JSON.stringify(binding.constraints ?? {})
+                ) {
+                    errors.push(
+                        `${path}.transport.parameters: invalid path binding ${binding.name}`
+                    );
+                }
+            }
+        } else {
             errors.push(`${path}.port.input: unsupported input contract`);
         }
         if (query.transport?.method !== 'GET') {
@@ -312,6 +450,22 @@ export function validateListQueryV2ExecutionModel(model) {
         const wireFields = new Set(
             query.wire_model?.fields?.map((field) => field.name)
         );
+        for (const field of query.wire_model?.fields ?? []) {
+            if (
+                field.type?.kind === 'array' &&
+                (field.type.items?.kind !== 'primitive' ||
+                    field.type.items.name !== 'string' ||
+                    !Array.isArray(field.allowed_values) ||
+                    field.allowed_values.length === 0 ||
+                    field.allowed_values.some(
+                        (value) => typeof value !== 'string'
+                    ))
+            ) {
+                errors.push(
+                    `${path}.wire_model.${field.name}: unsupported nested decoder shape`
+                );
+            }
+        }
         for (const [fieldIndex, field] of (
             query.read_model?.fields ?? []
         ).entries()) {
@@ -362,7 +516,7 @@ export function compileListQueryV2ExecutionModel({
         fail(`invalid definition\n${definitionErrors.join('\n')}`);
     }
     const model = {
-        schema_version: '1.0.0',
+        schema_version: '1.1.0',
         kind: 'list-query-execution-model',
         model_id: `${definition.feature.id}-list-query-execution`,
         domain: structuredClone(definition.feature),

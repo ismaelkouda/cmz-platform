@@ -46,6 +46,7 @@ const [
     contract,
     listQueryV2,
     publicListQueryV2,
+    parameterizedListQueryV2,
 ] = await Promise.all([
     computeTargets(),
     computeEvolvableCompositionTargets(),
@@ -59,6 +60,14 @@ const [
               definitionPath: resolve(
                   generatorRoot,
                   'fixtures/editorial-blocks.v2.definition.json'
+              ),
+          })
+        : Promise.resolve(undefined),
+    target === 'angular'
+        ? computeAngularListQueryV2Target({
+              definitionPath: resolve(
+                  generatorRoot,
+                  'fixtures/tasks-actions-processing-type.v2.definition.json'
               ),
           })
         : Promise.resolve(undefined),
@@ -140,6 +149,17 @@ await Promise.all([
               writeTargetFiles(
                   resolve(targetRoot, 'list-query-v2-public'),
                   publicListQueryV2.files
+              ),
+          ]
+        : []),
+    ...(parameterizedListQueryV2
+        ? [
+              writeTargetFiles(
+                  resolve(
+                      targetRoot,
+                      'list-query-v2-tasks-actions-processing-type'
+                  ),
+                  parameterizedListQueryV2.files
               ),
           ]
         : []),

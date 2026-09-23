@@ -18,6 +18,12 @@ const publicTarget = await computeAngularListQueryV2Target({
         'tools/generator-platform/fixtures/editorial-blocks.v2.definition.json'
     ),
 });
+const parameterizedTarget = await computeAngularListQueryV2Target({
+    definitionPath: resolve(
+        repositoryRoot,
+        'tools/generator-platform/fixtures/tasks-actions-processing-type.v2.definition.json'
+    ),
+});
 
 function mutateActive(mutator) {
     const model = structuredClone(activeTarget.model);
@@ -67,6 +73,76 @@ test('traduit une query publique vers le token exact du host sans bearer génér
     assert.match(source, /"authentication": \{\s*"mode": "omit"/);
     assert.doesNotMatch(source, /bearer|Authorization/i);
     assert.match(source, /createListQueryRequestContext/);
+});
+
+test('rend le cas actif paramétré et son tableau enum sans mécanisme parallèle', () => {
+    const models = parameterizedTarget.files['src/models.ts'];
+    assert.match(models, /interface ListReportActionTypesInput/);
+    assert.match(models, /readonly "reportUniqId": string/);
+    assert.match(models, /readonly "operators": readonly string\[\]/);
+
+    const source =
+        parameterizedTarget.files['src/list-report-action-types.source.ts'];
+    assert.match(source, /inject\(REPORT_API_URL\)/);
+    assert.match(source, /encodeURIComponent\(parameter0\)/);
+    assert.match(source, /path\.replace\("\{id\}"/);
+    assert.match(source, /parameter0\.length < 1/);
+    assert.doesNotMatch(source, /Authorization|Bearer|new HttpContextToken/);
+
+    const decoder =
+        parameterizedTarget.files['src/list-report-action-types.decoder.ts'];
+    assert.match(decoder, /Array\.isArray\(value\)/);
+    assert.match(decoder, /\["mtn","orange","moov"\]/);
+    assert.match(decoder, /\$\{path\}\[\$\{itemIndex\}\]/);
+
+    const facade =
+        parameterizedTarget.files['src/list-report-action-types.facade.ts'];
+    assert.match(
+        facade,
+        /load\(input: ListReportActionTypesInput, options: LoadOptions = \{\}\)/
+    );
+    assert.match(facade, /this\.source\.readAll\(params\.input, isRefresh\)/);
+});
+
+test('refuse d’élargir le renderer aux tableaux d’objets ou à plusieurs paths', () => {
+    const objectArray = structuredClone(parameterizedTarget.model);
+    objectArray.queries[0].wire_model.fields[2].type.items = {
+        kind: 'model',
+        model_id: 'invented',
+    };
+    assert.throws(
+        () =>
+            renderAngularListQueryV2(
+                objectArray,
+                cmzAngularListQueryHostBindings
+            ),
+        /proven required enum string-array shape/
+    );
+
+    const twoPaths = structuredClone(parameterizedTarget.model);
+    twoPaths.queries[0].port.input.fields.push(
+        structuredClone(twoPaths.queries[0].port.input.fields[0])
+    );
+    twoPaths.queries[0].transport.parameters.push(
+        structuredClone(twoPaths.queries[0].transport.parameters[0])
+    );
+    assert.throws(
+        () =>
+            renderAngularListQueryV2(twoPaths, cmzAngularListQueryHostBindings),
+        /proven single non-empty string path input/
+    );
+
+    const repeatedPlaceholder = structuredClone(parameterizedTarget.model);
+    repeatedPlaceholder.queries[0].transport.path =
+        '/processing-actions/{id}/report-types/{id}';
+    assert.throws(
+        () =>
+            renderAngularListQueryV2(
+                repeatedPlaceholder,
+                cmzAngularListQueryHostBindings
+            ),
+        /proven single non-empty string path input/
+    );
 });
 
 test('échoue fermé sur les capacités Angular non encore prouvées', () => {

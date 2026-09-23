@@ -32,6 +32,10 @@ export const cmzAngularListQueryHostBindings = Object.freeze({
             module: '@cmz/core',
             token: 'SETTINGS_API_URL',
         }),
+        'report-api': Object.freeze({
+            module: '@cmz/core',
+            token: 'REPORT_API_URL',
+        }),
     }),
 });
 

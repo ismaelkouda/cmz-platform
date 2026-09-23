@@ -509,6 +509,23 @@ Angular restent éphémères et compilées. `list-query` reste `experimental` :
 paramètres et modèles imbriqués, parité React, publication durable et
 réalisation de page restent à prouver.
 
+Quatrième incrément engagé le 2026-09-23 : le second cas actif
+`tasks-actions-processing-type` ouvre uniquement la forme réellement observée :
+un binding `reportUniqId → path:id`, chaîne obligatoire non vide et encodée
+comme un segment, ainsi qu'un tableau non nullable de chaînes bornées à
+`mtn|orange|moov`. Le modèle d'exécution passe en `1.1.0`. Les paramètres
+query/header, plusieurs paths, paramètres optionnels, tableaux ouverts,
+récursifs ou d'objets restent refusés.
+
+L'oracle Angular natif vérifie URL encodée, Bearer et cache du host, mapping du
+tableau, rejet d'un opérateur inconnu, rejet avant HTTP d'un identifiant vide,
+reload et annulation latest-wins lors d'un changement d'identifiant. La surface
+v2 cumulée mesurée sur le même périmètre atteint **2 231 lignes de production**
+(+391) ; le validateur backend existant reçoit +9 lignes nettes et aucun module,
+schéma, CLI ou runtime supplémentaire n'est créé. ADR-0050 consigne la revue.
+Restent la décision/parité React, la publication durable et la réalisation de
+page composée.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

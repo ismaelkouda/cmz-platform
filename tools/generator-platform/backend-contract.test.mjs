@@ -218,6 +218,26 @@ test('rejette des valeurs autorisées incompatibles avec le type du champ', () =
     );
 });
 
+test('borne les valeurs d’un tableau primitif au niveau de chaque item', () => {
+    const contract = validContract();
+    contract.models[0].fields[0] = {
+        ...contract.models[0].fields[0],
+        name: 'operators',
+        type: {
+            kind: 'array',
+            items: { kind: 'primitive', name: 'string' },
+        },
+        allowed_values: ['mtn', 'orange', 'moov'],
+    };
+    assert.deepEqual(validateBackendContract(contract, schema), []);
+
+    contract.models[0].fields[0].allowed_values.push(42);
+    assert.match(
+        validateBackendContract(contract, schema).join('\n'),
+        /value does not match string/
+    );
+});
+
 test('représente une réponse tableau sans inventer de propriété items', () => {
     const contract = validContract();
     assert.deepEqual(contract.models[1], {
