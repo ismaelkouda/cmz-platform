@@ -1,0 +1,204 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "backend-contract",
+  "contract": {
+    "id": "cmz-site-group-select",
+    "title": "Site group select client-observed contract",
+    "version": "1.0.0",
+    "status": "implemented",
+    "description": "Implemented workspace contract for the active site-group-select query; not a verified-live backend claim."
+  },
+  "sources": [
+    {
+      "id": "site-group-select-api",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/coverage-areas/data/src/lib/sources/site-group-select.api.ts",
+      "sha256": "87cac0dced307b1c994a4a1fe5efad31260addd2079493813a384ad101b41ada"
+    },
+    {
+      "id": "coverage-areas-endpoints",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/coverage-areas/data/src/lib/endpoints/coverage-areas.endpoints.ts",
+      "sha256": "069ba074c05e806fe989dabe636f5262442e59519c270bfb4dbc5769a44a79b6"
+    },
+    {
+      "id": "site-group-select-dto",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/coverage-areas/data/src/lib/dtos/site-group-select-response-api.dto.ts",
+      "sha256": "cc4a69282108b8537390d0e181563c1aee576c1224e05a5dfef4a77b07f421b2"
+    },
+    {
+      "id": "backoffice-auth-interceptor",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "apps/backoffice-angular/src/app/interceptors/auth.interceptor.ts",
+      "sha256": "27649aacfb12f0ad945f48bf25081d349ea1ebdcb3ac35a0bc9af57c3de6909e"
+    }
+  ],
+  "services": [
+    {
+      "id": "settings-api",
+      "status": "implemented",
+      "description": "Settings API selected by the SETTINGS_API_URL host token.",
+      "base_urls": [
+        {
+          "environment": "test",
+          "url": "https://settings.example.test/"
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "site-group-select-api",
+          "locator": "inject(SETTINGS_API_URL)"
+        }
+      ]
+    }
+  ],
+  "security_schemes": [
+    {
+      "id": "backoffice-session-bearer",
+      "kind": "bearer",
+      "status": "implemented",
+      "description": "Bearer attached by the backoffice host unless SKIP_AUTH is true.",
+      "evidence": [
+        {
+          "source_id": "backoffice-auth-interceptor",
+          "locator": "Authorization: Bearer"
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "id": "site-group-select-wire",
+      "kind": "object",
+      "status": "implemented",
+      "description": "Wire item returned by the site-group list endpoint.",
+      "fields": [
+        {
+          "name": "id",
+          "description": "Stable site-group identifier.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "site-group-select-dto",
+              "locator": "SiteGroupSelectItemApiDto.id"
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "description": "Human-readable site-group name.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "site-group-select-dto",
+              "locator": "SiteGroupSelectItemApiDto.name"
+            }
+          ]
+        },
+        {
+          "name": "description",
+          "description": "Site-group description carried on the wire but not exposed by the read model.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "site-group-select-dto",
+              "locator": "SiteGroupSelectItemApiDto.description"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "site-group-select-dto",
+          "locator": "SiteGroupSelectItemApiDto"
+        }
+      ]
+    },
+    {
+      "id": "site-group-select-list-wire",
+      "kind": "array",
+      "status": "implemented",
+      "description": "Collection carried by the simple response envelope.",
+      "items": {
+        "kind": "model",
+        "model_id": "site-group-select-wire"
+      },
+      "evidence": [
+        {
+          "source_id": "site-group-select-dto",
+          "locator": "SimpleResponseDto<SiteGroupSelectItemApiDto[]>"
+        }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "id": "coverage-areas.list-site-groups",
+      "service_id": "settings-api",
+      "status": "implemented",
+      "description": "Loads site groups for an authenticated select control.",
+      "method": "GET",
+      "path": "/infrastructures/site-groups",
+      "access": {
+        "mode": "authenticated",
+        "security_scheme_ids": ["backoffice-session-bearer"],
+        "permissions": []
+      },
+      "request": { "parameters": [] },
+      "responses": [
+        {
+          "status": 200,
+          "outcome": "success",
+          "description": "Site-group list available.",
+          "body": {
+            "media_type": "application/json",
+            "model_id": "site-group-select-list-wire",
+            "envelope": {
+              "kind": "object",
+              "data_field": "data",
+              "error_field": "error",
+              "message_field": "message"
+            },
+            "evidence": [
+              {
+                "source_id": "site-group-select-dto",
+                "locator": "SiteGroupSelectResponseApiDto"
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "source_id": "site-group-select-api",
+              "locator": "HttpClient.get<SiteGroupSelectResponseApiDto>"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "coverage-areas-endpoints",
+          "locator": "SITE_GROUP: infrastructures/site-groups"
+        },
+        {
+          "source_id": "site-group-select-api",
+          "locator": "SiteGroupSelectApi.readAll"
+        }
+      ]
+    }
+  ]
+}

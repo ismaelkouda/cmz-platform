@@ -162,6 +162,7 @@
   "ERRORS": {
     "HTTP": {
       "SERVER_ERROR": "Erreur serveur, veuillez réessayer.",
+      "INVALID_PAYLOAD": "La réponse du serveur ne respecte pas le format attendu.",
       "VALIDATION": "Certaines données envoyées sont invalides.",
       "UNKNOWN": "Une erreur inattendue est survenue.",
       "NOT_FOUND": "Ressource introuvable.",

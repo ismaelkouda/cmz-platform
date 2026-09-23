@@ -1960,6 +1960,20 @@ Figma, désormais source partielle différée :
   Paramètres, modèles imbriqués et annulation manuelle restent bloqués jusqu'à
   leurs preuves réelles. Restent le décodage exécuté, l'adaptateur host Angular
   et l'oracle actif `site-group-select`.
+  **C1k — renderer et oracle Angular v2 engagés localement le 2026-09-23 :** le
+  code généré est compilé puis exécuté avec `TestBed`, le vrai
+  `ResourceFacade` et les vrais intercepteurs auth/erreur/cache. Le cas actif
+  `site-group-select` prouve DTO wire distinct, mapping `id → value` / `name →
+  label`, enveloppe et types stricts, erreurs typées, six états, bypass cache,
+  conservation de la dernière valeur après erreur et annulation latest-wins.
+  Une query publique prouve l'absence de Bearer. Les tokens HTTP sont ceux du
+  host, jamais des copies privées. ADR-0049 mesure 1 840 lignes de production,
+  sept modules et un schéma et documente la revue de simplification. Restent
+  explicitement : (1) le second cas réel paramétré et imbriqué
+  `tasks-actions-processing-type`, (2) la décision et l'oracle de parité React,
+  (3) la publication durable de la sortie, puis (4) la réalisation d'une page
+  composée N `list-query` + N `action-request`. La v2 reste `experimental`
+  jusque-là.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

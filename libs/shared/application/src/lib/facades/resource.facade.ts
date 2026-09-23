@@ -1,8 +1,19 @@
-import { computed, effect, inject, signal } from '@angular/core';
+import {
+    computed,
+    effect,
+    inject,
+    signal,
+    type ResourceStatus,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DomainError, UnknownError } from '@cmz/shared-domain';
 import { Observable } from 'rxjs';
 import { ErrorHandlerRegistry } from '../services/error-handler-registry.service';
+
+export interface ResourceStreamContext {
+    readonly abortSignal: AbortSignal;
+    readonly previousStatus: ResourceStatus;
+}
 
 /**
  * Façade de ressource **signal-first (Angular 22)** : la lecture asynchrone est
@@ -18,11 +29,18 @@ export abstract class ResourceFacade<TData, TParams> {
     protected readonly _params = signal<TParams | undefined>(undefined);
 
     /** Flux de données pour des paramètres donnés (fourni par le concret). */
-    protected abstract stream(params: TParams): Observable<TData>;
+    protected abstract stream(
+        params: TParams,
+        context: ResourceStreamContext
+    ): Observable<TData>;
 
     protected readonly resource = rxResource<TData, TParams | undefined>({
         params: () => this._params(),
-        stream: ({ params }) => this.stream(params as TParams),
+        stream: ({ params, abortSignal, previous }) =>
+            this.stream(params as TParams, {
+                abortSignal,
+                previousStatus: previous.status,
+            }),
     });
 
     /**
