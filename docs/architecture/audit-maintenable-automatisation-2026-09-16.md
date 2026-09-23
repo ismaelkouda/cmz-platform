@@ -560,6 +560,24 @@ cumulée atteint **2 859 lignes**. ADR-0052 consigne la décision. Reste la page
 composée N `list-query` + N `action-request` ; la capacité reste
 `experimental`.
 
+Septième incrément engagé le 2026-09-23 : `action-request` v2 possède désormais
+sa frontière auteur fermée et son migrateur v1 → v2. Comme `list-query` v2, la
+définition référence le `backend-contract` par identité, version et SHA-256 au
+lieu de redéclarer transport, accès, auth, enveloppe et DTO. Concurrence, retry,
+idempotence, invalidation et effet local post-succès deviennent des décisions
+explicites ; retry manuel et parallélisme sont refusés sans idempotence host.
+
+La migration `support` est exacte, déterministe, idempotente et sans
+écrasement. Une seconde preuve confronte directement le contrat au cas Angular
+actif `forgot-password`, à ses sources, DTO, enveloppe et `SKIP_AUTH`, tout en
+distinguant honnêtement « client implémenté » de « serveur vérifié live ».
+L'incrément représente **1 141 lignes de production contractuelle**, deux
+modules exécutables et un schéma ; ADR-0053 consigne la revue SIMPL obligatoire.
+Il n'ajoute ni renderer, runtime, cache, journal, verrou, LLM ou publication.
+`action-request` v2 reste donc `experimental`. Les prochains lots sont son
+compilateur neutre, son host/oracle Angular, la parité React et sa publication ;
+le `page-execution-plan` ne commence qu'après ces contrats runtime stabilisés.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

@@ -85,6 +85,7 @@
     "generate:action-request": "node tools/generator-platform/generate-action-request.mjs",
     "generate:workflow-action": "node tools/generator-platform/generate-workflow-action.mjs",
     "generate:list-query": "node tools/generator-platform/generate-list-query.mjs",
+    "migrate:action-request": "node tools/generator-platform/migrate-action-request.mjs",
     "migrate:list-query": "node tools/generator-platform/migrate-list-query.mjs",
     "probe:composition-evolution": "node tools/generator-platform/check-evolvable-composition.mjs",
     "bundle:record": "node tools/record-bundle-metrics.mjs",

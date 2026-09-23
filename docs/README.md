@@ -93,6 +93,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0050](./adr/0050-list-query-v2-borne-path-et-tableau-enum.md) | `list-query` v2 borne le path et le tableau enum par un cas réel |
 | [0051](./adr/0051-list-query-v2-react-utilise-un-port-hote-explicite.md) | `list-query` v2 React utilise un port hôte explicite     |
 | [0052](./adr/0052-list-query-v2-reutilise-la-publication-transactionnelle.md) | `list-query` v2 réutilise la publication transactionnelle |
+| [0053](./adr/0053-action-request-v2-reference-backend-et-decisions-execution.md) | `action-request` v2 référence le backend et explicite l'exécution |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

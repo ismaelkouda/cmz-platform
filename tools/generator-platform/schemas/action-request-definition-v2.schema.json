@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/action-request-definition-v2.schema.json",
+  "title": "CMZ Action Request Authoring Definition v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "feature",
+    "backend_contract",
+    "operations"
+  ],
+  "properties": {
+    "schema_version": { "const": "2.0.0" },
+    "kind": { "const": "action-request" },
+    "feature": { "$ref": "#/$defs/feature" },
+    "backend_contract": { "$ref": "#/$defs/backendContractRef" },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "backendId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "fieldName": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "backendContractRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uri", "id", "version", "sha256"],
+      "properties": {
+        "uri": { "type": "string", "pattern": "^[A-Za-z0-9._/-]+$" },
+        "id": { "$ref": "#/$defs/backendId" },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "operationRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id"],
+      "properties": {
+        "operation_id": { "$ref": "#/$defs/backendId" }
+      }
+    },
+    "validation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "const": "required" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "format"],
+          "properties": {
+            "kind": { "const": "format" },
+            "format": { "const": "email" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "other_field"],
+          "properties": {
+            "kind": { "const": "equals" },
+            "other_field": { "$ref": "#/$defs/fieldName" }
+          }
+        }
+      ]
+    },
+    "inputField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "body_field", "validations"],
+      "properties": {
+        "name": { "$ref": "#/$defs/fieldName" },
+        "body_field": { "$ref": "#/$defs/fieldName" },
+        "validations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/validation" }
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/inputField" }
+        }
+      }
+    },
+    "resultField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "source_field"],
+      "properties": {
+        "name": { "$ref": "#/$defs/fieldName" },
+        "source_field": { "$ref": "#/$defs/fieldName" }
+      }
+    },
+    "resultModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/resultField" }
+        }
+      }
+    },
+    "retryNone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "const": "none" } }
+    },
+    "retryManual": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "const": "manual" } }
+    },
+    "idempotencyNone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "const": "none" } }
+    },
+    "idempotencyHost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "key_scope"],
+      "properties": {
+        "mode": { "const": "host" },
+        "key_scope": { "const": "operation-input" }
+      }
+    },
+    "invalidationNone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "const": "none" } }
+    },
+    "invalidationCaller": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "const": "caller-declared" } }
+    },
+    "postSuccessNone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "const": "none" } }
+    },
+    "postSuccessHost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "effect_id", "failure_state"],
+      "properties": {
+        "mode": { "const": "host" },
+        "effect_id": { "$ref": "#/$defs/id" },
+        "failure_state": { "const": "committed-with-local-error" }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "concurrency",
+        "retry",
+        "idempotency",
+        "invalidation",
+        "post_success"
+      ],
+      "properties": {
+        "concurrency": { "enum": ["reject-while-pending", "parallel"] },
+        "retry": {
+          "oneOf": [
+            { "$ref": "#/$defs/retryNone" },
+            { "$ref": "#/$defs/retryManual" }
+          ]
+        },
+        "idempotency": {
+          "oneOf": [
+            { "$ref": "#/$defs/idempotencyNone" },
+            { "$ref": "#/$defs/idempotencyHost" }
+          ]
+        },
+        "invalidation": {
+          "oneOf": [
+            { "$ref": "#/$defs/invalidationNone" },
+            { "$ref": "#/$defs/invalidationCaller" }
+          ]
+        },
+        "post_success": {
+          "oneOf": [
+            { "$ref": "#/$defs/postSuccessNone" },
+            { "$ref": "#/$defs/postSuccessHost" }
+          ]
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "operation_ref",
+        "success_response_status",
+        "input",
+        "result_model",
+        "execution"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "operation_ref": { "$ref": "#/$defs/operationRef" },
+        "success_response_status": {
+          "type": "integer",
+          "minimum": 200,
+          "maximum": 299
+        },
+        "input": { "$ref": "#/$defs/input" },
+        "result_model": { "$ref": "#/$defs/resultModel" },
+        "execution": { "$ref": "#/$defs/execution" }
+      }
+    }
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "backend-contract",
+  "contract": {
+    "id": "support-api",
+    "title": "Support API migration fixture",
+    "version": "1.0.0",
+    "status": "planned",
+    "description": "Backend authority fixture used only to prove the action-request v1 to v2 migration."
+  },
+  "sources": [
+    {
+      "id": "action-request-v1-source",
+      "kind": "manual",
+      "authority": "declared",
+      "status": "planned",
+      "snapshot_uri": "tools/generator-platform/sources/support-request.definition.json",
+      "sha256": "05fe7a502af1f9047f41351f1172b0241cab4bb70e60ca517a41cac2a5c192fa"
+    }
+  ],
+  "services": [
+    {
+      "id": "support-api",
+      "status": "planned",
+      "description": "Support service used by the migration fixture.",
+      "base_urls": [
+        {
+          "environment": "production",
+          "url": "https://support.example/api/"
+        }
+      ],
+      "evidence": [
+        { "source_id": "action-request-v1-source", "locator": "$.feature" }
+      ]
+    }
+  ],
+  "security_schemes": [
+    {
+      "id": "bearer",
+      "kind": "bearer",
+      "status": "planned",
+      "description": "Bearer session expected by the declared support endpoint.",
+      "evidence": [
+        {
+          "source_id": "action-request-v1-source",
+          "locator": "$.operations[0].http.authentication"
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "id": "support-request-wire",
+      "kind": "object",
+      "status": "planned",
+      "description": "Support request payload.",
+      "fields": [
+        {
+          "name": "email",
+          "description": "Contact email.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "action-request-v1-source",
+              "locator": "$.operations[0].input.fields[0]"
+            }
+          ]
+        },
+        {
+          "name": "subject",
+          "description": "Request subject.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "action-request-v1-source",
+              "locator": "$.operations[0].input.fields[1]"
+            }
+          ]
+        },
+        {
+          "name": "message",
+          "description": "Request message.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "action-request-v1-source",
+              "locator": "$.operations[0].input.fields[2]"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "action-request-v1-source",
+          "locator": "$.operations[0].input"
+        }
+      ]
+    },
+    {
+      "id": "support-request-result-wire",
+      "kind": "object",
+      "status": "planned",
+      "description": "Support request confirmation.",
+      "fields": [
+        {
+          "name": "request_id",
+          "description": "Accepted request identifier.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "action-request-v1-source",
+              "locator": "$.operations[0].output.fields[0]"
+            }
+          ]
+        },
+        {
+          "name": "message",
+          "description": "Acceptance message.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "action-request-v1-source",
+              "locator": "$.operations[0].output.fields[1]"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "action-request-v1-source",
+          "locator": "$.operations[0].output"
+        }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "id": "support.contact",
+      "service_id": "support-api",
+      "status": "planned",
+      "description": "Submits a support request.",
+      "method": "POST",
+      "path": "/support/requests",
+      "access": {
+        "mode": "authenticated",
+        "security_scheme_ids": ["bearer"],
+        "permissions": []
+      },
+      "request": {
+        "parameters": [],
+        "body": {
+          "required": true,
+          "media_types": ["application/json"],
+          "model_id": "support-request-wire",
+          "evidence": [
+            {
+              "source_id": "action-request-v1-source",
+              "locator": "$.operations[0].input"
+            }
+          ]
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "outcome": "success",
+          "description": "Support request accepted.",
+          "body": {
+            "media_type": "application/json",
+            "model_id": "support-request-result-wire",
+            "envelope": { "kind": "none" },
+            "evidence": [
+              {
+                "source_id": "action-request-v1-source",
+                "locator": "$.operations[0].output"
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "source_id": "action-request-v1-source",
+              "locator": "$.operations[0].http"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "action-request-v1-source",
+          "locator": "$.operations[0]"
+        }
+      ]
+    }
+  ]
+}
