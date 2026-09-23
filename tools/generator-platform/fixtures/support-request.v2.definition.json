@@ -1,0 +1,59 @@
+{
+  "schema_version": "2.0.0",
+  "kind": "action-request",
+  "feature": {
+    "id": "support",
+    "name": "Support",
+    "description": "Authenticated submission of a support request."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/action-request-v1.backend-contract.json",
+    "id": "support-api",
+    "version": "1.0.0",
+    "sha256": "69b5d3279841ba9e5932340820880e97bd32b985798a96c4c8e4e80487f0618d"
+  },
+  "operations": [
+    {
+      "id": "contact-support",
+      "operation_ref": { "operation_id": "support.contact" },
+      "success_response_status": 200,
+      "input": {
+        "fields": [
+          {
+            "name": "email",
+            "body_field": "email",
+            "validations": [
+              { "kind": "required" },
+              { "kind": "format", "format": "email" }
+            ]
+          },
+          {
+            "name": "subject",
+            "body_field": "subject",
+            "validations": [{ "kind": "required" }]
+          },
+          {
+            "name": "message",
+            "body_field": "message",
+            "validations": [{ "kind": "required" }]
+          }
+        ]
+      },
+      "result_model": {
+        "id": "support-request-result",
+        "description": "Confirmation returned after accepting the request.",
+        "fields": [
+          { "name": "request_id", "source_field": "request_id" },
+          { "name": "message", "source_field": "message" }
+        ]
+      },
+      "execution": {
+        "concurrency": "reject-while-pending",
+        "retry": { "mode": "none" },
+        "idempotency": { "mode": "none" },
+        "invalidation": { "mode": "none" },
+        "post_success": { "mode": "none" }
+      }
+    }
+  ]
+}

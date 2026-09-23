@@ -2021,6 +2021,21 @@ Figma, désormais source partielle différée :
   module, schéma, CLI, journal, lock ou runtime ; ADR-0052. Reste désormais la
   réalisation d'une page N `list-query` + N `action-request`, avant toute
   promotion hors `experimental`.
+  **C1o — frontière `action-request` v2 engagée localement le 2026-09-23 :** le
+  schéma `2.0.0` référence le backend content-addressed et ne redéclare plus
+  méthode, chemin, accès, auth, enveloppe ou DTO. Les mappings body/résultat et
+  les décisions concurrence, retry, idempotence, invalidation et post-succès
+  sont fermés et validés ensemble. Le migrateur v1 → v2 est déterministe,
+  idempotent, sans écrasement et refuse dérives backend, décisions absentes,
+  mappings inconnus ou ambigus. La migration `support` fournit l'avant/après
+  versionné ; le cas actif `forgot-password` vérifie les hashes du vrai code
+  Angular, ses DTO, son enveloppe et l'accès public, sans prétendre que le
+  serveur est `verified-live`. La revue SIMPL d'ADR-0053 accepte **1 141 lignes
+  de production**, deux modules exécutables et un schéma, sans renderer,
+  runtime, cache, journal, verrou ni publisher. Restent pour fermer C1 : (1)
+  compilateur neutre `action-request` v2, (2) host/oracle Angular, (3) parité
+  React, (4) publication durable ; le plan N×N vient ensuite, conformément à
+  l'audit de composition.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

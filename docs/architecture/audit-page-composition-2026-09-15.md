@@ -29,6 +29,19 @@ d'archétype fail-closed et vrais oracles Angular sur la fixture mono-action.
 L'audit sépare ces garanties réelles de la claim plus large « N requêtes + N
 commandes fonctionnent ensemble dans une page ».
 
+### Avancement sans réécriture de l'audit — 2026-09-23
+
+Le lot C1 progresse dans l'ordre prescrit. `list-query` v2 est compilé, prouvé
+sur Angular et React puis publié durablement. La première tranche
+`action-request` v2 ferme désormais sa frontière auteur et sa migration contre
+un backend content-addressed ; elle possède une preuve versionnée `support` et
+une preuve de contrat issue du cas actif `forgot-password`.
+
+Ces avancées ne changent pas le verdict N×N : `action-request` v2 n'a pas encore
+de compilateur, renderer, oracle host ni publication. C2 reste donc bloqué par
+C1 et aucun `page-execution-plan` n'est introduit prématurément. Les constats et
+critères ci-dessous sont conservés comme baseline de contrôle.
+
 ## Méthode et niveaux de preuve
 
 Les constats utilisent les mêmes niveaux que les deux audits précédents :

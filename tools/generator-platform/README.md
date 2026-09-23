@@ -288,6 +288,37 @@ plan. The published sources are type-checked against declared workspace ports;
 unknown aliases fail closed. `angular-layered` remains a v1-only target. V2 is
 still experimental until a real N×N page composition consumes the publication.
 
+## Migrate an action-request to v2
+
+Action-request v2 follows the same backend-authority boundary as list-query v2.
+The authoring document references a content-addressed backend contract and
+contains only UI field bindings, validations, result projection, and explicit
+execution decisions. It does not redeclare HTTP, access, authentication,
+response envelopes, or wire DTOs.
+
+The migration requires a reviewed decisions file because concurrency, retry,
+idempotency, invalidation, and post-success host effects cannot be inferred
+safely:
+
+```bash
+bun run migrate:action-request -- \
+  --definition tools/generator-platform/sources/support-request.definition.json \
+  --backend-contract tools/generator-platform/fixtures/action-request-v1.backend-contract.json \
+  --decisions tools/generator-platform/fixtures/action-request-v1.migration-decisions.json \
+  --out /tmp/support-request.v2.json
+```
+
+The command verifies backend source snapshots, checks v1/backend parity, writes
+one new file with exclusive-create semantics, and is idempotent when given a
+valid v2 input. The initial v2 subset is deliberately narrow: JSON mutations
+with no parameters and primitive object fields. Unsupported shapes fail closed.
+
+`forgot-password.v2.definition.json` is the first active-code contract proof.
+It is traced to the Angular client, endpoint, DTO, envelope, interceptor, and
+test configuration sources. Its status means “implemented client observation,”
+not “server verified live.” No v2 compiler, renderer, runtime, or publisher is
+claimed by this increment; those gates remain required before N×N composition.
+
 PLAT-2 adds two independent, fail-closed ingestion paths:
 
 - `adapters/structured-spec-adapter.mjs` consumes the versioned JSON source in

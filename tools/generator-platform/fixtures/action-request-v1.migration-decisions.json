@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "action-request-v1-migration-decisions",
+  "operations": [
+    {
+      "source_operation_id": "contact-support",
+      "backend_operation_id": "support.contact",
+      "success_response_status": 200,
+      "execution": {
+        "concurrency": "reject-while-pending",
+        "retry": { "mode": "none" },
+        "idempotency": { "mode": "none" },
+        "invalidation": { "mode": "none" },
+        "post_success": { "mode": "none" }
+      }
+    }
+  ]
+}
