@@ -252,15 +252,41 @@ bun run migrate:list-query -- \
 The command validates both inputs, refuses any v1/backend disagreement, writes
 one new file, and never overwrites an existing output. The versioned before,
 decisions, backend, and expected-after fixtures make the transformation
-reviewable without running the command. This is a migration boundary only:
-v2 has no production renderer or runtime yet and remains experimental.
+reviewable without running the command.
 
 The migration also compiles its result into one internal, target-neutral
 execution model before writing. That model resolves the query port, transport,
 strict wire decoder, read mapping, controller states, execution policies, and
 failure propagation once for every future target. Parameterized endpoints and
 nested wire models fail closed until a real second case proves their contract.
-No additional CLI or persisted intermediate file is introduced.
+No migration-specific journal or runtime is introduced.
+
+### Publish a list-query v2 output
+
+The existing `generate:list-query` command detects v1/v2 from the closed
+`schema_version`. V2 publishes the already-proven Angular and React sources
+through the same manifests, ownership, lock, journal, rollback and recovery
+protocol as the other generators:
+
+```bash
+bun run generate:list-query -- \
+  --definition tools/generator-platform/fixtures/site-group-select.v2.definition.json \
+  --out /tmp/generated-site-groups \
+  --target all
+```
+
+Creation requires an absent output path. To evolve an existing output, first
+review the read-only change set, then apply that exact identifier:
+
+```bash
+bun run generate:list-query -- --definition <v2.json> --out <directory> --target all --dry-run
+bun run generate:list-query -- --definition <v2.json> --out <directory> --target all --apply <change_set_id>
+```
+
+The v2 control plane contains the target-neutral execution model and artifact
+plan. The published sources are type-checked against declared workspace ports;
+unknown aliases fail closed. `angular-layered` remains a v1-only target. V2 is
+still experimental until a real N×N page composition consumes the publication.
 
 PLAT-2 adds two independent, fail-closed ingestion paths:
 

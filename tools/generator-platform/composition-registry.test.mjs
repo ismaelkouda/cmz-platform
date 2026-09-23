@@ -68,11 +68,11 @@ test('le registre réel est fermé, trié et fondé sur des preuves relisibles',
     );
     assert.match(
         registry.byKind['list-query'].maturityNote,
-        /removed cmz-client-landing-home POC \(rollback 6f70743\)/
+        /registry entry still describes the frozen v1 angular-layered path/
     );
     assert.match(
         registry.byKind['list-query'].maturityNote,
-        /requires a distinct active, non-retired case/
+        /requires one real N list-query \+ N action-request page composition/
     );
     assert.match(
         compositionSha256(registry.byKind['action-request']),

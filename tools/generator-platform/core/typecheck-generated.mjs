@@ -6,6 +6,47 @@ function normalize(path) {
     return resolve(path).replaceAll('\\', '/');
 }
 
+function workspaceModuleResolution(repositoryRoot) {
+    const configPath = resolve(repositoryRoot, 'tsconfig.base.json');
+    const loaded = ts.readConfigFile(configPath, ts.sys.readFile);
+    if (loaded.error) {
+        throw new Error(
+            `generated target typecheck cannot read ${configPath}: ${ts.flattenDiagnosticMessageText(loaded.error.messageText, '\n')}`
+        );
+    }
+    const parsed = ts.parseJsonConfigFileContent(
+        loaded.config,
+        ts.sys,
+        repositoryRoot,
+        {},
+        configPath
+    );
+    if (parsed.errors.length > 0) {
+        throw new Error(
+            `generated target typecheck cannot parse ${configPath}: ${ts.formatDiagnostics(
+                parsed.errors,
+                {
+                    getCanonicalFileName: (path) => path,
+                    getCurrentDirectory: () => repositoryRoot,
+                    getNewLine: () => '\n',
+                }
+            )}`
+        );
+    }
+    return {
+        paths: Object.fromEntries(
+            Object.entries(parsed.options.paths ?? {}).map(
+                ([alias, candidates]) => [
+                    alias,
+                    candidates.map((candidate) =>
+                        resolve(repositoryRoot, candidate)
+                    ),
+                ]
+            )
+        ),
+    };
+}
+
 export function typecheckGenerated(files, targetId, repositoryRoot) {
     const base = resolve(
         repositoryRoot,
@@ -18,6 +59,7 @@ export function typecheckGenerated(files, targetId, repositoryRoot) {
             .map(([path, content]) => [normalize(resolve(base, path)), content])
     );
     const options = {
+        ...workspaceModuleResolution(repositoryRoot),
         strict: true,
         noEmit: true,
         skipLibCheck: true,

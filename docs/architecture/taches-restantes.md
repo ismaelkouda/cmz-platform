@@ -2009,6 +2009,18 @@ Figma, désormais source partielle différée :
   runtime propriétaire. Restent : (1) publier durablement une sortie existante,
   puis (2) réaliser une page N `list-query` + N `action-request`. La capacité
   reste `experimental` jusque-là.
+  **C1n — publication durable `list-query` v2 engagée localement le
+  2026-09-23 :** l'unique commande `generate:list-query` auto-détecte v1/v2 et
+  publie Angular/React via le moteur transactionnel existant. Le plan v2 lie
+  exhaustivement les 5/6 fichiers au vrai modèle d'exécution ; le control plane
+  persiste ce modèle et non un faux semantic model v1. Le type-check de
+  publication résout les ports déclarés dans `tsconfig.base.json` mais refuse
+  un alias inconnu. Une preuve disque couvre création, 13 artefacts inchangés,
+  dry-run d'évolution sans écriture, apply par identifiant exact et suppression
+  des anciens fichiers. **210 lignes nettes de production**, aucun nouveau
+  module, schéma, CLI, journal, lock ou runtime ; ADR-0052. Reste désormais la
+  réalisation d'une page N `list-query` + N `action-request`, avant toute
+  promotion hors `experimental`.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

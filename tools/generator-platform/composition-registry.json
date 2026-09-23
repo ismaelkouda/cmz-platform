@@ -17,7 +17,7 @@
     {
       "kind": "list-query",
       "maturity": "experimental",
-      "maturity_note": "Experimental only: its sole evidence is the retained definition of the removed cmz-client-landing-home POC (rollback 6f70743); promotion to proven requires a distinct active, non-retired case.",
+      "maturity_note": "Experimental only: this registry entry still describes the frozen v1 angular-layered path. List-query v2 has active Angular/React runtime oracles and durable flat-target publication, but promotion still requires one real N list-query + N action-request page composition and its audited composition root.",
       "target": "angular-layered",
       "generator_script": "tools/generator-platform/generate-list-query.mjs",
       "layers": ["domain", "data"],

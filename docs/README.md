@@ -92,6 +92,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0049](./adr/0049-list-query-v2-angular-reutilise-le-runtime-host.md) | `list-query` v2 Angular réutilise le runtime du host     |
 | [0050](./adr/0050-list-query-v2-borne-path-et-tableau-enum.md) | `list-query` v2 borne le path et le tableau enum par un cas réel |
 | [0051](./adr/0051-list-query-v2-react-utilise-un-port-hote-explicite.md) | `list-query` v2 React utilise un port hôte explicite     |
+| [0052](./adr/0052-list-query-v2-reutilise-la-publication-transactionnelle.md) | `list-query` v2 réutilise la publication transactionnelle |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
