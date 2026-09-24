@@ -48,6 +48,20 @@ root n'est généré et aucun oracle n'observe encore les deux GET et le POST da
 un même host. Les constats et critères ci-dessous restent la baseline de
 contrôle pour C3 et C4.
 
+### Avancement C3 — 2026-09-24
+
+Le composition root Angular est désormais généré et publié avant toute UI.
+Chaque nœud du plan possède son propre répertoire et sa propre identité DI ; les
+sources et façades proviennent directement des renderers v2 existants. Un
+service de page et une liste de providers explicite sont les seuls fichiers de
+composition. Les contrats de page et de primitives sont relus par URI +
+SHA-256, les bindings host sont fermés et la négociation de capacités repose
+sur une allowlist Angular indépendante. ADR-0059 consigne la décision.
+
+Le verdict d'exécution reste volontairement ouvert : C3 prouve compilation et
+publication transactionnelle, pas l'émission conjointe des appels. C4 doit
+encore observer deux GET et un POST dans un host hermétique externe.
+
 ## Méthode et niveaux de preuve
 
 Les constats utilisent les mêmes niveaux que les deux audits précédents :

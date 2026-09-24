@@ -150,6 +150,35 @@ const catalogs = {
             'execution-controller',
         ]),
     ],
+    'page-execution-plan': [
+        generated('domain-model', 'domain'),
+        generated('input-validator', 'domain', ['domain-model']),
+        generated('response-decoder', 'domain', [
+            'domain-model',
+            'input-validator',
+        ]),
+        generated('integration-client', 'data', [
+            'domain-model',
+            'input-validator',
+            'response-decoder',
+        ]),
+        generated('execution-controller', 'application', [
+            'domain-model',
+            'integration-client',
+        ]),
+        generated('runtime-binding', 'application', [
+            'integration-client',
+            'execution-controller',
+        ]),
+        generated('public-api', 'per-layer', [
+            'domain-model',
+            'input-validator',
+            'response-decoder',
+            'integration-client',
+            'execution-controller',
+            'runtime-binding',
+        ]),
+    ],
 };
 
 function modelId(model, kind) {
@@ -160,6 +189,7 @@ function modelId(model, kind) {
         kind === 'action-request-execution-model'
     )
         return model.model_id;
+    if (kind === 'page-execution-plan') return model.plan_id;
     return `behavior:${model.domain?.id}`;
 }
 

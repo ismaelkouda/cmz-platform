@@ -378,6 +378,26 @@ its targets. A standalone replay validator checks the closed schema and the
 exact canonical capability union. No composition root or joint HTTP execution
 is claimed yet; those are the next C3/C4 proofs.
 
+C3 now materializes one Angular composition target from that plan. Each node is
+rendered through the already-proven v2 primitive renderer into its own
+`src/nodes/<node-id>` boundary, then a minimal `PageComposition` service and an
+explicit provider list wire the instances together. Host URL tokens come from
+a closed, versioned binding document; the renderer negotiates against an
+independent Angular capability allowlist and rechecks every referenced file and
+SHA-256 before rendering.
+
+The command reuses the existing transactional publisher:
+
+```bash
+bun run generate:page-composition --plan <plan.json> \
+  --host-bindings tools/generator-platform/fixtures/angular-page-host-bindings.json \
+  --out <directory> [--dry-run | --apply <change_set_id>]
+```
+
+The output deliberately contains no component or template. C3 proves a strict,
+published composition root; the external hermetic two-GET/one-POST execution
+oracle remains C4.
+
 PLAT-2 adds two independent, fail-closed ingestion paths:
 
 - `adapters/structured-spec-adapter.mjs` consumes the versioned JSON source in

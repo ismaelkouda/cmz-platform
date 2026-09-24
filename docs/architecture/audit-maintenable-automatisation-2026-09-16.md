@@ -657,6 +657,19 @@ publisher, renderer, runtime, cache, journal, verrou ou dépendance n'est ajout�
 Reste à générer le composition root puis à observer les deux GET et le POST dans
 un même host hermétique.
 
+Treizième incrément engagé le 2026-09-24 : C3 matérialise une cible Angular
+depuis le `page-execution-plan`. Chaque nœud réutilise son renderer v2 dans un
+répertoire isolé ; le composition root ajoute seulement un service de page, ses
+providers et son API publique. Les bindings host sont fermés, les capacités
+sont négociées contre une allowlist indépendante et toutes les références sont
+relues avec leurs SHA-256 avant le type-check strict.
+
+La commande `generate:page-composition` réutilise sans variante le publisher
+transactionnel existant. Le lot ajoute **654 lignes de production
+contractuelle**, sans nouveau runtime, transport, cache, journal, verrou ou
+publisher. ADR-0059 porte la revue de simplification. C4 reste le prochain
+incrément : oracle externe hermétique observant réellement deux GET et un POST.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/angular-page-host-bindings.schema.json",
+  "title": "CMZ Angular page composition host bindings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "services"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "angular-page-host-bindings" },
+    "services": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["module", "token"],
+        "properties": {
+          "module": {
+            "type": "string",
+            "pattern": "^[@A-Za-z0-9][@A-Za-z0-9._/-]*$"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+          }
+        }
+      }
+    }
+  }
+}

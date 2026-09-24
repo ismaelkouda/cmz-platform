@@ -19,7 +19,8 @@
             "behavior-model",
             "list-query-model",
             "list-query-execution-model",
-            "action-request-execution-model"
+            "action-request-execution-model",
+            "page-execution-plan"
           ]
         },
         "model_id": { "$ref": "#/$defs/id" },

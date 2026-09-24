@@ -2105,6 +2105,16 @@ Figma, désormais source partielle différée :
   schéma), aucun CLI, publisher, renderer, runtime, cache, journal, verrou ou
   dépendance ; ADR-0058. Restent C3, le composition root Angular minimal, puis
   C4, l'oracle hermétique observant deux GET et un POST.
+  **C3 — composition root Angular engagé localement le 2026-09-24 :** la cible
+  relit plan, contrat de page et modèles content-addressed, refuse toute dérive,
+  matérialise chaque primitive v2 sous son ID de nœud puis génère uniquement le
+  service de page, les providers et l'API publique. Les bindings host sont
+  fermés et les capacités négociées contre une allowlist indépendante. La
+  sortie type-checkée passe par la publication transactionnelle existante ;
+  création et dry-run stable sont prouvés. **654 lignes de production
+  contractuelle**, aucun composant UI, runtime, transport, cache, journal,
+  verrou ou publisher ajouté ; ADR-0059. Reste C4, l'oracle externe hermétique
+  observant réellement deux GET et un POST ainsi que les échecs partiels.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
