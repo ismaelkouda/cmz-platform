@@ -2036,6 +2036,25 @@ Figma, désormais source partielle différée :
   compilateur neutre `action-request` v2, (2) host/oracle Angular, (3) parité
   React, (4) publication durable ; le plan N×N vient ensuite, conformément à
   l'audit de composition.
+  **Direction produit ultérieure normalisée le 2026-09-23 :**
+  [`vision-produit-workbench-contractuel.md`](./vision-produit-workbench-contractuel.md)
+  conserve la projection d'un atelier assisté par IA : conversation de
+  conception, artefacts versionnés, aperçu isolé, diff, approbation et
+  publication contrôlée. Cette vision n'est ni une capacité actuelle ni un
+  chantier prioritaire concurrent. Son ordre reste : fermer `action-request`
+  v2, prouver le vertical slice N×N, puis seulement livrer un cockpit en lecture
+  seule avant toute proposition ou écriture assistée.
+  **C1p — compilateur neutre `action-request` v2 engagé localement le
+  2026-09-24 :** la définition et les octets backend sont résolus une seule fois
+  en port métier, payload wire, transport, réponse wire, résultat, politiques,
+  contrôleur et échecs. Le hash porte sur les octets réellement compilés ; une
+  action publique omet l'auth du host. La réussite distante forme une frontière
+  de commit : un effet local en échec produit `committed-with-local-error` et ne
+  peut relancer que cet effet, jamais la mutation distante. La migration appelle
+  le compilateur avant écriture. ADR-0054 accepte **1 777 lignes de production
+  v2**, trois modules et un schéma, sans renderer, runtime, CLI, journal ou
+  publication supplémentaires. Restent : (1) host/oracle Angular, (2) parité
+  React, (3) publication durable, puis le plan N×N.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

@@ -390,6 +390,10 @@ test('la commande écrit une seule sortie et refuse de l’écraser', async () =
             workspaceRoot: repositoryRoot,
         });
         assert.deepEqual(result.definition, expected);
+        assert.equal(
+            result.executionModel.kind,
+            'action-request-execution-model'
+        );
         await assert.rejects(
             migrateActionRequestFile({
                 definitionPath,

@@ -94,12 +94,16 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0051](./adr/0051-list-query-v2-react-utilise-un-port-hote-explicite.md) | `list-query` v2 React utilise un port hôte explicite     |
 | [0052](./adr/0052-list-query-v2-reutilise-la-publication-transactionnelle.md) | `list-query` v2 réutilise la publication transactionnelle |
 | [0053](./adr/0053-action-request-v2-reference-backend-et-decisions-execution.md) | `action-request` v2 référence le backend et explicite l'exécution |
+| [0054](./adr/0054-action-request-v2-modele-execution-commit-safe.md) | `action-request` v2 compile un modèle d'exécution à commit explicite |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
 
 ## Architecture
 
+- [Vision produit — Workbench contractuel assisté par IA](./architecture/vision-produit-workbench-contractuel.md)
+  — direction future, valeur utilisateur, frontières d'autorité et séquencement
+  sans confusion avec les capacités déjà prouvées
 - [État du socle](./architecture/etat-du-socle.md) — ce qui existe aujourd'hui
 - [Matrice de capacités de la plateforme](./architecture/generation-platform-capability-matrix.md)
   — sources, cibles et niveaux de preuve réellement atteints
