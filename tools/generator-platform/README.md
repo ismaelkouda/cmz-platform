@@ -363,6 +363,21 @@ not masquerade as a v1 semantic/evidence model. Layered targets remain v1-only.
 Unsupported neighboring shapes fail closed. The next proof is a real N×N page
 composition consuming both durable v2 primitives.
 
+The first C2 increment now compiles a target-neutral `page-execution-plan`
+directly from a content-addressed page contract and the published v2 execution
+models. It does not introduce a third business primitive or copy their runtime
+policies. Each query/command instance keeps its own local state and exact
+primitive reference; every output binding resolves to one explicit
+`producer_node_id`.
+
+The compiler proof uses two real list queries (including one route-parameter
+binding) and one real action request. It rejects stale hashes, missing or
+ambiguous primitives, weaker page access, incompatible controls, ambiguous
+producers, and caller-declared invalidation while product intent cannot name
+its targets. A standalone replay validator checks the closed schema and the
+exact canonical capability union. No composition root or joint HTTP execution
+is claimed yet; those are the next C3/C4 proofs.
+
 PLAT-2 adds two independent, fail-closed ingestion paths:
 
 - `adapters/structured-spec-adapter.mjs` consumes the versioned JSON source in

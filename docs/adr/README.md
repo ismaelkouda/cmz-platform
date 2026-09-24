@@ -91,4 +91,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0055](./0055-action-request-v2-angular-reutilise-le-host.md) | `action-request` v2 Angular réutilise le host réel       | Accepted |
 | [0056](./0056-action-request-v2-react-utilise-un-port-hote.md) | `action-request` v2 React utilise un port hôte explicite | Accepted |
 | [0057](./0057-action-request-v2-reutilise-la-publication-transactionnelle.md) | `action-request` v2 réutilise la publication transactionnelle | Accepted |
+| [0058](./0058-page-execution-plan-reference-les-primitives-v2.md) | Le plan de page référence les primitives v2 sans les recopier | Accepted |
 <!-- END:GENERATED:adr-index -->

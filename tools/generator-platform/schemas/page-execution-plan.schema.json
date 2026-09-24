@@ -1,0 +1,392 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/page-execution-plan.schema.json",
+  "title": "CMZ Target-neutral Page Execution Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "plan_id",
+    "source",
+    "page",
+    "required_capabilities",
+    "query_nodes",
+    "command_nodes",
+    "output_bindings"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "page-execution-plan" },
+    "plan_id": { "type": "string", "pattern": "^plan_[a-f0-9]{16}$" },
+    "source": { "$ref": "#/$defs/source" },
+    "page": { "$ref": "#/$defs/page" },
+    "required_capabilities": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "query_nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/queryNode" }
+    },
+    "command_nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/commandNode" }
+    },
+    "output_bindings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/outputBinding" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "pageId": { "type": "string", "pattern": "^page_[a-f0-9]{16}$" },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "uri": { "type": "string", "pattern": "^[A-Za-z0-9._/-]+$" },
+    "capability": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*(?:\\.[a-z0-9-]+)+@[1-9][0-9]*$"
+    },
+    "access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "permissions"],
+      "properties": {
+        "mode": { "enum": ["public", "authenticated", "authorized"] },
+        "permissions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page_contract"],
+      "properties": {
+        "page_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "uri",
+            "sha256",
+            "design_id",
+            "design_version",
+            "page_id"
+          ],
+          "properties": {
+            "uri": { "$ref": "#/$defs/uri" },
+            "sha256": { "$ref": "#/$defs/sha256" },
+            "design_id": { "$ref": "#/$defs/id" },
+            "design_version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+            },
+            "page_id": { "$ref": "#/$defs/pageId" }
+          }
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "access", "state_mode"],
+      "properties": {
+        "id": { "$ref": "#/$defs/pageId" },
+        "access": { "$ref": "#/$defs/access" },
+        "state_mode": { "const": "independent-nodes" }
+      }
+    },
+    "primitiveRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uri",
+        "sha256",
+        "kind",
+        "schema_version",
+        "model_id",
+        "operation_id"
+      ],
+      "properties": {
+        "uri": { "$ref": "#/$defs/uri" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "kind": {
+          "enum": [
+            "list-query-execution-model",
+            "action-request-execution-model"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "model_id": { "$ref": "#/$defs/id" },
+        "operation_id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "operationRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_id", "operation_id"],
+      "properties": {
+        "contract_id": { "$ref": "#/$defs/id" },
+        "operation_id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "primitiveType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": { "const": "primitive" },
+        "name": {
+          "enum": [
+            "boolean",
+            "date",
+            "datetime",
+            "decimal",
+            "integer",
+            "json",
+            "string",
+            "uuid"
+          ]
+        }
+      }
+    },
+    "sourceBinding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "ref"],
+          "properties": {
+            "kind": { "enum": ["route", "session", "constant", "device"] },
+            "ref": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "ref"],
+          "properties": {
+            "kind": { "const": "control" },
+            "ref": { "$ref": "#/$defs/id" }
+          }
+        }
+      ]
+    },
+    "parameterTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "in", "name"],
+      "properties": {
+        "kind": { "const": "backend-parameter" },
+        "in": { "enum": ["path", "query", "header"] },
+        "name": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "bodyTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": { "const": "body-field" },
+        "name": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "queryInputBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_field", "source", "target", "type"],
+      "properties": {
+        "input_field": { "$ref": "#/$defs/nonEmptyString" },
+        "source": { "$ref": "#/$defs/sourceBinding" },
+        "target": { "$ref": "#/$defs/parameterTarget" },
+        "type": { "$ref": "#/$defs/primitiveType" }
+      }
+    },
+    "commandInputBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_field", "source", "target", "type"],
+      "properties": {
+        "input_field": { "$ref": "#/$defs/nonEmptyString" },
+        "source": { "$ref": "#/$defs/sourceBinding" },
+        "target": { "$ref": "#/$defs/bodyTarget" },
+        "type": { "$ref": "#/$defs/primitiveType" }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["initial", "values"],
+      "properties": {
+        "initial": { "$ref": "#/$defs/id" },
+        "values": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "queryPresentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "loading_state_id",
+        "success_state_id",
+        "empty_state_id",
+        "error_state_id"
+      ],
+      "properties": {
+        "loading_state_id": { "$ref": "#/$defs/id" },
+        "success_state_id": { "$ref": "#/$defs/id" },
+        "empty_state_id": {
+          "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }]
+        },
+        "error_state_id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "commandPresentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available_in_state_ids",
+        "success_state_id",
+        "error_state_id"
+      ],
+      "properties": {
+        "available_in_state_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "success_state_id": { "$ref": "#/$defs/id" },
+        "error_state_id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "queryNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "primitive_ref",
+        "operation_ref",
+        "scope",
+        "trigger",
+        "input_bindings",
+        "state",
+        "presentation",
+        "capabilities"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "primitive_ref": { "$ref": "#/$defs/primitiveRef" },
+        "operation_ref": { "$ref": "#/$defs/operationRef" },
+        "scope": { "const": "page" },
+        "trigger": { "const": "page-enter" },
+        "input_bindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/queryInputBinding" }
+        },
+        "state": { "$ref": "#/$defs/state" },
+        "presentation": { "$ref": "#/$defs/queryPresentation" },
+        "capabilities": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capability" }
+        }
+      }
+    },
+    "commandNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "primitive_ref",
+        "operation_ref",
+        "scope",
+        "trigger",
+        "input_bindings",
+        "state",
+        "presentation",
+        "invalidates",
+        "capabilities"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "primitive_ref": { "$ref": "#/$defs/primitiveRef" },
+        "operation_ref": { "$ref": "#/$defs/operationRef" },
+        "scope": { "const": "page" },
+        "trigger": { "const": "user" },
+        "input_bindings": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/commandInputBinding" }
+        },
+        "state": { "$ref": "#/$defs/state" },
+        "presentation": { "$ref": "#/$defs/commandPresentation" },
+        "invalidates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "capabilities": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capability" }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "model_id", "fields"],
+      "properties": {
+        "kind": { "enum": ["list", "result"] },
+        "model_id": { "$ref": "#/$defs/id" },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "outputBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "producer_node_id",
+        "output",
+        "presentation_state_ids"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "producer_node_id": { "$ref": "#/$defs/id" },
+        "output": { "$ref": "#/$defs/output" },
+        "presentation_state_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    }
+  }
+}
