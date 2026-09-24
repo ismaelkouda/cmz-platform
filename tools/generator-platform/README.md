@@ -313,11 +313,19 @@ one new file with exclusive-create semantics, and is idempotent when given a
 valid v2 input. The initial v2 subset is deliberately narrow: JSON mutations
 with no parameters and primitive object fields. Unsupported shapes fail closed.
 
+Before writing, the command also compiles the definition and exact backend
+bytes into one internal, target-neutral execution model. That model keeps the
+business input, request DTO, response DTO and result projection separate,
+resolves public authentication to `omit`, and records the remote-success commit
+boundary. A host-side failure after that boundary becomes
+`committed-with-local-error`; only the local post-success effect may be retried,
+never the already-committed remote mutation.
+
 `forgot-password.v2.definition.json` is the first active-code contract proof.
 It is traced to the Angular client, endpoint, DTO, envelope, interceptor, and
 test configuration sources. Its status means “implemented client observation,”
-not “server verified live.” No v2 compiler, renderer, runtime, or publisher is
-claimed by this increment; those gates remain required before N×N composition.
+not “server verified live.” No v2 renderer, host oracle or publisher is claimed
+by this increment; those gates remain required before N×N composition.
 
 PLAT-2 adds two independent, fail-closed ingestion paths:
 

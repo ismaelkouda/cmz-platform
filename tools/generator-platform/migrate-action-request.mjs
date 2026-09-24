@@ -7,6 +7,7 @@ import {
     validateBackendContract,
     verifyBackendContractSnapshots,
 } from './core/backend-contract.mjs';
+import { compileActionRequestV2ExecutionModel } from './core/action-request-v2-compiler.mjs';
 import { migrateActionRequestV1Definition } from './core/action-request-v2.mjs';
 import {
     loadJson,
@@ -144,10 +145,15 @@ export async function migrateActionRequestFile({
         'invalid migrated action-request definition',
         validateJsonSchema(migrated, v2Schema)
     );
+    const executionModel = compileActionRequestV2ExecutionModel({
+        definition: migrated,
+        backendContractDocument: backendDocument.content,
+        backendContractUri,
+    });
     await writeFile(absoluteOutput, `${JSON.stringify(migrated, null, 2)}\n`, {
         flag: 'wx',
     });
-    return { output: absoluteOutput, definition: migrated };
+    return { output: absoluteOutput, definition: migrated, executionModel };
 }
 
 function usage() {

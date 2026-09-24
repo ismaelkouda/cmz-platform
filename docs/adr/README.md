@@ -87,4 +87,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0051](./0051-list-query-v2-react-utilise-un-port-hote-explicite.md) | `list-query` v2 React utilise un port hôte explicite     | Accepted |
 | [0052](./0052-list-query-v2-reutilise-la-publication-transactionnelle.md) | `list-query` v2 réutilise la publication transactionnelle | Accepted |
 | [0053](./0053-action-request-v2-reference-backend-et-decisions-execution.md) | `action-request` v2 référence le backend et explicite l'exécution | Accepted |
+| [0054](./0054-action-request-v2-modele-execution-commit-safe.md) | `action-request` v2 compile un modèle d'exécution à commit explicite | Accepted |
 <!-- END:GENERATED:adr-index -->

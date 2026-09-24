@@ -578,6 +578,21 @@ Il n'ajoute ni renderer, runtime, cache, journal, verrou, LLM ou publication.
 compilateur neutre, son host/oracle Angular, la parité React et sa publication ;
 le `page-execution-plan` ne commence qu'après ces contrats runtime stabilisés.
 
+Huitième incrément engagé le 2026-09-24 : `action-request` v2 compile désormais
+la définition et les octets backend exacts vers un modèle d'exécution neutre.
+Le modèle sépare port métier, payload wire, transport, réponse wire, résultat,
+authentification, contrôleur et échecs. L'accès public résout l'authentification
+à `omit` ; les accès protégés conservent les schémas exacts fournis par le host.
+
+La réussite distante est une frontière de commit : un effet local qui échoue
+ensuite produit `committed-with-local-error`, autorise uniquement
+`retry-post-success` et interdit de rejouer la mutation distante. La migration
+compile désormais avant d'écrire. La surface v2 atteint **1 777 lignes de
+production** (+636), trois modules exécutables et un schéma. ADR-0054 consigne
+la revue obligatoire ; aucun renderer, runtime, nouveau CLI, journal, lock,
+cache ou modèle persistant n'est ajouté. Restent le host/oracle Angular, la
+parité React et la publication durable avant le plan composé.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement
