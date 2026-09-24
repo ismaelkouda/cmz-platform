@@ -324,8 +324,21 @@ never the already-committed remote mutation.
 `forgot-password.v2.definition.json` is the first active-code contract proof.
 It is traced to the Angular client, endpoint, DTO, envelope, interceptor, and
 test configuration sources. Its status means “implemented client observation,”
-not “server verified live.” No v2 renderer, host oracle or publisher is claimed
-by this increment; those gates remain required before N×N composition.
+not “server verified live.”
+
+The Angular target now renders six ordinary TypeScript artifacts from that same
+compiled model: models, input validation, strict response decoder, HTTP client,
+execution facade, and public API. The generated code is formatted, type-checked,
+then executed with Angular `TestBed`, `HttpTestingController`, and the host's
+real auth/error interceptors. Public execution uses the host's exported
+`SKIP_AUTH` token, so it neither invents a private token nor leaks the session
+Bearer. Invalid input fails before HTTP; unknown response fields fail before the
+domain result; duplicate submission is rejected without disturbing the active
+request.
+
+This renderer deliberately supports only the active `forgot-password` shape.
+React parity and durable publication remain required before N×N composition;
+unsupported neighboring shapes fail closed.
 
 PLAT-2 adds two independent, fail-closed ingestion paths:
 

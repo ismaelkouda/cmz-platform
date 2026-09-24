@@ -2055,6 +2055,19 @@ Figma, désormais source partielle différée :
   v2**, trois modules et un schéma, sans renderer, runtime, CLI, journal ou
   publication supplémentaires. Restent : (1) host/oracle Angular, (2) parité
   React, (3) publication durable, puis le plan N×N.
+  **C1q — host/oracle Angular `action-request` v2 engagé localement le
+  2026-09-24 :** le cas actif `forgot-password` est rendu en six artefacts
+  Angular ordinaires, compilé puis exécuté avec `TestBed`, le vrai
+  `HttpClient`, les vrais intercepteurs auth/erreur et les tokens publics du
+  host. La validation refuse les entrées invalides avant HTTP ; l'action
+  publique ne transporte aucun Bearer ; payload, enveloppe, DTO wire et
+  résultat sont séparés et décodés strictement. Le contrôleur couvre succès,
+  erreurs typées, remise à zéro du résultat et rejet d'une double soumission
+  sans perturber la requête en vol. Les formes voisines restent fermées.
+  ADR-0055 mesure **2 436 lignes de production v2**, six modules exécutables et
+  le schéma auteur, sans runtime, CLI, cache, journal, verrou ou publication
+  supplémentaires. Restent : (1) parité React, (2) publication durable, puis le
+  plan N×N. La capacité reste `experimental`.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

@@ -18,7 +18,8 @@
             "semantic-model",
             "behavior-model",
             "list-query-model",
-            "list-query-execution-model"
+            "list-query-execution-model",
+            "action-request-execution-model"
           ]
         },
         "model_id": { "$ref": "#/$defs/id" },

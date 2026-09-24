@@ -88,4 +88,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0052](./0052-list-query-v2-reutilise-la-publication-transactionnelle.md) | `list-query` v2 réutilise la publication transactionnelle | Accepted |
 | [0053](./0053-action-request-v2-reference-backend-et-decisions-execution.md) | `action-request` v2 référence le backend et explicite l'exécution | Accepted |
 | [0054](./0054-action-request-v2-modele-execution-commit-safe.md) | `action-request` v2 compile un modèle d'exécution à commit explicite | Accepted |
+| [0055](./0055-action-request-v2-angular-reutilise-le-host.md) | `action-request` v2 Angular réutilise le host réel       | Accepted |
 <!-- END:GENERATED:adr-index -->

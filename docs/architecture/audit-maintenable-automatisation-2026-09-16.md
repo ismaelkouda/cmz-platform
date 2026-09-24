@@ -593,6 +593,22 @@ la revue obligatoire ; aucun renderer, runtime, nouveau CLI, journal, lock,
 cache ou modèle persistant n'est ajouté. Restent le host/oracle Angular, la
 parité React et la publication durable avant le plan composé.
 
+Neuvième incrément engagé le 2026-09-24 : `forgot-password` traverse désormais
+le modèle neutre, un renderer Angular borné et le runtime réel du host. Les six
+artefacts générés sont formatés, type-checkés et exécutés sous Angular 22 avec
+`TestBed`, `HttpTestingController`, les intercepteurs auth/erreur et les tokens
+publics du workspace. La validation précède HTTP, l'action publique omet le
+Bearer, le payload et la réponse sont stricts, et le contrôleur refuse une
+double soumission sans perturber la commande active.
+
+La surface v2 atteint **2 436 lignes de production** (+659 en comptant les 25
+lignes nettes du catalogue/schema d'artefacts), six modules exécutables et le
+schéma auteur. ADR-0055 consigne la revue : aucun runtime, CLI, journal, verrou,
+cache ou format persistant supplémentaire ; la sortie reste du code Angular
+ordinaire et l'oracle est éphémère. Toutes les formes non requises par le cas
+actif échouent fermées. Restent la parité React et la publication durable avant
+le `page-execution-plan` N×N.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement
