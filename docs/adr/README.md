@@ -92,4 +92,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0056](./0056-action-request-v2-react-utilise-un-port-hote.md) | `action-request` v2 React utilise un port hôte explicite | Accepted |
 | [0057](./0057-action-request-v2-reutilise-la-publication-transactionnelle.md) | `action-request` v2 réutilise la publication transactionnelle | Accepted |
 | [0058](./0058-page-execution-plan-reference-les-primitives-v2.md) | Le plan de page référence les primitives v2 sans les recopier | Accepted |
+| [0059](./0059-composition-angular-materialise-les-noeuds-du-plan.md) | La composition Angular matérialise les nœuds du plan avant l'UI | Accepted |
 <!-- END:GENERATED:adr-index -->
