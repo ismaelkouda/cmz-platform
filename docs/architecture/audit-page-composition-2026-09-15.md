@@ -29,18 +29,24 @@ d'archétype fail-closed et vrais oracles Angular sur la fixture mono-action.
 L'audit sépare ces garanties réelles de la claim plus large « N requêtes + N
 commandes fonctionnent ensemble dans une page ».
 
-### Avancement sans réécriture de l'audit — 2026-09-23
+### Avancement sans réécriture de l'audit — 2026-09-24
 
-Le lot C1 progresse dans l'ordre prescrit. `list-query` v2 est compilé, prouvé
-sur Angular et React puis publié durablement. La première tranche
-`action-request` v2 ferme désormais sa frontière auteur et sa migration contre
-un backend content-addressed ; elle possède une preuve versionnée `support` et
-une preuve de contrat issue du cas actif `forgot-password`.
+Le lot C1 est fermé : `list-query` v2 et `action-request` v2 sont compilés,
+prouvés sur Angular et React puis publiés durablement avec les mêmes primitives
+transactionnelles.
 
-Ces avancées ne changent pas le verdict N×N : `action-request` v2 n'a pas encore
-de compilateur, renderer, oracle host ni publication. C2 reste donc bloqué par
-C1 et aucun `page-execution-plan` n'est introduit prématurément. Les constats et
-critères ci-dessous sont conservés comme baseline de contrôle.
+Le premier incrément C2 compile désormais un `page-execution-plan` 1.0 depuis
+le contrat de page et les modèles v2 content-addressed. La preuve contient deux
+queries, dont une paramétrée, une commande, des états locaux indépendants, des
+bindings vers un `producer_node_id` et une négociation de capacités
+fail-closed. Les ambiguïtés par opération et l'invalidation ciblée encore
+inexprimable dans `application-design` 1.0 sont refusées. ADR-0058 consigne la
+décision.
+
+Ce progrès ne change pas encore le verdict d'exécution N×N : aucun composition
+root n'est généré et aucun oracle n'observe encore les deux GET et le POST dans
+un même host. Les constats et critères ci-dessous restent la baseline de
+contrôle pour C3 et C4.
 
 ## Méthode et niveaux de preuve
 

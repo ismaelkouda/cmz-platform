@@ -641,6 +641,22 @@ consigne la revue : aucun module, schéma, CLI, renderer, runtime, journal,
 verrou, cache ou abstraction de commandes supplémentaire. Le prochain travail
 est le `page-execution-plan` et son composition root N×N.
 
+Douzième incrément engagé le 2026-09-24 : le premier lot C2 compile un
+`page-execution-plan` target-neutral depuis le contrat de page et les modèles
+v2 content-addressed. Chaque query et commande devient une instance stable avec
+son état local, ses inputs typés et sa primitive exacte. Chaque sortie nomme son
+`producer_node_id` ; une référence par opération ambiguë échoue fermée. L'union
+canonique des capacités fournit la future négociation avec le host.
+
+La preuve assemble deux queries réelles, dont une paramétrée, et une commande
+réelle. Elle couvre aussi replay indépendant, hash périmé, primitive absente,
+accès insuffisant, producteur ambigu et invalidation inexprimable. Le lot ajoute
+**1 141 lignes de production contractuelle** : un cœur de 749 lignes et un
+schéma de 392 lignes. ADR-0058 consigne la revue obligatoire. Aucun CLI,
+publisher, renderer, runtime, cache, journal, verrou ou dépendance n'est ajouté.
+Reste à générer le composition root puis à observer les deux GET et le POST dans
+un même host hermétique.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

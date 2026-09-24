@@ -2093,6 +2093,18 @@ Figma, désormais source partielle différée :
   verrou ou cache ; ADR-0057. `action-request` v2 atteint **2 859 lignes de
   production** et reste `experimental` jusqu'au vertical slice N×N, désormais
   prochain chantier.
+  **C2a — premier `page-execution-plan` engagé localement le 2026-09-24 :** le
+  planner consomme le contrat de page et les modèles v2 par URI + SHA-256, puis
+  produit des instances de query/commande à états locaux indépendants. Deux
+  queries réelles, dont une paramétrée, et une commande réelle sont jointes par
+  backend/opération ; inputs, accès, permissions, types et hashes sont vérifiés.
+  Chaque sortie reçoit un `producer_node_id` explicite et l'union canonique des
+  capacités est négociable fail-closed. Replay, producteur ambigu, primitive
+  absente, accès trop faible, hash périmé et invalidation non exprimable sont
+  couverts. **1 141 lignes de production contractuelle** (749 cœur + 392
+  schéma), aucun CLI, publisher, renderer, runtime, cache, journal, verrou ou
+  dépendance ; ADR-0058. Restent C3, le composition root Angular minimal, puis
+  C4, l'oracle hermétique observant deux GET et un POST.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

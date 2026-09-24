@@ -98,6 +98,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0055](./adr/0055-action-request-v2-angular-reutilise-le-host.md) | `action-request` v2 Angular réutilise le host réel       |
 | [0056](./adr/0056-action-request-v2-react-utilise-un-port-hote.md) | `action-request` v2 React utilise un port hôte explicite |
 | [0057](./adr/0057-action-request-v2-reutilise-la-publication-transactionnelle.md) | `action-request` v2 réutilise la publication transactionnelle |
+| [0058](./adr/0058-page-execution-plan-reference-les-primitives-v2.md) | Le plan de page référence les primitives v2 sans les recopier |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
