@@ -86,6 +86,24 @@ const [
 ]);
 const sourceKey = target === 'angular' ? 'angular' : 'react';
 const targetRoot = resolve(outputRoot, target);
+let pageComposition;
+if (target === 'angular') {
+    const [fixtureSupport, pageCompositionTargets] = await Promise.all([
+        import('./page-composition.fixture.mjs'),
+        import('./page-composition-targets.mjs'),
+    ]);
+    const fixture = await fixtureSupport.createPageCompositionFixture();
+    try {
+        pageComposition =
+            await pageCompositionTargets.computeAngularPageCompositionTarget({
+                plan: fixture.plan,
+                artifactRoot: fixture.root,
+                hostBindings: fixtureSupport.angularPageHostBindings,
+            });
+    } finally {
+        await rm(fixture.root, { recursive: true, force: true });
+    }
+}
 const runtimeConfigurationFiles =
     target === 'angular'
         ? {
@@ -161,6 +179,14 @@ await Promise.all([
         resolve(targetRoot, 'action-request-v2'),
         actionRequestV2.files
     ),
+    ...(pageComposition
+        ? [
+              writeTargetFiles(
+                  resolve(targetRoot, 'page-composition-v2'),
+                  pageComposition.angular.files
+              ),
+          ]
+        : []),
     writeTargetFiles(resolve(targetRoot, 'behavior-graph'), behaviorGraphFiles),
     writeTargetFiles(
         resolve(targetRoot, 'presentation-flow'),
