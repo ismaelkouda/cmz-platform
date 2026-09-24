@@ -10,6 +10,7 @@ import {
     inspectGenerationChangeSet,
 } from './core/generation-publication.mjs';
 import { canonicalizeControlFiles } from './core/canonicalize-generated.mjs';
+import { computeActionRequestV2Targets } from './action-request-v2-targets.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
 import {
     loadJson,
@@ -103,20 +104,7 @@ function jsonDocument(value) {
     return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-export async function generateActionRequest({
-    definitionPath,
-    outputRoot,
-    target = 'all',
-    dryRun = false,
-    applyChangeSetId,
-}) {
-    if (dryRun && applyChangeSetId) {
-        throw new Error('dryRun and applyChangeSetId are mutually exclusive');
-    }
-    const absoluteDefinition = resolve(definitionPath);
-    const absoluteOutput = resolve(outputRoot);
-    const content = await readFile(absoluteDefinition);
-    const definition = JSON.parse(content.toString('utf8'));
+async function prepareV1Generation({ definition, content, target }) {
     const [definitionSchema, evidenceSchema, semanticSchema] =
         await Promise.all([
             loadJson(schemaPaths.definition),
@@ -129,13 +117,11 @@ export async function generateActionRequest({
             `invalid action-request definition:\n${definitionErrors.join('\n')}`
         );
     }
-    const sourceUri = relative(repositoryRoot, absoluteDefinition).replaceAll(
-        '\\',
-        '/'
-    );
     const compiled = compileActionRequestDefinition(definition, {
-        sourceUri,
-        sourceSha256: createHash('sha256').update(content).digest('hex'),
+        sourceUri: relative(repositoryRoot, content.path).replaceAll('\\', '/'),
+        sourceSha256: createHash('sha256')
+            .update(content.document)
+            .digest('hex'),
     });
     const evidenceErrors = await validateEvidence(
         compiled.evidence,
@@ -157,7 +143,6 @@ export async function generateActionRequest({
     }
 
     const targets = await computeTargetsForSemantic(compiled.semantic);
-    const normalizedTarget = target === 'react' ? 'reactjs' : target;
     // Table de correspondance target CLI -> clé interne de render-targets.mjs
     // (targets.*). 'angular'/'reactjs' restent nommés différemment en
     // interne (angular/react) pour des raisons historiques — les 6 clés
@@ -165,26 +150,26 @@ export async function generateActionRequest({
     // traduction à maintenir en double quand de nouvelles couches
     // arriveront, ex. workflow-action).
     const flatSelection =
-        normalizedTarget === 'all'
+        target === 'all'
             ? { angular: targets.angular, reactjs: targets.react }
-            : normalizedTarget === 'angular'
+            : target === 'angular'
               ? { angular: targets.angular }
-              : normalizedTarget === 'reactjs'
+              : target === 'reactjs'
                 ? { reactjs: targets.react }
                 : {};
     const layeredSelection =
-        normalizedTarget === 'all-layered'
+        target === 'all-layered'
             ? Object.fromEntries(
                   layeredTargetValues.map((id) => [id, targets[id]])
               )
-            : normalizedTarget === 'angular-layered'
+            : target === 'angular-layered'
               ? Object.fromEntries(
                     layeredTargetValues
                         .filter((id) => id.startsWith('angular-'))
                         .map((id) => [id, targets[id]])
                 )
-              : layeredTargetValues.includes(normalizedTarget)
-                ? { [normalizedTarget]: targets[normalizedTarget] }
+              : layeredTargetValues.includes(target)
+                ? { [target]: targets[target] }
                 : {};
     const selected = { ...flatSelection, ...layeredSelection };
     if (Object.keys(selected).length === 0) {
@@ -194,59 +179,137 @@ export async function generateActionRequest({
     // (tous calculés depuis le même compiled.semantic), pas seulement
     // 'angular' — utile pour --target react-domain (ou toute sélection
     // n'incluant pas la sortie plate Angular).
-    const referenceSha256 = Object.values(selected)[0].manifest.input.sha256;
-    const controlFiles = await canonicalizeControlFiles({
-        'artifact-plan.json': {
-            artifact_id: 'artifact-plan',
-            content: jsonDocument(targets.artifactPlan),
-        },
-        'evidence-model.json': {
-            artifact_id: 'evidence-model',
-            content: jsonDocument(compiled.evidence),
-        },
-        'semantic-model.json': {
-            artifact_id: 'semantic-model',
-            content: jsonDocument(compiled.semantic),
-        },
+    const modelSha256 = Object.values(selected)[0].manifest.input.sha256;
+    return {
+        selected,
+        controlFiles: await canonicalizeControlFiles({
+            'artifact-plan.json': {
+                artifact_id: 'artifact-plan',
+                content: jsonDocument(targets.artifactPlan),
+            },
+            'evidence-model.json': {
+                artifact_id: 'evidence-model',
+                content: jsonDocument(compiled.evidence),
+            },
+            'semantic-model.json': {
+                artifact_id: 'semantic-model',
+                content: jsonDocument(compiled.semantic),
+            },
+        }),
+        modelKind: 'semantic-model',
+        modelSha256,
+        legacyHash: { semanticSha256: modelSha256 },
+    };
+}
+
+async function prepareV2Generation({
+    definitionPath,
+    definitionDocument,
+    target,
+}) {
+    if (!['all', 'angular', 'reactjs'].includes(target)) {
+        throw new Error(
+            `action-request v2 does not support --target ${target}; use angular, reactjs, or all`
+        );
+    }
+    const targets = await computeActionRequestV2Targets({
+        definitionPath,
+        definitionDocument,
     });
+    const selected =
+        target === 'all'
+            ? { angular: targets.angular, reactjs: targets.react }
+            : target === 'angular'
+              ? { angular: targets.angular }
+              : { reactjs: targets.react };
+    const modelSha256 = Object.values(selected)[0].manifest.input.sha256;
+    return {
+        selected,
+        controlFiles: await canonicalizeControlFiles({
+            'artifact-plan.json': {
+                artifact_id: 'artifact-plan',
+                content: jsonDocument(targets.artifactPlan),
+            },
+            'action-request-execution-model.json': {
+                artifact_id: 'action-request-execution-model',
+                content: jsonDocument(targets.model),
+            },
+        }),
+        modelKind: 'action-request-execution-model',
+        modelSha256,
+        legacyHash: { executionModelSha256: modelSha256 },
+    };
+}
+
+export async function generateActionRequest({
+    definitionPath,
+    outputRoot,
+    target = 'all',
+    dryRun = false,
+    applyChangeSetId,
+}) {
+    if (dryRun && applyChangeSetId) {
+        throw new Error('dryRun and applyChangeSetId are mutually exclusive');
+    }
+    const absoluteDefinition = resolve(definitionPath);
+    const absoluteOutput = resolve(outputRoot);
+    const content = await readFile(absoluteDefinition);
+    const definition = JSON.parse(content.toString('utf8'));
+    const normalizedTarget = target === 'react' ? 'reactjs' : target;
+    if (!['1.0.0', '2.0.0'].includes(definition.schema_version)) {
+        throw new Error(
+            `unsupported action-request definition schema_version ${definition.schema_version ?? '<missing>'}`
+        );
+    }
+    const prepared =
+        definition.schema_version === '2.0.0'
+            ? await prepareV2Generation({
+                  definitionPath: absoluteDefinition,
+                  definitionDocument: content,
+                  target: normalizedTarget,
+              })
+            : await prepareV1Generation({
+                  definition,
+                  content: { path: absoluteDefinition, document: content },
+                  target: normalizedTarget,
+              });
+    const commonResult = {
+        feature: definition.feature.id,
+        outputRoot: absoluteOutput,
+        targets: Object.keys(prepared.selected),
+        modelKind: prepared.modelKind,
+        modelSha256: prepared.modelSha256,
+        ...prepared.legacyHash,
+    };
     if (dryRun) {
         return {
-            feature: definition.feature.id,
-            outputRoot: absoluteOutput,
-            targets: Object.keys(selected),
-            semanticSha256: referenceSha256,
+            ...commonResult,
             changeSet: await inspectGenerationChangeSet({
                 outputRoot: absoluteOutput,
-                targets: selected,
-                controlFiles,
+                targets: prepared.selected,
+                controlFiles: prepared.controlFiles,
             }),
         };
     }
     if (applyChangeSetId) {
         const publication = await applyGenerationChangeSet({
             outputRoot: absoluteOutput,
-            targets: selected,
-            controlFiles,
+            targets: prepared.selected,
+            controlFiles: prepared.controlFiles,
             expectedChangeSetId: applyChangeSetId,
         });
         return {
-            feature: definition.feature.id,
-            outputRoot: absoluteOutput,
-            targets: Object.keys(selected),
-            semanticSha256: referenceSha256,
+            ...commonResult,
             publication,
         };
     }
     const publication = await createGenerationOutput({
         outputRoot: absoluteOutput,
-        targets: selected,
-        controlFiles,
+        targets: prepared.selected,
+        controlFiles: prepared.controlFiles,
     });
     return {
-        feature: definition.feature.id,
-        outputRoot: absoluteOutput,
-        targets: Object.keys(selected),
-        semanticSha256: referenceSha256,
+        ...commonResult,
         publication,
     };
 }
@@ -278,7 +341,7 @@ async function main() {
         );
         console.log(`  change set: ${result.publication.change_set_id}`);
         console.log(`  targets: ${result.targets.join(', ')}`);
-        console.log(`  semantic sha256: ${result.semanticSha256}`);
+        console.log(`  ${result.modelKind} sha256: ${result.modelSha256}`);
         console.log(`  output: ${result.outputRoot}`);
         if (result.publication.recovery_pending) {
             console.warn(

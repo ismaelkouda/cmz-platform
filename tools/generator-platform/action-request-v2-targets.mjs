@@ -94,8 +94,8 @@ async function readBackendDocument(uri) {
     return readFile(canonicalPath);
 }
 
-async function computeModel(definitionPath) {
-    const definitionDocument = await readFile(definitionPath);
+async function computeModel(definitionPath, definitionDocument) {
+    definitionDocument ??= await readFile(definitionPath);
     const definition = JSON.parse(definitionDocument.toString('utf8'));
     const [backendSchema, definitionSchema] = await Promise.all([
         loadJson(BACKEND_SCHEMA),
@@ -167,9 +167,13 @@ async function materializeReactTarget(model, artifactPlan) {
 
 export async function computeActionRequestV2Targets({
     definitionPath = DEFAULT_DEFINITION,
+    definitionDocument,
     hostBindings = cmzAngularActionRequestHostBindings,
 } = {}) {
-    const { definition, model } = await computeModel(definitionPath);
+    const { definition, model } = await computeModel(
+        definitionPath,
+        definitionDocument
+    );
     const artifactPlan = buildArtifactPlan(
         model,
         'action-request-execution-model'

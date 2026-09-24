@@ -124,6 +124,16 @@ bun run generate:action-request \
   --target all
 ```
 
+Pour la v2 adossée à un contrat backend content-addressed, la commande reste la
+même :
+
+```bash
+bun run generate:action-request -- \
+  --definition tools/generator-platform/fixtures/forgot-password.v2.definition.json \
+  --out /tmp/generated-forgot-password \
+  --target all
+```
+
 Valeurs possibles de `--target` :
 
 - `angular` pour Angular (sortie plate historique) ;
@@ -142,6 +152,10 @@ inversement. Un appelant existant utilisant `--target all` continue de
 recevoir exactement `angular/` et `reactjs/`, sans changement de portée.
 Les couches doivent être demandées explicitement avec l'une des 7 valeurs
 dédiées.
+
+Les cibles en couches appartiennent uniquement à la v1. Une définition v2
+accepte `angular`, `reactjs`/`react` ou `all` et refuse les valeurs `layered`
+avant toute écriture.
 
 Sans option de régénération, le dossier indiqué par `--out` doit être nouveau.
 Une sortie existante exige d'abord `--dry-run`, puis l'option explicite
@@ -163,6 +177,12 @@ reactjs/                             package ReactJS généré
   generation-manifest.json          hashes, ownership et politiques ReactJS
   src/after-success.extension.ts     code humain appelé après un succès
 ```
+
+Pour une définition v2, les deux premiers modèles v1 sont remplacés par le vrai
+`action-request-execution-model.json`. Le plan, les manifests et le protocole de
+publication restent identiques ; la v2 ne crée aucun slot humain
+`after-success.extension.ts` tant que cette politique n'est pas prouvée par un
+cas actif.
 
 Avec un `--target` en couches (`all-layered` ou une couche unique), les
 fichiers de contrôle communs (`evidence-model.json`, `semantic-model.json`,
@@ -235,9 +255,9 @@ copie candidate, conserve les deux extensions humaines, compile Angular et
 ReactJS, puis publie sous verrou exclusif. Un journal synchronisé permet de
 restaurer l'ancienne sortie ou de vérifier la nouvelle à la prochaine tentative
 de publication après une interruption. La sortie doit rester inactive pendant la
-commande et ne peut être remise aux consommateurs qu'après son succès. La v1
-accepte uniquement APFS/macOS et ext4/Linux locaux ; tout autre stockage est
-refusé avant écriture.
+commande et ne peut être remise aux consommateurs qu'après son succès. La
+publication accepte uniquement APFS/macOS et ext4/Linux locaux ; tout autre
+stockage est refusé avant écriture.
 
 ### Ajouter un traitement après succès
 
