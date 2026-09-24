@@ -670,6 +670,21 @@ contractuelle**, sans nouveau runtime, transport, cache, journal, verrou ou
 publisher. ADR-0059 porte la revue de simplification. C4 reste le prochain
 incrément : oracle externe hermétique observant réellement deux GET et un POST.
 
+Quatorzième incrément engagé le 2026-09-24 : C4 instancie exactement la sortie
+C3 depuis un spec Angular externe. Le host réel fournit DI, `HttpClient` et les
+intercepteurs auth/erreur/cache ; seul le backend réseau est remplacé par
+`HttpTestingController`, sans socket ni secret. Cinq scénarios observent deux
+GET et un POST, l'isolation d'une panne partielle, le retry ciblé, les
+annulations `latest-wins` et à la destruction, ainsi que le rejet du double
+submit sans invalidation cachée.
+
+Le lot ajoute **zéro ligne de runtime de production**. La fixture C3 volumineuse
+a seulement été déplacée vers un support de test partagé ; le raccord reste
+dans le préparateur de tests natifs existant. Aucun transport, orchestrateur,
+cache, schéma, publisher, journal, verrou ou dépendance n'est ajouté. ADR-0060
+porte la revue. Les politiques positives encore fermées ne sont pas simulées :
+C5 reste le vertical slice représentatif, puis C6 la promotion humaine.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

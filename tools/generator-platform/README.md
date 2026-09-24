@@ -395,8 +395,17 @@ bun run generate:page-composition --plan <plan.json> \
 ```
 
 The output deliberately contains no component or template. C3 proves a strict,
-published composition root; the external hermetic two-GET/one-POST execution
-oracle remains C4.
+published composition root.
+
+C4 now prepares that exact output for the native Angular stack suite and tests
+it from an external consumer. The hermetic host observes two GET requests and
+one POST together, including URL, payload, auth, cache bypass, isolated partial
+failure, targeted retry, latest-wins and destroy cancellation, and double-submit
+rejection. The oracle imports no generator internals and adds no production
+runtime. Policies currently declared as `none` (automatic retry, invalidation,
+idempotency key and post-success effect) are verified as absent rather than
+invented. Angular remains the only composition target proven at runtime; C5 is
+the representative vertical slice.
 
 PLAT-2 adds two independent, fail-closed ingestion paths:
 

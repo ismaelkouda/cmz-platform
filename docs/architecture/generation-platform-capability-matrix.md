@@ -72,7 +72,7 @@ produit jamais directement des chemins ou classes d'une cible.
 | Reprise après interruption             | matrice CI APFS/ext4 verte 2026-08-17                                              |   M3   |
 | Extension humaine typée                | `after-success`, runtime + conservation par hash, CI verte                         |   M4   |
 | Garde runtime de permissions           | Angular + ReactJS, refus avant effet externe, CI verte                             |   M4   |
-| Réalisation d'écran multi-nœuds indép. | nœud `screen` porte N `load`/`data_binding`, invariant conception + `multi-node-screen.test.mjs` + 2 mutants, CI verte ; oracle Angular réel à venir avec la 1re app multi-nœuds (PLAT-9, ADR-0045) |   M3   |
+| Réalisation d'écran multi-nœuds indép. | plan content-addressed + composition root Angular publié ; oracle externe hermétique 2 GET + 1 POST, panne partielle, retry, annulation et double submit (ADR-0045/0058/0059/0060) ; vertical slice UI et parité React encore absents |   M3   |
 | Repair sous contraintes                | méthode documentée, partiellement exercée                                          |   M2   |
 
 `docs/architecture/patterns/pattern-core.schema.json` est un profil structurel

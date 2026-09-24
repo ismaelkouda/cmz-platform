@@ -62,6 +62,22 @@ Le verdict d'exécution reste volontairement ouvert : C3 prouve compilation et
 publication transactionnelle, pas l'émission conjointe des appels. C4 doit
 encore observer deux GET et un POST dans un host hermétique externe.
 
+### Avancement C4 — 2026-09-24
+
+Un oracle Vitest externe instancie désormais la sortie C3 dans un vrai contexte
+DI Angular et observe ensemble deux GET et un POST via le backend HTTP de test
+hermétique. Il vérifie URLs, payload, auth, cache, états locaux, panne partielle,
+retry ciblé, annulation `latest-wins`, annulation à la destruction et double
+submit. Le spec n'importe aucun cœur du générateur et les fichiers générés ne
+connaissent pas leur oracle. ADR-0060 consigne la décision.
+
+Le blocker « composition exécutable multi-nœuds » est donc fermé pour
+l'enveloppe Angular actuellement supportée. Cela ne vaut pas promotion
+production : invalidation, idempotency key, retry automatique et effet local
+post-succès sont déclarés `none` par ce plan et seulement prouvés absents. La
+parité React, le vertical slice représentatif, l'UI/a11y et la revue humaine
+C5/C6 restent dus.
+
 ## Méthode et niveaux de preuve
 
 Les constats utilisent les mêmes niveaux que les deux audits précédents :
@@ -524,6 +540,10 @@ composants réseau estimés                           : 81
 composants réseau avec au moins 2 façades           : 26 (~32 %)
 mutants application-design supplémentaires          : acceptations reproduites
 workspace après probes temporaires                  : propre
+C4 externe Angular ciblé                            : 5/5 tests verts
+C4 appels observés dans un même composition root    : 2 GET + 1 POST
+C4 panne partielle/retry/cancellation/double submit : reproduits
+C4 runtime de production ajouté                     : 0 ligne
 ```
 
 Les avertissements Nx sur les sockets du sandbox ont déclenché son fallback en
@@ -532,14 +552,14 @@ exécutés. Ils ne changent pas le périmètre mono-action de la fixture.
 
 ## Conclusion Staff
 
-Le dépôt possède une excellente enveloppe de conception et de publication,
-mais il confond encore **transport de métadonnées multi-nœuds** et **composition
-exécutable multi-nœuds**. Le prochain chantier ne doit pas embellir le test
-actuel ni ajouter des IDs : il doit fermer la chaîne runtime, donner une
-identité et un état à chaque nœud, externaliser l'oracle et sécuriser
-l'exécution du code réalisé.
+La distinction centrale de l'audit est maintenant fermée sur Angular : la
+plateforme ne transporte plus seulement des métadonnées multi-nœuds, elle
+compile, publie, instancie et exécute réellement deux queries et une commande
+indépendantes dans un même composition root. L'oracle externe démontre qu'une
+panne ou une annulation locale ne détruit pas les nœuds sains.
 
-L'ordre rationnel reste : stabiliser les deux primitives, compiler un plan de
-page target-neutral, générer le composition root, puis seulement reproduire un
-vertical slice SEOS comme preuve. Toute promotion antérieure serait une claim
-non soutenue par l'Oracle.
+La capacité reste néanmoins `experimental`. Le prochain chantier rationnel est
+C5 : reproduire un vertical slice représentatif depuis les contrats génériques,
+avec UI, accessibilité et parité comportementale mesurée. Les politiques
+positives non supportées ne doivent pas être ajoutées pour embellir C4 ; elles
+exigeront leur propre intention produit, contrat fail-closed et oracle.

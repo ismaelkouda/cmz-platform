@@ -2115,6 +2115,17 @@ Figma, désormais source partielle différée :
   contractuelle**, aucun composant UI, runtime, transport, cache, journal,
   verrou ou publisher ajouté ; ADR-0059. Reste C4, l'oracle externe hermétique
   observant réellement deux GET et un POST ainsi que les échecs partiels.
+  **C4 — oracle externe Angular engagé localement le 2026-09-24 :** le
+  préparateur natif matérialise désormais cette sortie C3 exacte et un spec
+  Vitest extérieur au code généré l'instancie par les providers publics. Cinq
+  scénarios observent deux GET et un POST avec URL, payload, auth et cache,
+  puis panne partielle, retry ciblé, annulations `latest-wins`/destruction et
+  double submit. Les politiques `none` restent absentes et observables : aucun
+  retry automatique, idempotency key, invalidation ou effet post-succès n'est
+  inventé. **Zéro ligne de runtime de production**, aucun nouveau transport,
+  orchestrateur, cache, schéma, publisher, journal, verrou ou dépendance ;
+  ADR-0060. Restent C5, le vertical slice représentatif avec UI/a11y, puis C6,
+  la promotion humaine et la fermeture éventuelle de l'issue #64.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
