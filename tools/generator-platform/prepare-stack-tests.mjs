@@ -12,7 +12,10 @@ import {
     computeAngularListQueryV2Target,
     computeReactListQueryV2Target,
 } from './list-query-v2-targets.mjs';
-import { computeAngularActionRequestV2Target } from './action-request-v2-targets.mjs';
+import {
+    computeAngularActionRequestV2Target,
+    computeReactActionRequestV2Target,
+} from './action-request-v2-targets.mjs';
 import { renderBehaviorGraphEngine } from './renderers/behavior-graph-renderer.mjs';
 import {
     renderAngularBehaviorGraphService,
@@ -39,6 +42,10 @@ const computeListQueryV2Target =
     target === 'angular'
         ? computeAngularListQueryV2Target
         : computeReactListQueryV2Target;
+const computeActionRequestV2Target =
+    target === 'angular'
+        ? computeAngularActionRequestV2Target
+        : computeReactActionRequestV2Target;
 
 async function writeTargetFiles(root, files) {
     for (const [relativePath, content] of Object.entries(files)) {
@@ -75,9 +82,7 @@ const [
             'fixtures/tasks-actions-processing-type.v2.definition.json'
         ),
     }),
-    target === 'angular'
-        ? computeAngularActionRequestV2Target()
-        : Promise.resolve(undefined),
+    computeActionRequestV2Target(),
 ]);
 const sourceKey = target === 'angular' ? 'angular' : 'react';
 const targetRoot = resolve(outputRoot, target);
@@ -152,14 +157,10 @@ await Promise.all([
         resolve(targetRoot, 'list-query-v2-tasks-actions-processing-type'),
         parameterizedListQueryV2.files
     ),
-    ...(actionRequestV2
-        ? [
-              writeTargetFiles(
-                  resolve(targetRoot, 'action-request-v2'),
-                  actionRequestV2.files
-              ),
-          ]
-        : []),
+    writeTargetFiles(
+        resolve(targetRoot, 'action-request-v2'),
+        actionRequestV2.files
+    ),
     writeTargetFiles(resolve(targetRoot, 'behavior-graph'), behaviorGraphFiles),
     writeTargetFiles(
         resolve(targetRoot, 'presentation-flow'),

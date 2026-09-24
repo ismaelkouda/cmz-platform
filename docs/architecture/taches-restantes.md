@@ -2068,6 +2068,19 @@ Figma, désormais source partielle différée :
   le schéma auteur, sans runtime, CLI, cache, journal, verrou ou publication
   supplémentaires. Restent : (1) parité React, (2) publication durable, puis le
   plan N×N. La capacité reste `experimental`.
+  **C1r — parité React `action-request` v2 engagée localement le 2026-09-24 :**
+  `forgot-password` est désormais rendu depuis le même modèle et le même plan
+  que la cible Angular. Le client transmet service, URL, méthode, headers,
+  politique `omit` et payload à un port host explicite ; il ne crée ni fetch,
+  auth, Bearer ou configuration parallèle. Le hook React réel couvre validation
+  avant transport, résultat, erreurs typées, statut exact et double soumission.
+  Au démontage, il arrête les mises à jour React sans prétendre annuler la
+  mutation distante. L'arrivée du second renderer extrait seulement modèles,
+  validation, décodage et contrôle fail-closed ; transports et lifecycles
+  restent séparés. ADR-0056 mesure **2 792 lignes de production v2** (+356
+  nettes), huit modules exécutables et le schéma auteur, sans nouveau runtime,
+  CLI, journal, verrou ou cache. Reste la publication durable avant le plan N×N.
+  La capacité reste `experimental`.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

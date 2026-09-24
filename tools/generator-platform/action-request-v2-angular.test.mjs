@@ -114,7 +114,7 @@ test('refuse les capacités Angular sans oracle actif', () => {
                 }),
                 cmzAngularActionRequestHostBindings
             ),
-        /proven public host-auth omission/
+        /proven public auth omission/
     );
 
     assert.throws(
@@ -125,7 +125,7 @@ test('refuse les capacités Angular sans oracle actif', () => {
                 }),
                 cmzAngularActionRequestHostBindings
             ),
-        /execution policy without an Angular oracle/
+        /execution policy without an oracle/
     );
 
     assert.throws(
@@ -149,7 +149,7 @@ test('refuse les capacités Angular sans oracle actif', () => {
                 }),
                 cmzAngularActionRequestHostBindings
             ),
-        /proven required email validation/
+        /proven email validation/
     );
 });
 

@@ -337,8 +337,16 @@ domain result; duplicate submission is rejected without disturbing the active
 request.
 
 This renderer deliberately supports only the active `forgot-password` shape.
-React parity and durable publication remain required before N×N composition;
-unsupported neighboring shapes fail closed.
+The React target now consumes the same compiled model and artifact plan. Its
+client delegates service resolution, transport, and authentication policy to an
+explicit host port; it does not call a global fetch or create authentication.
+The generated hook runs with real React primitives, rejects concurrent submit,
+and stops publishing state after unmount without claiming that the remote
+mutation was cancelled. Models, validation, and decoding are shared only at
+renderer level; Angular and React keep separate clients and lifecycles.
+
+Durable publication remains required before N×N composition. Unsupported
+neighboring shapes fail closed.
 
 PLAT-2 adds two independent, fail-closed ingestion paths:
 

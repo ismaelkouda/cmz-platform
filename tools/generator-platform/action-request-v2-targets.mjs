@@ -14,6 +14,7 @@ import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
 import { buildGenerationManifest } from './core/generation-manifest.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularActionRequestV2 } from './renderers/angular-action-request-v2-renderer.mjs';
+import { renderReactActionRequestV2 } from './renderers/react-action-request-v2-renderer.mjs';
 import {
     loadJson,
     repositoryRoot,
@@ -34,6 +35,10 @@ const DEFINITION_SCHEMA = new URL(
 );
 const ANGULAR_PROFILE = new URL(
     './profiles/angular-nx.profile.json',
+    import.meta.url
+);
+const REACT_PROFILE = new URL(
+    './profiles/react-typescript.profile.json',
     import.meta.url
 );
 
@@ -140,6 +145,42 @@ async function materializeAngularTarget(model, artifactPlan, hostBindings) {
     };
 }
 
+async function materializeReactTarget(model, artifactPlan) {
+    const profile = await loadJson(REACT_PROFILE);
+    const rendered = renderReactActionRequestV2(model);
+    const files = await canonicalizeGeneratedFiles(rendered.files);
+    const bound = bindRenderedArtifacts(artifactPlan, files, {
+        'src/index.ts': 'public-api',
+        [`src/${rendered.actionId}.client.ts`]: 'integration-client',
+        [`src/${rendered.actionId}.decoder.ts`]: 'response-decoder',
+        [`src/use-${rendered.actionId}.ts`]: 'execution-controller',
+        'src/models.ts': 'domain-model',
+        'src/validation.ts': 'input-validator',
+    });
+    typecheckGenerated(bound.files, profile.id, repositoryRoot);
+    return {
+        ...rendered,
+        ...bound,
+        manifest: buildGenerationManifest(model, artifactPlan, profile, bound),
+    };
+}
+
+export async function computeActionRequestV2Targets({
+    definitionPath = DEFAULT_DEFINITION,
+    hostBindings = cmzAngularActionRequestHostBindings,
+} = {}) {
+    const { definition, model } = await computeModel(definitionPath);
+    const artifactPlan = buildArtifactPlan(
+        model,
+        'action-request-execution-model'
+    );
+    const [angular, react] = await Promise.all([
+        materializeAngularTarget(model, artifactPlan, hostBindings),
+        materializeReactTarget(model, artifactPlan),
+    ]);
+    return { definition, model, artifactPlan, angular, react };
+}
+
 export async function computeAngularActionRequestV2Target({
     definitionPath = DEFAULT_DEFINITION,
     hostBindings = cmzAngularActionRequestHostBindings,
@@ -154,5 +195,21 @@ export async function computeAngularActionRequestV2Target({
         model,
         artifactPlan,
         ...(await materializeAngularTarget(model, artifactPlan, hostBindings)),
+    };
+}
+
+export async function computeReactActionRequestV2Target({
+    definitionPath = DEFAULT_DEFINITION,
+} = {}) {
+    const { definition, model } = await computeModel(definitionPath);
+    const artifactPlan = buildArtifactPlan(
+        model,
+        'action-request-execution-model'
+    );
+    return {
+        definition,
+        model,
+        artifactPlan,
+        ...(await materializeReactTarget(model, artifactPlan)),
     };
 }
