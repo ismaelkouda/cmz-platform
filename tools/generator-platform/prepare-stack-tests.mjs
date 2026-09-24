@@ -12,6 +12,7 @@ import {
     computeAngularListQueryV2Target,
     computeReactListQueryV2Target,
 } from './list-query-v2-targets.mjs';
+import { computeAngularActionRequestV2Target } from './action-request-v2-targets.mjs';
 import { renderBehaviorGraphEngine } from './renderers/behavior-graph-renderer.mjs';
 import {
     renderAngularBehaviorGraphService,
@@ -55,6 +56,7 @@ const [
     listQueryV2,
     publicListQueryV2,
     parameterizedListQueryV2,
+    actionRequestV2,
 ] = await Promise.all([
     computeTargets(),
     computeEvolvableCompositionTargets(),
@@ -73,6 +75,9 @@ const [
             'fixtures/tasks-actions-processing-type.v2.definition.json'
         ),
     }),
+    target === 'angular'
+        ? computeAngularActionRequestV2Target()
+        : Promise.resolve(undefined),
 ]);
 const sourceKey = target === 'angular' ? 'angular' : 'react';
 const targetRoot = resolve(outputRoot, target);
@@ -147,6 +152,14 @@ await Promise.all([
         resolve(targetRoot, 'list-query-v2-tasks-actions-processing-type'),
         parameterizedListQueryV2.files
     ),
+    ...(actionRequestV2
+        ? [
+              writeTargetFiles(
+                  resolve(targetRoot, 'action-request-v2'),
+                  actionRequestV2.files
+              ),
+          ]
+        : []),
     writeTargetFiles(resolve(targetRoot, 'behavior-graph'), behaviorGraphFiles),
     writeTargetFiles(
         resolve(targetRoot, 'presentation-flow'),

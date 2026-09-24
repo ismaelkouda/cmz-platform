@@ -125,13 +125,36 @@ const catalogs = {
             'execution-controller',
         ]),
     ],
+    'action-request-execution-model': [
+        generated('domain-model', 'domain'),
+        generated('input-validator', 'domain', ['domain-model']),
+        generated('response-decoder', 'domain', ['domain-model']),
+        generated('integration-client', 'data', [
+            'domain-model',
+            'input-validator',
+            'response-decoder',
+        ]),
+        generated('execution-controller', 'application', [
+            'domain-model',
+            'input-validator',
+            'integration-client',
+        ]),
+        generated('public-api', 'per-layer', [
+            'domain-model',
+            'input-validator',
+            'response-decoder',
+            'integration-client',
+            'execution-controller',
+        ]),
+    ],
 };
 
 function modelId(model, kind) {
     if (
         kind === 'semantic-model' ||
         kind === 'list-query-model' ||
-        kind === 'list-query-execution-model'
+        kind === 'list-query-execution-model' ||
+        kind === 'action-request-execution-model'
     )
         return model.model_id;
     return `behavior:${model.domain?.id}`;
