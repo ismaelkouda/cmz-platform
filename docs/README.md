@@ -96,6 +96,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0053](./adr/0053-action-request-v2-reference-backend-et-decisions-execution.md) | `action-request` v2 référence le backend et explicite l'exécution |
 | [0054](./adr/0054-action-request-v2-modele-execution-commit-safe.md) | `action-request` v2 compile un modèle d'exécution à commit explicite |
 | [0055](./adr/0055-action-request-v2-angular-reutilise-le-host.md) | `action-request` v2 Angular réutilise le host réel       |
+| [0056](./adr/0056-action-request-v2-react-utilise-un-port-hote.md) | `action-request` v2 React utilise un port hôte explicite |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

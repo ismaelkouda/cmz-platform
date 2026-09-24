@@ -609,6 +609,22 @@ ordinaire et l'oracle est éphémère. Toutes les formes non requises par le cas
 actif échouent fermées. Restent la parité React et la publication durable avant
 le `page-execution-plan` N×N.
 
+Dixième incrément engagé le 2026-09-24 : `action-request` v2 possède désormais
+une cible React issue du même modèle compilé et du même plan qu'Angular. Faute
+de host React réel dans le dépôt, le client délègue transport, URL et
+authentification à un port explicite. Le hook React réel prouve validation avant
+transport, payload et réponse stricts, résultat, erreurs, statut exact et rejet
+de la double soumission.
+
+Une mutation n'est volontairement pas présentée comme annulable au démontage :
+le hook cesse seulement ses mises à jour React et laisse la promesse retourner
+le résultat au caller. L'arrivée du second renderer extrait modèles, validation,
+décodage et garde fail-closed, mais pas les lifecycles ni les transports. La
+surface v2 atteint **2 792 lignes de production** (+356 nettes), huit modules
+exécutables et un schéma. ADR-0056 consigne la revue ; aucun runtime, schéma,
+CLI, journal, verrou ou cache supplémentaire n'est ajouté. Reste la publication
+durable avant le `page-execution-plan` N×N.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

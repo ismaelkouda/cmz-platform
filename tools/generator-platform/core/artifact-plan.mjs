@@ -128,7 +128,10 @@ const catalogs = {
     'action-request-execution-model': [
         generated('domain-model', 'domain'),
         generated('input-validator', 'domain', ['domain-model']),
-        generated('response-decoder', 'domain', ['domain-model']),
+        generated('response-decoder', 'domain', [
+            'domain-model',
+            'input-validator',
+        ]),
         generated('integration-client', 'data', [
             'domain-model',
             'input-validator',
