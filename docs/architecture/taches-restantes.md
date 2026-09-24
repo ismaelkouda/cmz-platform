@@ -2041,9 +2041,9 @@ Figma, désormais source partielle différée :
   conserve la projection d'un atelier assisté par IA : conversation de
   conception, artefacts versionnés, aperçu isolé, diff, approbation et
   publication contrôlée. Cette vision n'est ni une capacité actuelle ni un
-  chantier prioritaire concurrent. Son ordre reste : fermer `action-request`
-  v2, prouver le vertical slice N×N, puis seulement livrer un cockpit en lecture
-  seule avant toute proposition ou écriture assistée.
+  chantier prioritaire concurrent. `action-request` v2 étant désormais fermé,
+  son ordre est : prouver le vertical slice N×N, puis seulement livrer un
+  cockpit en lecture seule avant toute proposition ou écriture assistée.
   **C1p — compilateur neutre `action-request` v2 engagé localement le
   2026-09-24 :** la définition et les octets backend sont résolus une seule fois
   en port métier, payload wire, transport, réponse wire, résultat, politiques,
@@ -2081,6 +2081,18 @@ Figma, désormais source partielle différée :
   nettes), huit modules exécutables et le schéma auteur, sans nouveau runtime,
   CLI, journal, verrou ou cache. Reste la publication durable avant le plan N×N.
   La capacité reste `experimental`.
+  **C1s — publication durable `action-request` v2 engagée localement le
+  2026-09-24 :** l'unique commande `generate:action-request` détecte désormais
+  v1/v2 et publie les sorties Angular/React v2 via le moteur transactionnel
+  existant. Le control plane persiste le vrai modèle d'exécution et son plan,
+  jamais les modèles v1. La preuve disque couvre création, 14 artefacts
+  inchangés, dry-run sans écriture, évolution limitée aux deux contrôles et
+  apply par identifiant exact ; les cibles `layered` et versions inconnues sont
+  refusées avant écriture. **67 lignes nettes de production** dans deux modules
+  existants, aucun nouveau module, schéma, CLI, renderer, runtime, journal,
+  verrou ou cache ; ADR-0057. `action-request` v2 atteint **2 859 lignes de
+  production** et reste `experimental` jusqu'au vertical slice N×N, désormais
+  prochain chantier.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

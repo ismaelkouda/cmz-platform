@@ -345,8 +345,23 @@ and stops publishing state after unmount without claiming that the remote
 mutation was cancelled. Models, validation, and decoding are shared only at
 renderer level; Angular and React keep separate clients and lifecycles.
 
-Durable publication remains required before N×N composition. Unsupported
-neighboring shapes fail closed.
+The existing `generate:action-request` command detects v1/v2 from the closed
+`schema_version`. V2 publishes both proven targets with the existing manifests,
+ownership, lock, journal, rollback, and recovery protocol:
+
+```bash
+bun run generate:action-request -- \
+  --definition tools/generator-platform/fixtures/forgot-password.v2.definition.json \
+  --out /tmp/generated-forgot-password \
+  --target all
+```
+
+An existing output requires the same reviewed `--dry-run` then
+`--apply <change_set_id>` flow as v1 and `list-query` v2. The v2 control plane
+contains `artifact-plan.json` and `action-request-execution-model.json`; it does
+not masquerade as a v1 semantic/evidence model. Layered targets remain v1-only.
+Unsupported neighboring shapes fail closed. The next proof is a real N×N page
+composition consuming both durable v2 primitives.
 
 PLAT-2 adds two independent, fail-closed ingestion paths:
 

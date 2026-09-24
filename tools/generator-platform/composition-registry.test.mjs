@@ -56,24 +56,17 @@ test('le registre réel est fermé, trié et fondé sur des preuves relisibles',
         registry.entries.map(({ kind }) => kind),
         ['action-request', 'list-query']
     );
-    assert.equal(registry.byKind['action-request'].maturity, 'experimental');
-    assert.equal(registry.byKind['list-query'].maturity, 'experimental');
-    assert.match(
-        registry.byKind['action-request'].maturityNote,
-        /2026-09-15 Staff audit.*production blockers/
-    );
-    assert.match(
-        registry.byKind['action-request'].maturityNote,
-        /requires action-request 2\.0.*migration path/
-    );
-    assert.match(
-        registry.byKind['list-query'].maturityNote,
-        /registry entry still describes the frozen v1 angular-layered path/
-    );
-    assert.match(
-        registry.byKind['list-query'].maturityNote,
-        /requires one real N list-query \+ N action-request page composition/
-    );
+    for (const kind of ['action-request', 'list-query']) {
+        assert.equal(registry.byKind[kind].maturity, 'experimental');
+        assert.match(
+            registry.byKind[kind].maturityNote,
+            /registry entry still describes the frozen v1 angular-layered path/
+        );
+        assert.match(
+            registry.byKind[kind].maturityNote,
+            /requires one real N list-query \+ N action-request page composition/
+        );
+    }
     assert.match(
         compositionSha256(registry.byKind['action-request']),
         /^[a-f0-9]{64}$/

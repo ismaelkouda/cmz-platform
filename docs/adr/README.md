@@ -90,4 +90,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0054](./0054-action-request-v2-modele-execution-commit-safe.md) | `action-request` v2 compile un modèle d'exécution à commit explicite | Accepted |
 | [0055](./0055-action-request-v2-angular-reutilise-le-host.md) | `action-request` v2 Angular réutilise le host réel       | Accepted |
 | [0056](./0056-action-request-v2-react-utilise-un-port-hote.md) | `action-request` v2 React utilise un port hôte explicite | Accepted |
+| [0057](./0057-action-request-v2-reutilise-la-publication-transactionnelle.md) | `action-request` v2 réutilise la publication transactionnelle | Accepted |
 <!-- END:GENERATED:adr-index -->

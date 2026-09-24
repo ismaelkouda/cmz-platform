@@ -4,7 +4,7 @@
     {
       "kind": "action-request",
       "maturity": "experimental",
-      "maturity_note": "Experimental only: generation and isolated runtime behavior are reproducible, but the 2026-09-15 Staff audit found production blockers in host authentication, mandatory runtime validation, transport fidelity, idempotency, post-commit state, and query invalidation. Production adoption requires action-request 2.0 and its audited migration path.",
+      "maturity_note": "Experimental only: this registry entry still describes the frozen v1 angular-layered path. Action-request v2 has active Angular/React runtime oracles and durable flat-target publication, but promotion still requires one real N list-query + N action-request page composition and its audited composition root.",
       "target": "angular-layered",
       "generator_script": "tools/generator-platform/generate-action-request.mjs",
       "layers": ["domain", "data", "application"],

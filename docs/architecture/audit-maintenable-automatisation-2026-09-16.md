@@ -625,6 +625,22 @@ exécutables et un schéma. ADR-0056 consigne la revue ; aucun runtime, schéma,
 CLI, journal, verrou ou cache supplémentaire n'est ajouté. Reste la publication
 durable avant le `page-execution-plan` N×N.
 
+Onzième incrément engagé le 2026-09-24 : `action-request` v2 est désormais
+publié par l'unique commande `generate:action-request` et les primitives
+transactionnelles existantes. La sélection v1/v2 repose sur le
+`schema_version`; la v2 persiste son vrai modèle d'exécution et son plan, puis
+matérialise Angular et React avec le même hash d'entrée. Les sorties v1 plates
+et en couches restent inchangées ; les cibles v2 en couches échouent fermées.
+
+La preuve disque couvre création, stabilité exacte de 14 artefacts, dry-run
+sans écriture et application d'une évolution par son identifiant relu. La
+définition est lue une seule fois, ce qui évite une divergence entre détection
+de version et compilation. L'incrément ajoute **67 lignes nettes de production**
+dans deux modules existants ; la surface v2 atteint **2 859 lignes**. ADR-0057
+consigne la revue : aucun module, schéma, CLI, renderer, runtime, journal,
+verrou, cache ou abstraction de commandes supplémentaire. Le prochain travail
+est le `page-execution-plan` et son composition root N×N.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement
