@@ -63,6 +63,12 @@ Elle comporte quatre espaces reliés :
 4. **Livraison** — diff, approbation, application transactionnelle, historique
    et publication.
 
+Une référence visuelle ne transite pas comme une instruction libre. Figma, une
+capture, un wireframe ou un futur outil est d'abord figé dans une preuve de
+présentation générique, locale et adressée par contenu. La conversation peut
+expliquer ou annoter cette preuve ; elle ne peut ni modifier son autorité
+`presentation-only`, ni en déduire une permission ou un comportement métier.
+
 Le parcours nominal est :
 
 ```text
@@ -88,6 +94,8 @@ contrats du moteur sous des objets compréhensibles :
 - `plan` : opérations prévues et surfaces touchées ;
 - `run` : exécution reproductible d'un plan ;
 - `artifact` : contrat, code, preuve ou diagnostic versionné ;
+- `presentation evidence` : snapshots visuels, tokens, composants et
+  annotations approuvés pour une page exacte ;
 - `review` : décision humaine traçable ;
 - `release` : révision effectivement publiée.
 
@@ -189,6 +197,8 @@ rester utilisable sans IA quand le modèle est indisponible.
   gouverne la transformation future du langage naturel en définition candidate.
 - [ADR-0039](../adr/0039-frontiere-contractuelle-conception-realisation-llm.md)
   fixe la frontière de confiance entre conception, LLM et réalisation.
+- [ADR-0066](../adr/0066-preuve-presentation-bornee-pour-realisation-llm.md)
+  borne la preuve visuelle et son autorité de présentation.
 - [ADR-0033](../adr/0033-propriete-artefacts-regeneration-non-destructive.md) et
   [ADR-0035](../adr/0035-contrat-durabilite-publication-generation.md)
   gouvernent la propriété et la publication des artefacts.

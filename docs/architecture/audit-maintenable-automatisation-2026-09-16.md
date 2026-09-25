@@ -802,6 +802,19 @@ runtime partagé ou dépendance n'est ajouté. Restent le composant visible, la
 permission `create`, les notifications, la fermeture/conservation du formulaire
 et l'accessibilité ; ADR-0065.
 
+Vingt-et-unième incrément C5g-0/1 engagé le 2026-09-25 : la réalisation UI
+reste déléguée au LLM sans introduire de renderer visuel universel. Un contrat
+fermé `presentation-evidence` fige toute référence de présentation locale par
+type, taille et SHA-256, la lie à une page et à ses états exacts, et lui impose
+l'autorité `presentation-only` ainsi que le statut `untrusted-content`.
+
+Le work order passe en `2.0.0` et incorpore la preuve ou l'absence explicite de
+preuve dans son identité content-addressed. Préparation et vérification refusent
+une preuve brouillon, étrangère, ambiguë, symbolique, modifiée ou mal typée.
+Zéro adaptateur Figma, dépendance, runtime UI ou choix esthétique n'est ajouté.
+Restent une référence visuelle C5 approuvée, la page Angular ordinaire,
+l'oracle comportemental/a11y puis la comparaison visuelle ; ADR-0066.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

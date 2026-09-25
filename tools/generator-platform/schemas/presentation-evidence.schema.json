@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/presentation-evidence.schema.json",
+  "title": "CMZ Presentation Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "presentation_id",
+    "page_id",
+    "status",
+    "authority",
+    "sources"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "presentation-evidence" },
+    "presentation_id": {
+      "type": "string",
+      "pattern": "^presentation_[a-f0-9]{16}$"
+    },
+    "page_id": { "type": "string", "pattern": "^page_[a-f0-9]{16}$" },
+    "status": { "const": "approved" },
+    "authority": { "const": "presentation-only" },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "viewport": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height", "pixel_ratio"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1, "maximum": 8192 },
+            "height": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16384
+            },
+            "pixel_ratio": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 4
+            }
+          }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_kind",
+        "purpose",
+        "snapshot_uri",
+        "media_type",
+        "bytes",
+        "sha256",
+        "trust",
+        "state_ids",
+        "viewport"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source_kind": {
+          "enum": [
+            "structured-design",
+            "screenshot",
+            "wireframe",
+            "rendered-interface",
+            "design-system",
+            "component-map",
+            "annotation",
+            "design-brief"
+          ]
+        },
+        "purpose": {
+          "enum": [
+            "primary-layout",
+            "responsive-layout",
+            "state-reference",
+            "tokens",
+            "component-reuse",
+            "feedback"
+          ]
+        },
+        "snapshot_uri": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "media_type": {
+          "enum": [
+            "application/json",
+            "image/jpeg",
+            "image/png",
+            "text/markdown"
+          ]
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5242880
+        },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "trust": { "const": "untrusted-content" },
+        "state_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "viewport": { "$ref": "#/$defs/viewport" }
+      }
+    }
+  }
+}

@@ -2185,6 +2185,17 @@ Figma, désormais source partielle différée :
   dépendance, transport, cache ou bus ajouté. Restent la page Angular ordinaire,
   la permission `create`, les notifications, la fermeture/conservation du
   formulaire et l'accessibilité. ADR-0065.
+  **C5g-0/1 — frontière visuelle et preuve de présentation engagées localement
+  le 2026-09-25 :** la réalisation de l'UI reste confiée à un LLM, mais une
+  référence Figma, capture ou wireframe n'a que l'autorité
+  `presentation-only`. Le nouveau manifeste fermé `presentation-evidence`
+  borne type, taille, média, page, états, viewport et SHA-256 de chaque source,
+  toutes marquées `untrusted-content`. Le work order `2.0.0` lie ces ressources
+  à son identité ; prepare/verify refusent brouillon, page/état étrangers,
+  symlink, dérive et média invalide. Sans référence, l'absence est explicite et
+  aucune fidélité visuelle n'est revendiquée. Zéro dépendance ou runtime ajouté.
+  Restent une vraie référence C5 approuvée, la page Angular, permission,
+  notifications, fermeture/conservation, a11y et oracle visuel. ADR-0066.
   Le rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
   devront recevoir un discriminateur et un oracle lors d'un cas réel, sans

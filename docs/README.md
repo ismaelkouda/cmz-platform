@@ -106,6 +106,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0063](./adr/0063-list-query-page-react-reutilise-le-port-hote.md) | La page `list-query` React réutilise le port hôte        |
 | [0064](./adr/0064-invalidation-locale-nommee-apres-succes-distant.md) | L’invalidation locale est nommée et suit le succès distant |
 | [0065](./adr/0065-composition-c5-utilisateurs-sur-contrats-observes.md) | Composer C5 sur les trois contrats utilisateurs observés |
+| [0066](./adr/0066-preuve-presentation-bornee-pour-realisation-llm.md) | Lier une preuve de présentation bornée à la réalisation LLM |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
