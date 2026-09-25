@@ -3,7 +3,8 @@
 - **Date de réception :** 2026-09-25
 - **Origine :** description libre fournie par un utilisateur ne manipulant ni
   schéma ni code du générateur
-- **Statut :** composition runtime C5f livrée ; UI, permission et a11y ouvertes
+- **Statut :** composition runtime C5f et frontière visuelle C5g-0/1 livrées ;
+  UI, permission, a11y et oracle visuel ouverts
 - **But :** éprouver le parcours `list-query` + `action-request` + composition
   de page sur un cas produit réel
 - **Décision utilisateur du 2026-09-25 :** option A, reproduction du contrat
@@ -354,3 +355,39 @@ Ce lot ne revendique pas encore la page visible. Permission `create`,
 ouverture/fermeture du formulaire, notifications et accessibilité restent le
 prochain incrément. Voir
 [ADR-0065](../adr/0065-composition-c5-utilisateurs-sur-contrats-observes.md).
+
+## C5g-0/1 — frontière LLM et preuve de présentation
+
+La réalisation visuelle reste confiée à un LLM, mais ni une conversation ni un
+document Figma ne deviennent une source d'autorité métier. Le contrat backend,
+les comportements, l'accès, la composition et l'archétype restent décidés en
+amont. La source visuelle ne gouverne que la présentation.
+
+Le schéma fermé `presentation-evidence` accepte une source générique et figée :
+design structuré, capture, wireframe, interface rendue, design system, mapping
+de composants, annotation ou brief. Le fournisseur n'est pas encodé dans le
+contrat. Chaque ressource locale est bornée, typée, hashée et marquée comme
+contenu non fiable.
+
+`prepare:page-realization` peut maintenant attacher un manifeste approuvé au
+work order `2.0.0`. L'identité du work order couvre le manifeste et ses sources.
+`verify:page-realization` les relit et refuse page étrangère, état inconnu,
+source non approuvée, chemin symbolique, type invalide ou dérive de taille/hash.
+Sans preuve, le work order porte explicitement `presentation_evidence: null` et
+interdit toute revendication de fidélité à une référence externe.
+
+Ce lot ne fabrique aucune maquette C5 : aucun choix esthétique n'est inventé.
+La prochaine preuve exige une vraie référence fournie ou approuvée, puis une
+réalisation Angular bornée de `/users`. Voir
+[ADR-0066](../adr/0066-preuve-presentation-bornee-pour-realisation-llm.md).
+
+### Suite de C5 après C5g-0/1
+
+1. produire ou sélectionner une référence visuelle C5 réelle et ses états
+   desktop/mobile ;
+2. la figer dans un manifeste `presentation-evidence` approuvé ;
+3. réaliser les cinq fichiers Angular autorisés avec le work order ;
+4. prouver permission `create`, ouverture/fermeture, succès/erreur,
+   notifications, clavier et lecteur d'écran ;
+5. ajouter la comparaison visuelle déterministe, puis comparer le comportement
+   générique à la baseline SEOS.

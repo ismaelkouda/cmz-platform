@@ -6,7 +6,7 @@ import {
     publicPageRealizationPlan,
     publishPageRealizationWorkOrder,
 } from './generator-platform/core/page-realization.mjs';
-import { repositoryRoot } from './generator-platform/validate-ir.mjs';
+import { loadJson, repositoryRoot } from './generator-platform/validate-ir.mjs';
 
 function fail(message) {
     throw new Error(message);
@@ -18,6 +18,8 @@ export function parseArgs(argv) {
         const argument = argv[index];
         if (argument === '--app') options.appName = argv[++index];
         else if (argument === '--page') options.pageId = argv[++index];
+        else if (argument === '--presentation-evidence')
+            options.presentationEvidencePath = argv[++index];
         else if (argument === '--dry-run') options.dryRun = true;
         else if (argument === '--apply') options.workOrderId = argv[++index];
         else fail(`Argument inconnu : ${argument}`);
@@ -33,10 +35,18 @@ export function parseArgs(argv) {
 
 export async function main(argv = process.argv.slice(2)) {
     const options = parseArgs(argv);
+    const presentationEvidenceSchema = await loadJson(
+        new URL(
+            './generator-platform/schemas/presentation-evidence.schema.json',
+            import.meta.url
+        )
+    );
     const common = {
         workspaceRoot: repositoryRoot,
         appName: options.appName,
         pageId: options.pageId,
+        presentationEvidencePath: options.presentationEvidencePath,
+        presentationEvidenceSchema,
     };
     if (options.dryRun) {
         console.log(

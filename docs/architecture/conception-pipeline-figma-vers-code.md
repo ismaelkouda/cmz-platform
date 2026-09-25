@@ -9,6 +9,13 @@
 > conception utile de l'adaptateur Figma, non le plan d'implémentation
 > prioritaire de la plateforme.
 
+> ✅ **Reprise bornée le 2026-09-25** :
+> [ADR-0066](../adr/0066-preuve-presentation-bornee-pour-realisation-llm.md)
+> livre le contrat générique `presentation-evidence` et sa liaison au work
+> order. Ce document reste la conception d'un futur adaptateur Figma ; ses
+> sorties devront produire cet artefact générique et ne pourront pas devenir
+> l'IR canonique.
+
 > ⚠️ **Modèle interne supersédé** : les références ci-dessous aux quatre
 > patterns ou aux cinq verbes documentent le profil Angular/Nx historique.
 > [ADR-0030](../adr/0030-ir-canonique-et-profils-cibles.md) impose désormais une

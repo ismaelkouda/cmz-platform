@@ -168,9 +168,22 @@ binds its internal server to `127.0.0.1`. The security evidence and residual
 limits are recorded in
 [`securisation-page-realization-2026-09-15.md`](../../docs/architecture/securisation-page-realization-2026-09-15.md).
 
+An optional approved `presentation-evidence` manifest can bind structured
+design, screenshots, wireframes, tokens or component mappings to that same work
+order. Every local source is size- and hash-verified, belongs to the exact page,
+and remains `untrusted-content` with `presentation-only` authority. It cannot
+override backend, behavior, access, composition or archetype contracts. The
+work order records `presentation_evidence: null` when no reference is supplied,
+so visual fidelity is never claimed implicitly. See
+[`ADR-0066`](../../docs/adr/0066-preuve-presentation-bornee-pour-realisation-llm.md).
+
 ```bash
 bun run prepare:page-realization -- --app my-app --page <page_id> --dry-run
 bun run prepare:page-realization -- --app my-app --page <page_id> --apply <work_order_id>
+bun run prepare:page-realization -- --app my-app --page <page_id> \
+  --presentation-evidence designs/my-page.presentation.json --dry-run
+bun run prepare:page-realization -- --app my-app --page <page_id> \
+  --presentation-evidence designs/my-page.presentation.json --apply <work_order_id>
 bun run verify:page-realization -- --app my-app --page <page_id> --work-order <work_order_id>
 ```
 
