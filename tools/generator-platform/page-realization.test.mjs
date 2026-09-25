@@ -51,7 +51,6 @@ const presentationEvidenceSchema = JSON.parse(
         'utf8'
     )
 );
-
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
 }
@@ -219,7 +218,7 @@ test('prépare un work order immuable et borné à cinq fichiers', async () => {
     };
     const plan = planPageRealization(common);
     assert.match(plan.work_order_id, /^[a-f0-9]{64}$/);
-    assert.equal(plan.workOrder.schema_version, '2.0.0');
+    assert.equal(plan.workOrder.schema_version, '3.0.0');
     assert.deepEqual(plan.workOrder.allowed_files, [
         'page.component.html',
         'page.component.scss',
@@ -248,6 +247,7 @@ test('prépare un work order immuable et borné à cinq fichiers', async () => {
         'component'
     );
     assert.equal(plan.workOrder.presentation_evidence, null);
+    assert.equal(plan.workOrder.page_execution, null);
     assert.ok(
         plan.workOrder.rules.some((rule) =>
             rule.includes('do not claim visual fidelity')

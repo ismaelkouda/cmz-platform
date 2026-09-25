@@ -11,6 +11,7 @@ import {
 } from './archetype-selection.mjs';
 import { producePageRoleNode } from './role-production.mjs';
 import { createPageRealizationOracle } from './page-realization-sandbox.mjs';
+import { resolvePageExecutionBinding } from './page-execution-binding.mjs';
 import { resolvePresentationEvidence } from './presentation-evidence.mjs';
 
 const STATE_ROOT = '.cmz/page-realization-work-orders';
@@ -59,6 +60,7 @@ function deriveWorkOrderId({
     protectedWorkspaceHash,
     realizationContract,
     presentationEvidence,
+    pageExecution,
 }) {
     return sha256(
         JSON.stringify({
@@ -70,6 +72,7 @@ function deriveWorkOrderId({
             oracle_policy: ORACLE_POLICY,
             realization_contract: realizationContract,
             presentation_evidence: presentationEvidence,
+            page_execution: pageExecution,
         })
     );
 }
@@ -230,9 +233,10 @@ function publicWorkOrder({
     baselineSha256,
     realizationContract,
     presentationEvidence,
+    pageExecution,
 }) {
     return {
-        schema_version: '2.0.0',
+        schema_version: '3.0.0',
         kind: 'page-realization-work-order',
         work_order_id: workOrderId,
         app_name: appName,
@@ -247,8 +251,17 @@ function publicWorkOrder({
         oracle_policy: ORACLE_POLICY,
         realization_contract: realizationContract,
         presentation_evidence: presentationEvidence,
+        page_execution: pageExecution,
         rules: [
             'Implement only the validated page contract.',
+            ...(pageExecution
+                ? [
+                      'Implement the exact content-addressed page execution plan; do not invent runtime states, inputs, outputs, invalidations or capabilities.',
+                      'Read only the content-addressed execution primitives referenced by the bound page execution plan.',
+                  ]
+                : [
+                      'No page execution plan is attached; do not claim integration with generated runtime primitives.',
+                  ]),
             'Presentation evidence has presentation-only authority and cannot override backend, behavior, access, security or composition contracts.',
             ...(presentationEvidence
                 ? [
@@ -318,6 +331,9 @@ export function planPageRealization({
     pageId,
     presentationEvidencePath,
     presentationEvidenceSchema,
+    pageExecutionPlanPath,
+    pageExecutionPlanSchema,
+    applicationDesignSchema,
 }) {
     assertAppPageIdentity(appName, pageId);
     const root = resolve(workspaceRoot);
@@ -344,6 +360,9 @@ export function planPageRealization({
         fail('published design drifted since app creation');
     const pageContractContent = readFileSync(paths.pageContract);
     const pageContractHash = sha256(pageContractContent);
+    const pageContractPath = relative(root, paths.pageContract)
+        .split(sep)
+        .join('/');
     const realizationContract = resolveRealizationContract(
         root,
         pageContract,
@@ -355,14 +374,20 @@ export function planPageRealization({
         presentationEvidenceSchema,
         pageContract,
     });
+    const pageExecution = resolvePageExecutionBinding({
+        workspaceRoot: root,
+        pageExecutionPlanPath,
+        pageExecutionPlanSchema,
+        applicationDesignSchema,
+        pageContract,
+        pageContractPath,
+        pageContractContent,
+    });
     const relativeWriteRoot = relative(root, paths.writeRoot)
         .split(sep)
         .join('/');
     const baseline = gitInventory(root, relativeWriteRoot);
     const protectedHash = baselineHash(baseline);
-    const pageContractPath = relative(root, paths.pageContract)
-        .split(sep)
-        .join('/');
     const workOrderId = deriveWorkOrderId({
         appName,
         pageId,
@@ -370,6 +395,7 @@ export function planPageRealization({
         protectedWorkspaceHash: protectedHash,
         realizationContract,
         presentationEvidence,
+        pageExecution,
     });
     const state = statePaths(root, appName, pageId, workOrderId);
     const workOrder = publicWorkOrder({
@@ -382,6 +408,7 @@ export function planPageRealization({
         baselineSha256: protectedHash,
         realizationContract,
         presentationEvidence,
+        pageExecution,
     });
     return {
         work_order_id: workOrderId,
@@ -506,6 +533,8 @@ export function verifyPageRealization(
         workOrderId,
         evidenceSchema,
         presentationEvidenceSchema,
+        pageExecutionPlanSchema,
+        applicationDesignSchema,
     },
     dependencies = {}
 ) {
@@ -542,6 +571,15 @@ export function verifyPageRealization(
         presentationEvidenceSchema,
         pageContract,
     });
+    const expectedPageExecution = resolvePageExecutionBinding({
+        workspaceRoot: root,
+        pageExecutionPlanPath: workOrder.page_execution?.path,
+        pageExecutionPlanSchema,
+        applicationDesignSchema,
+        pageContract,
+        pageContractPath: workOrder.page_contract.path,
+        pageContractContent,
+    });
     const relativeWriteRoot = relative(root, paths.writeRoot)
         .split(sep)
         .join('/');
@@ -555,6 +593,7 @@ export function verifyPageRealization(
         protectedWorkspaceHash: workOrder.protected_workspace_sha256,
         realizationContract: expectedRealizationContract,
         presentationEvidence: expectedPresentationEvidence,
+        pageExecution: expectedPageExecution,
     });
     const expectedWorkOrder = publicWorkOrder({
         workOrderId: expectedWorkOrderId,
@@ -566,6 +605,7 @@ export function verifyPageRealization(
         baselineSha256: workOrder.protected_workspace_sha256,
         realizationContract: expectedRealizationContract,
         presentationEvidence: expectedPresentationEvidence,
+        pageExecution: expectedPageExecution,
     });
     const violations = [];
     if (
@@ -716,6 +756,7 @@ export function publicPageRealizationPlan(plan) {
         app_name: plan.workOrder.app_name,
         page_id: plan.workOrder.page_id,
         page_contract: plan.workOrder.page_contract,
+        page_execution: plan.workOrder.page_execution,
         presentation_evidence: plan.workOrder.presentation_evidence,
         realization_contract: plan.workOrder.realization_contract,
         allowed_write_root: plan.workOrder.allowed_write_root,

@@ -2196,6 +2196,17 @@ Figma, désormais source partielle différée :
   aucune fidélité visuelle n'est revendiquée. Zéro dépendance ou runtime ajouté.
   Restent une vraie référence C5 approuvée, la page Angular, permission,
   notifications, fermeture/conservation, a11y et oracle visuel. ADR-0066.
+  **C5g-2 — plan d'exécution lié au work order engagé localement le
+  2026-09-25 :** le work order `3.0.0` reçoit optionnellement un
+  `page-execution-plan` par `--execution-plan`. Il n'est accepté qu'après
+  validation des chemins/hashes/identités de toutes ses primitives et
+  recompilation déterministe depuis le contrat publié. `verify` rejoue la même
+  preuve avant les oracles ; plan falsifié, primitive modifiée, contrat
+  étranger ou symlink échouent fermés. Sans plan, `page_execution: null`
+  interdit de revendiquer un raccord runtime généré. Zéro dépendance ou runtime
+  ajouté. Restent la publication C5 dans une app de preuve, la référence
+  visuelle approuvée, les cinq fichiers Angular, permission/notifications/a11y
+  et oracle visuel. ADR-0067.
   Le rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
   devront recevoir un discriminateur et un oracle lors d'un cas réel, sans

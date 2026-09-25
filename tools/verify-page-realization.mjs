@@ -27,7 +27,12 @@ export function parseArgs(argv) {
 
 export async function main(argv = process.argv.slice(2)) {
     const options = parseArgs(argv);
-    const [evidenceSchema, presentationEvidenceSchema] = await Promise.all([
+    const [
+        evidenceSchema,
+        presentationEvidenceSchema,
+        pageExecutionPlanSchema,
+        applicationDesignSchema,
+    ] = await Promise.all([
         loadJson(
             new URL(
                 './generator-platform/schemas/page-realization-evidence.schema.json',
@@ -40,12 +45,26 @@ export async function main(argv = process.argv.slice(2)) {
                 import.meta.url
             )
         ),
+        loadJson(
+            new URL(
+                './generator-platform/schemas/page-execution-plan.schema.json',
+                import.meta.url
+            )
+        ),
+        loadJson(
+            new URL(
+                './generator-platform/schemas/application-design.schema.json',
+                import.meta.url
+            )
+        ),
     ]);
     const report = verifyPageRealization({
         workspaceRoot: repositoryRoot,
         ...options,
         evidenceSchema,
         presentationEvidenceSchema,
+        pageExecutionPlanSchema,
+        applicationDesignSchema,
     });
     console.log(JSON.stringify(report, null, 2));
     if (!report.ok) process.exitCode = 1;
