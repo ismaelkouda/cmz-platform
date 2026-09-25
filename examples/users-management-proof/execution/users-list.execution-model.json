@@ -1,0 +1,465 @@
+{
+  "schema_version": "1.2.0",
+  "kind": "list-query-execution-model",
+  "model_id": "settings-security-users-list-query-execution",
+  "domain": {
+    "id": "settings-security-users",
+    "name": "Paginated users list",
+    "description": "Filtered users list used by the C5 external vertical slice."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/users-list.backend-contract.json",
+    "id": "cmz-users-list",
+    "version": "1.0.0",
+    "sha256": "c61ca12448f1aa1f23f7cff5b11bcca9a5ff5495e87e3e56dd93b2d0f1e4c5a1"
+  },
+  "queries": [
+    {
+      "id": "list-users",
+      "description": "Loads one filtered page of users.",
+      "port": {
+        "input": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "page",
+              "type": {
+                "kind": "primitive",
+                "name": "integer"
+              },
+              "required": true,
+              "constraints": {
+                "minimum": 1
+              }
+            },
+            {
+              "name": "search",
+              "type": {
+                "kind": "primitive",
+                "name": "string"
+              },
+              "required": false,
+              "constraints": {
+                "min_length": 1
+              }
+            },
+            {
+              "name": "profile",
+              "type": {
+                "kind": "primitive",
+                "name": "string"
+              },
+              "required": false,
+              "constraints": {
+                "min_length": 1
+              }
+            },
+            {
+              "name": "role",
+              "type": {
+                "kind": "primitive",
+                "name": "string"
+              },
+              "required": false,
+              "constraints": {
+                "pattern": "^(supervisor|team-leader|agent)$"
+              }
+            },
+            {
+              "name": "isActive",
+              "type": {
+                "kind": "primitive",
+                "name": "boolean"
+              },
+              "required": false
+            }
+          ]
+        },
+        "output": {
+          "kind": "page",
+          "item_model_id": "user-list-item",
+          "page_model_id": "users-list-page-wire"
+        }
+      },
+      "access": {
+        "mode": "authenticated",
+        "security_scheme_ids": [
+          "backoffice-session-bearer"
+        ],
+        "permissions": []
+      },
+      "request_policy": {
+        "authentication": {
+          "mode": "host",
+          "schemes": [
+            {
+              "id": "backoffice-session-bearer",
+              "kind": "bearer"
+            }
+          ]
+        },
+        "cache": {
+          "mode": "host",
+          "scope": "principal",
+          "refresh": "bypass"
+        }
+      },
+      "transport": {
+        "operation_id": "settings-security.list-users",
+        "service_id": "settings-api",
+        "method": "GET",
+        "path": "/settings-and-security/users",
+        "success_response_status": 200,
+        "media_type": "application/json",
+        "collection_model_id": "users-list-items-wire",
+        "envelope": {
+          "kind": "object",
+          "data_field": "data",
+          "error_field": "error",
+          "message_field": "message"
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "source_field": "page",
+            "type": {
+              "kind": "primitive",
+              "name": "integer"
+            },
+            "required": true,
+            "constraints": {
+              "minimum": 1
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "source_field": "search",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": false,
+            "constraints": {
+              "min_length": 1
+            }
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "source_field": "profile",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": false,
+            "constraints": {
+              "min_length": 1
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "source_field": "role",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": false,
+            "constraints": {
+              "pattern": "^(supervisor|team-leader|agent)$"
+            }
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "source_field": "isActive",
+            "type": {
+              "kind": "primitive",
+              "name": "boolean"
+            },
+            "required": false
+          }
+        ],
+        "result": {
+          "kind": "page",
+          "page_model_id": "users-list-page-wire",
+          "items_field": "data",
+          "page_fields": {
+            "currentPage": {
+              "source_field": "current_page",
+              "type": "integer"
+            },
+            "lastPage": {
+              "source_field": "last_page",
+              "type": "integer"
+            },
+            "pageSize": {
+              "source_field": "per_page",
+              "type": "integer"
+            },
+            "totalItems": {
+              "source_field": "total",
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "wire_model": {
+        "id": "users-list-item-wire",
+        "unknown_fields": "reject",
+        "fields": [
+          {
+            "name": "id",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "first_name",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "last_name",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "phone",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "profile",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "role",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": true,
+            "allowed_values": [
+              "supervisor",
+              "team-leader",
+              "agent"
+            ]
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false,
+            "allowed_values": [
+              "active",
+              "inactive",
+              "blocked",
+              "pending"
+            ]
+          },
+          {
+            "name": "created_at",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "updated_at",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          }
+        ]
+      },
+      "read_model": {
+        "id": "user-list-item",
+        "description": "User item and display fields consumed by the C5 users page.",
+        "fields": [
+          {
+            "name": "uniqId",
+            "source_field": "id",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "firstName",
+            "source_field": "first_name",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "lastName",
+            "source_field": "last_name",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "email",
+            "source_field": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "phone",
+            "source_field": "phone",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "profile",
+            "source_field": "profile",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "role",
+            "source_field": "role",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": true
+          },
+          {
+            "name": "status",
+            "source_field": "status",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "updatedAt",
+            "source_field": "updated_at",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          }
+        ]
+      },
+      "controller": {
+        "initial_state": "idle",
+        "states": [
+          "idle",
+          "loading",
+          "success",
+          "empty",
+          "error",
+          "reloading"
+        ],
+        "commands": [
+          "load",
+          "reload"
+        ],
+        "state_rules": {
+          "load": "loading",
+          "reload": "reloading",
+          "non_empty_result": "success",
+          "empty_result": "empty",
+          "failure": "error"
+        },
+        "execution": {
+          "cache": {
+            "mode": "host",
+            "scope": "principal",
+            "refresh": "bypass"
+          },
+          "concurrency": "latest-wins",
+          "cancellation": {
+            "on_superseded": true,
+            "on_destroy": true
+          },
+          "retry": {
+            "mode": "none"
+          },
+          "stale_data": {
+            "on_reload": "preserve",
+            "on_error": "preserve"
+          }
+        }
+      },
+      "failures": {
+        "invalid_payload": "invalid-payload",
+        "backend_declared": {
+          "kind": "envelope-flag",
+          "error_field": "error",
+          "message_field": "message"
+        },
+        "http_responses": [],
+        "transport": "host-propagated"
+      }
+    }
+  ]
+}

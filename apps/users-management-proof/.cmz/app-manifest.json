@@ -1,0 +1,119 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "application-shell-manifest",
+  "app_name": "users-management-proof",
+  "profile": "angular-pwa",
+  "design_ref": {
+    "path": "designs/users-management-proof.application-design.json",
+    "sha256": "c5d9a2445769820d710c610ae06a2c9921121d7bf087bcdc984a8bdd93949660"
+  },
+  "experience_id": "operator-web",
+  "generated_files": [
+    {
+      "path": ".cmz/libraries.json",
+      "bytes": 121,
+      "sha256": "738aad6ab7e80ca5dab3bf5e9e2f89033c83afd53e1c98bd59efb1e902ca0bd5"
+    },
+    {
+      "path": ".cmz/pages/page_6666666666666666.json",
+      "bytes": 7844,
+      "sha256": "6b2e7b3019c8aa7946887a885d01f2342fef7b37981cd2077ebd721697fc8627"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "bytes": 605,
+      "sha256": "6e51440b2998db6419e541c5a300bb995a8453c6e758e85fa7447715173f7cda"
+    },
+    {
+      "path": "project.json",
+      "bytes": 2405,
+      "sha256": "af2b70dc98e7a1ff935bab8dc350a42f31ff5fe595d2c95c8f4211f303e6aae8"
+    },
+    {
+      "path": "public/i18n/fr.json",
+      "bytes": 147,
+      "sha256": "99da38219347dc44eff2b59de57b46b07ff07cdaaa019c4f0eaa807eca85286e"
+    },
+    {
+      "path": "public/icon.svg",
+      "bytes": 414,
+      "sha256": "871bf60fc40d327f604f6f440dad284758451aad8a89653ef3b72c42a78dfdba"
+    },
+    {
+      "path": "public/manifest.webmanifest",
+      "bytes": 395,
+      "sha256": "b54e227b7ae8e73f05db3012452c89d8295d4ecfff5dc52afe5fc1ca09880e27"
+    },
+    {
+      "path": "public/sw.js",
+      "bytes": 1370,
+      "sha256": "6935457689be13ebdb56f11bcadb9567e08ac1ca0486bbe9493cc4021f2434b8"
+    },
+    {
+      "path": "src/app/access.guard.spec.ts",
+      "bytes": 1916,
+      "sha256": "5ebcfe5e99dbd0c65ec1aae0a88dca0e65a863a360c3effb72aaaf0771505a96"
+    },
+    {
+      "path": "src/app/access.guard.ts",
+      "bytes": 1321,
+      "sha256": "f4aadf383e210ffd8d7f4f5bb13e3c1c5d74df092b66eeecb66a83fe4cffeef7"
+    },
+    {
+      "path": "src/app/app.config.ts",
+      "bytes": 833,
+      "sha256": "41d03dc46b947bc772dc6e6e18bfc929dfb585a95712dc5e780ca3b670422b20"
+    },
+    {
+      "path": "src/app/app.routes.ts",
+      "bytes": 496,
+      "sha256": "cfe19fcea912c94dcff142cf4f3ae69cedb10117c706655517378e70fd669527"
+    },
+    {
+      "path": "src/app/app.ts",
+      "bytes": 218,
+      "sha256": "ab7d994b80e6ca15707505697e65b8cf51f996416ef0abe0fcd0889f1e971a5d"
+    },
+    {
+      "path": "src/app/pages/page_6666666666666666/page.component.ts",
+      "bytes": 413,
+      "sha256": "5499176ea6848eb07cde29cb99bf2e3ccfd332a8f255d1a6da73abe32b844b6d"
+    },
+    {
+      "path": "src/app/transloco-loader.ts",
+      "bytes": 433,
+      "sha256": "89e9b804fa5a7e76e5c26357133399edea8272e920999d685e94d97d7ee33621"
+    },
+    {
+      "path": "src/index.html",
+      "bytes": 631,
+      "sha256": "8ee40c28962686da9d3e8ec4c670b5464e53bc071ba7d8992869c90da68c9427"
+    },
+    {
+      "path": "src/main.ts",
+      "bytes": 378,
+      "sha256": "edc7fe56bc4aaece3356c113ed01058eac65dbe75c6eb8d8805eabb158a6f701"
+    },
+    {
+      "path": "src/styles.scss",
+      "bytes": 177,
+      "sha256": "c767a4c3638dccd4e7fe96a871c36a278201246aeff87c52c6a9c3e45a4ec6d4"
+    },
+    {
+      "path": "tsconfig.app.json",
+      "bytes": 200,
+      "sha256": "3c4e0ed141fb9402ee2011744ff77318c18fa4bd517792722abda334db9a8c50"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 525,
+      "sha256": "b28ac4c581cb0561319bbf7b3d2ceab425c43177cd020a6efeba447cf3e5afb6"
+    },
+    {
+      "path": "tsconfig.spec.json",
+      "bytes": 183,
+      "sha256": "2ed7b872a444d9c3577a992880774ec5097600a2566f260651d4d5d032dcdeb0"
+    }
+  ],
+  "tree_sha256": "315b52fa92d2ac9d4698e40cf2f45de4ef50c13bff41248abac92b53dc84e95e"
+}

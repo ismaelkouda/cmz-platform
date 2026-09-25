@@ -7,6 +7,7 @@ import {
     validateBackendContract,
     verifyBackendContractSnapshots,
 } from './backend-contract.mjs';
+import { resolveDataBindingSourceModel } from './data-binding-projection.mjs';
 
 const ACCESS_RANK = { public: 0, authenticated: 1, authorized: 2 };
 const FORBIDDEN_TARGET_TOKENS = [
@@ -347,12 +348,15 @@ function validateDataBinding(page, binding, index, context, errors) {
         errors.push(`${path}.response_status: unresolved response`);
         return;
     }
-    if (response.body?.model_id !== binding.model_id) {
-        errors.push(`${path}.model_id: does not match response body model`);
-        return;
-    }
     const contract = context.contracts.get(binding.operation_ref.contract_id);
-    const model = modelFor(contract, binding.model_id);
+    const model = resolveDataBindingSourceModel({
+        binding,
+        responseModelId: response.body?.model_id,
+        resolveModel: (modelId) => modelFor(contract, modelId),
+        path,
+        errors,
+    });
+    if (!model) return;
     if (model?.kind !== 'object' && binding.field_names?.length > 0)
         errors.push(
             `${path}.field_names: scalar/array models have no named fields`

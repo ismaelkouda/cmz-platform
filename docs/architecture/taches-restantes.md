@@ -75,8 +75,8 @@
   approbation CODEOWNERS, l'invalidation des reviews périmées, l'approbation du
   dernier push, l'historique linéaire et l'interdiction des force-pushes et
   suppressions. Les deux relecteurs couvrent toutes les zones. Nx Cloud est
-  connecté avec l'id `69cfa6ba213c8001d0f75641` et son secret CI ; le run
-  `main` [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
+  connecté avec l'id `69cfa6ba213c8001d0f75641` et son secret CI ; le run `main`
+  [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
   a servi 41/74 tâches de lint depuis le cache distant (55,41 %), et le nightly
   [#34823198590](https://github.com/ismaelkouda/cmz-platform/actions/runs/34823198590)
   est vert. OPS-2, OPS-3/T6-4 et OPS-4 sont clos.
@@ -91,14 +91,14 @@ une spécification produit. Le prochain chemin critique part donc d'un besoin
 métier explicite ; il ne consiste pas à ajouter un nouveau mécanisme générique
 au socle.
 
-| Id      | État          | Travail restant                                                                                                                                                  | Critère de sortie                                                                                                            |
-| ------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `APP-1` | bloqué-humain | Écrire le brief de la vraie application : identité, utilisateurs, problème, résultat principal, premier parcours, critères d'acceptation et nature d'accès.      | Brief versionné et relu ; si le produit est public ou multi-locataire, ADR-0038 tranché avant toute implémentation associée. |
-| `APP-2` | bloqué-humain | Fournir ou approuver le contrat backend **cible** de la première tranche : opérations, authentification, entrées, sorties et erreurs.                            | Contrat canonique `target` sans champ inventé ; un analogue ou une collection Postman d'observation reste `reference`.       |
-| `APP-3` | en attente    | Compiler le brief et le contrat cible en conception applicative ; fermer les inconnues, accès, permissions, navigation, états d'erreur et comportement offline.  | `bun run compile:application-design -- ... --dry-run`, puis `--apply <plan_id>` et `bun run check:application-designs`.      |
+| Id      | État          | Travail restant                                                                                                                                                  | Critère de sortie                                                                                                             |
+| ------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `APP-1` | bloqué-humain | Écrire le brief de la vraie application : identité, utilisateurs, problème, résultat principal, premier parcours, critères d'acceptation et nature d'accès.      | Brief versionné et relu ; si le produit est public ou multi-locataire, ADR-0038 tranché avant toute implémentation associée.  |
+| `APP-2` | bloqué-humain | Fournir ou approuver le contrat backend **cible** de la première tranche : opérations, authentification, entrées, sorties et erreurs.                            | Contrat canonique `target` sans champ inventé ; un analogue ou une collection Postman d'observation reste `reference`.        |
+| `APP-3` | en attente    | Compiler le brief et le contrat cible en conception applicative ; fermer les inconnues, accès, permissions, navigation, états d'erreur et comportement offline.  | `bun run compile:application-design -- ... --dry-run`, puis `--apply <plan_id>` et `bun run check:application-designs`.       |
 | `APP-4` | en attente    | Générer le shell Angular/PWA de l'expérience retenue ; ajouter Material, Tailwind ou une autre bibliothèque seulement si le besoin approuvé l'exige.             | `bun run create-app -- ...` directement ; `--dry-run` et `--expect-plan <plan_id>` restent facultatifs ; build et lint verts. |
-| `APP-5` | en attente    | Réaliser une première page verticale, bornée par son contrat, avec ses états nominal, chargement, vide, erreur, accès refusé et offline lorsqu'ils s'appliquent. | `prepare:page-realization`, réalisation des seuls fichiers autorisés, puis `verify:page-realization` vert.                   |
-| `APP-6` | en attente    | Brancher le backend réel ou un mock explicitement provisoire et couvrir le parcours accepté de bout en bout.                                                     | Test d'acceptation du parcours vert, build production vert, puis `bun run check:all`.                                        |
+| `APP-5` | en attente    | Réaliser une première page verticale, bornée par son contrat, avec ses états nominal, chargement, vide, erreur, accès refusé et offline lorsqu'ils s'appliquent. | `prepare:page-realization`, réalisation des seuls fichiers autorisés, puis `verify:page-realization` vert.                    |
+| `APP-6` | en attente    | Brancher le backend réel ou un mock explicitement provisoire et couvrir le parcours accepté de bout en bout.                                                     | Test d'acceptation du parcours vert, build production vert, puis `bun run check:all`.                                         |
 
 `APP-1` et `APP-2` sont les seuls préalables à obtenir du porteur produit avant
 de lancer la première tranche. `APP-3` à `APP-6` forment ensuite le cycle de
@@ -1240,229 +1240,225 @@ Figma, désormais source partielle différée :
   `-27.9 %`), marge sous le seuil d'alerte `900 kB` passée de `~1 kB` (cause de
   la dérive nightly) à `~271 kB`. `nx build backoffice-angular:build:production`
   et `nx lint --max-warnings=0` verts sur le résultat final.
-- **OPS-26** — **fait** (2026-09-12), L, P1.
-  Constaté le 2026-09-10 en marge du durcissement de `main` (PR #34) :
-  **Dependabot npm ne régénérait pas `bun.lock` au moment du constat**. Le
-  robot mettait à jour
-  `package.json` mais ne recalculait pas le lockfile Bun sauf pour un bump
-  trivial d'une seule dépendance sans mouvement d'arbre — toutes les autres
-  PR échouent d'entrée à `bun install --frozen-lockfile`. Le commentaire de
-  `.github/dependabot.yml` affirme toujours à tort « Dependabot ouvre une PR
-  de mise à jour du lockfile racine ».
-  - **Backlog existant (2026-09-10/11) : traité manuellement**, option (2)
-    du mémo d'origine — bump + `bun install` + `bun run check:all` local,
-    une PR dédiée par sujet, palier par palier pour les majors. Ferme #10,
-    #11, #20-28 : nx 23.2.0 (PR #37, révèle et corrige au passage la
-    suppression d'`overrides.svgo` devenu mort — voir commit dédié),
-    lot patch/minor (PR #39), `@types/node` 22→26 (PR #40, 3 paliers,
-    0 impact), `jsdom` 27→30 (PR #41, 3 paliers, 1 impact réel — override
-    `undici` — corrigé), `eslint` 9→10 (PR #42, 15 erreurs de lint réelles
-    corrigées + périmage/requalification des attestations de compat comme
-    effet de bord), `@types/react-dom` patch (PR #45). `ci(deps:)`/`docker`
-    restants traités séparément (PR #43, #44 — hors périmètre bun.lock,
-    voir OPS-31).
-  - **Réévaluation Staff 2026-09-12 — canary Bun natif prioritaire.** GitHub
-    documente désormais `package-ecosystem: bun` pour Bun >= 1.1.39 et la
-    prise en charge du `bun.lock` texte. Le dépôt, pourtant épinglé sur Bun
-    1.3.14, utilisait encore l'updater `npm`. Bascule vers l'écosystème `bun`,
-    sans changer les groupes ni la cadence, et ajout d'un garde bloquant :
-    égalité stricte entre les `catalog/catalogs` de `package.json` et de
-    `bun.lock`, plus formats du lockfile figés. Tests purs dédiés et câblage à
-    `check:all`/`Garde-fous socle`. Le canary est accepté seulement lorsqu'une
-    vraie PR bot modifie aussi `bun.lock` et passe les 16 checks sans retouche
-    humaine. Risques upstream explicitement couverts : dependabot-core#12522
-    (catalogues supprimés) et #15897/#15848 (version Bun embarquée/format).
-  - **Validation réelle du canary (2026-09-12).** La PR #47 a été fusionnée,
-    puis Dependabot Bun a ouvert dix vraies PR (#48 à #57), toutes avec
-    `bun.lock`. La PR #48 est le témoin complet : un seul commit du bot,
-    `package.json` + `bun.lock`, catalogues préservés, 16 checks requis + SAST
-    verts, sans retouche humaine. La CI post-fusion de `main` est verte. Les
-    échecs observés ailleurs sont désormais des signaux applicatifs utiles :
-    #52 expose l'incompatibilité réelle de Vitest 5 et #50 a révélé une nouvelle
-    signature Darwin de runner, suivie sous OPS-32.
-  - **Fallback archivé — CI auto-réparatrice**, à reprendre uniquement si
-    l'écosystème Bun régresse. Le plan de sécurité reste utile, avec une
-    correction :
-    préférer un token d'installation court de GitHub App mono-dépôt à un PAT
-    personnel permanent.
-    - Contrainte bloquante identifiée : GitHub n'expose **aucun secret**
-      aux workflows déclenchés par une PR de `dependabot[bot]`
-      (anti-exfiltration, cf. OPS-22/23) → un déclencheur `pull_request`
-      classique ne peut jamais avoir les droits d'écriture requis.
-    - Deuxième contrainte : une PR mise à jour avec le `GITHUB_TOKEN` peut
-      redéclencher la CI, mais les runs sont placés en attente d'approbation ;
-      l'autonomie exige donc une identité GitHub App dédiée.
-    - Conception retenue : workflow **`schedule` (cron, lundi ~06h UTC,
-      quelques heures après le passage hebdomadaire de Dependabot) +
-      `workflow_dispatch`**, jamais `pull_request`/`pull_request_target`.
-      Liste les PR ouvertes de `dependabot[bot]` sur `main` dont la branche
-      commence par `dependabot/npm_and_yarn/`, pour chacune : checkout →
-      `bun install --lockfile-only --ignore-scripts` → validation que seul
-      `bun.lock` a changé → commit + push avec un **token d'installation
-      GitHub App** limité à ce dépôt et `Contents: write`. Le checkout et la
-      résolution restent sans identifiant d'écriture ; le token court n'est
-      exposé qu'à l'étape finale.
-    - Fichiers prévus : `.github/workflows/dependabot-lockfile-fix.yml`,
-      `tools/fix-dependabot-lockfile.mjs` + `.test.mjs` (logique de
-      filtrage/détection de diff testable en pur), mise à jour du
-      commentaire de `.github/dependabot.yml`.
-    - **Action humaine seulement si fallback activé** : créer la GitHub App,
-      l'installer sur ce seul dépôt et enregistrer sa clé privée comme secret.
-    - Check-list sécurité du fallback : permissions minimales,
-      `--lockfile-only --ignore-scripts`, `persist-credentials: false`, jamais
-      de `pull_request`/`pull_request_target`, SHA de tête immuable revalidé,
-      job qui ne touche que `bun.lock`, filtre strict sur auteur et branche.
+- **OPS-26** — **fait** (2026-09-12), L, P1. Constaté le 2026-09-10 en marge du
+  durcissement de `main` (PR #34) : **Dependabot npm ne régénérait pas
+  `bun.lock` au moment du constat**. Le robot mettait à jour `package.json` mais
+  ne recalculait pas le lockfile Bun sauf pour un bump trivial d'une seule
+  dépendance sans mouvement d'arbre — toutes les autres PR échouent d'entrée à
+  `bun install --frozen-lockfile`. Le commentaire de `.github/dependabot.yml`
+  affirme toujours à tort « Dependabot ouvre une PR de mise à jour du lockfile
+  racine ».
+    - **Backlog existant (2026-09-10/11) : traité manuellement**, option (2) du
+      mémo d'origine — bump + `bun install` + `bun run check:all` local, une PR
+      dédiée par sujet, palier par palier pour les majors. Ferme #10, #11,
+      #20-28 : nx 23.2.0 (PR #37, révèle et corrige au passage la suppression
+      d'`overrides.svgo` devenu mort — voir commit dédié), lot patch/minor (PR
+      #39), `@types/node` 22→26 (PR #40, 3 paliers, 0 impact), `jsdom` 27→30 (PR
+      #41, 3 paliers, 1 impact réel — override `undici` — corrigé), `eslint`
+      9→10 (PR #42, 15 erreurs de lint réelles corrigées +
+      périmage/requalification des attestations de compat comme effet de bord),
+      `@types/react-dom` patch (PR #45). `ci(deps:)`/`docker` restants traités
+      séparément (PR #43, #44 — hors périmètre bun.lock, voir OPS-31).
+    - **Réévaluation Staff 2026-09-12 — canary Bun natif prioritaire.** GitHub
+      documente désormais `package-ecosystem: bun` pour Bun >= 1.1.39 et la
+      prise en charge du `bun.lock` texte. Le dépôt, pourtant épinglé sur Bun
+      1.3.14, utilisait encore l'updater `npm`. Bascule vers l'écosystème `bun`,
+      sans changer les groupes ni la cadence, et ajout d'un garde bloquant :
+      égalité stricte entre les `catalog/catalogs` de `package.json` et de
+      `bun.lock`, plus formats du lockfile figés. Tests purs dédiés et câblage à
+      `check:all`/`Garde-fous socle`. Le canary est accepté seulement lorsqu'une
+      vraie PR bot modifie aussi `bun.lock` et passe les 16 checks sans retouche
+      humaine. Risques upstream explicitement couverts : dependabot-core#12522
+      (catalogues supprimés) et #15897/#15848 (version Bun embarquée/format).
+    - **Validation réelle du canary (2026-09-12).** La PR #47 a été fusionnée,
+      puis Dependabot Bun a ouvert dix vraies PR (#48 à #57), toutes avec
+      `bun.lock`. La PR #48 est le témoin complet : un seul commit du bot,
+      `package.json` + `bun.lock`, catalogues préservés, 16 checks requis + SAST
+      verts, sans retouche humaine. La CI post-fusion de `main` est verte. Les
+      échecs observés ailleurs sont désormais des signaux applicatifs utiles :
+      #52 expose l'incompatibilité réelle de Vitest 5 et #50 a révélé une
+      nouvelle signature Darwin de runner, suivie sous OPS-32.
+    - **Fallback archivé — CI auto-réparatrice**, à reprendre uniquement si
+      l'écosystème Bun régresse. Le plan de sécurité reste utile, avec une
+      correction : préférer un token d'installation court de GitHub App
+      mono-dépôt à un PAT personnel permanent.
+        - Contrainte bloquante identifiée : GitHub n'expose **aucun secret** aux
+          workflows déclenchés par une PR de `dependabot[bot]`
+          (anti-exfiltration, cf. OPS-22/23) → un déclencheur `pull_request`
+          classique ne peut jamais avoir les droits d'écriture requis.
+        - Deuxième contrainte : une PR mise à jour avec le `GITHUB_TOKEN` peut
+          redéclencher la CI, mais les runs sont placés en attente d'approbation
+          ; l'autonomie exige donc une identité GitHub App dédiée.
+        - Conception retenue : workflow **`schedule` (cron, lundi ~06h UTC,
+          quelques heures après le passage hebdomadaire de Dependabot) +
+          `workflow_dispatch`**, jamais `pull_request`/`pull_request_target`.
+          Liste les PR ouvertes de `dependabot[bot]` sur `main` dont la branche
+          commence par `dependabot/npm_and_yarn/`, pour chacune : checkout →
+          `bun install --lockfile-only --ignore-scripts` → validation que seul
+          `bun.lock` a changé → commit + push avec un **token d'installation
+          GitHub App** limité à ce dépôt et `Contents: write`. Le checkout et la
+          résolution restent sans identifiant d'écriture ; le token court n'est
+          exposé qu'à l'étape finale.
+        - Fichiers prévus : `.github/workflows/dependabot-lockfile-fix.yml`,
+          `tools/fix-dependabot-lockfile.mjs` + `.test.mjs` (logique de
+          filtrage/détection de diff testable en pur), mise à jour du
+          commentaire de `.github/dependabot.yml`.
+        - **Action humaine seulement si fallback activé** : créer la GitHub App,
+          l'installer sur ce seul dépôt et enregistrer sa clé privée comme
+          secret.
+        - Check-list sécurité du fallback : permissions minimales,
+          `--lockfile-only --ignore-scripts`, `persist-credentials: false`,
+          jamais de `pull_request`/`pull_request_target`, SHA de tête immuable
+          revalidé, job qui ne touche que `bun.lock`, filtre strict sur auteur
+          et branche.
 - **OPS-27** — **fait** (2026-09-11), M, P1, alias `G-2 · P1-13`. Durcissement
   de la protection de `main`, appliqué et vérifié en conditions réelles (mis en
   pause le 2026-09-10, repris et terminé le 2026-09-11 sur décision explicite).
-  PR #34 (gouvernance) fusionnée. `bun run protect:main` exécuté : `gh api
-  repos/ismaelkouda/cmz-platform/branches/main/protection` confirme
-  `protected: true`, les 16 contextes requis, `enforce_admins: true`,
-  1 approbation CODEOWNERS avec `dismiss_stale_reviews` +
+  PR #34 (gouvernance) fusionnée. `bun run protect:main` exécuté :
+  `gh api repos/ismaelkouda/cmz-platform/branches/main/protection` confirme
+  `protected: true`, les 16 contextes requis, `enforce_admins: true`, 1
+  approbation CODEOWNERS avec `dismiss_stale_reviews` +
   `require_last_push_approval`, `required_linear_history`, force-push et
   suppression interdits. Réglages de fusion du dépôt : squash uniquement,
   `delete_branch_on_merge: true`. **Vérifié empiriquement, pas seulement
   configuré** : un push direct (commit vide de test, jamais arrivé sur `main`)
-  refusé par GitHub (`GH006: Protected branch update failed... Changes must
-  be made through a pull request`) ; la PR #45 (patch `@types/react-dom`),
-  17/17 checks verts, restée `mergeStateStatus: BLOCKED` /
-  `reviewDecision: REVIEW_REQUIRED` jusqu'à l'approbation de
-  `@soumailakouda` — la CI verte seule ne suffit plus à fusionner.
+  refusé par GitHub
+  (`GH006: Protected branch update failed... Changes must be made through a pull request`)
+  ; la PR #45 (patch `@types/react-dom`), 17/17 checks verts, restée
+  `mergeStateStatus: BLOCKED` / `reviewDecision: REVIEW_REQUIRED` jusqu'à
+  l'approbation de `@soumailakouda` — la CI verte seule ne suffit plus à
+  fusionner.
 - **OPS-28** — **fait** (2026-09-11), M, P1, alias `OPS-25 suite`. Le job
-  nightly `Oracle Tier 2 — backoffice-angular` était rouge **19 des 20
-  derniers runs** (`gh run list --workflow=nightly-integration.yml`,
-  historique du 2026-08-26 au 2026-09-11). Deux causes cumulées, aucun lien
-  avec une régression de code :
-  1. La step "Record + verify bundle-metrics.json" mesurait le dist du
-     rebuild `--source-map=true` (step suivante à l'époque), pas celui du
-     build production propre — un `sourceMappingURL` injecté change les
-     octets et le hash de nom de chaque fichier. Corrigé : la mesure tourne
-     maintenant immédiatement après "Build production", avant le rebuild
-     sourcemap.
-  2. `generate-status.mjs` (`STATUS_DATE`) et `record-bundle-metrics.mjs`
-     tamponnent la date du jour à chaque régénération. `check:docs-freshness`
-     fige déjà cette date sur celle commitée (mécanisme correct, existant) ;
-     la step nightly, elle, faisait un `git diff --exit-code` brut après un
-     `bun run generate:status` sans figer — la ligne « dernière génération »
-     dérivait donc chaque nuit sans schedule reliée à un commit, même sans
-     aucun octet de contenu différent. **`record-bundle-metrics.mjs` n'avait
-     aucun mécanisme équivalent** pour son `measured_at`. Corrigé :
-     `BUNDLE_METRICS_DATE` (même pattern que `STATUS_DATE`) ajouté à
-     `record-bundle-metrics.mjs` ; nouveau `check:bundle-metrics-freshness.mjs`
-     (miroir de `check-docs-freshness.mjs`) fige cette date avant de mesurer,
-     tests `node:test` dédiés (mesure inchangée → vert, drift réel → rouge,
-     fichier absent → rouge explicite). La step nightly appelle maintenant
-     `bun run check:docs-freshness && bun run check:bundle-metrics-freshness`
-     au lieu du `git diff` à la main.
-  3. Validation du correctif par `workflow_dispatch` réel (pas seulement
-     local) : le build production **n'est pas garanti bit-à-bit identique
-     macOS/ubuntu-latest** — `main-*.js` identique (505 232 octets, même
-     hash), mais `styles-*.css` diffère (28 549 vs 28 621 octets, hash
-     différent), sans changement de code. `bundle-metrics.json` doit donc
-     toujours être (re)mesuré et committé depuis un run CI réel, jamais
-     depuis un poste de dev — documenté dans `record-bundle-metrics.mjs` et
-     le commentaire du job. Step `Publier bundle-metrics.json mesuré
-     (debug drift)` ajoutée (`if: failure()`) pour récupérer les octets
-     réels sans deviner.
-  **Drift réel détecté au passage** (pas seulement l'outillage) : le bundle
-  initial est passé de `526.38 kB` (commit du 2026-08-30) à `534.54 kB`
-  (mesuré en CI le 2026-09-11, après le bump nx 23.2.0 — cf. OPS-26/PR #37),
-  sous le seuil d'avertissement `900 kB` (ADR-0016). `bundle-metrics.json` +
-  `STATUS.md`/`README.md`/`LLM_CONTEXT.md`/`etat-du-socle.md` recommittés à
-  jour, avec la mesure CI réelle (`gh run download … -n bundle-metrics-measured`),
-  pas une mesure locale. `check:ci-wiring` : 40 gates (nouveau
-  `check:bundle-metrics-freshness` dans `REQUIRED_STANDALONE_SCRIPTS`, ci-wiring
-  confirme la step nightly qui l'appelle).
-  **Revalidation du 2026-09-22 :** deux échecs Nightly successifs ont révélé
-  une troisième cause, distincte d'OPS-28 : Tailwind 4 conservait sa détection
-  automatique des sources malgré les `@source` explicites. Des fichiers
-  d'outillage étrangers à l'application pouvaient donc modifier le CSS de
-  production et faire dériver la mesure sans changement d'UI. Le point
-  d'entrée utilise désormais `source(none)` ; seuls les périmètres `@source`
-  déclarés sont compilés. L'oracle navigateur Material/Tailwind place sa classe
-  sentinelle dans la source de l'app **avant** le build, puis la nettoie, au
-  lieu de dépendre du scan implicite. Les pistes Tailwind et Angular Material,
-  seules consommatrices de cet oracle, ont été requalifiées intégralement.
-  Mesure Linux autoritative du run `35741311471` : `521 154` octets
-  (`521.15 kB`), JavaScript inchangé à `505 232` octets, CSS réduit de
-  `28 621` à `15 230` octets. Le run final `35741801394` est vert sur les
-  quatre jobs (oracle applicatif, intégration bibliothèques, isolation Linux et
-  isolation macOS). Le Nightly retrouve ainsi sa fonction de signal : il ne
-  dépend plus des noms ou contenus des fichiers d'outillage du dépôt.
-  **Revalidation du 2026-09-23 après PR #91 :** la CI post-fusion
-  `35831788863` est verte. Le Nightly `35836133198` a correctement détecté un
-  drift réel limité au JavaScript initial : `521 154 → 521 220` octets au
-  total, `main` `505 232 → 505 298` octets, CSS inchangé à `15 230` octets et
-  ExcelJS inchangé à `948 323` octets. Les trois autres jobs Nightly sont
-  verts. `bundle-metrics.json` a été remplacé par l'artefact Ubuntu
-  `bundle-metrics-measured` du run (artifact `10739651377`), jamais par une
-  mesure locale ; le build production local reproduit ensuite les mêmes noms
-  de chunks et `check:bundle-metrics-freshness` repasse au vert. Les budgets
-  `900kb/1mb` restent très largement respectés.
-- **OPS-30** — **fait** (2026-09-11), M, P1, alias `OPS-26 suite`. `eslint`
-  9→10 (ferme #11+#24, indissociables : `@eslint/js@10` exige `eslint
-  ^10.0.0` en peer). Sur les 5 paquets du groupe, seul `eslint` est
-  réellement chargé par `eslint.config.mjs` — `@eslint/js`,
-  `eslint-plugin-import`, `eslint-plugin-jsx-a11y`,
-  `eslint-plugin-react-hooks` sont tous dans l'`ignoreDependencies` de
-  `knip.json`, jamais importés nulle part (vérifié par `grep` avant tout
-  bump). `eslint-plugin-react-hooks` bumpé directement `5.0.0 → 7.1.1` sans
-  palier (dormant, aucun code ne l'exerce, pas de major `6` stable ayant de
-  sens à isoler).
-  - `nx lint` (74 projets) : **0 impact**.
-  - `check:lint-tools` (`tools/**/*.mjs`, hors périmètre `nx lint`) :
-    **15 erreurs réelles, 2 règles nouvellement actives.** Corrigées, pas
-    désactivées : `preserve-caught-error` (13×, 9 fichiers — `throw` dans
-    un `catch` sans `{ cause: error }`, corrigé partout, préserve l'erreur
-    d'origine) et `no-useless-assignment` (2×,
-    `generation-publication.mjs` — initialiseur `let
-    preserveTransactionRoot = false` mort, les deux branches try/catch le
-    réassignent avant lecture, initialiseur retiré).
-  - **Effet de bord découvert en le vivant** : le correctif de
-    `llm-execution.mjs` (sous `tools/library-setup/`) a périmé les 3
-    attestations de compatibilité — `tooling-fingerprint.mjs` hache tout
-    le contenu non-test de `tools/library-setup/` comme empreinte
-    « runner », et cette empreinte fait partie de `verification` (cf.
-    OPS-26/PR #37, même mécanisme). Cycle périmer → requalifier rejoué à
-    l'identique (10/10 preuves vertes), confirme que le garde ADR-0041 n'a
-    aucun angle mort même pour un correctif de lint sans rapport
-    fonctionnel avec `add-library`.
-  `check:all` vert. `bun audit --audit-level=high` : 0 vulnérabilité.
+  nightly `Oracle Tier 2 — backoffice-angular` était rouge **19 des 20 derniers
+  runs** (`gh run list --workflow=nightly-integration.yml`, historique du
+  2026-08-26 au 2026-09-11). Deux causes cumulées, aucun lien avec une
+  régression de code :
+    1. La step "Record + verify bundle-metrics.json" mesurait le dist du rebuild
+       `--source-map=true` (step suivante à l'époque), pas celui du build
+       production propre — un `sourceMappingURL` injecté change les octets et le
+       hash de nom de chaque fichier. Corrigé : la mesure tourne maintenant
+       immédiatement après "Build production", avant le rebuild sourcemap.
+    2. `generate-status.mjs` (`STATUS_DATE`) et `record-bundle-metrics.mjs`
+       tamponnent la date du jour à chaque régénération. `check:docs-freshness`
+       fige déjà cette date sur celle commitée (mécanisme correct, existant) ;
+       la step nightly, elle, faisait un `git diff --exit-code` brut après un
+       `bun run generate:status` sans figer — la ligne « dernière génération »
+       dérivait donc chaque nuit sans schedule reliée à un commit, même sans
+       aucun octet de contenu différent. **`record-bundle-metrics.mjs` n'avait
+       aucun mécanisme équivalent** pour son `measured_at`. Corrigé :
+       `BUNDLE_METRICS_DATE` (même pattern que `STATUS_DATE`) ajouté à
+       `record-bundle-metrics.mjs` ; nouveau
+       `check:bundle-metrics-freshness.mjs` (miroir de
+       `check-docs-freshness.mjs`) fige cette date avant de mesurer, tests
+       `node:test` dédiés (mesure inchangée → vert, drift réel → rouge, fichier
+       absent → rouge explicite). La step nightly appelle maintenant
+       `bun run check:docs-freshness && bun run check:bundle-metrics-freshness`
+       au lieu du `git diff` à la main.
+    3. Validation du correctif par `workflow_dispatch` réel (pas seulement
+       local) : le build production **n'est pas garanti bit-à-bit identique
+       macOS/ubuntu-latest** — `main-*.js` identique (505 232 octets, même
+       hash), mais `styles-*.css` diffère (28 549 vs 28 621 octets, hash
+       différent), sans changement de code. `bundle-metrics.json` doit donc
+       toujours être (re)mesuré et committé depuis un run CI réel, jamais depuis
+       un poste de dev — documenté dans `record-bundle-metrics.mjs` et le
+       commentaire du job. Step
+       `Publier bundle-metrics.json mesuré (debug drift)` ajoutée
+       (`if: failure()`) pour récupérer les octets réels sans deviner. **Drift
+       réel détecté au passage** (pas seulement l'outillage) : le bundle initial
+       est passé de `526.38 kB` (commit du 2026-08-30) à `534.54 kB` (mesuré en
+       CI le 2026-09-11, après le bump nx 23.2.0 — cf. OPS-26/PR #37), sous le
+       seuil d'avertissement `900 kB` (ADR-0016). `bundle-metrics.json` +
+       `STATUS.md`/`README.md`/`LLM_CONTEXT.md`/`etat-du-socle.md` recommittés à
+       jour, avec la mesure CI réelle
+       (`gh run download … -n bundle-metrics-measured`), pas une mesure locale.
+       `check:ci-wiring` : 40 gates (nouveau `check:bundle-metrics-freshness`
+       dans `REQUIRED_STANDALONE_SCRIPTS`, ci-wiring confirme la step nightly
+       qui l'appelle). **Revalidation du 2026-09-22 :** deux échecs Nightly
+       successifs ont révélé une troisième cause, distincte d'OPS-28 : Tailwind
+       4 conservait sa détection automatique des sources malgré les `@source`
+       explicites. Des fichiers d'outillage étrangers à l'application pouvaient
+       donc modifier le CSS de production et faire dériver la mesure sans
+       changement d'UI. Le point d'entrée utilise désormais `source(none)` ;
+       seuls les périmètres `@source` déclarés sont compilés. L'oracle
+       navigateur Material/Tailwind place sa classe sentinelle dans la source de
+       l'app **avant** le build, puis la nettoie, au lieu de dépendre du scan
+       implicite. Les pistes Tailwind et Angular Material, seules consommatrices
+       de cet oracle, ont été requalifiées intégralement. Mesure Linux
+       autoritative du run `35741311471` : `521 154` octets (`521.15 kB`),
+       JavaScript inchangé à `505 232` octets, CSS réduit de `28 621` à `15 230`
+       octets. Le run final `35741801394` est vert sur les quatre jobs (oracle
+       applicatif, intégration bibliothèques, isolation Linux et isolation
+       macOS). Le Nightly retrouve ainsi sa fonction de signal : il ne dépend
+       plus des noms ou contenus des fichiers d'outillage du dépôt.
+       **Revalidation du 2026-09-23 après PR #91 :** la CI post-fusion
+       `35831788863` est verte. Le Nightly `35836133198` a correctement détecté
+       un drift réel limité au JavaScript initial : `521 154 → 521 220` octets
+       au total, `main` `505 232 → 505 298` octets, CSS inchangé à `15 230`
+       octets et ExcelJS inchangé à `948 323` octets. Les trois autres jobs
+       Nightly sont verts. `bundle-metrics.json` a été remplacé par l'artefact
+       Ubuntu `bundle-metrics-measured` du run (artifact `10739651377`), jamais
+       par une mesure locale ; le build production local reproduit ensuite les
+       mêmes noms de chunks et `check:bundle-metrics-freshness` repasse au vert.
+       Les budgets `900kb/1mb` restent très largement respectés.
+- **OPS-30** — **fait** (2026-09-11), M, P1, alias `OPS-26 suite`. `eslint` 9→10
+  (ferme #11+#24, indissociables : `@eslint/js@10` exige `eslint ^10.0.0` en
+  peer). Sur les 5 paquets du groupe, seul `eslint` est réellement chargé par
+  `eslint.config.mjs` — `@eslint/js`, `eslint-plugin-import`,
+  `eslint-plugin-jsx-a11y`, `eslint-plugin-react-hooks` sont tous dans
+  l'`ignoreDependencies` de `knip.json`, jamais importés nulle part (vérifié par
+  `grep` avant tout bump). `eslint-plugin-react-hooks` bumpé directement
+  `5.0.0 → 7.1.1` sans palier (dormant, aucun code ne l'exerce, pas de major `6`
+  stable ayant de sens à isoler).
+    - `nx lint` (74 projets) : **0 impact**.
+    - `check:lint-tools` (`tools/**/*.mjs`, hors périmètre `nx lint`) : **15
+      erreurs réelles, 2 règles nouvellement actives.** Corrigées, pas
+      désactivées : `preserve-caught-error` (13×, 9 fichiers — `throw` dans un
+      `catch` sans `{ cause: error }`, corrigé partout, préserve l'erreur
+      d'origine) et `no-useless-assignment` (2×, `generation-publication.mjs` —
+      initialiseur `let preserveTransactionRoot = false` mort, les deux branches
+      try/catch le réassignent avant lecture, initialiseur retiré).
+    - **Effet de bord découvert en le vivant** : le correctif de
+      `llm-execution.mjs` (sous `tools/library-setup/`) a périmé les 3
+      attestations de compatibilité — `tooling-fingerprint.mjs` hache tout le
+      contenu non-test de `tools/library-setup/` comme empreinte « runner », et
+      cette empreinte fait partie de `verification` (cf. OPS-26/PR #37, même
+      mécanisme). Cycle périmer → requalifier rejoué à l'identique (10/10
+      preuves vertes), confirme que le garde ADR-0041 n'a aucun angle mort même
+      pour un correctif de lint sans rapport fonctionnel avec `add-library`.
+      `check:all` vert. `bun audit --audit-level=high` : 0 vulnérabilité.
 - **OPS-31** — **fait** (2026-09-11), S, P2, alias `OPS-26 suite`. Bumps
-  `ci(deps:)`/`docker` restants, tous périmés depuis plusieurs semaines
-  chez Dependabot (`mergeStateStatus` non recalculé) :
-  - `actions/checkout` v4→v7, `actions/setup-node` v4→v7,
-    `actions/upload-artifact` v4→v7, `actions/setup-python` v5→v7 (ferme
-    #5, #6, #7, #16) — appliqués aux 3 workflows, notes de version
-    officielles relues avant application (migration ESM interne sans
-    impact consommateur ; `setup-python` retire l'input `pip-install`,
-    non utilisé ici, vérifié par `grep`). Preuve : run CI réel de la PR,
-    17/17 verts — les 4 actions exercées sur tous les jobs bloquants.
-  - `nginx` 1.27→1.31-alpine, `oven/bun` 1.4.0→1.4.2-debian (ferme #4,
-    #31). **Aucun workflow ne construit jamais `Dockerfile`** — seule
-    vérification possible : build local réel. Bloqué une première fois
-    par un backend Docker Desktop dégradé (accepte la connexion socket
-    puis `EOF` immédiat sur `docker ps`/`buildx`/`curl --unix-socket`,
-    process backend pourtant vivant) — résolu par redémarrage complet de
-    Docker Desktop (kill des process `com.docker.backend` + relance),
-    sur autorisation explicite.
-  - **Bug réel trouvé en construisant, indépendant des bumps de
-    version** : le build échoue sur `NX Cloud: Workspace is unable to be
-    authorized` — `Dockerfile` ne définissait jamais `NX_NO_CLOUD`,
-    contrairement aux 3 workflows CI qui portent ce fallback depuis
-    OPS-22/OPS-23 (2026-08-19). Confirmé pré-existant sur `main` (`git
-    show main:Dockerfile`, même absence). Invisible depuis 3 semaines
-    faute de tout CI qui construise l'image. Corrigé : `ENV
-    NX_NO_CLOUD=true` ajouté.
-  - Vérification complète en exécution réelle après correction : build
-    image → run conteneur (`docker run` avec les variables `CMZ_*`
-    documentées dans `Dockerfile`) → `HEALTHCHECK` passe (`Up … (healthy)`)
-    → `curl` sur `/` → `200` → `env.js` inspecté dans le conteneur :
-    substitution `envsubst` correcte (URLs, `enableDebug: false`,
-    `trustedFrameOrigins` converti en tableau JSON) — pas une supposition,
-    le pipeline `docker-entrypoint.sh` complet a tourné.
-- **OPS-32** — **fait localement** (2026-09-12), S, P0, alias `OPS-21 suite`.
-  La PR Dependabot #50 a échoué sur `Publication durability (macos-apfs)` avec
+  `ci(deps:)`/`docker` restants, tous périmés depuis plusieurs semaines chez
+  Dependabot (`mergeStateStatus` non recalculé) :
+    - `actions/checkout` v4→v7, `actions/setup-node` v4→v7,
+      `actions/upload-artifact` v4→v7, `actions/setup-python` v5→v7 (ferme #5,
+      #6, #7, #16) — appliqués aux 3 workflows, notes de version officielles
+      relues avant application (migration ESM interne sans impact consommateur ;
+      `setup-python` retire l'input `pip-install`, non utilisé ici, vérifié par
+      `grep`). Preuve : run CI réel de la PR, 17/17 verts — les 4 actions
+      exercées sur tous les jobs bloquants.
+    - `nginx` 1.27→1.31-alpine, `oven/bun` 1.4.0→1.4.2-debian (ferme #4, #31).
+      **Aucun workflow ne construit jamais `Dockerfile`** — seule vérification
+      possible : build local réel. Bloqué une première fois par un backend
+      Docker Desktop dégradé (accepte la connexion socket puis `EOF` immédiat
+      sur `docker ps`/`buildx`/`curl --unix-socket`, process backend pourtant
+      vivant) — résolu par redémarrage complet de Docker Desktop (kill des
+      process `com.docker.backend` + relance), sur autorisation explicite.
+    - **Bug réel trouvé en construisant, indépendant des bumps de version** : le
+      build échoue sur `NX Cloud: Workspace is unable to be authorized` —
+      `Dockerfile` ne définissait jamais `NX_NO_CLOUD`, contrairement aux 3
+      workflows CI qui portent ce fallback depuis OPS-22/OPS-23 (2026-08-19).
+      Confirmé pré-existant sur `main` (`git show main:Dockerfile`, même
+      absence). Invisible depuis 3 semaines faute de tout CI qui construise
+      l'image. Corrigé : `ENV NX_NO_CLOUD=true` ajouté.
+    - Vérification complète en exécution réelle après correction : build image →
+      run conteneur (`docker run` avec les variables `CMZ_*` documentées dans
+      `Dockerfile`) → `HEALTHCHECK` passe (`Up … (healthy)`) → `curl` sur `/` →
+      `200` → `env.js` inspecté dans le conteneur : substitution `envsubst`
+      correcte (URLs, `enableDebug: false`, `trustedFrameOrigins` converti en
+      tableau JSON) — pas une supposition, le pipeline `docker-entrypoint.sh`
+      complet a tourné.
+- **OPS-32** — **fait localement** (2026-09-12), S, P0, alias `OPS-21 suite`. La
+  PR Dependabot #50 a échoué sur `Publication durability (macos-apfs)` avec
   `unsupported filesystem darwin:27`. Ce n'est ni Vitest ni l'updater Bun : le
   job s'arrête avant les tests. Preuve croisée : le job vert post-fusion de
   `main` et le job rouge #50 utilisent exactement le runner `macos-14-arm64`,
@@ -1482,9 +1478,9 @@ Figma, désormais source partielle différée :
   la prochaine fusion squash. La sortie attendue est une provenance stable et
   adressée par le contenu, qui survit à `branche → squash → main`, invalide
   toujours toute modification sémantique et n'accorde aucune écriture
-  privilégiée aux PR non fiables. Un test d'intégration doit reproduire le
-  cycle complet ; la politique squash-only, l'historique linéaire et les
-  protections de `main` restent inchangés.
+  privilégiée aux PR non fiables. Un test d'intégration doit reproduire le cycle
+  complet ; la politique squash-only, l'historique linéaire et les protections
+  de `main` restent inchangés.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
@@ -1861,9 +1857,9 @@ Figma, désormais source partielle différée :
   variantes incluses) sont tous fait/fait localement, confirmés CI verte (voir
   PLAT-6 ci-dessus et §6 promotion M4) — ce chantier peut être engagé.
 - **PLAT-9** — partiel (socle local fait le 2026-09-07, preuve réelle ouverte),
-  M, P1, [issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64), alias
-  `réalisation d'écran multi-nœuds indépendants`.
-  **Audit préalable `list-query` (2026-09-15) :**
+  M, P1, [issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64),
+  alias `réalisation d'écran multi-nœuds indépendants`. **Audit préalable
+  `list-query` (2026-09-15) :**
   [`audit-list-query-2026-09-15.md`](./audit-list-query-2026-09-15.md). Verdict
   Staff : infrastructure de génération solide, mais composition interdite en
   production avant correction des release blockers auth/cache, nullabilité,
@@ -1873,21 +1869,21 @@ Figma, désormais source partielle différée :
   reproduction de SEOS avant satisfaction des critères de sortie de l'audit.
   **Audit préalable `action-request` (2026-09-15) :**
   [`audit-action-request-2026-09-15.md`](./audit-action-request-2026-09-15.md).
-  Verdict Staff : génération déterministe et oracles isolés solides, mais
-  statut `proven` insuffisant pour autoriser la production. Blockers confirmés :
-  Bearer du host sur actions publiques, validation facultative et incomplète,
-  absence de décodage runtime, verbes/path/media types non réalisés, succès
-  distant transformé en échec local rejouable, absence d'idempotence et
-  d'invalidation déclarative des queries. Toute refonte incompatible suit
-  ADR-0039 (`action-request` v2 + migrateur) et se lie au `backend-contract`.
-  **C1a — confinement v1 fait localement le 2026-09-16 :** le registre reflète
-  désormais le verdict des audits : `list-query` et `action-request` v1 sont
-  tous deux `experimental`. `create-module` les refuse avant toute écriture,
-  sauf consentement initial explicite `--allow-experimental`; ce consentement
-  ne contourne aucun gate et n'est accepté ni en reprise ni en abandon. Les
-  preuves v1 restent lisibles pour construire les migrateurs. Cette tranche ne
-  prétend fermer aucun blocker runtime et ne remplace pas `list-query` 2.0.
-  **C1b — audit de maintenabilité de l'automatisation fait le 2026-09-16 :**
+  Verdict Staff : génération déterministe et oracles isolés solides, mais statut
+  `proven` insuffisant pour autoriser la production. Blockers confirmés : Bearer
+  du host sur actions publiques, validation facultative et incomplète, absence
+  de décodage runtime, verbes/path/media types non réalisés, succès distant
+  transformé en échec local rejouable, absence d'idempotence et d'invalidation
+  déclarative des queries. Toute refonte incompatible suit ADR-0039
+  (`action-request` v2 + migrateur) et se lie au `backend-contract`. **C1a —
+  confinement v1 fait localement le 2026-09-16 :** le registre reflète désormais
+  le verdict des audits : `list-query` et `action-request` v1 sont tous deux
+  `experimental`. `create-module` les refuse avant toute écriture, sauf
+  consentement initial explicite `--allow-experimental`; ce consentement ne
+  contourne aucun gate et n'est accepté ni en reprise ni en abandon. Les preuves
+  v1 restent lisibles pour construire les migrateurs. Cette tranche ne prétend
+  fermer aucun blocker runtime et ne remplace pas `list-query` 2.0. **C1b —
+  audit de maintenabilité de l'automatisation fait le 2026-09-16 :**
   [`audit-maintenable-automatisation-2026-09-16.md`](./audit-maintenable-automatisation-2026-09-16.md)
   mesure le parcours `create-app → add-library → create-module` avant toute
   nouvelle abstraction. Verdict : `create-app` est conservé avec une UX à
@@ -1900,31 +1896,29 @@ Figma, désormais source partielle différée :
   découplées, séparation qualification/application, diagnostics humains,
   simplification des commandes, puis budget obligatoire pour les compositions
   v2. Aucune garantie existante n'est supprimée avant remplacement prouvé, mais
-  aucune extension du modèle actuel n'est admise.
-  **C1c — SIMPL-1 fait le 2026-09-16 :** les trois contextes GitHub bibliothèque
-  restent stables et exécutent toujours un sélecteur Node fail-closed. Bun,
-  l'installation et les preuves isolation/E2E ne tournent désormais que si le
-  diff touche leur surface de risque déclarée ; `check:library-setup` reste le
-  contrat rapide bloquant dans les garde-fous. La preuve profonde complète est
-  conservée chaque nuit sur Linux, macOS et sur le parcours
-  `create-app → Material → Tailwind`. Les tests du classifieur et de la
-  politique YAML bloquent les faux négatifs de câblage. Aucune réduction de
-  garantie de sécurité n'a été utilisée pour fermer SIMPL-1.
-  **C1d — SIMPL-2 fait le 2026-09-16 :** la voie dormante
-  `llm-then-verified` est absente du schéma et du cœur `add-library`; son runner,
-  sa fixture et ses tests dédiés (1 312 lignes) sont supprimés. Le validateur
-  refuse explicitement les anciennes recettes et rappelle qu'un fournisseur
-  réel, un nouvel audit de sécurité et un nouvel ADR sont requis pour toute
-  réintroduction. Angular Material, Tailwind et Transloco ont été périmés puis
-  requalifiés par leurs vraies preuves isolées. SIMPL-3 est le prochain lot.
-  **C1e — SIMPL-3 fait le 2026-09-16 :** l'empreinte globale du dossier
-  `tools/library-setup/` est remplacée par une liste fermée de sources communes
-  et de sources propres aux oracles réellement requis par chaque piste. Cette
-  liste et ses SHA-256 sont visibles dans l'attestation `1.2.0`; une acceptance
-  sans surface déclarée échoue fermée. Les tests prouvent qu'un oracle étranger
-  ne périme plus une piste indépendante et qu'une source pertinente la périme
-  toujours. Angular Material, Tailwind et Transloco ont été requalifiés par le
-  parcours réel.
+  aucune extension du modèle actuel n'est admise. **C1c — SIMPL-1 fait le
+  2026-09-16 :** les trois contextes GitHub bibliothèque restent stables et
+  exécutent toujours un sélecteur Node fail-closed. Bun, l'installation et les
+  preuves isolation/E2E ne tournent désormais que si le diff touche leur surface
+  de risque déclarée ; `check:library-setup` reste le contrat rapide bloquant
+  dans les garde-fous. La preuve profonde complète est conservée chaque nuit sur
+  Linux, macOS et sur le parcours `create-app → Material → Tailwind`. Les tests
+  du classifieur et de la politique YAML bloquent les faux négatifs de câblage.
+  Aucune réduction de garantie de sécurité n'a été utilisée pour fermer SIMPL-1.
+  **C1d — SIMPL-2 fait le 2026-09-16 :** la voie dormante `llm-then-verified`
+  est absente du schéma et du cœur `add-library`; son runner, sa fixture et ses
+  tests dédiés (1 312 lignes) sont supprimés. Le validateur refuse explicitement
+  les anciennes recettes et rappelle qu'un fournisseur réel, un nouvel audit de
+  sécurité et un nouvel ADR sont requis pour toute réintroduction. Angular
+  Material, Tailwind et Transloco ont été périmés puis requalifiés par leurs
+  vraies preuves isolées. SIMPL-3 est le prochain lot. **C1e — SIMPL-3 fait le
+  2026-09-16 :** l'empreinte globale du dossier `tools/library-setup/` est
+  remplacée par une liste fermée de sources communes et de sources propres aux
+  oracles réellement requis par chaque piste. Cette liste et ses SHA-256 sont
+  visibles dans l'attestation `1.2.0`; une acceptance sans surface déclarée
+  échoue fermée. Les tests prouvent qu'un oracle étranger ne périme plus une
+  piste indépendante et qu'une source pertinente la périme toujours. Angular
+  Material, Tailwind et Transloco ont été requalifiés par le parcours réel.
   **C1f — SIMPL-4 fait localement le 2026-09-17 :** la qualification rare
   conserve recette vendeuse, confinement et oracles, mais prouve désormais un
   adaptateur plateforme distinct porté par l'attestation `1.3.0`. La CLI
@@ -1933,142 +1927,134 @@ Figma, désormais source partielle différée :
   fast-forward ; elle ne charge ni sandbox, ni navigateur, ni promotion. Les
   trois pistes ont été réellement requalifiées. Le harnais
   `create-app → Material → Tailwind` passe de 2 min 58 s à 1 min 44 s, environ
-  42 % de temps mur en moins.
-  **C1g — SIMPL-5 fait localement le 2026-09-17 :** `create-app`,
-  `add-library` et `create-module` exposent `--explain` sans précondition ni
-  écriture. Le contrat JSON fermé `1.0.0` affiche propriété, phases, checks,
-  temporaires, journal, verrou et reprise. Sa gate dédiée exécute les trois CLI
-  hors workspace et vérifie leur innocuité. Le runbook humain commun reste
-  borné à 138 lignes par test.
-  **C1h — SIMPL-6 fait localement le 2026-09-17 :** `create-app` publie
-  directement ; `--dry-run` et `--expect-plan` sont des options, et le résultat
-  JSON rend la publication observable. Les primitives partagées de cycle de vie
-  ont un nom neutre sans migrer le stockage historique récupérable.
-  `create-module` conserve son journal à trois états et son rollback, mais son
-  chemin nominal n'exécute qu'une installation sans scripts, les builds/lint
-  des projets créés et leur formatage. Un test prouve que les audits globaux
-  noms, targets et dépendances restent directement bloquants dans la CI.
-  **C1i — SIMPL-7 engagé localement le 2026-09-22 :** le premier incrément de
-  `list-query` 2.0 introduit un contrat fermé qui référence le
-  `backend-contract` par identité, version et SHA-256 au lieu de redéclarer
-  HTTP, auth et DTO. Le mapping wire → read model et les politiques cache,
-  concurrence, annulation, retry et données obsolètes restent explicites. Le
-  migrateur v1 → v2 exige les décisions non déductibles, vérifie la parité avec
-  le backend, est idempotent et écrit un seul fichier sans écrasement, journal
-  ni runtime propriétaire. Le contrat représente le mapping connu du cas actif
-  `site-group-select` (`id → value` / `name → label`) sans le revendiquer encore
-  comme oracle runtime. ADR-0047 documente la frontière. À ce stade restaient :
-  compilation v2, décodage runtime, contrôleur de query, adaptateur host réel,
-  second cas imbriqué puis réalisation de page.
-  **C1j — compilateur v2 engagé localement le 2026-09-22 :** la définition et
-  les octets backend sont résolus en un modèle d'exécution neutre séparant
-  port, transport, DTO wire, read model, contrôleur et échecs. Le SHA-256 est
-  calculé sur les octets réellement compilés et la migration refuse désormais
-  toute sortie qu'elle ne peut pas compiler. La revue SIMPL obligatoire est
-  consignée dans ADR-0048 : 1 233 lignes de production v2 cumulées, trois
-  modules et un schéma ; aucun second schéma, CLI, journal ou renderer ajouté.
-  Paramètres, modèles imbriqués et annulation manuelle restent bloqués jusqu'à
-  leurs preuves réelles. Restent le décodage exécuté, l'adaptateur host Angular
-  et l'oracle actif `site-group-select`.
-  **C1k — renderer et oracle Angular v2 engagés localement le 2026-09-23 :** le
-  code généré est compilé puis exécuté avec `TestBed`, le vrai
-  `ResourceFacade` et les vrais intercepteurs auth/erreur/cache. Le cas actif
-  `site-group-select` prouve DTO wire distinct, mapping `id → value` / `name →
-  label`, enveloppe et types stricts, erreurs typées, six états, bypass cache,
-  conservation de la dernière valeur après erreur et annulation latest-wins.
-  Une query publique prouve l'absence de Bearer. Les tokens HTTP sont ceux du
-  host, jamais des copies privées. ADR-0049 mesure 1 840 lignes de production,
-  sept modules et un schéma et documente la revue de simplification. Restent
-  explicitement : (1) le second cas réel paramétré et imbriqué
-  `tasks-actions-processing-type`, (2) la décision et l'oracle de parité React,
-  (3) la publication durable de la sortie, puis (4) la réalisation d'une page
-  composée N `list-query` + N `action-request`. La v2 reste `experimental`
-  jusque-là.
-  **C1l — second oracle réel SIMPL-7 engagé localement le 2026-09-23 :**
-  `tasks-actions-processing-type` passe désormais par le même pipeline v2. La
-  définition lie explicitement `reportUniqId` au path backend `{id}` ; le
-  renderer valide la chaîne non vide, l'encode comme un segment unique et
-  décode strictement `operators` comme un tableau de valeurs
-  `mtn|orange|moov`. L'oracle natif Angular couvre l'URL, le host auth/cache,
-  le mapping, le rejet avant domaine, le reload et l'annulation lors d'un
-  changement d'identifiant. Les capacités voisines non prouvées restent
-  fermées. ADR-0050 mesure 2 231 lignes de surface v2 (+391), plus 9 lignes
-  nettes dans le validateur backend existant, sans nouveau module de production.
-  À ce stade restaient : (1) décision et oracle de parité React, (2)
-  publication durable, puis (3) réalisation d'une page N `list-query` + N
-  `action-request`.
-  **C1m — parité React `list-query` v2 engagée localement le 2026-09-23 :** les
-  trois définitions de preuve sont compilées vers six fichiers React standard
-  et exécutées sous React 19. Le client ne possède ni auth, ni cache, ni
+  42 % de temps mur en moins. **C1g — SIMPL-5 fait localement le 2026-09-17 :**
+  `create-app`, `add-library` et `create-module` exposent `--explain` sans
+  précondition ni écriture. Le contrat JSON fermé `1.0.0` affiche propriété,
+  phases, checks, temporaires, journal, verrou et reprise. Sa gate dédiée
+  exécute les trois CLI hors workspace et vérifie leur innocuité. Le runbook
+  humain commun reste borné à 138 lignes par test. **C1h — SIMPL-6 fait
+  localement le 2026-09-17 :** `create-app` publie directement ; `--dry-run` et
+  `--expect-plan` sont des options, et le résultat JSON rend la publication
+  observable. Les primitives partagées de cycle de vie ont un nom neutre sans
+  migrer le stockage historique récupérable. `create-module` conserve son
+  journal à trois états et son rollback, mais son chemin nominal n'exécute
+  qu'une installation sans scripts, les builds/lint des projets créés et leur
+  formatage. Un test prouve que les audits globaux noms, targets et dépendances
+  restent directement bloquants dans la CI. **C1i — SIMPL-7 engagé localement le
+  2026-09-22 :** le premier incrément de `list-query` 2.0 introduit un contrat
+  fermé qui référence le `backend-contract` par identité, version et SHA-256 au
+  lieu de redéclarer HTTP, auth et DTO. Le mapping wire → read model et les
+  politiques cache, concurrence, annulation, retry et données obsolètes restent
+  explicites. Le migrateur v1 → v2 exige les décisions non déductibles, vérifie
+  la parité avec le backend, est idempotent et écrit un seul fichier sans
+  écrasement, journal ni runtime propriétaire. Le contrat représente le mapping
+  connu du cas actif `site-group-select` (`id → value` / `name → label`) sans le
+  revendiquer encore comme oracle runtime. ADR-0047 documente la frontière. À ce
+  stade restaient : compilation v2, décodage runtime, contrôleur de query,
+  adaptateur host réel, second cas imbriqué puis réalisation de page. **C1j —
+  compilateur v2 engagé localement le 2026-09-22 :** la définition et les octets
+  backend sont résolus en un modèle d'exécution neutre séparant port, transport,
+  DTO wire, read model, contrôleur et échecs. Le SHA-256 est calculé sur les
+  octets réellement compilés et la migration refuse désormais toute sortie
+  qu'elle ne peut pas compiler. La revue SIMPL obligatoire est consignée dans
+  ADR-0048 : 1 233 lignes de production v2 cumulées, trois modules et un schéma
+  ; aucun second schéma, CLI, journal ou renderer ajouté. Paramètres, modèles
+  imbriqués et annulation manuelle restent bloqués jusqu'à leurs preuves
+  réelles. Restent le décodage exécuté, l'adaptateur host Angular et l'oracle
+  actif `site-group-select`. **C1k — renderer et oracle Angular v2 engagés
+  localement le 2026-09-23 :** le code généré est compilé puis exécuté avec
+  `TestBed`, le vrai `ResourceFacade` et les vrais intercepteurs
+  auth/erreur/cache. Le cas actif `site-group-select` prouve DTO wire distinct,
+  mapping `id → value` / `name → label`, enveloppe et types stricts, erreurs
+  typées, six états, bypass cache, conservation de la dernière valeur après
+  erreur et annulation latest-wins. Une query publique prouve l'absence de
+  Bearer. Les tokens HTTP sont ceux du host, jamais des copies privées. ADR-0049
+  mesure 1 840 lignes de production, sept modules et un schéma et documente la
+  revue de simplification. Restent explicitement : (1) le second cas réel
+  paramétré et imbriqué `tasks-actions-processing-type`, (2) la décision et
+  l'oracle de parité React, (3) la publication durable de la sortie, puis (4) la
+  réalisation d'une page composée N `list-query` + N `action-request`. La v2
+  reste `experimental` jusque-là. **C1l — second oracle réel SIMPL-7 engagé
+  localement le 2026-09-23 :** `tasks-actions-processing-type` passe désormais
+  par le même pipeline v2. La définition lie explicitement `reportUniqId` au
+  path backend `{id}` ; le renderer valide la chaîne non vide, l'encode comme un
+  segment unique et décode strictement `operators` comme un tableau de valeurs
+  `mtn|orange|moov`. L'oracle natif Angular couvre l'URL, le host auth/cache, le
+  mapping, le rejet avant domaine, le reload et l'annulation lors d'un
+  changement d'identifiant. Les capacités voisines non prouvées restent fermées.
+  ADR-0050 mesure 2 231 lignes de surface v2 (+391), plus 9 lignes nettes dans
+  le validateur backend existant, sans nouveau module de production. À ce stade
+  restaient : (1) décision et oracle de parité React, (2) publication durable,
+  puis (3) réalisation d'une page N `list-query` + N `action-request`. **C1m —
+  parité React `list-query` v2 engagée localement le 2026-09-23 :** les trois
+  définitions de preuve sont compilées vers six fichiers React standard et
+  exécutées sous React 19. Le client ne possède ni auth, ni cache, ni
   configuration : il transmet la politique et l'`AbortSignal` à un port hôte
   explicite. Les hooks couvrent états, reload, stale data, erreurs, latest-wins
-  et démontage. Les règles communes de modèles, décodage, path et validation
-  ont été extraites seulement après ce second consommateur ; Angular garde son
-  cycle `ResourceFacade`, React son cycle hooks. ADR-0051 mesure **2 649 lignes
-  de production v2** (+418 nettes), neuf modules et un schéma, sans nouveau
-  runtime propriétaire. Restent : (1) publier durablement une sortie existante,
-  puis (2) réaliser une page N `list-query` + N `action-request`. La capacité
-  reste `experimental` jusque-là.
-  **C1n — publication durable `list-query` v2 engagée localement le
-  2026-09-23 :** l'unique commande `generate:list-query` auto-détecte v1/v2 et
-  publie Angular/React via le moteur transactionnel existant. Le plan v2 lie
-  exhaustivement les 5/6 fichiers au vrai modèle d'exécution ; le control plane
-  persiste ce modèle et non un faux semantic model v1. Le type-check de
-  publication résout les ports déclarés dans `tsconfig.base.json` mais refuse
-  un alias inconnu. Une preuve disque couvre création, 13 artefacts inchangés,
-  dry-run d'évolution sans écriture, apply par identifiant exact et suppression
-  des anciens fichiers. **210 lignes nettes de production**, aucun nouveau
-  module, schéma, CLI, journal, lock ou runtime ; ADR-0052. Reste désormais la
-  réalisation d'une page N `list-query` + N `action-request`, avant toute
-  promotion hors `experimental`.
-  **C1o — frontière `action-request` v2 engagée localement le 2026-09-23 :** le
-  schéma `2.0.0` référence le backend content-addressed et ne redéclare plus
-  méthode, chemin, accès, auth, enveloppe ou DTO. Les mappings body/résultat et
-  les décisions concurrence, retry, idempotence, invalidation et post-succès
-  sont fermés et validés ensemble. Le migrateur v1 → v2 est déterministe,
-  idempotent, sans écrasement et refuse dérives backend, décisions absentes,
-  mappings inconnus ou ambigus. La migration `support` fournit l'avant/après
-  versionné ; le cas actif `forgot-password` vérifie les hashes du vrai code
-  Angular, ses DTO, son enveloppe et l'accès public, sans prétendre que le
-  serveur est `verified-live`. La revue SIMPL d'ADR-0053 accepte **1 141 lignes
-  de production**, deux modules exécutables et un schéma, sans renderer,
-  runtime, cache, journal, verrou ni publisher. Restent pour fermer C1 : (1)
-  compilateur neutre `action-request` v2, (2) host/oracle Angular, (3) parité
-  React, (4) publication durable ; le plan N×N vient ensuite, conformément à
-  l'audit de composition.
-  **Direction produit ultérieure normalisée le 2026-09-23 :**
+  et démontage. Les règles communes de modèles, décodage, path et validation ont
+  été extraites seulement après ce second consommateur ; Angular garde son cycle
+  `ResourceFacade`, React son cycle hooks. ADR-0051 mesure **2 649 lignes de
+  production v2** (+418 nettes), neuf modules et un schéma, sans nouveau runtime
+  propriétaire. Restent : (1) publier durablement une sortie existante, puis (2)
+  réaliser une page N `list-query` + N `action-request`. La capacité reste
+  `experimental` jusque-là. **C1n — publication durable `list-query` v2 engagée
+  localement le 2026-09-23 :** l'unique commande `generate:list-query`
+  auto-détecte v1/v2 et publie Angular/React via le moteur transactionnel
+  existant. Le plan v2 lie exhaustivement les 5/6 fichiers au vrai modèle
+  d'exécution ; le control plane persiste ce modèle et non un faux semantic
+  model v1. Le type-check de publication résout les ports déclarés dans
+  `tsconfig.base.json` mais refuse un alias inconnu. Une preuve disque couvre
+  création, 13 artefacts inchangés, dry-run d'évolution sans écriture, apply par
+  identifiant exact et suppression des anciens fichiers. **210 lignes nettes de
+  production**, aucun nouveau module, schéma, CLI, journal, lock ou runtime ;
+  ADR-0052. Reste désormais la réalisation d'une page N `list-query` + N
+  `action-request`, avant toute promotion hors `experimental`. **C1o — frontière
+  `action-request` v2 engagée localement le 2026-09-23 :** le schéma `2.0.0`
+  référence le backend content-addressed et ne redéclare plus méthode, chemin,
+  accès, auth, enveloppe ou DTO. Les mappings body/résultat et les décisions
+  concurrence, retry, idempotence, invalidation et post-succès sont fermés et
+  validés ensemble. Le migrateur v1 → v2 est déterministe, idempotent, sans
+  écrasement et refuse dérives backend, décisions absentes, mappings inconnus ou
+  ambigus. La migration `support` fournit l'avant/après versionné ; le cas actif
+  `forgot-password` vérifie les hashes du vrai code Angular, ses DTO, son
+  enveloppe et l'accès public, sans prétendre que le serveur est
+  `verified-live`. La revue SIMPL d'ADR-0053 accepte **1 141 lignes de
+  production**, deux modules exécutables et un schéma, sans renderer, runtime,
+  cache, journal, verrou ni publisher. Restent pour fermer C1 : (1) compilateur
+  neutre `action-request` v2, (2) host/oracle Angular, (3) parité React, (4)
+  publication durable ; le plan N×N vient ensuite, conformément à l'audit de
+  composition. **Direction produit ultérieure normalisée le 2026-09-23 :**
   [`vision-produit-workbench-contractuel.md`](./vision-produit-workbench-contractuel.md)
   conserve la projection d'un atelier assisté par IA : conversation de
   conception, artefacts versionnés, aperçu isolé, diff, approbation et
   publication contrôlée. Cette vision n'est ni une capacité actuelle ni un
   chantier prioritaire concurrent. `action-request` v2 étant désormais fermé,
   son ordre est : prouver le vertical slice N×N, puis seulement livrer un
-  cockpit en lecture seule avant toute proposition ou écriture assistée.
-  **C1p — compilateur neutre `action-request` v2 engagé localement le
-  2026-09-24 :** la définition et les octets backend sont résolus une seule fois
-  en port métier, payload wire, transport, réponse wire, résultat, politiques,
-  contrôleur et échecs. Le hash porte sur les octets réellement compilés ; une
-  action publique omet l'auth du host. La réussite distante forme une frontière
-  de commit : un effet local en échec produit `committed-with-local-error` et ne
-  peut relancer que cet effet, jamais la mutation distante. La migration appelle
-  le compilateur avant écriture. ADR-0054 accepte **1 777 lignes de production
+  cockpit en lecture seule avant toute proposition ou écriture assistée. **C1p —
+  compilateur neutre `action-request` v2 engagé localement le 2026-09-24 :** la
+  définition et les octets backend sont résolus une seule fois en port métier,
+  payload wire, transport, réponse wire, résultat, politiques, contrôleur et
+  échecs. Le hash porte sur les octets réellement compilés ; une action publique
+  omet l'auth du host. La réussite distante forme une frontière de commit : un
+  effet local en échec produit `committed-with-local-error` et ne peut relancer
+  que cet effet, jamais la mutation distante. La migration appelle le
+  compilateur avant écriture. ADR-0054 accepte **1 777 lignes de production
   v2**, trois modules et un schéma, sans renderer, runtime, CLI, journal ou
   publication supplémentaires. Restent : (1) host/oracle Angular, (2) parité
-  React, (3) publication durable, puis le plan N×N.
-  **C1q — host/oracle Angular `action-request` v2 engagé localement le
-  2026-09-24 :** le cas actif `forgot-password` est rendu en six artefacts
-  Angular ordinaires, compilé puis exécuté avec `TestBed`, le vrai
-  `HttpClient`, les vrais intercepteurs auth/erreur et les tokens publics du
-  host. La validation refuse les entrées invalides avant HTTP ; l'action
-  publique ne transporte aucun Bearer ; payload, enveloppe, DTO wire et
-  résultat sont séparés et décodés strictement. Le contrôleur couvre succès,
-  erreurs typées, remise à zéro du résultat et rejet d'une double soumission
-  sans perturber la requête en vol. Les formes voisines restent fermées.
-  ADR-0055 mesure **2 436 lignes de production v2**, six modules exécutables et
-  le schéma auteur, sans runtime, CLI, cache, journal, verrou ou publication
-  supplémentaires. Restent : (1) parité React, (2) publication durable, puis le
-  plan N×N. La capacité reste `experimental`.
-  **C1r — parité React `action-request` v2 engagée localement le 2026-09-24 :**
+  React, (3) publication durable, puis le plan N×N. **C1q — host/oracle Angular
+  `action-request` v2 engagé localement le 2026-09-24 :** le cas actif
+  `forgot-password` est rendu en six artefacts Angular ordinaires, compilé puis
+  exécuté avec `TestBed`, le vrai `HttpClient`, les vrais intercepteurs
+  auth/erreur et les tokens publics du host. La validation refuse les entrées
+  invalides avant HTTP ; l'action publique ne transporte aucun Bearer ; payload,
+  enveloppe, DTO wire et résultat sont séparés et décodés strictement. Le
+  contrôleur couvre succès, erreurs typées, remise à zéro du résultat et rejet
+  d'une double soumission sans perturber la requête en vol. Les formes voisines
+  restent fermées. ADR-0055 mesure **2 436 lignes de production v2**, six
+  modules exécutables et le schéma auteur, sans runtime, CLI, cache, journal,
+  verrou ou publication supplémentaires. Restent : (1) parité React, (2)
+  publication durable, puis le plan N×N. La capacité reste `experimental`. **C1r
+  — parité React `action-request` v2 engagée localement le 2026-09-24 :**
   `forgot-password` est désormais rendu depuis le même modèle et le même plan
   que la cible Angular. Le client transmet service, URL, méthode, headers,
   politique `omit` et payload à un port host explicite ; il ne crée ni fetch,
@@ -2080,23 +2066,22 @@ Figma, désormais source partielle différée :
   restent séparés. ADR-0056 mesure **2 792 lignes de production v2** (+356
   nettes), huit modules exécutables et le schéma auteur, sans nouveau runtime,
   CLI, journal, verrou ou cache. Reste la publication durable avant le plan N×N.
-  La capacité reste `experimental`.
-  **C1s — publication durable `action-request` v2 engagée localement le
-  2026-09-24 :** l'unique commande `generate:action-request` détecte désormais
-  v1/v2 et publie les sorties Angular/React v2 via le moteur transactionnel
-  existant. Le control plane persiste le vrai modèle d'exécution et son plan,
-  jamais les modèles v1. La preuve disque couvre création, 14 artefacts
-  inchangés, dry-run sans écriture, évolution limitée aux deux contrôles et
-  apply par identifiant exact ; les cibles `layered` et versions inconnues sont
-  refusées avant écriture. **67 lignes nettes de production** dans deux modules
-  existants, aucun nouveau module, schéma, CLI, renderer, runtime, journal,
-  verrou ou cache ; ADR-0057. `action-request` v2 atteint **2 859 lignes de
-  production** et reste `experimental` jusqu'au vertical slice N×N, désormais
-  prochain chantier.
-  **C2a — premier `page-execution-plan` engagé localement le 2026-09-24 :** le
-  planner consomme le contrat de page et les modèles v2 par URI + SHA-256, puis
-  produit des instances de query/commande à états locaux indépendants. Deux
-  queries réelles, dont une paramétrée, et une commande réelle sont jointes par
+  La capacité reste `experimental`. **C1s — publication durable `action-request`
+  v2 engagée localement le 2026-09-24 :** l'unique commande
+  `generate:action-request` détecte désormais v1/v2 et publie les sorties
+  Angular/React v2 via le moteur transactionnel existant. Le control plane
+  persiste le vrai modèle d'exécution et son plan, jamais les modèles v1. La
+  preuve disque couvre création, 14 artefacts inchangés, dry-run sans écriture,
+  évolution limitée aux deux contrôles et apply par identifiant exact ; les
+  cibles `layered` et versions inconnues sont refusées avant écriture. **67
+  lignes nettes de production** dans deux modules existants, aucun nouveau
+  module, schéma, CLI, renderer, runtime, journal, verrou ou cache ; ADR-0057.
+  `action-request` v2 atteint **2 859 lignes de production** et reste
+  `experimental` jusqu'au vertical slice N×N, désormais prochain chantier. **C2a
+  — premier `page-execution-plan` engagé localement le 2026-09-24 :** le planner
+  consomme le contrat de page et les modèles v2 par URI + SHA-256, puis produit
+  des instances de query/commande à états locaux indépendants. Deux queries
+  réelles, dont une paramétrée, et une commande réelle sont jointes par
   backend/opération ; inputs, accès, permissions, types et hashes sont vérifiés.
   Chaque sortie reçoit un `producer_node_id` explicite et l'union canonique des
   capacités est négociable fail-closed. Replay, producteur ambigu, primitive
@@ -2104,40 +2089,39 @@ Figma, désormais source partielle différée :
   couverts. **1 141 lignes de production contractuelle** (749 cœur + 392
   schéma), aucun CLI, publisher, renderer, runtime, cache, journal, verrou ou
   dépendance ; ADR-0058. Restent C3, le composition root Angular minimal, puis
-  C4, l'oracle hermétique observant deux GET et un POST.
-  **C3 — composition root Angular engagé localement le 2026-09-24 :** la cible
-  relit plan, contrat de page et modèles content-addressed, refuse toute dérive,
-  matérialise chaque primitive v2 sous son ID de nœud puis génère uniquement le
-  service de page, les providers et l'API publique. Les bindings host sont
-  fermés et les capacités négociées contre une allowlist indépendante. La
-  sortie type-checkée passe par la publication transactionnelle existante ;
-  création et dry-run stable sont prouvés. **654 lignes de production
-  contractuelle**, aucun composant UI, runtime, transport, cache, journal,
-  verrou ou publisher ajouté ; ADR-0059. Reste C4, l'oracle externe hermétique
-  observant réellement deux GET et un POST ainsi que les échecs partiels.
-  **C4 — oracle externe Angular engagé localement le 2026-09-24 :** le
-  préparateur natif matérialise désormais cette sortie C3 exacte et un spec
-  Vitest extérieur au code généré l'instancie par les providers publics. Cinq
-  scénarios observent deux GET et un POST avec URL, payload, auth et cache,
-  puis panne partielle, retry ciblé, annulations `latest-wins`/destruction et
-  double submit. Les politiques `none` restent absentes et observables : aucun
-  retry automatique, idempotency key, invalidation ou effet post-succès n'est
-  inventé. **Zéro ligne de runtime de production**, aucun nouveau transport,
-  orchestrateur, cache, schéma, publisher, journal, verrou ou dépendance ;
-  ADR-0060. Restent C5, le vertical slice représentatif avec UI/a11y, puis C6,
-  la promotion humaine et la fermeture éventuelle de l'issue #64.
-  **C5a — demande externe et baseline SEOS engagées localement le 2026-09-25 :**
-  le besoin « Gestion des utilisateurs » a été figé avant lecture du corpus.
-  Après comparaison et clarification, l'option exacte SEOS a été retenue : deux
-  queries (`users-list`, `profiles-select`) et une commande (`create-user`). Un
-  spec Angular traverse les vraies couches domain/data/application avec le seul
-  réseau mocké et verrouille trois scénarios : GET paginé/filtres/mapping, POST
-  réussi avec notification et rechargement de la liste courante, POST en échec
-  sans rechargement ni perte de liste. **3/3 tests ciblés verts, zéro runtime de
-  production ajouté.** C5 reste ouvert : pagination/query parameters dans
-  `list-query` v2, invalidation positive nommée, composition complète puis
-  UI/a11y et oracle externe. L'erreur email n'est pas typée sans enveloppe
-  backend observée. Voir
+  C4, l'oracle hermétique observant deux GET et un POST. **C3 — composition root
+  Angular engagé localement le 2026-09-24 :** la cible relit plan, contrat de
+  page et modèles content-addressed, refuse toute dérive, matérialise chaque
+  primitive v2 sous son ID de nœud puis génère uniquement le service de page,
+  les providers et l'API publique. Les bindings host sont fermés et les
+  capacités négociées contre une allowlist indépendante. La sortie type-checkée
+  passe par la publication transactionnelle existante ; création et dry-run
+  stable sont prouvés. **654 lignes de production contractuelle**, aucun
+  composant UI, runtime, transport, cache, journal, verrou ou publisher ajouté ;
+  ADR-0059. Reste C4, l'oracle externe hermétique observant réellement deux GET
+  et un POST ainsi que les échecs partiels. **C4 — oracle externe Angular engagé
+  localement le 2026-09-24 :** le préparateur natif matérialise désormais cette
+  sortie C3 exacte et un spec Vitest extérieur au code généré l'instancie par
+  les providers publics. Cinq scénarios observent deux GET et un POST avec URL,
+  payload, auth et cache, puis panne partielle, retry ciblé, annulations
+  `latest-wins`/destruction et double submit. Les politiques `none` restent
+  absentes et observables : aucun retry automatique, idempotency key,
+  invalidation ou effet post-succès n'est inventé. **Zéro ligne de runtime de
+  production**, aucun nouveau transport, orchestrateur, cache, schéma,
+  publisher, journal, verrou ou dépendance ; ADR-0060. Restent C5, le vertical
+  slice représentatif avec UI/a11y, puis C6, la promotion humaine et la
+  fermeture éventuelle de l'issue #64. **C5a — demande externe et baseline SEOS
+  engagées localement le 2026-09-25 :** le besoin « Gestion des utilisateurs » a
+  été figé avant lecture du corpus. Après comparaison et clarification, l'option
+  exacte SEOS a été retenue : deux queries (`users-list`, `profiles-select`) et
+  une commande (`create-user`). Un spec Angular traverse les vraies couches
+  domain/data/application avec le seul réseau mocké et verrouille trois
+  scénarios : GET paginé/filtres/mapping, POST réussi avec notification et
+  rechargement de la liste courante, POST en échec sans rechargement ni perte de
+  liste. **3/3 tests ciblés verts, zéro runtime de production ajouté.** C5 reste
+  ouvert : pagination/query parameters dans `list-query` v2, invalidation
+  positive nommée, composition complète puis UI/a11y et oracle externe. L'erreur
+  email n'est pas typée sans enveloppe backend observée. Voir
   [`c5-entree-externe-gestion-utilisateurs-2026-09-25.md`](./c5-entree-externe-gestion-utilisateurs-2026-09-25.md).
   **C5b — page et query parameters backend-neutres engagés localement le
   2026-09-25 :** le contrat `users-list` versionne les cinq paramètres réels et
@@ -2146,37 +2130,36 @@ Figma, désormais source partielle différée :
   framework. Un mutant de forme Spring Data prouve que Laravel, Spring Boot,
   .NET et Django ne nécessitent aucun branchement central. Les deux renderers
   refusent encore explicitement la page : restent leurs oracles runtime, puis
-  l'invalidation positive et la composition complète. ADR-0061.
-  **C5c — page et query parameters Angular engagés localement le 2026-09-25 :**
-  le renderer Angular réutilise `HttpClient`, `HttpParams`, les intercepteurs du
-  host et `ResourceFacade`. Il valide les cinq paramètres avant HTTP, produit
-  une page canonique, conserve la dernière page au reload et ne crée aucun
-  runtime paginé parallèle. Un oracle externe ajoute neuf scénarios et porte la
-  suite Angular à 59/59 : encodage, optionnels, auth/cache, mapping, vide,
-  erreurs, reload et annulation. Les champs supplémentaires de la page sont
-  tolérés comme projection contractuelle ; les items restent stricts. React
-  continue d'échouer fermé. Restent sa parité runtime, l'invalidation positive
-  nommée puis la composition C5 complète. ADR-0062.
-  **C5d — page et query parameters React engagés localement le 2026-09-25 :**
-  le renderer React réutilise son `ListQueryFetchPort`, encode les paramètres
-  wire et restitue la même page canonique qu'Angular. Le hook expose page et
-  items, conserve les données sur reload/erreur et maintient annulation et
-  `latest-wins`. L'oracle React natif ajoute 9 scénarios ; suites React 53/53 et
-  Angular 59/59. Zéro dépendance ou runtime parallèle. Restent l'invalidation
-  positive nommée puis la composition C5 complète. ADR-0063.
-  **C5e — invalidation locale nommée engagée localement le 2026-09-25 :** la
-  conception déclare les `load` invalidés par une action, le planner vérifie la
-  cohérence `none`/`caller-declared` et refuse cible absente ou inconnue. Le
-  composition root Angular encapsule la commande et recharge seulement la
-  query nommée après succès distant, avec bypass du cache. Les oracles prouvent
-  aussi zéro reload après erreur, aucune autre query touchée et aucune
-  invalidation anticipée sur double submit. Suite Angular 61/61, zéro dépendance
-  ou runtime partagé. L'invalidation inter-page reste une proposition séparée à
-  décider ; elle n'est pas implicitement incluse. Reste la composition des
-  trois primitives C5 réelles, puis l'UI/a11y. ADR-0064.
-  **C5f — composition utilisateurs réelle engagée localement le 2026-09-25 :**
-  les contrats observés `profiles-select` et `create-user` rejoignent
-  `users-list` dans un composition root Angular distinct. Le wire de création
+  l'invalidation positive et la composition complète. ADR-0061. **C5c — page et
+  query parameters Angular engagés localement le 2026-09-25 :** le renderer
+  Angular réutilise `HttpClient`, `HttpParams`, les intercepteurs du host et
+  `ResourceFacade`. Il valide les cinq paramètres avant HTTP, produit une page
+  canonique, conserve la dernière page au reload et ne crée aucun runtime paginé
+  parallèle. Un oracle externe ajoute neuf scénarios et porte la suite Angular à
+  59/59 : encodage, optionnels, auth/cache, mapping, vide, erreurs, reload et
+  annulation. Les champs supplémentaires de la page sont tolérés comme
+  projection contractuelle ; les items restent stricts. React continue d'échouer
+  fermé. Restent sa parité runtime, l'invalidation positive nommée puis la
+  composition C5 complète. ADR-0062. **C5d — page et query parameters React
+  engagés localement le 2026-09-25 :** le renderer React réutilise son
+  `ListQueryFetchPort`, encode les paramètres wire et restitue la même page
+  canonique qu'Angular. Le hook expose page et items, conserve les données sur
+  reload/erreur et maintient annulation et `latest-wins`. L'oracle React natif
+  ajoute 9 scénarios ; suites React 53/53 et Angular 59/59. Zéro dépendance ou
+  runtime parallèle. Restent l'invalidation positive nommée puis la composition
+  C5 complète. ADR-0063. **C5e — invalidation locale nommée engagée localement
+  le 2026-09-25 :** la conception déclare les `load` invalidés par une action,
+  le planner vérifie la cohérence `none`/`caller-declared` et refuse cible
+  absente ou inconnue. Le composition root Angular encapsule la commande et
+  recharge seulement la query nommée après succès distant, avec bypass du cache.
+  Les oracles prouvent aussi zéro reload après erreur, aucune autre query
+  touchée et aucune invalidation anticipée sur double submit. Suite Angular
+  61/61, zéro dépendance ou runtime partagé. L'invalidation inter-page reste une
+  proposition séparée à décider ; elle n'est pas implicitement incluse. Reste la
+  composition des trois primitives C5 réelles, puis l'UI/a11y. ADR-0064. **C5f —
+  composition utilisateurs réelle engagée localement le 2026-09-25 :** les
+  contrats observés `profiles-select` et `create-user` rejoignent `users-list`
+  dans un composition root Angular distinct. Le wire de création
   `{ error, message }` reçoit la forme explicite `status-object` au lieu d'un
   faux champ `data`. L'oracle natif conserve la preuve générique antérieure et
   couvre les deux GET authentifiés, le POST snake_case à cinq champs, le reload
@@ -2184,38 +2167,45 @@ Figma, désormais source partielle différée :
   submit et l'annulation à la destruction. **67/67 tests Angular verts**, zéro
   dépendance, transport, cache ou bus ajouté. Restent la page Angular ordinaire,
   la permission `create`, les notifications, la fermeture/conservation du
-  formulaire et l'accessibilité. ADR-0065.
-  **C5g-0/1 — frontière visuelle et preuve de présentation engagées localement
-  le 2026-09-25 :** la réalisation de l'UI reste confiée à un LLM, mais une
-  référence Figma, capture ou wireframe n'a que l'autorité
-  `presentation-only`. Le nouveau manifeste fermé `presentation-evidence`
-  borne type, taille, média, page, états, viewport et SHA-256 de chaque source,
-  toutes marquées `untrusted-content`. Le work order `2.0.0` lie ces ressources
-  à son identité ; prepare/verify refusent brouillon, page/état étrangers,
-  symlink, dérive et média invalide. Sans référence, l'absence est explicite et
-  aucune fidélité visuelle n'est revendiquée. Zéro dépendance ou runtime ajouté.
-  Restent une vraie référence C5 approuvée, la page Angular, permission,
-  notifications, fermeture/conservation, a11y et oracle visuel. ADR-0066.
-  **C5g-2 — plan d'exécution lié au work order engagé localement le
-  2026-09-25 :** le work order `3.0.0` reçoit optionnellement un
+  formulaire et l'accessibilité. ADR-0065. **C5g-0/1 — frontière visuelle et
+  preuve de présentation engagées localement le 2026-09-25 :** la réalisation de
+  l'UI reste confiée à un LLM, mais une référence Figma, capture ou wireframe
+  n'a que l'autorité `presentation-only`. Le nouveau manifeste fermé
+  `presentation-evidence` borne type, taille, média, page, états, viewport et
+  SHA-256 de chaque source, toutes marquées `untrusted-content`. Le work order
+  `2.0.0` lie ces ressources à son identité ; prepare/verify refusent brouillon,
+  page/état étrangers, symlink, dérive et média invalide. Sans référence,
+  l'absence est explicite et aucune fidélité visuelle n'est revendiquée. Zéro
+  dépendance ou runtime ajouté. Restent une vraie référence C5 approuvée, la
+  page Angular, permission, notifications, fermeture/conservation, a11y et
+  oracle visuel. ADR-0066. **C5g-2 — plan d'exécution lié au work order engagé
+  localement le 2026-09-25 :** le work order `3.0.0` reçoit optionnellement un
   `page-execution-plan` par `--execution-plan`. Il n'est accepté qu'après
   validation des chemins/hashes/identités de toutes ses primitives et
   recompilation déterministe depuis le contrat publié. `verify` rejoue la même
-  preuve avant les oracles ; plan falsifié, primitive modifiée, contrat
-  étranger ou symlink échouent fermés. Sans plan, `page_execution: null`
-  interdit de revendiquer un raccord runtime généré. Zéro dépendance ou runtime
-  ajouté. Restent la publication C5 dans une app de preuve, la référence
-  visuelle approuvée, les cinq fichiers Angular, permission/notifications/a11y
-  et oracle visuel. ADR-0067.
-  Le rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
-  sont les deux variantes prouvées. Objet conteneur, map ou autre projection
-  devront recevoir un discriminateur et un oracle lors d'un cas réel, sans
-  heuristique liée à `data` ou au framework backend.
-  **QUERY-1 — lecture objet unique à auditer :** le GET
-  `RequestsDetailsApi.execute()` retourne réellement
-  `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
-  `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
-  primitive `read-query` à cardinalités `one|many|page` et un profil
+  preuve avant les oracles ; plan falsifié, primitive modifiée, contrat étranger
+  ou symlink échouent fermés. Sans plan, `page_execution: null` interdit de
+  revendiquer un raccord runtime généré. Zéro dépendance ou runtime ajouté.
+  Restent la publication C5 dans une app de preuve, la référence visuelle
+  approuvée, les cinq fichiers Angular, permission/notifications/a11y et oracle
+  visuel. ADR-0067. **C5g-3 — application de preuve réelle engagée localement le
+  2026-09-25 :** la conception approuvée `users-management-proof` publie un
+  shell Angular standard, les trois modèles C5, le plan et la composition
+  générée. Leur recompilation octet par octet et le work order raccordé sont
+  testés. Le cas réel a révélé puis fermé l'ambiguïté page/collection :
+  `data_binding.source_path` pointe explicitement `data` et doit correspondre à
+  l'`items_field` de la primitive, sans heuristique backend. Compilation
+  stricte, build, lint et tests verts ; zéro dépendance ou runtime ajouté.
+  Restent l'autorité contractuelle de la permission fine `create`, une preuve
+  visuelle approuvée, les cinq fichiers de page, notifications/a11y et oracle
+  visuel. ADR-0068. Le rôle métier « liste » ne fige pas la forme réseau :
+  tableau direct et page sont les deux variantes prouvées. Objet conteneur, map
+  ou autre projection devront recevoir un discriminateur et un oracle lors d'un
+  cas réel, sans heuristique liée à `data` ou au framework backend. **QUERY-1 —
+  lecture objet unique à auditer :** le GET `RequestsDetailsApi.execute()`
+  retourne réellement `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un
+  seul `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre
+  une primitive `read-query` à cardinalités `one|many|page` et un profil
   `detail-query` mince. Refus de dupliquer transport, cache, erreurs, contrôleur
   ou renderers ; aucun objet n'est accepté par `list-query` avant cet audit.
   **Audit préalable de la composition N×N (2026-09-15) :**
@@ -2224,14 +2214,14 @@ Figma, désormais source partielle différée :
   `data_bindings` jusqu'au work order, mais ne génère, ne raccorde et ne teste
   aucune composition runtime. La fixture mixte accepte un composant vide et
   mocke les quatre oracles ; la fixture à oracles réels a zéro load et zéro
-  appel backend. Blockers supplémentaires : data binding sans identité de
-  nœud producteur, état global impropre aux pannes partielles, absence de
+  appel backend. Blockers supplémentaires : data binding sans identité de nœud
+  producteur, état global impropre aux pannes partielles, absence de
   providers/invalidation/cancellation/concurrence, et exécution du spec réalisé
-  avec tout `process.env`. Le troisième élément sera un
-  `page-execution-plan` target-neutral référençant les primitives v2, pas un
-  troisième générateur métier. Ordre retenu : sécuriser l'oracle, stabiliser
-  les deux primitives, compiler/publier le plan et son composition root, puis
-  reproduire un vertical slice SEOS représentatif avant toute promotion.
+  avec tout `process.env`. Le troisième élément sera un `page-execution-plan`
+  target-neutral référençant les primitives v2, pas un troisième générateur
+  métier. Ordre retenu : sécuriser l'oracle, stabiliser les deux primitives,
+  compiler/publier le plan et son composition root, puis reproduire un vertical
+  slice SEOS représentatif avant toute promotion.
   [ADR-0045](../adr/0045-realisation-ecran-multi-noeuds-independants.md). La
   chaîne app-builder n'avait été prouvée que sur une page à une seule opération
   (`application-conception-proof`, un `action-request` sans lecture).
@@ -2263,15 +2253,15 @@ Figma, désormais source partielle différée :
   considérée prouvée en réel avant la fermeture de l'issue #64. Aucun sélecteur,
   adaptateur ou branche métier propre à SEOS n'est admis dans le moteur. SEOS
   reste actif comme oracle de migration jusque-là ; son retrait de la CI et son
-  archivage nécessiteront un changement séparé après revue humaine.
-  **C0 — fait, relu et fusionné par PR #66 le 2026-09-15 :** les
-  quatre oracles de `verify:page-realization` sont désormais lancés par un
-  runner externe dans un candidat jetable. L'environnement est allowlisté,
-  `node_modules` est en lecture seule, le vrai dépôt n'est pas inscriptible et
-  le réseau externe est coupé ; seule la boucle locale liée à `127.0.0.1` est
-  ouverte pour Vitest. Les mutants hostiles passent sur les backends macOS et
-  Docker, et `check:application-pipeline` est vert avec `ngc`, build, lint et
-  test réellement confinés. Preuve et limites :
+  archivage nécessiteront un changement séparé après revue humaine. **C0 — fait,
+  relu et fusionné par PR #66 le 2026-09-15 :** les quatre oracles de
+  `verify:page-realization` sont désormais lancés par un runner externe dans un
+  candidat jetable. L'environnement est allowlisté, `node_modules` est en
+  lecture seule, le vrai dépôt n'est pas inscriptible et le réseau externe est
+  coupé ; seule la boucle locale liée à `127.0.0.1` est ouverte pour Vitest. Les
+  mutants hostiles passent sur les backends macOS et Docker, et
+  `check:application-pipeline` est vert avec `ngc`, build, lint et test
+  réellement confinés. Preuve et limites :
   [`securisation-page-realization-2026-09-15.md`](./securisation-page-realization-2026-09-15.md).
   **Limite explicite** : nœuds indépendants seulement — aucune arête, aucune
   précondition inter-nœuds, aucune livraison asynchrone (relève du lot graphe
@@ -2814,21 +2804,20 @@ gouvernance, sécurité, licences.
   `require_last_push_approval`, l'historique linéaire, la résolution des
   conversations et l'interdiction des force-pushes/suppressions. Voir OPS-27
   pour la preuve empirique du refus de push direct et du blocage sans review.
-- **OPS-3** — **fait** (2026-09-14), S, P1 Ops, alias `G-7 · T6-4`. Workspace
-  Nx Cloud connecté (`nxCloudId` `69cfa6ba213c8001d0f75641`), secret GitHub
+- **OPS-3** — **fait** (2026-09-14), S, P1 Ops, alias `G-7 · T6-4`. Workspace Nx
+  Cloud connecté (`nxCloudId` `69cfa6ba213c8001d0f75641`), secret GitHub
   `NX_CLOUD_ACCESS_TOKEN` présent et effectivement injecté masqué. Le CI `main`
   [#34828468339](https://github.com/ismaelkouda/cmz-platform/actions/runs/34828468339)
   est vert et prouve des `[remote cache]` réels : 41/74 tâches de lint, soit
   55,41 %. Le nightly
   [#34823198590](https://github.com/ismaelkouda/cmz-platform/actions/runs/34823198590)
-  est vert. Les trois workflows Nx conservent le fallback sûr
-  `NX_NO_CLOUD=true` lorsque le secret est absent. _(= T6-4, même item, deux
-  ids historiques.)_
-- **OPS-4** — **fait** (2026-09-14), S, P1, alias `P1-13`.
-  `@ismaelkouda` et `@soumailakouda` couvrent chaque zone de `CODEOWNERS` ;
-  `@soumailakouda` dispose de la permission `write` et les PR qui exigent son
-  second regard lui sont assignées avec une demande de review, afin de
-  déclencher les notifications GitHub.
+  est vert. Les trois workflows Nx conservent le fallback sûr `NX_NO_CLOUD=true`
+  lorsque le secret est absent. _(= T6-4, même item, deux ids historiques.)_
+- **OPS-4** — **fait** (2026-09-14), S, P1, alias `P1-13`. `@ismaelkouda` et
+  `@soumailakouda` couvrent chaque zone de `CODEOWNERS` ; `@soumailakouda`
+  dispose de la permission `write` et les PR qui exigent son second regard lui
+  sont assignées avec une demande de review, afin de déclencher les
+  notifications GitHub.
 - **OPS-8** — ouvert, S, P1 Ops, alias `carto #6`. `nginx -t` réel conf + CSP.
   _(recoupe T4-1, même sujet.)_
 - **OPS-9** — **fait localement** (2026-08-16), M, P0 Ops. Cause racine isolée
@@ -3364,8 +3353,8 @@ gouvernance, sécurité, licences.
   retirés — `@nx/react@23.2.0` a supprimé `@svgr/webpack` de ses dépendances
   (confirmé registre npm : deps 23.1.0 → 23.2.0), le dépôt n'a aucun build
   webpack (`@angular/build` esbuild uniquement), donc `@svgr/plugin-svgo` /
-  `postcss-svgo` / `svgo` ont entièrement quitté l'arbre (`grep svgo bun.lock`
-  = 0, `bun audit` = 0 vuln). Voir OPS-26 (bump nx via lockfile régénéré).
+  `postcss-svgo` / `svgo` ont entièrement quitté l'arbre (`grep svgo bun.lock` =
+  0, `bun audit` = 0 vuln). Voir OPS-26 (bump nx via lockfile régénéré).
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
 - **T4-5** — fait, S, P1, alias `Big Tech gap`. Secret scanning pre-push + CI
@@ -3509,7 +3498,7 @@ T9-1, T12-4, T13-6, factorisation O, multi-stack ROAD-3.
 | daily-goal hors scope                      | **Fermé** 52/52                                                                                                                                                  |
 | H-4                                        | pattern family-dupe ✅ vs **T2-5** contracts UI ✅                                                                                                               |
 | Chantier L                                 | scope ✅ vs tests shared = **T12-3**                                                                                                                             |
-| CODEOWNERS « fait »                        | **Fermé** 2026-09-14 : zonage + second regard `@soumailakouda` effectifs                                                                                        |
+| CODEOWNERS « fait »                        | **Fermé** 2026-09-14 : zonage + second regard `@soumailakouda` effectifs                                                                                         |
 | « 2,2 % tests »                            | Périmé ; unit RO-view ✅ · e2e smoke mock ✅ · staging = T12-7                                                                                                   |
 | Corpus `verified` = comportement           | **T12-11** encore vrai risque                                                                                                                                    |
 | Corpus 18/18 modules couverts (2026-08-10) | **Volume seulement.** 7 modules crud-entity sur 18 ont un `legacy` synthétique non vérifié — **T12-18**. Ne pas rapporter « corpus complet » sans cette réserve. |

@@ -1,0 +1,309 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "page-execution-plan",
+  "plan_id": "plan_18ad881fcde82471",
+  "source": {
+    "page_contract": {
+      "uri": "apps/users-management-proof/.cmz/pages/page_6666666666666666.json",
+      "sha256": "6b2e7b3019c8aa7946887a885d01f2342fef7b37981cd2077ebd721697fc8627",
+      "design_id": "users-management-proof",
+      "design_version": "1.0.0",
+      "page_id": "page_6666666666666666"
+    }
+  },
+  "page": {
+    "id": "page_6666666666666666",
+    "access": {
+      "mode": "authenticated",
+      "permissions": []
+    },
+    "state_mode": "independent-nodes"
+  },
+  "required_capabilities": [
+    "action.concurrency.reject-while-pending@1",
+    "action.idempotency.none@1",
+    "action.invalidation.caller-declared@1",
+    "action.post-success.none@1",
+    "action.retry.none@1",
+    "composition.independent-node-state@1",
+    "composition.producer-node-binding@1",
+    "host.authentication.bearer@1",
+    "query.cache.host.principal@1",
+    "query.cancellation.on-destroy@1",
+    "query.cancellation.on-superseded@1",
+    "query.concurrency.latest-wins@1",
+    "query.retry.none@1",
+    "query.stale-data.reload-preserve.error-preserve@1"
+  ],
+  "query_nodes": [
+    {
+      "id": "profiles-select",
+      "primitive_ref": {
+        "uri": "examples/users-management-proof/execution/profiles-select.execution-model.json",
+        "sha256": "d2d1c0e93b7b807d3cb3fa313010f0d92730e59a976e291f5565f854f0bac4f9",
+        "kind": "list-query-execution-model",
+        "schema_version": "1.2.0",
+        "model_id": "settings-security-user-profiles-list-query-execution",
+        "operation_id": "list-user-profiles"
+      },
+      "operation_ref": {
+        "contract_id": "cmz-profiles-select",
+        "operation_id": "settings-security.list-user-profiles"
+      },
+      "scope": "page",
+      "trigger": "page-enter",
+      "input_bindings": [],
+      "state": {
+        "initial": "idle",
+        "values": [
+          "idle",
+          "loading",
+          "success",
+          "empty",
+          "error",
+          "reloading"
+        ]
+      },
+      "presentation": {
+        "loading_state_id": "loading",
+        "success_state_id": "ready",
+        "empty_state_id": "empty",
+        "error_state_id": "query-failed"
+      },
+      "capabilities": [
+        "host.authentication.bearer@1",
+        "query.cache.host.principal@1",
+        "query.cancellation.on-destroy@1",
+        "query.cancellation.on-superseded@1",
+        "query.concurrency.latest-wins@1",
+        "query.retry.none@1",
+        "query.stale-data.reload-preserve.error-preserve@1"
+      ]
+    },
+    {
+      "id": "users-list",
+      "primitive_ref": {
+        "uri": "examples/users-management-proof/execution/users-list.execution-model.json",
+        "sha256": "7564ec01a53c402ebeb68ae1638832ed88f6a213292f0eb23c8ac5445f27bfae",
+        "kind": "list-query-execution-model",
+        "schema_version": "1.2.0",
+        "model_id": "settings-security-users-list-query-execution",
+        "operation_id": "list-users"
+      },
+      "operation_ref": {
+        "contract_id": "cmz-users-list",
+        "operation_id": "settings-security.list-users"
+      },
+      "scope": "page",
+      "trigger": "page-enter",
+      "input_bindings": [
+        {
+          "input_field": "page",
+          "source": {
+            "kind": "constant",
+            "ref": "1"
+          },
+          "target": {
+            "kind": "backend-parameter",
+            "in": "query",
+            "name": "page"
+          },
+          "type": {
+            "kind": "primitive",
+            "name": "integer"
+          }
+        }
+      ],
+      "state": {
+        "initial": "idle",
+        "values": [
+          "idle",
+          "loading",
+          "success",
+          "empty",
+          "error",
+          "reloading"
+        ]
+      },
+      "presentation": {
+        "loading_state_id": "loading",
+        "success_state_id": "ready",
+        "empty_state_id": "empty",
+        "error_state_id": "query-failed"
+      },
+      "capabilities": [
+        "host.authentication.bearer@1",
+        "query.cache.host.principal@1",
+        "query.cancellation.on-destroy@1",
+        "query.cancellation.on-superseded@1",
+        "query.concurrency.latest-wins@1",
+        "query.retry.none@1",
+        "query.stale-data.reload-preserve.error-preserve@1"
+      ]
+    }
+  ],
+  "command_nodes": [
+    {
+      "id": "create-user",
+      "primitive_ref": {
+        "uri": "examples/users-management-proof/execution/create-user.execution-model.json",
+        "sha256": "6a7ac737ff4246872b6a99495200671cf4997ef25e61d43dd09dae847904fdff",
+        "kind": "action-request-execution-model",
+        "schema_version": "1.0.0",
+        "model_id": "settings-security-create-user-action-request-execution",
+        "operation_id": "create-user"
+      },
+      "operation_ref": {
+        "contract_id": "cmz-create-user",
+        "operation_id": "settings-security.create-user"
+      },
+      "scope": "page",
+      "trigger": "user",
+      "input_bindings": [
+        {
+          "input_field": "firstName",
+          "source": {
+            "kind": "control",
+            "ref": "first-name"
+          },
+          "target": {
+            "kind": "body-field",
+            "name": "first_name"
+          },
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          }
+        },
+        {
+          "input_field": "lastName",
+          "source": {
+            "kind": "control",
+            "ref": "last-name"
+          },
+          "target": {
+            "kind": "body-field",
+            "name": "last_name"
+          },
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          }
+        },
+        {
+          "input_field": "email",
+          "source": {
+            "kind": "control",
+            "ref": "email"
+          },
+          "target": {
+            "kind": "body-field",
+            "name": "email"
+          },
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          }
+        },
+        {
+          "input_field": "phone",
+          "source": {
+            "kind": "control",
+            "ref": "phone"
+          },
+          "target": {
+            "kind": "body-field",
+            "name": "phone"
+          },
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          }
+        },
+        {
+          "input_field": "profileId",
+          "source": {
+            "kind": "control",
+            "ref": "profile-id"
+          },
+          "target": {
+            "kind": "body-field",
+            "name": "profile_id"
+          },
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          }
+        }
+      ],
+      "state": {
+        "initial": "idle",
+        "values": [
+          "idle",
+          "submitting",
+          "applying-post-success",
+          "success",
+          "error",
+          "committed-with-local-error"
+        ]
+      },
+      "presentation": {
+        "available_in_state_ids": [
+          "ready"
+        ],
+        "success_state_id": "created",
+        "error_state_id": "create-failed"
+      },
+      "invalidates": [
+        "users-list"
+      ],
+      "capabilities": [
+        "action.concurrency.reject-while-pending@1",
+        "action.idempotency.none@1",
+        "action.invalidation.caller-declared@1",
+        "action.post-success.none@1",
+        "action.retry.none@1",
+        "host.authentication.bearer@1"
+      ]
+    }
+  ],
+  "output_bindings": [
+    {
+      "id": "profiles",
+      "producer_node_id": "profiles-select",
+      "output": {
+        "kind": "list",
+        "model_id": "profile-option",
+        "fields": [
+          "label",
+          "value"
+        ]
+      },
+      "presentation_state_ids": [
+        "ready"
+      ]
+    },
+    {
+      "id": "users",
+      "producer_node_id": "users-list",
+      "output": {
+        "kind": "list",
+        "model_id": "user-list-item",
+        "fields": [
+          "email",
+          "firstName",
+          "lastName",
+          "phone",
+          "profile",
+          "role",
+          "status",
+          "uniqId",
+          "updatedAt"
+        ]
+      },
+      "presentation_state_ids": [
+        "ready"
+      ]
+    }
+  ]
+}

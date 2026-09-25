@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "angular-page-host-bindings",
+  "services": {
+    "authentication-api": {
+      "module": "@cmz/core",
+      "token": "AUTH_API_URL"
+    },
+    "report-api": {
+      "module": "@cmz/core",
+      "token": "REPORT_API_URL"
+    },
+    "settings-api": {
+      "module": "@cmz/core",
+      "token": "SETTINGS_API_URL"
+    }
+  }
+}

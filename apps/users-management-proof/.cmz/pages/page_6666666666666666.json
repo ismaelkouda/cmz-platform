@@ -1,0 +1,275 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "page-realization-contract",
+  "design_ref": {
+    "path": "designs/users-management-proof.application-design.json",
+    "sha256": "c5d9a2445769820d710c610ae06a2c9921121d7bf087bcdc984a8bdd93949660"
+  },
+  "design": {
+    "id": "users-management-proof",
+    "title": "Users management proof",
+    "version": "1.0.0"
+  },
+  "experience": {
+    "id": "operator-web",
+    "channel": "web",
+    "offline_policy": "none",
+    "audience_ids": ["operator"]
+  },
+  "backend_contracts": [
+    {
+      "id": "cmz-users-list",
+      "role": "target",
+      "sha256": "c61ca12448f1aa1f23f7cff5b11bcca9a5ff5495e87e3e56dd93b2d0f1e4c5a1",
+      "snapshot_uri": "tools/generator-platform/fixtures/users-list.backend-contract.json"
+    },
+    {
+      "id": "cmz-profiles-select",
+      "role": "target",
+      "sha256": "f35f5b25897948b2cb528557532961597daa5009d1631b14bf1b7a235d9277ce",
+      "snapshot_uri": "tools/generator-platform/fixtures/profiles-select.backend-contract.json"
+    },
+    {
+      "id": "cmz-create-user",
+      "role": "target",
+      "sha256": "3f806a1c58c48bf6528bc29def562b3147a77674a28f0d2399204a2ca316109a",
+      "snapshot_uri": "tools/generator-platform/fixtures/create-user.backend-contract.json"
+    }
+  ],
+  "page": {
+    "access": {
+      "mode": "authenticated",
+      "permissions": []
+    },
+    "actions": [
+      {
+        "available_in_state_ids": ["ready"],
+        "description": "Create the user with the selected profile.",
+        "error_state_id": "create-failed",
+        "id": "create-user",
+        "input_bindings": [
+          {
+            "control_id": "first-name",
+            "target_kind": "body-field",
+            "target_name": "first_name"
+          },
+          {
+            "control_id": "last-name",
+            "target_kind": "body-field",
+            "target_name": "last_name"
+          },
+          {
+            "control_id": "email",
+            "target_kind": "body-field",
+            "target_name": "email"
+          },
+          {
+            "control_id": "phone",
+            "target_kind": "body-field",
+            "target_name": "phone"
+          },
+          {
+            "control_id": "profile-id",
+            "target_kind": "body-field",
+            "target_name": "profile_id"
+          }
+        ],
+        "invalidates_load_ids": ["users-list"],
+        "kind": "backend",
+        "label": "Create user",
+        "operation_ref": {
+          "contract_id": "cmz-create-user",
+          "operation_id": "settings-security.create-user"
+        },
+        "success_state_id": "created"
+      }
+    ],
+    "controls": [
+      {
+        "description": "Required user first name.",
+        "id": "first-name",
+        "kind": "text",
+        "label": "First name",
+        "required": true
+      },
+      {
+        "description": "Required user last name.",
+        "id": "last-name",
+        "kind": "text",
+        "label": "Last name",
+        "required": true
+      },
+      {
+        "description": "Required user email address.",
+        "id": "email",
+        "kind": "text",
+        "label": "Email",
+        "required": true
+      },
+      {
+        "description": "Required user phone number.",
+        "id": "phone",
+        "kind": "text",
+        "label": "Phone",
+        "required": true
+      },
+      {
+        "description": "Required user profile.",
+        "id": "profile-id",
+        "kind": "select",
+        "label": "Profile",
+        "required": true
+      }
+    ],
+    "data_bindings": [
+      {
+        "field_names": [],
+        "id": "users",
+        "model_id": "users-list-items-wire",
+        "operation_ref": {
+          "contract_id": "cmz-users-list",
+          "operation_id": "settings-security.list-users"
+        },
+        "response_status": 200,
+        "source_path": ["data"],
+        "visible_in_state_ids": ["ready"]
+      },
+      {
+        "field_names": [],
+        "id": "profiles",
+        "model_id": "profile-select-list-wire",
+        "operation_ref": {
+          "contract_id": "cmz-profiles-select",
+          "operation_id": "settings-security.list-user-profiles"
+        },
+        "response_status": 200,
+        "visible_in_state_ids": ["ready"]
+      }
+    ],
+    "evidence": [
+      {
+        "locator": "users-page",
+        "source_id": "users-proof-brief"
+      }
+    ],
+    "experience_ids": ["operator-web"],
+    "id": "page_6666666666666666",
+    "initial_state_id": "loading",
+    "loads": [
+      {
+        "empty_state_id": "empty",
+        "error_state_id": "query-failed",
+        "id": "users-list",
+        "loading_state_id": "loading",
+        "operation_ref": {
+          "contract_id": "cmz-users-list",
+          "operation_id": "settings-security.list-users"
+        },
+        "parameter_bindings": [
+          {
+            "parameter_in": "query",
+            "parameter_name": "page",
+            "source_kind": "constant",
+            "source_ref": "1"
+          }
+        ],
+        "success_state_id": "ready"
+      },
+      {
+        "empty_state_id": "empty",
+        "error_state_id": "query-failed",
+        "id": "profiles-select",
+        "loading_state_id": "loading",
+        "operation_ref": {
+          "contract_id": "cmz-profiles-select",
+          "operation_id": "settings-security.list-user-profiles"
+        },
+        "parameter_bindings": [],
+        "success_state_id": "ready"
+      }
+    ],
+    "path": "/settings-security/users",
+    "purpose": "List users and create a user from the observed C5 contracts.",
+    "regions": [
+      {
+        "accessible_name": "User management",
+        "elements": [
+          {
+            "accessible_name": "User management heading",
+            "action_ids": [],
+            "content": "User management",
+            "control_ids": [],
+            "data_binding_ids": [],
+            "id": "page-heading",
+            "kind": "heading"
+          },
+          {
+            "accessible_name": "Users",
+            "action_ids": [],
+            "content": "Paginated users list.",
+            "control_ids": [],
+            "data_binding_ids": ["users"],
+            "id": "users-table",
+            "kind": "list"
+          },
+          {
+            "accessible_name": "Create user",
+            "action_ids": ["create-user"],
+            "content": "Required user creation fields.",
+            "control_ids": [
+              "first-name",
+              "last-name",
+              "email",
+              "phone",
+              "profile-id"
+            ],
+            "data_binding_ids": ["profiles"],
+            "id": "create-user-form",
+            "kind": "form"
+          }
+        ],
+        "id": "main",
+        "role": "main"
+      }
+    ],
+    "states": [
+      {
+        "announcement": "Loading users and profiles.",
+        "description": "Users and profiles are loading.",
+        "id": "loading",
+        "kind": "loading"
+      },
+      {
+        "announcement": "User management is ready.",
+        "description": "Users and profile options are available.",
+        "id": "ready",
+        "kind": "ready"
+      },
+      {
+        "announcement": "No users found.",
+        "description": "No user matches the current query.",
+        "id": "empty",
+        "kind": "empty"
+      },
+      {
+        "announcement": "Users or profiles could not be loaded.",
+        "description": "At least one initial query failed.",
+        "id": "query-failed",
+        "kind": "error"
+      },
+      {
+        "announcement": "User created.",
+        "description": "The user was created successfully.",
+        "id": "created",
+        "kind": "success"
+      },
+      {
+        "announcement": "User creation failed.",
+        "description": "The user creation request failed.",
+        "id": "create-failed",
+        "kind": "error"
+      }
+    ],
+    "title": "User management"
+  }
+}

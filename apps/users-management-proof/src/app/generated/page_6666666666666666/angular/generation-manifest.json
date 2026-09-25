@@ -1,0 +1,175 @@
+{
+  "schema_version": "1.1.0",
+  "generator": {
+    "name": "cmz-generator-platform",
+    "version": "1.2.0"
+  },
+  "input": {
+    "model_id": "plan_18ad881fcde82471",
+    "sha256": "bace005e0bb498e301e126c2e01462dd212efa915bc10ba22a07e058067f9d66"
+  },
+  "plan": {
+    "plan_id": "plan_18ad881fcde82471:artifacts",
+    "sha256": "9310d16c29b641f545dd6d7e3afc0b58c798492fb47ec99eaf9ac9fa53f3e3c5"
+  },
+  "target": {
+    "profile_id": "angular-nx",
+    "profile_version": "1.0.0",
+    "profile_sha256": "59c4a50ab91ac1eaee73c11833dfb1a0eba11082542e5b1ef7371cdb17d3c2e6"
+  },
+  "files": [
+    {
+      "path": "src/index.ts",
+      "artifact_id": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 271,
+      "sha256": "b6b736c54826dad4ece6e2f18e21850393e504d28a71754bab693cf02fcabcbc"
+    },
+    {
+      "path": "src/nodes/create-user/create-user.decoder.ts",
+      "artifact_id": "response-decoder",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1780,
+      "sha256": "29adf149622a7bbe28d8f0216f82d85319b56bf450ddde809999950cca5eab20"
+    },
+    {
+      "path": "src/nodes/create-user/create-user.facade.ts",
+      "artifact_id": "execution-controller",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 2054,
+      "sha256": "7b5f403d40c542859cb1264e8f73a315b177f178266a5a44a4a402f17aafc91a"
+    },
+    {
+      "path": "src/nodes/create-user/create-user.source.ts",
+      "artifact_id": "integration-client",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 2200,
+      "sha256": "0345c8cf8bab3096afe1d8592e43d10fb808fb92662a414c196db0af4ba9938c"
+    },
+    {
+      "path": "src/nodes/create-user/index.ts",
+      "artifact_id": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 171,
+      "sha256": "6d90dc07186253a46067f91f64f46d6c8c4cfb859b838ad66aebaafcba0608af"
+    },
+    {
+      "path": "src/nodes/create-user/models.ts",
+      "artifact_id": "domain-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 556,
+      "sha256": "3b003ebad5a708b24fd327e0dbd4bedbb6d9ad782778d1aa417c46628f03749c"
+    },
+    {
+      "path": "src/nodes/create-user/validation.ts",
+      "artifact_id": "input-validator",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1707,
+      "sha256": "1f07235835abb2af25f8e379ab4a562091973349ddaa76ebce59ff961f58603d"
+    },
+    {
+      "path": "src/nodes/profiles-select/index.ts",
+      "artifact_id": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 162,
+      "sha256": "e8e41490e8be51999da706179e21555d81904f7230414a389650c9559a96d30b"
+    },
+    {
+      "path": "src/nodes/profiles-select/list-user-profiles.decoder.ts",
+      "artifact_id": "response-decoder",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 2500,
+      "sha256": "b4a89be98988a50dbfdcf4520c6ddf573278655471a821ac7bbcdd308eb67ff1"
+    },
+    {
+      "path": "src/nodes/profiles-select/list-user-profiles.facade.ts",
+      "artifact_id": "execution-controller",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1907,
+      "sha256": "e98c492101768b91614c411d6b9892c0a5785c1f50cd7b3e5b7911328cf44988"
+    },
+    {
+      "path": "src/nodes/profiles-select/list-user-profiles.source.ts",
+      "artifact_id": "integration-client",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1395,
+      "sha256": "3f734fd218eb4ca4b80bbdcf37eb39f63c76092584d881a80019be180b761652"
+    },
+    {
+      "path": "src/nodes/profiles-select/models.ts",
+      "artifact_id": "domain-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 188,
+      "sha256": "c64f81854ca0aefb18009482a5acd662a86be7983a0ce1a34096eb9fa530662a"
+    },
+    {
+      "path": "src/nodes/users-list/index.ts",
+      "artifact_id": "public-api",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 138,
+      "sha256": "ca9c4cf32c2b5d51b1139877edf97c551c67361701256b96bda2ac75767a34e3"
+    },
+    {
+      "path": "src/nodes/users-list/list-users.decoder.ts",
+      "artifact_id": "response-decoder",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 7368,
+      "sha256": "2d4b850e7eee86d54f3e8133ce06701f12fd0f3ef1f828b0202920fb58c1c9e5"
+    },
+    {
+      "path": "src/nodes/users-list/list-users.facade.ts",
+      "artifact_id": "execution-controller",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 2020,
+      "sha256": "b18c800ab35eb623c050de107267fc900f9194f38f197c6d35964a8479315efc"
+    },
+    {
+      "path": "src/nodes/users-list/list-users.source.ts",
+      "artifact_id": "integration-client",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 3200,
+      "sha256": "5ba491d3458af95e3c380bd3aef822d8bc79d5352c3d3fbcdc5bef3d5365fbd7"
+    },
+    {
+      "path": "src/nodes/users-list/models.ts",
+      "artifact_id": "domain-model",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1048,
+      "sha256": "db28d97782d052d690edc9c60d8e450d674741e6b43916c7acac5708ba6ce2cf"
+    },
+    {
+      "path": "src/page-composition.providers.ts",
+      "artifact_id": "runtime-binding",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 982,
+      "sha256": "f5732e75480fae207f06db7b91200bf5e19523e6480268cb2ce1374aa78d414c"
+    },
+    {
+      "path": "src/page-composition.ts",
+      "artifact_id": "execution-controller",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 1118,
+      "sha256": "820c8c7ad26e405ef990d764c5295eeb7066752cd876d192b8c7ae0b1c1e1dd4"
+    }
+  ],
+  "tree_sha256": "4f224a14f2f5bd6c32aa0ef57e7d294360e147eee1659148263f66e16cf10bc9"
+}

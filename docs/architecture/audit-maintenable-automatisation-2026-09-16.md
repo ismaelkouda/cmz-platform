@@ -522,8 +522,8 @@ tableau, rejet d'un opérateur inconnu, rejet avant HTTP d'un identifiant vide,
 reload et annulation latest-wins lors d'un changement d'identifiant. La surface
 v2 cumulée mesurée sur le même périmètre atteint **2 231 lignes de production**
 (+391) ; le validateur backend existant reçoit +9 lignes nettes et aucun module,
-schéma, CLI ou runtime supplémentaire n'est créé. ADR-0050 consigne la revue.
-À ce stade restaient la décision/parité React, la publication durable et la
+schéma, CLI ou runtime supplémentaire n'est créé. ADR-0050 consigne la revue. À
+ce stade restaient la décision/parité React, la publication durable et la
 réalisation de page composée.
 
 Cinquième incrément engagé le 2026-09-23 : les deux cas actifs et la query
@@ -536,12 +536,12 @@ l'annulation latest-wins et l'annulation au démontage.
 
 L'arrivée du second renderer justifie seulement maintenant l'extraction des
 modèles, du décodeur, du path et des validations fail-closed dans un module
-target-neutral. Les cycles de vie restent propres à Angular et React. La
-surface v2 cumulée atteint **2 649 lignes de production** (+418 nettes) et neuf
-modules exécutables ; aucun schéma, CLI, journal, cache ou runtime propriétaire
-n'est ajouté. ADR-0051 consigne la décision et la revue. `list-query` v2 reste
-`experimental` : restent la publication durable, puis la réalisation d'une
-page composée N `list-query` + N `action-request`.
+target-neutral. Les cycles de vie restent propres à Angular et React. La surface
+v2 cumulée atteint **2 649 lignes de production** (+418 nettes) et neuf modules
+exécutables ; aucun schéma, CLI, journal, cache ou runtime propriétaire n'est
+ajouté. ADR-0051 consigne la décision et la revue. `list-query` v2 reste
+`experimental` : restent la publication durable, puis la réalisation d'une page
+composée N `list-query` + N `action-request`.
 
 Sixième incrément engagé le 2026-09-23 : la sortie v2 existante est désormais
 publiée par l'unique commande `generate:list-query` et le moteur transactionnel
@@ -557,8 +557,7 @@ d'un dry-run ; verrou, journal, rollback, reprise et limites APFS/ext4 restent
 ceux d'ADR-0035. L'incrément ajoute **210 lignes nettes de production** sans
 nouveau module exécutable, schéma, CLI, journal ou runtime ; la surface v2
 cumulée atteint **2 859 lignes**. ADR-0052 consigne la décision. Reste la page
-composée N `list-query` + N `action-request` ; la capacité reste
-`experimental`.
+composée N `list-query` + N `action-request` ; la capacité reste `experimental`.
 
 Septième incrément engagé le 2026-09-23 : `action-request` v2 possède désormais
 sa frontière auteur fermée et son migrateur v1 → v2. Comme `list-query` v2, la
@@ -567,9 +566,9 @@ lieu de redéclarer transport, accès, auth, enveloppe et DTO. Concurrence, retr
 idempotence, invalidation et effet local post-succès deviennent des décisions
 explicites ; retry manuel et parallélisme sont refusés sans idempotence host.
 
-La migration `support` est exacte, déterministe, idempotente et sans
-écrasement. Une seconde preuve confronte directement le contrat au cas Angular
-actif `forgot-password`, à ses sources, DTO, enveloppe et `SKIP_AUTH`, tout en
+La migration `support` est exacte, déterministe, idempotente et sans écrasement.
+Une seconde preuve confronte directement le contrat au cas Angular actif
+`forgot-password`, à ses sources, DTO, enveloppe et `SKIP_AUTH`, tout en
 distinguant honnêtement « client implémenté » de « serveur vérifié live ».
 L'incrément représente **1 141 lignes de production contractuelle**, deux
 modules exécutables et un schéma ; ADR-0053 consigne la revue SIMPL obligatoire.
@@ -579,8 +578,8 @@ compilateur neutre, son host/oracle Angular, la parité React et sa publication 
 le `page-execution-plan` ne commence qu'après ces contrats runtime stabilisés.
 
 Huitième incrément engagé le 2026-09-24 : `action-request` v2 compile désormais
-la définition et les octets backend exacts vers un modèle d'exécution neutre.
-Le modèle sépare port métier, payload wire, transport, réponse wire, résultat,
+la définition et les octets backend exacts vers un modèle d'exécution neutre. Le
+modèle sépare port métier, payload wire, transport, réponse wire, résultat,
 authentification, contrôleur et échecs. L'accès public résout l'authentification
 à `omit` ; les accès protégés conservent les schémas exacts fournis par le host.
 
@@ -627,24 +626,24 @@ durable avant le `page-execution-plan` N×N.
 
 Onzième incrément engagé le 2026-09-24 : `action-request` v2 est désormais
 publié par l'unique commande `generate:action-request` et les primitives
-transactionnelles existantes. La sélection v1/v2 repose sur le
-`schema_version`; la v2 persiste son vrai modèle d'exécution et son plan, puis
-matérialise Angular et React avec le même hash d'entrée. Les sorties v1 plates
-et en couches restent inchangées ; les cibles v2 en couches échouent fermées.
+transactionnelles existantes. La sélection v1/v2 repose sur le `schema_version`;
+la v2 persiste son vrai modèle d'exécution et son plan, puis matérialise Angular
+et React avec le même hash d'entrée. Les sorties v1 plates et en couches restent
+inchangées ; les cibles v2 en couches échouent fermées.
 
-La preuve disque couvre création, stabilité exacte de 14 artefacts, dry-run
-sans écriture et application d'une évolution par son identifiant relu. La
-définition est lue une seule fois, ce qui évite une divergence entre détection
-de version et compilation. L'incrément ajoute **67 lignes nettes de production**
-dans deux modules existants ; la surface v2 atteint **2 859 lignes**. ADR-0057
-consigne la revue : aucun module, schéma, CLI, renderer, runtime, journal,
-verrou, cache ou abstraction de commandes supplémentaire. Le prochain travail
-est le `page-execution-plan` et son composition root N×N.
+La preuve disque couvre création, stabilité exacte de 14 artefacts, dry-run sans
+écriture et application d'une évolution par son identifiant relu. La définition
+est lue une seule fois, ce qui évite une divergence entre détection de version
+et compilation. L'incrément ajoute **67 lignes nettes de production** dans deux
+modules existants ; la surface v2 atteint **2 859 lignes**. ADR-0057 consigne la
+revue : aucun module, schéma, CLI, renderer, runtime, journal, verrou, cache ou
+abstraction de commandes supplémentaire. Le prochain travail est le
+`page-execution-plan` et son composition root N×N.
 
 Douzième incrément engagé le 2026-09-24 : le premier lot C2 compile un
-`page-execution-plan` target-neutral depuis le contrat de page et les modèles
-v2 content-addressed. Chaque query et commande devient une instance stable avec
-son état local, ses inputs typés et sa primitive exacte. Chaque sortie nomme son
+`page-execution-plan` target-neutral depuis le contrat de page et les modèles v2
+content-addressed. Chaque query et commande devient une instance stable avec son
+état local, ses inputs typés et sa primitive exacte. Chaque sortie nomme son
 `producer_node_id` ; une référence par opération ambiguë échoue fermée. L'union
 canonique des capacités fournit la future négociation avec le host.
 
@@ -660,9 +659,9 @@ un même host hermétique.
 Treizième incrément engagé le 2026-09-24 : C3 matérialise une cible Angular
 depuis le `page-execution-plan`. Chaque nœud réutilise son renderer v2 dans un
 répertoire isolé ; le composition root ajoute seulement un service de page, ses
-providers et son API publique. Les bindings host sont fermés, les capacités
-sont négociées contre une allowlist indépendante et toutes les références sont
-relues avec leurs SHA-256 avant le type-check strict.
+providers et son API publique. Les bindings host sont fermés, les capacités sont
+négociées contre une allowlist indépendante et toutes les références sont relues
+avec leurs SHA-256 avant le type-check strict.
 
 La commande `generate:page-composition` réutilise sans variante le publisher
 transactionnel existant. Le lot ajoute **654 lignes de production
@@ -679,11 +678,11 @@ annulations `latest-wins` et à la destruction, ainsi que le rejet du double
 submit sans invalidation cachée.
 
 Le lot ajoute **zéro ligne de runtime de production**. La fixture C3 volumineuse
-a seulement été déplacée vers un support de test partagé ; le raccord reste
-dans le préparateur de tests natifs existant. Aucun transport, orchestrateur,
-cache, schéma, publisher, journal, verrou ou dépendance n'est ajouté. ADR-0060
-porte la revue. Les politiques positives encore fermées ne sont pas simulées :
-C5 reste le vertical slice représentatif, puis C6 la promotion humaine.
+a seulement été déplacée vers un support de test partagé ; le raccord reste dans
+le préparateur de tests natifs existant. Aucun transport, orchestrateur, cache,
+schéma, publisher, journal, verrou ou dépendance n'est ajouté. ADR-0060 porte la
+revue. Les politiques positives encore fermées ne sont pas simulées : C5 reste
+le vertical slice représentatif, puis C6 la promotion humaine.
 
 Quinzième incrément C5 engagé le 2026-09-25 : une demande libre d'utilisateur
 externe a été figée avant toute consultation du corpus, puis comparée à la vraie
@@ -713,8 +712,8 @@ Laravel, Spring, .NET ou Django. Les formes non requises restent refusées.
 
 « Liste » reste un rôle métier, pas une hypothèse de sérialisation. Le modèle
 d'exécution distingue le tableau direct de la page. Les objets conteneurs, maps
-ou projections voisines devront ajouter une variante explicite à partir d'un
-cas réel ; aucun objet n'est deviné comme collection via son nom ou son backend.
+ou projections voisines devront ajouter une variante explicite à partir d'un cas
+réel ; aucun objet n'est deviné comme collection via son nom ou son backend.
 
 Contre-exemple réel conservé : `requests-details` retourne un objet unique sous
 `SimpleResponseDto<RequestsDetailsItemApiDto>` et le mappe vers un seul
@@ -732,9 +731,9 @@ L'invalidation positive et la composition C5 restent ouvertes.
 Dix-septième incrément C5c engagé le 2026-09-25 : le renderer Angular exécute
 désormais la page et les query parameters déjà compilés par C5b. La sortie
 réutilise `HttpClient`, `HttpParams`, les intercepteurs du host et
-`ResourceFacade`; aucun runtime paginé parallèle n'est introduit. Les
-paramètres `string`, `integer` et `boolean` sont validés avant le réseau, les
-optionnels absents sont omis et les noms wire restent issus du contrat.
+`ResourceFacade`; aucun runtime paginé parallèle n'est introduit. Les paramètres
+`string`, `integer` et `boolean` sont validés avant le réseau, les optionnels
+absents sont omis et les noms wire restent issus du contrat.
 
 Le résultat généré expose une page canonique et ses items. Les champs de page
 non projetés sont tolérés, conformément au contrat C5 qui ne revendique qu'une
@@ -772,8 +771,8 @@ déclaration à la politique `action-request` : `none` interdit les cibles,
 de la page. Le plan conserve les IDs triés et négocie la capacité
 `action.invalidation.caller-declared@1`.
 
-La composition Angular encapsule la façade de commande et recharge seulement
-les queries nommées après succès distant. L'oracle externe prouve le bypass du
+La composition Angular encapsule la façade de commande et recharge seulement les
+queries nommées après succès distant. L'oracle externe prouve le bypass du
 cache, l'absence de reload des autres queries, zéro reload après erreur et zéro
 invalidation anticipée lors d'un double submit. La suite Angular passe à 61/61.
 Le renderer autonome de commande reste fail-closed, car il n'a aucun caller
@@ -787,8 +786,8 @@ projet. Reste la composition C5 réelle
 `users-list + profiles-select + create-user`, puis l'UI/a11y.
 
 Vingtième incrément C5f engagé le 2026-09-25 : le composition root Angular
-assemble maintenant les trois primitives utilisateurs réellement observées.
-Deux contrats versionnés ajoutent la query `profiles-select` et la commande
+assemble maintenant les trois primitives utilisateurs réellement observées. Deux
+contrats versionnés ajoutent la query `profiles-select` et la commande
 authentifiée `create-user` à cinq champs, sans importer les classes SEOS. La
 réponse directe `{ error, message }` reçoit une forme `status-object` fermée ;
 un mutant avec un faux `data_field` est rejeté.
@@ -802,23 +801,23 @@ runtime partagé ou dépendance n'est ajouté. Restent le composant visible, la
 permission `create`, les notifications, la fermeture/conservation du formulaire
 et l'accessibilité ; ADR-0065.
 
-Vingt-et-unième incrément C5g-0/1 engagé le 2026-09-25 : la réalisation UI
-reste déléguée au LLM sans introduire de renderer visuel universel. Un contrat
-fermé `presentation-evidence` fige toute référence de présentation locale par
-type, taille et SHA-256, la lie à une page et à ses états exacts, et lui impose
+Vingt-et-unième incrément C5g-0/1 engagé le 2026-09-25 : la réalisation UI reste
+déléguée au LLM sans introduire de renderer visuel universel. Un contrat fermé
+`presentation-evidence` fige toute référence de présentation locale par type,
+taille et SHA-256, la lie à une page et à ses états exacts, et lui impose
 l'autorité `presentation-only` ainsi que le statut `untrusted-content`.
 
 Le work order passe en `2.0.0` et incorpore la preuve ou l'absence explicite de
 preuve dans son identité content-addressed. Préparation et vérification refusent
 une preuve brouillon, étrangère, ambiguë, symbolique, modifiée ou mal typée.
 Zéro adaptateur Figma, dépendance, runtime UI ou choix esthétique n'est ajouté.
-Restent une référence visuelle C5 approuvée, la page Angular ordinaire,
-l'oracle comportemental/a11y puis la comparaison visuelle ; ADR-0066.
+Restent une référence visuelle C5 approuvée, la page Angular ordinaire, l'oracle
+comportemental/a11y puis la comparaison visuelle ; ADR-0066.
 
 Vingt-deuxième incrément C5g-2 engagé le 2026-09-25 : un audit pré-UI a montré
-que le work order ne transportait pas le `page-execution-plan` produit et
-prouvé en C5f. Une réalisation pouvait donc compiler tout en inventant son
-raccord runtime.
+que le work order ne transportait pas le `page-execution-plan` produit et prouvé
+en C5f. Une réalisation pouvait donc compiler tout en inventant son raccord
+runtime.
 
 Le work order passe en `3.0.0` et accepte un plan optionnel. Avant liaison, le
 plan, le contrat publié et chaque primitive content-addressed sont relus sans
@@ -828,6 +827,20 @@ interdit de revendiquer une intégration runtime générée. Zéro runtime,
 dépendance ou abstraction UI n'est ajouté. Restent la publication C5 dans une
 app de preuve, une référence visuelle approuvée, la page Angular, l'a11y et
 l'oracle visuel ; ADR-0067.
+
+Vingt-troisième incrément C5g-3 engagé le 2026-09-25 : la fixture temporaire C5
+et son hash de design fictif ne suffisaient pas à autoriser une réalisation. Le
+vertical est désormais publié depuis une conception approuvée dans le shell
+standard `users-management-proof`, avec ses trois modèles, son plan et sa
+composition versionnés et recompilables.
+
+Cette publication a exposé puis fermé une contradiction entre enveloppe de page
+et collection visible. Le nouveau `data_binding.source_path` traverse seulement
+des références de modèles backend déclarées ; le planner exige qu'il égale
+l'`items_field` paginé. Les artefacts passent compilation Angular, build, lint
+et tests sans nouveau runtime ni dépendance. Restent la permission fine de
+création, la preuve visuelle approuvée, les cinq fichiers de page, l'a11y et
+l'oracle visuel ; ADR-0068.
 
 ## Ce qui n'est pas décidé par cet audit
 

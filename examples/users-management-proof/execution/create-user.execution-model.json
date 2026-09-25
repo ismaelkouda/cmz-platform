@@ -1,0 +1,295 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "action-request-execution-model",
+  "model_id": "settings-security-create-user-action-request-execution",
+  "domain": {
+    "id": "settings-security-create-user",
+    "name": "Create user",
+    "description": "Authenticated user creation used by the C5 vertical slice."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/create-user.backend-contract.json",
+    "id": "cmz-create-user",
+    "version": "1.0.0",
+    "sha256": "3f806a1c58c48bf6528bc29def562b3147a77674a28f0d2399204a2ca316109a"
+  },
+  "actions": [
+    {
+      "id": "create-user",
+      "description": "Creates a user from the authenticated management page.",
+      "port": {
+        "input": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "firstName",
+              "type": {
+                "kind": "primitive",
+                "name": "string"
+              },
+              "required": true,
+              "nullable": false,
+              "validations": [
+                {
+                  "kind": "required"
+                }
+              ]
+            },
+            {
+              "name": "lastName",
+              "type": {
+                "kind": "primitive",
+                "name": "string"
+              },
+              "required": true,
+              "nullable": false,
+              "validations": [
+                {
+                  "kind": "required"
+                }
+              ]
+            },
+            {
+              "name": "email",
+              "type": {
+                "kind": "primitive",
+                "name": "string"
+              },
+              "required": true,
+              "nullable": false,
+              "validations": [
+                {
+                  "kind": "required"
+                },
+                {
+                  "kind": "format",
+                  "format": "email"
+                }
+              ]
+            },
+            {
+              "name": "phone",
+              "type": {
+                "kind": "primitive",
+                "name": "string"
+              },
+              "required": true,
+              "nullable": false,
+              "validations": [
+                {
+                  "kind": "required"
+                }
+              ]
+            },
+            {
+              "name": "profileId",
+              "type": {
+                "kind": "primitive",
+                "name": "string"
+              },
+              "required": true,
+              "nullable": false,
+              "validations": [
+                {
+                  "kind": "required"
+                }
+              ]
+            }
+          ]
+        },
+        "output": {
+          "kind": "result",
+          "model_id": "create-user-result"
+        }
+      },
+      "access": {
+        "mode": "authenticated",
+        "security_scheme_ids": [
+          "backoffice-session-bearer"
+        ],
+        "permissions": []
+      },
+      "request_policy": {
+        "authentication": {
+          "mode": "host",
+          "schemes": [
+            {
+              "id": "backoffice-session-bearer",
+              "kind": "bearer"
+            }
+          ]
+        },
+        "idempotency": {
+          "mode": "none"
+        }
+      },
+      "transport": {
+        "operation_id": "settings-security.create-user",
+        "service_id": "settings-api",
+        "method": "POST",
+        "path": "/settings-and-security/users/store",
+        "request_media_type": "application/json",
+        "request_model_id": "create-user-request-wire",
+        "success_response_status": 200,
+        "response_media_type": "application/json",
+        "response_model_id": "message-response-wire",
+        "envelope": {
+          "kind": "status-object",
+          "error_field": "error",
+          "message_field": "message"
+        }
+      },
+      "request_model": {
+        "id": "create-user-request-wire",
+        "unknown_fields": "reject",
+        "fields": [
+          {
+            "name": "first_name",
+            "source_field": "firstName",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "last_name",
+            "source_field": "lastName",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "email",
+            "source_field": "email",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "phone",
+            "source_field": "phone",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "profile_id",
+            "source_field": "profileId",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          }
+        ]
+      },
+      "response_wire_model": {
+        "id": "message-response-wire",
+        "unknown_fields": "reject",
+        "fields": [
+          {
+            "name": "error",
+            "type": {
+              "kind": "primitive",
+              "name": "boolean"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "message",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          }
+        ]
+      },
+      "result_model": {
+        "id": "create-user-result",
+        "description": "Message returned after the user mutation is accepted.",
+        "fields": [
+          {
+            "name": "message",
+            "source_field": "message",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          }
+        ]
+      },
+      "controller": {
+        "initial_state": "idle",
+        "states": [
+          "idle",
+          "submitting",
+          "applying-post-success",
+          "success",
+          "error",
+          "committed-with-local-error"
+        ],
+        "commands": [
+          "submit"
+        ],
+        "state_rules": {
+          "submit": "submitting",
+          "remote_failure": "error",
+          "remote_success": "success",
+          "post_success_success": "not-applicable",
+          "post_success_failure": "not-applicable",
+          "retry_post_success": "not-applicable"
+        },
+        "commit_boundary": {
+          "event": "remote-success",
+          "retry_remote_after_commit": "forbidden"
+        },
+        "execution": {
+          "concurrency": "reject-while-pending",
+          "retry": {
+            "mode": "none"
+          },
+          "idempotency": {
+            "mode": "none"
+          },
+          "invalidation": {
+            "mode": "caller-declared"
+          },
+          "post_success": {
+            "mode": "none"
+          }
+        }
+      },
+      "failures": {
+        "invalid_input": "invalid-input",
+        "invalid_response": "invalid-response",
+        "backend_declared": {
+          "kind": "envelope-flag",
+          "error_field": "error",
+          "message_field": "message"
+        },
+        "http_responses": [],
+        "transport": "host-propagated",
+        "post_success": {
+          "mode": "none"
+        }
+      }
+    }
+  ]
+}
