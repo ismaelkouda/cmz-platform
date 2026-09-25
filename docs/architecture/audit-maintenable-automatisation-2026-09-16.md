@@ -716,6 +716,14 @@ d'exécution distingue le tableau direct de la page. Les objets conteneurs, maps
 ou projections voisines devront ajouter une variante explicite à partir d'un
 cas réel ; aucun objet n'est deviné comme collection via son nom ou son backend.
 
+Contre-exemple réel conservé : `requests-details` retourne un objet unique sous
+`SimpleResponseDto<RequestsDetailsItemApiDto>` et le mappe vers un seul
+`RequestsDetailsEntity`. Ce GET est une lecture à cardinalité `one`, pas une
+liste. Avant toute implémentation, QUERY-1 devra comparer une généralisation
+`read-query` (`one`, `many`, `page`) à un profil `detail-query` mince, avec la
+contrainte de réutiliser le transport, le cache, les erreurs et le contrôleur
+existants plutôt que créer une automatisation parallèle.
+
 Le lot n'ajoute aucun runtime, transport, CLI, cache, journal, verrou ou
 dépendance. Les renderers Angular et React rejettent explicitement la pagination
 tant que leurs oracles dédiés ne l'exécutent pas. ADR-0061 consigne la décision.

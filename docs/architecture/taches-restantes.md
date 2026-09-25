@@ -2151,6 +2151,13 @@ Figma, désormais source partielle différée :
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
   devront recevoir un discriminateur et un oracle lors d'un cas réel, sans
   heuristique liée à `data` ou au framework backend.
+  **QUERY-1 — lecture objet unique à auditer :** le GET
+  `RequestsDetailsApi.execute()` retourne réellement
+  `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
+  `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
+  primitive `read-query` à cardinalités `one|many|page` et un profil
+  `detail-query` mince. Refus de dupliquer transport, cache, erreurs, contrôleur
+  ou renderers ; aucun objet n'est accepté par `list-query` avant cet audit.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

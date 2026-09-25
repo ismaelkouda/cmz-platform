@@ -42,6 +42,14 @@ C5. Une future collection enveloppée dans un objet devra déclarer un autre
 discriminateur et le champ exact portant les items ; elle ne sera jamais déduite
 du nom `data`, de l'URL ou du framework backend.
 
+Une lecture d'objet unique est un autre cas. SEOS en fournit déjà une preuve :
+`RequestsDetailsApi.execute()` effectue un GET par `uniq_id`, reçoit
+`SimpleResponseDto<RequestsDetailsItemApiDto>` puis le repository produit un
+seul `RequestsDetailsEntity`. Cette forme a une cardinalité `one`; elle ne doit
+pas être maquillée en liste. Un audit séparé décidera si le socle doit généraliser
+la primitive en `read-query` (`one`, `many`, `page`) ou exposer un profil
+`detail-query` mince réutilisant le même transport et le même contrôleur.
+
 La fixture SEOS conserve ses noms Laravel parce qu'ils constituent la preuve
 observée, pas parce que le noyau les connaît. Un test remplace ces noms par une
 forme de type Spring Data (`content`, `number`, `totalPages`, `size`,
@@ -77,6 +85,9 @@ verrou, CLI ou dépendance. Deux fixtures versionnées portent la preuve SEOS.
   nullables ne sont pas ouvertes sans cas réel.
 - Les objets conteneurs, maps indexées et objets uniques ne sont pas assimilés
   à un tableau : chaque forme attend son contrat et son oracle propres.
+- Le cas objet unique `requests-details` est observé mais pas encore généré ;
+  aucune seconde pile de transport, cache ou état ne sera acceptée pour le
+  prendre en charge.
 - Aucun renderer ne consomme encore le résultat `page`.
 - L'invalidation `create-user -> users-list` reste le lot C5 suivant.
 
