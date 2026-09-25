@@ -1,0 +1,257 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "backend-contract",
+  "contract": {
+    "id": "cmz-create-user",
+    "title": "Create user client-observed contract",
+    "version": "1.0.0",
+    "status": "implemented",
+    "description": "Implemented workspace contract for the SEOS user creation action; not a verified-live backend claim."
+  },
+  "sources": [
+    {
+      "id": "users-api",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/settings-security/data/src/lib/sources/users.api.ts",
+      "sha256": "494ecbbee247086faee1d2e03140355d56521341369ecfab3138ee45a0a0e03a"
+    },
+    {
+      "id": "users-create-dto",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/settings-security/data/src/lib/dtos/users-create-api.dto.ts",
+      "sha256": "77d694133098da433367216fb5f35c3a0d4695ba82421c88c20f5b5a7609ad22"
+    },
+    {
+      "id": "message-response-dto",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/shared/data/src/lib/dtos/simple-response.dto.ts",
+      "sha256": "cba0b8c0db95ca80c36f4bf2ec4a7dd239107807d7ab216ed5abb692ded8ee90"
+    },
+    {
+      "id": "settings-security-endpoints",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/settings-security/data/src/lib/endpoints/settings-security.endpoints.ts",
+      "sha256": "f346b728bb2cbb7f14e117b8b02c6497118ee9e1776b8d18461a0a4542a9d6bd"
+    },
+    {
+      "id": "backoffice-auth-interceptor",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "apps/backoffice-angular/src/app/interceptors/auth.interceptor.ts",
+      "sha256": "27649aacfb12f0ad945f48bf25081d349ea1ebdcb3ac35a0bc9af57c3de6909e"
+    }
+  ],
+  "services": [
+    {
+      "id": "settings-api",
+      "status": "implemented",
+      "description": "Settings API selected by the SETTINGS_API_URL host token.",
+      "base_urls": [
+        { "environment": "test", "url": "https://settings.example.test/" }
+      ],
+      "evidence": [
+        { "source_id": "users-api", "locator": "inject(SETTINGS_API_URL)" }
+      ]
+    }
+  ],
+  "security_schemes": [
+    {
+      "id": "backoffice-session-bearer",
+      "kind": "bearer",
+      "status": "implemented",
+      "description": "Bearer attached by the backoffice host unless SKIP_AUTH is true.",
+      "evidence": [
+        {
+          "source_id": "backoffice-auth-interceptor",
+          "locator": "Authorization: Bearer"
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "id": "create-user-request-wire",
+      "kind": "object",
+      "status": "implemented",
+      "description": "Payload submitted by the user creation form.",
+      "fields": [
+        {
+          "name": "first_name",
+          "description": "User first name.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "users-create-dto",
+              "locator": "UsersCreateApiDto.first_name"
+            }
+          ]
+        },
+        {
+          "name": "last_name",
+          "description": "User last name.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "users-create-dto",
+              "locator": "UsersCreateApiDto.last_name"
+            }
+          ]
+        },
+        {
+          "name": "email",
+          "description": "User email address.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "users-create-dto",
+              "locator": "UsersCreateApiDto.email"
+            }
+          ]
+        },
+        {
+          "name": "phone",
+          "description": "User phone number.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "users-create-dto",
+              "locator": "UsersCreateApiDto.phone"
+            }
+          ]
+        },
+        {
+          "name": "profile_id",
+          "description": "Selected profile identifier.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "users-create-dto",
+              "locator": "UsersCreateApiDto.profile_id"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        { "source_id": "users-create-dto", "locator": "UsersCreateApiDto" }
+      ]
+    },
+    {
+      "id": "message-response-wire",
+      "kind": "object",
+      "status": "implemented",
+      "description": "Top-level status response returned after a mutation.",
+      "fields": [
+        {
+          "name": "error",
+          "description": "Backend-declared failure flag.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "boolean" },
+          "evidence": [
+            {
+              "source_id": "message-response-dto",
+              "locator": "MessageResponseDto.error"
+            }
+          ]
+        },
+        {
+          "name": "message",
+          "description": "Backend result message.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "message-response-dto",
+              "locator": "MessageResponseDto.message"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        { "source_id": "message-response-dto", "locator": "MessageResponseDto" }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "id": "settings-security.create-user",
+      "service_id": "settings-api",
+      "status": "implemented",
+      "description": "Creates a user from the authenticated management page.",
+      "method": "POST",
+      "path": "/settings-and-security/users/store",
+      "access": {
+        "mode": "authenticated",
+        "security_scheme_ids": ["backoffice-session-bearer"],
+        "permissions": []
+      },
+      "request": {
+        "parameters": [],
+        "body": {
+          "required": true,
+          "media_types": ["application/json"],
+          "model_id": "create-user-request-wire",
+          "evidence": [
+            { "source_id": "users-api", "locator": "UsersApi.create(dto)" },
+            { "source_id": "users-create-dto", "locator": "UsersCreateApiDto" }
+          ]
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "outcome": "success",
+          "description": "User creation accepted.",
+          "body": {
+            "media_type": "application/json",
+            "model_id": "message-response-wire",
+            "envelope": {
+              "kind": "status-object",
+              "error_field": "error",
+              "message_field": "message"
+            },
+            "evidence": [
+              {
+                "source_id": "message-response-dto",
+                "locator": "MessageResponseDto"
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "source_id": "users-api",
+              "locator": "HttpClient.post<MessageResponseDto>"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "settings-security-endpoints",
+          "locator": "USERS: settings-and-security/users"
+        },
+        { "source_id": "users-api", "locator": "UsersApi.create" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": "2.0.0",
+  "kind": "list-query",
+  "feature": {
+    "id": "settings-security-user-profiles",
+    "name": "User profile options",
+    "description": "Profiles selectable while creating a user in the C5 vertical slice."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/profiles-select.backend-contract.json",
+    "id": "cmz-profiles-select",
+    "version": "1.0.0",
+    "sha256": "f35f5b25897948b2cb528557532961597daa5009d1631b14bf1b7a235d9277ce"
+  },
+  "operations": [
+    {
+      "id": "list-user-profiles",
+      "operation_ref": {
+        "operation_id": "settings-security.list-user-profiles"
+      },
+      "success_response_status": 200,
+      "read_model": {
+        "id": "profile-option",
+        "description": "Profile option consumed by the user creation form.",
+        "fields": [
+          { "name": "value", "source_field": "uniq_id" },
+          { "name": "label", "source_field": "name" }
+        ]
+      },
+      "execution": {
+        "cache": {
+          "mode": "host",
+          "scope": "principal",
+          "refresh": "bypass"
+        },
+        "concurrency": "latest-wins",
+        "cancellation": {
+          "on_superseded": true,
+          "on_destroy": true
+        },
+        "retry": { "mode": "none" },
+        "stale_data": {
+          "on_reload": "preserve",
+          "on_error": "preserve"
+        }
+      }
+    }
+  ]
+}

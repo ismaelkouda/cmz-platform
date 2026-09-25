@@ -98,4 +98,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0062](./0062-list-query-page-angular-reutilise-resource-facade.md) | La page `list-query` Angular réutilise `ResourceFacade`  | Accepted |
 | [0063](./0063-list-query-page-react-reutilise-le-port-hote.md) | La page `list-query` React réutilise le port hôte        | Accepted |
 | [0064](./0064-invalidation-locale-nommee-apres-succes-distant.md) | L’invalidation locale est nommée et suit le succès distant | Accepted |
+| [0065](./0065-composition-c5-utilisateurs-sur-contrats-observes.md) | Composer C5 sur les trois contrats utilisateurs observés | Accepted |
 <!-- END:GENERATED:adr-index -->

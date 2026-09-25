@@ -89,7 +89,7 @@ function requestPolicy(operation, backendContract, execution) {
 function failureContract(operation, successResponse, models, execution) {
     const envelope = successResponse.body.envelope;
     const backendDeclared =
-        envelope.kind === 'object'
+        envelope.kind === 'object' || envelope.kind === 'status-object'
             ? {
                   kind: 'envelope-flag',
                   error_field: envelope.error_field,

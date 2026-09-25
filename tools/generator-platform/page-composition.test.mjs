@@ -7,6 +7,7 @@ import { generateAngularPageComposition } from './generate-page-composition.mjs'
 import {
     angularPageHostBindings,
     createPageCompositionFixture,
+    createUsersPageCompositionFixture,
 } from './page-composition.fixture.mjs';
 import { computeAngularPageCompositionTarget } from './page-composition-targets.mjs';
 
@@ -61,6 +62,59 @@ test('materializes an Angular composition root from two queries and one command'
     assert.equal(
         target.angular.manifest.input.sha256,
         target.artifactPlan.input.sha256
+    );
+});
+
+test('materializes the real C5 users composition from its three observed primitives', async (context) => {
+    const input = await createUsersPageCompositionFixture();
+    context.after(() => rm(input.root, { recursive: true, force: true }));
+    const target = await computeAngularPageCompositionTarget({
+        plan: input.plan,
+        artifactRoot: input.root,
+        hostBindings: angularPageHostBindings,
+    });
+
+    assert.deepEqual(
+        input.plan.query_nodes.map(({ id }) => id),
+        ['profiles-select', 'users-list']
+    );
+    assert.deepEqual(
+        input.plan.command_nodes.map(({ id, invalidates }) => ({
+            id,
+            invalidates,
+        })),
+        [{ id: 'create-user', invalidates: ['users-list'] }]
+    );
+    assert.ok(
+        Object.keys(target.angular.files).includes(
+            'src/nodes/users-list/list-users.facade.ts'
+        )
+    );
+    assert.ok(
+        Object.keys(target.angular.files).includes(
+            'src/nodes/profiles-select/list-user-profiles.facade.ts'
+        )
+    );
+    assert.ok(
+        Object.keys(target.angular.files).includes(
+            'src/nodes/create-user/create-user.facade.ts'
+        )
+    );
+    assert.match(
+        target.angular.files['src/page-composition.ts'],
+        /readonly usersList = inject\(UsersListNodeFacade\)/
+    );
+    assert.match(
+        target.angular.files['src/page-composition.ts'],
+        /this\.createUserFacade\.submit\(input\)\.pipe/
+    );
+    assert.match(
+        target.angular.files['src/page-composition.ts'],
+        /this\.usersList\.reload\(\)/
+    );
+    assert.doesNotMatch(
+        target.angular.files['src/page-composition.ts'],
+        /this\.profilesSelect\.reload\(\)/
     );
 });
 

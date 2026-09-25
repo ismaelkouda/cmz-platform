@@ -1,0 +1,185 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "backend-contract",
+  "contract": {
+    "id": "cmz-profiles-select",
+    "title": "User profiles select client-observed contract",
+    "version": "1.0.0",
+    "status": "implemented",
+    "description": "Implemented workspace contract for the SEOS user-profile select query; not a verified-live backend claim."
+  },
+  "sources": [
+    {
+      "id": "profiles-select-api",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/settings-security/data/src/lib/sources/profiles-permissions-select.api.ts",
+      "sha256": "45b05e1084bdea174f0410dafc68e0bed6b3b259105a3b5658a16f698140bfdf"
+    },
+    {
+      "id": "profiles-select-dto",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/settings-security/data/src/lib/dtos/profiles-permissions-select-response-api.dto.ts",
+      "sha256": "4bbf1dbcdc864a58733e1c0756c0164bc4a5d3078e7239fc127f214e5e73a9af"
+    },
+    {
+      "id": "settings-security-endpoints",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "libs/settings-security/data/src/lib/endpoints/settings-security.endpoints.ts",
+      "sha256": "f346b728bb2cbb7f14e117b8b02c6497118ee9e1776b8d18461a0a4542a9d6bd"
+    },
+    {
+      "id": "backoffice-auth-interceptor",
+      "kind": "legacy-code",
+      "authority": "observational",
+      "status": "implemented",
+      "snapshot_uri": "apps/backoffice-angular/src/app/interceptors/auth.interceptor.ts",
+      "sha256": "27649aacfb12f0ad945f48bf25081d349ea1ebdcb3ac35a0bc9af57c3de6909e"
+    }
+  ],
+  "services": [
+    {
+      "id": "settings-api",
+      "status": "implemented",
+      "description": "Settings API selected by the SETTINGS_API_URL host token.",
+      "base_urls": [
+        { "environment": "test", "url": "https://settings.example.test/" }
+      ],
+      "evidence": [
+        {
+          "source_id": "profiles-select-api",
+          "locator": "inject(SETTINGS_API_URL)"
+        }
+      ]
+    }
+  ],
+  "security_schemes": [
+    {
+      "id": "backoffice-session-bearer",
+      "kind": "bearer",
+      "status": "implemented",
+      "description": "Bearer attached by the backoffice host unless SKIP_AUTH is true.",
+      "evidence": [
+        {
+          "source_id": "backoffice-auth-interceptor",
+          "locator": "Authorization: Bearer"
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "id": "profile-select-wire",
+      "kind": "object",
+      "status": "implemented",
+      "description": "Wire profile option returned by the user-profile select endpoint.",
+      "fields": [
+        {
+          "name": "uniq_id",
+          "description": "Stable profile identifier.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "profiles-select-dto",
+              "locator": "ProfilesPermissionsSelectItemApiDto.uniq_id"
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "description": "Human-readable profile name.",
+          "required": true,
+          "nullable": false,
+          "type": { "kind": "primitive", "name": "string" },
+          "evidence": [
+            {
+              "source_id": "profiles-select-dto",
+              "locator": "ProfilesPermissionsSelectItemApiDto.name"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "profiles-select-dto",
+          "locator": "ProfilesPermissionsSelectItemApiDto"
+        }
+      ]
+    },
+    {
+      "id": "profile-select-list-wire",
+      "kind": "array",
+      "status": "implemented",
+      "description": "Profiles carried by the simple response envelope.",
+      "items": { "kind": "model", "model_id": "profile-select-wire" },
+      "evidence": [
+        {
+          "source_id": "profiles-select-dto",
+          "locator": "SimpleResponseDto<ProfilesPermissionsSelectItemApiDto[]>"
+        }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "id": "settings-security.list-user-profiles",
+      "service_id": "settings-api",
+      "status": "implemented",
+      "description": "Loads profiles for the authenticated user creation form.",
+      "method": "GET",
+      "path": "/settings-and-security/user-profiles/select-field",
+      "access": {
+        "mode": "authenticated",
+        "security_scheme_ids": ["backoffice-session-bearer"],
+        "permissions": []
+      },
+      "request": { "parameters": [] },
+      "responses": [
+        {
+          "status": 200,
+          "outcome": "success",
+          "description": "Profile options available.",
+          "body": {
+            "media_type": "application/json",
+            "model_id": "profile-select-list-wire",
+            "envelope": {
+              "kind": "object",
+              "data_field": "data",
+              "error_field": "error",
+              "message_field": "message"
+            },
+            "evidence": [
+              {
+                "source_id": "profiles-select-dto",
+                "locator": "ProfilesPermissionsSelectResponseApiDto"
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "source_id": "profiles-select-api",
+              "locator": "HttpClient.get<ProfilesPermissionsSelectResponseApiDto>"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "source_id": "settings-security-endpoints",
+          "locator": "PROFILES_PERMISSIONS: settings-and-security/user-profiles"
+        },
+        {
+          "source_id": "profiles-select-api",
+          "locator": "ProfilesPermissionsSelectApi.readAll"
+        }
+      ]
+    }
+  ]
+}

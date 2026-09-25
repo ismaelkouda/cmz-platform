@@ -23,10 +23,13 @@ function property(name) {
 }
 
 function typeScriptType(field, renderer) {
-    if (field.type?.kind !== 'primitive' || field.type.name !== 'string') {
+    if (
+        field.type?.kind !== 'primitive' ||
+        !['boolean', 'string'].includes(field.type.name)
+    ) {
         fail(
             renderer,
-            `unsupported primitive ${field.type?.kind}:${field.type?.name ?? ''}; only the active required string shape is proven`
+            `unsupported primitive ${field.type?.kind}:${field.type?.name ?? ''}; only the active required string and boolean shapes are proven`
         );
     }
     if (
@@ -37,10 +40,10 @@ function typeScriptType(field, renderer) {
     ) {
         fail(
             renderer,
-            `${field.name} requires the proven required non-null string shape without backend constraints`
+            `${field.name} requires a proven required non-null primitive shape without backend constraints`
         );
     }
-    return 'string';
+    return field.type.name;
 }
 
 function renderInterface(model, renderer) {
@@ -124,18 +127,23 @@ ${validatedFields}
 `;
 }
 
+function renderWireFieldCheck(field, index, path) {
+    const variable = `value${index}`;
+    const expected = field.type.name;
+    return `    const ${variable} = record[${property(field.name)}];
+    if (typeof ${variable} !== ${JSON.stringify(expected)}) invalid(${JSON.stringify(path)}, ${JSON.stringify(expected)});`;
+}
+
 export function renderActionRequestV2Decoder(action, errorSource) {
     const wireName = pascalCase(action.response_wire_model.id);
     const resultName = pascalCase(action.result_model.id);
     const decoderName = `decode${pascalCase(action.id)}Response`;
     const envelope = action.transport.envelope;
+    const wirePath =
+        envelope.kind === 'object' ? `$.${envelope.data_field}` : '$';
     const fieldReads = action.response_wire_model.fields
-        .map(
-            (
-                field,
-                index
-            ) => `    const value${index} = record[${property(field.name)}];
-    if (typeof value${index} !== 'string') invalid('$.${envelope.data_field}.${field.name}', 'string');`
+        .map((field, index) =>
+            renderWireFieldCheck(field, index, `${wirePath}.${field.name}`)
         )
         .join('\n');
     const wireAssignment = action.response_wire_model.fields
@@ -165,16 +173,20 @@ function asRecord(value: unknown, path: string): Readonly<Record<string, unknown
 }
 
 const WIRE_FIELDS = new Set(${JSON.stringify(action.response_wire_model.fields.map((field) => field.name))});
-const ENVELOPE_FIELDS = new Set(${JSON.stringify([
-        envelope.data_field,
-        envelope.error_field,
-        envelope.message_field,
-    ])});
+const ENVELOPE_FIELDS = new Set(${JSON.stringify(
+        envelope.kind === 'object'
+            ? [
+                  envelope.data_field,
+                  envelope.error_field,
+                  envelope.message_field,
+              ]
+            : action.response_wire_model.fields.map((field) => field.name)
+    )});
 
 function decodeWire(value: unknown): ${wireName} {
-    const record = asRecord(value, '$.${envelope.data_field}');
+    const record = asRecord(value, ${JSON.stringify(wirePath)});
     for (const key of Object.keys(record)) {
-        if (!WIRE_FIELDS.has(key)) invalid('$.${envelope.data_field}.' + key, 'declared field');
+        if (!WIRE_FIELDS.has(key)) invalid(${JSON.stringify(`${wirePath}.`)} + key, 'declared field');
     }
 ${fieldReads}
     return {
@@ -192,7 +204,7 @@ export function ${decoderName}(payload: unknown): ${resultName} {
     if (typeof error !== 'boolean') invalid('$.${envelope.error_field}', 'boolean');
     if (typeof message !== 'string') invalid('$.${envelope.message_field}', 'string');
     if (error) throw new ServerResponseError(message);
-    const wire = decodeWire(envelope[${property(envelope.data_field)}]);
+    const wire = decodeWire(${envelope.kind === 'object' ? `envelope[${property(envelope.data_field)}]` : 'envelope'});
     return {
 ${resultAssignment}
     };
@@ -223,6 +235,99 @@ function validateExecution(
     }
 }
 
+function validateAuthentication(action, renderer, allowAuthenticated) {
+    const authentication = action.request_policy.authentication;
+    if (action.access.mode === 'public') {
+        if (
+            action.access.security_scheme_ids.length !== 0 ||
+            action.access.permissions.length !== 0 ||
+            !exactKeys(authentication, ['mode']) ||
+            authentication.mode !== 'omit'
+        ) {
+            fail(
+                renderer,
+                `${action.id} requires the proven public auth omission`
+            );
+        }
+        return;
+    }
+    if (!allowAuthenticated) {
+        fail(renderer, `${action.id} requires the proven public auth omission`);
+    }
+    if (
+        action.access.mode !== 'authenticated' ||
+        action.access.permissions.length !== 0 ||
+        !exactKeys(authentication, ['mode', 'schemes']) ||
+        authentication.mode !== 'host' ||
+        !Array.isArray(authentication.schemes) ||
+        authentication.schemes.length === 0 ||
+        authentication.schemes.some(
+            (scheme) =>
+                !exactKeys(scheme, ['id', 'kind']) || scheme.kind !== 'bearer'
+        )
+    ) {
+        fail(
+            renderer,
+            `${action.id} requires the proven authenticated bearer host policy`
+        );
+    }
+}
+
+function validateInputShape(action, renderer, allowRequiredStringFields) {
+    if (!allowRequiredStringFields) {
+        if (
+            action.port.input.fields.length !== 1 ||
+            action.request_model.fields.length !== 1 ||
+            action.response_wire_model.fields.length !== 1 ||
+            action.result_model.fields.length !== 1
+        ) {
+            fail(
+                renderer,
+                `${action.id} requires the proven single-field shape`
+            );
+        }
+        const validations = action.port.input.fields[0].validations;
+        if (
+            JSON.stringify(validations) !==
+            JSON.stringify([
+                { kind: 'required' },
+                { kind: 'format', format: 'email' },
+            ])
+        ) {
+            fail(renderer, `${action.id} requires the proven email validation`);
+        }
+        return;
+    }
+    if (
+        action.port.input.fields.length === 0 ||
+        action.request_model.fields.length !==
+            action.port.input.fields.length ||
+        action.result_model.fields.length === 0
+    ) {
+        fail(
+            renderer,
+            `${action.id} requires the proven required-string action shape`
+        );
+    }
+    for (const field of action.port.input.fields) {
+        const validations = field.validations;
+        const allowed =
+            JSON.stringify(validations) ===
+                JSON.stringify([{ kind: 'required' }]) ||
+            JSON.stringify(validations) ===
+                JSON.stringify([
+                    { kind: 'required' },
+                    { kind: 'format', format: 'email' },
+                ]);
+        if (field.type?.name !== 'string' || !allowed) {
+            fail(
+                renderer,
+                `${action.id}.${field.name} lacks a proven required-string validation`
+            );
+        }
+    }
+}
+
 export function assertActionRequestV2RendererModel(
     model,
     renderer,
@@ -236,15 +341,11 @@ export function assertActionRequestV2RendererModel(
         fail(renderer, 'requires exactly one action');
     }
     const action = model.actions[0];
-    if (
-        action.access.mode !== 'public' ||
-        action.access.security_scheme_ids.length !== 0 ||
-        action.access.permissions.length !== 0 ||
-        !exactKeys(action.request_policy.authentication, ['mode']) ||
-        action.request_policy.authentication.mode !== 'omit'
-    ) {
-        fail(renderer, `${action.id} requires the proven public auth omission`);
-    }
+    validateAuthentication(
+        action,
+        renderer,
+        options.allowAuthenticated === true
+    );
     if (
         action.transport.method !== 'POST' ||
         action.transport.success_response_status !== 200 ||
@@ -254,35 +355,38 @@ export function assertActionRequestV2RendererModel(
     ) {
         fail(renderer, `${action.id} requires the proven JSON POST shape`);
     }
-    if (
-        action.transport.envelope.kind !== 'object' ||
-        !exactKeys(action.transport.envelope, [
+    const envelope = action.transport.envelope;
+    const objectEnvelope =
+        envelope.kind === 'object' &&
+        exactKeys(envelope, [
             'kind',
             'data_field',
             'error_field',
             'message_field',
-        ])
-    ) {
-        fail(renderer, `${action.id} requires the proven JSON object envelope`);
+        ]);
+    const statusErrorField = action.response_wire_model.fields.find(
+        (field) => field.name === envelope.error_field
+    );
+    const statusMessageField = action.response_wire_model.fields.find(
+        (field) => field.name === envelope.message_field
+    );
+    const statusEnvelope =
+        options.allowStatusEnvelope === true &&
+        envelope.kind === 'status-object' &&
+        exactKeys(envelope, ['kind', 'error_field', 'message_field']) &&
+        envelope.error_field !== envelope.message_field &&
+        statusErrorField?.type?.kind === 'primitive' &&
+        statusErrorField.type.name === 'boolean' &&
+        statusMessageField?.type?.kind === 'primitive' &&
+        statusMessageField.type.name === 'string';
+    if (!objectEnvelope && !statusEnvelope) {
+        fail(renderer, `${action.id} requires a proven JSON response envelope`);
     }
-    if (
-        action.port.input.fields.length !== 1 ||
-        action.request_model.fields.length !== 1 ||
-        action.response_wire_model.fields.length !== 1 ||
-        action.result_model.fields.length !== 1
-    ) {
-        fail(renderer, `${action.id} requires the proven single-field shape`);
-    }
-    const validations = action.port.input.fields[0].validations;
-    if (
-        JSON.stringify(validations) !==
-        JSON.stringify([
-            { kind: 'required' },
-            { kind: 'format', format: 'email' },
-        ])
-    ) {
-        fail(renderer, `${action.id} requires the proven email validation`);
-    }
+    validateInputShape(
+        action,
+        renderer,
+        options.allowRequiredStringFields === true
+    );
     for (const field of [
         ...action.port.input.fields,
         ...action.request_model.fields,

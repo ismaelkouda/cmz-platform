@@ -232,6 +232,204 @@ function page(siteGroups, reportTypes, forgotPassword) {
     };
 }
 
+function usersPage(usersList, profilesSelect, createUser) {
+    return {
+        id: 'page_6666666666666666',
+        title: 'User management',
+        purpose: 'List users and create a user from observed SEOS contracts.',
+        path: '/settings-security/users',
+        experience_ids: ['web'],
+        access: { mode: 'authenticated', permissions: [] },
+        initial_state_id: 'loading',
+        states: [
+            state('loading', 'loading'),
+            state('ready', 'ready'),
+            state('empty', 'empty'),
+            state('query-failed', 'error'),
+            state('created', 'success'),
+            state('create-failed', 'error'),
+        ],
+        controls: [
+            {
+                id: 'first-name',
+                kind: 'text',
+                label: 'First name',
+                description: 'Required user first name.',
+                required: true,
+            },
+            {
+                id: 'last-name',
+                kind: 'text',
+                label: 'Last name',
+                description: 'Required user last name.',
+                required: true,
+            },
+            {
+                id: 'email',
+                kind: 'text',
+                label: 'Email',
+                description: 'Required user email.',
+                required: true,
+            },
+            {
+                id: 'phone',
+                kind: 'text',
+                label: 'Phone',
+                description: 'Required user phone number.',
+                required: true,
+            },
+            {
+                id: 'profile-id',
+                kind: 'select',
+                label: 'Profile',
+                description: 'Required user profile.',
+                required: true,
+            },
+        ],
+        actions: [
+            {
+                id: 'create-user',
+                kind: 'backend',
+                label: 'Create user',
+                description: 'Create the user with the selected profile.',
+                available_in_state_ids: ['ready'],
+                input_bindings: [
+                    {
+                        control_id: 'first-name',
+                        target_kind: 'body-field',
+                        target_name: 'first_name',
+                    },
+                    {
+                        control_id: 'last-name',
+                        target_kind: 'body-field',
+                        target_name: 'last_name',
+                    },
+                    {
+                        control_id: 'email',
+                        target_kind: 'body-field',
+                        target_name: 'email',
+                    },
+                    {
+                        control_id: 'phone',
+                        target_kind: 'body-field',
+                        target_name: 'phone',
+                    },
+                    {
+                        control_id: 'profile-id',
+                        target_kind: 'body-field',
+                        target_name: 'profile_id',
+                    },
+                ],
+                operation_ref: {
+                    contract_id: createUser.backend_contract.id,
+                    operation_id: createUser.actions[0].transport.operation_id,
+                },
+                invalidates_load_ids: ['users-list'],
+                success_state_id: 'created',
+                error_state_id: 'create-failed',
+            },
+        ],
+        loads: [
+            {
+                id: 'users-list',
+                operation_ref: {
+                    contract_id: usersList.backend_contract.id,
+                    operation_id: usersList.queries[0].transport.operation_id,
+                },
+                parameter_bindings: [
+                    {
+                        parameter_name: 'page',
+                        parameter_in: 'query',
+                        source_kind: 'constant',
+                        source_ref: '1',
+                    },
+                ],
+                loading_state_id: 'loading',
+                success_state_id: 'ready',
+                empty_state_id: 'empty',
+                error_state_id: 'query-failed',
+            },
+            {
+                id: 'profiles-select',
+                operation_ref: {
+                    contract_id: profilesSelect.backend_contract.id,
+                    operation_id:
+                        profilesSelect.queries[0].transport.operation_id,
+                },
+                parameter_bindings: [],
+                loading_state_id: 'loading',
+                success_state_id: 'ready',
+                empty_state_id: 'empty',
+                error_state_id: 'query-failed',
+            },
+        ],
+        data_bindings: [
+            {
+                id: 'users',
+                operation_ref: {
+                    contract_id: usersList.backend_contract.id,
+                    operation_id: usersList.queries[0].transport.operation_id,
+                },
+                response_status:
+                    usersList.queries[0].transport.success_response_status,
+                model_id: usersList.queries[0].transport.collection_model_id,
+                field_names: [],
+                visible_in_state_ids: ['ready'],
+            },
+            {
+                id: 'profiles',
+                operation_ref: {
+                    contract_id: profilesSelect.backend_contract.id,
+                    operation_id:
+                        profilesSelect.queries[0].transport.operation_id,
+                },
+                response_status:
+                    profilesSelect.queries[0].transport.success_response_status,
+                model_id:
+                    profilesSelect.queries[0].transport.collection_model_id,
+                field_names: [],
+                visible_in_state_ids: ['ready'],
+            },
+        ],
+        regions: [
+            {
+                id: 'main',
+                role: 'main',
+                accessible_name: 'User management',
+                elements: [
+                    {
+                        id: 'users-table',
+                        kind: 'list',
+                        accessible_name: 'Users',
+                        content: 'Paginated users list.',
+                        control_ids: [],
+                        action_ids: [],
+                        data_binding_ids: ['users'],
+                    },
+                    {
+                        id: 'create-user-form',
+                        kind: 'form',
+                        accessible_name: 'Create user',
+                        content: 'Required user creation fields.',
+                        control_ids: [
+                            'first-name',
+                            'last-name',
+                            'email',
+                            'phone',
+                            'profile-id',
+                        ],
+                        action_ids: ['create-user'],
+                        data_binding_ids: ['profiles'],
+                    },
+                ],
+            },
+        ],
+        evidence: [
+            { source_id: 'users-composition-proof', locator: 'c5-baseline' },
+        ],
+    };
+}
+
 async function writeArtifact(root, value) {
     const path = resolve(root, value.uri);
     await mkdir(dirname(path), { recursive: true });
@@ -290,6 +488,75 @@ export async function createPageCompositionFixture() {
         pageContract,
         listQueryModels: [siteGroups, reportTypes],
         actionRequestModels: [forgotPassword],
+        applicationDesignSchema,
+        pageExecutionPlanSchema,
+    });
+    await Promise.all(
+        [...models, pageContract].map((value) => writeArtifact(root, value))
+    );
+    const planPath = resolve(root, 'page-execution-plan.json');
+    const hostBindingsPath = resolve(root, 'angular-host-bindings.json');
+    await Promise.all([
+        writeFile(planPath, `${JSON.stringify(plan, null, 2)}\n`),
+        writeFile(
+            hostBindingsPath,
+            `${JSON.stringify(angularPageHostBindings, null, 2)}\n`
+        ),
+    ]);
+    return { root, models, pageContract, plan, planPath, hostBindingsPath };
+}
+
+export async function createUsersPageCompositionFixture() {
+    const root = await mkdtemp(resolve(tmpdir(), 'cmz-users-composition-'));
+    const [usersList, profilesSelect, createUser] = await Promise.all([
+        primitive(
+            'query',
+            'users-list.v2.definition.json',
+            'models/users-list.json'
+        ),
+        primitive(
+            'query',
+            'profiles-select.v2.definition.json',
+            'models/profiles-select.json'
+        ),
+        primitive(
+            'command',
+            'create-user.v2.definition.json',
+            'models/create-user.json'
+        ),
+    ]);
+    const models = [usersList, profilesSelect, createUser];
+    const parsed = models.map(modelOf);
+    const pageContract = artifact('contracts/users-page.json', {
+        schema_version: '1.0.0',
+        kind: 'page-realization-contract',
+        design_ref: {
+            path: 'designs/users.application-design.json',
+            sha256: 'e'.repeat(64),
+        },
+        design: {
+            id: 'users-composition-proof',
+            title: 'Users composition proof',
+            version: '1.0.0',
+        },
+        experience: {
+            id: 'web',
+            channel: 'web',
+            offline_policy: 'none',
+            audience_ids: ['operator'],
+        },
+        backend_contracts: parsed.map((model) => ({
+            id: model.backend_contract.id,
+            role: 'target',
+            snapshot_uri: model.backend_contract.uri,
+            sha256: model.backend_contract.sha256,
+        })),
+        page: usersPage(...parsed),
+    });
+    const plan = compilePageExecutionPlan({
+        pageContract,
+        listQueryModels: [usersList, profilesSelect],
+        actionRequestModels: [createUser],
         applicationDesignSchema,
         pageExecutionPlanSchema,
     });

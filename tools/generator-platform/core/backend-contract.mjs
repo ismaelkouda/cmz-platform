@@ -359,7 +359,7 @@ function pathParameterNames(path) {
 function validateOperation(
     operation,
     index,
-    { modelIds, securityIds, serviceIds, sourceIds, usedSources },
+    { modelIds, modelsById, securityIds, serviceIds, sourceIds, usedSources },
     errors
 ) {
     if (!operation || typeof operation !== 'object') return;
@@ -490,11 +490,43 @@ function validateOperation(
         const expectedEnvelopeKeys =
             envelope.kind === 'none'
                 ? ['kind']
-                : ['data_field', 'error_field', 'kind', 'message_field'];
+                : envelope.kind === 'status-object'
+                  ? ['error_field', 'kind', 'message_field']
+                  : ['data_field', 'error_field', 'kind', 'message_field'];
         if (!exactKeys(envelope, expectedEnvelopeKeys)) {
             errors.push(
                 `${responsePath}.body.envelope: invalid closed shape for ${envelope.kind}`
             );
+        }
+        if (envelope.kind === 'status-object') {
+            const model = modelsById.get(response.body.model_id);
+            const errorField = model?.fields?.find(
+                (field) => field.name === envelope.error_field
+            );
+            const messageField = model?.fields?.find(
+                (field) => field.name === envelope.message_field
+            );
+            if (
+                envelope.error_field === envelope.message_field ||
+                errorField?.type?.kind !== 'primitive' ||
+                errorField.type.name !== 'boolean' ||
+                errorField.required !== true ||
+                errorField.nullable !== false
+            ) {
+                errors.push(
+                    `${responsePath}.body.envelope.error_field: status-object requires a distinct required non-null boolean model field`
+                );
+            }
+            if (
+                messageField?.type?.kind !== 'primitive' ||
+                messageField.type.name !== 'string' ||
+                messageField.required !== true ||
+                messageField.nullable !== false
+            ) {
+                errors.push(
+                    `${responsePath}.body.envelope.message_field: status-object requires a distinct required non-null string model field`
+                );
+            }
         }
     }
 }
@@ -532,6 +564,9 @@ export function validateBackendContract(contract, schema) {
         (contract.security_schemes ?? []).map((scheme) => scheme?.id)
     );
     const modelIds = new Set((contract.models ?? []).map((model) => model?.id));
+    const modelsById = new Map(
+        (contract.models ?? []).map((model) => [model?.id, model])
+    );
     const sourceStatusById = new Map(
         (contract.sources ?? []).map((source) => [source?.id, source?.status])
     );
@@ -673,7 +708,14 @@ export function validateBackendContract(contract, schema) {
         validateOperation(
             operation,
             index,
-            { modelIds, securityIds, serviceIds, sourceIds, usedSources },
+            {
+                modelIds,
+                modelsById,
+                securityIds,
+                serviceIds,
+                sourceIds,
+                usedSources,
+            },
             errors
         );
     }
