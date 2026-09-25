@@ -200,13 +200,20 @@ ${resultAssignment}
 `;
 }
 
-function validateExecution(action, renderer) {
+function validateExecution(
+    action,
+    renderer,
+    { allowCallerDeclaredInvalidation = false } = {}
+) {
     const execution = action.controller.execution;
+    const supportedInvalidation = allowCallerDeclaredInvalidation
+        ? new Set(['none', 'caller-declared'])
+        : new Set(['none']);
     if (
         execution.concurrency !== 'reject-while-pending' ||
         execution.retry?.mode !== 'none' ||
         execution.idempotency?.mode !== 'none' ||
-        execution.invalidation?.mode !== 'none' ||
+        !supportedInvalidation.has(execution.invalidation?.mode) ||
         execution.post_success?.mode !== 'none'
     ) {
         fail(
@@ -216,7 +223,11 @@ function validateExecution(action, renderer) {
     }
 }
 
-export function assertActionRequestV2RendererModel(model, renderer) {
+export function assertActionRequestV2RendererModel(
+    model,
+    renderer,
+    options = {}
+) {
     const errors = validateActionRequestV2ExecutionModel(model);
     if (errors.length > 0) {
         fail(renderer, `invalid execution model\n${errors.join('\n')}`);
@@ -280,6 +291,6 @@ export function assertActionRequestV2RendererModel(model, renderer) {
     ]) {
         typeScriptType(field, renderer);
     }
-    validateExecution(action, renderer);
+    validateExecution(action, renderer, options);
     return action;
 }

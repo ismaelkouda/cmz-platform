@@ -205,14 +205,15 @@ généré.
 - Le `profiles-select` requis par le formulaire n'est pas encore dans cette
   première baseline. Il doit rejoindre l'oracle de composition complet.
 - `list-query` v2 compile et exécute désormais cette page et ses query
-  parameters sur Angular et React. Le planner refuse encore l'invalidation
-  positive car le contrat de conception actuel ne nomme pas sa cible.
+  parameters sur Angular et React. C5e ajoute l'invalidation locale nommée au
+  contrat et au runtime Angular ; la composition des trois primitives métier
+  réelles reste à faire.
 - La façade historique accepte techniquement deux créations déclenchées presque
   simultanément ; le bouton UI réduit ce risque sans constituer une garantie de
   couche application. La sortie générique conservera sa garde stricte de double
   soumission au lieu de reproduire ce défaut.
 
-## Prochain incrément C5
+## Incréments C5
 
 Étendre les contrats existants, sans nouveau générateur ni runtime, dans cet
 ordre :
@@ -298,11 +299,33 @@ la suite Angular reste à 59 tests.
 Voir
 [ADR-0063](../adr/0063-list-query-page-react-reutilise-le-port-hote.md).
 
-### Suite de C5 après C5d
+## C5e — invalidation locale nommée après succès
 
-1. introduire l'invalidation positive nommée `create-user -> users-list`,
-   uniquement après succès distant ;
-2. composer `users-list + profiles-select + create-user` ;
-3. produire la page Angular ordinaire avec permission, formulaire, fermeture,
+Le contrat de page accepte maintenant `invalidates_load_ids` sur une action
+backend. La cible est un `load` exact de la page, pas un nom de façade ni un
+endpoint deviné. Le planner refuse les trois incohérences dangereuses : une
+politique `caller-declared` sans cible, une cible inconnue et des cibles sous
+une politique `none`.
+
+Le renderer Angular garde la coordination dans `PageComposition`. La façade de
+commande n'est plus exposée directement : un wrapper conserve son API publique
+et déclenche `reload()` sur la seule query déclarée après succès de l'Observable.
+L'oracle externe observe un GET forcé après succès, aucun GET après erreur,
+aucun reload d'une query voisine et aucune invalidation anticipée en cas de
+double submit. La suite Angular passe à 61 tests.
+
+La proposition d'invalider une query qui existe dans le projet mais pas dans la
+page courante est conservée comme option non décidée. Elle ne peut pas être
+assimilée à un simple `reload()` : il faut définir l'identité projet de la
+query, la péremption du cache lorsqu'aucune instance n'est montée et le
+comportement à la navigation. Aucun bus global n'est introduit dans C5e.
+
+Voir
+[ADR-0064](../adr/0064-invalidation-locale-nommee-apres-succes-distant.md).
+
+### Suite de C5 après C5e
+
+1. composer `users-list + profiles-select + create-user` ;
+2. produire la page Angular ordinaire avec permission, formulaire, fermeture,
    conservation après erreur et accessibilité ;
-4. comparer le résultat générique à la baseline SEOS.
+3. comparer le résultat générique à la baseline SEOS.

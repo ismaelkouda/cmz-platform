@@ -401,6 +401,17 @@ test('standalone replay validation rejects broken producers and capability drift
             '$.query_nodes[0].primitive_ref.uri: must be a normalized relative path'
         )
     );
+
+    const hiddenInvalidation = structuredClone(compile());
+    hiddenInvalidation.command_nodes[0].invalidates = ['load-site-groups'];
+    assert.ok(
+        validatePageExecutionPlan(
+            hiddenInvalidation,
+            pageExecutionPlanSchema
+        ).includes(
+            '$.command_nodes[0].invalidates: action.invalidation.none@1 forbids targets'
+        )
+    );
 });
 
 test('rejects an ambiguous output producer instead of binding by operation only', () => {
@@ -446,7 +457,30 @@ test('rejects weaker page access, missing primitives, and stale artifact hashes'
     );
 });
 
-test('rejects caller-declared invalidation until its targets exist in product intent', () => {
+test('compiles caller-declared invalidation to one named page query', () => {
+    const model = structuredClone(forgotPasswordModel);
+    model.actions[0].controller.execution.invalidation = {
+        mode: 'caller-declared',
+    };
+    const callerDeclared = documentArtifact(
+        'generated/caller-declared-action.json',
+        model
+    );
+    const invalidatingPage = page();
+    invalidatingPage.actions[0].invalidates_load_ids = ['load-site-groups'];
+    const plan = compile({
+        pageContract: pageContract(invalidatingPage),
+        actionRequestModels: [callerDeclared],
+    });
+    assert.deepEqual(plan.command_nodes[0].invalidates, ['load-site-groups']);
+    assert.ok(
+        plan.required_capabilities.includes(
+            'action.invalidation.caller-declared@1'
+        )
+    );
+});
+
+test('rejects absent, unknown, or policy-incompatible invalidation targets', () => {
     const model = structuredClone(forgotPasswordModel);
     model.actions[0].controller.execution.invalidation = {
         mode: 'caller-declared',
@@ -457,6 +491,24 @@ test('rejects caller-declared invalidation until its targets exist in product in
     );
     assert.throws(
         () => compile({ actionRequestModels: [callerDeclared] }),
-        /caller-declared invalidation targets that application-design 1\.0 cannot express/
+        /requires at least one invalidation target/
+    );
+
+    const unknownTarget = page();
+    unknownTarget.actions[0].invalidates_load_ids = ['missing-query'];
+    assert.throws(
+        () =>
+            compile({
+                pageContract: pageContract(unknownTarget),
+                actionRequestModels: [callerDeclared],
+            }),
+        /invalidates unknown page query missing-query/
+    );
+
+    const forbiddenTarget = page();
+    forbiddenTarget.actions[0].invalidates_load_ids = ['load-site-groups'];
+    assert.throws(
+        () => compile({ pageContract: pageContract(forbiddenTarget) }),
+        /declares invalidation targets but its action-request policy is none/
     );
 });

@@ -151,8 +151,12 @@ export class ${className} {
 `;
 }
 
-function validateInput(model, hostBindings) {
-    const action = assertActionRequestV2RendererModel(model, 'Angular');
+function validateInput(model, hostBindings, options) {
+    const action = assertActionRequestV2RendererModel(
+        model,
+        'Angular',
+        options
+    );
     if (!exactKeys(hostBindings, ['services'])) {
         fail('host bindings must use the closed services shape');
     }
@@ -178,8 +182,12 @@ function validateInput(model, hostBindings) {
     }
     return { action, binding };
 }
-export function renderAngularActionRequestV2(model, hostBindings) {
-    const { action, binding } = validateInput(model, hostBindings);
+export function renderAngularActionRequestV2(
+    model,
+    hostBindings,
+    options = {}
+) {
+    const { action, binding } = validateInput(model, hostBindings, options);
     const files = {
         'src/models.ts': renderActionRequestV2Models(action, 'Angular'),
         'src/validation.ts': renderActionRequestV2Validation(

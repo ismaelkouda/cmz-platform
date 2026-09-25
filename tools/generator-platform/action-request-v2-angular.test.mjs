@@ -132,6 +132,19 @@ test('refuse les capacités Angular sans oracle actif', () => {
         () =>
             renderAngularActionRequestV2(
                 mutateActive((action) => {
+                    action.controller.execution.invalidation = {
+                        mode: 'caller-declared',
+                    };
+                }),
+                cmzAngularActionRequestHostBindings
+            ),
+        /execution policy without an oracle/
+    );
+
+    assert.throws(
+        () =>
+            renderAngularActionRequestV2(
+                mutateActive((action) => {
                     action.transport.envelope = { kind: 'none' };
                 }),
                 cmzAngularActionRequestHostBindings

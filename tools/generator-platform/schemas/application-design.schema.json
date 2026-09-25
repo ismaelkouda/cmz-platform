@@ -292,6 +292,12 @@
           "type": "array",
           "items": { "$ref": "#/$defs/inputBinding" }
         },
+        "invalidates_load_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
         "operation_ref": { "$ref": "#/$defs/backendRef" },
         "destination_page_id": { "$ref": "#/$defs/pageId" },
         "success_state_id": { "$ref": "#/$defs/id" },

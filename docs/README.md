@@ -104,6 +104,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0061](./adr/0061-list-query-page-et-parametres-restent-backend-neutres.md) | Les pages et paramètres `list-query` restent backend-neutres |
 | [0062](./adr/0062-list-query-page-angular-reutilise-resource-facade.md) | La page `list-query` Angular réutilise `ResourceFacade`  |
 | [0063](./adr/0063-list-query-page-react-reutilise-le-port-hote.md) | La page `list-query` React réutilise le port hôte        |
+| [0064](./adr/0064-invalidation-locale-nommee-apres-succes-distant.md) | L’invalidation locale est nommée et suit le succès distant |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

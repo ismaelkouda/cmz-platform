@@ -765,6 +765,27 @@ chaque framework. Un oracle React natif ajoute neuf scénarios et porte la suite
 orchestrateur, publisher ou dépendance n'est ajouté. ADR-0063 porte la revue.
 Restent l'invalidation positive nommée puis la composition C5 complète.
 
+Dix-neuvième incrément C5e engagé le 2026-09-25 : la conception nomme désormais
+les `load` locaux invalidés par une action backend. Le planner confronte cette
+déclaration à la politique `action-request` : `none` interdit les cibles,
+`caller-declared` en exige au moins une, et toute cible doit résoudre une query
+de la page. Le plan conserve les IDs triés et négocie la capacité
+`action.invalidation.caller-declared@1`.
+
+La composition Angular encapsule la façade de commande et recharge seulement
+les queries nommées après succès distant. L'oracle externe prouve le bypass du
+cache, l'absence de reload des autres queries, zéro reload après erreur et zéro
+invalidation anticipée lors d'un double submit. La suite Angular passe à 61/61.
+Le renderer autonome de commande reste fail-closed, car il n'a aucun caller
+capable de résoudre les cibles. Zéro dépendance, runtime partagé, bus, store ou
+cache parallèle n'est ajouté ; ADR-0064 porte la revue.
+
+Une invalidation de query située hors de la page a été proposée puis séparée de
+ce lot : elle reste une option à décider, pas un ordre d'implémentation. Elle
+demanderait une identité de query et une politique de péremption au niveau
+projet. Reste la composition C5 réelle
+`users-list + profiles-select + create-user`, puis l'UI/a11y.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement
