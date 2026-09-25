@@ -102,6 +102,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0059](./adr/0059-composition-angular-materialise-les-noeuds-du-plan.md) | La composition Angular matérialise les nœuds du plan avant l'UI |
 | [0060](./adr/0060-oracle-angular-externe-execute-la-composition-nxn.md) | Un oracle Angular externe exécute la composition N×N     |
 | [0061](./adr/0061-list-query-page-et-parametres-restent-backend-neutres.md) | Les pages et paramètres `list-query` restent backend-neutres |
+| [0062](./adr/0062-list-query-page-angular-reutilise-resource-facade.md) | La page `list-query` Angular réutilise `ResourceFacade`  |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

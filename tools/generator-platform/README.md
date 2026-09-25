@@ -288,6 +288,14 @@ plan. The published sources are type-checked against declared workspace ports;
 unknown aliases fail closed. `angular-layered` remains a v1-only target. V2 is
 still experimental until a real N×N page composition consumes the publication.
 
+Direct lists and the proven single string path parameter are executable on both
+targets. A paginated result with typed query parameters is currently executable
+on Angular only and must be published with `--target angular`; the React
+renderer deliberately fails closed until its independent runtime oracle exists.
+The Angular page reuses the host `HttpClient`, interceptors and `ResourceFacade`
+and maps backend field names to the canonical page roles from the execution
+model. It does not infer Laravel, Spring, .NET or Django conventions.
+
 ## Migrate an action-request to v2
 
 Action-request v2 follows the same backend-authority boundary as list-query v2.

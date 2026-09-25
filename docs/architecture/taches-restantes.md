@@ -2147,6 +2147,16 @@ Figma, désormais source partielle différée :
   .NET et Django ne nécessitent aucun branchement central. Les deux renderers
   refusent encore explicitement la page : restent leurs oracles runtime, puis
   l'invalidation positive et la composition complète. ADR-0061.
+  **C5c — page et query parameters Angular engagés localement le 2026-09-25 :**
+  le renderer Angular réutilise `HttpClient`, `HttpParams`, les intercepteurs du
+  host et `ResourceFacade`. Il valide les cinq paramètres avant HTTP, produit
+  une page canonique, conserve la dernière page au reload et ne crée aucun
+  runtime paginé parallèle. Un oracle externe ajoute neuf scénarios et porte la
+  suite Angular à 59/59 : encodage, optionnels, auth/cache, mapping, vide,
+  erreurs, reload et annulation. Les champs supplémentaires de la page sont
+  tolérés comme projection contractuelle ; les items restent stricts. React
+  continue d'échouer fermé. Restent sa parité runtime, l'invalidation positive
+  nommée puis la composition C5 complète. ADR-0062.
   Le rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
   devront recevoir un discriminateur et un oracle lors d'un cas réel, sans

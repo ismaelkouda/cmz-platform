@@ -28,6 +28,9 @@ const usersDefinitionPath = resolve(
     repositoryRoot,
     'tools/generator-platform/fixtures/users-list.v2.definition.json'
 );
+const usersTarget = await computeAngularListQueryV2Target({
+    definitionPath: usersDefinitionPath,
+});
 
 function mutateActive(mutator) {
     const model = structuredClone(activeTarget.model);
@@ -149,12 +152,114 @@ test('refuse d’élargir le renderer aux tableaux d’objets ou à plusieurs pa
     );
 });
 
-test('garde la page C5 fermée tant que son oracle Angular n’existe pas', async () => {
-    await assert.rejects(
-        computeAngularListQueryV2Target({
-            definitionPath: usersDefinitionPath,
-        }),
-        /pagination without a runtime oracle/
+test('rend la page C5 et ses query parameters sans hypothèse Laravel', () => {
+    const models = usersTarget.files['src/models.ts'];
+    assert.match(models, /interface ListUsersPage/);
+    assert.match(models, /readonly items: readonly UserListItem\[\]/);
+    assert.match(models, /readonly currentPage: number/);
+    assert.match(models, /readonly search\?: string/);
+    assert.match(models, /readonly isActive\?: boolean/);
+
+    const source = usersTarget.files['src/list-users.source.ts'];
+    assert.match(source, /HttpClient, HttpParams/);
+    assert.match(
+        source,
+        /params = params\.set\('page', String\(parameter0\)\)/
+    );
+    assert.match(
+        source,
+        /params = params\.set\('is_active', String\(parameter4\)\)/
+    );
+    assert.match(source, /parameter0 < 1/);
+    assert.match(source, /declared pattern/);
+    assert.doesNotMatch(source, /Laravel|Spring|Django|\.NET/);
+
+    const decoder = usersTarget.files['src/list-users.decoder.ts'];
+    assert.match(decoder, /const page = asRecord\(result, '\$\.data'\)/);
+    assert.match(decoder, /const collection = page\['data'\]/);
+    assert.match(decoder, /currentPage: pageField0/);
+    assert.match(decoder, /totalItems: pageField3/);
+
+    const facade = usersTarget.files['src/list-users.facade.ts'];
+    assert.match(facade, /extends ResourceFacade<\s*ListUsersPage/);
+    assert.match(facade, /readonly page = computed/);
+    assert.match(facade, /readonly items = computed/);
+    assert.match(facade, /lastResolvedPage/);
+
+    const reorderedPage = structuredClone(usersTarget.model);
+    const pageFields = reorderedPage.queries[0].transport.result.page_fields;
+    reorderedPage.queries[0].transport.result.page_fields = {
+        totalItems: pageFields.totalItems,
+        pageSize: pageFields.pageSize,
+        lastPage: pageFields.lastPage,
+        currentPage: pageFields.currentPage,
+    };
+    const reordered = renderAngularListQueryV2(
+        reorderedPage,
+        cmzAngularListQueryHostBindings
+    );
+    const original = renderAngularListQueryV2(
+        usersTarget.model,
+        cmzAngularListQueryHostBindings
+    );
+    assert.equal(
+        reordered.files['src/models.ts'],
+        original.files['src/models.ts']
+    );
+    assert.equal(
+        reordered.files['src/list-users.decoder.ts'],
+        original.files['src/list-users.decoder.ts']
+    );
+});
+
+test('refuse les variantes de page et query non couvertes par l’oracle Angular', () => {
+    const invalidPage = structuredClone(usersTarget.model);
+    invalidPage.queries[0].transport.result.page_fields.totalItems.type =
+        'number';
+    assert.throws(
+        () =>
+            renderAngularListQueryV2(
+                invalidPage,
+                cmzAngularListQueryHostBindings
+            ),
+        /proven canonical page shape/
+    );
+
+    const duplicateParameter = structuredClone(usersTarget.model);
+    duplicateParameter.queries[0].transport.parameters[1].name = 'page';
+    assert.throws(
+        () =>
+            renderAngularListQueryV2(
+                duplicateParameter,
+                cmzAngularListQueryHostBindings
+            ),
+        /typed query parameters with a runtime oracle/
+    );
+
+    const injectableConstraint = structuredClone(usersTarget.model);
+    injectableConstraint.queries[0].port.input.fields[0].constraints.minimum =
+        '1); throw new Error("injected")';
+    injectableConstraint.queries[0].transport.parameters[0].constraints.minimum =
+        '1); throw new Error("injected")';
+    assert.throws(
+        () =>
+            renderAngularListQueryV2(
+                injectableConstraint,
+                cmzAngularListQueryHostBindings
+            ),
+        /typed query parameters with a runtime oracle/
+    );
+
+    const duplicatePageField = structuredClone(usersTarget.model);
+    duplicatePageField.queries[0].transport.result.page_fields.totalItems.source_field =
+        'current_page';
+    assert.throws(
+        () =>
+            renderAngularListQueryV2(
+                duplicatePageField,
+                cmzAngularListQueryHostBindings
+            ),
+        /proven canonical page shape/
     );
 });
 
