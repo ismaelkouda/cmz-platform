@@ -3,7 +3,7 @@
 - **Date de réception :** 2026-09-25
 - **Origine :** description libre fournie par un utilisateur ne manipulant ni
   schéma ni code du générateur
-- **Statut :** entrée figée, baseline SEOS verte et contrat/compiler C5b livré
+- **Statut :** entrée figée, baseline SEOS verte et runtime Angular C5c livré
 - **But :** éprouver le parcours `list-query` + `action-request` + composition
   de page sur un cas produit réel
 - **Décision utilisateur du 2026-09-25 :** option A, reproduction du contrat
@@ -253,3 +253,39 @@ Ce lot reste contractuel : Angular et React rejettent explicitement la page tant
 que leurs oracles runtime respectifs ne prouvent pas la sérialisation des query
 parameters, le décodage des métadonnées et le cycle de chargement. Voir
 [ADR-0061](../adr/0061-list-query-page-et-parametres-restent-backend-neutres.md).
+
+## C5c — runtime Angular de page
+
+La sortie Angular exécute maintenant `users-list` depuis le même modèle C5b.
+Elle génère une interface `ListUsersPage`, une source `HttpClient` et une façade
+`ResourceFacade`; aucun runtime paginé parallèle n'a été ajouté.
+
+Les cinq paramètres sont validés avant le réseau puis sérialisés avec
+`HttpParams`. `page` est obligatoire et entier ; les quatre filtres facultatifs
+sont omis lorsqu'ils sont absents. Une chaîne vide sous contrainte, un rôle hors
+pattern ou un faux booléen produit un `InvalidPayloadError` sans requête HTTP.
+
+Le décodeur mappe les champs wire vers `items`, `currentPage`, `lastPage`,
+`pageSize` et `totalItems`. Il accepte les métadonnées supplémentaires de la
+page Laravel parce que le contrat déclare une projection, mais conserve le rejet
+strict des champs inconnus sur chaque item utilisateur.
+
+L'oracle Angular externe couvre 9 scénarios et traverse le vrai host de test :
+intercepteurs d'authentification, d'erreur et de cache, encodage URL, page vide,
+erreurs d'entrée et de payload, conservation au reload et annulation
+`latest-wins`. La suite Angular contient 59 tests verts après ajout. React
+continue de refuser explicitement la page : aucune parité n'est déclarée sans
+son oracle dédié.
+
+Voir
+[ADR-0062](../adr/0062-list-query-page-angular-reutilise-resource-facade.md).
+
+### Suite de C5 après C5c
+
+1. rendre et exécuter la même capacité sur React avec son oracle indépendant ;
+2. introduire l'invalidation positive nommée `create-user -> users-list`,
+   uniquement après succès distant ;
+3. composer `users-list + profiles-select + create-user` ;
+4. produire la page Angular ordinaire avec permission, formulaire, fermeture,
+   conservation après erreur et accessibilité ;
+5. comparer le résultat générique à la baseline SEOS.

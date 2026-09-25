@@ -729,6 +729,27 @@ dépendance. Les renderers Angular et React rejettent explicitement la paginatio
 tant que leurs oracles dédiés ne l'exécutent pas. ADR-0061 consigne la décision.
 L'invalidation positive et la composition C5 restent ouvertes.
 
+Dix-septième incrément C5c engagé le 2026-09-25 : le renderer Angular exécute
+désormais la page et les query parameters déjà compilés par C5b. La sortie
+réutilise `HttpClient`, `HttpParams`, les intercepteurs du host et
+`ResourceFacade`; aucun runtime paginé parallèle n'est introduit. Les
+paramètres `string`, `integer` et `boolean` sont validés avant le réseau, les
+optionnels absents sont omis et les noms wire restent issus du contrat.
+
+Le résultat généré expose une page canonique et ses items. Les champs de page
+non projetés sont tolérés, conformément au contrat C5 qui ne revendique qu'une
+projection des métadonnées Laravel ; les items conservent en revanche leur
+politique stricte de rejet des champs inconnus. Cette distinction est explicite
+et testée, pas déduite du framework backend.
+
+Un oracle Angular externe ajoute neuf scénarios sur le vrai host de test : URL
+encodée, auth/cache, omission des filtres, mapping, état vide, rejet avant HTTP,
+payload invalide avec chemin wire, reload avec donnée conservée et annulation
+`latest-wins`. La suite Angular passe à 59/59. React reste fermé sur cette
+capacité et son test de refus reste vert. Le lot ajoute zéro dépendance, cache,
+orchestrateur, journal, publisher ou runtime partagé ; ADR-0062 porte la revue.
+Restent la parité React, l'invalidation positive et la composition C5.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

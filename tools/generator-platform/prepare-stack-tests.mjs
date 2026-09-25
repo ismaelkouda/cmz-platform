@@ -87,11 +87,20 @@ const [
 const sourceKey = target === 'angular' ? 'angular' : 'react';
 const targetRoot = resolve(outputRoot, target);
 let pageComposition;
+let usersListQuery;
 if (target === 'angular') {
-    const [fixtureSupport, pageCompositionTargets] = await Promise.all([
-        import('./page-composition.fixture.mjs'),
-        import('./page-composition-targets.mjs'),
-    ]);
+    const [fixtureSupport, pageCompositionTargets, usersListTarget] =
+        await Promise.all([
+            import('./page-composition.fixture.mjs'),
+            import('./page-composition-targets.mjs'),
+            computeAngularListQueryV2Target({
+                definitionPath: resolve(
+                    generatorRoot,
+                    'fixtures/users-list.v2.definition.json'
+                ),
+            }),
+        ]);
+    usersListQuery = usersListTarget;
     const fixture = await fixtureSupport.createPageCompositionFixture();
     try {
         pageComposition =
@@ -175,6 +184,14 @@ await Promise.all([
         resolve(targetRoot, 'list-query-v2-tasks-actions-processing-type'),
         parameterizedListQueryV2.files
     ),
+    ...(usersListQuery
+        ? [
+              writeTargetFiles(
+                  resolve(targetRoot, 'list-query-v2-users'),
+                  usersListQuery.files
+              ),
+          ]
+        : []),
     writeTargetFiles(
         resolve(targetRoot, 'action-request-v2'),
         actionRequestV2.files

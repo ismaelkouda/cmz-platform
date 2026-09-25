@@ -7,6 +7,19 @@ export const LIST_QUERY_V2_SUPPORTED_PRIMITIVES = new Set([
     'string',
 ]);
 
+export const LIST_QUERY_V2_SUPPORTED_INPUT_PRIMITIVES = new Set([
+    'boolean',
+    'integer',
+    'string',
+]);
+
+const LIST_QUERY_V2_PAGE_FIELDS = [
+    'currentPage',
+    'lastPage',
+    'pageSize',
+    'totalItems',
+];
+
 export function exactKeys(value, expected) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
         return false;
@@ -31,17 +44,19 @@ function property(name) {
     return JSON.stringify(name);
 }
 
-export function listQueryV2TypeScriptPrimitive(type, renderer) {
-    if (
-        type?.kind !== 'primitive' ||
-        !LIST_QUERY_V2_SUPPORTED_PRIMITIVES.has(type.name)
-    ) {
+export function listQueryV2TypeScriptPrimitive(
+    type,
+    renderer,
+    supported = LIST_QUERY_V2_SUPPORTED_PRIMITIVES
+) {
+    if (type?.kind !== 'primitive' || !supported.has(type.name)) {
         fail(
             renderer,
             `unsupported wire primitive ${type?.kind}:${type?.name ?? ''}`
         );
     }
-    return type.name === 'integer' ? 'number' : 'string';
+    if (type.name === 'integer') return 'number';
+    return type.name;
 }
 
 function fieldType(field, renderer) {
@@ -67,10 +82,18 @@ function renderInputInterface(query, renderer) {
     const fields = query.port.input.fields
         .map(
             (field) =>
-                `    readonly ${property(field.name)}: ${listQueryV2TypeScriptPrimitive(field.type, renderer)};`
+                `    readonly ${property(field.name)}${field.required ? '' : '?'}: ${listQueryV2TypeScriptPrimitive(field.type, renderer, LIST_QUERY_V2_SUPPORTED_INPUT_PRIMITIVES)};`
         )
         .join('\n');
     return `export interface ${pascalCase(query.id)}Input {\n${fields}\n}`;
+}
+
+function renderPageInterface(query) {
+    const readName = pascalCase(query.read_model.id);
+    const fields = LIST_QUERY_V2_PAGE_FIELDS.map(
+        (name) => `    readonly ${property(name)}: number;`
+    ).join('\n');
+    return `export interface ${pascalCase(query.id)}Page {\n    readonly items: readonly ${readName}[];\n${fields}\n}`;
 }
 
 export function renderListQueryV2Models(query, renderer) {
@@ -78,7 +101,11 @@ export function renderListQueryV2Models(query, renderer) {
         query.port.input.kind === 'object'
             ? `\n\n${renderInputInterface(query, renderer)}`
             : '';
-    return `${renderInterface(query.wire_model, renderer)}\n\n${renderInterface(query.read_model, renderer)}${input}\n`;
+    const page =
+        query.transport.result.kind === 'page'
+            ? `\n\n${renderPageInterface(query)}`
+            : '';
+    return `${renderInterface(query.wire_model, renderer)}\n\n${renderInterface(query.read_model, renderer)}${input}${page}\n`;
 }
 
 function primitiveCheck(field, variable) {
@@ -183,6 +210,12 @@ export function renderListQueryV2Decoder(
     const decoderName = `decode${pascalCase(query.id)}Response`;
     const wireName = pascalCase(query.wire_model.id);
     const readName = pascalCase(query.read_model.id);
+    const isPage = query.transport.result.kind === 'page';
+    const pageName = `${pascalCase(query.id)}Page`;
+    const outputName = isPage ? pageName : `readonly ${readName}[]`;
+    const importedModels = [readName, wireName, ...(isPage ? [pageName] : [])]
+        .sort()
+        .join(', ');
     const fieldDecoders = query.wire_model.fields
         .map((field, index) => renderFieldDecoder(field, index, renderer))
         .join('\n\n');
@@ -199,8 +232,11 @@ export function renderListQueryV2Decoder(
         )
         .join('\n');
     const envelope = query.transport.envelope;
-    const collectionPath =
+    const resultPath =
         envelope.kind === 'object' ? `$.${envelope.data_field}` : '$';
+    const collectionPath = isPage
+        ? `${resultPath}.${query.transport.result.items_field}`
+        : resultPath;
     const collectionExpression =
         envelope.kind === 'object'
             ? `    const envelope = asRecord(payload, '$');
@@ -209,11 +245,38 @@ export function renderListQueryV2Decoder(
     if (typeof error !== 'boolean') invalid('$.${envelope.error_field}', 'boolean');
     if (typeof message !== 'string') invalid('$.${envelope.message_field}', 'string');
     if (error) throw new ServerResponseError(message);
-    const collection = envelope[${property(envelope.data_field)}];`
-            : '    const collection = payload;';
+    const result = envelope[${property(envelope.data_field)}];`
+            : '    const result = payload;';
+    const pageExpression = isPage
+        ? `    const page = asRecord(result, ${JSON.stringify(resultPath)});
+    const collection = page[${property(query.transport.result.items_field)}];`
+        : '    const collection = result;';
+    const pageChecks = isPage
+        ? LIST_QUERY_V2_PAGE_FIELDS.map(
+              (name) => query.transport.result.page_fields[name]
+          )
+              .map(
+                  (
+                      field,
+                      index
+                  ) => `    const pageField${index} = page[${property(field.source_field)}];
+    if (typeof pageField${index} !== 'number' || !Number.isInteger(pageField${index})) invalid(${JSON.stringify(`${resultPath}.${field.source_field}`)}, 'integer');`
+              )
+              .join('\n')
+        : '';
+    const decodedItems =
+        'collection.map((item, index) => mapReadModel(decodeWireItem(item, index)))';
+    const resultExpression = isPage
+        ? `    return {
+        items: ${decodedItems},
+${LIST_QUERY_V2_PAGE_FIELDS.map(
+    (name, index) => `        ${property(name)}: pageField${index},`
+).join('\n')}
+    };`
+        : `    return ${decodedItems};`;
     return `import { InvalidPayloadError, ServerResponseError } from '${errorsModule}';
 
-import type { ${readName}, ${wireName} } from './models';
+import type { ${importedModels} } from './models';
 
 function invalid(path: string, expected: string): never {
     throw new InvalidPayloadError(path, expected);
@@ -247,10 +310,12 @@ ${readFields}
     };
 }
 
-export function ${decoderName}(payload: unknown): readonly ${readName}[] {
+export function ${decoderName}(payload: unknown): ${outputName} {
 ${collectionExpression}
+${pageExpression}
     if (!Array.isArray(collection)) invalid(${JSON.stringify(collectionPath)}, 'array');
-    return collection.map((item, index) => mapReadModel(decodeWireItem(item, index)));
+${pageChecks}
+${resultExpression}
 }
 `;
 }
@@ -378,7 +443,114 @@ function validateExecution(query, renderer) {
     }
 }
 
-export function assertListQueryV2RendererModel(model, renderer) {
+function validQueryParameter(field, binding) {
+    if (
+        !field ||
+        !binding ||
+        field.name !== binding.source_field ||
+        binding.in !== 'query' ||
+        typeof binding.required !== 'boolean' ||
+        field.required !== binding.required ||
+        JSON.stringify(field.type) !== JSON.stringify(binding.type) ||
+        JSON.stringify(field.constraints ?? {}) !==
+            JSON.stringify(binding.constraints ?? {}) ||
+        field.type?.kind !== 'primitive' ||
+        !LIST_QUERY_V2_SUPPORTED_INPUT_PRIMITIVES.has(field.type.name)
+    ) {
+        return false;
+    }
+    const constraints = field.constraints ?? {};
+    const supportedConstraints =
+        field.type.name === 'string'
+            ? ['max_length', 'min_length', 'pattern']
+            : field.type.name === 'integer'
+              ? ['maximum', 'minimum']
+              : [];
+    if (
+        !Object.keys(constraints).every((key) =>
+            supportedConstraints.includes(key)
+        )
+    ) {
+        return false;
+    }
+    for (const key of ['max_length', 'min_length']) {
+        if (
+            constraints[key] !== undefined &&
+            (!Number.isInteger(constraints[key]) || constraints[key] < 0)
+        ) {
+            return false;
+        }
+    }
+    for (const key of ['maximum', 'minimum']) {
+        if (
+            constraints[key] !== undefined &&
+            !Number.isInteger(constraints[key])
+        ) {
+            return false;
+        }
+    }
+    if (
+        constraints.min_length !== undefined &&
+        constraints.max_length !== undefined &&
+        constraints.min_length > constraints.max_length
+    ) {
+        return false;
+    }
+    if (
+        constraints.minimum !== undefined &&
+        constraints.maximum !== undefined &&
+        constraints.minimum > constraints.maximum
+    ) {
+        return false;
+    }
+    if (constraints.pattern !== undefined) {
+        if (typeof constraints.pattern !== 'string') return false;
+        try {
+            new RegExp(constraints.pattern);
+        } catch {
+            return false;
+        }
+    }
+    return true;
+}
+
+function validateResult(query, renderer, capabilities) {
+    const result = query.transport?.result;
+    const output = query.port?.output;
+    if (result?.kind === 'list' && output?.kind === 'list') return;
+    if (result?.kind !== 'page' || output?.kind !== 'page') {
+        fail(renderer, `${query.id} uses an unsupported result shape`);
+    }
+    if (capabilities.page !== true) {
+        fail(renderer, `${query.id} uses pagination without a runtime oracle`);
+    }
+    if (
+        !exactKeys(result, [
+            'kind',
+            'page_model_id',
+            'items_field',
+            'page_fields',
+        ]) ||
+        !exactKeys(result.page_fields, LIST_QUERY_V2_PAGE_FIELDS) ||
+        Object.values(result.page_fields).some(
+            (field) =>
+                !exactKeys(field, ['source_field', 'type']) ||
+                typeof field.source_field !== 'string' ||
+                field.type !== 'integer'
+        ) ||
+        new Set(
+            Object.values(result.page_fields).map((field) => field.source_field)
+        ).size !== 4
+    ) {
+        fail(renderer, `${query.id} requires the proven canonical page shape`);
+    }
+}
+
+export function assertListQueryV2RendererModel(
+    model,
+    renderer,
+    capabilities = {}
+) {
     if (model?.kind !== 'list-query-execution-model') {
         fail(renderer, 'expected list-query-execution-model');
     }
@@ -389,12 +561,7 @@ export function assertListQueryV2RendererModel(model, renderer) {
     if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(query.id)) {
         fail(renderer, `unsafe query id ${query.id}`);
     }
-    if (
-        query.port?.output?.kind !== 'list' ||
-        query.transport?.result?.kind !== 'list'
-    ) {
-        fail(renderer, `${query.id} uses pagination without a runtime oracle`);
-    }
+    validateResult(query, renderer, capabilities);
     const parameterBindings = query.transport?.parameters;
     if (query.port?.input?.kind === 'none') {
         if (!Array.isArray(parameterBindings) || parameterBindings.length > 0) {
@@ -402,26 +569,51 @@ export function assertListQueryV2RendererModel(model, renderer) {
         }
     } else if (query.port?.input?.kind === 'object') {
         const fields = query.port.input.fields ?? [];
-        if (
-            fields.length !== 1 ||
-            parameterBindings?.length !== 1 ||
-            fields[0].name !== parameterBindings[0].source_field ||
-            fields[0].type?.kind !== 'primitive' ||
-            fields[0].type.name !== 'string' ||
-            fields[0].required !== true ||
-            parameterBindings[0].in !== 'path' ||
-            parameterBindings[0].required !== true ||
+        const bindingNames = (parameterBindings ?? []).map(
+            (binding) => binding.name
+        );
+        const bindingSources = (parameterBindings ?? []).map(
+            (binding) => binding.source_field
+        );
+        const isProvenPath =
+            fields.length === 1 &&
+            parameterBindings?.length === 1 &&
+            fields[0].name === parameterBindings[0].source_field &&
+            fields[0].type?.kind === 'primitive' &&
+            fields[0].type.name === 'string' &&
+            fields[0].required === true &&
+            parameterBindings[0].in === 'path' &&
+            parameterBindings[0].required === true &&
             occurrenceCount(
                 query.transport.path,
                 `{${parameterBindings[0].name}}`
-            ) !== 1 ||
-            JSON.stringify(parameterBindings[0].constraints ?? {}) !==
-                JSON.stringify({ min_length: 1 })
-        ) {
-            fail(
-                renderer,
-                `${query.id} requires the proven single non-empty string path input`
-            );
+            ) === 1 &&
+            JSON.stringify(parameterBindings[0].constraints ?? {}) ===
+                JSON.stringify({ min_length: 1 });
+        if (!isProvenPath) {
+            if (
+                capabilities.queryParameters !== true ||
+                fields.length === 0 ||
+                fields.length !== parameterBindings?.length ||
+                new Set(bindingNames).size !== bindingNames.length ||
+                new Set(bindingSources).size !== bindingSources.length ||
+                !fields.every(
+                    (field, index) =>
+                        validQueryParameter(field, parameterBindings[index]) &&
+                        /^[A-Za-z_][A-Za-z0-9_.-]*$/.test(
+                            parameterBindings[index].name
+                        ) &&
+                        occurrenceCount(
+                            query.transport.path,
+                            `{${parameterBindings[index].name}}`
+                        ) === 0
+                )
+            ) {
+                fail(
+                    renderer,
+                    `${query.id} requires the proven single non-empty string path input or typed query parameters with a runtime oracle`
+                );
+            }
         }
     } else {
         fail(renderer, `${query.id} requires unsupported business input`);

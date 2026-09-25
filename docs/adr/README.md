@@ -95,4 +95,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0059](./0059-composition-angular-materialise-les-noeuds-du-plan.md) | La composition Angular matérialise les nœuds du plan avant l'UI | Accepted |
 | [0060](./0060-oracle-angular-externe-execute-la-composition-nxn.md) | Un oracle Angular externe exécute la composition N×N     | Accepted |
 | [0061](./0061-list-query-page-et-parametres-restent-backend-neutres.md) | Les pages et paramètres `list-query` restent backend-neutres | Accepted |
+| [0062](./0062-list-query-page-angular-reutilise-resource-facade.md) | La page `list-query` Angular réutilise `ResourceFacade`  | Accepted |
 <!-- END:GENERATED:adr-index -->
