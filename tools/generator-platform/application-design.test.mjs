@@ -94,6 +94,16 @@ test('refuse une page moins protégée que son opération', async () => {
     );
 });
 
+test('refuse une invalidation qui ne cible pas un load de la page', async () => {
+    const data = await fixture();
+    data.design.pages[1].actions[0].invalidates_load_ids = ['users-list'];
+    assert.ok(
+        validate(data.design, data.contracts).some((error) =>
+            error.includes('unresolved page load users-list')
+        )
+    );
+});
+
 test('refuse les contrôles non rendus et les destinations inconnues', async () => {
     const data = await fixture();
     data.design.pages[1].regions[0].elements[1].control_ids = [];

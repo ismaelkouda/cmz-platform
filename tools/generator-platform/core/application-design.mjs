@@ -122,7 +122,8 @@ function validateAction(page, action, index, context, errors) {
             action.operation_ref ||
             action.success_state_id ||
             action.error_state_id ||
-            action.input_bindings?.length
+            action.input_bindings?.length ||
+            action.invalidates_load_ids?.length
         ) {
             errors.push(
                 `${path}: navigate action contains backend-only properties`
@@ -161,6 +162,15 @@ function validateAction(page, action, index, context, errors) {
         errors
     );
     assertPageAccess(page, operation, path, errors);
+    const loadIds = new Set((page.loads ?? []).map((load) => load.id));
+    for (const [targetIndex, targetId] of (
+        action.invalidates_load_ids ?? []
+    ).entries()) {
+        if (!loadIds.has(targetId))
+            errors.push(
+                `${path}.invalidates_load_ids[${targetIndex}]: unresolved page load ${targetId}`
+            );
+    }
     if (!operation) return;
     const contractEntry = context.contracts.get(
         action.operation_ref.contract_id

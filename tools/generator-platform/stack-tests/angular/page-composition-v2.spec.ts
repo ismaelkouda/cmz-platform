@@ -117,7 +117,7 @@ afterEach(() => {
 });
 
 describe('page composition v2 Angular — oracle externe hermétique', () => {
-    it('observe deux GET et un POST réels avec les politiques exactes du host', async () => {
+    it('observe les GET, le POST et le rafraîchissement ciblé avec les politiques exactes du host', async () => {
         const { composition, http } = configureRuntime();
 
         composition.loadSiteGroups.load();
@@ -160,6 +160,13 @@ describe('page composition v2 Angular — oracle externe hermétique', () => {
         await expect(submission).resolves.toEqual({
             message: 'Reset instructions sent.',
         });
+        await settle();
+        const refresh = http.expectOne(siteGroupsUrl);
+        expect(refresh.request.context.get(BYPASS_CACHE)).toBe(true);
+        expect(composition.loadSiteGroups.state()).toBe('reloading');
+        http.expectNone((candidate) => candidate.url.startsWith(reportBaseUrl));
+        flushSiteGroups(refresh);
+        await settle();
         expect(composition.loadSiteGroups.state()).toBe('success');
         expect(composition.loadReportTypes.state()).toBe('success');
         expect(composition.submitPasswordRecovery.state()).toBe('success');
@@ -256,7 +263,60 @@ describe('page composition v2 Angular — oracle externe hermétique', () => {
         expect(reportTypes.cancelled).toBe(true);
     });
 
-    it('refuse le double submit sans POST, invalidation ou replay caché', async () => {
+    it('invalide seulement la query nommée après le succès distant', async () => {
+        const { composition, http } = configureRuntime();
+
+        composition.loadSiteGroups.load();
+        await settle();
+        flushSiteGroups(http.expectOne(siteGroupsUrl));
+        await settle();
+
+        const submitted = firstValueFrom(
+            composition.submitPasswordRecovery.submit({
+                email: 'person@example.com',
+            })
+        );
+        http.expectOne(forgotPasswordUrl).flush({
+            error: false,
+            message: 'OK',
+            data: { message: 'Accepted.' },
+        });
+        await expect(submitted).resolves.toEqual({ message: 'Accepted.' });
+        await settle();
+
+        const refresh = http.expectOne(siteGroupsUrl);
+        expect(refresh.request.context.get(BYPASS_CACHE)).toBe(true);
+        http.expectNone((candidate) => candidate.url.startsWith(reportBaseUrl));
+        flushSiteGroups(refresh);
+        await settle();
+        expect(composition.loadSiteGroups.state()).toBe('success');
+    });
+
+    it('n’invalide aucune query quand la commande distante échoue', async () => {
+        const { composition, http } = configureRuntime();
+
+        composition.loadSiteGroups.load();
+        await settle();
+        flushSiteGroups(http.expectOne(siteGroupsUrl));
+        await settle();
+
+        const submitted = firstValueFrom(
+            composition.submitPasswordRecovery.submit({
+                email: 'person@example.com',
+            })
+        );
+        http.expectOne(forgotPasswordUrl).flush(
+            { message: 'Unavailable.' },
+            { status: 503, statusText: 'Unavailable' }
+        );
+        await expect(submitted).rejects.toBeInstanceOf(ServerResponseError);
+        await settle();
+
+        http.expectNone((candidate) => candidate.method === 'GET');
+        expect(composition.loadSiteGroups.state()).toBe('success');
+    });
+
+    it('refuse le double submit sans second POST ni invalidation anticipée', async () => {
         const { composition, http } = configureRuntime();
         const first = firstValueFrom(
             composition.submitPasswordRecovery.submit({
@@ -276,6 +336,7 @@ describe('page composition v2 Angular — oracle externe hermétique', () => {
         http.expectNone(
             (candidate) => candidate.body?.email === 'second@example.com'
         );
+        http.expectNone((candidate) => candidate.method === 'GET');
 
         request.flush({
             error: false,

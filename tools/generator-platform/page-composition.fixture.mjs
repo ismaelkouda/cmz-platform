@@ -70,6 +70,14 @@ function modelOf(value) {
     return JSON.parse(value.document.toString('utf8'));
 }
 
+function withCallerDeclaredInvalidation(value) {
+    const model = modelOf(value);
+    model.actions[0].controller.execution.invalidation = {
+        mode: 'caller-declared',
+    };
+    return artifact(value.uri, model);
+}
+
 function state(id, kind) {
     return {
         id,
@@ -124,6 +132,7 @@ function page(siteGroups, reportTypes, forgotPassword) {
                     operation_id:
                         forgotPassword.actions[0].transport.operation_id,
                 },
+                invalidates_load_ids: ['load-site-groups'],
                 success_state_id: 'submitted',
                 error_state_id: 'submit-failed',
             },
@@ -231,7 +240,7 @@ async function writeArtifact(root, value) {
 
 export async function createPageCompositionFixture() {
     const root = await mkdtemp(resolve(tmpdir(), 'cmz-page-composition-'));
-    const [siteGroups, reportTypes, forgotPassword] = await Promise.all([
+    const [siteGroups, reportTypes, baseForgotPassword] = await Promise.all([
         primitive(
             'query',
             'site-group-select.v2.definition.json',
@@ -248,6 +257,7 @@ export async function createPageCompositionFixture() {
             'models/forgot-password.json'
         ),
     ]);
+    const forgotPassword = withCallerDeclaredInvalidation(baseForgotPassword);
     const models = [siteGroups, reportTypes, forgotPassword];
     const parsed = models.map(modelOf);
     const pageContract = artifact('contracts/page.json', {

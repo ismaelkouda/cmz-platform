@@ -2164,6 +2164,16 @@ Figma, désormais source partielle différée :
   `latest-wins`. L'oracle React natif ajoute 9 scénarios ; suites React 53/53 et
   Angular 59/59. Zéro dépendance ou runtime parallèle. Restent l'invalidation
   positive nommée puis la composition C5 complète. ADR-0063.
+  **C5e — invalidation locale nommée engagée localement le 2026-09-25 :** la
+  conception déclare les `load` invalidés par une action, le planner vérifie la
+  cohérence `none`/`caller-declared` et refuse cible absente ou inconnue. Le
+  composition root Angular encapsule la commande et recharge seulement la
+  query nommée après succès distant, avec bypass du cache. Les oracles prouvent
+  aussi zéro reload après erreur, aucune autre query touchée et aucune
+  invalidation anticipée sur double submit. Suite Angular 61/61, zéro dépendance
+  ou runtime partagé. L'invalidation inter-page reste une proposition séparée à
+  décider ; elle n'est pas implicitement incluse. Reste la composition des
+  trois primitives C5 réelles, puis l'UI/a11y. ADR-0064.
   Le rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
   devront recevoir un discriminateur et un oracle lors d'un cas réel, sans

@@ -244,7 +244,13 @@ function assertControlType(control, field, nodeId) {
         fail(`${nodeId} required input ${field.name} needs a required control`);
 }
 
-function compileCommandNode(action, resolved, page, pageContract) {
+function compileCommandNode(
+    action,
+    resolved,
+    page,
+    pageContract,
+    availableQueryIds
+) {
     const { artifact, model, operation } = resolved;
     assertBackendReference(pageContract, model, action.id);
     assertPageAccess(page, operation, action.id);
@@ -296,10 +302,18 @@ function compileCommandNode(action, resolved, page, pageContract) {
         )
             fail(`${action.id} binds unknown body field ${target}`);
     }
-    if (operation.controller.execution.invalidation.mode !== 'none')
+    const invalidationMode = operation.controller.execution.invalidation.mode;
+    const invalidates = [...(action.invalidates_load_ids ?? [])].sort();
+    if (invalidationMode === 'none' && invalidates.length > 0)
         fail(
-            `${action.id} requires caller-declared invalidation targets that application-design 1.0 cannot express`
+            `${action.id} declares invalidation targets but its action-request policy is none`
         );
+    if (invalidationMode === 'caller-declared' && invalidates.length === 0)
+        fail(`${action.id} requires at least one invalidation target`);
+    for (const targetId of invalidates) {
+        if (!availableQueryIds.has(targetId))
+            fail(`${action.id} invalidates unknown page query ${targetId}`);
+    }
     return {
         id: action.id,
         primitive_ref: primitiveReference(artifact, model, operation.id),
@@ -316,7 +330,7 @@ function compileCommandNode(action, resolved, page, pageContract) {
             success_state_id: action.success_state_id,
             error_state_id: action.error_state_id,
         },
-        invalidates: [],
+        invalidates,
         capabilities: [
             ...actionCapabilities(operation),
             ...authenticationCapabilities(operation),
@@ -602,11 +616,41 @@ export function validatePageExecutionPlan(plan, schema) {
             );
         if (!node?.state?.values?.includes(node?.state?.initial))
             errors.push(`${path}.state.initial: must belong to values`);
+        if (
+            !sameValues(
+                node?.invalidates ?? [],
+                [...(node?.invalidates ?? [])].sort()
+            )
+        )
+            errors.push(`${path}.invalidates: entries must be sorted`);
         for (const target of node?.invalidates ?? []) {
             if (!queryIds.has(target))
                 errors.push(
                     `${path}.invalidates: unresolved query node ${target}`
                 );
+        }
+        const invalidationCapabilities = (node?.capabilities ?? []).filter(
+            (capability) => capability.startsWith('action.invalidation.')
+        );
+        if (invalidationCapabilities.length !== 1) {
+            errors.push(
+                `${path}.capabilities: exactly one action invalidation capability is required`
+            );
+        } else if (
+            invalidationCapabilities[0] === 'action.invalidation.none@1' &&
+            (node?.invalidates ?? []).length > 0
+        ) {
+            errors.push(
+                `${path}.invalidates: action.invalidation.none@1 forbids targets`
+            );
+        } else if (
+            invalidationCapabilities[0] ===
+                'action.invalidation.caller-declared@1' &&
+            (node?.invalidates ?? []).length === 0
+        ) {
+            errors.push(
+                `${path}.invalidates: action.invalidation.caller-declared@1 requires targets`
+            );
         }
     }
     for (const [index, binding] of outputBindings.entries()) {
@@ -693,9 +737,16 @@ export function compilePageExecutionPlan({
             compileQueryNode(source, resolved, page, pageArtifact.value)
         )
         .sort((left, right) => left.id.localeCompare(right.id));
+    const queryNodeIds = new Set(queryNodes.map((node) => node.id));
     const commandNodes = commandPairs
         .map(({ source, resolved }) =>
-            compileCommandNode(source, resolved, page, pageArtifact.value)
+            compileCommandNode(
+                source,
+                resolved,
+                page,
+                pageArtifact.value,
+                queryNodeIds
+            )
         )
         .sort((left, right) => left.id.localeCompare(right.id));
     const producers = [

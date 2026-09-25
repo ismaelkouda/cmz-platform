@@ -46,6 +46,14 @@ test('materializes an Angular composition root from two queries and one command'
         /readonly loadReportTypes = inject\(LoadReportTypesNodeFacade\)/
     );
     assert.match(
+        target.angular.files['src/page-composition.ts'],
+        /this\.submitPasswordRecoveryFacade\.submit\(input\)\.pipe/
+    );
+    assert.match(
+        target.angular.files['src/page-composition.ts'],
+        /this\.loadSiteGroups\.reload\(\)/
+    );
+    assert.match(
         target.angular.files['src/page-composition.providers.ts'],
         /PageComposition,/
     );
@@ -93,6 +101,35 @@ test('fails closed on missing host services, stale artifacts, and unknown capabi
             hostBindings: angularPageHostBindings,
         }),
         /missing target capability query.magic.enabled@1/
+    );
+
+    const primitivePolicyDrift = structuredClone(input.plan);
+    primitivePolicyDrift.command_nodes[0].capabilities =
+        primitivePolicyDrift.command_nodes[0].capabilities.map((capability) =>
+            capability === 'action.invalidation.caller-declared@1'
+                ? 'action.invalidation.none@1'
+                : capability
+        );
+    primitivePolicyDrift.command_nodes[0].invalidates = [];
+    primitivePolicyDrift.required_capabilities = [
+        ...new Set([
+            'composition.independent-node-state@1',
+            'composition.producer-node-binding@1',
+            ...primitivePolicyDrift.query_nodes.flatMap(
+                (node) => node.capabilities
+            ),
+            ...primitivePolicyDrift.command_nodes.flatMap(
+                (node) => node.capabilities
+            ),
+        ]),
+    ].sort();
+    await assert.rejects(
+        computeAngularPageCompositionTarget({
+            plan: primitivePolicyDrift,
+            artifactRoot: input.root,
+            hostBindings: angularPageHostBindings,
+        }),
+        /invalidation capability differs from its primitive/
     );
 });
 

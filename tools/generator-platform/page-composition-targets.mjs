@@ -101,6 +101,14 @@ function assertPrimitiveReference(node, model) {
     ) {
         fail(`${node.id} backend operation differs from the page plan`);
     }
+    if (model.kind === 'action-request-execution-model') {
+        const invalidationCapability = `action.invalidation.${operation.controller.execution.invalidation.mode}@1`;
+        if (!node.capabilities.includes(invalidationCapability)) {
+            fail(
+                `${node.id} invalidation capability differs from its primitive`
+            );
+        }
+    }
     return operation;
 }
 
@@ -122,7 +130,8 @@ async function renderPrimitive(node, model, operation, hostBindings) {
               )
             : renderAngularActionRequestV2(
                   model,
-                  serviceBinding(hostBindings, operation.transport.service_id)
+                  serviceBinding(hostBindings, operation.transport.service_id),
+                  { allowCallerDeclaredInvalidation: true }
               );
     const files = await canonicalizeGeneratedFiles(rendered.files);
     const bindings = Object.fromEntries(
