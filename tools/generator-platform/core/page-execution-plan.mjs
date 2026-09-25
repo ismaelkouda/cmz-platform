@@ -2,6 +2,10 @@ import { createHash } from 'node:crypto';
 
 import { validateJsonSchema } from '../validate-ir.mjs';
 import { validateActionRequestV2ExecutionModel } from './action-request-v2-compiler.mjs';
+import {
+    assertActionOutputBinding,
+    assertQueryOutputBinding,
+} from './data-binding-projection.mjs';
 import { validateListQueryV2ExecutionModel } from './list-query-v2-compiler.mjs';
 
 const ACCESS_RANK = { public: 0, authenticated: 1, authorized: 2 };
@@ -353,17 +357,7 @@ function compileOutputBinding(binding, producers) {
     const operation = resolved.operation;
     let output;
     if (kind === 'query') {
-        if (
-            binding.response_status !==
-            operation.transport.success_response_status
-        )
-            fail(
-                `${binding.id} response status differs from its query primitive`
-            );
-        if (binding.model_id !== operation.transport.collection_model_id)
-            fail(
-                `${binding.id} response model differs from its query primitive`
-            );
+        assertQueryOutputBinding(binding, operation, fail);
         if (binding.field_names.length > 0)
             fail(
                 `${binding.id} cannot select fields directly from a list response`
@@ -376,17 +370,7 @@ function compileOutputBinding(binding, producers) {
                 .sort(),
         };
     } else {
-        if (
-            binding.response_status !==
-            operation.transport.success_response_status
-        )
-            fail(
-                `${binding.id} response status differs from its action primitive`
-            );
-        if (binding.model_id !== operation.transport.response_model_id)
-            fail(
-                `${binding.id} response model differs from its action primitive`
-            );
+        assertActionOutputBinding(binding, operation, fail);
         const requested =
             binding.field_names.length > 0
                 ? new Set(binding.field_names)

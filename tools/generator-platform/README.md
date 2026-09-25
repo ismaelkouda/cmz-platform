@@ -217,6 +217,22 @@ shell, prepares a real work order, installs the reviewed page output, then runs
 `finally` block. This proof does not validate any Clean Street field: that
 product remains blocked until its own target contract is confirmed.
 
+`examples/users-management-proof/` est la première preuve produit C5 publiée
+dans une application versionnée. Le design canonique crée le shell
+`apps/users-management-proof`; trois modèles d'exécution adressés par contenu
+alimentent un `page-execution-plan`, puis la composition Angular est publiée
+dans ce shell. Un binding de réponse paginée nomme explicitement son
+`source_path` vers la collection au lieu de déduire une convention backend.
+
+```bash
+node --test tools/generator-platform/users-management-proof-publication.test.mjs
+bunx nx run users-management-proof:build:production --skipNxCache
+```
+
+La page visible reste un placeholder tant que permission fine et preuve de
+présentation ne sont pas approuvées. Cette application prouve la chaîne de
+publication ; elle ne prétend pas être une application de production.
+
 ### Demand-driven composition registry
 
 `composition-registry.json` replaces dispatch code edited by hand. Every entry

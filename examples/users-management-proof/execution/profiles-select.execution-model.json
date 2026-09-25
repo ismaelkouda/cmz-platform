@@ -1,0 +1,174 @@
+{
+  "schema_version": "1.2.0",
+  "kind": "list-query-execution-model",
+  "model_id": "settings-security-user-profiles-list-query-execution",
+  "domain": {
+    "id": "settings-security-user-profiles",
+    "name": "User profile options",
+    "description": "Profiles selectable while creating a user in the C5 vertical slice."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/profiles-select.backend-contract.json",
+    "id": "cmz-profiles-select",
+    "version": "1.0.0",
+    "sha256": "f35f5b25897948b2cb528557532961597daa5009d1631b14bf1b7a235d9277ce"
+  },
+  "queries": [
+    {
+      "id": "list-user-profiles",
+      "description": "Loads profiles for the authenticated user creation form.",
+      "port": {
+        "input": {
+          "kind": "none"
+        },
+        "output": {
+          "kind": "list",
+          "item_model_id": "profile-option"
+        }
+      },
+      "access": {
+        "mode": "authenticated",
+        "security_scheme_ids": [
+          "backoffice-session-bearer"
+        ],
+        "permissions": []
+      },
+      "request_policy": {
+        "authentication": {
+          "mode": "host",
+          "schemes": [
+            {
+              "id": "backoffice-session-bearer",
+              "kind": "bearer"
+            }
+          ]
+        },
+        "cache": {
+          "mode": "host",
+          "scope": "principal",
+          "refresh": "bypass"
+        }
+      },
+      "transport": {
+        "operation_id": "settings-security.list-user-profiles",
+        "service_id": "settings-api",
+        "method": "GET",
+        "path": "/settings-and-security/user-profiles/select-field",
+        "success_response_status": 200,
+        "media_type": "application/json",
+        "collection_model_id": "profile-select-list-wire",
+        "envelope": {
+          "kind": "object",
+          "data_field": "data",
+          "error_field": "error",
+          "message_field": "message"
+        },
+        "parameters": [],
+        "result": {
+          "kind": "list"
+        }
+      },
+      "wire_model": {
+        "id": "profile-select-wire",
+        "unknown_fields": "reject",
+        "fields": [
+          {
+            "name": "uniq_id",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          }
+        ]
+      },
+      "read_model": {
+        "id": "profile-option",
+        "description": "Profile option consumed by the user creation form.",
+        "fields": [
+          {
+            "name": "value",
+            "source_field": "uniq_id",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          },
+          {
+            "name": "label",
+            "source_field": "name",
+            "type": {
+              "kind": "primitive",
+              "name": "string"
+            },
+            "required": true,
+            "nullable": false
+          }
+        ]
+      },
+      "controller": {
+        "initial_state": "idle",
+        "states": [
+          "idle",
+          "loading",
+          "success",
+          "empty",
+          "error",
+          "reloading"
+        ],
+        "commands": [
+          "load",
+          "reload"
+        ],
+        "state_rules": {
+          "load": "loading",
+          "reload": "reloading",
+          "non_empty_result": "success",
+          "empty_result": "empty",
+          "failure": "error"
+        },
+        "execution": {
+          "cache": {
+            "mode": "host",
+            "scope": "principal",
+            "refresh": "bypass"
+          },
+          "concurrency": "latest-wins",
+          "cancellation": {
+            "on_superseded": true,
+            "on_destroy": true
+          },
+          "retry": {
+            "mode": "none"
+          },
+          "stale_data": {
+            "on_reload": "preserve",
+            "on_error": "preserve"
+          }
+        }
+      },
+      "failures": {
+        "invalid_payload": "invalid-payload",
+        "backend_declared": {
+          "kind": "envelope-flag",
+          "error_field": "error",
+          "message_field": "message"
+        },
+        "http_responses": [],
+        "transport": "host-propagated"
+      }
+    }
+  ]
+}

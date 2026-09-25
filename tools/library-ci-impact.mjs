@@ -55,6 +55,7 @@ export const INTEGRATION_EXACT_INPUTS = Object.freeze([
     'tools/generator-platform/core/application-shell-publication.mjs',
     'tools/generator-platform/core/backend-contract.mjs',
     'tools/generator-platform/core/canonicalize-generated.mjs',
+    'tools/generator-platform/core/data-binding-projection.mjs',
     'tools/generator-platform/core/generation-change-set.mjs',
     'tools/generator-platform/core/generation-manifest.mjs',
     'tools/generator-platform/core/generation-transaction.mjs',

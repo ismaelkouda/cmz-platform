@@ -3,8 +3,9 @@
 - **Date de réception :** 2026-09-25
 - **Origine :** description libre fournie par un utilisateur ne manipulant ni
   schéma ni code du générateur
-- **Statut :** composition runtime C5f et frontière visuelle C5g-0/1 livrées ;
-  UI, permission, a11y et oracle visuel ouverts
+- **Statut :** composition runtime, frontière visuelle, liaison du plan et
+  application de preuve C5g-3 livrées ; UI, permission, a11y et oracle visuel
+  ouverts
 - **But :** éprouver le parcours `list-query` + `action-request` + composition
   de page sur un cas produit réel
 - **Décision utilisateur du 2026-09-25 :** option A, reproduction du contrat
@@ -244,11 +245,11 @@ collection ou une autre projection. Le modèle d'exécution distingue aujourd'hu
 explicitement `list` et `page`; il refuse les autres objets plutôt que de les
 interpréter arbitrairement.
 
-Cette séparation est volontairement indépendante de Laravel. Un test remplace
-la forme SEOS par des noms de type Spring Data (`content`, `number`,
-`totalPages`, `size`, `totalElements`) et obtient le même résultat canonique.
-Une API .NET, Django ou propriétaire peut donc choisir ses propres noms sans
-branche spécifique dans le compilateur.
+Cette séparation est volontairement indépendante de Laravel. Un test remplace la
+forme SEOS par des noms de type Spring Data (`content`, `number`, `totalPages`,
+`size`, `totalElements`) et obtient le même résultat canonique. Une API .NET,
+Django ou propriétaire peut donc choisir ses propres noms sans branche
+spécifique dans le compilateur.
 
 Ce lot reste contractuel : Angular et React rejettent explicitement la page tant
 que leurs oracles runtime respectifs ne prouvent pas la sérialisation des query
@@ -297,8 +298,7 @@ host, mapping, vide, quatre entrées invalides, payload invalide, reload en éch
 avec conservation et `latest-wins`. La suite React passe à 53 tests, tandis que
 la suite Angular reste à 59 tests.
 
-Voir
-[ADR-0063](../adr/0063-list-query-page-react-reutilise-le-port-hote.md).
+Voir [ADR-0063](../adr/0063-list-query-page-react-reutilise-le-port-hote.md).
 
 ## C5e — invalidation locale nommée après succès
 
@@ -310,10 +310,10 @@ une politique `none`.
 
 Le renderer Angular garde la coordination dans `PageComposition`. La façade de
 commande n'est plus exposée directement : un wrapper conserve son API publique
-et déclenche `reload()` sur la seule query déclarée après succès de l'Observable.
-L'oracle externe observe un GET forcé après succès, aucun GET après erreur,
-aucun reload d'une query voisine et aucune invalidation anticipée en cas de
-double submit. La suite Angular passe à 61 tests.
+et déclenche `reload()` sur la seule query déclarée après succès de
+l'Observable. L'oracle externe observe un GET forcé après succès, aucun GET
+après erreur, aucun reload d'une query voisine et aucune invalidation anticipée
+en cas de double submit. La suite Angular passe à 61 tests.
 
 La proposition d'invalider une query qui existe dans le projet mais pas dans la
 page courante est conservée comme option non décidée. Elle ne peut pas être
@@ -321,8 +321,7 @@ assimilée à un simple `reload()` : il faut définir l'identité projet de la
 query, la péremption du cache lorsqu'aucune instance n'est montée et le
 comportement à la navigation. Aucun bus global n'est introduit dans C5e.
 
-Voir
-[ADR-0064](../adr/0064-invalidation-locale-nommee-apres-succes-distant.md).
+Voir [ADR-0064](../adr/0064-invalidation-locale-nommee-apres-succes-distant.md).
 
 ### Suite de C5 après C5e
 
@@ -333,17 +332,17 @@ Voir
 
 ## C5f — composition réelle des trois primitives utilisateurs
 
-La composition Angular matérialise désormais les trois primitives exactes du
-cas retenu : la page `users-list`, le tableau `profiles-select` et la commande
+La composition Angular matérialise désormais les trois primitives exactes du cas
+retenu : la page `users-list`, le tableau `profiles-select` et la commande
 authentifiée `create-user`. Les contrats sont fondés sur les sources et DTO
 historiques observés, mais la sortie générée n’importe aucune classe SEOS.
 
-La réponse réelle de création `{ error, message }` est représentée par une
-forme contractuelle `status-object`. Elle n’est pas maquillée en enveloppe
-`data` : schéma, validateur et test négatif ferment cette distinction. Le
-renderer de commande accepte dans la composition seulement le profil borné
-nécessaire ici : Bearer du host, cinq strings requis, email validé,
-`status-object` et invalidation caller-declared.
+La réponse réelle de création `{ error, message }` est représentée par une forme
+contractuelle `status-object`. Elle n’est pas maquillée en enveloppe `data` :
+schéma, validateur et test négatif ferment cette distinction. Le renderer de
+commande accepte dans la composition seulement le profil borné nécessaire ici :
+Bearer du host, cinq strings requis, email validé, `status-object` et
+invalidation caller-declared.
 
 Un oracle Angular séparé conserve l’oracle générique précédent et ajoute six
 scénarios C5 : chargement des deux queries, payload POST/auth exacts, succès
@@ -376,9 +375,9 @@ source non approuvée, chemin symbolique, type invalide ou dérive de taille/has
 Sans preuve, le work order porte explicitement `presentation_evidence: null` et
 interdit toute revendication de fidélité à une référence externe.
 
-Ce lot ne fabrique aucune maquette C5 : aucun choix esthétique n'est inventé.
-La prochaine preuve exige une vraie référence fournie ou approuvée, puis une
-réalisation Angular bornée de `/users`. Voir
+Ce lot ne fabrique aucune maquette C5 : aucun choix esthétique n'est inventé. La
+prochaine preuve exige une vraie référence fournie ou approuvée, puis une
+réalisation Angular bornée de `/settings-security/users`. Voir
 [ADR-0066](../adr/0066-preuve-presentation-bornee-pour-realisation-llm.md).
 
 ### Suite de C5 après C5g-0/1
@@ -402,15 +401,51 @@ inventer les états runtime, mappings, outputs ou invalidations tout en livrant
 un composant compilable.
 
 Le work order `3.0.0` peut désormais recevoir `--execution-plan`. Le plan est
-accepté seulement si le contrat publié et toutes les primitives référencées
-sont des fichiers réels du workspace, correspondent à leurs SHA-256 et
-recompilent exactement le même plan. La vérification répète ce replay avant les
-oracles. Plan falsifié, primitive modifiée, opération absente, chemin étranger
-ou lien symbolique échouent fermés.
+accepté seulement si le contrat publié et toutes les primitives référencées sont
+des fichiers réels du workspace, correspondent à leurs SHA-256 et recompilent
+exactement le même plan. La vérification répète ce replay avant les oracles.
+Plan falsifié, primitive modifiée, opération absente, chemin étranger ou lien
+symbolique échouent fermés.
 
 Sans plan, `page_execution: null` reste compatible mais interdit de revendiquer
-un raccord aux runtimes générés. Ce lot n’invente toujours aucune maquette et
-ne crée pas encore le composant visible. La prochaine étape C5 est de publier
-les artefacts C5 dans une app de preuve, attacher une référence visuelle
-approuvée, puis seulement réaliser les cinq fichiers Angular. Voir
+un raccord aux runtimes générés. Ce lot n’invente toujours aucune maquette et ne
+crée pas encore le composant visible. La prochaine étape C5 est de publier les
+artefacts C5 dans une app de preuve, attacher une référence visuelle approuvée,
+puis seulement réaliser les cinq fichiers Angular. Voir
 [ADR-0067](../adr/0067-lier-plan-execution-a-realisation-page.md).
+
+## C5g-3 — publication dans une application de preuve réelle
+
+La preuve C5 ne vit plus seulement dans `/tmp`. Une conception approuvée et
+backend-neutre est publiée sous `designs/users-management-proof...`, puis le
+shell standard `apps/users-management-proof` contient le vrai contrat de la page
+`/settings-security/users`. Les trois modèles d'exécution, le
+`page-execution-plan` et la composition Angular sont versionnés et recompilés
+octet par octet par un test dédié.
+
+Cette publication a détecté une contradiction auparavant invisible : le design
+pointait l'enveloppe paginée alors que `list-query` consomme sa collection
+d'items. `data_binding.source_path` rend maintenant la projection explicite
+(`["data"]` ici). Le validateur suit uniquement des références de modèles
+déclarées et le planner exige le même `items_field` que la primitive. Il
+n'existe donc aucune heuristique Laravel, Spring, .NET ou Django.
+
+Le shell, ses trois nœuds générés et leur composition passent compilation
+Angular stricte, build production, lint et tests. Le composant de page reste le
+placeholder standard : ce lot ne revendique encore ni présentation, ni
+permission fine `create`, ni comportement de formulaire. Voir
+[ADR-0068](../adr/0068-publier-c5-dans-une-application-de-preuve.md).
+
+### Suite de C5 après C5g-3
+
+1. représenter explicitement l'autorisation de l'action `create`, absente du
+   contrat d'accès de page actuel ;
+2. produire ou sélectionner une vraie référence visuelle desktop/mobile et la
+   faire approuver ;
+3. publier son manifeste `presentation-evidence` ;
+4. préparer le work order avec le plan et la preuve visuelle, puis réaliser
+   uniquement les cinq fichiers autorisés ;
+5. prouver permission, succès/erreur, fermeture/conservation, notifications,
+   clavier et lecteur d'écran ;
+6. ajouter l'oracle visuel déterministe et la comparaison finale à la baseline
+   SEOS.

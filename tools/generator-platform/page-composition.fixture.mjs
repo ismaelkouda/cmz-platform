@@ -373,6 +373,9 @@ function usersPage(usersList, profilesSelect, createUser) {
                 response_status:
                     usersList.queries[0].transport.success_response_status,
                 model_id: usersList.queries[0].transport.collection_model_id,
+                source_path: [
+                    usersList.queries[0].transport.result.items_field,
+                ],
                 field_names: [],
                 visible_in_state_ids: ['ready'],
             },

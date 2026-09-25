@@ -160,6 +160,9 @@
     "ERROR": "Erreur lors de l'export"
   },
   "ERRORS": {
+    "ACTION_REQUEST": {
+      "PENDING": "Une action est déjà en cours. Veuillez patienter."
+    },
     "HTTP": {
       "SERVER_ERROR": "Erreur serveur, veuillez réessayer.",
       "INVALID_PAYLOAD": "La réponse du serveur ne respecte pas le format attendu.",
