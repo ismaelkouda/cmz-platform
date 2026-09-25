@@ -815,6 +815,20 @@ Zéro adaptateur Figma, dépendance, runtime UI ou choix esthétique n'est ajout
 Restent une référence visuelle C5 approuvée, la page Angular ordinaire,
 l'oracle comportemental/a11y puis la comparaison visuelle ; ADR-0066.
 
+Vingt-deuxième incrément C5g-2 engagé le 2026-09-25 : un audit pré-UI a montré
+que le work order ne transportait pas le `page-execution-plan` produit et
+prouvé en C5f. Une réalisation pouvait donc compiler tout en inventant son
+raccord runtime.
+
+Le work order passe en `3.0.0` et accepte un plan optionnel. Avant liaison, le
+plan, le contrat publié et chaque primitive content-addressed sont relus sans
+symlink, puis le plan est recompilé et comparé exactement. La vérification
+rejoue la même preuve avant les oracles. Sans plan, l'absence est explicite et
+interdit de revendiquer une intégration runtime générée. Zéro runtime,
+dépendance ou abstraction UI n'est ajouté. Restent la publication C5 dans une
+app de preuve, une référence visuelle approuvée, la page Angular, l'a11y et
+l'oracle visuel ; ADR-0067.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

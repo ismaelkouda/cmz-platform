@@ -14,15 +14,30 @@ function fail(message) {
 
 export function parseArgs(argv) {
     const options = { dryRun: false };
+    const valueAfter = (index, flag) => {
+        const value = argv[index + 1];
+        if (!value || value.startsWith('--')) fail(`${flag} exige une valeur.`);
+        return value;
+    };
     for (let index = 0; index < argv.length; index += 1) {
         const argument = argv[index];
-        if (argument === '--app') options.appName = argv[++index];
-        else if (argument === '--page') options.pageId = argv[++index];
-        else if (argument === '--presentation-evidence')
-            options.presentationEvidencePath = argv[++index];
-        else if (argument === '--dry-run') options.dryRun = true;
-        else if (argument === '--apply') options.workOrderId = argv[++index];
-        else fail(`Argument inconnu : ${argument}`);
+        if (argument === '--app') {
+            options.appName = valueAfter(index, argument);
+            index += 1;
+        } else if (argument === '--page') {
+            options.pageId = valueAfter(index, argument);
+            index += 1;
+        } else if (argument === '--presentation-evidence') {
+            options.presentationEvidencePath = valueAfter(index, argument);
+            index += 1;
+        } else if (argument === '--execution-plan') {
+            options.pageExecutionPlanPath = valueAfter(index, argument);
+            index += 1;
+        } else if (argument === '--dry-run') options.dryRun = true;
+        else if (argument === '--apply') {
+            options.workOrderId = valueAfter(index, argument);
+            index += 1;
+        } else fail(`Argument inconnu : ${argument}`);
     }
     if (!options.appName || !options.pageId)
         fail('--app et --page sont requis.');
@@ -35,18 +50,39 @@ export function parseArgs(argv) {
 
 export async function main(argv = process.argv.slice(2)) {
     const options = parseArgs(argv);
-    const presentationEvidenceSchema = await loadJson(
-        new URL(
-            './generator-platform/schemas/presentation-evidence.schema.json',
-            import.meta.url
-        )
-    );
+    const [
+        presentationEvidenceSchema,
+        pageExecutionPlanSchema,
+        applicationDesignSchema,
+    ] = await Promise.all([
+        loadJson(
+            new URL(
+                './generator-platform/schemas/presentation-evidence.schema.json',
+                import.meta.url
+            )
+        ),
+        loadJson(
+            new URL(
+                './generator-platform/schemas/page-execution-plan.schema.json',
+                import.meta.url
+            )
+        ),
+        loadJson(
+            new URL(
+                './generator-platform/schemas/application-design.schema.json',
+                import.meta.url
+            )
+        ),
+    ]);
     const common = {
         workspaceRoot: repositoryRoot,
         appName: options.appName,
         pageId: options.pageId,
         presentationEvidencePath: options.presentationEvidencePath,
         presentationEvidenceSchema,
+        pageExecutionPlanPath: options.pageExecutionPlanPath,
+        pageExecutionPlanSchema,
+        applicationDesignSchema,
     };
     if (options.dryRun) {
         console.log(

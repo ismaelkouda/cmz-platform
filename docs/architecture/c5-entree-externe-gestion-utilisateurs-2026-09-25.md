@@ -383,11 +383,34 @@ réalisation Angular bornée de `/users`. Voir
 
 ### Suite de C5 après C5g-0/1
 
-1. produire ou sélectionner une référence visuelle C5 réelle et ses états
+1. lier le `page-execution-plan` C5 recompilé au work order de réalisation ;
+2. produire ou sélectionner une référence visuelle C5 réelle et ses états
    desktop/mobile ;
-2. la figer dans un manifeste `presentation-evidence` approuvé ;
-3. réaliser les cinq fichiers Angular autorisés avec le work order ;
-4. prouver permission `create`, ouverture/fermeture, succès/erreur,
+3. la figer dans un manifeste `presentation-evidence` approuvé ;
+4. réaliser les cinq fichiers Angular autorisés avec le work order ;
+5. prouver permission `create`, ouverture/fermeture, succès/erreur,
    notifications, clavier et lecteur d'écran ;
-5. ajouter la comparaison visuelle déterministe, puis comparer le comportement
+6. ajouter la comparaison visuelle déterministe, puis comparer le comportement
    générique à la baseline SEOS.
+
+## C5g-2 — liaison déterministe du plan d’exécution
+
+Un audit avant génération de l’UI a trouvé une rupture d’autorité : le work
+order `2.0.0` transportait le contrat et le visuel, mais pas le
+`page-execution-plan` déjà prouvé par C5f. Un réalisateur aurait donc pu
+inventer les états runtime, mappings, outputs ou invalidations tout en livrant
+un composant compilable.
+
+Le work order `3.0.0` peut désormais recevoir `--execution-plan`. Le plan est
+accepté seulement si le contrat publié et toutes les primitives référencées
+sont des fichiers réels du workspace, correspondent à leurs SHA-256 et
+recompilent exactement le même plan. La vérification répète ce replay avant les
+oracles. Plan falsifié, primitive modifiée, opération absente, chemin étranger
+ou lien symbolique échouent fermés.
+
+Sans plan, `page_execution: null` reste compatible mais interdit de revendiquer
+un raccord aux runtimes générés. Ce lot n’invente toujours aucune maquette et
+ne crée pas encore le composant visible. La prochaine étape C5 est de publier
+les artefacts C5 dans une app de preuve, attacher une référence visuelle
+approuvée, puis seulement réaliser les cinq fichiers Angular. Voir
+[ADR-0067](../adr/0067-lier-plan-execution-a-realisation-page.md).
