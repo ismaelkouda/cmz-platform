@@ -42,6 +42,12 @@ const [persistedBackendContract, persistedDecisions, expectedV2Definition] =
             JSON.parse(await readFile(new URL(path, root), 'utf8'))
         )
     );
+const [usersBackendDocument, usersDefinitionDocument] = await Promise.all([
+    readFile(new URL('fixtures/users-list.backend-contract.json', root)),
+    readFile(new URL('fixtures/users-list.v2.definition.json', root)),
+]);
+const usersBackendContract = JSON.parse(usersBackendDocument.toString('utf8'));
+const usersDefinition = JSON.parse(usersDefinitionDocument.toString('utf8'));
 
 function evidence(locator = '$') {
     return [{ source_id: 'source', locator }];
@@ -251,6 +257,33 @@ test('la v2 référence le backend autoritaire sans redéclarer HTTP, auth ou DT
     assert.equal(Object.hasOwn(operation, 'item'), false);
 });
 
+test('la fixture C5 users est fermée, content-addressed et sémantiquement valide', () => {
+    assert.deepEqual(
+        validateBackendContract(usersBackendContract, backendSchema),
+        []
+    );
+    assert.deepEqual(validateJsonSchema(usersDefinition, v2Schema), []);
+    assert.equal(
+        usersDefinition.backend_contract.sha256,
+        sha256(usersBackendDocument)
+    );
+    assert.deepEqual(
+        validateListQueryV2Definition(usersDefinition, usersBackendContract, {
+            backendContractSha256: sha256(usersBackendDocument),
+            backendContractUri:
+                'tools/generator-platform/fixtures/users-list.backend-contract.json',
+        }),
+        []
+    );
+
+    const portableDefinition = structuredClone(usersDefinition);
+    portableDefinition.operations[0].input.fields.at(-1).parameter_ref.name =
+        'filter.is-active';
+    portableDefinition.operations[0].result.page_fields.totalItems =
+        'page.total-elements';
+    assert.deepEqual(validateJsonSchema(portableDefinition, v2Schema), []);
+});
+
 test('le migrateur est déterministe et idempotent sur une définition v2 valide', () => {
     const backendContract = backendContractFor(legacyDefinition);
     const backendBytes = `${JSON.stringify(backendContract, null, 2)}\n`;
@@ -392,6 +425,13 @@ test('le migrateur bloque les décisions non déductibles et toute dérive backe
     assert.throws(
         () => migrate(legacyDefinition, { decisions: malformedDecisions }),
         /closed v1 migration shape/
+    );
+
+    const invalidResponse = backendContractFor(legacyDefinition);
+    invalidResponse.models[1].kind = 'object';
+    assert.throws(
+        () => migrate(legacyDefinition, { backendContract: invalidResponse }),
+        /response model must be an array/
     );
 });
 

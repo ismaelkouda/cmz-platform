@@ -703,6 +703,32 @@ permission et accessibilité. L'erreur « email déjà existant » reste non typ
 tant qu'aucune enveloppe backend stable n'est observée. Détails :
 [`c5-entree-externe-gestion-utilisateurs-2026-09-25.md`](./c5-entree-externe-gestion-utilisateurs-2026-09-25.md).
 
+Seizième incrément C5b engagé le 2026-09-25 : `list-query` v2 compile désormais
+les cinq query parameters du cas utilisateurs (`string`, `integer`, `boolean`,
+requis ou facultatifs) et un résultat page. Le modèle neutre passe en `1.2.0` et
+sépare les noms wire de quatre rôles canoniques (`currentPage`, `lastPage`,
+`pageSize`, `totalItems`). La fixture SEOS conserve ses noms observés ; une
+mutation de type Spring Data prouve que le noyau ne contient aucun branchement
+Laravel, Spring, .NET ou Django. Les formes non requises restent refusées.
+
+« Liste » reste un rôle métier, pas une hypothèse de sérialisation. Le modèle
+d'exécution distingue le tableau direct de la page. Les objets conteneurs, maps
+ou projections voisines devront ajouter une variante explicite à partir d'un
+cas réel ; aucun objet n'est deviné comme collection via son nom ou son backend.
+
+Contre-exemple réel conservé : `requests-details` retourne un objet unique sous
+`SimpleResponseDto<RequestsDetailsItemApiDto>` et le mappe vers un seul
+`RequestsDetailsEntity`. Ce GET est une lecture à cardinalité `one`, pas une
+liste. Avant toute implémentation, QUERY-1 devra comparer une généralisation
+`read-query` (`one`, `many`, `page`) à un profil `detail-query` mince, avec la
+contrainte de réutiliser le transport, le cache, les erreurs et le contrôleur
+existants plutôt que créer une automatisation parallèle.
+
+Le lot n'ajoute aucun runtime, transport, CLI, cache, journal, verrou ou
+dépendance. Les renderers Angular et React rejettent explicitement la pagination
+tant que leurs oracles dédiés ne l'exécutent pas. ADR-0061 consigne la décision.
+L'invalidation positive et la composition C5 restent ouvertes.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

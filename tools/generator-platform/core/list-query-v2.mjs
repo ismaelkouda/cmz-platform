@@ -31,7 +31,59 @@ function modelById(contract, modelId) {
     return contract.models?.find((model) => model.id === modelId);
 }
 
-function resolveListResponse(contract, operation, status, path, errors) {
+function resolvePageResponse(contract, responseModel, result, path, errors) {
+    if (responseModel?.kind !== 'object') {
+        errors.push(
+            `${path}.result: paginated response model must be an object`
+        );
+        return undefined;
+    }
+    const pageFields = new Map(
+        (responseModel.fields ?? []).map((field) => [field.name, field])
+    );
+    const itemsField = pageFields.get(result.items_field);
+    const collection =
+        itemsField?.required === true &&
+        itemsField.nullable === false &&
+        itemsField.type?.kind === 'model'
+            ? modelById(contract, itemsField.type.model_id)
+            : undefined;
+    if (collection?.kind !== 'array') {
+        errors.push(
+            `${path}.result.items_field: must resolve to an array model`
+        );
+        return undefined;
+    }
+    const pageFieldNames = Object.values(result.page_fields ?? {});
+    if (new Set(pageFieldNames).size !== pageFieldNames.length) {
+        errors.push(`${path}.result.page_fields: fields must be distinct`);
+    }
+    for (const [semanticName, sourceName] of Object.entries(
+        result.page_fields ?? {}
+    )) {
+        const field = pageFields.get(sourceName);
+        if (
+            field?.required !== true ||
+            field.nullable !== false ||
+            field.type?.kind !== 'primitive' ||
+            field.type.name !== 'integer'
+        ) {
+            errors.push(
+                `${path}.result.page_fields.${semanticName}: ${sourceName} must be a required non-null integer`
+            );
+        }
+    }
+    return { collection, pageModel: responseModel };
+}
+
+function resolveListResponse(
+    contract,
+    operation,
+    status,
+    result,
+    path,
+    errors
+) {
     if (!operation) return undefined;
     if (operation.method !== 'GET') {
         errors.push(`${path}.operation_ref: list-query requires GET`);
@@ -52,8 +104,21 @@ function resolveListResponse(contract, operation, status, path, errors) {
         errors.push(`${path}.success_response_status: response has no body`);
         return undefined;
     }
-    const collection = modelById(contract, response.body.model_id);
-    if (collection?.kind !== 'array') {
+    const responseModel = modelById(contract, response.body.model_id);
+    let collection = responseModel;
+    let pageModel;
+    if (result?.kind === 'page') {
+        const resolvedPage = resolvePageResponse(
+            contract,
+            responseModel,
+            result,
+            path,
+            errors
+        );
+        if (!resolvedPage) return undefined;
+        collection = resolvedPage.collection;
+        pageModel = resolvedPage.pageModel;
+    } else if (collection?.kind !== 'array') {
         errors.push(
             `${path}.success_response_status: response model must be an array`
         );
@@ -72,7 +137,7 @@ function resolveListResponse(contract, operation, status, path, errors) {
         );
         return undefined;
     }
-    return { response, collection, item };
+    return { response, collection, item, pageModel };
 }
 
 function validateBackendReference(definition, contract, sha256, uri, errors) {
@@ -213,6 +278,7 @@ export function validateListQueryV2Definition(
             backendContract,
             operation,
             query.success_response_status,
+            query.result,
             path,
             errors
         );
@@ -466,6 +532,7 @@ export function migrateListQueryV1Definition(
             backendContract,
             backendOperation,
             decision.success_response_status,
+            undefined,
             `operation ${source.id}`,
             errors
         );

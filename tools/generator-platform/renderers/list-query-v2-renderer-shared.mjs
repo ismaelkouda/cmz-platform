@@ -389,6 +389,12 @@ export function assertListQueryV2RendererModel(model, renderer) {
     if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(query.id)) {
         fail(renderer, `unsafe query id ${query.id}`);
     }
+    if (
+        query.port?.output?.kind !== 'list' ||
+        query.transport?.result?.kind !== 'list'
+    ) {
+        fail(renderer, `${query.id} uses pagination without a runtime oracle`);
+    }
     const parameterBindings = query.transport?.parameters;
     if (query.port?.input?.kind === 'none') {
         if (!Array.isArray(parameterBindings) || parameterBindings.length > 0) {

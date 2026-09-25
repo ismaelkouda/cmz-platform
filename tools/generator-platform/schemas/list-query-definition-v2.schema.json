@@ -35,6 +35,10 @@
       "type": "string",
       "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
     },
+    "wireName": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$"
+    },
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "feature": {
@@ -78,7 +82,7 @@
       "required": ["name", "source_field"],
       "properties": {
         "name": { "$ref": "#/$defs/fieldName" },
-        "source_field": { "$ref": "#/$defs/fieldName" }
+        "source_field": { "$ref": "#/$defs/wireName" }
       }
     },
     "parameterRef": {
@@ -86,8 +90,8 @@
       "additionalProperties": false,
       "required": ["name", "in"],
       "properties": {
-        "name": { "$ref": "#/$defs/fieldName" },
-        "in": { "const": "path" }
+        "name": { "$ref": "#/$defs/wireName" },
+        "in": { "enum": ["path", "query"] }
       }
     },
     "inputField": {
@@ -122,6 +126,26 @@
           "type": "array",
           "minItems": 1,
           "items": { "$ref": "#/$defs/readField" }
+        }
+      }
+    },
+    "pageResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "items_field", "page_fields"],
+      "properties": {
+        "kind": { "const": "page" },
+        "items_field": { "$ref": "#/$defs/wireName" },
+        "page_fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["currentPage", "lastPage", "pageSize", "totalItems"],
+          "properties": {
+            "currentPage": { "$ref": "#/$defs/wireName" },
+            "lastPage": { "$ref": "#/$defs/wireName" },
+            "pageSize": { "$ref": "#/$defs/wireName" },
+            "totalItems": { "$ref": "#/$defs/wireName" }
+          }
         }
       }
     },
@@ -233,6 +257,7 @@
           "maximum": 299
         },
         "input": { "$ref": "#/$defs/input" },
+        "result": { "$ref": "#/$defs/pageResult" },
         "read_model": { "$ref": "#/$defs/readModel" },
         "execution": { "$ref": "#/$defs/execution" }
       }

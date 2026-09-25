@@ -24,6 +24,10 @@ const parameterizedTarget = await computeAngularListQueryV2Target({
         'tools/generator-platform/fixtures/tasks-actions-processing-type.v2.definition.json'
     ),
 });
+const usersDefinitionPath = resolve(
+    repositoryRoot,
+    'tools/generator-platform/fixtures/users-list.v2.definition.json'
+);
 
 function mutateActive(mutator) {
     const model = structuredClone(activeTarget.model);
@@ -142,6 +146,15 @@ test('refuse d’élargir le renderer aux tableaux d’objets ou à plusieurs pa
                 cmzAngularListQueryHostBindings
             ),
         /proven single non-empty string path input/
+    );
+});
+
+test('garde la page C5 fermée tant que son oracle Angular n’existe pas', async () => {
+    await assert.rejects(
+        computeAngularListQueryV2Target({
+            definitionPath: usersDefinitionPath,
+        }),
+        /pagination without a runtime oracle/
     );
 });
 

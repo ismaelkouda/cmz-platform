@@ -2139,6 +2139,25 @@ Figma, désormais source partielle différée :
   UI/a11y et oracle externe. L'erreur email n'est pas typée sans enveloppe
   backend observée. Voir
   [`c5-entree-externe-gestion-utilisateurs-2026-09-25.md`](./c5-entree-externe-gestion-utilisateurs-2026-09-25.md).
+  **C5b — page et query parameters backend-neutres engagés localement le
+  2026-09-25 :** le contrat `users-list` versionne les cinq paramètres réels et
+  la page imbriquée. Le modèle d'exécution `1.2.0` mappe les noms wire vers
+  `currentPage`, `lastPage`, `pageSize`, `totalItems` sans vocabulaire de
+  framework. Un mutant de forme Spring Data prouve que Laravel, Spring Boot,
+  .NET et Django ne nécessitent aucun branchement central. Les deux renderers
+  refusent encore explicitement la page : restent leurs oracles runtime, puis
+  l'invalidation positive et la composition complète. ADR-0061.
+  Le rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
+  sont les deux variantes prouvées. Objet conteneur, map ou autre projection
+  devront recevoir un discriminateur et un oracle lors d'un cas réel, sans
+  heuristique liée à `data` ou au framework backend.
+  **QUERY-1 — lecture objet unique à auditer :** le GET
+  `RequestsDetailsApi.execute()` retourne réellement
+  `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
+  `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
+  primitive `read-query` à cardinalités `one|many|page` et un profil
+  `detail-query` mince. Refus de dupliquer transport, cache, erreurs, contrôleur
+  ou renderers ; aucun objet n'est accepté par `list-query` avant cet audit.
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N

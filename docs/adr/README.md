@@ -94,4 +94,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0058](./0058-page-execution-plan-reference-les-primitives-v2.md) | Le plan de page référence les primitives v2 sans les recopier | Accepted |
 | [0059](./0059-composition-angular-materialise-les-noeuds-du-plan.md) | La composition Angular matérialise les nœuds du plan avant l'UI | Accepted |
 | [0060](./0060-oracle-angular-externe-execute-la-composition-nxn.md) | Un oracle Angular externe exécute la composition N×N     | Accepted |
+| [0061](./0061-list-query-page-et-parametres-restent-backend-neutres.md) | Les pages et paramètres `list-query` restent backend-neutres | Accepted |
 <!-- END:GENERATED:adr-index -->

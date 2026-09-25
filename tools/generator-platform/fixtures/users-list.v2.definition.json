@@ -1,0 +1,90 @@
+{
+  "schema_version": "2.0.0",
+  "kind": "list-query",
+  "feature": {
+    "id": "settings-security-users",
+    "name": "Paginated users list",
+    "description": "Filtered users list used by the C5 external vertical slice."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/users-list.backend-contract.json",
+    "id": "cmz-users-list",
+    "version": "1.0.0",
+    "sha256": "c61ca12448f1aa1f23f7cff5b11bcca9a5ff5495e87e3e56dd93b2d0f1e4c5a1"
+  },
+  "operations": [
+    {
+      "id": "list-users",
+      "operation_ref": {
+        "operation_id": "settings-security.list-users"
+      },
+      "success_response_status": 200,
+      "input": {
+        "fields": [
+          {
+            "name": "page",
+            "parameter_ref": { "name": "page", "in": "query" }
+          },
+          {
+            "name": "search",
+            "parameter_ref": { "name": "search", "in": "query" }
+          },
+          {
+            "name": "profile",
+            "parameter_ref": { "name": "profile", "in": "query" }
+          },
+          {
+            "name": "role",
+            "parameter_ref": { "name": "role", "in": "query" }
+          },
+          {
+            "name": "isActive",
+            "parameter_ref": { "name": "is_active", "in": "query" }
+          }
+        ]
+      },
+      "result": {
+        "kind": "page",
+        "items_field": "data",
+        "page_fields": {
+          "currentPage": "current_page",
+          "lastPage": "last_page",
+          "pageSize": "per_page",
+          "totalItems": "total"
+        }
+      },
+      "read_model": {
+        "id": "user-list-item",
+        "description": "User item and display fields consumed by the C5 users page.",
+        "fields": [
+          { "name": "uniqId", "source_field": "id" },
+          { "name": "firstName", "source_field": "first_name" },
+          { "name": "lastName", "source_field": "last_name" },
+          { "name": "email", "source_field": "email" },
+          { "name": "phone", "source_field": "phone" },
+          { "name": "profile", "source_field": "profile" },
+          { "name": "role", "source_field": "role" },
+          { "name": "status", "source_field": "status" },
+          { "name": "updatedAt", "source_field": "updated_at" }
+        ]
+      },
+      "execution": {
+        "cache": {
+          "mode": "host",
+          "scope": "principal",
+          "refresh": "bypass"
+        },
+        "concurrency": "latest-wins",
+        "cancellation": {
+          "on_superseded": true,
+          "on_destroy": true
+        },
+        "retry": { "mode": "none" },
+        "stale_data": {
+          "on_reload": "preserve",
+          "on_error": "preserve"
+        }
+      }
+    }
+  ]
+}
