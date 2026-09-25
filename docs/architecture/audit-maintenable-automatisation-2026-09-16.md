@@ -750,6 +750,21 @@ capacité et son test de refus reste vert. Le lot ajoute zéro dépendance, cach
 orchestrateur, journal, publisher ou runtime partagé ; ADR-0062 porte la revue.
 Restent la parité React, l'invalidation positive et la composition C5.
 
+Dix-huitième incrément C5d engagé le 2026-09-25 : le renderer React exécute
+désormais la même page et les mêmes paramètres query depuis le modèle neutre
+C5b. Le client conserve le `ListQueryFetchPort` du host ; il valide et encode
+les paramètres avant l'appel, puis transmet service, auth/cache, refresh et
+signal d'annulation sans ajouter de transport privé.
+
+Le hook expose page et items, conserve la dernière page pendant reload ou
+erreur, réutilise le dernier input et maintient `latest-wins` via
+`AbortController` et numéro de séquence. Les lignes de validation communes sont
+rendues par un helper partagé ; sérialisation et cycle de vie restent propres à
+chaque framework. Un oracle React natif ajoute neuf scénarios et porte la suite
+à 53/53 ; la régression Angular reste à 59/59. Aucun runtime, cache,
+orchestrateur, publisher ou dépendance n'est ajouté. ADR-0063 porte la revue.
+Restent l'invalidation positive nommée puis la composition C5 complète.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

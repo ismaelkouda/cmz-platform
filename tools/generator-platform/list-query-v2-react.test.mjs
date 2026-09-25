@@ -23,6 +23,9 @@ const usersDefinitionPath = resolve(
     repositoryRoot,
     'tools/generator-platform/fixtures/users-list.v2.definition.json'
 );
+const usersTarget = await computeReactListQueryV2Target({
+    definitionPath: usersDefinitionPath,
+});
 
 test('rend le cas actif React depuis le même modèle et sans runtime de données privé', () => {
     const client = activeTarget.files['src/list-site-groups.client.ts'];
@@ -94,11 +97,53 @@ test('refuse les mêmes capacités non prouvées que la cible Angular', () => {
     );
 });
 
-test('garde la page C5 fermée tant que son oracle React n’existe pas', async () => {
-    await assert.rejects(
-        computeReactListQueryV2Target({
-            definitionPath: usersDefinitionPath,
-        }),
-        /pagination without a runtime oracle/
+test('rend la page C5 et ses query parameters sans convention backend', () => {
+    const client = usersTarget.files['src/list-users.client.ts'];
+    const hooks = usersTarget.files['src/use-list-users.ts'];
+    const decoder = usersTarget.files['src/list-users.decoder.ts'];
+
+    assert.match(
+        client,
+        /parameters\.push\(\['is_active', String\(parameter4\)\]\)/
+    );
+    assert.match(client, /encodeURIComponent\(value\)/);
+    assert.match(client, /Promise<ListUsersPage>/);
+    assert.match(hooks, /readonly page: ListUsersPage \| undefined/);
+    assert.match(hooks, /items: snapshot\.page\?\.items \?\? \[\]/);
+    assert.match(decoder, /currentPage: pageField0/);
+});
+
+test('refuse les variantes de page et query non couvertes par l’oracle React', () => {
+    const invalidPage = structuredClone(usersTarget.model);
+    invalidPage.queries[0].transport.result.page_fields.totalItems.type =
+        'number';
+    assert.throws(
+        () => renderReactListQueryV2(invalidPage),
+        /proven canonical page shape/
+    );
+
+    const duplicateParameter = structuredClone(usersTarget.model);
+    duplicateParameter.queries[0].transport.parameters[1].name = 'page';
+    assert.throws(
+        () => renderReactListQueryV2(duplicateParameter),
+        /typed query parameters with a runtime oracle/
+    );
+
+    const injectableConstraint = structuredClone(usersTarget.model);
+    injectableConstraint.queries[0].port.input.fields[0].constraints.minimum =
+        '1); throw new Error("injected")';
+    injectableConstraint.queries[0].transport.parameters[0].constraints.minimum =
+        '1); throw new Error("injected")';
+    assert.throws(
+        () => renderReactListQueryV2(injectableConstraint),
+        /typed query parameters with a runtime oracle/
+    );
+
+    const duplicatePageField = structuredClone(usersTarget.model);
+    duplicatePageField.queries[0].transport.result.page_fields.totalItems.source_field =
+        'current_page';
+    assert.throws(
+        () => renderReactListQueryV2(duplicatePageField),
+        /proven canonical page shape/
     );
 });

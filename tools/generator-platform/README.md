@@ -288,13 +288,12 @@ plan. The published sources are type-checked against declared workspace ports;
 unknown aliases fail closed. `angular-layered` remains a v1-only target. V2 is
 still experimental until a real N×N page composition consumes the publication.
 
-Direct lists and the proven single string path parameter are executable on both
-targets. A paginated result with typed query parameters is currently executable
-on Angular only and must be published with `--target angular`; the React
-renderer deliberately fails closed until its independent runtime oracle exists.
-The Angular page reuses the host `HttpClient`, interceptors and `ResourceFacade`
-and maps backend field names to the canonical page roles from the execution
-model. It does not infer Laravel, Spring, .NET or Django conventions.
+Direct lists, the proven single string path parameter, and the canonical page
+with typed query parameters are executable on both targets. The Angular page
+reuses the host `HttpClient`, interceptors and `ResourceFacade`; the React page
+reuses its explicit fetch port and native hook lifecycle. Both map backend field
+names to the canonical page roles from the execution model. Neither infers
+Laravel, Spring, .NET or Django conventions.
 
 ## Migrate an action-request to v2
 

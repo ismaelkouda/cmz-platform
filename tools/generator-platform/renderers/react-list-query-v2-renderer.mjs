@@ -1,25 +1,85 @@
 import { pascalCase } from './shared.mjs';
 import {
     assertListQueryV2RendererModel,
+    listQueryV2QueryParameterValidationLines,
     renderListQueryV2Decoder,
     renderListQueryV2Models,
     renderListQueryV2RequestPath,
 } from './list-query-v2-renderer-shared.mjs';
 
+function renderRequestUrl(query, inputName) {
+    const parameters = query.transport.parameters
+        .map((binding, index) => {
+            const variable = `parameter${index}`;
+            const validation = listQueryV2QueryParameterValidationLines(
+                binding,
+                index
+            )
+                .map((line) => `        ${line}`)
+                .join('\n');
+            const append = `        parameters.push([${JSON.stringify(binding.name)}, String(${variable})]);`;
+            if (binding.required) {
+                return `    const ${variable} = input[${JSON.stringify(binding.source_field)}];
+    if (${variable} === undefined) invalidInput(${JSON.stringify(`$.${binding.source_field}`)}, 'required');
+${validation}
+${append}`;
+            }
+            return `    const ${variable} = input[${JSON.stringify(binding.source_field)}];
+    if (${variable} !== undefined) {
+${validation}
+${append}
+    }`;
+        })
+        .join('\n');
+    return `function invalidInput(path: string, expected: string): never {
+    throw new InvalidPayloadError(path, expected);
+}
+
+function requestUrl(baseUrl: string, input: ${inputName}): string {
+    const parameters: [string, string][] = [];
+${parameters}
+    const url = joinUrl(baseUrl, ${JSON.stringify(query.transport.path)});
+    const queryString = parameters
+        .map(([name, value]) => \`${'${encodeURIComponent(name)}'}=${'${encodeURIComponent(value)}'}\`)
+        .join('&');
+    return queryString.length === 0 ? url : \`${'${url}'}?${'${queryString}'}\`;
+}`;
+}
+
 function renderClient(query) {
     const className = `${pascalCase(query.id)}Client`;
     const decoderName = `decode${pascalCase(query.id)}Response`;
     const readName = pascalCase(query.read_model.id);
+    const isPage = query.transport.result.kind === 'page';
+    const outputName = isPage
+        ? `${pascalCase(query.id)}Page`
+        : `readonly ${readName}[]`;
     const hasInput = query.port.input.kind === 'object';
+    const hasPathInput = query.transport.parameters.some(
+        (parameter) => parameter.in === 'path'
+    );
+    const hasQueryInput = query.transport.parameters.some(
+        (parameter) => parameter.in === 'query'
+    );
     const inputName = `${pascalCase(query.id)}Input`;
-    const modelImports = hasInput ? `${inputName}, ${readName}` : readName;
+    const modelImports = [
+        ...(hasInput ? [inputName] : []),
+        isPage ? outputName : readName,
+    ]
+        .sort()
+        .join(', ');
     const inputParameter = hasInput ? `input: ${inputName}, ` : '';
-    const path = hasInput
+    const path = hasPathInput
         ? 'requestPath(input)'
         : JSON.stringify(query.transport.path);
-    const requestPath = hasInput
+    const requestPath = hasPathInput
         ? renderListQueryV2RequestPath(query, inputName)
-        : '';
+        : hasQueryInput
+          ? renderRequestUrl(query, inputName)
+          : '';
+    const url = hasQueryInput
+        ? 'requestUrl(this.baseUrl, input)'
+        : `joinUrl(this.baseUrl, ${path})`;
     const invalidPayloadImport = hasInput
         ? "import { InvalidPayloadError } from './errors';\n"
         : '';
@@ -93,10 +153,10 @@ export class ${className} {
         private readonly fetch: ListQueryFetchPort
     ) {}
 
-    async readAll(${inputParameter}options: ListQueryReadOptions): Promise<readonly ${readName}[]> {
+    async readAll(${inputParameter}options: ListQueryReadOptions): Promise<${outputName}> {
         const response = await this.fetch({
             serviceId: ${JSON.stringify(query.transport.service_id)},
-            url: joinUrl(this.baseUrl, ${path}),
+            url: ${url},
             method: 'GET',
             policy: REQUEST_POLICY,
             isRefresh: options.isRefresh,
@@ -138,11 +198,18 @@ function renderHooks(query) {
     const factoryName = `create${pascalCase(query.id)}Hooks`;
     const className = `${pascalCase(query.id)}Client`;
     const readName = pascalCase(query.read_model.id);
+    const isPage = query.transport.result.kind === 'page';
+    const pageName = `${pascalCase(query.id)}Page`;
     const stateName = `${pascalCase(query.id)}State`;
     const bindingName = `${pascalCase(query.id)}Binding`;
     const hasInput = query.port.input.kind === 'object';
     const inputName = `${pascalCase(query.id)}Input`;
-    const modelImports = hasInput ? `${inputName}, ${readName}` : readName;
+    const modelImports = [
+        ...(hasInput ? [inputName] : []),
+        ...(isPage ? [pageName, readName] : [readName]),
+    ]
+        .sort()
+        .join(', ');
     const inputRef = hasInput
         ? `        const inputRef = hooks.useRef<${inputName} | undefined>(undefined);\n`
         : '';
@@ -172,6 +239,26 @@ function renderHooks(query) {
     const loadType = hasInput
         ? `(input: ${inputName}, options?: LoadOptions) => Promise<void>`
         : `(options?: LoadOptions) => Promise<void>`;
+    const snapshotValue = isPage
+        ? `    readonly page?: ${pageName};`
+        : `    readonly items: readonly ${readName}[];`;
+    const bindingValue = isPage
+        ? `    readonly page: ${pageName} | undefined;
+    readonly items: readonly ${readName}[];`
+        : `    readonly items: readonly ${readName}[];`;
+    const initialValue = isPage ? '' : `\n            items: [],`;
+    const preserveValue = isPage
+        ? '                    page: previous.page,'
+        : '                    items: previous.items,';
+    const resolvedName = isPage ? 'page' : 'items';
+    const resolvedLength = isPage ? 'page.items.length' : 'items.length';
+    const resolvedValue = isPage
+        ? '                        page,'
+        : '                        items,';
+    const returnedValue = isPage
+        ? `            page: snapshot.page,
+            items: snapshot.page?.items ?? [],`
+        : '            items: snapshot.items,';
     return `import type { ${className} } from './${query.id}.client';
 import type { ${modelImports} } from './models';
 
@@ -206,13 +293,13 @@ export type ${stateName} =
 
 interface QuerySnapshot {
     readonly state: ${stateName};
-    readonly items: readonly ${readName}[];
+${snapshotValue}
     readonly error?: unknown;
 }
 
 export interface ${bindingName} {
     readonly state: ${stateName};
-    readonly items: readonly ${readName}[];
+${bindingValue}
     readonly error: unknown;
     readonly load: ${loadType};
     readonly reload: () => Promise<void>;
@@ -224,8 +311,7 @@ export function ${factoryName}(
 ) {
     function ${hookName}(): ${bindingName} {
         const [snapshot, setSnapshot] = hooks.useState<QuerySnapshot>({
-            state: 'idle',
-            items: [],
+            state: 'idle',${initialValue}
         });
         const activeRequestRef = hooks.useRef<AbortController | undefined>(
             undefined
@@ -251,10 +337,10 @@ ${inputRef}
                 sequenceRef.current = requestId;
                 setSnapshot((previous) => ({
                     state: nextState,
-                    items: previous.items,
+${preserveValue}
                 }));
                 try {
-                    const items = await ${clientCall};
+                    const ${resolvedName} = await ${clientCall};
                     if (
                         !mountedRef.current ||
                         sequenceRef.current !== requestId ||
@@ -263,8 +349,8 @@ ${inputRef}
                         return;
                     }
                     setSnapshot({
-                        state: items.length === 0 ? 'empty' : 'success',
-                        items,
+                        state: ${resolvedLength} === 0 ? 'empty' : 'success',
+${resolvedValue}
                     });
                 } catch (error: unknown) {
                     if (
@@ -276,7 +362,7 @@ ${inputRef}
                     }
                     setSnapshot((previous) => ({
                         state: 'error',
-                        items: previous.items,
+${preserveValue}
                         error,
                     }));
                     throw error;
@@ -303,7 +389,7 @@ ${reloadGuard}
 
         return {
             state: snapshot.state,
-            items: snapshot.items,
+${returnedValue}
             error: snapshot.error,
             load,
             reload,
@@ -316,7 +402,10 @@ ${reloadGuard}
 }
 
 export function renderReactListQueryV2(model) {
-    const query = assertListQueryV2RendererModel(model, 'react');
+    const query = assertListQueryV2RendererModel(model, 'react', {
+        page: true,
+        queryParameters: true,
+    });
     const files = {
         'src/models.ts': renderListQueryV2Models(query, 'react'),
         [`src/${query.id}.decoder.ts`]: renderListQueryV2Decoder(
