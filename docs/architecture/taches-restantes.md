@@ -2157,6 +2157,13 @@ Figma, désormais source partielle différée :
   tolérés comme projection contractuelle ; les items restent stricts. React
   continue d'échouer fermé. Restent sa parité runtime, l'invalidation positive
   nommée puis la composition C5 complète. ADR-0062.
+  **C5d — page et query parameters React engagés localement le 2026-09-25 :**
+  le renderer React réutilise son `ListQueryFetchPort`, encode les paramètres
+  wire et restitue la même page canonique qu'Angular. Le hook expose page et
+  items, conserve les données sur reload/erreur et maintient annulation et
+  `latest-wins`. L'oracle React natif ajoute 9 scénarios ; suites React 53/53 et
+  Angular 59/59. Zéro dépendance ou runtime parallèle. Restent l'invalidation
+  positive nommée puis la composition C5 complète. ADR-0063.
   Le rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
   devront recevoir un discriminateur et un oracle lors d'un cas réel, sans

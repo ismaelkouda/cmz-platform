@@ -4,6 +4,7 @@ import {
     LIST_QUERY_V2_SUPPORTED_PRIMITIVES,
     assertListQueryV2RendererModel,
     exactKeys,
+    listQueryV2QueryParameterValidationLines,
     renderListQueryV2Decoder,
     renderListQueryV2Models,
     renderListQueryV2RequestPath,
@@ -15,41 +16,9 @@ function fail(message) {
 
 function renderQueryParameterValidation(binding, index) {
     const variable = `parameter${index}`;
-    const path = `$.${binding.source_field}`;
-    const type = binding.type.name;
-    const typeCheck =
-        type === 'integer'
-            ? `typeof ${variable} !== 'number' || !Number.isInteger(${variable})`
-            : `typeof ${variable} !== '${type}'`;
-    const lines = [
-        `        if (${typeCheck}) invalidInput(${JSON.stringify(path)}, ${JSON.stringify(type)});`,
-    ];
-    const constraints = binding.constraints ?? {};
-    if (constraints.min_length !== undefined) {
-        lines.push(
-            `        if (${variable}.length < ${constraints.min_length}) invalidInput(${JSON.stringify(path)}, 'min length ${constraints.min_length}');`
-        );
-    }
-    if (constraints.max_length !== undefined) {
-        lines.push(
-            `        if (${variable}.length > ${constraints.max_length}) invalidInput(${JSON.stringify(path)}, 'max length ${constraints.max_length}');`
-        );
-    }
-    if (constraints.pattern !== undefined) {
-        lines.push(
-            `        if (!new RegExp(${JSON.stringify(constraints.pattern)}).test(${variable})) invalidInput(${JSON.stringify(path)}, 'declared pattern');`
-        );
-    }
-    if (constraints.minimum !== undefined) {
-        lines.push(
-            `        if (${variable} < ${constraints.minimum}) invalidInput(${JSON.stringify(path)}, 'minimum ${constraints.minimum}');`
-        );
-    }
-    if (constraints.maximum !== undefined) {
-        lines.push(
-            `        if (${variable} > ${constraints.maximum}) invalidInput(${JSON.stringify(path)}, 'maximum ${constraints.maximum}');`
-        );
-    }
+    const lines = listQueryV2QueryParameterValidationLines(binding, index).map(
+        (line) => `        ${line}`
+    );
     lines.push(
         `        params = params.set(${JSON.stringify(binding.name)}, String(${variable}));`
     );

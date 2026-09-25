@@ -3,7 +3,7 @@
 - **Date de réception :** 2026-09-25
 - **Origine :** description libre fournie par un utilisateur ne manipulant ni
   schéma ni code du générateur
-- **Statut :** entrée figée, baseline SEOS verte et runtime Angular C5c livré
+- **Statut :** entrée figée, baseline SEOS verte et parité runtime C5d livrée
 - **But :** éprouver le parcours `list-query` + `action-request` + composition
   de page sur un cas produit réel
 - **Décision utilisateur du 2026-09-25 :** option A, reproduction du contrat
@@ -204,10 +204,9 @@ généré.
   couvrir.
 - Le `profiles-select` requis par le formulaire n'est pas encore dans cette
   première baseline. Il doit rejoindre l'oracle de composition complet.
-- `list-query` v2 sait désormais compiler une page et les query parameters de ce
-  cas, mais ses renderers Angular/React les refusent encore sans oracle runtime.
-  Le planner refuse aussi l'invalidation positive car le contrat de conception
-  actuel ne nomme pas encore sa cible.
+- `list-query` v2 compile et exécute désormais cette page et ses query
+  parameters sur Angular et React. Le planner refuse encore l'invalidation
+  positive car le contrat de conception actuel ne nomme pas sa cible.
 - La façade historique accepte techniquement deux créations déclenchées presque
   simultanément ; le bouton UI réduit ce risque sans constituer une garantie de
   couche application. La sortie générique conservera sa garde stricte de double
@@ -273,19 +272,37 @@ strict des champs inconnus sur chaque item utilisateur.
 L'oracle Angular externe couvre 9 scénarios et traverse le vrai host de test :
 intercepteurs d'authentification, d'erreur et de cache, encodage URL, page vide,
 erreurs d'entrée et de payload, conservation au reload et annulation
-`latest-wins`. La suite Angular contient 59 tests verts après ajout. React
-continue de refuser explicitement la page : aucune parité n'est déclarée sans
-son oracle dédié.
+`latest-wins`. La suite Angular contient 59 tests verts après ajout. À la fin de
+C5c, React refusait encore explicitement la page ; C5d ci-dessous apporte son
+oracle dédié et ouvre cette parité.
 
 Voir
 [ADR-0062](../adr/0062-list-query-page-angular-reutilise-resource-facade.md).
 
-### Suite de C5 après C5c
+## C5d — runtime React de page
 
-1. rendre et exécuter la même capacité sur React avec son oracle indépendant ;
-2. introduire l'invalidation positive nommée `create-user -> users-list`,
+La sortie React exécute maintenant `users-list` depuis le même modèle C5b et le
+même décodeur de page qu'Angular. Elle conserve le port hôte existant : le code
+généré ne possède ni authentification, ni cache, ni client réseau parallèle.
+
+Les paramètres obligatoires ou facultatifs sont validés avant le port, encodés
+avec leurs noms wire et assemblés dans un ordre déterministe. Le hook expose la
+page canonique et ses items, préserve la dernière page pendant reload ou erreur,
+réutilise le dernier input et annule la requête supplantée.
+
+L'oracle React Testing Library couvre 9 scénarios indépendants : URL/politique
+host, mapping, vide, quatre entrées invalides, payload invalide, reload en échec
+avec conservation et `latest-wins`. La suite React passe à 53 tests, tandis que
+la suite Angular reste à 59 tests.
+
+Voir
+[ADR-0063](../adr/0063-list-query-page-react-reutilise-le-port-hote.md).
+
+### Suite de C5 après C5d
+
+1. introduire l'invalidation positive nommée `create-user -> users-list`,
    uniquement après succès distant ;
-3. composer `users-list + profiles-select + create-user` ;
-4. produire la page Angular ordinaire avec permission, formulaire, fermeture,
+2. composer `users-list + profiles-select + create-user` ;
+3. produire la page Angular ordinaire avec permission, formulaire, fermeture,
    conservation après erreur et accessibilité ;
-5. comparer le résultat générique à la baseline SEOS.
+4. comparer le résultat générique à la baseline SEOS.
