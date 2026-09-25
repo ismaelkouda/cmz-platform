@@ -685,6 +685,24 @@ cache, schéma, publisher, journal, verrou ou dépendance n'est ajouté. ADR-006
 porte la revue. Les politiques positives encore fermées ne sont pas simulées :
 C5 reste le vertical slice représentatif, puis C6 la promotion humaine.
 
+Quinzième incrément C5 engagé le 2026-09-25 : une demande libre d'utilisateur
+externe a été figée avant toute consultation du corpus, puis comparée à la vraie
+gestion des utilisateurs SEOS. L'utilisateur a retenu la reproduction exacte du
+cas historique : deux queries (`users-list`, `profiles-select`) et une commande
+(`create-user`), avec pagination, filtres, permission, notification et
+invalidation ciblée. Une première baseline Angular exécutable traverse les
+vraies couches domain/data/application et observe le HTTP via le seul mock
+réseau. Ses trois scénarios couvrent GET paginé et mapping, POST réussi suivi du
+rechargement exact, puis POST en échec sans rechargement ni perte de liste.
+
+Ce lot ne prétend pas encore réaliser C5 : il ajoute **zéro ligne de runtime de
+production** et rend mesurables les écarts à fermer. `list-query` v2 doit encore
+porter pagination et query parameters ; le plan doit exprimer l'invalidation
+positive nommée ; l'oracle UI doit prouver fermeture/conservation du formulaire,
+permission et accessibilité. L'erreur « email déjà existant » reste non typée
+tant qu'aucune enveloppe backend stable n'est observée. Détails :
+[`c5-entree-externe-gestion-utilisateurs-2026-09-25.md`](./c5-entree-externe-gestion-utilisateurs-2026-09-25.md).
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

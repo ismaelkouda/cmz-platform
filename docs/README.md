@@ -116,6 +116,9 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 - [Conception des compositions évolutives et patterns mémorisés](./architecture/conception-compositions-evolutives-patterns-memorises.md)
   — architecture cible, mémoire des compositions, promotion des patterns,
   régénération non destructive et test directeur multi-axes
+- [C5 — entrée externe « Gestion des utilisateurs »](./architecture/c5-entree-externe-gestion-utilisateurs-2026-09-25.md)
+  — demande utilisateur figée, comparaison SEOS, décision de périmètre,
+  baseline exécutable et écarts avant vertical slice générique
 - [Validation runtime `action-request`](./architecture/validation-runtime-action-request.md)
   — cas métier exécutés sur les sorties Angular et ReactJS, avec limites
   explicites de la preuve

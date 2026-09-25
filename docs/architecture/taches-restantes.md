@@ -2126,6 +2126,19 @@ Figma, désormais source partielle différée :
   orchestrateur, cache, schéma, publisher, journal, verrou ou dépendance ;
   ADR-0060. Restent C5, le vertical slice représentatif avec UI/a11y, puis C6,
   la promotion humaine et la fermeture éventuelle de l'issue #64.
+  **C5a — demande externe et baseline SEOS engagées localement le 2026-09-25 :**
+  le besoin « Gestion des utilisateurs » a été figé avant lecture du corpus.
+  Après comparaison et clarification, l'option exacte SEOS a été retenue : deux
+  queries (`users-list`, `profiles-select`) et une commande (`create-user`). Un
+  spec Angular traverse les vraies couches domain/data/application avec le seul
+  réseau mocké et verrouille trois scénarios : GET paginé/filtres/mapping, POST
+  réussi avec notification et rechargement de la liste courante, POST en échec
+  sans rechargement ni perte de liste. **3/3 tests ciblés verts, zéro runtime de
+  production ajouté.** C5 reste ouvert : pagination/query parameters dans
+  `list-query` v2, invalidation positive nommée, composition complète puis
+  UI/a11y et oracle externe. L'erreur email n'est pas typée sans enveloppe
+  backend observée. Voir
+  [`c5-entree-externe-gestion-utilisateurs-2026-09-25.md`](./c5-entree-externe-gestion-utilisateurs-2026-09-25.md).
   **Audit préalable de la composition N×N (2026-09-15) :**
   [`audit-page-composition-2026-09-15.md`](./audit-page-composition-2026-09-15.md).
   Verdict Staff : la plateforme transporte bien N `loads`, N `actions` et N
