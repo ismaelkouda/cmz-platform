@@ -786,6 +786,22 @@ demanderait une identité de query et une politique de péremption au niveau
 projet. Reste la composition C5 réelle
 `users-list + profiles-select + create-user`, puis l'UI/a11y.
 
+Vingtième incrément C5f engagé le 2026-09-25 : le composition root Angular
+assemble maintenant les trois primitives utilisateurs réellement observées.
+Deux contrats versionnés ajoutent la query `profiles-select` et la commande
+authentifiée `create-user` à cinq champs, sans importer les classes SEOS. La
+réponse directe `{ error, message }` reçoit une forme `status-object` fermée ;
+un mutant avec un faux `data_field` est rejeté.
+
+L'ancien oracle générique n'est pas remplacé. Un second oracle C5 traverse le
+vrai host Angular et prouve les deux GET, l'auth Bearer, les mappings page et
+tableau, le POST snake_case, le reload exclusif de `users-list` après succès,
+zéro invalidation sur erreur/validation/double submit et l'annulation à la
+destruction. La suite Angular passe à 67/67. Aucun transport, cache, bus,
+runtime partagé ou dépendance n'est ajouté. Restent le composant visible, la
+permission `create`, les notifications, la fermeture/conservation du formulaire
+et l'accessibilité ; ADR-0065.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

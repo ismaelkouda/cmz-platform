@@ -8,6 +8,7 @@ import {
     cmzAngularActionRequestHostBindings,
     computeAngularActionRequestV2Target,
 } from './action-request-v2-targets.mjs';
+import { createUsersPageCompositionFixture } from './page-composition.fixture.mjs';
 import { renderAngularActionRequestV2 } from './renderers/angular-action-request-v2-renderer.mjs';
 
 const activeTarget = await computeAngularActionRequestV2Target();
@@ -63,6 +64,56 @@ test('rend forgot-password de façon déterministe avec le host Angular réel', 
     assert.match(facade, /this\._state\.set\('success'\)/);
     assert.match(facade, /this\._state\.set\('error'\)/);
     assert.doesNotMatch(facade, /subscribe\(/);
+});
+
+test('rend create-user uniquement dans la composition authentifiée C5 bornée', async () => {
+    const fixture = await createUsersPageCompositionFixture();
+    try {
+        const model = JSON.parse(fixture.models[2].document.toString('utf8'));
+        const target = renderAngularActionRequestV2(
+            model,
+            {
+                services: {
+                    'settings-api': {
+                        module: '@cmz/core',
+                        token: 'SETTINGS_API_URL',
+                    },
+                },
+            },
+            {
+                allowAuthenticated: true,
+                allowCallerDeclaredInvalidation: true,
+                allowRequiredStringFields: true,
+                allowStatusEnvelope: true,
+            }
+        );
+
+        const models = target.files['src/models.ts'];
+        assert.match(models, /interface CreateUserInput/);
+        assert.match(models, /readonly "firstName": string/);
+        assert.match(models, /readonly "profileId": string/);
+        assert.match(models, /readonly "error": boolean/);
+
+        const source = target.files['src/create-user.source.ts'];
+        assert.match(source, /"authentication": \{\s*"mode": "host"/);
+        assert.match(source, /inject\(SETTINGS_API_URL\)/);
+        assert.match(source, /"first_name": validated\["firstName"\]/);
+        assert.match(source, /"profile_id": validated\["profileId"\]/);
+
+        const validation = target.files['src/validation.ts'];
+        assert.match(validation, /invalid\("\$\.email", 'email'\)/);
+        assert.match(validation, /invalid\("\$\.phone", 'non-empty string'\)/);
+
+        const decoder = target.files['src/create-user.decoder.ts'];
+        assert.match(decoder, /const wire = decodeWire\(envelope\)/);
+        assert.match(decoder, /typeof value0 !== "boolean"/);
+        assert.match(
+            decoder,
+            /if \(error\) throw new ServerResponseError\(message\)/
+        );
+    } finally {
+        await rm(fixture.root, { recursive: true, force: true });
+    }
 });
 
 test('lie exhaustivement les six artefacts au modèle réellement compilé', () => {
@@ -149,7 +200,7 @@ test('refuse les capacités Angular sans oracle actif', () => {
                 }),
                 cmzAngularActionRequestHostBindings
             ),
-        /proven JSON object envelope/
+        /proven JSON response envelope/
     );
 
     assert.throws(

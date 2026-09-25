@@ -2174,6 +2174,17 @@ Figma, désormais source partielle différée :
   ou runtime partagé. L'invalidation inter-page reste une proposition séparée à
   décider ; elle n'est pas implicitement incluse. Reste la composition des
   trois primitives C5 réelles, puis l'UI/a11y. ADR-0064.
+  **C5f — composition utilisateurs réelle engagée localement le 2026-09-25 :**
+  les contrats observés `profiles-select` et `create-user` rejoignent
+  `users-list` dans un composition root Angular distinct. Le wire de création
+  `{ error, message }` reçoit la forme explicite `status-object` au lieu d'un
+  faux champ `data`. L'oracle natif conserve la preuve générique antérieure et
+  couvre les deux GET authentifiés, le POST snake_case à cinq champs, le reload
+  ciblé après succès, l'absence d'invalidation sur erreur/entrée invalide/double
+  submit et l'annulation à la destruction. **67/67 tests Angular verts**, zéro
+  dépendance, transport, cache ou bus ajouté. Restent la page Angular ordinaire,
+  la permission `create`, les notifications, la fermeture/conservation du
+  formulaire et l'accessibilité. ADR-0065.
   Le rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
   devront recevoir un discriminateur et un oracle lors d'un cas réel, sans

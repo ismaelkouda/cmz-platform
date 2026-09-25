@@ -282,7 +282,7 @@
       "additionalProperties": false,
       "required": ["kind"],
       "properties": {
-        "kind": { "enum": ["none", "object"] },
+        "kind": { "enum": ["none", "object", "status-object"] },
         "data_field": { "$ref": "#/$defs/nonEmptyString" },
         "error_field": { "$ref": "#/$defs/nonEmptyString" },
         "message_field": { "$ref": "#/$defs/nonEmptyString" }

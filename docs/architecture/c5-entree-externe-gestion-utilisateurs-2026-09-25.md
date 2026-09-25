@@ -3,7 +3,7 @@
 - **Date de réception :** 2026-09-25
 - **Origine :** description libre fournie par un utilisateur ne manipulant ni
   schéma ni code du générateur
-- **Statut :** entrée figée, baseline SEOS verte et parité runtime C5d livrée
+- **Statut :** composition runtime C5f livrée ; UI, permission et a11y ouvertes
 - **But :** éprouver le parcours `list-query` + `action-request` + composition
   de page sur un cas produit réel
 - **Décision utilisateur du 2026-09-25 :** option A, reproduction du contrat
@@ -325,7 +325,32 @@ Voir
 
 ### Suite de C5 après C5e
 
-1. composer `users-list + profiles-select + create-user` ;
+1. ~~composer `users-list + profiles-select + create-user`~~ — livré par C5f ;
 2. produire la page Angular ordinaire avec permission, formulaire, fermeture,
    conservation après erreur et accessibilité ;
 3. comparer le résultat générique à la baseline SEOS.
+
+## C5f — composition réelle des trois primitives utilisateurs
+
+La composition Angular matérialise désormais les trois primitives exactes du
+cas retenu : la page `users-list`, le tableau `profiles-select` et la commande
+authentifiée `create-user`. Les contrats sont fondés sur les sources et DTO
+historiques observés, mais la sortie générée n’importe aucune classe SEOS.
+
+La réponse réelle de création `{ error, message }` est représentée par une
+forme contractuelle `status-object`. Elle n’est pas maquillée en enveloppe
+`data` : schéma, validateur et test négatif ferment cette distinction. Le
+renderer de commande accepte dans la composition seulement le profil borné
+nécessaire ici : Bearer du host, cinq strings requis, email validé,
+`status-object` et invalidation caller-declared.
+
+Un oracle Angular séparé conserve l’oracle générique précédent et ajoute six
+scénarios C5 : chargement des deux queries, payload POST/auth exacts, succès
+avec seul reload de `users-list`, erreur métier sans invalidation, validation
+avant réseau, double submit et destruction du scope. La suite Angular contient
+maintenant **67 tests verts**.
+
+Ce lot ne revendique pas encore la page visible. Permission `create`,
+ouverture/fermeture du formulaire, notifications et accessibilité restent le
+prochain incrément. Voir
+[ADR-0065](../adr/0065-composition-c5-utilisateurs-sur-contrats-observes.md).

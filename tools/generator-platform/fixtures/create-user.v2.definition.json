@@ -1,0 +1,68 @@
+{
+  "schema_version": "2.0.0",
+  "kind": "action-request",
+  "feature": {
+    "id": "settings-security-create-user",
+    "name": "Create user",
+    "description": "Authenticated user creation used by the C5 vertical slice."
+  },
+  "backend_contract": {
+    "uri": "tools/generator-platform/fixtures/create-user.backend-contract.json",
+    "id": "cmz-create-user",
+    "version": "1.0.0",
+    "sha256": "3f806a1c58c48bf6528bc29def562b3147a77674a28f0d2399204a2ca316109a"
+  },
+  "operations": [
+    {
+      "id": "create-user",
+      "operation_ref": {
+        "operation_id": "settings-security.create-user"
+      },
+      "success_response_status": 200,
+      "input": {
+        "fields": [
+          {
+            "name": "firstName",
+            "body_field": "first_name",
+            "validations": [{ "kind": "required" }]
+          },
+          {
+            "name": "lastName",
+            "body_field": "last_name",
+            "validations": [{ "kind": "required" }]
+          },
+          {
+            "name": "email",
+            "body_field": "email",
+            "validations": [
+              { "kind": "required" },
+              { "kind": "format", "format": "email" }
+            ]
+          },
+          {
+            "name": "phone",
+            "body_field": "phone",
+            "validations": [{ "kind": "required" }]
+          },
+          {
+            "name": "profileId",
+            "body_field": "profile_id",
+            "validations": [{ "kind": "required" }]
+          }
+        ]
+      },
+      "result_model": {
+        "id": "create-user-result",
+        "description": "Message returned after the user mutation is accepted.",
+        "fields": [{ "name": "message", "source_field": "message" }]
+      },
+      "execution": {
+        "concurrency": "reject-while-pending",
+        "retry": { "mode": "none" },
+        "idempotency": { "mode": "none" },
+        "invalidation": { "mode": "caller-declared" },
+        "post_success": { "mode": "none" }
+      }
+    }
+  ]
+}

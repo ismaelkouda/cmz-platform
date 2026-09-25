@@ -94,21 +94,34 @@ const [
 const sourceKey = target === 'angular' ? 'angular' : 'react';
 const targetRoot = resolve(outputRoot, target);
 let pageComposition;
+let usersPageComposition;
 if (target === 'angular') {
     const [fixtureSupport, pageCompositionTargets] = await Promise.all([
         import('./page-composition.fixture.mjs'),
         import('./page-composition-targets.mjs'),
     ]);
-    const fixture = await fixtureSupport.createPageCompositionFixture();
+    const [fixture, usersFixture] = await Promise.all([
+        fixtureSupport.createPageCompositionFixture(),
+        fixtureSupport.createUsersPageCompositionFixture(),
+    ]);
     try {
-        pageComposition =
-            await pageCompositionTargets.computeAngularPageCompositionTarget({
+        [pageComposition, usersPageComposition] = await Promise.all([
+            pageCompositionTargets.computeAngularPageCompositionTarget({
                 plan: fixture.plan,
                 artifactRoot: fixture.root,
                 hostBindings: fixtureSupport.angularPageHostBindings,
-            });
+            }),
+            pageCompositionTargets.computeAngularPageCompositionTarget({
+                plan: usersFixture.plan,
+                artifactRoot: usersFixture.root,
+                hostBindings: fixtureSupport.angularPageHostBindings,
+            }),
+        ]);
     } finally {
-        await rm(fixture.root, { recursive: true, force: true });
+        await Promise.all([
+            rm(fixture.root, { recursive: true, force: true }),
+            rm(usersFixture.root, { recursive: true, force: true }),
+        ]);
     }
 }
 const runtimeConfigurationFiles =
@@ -195,6 +208,14 @@ await Promise.all([
               writeTargetFiles(
                   resolve(targetRoot, 'page-composition-v2'),
                   pageComposition.angular.files
+              ),
+          ]
+        : []),
+    ...(usersPageComposition
+        ? [
+              writeTargetFiles(
+                  resolve(targetRoot, 'page-composition-users-v2'),
+                  usersPageComposition.angular.files
               ),
           ]
         : []),

@@ -131,7 +131,12 @@ async function renderPrimitive(node, model, operation, hostBindings) {
             : renderAngularActionRequestV2(
                   model,
                   serviceBinding(hostBindings, operation.transport.service_id),
-                  { allowCallerDeclaredInvalidation: true }
+                  {
+                      allowAuthenticated: true,
+                      allowCallerDeclaredInvalidation: true,
+                      allowRequiredStringFields: true,
+                      allowStatusEnvelope: true,
+                  }
               );
     const files = await canonicalizeGeneratedFiles(rendered.files);
     const bindings = Object.fromEntries(
