@@ -38,6 +38,12 @@ const parameterizedDefinition = JSON.parse(
 const parameterizedBackend = JSON.parse(
     parameterizedBackendDocument.toString('utf8')
 );
+const [usersDefinitionDocument, usersBackendDocument] = await Promise.all([
+    readFile(new URL('fixtures/users-list.v2.definition.json', root)),
+    readFile(new URL('fixtures/users-list.backend-contract.json', root)),
+]);
+const usersDefinition = JSON.parse(usersDefinitionDocument.toString('utf8'));
+const usersBackend = JSON.parse(usersBackendDocument.toString('utf8'));
 
 function compile(overrides = {}) {
     const backendContract = overrides.backendContract ?? canonicalBackend;
@@ -78,6 +84,25 @@ function compileParameterized(overrides = {}) {
     });
 }
 
+function compileUsers(overrides = {}) {
+    const backendContract = structuredClone(
+        overrides.backendContract ?? usersBackend
+    );
+    const backendContractDocument = Buffer.from(
+        `${JSON.stringify(backendContract, null, 2)}\n`
+    );
+    const definition = structuredClone(overrides.definition ?? usersDefinition);
+    definition.backend_contract.sha256 = createHash('sha256')
+        .update(backendContractDocument)
+        .digest('hex');
+    return compileListQueryV2ExecutionModel({
+        definition,
+        backendContractDocument,
+        backendContractUri:
+            'tools/generator-platform/fixtures/users-list.backend-contract.json',
+    });
+}
+
 test('compile un contrat v2 en modèle d’exécution neutre et déterministe', () => {
     const definitionBefore = structuredClone(canonicalDefinition);
     const backendBefore = structuredClone(canonicalBackend);
@@ -115,6 +140,7 @@ test('compile un contrat v2 en modèle d’exécution neutre et déterministe', 
             message_field: 'message',
         },
         parameters: [],
+        result: { kind: 'list' },
     });
     assert.deepEqual(query.wire_model.fields, [
         {
@@ -285,7 +311,229 @@ test('compile le cas réel avec un path lié et un tableau enum imbriqué', () =
     );
 });
 
-test('refuse une liaison path absente, renommée ou élargie à query', () => {
+test('compile C5 users en page typée avec cinq query parameters', () => {
+    const first = compileUsers();
+    const second = compileUsers();
+    const query = first.queries[0];
+
+    assert.deepEqual(first, second);
+    assert.equal(first.schema_version, '1.2.0');
+    assert.deepEqual(query.port.input, {
+        kind: 'object',
+        fields: [
+            {
+                name: 'page',
+                type: { kind: 'primitive', name: 'integer' },
+                required: true,
+                constraints: { minimum: 1 },
+            },
+            {
+                name: 'search',
+                type: { kind: 'primitive', name: 'string' },
+                required: false,
+                constraints: { min_length: 1 },
+            },
+            {
+                name: 'profile',
+                type: { kind: 'primitive', name: 'string' },
+                required: false,
+                constraints: { min_length: 1 },
+            },
+            {
+                name: 'role',
+                type: { kind: 'primitive', name: 'string' },
+                required: false,
+                constraints: { pattern: '^(supervisor|team-leader|agent)$' },
+            },
+            {
+                name: 'isActive',
+                type: { kind: 'primitive', name: 'boolean' },
+                required: false,
+            },
+        ],
+    });
+    assert.deepEqual(query.port.output, {
+        kind: 'page',
+        item_model_id: 'user-list-item',
+        page_model_id: 'users-list-page-wire',
+    });
+    assert.deepEqual(
+        query.transport.parameters.map(
+            ({ name, in: location, source_field, type, required }) => ({
+                name,
+                in: location,
+                source_field,
+                type,
+                required,
+            })
+        ),
+        [
+            {
+                name: 'page',
+                in: 'query',
+                source_field: 'page',
+                type: { kind: 'primitive', name: 'integer' },
+                required: true,
+            },
+            {
+                name: 'search',
+                in: 'query',
+                source_field: 'search',
+                type: { kind: 'primitive', name: 'string' },
+                required: false,
+            },
+            {
+                name: 'profile',
+                in: 'query',
+                source_field: 'profile',
+                type: { kind: 'primitive', name: 'string' },
+                required: false,
+            },
+            {
+                name: 'role',
+                in: 'query',
+                source_field: 'role',
+                type: { kind: 'primitive', name: 'string' },
+                required: false,
+            },
+            {
+                name: 'is_active',
+                in: 'query',
+                source_field: 'isActive',
+                type: { kind: 'primitive', name: 'boolean' },
+                required: false,
+            },
+        ]
+    );
+    assert.deepEqual(query.transport.result, {
+        kind: 'page',
+        page_model_id: 'users-list-page-wire',
+        items_field: 'data',
+        page_fields: {
+            currentPage: {
+                source_field: 'current_page',
+                type: 'integer',
+            },
+            lastPage: { source_field: 'last_page', type: 'integer' },
+            pageSize: { source_field: 'per_page', type: 'integer' },
+            totalItems: { source_field: 'total', type: 'integer' },
+        },
+    });
+    assert.deepEqual(validateListQueryV2ExecutionModel(first), []);
+});
+
+test('reste indépendant du framework backend et canonicalise ses noms wire', () => {
+    const backendContract = structuredClone(usersBackend);
+    const definition = structuredClone(usersDefinition);
+    const pageModel = backendContract.models.find(
+        (model) => model.id === 'users-list-page-wire'
+    );
+    const wireNames = new Map([
+        ['data', 'content'],
+        ['current_page', 'number'],
+        ['last_page', 'totalPages'],
+        ['per_page', 'size'],
+        ['total', 'totalElements'],
+    ]);
+    for (const field of pageModel.fields) {
+        field.name = wireNames.get(field.name) ?? field.name;
+    }
+    definition.operations[0].result = {
+        kind: 'page',
+        items_field: 'content',
+        page_fields: {
+            currentPage: 'number',
+            lastPage: 'totalPages',
+            pageSize: 'size',
+            totalItems: 'totalElements',
+        },
+    };
+    const activeParameter =
+        backendContract.operations[0].request.parameters.find(
+            (parameter) => parameter.name === 'is_active'
+        );
+    activeParameter.name = 'filter.is-active';
+    definition.operations[0].input.fields.find(
+        (field) => field.name === 'isActive'
+    ).parameter_ref.name = 'filter.is-active';
+
+    const query = compileUsers({ backendContract, definition }).queries[0];
+
+    assert.equal(query.transport.result.items_field, 'content');
+    assert.deepEqual(query.transport.result.page_fields, {
+        currentPage: { source_field: 'number', type: 'integer' },
+        lastPage: { source_field: 'totalPages', type: 'integer' },
+        pageSize: { source_field: 'size', type: 'integer' },
+        totalItems: { source_field: 'totalElements', type: 'integer' },
+    });
+    assert.equal(query.transport.parameters.at(-1).name, 'filter.is-active');
+    assert.doesNotMatch(
+        JSON.stringify(query),
+        /laravel|spring|django|aspnet|dotnet/i
+    );
+});
+
+test('refuse les pages ambiguës et les query parameters hors périmètre C5', () => {
+    const wrongPage = structuredClone(usersBackend);
+    const pageModel = wrongPage.models.find(
+        (model) => model.id === 'users-list-page-wire'
+    );
+    pageModel.fields.find((field) => field.name === 'total').type = {
+        kind: 'primitive',
+        name: 'string',
+    };
+    assert.throws(
+        () => compileUsers({ backendContract: wrongPage }),
+        /total must be a required non-null integer/
+    );
+
+    const unsupportedQuery = structuredClone(usersBackend);
+    unsupportedQuery.operations[0].request.parameters.find(
+        (parameter) => parameter.name === 'is_active'
+    ).type = { kind: 'primitive', name: 'number' };
+    assert.throws(
+        () => compileUsers({ backendContract: unsupportedQuery }),
+        /only the proven path or typed query shapes are accepted/
+    );
+
+    const duplicatePageField = structuredClone(usersDefinition);
+    duplicatePageField.operations[0].result.page_fields.totalItems = 'per_page';
+    assert.throws(
+        () => compileUsers({ definition: duplicatePageField }),
+        /page_fields: fields must be distinct/
+    );
+});
+
+test('le validateur tue les mutants de page et de paramètres query', () => {
+    const model = compileUsers();
+
+    const duplicatePageSource = structuredClone(model);
+    duplicatePageSource.queries[0].transport.result.page_fields.totalItems = {
+        source_field: 'per_page',
+        type: 'integer',
+    };
+    assert.match(
+        validateListQueryV2ExecutionModel(duplicatePageSource).join('\n'),
+        /port\.output: does not match read model/
+    );
+
+    const duplicateQuerySource = structuredClone(model);
+    duplicateQuerySource.queries[0].transport.parameters[1].source_field =
+        'page';
+    assert.match(
+        validateListQueryV2ExecutionModel(duplicateQuerySource).join('\n'),
+        /must match port input fields/
+    );
+
+    const openBinding = structuredClone(model);
+    openBinding.queries[0].transport.parameters[0].serializer = 'invented';
+    assert.match(
+        validateListQueryV2ExecutionModel(openBinding).join('\n'),
+        /invalid query binding page/
+    );
+});
+
+test('refuse une liaison path absente, renommée ou élargie hors forme prouvée', () => {
     const absent = structuredClone(parameterizedDefinition);
     delete absent.operations[0].input;
     assert.throws(
@@ -298,20 +546,6 @@ test('refuse une liaison path absente, renommée ou élargie à query', () => {
     assert.throws(
         () => compileParameterized({ definition: renamed }),
         /unresolved backend parameter path:other/
-    );
-
-    const queryParameter = structuredClone(parameterizedBackend);
-    queryParameter.operations[0].path = '/processing-actions/report-types';
-    queryParameter.operations[0].request.parameters[0].in = 'query';
-    const queryDefinition = structuredClone(parameterizedDefinition);
-    queryDefinition.operations[0].input.fields[0].parameter_ref.in = 'query';
-    assert.throws(
-        () =>
-            compileParameterized({
-                backendContract: queryParameter,
-                definition: queryDefinition,
-            }),
-        /requires an unsupported parameter; only required string path parameters are proven/
     );
 
     const twoParameters = structuredClone(parameterizedBackend);
@@ -332,7 +566,7 @@ test('refuse une liaison path absente, renommée ou élargie à query', () => {
                 backendContract: twoParameters,
                 definition: twoInputs,
             }),
-        /only one required string path parameter is proven/
+        /only one required string path parameter or a query-only input is proven/
     );
 
     const repeatedPlaceholder = structuredClone(parameterizedBackend);
@@ -343,7 +577,7 @@ test('refuse une liaison path absente, renommée ou élargie à query', () => {
             compileParameterized({
                 backendContract: repeatedPlaceholder,
             }),
-        /only required string path parameters are proven/
+        /only the proven path or typed query shapes are accepted/
     );
 });
 

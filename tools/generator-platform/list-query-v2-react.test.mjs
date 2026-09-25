@@ -19,6 +19,10 @@ const parameterizedTarget = await computeReactListQueryV2Target({
         'tools/generator-platform/fixtures/tasks-actions-processing-type.v2.definition.json'
     ),
 });
+const usersDefinitionPath = resolve(
+    repositoryRoot,
+    'tools/generator-platform/fixtures/users-list.v2.definition.json'
+);
 
 test('rend le cas actif React depuis le même modèle et sans runtime de données privé', () => {
     const client = activeTarget.files['src/list-site-groups.client.ts'];
@@ -87,5 +91,14 @@ test('refuse les mêmes capacités non prouvées que la cible Angular', () => {
     assert.throws(
         () => renderReactListQueryV2(retry),
         /execution policy without a React oracle/
+    );
+});
+
+test('garde la page C5 fermée tant que son oracle React n’existe pas', async () => {
+    await assert.rejects(
+        computeReactListQueryV2Target({
+            definitionPath: usersDefinitionPath,
+        }),
+        /pagination without a runtime oracle/
     );
 });

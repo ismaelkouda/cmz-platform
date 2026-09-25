@@ -10,6 +10,8 @@ const CONTROLLER_STATES = [
     'error',
     'reloading',
 ];
+const FIELD_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const WIRE_NAME = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
 
 function fail(message) {
     throw new Error(`list-query v2 compiler: ${message}`);
@@ -80,6 +82,24 @@ function decoderField(field) {
     };
 }
 
+function supportedQueryParameter(parameter) {
+    if (
+        parameter.type?.kind !== 'primitive' ||
+        !['boolean', 'integer', 'string'].includes(parameter.type.name)
+    ) {
+        return false;
+    }
+    const allowedConstraintKeys =
+        parameter.type.name === 'string'
+            ? ['max_length', 'min_length', 'pattern']
+            : parameter.type.name === 'integer'
+              ? ['maximum', 'minimum']
+              : [];
+    return Object.keys(parameter.constraints ?? {}).every((key) =>
+        allowedConstraintKeys.includes(key)
+    );
+}
+
 function compileInput(definitionOperation, operation) {
     const parameters = operation.request?.parameters ?? [];
     if (parameters.length === 0) {
@@ -88,9 +108,15 @@ function compileInput(definitionOperation, operation) {
             parameterBindings: [],
         };
     }
-    if (parameters.length !== 1) {
+    const pathParameters = parameters.filter(
+        (parameter) => parameter.in === 'path'
+    );
+    if (
+        pathParameters.length > 1 ||
+        (pathParameters.length === 1 && parameters.length !== 1)
+    ) {
         fail(
-            `${definitionOperation.id} requires unsupported parameters; only one required string path parameter is proven`
+            `${definitionOperation.id} requires unsupported parameters; only one required string path parameter or a query-only input is proven`
         );
     }
     const fields = definitionOperation.input?.fields ?? [];
@@ -105,17 +131,21 @@ function compileInput(definitionOperation, operation) {
                 `${definitionOperation.id}.${field.name} references an unresolved backend parameter`
             );
         }
-        if (
-            parameter.in !== 'path' ||
-            parameter.required !== true ||
-            parameter.type?.kind !== 'primitive' ||
-            parameter.type.name !== 'string' ||
-            JSON.stringify(parameter.constraints ?? {}) !==
-                JSON.stringify({ min_length: 1 }) ||
-            occurrenceCount(operation.path, `{${parameter.name}}`) !== 1
-        ) {
+        const supportedPath =
+            parameter.in === 'path' &&
+            parameter.required === true &&
+            parameter.type?.kind === 'primitive' &&
+            parameter.type.name === 'string' &&
+            JSON.stringify(parameter.constraints ?? {}) ===
+                JSON.stringify({ min_length: 1 }) &&
+            occurrenceCount(operation.path, `{${parameter.name}}`) === 1;
+        const supportedQuery =
+            parameter.in === 'query' &&
+            occurrenceCount(operation.path, `{${parameter.name}}`) === 0 &&
+            supportedQueryParameter(parameter);
+        if (!supportedPath && !supportedQuery) {
             fail(
-                `${definitionOperation.id}.${field.name} requires an unsupported parameter; only required string path parameters are proven`
+                `${definitionOperation.id}.${field.name} requires an unsupported parameter; only the proven path or typed query shapes are accepted`
             );
         }
         return {
@@ -214,11 +244,44 @@ function compileQuery(definitionOperation, backendContract) {
     if (!response?.body) {
         fail(`${definitionOperation.id} has no selected response body`);
     }
-    const collection = byId(
+    const responseModel = byId(
         backendContract.models,
         response.body.model_id,
-        'collection model'
+        'response model'
     );
+    let collection = responseModel;
+    let result = { kind: 'list' };
+    if (definitionOperation.result?.kind === 'page') {
+        if (responseModel.kind !== 'object') {
+            fail(`${definitionOperation.id} response is not a page object`);
+        }
+        const itemsField = responseModel.fields?.find(
+            (field) => field.name === definitionOperation.result.items_field
+        );
+        if (itemsField?.type?.kind !== 'model') {
+            fail(
+                `${definitionOperation.id} page items do not reference a collection model`
+            );
+        }
+        collection = byId(
+            backendContract.models,
+            itemsField.type.model_id,
+            'page collection model'
+        );
+        result = {
+            kind: 'page',
+            page_model_id: responseModel.id,
+            items_field: definitionOperation.result.items_field,
+            page_fields: Object.fromEntries(
+                Object.entries(definitionOperation.result.page_fields).map(
+                    ([name, sourceField]) => [
+                        name,
+                        { source_field: sourceField, type: 'integer' },
+                    ]
+                )
+            ),
+        };
+    }
     if (collection.kind !== 'array' || collection.items?.kind !== 'model') {
         fail(`${definitionOperation.id} response is not a model collection`);
     }
@@ -252,10 +315,17 @@ function compileQuery(definitionOperation, backendContract) {
         description: operation.description,
         port: {
             input: portInput,
-            output: {
-                kind: 'list',
-                item_model_id: definitionOperation.read_model.id,
-            },
+            output:
+                result.kind === 'page'
+                    ? {
+                          kind: 'page',
+                          item_model_id: definitionOperation.read_model.id,
+                          page_model_id: result.page_model_id,
+                      }
+                    : {
+                          kind: 'list',
+                          item_model_id: definitionOperation.read_model.id,
+                      },
         },
         access: structuredClone(operation.access),
         request_policy: requestPolicy(
@@ -273,6 +343,7 @@ function compileQuery(definitionOperation, backendContract) {
             collection_model_id: collection.id,
             envelope: structuredClone(response.body.envelope),
             parameters: parameterBindings,
+            result,
         },
         wire_model: {
             id: wireItem.id,
@@ -315,8 +386,8 @@ export function validateListQueryV2ExecutionModel(model) {
     ) {
         errors.push('$: execution model must use the closed root shape');
     }
-    if (model?.schema_version !== '1.1.0') {
-        errors.push('$.schema_version: expected 1.1.0');
+    if (model?.schema_version !== '1.2.0') {
+        errors.push('$.schema_version: expected 1.2.0');
     }
     if (model?.kind !== 'list-query-execution-model') {
         errors.push('$.kind: expected list-query-execution-model');
@@ -373,47 +444,143 @@ export function validateListQueryV2ExecutionModel(model) {
         ) {
             errors.push(`${path}.controller: incomplete transition contract`);
         }
+        const result = query.transport?.result;
+        const output = query.port?.output;
+        const validListOutput =
+            result?.kind === 'list' &&
+            exactKeys(result, ['kind']) &&
+            output?.kind === 'list' &&
+            exactKeys(output, ['kind', 'item_model_id']);
+        const validPageOutput =
+            result?.kind === 'page' &&
+            exactKeys(result, [
+                'kind',
+                'page_model_id',
+                'items_field',
+                'page_fields',
+            ]) &&
+            typeof result.page_model_id === 'string' &&
+            result.page_model_id.length > 0 &&
+            typeof result.items_field === 'string' &&
+            WIRE_NAME.test(result.items_field) &&
+            exactKeys(result.page_fields, [
+                'currentPage',
+                'lastPage',
+                'pageSize',
+                'totalItems',
+            ]) &&
+            Object.values(result.page_fields).every(
+                (field) =>
+                    exactKeys(field, ['source_field', 'type']) &&
+                    typeof field.source_field === 'string' &&
+                    WIRE_NAME.test(field.source_field) &&
+                    field.type === 'integer'
+            ) &&
+            new Set(
+                Object.values(result.page_fields).map(
+                    (field) => field.source_field
+                )
+            ).size === 4 &&
+            output?.kind === 'page' &&
+            exactKeys(output, ['kind', 'item_model_id', 'page_model_id']) &&
+            output.page_model_id === result.page_model_id;
         if (
-            query.port?.output?.item_model_id !== query.read_model?.id ||
-            query.port?.output?.kind !== 'list'
+            output?.item_model_id !== query.read_model?.id ||
+            (!validListOutput && !validPageOutput)
         ) {
             errors.push(`${path}.port.output: does not match read model`);
         }
         const input = query.port?.input;
         const parameterBindings = query.transport?.parameters;
         if (input?.kind === 'none') {
-            if (!Array.isArray(parameterBindings) || parameterBindings.length) {
+            if (
+                !exactKeys(input, ['kind']) ||
+                !Array.isArray(parameterBindings) ||
+                parameterBindings.length
+            ) {
                 errors.push(
                     `${path}.transport.parameters: parameterless port must have no bindings`
                 );
             }
         } else if (input?.kind === 'object' && Array.isArray(input.fields)) {
             const inputNames = new Set(input.fields.map((field) => field.name));
+            const bindingNames = new Set(
+                (parameterBindings ?? []).map(
+                    (binding) => `${binding.in}:${binding.name}`
+                )
+            );
+            const bindingSources = new Set(
+                (parameterBindings ?? []).map((binding) => binding.source_field)
+            );
             if (
-                input.fields.length !== 1 ||
+                !exactKeys(input, ['kind', 'fields']) ||
                 !Array.isArray(parameterBindings) ||
-                parameterBindings.length !== 1
+                input.fields.length !== parameterBindings.length ||
+                inputNames.size !== input.fields.length ||
+                bindingNames.size !== parameterBindings.length ||
+                bindingSources.size !== parameterBindings.length
             ) {
                 errors.push(
                     `${path}.transport.parameters: must match port input fields`
+                );
+            }
+            const pathBindings = (parameterBindings ?? []).filter(
+                (binding) => binding.in === 'path'
+            );
+            if (
+                pathBindings.length > 1 ||
+                (pathBindings.length === 1 && parameterBindings.length !== 1)
+            ) {
+                errors.push(
+                    `${path}.transport.parameters: path and query parameters cannot be combined`
                 );
             }
             for (const binding of parameterBindings ?? []) {
                 const inputField = input.fields.find(
                     (field) => field.name === binding.source_field
                 );
-                if (
-                    binding.in !== 'path' ||
-                    binding.required !== true ||
-                    binding.type?.kind !== 'primitive' ||
-                    binding.type.name !== 'string' ||
-                    !inputNames.has(binding.source_field) ||
+                const bindingKeys = [
+                    'name',
+                    'in',
+                    'source_field',
+                    'type',
+                    'required',
+                    ...(binding.constraints ? ['constraints'] : []),
+                ];
+                const inputFieldKeys = [
+                    'name',
+                    'type',
+                    'required',
+                    ...(inputField?.constraints ? ['constraints'] : []),
+                ];
+                const validPath =
+                    binding.in === 'path' &&
+                    binding.required === true &&
+                    binding.type?.kind === 'primitive' &&
+                    binding.type.name === 'string' &&
                     occurrenceCount(
                         query.transport.path,
                         `{${binding.name}}`
-                    ) !== 1 ||
-                    JSON.stringify(binding.constraints ?? {}) !==
-                        JSON.stringify({ min_length: 1 }) ||
+                    ) === 1 &&
+                    JSON.stringify(binding.constraints ?? {}) ===
+                        JSON.stringify({ min_length: 1 });
+                const validQuery =
+                    binding.in === 'query' &&
+                    occurrenceCount(
+                        query.transport.path,
+                        `{${binding.name}}`
+                    ) === 0 &&
+                    supportedQueryParameter(binding);
+                if (
+                    !exactKeys(binding, bindingKeys) ||
+                    !exactKeys(inputField, inputFieldKeys) ||
+                    typeof binding.name !== 'string' ||
+                    typeof binding.source_field !== 'string' ||
+                    !WIRE_NAME.test(binding.name) ||
+                    !FIELD_NAME.test(binding.source_field) ||
+                    typeof binding.required !== 'boolean' ||
+                    (!validPath && !validQuery) ||
+                    !inputNames.has(binding.source_field) ||
                     JSON.stringify(inputField?.type) !==
                         JSON.stringify(binding.type) ||
                     inputField?.required !== binding.required ||
@@ -421,7 +588,7 @@ export function validateListQueryV2ExecutionModel(model) {
                         JSON.stringify(binding.constraints ?? {})
                 ) {
                     errors.push(
-                        `${path}.transport.parameters: invalid path binding ${binding.name}`
+                        `${path}.transport.parameters: invalid ${binding.in} binding ${binding.name}`
                     );
                 }
             }
@@ -516,7 +683,7 @@ export function compileListQueryV2ExecutionModel({
         fail(`invalid definition\n${definitionErrors.join('\n')}`);
     }
     const model = {
-        schema_version: '1.1.0',
+        schema_version: '1.2.0',
         kind: 'list-query-execution-model',
         model_id: `${definition.feature.id}-list-query-execution`,
         domain: structuredClone(definition.feature),

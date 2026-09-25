@@ -3,7 +3,7 @@
 - **Date de réception :** 2026-09-25
 - **Origine :** description libre fournie par un utilisateur ne manipulant ni
   schéma ni code du générateur
-- **Statut :** entrée figée, option A retenue et baseline SEOS exécutable verte
+- **Statut :** entrée figée, baseline SEOS verte et contrat/compiler C5b livré
 - **But :** éprouver le parcours `list-query` + `action-request` + composition
   de page sur un cas produit réel
 - **Décision utilisateur du 2026-09-25 :** option A, reproduction du contrat
@@ -204,9 +204,10 @@ généré.
   couvrir.
 - Le `profiles-select` requis par le formulaire n'est pas encore dans cette
   première baseline. Il doit rejoindre l'oracle de composition complet.
-- `list-query` v2 ne sait pas encore représenter la pagination Laravel et les
-  query parameters de ce cas. Le planner refuse aussi l'invalidation positive
-  car le contrat de conception actuel ne nomme pas encore sa cible.
+- `list-query` v2 sait désormais compiler une page et les query parameters de ce
+  cas, mais ses renderers Angular/React les refusent encore sans oracle runtime.
+  Le planner refuse aussi l'invalidation positive car le contrat de conception
+  actuel ne nomme pas encore sa cible.
 - La façade historique accepte techniquement deux créations déclenchées presque
   simultanément ; le bouton UI réduit ce risque sans constituer une garantie de
   couche application. La sortie générique conservera sa garde stricte de double
@@ -217,7 +218,8 @@ généré.
 Étendre les contrats existants, sans nouveau générateur ni runtime, dans cet
 ordre :
 
-1. pagination et query parameters typés pour `users-list` ;
+1. rendre et exécuter la pagination et les query parameters sur Angular puis
+   React, avec un oracle indépendant pour chaque cible ;
 2. invalidation positive nommée `create-user -> users-list`, uniquement après
    succès distant ;
 3. composition réelle `users-list + profiles-select + create-user` ;
@@ -227,3 +229,27 @@ ordre :
 
 Chaque extension reste fail-closed et doit être justifiée par ce cas exact. Les
 paramètres, formes ou politiques voisines ne sont pas ouverts par anticipation.
+
+## C5b — contrat et compilation backend-neutres
+
+Le contrat versionné `users-list` représente maintenant les cinq paramètres
+query réels (`page`, `search`, `profile`, `role`, `is_active`) et la page reçue.
+Le modèle d'exécution `1.2.0` conserve les noms wire mais expose quatre rôles
+canoniques : `currentPage`, `lastPage`, `pageSize` et `totalItems`.
+
+Cette page n'est pas érigée en forme universelle. Une `list-query` peut recevoir
+un tableau direct, une page ou, dans un futur cas prouvé, un objet portant une
+collection ou une autre projection. Le modèle d'exécution distingue aujourd'hui
+explicitement `list` et `page`; il refuse les autres objets plutôt que de les
+interpréter arbitrairement.
+
+Cette séparation est volontairement indépendante de Laravel. Un test remplace
+la forme SEOS par des noms de type Spring Data (`content`, `number`,
+`totalPages`, `size`, `totalElements`) et obtient le même résultat canonique.
+Une API .NET, Django ou propriétaire peut donc choisir ses propres noms sans
+branche spécifique dans le compilateur.
+
+Ce lot reste contractuel : Angular et React rejettent explicitement la page tant
+que leurs oracles runtime respectifs ne prouvent pas la sérialisation des query
+parameters, le décodage des métadonnées et le cycle de chargement. Voir
+[ADR-0061](../adr/0061-list-query-page-et-parametres-restent-backend-neutres.md).

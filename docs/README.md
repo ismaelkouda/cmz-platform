@@ -101,6 +101,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0058](./adr/0058-page-execution-plan-reference-les-primitives-v2.md) | Le plan de page référence les primitives v2 sans les recopier |
 | [0059](./adr/0059-composition-angular-materialise-les-noeuds-du-plan.md) | La composition Angular matérialise les nœuds du plan avant l'UI |
 | [0060](./adr/0060-oracle-angular-externe-execute-la-composition-nxn.md) | Un oracle Angular externe exécute la composition N×N     |
+| [0061](./adr/0061-list-query-page-et-parametres-restent-backend-neutres.md) | Les pages et paramètres `list-query` restent backend-neutres |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
