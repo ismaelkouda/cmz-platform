@@ -103,4 +103,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0067](./0067-lier-plan-execution-a-realisation-page.md)  | Lier le plan d’exécution à la réalisation de page        | Accepted |
 | [0068](./0068-publier-c5-dans-une-application-de-preuve.md) | Publier C5 dans une application de preuve réelle         | accepté  |
 | [0069](./0069-autorisation-fine-action-dans-composition-page.md) | L’autorisation fine appartient à l’action de page        | accepté  |
+| [0070](./0070-harnais-navigateur-avant-baseline-visuelle.md) | Prouver le rendu navigateur avant de figer une baseline visuelle | accepté  |
 <!-- END:GENERATED:adr-index -->

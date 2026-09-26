@@ -530,8 +530,9 @@ jobs:
       - name: Test (nx affected)
         run: bunx nx affected -t test --base=${{ env.NX_BASE }}
 
-  # ─── Job T12-6 : e2e Playwright smoke login (ADR-0008) ───────────────────
-  # Mock-server local + serve app — 0 secrets staging. Staging réel = T12-7.
+  # ─── Job T12-6 : e2e Playwright + candidats visuels C5 ────────────────────
+  # Mock-server local + serve app — 0 secrets staging. Le rendu C5 ne tourne
+  # que si son projet (ou son serveur statique partagé) est affecté.
   e2e-smoke:
     name: E2E smoke — login (Playwright)
     runs-on: ubuntu-latest
@@ -539,6 +540,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
@@ -554,10 +557,43 @@ jobs:
       - name: Install Playwright Chromium
         run: bunx playwright install chromium --with-deps
 
+      - name: Set NX base branch
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "NX_BASE=origin/${{ github.base_ref }}" >> $GITHUB_ENV
+          else
+            echo "NX_BASE=HEAD~1" >> $GITHUB_ENV
+          fi
+
       - name: E2E smoke login
         run: bunx nx run backoffice-angular:e2e
         env:
           CI: 'true'
+
+      - name: Detect C5 browser-proof impact
+        id: c5-browser-proof
+        run: |
+          if bunx nx show projects --affected --base=${{ env.NX_BASE }} | grep -qx users-management-proof \
+            || ! git diff --quiet ${{ env.NX_BASE }}...HEAD -- tools/e2e-static-server.mjs; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: C5 deterministic browser candidates
+        if: steps.c5-browser-proof.outputs.run == 'true'
+        run: bunx nx run users-management-proof:visual-proof
+        env:
+          CI: 'true'
+
+      - name: Upload C5 rendered candidates
+        if: always() && steps.c5-browser-proof.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: c5-rendered-candidates
+          path: test-results/users-management-proof/**/*.png
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload Playwright report
         if: failure()

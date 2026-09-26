@@ -110,6 +110,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0067](./adr/0067-lier-plan-execution-a-realisation-page.md) | Lier le plan d’exécution à la réalisation de page        |
 | [0068](./adr/0068-publier-c5-dans-une-application-de-preuve.md) | Publier C5 dans une application de preuve réelle         |
 | [0069](./adr/0069-autorisation-fine-action-dans-composition-page.md) | L’autorisation fine appartient à l’action de page        |
+| [0070](./adr/0070-harnais-navigateur-avant-baseline-visuelle.md) | Prouver le rendu navigateur avant de figer une baseline visuelle |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
