@@ -7,6 +7,7 @@ import {
     EnvironmentInjector,
     createEnvironmentInjector,
     signal,
+    type WritableSignal,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
@@ -23,7 +24,11 @@ import { firstValueFrom } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { authInterceptor } from '../../../../apps/backoffice-angular/src/app/interceptors/auth.interceptor';
-import { PageComposition } from '../../.stack-test-runtime/angular/page-composition-users-v2/src/page-composition';
+import {
+    PAGE_ACTION_PERMISSION_PORT,
+    PageActionPermissionDeniedError,
+    PageComposition,
+} from '../../.stack-test-runtime/angular/page-composition-users-v2/src/page-composition';
 import { PAGE_COMPOSITION_PROVIDERS } from '../../.stack-test-runtime/angular/page-composition-users-v2/src/page-composition.providers';
 
 const settingsBaseUrl = 'https://settings.example.test/';
@@ -34,10 +39,22 @@ const createUserUrl = `${settingsBaseUrl}settings-and-security/users/store`;
 interface Runtime {
     readonly composition: PageComposition;
     readonly http: HttpTestingController;
+    readonly hasPermission: ReturnType<typeof vi.fn>;
+    readonly setPermission: (permission: string, granted: boolean) => void;
 }
 
-function configureRuntime(): Runtime {
+function configureRuntime(
+    grantedPermissions: ReadonlySet<string> = new Set(['users.create'])
+): Runtime {
     const errorHandler = { handle: vi.fn() };
+    const permissionSignals = new Map<string, WritableSignal<boolean>>();
+    const hasPermission = vi.fn((permission: string) => {
+        const existing = permissionSignals.get(permission);
+        if (existing) return existing;
+        const created = signal(grantedPermissions.has(permission));
+        permissionSignals.set(permission, created);
+        return created;
+    });
     TestBed.configureTestingModule({
         providers: [
             provideHttpClient(
@@ -54,6 +71,10 @@ function configureRuntime(): Runtime {
             },
             { provide: SETTINGS_API_URL, useValue: settingsBaseUrl },
             { provide: ErrorHandlerRegistry, useValue: errorHandler },
+            {
+                provide: PAGE_ACTION_PERMISSION_PORT,
+                useValue: { has: hasPermission },
+            },
             HttpCacheStore,
             ...PAGE_COMPOSITION_PROVIDERS,
         ],
@@ -61,6 +82,15 @@ function configureRuntime(): Runtime {
     return {
         composition: TestBed.inject(PageComposition),
         http: TestBed.inject(HttpTestingController),
+        hasPermission,
+        setPermission(permission, granted) {
+            const permissionSignal = permissionSignals.get(permission);
+            if (!permissionSignal)
+                throw new Error(
+                    `Permission signal not requested: ${permission}`
+                );
+            permissionSignal.set(granted);
+        },
     };
 }
 
@@ -125,6 +155,40 @@ afterEach(() => {
 });
 
 describe('page composition C5 Angular — oracle externe hermétique', () => {
+    it('refuse create sans permission avant HTTP et sans invalider la liste', async () => {
+        const { composition, hasPermission, http } = configureRuntime(
+            new Set()
+        );
+
+        expect(composition.createUser.authorized()).toBe(false);
+        expect(composition.createUser.deniedBehavior).toBe('disable');
+        await expect(
+            firstValueFrom(composition.createUser.submit(userInput()))
+        ).rejects.toMatchObject({
+            code: 'permission_denied',
+            missingPermissions: ['users.create'],
+        });
+        expect(hasPermission).toHaveBeenCalledExactlyOnceWith('users.create');
+        expect(composition.createUser.state()).toBe('idle');
+        http.expectNone(createUserUrl);
+        http.expectNone((request) => request.method === 'GET');
+        expect(PageActionPermissionDeniedError).toBeDefined();
+    });
+
+    it('revérifie une permission révoquée après la création de la composition', async () => {
+        const { composition, http, setPermission } = configureRuntime();
+        expect(composition.createUser.authorized()).toBe(true);
+
+        setPermission('users.create', false);
+
+        expect(composition.createUser.authorized()).toBe(false);
+        await expect(
+            firstValueFrom(composition.createUser.submit(userInput()))
+        ).rejects.toBeInstanceOf(PageActionPermissionDeniedError);
+        expect(composition.createUser.state()).toBe('idle');
+        http.expectNone(createUserUrl);
+    });
+
     it('charge users-list et profiles-select avec le host, l’auth et les mappings réels', async () => {
         const { composition, http } = configureRuntime();
 

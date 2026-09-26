@@ -104,6 +104,64 @@ test('refuse une invalidation qui ne cible pas un load de la page', async () => 
     );
 });
 
+test('borne et trace l’autorisation fine d’une action sans renforcer l’accès de page', async () => {
+    const data = await fixture();
+    const action = data.design.pages[1].actions[0];
+    action.authorization = {
+        mode: 'required',
+        permissions: ['reports.create'],
+        denied_behavior: 'disable',
+        evidence: [
+            {
+                source_id: 'clean-street-brief',
+                locator: 'validated-project-sheet',
+            },
+        ],
+    };
+    assert.deepEqual(validate(data.design, data.contracts), []);
+    assert.equal(data.design.pages[1].access.mode, 'authenticated');
+
+    const unknownEvidence = structuredClone(data.design);
+    unknownEvidence.pages[1].actions[0].authorization.evidence[0].source_id =
+        'missing-source';
+    assert.ok(
+        validate(unknownEvidence, data.contracts).some((error) =>
+            error.includes('unresolved source missing-source')
+        )
+    );
+
+    const duplicated = structuredClone(data.design);
+    duplicated.pages[1].actions[0].authorization.permissions = [
+        'reports.create',
+        'reports.create',
+    ];
+    assert.ok(
+        validate(duplicated, data.contracts).some((error) =>
+            error.includes('duplicate "reports.create"')
+        )
+    );
+});
+
+test('refuse une permission de navigation tant qu’aucun oracle ne l’exécute', async () => {
+    const data = await fixture();
+    data.design.pages[0].actions[0].authorization = {
+        mode: 'required',
+        permissions: ['reports.open'],
+        denied_behavior: 'hide',
+        evidence: [
+            {
+                source_id: 'clean-street-brief',
+                locator: 'validated-project-sheet',
+            },
+        ],
+    };
+    assert.ok(
+        validate(data.design, data.contracts).some((error) =>
+            error.includes('navigation authorization has no runtime oracle')
+        )
+    );
+});
+
 test('refuse les contrôles non rendus et les destinations inconnues', async () => {
     const data = await fixture();
     data.design.pages[1].regions[0].elements[1].control_ids = [];

@@ -2196,16 +2196,25 @@ Figma, désormais source partielle différée :
   `data_binding.source_path` pointe explicitement `data` et doit correspondre à
   l'`items_field` de la primitive, sans heuristique backend. Compilation
   stricte, build, lint et tests verts ; zéro dépendance ou runtime ajouté.
-  Restent l'autorité contractuelle de la permission fine `create`, une preuve
-  visuelle approuvée, les cinq fichiers de page, notifications/a11y et oracle
-  visuel. ADR-0068. Le rôle métier « liste » ne fige pas la forme réseau :
-  tableau direct et page sont les deux variantes prouvées. Objet conteneur, map
-  ou autre projection devront recevoir un discriminateur et un oracle lors d'un
-  cas réel, sans heuristique liée à `data` ou au framework backend. **QUERY-1 —
-  lecture objet unique à auditer :** le GET `RequestsDetailsApi.execute()`
-  retourne réellement `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un
-  seul `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre
-  une primitive `read-query` à cardinalités `one|many|page` et un profil
+  Restent une preuve visuelle approuvée, les cinq fichiers de page,
+  notifications/a11y et oracle visuel. ADR-0068. **C5g-4 — autorisation fine de
+  création engagée localement le 2026-09-26 :** chaque action déclare maintenant
+  `authorization: none|required`. La permission C5 `users.create` reste séparée
+  de l'accès authentifié de la page, est traçable au brief, compilée dans le
+  plan et négociée par capability. La composition expose son état au futur
+  bouton, mais revérifie aussi la permission à chaque souscription avant toute
+  façade : refus typé, état `idle`, zéro POST et zéro invalidation. Le backend
+  reste l'autorité ; aucun RBAC, store, bus, transport ou dépendance n'est
+  ajouté. Restent la preuve visuelle, la réalisation des cinq fichiers, le
+  provider hôte réel, notifications/a11y et oracle visuel. ADR-0069. Le rôle
+  métier « liste » ne fige pas la forme réseau : tableau direct et page sont les
+  deux variantes prouvées. Objet conteneur, map ou autre projection devront
+  recevoir un discriminateur et un oracle lors d'un cas réel, sans heuristique
+  liée à `data` ou au framework backend. **QUERY-1 — lecture objet unique à
+  auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
+  `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
+  `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
+  primitive `read-query` à cardinalités `one|many|page` et un profil
   `detail-query` mince. Refus de dupliquer transport, cache, erreurs, contrôleur
   ou renderers ; aucun objet n'est accepté par `list-query` avant cet audit.
   **Audit préalable de la composition N×N (2026-09-15) :**

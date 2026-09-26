@@ -102,4 +102,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0066](./0066-preuve-presentation-bornee-pour-realisation-llm.md) | Lier une preuve de présentation bornée à la réalisation LLM | Accepted |
 | [0067](./0067-lier-plan-execution-a-realisation-page.md)  | Lier le plan d’exécution à la réalisation de page        | Accepted |
 | [0068](./0068-publier-c5-dans-une-application-de-preuve.md) | Publier C5 dans une application de preuve réelle         | accepté  |
+| [0069](./0069-autorisation-fine-action-dans-composition-page.md) | L’autorisation fine appartient à l’action de page        | accepté  |
 <!-- END:GENERATED:adr-index -->

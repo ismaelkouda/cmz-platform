@@ -5,7 +5,7 @@
   "source": {
     "page_contract": {
       "uri": "apps/users-management-proof/.cmz/pages/page_6666666666666666.json",
-      "sha256": "6b2e7b3019c8aa7946887a885d01f2342fef7b37981cd2077ebd721697fc8627",
+      "sha256": "8012bb78d940b90151bed99273882a23ac80695619094fbe25304281cfeaad3d",
       "design_id": "users-management-proof",
       "design_version": "1.0.0",
       "page_id": "page_6666666666666666"
@@ -20,6 +20,7 @@
     "state_mode": "independent-nodes"
   },
   "required_capabilities": [
+    "action.authorization.permissions-all@1",
     "action.concurrency.reject-while-pending@1",
     "action.idempotency.none@1",
     "action.invalidation.caller-declared@1",
@@ -238,8 +239,14 @@
         "success_state_id": "created",
         "error_state_id": "create-failed"
       },
+      "authorization": {
+        "mode": "required",
+        "permissions": ["users.create"],
+        "denied_behavior": "disable"
+      },
       "invalidates": ["users-list"],
       "capabilities": [
+        "action.authorization.permissions-all@1",
         "action.concurrency.reject-while-pending@1",
         "action.idempotency.none@1",
         "action.invalidation.caller-declared@1",

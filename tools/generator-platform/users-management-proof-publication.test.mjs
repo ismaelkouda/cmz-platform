@@ -108,11 +108,24 @@ test('publie les trois primitives C5 et leur plan depuis le vrai contrat de page
         ['profiles-select', 'users-list']
     );
     assert.deepEqual(
-        binding.plan.command_nodes.map(({ id, invalidates }) => ({
-            id,
-            invalidates,
-        })),
-        [{ id: 'create-user', invalidates: ['users-list'] }]
+        binding.plan.command_nodes.map(
+            ({ id, authorization, invalidates }) => ({
+                id,
+                authorization,
+                invalidates,
+            })
+        ),
+        [
+            {
+                id: 'create-user',
+                authorization: {
+                    mode: 'required',
+                    permissions: ['users.create'],
+                    denied_behavior: 'disable',
+                },
+                invalidates: ['users-list'],
+            },
+        ]
     );
 });
 

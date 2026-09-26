@@ -281,6 +281,7 @@ function mixedPage(overrides = {}) {
                 kind: 'backend',
                 label: 'Subscribe',
                 description: 'Send the signup to the target API.',
+                authorization: { mode: 'none' },
                 available_in_state_ids: ['ready'],
                 input_bindings: [
                     {

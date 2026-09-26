@@ -1,6 +1,7 @@
 import { camelCase, pascalCase } from './shared.mjs';
 
 export const ANGULAR_PAGE_COMPOSITION_CAPABILITIES = Object.freeze([
+    'action.authorization.permissions-all@1',
     'action.concurrency.reject-while-pending@1',
     'action.idempotency.none@1',
     'action.invalidation.caller-declared@1',
@@ -67,11 +68,8 @@ function renderComposition(descriptors) {
     const commandDescriptors = descriptors.filter(
         ({ kind }) => kind === 'command'
     );
-    const directCommandDescriptors = commandDescriptors.filter(
-        ({ node }) => node.invalidates.length === 0
-    );
-    const orchestratedCommandDescriptors = commandDescriptors.filter(
-        ({ node }) => node.invalidates.length > 0
+    const authorizedCommandDescriptors = commandDescriptors.filter(
+        ({ node }) => node.authorization.mode === 'required'
     );
     const queryProperties = queryDescriptors
         .map(
@@ -79,22 +77,30 @@ function renderComposition(descriptors) {
                 `    readonly ${propertyName} = inject(${facadeAlias});`
         )
         .join('\n');
-    const directCommandProperties = directCommandDescriptors
-        .map(
-            ({ facadeAlias, propertyName }) =>
-                `    readonly ${propertyName} = inject(${facadeAlias});`
-        )
-        .join('\n');
-    const commandFacades = orchestratedCommandDescriptors
+    const commandFacades = commandDescriptors
         .map(
             ({ facadeAlias, propertyName }) =>
                 `    private readonly ${propertyName}Facade = inject(${facadeAlias});`
         )
         .join('\n');
+    const authorizationSignals = commandDescriptors
+        .map(({ propertyName, node }) => {
+            const permissions = node.authorization.permissions ?? [];
+            if (node.authorization.mode === 'none') {
+                return `    private readonly ${propertyName}Authorized = computed(() => true);`;
+            }
+            return `    private readonly ${propertyName}PermissionSignals = ${JSON.stringify(permissions)}.map((permission) =>
+        this.permissionPort.has(permission)
+    );
+    private readonly ${propertyName}Authorized = computed(() =>
+        this.${propertyName}PermissionSignals.every((permission) => permission())
+    );`;
+        })
+        .join('\n');
     const descriptorById = new Map(
         queryDescriptors.map((descriptor) => [descriptor.node.id, descriptor])
     );
-    const commandProperties = orchestratedCommandDescriptors
+    const commandProperties = commandDescriptors
         .map(({ facadeAlias, propertyName, node }) => {
             const invalidationStatements = node.invalidates.map((targetId) => {
                 const target = descriptorById.get(targetId);
@@ -106,14 +112,30 @@ function renderComposition(descriptors) {
                 return `                    this.${target.propertyName}.reload();`;
             });
             const invocation = `this.${propertyName}Facade.submit(input)`;
+            const guardedInvocation =
+                node.authorization.mode === 'required'
+                    ? `defer(() => {
+                const permissions = ${JSON.stringify(node.authorization.permissions)};
+                const missingPermissions = permissions.filter(
+                    (_permission, index) =>
+                        !this.${propertyName}PermissionSignals[index]()
+                );
+                if (missingPermissions.length > 0) {
+                    throw new PageActionPermissionDeniedError(missingPermissions);
+                }
+                return ${invocation};
+            })`
+                    : invocation;
             const submit =
                 invalidationStatements.length === 0
-                    ? invocation
-                    : `${invocation}.pipe(\n                tap(() => {\n${invalidationStatements.join('\n')}\n                })\n            )`;
+                    ? guardedInvocation
+                    : `${guardedInvocation}.pipe(\n                tap(() => {\n${invalidationStatements.join('\n')}\n                })\n            )`;
             return `    readonly ${propertyName} = {
         state: this.${propertyName}Facade.state,
         result: this.${propertyName}Facade.result,
         error: this.${propertyName}Facade.error,
+        authorized: this.${propertyName}Authorized,
+        deniedBehavior: ${JSON.stringify(node.authorization.denied_behavior ?? null)},
         submit: (
             input: Parameters<${facadeAlias}['submit']>[0]
         ): ReturnType<${facadeAlias}['submit']> =>
@@ -121,18 +143,58 @@ function renderComposition(descriptors) {
     };`;
         })
         .join('\n');
+    const hasAuthorization = authorizedCommandDescriptors.length > 0;
+    const angularImports = [
+        ...(hasAuthorization ? ['InjectionToken'] : []),
+        'Service',
+        'computed',
+        'inject',
+        ...(hasAuthorization ? ['type Signal'] : []),
+    ].join(', ');
+    const rxjsImports = [
+        ...(hasAuthorization ? ['defer'] : []),
+        ...(commandDescriptors.some(({ node }) => node.invalidates.length > 0)
+            ? ['tap']
+            : []),
+    ];
     const rxjsImport =
-        orchestratedCommandDescriptors.length > 0
-            ? "import { tap } from 'rxjs';\n"
+        rxjsImports.length > 0
+            ? `import { ${rxjsImports.join(', ')} } from 'rxjs';\n`
             : '';
-    return `import { Service, inject } from '@angular/core';
+    const permissionContract = hasAuthorization
+        ? `
+export interface PageActionPermissionPort {
+    has(permission: string): Signal<boolean>;
+}
+
+export const PAGE_ACTION_PERMISSION_PORT =
+    new InjectionToken<PageActionPermissionPort>('PAGE_ACTION_PERMISSION_PORT');
+
+export class PageActionPermissionDeniedError extends Error {
+    readonly code = 'permission_denied';
+    readonly missingPermissions: readonly string[];
+
+    constructor(missingPermissions: readonly string[]) {
+        super(\`Missing required permissions: \${missingPermissions.join(', ')}\`);
+        this.name = 'PageActionPermissionDeniedError';
+        this.missingPermissions = Object.freeze([...missingPermissions]);
+    }
+}
+`
+        : '';
+    const permissionInjection = hasAuthorization
+        ? '    private readonly permissionPort = inject(PAGE_ACTION_PERMISSION_PORT);\n'
+        : '';
+    return `import { ${angularImports} } from '@angular/core';
 ${rxjsImport}${imports}
+${permissionContract}
 
 @Service({ autoProvided: false })
 export class PageComposition {
+${permissionInjection}
 ${queryProperties}
-${directCommandProperties}
 ${commandFacades}
+${authorizationSignals}
 ${commandProperties}
 }
 `;

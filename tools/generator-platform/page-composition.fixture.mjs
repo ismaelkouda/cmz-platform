@@ -119,6 +119,7 @@ function page(siteGroups, reportTypes, forgotPassword) {
                 kind: 'backend',
                 label: 'Send recovery request',
                 description: 'Request password recovery instructions.',
+                authorization: { mode: 'none' },
                 available_in_state_ids: ['ready'],
                 input_bindings: [
                     {
@@ -292,6 +293,17 @@ function usersPage(usersList, profilesSelect, createUser) {
                 kind: 'backend',
                 label: 'Create user',
                 description: 'Create the user with the selected profile.',
+                authorization: {
+                    mode: 'required',
+                    permissions: ['users.create'],
+                    denied_behavior: 'disable',
+                    evidence: [
+                        {
+                            source_id: 'users-composition-proof',
+                            locator: 'create-authorization',
+                        },
+                    ],
+                },
                 available_in_state_ids: ['ready'],
                 input_bindings: [
                     {

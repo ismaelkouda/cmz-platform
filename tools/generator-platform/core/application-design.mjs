@@ -109,6 +109,23 @@ function stateReference(errors, states, value, path, expectedKind) {
 function validateAction(page, action, index, context, errors) {
     const path = `${context.path}.actions[${index}]`;
     const states = context.states;
+    if (action.authorization?.mode === 'required') {
+        errors.push(
+            ...duplicateErrors(
+                action.authorization.permissions,
+                `${path}.authorization.permissions`,
+                (permission) => permission
+            )
+        );
+        errors.push(
+            ...evidenceErrors(
+                action.authorization,
+                `${path}.authorization`,
+                context.sourceIds,
+                context.usedSources
+            )
+        );
+    }
     for (const stateId of action.available_in_state_ids ?? [])
         stateReference(
             errors,
@@ -117,6 +134,10 @@ function validateAction(page, action, index, context, errors) {
             `${path}.available_in_state_ids`
         );
     if (action.kind === 'navigate') {
+        if (action.authorization?.mode !== 'none')
+            errors.push(
+                `${path}.authorization: navigation authorization has no runtime oracle`
+            );
         if (!action.destination_page_id)
             errors.push(`${path}.destination_page_id: required for navigation`);
         if (

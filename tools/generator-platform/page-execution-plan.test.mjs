@@ -122,6 +122,7 @@ function page(overrides = {}) {
                 kind: 'backend',
                 label: 'Send recovery request',
                 description: 'Request password recovery instructions.',
+                authorization: { mode: 'none' },
                 available_in_state_ids: ['ready'],
                 input_bindings: [
                     {
@@ -476,6 +477,38 @@ test('compiles caller-declared invalidation to one named page query', () => {
     assert.ok(
         plan.required_capabilities.includes(
             'action.invalidation.caller-declared@1'
+        )
+    );
+});
+
+test('propage l’autorisation fine de commande et négocie sa capability', () => {
+    const authorizedPage = page();
+    authorizedPage.actions[0].authorization = {
+        mode: 'required',
+        permissions: ['recovery.submit'],
+        denied_behavior: 'disable',
+        evidence: [
+            { source_id: 'composition-proof', locator: 'authorization' },
+        ],
+    };
+    const plan = compile({ pageContract: pageContract(authorizedPage) });
+
+    assert.deepEqual(plan.command_nodes[0].authorization, {
+        mode: 'required',
+        permissions: ['recovery.submit'],
+        denied_behavior: 'disable',
+    });
+    assert.ok(
+        plan.required_capabilities.includes(
+            'action.authorization.permissions-all@1'
+        )
+    );
+
+    const strippedGuard = structuredClone(plan);
+    strippedGuard.command_nodes[0].authorization = { mode: 'none' };
+    assert.ok(
+        validatePageExecutionPlan(strippedGuard, pageExecutionPlanSchema).some(
+            (error) => error.includes('authorization.none forbids')
         )
     );
 });

@@ -438,14 +438,41 @@ permission fine `create`, ni comportement de formulaire. Voir
 
 ### Suite de C5 après C5g-3
 
-1. représenter explicitement l'autorisation de l'action `create`, absente du
-   contrat d'accès de page actuel ;
-2. produire ou sélectionner une vraie référence visuelle desktop/mobile et la
+1. produire ou sélectionner une vraie référence visuelle desktop/mobile et la
    faire approuver ;
-3. publier son manifeste `presentation-evidence` ;
-4. préparer le work order avec le plan et la preuve visuelle, puis réaliser
+2. publier son manifeste `presentation-evidence` ;
+3. préparer le work order avec le plan et la preuve visuelle, puis réaliser
    uniquement les cinq fichiers autorisés ;
-5. prouver permission, succès/erreur, fermeture/conservation, notifications,
-   clavier et lecteur d'écran ;
-6. ajouter l'oracle visuel déterministe et la comparaison finale à la baseline
+4. raccorder le port de permission hôte et prouver succès/erreur,
+   fermeture/conservation, notifications, clavier et lecteur d'écran ;
+5. ajouter l'oracle visuel déterministe et la comparaison finale à la baseline
    SEOS.
+
+## C5g-4 — autorisation fine de l’action de création
+
+La page reste accessible avec `access.mode: authenticated` : un opérateur sans
+droit de création doit encore pouvoir consulter la liste. L’action `create-user`
+porte séparément la permission approuvée `users.create` et le comportement
+`disable`, tous deux traçables au brief C5.
+
+Le planner compile cette décision dans chaque nœud de commande et exige la
+capability `action.authorization.permissions-all@1`. La composition Angular
+demande au host un signal par permission, expose `authorized` à la future UI et
+revérifie les signaux lors de chaque souscription. En cas de refus, elle produit
+une erreur `permission_denied` avant la façade : zéro POST, zéro invalidation et
+état de commande inchangé. L’absence du provider ne devient jamais une
+autorisation implicite.
+
+La garde frontend ne remplace pas le backend, seule autorité de sécurité. Aucun
+moteur RBAC, store, bus, transport ou dépendance n’est ajouté, et le contrat
+Bearer observé n’est pas présenté comme une preuve d’autorisation. Voir
+[ADR-0069](../adr/0069-autorisation-fine-action-dans-composition-page.md).
+
+### Suite de C5 après C5g-4
+
+1. obtenir une référence visuelle desktop/mobile approuvée ;
+2. publier le manifeste `presentation-evidence` correspondant ;
+3. préparer le work order lié au plan et à cette preuve ;
+4. réaliser les cinq fichiers Angular autorisés et raccorder le vrai provider de
+   permission du host ;
+5. prouver formulaire, notifications, clavier, lecteur d’écran et visuel.

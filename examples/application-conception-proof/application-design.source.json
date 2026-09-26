@@ -26,7 +26,7 @@
       "id": "reference-note-api",
       "role": "reference",
       "snapshot_uri": "examples/application-conception-proof/reference-api.backend-contract.json",
-            "sha256": "208511b936508567b246807036c305dde012ec53332c361be9b28c3ce20a9938"
+      "sha256": "208511b936508567b246807036c305dde012ec53332c361be9b28c3ce20a9938"
     },
     {
       "id": "planned-note-api",
@@ -110,6 +110,7 @@
           "kind": "backend",
           "label": "Submit note",
           "description": "Submit the note to the explicitly planned target contract.",
+          "authorization": { "mode": "none" },
           "available_in_state_ids": ["ready"],
           "input_bindings": [
             {

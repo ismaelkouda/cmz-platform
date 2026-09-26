@@ -193,6 +193,7 @@ export function applicationDesign(briefHash, contractHash, pathPrefix = '') {
                         kind: 'navigate',
                         label: 'Report waste',
                         description: 'Open the reporting page.',
+                        authorization: { mode: 'none' },
                         available_in_state_ids: ['ready'],
                         input_bindings: [],
                         destination_page_id: reportId,
@@ -278,6 +279,7 @@ export function applicationDesign(briefHash, contractHash, pathPrefix = '') {
                         kind: 'backend',
                         label: 'Submit report',
                         description: 'Send the report to the target API.',
+                        authorization: { mode: 'none' },
                         available_in_state_ids: ['ready'],
                         input_bindings: [
                             {
