@@ -2206,12 +2206,20 @@ Figma, désormais source partielle différée :
   façade : refus typé, état `idle`, zéro POST et zéro invalidation. Le backend
   reste l'autorité ; aucun RBAC, store, bus, transport ou dépendance n'est
   ajouté. Restent la preuve visuelle, la réalisation des cinq fichiers, le
-  provider hôte réel, notifications/a11y et oracle visuel. ADR-0069. Le rôle
-  métier « liste » ne fige pas la forme réseau : tableau direct et page sont les
-  deux variantes prouvées. Objet conteneur, map ou autre projection devront
-  recevoir un discriminateur et un oracle lors d'un cas réel, sans heuristique
-  liée à `data` ou au framework backend. **QUERY-1 — lecture objet unique à
-  auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
+  provider hôte réel, notifications/a11y et oracle visuel. ADR-0069. **C5g-5 —
+  proposition visuelle engagée localement le 2026-09-26 :** quatre captures
+  synthétiques et figées couvrent `ready` et `create-failed` en desktop 1440 ×
+  1024 et mobile 390 × 844. La création est proposée en panneau latéral desktop
+  et vue plein écran mobile, sans design system ni dépendance supplémentaires.
+  L'IA ne s'auto-approuve pas : aucun manifeste `presentation-evidence` n'est
+  publié avant la revue humaine des octets. Le prochain lot, après approbation
+  et fusion, figera les hashes dans le manifeste puis préparera le work order
+  avant toute réalisation Angular. Le rôle métier « liste » ne fige pas la forme
+  réseau : tableau direct et page sont les deux variantes prouvées. Objet
+  conteneur, map ou autre projection devront recevoir un discriminateur et un
+  oracle lors d'un cas réel, sans heuristique liée à `data` ou au framework
+  backend. **QUERY-1 — lecture objet unique à auditer :** le GET
+  `RequestsDetailsApi.execute()` retourne réellement
   `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
   `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
   primitive `read-query` à cardinalités `one|many|page` et un profil
