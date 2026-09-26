@@ -21,7 +21,7 @@ import {
     compileUsersManagementProofExecution,
     usersManagementProof,
 } from './test-support/users-management-proof.mjs';
-import { repositoryRoot } from './validate-ir.mjs';
+import { repositoryRoot, validateJsonSchema } from './validate-ir.mjs';
 
 const applicationDesignSchema = JSON.parse(
     await readFile(
@@ -47,8 +47,17 @@ const presentationEvidenceSchema = JSON.parse(
         'utf8'
     )
 );
+const pageRealizationEvidenceSchema = JSON.parse(
+    await readFile(
+        new URL(
+            './schemas/page-realization-evidence.schema.json',
+            import.meta.url
+        ),
+        'utf8'
+    )
+);
 
-test('publie la conception et le shell C5 depuis leurs sources canoniques', async () => {
+test('publie le shell C5 canonique sans confondre placeholder et réalisation bornée', async () => {
     const designPlan = await planApplicationDesignPublication({
         workspaceRoot: repositoryRoot,
         sourcePath:
@@ -71,9 +80,52 @@ test('publie la conception et le shell C5 depuis leurs sources canoniques', asyn
         applicationDesignSchema,
         backendContractSchema,
     });
-    for (const [path, content] of Object.entries(shellPlan.files)) {
+    const realizedComponent = `src/app/pages/${usersManagementProof.pageId}/page.component.ts`;
+    const evidencePath = resolve(
+        shellPlan.outputAbsolute,
+        'src/app/pages',
+        usersManagementProof.pageId,
+        'realization-evidence.json'
+    );
+    let realizationEvidence = null;
+    try {
+        realizationEvidence = JSON.parse(await readFile(evidencePath, 'utf8'));
+    } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+    }
+
+    if (realizationEvidence) {
         assert.deepEqual(
-            await readFile(resolve(shellPlan.outputAbsolute, path)),
+            validateJsonSchema(
+                realizationEvidence,
+                pageRealizationEvidenceSchema
+            ),
+            [],
+            'the realized page must carry schema-valid evidence'
+        );
+        assert.equal(realizationEvidence.page_id, usersManagementProof.pageId);
+        const contract = await readFile(
+            resolve(repositoryRoot, usersManagementProof.pageContractUri)
+        );
+        assert.equal(
+            realizationEvidence.page_contract_sha256,
+            createHash('sha256').update(contract).digest('hex'),
+            'the realization evidence must bind the current page contract'
+        );
+    }
+
+    for (const [path, content] of Object.entries(shellPlan.files)) {
+        const actual = await readFile(resolve(shellPlan.outputAbsolute, path));
+        if (path === realizedComponent && realizationEvidence) {
+            assert.notDeepEqual(
+                actual,
+                Buffer.from(content),
+                `${path} must no longer equal the pre-realization placeholder`
+            );
+            continue;
+        }
+        assert.deepEqual(
+            actual,
             Buffer.from(content),
             `${path} must equal the deterministic shell publication`
         );
