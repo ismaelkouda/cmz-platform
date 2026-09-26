@@ -87,6 +87,9 @@ comportement par défaut.
   autorisées, puis reproduit octet par octet par le shell ;
 - quatre scénarios Playwright verts avec Chrome local et Chromium CI verrouillé
   ;
+- deux exécutions CI indépendantes du même rendu : PNG mobiles identiques octet
+  par octet ; écarts desktop limités à 6 et 5 pixels sur 1 474 560, avec un
+  delta maximal d'un niveau de couleur ;
 - compilation Angular stricte, build production, lint et 23 tests unitaires
   verts ;
 - upload CI obligatoire lorsque la preuve C5 est exécutée ;
@@ -118,7 +121,9 @@ lot de réalisation traçable, relu séparément.
   humaine ;
 - C5g-8b devra faire relire les rendus, corriger les écarts acceptés sous un
   nouveau work order, puis figer des snapshots produits par le même Chromium ;
-- la comparaison pixel ne deviendra bloquante qu'après cette approbation.
+- la comparaison pixel ne deviendra bloquante qu'après cette approbation ; son
+  budget absolu minimal sera calibré sur plusieurs exécutions du même commit,
+  sans utiliser le hash du PNG ni une tolérance proportionnelle arbitraire.
 
 ## Alternatives rejetées
 

@@ -576,7 +576,11 @@ Le lot introduit donc d'abord une preuve Playwright hermétique :
 
 Les quatre scénarios passent avec Chrome local et avec le Chromium Playwright
 verrouillé utilisé en CI. Ces images restent des **candidats**, pas une baseline
-auto-approuvée.
+auto-approuvée. Deux exécutions CI indépendantes donnent des mobiles identiques
+octet par octet et seulement 6 puis 5 pixels desktop différents sur 1 474 560,
+avec un delta maximal d'un niveau de couleur. C5g-8b devra donc calibrer un
+budget absolu minimal sur plusieurs runs du même commit ; le hash du PNG et une
+tolérance proportionnelle arbitraire ne sont pas des oracles acceptables.
 
 La première inspection réelle a relevé des écarts à traiter séparément : rôles
 backend non libellés, pagination desktop comprimée, toast superposé au panneau,
