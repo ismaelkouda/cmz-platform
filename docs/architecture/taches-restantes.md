@@ -2223,12 +2223,29 @@ Figma, désormais source partielle différée :
   simultanément ce manifeste et le `page-execution-plan`; elle vérifie les
   mappings état/viewport. Aucun fichier Angular n'est modifié dans ce lot.
   Restent la fusion de cette preuve, la régénération du work order, les cinq
-  fichiers de page, le provider hôte, notifications/a11y et l'oracle visuel. Le
-  rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
-  sont les deux variantes prouvées. Objet conteneur, map ou autre projection
-  devront recevoir un discriminateur et un oracle lors d'un cas réel, sans
-  heuristique liée à `data` ou au framework backend. **QUERY-1 — lecture objet
-  unique à auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
+  fichiers de page, le provider hôte, notifications/a11y et l'oracle visuel.
+  **C5g-7 — page Angular réalisée et fusionnée le 2026-09-26 :** la PR #116 a
+  été approuvée par Soumaila sur son commit exact, fusionnée, puis validée par
+  la CI post-fusion. Les cinq fichiers bornés par le work order exécutent les
+  trois primitives, la permission, le formulaire, les états partiels et les
+  comportements a11y ; les tests isolés ne prouvaient toutefois pas encore le
+  bootstrap réel de l'application. **C5g-8a — harnais navigateur déterministe
+  engagé localement le 2026-09-26 :** le shell généré reçoit un point d'entrée
+  hôte générique et fail-closed, attesté par son manifeste ; le harnais injecte
+  séparément sa configuration runtime publique sans secret. Playwright démarre
+  le vrai build, bloque toute API inconnue et couvre les états `ready` et
+  `create-failed` en desktop/mobile avec quatre scénarios verts sur Chrome et le
+  Chromium CI verrouillé. La CI réutilise le job E2E et ne produit les quatre
+  PNG candidats que lorsque C5 ou son serveur partagé est affecté. Les images
+  approuvées antérieures étant des wireframes, aucune comparaison pixel
+  trompeuse ni auto-approbation n'est introduite. ADR-0070. Restent la revue des
+  rendus réels, un nouveau work order pour les corrections retenues, puis la
+  baseline Chromium bloquante et la comparaison comportementale finale. Le rôle
+  métier de liste ne fige pas la forme réseau : tableau direct et page sont les
+  deux variantes prouvées. Objet conteneur, map ou autre projection devront
+  recevoir un discriminateur et un oracle lors d'un cas réel, sans heuristique
+  liée à `data` ou au framework backend. **QUERY-1 — lecture objet unique à
+  auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
   `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
   `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
   primitive `read-query` à cardinalités `one|many|page` et un profil

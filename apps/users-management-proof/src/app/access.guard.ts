@@ -11,8 +11,57 @@ export interface AppAccessPolicy {
     permissions: readonly string[];
 }
 
+declare global {
+    interface Window {
+        /** Contexte public injecté par le host avant le bootstrap Angular. */
+        __cmzAppAccessContext?: unknown;
+    }
+}
+
+function denyAll(): AppAccessDecisionPort {
+    return Object.freeze({
+        isAuthenticated: () => false,
+        hasPermission: () => false,
+    });
+}
+
+export function createBrowserAccessDecision(
+    raw: unknown
+): AppAccessDecisionPort {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        return denyAll();
+    }
+
+    const context = raw as Record<string, unknown>;
+    const keys = Object.keys(context).sort();
+    if (
+        keys.length !== 2 ||
+        keys[0] !== 'authenticated' ||
+        keys[1] !== 'permissions' ||
+        context['authenticated'] !== true ||
+        !Array.isArray(context['permissions']) ||
+        !context['permissions'].every(
+            (permission) =>
+                typeof permission === 'string' && permission.length > 0
+        )
+    ) {
+        return denyAll();
+    }
+
+    const permissions = new Set(context['permissions'] as readonly string[]);
+    return Object.freeze({
+        isAuthenticated: () => true,
+        hasPermission: (permission: string) => permissions.has(permission),
+    });
+}
+
 export const APP_ACCESS_DECISION = new InjectionToken<AppAccessDecisionPort>(
-    'APP_ACCESS_DECISION'
+    'APP_ACCESS_DECISION',
+    {
+        providedIn: 'root',
+        factory: () =>
+            createBrowserAccessDecision(window.__cmzAppAccessContext),
+    }
 );
 
 export function evaluateAppAccess(

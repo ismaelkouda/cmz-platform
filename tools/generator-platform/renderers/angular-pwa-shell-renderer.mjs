@@ -67,8 +67,57 @@ export interface AppAccessPolicy {
     permissions: readonly string[];
 }
 
+declare global {
+    interface Window {
+        /** Contexte public injecté par le host avant le bootstrap Angular. */
+        __cmzAppAccessContext?: unknown;
+    }
+}
+
+function denyAll(): AppAccessDecisionPort {
+    return Object.freeze({
+        isAuthenticated: () => false,
+        hasPermission: () => false,
+    });
+}
+
+export function createBrowserAccessDecision(
+    raw: unknown
+): AppAccessDecisionPort {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        return denyAll();
+    }
+
+    const context = raw as Record<string, unknown>;
+    const keys = Object.keys(context).sort();
+    if (
+        keys.length !== 2 ||
+        keys[0] !== 'authenticated' ||
+        keys[1] !== 'permissions' ||
+        context['authenticated'] !== true ||
+        !Array.isArray(context['permissions']) ||
+        !context['permissions'].every(
+            (permission) =>
+                typeof permission === 'string' && permission.length > 0
+        )
+    ) {
+        return denyAll();
+    }
+
+    const permissions = new Set(context['permissions'] as readonly string[]);
+    return Object.freeze({
+        isAuthenticated: () => true,
+        hasPermission: (permission: string) => permissions.has(permission),
+    });
+}
+
 export const APP_ACCESS_DECISION = new InjectionToken<AppAccessDecisionPort>(
-    'APP_ACCESS_DECISION'
+    'APP_ACCESS_DECISION',
+    {
+        providedIn: 'root',
+        factory: () =>
+            createBrowserAccessDecision(window.__cmzAppAccessContext),
+    }
 );
 
 export function evaluateAppAccess(
@@ -97,7 +146,10 @@ export const appAccessGuard: CanActivateFn = (route) =>
 function accessGuardSpec() {
     return `import { describe, expect, it } from 'vitest';
 
-import { evaluateAppAccess } from './access.guard';
+import {
+    createBrowserAccessDecision,
+    evaluateAppAccess,
+} from './access.guard';
 import type { AppAccessDecisionPort } from './access.guard';
 
 function decision(
@@ -130,6 +182,40 @@ describe('evaluateAppAccess', () => {
     it('refuse une politique absente ou incohérente', () => {
         expect(evaluateAppAccess(undefined, decision(true))).toBe(false);
         expect(evaluateAppAccess({ mode: 'public', permissions: ['unexpected'] }, null)).toBe(false);
+    });
+});
+
+describe('createBrowserAccessDecision', () => {
+    it.each([
+        undefined,
+        null,
+        true,
+        {},
+        { authenticated: false, permissions: [] },
+        { authenticated: true, permissions: 'users.create' },
+        { authenticated: true, permissions: [''] },
+        { authenticated: true, permissions: [1] },
+        {
+            authenticated: true,
+            permissions: ['users.create'],
+            unexpected: true,
+        },
+    ])('échoue fermé pour un contexte absent ou invalide', (raw) => {
+        const access = createBrowserAccessDecision(raw);
+
+        expect(access.isAuthenticated()).toBe(false);
+        expect(access.hasPermission('users.create')).toBe(false);
+    });
+
+    it('expose uniquement les permissions explicites du host', () => {
+        const access = createBrowserAccessDecision({
+            authenticated: true,
+            permissions: ['users.create'],
+        });
+
+        expect(access.isAuthenticated()).toBe(true);
+        expect(access.hasPermission('users.create')).toBe(true);
+        expect(access.hasPermission('users.delete')).toBe(false);
     });
 });
 `;

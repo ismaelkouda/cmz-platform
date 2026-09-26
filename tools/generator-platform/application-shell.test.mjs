@@ -185,6 +185,11 @@ test('le renderer produit routing, i18n, PWA et un contrat borné par page', asy
         rendered.files['src/app/access.guard.ts'],
         /if \(!decision\?\.isAuthenticated\(\)\) return false/
     );
+    assert.match(
+        rendered.files['src/app/access.guard.ts'],
+        /createBrowserAccessDecision\(window\.__cmzAppAccessContext\)/,
+        'le shell doit fournir un point d’entrée host générique et fail-closed'
+    );
     assert.doesNotMatch(
         rendered.files['.cmz/pages/page_1111111111111111.json'],
         /angular/i

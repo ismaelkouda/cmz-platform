@@ -3,8 +3,11 @@
  * Zéro watchers (évite EMFILE macOS / agent sandbox) — alternative au
  * `nx serve` pour Playwright.
  *
- * Prérequis : dist présent
+ * Prérequis : dist présent. `E2E_APP_NAME` sélectionne une application dans
+ * l'allowlist fermée ci-dessous ; la valeur par défaut préserve le smoke login.
+ *
  *   bunx nx run backoffice-angular:build:development
+ *   E2E_APP_NAME=users-management-proof node tools/e2e-static-server.mjs
  *
  * Usage :
  *   MOCK_PORT=3333 E2E_APP_PORT=4200 node tools/e2e-static-server.mjs
@@ -16,7 +19,19 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DIST = resolve(ROOT, 'dist/apps/backoffice-angular/browser');
+const APP_OUTPUTS = new Map([
+    ['backoffice-angular', 'dist/apps/backoffice-angular/browser'],
+    ['users-management-proof', 'dist/apps/users-management-proof/browser'],
+]);
+const APP_NAME = process.env.E2E_APP_NAME ?? 'backoffice-angular';
+const output = APP_OUTPUTS.get(APP_NAME);
+if (!output) {
+    console.error(
+        `[e2e-static] application refusée : ${APP_NAME}. Valeurs permises : ${[...APP_OUTPUTS.keys()].join(', ')}`
+    );
+    process.exit(1);
+}
+const DIST = resolve(ROOT, output);
 const PORT = Number(process.env.E2E_APP_PORT ?? 4200);
 const MOCK_PORT = Number(process.env.MOCK_PORT ?? 3333);
 const MOCK_HOST = process.env.MOCK_HOST ?? '127.0.0.1';
@@ -39,7 +54,7 @@ const MIME = {
 if (!existsSync(join(DIST, 'index.html'))) {
     console.error(
         `[e2e-static] index.html absent dans ${DIST} — build d'abord:\n` +
-            `  bunx nx run backoffice-angular:build:development`
+            `  bunx nx run ${APP_NAME}:build:development`
     );
     process.exit(1);
 }
@@ -129,6 +144,6 @@ createServer((req, res) => {
     serveFile(filePath, res);
 }).listen(PORT, '127.0.0.1', () => {
     console.log(
-        `[e2e-static] http://127.0.0.1:${PORT}  (dist=${DIST}, mock=${MOCK_HOST}:${MOCK_PORT})`
+        `[e2e-static] http://127.0.0.1:${PORT}  (app=${APP_NAME}, dist=${DIST}, mock=${MOCK_HOST}:${MOCK_PORT})`
     );
 });

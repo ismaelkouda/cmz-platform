@@ -3,9 +3,8 @@
 - **Date de réception :** 2026-09-25
 - **Origine :** description libre fournie par un utilisateur ne manipulant ni
   schéma ni code du générateur
-- **Statut :** composition runtime, frontière visuelle, liaison du plan et
-  application de preuve C5g-3 livrées ; UI, permission, a11y et oracle visuel
-  ouverts
+- **Statut :** page C5 réalisée et prouvée dans le vrai navigateur ; revue des
+  rendus, corrections visuelles traçables et baseline pixel encore ouvertes
 - **But :** éprouver le parcours `list-query` + `action-request` + composition
   de page sur un cas produit réel
 - **Décision utilisateur du 2026-09-25 :** option A, reproduction du contrat
@@ -537,3 +536,66 @@ les cinq fichiers autorisés pour le prochain work order vérifié.
    d'écran ;
 5. ajouter la comparaison visuelle déterministe et la comparaison finale à la
    baseline SEOS.
+
+## C5g-7 — réalisation Angular approuvée et fusionnée
+
+La PR #116 a été approuvée par Soumaila sur son commit de tête exact, fusionnée
+dans `main`, puis validée par la CI post-fusion sur le commit de merge exact. Le
+work order entièrement lié a produit les cinq fichiers Angular autorisés : page,
+template, styles, tests et preuve de réalisation.
+
+La page exécute les deux queries et la commande réelles. Elle couvre filtres,
+pagination, états partiels, permission `users.create`, formulaire à cinq champs,
+fermeture sur succès, conservation sur erreur, annonces accessibles, Échap,
+piège de focus et retour du focus. Les tests de composant prouvent ces
+comportements, mais ne constituaient pas encore une navigation de l'application
+complète.
+
+## C5g-8a — harnais navigateur déterministe avant baseline
+
+L'audit post-réalisation a refusé une comparaison pixel immédiate : les quatre
+références approuvées sont des `wireframe`, pas des captures issues d'un moteur
+de navigateur. Les utiliser comme snapshots exacts aurait transformé une
+intention visuelle en oracle technique artificiel.
+
+Le lot introduit donc d'abord une preuve Playwright hermétique :
+
+- le shell généré expose un point d'entrée hôte générique et fail-closed ; il
+  lit un contexte d'accès fermé injecté avant le bootstrap et refuse toute forme
+  absente ou mal formée ;
+- le harnais injecte séparément la configuration runtime publique nécessaire,
+  sans secret ni droit ;
+- seuls les deux GET et le POST C5 sont servis avec des données synthétiques ;
+  tout autre appel API est bloqué ;
+- locale, fuseau, thème, densité, animations, service workers, navigateur et
+  viewports sont fixés ;
+- quatre scénarios exécutent le vrai build Angular et prouvent données,
+  responsive, permission, formulaire et conservation après conflit email ;
+- la CI réutilise le job E2E existant, s'active seulement lorsque sa fermeture
+  de dépendances est affectée et publie les PNG comme artefacts temporaires.
+
+Les quatre scénarios passent avec Chrome local et avec le Chromium Playwright
+verrouillé utilisé en CI. Ces images restent des **candidats**, pas une baseline
+auto-approuvée. Deux exécutions CI indépendantes donnent des mobiles identiques
+octet par octet et seulement 6 puis 5 pixels desktop différents sur 1 474 560,
+avec un delta maximal d'un niveau de couleur. C5g-8b devra donc calibrer un
+budget absolu minimal sur plusieurs runs du même commit ; le hash du PNG et une
+tolérance proportionnelle arbitraire ne sont pas des oracles acceptables.
+
+La première inspection réelle a relevé des écarts à traiter séparément : rôles
+backend non libellés, pagination desktop comprimée, toast superposé au panneau,
+hiérarchie d'erreur différente, nouvelle soumission désactivée jusqu'à la
+modification de l'email, titre mobile renvoyé sur deux lignes, actions mobiles
+réordonnées et densité mobile différente. Aucun des cinq fichiers réalisés n'est
+modifié hors de son work order dans C5g-8a. Voir
+[ADR-0070](../adr/0070-harnais-navigateur-avant-baseline-visuelle.md).
+
+### Suite de C5 après C5g-8a
+
+1. faire produire les candidats par la CI de la PR et les relire humainement ;
+2. décider écart par écart ce qui relève d'une correction ou d'une divergence
+   acceptable du wireframe ;
+3. préparer un nouveau work order pour les seules corrections de page retenues ;
+4. figer ensuite les sorties Chromium approuvées comme snapshots bloquants ;
+5. terminer par la comparaison comportementale avec la baseline SEOS, sans
+   réintroduire le corpus dans le runtime produit.
