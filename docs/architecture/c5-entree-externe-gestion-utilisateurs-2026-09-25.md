@@ -476,3 +476,33 @@ Bearer observé n’est pas présenté comme une preuve d’autorisation. Voir
 4. réaliser les cinq fichiers Angular autorisés et raccorder le vrai provider de
    permission du host ;
 5. prouver formulaire, notifications, clavier, lecteur d’écran et visuel.
+
+## C5g-5 — proposition de référence visuelle soumise à revue
+
+Quatre captures figées proposent maintenant les états `ready` et `create-failed`
+aux viewports desktop 1440 × 1024 et mobile 390 × 844. Elles emploient
+uniquement des données synthétiques, suivent les tokens existants du host et
+n'ajoutent ni bibliothèque UI ni design system parallèle.
+
+Le choix proposé conserve la liste derrière un panneau de création desktop et
+utilise une vue de création plein écran sur mobile. L'erreur garde le formulaire
+ouvert, reste attachée au champ concerné et reçoit un feedback global. Ces
+images expriment seulement la présentation ; permissions, payloads,
+invalidations, fermeture et annonces accessibles restent gouvernés et prouvés
+par les contrats et oracles.
+
+La proposition est documentée dans
+[`reference-proposal.md`](../../examples/users-management-proof/presentation/reference-proposal.md).
+Elle n'est volontairement pas publiée comme `presentation-evidence` : seule une
+revue humaine peut la faire passer de `proposed` à `approved`. Un brouillon
+Figma mutable ayant servi à l'exploration est exclu de la preuve.
+
+### Suite de C5 après C5g-5
+
+1. faire approuver et fusionner ensemble le dossier et ses quatre images ;
+2. relire leurs octets depuis Git et publier le manifeste
+   `presentation-evidence` approuvé ;
+3. préparer le work order lié au plan d'exécution et à cette preuve ;
+4. réaliser les cinq fichiers Angular autorisés et raccorder le provider hôte ;
+5. prouver formulaire, permission, notifications, clavier, lecteur d'écran et
+   comparaison visuelle déterministe.
