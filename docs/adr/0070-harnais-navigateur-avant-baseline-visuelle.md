@@ -100,6 +100,9 @@ Le premier rendu réel révèle des écarts qui ne doivent pas être masqués :
 - numéro de page desktop comprimé ;
 - toast desktop superposé au panneau ;
 - hiérarchie et disposition de l'erreur différentes du wireframe ;
+- nouvelle soumission désactivée après le conflit tant que l'email n'est pas
+  modifié, alors que le wireframe montre l'action active ;
+- titre du formulaire mobile renvoyé sur deux lignes ;
 - ordre et disposition des actions mobiles différents ;
 - densité mobile différente.
 

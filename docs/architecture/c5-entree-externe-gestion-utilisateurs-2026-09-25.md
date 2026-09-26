@@ -580,9 +580,10 @@ auto-approuvée.
 
 La première inspection réelle a relevé des écarts à traiter séparément : rôles
 backend non libellés, pagination desktop comprimée, toast superposé au panneau,
-hiérarchie d'erreur différente, actions mobiles réordonnées et densité mobile
-différente. Aucun des cinq fichiers réalisés n'est modifié hors de son work
-order dans C5g-8a. Voir
+hiérarchie d'erreur différente, nouvelle soumission désactivée jusqu'à la
+modification de l'email, titre mobile renvoyé sur deux lignes, actions mobiles
+réordonnées et densité mobile différente. Aucun des cinq fichiers réalisés n'est
+modifié hors de son work order dans C5g-8a. Voir
 [ADR-0070](../adr/0070-harnais-navigateur-avant-baseline-visuelle.md).
 
 ### Suite de C5 après C5g-8a
