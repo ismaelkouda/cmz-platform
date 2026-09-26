@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "page-realization-evidence",
+  "page_id": "page_6666666666666666",
+  "page_contract_sha256": "8012bb78d940b90151bed99273882a23ac80695619094fbe25304281cfeaad3d",
+  "states": [
+    { "id": "create-failed", "selector": "[data-cmz-id=\"create-failed\"]" },
+    { "id": "created", "selector": "[data-cmz-id=\"created\"]" },
+    { "id": "empty", "selector": "[data-cmz-id=\"empty\"]" },
+    { "id": "loading", "selector": "[data-cmz-id=\"loading\"]" },
+    { "id": "query-failed", "selector": "[data-cmz-id=\"query-failed\"]" },
+    { "id": "ready", "selector": "[data-cmz-id=\"ready\"]" }
+  ],
+  "controls": [
+    { "id": "email", "selector": "[data-cmz-id=\"email\"]" },
+    { "id": "first-name", "selector": "[data-cmz-id=\"first-name\"]" },
+    { "id": "last-name", "selector": "[data-cmz-id=\"last-name\"]" },
+    { "id": "phone", "selector": "[data-cmz-id=\"phone\"]" },
+    { "id": "profile-id", "selector": "[data-cmz-id=\"profile-id\"]" }
+  ],
+  "actions": [
+    { "id": "create-user", "selector": "[data-cmz-id=\"create-user\"]" }
+  ],
+  "data_bindings": [
+    { "id": "profiles", "selector": "[data-cmz-id=\"profiles\"]" },
+    { "id": "users", "selector": "[data-cmz-id=\"users\"]" }
+  ],
+  "regions": [{ "id": "main", "selector": "[data-cmz-id=\"main\"]" }],
+  "elements": [
+    {
+      "id": "create-user-form",
+      "selector": "[data-cmz-id=\"create-user-form\"]"
+    },
+    { "id": "page-heading", "selector": "[data-cmz-id=\"page-heading\"]" },
+    { "id": "users-table", "selector": "[data-cmz-id=\"users-table\"]" }
+  ]
+}

@@ -1,0 +1,323 @@
+<header class="app-bar">
+    <div class="brand"><span aria-hidden="true"></span>CMZ Platform</div>
+    <p>Opérateur connecté</p>
+</header>
+
+<main data-cmz-id="main" class="page-shell">
+    <section class="page-heading-row">
+        <div>
+            <h1 data-cmz-id="page-heading">Gestion des utilisateurs</h1>
+            <p>Consulter, filtrer et créer les comptes utilisateurs.</p>
+        </div>
+        <button
+            #createButton
+            data-cmz-id="create-user"
+            type="button"
+            class="button button-primary create-button"
+            [disabled]="!composition.createUser.authorized()"
+            [attr.aria-describedby]="composition.createUser.authorized() ? null : 'create-denied'"
+            (click)="openCreateForm()"
+        >
+            Créer un utilisateur
+        </button>
+        @if (!composition.createUser.authorized()) {
+            <p id="create-denied" class="sr-only">Vous n’avez pas la permission de créer un utilisateur.</p>
+        }
+    </section>
+
+    <form class="filters" (submit)="applyFilters($event)">
+        <label>
+            <span>Recherche</span>
+            <input type="search" [formField]="filtersForm.search" placeholder="Nom, prénom ou email" />
+        </label>
+        <label data-cmz-id="profiles">
+            <span>Profil</span>
+            <select [formField]="filtersForm.profile">
+                <option value="">Tous les profils</option>
+                @for (profile of profiles(); track profile.value) {
+                    <option [value]="profile.value">{{ profile.label }}</option>
+                }
+            </select>
+        </label>
+        <label>
+            <span>Rôle</span>
+            <select [formField]="filtersForm.role">
+                <option value="">Tous les rôles</option>
+                <option value="supervisor">Superviseur</option>
+                <option value="team-leader">Chef d’équipe</option>
+                <option value="agent">Agent</option>
+            </select>
+        </label>
+        <label>
+            <span>Statut</span>
+            <select [formField]="filtersForm.status">
+                <option value="">Tous les statuts</option>
+                <option value="active">Actif</option>
+                <option value="inactive">Inactif</option>
+            </select>
+        </label>
+        <div class="filter-actions">
+            <button type="button" class="button button-secondary" (click)="clearFilters()">Effacer</button>
+            <button type="submit" class="button button-primary">Appliquer</button>
+        </div>
+    </form>
+
+    @if (successNotice()) {
+        <div data-cmz-id="created" class="toast toast-success" role="status">
+            {{ successNotice() }}
+        </div>
+    }
+
+    @if (hasQueryError()) {
+        <section data-cmz-id="query-failed" class="state state-error" role="alert">
+            <strong>Impossible d’actualiser toutes les données.</strong>
+            <span>Les informations déjà chargées restent affichées. Réessayez.</span>
+        </section>
+    }
+
+    @if (isInitialLoading()) {
+        <section data-cmz-id="loading" class="state" aria-live="polite">
+            <span class="spinner" aria-hidden="true"></span>
+            Chargement des utilisateurs…
+        </section>
+    }
+
+    @if (isEmpty()) {
+        <section data-cmz-id="empty" class="state">
+            <strong>Aucun utilisateur trouvé</strong>
+            <span>Modifiez les filtres ou créez un premier utilisateur.</span>
+        </section>
+    }
+
+    @if (isReady()) {
+        <section data-cmz-id="ready" class="results" [attr.aria-busy]="isReloading()">
+            @if (isReloading()) {
+                <p class="refreshing" role="status">Actualisation de la liste…</p>
+            }
+            <div data-cmz-id="users">
+                <div data-cmz-id="users-table" class="desktop-table">
+                    <table>
+                        <caption class="sr-only">
+                            Liste des utilisateurs
+                        </caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Nom</th>
+                                <th scope="col">Prénom</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Profil</th>
+                                <th scope="col">Rôle</th>
+                                <th scope="col">Statut</th>
+                                <th scope="col">Mise à jour</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (user of users(); track user.uniqId) {
+                                <tr>
+                                    <td>{{ user.lastName }}</td>
+                                    <td>{{ user.firstName }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.profile }}</td>
+                                    <td>{{ user.role || '—' }}</td>
+                                    <td>
+                                        <span class="status" [class.status-active]="isActiveStatus(user.status)">
+                                            {{ statusLabel(user.status) }}
+                                        </span>
+                                    </td>
+                                    <td>{{ formatDate(user.updatedAt) }}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mobile-results">
+                    <div class="mobile-summary">
+                        <strong>{{ page()?.totalItems }} utilisateurs</strong>
+                        <span>Page {{ page()?.currentPage }} / {{ page()?.lastPage }}</span>
+                    </div>
+                    @for (user of users(); track user.uniqId) {
+                        <article class="user-card">
+                            <div>
+                                <strong>{{ user.lastName }} {{ user.firstName }}</strong>
+                                <span class="status" [class.status-active]="isActiveStatus(user.status)">
+                                    {{ statusLabel(user.status) }}
+                                </span>
+                            </div>
+                            <p>{{ user.email }}</p>
+                            <p>{{ user.profile }} · {{ user.role || 'Sans rôle' }}</p>
+                        </article>
+                    }
+                </div>
+            </div>
+
+            <nav class="pagination" aria-label="Pagination des utilisateurs">
+                <span>{{ resultRange() }}</span>
+                <div>
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        [disabled]="!canGoPrevious()"
+                        (click)="goToPage((page()?.currentPage ?? 1) - 1)"
+                    >
+                        Précédent
+                    </button>
+                    <span aria-current="page">{{ page()?.currentPage }}</span>
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        [disabled]="!canGoNext()"
+                        (click)="goToPage((page()?.currentPage ?? 1) + 1)"
+                    >
+                        Suivant
+                    </button>
+                </div>
+            </nav>
+        </section>
+    }
+</main>
+
+@if (isCreateOpen()) {
+    <div class="overlay">
+        <button
+            type="button"
+            class="backdrop"
+            aria-label="Fermer le formulaire de création"
+            (click)="closeCreateForm()"
+        ></button>
+        <section
+            class="drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-title"
+            cdkTrapFocus
+            [cdkTrapFocusAutoCapture]="true"
+            (keydown)="onDialogKeydown($event)"
+        >
+            <header class="drawer-header">
+                <div>
+                    <h2 id="create-title">Créer un utilisateur</h2>
+                    <p>Tous les champs sont obligatoires.</p>
+                </div>
+                <button
+                    type="button"
+                    class="button button-secondary"
+                    [disabled]="isSubmitting()"
+                    (click)="closeCreateForm()"
+                >
+                    Fermer
+                </button>
+            </header>
+
+            @if (failureNotice()) {
+                <div data-cmz-id="create-failed" class="form-error" role="alert">
+                    <strong>Création impossible</strong>
+                    <span>
+                        @if (emailConflict()) {
+                            Corrigez l’adresse email puis réessayez.
+                        } @else {
+                            Vérifiez les informations puis réessayez.
+                        }
+                    </span>
+                </div>
+            }
+
+            <form data-cmz-id="create-user-form" class="create-form" novalidate (submit)="createUser($event)">
+                <label>
+                    <span>Prénom *</span>
+                    <input
+                        data-cmz-id="first-name"
+                        type="text"
+                        autocomplete="given-name"
+                        [formField]="createForm.firstName"
+                        [attr.aria-describedby]="fieldError(createForm.firstName) ? 'first-name-error' : null"
+                    />
+                    @if (fieldError(createForm.firstName); as error) {
+                        <small id="first-name-error" class="field-error">{{ error }}</small>
+                    }
+                </label>
+                <label>
+                    <span>Nom *</span>
+                    <input
+                        data-cmz-id="last-name"
+                        type="text"
+                        autocomplete="family-name"
+                        [formField]="createForm.lastName"
+                        [attr.aria-describedby]="fieldError(createForm.lastName) ? 'last-name-error' : null"
+                    />
+                    @if (fieldError(createForm.lastName); as error) {
+                        <small id="last-name-error" class="field-error">{{ error }}</small>
+                    }
+                </label>
+                <label>
+                    <span>Email *</span>
+                    <input
+                        data-cmz-id="email"
+                        type="email"
+                        autocomplete="email"
+                        [formField]="createForm.email"
+                        [class.invalid]="emailConflict()"
+                        [attr.aria-describedby]="emailConflict() || fieldError(createForm.email) ? 'email-error' : null"
+                        [attr.aria-invalid]="emailConflict() || createForm.email().invalid()"
+                    />
+                    @if (emailConflict()) {
+                        <small id="email-error" class="field-error"> Cette adresse email existe déjà. </small>
+                    } @else if (fieldError(createForm.email); as error) {
+                        <small id="email-error" class="field-error">{{ error }}</small>
+                    }
+                </label>
+                <label>
+                    <span>Téléphone *</span>
+                    <input
+                        data-cmz-id="phone"
+                        type="tel"
+                        autocomplete="tel"
+                        [formField]="createForm.phone"
+                        [attr.aria-describedby]="fieldError(createForm.phone) ? 'phone-error' : null"
+                    />
+                    @if (fieldError(createForm.phone); as error) {
+                        <small id="phone-error" class="field-error">{{ error }}</small>
+                    }
+                </label>
+                <label>
+                    <span>Profil *</span>
+                    <select
+                        data-cmz-id="profile-id"
+                        [formField]="createForm.profileId"
+                        [attr.aria-describedby]="fieldError(createForm.profileId) ? 'profile-error' : null"
+                    >
+                        <option value="">Sélectionner un profil</option>
+                        @for (profile of profiles(); track profile.value) {
+                            <option [value]="profile.value">{{ profile.label }}</option>
+                        }
+                    </select>
+                    @if (fieldError(createForm.profileId); as error) {
+                        <small id="profile-error" class="field-error">{{ error }}</small>
+                    }
+                </label>
+
+                <div class="drawer-actions">
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        [disabled]="isSubmitting()"
+                        (click)="closeCreateForm()"
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        type="submit"
+                        class="button button-primary"
+                        [disabled]="createForm().invalid() || isSubmitting()"
+                    >
+                        {{ isSubmitting() ? 'Création…' : 'Créer' }}
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+}
+
+@if (failureNotice()) {
+    <div class="toast toast-error" role="alert">{{ failureNotice() }}</div>
+}
