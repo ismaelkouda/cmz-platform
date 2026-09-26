@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { evaluateAppAccess } from './access.guard';
+import { createBrowserAccessDecision, evaluateAppAccess } from './access.guard';
 import type { AppAccessDecisionPort } from './access.guard';
 
 function decision(
@@ -59,5 +59,39 @@ describe('evaluateAppAccess', () => {
                 null
             )
         ).toBe(false);
+    });
+});
+
+describe('createBrowserAccessDecision', () => {
+    it.each([
+        undefined,
+        null,
+        true,
+        {},
+        { authenticated: false, permissions: [] },
+        { authenticated: true, permissions: 'users.create' },
+        { authenticated: true, permissions: [''] },
+        { authenticated: true, permissions: [1] },
+        {
+            authenticated: true,
+            permissions: ['users.create'],
+            unexpected: true,
+        },
+    ])('échoue fermé pour un contexte absent ou invalide', (raw) => {
+        const access = createBrowserAccessDecision(raw);
+
+        expect(access.isAuthenticated()).toBe(false);
+        expect(access.hasPermission('users.create')).toBe(false);
+    });
+
+    it('expose uniquement les permissions explicites du host', () => {
+        const access = createBrowserAccessDecision({
+            authenticated: true,
+            permissions: ['users.create'],
+        });
+
+        expect(access.isAuthenticated()).toBe(true);
+        expect(access.hasPermission('users.create')).toBe(true);
+        expect(access.hasPermission('users.delete')).toBe(false);
     });
 });

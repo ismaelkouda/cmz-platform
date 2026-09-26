@@ -73,13 +73,6 @@
         "watch": false
       }
     },
-    "visual-proof": {
-      "executor": "nx:run-commands",
-      "cache": false,
-      "options": {
-        "command": "bunx playwright test -c apps/users-management-proof/playwright.config.mjs"
-      }
-    },
     "serve-static": {
       "continuous": true,
       "executor": "@nx/web:file-server",

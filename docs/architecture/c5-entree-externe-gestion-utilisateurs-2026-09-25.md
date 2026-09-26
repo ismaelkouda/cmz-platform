@@ -560,9 +560,11 @@ intention visuelle en oracle technique artificiel.
 
 Le lot introduit donc d'abord une preuve Playwright hermétique :
 
-- un provider hôte de preuve lit un contexte d'accès fermé injecté avant le
-  bootstrap et refuse tout contexte absent ou mal formé ;
-- la configuration runtime publique existe réellement, sans secret ni droit ;
+- le shell généré expose un point d'entrée hôte générique et fail-closed ; il
+  lit un contexte d'accès fermé injecté avant le bootstrap et refuse toute forme
+  absente ou mal formée ;
+- le harnais injecte séparément la configuration runtime publique nécessaire,
+  sans secret ni droit ;
 - seuls les deux GET et le POST C5 sont servis avec des données synthétiques ;
   tout autre appel API est bloqué ;
 - locale, fuseau, thème, densité, animations, service workers, navigateur et

@@ -15,9 +15,11 @@ de rendu déterminés.
 
 Les tests Angular prouvent les comportements et l'accessibilité du composant,
 mais ils remplaçaient la composition et ne démarraient pas l'application
-complète. Un audit navigateur a ainsi trouvé deux frontières absentes du shell
-de preuve : le provider réel de décision d'accès et le fichier public `env.js`.
-Sans provider, la route échouait correctement fermée dans une vraie navigation.
+complète. Un audit navigateur a ainsi trouvé une frontière incomplète dans le
+shell généré : le token d'accès exigeait un provider, sans offrir de point
+d'entrée déterministe au host. La route échouait correctement fermée dans une
+vraie navigation, mais aucun host ne pouvait l'ouvrir sans modifier un fichier
+généré.
 
 Comparer immédiatement le rendu à des wireframes au pixel près aurait produit un
 oracle trompeur et coûteux à maintenir. À l'inverse, prendre une capture sans
@@ -25,17 +27,20 @@ assertions fonctionnelles aurait pu figer un écran vide ou incomplet.
 
 ## Décision
 
-### 1. Un host de preuve explicite et fermé
+### 1. Un point d'entrée hôte explicite et fermé
 
-L'application lit un unique contexte injecté avant le bootstrap :
-`window.__cmzUsersManagementProofAccess`. Il est accepté seulement si sa forme
-contient exactement `authenticated: true` et un tableau de permissions valides.
-Une valeur absente, mal formée, enrichie d'une clé inconnue ou non authentifiée
+Le shell Angular généré lit un unique contexte injecté avant le bootstrap :
+`window.__cmzAppAccessContext`. Il est accepté seulement si sa forme contient
+exactement `authenticated: true` et un tableau de permissions valides. Une
+valeur absente, mal formée, enrichie d'une clé inconnue ou non authentifiée
 refuse l'accès et toutes les permissions.
 
-Ce contexte n'est pas une autorité de sécurité et ne contient aucun secret. Le
-backend reste responsable de l'autorisation. `env.js` ne transporte que les URL
-publiques nécessaires au runtime de preuve.
+Cette adaptation est produite par le renderer du shell, testée puis attestée
+dans son manifeste ; C5 ne modifie donc plus `app.config.ts` hors publication.
+Le contexte n'est pas une autorité de sécurité et ne contient aucun secret. Le
+backend reste responsable de l'autorisation. La configuration runtime publique
+nécessaire au scénario est injectée séparément par le harnais avant le bootstrap
+et n'accorde aucun droit.
 
 ### 2. Un backend navigateur hermétique
 
@@ -68,8 +73,8 @@ wireframes approuvés et ne deviennent pas automatiquement une baseline.
 
 Le harnais réutilise Playwright et le job E2E existants. Il ne tourne que si
 l'application C5 ou son serveur statique partagé est affecté. Les quatre PNG
-sont alors publiés sept jours comme artefact de revue. Aucun nouveau runtime ni
-aucune dépendance n'est ajouté.
+sont alors publiés sept jours comme artefact de revue. Aucun framework ou
+runtime parallèle ni aucune dépendance n'est ajouté.
 
 Le serveur statique partagé sélectionne l'application par une allowlist fermée ;
 une valeur inconnue est refusée. Le smoke login historique conserve son
@@ -78,7 +83,8 @@ comportement par défaut.
 ## Preuves
 
 - route réelle démarrée depuis le build Angular, et non composant isolé ;
-- provider hôte testé sur les formes absentes, invalides et autorisées ;
+- point d'entrée hôte générique testé sur les formes absentes, invalides et
+  autorisées, puis reproduit octet par octet par le shell ;
 - quatre scénarios Playwright verts avec Chrome local et Chromium CI verrouillé
   ;
 - compilation Angular stricte, build production, lint et 23 tests unitaires

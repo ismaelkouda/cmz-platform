@@ -2230,9 +2230,10 @@ Figma, désormais source partielle différée :
   trois primitives, la permission, le formulaire, les états partiels et les
   comportements a11y ; les tests isolés ne prouvaient toutefois pas encore le
   bootstrap réel de l'application. **C5g-8a — harnais navigateur déterministe
-  engagé localement le 2026-09-26 :** le shell reçoit un provider d'accès
-  fail-closed et une configuration runtime publique sans secret. Playwright
-  démarre le vrai build, bloque toute API inconnue et couvre `ready`/
+  engagé localement le 2026-09-26 :** le shell généré reçoit un point d'entrée
+  hôte générique et fail-closed, attesté par son manifeste ; le harnais injecte
+  séparément sa configuration runtime publique sans secret. Playwright démarre
+  le vrai build, bloque toute API inconnue et couvre les états `ready` et
   `create-failed` en desktop/mobile avec quatre scénarios verts sur Chrome et le
   Chromium CI verrouillé. La CI réutilise le job E2E et ne produit les quatre
   PNG candidats que lorsque C5 ou son serveur partagé est affecté. Les images
@@ -2240,7 +2241,7 @@ Figma, désormais source partielle différée :
   trompeuse ni auto-approbation n'est introduite. ADR-0070. Restent la revue des
   rendus réels, un nouveau work order pour les corrections retenues, puis la
   baseline Chromium bloquante et la comparaison comportementale finale. Le rôle
-  métier « liste » ne fige pas la forme réseau : tableau direct et page sont les
+  métier de liste ne fige pas la forme réseau : tableau direct et page sont les
   deux variantes prouvées. Objet conteneur, map ou autre projection devront
   recevoir un discriminateur et un oracle lors d'un cas réel, sans heuristique
   liée à `data` ou au framework backend. **QUERY-1 — lecture objet unique à

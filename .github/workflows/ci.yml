@@ -582,7 +582,7 @@ jobs:
 
       - name: C5 deterministic browser candidates
         if: steps.c5-browser-proof.outputs.run == 'true'
-        run: bunx nx run users-management-proof:visual-proof
+        run: bunx playwright test -c apps/users-management-proof/playwright.config.mjs
         env:
           CI: 'true'
 

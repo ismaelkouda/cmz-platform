@@ -84,7 +84,16 @@ const PROFILES = [
 
 async function installHostAndBackend(page: Page): Promise<void> {
     await page.addInitScript(() => {
-        window.__cmzUsersManagementProofAccess = {
+        window.__env = {
+            authenticationUrl: '/api/auth/',
+            reportUrl: '/api/report/',
+            settingUrl: '/api/settings/',
+            fileUrl: '/api/file/',
+            environmentDeployment: 'DEV',
+            enableDebug: false,
+            trustedFrameOrigins: [],
+        };
+        window.__cmzAppAccessContext = {
             authenticated: true,
             permissions: ['users.create'],
         };
