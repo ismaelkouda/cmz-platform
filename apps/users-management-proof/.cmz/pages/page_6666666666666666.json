@@ -3,7 +3,7 @@
   "kind": "page-realization-contract",
   "design_ref": {
     "path": "designs/users-management-proof.application-design.json",
-    "sha256": "c5d9a2445769820d710c610ae06a2c9921121d7bf087bcdc984a8bdd93949660"
+    "sha256": "bcbd75141911d69fb31403a57b22e068cc461862c1b74a7dde117062982cc8af"
   },
   "design": {
     "id": "users-management-proof",
@@ -43,6 +43,17 @@
     },
     "actions": [
       {
+        "authorization": {
+          "denied_behavior": "disable",
+          "evidence": [
+            {
+              "locator": "create-authorization",
+              "source_id": "users-proof-brief"
+            }
+          ],
+          "mode": "required",
+          "permissions": ["users.create"]
+        },
         "available_in_state_ids": ["ready"],
         "description": "Create the user with the selected profile.",
         "error_state_id": "create-failed",

@@ -3,6 +3,11 @@ import { createHash } from 'node:crypto';
 import { validateJsonSchema } from '../validate-ir.mjs';
 import { validateActionRequestV2ExecutionModel } from './action-request-v2-compiler.mjs';
 import {
+    actionAuthorizationCapabilities,
+    compileActionAuthorization,
+    validateCompiledActionAuthorization,
+} from './action-authorization.mjs';
+import {
     assertActionOutputBinding,
     assertQueryOutputBinding,
 } from './data-binding-projection.mjs';
@@ -334,9 +339,11 @@ function compileCommandNode(
             success_state_id: action.success_state_id,
             error_state_id: action.error_state_id,
         },
+        authorization: compileActionAuthorization(action.authorization),
         invalidates,
         capabilities: [
             ...actionCapabilities(operation),
+            ...actionAuthorizationCapabilities(action.authorization),
             ...authenticationCapabilities(operation),
         ].sort(),
     };
@@ -590,6 +597,13 @@ export function validatePageExecutionPlan(plan, schema) {
     }
     for (const [index, node] of commandNodes.entries()) {
         const path = `$.command_nodes[${index}]`;
+        errors.push(
+            ...validateCompiledActionAuthorization(
+                node?.authorization,
+                node?.capabilities,
+                path
+            )
+        );
         if (!isNormalizedRelativeUri(node?.primitive_ref?.uri))
             errors.push(
                 `${path}.primitive_ref.uri: must be a normalized relative path`

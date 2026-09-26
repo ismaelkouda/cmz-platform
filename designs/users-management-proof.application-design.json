@@ -82,6 +82,19 @@
       },
       "actions": [
         {
+          "authorization": {
+            "denied_behavior": "disable",
+            "evidence": [
+              {
+                "locator": "create-authorization",
+                "source_id": "users-proof-brief"
+              }
+            ],
+            "mode": "required",
+            "permissions": [
+              "users.create"
+            ]
+          },
           "available_in_state_ids": [
             "ready"
           ],
@@ -335,7 +348,7 @@
     {
       "id": "users-proof-brief",
       "kind": "project-brief",
-      "sha256": "b344f6312b1664c3dd64c0f4c7e04d37d486e521cb44cefdc6ec2de9d44b6469",
+      "sha256": "eb3244fd95ed74443e39d8968197962a669428e1a5f1423b0aa412a8503b0f76",
       "snapshot_uri": "examples/users-management-proof/project-brief.md"
     }
   ],

@@ -51,6 +51,7 @@ export const INTEGRATION_EXACT_INPUTS = Object.freeze([
     'tools/check-library-setup-deps.mjs',
     'tools/check-library-setup.mjs',
     'tools/create-app.mjs',
+    'tools/generator-platform/core/action-authorization.mjs',
     'tools/generator-platform/core/application-design.mjs',
     'tools/generator-platform/core/application-shell-publication.mjs',
     'tools/generator-platform/core/backend-contract.mjs',

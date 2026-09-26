@@ -5,7 +5,7 @@
   "profile": "angular-pwa",
   "design_ref": {
     "path": "designs/users-management-proof.application-design.json",
-    "sha256": "c5d9a2445769820d710c610ae06a2c9921121d7bf087bcdc984a8bdd93949660"
+    "sha256": "bcbd75141911d69fb31403a57b22e068cc461862c1b74a7dde117062982cc8af"
   },
   "experience_id": "operator-web",
   "generated_files": [
@@ -16,8 +16,8 @@
     },
     {
       "path": ".cmz/pages/page_6666666666666666.json",
-      "bytes": 7844,
-      "sha256": "6b2e7b3019c8aa7946887a885d01f2342fef7b37981cd2077ebd721697fc8627"
+      "bytes": 8155,
+      "sha256": "8012bb78d940b90151bed99273882a23ac80695619094fbe25304281cfeaad3d"
     },
     {
       "path": "eslint.config.mjs",
@@ -115,5 +115,5 @@
       "sha256": "2ed7b872a444d9c3577a992880774ec5097600a2566f260651d4d5d032dcdeb0"
     }
   ],
-  "tree_sha256": "315b52fa92d2ac9d4698e40cf2f45de4ef50c13bff41248abac92b53dc84e95e"
+  "tree_sha256": "4511f8d8df16d56c7065d96c8976079e4790a199566307a21d81e155e8853916"
 }

@@ -68,6 +68,33 @@
         }
       }
     },
+    "actionAuthorization": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": {
+            "mode": { "const": "none" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "permissions", "denied_behavior"],
+          "properties": {
+            "mode": { "const": "required" },
+            "permissions": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/nonEmptyString" }
+            },
+            "denied_behavior": { "enum": ["disable", "hide"] }
+          }
+        }
+      ]
+    },
     "source": {
       "type": "object",
       "additionalProperties": false,
@@ -323,6 +350,7 @@
         "input_bindings",
         "state",
         "presentation",
+        "authorization",
         "invalidates",
         "capabilities"
       ],
@@ -339,6 +367,7 @@
         },
         "state": { "$ref": "#/$defs/state" },
         "presentation": { "$ref": "#/$defs/commandPresentation" },
+        "authorization": { "$ref": "#/$defs/actionAuthorization" },
         "invalidates": {
           "type": "array",
           "uniqueItems": true,

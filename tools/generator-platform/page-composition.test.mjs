@@ -79,11 +79,22 @@ test('materializes the real C5 users composition from its three observed primiti
         ['profiles-select', 'users-list']
     );
     assert.deepEqual(
-        input.plan.command_nodes.map(({ id, invalidates }) => ({
+        input.plan.command_nodes.map(({ id, invalidates, authorization }) => ({
             id,
             invalidates,
+            authorization,
         })),
-        [{ id: 'create-user', invalidates: ['users-list'] }]
+        [
+            {
+                id: 'create-user',
+                invalidates: ['users-list'],
+                authorization: {
+                    mode: 'required',
+                    permissions: ['users.create'],
+                    denied_behavior: 'disable',
+                },
+            },
+        ]
     );
     assert.ok(
         Object.keys(target.angular.files).includes(
@@ -106,7 +117,19 @@ test('materializes the real C5 users composition from its three observed primiti
     );
     assert.match(
         target.angular.files['src/page-composition.ts'],
-        /this\.createUserFacade\.submit\(input\)\.pipe/
+        /return this\.createUserFacade\.submit\(input\);/
+    );
+    assert.match(
+        target.angular.files['src/page-composition.ts'],
+        /PAGE_ACTION_PERMISSION_PORT/
+    );
+    assert.match(
+        target.angular.files['src/page-composition.ts'],
+        /PageActionPermissionDeniedError/
+    );
+    assert.match(
+        target.angular.files['src/page-composition.ts'],
+        /permissions = \['users\.create'\]/
     );
     assert.match(
         target.angular.files['src/page-composition.ts'],

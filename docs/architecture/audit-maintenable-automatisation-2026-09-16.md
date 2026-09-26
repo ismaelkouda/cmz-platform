@@ -842,6 +842,21 @@ et tests sans nouveau runtime ni dépendance. Restent la permission fine de
 création, la preuve visuelle approuvée, les cinq fichiers de page, l'a11y et
 l'oracle visuel ; ADR-0068.
 
+Vingt-quatrième incrément C5g-4 engagé le 2026-09-26 : l’accès authentifié de la
+page et le droit de créer ne sont plus confondus. Chaque action déclare
+explicitement `authorization: none|required`; une autorisation requise porte des
+permissions traçables et un comportement `disable|hide`. Le cas C5 fixe
+`users.create` et conserve la lecture de la liste aux opérateurs sans ce droit.
+
+Le plan normalise cette décision et négocie
+`action.authorization.permissions-all@1`. La composition Angular expose un
+signal `authorized`, mais contrôle aussi chaque souscription de `submit` avant
+la façade : permission absente signifie erreur typée, état `idle`, zéro POST et
+zéro invalidation. Le backend reste l’unique autorité de sécurité ; aucun moteur
+RBAC, store, transport, bus ou dépendance n’est ajouté. Restent la preuve
+visuelle approuvée, les cinq fichiers de page, le raccord du provider hôte,
+notifications/a11y et oracle visuel ; ADR-0069.
+
 ## Ce qui n'est pas décidé par cet audit
 
 - aucune garantie de sécurité existante n'est supprimée avant son remplacement

@@ -72,6 +72,9 @@
       },
       "actions": [
         {
+          "authorization": {
+            "mode": "none"
+          },
           "available_in_state_ids": [
             "ready"
           ],

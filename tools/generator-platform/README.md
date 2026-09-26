@@ -229,9 +229,13 @@ node --test tools/generator-platform/users-management-proof-publication.test.mjs
 bunx nx run users-management-proof:build:production --skipNxCache
 ```
 
-La page visible reste un placeholder tant que permission fine et preuve de
-présentation ne sont pas approuvées. Cette application prouve la chaîne de
-publication ; elle ne prétend pas être une application de production.
+La permission fine de création est désormais portée par l’action du design,
+compilée dans le plan et gardée dans la composition avant tout POST. Le host
+fournit un `Signal<boolean>` par permission ; la composition expose
+`authorized` et `deniedBehavior`, puis échoue avec une erreur typée si un appel
+direct tente de contourner le contrôle visible. Cette garde frontend ne remplace
+jamais l’autorisation backend. La page visible reste un placeholder tant qu’une
+preuve de présentation n’est pas approuvée.
 
 ### Demand-driven composition registry
 
