@@ -506,3 +506,34 @@ Figma mutable ayant servi à l'exploration est exclu de la preuve.
 4. réaliser les cinq fichiers Angular autorisés et raccorder le provider hôte ;
 5. prouver formulaire, permission, notifications, clavier, lecteur d'écran et
    comparaison visuelle déterministe.
+
+## C5g-6 — preuve approuvée et work order entièrement lié
+
+La PR #114 a été approuvée par Soumaila sur son commit de tête exact, puis
+fusionnée avec une CI post-fusion verte. Les tailles et SHA-256 des quatre PNG
+ont été relus directement depuis le commit de fusion, pas depuis une copie de
+travail. Le manifeste fermé
+`designs/users-management-proof.presentation-evidence.json` les publie donc avec
+l'autorité `presentation-only`, les états et viewports approuvés, et la marque
+obligatoire `untrusted-content`.
+
+La preuve de publication C5 prépare désormais le work order avec ses deux
+entrées adressées par contenu : le `page-execution-plan` C5 et ce manifeste de
+présentation. Elle vérifie aussi les quatre mappings état/viewport attendus.
+Toute dérive d'octets, de page, d'état, de média ou de chemin échoue dans le
+résolveur existant avant la réalisation.
+
+Ce lot n'écrit aucun fichier de page Angular. Cette séparation empêche de noyer
+la revue de la nouvelle autorité visuelle dans une implémentation UI et conserve
+les cinq fichiers autorisés pour le prochain work order vérifié.
+
+### Suite de C5 après C5g-6
+
+1. faire approuver et fusionner le manifeste et sa preuve de liaison ;
+2. régénérer le work order depuis les octets fusionnés ;
+3. réaliser uniquement les cinq fichiers Angular autorisés et raccorder le
+   provider hôte ;
+4. prouver formulaire, permission, notifications, focus, clavier et lecteur
+   d'écran ;
+5. ajouter la comparaison visuelle déterministe et la comparaison finale à la
+   baseline SEOS.

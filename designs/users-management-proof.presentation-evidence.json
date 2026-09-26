@@ -1,0 +1,74 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "presentation-evidence",
+  "presentation_id": "presentation_5627f087550dd218",
+  "page_id": "page_6666666666666666",
+  "status": "approved",
+  "authority": "presentation-only",
+  "sources": [
+    {
+      "id": "desktop-ready",
+      "source_kind": "wireframe",
+      "purpose": "primary-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/desktop-ready.proposed.png",
+      "media_type": "image/png",
+      "bytes": 81327,
+      "sha256": "7b3523f1c7aa64843918c0e622bd8fc3873f11e065e3096cea39aacb7faf88b4",
+      "trust": "untrusted-content",
+      "state_ids": ["ready"],
+      "viewport": {
+        "width": 1440,
+        "height": 1024,
+        "pixel_ratio": 1
+      }
+    },
+    {
+      "id": "desktop-create-error",
+      "source_kind": "wireframe",
+      "purpose": "state-reference",
+      "snapshot_uri": "examples/users-management-proof/presentation/desktop-create-error.proposed.png",
+      "media_type": "image/png",
+      "bytes": 96614,
+      "sha256": "ad9e0ddf0415cfe14bea276615af3f2abe4450a22ab15630bc21a52a84ba90ec",
+      "trust": "untrusted-content",
+      "state_ids": ["create-failed"],
+      "viewport": {
+        "width": 1440,
+        "height": 1024,
+        "pixel_ratio": 1
+      }
+    },
+    {
+      "id": "mobile-ready",
+      "source_kind": "wireframe",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/mobile-ready.proposed.png",
+      "media_type": "image/png",
+      "bytes": 46625,
+      "sha256": "68c94addd635aa5ee8bde1cdc97b67c8e387fec82c7c74aacdcb1e543e9ea2ea",
+      "trust": "untrusted-content",
+      "state_ids": ["ready"],
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "pixel_ratio": 1
+      }
+    },
+    {
+      "id": "mobile-create-error",
+      "source_kind": "wireframe",
+      "purpose": "state-reference",
+      "snapshot_uri": "examples/users-management-proof/presentation/mobile-create-error.proposed.png",
+      "media_type": "image/png",
+      "bytes": 34485,
+      "sha256": "34715ffd9b7de4781e8bc89469ea27d25884ccaf9892d9690513e57331db4fc1",
+      "trust": "untrusted-content",
+      "state_ids": ["create-failed"],
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "pixel_ratio": 1
+      }
+    }
+  ]
+}

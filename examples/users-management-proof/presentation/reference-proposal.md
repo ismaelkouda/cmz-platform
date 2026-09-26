@@ -1,8 +1,7 @@
 # Proposition de référence visuelle C5
 
-- **Statut :** Proposed — revue humaine requise
-- **Autorité actuelle :** aucune
-- **Autorité après approbation :** `presentation-only`
+- **Statut :** Approved — PR #114 approuvée et fusionnée
+- **Autorité :** `presentation-only`
 - **Page :** `page_6666666666666666`
 - **Route :** `/settings-security/users`
 - **Date de production :** 2026-09-26
@@ -10,13 +9,19 @@
 ## Objet de la revue
 
 Cette proposition donne au réalisateur LLM une direction visuelle bornée pour la
-page de gestion des utilisateurs. Elle ne constitue pas encore un manifeste
-`presentation-evidence` : le schéma n'accepte que des preuves déjà approuvées,
-et l'auteur de la proposition ne peut pas s'auto-approuver.
+page de gestion des utilisateurs. Ce document reste le dossier de revue, pas le
+manifeste `presentation-evidence` : le schéma n'accepte que des preuves déjà
+approuvées, et l'auteur de la proposition ne peut pas s'auto-approuver.
 
-L'approbation de la pull request portant ces quatre images signifie uniquement
-que leur présentation peut être figée lors du lot suivant. Elle ne valide ni un
-endpoint, ni un payload, ni une permission, ni une transition métier.
+Soumaila a approuvé le commit `031590b9128af4a7f5b03ff89fbe80c5a621b995` de la
+PR #114 le 2026-09-26. La PR a ensuite été fusionnée dans `main` par le commit
+`36608400157dfc3673373e3ce734848466c4e73f`. Le manifeste approuvé est publié
+séparément sous `designs/users-management-proof.presentation-evidence.json` afin
+que ses métadonnées et sa liaison au work order restent elles aussi relisibles.
+
+L'approbation de la pull request portant ces quatre images a autorisé leur
+figement dans le manifeste C5g-6. Elle ne valide ni un endpoint, ni un payload,
+ni une permission, ni une transition métier.
 
 ## Ressources proposées
 
@@ -75,7 +80,6 @@ composition, puis le design system du dépôt.
 - les quatre fichiers sont approuvés ensemble, sans modification de leurs octets
   après la revue.
 
-Après approbation et fusion, le lot suivant pourra publier un manifeste
-`presentation-evidence` avec les tailles et empreintes relues depuis Git,
-préparer le work order lié au plan d'exécution, puis seulement autoriser la
-réalisation Angular.
+Les tailles et empreintes ont été relues depuis le commit de fusion. Le lot
+C5g-6 publie le manifeste `presentation-evidence` et prépare le work order lié
+au plan d'exécution. La réalisation Angular reste un lot séparé.
