@@ -2214,12 +2214,21 @@ Figma, désormais source partielle différée :
   L'IA ne s'auto-approuve pas : aucun manifeste `presentation-evidence` n'est
   publié avant la revue humaine des octets. Le prochain lot, après approbation
   et fusion, figera les hashes dans le manifeste puis préparera le work order
-  avant toute réalisation Angular. Le rôle métier « liste » ne fige pas la forme
-  réseau : tableau direct et page sont les deux variantes prouvées. Objet
-  conteneur, map ou autre projection devront recevoir un discriminateur et un
-  oracle lors d'un cas réel, sans heuristique liée à `data` ou au framework
-  backend. **QUERY-1 — lecture objet unique à auditer :** le GET
-  `RequestsDetailsApi.execute()` retourne réellement
+  avant toute réalisation Angular. **C5g-6 — preuve visuelle approuvée et
+  liaison engagées localement le 2026-09-26 :** l'approbation de la PR #114
+  porte sur le commit exact fusionné. Les tailles et SHA-256 des quatre PNG ont
+  été relus depuis ce commit puis publiés dans un manifeste fermé
+  `presentation-evidence`, avec autorité `presentation-only`, états, viewports
+  et contenu non fiable. La preuve C5 prépare désormais un work order portant
+  simultanément ce manifeste et le `page-execution-plan`; elle vérifie les
+  mappings état/viewport. Aucun fichier Angular n'est modifié dans ce lot.
+  Restent la fusion de cette preuve, la régénération du work order, les cinq
+  fichiers de page, le provider hôte, notifications/a11y et l'oracle visuel. Le
+  rôle métier « liste » ne fige pas la forme réseau : tableau direct et page
+  sont les deux variantes prouvées. Objet conteneur, map ou autre projection
+  devront recevoir un discriminateur et un oracle lors d'un cas réel, sans
+  heuristique liée à `data` ou au framework backend. **QUERY-1 — lecture objet
+  unique à auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
   `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
   `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
   primitive `read-query` à cardinalités `one|many|page` et un profil

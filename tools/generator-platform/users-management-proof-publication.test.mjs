@@ -228,10 +228,59 @@ test('publie une composition Angular stable et prépare un work order raccordé'
             pageExecutionPlanPath: usersManagementProof.planUri,
             pageExecutionPlanSchema,
             applicationDesignSchema,
+            presentationEvidencePath:
+                usersManagementProof.presentationEvidenceUri,
             presentationEvidenceSchema,
         })
     );
     assert.equal(realization.page_execution.path, usersManagementProof.planUri);
     assert.equal(realization.page_execution.plan.plan_id, generated.planId);
-    assert.equal(realization.presentation_evidence, null);
+    assert.equal(
+        realization.presentation_evidence.presentation_id,
+        'presentation_5627f087550dd218'
+    );
+    assert.equal(
+        realization.presentation_evidence.manifest.path,
+        usersManagementProof.presentationEvidenceUri
+    );
+    assert.equal(
+        realization.presentation_evidence.authority,
+        'presentation-only'
+    );
+    assert.deepEqual(
+        realization.presentation_evidence.sources.map(
+            ({ id, purpose, state_ids, viewport }) => ({
+                id,
+                purpose,
+                state_ids,
+                viewport,
+            })
+        ),
+        [
+            {
+                id: 'desktop-ready',
+                purpose: 'primary-layout',
+                state_ids: ['ready'],
+                viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
+            },
+            {
+                id: 'desktop-create-error',
+                purpose: 'state-reference',
+                state_ids: ['create-failed'],
+                viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
+            },
+            {
+                id: 'mobile-ready',
+                purpose: 'responsive-layout',
+                state_ids: ['ready'],
+                viewport: { width: 390, height: 844, pixel_ratio: 1 },
+            },
+            {
+                id: 'mobile-create-error',
+                purpose: 'state-reference',
+                state_ids: ['create-failed'],
+                viewport: { width: 390, height: 844, pixel_ratio: 1 },
+            },
+        ]
+    );
 });
