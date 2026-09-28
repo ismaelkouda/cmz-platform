@@ -1,6 +1,7 @@
+import { BreakpointObserver, type BreakpointState } from '@angular/cdk/layout';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { BehaviorSubject, of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -8,7 +9,12 @@ import {
     PageComposition,
 } from '../../generated/page_6666666666666666/angular/src';
 import { APP_ACCESS_DECISION } from '../../access.guard';
-import { PAGE_PERMISSION_PROVIDER, PageComponent } from './page.component';
+import {
+    PAGE_COMPACT_MEDIA_QUERY,
+    PAGE_EXPANDED_MEDIA_QUERY,
+    PAGE_PERMISSION_PROVIDER,
+    PageComponent,
+} from './page.component';
 
 const USERS = [
     {
@@ -37,11 +43,15 @@ const USERS = [
 
 interface SetupOptions {
     authorized?: boolean;
+    layout?: 'compact' | 'medium' | 'expanded';
     submitError?: Error;
     usersState?: 'success' | 'error' | 'empty' | 'loading' | 'reloading';
 }
 
 async function setup(options: SetupOptions = {}) {
+    const layoutState = new BehaviorSubject<BreakpointState>(
+        breakpointState(options.layout ?? 'medium')
+    );
     const usersState = signal(options.usersState ?? 'success');
     const profilesState = signal<'success' | 'error'>('success');
     const items = signal(options.usersState === 'empty' ? [] : USERS);
@@ -85,7 +95,15 @@ async function setup(options: SetupOptions = {}) {
         },
     } as unknown as PageComposition;
 
-    TestBed.configureTestingModule({ imports: [PageComponent] });
+    TestBed.configureTestingModule({
+        imports: [PageComponent],
+        providers: [
+            {
+                provide: BreakpointObserver,
+                useValue: { observe: () => layoutState.asObservable() },
+            },
+        ],
+    });
     TestBed.overrideComponent(PageComponent, {
         set: {
             providers: [{ provide: PageComposition, useValue: composition }],
@@ -97,8 +115,24 @@ async function setup(options: SetupOptions = {}) {
         fixture,
         loadProfiles,
         loadUsers,
+        setLayout: (layout: NonNullable<SetupOptions['layout']>) =>
+            layoutState.next(breakpointState(layout)),
         submitUser,
         usersState,
+    };
+}
+
+function breakpointState(
+    layout: NonNullable<SetupOptions['layout']>
+): BreakpointState {
+    const compact = layout === 'compact';
+    const expanded = layout === 'expanded';
+    return {
+        matches: compact || expanded,
+        breakpoints: {
+            [PAGE_COMPACT_MEDIA_QUERY]: compact,
+            [PAGE_EXPANDED_MEDIA_QUERY]: expanded,
+        },
     };
 }
 
@@ -386,7 +420,7 @@ describe('PageComponent', () => {
         const dialog = element<HTMLElement>(root, '[role="dialog"]');
 
         expect(dialog.getAttribute('aria-modal')).toBe('true');
-        expect(dialog.hasAttribute('cdktrapfocus')).toBe(true);
+        expect(element(root, 'main').hasAttribute('inert')).toBe(true);
         dialog.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
         );
@@ -394,6 +428,44 @@ describe('PageComponent', () => {
 
         expect(root.querySelector('[role="dialog"]')).toBeNull();
         expect(document.activeElement).toBe(create);
+    });
+
+    it('adapte la modalité sans recréer le formulaire ni perdre son focus', async () => {
+        const { fixture, setLayout } = await setup({ layout: 'compact' });
+        const root = fixture.nativeElement as HTMLElement;
+        const create = element<HTMLButtonElement>(
+            root,
+            '[data-cmz-id="create-user"]'
+        );
+        create.click();
+        await fixture.whenStable();
+
+        const email = element<HTMLInputElement>(root, '[data-cmz-id="email"]');
+        setControl(email, 'conserve@example.test');
+        email.focus();
+
+        setLayout('expanded');
+        await fixture.whenStable();
+
+        const expandedDialog = element<HTMLElement>(root, '[role="dialog"]');
+        expect(expandedDialog.getAttribute('aria-modal')).toBeNull();
+        expect(root.querySelector('.backdrop')).toBeNull();
+        expect(element(root, 'main').hasAttribute('inert')).toBe(false);
+        expect(element(root, '[data-cmz-id="email"]')).toBe(email);
+        expect(email.value).toBe('conserve@example.test');
+        expect(document.activeElement).toBe(email);
+        expect(create.disabled).toBe(true);
+
+        setLayout('compact');
+        await fixture.whenStable();
+
+        expect(
+            element(root, '[role="dialog"]').getAttribute('aria-modal')
+        ).toBe('true');
+        expect(root.querySelector('.backdrop')).not.toBeNull();
+        expect(element(root, 'main').hasAttribute('inert')).toBe(true);
+        expect(element(root, '[data-cmz-id="email"]')).toBe(email);
+        expect(document.activeElement).toBe(email);
     });
 });
 
