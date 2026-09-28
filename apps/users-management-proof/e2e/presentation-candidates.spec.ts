@@ -288,35 +288,6 @@ test('produit le candidat desktop ready depuis le vrai rendu Angular', async ({
     await captureCandidate(page, testInfo, 'desktop-ready.actual.png');
 });
 
-test('produit le candidat desktop create-failed sans perdre la liste', async ({
-    page,
-}, testInfo) => {
-    await page.setViewportSize({ width: 1440, height: 1024 });
-    await openReadyPage(page);
-    await submitEmailConflict(page);
-
-    await expect(page.locator('[data-cmz-id="ready"]')).toBeVisible();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toHaveCSS('width', '520px');
-    const toast = page.locator('.toast-error');
-    const errorTitle = page.locator('[data-cmz-id="create-failed"] strong');
-    const errorDetail = page.locator('[data-cmz-id="create-failed"] span');
-    const [rawDialogBox, rawToastBox, rawTitleBox, rawDetailBox] =
-        await Promise.all([
-            dialog.boundingBox(),
-            toast.boundingBox(),
-            errorTitle.boundingBox(),
-            errorDetail.boundingBox(),
-        ]);
-    const dialogBox = requireBox(rawDialogBox, 'drawer desktop');
-    const toastBox = requireBox(rawToastBox, 'toast desktop');
-    const titleBox = requireBox(rawTitleBox, "titre d'erreur desktop");
-    const detailBox = requireBox(rawDetailBox, "détail d'erreur desktop");
-    expect(toastBox.x + toastBox.width).toBeLessThanOrEqual(dialogBox.x);
-    expect(detailBox.y).toBeGreaterThan(titleBox.y);
-    await captureCandidate(page, testInfo, 'desktop-create-error.actual.png');
-});
-
 test('produit le candidat mobile ready avec la projection en cartes', async ({
     page,
 }, testInfo) => {
@@ -487,7 +458,6 @@ test('préserve liste, formulaire, erreur et focus sans réseau au resize compac
     await expect(email).toHaveValue('test.user@example.invalid');
     await expect(email).toBeFocused();
     await expect(page.locator('[data-cmz-id="create-failed"]')).toBeVisible();
-    await expect(page.getByRole('dialog')).toHaveCSS('width', '520px');
     await captureCandidate(
         page,
         testInfo,
@@ -557,11 +527,19 @@ test('rend le side sheet medium strictement modal et restitue le focus', async (
 
     expect(width).toBe('480px');
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(
-        await dialog.evaluate((element) => element.hasAttribute('cdktrapfocus'))
-    ).toBe(true);
     await expect(page.locator('.backdrop')).toBeVisible();
     await expect(page.locator('main')).toHaveAttribute('inert', '');
+    expect(
+        await dialog.evaluate((element) =>
+            element.contains(document.activeElement)
+        )
+    ).toBe(true);
+
+    const enabledControls = dialog.locator(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled])'
+    );
+    await enabledControls.last().focus();
+    await page.keyboard.press('Tab');
     expect(
         await dialog.evaluate((element) =>
             element.contains(document.activeElement)
@@ -587,17 +565,13 @@ test('rend le panneau expanded persistant, non modal et adjacent à la liste', a
         name: 'Créer un utilisateur',
     });
     const ariaModal = await pane.getAttribute('aria-modal');
-    const hasFocusTrap = await pane.evaluate((element) =>
-        element.hasAttribute('cdktrapfocus')
-    );
     const backdropCount = await page.locator('.backdrop').count();
     test.fail(
-        ariaModal === 'true' && hasFocusTrap && backdropCount === 1,
+        ariaModal === 'true' && backdropCount === 1,
         'ADAPT-5 : le drawer modal historique doit devenir un panneau expanded non modal.'
     );
 
     expect(ariaModal).not.toBe('true');
-    expect(hasFocusTrap).toBe(false);
     expect(backdropCount).toBe(0);
     await expect(page.locator('main')).not.toHaveAttribute('inert', '');
     await expect(create).toBeDisabled();
@@ -615,6 +589,7 @@ test('rend le panneau expanded persistant, non modal et adjacent à la liste', a
     const search = page.getByLabel('Recherche');
     await search.fill('Alpha');
     await expect(search).toHaveValue('Alpha');
+    await expect(search).toBeFocused();
     await pane.getByRole('button', { name: 'Annuler' }).click();
     await expect(pane).toHaveCount(0);
     await expect(create).toBeFocused();

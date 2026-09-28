@@ -806,3 +806,25 @@ revue et fusion d'ADAPT-5a, un nouveau work order devra être calculé depuis
 `main`. La réalisation pourra alors modifier seulement les cinq fichiers de
 page. Les oracles s'activeront automatiquement dès que les signatures
 historiques disparaîtront.
+
+## ADAPT-5b — cohérence des oracles avant work order
+
+La revue post-fusion d'ADAPT-5a a trouvé deux contradictions qui interdisaient
+une réalisation honnête. Un scénario historique imposait encore le drawer
+`desktop-create-error` de `520px`, alors que cette référence avait été retirée
+du manifeste en ADAPT-4b au profit du pane `expanded` non modal de `360–440px`.
+Un autre scénario de continuité répétait la largeur historique `520px` malgré la
+décision `medium` à `480px` déjà couverte par l'oracle adaptatif dédié.
+
+ADAPT-5b retire ce scénario issu d'une référence sans autorité et supprime
+l'assertion de largeur redondante du scénario de continuité. Il remplace aussi
+l'observation de l'attribut d'implémentation `cdktrapfocus` par deux preuves
+utilisateur : le focus reste contenu après Tab en mode modal `medium`, tandis
+que la recherche de la liste reprend réellement le focus avec le pane `expanded`
+ouvert. Les exigences `aria-modal`, backdrop, `inert`, restitution du focus et
+géométrie restent explicites.
+
+Le harnais compte désormais treize scénarios : cinq écarts adaptatifs attendus
+et huit succès réels sur l'implémentation historique. Aucun `skip`, `todo` ou
+affaiblissement du comportement cible n'est introduit. Ce correctif doit être
+revu et fusionné avant de calculer le work order définitif d'ADAPT-5.
