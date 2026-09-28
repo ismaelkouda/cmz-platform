@@ -687,7 +687,8 @@ masquées en compact, et le mode `expanded` persistant n'existe pas. La matrice
 de décision et de preuve est dans
 [`c5-adapt2-audit-placement-multifenetre-2026-09-28.md`](./c5-adapt2-audit-placement-multifenetre-2026-09-28.md).
 Le porteur produit a approuvé cet audit et sa séquence le 2026-09-28. La revue
-technique de la PR reste nécessaire avant de créer le work order d'implémentation.
+technique de la PR reste nécessaire avant de créer le work order
+d'implémentation.
 
 ## ADAPT-3a — audit adaptatif lié à la preuve de présentation
 
@@ -730,6 +731,26 @@ d'appareil. Les tests de composant couvrent la même séquence et les appels
 exacts à la composition.
 
 Le lot ne décide pas encore le FAB, la parité de `updated_at`, le pane
-`expanded`, le contraste des frontières ni la baseline Chromium. Après revue
-et fusion, ces sujets reprennent à l'étape des trois candidats cohérents prévue
-par l'audit, sans rouvrir le défaut fonctionnel compact.
+`expanded`, le contraste des frontières ni la baseline Chromium. Après revue et
+fusion, ces sujets reprennent à l'étape des trois candidats cohérents prévue par
+l'audit, sans rouvrir le défaut fonctionnel compact.
+
+## ADAPT-4a — trois compositions proposées avant le runtime
+
+La PR #123 a été approuvée par Soumaila sur le commit exact, fusionnée par
+Soumaila, puis validée par la CI post-fusion sur le SHA de merge exact. Le
+défaut fonctionnel compact est donc clos.
+
+Le lot suivant ne touche volontairement pas la page Angular. Il propose trois
+wireframes basse fidélité et leurs sources SVG éditables : liste compacte avec
+FAB étendu, création `medium` dans un side sheet modal temporaire, et création
+`expanded` dans un pane persistant non modal. Les candidats rendent aussi
+visible la décision de parité `updated_at` au lieu de la laisser implicite.
+
+Le dossier distingue strictement approbation produit, revue technique et preuve
+runtime. Un vote favorable sur les images n'introduit ni règle universelle
+`create -> FAB`, ni breakpoint universel, ni Angular Material. Après approbation
+et fusion seulement, les PNG pourront entrer dans le manifeste de présentation,
+un nouveau work order pourra être calculé, puis les oracles devront échouer sur
+`main` avant toute réalisation Angular. Voir
+[`proposal.md`](../../examples/users-management-proof/presentation/adaptive-candidates/proposal.md).
