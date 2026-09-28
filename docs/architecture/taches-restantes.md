@@ -2279,27 +2279,36 @@ Figma, désormais source partielle différée :
   technique de la PR reste requise. Les choix de rendu précis de l'action
   principale et de `updated_at` seront vérifiés dans les candidats, sans bloquer
   la clôture documentaire. Dossier :
-  `c5-adapt2-audit-placement-multifenetre-2026-09-28.md`.
-  **ADAPT-3a — liaison de l'audit engagée localement le 2026-09-28 :** après
-  approbation, fusion de la PR #121 et CI post-fusion verte sur le SHA exact,
-  l'audit est ajouté au manifeste de présentation comme `design-brief`
-  Markdown content-addressed, global aux viewports et sans autorité métier.
-  Aucun fichier de page n'est modifié dans ADAPT-3a. **ADAPT-3b — défaut des
-  filtres compacts corrigé localement le 2026-09-28 :** après
-  approbation/fusion de la PR #122 et CI post-fusion verte, un scénario
-  Playwright `390 × 844` échoue d'abord sur `main`, puis prouve un disclosure
-  sans réseau, `Appliquer` et `Effacer` visibles et hauts de `44px`, le filtre
-  transmis et son effacement. Le work order régénéré borne la réalisation aux
-  cinq fichiers de page. Un seul DOM est conservé ; recherche, compteur, état
-  `aria-expanded` et appels de composition sont aussi couverts en test de
-  composant. Restent la revue/fusion, puis les candidats compact/medium/expanded,
-  les décisions FAB et `updated_at`, le contraste et la baseline. Le rôle
-  métier de liste ne
-  fige pas la forme réseau : tableau direct et page sont les deux variantes
-  prouvées. Objet conteneur, map ou autre projection devront recevoir un
-  discriminateur et un oracle lors d'un cas réel, sans heuristique liée à `data`
-  ou au framework backend. **QUERY-1 — lecture objet unique à auditer :** le GET
-  `RequestsDetailsApi.execute()` retourne réellement
+  `c5-adapt2-audit-placement-multifenetre-2026-09-28.md`. **ADAPT-3a — liaison
+  de l'audit engagée localement le 2026-09-28 :** après approbation, fusion de
+  la PR #121 et CI post-fusion verte sur le SHA exact, l'audit est ajouté au
+  manifeste de présentation comme `design-brief` Markdown content-addressed,
+  global aux viewports et sans autorité métier. Aucun fichier de page n'est
+  modifié dans ADAPT-3a. **ADAPT-3b — défaut des filtres compacts corrigé
+  localement le 2026-09-28 :** après approbation/fusion de la PR #122 et CI
+  post-fusion verte, un scénario Playwright `390 × 844` échoue d'abord sur
+  `main`, puis prouve un disclosure sans réseau, `Appliquer` et `Effacer`
+  visibles et hauts de `44px`, le filtre transmis et son effacement. Le work
+  order régénéré borne la réalisation aux cinq fichiers de page. Un seul DOM est
+  conservé ; recherche, compteur, état `aria-expanded` et appels de composition
+  sont aussi couverts en test de composant. Restent la revue/fusion, puis les
+  candidats compact/medium/expanded, les décisions FAB et `updated_at`, le
+  contraste et la baseline. **ADAPT-4a — candidats de composition proposés
+  localement le 2026-09-28 :** après approbation/fusion de la PR #123 et CI
+  post-fusion verte, trois wireframes content-addressables matérialisent le FAB
+  compact étendu, le side sheet `medium` temporaire et modal, et le pane
+  `expanded` persistant non modal. Le dossier impose un DOM/action uniques, la
+  parité conservatrice de `updated_at`, les frontières d'autorité et les
+  critères de refus de Soumaila. Aucun fichier Angular, manifeste approuvé, work
+  order ou dépendance n'est modifié avant la décision produit et la revue
+  technique. Restent approbation/fusion, liaison des trois PNG au manifeste,
+  génération du work order, oracles rouges puis réalisation. Dossier :
+  `examples/users-management-proof/presentation/adaptive-candidates/proposal.md`.
+  Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
+  sont les deux variantes prouvées. Objet conteneur, map ou autre projection
+  devront recevoir un discriminateur et un oracle lors d'un cas réel, sans
+  heuristique liée à `data` ou au framework backend. **QUERY-1 — lecture objet
+  unique à auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
   `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
   `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
   primitive `read-query` à cardinalités `one|many|page` et un profil

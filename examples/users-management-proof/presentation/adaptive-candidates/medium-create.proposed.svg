@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+  <defs>
+    <filter id="shadow" x="-25%" y="-10%" width="150%" height="120%">
+      <feDropShadow dx="-6" dy="0" stdDeviation="12" flood-color="#0b1f44" flood-opacity="0.22"/>
+    </filter>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #13213a; }
+      .muted { fill: #526581; }
+      .label { font-size: 11px; font-weight: 700; }
+      .body { font-size: 13px; }
+      .strong { font-weight: 700; }
+      text[fill="#ffffff"] { fill: #ffffff; }
+      text[fill="#087b34"] { fill: #087b34; }
+    </style>
+  </defs>
+  <rect width="1024" height="768" fill="#f6f8fc"/>
+  <rect width="1024" height="64" fill="#ffffff"/>
+  <path d="M0 63.5H1024" stroke="#d4deec"/>
+  <rect x="32" y="18" width="28" height="28" rx="7" fill="#2864e8"/>
+  <text x="72" y="39" font-size="16" font-weight="700">CMZ Platform</text>
+  <text x="992" y="38" class="muted body" text-anchor="end">Opérateur connecté</text>
+
+  <text x="40" y="105" font-size="24" font-weight="750">Gestion des utilisateurs</text>
+  <text x="40" y="129" class="muted body">Consulter, filtrer et créer les comptes utilisateurs.</text>
+  <rect x="804" y="88" width="180" height="42" rx="8" fill="#2864e8"/>
+  <text x="894" y="114" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">Créer un utilisateur</text>
+
+  <rect x="40" y="151" width="944" height="108" rx="10" fill="#ffffff" stroke="#c0cbda"/>
+  <rect x="56" y="170" width="300" height="42" rx="7" fill="#ffffff" stroke="#8495ad"/>
+  <text x="68" y="187" class="label muted">Recherche</text>
+  <text x="68" y="204" class="body muted">Nom, prénom ou email</text>
+  <rect x="372" y="170" width="210" height="42" rx="7" fill="#ffffff" stroke="#8495ad"/>
+  <text x="384" y="187" class="label muted">Profil</text>
+  <text x="384" y="204" class="body">Tous les profils</text>
+  <rect x="598" y="170" width="178" height="42" rx="7" fill="#ffffff" stroke="#8495ad"/>
+  <text x="610" y="187" class="label muted">Rôle</text>
+  <text x="610" y="204" class="body">Tous les rôles</text>
+  <rect x="792" y="170" width="176" height="42" rx="7" fill="#ffffff" stroke="#8495ad"/>
+  <text x="804" y="187" class="label muted">Statut</text>
+  <text x="804" y="204" class="body">Tous les statuts</text>
+  <text x="882" y="242" class="body strong">Effacer</text>
+  <rect x="902" y="220" width="66" height="30" rx="7" fill="#2864e8"/>
+  <text x="935" y="240" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">Appliquer</text>
+
+  <rect x="40" y="279" width="944" height="409" rx="10" fill="#ffffff" stroke="#c0cbda"/>
+  <rect x="40" y="279" width="944" height="52" rx="10" fill="#edf2f8"/>
+  <text x="58" y="310" class="label">Nom</text>
+  <text x="202" y="310" class="label">Email</text>
+  <text x="452" y="310" class="label">Profil et rôle</text>
+  <text x="690" y="310" class="label">Statut</text>
+  <text x="812" y="310" class="label">Mise à jour</text>
+  <g class="body">
+    <text x="58" y="365">Alpha Test</text><text x="202" y="365">alpha.user@example.invalid</text><text x="452" y="365">Profil A · Superviseur</text><text x="690" y="365" fill="#087b34">Actif</text><text x="812" y="365">26/09/2026</text>
+    <text x="58" y="421">Bravo Test</text><text x="202" y="421">bravo.user@example.invalid</text><text x="452" y="421">Profil B · Chef d’équipe</text><text x="690" y="421" fill="#087b34">Actif</text><text x="812" y="421">25/09/2026</text>
+    <text x="58" y="477">Charlie Test</text><text x="202" y="477">charlie.user@example.invalid</text><text x="452" y="477">Profil C · Agent</text><text x="690" y="477" fill="#087b34">Actif</text><text x="812" y="477">24/09/2026</text>
+  </g>
+  <path d="M40 387H984M40 443H984M40 499H984" stroke="#d4deec"/>
+
+  <rect x="0" y="64" width="1024" height="704" fill="#0b1f44" opacity="0.38"/>
+  <rect x="544" y="64" width="480" height="704" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="576" y="111" font-size="22" font-weight="750">Créer un utilisateur</text>
+  <text x="576" y="136" class="muted body">Tous les champs sont requis.</text>
+  <rect x="964" y="86" width="36" height="36" rx="18" fill="#edf2f8"/>
+  <text x="982" y="110" font-size="20" text-anchor="middle">×</text>
+
+  <text x="576" y="179" class="label">Nom</text>
+  <rect x="576" y="190" width="416" height="46" rx="8" fill="#ffffff" stroke="#8495ad"/>
+  <text x="592" y="218" class="body muted">Saisir le nom</text>
+  <text x="576" y="270" class="label">Prénom</text>
+  <rect x="576" y="281" width="416" height="46" rx="8" fill="#ffffff" stroke="#8495ad"/>
+  <text x="592" y="309" class="body muted">Saisir le prénom</text>
+  <text x="576" y="361" class="label">Email</text>
+  <rect x="576" y="372" width="416" height="46" rx="8" fill="#ffffff" stroke="#8495ad"/>
+  <text x="592" y="400" class="body muted">nom@example.invalid</text>
+  <text x="576" y="452" class="label">Téléphone</text>
+  <rect x="576" y="463" width="416" height="46" rx="8" fill="#ffffff" stroke="#8495ad"/>
+  <text x="592" y="491" class="body muted">+000 00 00 00 00</text>
+  <text x="576" y="543" class="label">Profil</text>
+  <rect x="576" y="554" width="416" height="46" rx="8" fill="#ffffff" stroke="#8495ad"/>
+  <text x="592" y="582" class="body muted">Choisir un profil</text>
+
+  <path d="M544 674H1024" stroke="#d4deec"/>
+  <rect x="576" y="698" width="102" height="46" rx="8" fill="#ffffff" stroke="#8495ad"/>
+  <text x="627" y="727" font-size="14" font-weight="700" text-anchor="middle">Annuler</text>
+  <rect x="804" y="698" width="188" height="46" rx="8" fill="#2864e8"/>
+  <text x="898" y="727" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">Créer l’utilisateur</text>
+</svg>
