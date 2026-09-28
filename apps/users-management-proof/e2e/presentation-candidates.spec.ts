@@ -82,6 +82,10 @@ const PROFILES = [
     { uniq_id: 'profile-demo', name: 'Profil de démonstration' },
 ];
 
+const COMPACT_MAX_WIDTH = 800;
+const MEDIUM_PROOF_VIEWPORT = { width: 1024, height: 768 } as const;
+const RESPONSIVE_QUIET_WINDOW_MS = 250;
+
 function requireBox(
     box: { x: number; y: number; width: number; height: number } | null,
     label: string
@@ -181,6 +185,31 @@ async function captureCandidate(
         fullPage: false,
     });
     await testInfo.attach(name, { path, contentType: 'image/png' });
+}
+
+async function waitForResponsiveLayout(page: Page): Promise<void> {
+    await page.evaluate(
+        () =>
+            new Promise<void>((resolve) => {
+                requestAnimationFrame(() =>
+                    requestAnimationFrame(() => resolve())
+                );
+            })
+    );
+    // A negative network assertion needs a bounded quiet window after layout.
+    // This also catches a delayed resize handler instead of checking too early.
+    await page.waitForTimeout(RESPONSIVE_QUIET_WINDOW_MS);
+}
+
+function observeApiRequests(page: Page): string[] {
+    const requests: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.pathname.startsWith('/api/')) {
+            requests.push(`${request.method()} ${url.pathname}${url.search}`);
+        }
+    });
+    return requests;
 }
 
 async function submitEmailConflict(page: Page): Promise<void> {
@@ -319,4 +348,81 @@ test('produit le candidat mobile create-failed en plein écran', async ({
     await expect(create).toBeEnabled();
     await expect(page.locator('[data-cmz-id="create-failed"]')).toBeHidden();
     await expect(page.locator('.toast-error')).toBeHidden();
+});
+
+test('produit le candidat medium ready depuis le vrai rendu Angular', async ({
+    page,
+}, testInfo) => {
+    await page.setViewportSize(MEDIUM_PROOF_VIEWPORT);
+    await openReadyPage(page);
+
+    await expect(page.locator('.desktop-table')).toBeVisible();
+    await expect(page.locator('.mobile-results')).toBeHidden();
+    await expect(page.locator('tbody tr')).toHaveCount(5);
+    await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 1024);
+    await captureCandidate(page, testInfo, 'medium-ready.actual.png');
+});
+
+test('verrouille la frontière compact actuelle sans appel réseau de resize', async ({
+    page,
+}) => {
+    const apiRequests = observeApiRequests(page);
+    await page.setViewportSize({ width: COMPACT_MAX_WIDTH - 1, height: 900 });
+    await openReadyPage(page);
+    await expect(page.locator('.mobile-results')).toBeVisible();
+    await expect(page.locator('.desktop-table')).toBeHidden();
+
+    for (const width of [COMPACT_MAX_WIDTH, COMPACT_MAX_WIDTH + 1]) {
+        const requestsBeforeResize = [...apiRequests];
+        await page.setViewportSize({ width, height: 900 });
+        await waitForResponsiveLayout(page);
+        expect(apiRequests).toEqual(requestsBeforeResize);
+        if (width === COMPACT_MAX_WIDTH) {
+            await expect(page.locator('.mobile-results')).toBeVisible();
+            await expect(page.locator('.desktop-table')).toBeHidden();
+        }
+    }
+
+    await expect(page.locator('.desktop-table')).toBeVisible();
+    await expect(page.locator('.mobile-results')).toBeHidden();
+});
+
+test('préserve liste, formulaire, erreur et focus sans réseau au resize compact vers medium', async ({
+    page,
+}, testInfo) => {
+    const apiRequests = observeApiRequests(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openReadyPage(page);
+
+    const search = page.locator('.filters input').first();
+    await search.fill('Alpha');
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await expect(page.locator('.mobile-summary')).toContainText('Page 2 / 9');
+    await submitEmailConflict(page);
+
+    const email = page.locator('[data-cmz-id="email"]');
+    await email.focus();
+    await expect(email).toBeFocused();
+    const requestsBeforeResize = [...apiRequests];
+
+    await page.setViewportSize(MEDIUM_PROOF_VIEWPORT);
+    await waitForResponsiveLayout(page);
+
+    expect(apiRequests).toEqual(requestsBeforeResize);
+    await expect(page.locator('.desktop-table')).toBeVisible();
+    await expect(page.locator('.mobile-results')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Page 2' })).toHaveAttribute(
+        'aria-current',
+        'page'
+    );
+    await expect(search).toHaveValue('Alpha');
+    await expect(email).toHaveValue('test.user@example.invalid');
+    await expect(email).toBeFocused();
+    await expect(page.locator('[data-cmz-id="create-failed"]')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCSS('width', '520px');
+    await captureCandidate(
+        page,
+        testInfo,
+        'medium-create-error-after-resize.actual.png'
+    );
 });
