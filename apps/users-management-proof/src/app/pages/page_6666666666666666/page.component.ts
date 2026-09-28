@@ -102,6 +102,12 @@ export class PageComponent {
         ...EMPTY_FILTERS,
     });
     protected readonly filtersForm = form(this.filtersModel);
+    protected readonly areFiltersOpen = signal(false);
+    protected readonly activeSecondaryFilterCount = computed(() => {
+        const filters = this.filtersModel();
+        return [filters.profile, filters.role, filters.status].filter(Boolean)
+            .length;
+    });
     protected readonly createModel = signal<CreateUserModel>({ ...EMPTY_USER });
     protected readonly isCreateOpen = signal(false);
     protected readonly successNotice = signal('');
@@ -196,6 +202,10 @@ export class PageComponent {
     protected applyFilters(event: Event): void {
         event.preventDefault();
         this.loadUsers(1);
+    }
+
+    protected toggleFilters(): void {
+        this.areFiltersOpen.update((isOpen) => !isOpen);
     }
 
     protected clearFilters(): void {

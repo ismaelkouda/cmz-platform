@@ -704,3 +704,32 @@ leurs quatre mappings état/viewport. Ce lot ne modifie aucun fichier de page et
 ne crée pas encore le work order. Après sa revue et sa fusion, le work order
 ADAPT-3 pourra prouver qu'il a réellement reçu les décisions compact, medium et
 expanded avant toute réalisation Angular.
+
+## ADAPT-3b — oracle compact avant réalisation
+
+La PR #122 a été approuvée par Soumaila sur le commit exact, fusionnée par
+Soumaila dans `main`, puis validée par la CI post-fusion sur le SHA de merge
+exact. L'audit adaptatif fait donc désormais partie des entrées vérifiables du
+work order.
+
+Avant de modifier les fichiers de page, le harnais navigateur reçoit un oracle
+compact dédié à `390 × 844` : le bouton de disclosure doit être visible et
+porter son état, son ouverture ne déclenche aucun appel API, `Appliquer` et
+`Effacer` deviennent visibles avec une cible de `44px`, l'application transmet
+le filtre sélectionné et l'effacement recharge sans ce filtre. Cet oracle doit
+échouer sur la page fusionnée puis entrer dans la baseline protégée du nouveau
+work order. La réalisation reste bornée aux cinq fichiers de page autorisés.
+
+Le scénario échoue d'abord sur `main`, faute de bouton `Filtres`, puis passe
+avec la réalisation locale. Celle-ci conserve un seul DOM : la recherche reste
+visible ; un bouton natif porte `aria-controls` et `aria-expanded` ; la région
+secondaire contient les trois sélecteurs et les deux actions ; son compteur
+reflète les filtres secondaires actifs. La région est repliable jusqu'à `800px`
+et reste visible à partir de `801px`, sans écoute du resize ni détection
+d'appareil. Les tests de composant couvrent la même séquence et les appels
+exacts à la composition.
+
+Le lot ne décide pas encore le FAB, la parité de `updated_at`, le pane
+`expanded`, le contraste des frontières ni la baseline Chromium. Après revue
+et fusion, ces sujets reprennent à l'étape des trois candidats cohérents prévue
+par l'audit, sans rouvrir le défaut fonctionnel compact.
