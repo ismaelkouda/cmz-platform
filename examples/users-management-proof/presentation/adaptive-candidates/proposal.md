@@ -1,8 +1,7 @@
 # C5 ADAPT-4 — proposition de composition adaptative
 
-- **Statut :** Proposed — décision produit et revue technique requises
-- **Autorité actuelle :** aucune
-- **Autorité après approbation :** `presentation-only`
+- **Statut :** Approved — décision produit, revue et fusion de la PR #124
+- **Autorité :** `presentation-only` après publication par ADAPT-4b
 - **Page :** `page_6666666666666666`
 - **Route :** `/settings-security/users`
 - **Date de production :** 2026-09-28
@@ -14,13 +13,18 @@ l'audit ADAPT-2 : `compact`, `medium` et `expanded`. Il ne modifie ni la page
 Angular, ni un contrat API, ni la composition `list-query` + `action-request`,
 ni les dépendances UI.
 
-Les PNG sont des wireframes basse fidélité soumis à décision humaine. Les SVG
-sont leurs sources éditables et déterministes. Aucun de ces fichiers n'est une
-baseline Chromium, une implémentation accessible ou une preuve de comportement.
-Ils ne seront liés au manifeste `presentation-evidence` qu'après approbation et
-fusion de leurs octets exacts.
+Les PNG sont des wireframes basse fidélité approuvés après décision humaine. Les
+SVG sont leurs sources éditables et déterministes. Aucun de ces fichiers n'est
+une baseline Chromium, une implémentation accessible ou une preuve de
+comportement. Le porteur produit a approuvé la disposition, le FAB compact et la
+conservation de `updated_at`. Soumaila a ensuite approuvé le commit exact
+`292c1debbdaa9bb56a2f14a5062fa6830ac8c5b9` et fusionné la PR #124 dans le commit
+`3b8e3d60cef66afd528a5bd8869c55f9efeffe13`. Les 17 contrôles de la PR et la CI
+post-fusion sont verts. ADAPT-4b peut donc lier les PNG exacts au manifeste
+`presentation-evidence` ; les SVG restent des sources éditables sans autorité
+runtime.
 
-## 2. Ressources proposées
+## 2. Ressources approuvées
 
 | Classe     | Fichier PNG                    | État                              | Viewport    |  Octets | SHA-256                                                            |
 | ---------- | ------------------------------ | --------------------------------- | ----------- | ------: | ------------------------------------------------------------------ |
@@ -39,7 +43,7 @@ exemples. Les PNG ont été rendus depuis les SVG avec Playwright `1.62.1`, le
 Chromium local verrouillé et les viewports indiqués. Deux rendus consécutifs
 doivent conserver les mêmes empreintes avant soumission.
 
-## 3. Décisions proposées, classe par classe
+## 3. Décisions approuvées, classe par classe
 
 ### 3.1 `compact` — liste prioritaire et FAB étendu
 
@@ -111,16 +115,16 @@ ni une détection d'appareil ni une copie des classes Android en pixels CSS.
 8. Aucun élément fixe ou sticky ne masque le contenu ou le focus, conformément à
    WCAG 2.2 SC 2.4.11.
 
-## 5. Ce que l'approbation décide — et ne décide pas
+## 5. Ce que l'approbation a décidé — et n'a pas décidé
 
-L'approbation produit de ce dossier décide pour C5 :
+L'approbation produit de ce dossier a décidé pour C5 :
 
 - création visible au scroll en compact via un FAB étendu ;
 - conservation de `updated_at` dans les cartes ;
 - tâche modale temporaire en `medium` ;
 - tâche persistante non modale en `expanded`.
 
-Elle ne décide pas :
+Elle n'a pas décidé :
 
 - une règle universelle de générateur ou un breakpoint universel ;
 - l'adoption d'Angular Material ;
@@ -128,10 +132,10 @@ Elle ne décide pas :
 - les contrats métier, endpoints, payloads, permissions ou erreurs ;
 - la conformité accessibilité, qui exige encore des oracles runtime.
 
-## 6. Revue attendue de Soumaila
+## 6. Points contrôlés par Soumaila
 
-Soumaila doit refuser le lot si l'une des conditions suivantes n'est pas claire
-dans les trois images et ce dossier :
+La revue devait refuser le lot si l'une des conditions suivantes n'était pas
+claire dans les trois images et ce dossier :
 
 1. le FAB compact peut recouvrir un résultat, la pagination ou un focus ;
 2. `updated_at` disparaît silencieusement d'une projection ;
@@ -142,19 +146,19 @@ dans les trois images et ce dossier :
 7. une valeur Android en `dp` est traitée comme un pixel Web imposé ;
 8. le dossier prétend valider l'accessibilité par l'image seule.
 
-La revue technique confirme la cohérence et la réalisabilité. Elle ne remplace
-pas la décision produit explicite sur le FAB et `updated_at`.
+La revue technique a confirmé la cohérence et la réalisabilité. Elle ne remplace
+pas la décision produit explicite déjà donnée sur le FAB et `updated_at`.
 
-## 7. Suite autorisée après approbation
+## 7. Suite autorisée après publication ADAPT-4b
 
-1. figer les PNG approuvés dans `presentation-evidence` avec leurs empreintes ;
-2. régénérer un work order content-addressed qui reçoit ces trois sources ;
-3. écrire d'abord les oracles de modalité, focus, resize, permission,
+1. régénérer depuis `main` un work order content-addressed qui reçoit les trois
+   sources ;
+2. écrire d'abord les oracles de modalité, focus, resize, permission,
    non-recouvrement et absence de réseau ;
-4. vérifier l'échec attendu de ces oracles sur `main` ;
-5. seulement alors modifier les cinq fichiers Angular autorisés ;
-6. exécuter la matrice fonctionnelle, accessibilité et resize ;
-7. produire des captures du vrai navigateur, les faire relire, puis calibrer la
+3. vérifier l'échec attendu de ces oracles sur `main` ;
+4. seulement alors modifier les cinq fichiers Angular autorisés ;
+5. exécuter la matrice fonctionnelle, accessibilité et resize ;
+6. produire des captures du vrai navigateur, les faire relire, puis calibrer la
    baseline dans un lot séparé.
 
 ## 8. Références officielles
