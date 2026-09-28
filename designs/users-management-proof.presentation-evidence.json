@@ -69,6 +69,18 @@
         "height": 844,
         "pixel_ratio": 1
       }
+    },
+    {
+      "id": "adaptive-placement-audit",
+      "source_kind": "design-brief",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "docs/architecture/c5-adapt2-audit-placement-multifenetre-2026-09-28.md",
+      "media_type": "text/markdown",
+      "bytes": 22356,
+      "sha256": "bc93bc1a0dbd1d35320ab2376ab5b58d5a3ac1e5807da839192ba3da33dec25f",
+      "trust": "untrusted-content",
+      "state_ids": [],
+      "viewport": null
     }
   ]
 }

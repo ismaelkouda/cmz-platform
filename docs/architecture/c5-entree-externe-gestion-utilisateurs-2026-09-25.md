@@ -688,3 +688,19 @@ de décision et de preuve est dans
 [`c5-adapt2-audit-placement-multifenetre-2026-09-28.md`](./c5-adapt2-audit-placement-multifenetre-2026-09-28.md).
 Le porteur produit a approuvé cet audit et sa séquence le 2026-09-28. La revue
 technique de la PR reste nécessaire avant de créer le work order d'implémentation.
+
+## ADAPT-3a — audit adaptatif lié à la preuve de présentation
+
+La PR #121 a été approuvée par Soumaila sur son commit exact, entièrement verte,
+fusionnée par squash dans `main`, puis validée par la CI post-fusion sur le SHA
+de merge exact. Le prochain work order ne doit toutefois pas s'appuyer sur la
+seule mémoire de la discussion : le manifeste de présentation historique ne
+référence que les quatre wireframes initiaux.
+
+L'audit adaptatif approuvé est donc ajouté comme source `design-brief` Markdown,
+content-addressed, `presentation-only` et `untrusted-content`. Son viewport est
+`null` car ses règles couvrent plusieurs classes de fenêtre ; les images gardent
+leurs quatre mappings état/viewport. Ce lot ne modifie aucun fichier de page et
+ne crée pas encore le work order. Après sa revue et sa fusion, le work order
+ADAPT-3 pourra prouver qu'il a réellement reçu les décisions compact, medium et
+expanded avant toute réalisation Angular.
