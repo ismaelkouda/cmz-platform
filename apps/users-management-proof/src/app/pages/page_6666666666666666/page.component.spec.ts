@@ -220,6 +220,48 @@ describe('PageComponent', () => {
         });
     });
 
+    it('rend les actions de filtres compactes accessibles sans appel implicite', async () => {
+        const { fixture, loadUsers } = await setup();
+        const root = fixture.nativeElement as HTMLElement;
+        const toggle = element<HTMLButtonElement>(root, '.filter-toggle');
+        const options = element<HTMLElement>(root, '.filter-options');
+
+        expect(toggle.getAttribute('aria-controls')).toBe(
+            'secondary-user-filters'
+        );
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
+        expect(options.classList.contains('filter-options-open')).toBe(false);
+
+        toggle.click();
+        await fixture.whenStable();
+
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        expect(options.classList.contains('filter-options-open')).toBe(true);
+        expect(loadUsers).toHaveBeenCalledTimes(1);
+
+        setControl(element<HTMLSelectElement>(options, 'select'), 'profile-a');
+        await fixture.whenStable();
+        expect(toggle.textContent).toContain('1 actif');
+
+        element<HTMLButtonElement>(options, '[type="submit"]').click();
+        await fixture.whenStable();
+        expect(loadUsers).toHaveBeenLastCalledWith({
+            page: 1,
+            profile: 'profile-a',
+        });
+
+        const clear = Array.from(options.querySelectorAll('button')).find(
+            (button) => button.textContent?.trim() === 'Effacer'
+        );
+        if (!clear) throw new Error('Action Effacer introuvable.');
+        clear.click();
+        await fixture.whenStable();
+
+        expect(element<HTMLSelectElement>(options, 'select').value).toBe('');
+        expect(toggle.textContent).not.toContain('actif');
+        expect(loadUsers).toHaveBeenLastCalledWith({ page: 1 });
+    });
+
     it('garde les données périmées visibles quand une actualisation échoue', async () => {
         const { fixture } = await setup({ usersState: 'error' });
         const root = fixture.nativeElement as HTMLElement;

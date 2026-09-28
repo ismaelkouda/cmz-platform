@@ -26,39 +26,53 @@
     </section>
 
     <form class="filters" (submit)="applyFilters($event)">
-        <label>
+        <label class="filter-search">
             <span>Recherche</span>
             <input type="search" [formField]="filtersForm.search" placeholder="Nom, prénom ou email" />
         </label>
-        <label data-cmz-id="profiles">
-            <span>Profil</span>
-            <select [formField]="filtersForm.profile">
-                <option value="">Tous les profils</option>
-                @for (profile of profiles(); track profile.value) {
-                    <option [value]="profile.value">{{ profile.label }}</option>
-                }
-            </select>
-        </label>
-        <label>
-            <span>Rôle</span>
-            <select [formField]="filtersForm.role">
-                <option value="">Tous les rôles</option>
-                <option value="supervisor">Superviseur</option>
-                <option value="team-leader">Chef d’équipe</option>
-                <option value="agent">Agent</option>
-            </select>
-        </label>
-        <label>
-            <span>Statut</span>
-            <select [formField]="filtersForm.status">
-                <option value="">Tous les statuts</option>
-                <option value="active">Actif</option>
-                <option value="inactive">Inactif</option>
-            </select>
-        </label>
-        <div class="filter-actions">
-            <button type="button" class="button button-secondary" (click)="clearFilters()">Effacer</button>
-            <button type="submit" class="button button-primary">Appliquer</button>
+        <button
+            type="button"
+            class="button button-secondary filter-toggle"
+            aria-controls="secondary-user-filters"
+            [attr.aria-expanded]="areFiltersOpen()"
+            (click)="toggleFilters()"
+        >
+            <span>Filtres</span>
+            @if (activeSecondaryFilterCount(); as count) {
+                <span class="filter-count">{{ count }} actif{{ count > 1 ? 's' : '' }}</span>
+            }
+        </button>
+        <div id="secondary-user-filters" class="filter-options" [class.filter-options-open]="areFiltersOpen()">
+            <label data-cmz-id="profiles">
+                <span>Profil</span>
+                <select [formField]="filtersForm.profile">
+                    <option value="">Tous les profils</option>
+                    @for (profile of profiles(); track profile.value) {
+                        <option [value]="profile.value">{{ profile.label }}</option>
+                    }
+                </select>
+            </label>
+            <label>
+                <span>Rôle</span>
+                <select [formField]="filtersForm.role">
+                    <option value="">Tous les rôles</option>
+                    <option value="supervisor">Superviseur</option>
+                    <option value="team-leader">Chef d’équipe</option>
+                    <option value="agent">Agent</option>
+                </select>
+            </label>
+            <label>
+                <span>Statut</span>
+                <select [formField]="filtersForm.status">
+                    <option value="">Tous les statuts</option>
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                </select>
+            </label>
+            <div class="filter-actions">
+                <button type="button" class="button button-secondary" (click)="clearFilters()">Effacer</button>
+                <button type="submit" class="button button-primary">Appliquer</button>
+            </div>
         </div>
     </form>
 

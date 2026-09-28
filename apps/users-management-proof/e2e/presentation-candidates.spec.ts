@@ -316,6 +316,52 @@ test('produit le candidat mobile ready avec la projection en cartes', async ({
     await captureCandidate(page, testInfo, 'mobile-ready.actual.png');
 });
 
+test('garde Appliquer et Effacer accessibles dans les filtres compacts', async ({
+    page,
+}) => {
+    const apiRequests = observeApiRequests(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openReadyPage(page);
+
+    const toggle = page.getByRole('button', {
+        name: /^Filtres(?:\s|$)/,
+    });
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    const requestsBeforeOpen = [...apiRequests];
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(apiRequests).toEqual(requestsBeforeOpen);
+
+    const apply = page.getByRole('button', {
+        name: 'Appliquer',
+        exact: true,
+    });
+    const clear = page.getByRole('button', {
+        name: 'Effacer',
+        exact: true,
+    });
+    await expect(apply).toBeVisible();
+    await expect(clear).toBeVisible();
+    await expect(apply).toHaveCSS('min-height', '44px');
+    await expect(clear).toHaveCSS('min-height', '44px');
+
+    await page.getByLabel('Profil').selectOption('profile-a');
+    await expect(toggle).toContainText('1 actif');
+    const requestsBeforeApply = apiRequests.length;
+    await apply.click();
+    await expect.poll(() => apiRequests.length).toBe(requestsBeforeApply + 1);
+    expect(apiRequests.at(-1)).toContain('profile=profile-a');
+
+    const requestsBeforeClear = apiRequests.length;
+    await clear.click();
+    await expect.poll(() => apiRequests.length).toBe(requestsBeforeClear + 1);
+    await expect(page.getByLabel('Profil')).toHaveValue('');
+    await expect(toggle).toHaveText('Filtres');
+    expect(apiRequests.at(-1)).not.toContain('profile=');
+});
+
 test('produit le candidat mobile create-failed en plein écran', async ({
     page,
 }, testInfo) => {

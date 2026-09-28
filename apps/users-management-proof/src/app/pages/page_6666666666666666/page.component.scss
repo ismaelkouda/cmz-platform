@@ -100,11 +100,22 @@ h1 {
 
 .filters {
     display: grid;
-    grid-template-columns: 1.4fr 1fr 0.9fr 0.9fr auto;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 3.8fr);
     align-items: end;
     gap: 12px;
     padding: 16px;
     margin-bottom: 24px;
+}
+
+.filter-options {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.9fr) auto;
+    align-items: end;
+    gap: 12px;
+}
+
+.filter-toggle {
+    display: none;
 }
 
 label {
@@ -379,7 +390,37 @@ td,
         padding: 18px 12px 5px;
     }
 
-    .filter-actions,
+    .filter-toggle {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .filter-count {
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    .filter-options {
+        display: none;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .filter-options-open {
+        display: grid;
+    }
+
+    .filter-actions {
+        width: 100%;
+    }
+
+    .filter-actions .button {
+        flex: 1;
+        min-height: 44px;
+    }
+
     .desktop-table {
         display: none;
     }

@@ -2284,9 +2284,17 @@ Figma, désormais source partielle différée :
   approbation, fusion de la PR #121 et CI post-fusion verte sur le SHA exact,
   l'audit est ajouté au manifeste de présentation comme `design-brief`
   Markdown content-addressed, global aux viewports et sans autorité métier.
-  Aucun fichier de page n'est modifié. Restent la revue/fusion de cette liaison,
-  la régénération du work order depuis `main`, puis la correction des filtres
-  compacts dans les cinq fichiers autorisés. Le rôle métier de liste ne
+  Aucun fichier de page n'est modifié dans ADAPT-3a. **ADAPT-3b — défaut des
+  filtres compacts corrigé localement le 2026-09-28 :** après
+  approbation/fusion de la PR #122 et CI post-fusion verte, un scénario
+  Playwright `390 × 844` échoue d'abord sur `main`, puis prouve un disclosure
+  sans réseau, `Appliquer` et `Effacer` visibles et hauts de `44px`, le filtre
+  transmis et son effacement. Le work order régénéré borne la réalisation aux
+  cinq fichiers de page. Un seul DOM est conservé ; recherche, compteur, état
+  `aria-expanded` et appels de composition sont aussi couverts en test de
+  composant. Restent la revue/fusion, puis les candidats compact/medium/expanded,
+  les décisions FAB et `updated_at`, le contraste et la baseline. Le rôle
+  métier de liste ne
   fige pas la forme réseau : tableau direct et page sont les deux variantes
   prouvées. Objet conteneur, map ou autre projection devront recevoir un
   discriminateur et un oracle lors d'un cas réel, sans heuristique liée à `data`
