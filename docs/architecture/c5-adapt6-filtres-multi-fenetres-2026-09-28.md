@@ -1,6 +1,7 @@
 # C5 ADAPT-6 — filtres adaptatifs multi-fenêtres
 
-- **Statut :** décision produit approuvée ; réalisation non commencée
+- **Statut :** décision produit approuvée ; candidats visuels ADAPT-6b soumis à
+  revue ; réalisation non commencée
 - **Date :** 2026-09-28
 - **Périmètre :** présentation des filtres de la page C5 et capacité à monter à
   environ quinze critères
@@ -238,6 +239,24 @@ sur les classes DOM privées d'une bibliothèque.
 - synchronisation URL, vues enregistrées ou recherche interne des filtres sans
   besoin produit ;
 - copie graphique ou conservation des captures de l'application tierce.
+
+## 13. État de livraison au 2026-09-28
+
+La dépendance ADAPT-5 est close : Soumaila a approuvé la PR #128 sur
+`7fbe158e21bcb5a0067c51b2770cd8739294806a`, l'a fusionnée dans
+`eff4d2d405e5cd884a8c5fac1557c99f2a87706e`, et la CI post-fusion
+`36462839705` est verte.
+
+La décision ADAPT-6a a ensuite été approuvée sur
+`94823549a09a8f39df0979db273c64fcdf0e1951`, fusionnée dans
+`0c6ff7b25eda3d407afffda27a7629174d015d87`, et validée par la CI
+post-fusion `36465758895`.
+
+ADAPT-6b propose maintenant quatre références déterministes : deux états du
+même bottom sheet compact, un side sheet `medium` et un pane `expanded`. Elles
+vivent dans
+[`filter-candidates/proposal.md`](../../examples/users-management-proof/presentation/filter-candidates/proposal.md).
+Elles n'ont aucune autorité avant approbation humaine et publication séparée.
 
 ## Références
 

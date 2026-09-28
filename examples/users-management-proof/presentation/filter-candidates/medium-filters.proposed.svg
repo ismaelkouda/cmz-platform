@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+  <defs>
+    <filter id="shadow" x="-25%" y="-10%" width="150%" height="120%">
+      <feDropShadow dx="-6" dy="0" stdDeviation="12" flood-color="#0b1f44" flood-opacity="0.22"/>
+    </filter>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #13213a; }
+      .muted { fill: #526581; }
+      .body { font-size: 13px; }
+      .label { font-size: 12px; font-weight: 700; }
+      text[fill="#ffffff"] { fill: #ffffff; }
+    </style>
+  </defs>
+  <rect width="1024" height="768" fill="#f6f8fc"/>
+  <rect width="1024" height="64" fill="#ffffff"/>
+  <path d="M0 63.5H1024" stroke="#d4deec"/>
+  <rect x="32" y="18" width="28" height="28" rx="7" fill="#2864e8"/>
+  <text x="72" y="39" font-size="16" font-weight="700">CMZ Platform</text>
+  <text x="40" y="108" font-size="24" font-weight="750">Gestion des utilisateurs</text>
+  <text x="40" y="133" class="body muted">Consulter, filtrer et créer les comptes utilisateurs.</text>
+  <rect x="40" y="157" width="360" height="44" rx="8" fill="#ffffff" stroke="#718096"/>
+  <text x="54" y="184" class="body muted">Nom, prénom ou email</text>
+  <rect x="416" y="157" width="112" height="44" rx="8" fill="#ffffff" stroke="#718096"/>
+  <text x="472" y="184" class="body" font-weight="700" text-anchor="middle">Filtres (2)</text>
+  <rect x="40" y="224" width="944" height="404" rx="10" fill="#ffffff" stroke="#c0cbda"/>
+  <rect x="40" y="224" width="944" height="52" rx="10" fill="#edf2f8"/>
+  <text x="58" y="255" class="label">Nom</text><text x="212" y="255" class="label">Email</text>
+  <text x="460" y="255" class="label">Profil et rôle</text><text x="704" y="255" class="label">Statut</text>
+  <g class="body"><text x="58" y="310">Alpha Test</text><text x="212" y="310">alpha.user@example.invalid</text><text x="460" y="310">Profil A · Superviseur</text><text x="704" y="310">Actif</text></g>
+
+  <rect y="64" width="1024" height="704" fill="#0b1f44" opacity="0.38"/>
+  <rect x="544" y="64" width="480" height="704" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="576" y="108" font-size="22" font-weight="750">Filtres</text>
+  <text x="576" y="132" class="body muted">2 filtres appliqués · modifications en brouillon</text>
+  <rect x="964" y="82" width="36" height="36" rx="18" fill="#edf2f8"/>
+  <text x="982" y="107" font-size="21" text-anchor="middle">×</text>
+  <path d="M544 154H1024" stroke="#d4deec"/>
+
+  <text x="576" y="187" font-size="14" font-weight="750">Essentiels</text>
+  <text x="576" y="215" class="label">Profil</text>
+  <rect x="576" y="226" width="416" height="46" rx="8" fill="#ffffff" stroke="#718096"/>
+  <text x="592" y="254" class="body">Tous les profils</text><text x="970" y="254" class="muted" text-anchor="end">⌄</text>
+  <text x="576" y="304" class="label">Rôle</text>
+  <rect x="576" y="315" width="416" height="46" rx="8" fill="#ffffff" stroke="#718096"/>
+  <text x="592" y="343" class="body">Agent</text><text x="970" y="343" class="muted" text-anchor="end">⌄</text>
+  <text x="576" y="393" class="label">Statut</text>
+  <g class="body">
+    <rect x="576" y="408" width="90" height="42" rx="21" fill="#ffffff" stroke="#718096"/><text x="621" y="434" text-anchor="middle">Tous</text>
+    <rect x="676" y="408" width="90" height="42" rx="21" fill="#edf4ff" stroke="#2864e8" stroke-width="2"/><text x="721" y="434" font-weight="700" text-anchor="middle">Actif</text>
+    <rect x="776" y="408" width="100" height="42" rx="21" fill="#ffffff" stroke="#718096"/><text x="826" y="434" text-anchor="middle">Inactif</text>
+  </g>
+  <path d="M576 484H992" stroke="#d4deec"/>
+  <text x="576" y="515" class="body muted">Capacité future : groupes métier repliables,</text>
+  <text x="576" y="535" class="body muted">sans inventer de critères absents du contrat C5.</text>
+  <rect x="576" y="558" width="416" height="50" rx="8" fill="#f8fafc" stroke="#c0cbda"/>
+  <text x="592" y="588" class="body" font-weight="700">Autres critères contractuels</text><text x="970" y="588" class="muted" text-anchor="end">⌄</text>
+
+  <rect x="544" y="672" width="480" height="96" fill="#ffffff"/>
+  <path d="M544 672H1024" stroke="#d4deec"/>
+  <rect x="576" y="696" width="150" height="48" rx="9" fill="#ffffff" stroke="#718096"/>
+  <text x="651" y="726" class="body" font-weight="700" text-anchor="middle">Réinitialiser</text>
+  <rect x="810" y="696" width="182" height="48" rx="9" fill="#2864e8"/>
+  <text x="901" y="726" class="body" font-weight="700" fill="#ffffff" text-anchor="middle">Appliquer</text>
+</svg>
