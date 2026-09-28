@@ -775,3 +775,34 @@ refuse le retour silencieux des deux anciennes références. Aucun fichier de pa
 Angular ni aucune dépendance n'est modifié. Après revue et fusion d'ADAPT-4b, le
 work order sera régénéré depuis le nouveau `main`, puis les oracles adaptatifs
 devront échouer avant toute réalisation.
+
+## ADAPT-5a — oracles adaptatifs avant réalisation
+
+Soumaila a approuvé la PR #125 sur le commit exact
+`fe47612c51609397637432fedc1984a574c442de`, puis l'a fusionnée dans
+`4d69db6a10b20a06bec5e6f16984e2401407286e`. Les 17 contrôles de la PR et la CI
+post-fusion `36440423119` sont verts sur ces SHA exacts.
+
+Le work order `4a3ee893d4fd36d4331e3f746b8e32359db53e38a3b467bf43531bdf91ab0f7b`
+a ensuite été publié localement depuis ce nouveau `main`. Il reçoit les six
+preuves actives et borne toujours la réalisation aux cinq fichiers de page.
+
+Les preuves de viewport vivent toutefois dans le harnais Playwright, hors de ce
+périmètre. ADAPT-5a les sépare donc de la réalisation. Six scénarios couvrent le
+FAB compact et son non-recouvrement, la parité `updated_at`, la modalité et le
+focus `medium`, le pane non modal `expanded`, les seuils de largeur et de
+hauteur, la continuité d'état, l'absence de réseau au resize et la permission.
+
+Cinq scénarios reconnaissent uniquement la signature exacte du comportement
+historique avec `test.fail(condition, raison)` : ils doivent réellement échouer
+tant que l'écart connu existe. Une dérive différente réactive immédiatement les
+assertions normales ; il n'existe ni `skip` ni `todo` permanent. Le scénario de
+permission passe sans tolérance. Sur `main`, Playwright rapporte ainsi quatorze
+tests conformes au contrat, dont cinq échecs attendus et neuf succès réels.
+
+La modification du harnais invalide volontairement le work order précédent avec
+l'unique violation `workspace changed outside the allowed page root`. Après
+revue et fusion d'ADAPT-5a, un nouveau work order devra être calculé depuis
+`main`. La réalisation pourra alors modifier seulement les cinq fichiers de
+page. Les oracles s'activeront automatiquement dès que les signatures
+historiques disparaîtront.

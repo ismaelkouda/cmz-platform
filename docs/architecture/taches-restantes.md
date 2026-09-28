@@ -2310,8 +2310,17 @@ Figma, désormais source partielle différée :
   et ajoute les trois PNG approuvés avec leurs tailles, SHA-256, états et
   viewports exacts. La preuve de publication refuse tout retour silencieux des
   références remplacées. Aucun fichier Angular, work order publié ou dépendance
-  n'est modifié dans ce lot. Restent revue/fusion, génération du work order
-  depuis le nouveau `main`, oracles rouges puis réalisation. Dossier :
+  n'est modifié dans ce lot. Soumaila a ensuite approuvé le SHA exact de la PR
+  #125 et l'a fusionnée ; ses 17 checks et la CI post-fusion sont verts.
+  **ADAPT-5a — oracles adaptatifs engagés localement le 2026-09-28 :** six
+  scénarios Playwright couvrent FAB/non-recouvrement, parité `updated_at`,
+  modalité et focus, pane `expanded`, frontières largeur/hauteur, continuité,
+  silence réseau et permission. Cinq reconnaissent uniquement la signature
+  historique exacte comme échec attendu, sans `skip` ni `todo` ; neuf scénarios
+  passent réellement. Le work order publié depuis `main` refuse ensuite la
+  modification du harnais hors racine autorisée, comme attendu. Restent revue et
+  fusion d'ADAPT-5a, régénération du work order depuis le nouveau `main`, puis
+  réalisation bornée aux cinq fichiers de page. Dossier :
   `examples/users-management-proof/presentation/adaptive-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection

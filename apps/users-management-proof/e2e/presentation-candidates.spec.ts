@@ -83,6 +83,8 @@ const PROFILES = [
 ];
 
 const COMPACT_MAX_WIDTH = 800;
+const EXPANDED_MIN_WIDTH = 1200;
+const EXPANDED_MIN_HEIGHT = 800;
 const MEDIUM_PROOF_VIEWPORT = { width: 1024, height: 768 } as const;
 const RESPONSIVE_QUIET_WINDOW_MS = 250;
 
@@ -104,10 +106,6 @@ async function installHostAndBackend(page: Page): Promise<void> {
             environmentDeployment: 'DEV',
             enableDebug: false,
             trustedFrameOrigins: [],
-        };
-        window.__cmzAppAccessContext = {
-            authenticated: true,
-            permissions: ['users.create'],
         };
     });
 
@@ -159,7 +157,19 @@ async function installHostAndBackend(page: Page): Promise<void> {
     });
 }
 
-async function openReadyPage(page: Page): Promise<void> {
+async function openReadyPage(
+    page: Page,
+    permissions: readonly string[] = ['users.create']
+): Promise<void> {
+    await page.addInitScript(
+        (authorizedPermissions) => {
+            window.__cmzAppAccessContext = {
+                authenticated: true,
+                permissions: authorizedPermissions,
+            };
+        },
+        [...permissions]
+    );
     await page.goto('/settings-security/users');
     await page.addStyleTag({
         content:
@@ -210,6 +220,18 @@ function observeApiRequests(page: Page): string[] {
         }
     });
     return requests;
+}
+
+function boxesOverlap(
+    first: { x: number; y: number; width: number; height: number },
+    second: { x: number; y: number; width: number; height: number }
+): boolean {
+    return !(
+        first.x + first.width <= second.x ||
+        second.x + second.width <= first.x ||
+        first.y + first.height <= second.y ||
+        second.y + second.height <= first.y
+    );
 }
 
 async function submitEmailConflict(page: Page): Promise<void> {
@@ -471,4 +493,258 @@ test('préserve liste, formulaire, erreur et focus sans réseau au resize compac
         testInfo,
         'medium-create-error-after-resize.actual.png'
     );
+});
+
+test('active un FAB compact unique sans masquer la pagination ni updated_at', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openReadyPage(page);
+
+    const create = page.getByRole('button', {
+        name: 'Créer un utilisateur',
+    });
+    await expect(create).toHaveCount(1);
+    const position = await create.evaluate(
+        (element) => getComputedStyle(element).position
+    );
+    test.fail(
+        position === 'static',
+        'ADAPT-5 : le bouton compact historique doit céder la place au FAB approuvé.'
+    );
+
+    expect(position).toBe('fixed');
+    await expect(create).toBeEnabled();
+    await expect(page.locator('.user-card').first()).toContainText(
+        '26/09/2026'
+    );
+
+    const next = page.getByRole('button', { name: 'Suivant' });
+    await next.focus();
+    await expect(next).toBeFocused();
+    const [rawFabBox, rawNextBox] = await Promise.all([
+        create.boundingBox(),
+        next.boundingBox(),
+    ]);
+    const fabBox = requireBox(rawFabBox, 'FAB compact');
+    const nextBox = requireBox(rawNextBox, 'pagination compacte focalisée');
+    expect(fabBox.height).toBeGreaterThanOrEqual(48);
+    expect(fabBox.width).toBeLessThan(280);
+    expect(fabBox.x + fabBox.width).toBeLessThanOrEqual(390 - 16);
+    expect(boxesOverlap(fabBox, nextBox)).toBe(false);
+});
+
+test('rend le side sheet medium strictement modal et restitue le focus', async ({
+    page,
+}) => {
+    await page.setViewportSize(MEDIUM_PROOF_VIEWPORT);
+    await openReadyPage(page);
+
+    const create = page.getByRole('button', {
+        name: 'Créer un utilisateur',
+    });
+    await create.click();
+    const dialog = page.getByRole('dialog', {
+        name: 'Créer un utilisateur',
+    });
+    const width = await dialog.evaluate(
+        (element) => getComputedStyle(element).width
+    );
+    test.fail(
+        width === '520px',
+        'ADAPT-5 : le drawer historique de 520 px doit devenir le side sheet medium approuvé.'
+    );
+
+    expect(width).toBe('480px');
+    await expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(
+        await dialog.evaluate((element) => element.hasAttribute('cdktrapfocus'))
+    ).toBe(true);
+    await expect(page.locator('.backdrop')).toBeVisible();
+    await expect(page.locator('main')).toHaveAttribute('inert', '');
+    expect(
+        await dialog.evaluate((element) =>
+            element.contains(document.activeElement)
+        )
+    ).toBe(true);
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(create).toBeFocused();
+});
+
+test('rend le panneau expanded persistant, non modal et adjacent à la liste', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1440, height: 1024 });
+    await openReadyPage(page);
+
+    const create = page.getByRole('button', {
+        name: 'Créer un utilisateur',
+    });
+    await create.click();
+    const pane = page.getByRole('dialog', {
+        name: 'Créer un utilisateur',
+    });
+    const ariaModal = await pane.getAttribute('aria-modal');
+    const hasFocusTrap = await pane.evaluate((element) =>
+        element.hasAttribute('cdktrapfocus')
+    );
+    const backdropCount = await page.locator('.backdrop').count();
+    test.fail(
+        ariaModal === 'true' && hasFocusTrap && backdropCount === 1,
+        'ADAPT-5 : le drawer modal historique doit devenir un panneau expanded non modal.'
+    );
+
+    expect(ariaModal).not.toBe('true');
+    expect(hasFocusTrap).toBe(false);
+    expect(backdropCount).toBe(0);
+    await expect(page.locator('main')).not.toHaveAttribute('inert', '');
+    await expect(create).toBeDisabled();
+
+    const [rawMainBox, rawPaneBox] = await Promise.all([
+        page.locator('main').boundingBox(),
+        pane.boundingBox(),
+    ]);
+    const mainBox = requireBox(rawMainBox, 'liste expanded');
+    const paneBox = requireBox(rawPaneBox, 'panneau expanded');
+    expect(paneBox.width).toBeGreaterThanOrEqual(360);
+    expect(paneBox.width).toBeLessThanOrEqual(440);
+    expect(mainBox.x + mainBox.width).toBeLessThanOrEqual(paneBox.x);
+
+    const search = page.getByLabel('Recherche');
+    await search.fill('Alpha');
+    await expect(search).toHaveValue('Alpha');
+    await pane.getByRole('button', { name: 'Annuler' }).click();
+    await expect(pane).toHaveCount(0);
+    await expect(create).toBeFocused();
+});
+
+test('conserve permission, état, focus et silence réseau sur les trois classes', async ({
+    page,
+}) => {
+    const apiRequests = observeApiRequests(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openReadyPage(page);
+
+    const search = page.getByLabel('Recherche');
+    await search.fill('Alpha');
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await submitEmailConflict(page);
+    const email = page.locator('[data-cmz-id="email"]');
+    await email.focus();
+    const requestsBeforeResize = [...apiRequests];
+
+    await page.setViewportSize(MEDIUM_PROOF_VIEWPORT);
+    await waitForResponsiveLayout(page);
+    const mediumPane = page.getByRole('dialog');
+    const mediumWidth = await mediumPane.evaluate(
+        (element) => getComputedStyle(element).width
+    );
+    test.fail(
+        mediumWidth === '520px',
+        'ADAPT-5 : la transition utilise encore le drawer historique non adaptatif.'
+    );
+
+    expect(apiRequests).toEqual(requestsBeforeResize);
+    expect(mediumWidth).toBe('480px');
+    await expect(mediumPane).toHaveAttribute('aria-modal', 'true');
+    await expect(email).toBeFocused();
+
+    await page.setViewportSize({ width: 1440, height: 1024 });
+    await waitForResponsiveLayout(page);
+    const expandedPane = page.getByRole('dialog');
+    expect(apiRequests).toEqual(requestsBeforeResize);
+    await expect(expandedPane).not.toHaveAttribute('aria-modal', 'true');
+    await expect(page.locator('.backdrop')).toHaveCount(0);
+    await expect(search).toHaveValue('Alpha');
+    await expect(page.getByRole('button', { name: 'Page 2' })).toHaveAttribute(
+        'aria-current',
+        'page'
+    );
+    await expect(email).toHaveValue('test.user@example.invalid');
+    await expect(email).toBeFocused();
+    await expect(page.locator('[data-cmz-id="create-failed"]')).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await waitForResponsiveLayout(page);
+    expect(apiRequests).toEqual(requestsBeforeResize);
+    await expect(page.getByRole('dialog')).toHaveAttribute(
+        'aria-modal',
+        'true'
+    );
+    await expect(email).toBeFocused();
+});
+
+test('verrouille les frontières expanded de largeur et de hauteur sans réseau', async ({
+    page,
+}) => {
+    const apiRequests = observeApiRequests(page);
+    await page.setViewportSize({
+        width: EXPANDED_MIN_WIDTH - 1,
+        height: EXPANDED_MIN_HEIGHT,
+    });
+    await openReadyPage(page);
+    await page.getByRole('button', { name: 'Créer un utilisateur' }).click();
+    const pane = page.getByRole('dialog');
+    const mediumWidth = await pane.evaluate(
+        (element) => getComputedStyle(element).width
+    );
+    test.fail(
+        mediumWidth === '520px',
+        'ADAPT-5 : les frontières medium/expanded ne sont pas encore réalisées.'
+    );
+
+    expect(mediumWidth).toBe('480px');
+    await expect(pane).toHaveAttribute('aria-modal', 'true');
+    const requestsBeforeResize = [...apiRequests];
+
+    await page.setViewportSize({
+        width: EXPANDED_MIN_WIDTH,
+        height: EXPANDED_MIN_HEIGHT,
+    });
+    await waitForResponsiveLayout(page);
+    expect(apiRequests).toEqual(requestsBeforeResize);
+    await expect(pane).not.toHaveAttribute('aria-modal', 'true');
+
+    await page.setViewportSize({
+        width: 1440,
+        height: EXPANDED_MIN_HEIGHT - 1,
+    });
+    await waitForResponsiveLayout(page);
+    expect(apiRequests).toEqual(requestsBeforeResize);
+    await expect(pane).toHaveAttribute('aria-modal', 'true');
+
+    await page.setViewportSize({
+        width: 1440,
+        height: EXPANDED_MIN_HEIGHT,
+    });
+    await waitForResponsiveLayout(page);
+    expect(apiRequests).toEqual(requestsBeforeResize);
+    await expect(pane).not.toHaveAttribute('aria-modal', 'true');
+});
+
+test('refuse la création dans chaque classe sans permission', async ({
+    page,
+}) => {
+    const apiRequests = observeApiRequests(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openReadyPage(page, []);
+    const requestsAfterLoad = [...apiRequests];
+
+    for (const viewport of [
+        { width: 390, height: 844 },
+        MEDIUM_PROOF_VIEWPORT,
+        { width: 1440, height: 1024 },
+    ]) {
+        await page.setViewportSize(viewport);
+        await waitForResponsiveLayout(page);
+        const create = page.getByRole('button', {
+            name: 'Créer un utilisateur',
+        });
+        await expect(create).toHaveCount(1);
+        await expect(create).toBeDisabled();
+        await expect(page.getByRole('dialog')).toHaveCount(0);
+        expect(apiRequests).toEqual(requestsAfterLoad);
+    }
 });
