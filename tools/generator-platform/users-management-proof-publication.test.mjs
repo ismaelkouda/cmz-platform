@@ -310,10 +310,10 @@ test('publie une composition Angular stable et prépare un work order raccordé'
         ),
         [
             {
-                id: 'desktop-ready',
+                id: 'compact-ready-adaptive',
                 purpose: 'primary-layout',
                 state_ids: ['ready'],
-                viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
+                viewport: { width: 390, height: 844, pixel_ratio: 1 },
             },
             {
                 id: 'mobile-create-error',
@@ -328,19 +328,31 @@ test('publie une composition Angular stable et prépare un work order raccordé'
                 viewport: null,
             },
             {
-                id: 'compact-ready-adaptive',
+                id: 'adaptive-filter-brief',
+                purpose: 'responsive-layout',
+                state_ids: [],
+                viewport: null,
+            },
+            {
+                id: 'compact-filter-summary',
                 purpose: 'responsive-layout',
                 state_ids: ['ready'],
                 viewport: { width: 390, height: 844, pixel_ratio: 1 },
             },
             {
-                id: 'medium-create-adaptive',
+                id: 'compact-filter-detail',
+                purpose: 'responsive-layout',
+                state_ids: ['ready'],
+                viewport: { width: 390, height: 844, pixel_ratio: 1 },
+            },
+            {
+                id: 'medium-filters-adaptive',
                 purpose: 'responsive-layout',
                 state_ids: ['ready'],
                 viewport: { width: 1024, height: 768, pixel_ratio: 1 },
             },
             {
-                id: 'expanded-create-adaptive',
+                id: 'expanded-filters-adaptive',
                 purpose: 'responsive-layout',
                 state_ids: ['ready'],
                 viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
@@ -357,8 +369,25 @@ test('publie une composition Angular stable et prépare un work order raccordé'
             purpose: 'responsive-layout',
             path: 'docs/architecture/c5-adapt2-audit-placement-multifenetre-2026-09-28.md',
             media_type: 'text/markdown',
-            bytes: 22356,
-            sha256: 'bc93bc1a0dbd1d35320ab2376ab5b58d5a3ac1e5807da839192ba3da33dec25f',
+            bytes: 24005,
+            sha256: '2fb5823ce595b5c664c55dcd0923904b18c6664b2018ac059cde4be66770a418',
+            trust: 'untrusted-content',
+            state_ids: [],
+            viewport: null,
+        }
+    );
+    assert.deepEqual(
+        realization.presentation_evidence.sources.find(
+            ({ id }) => id === 'adaptive-filter-brief'
+        ),
+        {
+            id: 'adaptive-filter-brief',
+            source_kind: 'design-brief',
+            purpose: 'responsive-layout',
+            path: 'examples/users-management-proof/presentation/filter-candidates/proposal.md',
+            media_type: 'text/markdown',
+            bytes: 10636,
+            sha256: '17b88e858ade6dd24f7c2714fba2949c6ed1d54d74e8550767ecac8149c9d7c4',
             trust: 'untrusted-content',
             state_ids: [],
             viewport: null,
@@ -366,7 +395,7 @@ test('publie une composition Angular stable et prépare un work order raccordé'
     );
     assert.deepEqual(
         realization.presentation_evidence.sources
-            .filter(({ id }) => id.endsWith('-adaptive'))
+            .filter(({ id }) => id.includes('filter'))
             .map(
                 ({
                     id,
@@ -394,37 +423,61 @@ test('publie une composition Angular stable et prépare un work order raccordé'
             ),
         [
             {
-                id: 'compact-ready-adaptive',
+                id: 'adaptive-filter-brief',
+                source_kind: 'design-brief',
+                purpose: 'responsive-layout',
+                path: 'examples/users-management-proof/presentation/filter-candidates/proposal.md',
+                media_type: 'text/markdown',
+                bytes: 10636,
+                sha256: '17b88e858ade6dd24f7c2714fba2949c6ed1d54d74e8550767ecac8149c9d7c4',
+                trust: 'untrusted-content',
+                state_ids: [],
+                viewport: null,
+            },
+            {
+                id: 'compact-filter-summary',
                 source_kind: 'wireframe',
                 purpose: 'responsive-layout',
-                path: 'examples/users-management-proof/presentation/adaptive-candidates/compact-ready.proposed.png',
+                path: 'examples/users-management-proof/presentation/filter-candidates/compact-filter-list.proposed.png',
                 media_type: 'image/png',
-                bytes: 48279,
-                sha256: '18a08587a9ef143540287d273ae89ea55c4b3f27ec95b1d5486e3dec3c843b07',
+                bytes: 34192,
+                sha256: '6dc0b706dd0fcf2526d489a0ce63533a60de4ad1f70ea946d01c27a990753e44',
                 trust: 'untrusted-content',
                 state_ids: ['ready'],
                 viewport: { width: 390, height: 844, pixel_ratio: 1 },
             },
             {
-                id: 'medium-create-adaptive',
+                id: 'compact-filter-detail',
                 source_kind: 'wireframe',
                 purpose: 'responsive-layout',
-                path: 'examples/users-management-proof/presentation/adaptive-candidates/medium-create.proposed.png',
+                path: 'examples/users-management-proof/presentation/filter-candidates/compact-filter-detail.proposed.png',
                 media_type: 'image/png',
-                bytes: 66545,
-                sha256: '50d6cb12140ce3a55edea0459540cace6569af77494b641f339a74d8162c2252',
+                bytes: 32034,
+                sha256: '7d8bf42fa6c0a828e77c9b60f7da5cc6d33140dbffb7d7b9ffa8a22340049719',
+                trust: 'untrusted-content',
+                state_ids: ['ready'],
+                viewport: { width: 390, height: 844, pixel_ratio: 1 },
+            },
+            {
+                id: 'medium-filters-adaptive',
+                source_kind: 'wireframe',
+                purpose: 'responsive-layout',
+                path: 'examples/users-management-proof/presentation/filter-candidates/medium-filters.proposed.png',
+                media_type: 'image/png',
+                bytes: 61384,
+                sha256: '222a9fdf6b0117af68362e854dc21f86b7b53d294dd97d9e4482e9de130ed8e0',
                 trust: 'untrusted-content',
                 state_ids: ['ready'],
                 viewport: { width: 1024, height: 768, pixel_ratio: 1 },
             },
             {
-                id: 'expanded-create-adaptive',
+                id: 'expanded-filters-adaptive',
                 source_kind: 'wireframe',
                 purpose: 'responsive-layout',
-                path: 'examples/users-management-proof/presentation/adaptive-candidates/expanded-create.proposed.png',
+                path: 'examples/users-management-proof/presentation/filter-candidates/expanded-filters.proposed.png',
                 media_type: 'image/png',
-                bytes: 100767,
-                sha256: 'b2216c0fb5e0b6647ffb49e5d24dce5db1e37ff6394ed0f3c1711bcd8c8462f9',
+                bytes: 88132,
+                sha256: '6154ffcd008ad3ccdd4d1c52388fcc612b93a9940d51f0e6fe3f5ee5c8180c3c',
                 trust: 'untrusted-content',
                 state_ids: ['ready'],
                 viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
@@ -433,7 +486,13 @@ test('publie une composition Angular stable et prépare un work order raccordé'
     );
     assert.equal(
         realization.presentation_evidence.sources.some(({ id }) =>
-            ['desktop-create-error', 'mobile-ready'].includes(id)
+            [
+                'desktop-ready',
+                'desktop-create-error',
+                'mobile-ready',
+                'medium-create-adaptive',
+                'expanded-create-adaptive',
+            ].includes(id)
         ),
         false,
         'les références remplacées ne doivent plus guider la réalisation'

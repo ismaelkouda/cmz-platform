@@ -1,23 +1,23 @@
 # C5 ADAPT-6 — filtres adaptatifs multi-fenêtres
 
-- **Statut :** décision produit approuvée ; candidats visuels ADAPT-6b soumis à
-  revue ; réalisation non commencée
+- **Statut :** décision et candidats visuels approuvés puis fusionnés ;
+  publication content-addressed engagée ; réalisation non commencée
 - **Date :** 2026-09-28
 - **Périmètre :** présentation des filtres de la page C5 et capacité à monter à
   environ quinze critères
-- **Dépendance :** terminer la revue, la fusion et la CI post-fusion de la
-  réalisation ADAPT-5 avant de produire les nouveaux oracles
+- **Dépendance :** ADAPT-5 et ADAPT-6b fusionnés avec CI post-fusion verte ; les
+  nouveaux oracles restent séparés de cette publication
 
 ## 1. Résultat attendu
 
 La liste reste le contenu principal. Les filtres secondaires utilisent un même
 état et un même formulaire, mais changent de conteneur selon l'espace utile :
 
-| Classe     | Conteneur                       | Modalité | Organisation                                |
-| ---------- | -------------------------------- | -------- | ------------------------------------------- |
-| `compact`  | bottom sheet, `max-height: 80dvh` | modale   | liste de critères puis contrôle d'un critère |
-| `medium`   | side sheet droit, `420–480px`      | modale   | contrôles complets regroupés                |
-| `expanded` | pane droit, `360–440px`             | non modale | contrôles complets regroupés et repliables  |
+| Classe     | Conteneur                         | Modalité   | Organisation                                 |
+| ---------- | --------------------------------- | ---------- | -------------------------------------------- |
+| `compact`  | bottom sheet, `max-height: 80dvh` | modale     | liste de critères puis contrôle d'un critère |
+| `medium`   | side sheet droit, `420–480px`     | modale     | contrôles complets regroupés                 |
+| `expanded` | pane droit, `360–440px`           | non modale | contrôles complets regroupés et repliables   |
 
 Ces dimensions sont des bornes C5 à prouver, pas des constantes universelles du
 générateur. Le mode `expanded` n'est autorisé que si le pane principal conserve
@@ -65,8 +65,8 @@ Le footer est fixe, respecte la safe area et contient :
 - `Appliquer`, action principale à droite.
 
 À une largeur où les deux libellés complets ne tiennent plus sans troncature,
-les actions peuvent s'empiler. Elles gardent une cible d'au moins `44 × 44 CSS
-px`; la préférence C5 reste `48px` de hauteur.
+les actions peuvent s'empiler. Elles gardent une cible d'au moins
+`44 × 44 CSS px`; la préférence C5 reste `48px` de hauteur.
 
 ## 3. Parcours `medium`
 
@@ -116,15 +116,15 @@ par sens métier :
 
 Le choix du contrôle suit la donnée, pas le framework backend :
 
-| Donnée                                             | Contrôle candidat                   |
-| -------------------------------------------------- | ------------------------------------ |
-| booléen                                            | checkbox ou groupe segmenté         |
-| choix unique court, environ deux à cinq valeurs    | radios ou chips de sélection        |
-| liste moyenne                                      | select/listbox                       |
-| liste importante, distante ou recherchable         | autocomplete                         |
-| date ou période                                    | datepicker ou intervalle             |
-| texte libre                                        | input                                |
-| nombre ou plage numérique                          | input numérique ou intervalle        |
+| Donnée                                          | Contrôle candidat             |
+| ----------------------------------------------- | ----------------------------- |
+| booléen                                         | checkbox ou groupe segmenté   |
+| choix unique court, environ deux à cinq valeurs | radios ou chips de sélection  |
+| liste moyenne                                   | select/listbox                |
+| liste importante, distante ou recherchable      | autocomplete                  |
+| date ou période                                 | datepicker ou intervalle      |
+| texte libre                                     | input                         |
+| nombre ou plage numérique                       | input numérique ou intervalle |
 
 Cette table guide une décision explicite. Elle n'autorise pas le réalisateur à
 inventer options, valeurs, tri ou sémantique absents du contrat.
@@ -138,24 +138,24 @@ Le modèle distingue :
 
 Les transitions sont fermées :
 
-| Événement                              | Effet local                         | Effet réseau           |
-| -------------------------------------- | ----------------------------------- | ---------------------- |
-| ouverture                              | copie `applied` vers `draft`        | aucun                  |
-| modification d'un champ                | change `draft`                      | aucun                  |
-| `Réinitialiser`                        | remet `draft` aux valeurs par défaut | aucun                  |
-| fermeture temporaire sans appliquer    | abandonne `draft`                   | aucun                  |
-| `Appliquer`                            | valide `draft` vers `applied`       | au plus un GET         |
-| suppression d'une chip déjà appliquée  | modifie `applied` explicitement     | au plus un GET         |
-| resize ou changement de classe         | conserve les deux états             | aucun                  |
+| Événement                             | Effet local                          | Effet réseau   |
+| ------------------------------------- | ------------------------------------ | -------------- |
+| ouverture                             | copie `applied` vers `draft`         | aucun          |
+| modification d'un champ               | change `draft`                       | aucun          |
+| `Réinitialiser`                       | remet `draft` aux valeurs par défaut | aucun          |
+| fermeture temporaire sans appliquer   | abandonne `draft`                    | aucun          |
+| `Appliquer`                           | valide `draft` vers `applied`        | au plus un GET |
+| suppression d'une chip déjà appliquée | modifie `applied` explicitement      | au plus un GET |
+| resize ou changement de classe        | conserve les deux états              | aucun          |
 
-Le comportement de soumission de la recherche principale déjà approuvé n'est
-pas redéfini ici. Lorsqu'un GET est demandé, il compose recherche, pagination et
+Le comportement de soumission de la recherche principale déjà approuvé n'est pas
+redéfini ici. Lorsqu'un GET est demandé, il compose recherche, pagination et
 filtres appliqués selon le contrat `list-query` existant.
 
 ## 7. Résumé des filtres appliqués
 
-La barre de liste présente `Filtres (n)` et un nombre borné de chips supprimables.
-Les chips reflètent seulement les valeurs appliquées :
+La barre de liste présente `Filtres (n)` et un nombre borné de chips
+supprimables. Les chips reflètent seulement les valeurs appliquées :
 
 - `medium` : jusqu'à deux chips, puis `+n` ;
 - `expanded` : autant que la largeur utile l'autorise, avec une limite C5
@@ -183,8 +183,8 @@ sur plusieurs rangées de manière imprévisible.
 
 Soumaila doit refuser la décision ou ses futurs candidats si :
 
-1. le compact empile deux modales au lieu de remplacer le contenu du même
-   bottom sheet ;
+1. le compact empile deux modales au lieu de remplacer le contenu du même bottom
+   sheet ;
 2. une sélection ou `Réinitialiser` déclenche une requête avant `Appliquer` ;
 3. fermer sans appliquer modifie malgré tout les filtres actifs ;
 4. les actions sortent du viewport, passent sous le clavier ou masquent un
@@ -244,19 +244,28 @@ sur les classes DOM privées d'une bibliothèque.
 
 La dépendance ADAPT-5 est close : Soumaila a approuvé la PR #128 sur
 `7fbe158e21bcb5a0067c51b2770cd8739294806a`, l'a fusionnée dans
-`eff4d2d405e5cd884a8c5fac1557c99f2a87706e`, et la CI post-fusion
-`36462839705` est verte.
+`eff4d2d405e5cd884a8c5fac1557c99f2a87706e`, et la CI post-fusion `36462839705`
+est verte.
 
 La décision ADAPT-6a a ensuite été approuvée sur
 `94823549a09a8f39df0979db273c64fcdf0e1951`, fusionnée dans
-`0c6ff7b25eda3d407afffda27a7629174d015d87`, et validée par la CI
-post-fusion `36465758895`.
+`0c6ff7b25eda3d407afffda27a7629174d015d87`, et validée par la CI post-fusion
+`36465758895`.
 
-ADAPT-6b propose maintenant quatre références déterministes : deux états du
-même bottom sheet compact, un side sheet `medium` et un pane `expanded`. Elles
-vivent dans
+ADAPT-6b fournit quatre références déterministes : deux états du même bottom
+sheet compact, un side sheet `medium` et un pane `expanded`. Elles vivent dans
 [`filter-candidates/proposal.md`](../../examples/users-management-proof/presentation/filter-candidates/proposal.md).
-Elles n'ont aucune autorité avant approbation humaine et publication séparée.
+Soumaila a approuvé leur commit exact
+`81dd77e3633eada14fc1940f4a0c1cb4338aec87`, puis la PR #130 a été fusionnée dans
+`9b1792c9afbb31c906c69af9068a6d2e498ca043`. Ses 16 contrôles et la CI
+post-fusion `36471376072` sont verts.
+
+ADAPT-6c publie maintenant ces quatre PNG et leur brief visuel stable dans le
+manifeste `presentation-evidence`. Il retire de l'autorité active les anciennes
+images qui montrent encore les filtres secondaires en ligne, sans supprimer leur
+historique. Le brief ADAPT-2 reste actif après avoir rendu explicite la
+supersession ciblée de sa section 4.3 par ADAPT-6. Aucun fichier Angular ni work
+order n'est modifié dans ce lot.
 
 ## Références
 

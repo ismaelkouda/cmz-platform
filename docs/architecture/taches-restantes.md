@@ -2328,30 +2328,35 @@ Figma, désormais source partielle différée :
   et de liberté du focus. Le harnais conserve cinq écarts attendus et huit
   succès réels. Soumaila a approuvé la PR #127 sur
   `98e8be89b57156a7ba957e5788ed8bb416542896`, l'a fusionnée dans
-  `1eac9a2aa2251faa12fb1842fcb2fc8dbfe9808a`, et la CI post-fusion
-  `36449207951` est verte. **ADAPT-5c — réalisation adaptative fusionnée :**
-  le work order
-  `31407ceadaaee8dbca41ee3b6cd9fed18acdbbab3e1cee6b3a48b29fb3bbe7e3`
-  borne les cinq fichiers de page ; la PR #128 réalise les treize scénarios sur
+  `1eac9a2aa2251faa12fb1842fcb2fc8dbfe9808a`, et la CI post-fusion `36449207951`
+  est verte. **ADAPT-5c — réalisation adaptative fusionnée :** le work order
+  `31407ceadaaee8dbca41ee3b6cd9fed18acdbbab3e1cee6b3a48b29fb3bbe7e3` borne les
+  cinq fichiers de page ; la PR #128 réalise les treize scénarios sur
   `7fbe158e21bcb5a0067c51b2770cd8739294806a`. Soumaila l'a approuvée et
-  fusionnée dans `eff4d2d405e5cd884a8c5fac1557c99f2a87706e` ; les 17 checks
-  de PR et la CI post-fusion `36462839705` sont verts.
-  **ADAPT-6a — décision de filtrage multi-fenêtres fusionnée le
-  2026-09-28 :** ADR-0073 et le dossier
+  fusionnée dans `eff4d2d405e5cd884a8c5fac1557c99f2a87706e` ; les 17 checks de
+  PR et la CI post-fusion `36462839705` sont verts. **ADAPT-6a — décision de
+  filtrage multi-fenêtres fusionnée le 2026-09-28 :** ADR-0073 et le dossier
   `c5-adapt6-filtres-multi-fenetres-2026-09-28.md` figent un état unique
   `applied`/`draft`, un bottom sheet compact à navigation interne, un side sheet
   `medium` modal et un pane `expanded` persistant/repliable. Quinze filtres sont
   hiérarchisés en essentiels et groupes métier ; `Réinitialiser` n'émet aucun
   GET et `Appliquer` en émet au plus un. Soumaila a approuvé le SHA
   `94823549a09a8f39df0979db273c64fcdf0e1951`, l'a fusionné dans
-  `0c6ff7b25eda3d407afffda27a7629174d015d87`, et la CI post-fusion
-  `36465758895` est verte. **ADAPT-6b — références visuelles proposées :** quatre
-  PNG déterministes avec sources SVG couvrent sommaire et détail du même bottom
+  `0c6ff7b25eda3d407afffda27a7629174d015d87`, et la CI post-fusion `36465758895`
+  est verte. **ADAPT-6b — références visuelles approuvées :** quatre PNG
+  déterministes avec sources SVG couvrent sommaire et détail du même bottom
   sheet compact, side sheet `medium` et pane `expanded`. Aucun filtre absent du
-  contrat C5 n'est inventé pour simuler artificiellement quinze champs. Ce lot
-  attend approbation et fusion avant publication dans `presentation-evidence`,
-  puis oracles en échec attendu et nouveau work order avant réalisation.
-  Dossier :
+  contrat C5 n'est inventé pour simuler artificiellement quinze champs. Soumaila
+  a approuvé le commit exact `81dd77e3633eada14fc1940f4a0c1cb4338aec87`, la PR
+  #130 a été fusionnée dans `9b1792c9afbb31c906c69af9068a6d2e498ca043`, et la CI
+  post-fusion `36471376072` est verte. **ADAPT-6c — publication
+  content-addressed engagée :** les quatre PNG et leur brief visuel stable
+  entrent dans `presentation-evidence` ; les anciennes images qui montrent
+  encore les filtres en ligne quittent l'autorité active sans être supprimées.
+  Le brief ADAPT-2 déclare la supersession ciblée de sa section filtres et
+  reçoit une nouvelle empreinte. Aucun fichier Angular, work order ou dépendance
+  n'est modifié. Restent la revue/fusion, puis les oracles en échec attendu et
+  le nouveau work order avant réalisation. Dossier :
   `examples/users-management-proof/presentation/filter-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
