@@ -2279,7 +2279,14 @@ Figma, désormais source partielle différée :
   technique de la PR reste requise. Les choix de rendu précis de l'action
   principale et de `updated_at` seront vérifiés dans les candidats, sans bloquer
   la clôture documentaire. Dossier :
-  `c5-adapt2-audit-placement-multifenetre-2026-09-28.md`. Le rôle métier de liste ne
+  `c5-adapt2-audit-placement-multifenetre-2026-09-28.md`.
+  **ADAPT-3a — liaison de l'audit engagée localement le 2026-09-28 :** après
+  approbation, fusion de la PR #121 et CI post-fusion verte sur le SHA exact,
+  l'audit est ajouté au manifeste de présentation comme `design-brief`
+  Markdown content-addressed, global aux viewports et sans autorité métier.
+  Aucun fichier de page n'est modifié. Restent la revue/fusion de cette liaison,
+  la régénération du work order depuis `main`, puis la correction des filtres
+  compacts dans les cinq fichiers autorisés. Le rôle métier de liste ne
   fige pas la forme réseau : tableau direct et page sont les deux variantes
   prouvées. Objet conteneur, map ou autre projection devront recevoir un
   discriminateur et un oracle lors d'un cas réel, sans heuristique liée à `data`
