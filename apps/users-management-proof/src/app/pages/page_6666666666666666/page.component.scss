@@ -1,5 +1,6 @@
 :host {
     --border: #d8e1ed;
+    --control-border: #718096;
     --muted: #526581;
     --primary: #2864e8;
     display: block;
@@ -62,6 +63,7 @@
 
 .page-shell {
     padding: 36px 4.5% 64px;
+    container-type: inline-size;
 }
 
 .page-heading-row {
@@ -78,7 +80,7 @@ h1 {
 .button {
     min-height: 40px;
     padding: 9px 16px;
-    border: 1px solid #c7d3e3;
+    border: 1px solid var(--control-border);
     border-radius: 7px;
     background: #fff;
     color: inherit;
@@ -131,7 +133,7 @@ select {
     width: 100%;
     min-height: 40px;
     padding: 9px 12px;
-    border: 1px solid #c7d3e3;
+    border: 1px solid var(--control-border);
     border-radius: 6px;
     background: #fff;
     color: inherit;
@@ -215,7 +217,7 @@ td,
     min-width: 40px;
     min-height: 40px;
     padding: 0;
-    border: 1px solid #c7d3e3;
+    border: 1px solid var(--control-border);
     border-radius: 7px;
     background: #fff;
     color: inherit;
@@ -252,7 +254,7 @@ td,
 .drawer {
     position: relative;
     z-index: 1;
-    width: min(520px, 100%);
+    width: min(480px, 100%);
     height: 100%;
     overflow: auto;
     padding: 28px 32px;
@@ -315,15 +317,9 @@ td,
     color: #fff;
 }
 
-.toast-error {
-    background: #911f1f;
-}
-
-@media (min-width: 801px) {
-    .toast-with-drawer {
-        right: 544px;
-        max-width: calc(100vw - 582px);
-    }
+:where(button, input, select):focus-visible {
+    outline: 3px solid #111827;
+    outline-offset: 2px;
 }
 
 .sr-only {
@@ -338,14 +334,41 @@ td,
     border: 0;
 }
 
+@container (max-width: 1024px) {
+    .filters,
+    .filter-options {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .filter-search,
+    .filter-options,
+    .filter-actions {
+        grid-column: 1 / -1;
+    }
+
+    .filter-options {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .filter-actions {
+        justify-content: flex-end;
+    }
+}
+
 @media (max-width: 800px) {
     .app-bar {
         height: 60px;
         padding: 0 16px;
     }
 
+    .workspace {
+        height: calc(100dvh - 148px - env(safe-area-inset-bottom, 0px));
+        overflow-y: auto;
+        scroll-padding-bottom: 24px;
+    }
+
     .page-shell {
-        padding: 20px 16px 40px;
+        padding: 20px 16px 24px;
     }
 
     .page-heading-row {
@@ -359,7 +382,14 @@ td,
     }
 
     .create-button {
-        width: 100%;
+        position: fixed;
+        z-index: 10;
+        right: max(16px, env(safe-area-inset-right));
+        bottom: max(16px, env(safe-area-inset-bottom));
+        width: auto;
+        min-height: 56px;
+        border-radius: 18px;
+        box-shadow: 0 4px 14px rgb(15 23 42 / 24%);
     }
 
     .filters {
@@ -443,11 +473,18 @@ td,
     }
 
     .user-card {
-        padding: 12px 14px;
+        padding: 10px 12px;
+        font-size: 13px;
     }
 
     .user-card p {
-        margin: 6px 0 0;
+        margin: 4px 0 0;
+        line-height: 16px;
+    }
+
+    .user-updated {
+        color: var(--muted);
+        font-size: 12px;
     }
 
     .pagination {
@@ -489,5 +526,41 @@ td,
         bottom: 16px;
         left: 16px;
         min-width: 0;
+    }
+}
+
+@media (min-width: 1200px) and (min-height: 800px) {
+    .workspace.layout-expanded.create-open {
+        display: grid;
+        grid-template-columns: minmax(720px, 1fr) minmax(360px, 400px);
+        align-items: start;
+        gap: 24px;
+        max-width: 1600px;
+        padding: 36px clamp(16px, 3vw, 48px) 64px;
+        margin: 0 auto;
+    }
+
+    .workspace.layout-expanded.create-open .page-shell {
+        min-width: 0;
+        padding: 0;
+    }
+
+    .overlay-persistent {
+        position: sticky;
+        z-index: 1;
+        top: 24px;
+        inset: auto;
+        display: block;
+        min-width: 0;
+    }
+
+    .overlay-persistent .drawer {
+        width: 100%;
+        max-width: 440px;
+        height: auto;
+        max-height: calc(100vh - 120px);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 8px 28px rgb(15 23 42 / 12%);
     }
 }

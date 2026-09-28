@@ -1,13 +1,17 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import {
     Component,
     ElementRef,
+    Injector,
+    afterNextRender,
     computed,
     inject,
     signal,
     viewChild,
     type Provider,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
     FormField,
     disabled,
@@ -18,7 +22,7 @@ import {
     submit,
     validate,
 } from '@angular/forms/signals';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 
 import {
     PAGE_ACTION_PERMISSION_PORT,
@@ -60,6 +64,12 @@ const EMPTY_USER: CreateUserModel = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export const PAGE_COMPACT_MEDIA_QUERY = '(max-width: 800px)';
+export const PAGE_EXPANDED_MEDIA_QUERY =
+    '(min-width: 1200px) and (min-height: 800px)';
+
+type PageLayout = 'compact' | 'medium' | 'expanded';
+
 function permissionPortFactory(): PageActionPermissionPort {
     const decision = inject(APP_ACCESS_DECISION, { optional: true });
     return {
@@ -95,8 +105,26 @@ function messageFrom(error: unknown): string {
 })
 export class PageComponent {
     protected readonly composition = inject(PageComposition);
+    private readonly breakpointObserver = inject(BreakpointObserver);
+    private readonly injector = inject(Injector);
     private readonly createButton =
         viewChild<ElementRef<HTMLButtonElement>>('createButton');
+    private readonly firstNameInput =
+        viewChild<ElementRef<HTMLInputElement>>('firstNameInput');
+
+    protected readonly layout = toSignal(
+        this.breakpointObserver
+            .observe([PAGE_COMPACT_MEDIA_QUERY, PAGE_EXPANDED_MEDIA_QUERY])
+            .pipe(
+                map(({ breakpoints }): PageLayout => {
+                    if (breakpoints[PAGE_COMPACT_MEDIA_QUERY]) return 'compact';
+                    if (breakpoints[PAGE_EXPANDED_MEDIA_QUERY])
+                        return 'expanded';
+                    return 'medium';
+                })
+            ),
+        { initialValue: 'medium' as PageLayout }
+    );
 
     protected readonly filtersModel = signal<FiltersModel>({
         ...EMPTY_FILTERS,
@@ -110,6 +138,9 @@ export class PageComponent {
     });
     protected readonly createModel = signal<CreateUserModel>({ ...EMPTY_USER });
     protected readonly isCreateOpen = signal(false);
+    protected readonly isModalCreate = computed(
+        () => this.isCreateOpen() && this.layout() !== 'expanded'
+    );
     protected readonly successNotice = signal('');
     protected readonly failureNotice = signal('');
     protected readonly emailConflict = signal(false);
@@ -224,6 +255,10 @@ export class PageComponent {
         this.failureNotice.set('');
         this.emailConflict.set(false);
         this.isCreateOpen.set(true);
+        afterNextRender(
+            { write: () => this.firstNameInput()?.nativeElement.focus() },
+            { injector: this.injector }
+        );
     }
 
     protected closeCreateForm(): void {
@@ -231,11 +266,11 @@ export class PageComponent {
         this.isCreateOpen.set(false);
         this.failureNotice.set('');
         this.emailConflict.set(false);
-        queueMicrotask(() => this.createButton()?.nativeElement.focus());
+        this.restoreCreateButtonFocus();
     }
 
     protected onDialogKeydown(event: KeyboardEvent): void {
-        if (event.key !== 'Escape') return;
+        if (event.key !== 'Escape' || !this.isModalCreate()) return;
         event.preventDefault();
         this.closeCreateForm();
     }
@@ -260,9 +295,7 @@ export class PageComponent {
                 this.successNotice.set("L'utilisateur a été créé.");
                 this.isCreateOpen.set(false);
                 this.createForm().reset({ ...EMPTY_USER });
-                queueMicrotask(() =>
-                    this.createButton()?.nativeElement.focus()
-                );
+                this.restoreCreateButtonFocus();
                 return undefined;
             } catch (error: unknown) {
                 const detail = messageFrom(error);
@@ -341,5 +374,12 @@ export class PageComponent {
                 ? { isActive: filters.status === 'active' }
                 : {}),
         });
+    }
+
+    private restoreCreateButtonFocus(): void {
+        afterNextRender(
+            { write: () => this.createButton()?.nativeElement.focus() },
+            { injector: this.injector }
+        );
     }
 }
