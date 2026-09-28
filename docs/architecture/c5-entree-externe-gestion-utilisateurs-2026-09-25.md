@@ -620,15 +620,39 @@ wireframe n'a l'autorité ni d'affaiblir une erreur serveur attachée au champ, 
 de masquer des données paginées.
 
 Compilation stricte, build production, lint, tests Angular zoneless et quatre
-scénarios Playwright passent. Les quatre nouveaux PNG ont été relus localement
-et restent des candidats : la PR doit encore les faire produire et relire avant
-de figer une baseline dans un lot séparé. Voir
+scénarios Playwright passent. La PR #119 a été approuvée par Soumaila sur son
+commit exact, fusionnée dans `main`, puis validée par la CI post-fusion sur le
+commit de merge exact. Les quatre PNG restent des candidats : leur couverture
+mobile/desktop ne prouve pas encore une adaptation tablette. Voir
 [ADR-0071](../adr/0071-arbitrer-ecarts-c5-avant-baseline-chromium.md).
 
 ### Suite de C5 après C5g-8b
 
-1. faire produire les quatre candidats par la CI de la PR et les relire ;
-2. faire approuver et fusionner les corrections ;
-3. mesurer plusieurs rendus du commit fusionné et calibrer un budget absolu ;
-4. figer les sorties Chromium approuvées comme snapshots bloquants ;
-5. terminer par la comparaison comportementale avec la baseline SEOS.
+1. appliquer ADAPT-1 : formaliser les références officielles, le scaffold et les
+   invariants `compact` / `medium` / `expanded` ;
+2. produire et faire approuver une preuve C5 `medium`, sans migration Material
+   implicite ;
+3. prouver la conservation d'état et l'absence de réseau pendant le resize ;
+4. mesurer plusieurs rendus des viewports approuvés et calibrer un budget absolu
+   ;
+5. figer les sorties Chromium approuvées comme snapshots bloquants ;
+6. terminer par la comparaison comportementale avec la baseline SEOS.
+
+## ADAPT-1 — doctrine adaptative officielle formalisée
+
+La stratégie ne repose plus sur le seul couple mobile/desktop de la preuve
+initiale.
+[ADR-0072](../adr/0072-ui-adaptative-guidee-par-m3-et-apis-officielles.md)
+sépare désormais :
+
+- Material 3, autorité de design sur scaffold et layouts canoniques ;
+- Android Adaptive, référence comportementale et non dépendance Angular ;
+- Angular Material/CDK, API d'implémentation seulement après adoption explicite
+  par l'application ;
+- les contrats, oracles et preuves locales, autorités sur le comportement réel.
+
+C5 est une liste avec panneau de tâche/support de création, pas un
+`list-detail`. Le mode `medium` et la transition dynamique restent à produire et
+à faire relire avant la baseline. La doctrine complète, ses anti-patterns et son
+oracle minimal sont consignés dans
+[`ui-adaptative-references-officielles.md`](./ui-adaptative-references-officielles.md).
