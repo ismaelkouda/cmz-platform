@@ -2326,8 +2326,26 @@ Figma, désormais source partielle différée :
   `520px` redondante qui contredisait le mode `medium` approuvé, et remplace
   l'inspection de `cdktrapfocus` par des preuves comportementales de confinement
   et de liberté du focus. Le harnais conserve cinq écarts attendus et huit
-  succès réels. Restent revue et fusion d'ADAPT-5b, régénération du work order
-  depuis le nouveau `main`, puis réalisation bornée aux cinq fichiers de page.
+  succès réels. Soumaila a approuvé la PR #127 sur
+  `98e8be89b57156a7ba957e5788ed8bb416542896`, l'a fusionnée dans
+  `1eac9a2aa2251faa12fb1842fcb2fc8dbfe9808a`, et la CI post-fusion
+  `36449207951` est verte. **ADAPT-5c — réalisation adaptative soumise à revue :**
+  le work order
+  `31407ceadaaee8dbca41ee3b6cd9fed18acdbbab3e1cee6b3a48b29fb3bbe7e3`
+  borne les cinq fichiers de page ; la PR #128 réalise les treize scénarios sur
+  `7fbe158e21bcb5a0067c51b2770cd8739294806a`. Les 17 checks GitHub sont verts,
+  Soumaila est assigné et demandé en revue, mais aucune approbation n'est encore
+  enregistrée.
+  **ADAPT-6a — décision de filtrage multi-fenêtres formalisée localement le
+  2026-09-28 :** ADR-0073 et le dossier
+  `c5-adapt6-filtres-multi-fenetres-2026-09-28.md` figent un état unique
+  `applied`/`draft`, un bottom sheet compact à navigation interne, un side sheet
+  `medium` modal et un pane `expanded` persistant/repliable. Quinze filtres sont
+  hiérarchisés en essentiels et groupes métier ; `Réinitialiser` n'émet aucun
+  GET et `Appliquer` en émet au plus un. Ce lot ne modifie pas la PR de
+  réalisation ADAPT-5 en attente de revue. Restent sa fusion et sa CI
+  post-fusion, puis les références visuelles ADAPT-6, leur approbation, les
+  oracles en échec attendu et un nouveau work order avant réalisation.
   Dossier :
   `examples/users-management-proof/presentation/adaptive-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
