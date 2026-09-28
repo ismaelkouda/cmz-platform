@@ -111,6 +111,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0068](./adr/0068-publier-c5-dans-une-application-de-preuve.md) | Publier C5 dans une application de preuve réelle         |
 | [0069](./adr/0069-autorisation-fine-action-dans-composition-page.md) | L’autorisation fine appartient à l’action de page        |
 | [0070](./adr/0070-harnais-navigateur-avant-baseline-visuelle.md) | Prouver le rendu navigateur avant de figer une baseline visuelle |
+| [0071](./adr/0071-arbitrer-ecarts-c5-avant-baseline-chromium.md) | Arbitrer les écarts C5 avant la baseline Chromium        |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

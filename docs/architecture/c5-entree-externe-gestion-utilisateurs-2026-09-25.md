@@ -599,3 +599,36 @@ modifié hors de son work order dans C5g-8a. Voir
 4. figer ensuite les sorties Chromium approuvées comme snapshots bloquants ;
 5. terminer par la comparaison comportementale avec la baseline SEOS, sans
    réintroduire le corpus dans le runtime produit.
+
+## C5g-8b — écarts arbitrés et corrections vérifiées
+
+La PR #118 a été approuvée par Soumaila sur son commit exact, fusionnée dans
+`main`, puis validée par la CI post-fusion. La revue des quatre candidats
+retient les corrections de libellés de rôles, pagination desktop, placement du
+toast, hiérarchie d'erreur, titre, densité et actions mobiles.
+
+Le nouveau work order borne les corrections aux cinq fichiers de page : les
+rôles connus sont projetés en français avec repli explicite, la pagination
+desktop expose des boutons utilisables, le toast ne recouvre plus le drawer,
+l'erreur possède une hiérarchie lisible et la présentation mobile est plus dense
+avec l'action primaire en premier. L'édition de l'email efface le conflit devenu
+périmé ; avant cette édition, la soumission reste désactivée.
+
+Deux divergences restent intentionnelles : l'email rejeté ne peut pas être
+resoumis à l'identique et les cinq résultats mobiles restent rendus. Le
+wireframe n'a l'autorité ni d'affaiblir une erreur serveur attachée au champ, ni
+de masquer des données paginées.
+
+Compilation stricte, build production, lint, tests Angular zoneless et quatre
+scénarios Playwright passent. Les quatre nouveaux PNG ont été relus localement
+et restent des candidats : la PR doit encore les faire produire et relire avant
+de figer une baseline dans un lot séparé. Voir
+[ADR-0071](../adr/0071-arbitrer-ecarts-c5-avant-baseline-chromium.md).
+
+### Suite de C5 après C5g-8b
+
+1. faire produire les quatre candidats par la CI de la PR et les relire ;
+2. faire approuver et fusionner les corrections ;
+3. mesurer plusieurs rendus du commit fusionné et calibrer un budget absolu ;
+4. figer les sorties Chromium approuvées comme snapshots bloquants ;
+5. terminer par la comparaison comportementale avec la baseline SEOS.

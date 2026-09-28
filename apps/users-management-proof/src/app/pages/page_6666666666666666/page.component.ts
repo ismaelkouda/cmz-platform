@@ -177,6 +177,16 @@ export class PageComponent {
         const last = Math.min(first + page.items.length - 1, page.totalItems);
         return `${first}–${last} sur ${page.totalItems} utilisateurs`;
     });
+    protected readonly paginationPages = computed(() => {
+        const page = this.page();
+        if (!page || page.lastPage < 1) return [];
+        if (page.lastPage === 1) return [1];
+        const first = Math.min(
+            Math.max(page.currentPage - 1, 1),
+            page.lastPage - 1
+        );
+        return [first, first + 1];
+    });
 
     constructor() {
         this.composition.profilesSelect.load();
@@ -264,6 +274,12 @@ export class PageComponent {
         });
     }
 
+    protected onEmailInput(): void {
+        if (!this.emailConflict()) return;
+        this.emailConflict.set(false);
+        this.failureNotice.set('');
+    }
+
     protected fieldError(
         field: () => {
             touched(): boolean;
@@ -284,6 +300,16 @@ export class PageComponent {
 
     protected isActiveStatus(status: string): boolean {
         return ['active', 'actif'].includes(status.toLowerCase());
+    }
+
+    protected roleLabel(role: string | null | undefined): string {
+        const value = role?.trim() ?? '';
+        const labels: Readonly<Record<string, string>> = {
+            agent: 'Agent',
+            supervisor: 'Superviseur',
+            'team-leader': 'Chef d’équipe',
+        };
+        return labels[value.toLowerCase()] ?? (value || 'Sans rôle');
     }
 
     protected formatDate(value: string): string {
