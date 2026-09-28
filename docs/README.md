@@ -113,6 +113,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0070](./adr/0070-harnais-navigateur-avant-baseline-visuelle.md) | Prouver le rendu navigateur avant de figer une baseline visuelle |
 | [0071](./adr/0071-arbitrer-ecarts-c5-avant-baseline-chromium.md) | Arbitrer les écarts C5 avant la baseline Chromium        |
 | [0072](./adr/0072-ui-adaptative-guidee-par-m3-et-apis-officielles.md) | Guider l'UI adaptative par M3 et les API officielles de la cible |
+| [0073](./adr/0073-filtrage-adaptatif-par-panneau-unique.md) | Filtrage adaptatif par panneau unique et état brouillon  |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

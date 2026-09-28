@@ -826,5 +826,42 @@ géométrie restent explicites.
 
 Le harnais compte désormais treize scénarios : cinq écarts adaptatifs attendus
 et huit succès réels sur l'implémentation historique. Aucun `skip`, `todo` ou
-affaiblissement du comportement cible n'est introduit. Ce correctif doit être
-revu et fusionné avant de calculer le work order définitif d'ADAPT-5.
+affaiblissement du comportement cible n'est introduit. Soumaila a approuvé la
+PR #127 sur le commit exact
+`98e8be89b57156a7ba957e5788ed8bb416542896`, puis l'a fusionnée dans
+`1eac9a2aa2251faa12fb1842fcb2fc8dbfe9808a`. Les 17 checks de PR et la CI
+post-fusion `36449207951` sont verts.
+
+## ADAPT-5c — réalisation adaptative soumise à revue
+
+Le work order définitif
+`31407ceadaaee8dbca41ee3b6cd9fed18acdbbab3e1cee6b3a48b29fb3bbe7e3`
+a borné la réalisation aux cinq fichiers de page. La PR #128 implémente le FAB
+compact sans recouvrement, la parité `updated_at`, le side sheet `medium` modal,
+le pane `expanded` non modal et la continuité d'état sur le commit exact
+`7fbe158e21bcb5a0067c51b2770cd8739294806a`.
+
+Les treize scénarios Playwright sont de vrais succès, les 25 tests Angular et
+les 17 checks GitHub sont verts. Soumaila est assigné et demandé en revue. La PR
+reste ouverte et fusionnable, bloquée uniquement par la revue obligatoire ;
+aucune approbation n'est enregistrée au moment de cette formalisation.
+
+## ADAPT-6a — décision de filtrage multi-fenêtres avant réalisation
+
+La discussion produit du 2026-09-28 a clos la disposition des filtres pour les
+trois classes, y compris le cas d'environ quinze critères. La décision est
+formalisée par [ADR-0073](../adr/0073-filtrage-adaptatif-par-panneau-unique.md)
+et détaillée dans
+[`c5-adapt6-filtres-multi-fenetres-2026-09-28.md`](./c5-adapt6-filtres-multi-fenetres-2026-09-28.md).
+
+Le compact utilise un bottom sheet modal à deux niveaux : sommaire des filtres,
+puis contrôle du champ dans le même panneau. Le medium utilise un side sheet
+modal avec les contrôles regroupés. L'expanded utilise un supporting pane
+persistant, repliable et non modal. Les actions `Réinitialiser` et `Appliquer`
+restent côte à côte dans le footer fixe ; le brouillon n'émet aucune requête et
+une application produit au plus un GET.
+
+Cette décision ne modifie pas la réalisation ADAPT-5 en cours de revue. Après
+sa fusion et sa CI post-fusion, ADAPT-6 devra produire des références visuelles,
+les publier après approbation, écrire les oracles en échec attendu, puis
+seulement ouvrir un nouveau work order de réalisation.
