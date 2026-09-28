@@ -832,7 +832,7 @@ PR #127 sur le commit exact
 `1eac9a2aa2251faa12fb1842fcb2fc8dbfe9808a`. Les 17 checks de PR et la CI
 post-fusion `36449207951` sont verts.
 
-## ADAPT-5c — réalisation adaptative soumise à revue
+## ADAPT-5c — réalisation adaptative fusionnée
 
 Le work order définitif
 `31407ceadaaee8dbca41ee3b6cd9fed18acdbbab3e1cee6b3a48b29fb3bbe7e3`
@@ -842,9 +842,10 @@ le pane `expanded` non modal et la continuité d'état sur le commit exact
 `7fbe158e21bcb5a0067c51b2770cd8739294806a`.
 
 Les treize scénarios Playwright sont de vrais succès, les 25 tests Angular et
-les 17 checks GitHub sont verts. Soumaila est assigné et demandé en revue. La PR
-reste ouverte et fusionnable, bloquée uniquement par la revue obligatoire ;
-aucune approbation n'est enregistrée au moment de cette formalisation.
+les 17 checks GitHub sont verts. Soumaila a approuvé la PR #128 sur le commit
+exact, puis l'a fusionnée dans
+`eff4d2d405e5cd884a8c5fac1557c99f2a87706e`. La CI post-fusion
+`36462839705` est verte.
 
 ## ADAPT-6a — décision de filtrage multi-fenêtres avant réalisation
 
@@ -861,7 +862,23 @@ persistant, repliable et non modal. Les actions `Réinitialiser` et `Appliquer`
 restent côte à côte dans le footer fixe ; le brouillon n'émet aucune requête et
 une application produit au plus un GET.
 
-Cette décision ne modifie pas la réalisation ADAPT-5 en cours de revue. Après
-sa fusion et sa CI post-fusion, ADAPT-6 devra produire des références visuelles,
-les publier après approbation, écrire les oracles en échec attendu, puis
-seulement ouvrir un nouveau work order de réalisation.
+Cette décision a été approuvée par Soumaila sur
+`94823549a09a8f39df0979db273c64fcdf0e1951`, fusionnée dans
+`0c6ff7b25eda3d407afffda27a7629174d015d87`, puis validée par la CI
+post-fusion `36465758895`.
+
+## ADAPT-6b — quatre états visuels proposés avant le runtime
+
+Le lot suivant ne modifie toujours pas la page Angular. Il matérialise le
+sommaire compact, le détail compact dans le même bottom sheet, le side sheet
+`medium` et le pane `expanded`. Les quatre PNG sont rendus depuis des SVG
+éditables et reproduits une seconde fois à l'identique octet par octet.
+
+Les références n'inventent pas douze critères pour simuler quinze champs. Elles
+montrent les trois filtres C5 réels et l'emplacement de groupes supplémentaires
+uniquement si un futur contrat les fournit. Voir
+[`filter-candidates/proposal.md`](../../examples/users-management-proof/presentation/filter-candidates/proposal.md).
+
+Ce lot doit être approuvé et fusionné avant publication dans le manifeste. Les
+oracles en échec attendu et le work order de réalisation restent des lots
+séparés.
