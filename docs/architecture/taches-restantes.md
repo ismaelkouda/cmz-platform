@@ -2249,15 +2249,23 @@ Figma, désormais source partielle différée :
   modifié ; l'édition efface le feedback périmé. Les cinq résultats mobiles
   restent rendus : le wireframe ne peut ni affaiblir la validation serveur ni
   masquer des données. Compilation, build, lint, tests Angular zoneless et les
-  quatre scénarios Playwright sont verts ; les nouveaux PNG ont été relus
-  localement et restent candidats. Reste leur production et leur revue en CI,
-  l'approbation/fusion du lot, puis une baseline Chromium séparée calibrée sur
-  plusieurs runs. Le rôle métier de liste ne fige pas la forme réseau : tableau
-  direct et page sont les deux variantes prouvées. Objet conteneur, map ou autre
-  projection devront recevoir un discriminateur et un oracle lors d'un cas réel,
-  sans heuristique liée à `data` ou au framework backend. **QUERY-1 — lecture
-  objet unique à auditer :** le GET `RequestsDetailsApi.execute()` retourne
-  réellement `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
+  quatre scénarios Playwright sont verts. La PR #119 a été approuvée par
+  Soumaila sur son commit exact, fusionnée, puis validée par la CI post-fusion.
+  Les PNG restent candidats. **ADAPT-1 — doctrine officielle formalisée
+  localement le 2026-09-28 :** ADR-0072 et le guide
+  `ui-adaptative-references-officielles.md` hiérarchisent contrats, WCAG, preuve
+  de présentation, Material 3, Android Adaptive et Angular Material/CDK. C5 est
+  classé liste + panneau de tâche/support, pas `list-detail` ; les classes
+  décrivent la fenêtre, jamais l'appareil. Aucun seuil Android `dp` n'est copié
+  en CSS et Material reste opt-in. Restent l'approbation/fusion de cette
+  doctrine, une preuve `medium`, les tests de resize sans perte d'état ni
+  réseau, puis la baseline Chromium calibrée sur les viewports approuvés. Le
+  rôle métier de liste ne fige pas la forme réseau : tableau direct et page sont
+  les deux variantes prouvées. Objet conteneur, map ou autre projection devront
+  recevoir un discriminateur et un oracle lors d'un cas réel, sans heuristique
+  liée à `data` ou au framework backend. **QUERY-1 — lecture objet unique à
+  auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
+  `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
   `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
   primitive `read-query` à cardinalités `one|many|page` et un profil
   `detail-query` mince. Refus de dupliquer transport, cache, erreurs, contrôleur
