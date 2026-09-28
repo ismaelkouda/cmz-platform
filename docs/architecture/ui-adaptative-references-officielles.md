@@ -144,9 +144,10 @@ Le changement de classe pendant l'exécution ne doit produire :
 - ni duplication d'un contrôle interactif sous deux layouts simultanés ;
 - ni perte de focus silencieuse.
 
-Le comportement `medium` n'est pas encore approuvé : les wireframes C5 ne
-couvrent que 390 × 844 et 1440 × 1024. Une preuve tablette doit précéder toute
-baseline visuelle prétendant couvrir l'adaptation.
+La composition C5 `medium` temporaire et la composition `expanded` persistante
+ont été approuvées le 2026-09-28 avec le candidat compact. Cette approbation
+porte sur leur placement et leur sémantique ; les oracles runtime de modalité,
+focus et continuité restent requis avant toute baseline visuelle.
 
 ## 7. Règles d'implémentation Angular
 

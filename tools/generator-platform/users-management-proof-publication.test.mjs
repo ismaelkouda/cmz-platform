@@ -316,18 +316,6 @@ test('publie une composition Angular stable et prépare un work order raccordé'
                 viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
             },
             {
-                id: 'desktop-create-error',
-                purpose: 'state-reference',
-                state_ids: ['create-failed'],
-                viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
-            },
-            {
-                id: 'mobile-ready',
-                purpose: 'responsive-layout',
-                state_ids: ['ready'],
-                viewport: { width: 390, height: 844, pixel_ratio: 1 },
-            },
-            {
                 id: 'mobile-create-error',
                 purpose: 'state-reference',
                 state_ids: ['create-failed'],
@@ -338,6 +326,24 @@ test('publie une composition Angular stable et prépare un work order raccordé'
                 purpose: 'responsive-layout',
                 state_ids: [],
                 viewport: null,
+            },
+            {
+                id: 'compact-ready-adaptive',
+                purpose: 'responsive-layout',
+                state_ids: ['ready'],
+                viewport: { width: 390, height: 844, pixel_ratio: 1 },
+            },
+            {
+                id: 'medium-create-adaptive',
+                purpose: 'responsive-layout',
+                state_ids: ['ready'],
+                viewport: { width: 1024, height: 768, pixel_ratio: 1 },
+            },
+            {
+                id: 'expanded-create-adaptive',
+                purpose: 'responsive-layout',
+                state_ids: ['ready'],
+                viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
             },
         ]
     );
@@ -357,5 +363,79 @@ test('publie une composition Angular stable et prépare un work order raccordé'
             state_ids: [],
             viewport: null,
         }
+    );
+    assert.deepEqual(
+        realization.presentation_evidence.sources
+            .filter(({ id }) => id.endsWith('-adaptive'))
+            .map(
+                ({
+                    id,
+                    source_kind,
+                    purpose,
+                    path,
+                    media_type,
+                    bytes,
+                    sha256,
+                    trust,
+                    state_ids,
+                    viewport,
+                }) => ({
+                    id,
+                    source_kind,
+                    purpose,
+                    path,
+                    media_type,
+                    bytes,
+                    sha256,
+                    trust,
+                    state_ids,
+                    viewport,
+                })
+            ),
+        [
+            {
+                id: 'compact-ready-adaptive',
+                source_kind: 'wireframe',
+                purpose: 'responsive-layout',
+                path: 'examples/users-management-proof/presentation/adaptive-candidates/compact-ready.proposed.png',
+                media_type: 'image/png',
+                bytes: 48279,
+                sha256: '18a08587a9ef143540287d273ae89ea55c4b3f27ec95b1d5486e3dec3c843b07',
+                trust: 'untrusted-content',
+                state_ids: ['ready'],
+                viewport: { width: 390, height: 844, pixel_ratio: 1 },
+            },
+            {
+                id: 'medium-create-adaptive',
+                source_kind: 'wireframe',
+                purpose: 'responsive-layout',
+                path: 'examples/users-management-proof/presentation/adaptive-candidates/medium-create.proposed.png',
+                media_type: 'image/png',
+                bytes: 66545,
+                sha256: '50d6cb12140ce3a55edea0459540cace6569af77494b641f339a74d8162c2252',
+                trust: 'untrusted-content',
+                state_ids: ['ready'],
+                viewport: { width: 1024, height: 768, pixel_ratio: 1 },
+            },
+            {
+                id: 'expanded-create-adaptive',
+                source_kind: 'wireframe',
+                purpose: 'responsive-layout',
+                path: 'examples/users-management-proof/presentation/adaptive-candidates/expanded-create.proposed.png',
+                media_type: 'image/png',
+                bytes: 100767,
+                sha256: 'b2216c0fb5e0b6647ffb49e5d24dce5db1e37ff6394ed0f3c1711bcd8c8462f9',
+                trust: 'untrusted-content',
+                state_ids: ['ready'],
+                viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
+            },
+        ]
+    );
+    assert.equal(
+        realization.presentation_evidence.sources.some(({ id }) =>
+            ['desktop-create-error', 'mobile-ready'].includes(id)
+        ),
+        false,
+        'les références remplacées ne doivent plus guider la réalisation'
     );
 });

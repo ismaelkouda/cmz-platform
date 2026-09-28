@@ -23,38 +23,6 @@
       }
     },
     {
-      "id": "desktop-create-error",
-      "source_kind": "wireframe",
-      "purpose": "state-reference",
-      "snapshot_uri": "examples/users-management-proof/presentation/desktop-create-error.proposed.png",
-      "media_type": "image/png",
-      "bytes": 96614,
-      "sha256": "ad9e0ddf0415cfe14bea276615af3f2abe4450a22ab15630bc21a52a84ba90ec",
-      "trust": "untrusted-content",
-      "state_ids": ["create-failed"],
-      "viewport": {
-        "width": 1440,
-        "height": 1024,
-        "pixel_ratio": 1
-      }
-    },
-    {
-      "id": "mobile-ready",
-      "source_kind": "wireframe",
-      "purpose": "responsive-layout",
-      "snapshot_uri": "examples/users-management-proof/presentation/mobile-ready.proposed.png",
-      "media_type": "image/png",
-      "bytes": 46625,
-      "sha256": "68c94addd635aa5ee8bde1cdc97b67c8e387fec82c7c74aacdcb1e543e9ea2ea",
-      "trust": "untrusted-content",
-      "state_ids": ["ready"],
-      "viewport": {
-        "width": 390,
-        "height": 844,
-        "pixel_ratio": 1
-      }
-    },
-    {
       "id": "mobile-create-error",
       "source_kind": "wireframe",
       "purpose": "state-reference",
@@ -81,6 +49,54 @@
       "trust": "untrusted-content",
       "state_ids": [],
       "viewport": null
+    },
+    {
+      "id": "compact-ready-adaptive",
+      "source_kind": "wireframe",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/adaptive-candidates/compact-ready.proposed.png",
+      "media_type": "image/png",
+      "bytes": 48279,
+      "sha256": "18a08587a9ef143540287d273ae89ea55c4b3f27ec95b1d5486e3dec3c843b07",
+      "trust": "untrusted-content",
+      "state_ids": ["ready"],
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "pixel_ratio": 1
+      }
+    },
+    {
+      "id": "medium-create-adaptive",
+      "source_kind": "wireframe",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/adaptive-candidates/medium-create.proposed.png",
+      "media_type": "image/png",
+      "bytes": 66545,
+      "sha256": "50d6cb12140ce3a55edea0459540cace6569af77494b641f339a74d8162c2252",
+      "trust": "untrusted-content",
+      "state_ids": ["ready"],
+      "viewport": {
+        "width": 1024,
+        "height": 768,
+        "pixel_ratio": 1
+      }
+    },
+    {
+      "id": "expanded-create-adaptive",
+      "source_kind": "wireframe",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/adaptive-candidates/expanded-create.proposed.png",
+      "media_type": "image/png",
+      "bytes": 100767,
+      "sha256": "b2216c0fb5e0b6647ffb49e5d24dce5db1e37ff6394ed0f3c1711bcd8c8462f9",
+      "trust": "untrusted-content",
+      "state_ids": ["ready"],
+      "viewport": {
+        "width": 1440,
+        "height": 1024,
+        "pixel_ratio": 1
+      }
     }
   ]
 }

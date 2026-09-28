@@ -1,10 +1,17 @@
 # Proposition de référence visuelle C5
 
-- **Statut :** Approved — PR #114 approuvée et fusionnée
+- **Statut :** Partiellement remplacé — historique approuvé conservé
 - **Autorité :** `presentation-only`
 - **Page :** `page_6666666666666666`
 - **Route :** `/settings-security/users`
 - **Date de production :** 2026-09-26
+
+> **Autorité courante :** ADAPT-4b retire `mobile-ready` et
+> `desktop-create-error` du manifeste actif, car les compositions compactes et
+> étendues approuvées le 2026-09-28 les remplacent. Les quatre fichiers restent
+> versionnés comme historique ; seuls `desktop-ready` et `mobile-create-error`
+> continuent de guider la réalisation. Voir
+> [`adaptive-candidates/proposal.md`](./adaptive-candidates/proposal.md).
 
 ## Objet de la revue
 

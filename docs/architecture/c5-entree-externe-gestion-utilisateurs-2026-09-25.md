@@ -754,3 +754,24 @@ et fusion seulement, les PNG pourront entrer dans le manifeste de présentation,
 un nouveau work order pourra être calculé, puis les oracles devront échouer sur
 `main` avant toute réalisation Angular. Voir
 [`proposal.md`](../../examples/users-management-proof/presentation/adaptive-candidates/proposal.md).
+
+## ADAPT-4b — références adaptatives actives et non contradictoires
+
+Le porteur produit a approuvé la disposition, le FAB compact et la conservation
+de `updated_at`. Soumaila a approuvé le commit exact de la PR #124, l'a
+fusionné, les 17 contrôles sont verts et la CI post-fusion a réussi sur le SHA
+de merge exact.
+
+Le manifeste de présentation remplace donc les deux références devenues
+contradictoires : `mobile-ready`, qui imposait encore un bouton pleine largeur,
+et `desktop-create-error`, qui imposait encore une modalité au viewport
+`expanded`. Leurs fichiers historiques restent versionnés, mais ils ne guident
+plus le réalisateur. Les références `desktop-ready`, `mobile-create-error` et
+l'audit ADAPT-2 restent compatibles et actives.
+
+Les trois PNG approuvés sont ajoutés avec taille, SHA-256, état et viewport
+exacts. La preuve de publication vérifie leur résolution dans le work order et
+refuse le retour silencieux des deux anciennes références. Aucun fichier de page
+Angular ni aucune dépendance n'est modifié. Après revue et fusion d'ADAPT-4b, le
+work order sera régénéré depuis le nouveau `main`, puis les oracles adaptatifs
+devront échouer avant toute réalisation.

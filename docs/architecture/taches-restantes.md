@@ -2301,8 +2301,17 @@ Figma, désormais source partielle différée :
   parité conservatrice de `updated_at`, les frontières d'autorité et les
   critères de refus de Soumaila. Aucun fichier Angular, manifeste approuvé, work
   order ou dépendance n'est modifié avant la décision produit et la revue
-  technique. Restent approbation/fusion, liaison des trois PNG au manifeste,
-  génération du work order, oracles rouges puis réalisation. Dossier :
+  technique. La disposition, le FAB compact et `updated_at` ont ensuite été
+  approuvés par le porteur produit ; Soumaila a approuvé le SHA exact, fusionné
+  la PR #124, et la CI post-fusion est verte. **ADAPT-4b — liaison des preuves
+  engagée localement le 2026-09-28 :** le manifeste retire de son autorité
+  `mobile-ready` et `desktop-create-error`, désormais contradictoires, sans
+  supprimer leurs fichiers historiques. Il conserve les références compatibles
+  et ajoute les trois PNG approuvés avec leurs tailles, SHA-256, états et
+  viewports exacts. La preuve de publication refuse tout retour silencieux des
+  références remplacées. Aucun fichier Angular, work order publié ou dépendance
+  n'est modifié dans ce lot. Restent revue/fusion, génération du work order
+  depuis le nouveau `main`, oracles rouges puis réalisation. Dossier :
   `examples/users-management-proof/presentation/adaptive-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
