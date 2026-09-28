@@ -104,4 +104,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0068](./0068-publier-c5-dans-une-application-de-preuve.md) | Publier C5 dans une application de preuve réelle         | accepté  |
 | [0069](./0069-autorisation-fine-action-dans-composition-page.md) | L’autorisation fine appartient à l’action de page        | accepté  |
 | [0070](./0070-harnais-navigateur-avant-baseline-visuelle.md) | Prouver le rendu navigateur avant de figer une baseline visuelle | accepté  |
+| [0071](./0071-arbitrer-ecarts-c5-avant-baseline-chromium.md) | Arbitrer les écarts C5 avant la baseline Chromium        | accepté  |
 <!-- END:GENERATED:adr-index -->

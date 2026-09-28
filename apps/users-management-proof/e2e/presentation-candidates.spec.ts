@@ -82,6 +82,14 @@ const PROFILES = [
     { uniq_id: 'profile-demo', name: 'Profil de démonstration' },
 ];
 
+function requireBox(
+    box: { x: number; y: number; width: number; height: number } | null,
+    label: string
+): { x: number; y: number; width: number; height: number } {
+    if (!box) throw new Error(`Géométrie introuvable : ${label}`);
+    return box;
+}
+
 async function installHostAndBackend(page: Page): Promise<void> {
     await page.addInitScript(() => {
         window.__env = {
@@ -114,11 +122,12 @@ async function installHostAndBackend(page: Page): Promise<void> {
             request.method() === 'GET' &&
             path.endsWith('/settings-and-security/users')
         ) {
+            const currentPage = Number(url.searchParams.get('page') ?? '1');
             payload = {
                 error: false,
                 message: 'SUCCESS',
                 data: {
-                    current_page: 1,
+                    current_page: currentPage,
                     last_page: 9,
                     per_page: 5,
                     total: 42,
@@ -214,6 +223,17 @@ test('produit le candidat desktop ready depuis le vrai rendu Angular', async ({
     await expect(
         page.getByRole('button', { name: 'Créer un utilisateur' })
     ).toBeEnabled();
+    await expect(page.getByRole('cell', { name: 'Superviseur' })).toBeVisible();
+    await expect(
+        page.getByRole('cell', { name: 'Chef d’équipe' })
+    ).toBeVisible();
+    const pageOne = page.getByRole('button', { name: 'Page 1' });
+    const pageTwo = page.getByRole('button', { name: 'Page 2' });
+    await expect(pageOne).toHaveAttribute('aria-current', 'page');
+    await expect(pageOne).toHaveCSS('width', '40px');
+    await expect(pageTwo).toHaveCSS('width', '40px');
+    await pageTwo.click();
+    await expect(pageTwo).toHaveAttribute('aria-current', 'page');
     await captureCandidate(page, testInfo, 'desktop-ready.actual.png');
 });
 
@@ -225,7 +245,24 @@ test('produit le candidat desktop create-failed sans perdre la liste', async ({
     await submitEmailConflict(page);
 
     await expect(page.locator('[data-cmz-id="ready"]')).toBeVisible();
-    await expect(page.getByRole('dialog')).toHaveCSS('width', '520px');
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toHaveCSS('width', '520px');
+    const toast = page.locator('.toast-error');
+    const errorTitle = page.locator('[data-cmz-id="create-failed"] strong');
+    const errorDetail = page.locator('[data-cmz-id="create-failed"] span');
+    const [rawDialogBox, rawToastBox, rawTitleBox, rawDetailBox] =
+        await Promise.all([
+            dialog.boundingBox(),
+            toast.boundingBox(),
+            errorTitle.boundingBox(),
+            errorDetail.boundingBox(),
+        ]);
+    const dialogBox = requireBox(rawDialogBox, 'drawer desktop');
+    const toastBox = requireBox(rawToastBox, 'toast desktop');
+    const titleBox = requireBox(rawTitleBox, "titre d'erreur desktop");
+    const detailBox = requireBox(rawDetailBox, "détail d'erreur desktop");
+    expect(toastBox.x + toastBox.width).toBeLessThanOrEqual(dialogBox.x);
+    expect(detailBox.y).toBeGreaterThan(titleBox.y);
     await captureCandidate(page, testInfo, 'desktop-create-error.actual.png');
 });
 
@@ -238,6 +275,15 @@ test('produit le candidat mobile ready avec la projection en cartes', async ({
     await expect(page.locator('.desktop-table')).toBeHidden();
     await expect(page.locator('.mobile-results')).toBeVisible();
     await expect(page.locator('.user-card')).toHaveCount(5);
+    await expect(page.locator('.filters input').first()).toHaveCSS(
+        'height',
+        '44px'
+    );
+    const firstCard = requireBox(
+        await page.locator('.user-card').first().boundingBox(),
+        'première carte mobile'
+    );
+    expect(firstCard.height).toBeLessThan(100);
     await captureCandidate(page, testInfo, 'mobile-ready.actual.png');
 });
 
@@ -248,6 +294,29 @@ test('produit le candidat mobile create-failed en plein écran', async ({
     await openReadyPage(page);
     await submitEmailConflict(page);
 
-    await expect(page.getByRole('dialog')).toHaveCSS('width', '390px');
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toHaveCSS('width', '390px');
+    const titleBox = requireBox(
+        await dialog.getByRole('heading').boundingBox(),
+        'titre du drawer mobile'
+    );
+    expect(titleBox.height).toBeLessThan(30);
+    const create = dialog.getByRole('button', { name: 'Créer', exact: true });
+    const cancel = dialog.getByRole('button', { name: 'Annuler' });
+    await expect(create).toBeDisabled();
+    const [rawCreateBox, rawCancelBox] = await Promise.all([
+        create.boundingBox(),
+        cancel.boundingBox(),
+    ]);
+    const createBox = requireBox(rawCreateBox, 'action Créer mobile');
+    const cancelBox = requireBox(rawCancelBox, 'action Annuler mobile');
+    expect(createBox.y).toBeLessThan(cancelBox.y);
     await captureCandidate(page, testInfo, 'mobile-create-error.actual.png');
+
+    await dialog
+        .locator('[data-cmz-id="email"]')
+        .fill('autre.user@example.invalid');
+    await expect(create).toBeEnabled();
+    await expect(page.locator('[data-cmz-id="create-failed"]')).toBeHidden();
+    await expect(page.locator('.toast-error')).toBeHidden();
 });

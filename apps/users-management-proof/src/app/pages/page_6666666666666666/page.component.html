@@ -118,7 +118,7 @@
                                     <td>{{ user.firstName }}</td>
                                     <td>{{ user.email }}</td>
                                     <td>{{ user.profile }}</td>
-                                    <td>{{ user.role || '—' }}</td>
+                                    <td>{{ roleLabel(user.role) }}</td>
                                     <td>
                                         <span class="status" [class.status-active]="isActiveStatus(user.status)">
                                             {{ statusLabel(user.status) }}
@@ -145,7 +145,7 @@
                                 </span>
                             </div>
                             <p>{{ user.email }}</p>
-                            <p>{{ user.profile }} · {{ user.role || 'Sans rôle' }}</p>
+                            <p>{{ user.profile }} · {{ roleLabel(user.role) }}</p>
                         </article>
                     }
                 </div>
@@ -162,7 +162,18 @@
                     >
                         Précédent
                     </button>
-                    <span aria-current="page">{{ page()?.currentPage }}</span>
+                    @for (pageNumber of paginationPages(); track pageNumber) {
+                        <button
+                            type="button"
+                            class="page-number"
+                            [class.page-number-current]="pageNumber === page()?.currentPage"
+                            [attr.aria-current]="pageNumber === page()?.currentPage ? 'page' : null"
+                            [attr.aria-label]="'Page ' + pageNumber"
+                            (click)="goToPage(pageNumber)"
+                        >
+                            {{ pageNumber }}
+                        </button>
+                    }
                     <button
                         type="button"
                         class="button button-secondary"
@@ -259,6 +270,7 @@
                         [class.invalid]="emailConflict()"
                         [attr.aria-describedby]="emailConflict() || fieldError(createForm.email) ? 'email-error' : null"
                         [attr.aria-invalid]="emailConflict() || createForm.email().invalid()"
+                        (input)="onEmailInput()"
                     />
                     @if (emailConflict()) {
                         <small id="email-error" class="field-error"> Cette adresse email existe déjà. </small>
@@ -319,5 +331,7 @@
 }
 
 @if (failureNotice()) {
-    <div class="toast toast-error" role="alert">{{ failureNotice() }}</div>
+    <div class="toast toast-error" [class.toast-with-drawer]="isCreateOpen()" role="alert">
+        {{ failureNotice() }}
+    </div>
 }

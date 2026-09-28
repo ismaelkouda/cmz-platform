@@ -2230,23 +2230,34 @@ Figma, désormais source partielle différée :
   trois primitives, la permission, le formulaire, les états partiels et les
   comportements a11y ; les tests isolés ne prouvaient toutefois pas encore le
   bootstrap réel de l'application. **C5g-8a — harnais navigateur déterministe
-  engagé localement le 2026-09-26 :** le shell généré reçoit un point d'entrée
-  hôte générique et fail-closed, attesté par son manifeste ; le harnais injecte
-  séparément sa configuration runtime publique sans secret. Playwright démarre
-  le vrai build, bloque toute API inconnue et couvre les états `ready` et
-  `create-failed` en desktop/mobile avec quatre scénarios verts sur Chrome et le
-  Chromium CI verrouillé. La CI réutilise le job E2E et ne produit les quatre
-  PNG candidats que lorsque C5 ou son serveur partagé est affecté. Les images
-  approuvées antérieures étant des wireframes, aucune comparaison pixel
-  trompeuse ni auto-approbation n'est introduite. ADR-0070. Restent la revue des
-  rendus réels, un nouveau work order pour les corrections retenues, puis la
-  baseline Chromium bloquante et la comparaison comportementale finale. Le rôle
-  métier de liste ne fige pas la forme réseau : tableau direct et page sont les
-  deux variantes prouvées. Objet conteneur, map ou autre projection devront
-  recevoir un discriminateur et un oracle lors d'un cas réel, sans heuristique
-  liée à `data` ou au framework backend. **QUERY-1 — lecture objet unique à
-  auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
-  `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
+  fusionné le 2026-09-26 :** la PR #118 a été approuvée par Soumaila sur son
+  commit exact, fusionnée, puis validée par la CI post-fusion. Le shell généré
+  reçoit un point d'entrée hôte générique et fail-closed, attesté par son
+  manifeste ; le harnais injecte séparément sa configuration runtime publique
+  sans secret. Playwright démarre le vrai build, bloque toute API inconnue et
+  couvre les états `ready` et `create-failed` en desktop/mobile avec quatre
+  scénarios verts sur Chrome et le Chromium CI verrouillé. La CI réutilise le
+  job E2E et ne produit les quatre PNG candidats que lorsque C5 ou son serveur
+  partagé est affecté. Les images approuvées antérieures étant des wireframes,
+  aucune comparaison pixel trompeuse ni auto-approbation n'est introduite.
+  ADR-0070. Restent la revue des rendus réels, un nouveau work order pour les
+  corrections retenues, puis la baseline Chromium bloquante et la comparaison
+  comportementale finale. **C5g-8b — corrections vérifiées localement le
+  2026-09-28 :** ADR-0071 arbitre puis le nouveau work order borne les
+  corrections de libellés, pagination, toast, hiérarchie d'erreur et responsive
+  mobile. Le bouton reste désactivé tant que l'email en conflit n'est pas
+  modifié ; l'édition efface le feedback périmé. Les cinq résultats mobiles
+  restent rendus : le wireframe ne peut ni affaiblir la validation serveur ni
+  masquer des données. Compilation, build, lint, tests Angular zoneless et les
+  quatre scénarios Playwright sont verts ; les nouveaux PNG ont été relus
+  localement et restent candidats. Reste leur production et leur revue en CI,
+  l'approbation/fusion du lot, puis une baseline Chromium séparée calibrée sur
+  plusieurs runs. Le rôle métier de liste ne fige pas la forme réseau : tableau
+  direct et page sont les deux variantes prouvées. Objet conteneur, map ou autre
+  projection devront recevoir un discriminateur et un oracle lors d'un cas réel,
+  sans heuristique liée à `data` ou au framework backend. **QUERY-1 — lecture
+  objet unique à auditer :** le GET `RequestsDetailsApi.execute()` retourne
+  réellement `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
   `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
   primitive `read-query` à cardinalités `one|many|page` et un profil
   `detail-query` mince. Refus de dupliquer transport, cache, erreurs, contrôleur

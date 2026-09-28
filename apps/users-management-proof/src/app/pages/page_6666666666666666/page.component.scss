@@ -87,8 +87,7 @@ h1 {
     cursor: pointer;
 }
 
-.button-primary,
-.pagination [aria-current] {
+.button-primary {
     border-color: var(--primary);
     background: var(--primary);
     color: #fff;
@@ -200,7 +199,23 @@ td,
     font-size: 13px;
 }
 
-.pagination [aria-current] {
+.page-number {
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border: 1px solid #c7d3e3;
+    border-radius: 7px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.page-number-current {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
     font-weight: 750;
 }
 
@@ -236,10 +251,17 @@ td,
 .drawer-header {
     align-items: start;
     justify-content: space-between;
+    gap: 16px;
     margin-bottom: 20px;
 }
 
+.drawer-header h2 {
+    margin: 0 0 6px;
+}
+
 .form-error {
+    display: grid;
+    gap: 2px;
     padding: 14px;
     margin-bottom: 20px;
     border: 1px solid #f4b7b7;
@@ -286,6 +308,13 @@ td,
     background: #911f1f;
 }
 
+@media (min-width: 801px) {
+    .toast-with-drawer {
+        right: 544px;
+        max-width: calc(100vw - 582px);
+    }
+}
+
 .sr-only {
     position: absolute;
     width: 1px;
@@ -330,6 +359,26 @@ td,
         background: transparent;
     }
 
+    .filters label {
+        position: relative;
+        gap: 0;
+    }
+
+    .filters label > span {
+        position: absolute;
+        z-index: 1;
+        top: 5px;
+        left: 12px;
+        color: var(--muted);
+        font-size: 10px;
+    }
+
+    .filters input,
+    .filters select {
+        min-height: 44px;
+        padding: 18px 12px 5px;
+    }
+
     .filter-actions,
     .desktop-table {
         display: none;
@@ -337,7 +386,7 @@ td,
 
     .mobile-results {
         display: grid;
-        gap: 14px;
+        gap: 12px;
     }
 
     .results {
@@ -353,7 +402,11 @@ td,
     }
 
     .user-card {
-        padding: 14px;
+        padding: 12px 14px;
+    }
+
+    .user-card p {
+        margin: 6px 0 0;
     }
 
     .pagination {
@@ -362,7 +415,7 @@ td,
     }
 
     .pagination > span,
-    .pagination [aria-current] {
+    .page-number {
         display: none;
     }
 
@@ -373,6 +426,20 @@ td,
     .drawer {
         width: 100%;
         padding: 20px 16px;
+    }
+
+    .drawer-header h2 {
+        white-space: nowrap;
+        font-size: 20px;
+    }
+
+    .drawer-actions {
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .drawer-actions .button-primary {
+        order: -1;
     }
 
     .toast {

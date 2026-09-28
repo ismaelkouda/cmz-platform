@@ -18,7 +18,7 @@ const USERS = [
         email: 'alpha@example.invalid',
         phone: '+225 00 00 00 00',
         profile: 'Profil A',
-        role: 'Superviseur',
+        role: 'supervisor',
         status: 'active',
         updatedAt: '2026-09-26T08:00:00Z',
     },
@@ -29,7 +29,7 @@ const USERS = [
         email: 'bravo@example.invalid',
         phone: '+225 00 00 00 01',
         profile: 'Profil B',
-        role: 'Agent',
+        role: 'custom-role',
         status: 'inactive',
         updatedAt: '2026-09-25T08:00:00Z',
     },
@@ -148,7 +148,13 @@ describe('PageComponent', () => {
         );
         expect(root.querySelectorAll('tbody tr')).toHaveLength(2);
         expect(root.textContent).toContain('alpha@example.invalid');
+        expect(root.textContent).toContain('Superviseur');
+        expect(root.textContent).toContain('custom-role');
         expect(root.querySelectorAll('th[scope="col"]')).toHaveLength(7);
+        expect(root.querySelectorAll('.page-number')).toHaveLength(2);
+        expect(
+            element(root, '[aria-label="Page 1"]').getAttribute('aria-current')
+        ).toBe('page');
     });
 
     it('échoue fermé sans permission et ne soumet aucune commande', async () => {
@@ -197,6 +203,16 @@ describe('PageComponent', () => {
         await fixture.whenStable();
         expect(loadUsers).toHaveBeenLastCalledWith({
             page: 2,
+            search: 'Alpha',
+            profile: 'profile-a',
+            role: 'agent',
+            isActive: false,
+        });
+
+        element<HTMLButtonElement>(root, '[aria-label="Page 1"]').click();
+        await fixture.whenStable();
+        expect(loadUsers).toHaveBeenLastCalledWith({
+            page: 1,
             search: 'Alpha',
             profile: 'profile-a',
             role: 'agent',
@@ -300,6 +316,20 @@ describe('PageComponent', () => {
         expect(
             element(root, '[data-cmz-id="create-failed"]').getAttribute('role')
         ).toBe('alert');
+
+        const create = element<HTMLButtonElement>(
+            root,
+            '[data-cmz-id="create-user-form"] [type="submit"]'
+        );
+        expect(create.disabled).toBe(true);
+        setControl(
+            element(root, '[data-cmz-id="email"]'),
+            'autre@example.test'
+        );
+        await fixture.whenStable();
+        expect(create.disabled).toBe(false);
+        expect(root.querySelector('[data-cmz-id="create-failed"]')).toBeNull();
+        expect(root.querySelector('.toast-error')).toBeNull();
     });
 
     it('ferme par Échap et rend le focus au déclencheur', async () => {
