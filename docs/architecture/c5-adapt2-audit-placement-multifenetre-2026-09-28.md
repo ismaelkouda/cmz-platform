@@ -1,7 +1,8 @@
 # C5 ADAPT-2 — audit de placement multi-fenêtre
 
 - **Date :** 2026-09-28
-- **Statut :** approuvé produit le 2026-09-28 ; revue technique de PR requise
+- **Statut :** approuvé et fusionné ; les règles de filtres de la section 4.3
+  sont précisées et remplacées par ADAPT-6 / ADR-0073
 - **Périmètre :** page C5 « Gestion des utilisateurs », de `320px` au très grand
   écran, zoom et redimensionnement compris
 - **Autorités :** contrats C5, WCAG 2.2, preuve de présentation approuvée,
@@ -46,11 +47,11 @@ L'audit combine :
 - inspection des quatre candidats Playwright existants ;
 - preuve automatique `799/800/801px` et `390 -> 1024px` ;
 - documentation officielle M3, Android Adaptive, Angular Material/CDK et W3C ;
-- vérification des types effectivement installés : Angular `22.0.7`, Material
-  et CDK `22.0.5`.
+- vérification des types effectivement installés : Angular `22.0.7`, Material et
+  CDK `22.0.5`.
 
-Les recommandations Android exprimées en `dp` sont des précédents de design,
-pas des pixels CSS à recopier. Les seuils Web doivent être dérivés du contenu,
+Les recommandations Android exprimées en `dp` sont des précédents de design, pas
+des pixels CSS à recopier. Les seuils Web doivent être dérivés du contenu,
 testés juste avant, au seuil et juste après, puis centralisés.
 
 L'audit ne mesure pas encore les contrastes calculés, ne simule pas un vrai
@@ -62,15 +63,15 @@ obligatoires avant promotion.
 La largeur choisit l'organisation principale ; la hauteur peut la refuser. Une
 fenêtre `1024x500` n'est pas équivalente à `1024x768`.
 
-| Profil sémantique | Intention produit | Point de preuve initial | Règle de hauteur |
-| --- | --- | --- | --- |
-| `compact` | une tâche et une colonne ; résultats en cartes | `320`, `390`, `800px` | le formulaire doit rester utilisable avec clavier virtuel et footer visible |
-| `medium` | liste prioritaire ; tâche en couche temporaire | `801`, `1024px` | une hauteur compacte conserve le mode temporaire et évite deux panneaux exigus |
-| `expanded` | liste et tâche visibles côte à côte quand la création est ouverte | candidat `>=1200px`, à calibrer | le mode côte à côte n'est permis que si les deux panneaux gardent leurs minima |
-| `large/xlarge` | même sémantique que `expanded`, contenu borné | `1440`, `1920`, `2560px` | ne pas étirer table, formulaire ou lignes à l'infini |
+| Profil sémantique | Intention produit                                                 | Point de preuve initial         | Règle de hauteur                                                               |
+| ----------------- | ----------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------ |
+| `compact`         | une tâche et une colonne ; résultats en cartes                    | `320`, `390`, `800px`           | le formulaire doit rester utilisable avec clavier virtuel et footer visible    |
+| `medium`          | liste prioritaire ; tâche en couche temporaire                    | `801`, `1024px`                 | une hauteur compacte conserve le mode temporaire et évite deux panneaux exigus |
+| `expanded`        | liste et tâche visibles côte à côte quand la création est ouverte | candidat `>=1200px`, à calibrer | le mode côte à côte n'est permis que si les deux panneaux gardent leurs minima |
+| `large/xlarge`    | même sémantique que `expanded`, contenu borné                     | `1440`, `1920`, `2560px`        | ne pas étirer table, formulaire ou lignes à l'infini                           |
 
-`1200px` n'est pas une règle de plateforme. C'est un point de départ calculable :
-environ `720px` pour la liste, `360px` pour le formulaire, un gutter de `24px`
+`1200px` n'est pas une règle de plateforme. C'est un point de départ calculable
+: environ `720px` pour la liste, `360px` pour le formulaire, un gutter de `24px`
 et les marges du shell. La preuve de contenu peut déplacer ce seuil. Aucun
 profil supplémentaire n'est créé sans comportement distinct.
 
@@ -117,10 +118,16 @@ d'adoption explicite ; sinon le pattern est réalisé avec un bouton natif.
 appliquée et effacée ; `Enter` dans la recherche ne remplace pas les actions des
 listes déroulantes.
 
+> **Supersession ciblée :** les trois recommandations de placement ci-dessous
+> conservent leur valeur historique d'audit, mais ne guident plus la réalisation
+> des filtres. ADAPT-6 et ADR-0073 les remplacent par un bottom sheet compact,
+> un side sheet medium et un pane expanded, avec un état `draft` séparé de
+> l'état `applied`. L'invariant d'application explicite reste obligatoire.
+
 - `compact` : recherche toujours visible ; filtres secondaires derrière un
   bouton « Filtres » avec état ouvert/fermé, compteur ou résumé des filtres
-  actifs ; « Appliquer » et « Effacer » restent visibles dans la région
-  déployée ;
+  actifs ; « Appliquer » et « Effacer » restent visibles dans la région déployée
+  ;
 - `medium` : grille de deux colonnes ou deux rangées, actions sur une rangée
   dédiée ; la grille actuelle à cinq colonnes est refusée à `1024px` tant que
   les libellés et valeurs longues ne passent pas ;
@@ -198,16 +205,16 @@ champs, état conservé au resize, validation client et serveur distinctes.
 - footer d'actions visible ou sticky uniquement si aucun champ focalisé n'est
   masqué ; prévoir `scroll-padding` et l'occlusion du clavier ;
 - ordre principal puis secondaire cohérent avec la plateforme et le DOM ;
-- un seul affordance d'annulation explicite suffit en compact, sauf preuve que
-  « Fermer » et « Annuler » ont des effets différents ;
+- un seul affordance d'annulation explicite suffit en compact, sauf preuve que «
+  Fermer » et « Annuler » ont des effets différents ;
 - au submit invalide, amener le focus au premier champ invalide ou au résumé
-  d'erreurs selon une règle documentée ; conserver le focus sur l'email après
-  un conflit serveur est correct.
+  d'erreurs selon une règle documentée ; conserver le focus sur l'email après un
+  conflit serveur est correct.
 
 ### 4.8 Erreurs, succès et toasts
 
-**Invariant :** une information a une source principale et une annonce
-assistive ; elle n'est pas criée trois fois.
+**Invariant :** une information a une source principale et une annonce assistive
+; elle n'est pas criée trois fois.
 
 - erreur de champ connue, comme email existant : message inline associé au
   champ, éventuellement résumé unique si plusieurs erreurs ; pas de toast
@@ -237,14 +244,14 @@ respecter safe areas, clavier, FAB et focus visible.
 
 La mesure locale des couleurs déclarées donne notamment :
 
-| Usage | Rapport mesuré | Lecture |
-| --- | ---: | --- |
-| bouton primaire `#2864e8` / blanc | `5.15:1` | texte normal conforme AA |
-| texte secondaire `#526581` / blanc | `5.94:1` | texte normal conforme AA |
-| statut vert `#087b34` / blanc | `5.39:1` | texte normal conforme AA |
-| statut rouge `#c21d1d` / blanc | `6.02:1` | texte normal conforme AA |
-| bordure de contrôle `#c7d3e3` / blanc | `1.52:1` | insuffisant si la bordure identifie le contrôle |
-| séparateur `#d8e1ed` / blanc | `1.32:1` | acceptable seulement s'il n'est pas porteur d'information |
+| Usage                                 | Rapport mesuré | Lecture                                                   |
+| ------------------------------------- | -------------: | --------------------------------------------------------- |
+| bouton primaire `#2864e8` / blanc     |       `5.15:1` | texte normal conforme AA                                  |
+| texte secondaire `#526581` / blanc    |       `5.94:1` | texte normal conforme AA                                  |
+| statut vert `#087b34` / blanc         |       `5.39:1` | texte normal conforme AA                                  |
+| statut rouge `#c21d1d` / blanc        |       `6.02:1` | texte normal conforme AA                                  |
+| bordure de contrôle `#c7d3e3` / blanc |       `1.52:1` | insuffisant si la bordure identifie le contrôle           |
+| séparateur `#d8e1ed` / blanc          |       `1.32:1` | acceptable seulement s'il n'est pas porteur d'information |
 
 Ces rapports ne valident pas à eux seuls les composants. Le prochain lot doit :
 
@@ -271,22 +278,22 @@ avoir clavier et trackpad ; une fenêtre desktop peut être réduite à `390px`.
 - ne pas réduire les cibles seulement parce que la fenêtre est `expanded` ; une
   densité plus compacte est une préférence ou un signal d'entrée distinct, pas
   une conséquence automatique de la largeur ;
-- éviter toute opération uniquement par swipe ou drag ; pagination, fermeture
-  et filtres disposent déjà d'actions ponctuelles explicites ;
+- éviter toute opération uniquement par swipe ou drag ; pagination, fermeture et
+  filtres disposent déjà d'actions ponctuelles explicites ;
 - vérifier ordre de tabulation, activation `Enter`/`Space`, scroll clavier,
   molette/trackpad et toucher sans gestionnaire spécifique inutile.
 
 ## 5. Matrice de décision compacte
 
-| Élément | `compact` | `medium` | `expanded` | Oracle indispensable |
-| --- | --- | --- | --- | --- |
-| shell | colonne, marges compactes | marges bornées | panes + max-width | 320px, 200%, texte long |
-| création | FAB étendu conditionnel | bouton heading | bouton heading | permission, scroll, focus |
-| filtres | recherche + disclosure | grille 2 colonnes | adaptée au pane | appliquer/effacer toujours accessibles |
-| résultats | cartes | table si elle tient | table | mêmes items et capacité |
-| pagination | résumé + précédent/suivant | complète | complète | page conservée au resize |
-| formulaire | dialogue plein écran | side sheet modale | pane persistant | modalité et focus exacts |
-| feedback | inline + statut borné | idem | idem | une annonce, aucun recouvrement |
+| Élément    | `compact`                  | `medium`            | `expanded`        | Oracle indispensable                   |
+| ---------- | -------------------------- | ------------------- | ----------------- | -------------------------------------- |
+| shell      | colonne, marges compactes  | marges bornées      | panes + max-width | 320px, 200%, texte long                |
+| création   | FAB étendu conditionnel    | bouton heading      | bouton heading    | permission, scroll, focus              |
+| filtres    | recherche + disclosure     | grille 2 colonnes   | adaptée au pane   | appliquer/effacer toujours accessibles |
+| résultats  | cartes                     | table si elle tient | table             | mêmes items et capacité                |
+| pagination | résumé + précédent/suivant | complète            | complète          | page conservée au resize               |
+| formulaire | dialogue plein écran       | side sheet modale   | pane persistant   | modalité et focus exacts               |
+| feedback   | inline + statut borné      | idem                | idem              | une annonce, aucun recouvrement        |
 
 ## 6. Matrice de preuve minimale
 
@@ -345,8 +352,8 @@ revue technique de la PR ni les preuves visuelles des futures réalisations.
 4. produire trois candidats cohérents : compact avec action, medium temporaire,
    expanded persistant ;
 5. faire approuver placement, hiérarchie et sémantique avant code visuel ;
-6. centraliser les classes de fenêtre et implémenter sans recréer la
-   composition ;
+6. centraliser les classes de fenêtre et implémenter sans recréer la composition
+   ;
 7. exécuter la matrice fonctionnelle, accessibilité et redimensionnement ;
 8. seulement ensuite calibrer et figer la baseline Chromium.
 

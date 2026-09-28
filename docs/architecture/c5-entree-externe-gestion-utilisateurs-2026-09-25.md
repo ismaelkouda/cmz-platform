@@ -826,26 +826,24 @@ géométrie restent explicites.
 
 Le harnais compte désormais treize scénarios : cinq écarts adaptatifs attendus
 et huit succès réels sur l'implémentation historique. Aucun `skip`, `todo` ou
-affaiblissement du comportement cible n'est introduit. Soumaila a approuvé la
-PR #127 sur le commit exact
-`98e8be89b57156a7ba957e5788ed8bb416542896`, puis l'a fusionnée dans
-`1eac9a2aa2251faa12fb1842fcb2fc8dbfe9808a`. Les 17 checks de PR et la CI
-post-fusion `36449207951` sont verts.
+affaiblissement du comportement cible n'est introduit. Soumaila a approuvé la PR
+#127 sur le commit exact `98e8be89b57156a7ba957e5788ed8bb416542896`, puis l'a
+fusionnée dans `1eac9a2aa2251faa12fb1842fcb2fc8dbfe9808a`. Les 17 checks de PR
+et la CI post-fusion `36449207951` sont verts.
 
 ## ADAPT-5c — réalisation adaptative fusionnée
 
 Le work order définitif
-`31407ceadaaee8dbca41ee3b6cd9fed18acdbbab3e1cee6b3a48b29fb3bbe7e3`
-a borné la réalisation aux cinq fichiers de page. La PR #128 implémente le FAB
-compact sans recouvrement, la parité `updated_at`, le side sheet `medium` modal,
-le pane `expanded` non modal et la continuité d'état sur le commit exact
+`31407ceadaaee8dbca41ee3b6cd9fed18acdbbab3e1cee6b3a48b29fb3bbe7e3` a borné la
+réalisation aux cinq fichiers de page. La PR #128 implémente le FAB compact sans
+recouvrement, la parité `updated_at`, le side sheet `medium` modal, le pane
+`expanded` non modal et la continuité d'état sur le commit exact
 `7fbe158e21bcb5a0067c51b2770cd8739294806a`.
 
 Les treize scénarios Playwright sont de vrais succès, les 25 tests Angular et
 les 17 checks GitHub sont verts. Soumaila a approuvé la PR #128 sur le commit
-exact, puis l'a fusionnée dans
-`eff4d2d405e5cd884a8c5fac1557c99f2a87706e`. La CI post-fusion
-`36462839705` est verte.
+exact, puis l'a fusionnée dans `eff4d2d405e5cd884a8c5fac1557c99f2a87706e`. La CI
+post-fusion `36462839705` est verte.
 
 ## ADAPT-6a — décision de filtrage multi-fenêtres avant réalisation
 
@@ -864,10 +862,10 @@ une application produit au plus un GET.
 
 Cette décision a été approuvée par Soumaila sur
 `94823549a09a8f39df0979db273c64fcdf0e1951`, fusionnée dans
-`0c6ff7b25eda3d407afffda27a7629174d015d87`, puis validée par la CI
-post-fusion `36465758895`.
+`0c6ff7b25eda3d407afffda27a7629174d015d87`, puis validée par la CI post-fusion
+`36465758895`.
 
-## ADAPT-6b — quatre états visuels proposés avant le runtime
+## ADAPT-6b — quatre états visuels approuvés avant le runtime
 
 Le lot suivant ne modifie toujours pas la page Angular. Il matérialise le
 sommaire compact, le détail compact dans le même bottom sheet, le side sheet
@@ -879,6 +877,23 @@ montrent les trois filtres C5 réels et l'emplacement de groupes supplémentaire
 uniquement si un futur contrat les fournit. Voir
 [`filter-candidates/proposal.md`](../../examples/users-management-proof/presentation/filter-candidates/proposal.md).
 
-Ce lot doit être approuvé et fusionné avant publication dans le manifeste. Les
-oracles en échec attendu et le work order de réalisation restent des lots
-séparés.
+Soumaila a approuvé le commit exact `81dd77e3633eada14fc1940f4a0c1cb4338aec87`,
+puis la PR #130 a été fusionnée dans `9b1792c9afbb31c906c69af9068a6d2e498ca043`.
+Ses 16 contrôles et la CI post-fusion `36471376072` sont verts.
+
+## ADAPT-6c — publication des références de filtres
+
+Le manifeste `presentation-evidence` reçoit les quatre PNG approuvés et leur
+brief visuel stable. Les anciennes références `desktop-ready`,
+`medium-create-adaptive` et `expanded-create-adaptive` restent versionnées comme
+historique, mais quittent l'autorité active parce que leur arrière-plan montre
+encore les filtres secondaires en ligne. `compact-ready-adaptive` devient la
+référence principale compatible ; `mobile-create-error` reste active.
+
+Le brief ADAPT-2 reste utile pour le scaffold général. Sa section 4.3 indique
+désormais explicitement que les placements de filtres historiques sont remplacés
+par ADAPT-6, et son empreinte est recalculée. La preuve de publication doit
+résoudre exactement les sources conservées et nouvelles, et refuser le retour
+silencieux d'une référence contradictoire. Aucun fichier Angular, work order ou
+dépendance n'est modifié dans ce lot. Les oracles en échec attendu restent
+l'étape suivante.

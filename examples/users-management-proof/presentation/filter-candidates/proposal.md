@@ -1,12 +1,12 @@
 # C5 ADAPT-6b — proposition visuelle des filtres adaptatifs
 
-- **Statut :** Proposed — approbation produit et revue technique requises
-- **Autorité actuelle :** aucune
-- **Autorité après approbation et publication :** `presentation-only`
+- **Statut :** Approved — décision produit, revue et fusion de la PR #130
+- **Autorité :** `presentation-only` après publication par ADAPT-6c
 - **Page :** `page_6666666666666666`
 - **Route :** `/settings-security/users`
 - **Date de production :** 2026-09-28
-- **Décision source :** [ADR-0073](../../../../docs/adr/0073-filtrage-adaptatif-par-panneau-unique.md)
+- **Décision source :**
+  [ADR-0073](../../../../docs/adr/0073-filtrage-adaptatif-par-panneau-unique.md)
 
 ## 1. Objet et frontière
 
@@ -28,30 +28,34 @@ Le lot ne modifie :
 - ni les dépendances de l'application.
 
 Les captures tierces ayant nourri la discussion ne sont ni copiées ni
-versionnées. Les SVG sont des créations déterministes propres au dépôt ; leurs
-PNG servent uniquement de candidats à la décision humaine.
+versionnées. Les SVG sont des créations déterministes propres au dépôt. Le
+porteur produit a approuvé leur disposition, puis Soumaila a approuvé le commit
+exact `81dd77e3633eada14fc1940f4a0c1cb4338aec87`. La PR #130 a été fusionnée
+dans `9b1792c9afbb31c906c69af9068a6d2e498ca043` et la CI post-fusion
+`36471376072` est verte. ADAPT-6c peut donc publier les PNG exacts ; les SVG
+restent des sources éditables sans autorité runtime.
 
-## 2. Ressources proposées
+## 2. Ressources approuvées
 
-| Classe | Fichier PNG | État | Viewport | Octets | SHA-256 |
-| --- | --- | --- | --- | ---: | --- |
-| `compact` | `compact-filter-list.proposed.png` | sommaire du bottom sheet | 390 × 844 | 34 192 | `6dc0b706dd0fcf2526d489a0ce63533a60de4ad1f70ea946d01c27a990753e44` |
-| `compact` | `compact-filter-detail.proposed.png` | détail `Statut` dans le même sheet | 390 × 844 | 32 034 | `7d8bf42fa6c0a828e77c9b60f7da5cc6d33140dbffb7d7b9ffa8a22340049719` |
-| `medium` | `medium-filters.proposed.png` | side sheet modal | 1024 × 768 | 61 384 | `222a9fdf6b0117af68362e854dc21f86b7b53d294dd97d9e4482e9de130ed8e0` |
-| `expanded` | `expanded-filters.proposed.png` | pane persistant non modal | 1440 × 1024 | 88 132 | `6154ffcd008ad3ccdd4d1c52388fcc612b93a9940d51f0e6fe3f5ee5c8180c3c` |
+| Classe     | Fichier PNG                          | État                               | Viewport    | Octets | SHA-256                                                            |
+| ---------- | ------------------------------------ | ---------------------------------- | ----------- | -----: | ------------------------------------------------------------------ |
+| `compact`  | `compact-filter-list.proposed.png`   | sommaire du bottom sheet           | 390 × 844   | 34 192 | `6dc0b706dd0fcf2526d489a0ce63533a60de4ad1f70ea946d01c27a990753e44` |
+| `compact`  | `compact-filter-detail.proposed.png` | détail `Statut` dans le même sheet | 390 × 844   | 32 034 | `7d8bf42fa6c0a828e77c9b60f7da5cc6d33140dbffb7d7b9ffa8a22340049719` |
+| `medium`   | `medium-filters.proposed.png`        | side sheet modal                   | 1024 × 768  | 61 384 | `222a9fdf6b0117af68362e854dc21f86b7b53d294dd97d9e4482e9de130ed8e0` |
+| `expanded` | `expanded-filters.proposed.png`      | pane persistant non modal          | 1440 × 1024 | 88 132 | `6154ffcd008ad3ccdd4d1c52388fcc612b93a9940d51f0e6fe3f5ee5c8180c3c` |
 
-| Source SVG | Octets | SHA-256 |
-| --- | ---: | --- |
-| `compact-filter-list.proposed.svg` | 3 503 | `fcb26980df02b189f1a26131d1aa93c3d36746e47929869adf8a4f7926b75d29` |
-| `compact-filter-detail.proposed.svg` | 3 306 | `1df2f1fec1e03a927364a90226b2f21edc4b45e0d6dc5a7b64f059984a42a04a` |
-| `medium-filters.proposed.svg` | 4 615 | `d2a5be8ea638d1d9b9749fac9bcfcc55773c5f56ef01da11e6b532b5a01d230e` |
-| `expanded-filters.proposed.svg` | 5 555 | `601ef8af3cb0caf606da93ae294cc015e8d522734a1484587f0007dba02a8d52` |
+| Source SVG                           | Octets | SHA-256                                                            |
+| ------------------------------------ | -----: | ------------------------------------------------------------------ |
+| `compact-filter-list.proposed.svg`   |  3 503 | `fcb26980df02b189f1a26131d1aa93c3d36746e47929869adf8a4f7926b75d29` |
+| `compact-filter-detail.proposed.svg` |  3 306 | `1df2f1fec1e03a927364a90226b2f21edc4b45e0d6dc5a7b64f059984a42a04a` |
+| `medium-filters.proposed.svg`        |  4 615 | `d2a5be8ea638d1d9b9749fac9bcfcc55773c5f56ef01da11e6b532b5a01d230e` |
+| `expanded-filters.proposed.svg`      |  5 555 | `601ef8af3cb0caf606da93ae294cc015e8d522734a1484587f0007dba02a8d52` |
 
 Les PNG ont été rendus depuis les SVG avec le Chromium Playwright verrouillé du
 workspace, sans ressource distante. Un second rendu indépendant produit des
 fichiers identiques octet par octet pour les quatre images.
 
-## 3. Décisions rendues visibles
+## 3. Décisions approuvées et rendues visibles
 
 ### 3.1 Compact — bottom sheet et navigation interne
 
@@ -63,8 +67,8 @@ fichiers identiques octet par octet pour les quatre images.
 - `Retour` conserve le brouillon et revient au sommaire ;
 - `Réinitialiser` et `Appliquer` restent dans un footer fixe, côte à côte et
   au-dessus de la safe area ;
-- fermer abandonne le brouillon ; ni la sélection, ni Retour, ni
-  Réinitialiser ne lancent une requête.
+- fermer abandonne le brouillon ; ni la sélection, ni Retour, ni Réinitialiser
+  ne lancent une requête.
 
 Les radios du dessin expriment un choix unique court. Elles ne prescrivent pas
 une bibliothèque ni une implémentation DOM particulière ; les oracles runtime
@@ -108,10 +112,10 @@ Lorsqu'un futur contrat apporte réellement une quinzaine de champs :
 1. trois à cinq critères fréquents restent dans `Essentiels` ;
 2. les autres sont répartis par sens métier, jamais par type technique ou
    framework backend ;
-3. les sections inactives peuvent être repliées ; une section avec valeur
-   active ou erreur s'ouvre automatiquement ;
-4. le corps du panneau défile indépendamment ; header et footer restent
-   visibles ;
+3. les sections inactives peuvent être repliées ; une section avec valeur active
+   ou erreur s'ouvre automatiquement ;
+4. le corps du panneau défile indépendamment ; header et footer restent visibles
+   ;
 5. le formulaire conserve un seul `draftFilters` quelle que soit la classe de
    fenêtre ;
 6. aucune grille horizontale de quinze champs n'est admise au-dessus de la
@@ -135,9 +139,9 @@ définition métier.
 - la recherche principale reste hors du panneau et conserve son comportement
   contractuel existant.
 
-## 6. Ce que l'approbation décide — et ne décide pas
+## 6. Ce que l'approbation a décidé — et n'a pas décidé
 
-L'approbation produit décidera pour C5 :
+L'approbation produit a décidé pour C5 :
 
 - la composition visuelle des quatre états ;
 - la navigation compacte dans un panneau unique ;
@@ -145,7 +149,7 @@ L'approbation produit décidera pour C5 :
 - la modalité temporaire `medium` et la non-modalité `expanded` ;
 - le refus d'inventer des champs afin de démontrer artificiellement la densité.
 
-Elle ne décidera pas :
+Elle n'a pas décidé :
 
 - la conformité accessibilité ou réseau, qui exige le runtime ;
 - une règle universelle pour toutes les applications ;
@@ -154,9 +158,9 @@ Elle ne décidera pas :
 - un nouvel endpoint, un tri ou une option métier ;
 - l'extraction d'un composant partagé avant un second cas réel.
 
-## 7. Revue attendue de Soumaila
+## 7. Points contrôlés par Soumaila
 
-Soumaila doit refuser le lot si l'un de ces points est ambigu ou faux :
+La revue devait refuser le lot si l'un de ces points était ambigu ou faux :
 
 1. le détail compact ressemble à une seconde modale empilée ;
 2. le bottom sheet dépasse `80dvh` ou masque ses actions ;
@@ -165,22 +169,21 @@ Soumaila doit refuser le lot si l'un de ces points est ambigu ou faux :
 5. le `medium` paraît non modal ou laisse l'arrière-plan opérable ;
 6. l'`expanded` paraît modal, possède un backdrop ou comprime la liste sous son
    minimum ;
-7. les chips paraissent refléter le brouillon plutôt que les valeurs appliquées ;
+7. les chips paraissent refléter le brouillon plutôt que les valeurs appliquées
+   ;
 8. le dossier invente des filtres, options ou tris absents du contrat ;
 9. les images sont présentées comme preuve d'accessibilité ;
 10. un pixel C5 est présenté comme une constante universelle du générateur.
 
-## 8. Suite autorisée après approbation et fusion
+## 8. Suite autorisée après publication ADAPT-6c
 
-1. publier les quatre PNG exacts dans `presentation-evidence` avec leurs
-   empreintes et retirer toute référence devenue contradictoire ;
-2. écrire les oracles comportementaux ADAPT-6 et constater leur échec exact sur
+1. écrire les oracles comportementaux ADAPT-6 et constater leur échec exact sur
    `main` ;
-3. régénérer le work order content-addressed depuis ce nouveau `main` ;
-4. réaliser uniquement les fichiers autorisés ;
-5. exécuter tests Angular, navigateur, accessibilité, géométrie, resize et
+2. régénérer le work order content-addressed depuis ce nouveau `main` ;
+3. réaliser uniquement les fichiers autorisés ;
+4. exécuter tests Angular, navigateur, accessibilité, géométrie, resize et
    silence réseau ;
-6. produire les captures du vrai runtime pour la revue finale.
+5. produire les captures du vrai runtime pour la revue finale.
 
 ## 9. Références
 
