@@ -2318,9 +2318,17 @@ Figma, désormais source partielle différée :
   silence réseau et permission. Cinq reconnaissent uniquement la signature
   historique exacte comme échec attendu, sans `skip` ni `todo` ; neuf scénarios
   passent réellement. Le work order publié depuis `main` refuse ensuite la
-  modification du harnais hors racine autorisée, comme attendu. Restent revue et
-  fusion d'ADAPT-5a, régénération du work order depuis le nouveau `main`, puis
-  réalisation bornée aux cinq fichiers de page. Dossier :
+  modification du harnais hors racine autorisée, comme attendu. Soumaila a
+  approuvé le commit exact de la PR #126 et l'a fusionnée ; les 17 checks de PR
+  et la CI post-fusion sont verts. **ADAPT-5b — cohérence des oracles engagée
+  localement le 2026-09-28 :** la revue avant work order retire le scénario
+  `desktop-create-error` devenu sans autorité en ADAPT-4b, supprime une largeur
+  `520px` redondante qui contredisait le mode `medium` approuvé, et remplace
+  l'inspection de `cdktrapfocus` par des preuves comportementales de confinement
+  et de liberté du focus. Le harnais conserve cinq écarts attendus et huit
+  succès réels. Restent revue et fusion d'ADAPT-5b, régénération du work order
+  depuis le nouveau `main`, puis réalisation bornée aux cinq fichiers de page.
+  Dossier :
   `examples/users-management-proof/presentation/adaptive-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
