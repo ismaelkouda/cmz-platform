@@ -656,3 +656,35 @@ C5 est une liste avec panneau de tâche/support de création, pas un
 à faire relire avant la baseline. La doctrine complète, ses anti-patterns et son
 oracle minimal sont consignés dans
 [`ui-adaptative-references-officielles.md`](./ui-adaptative-references-officielles.md).
+
+## ADAPT-2a — candidat `medium` et resize sans effet métier
+
+Le harnais du vrai build Angular produit maintenant deux candidats à
+`1024 × 768` et vérifie la frontière compacte actuelle à `799`, `800` et
+`801px`. Un scénario part de `390 × 844` avec page 2, filtre, formulaire rempli,
+conflit email et focus actif, puis redimensionne la même session : tous ces
+états sont conservés et la séquence exacte des requêtes API ne change pas.
+
+Ce lot ne modifie ni les cinq fichiers de page, ni les dépendances UI, ni la
+composition. Le panneau `medium` reste temporaire et modal. Les PNG sont des
+candidats CI à relire, pas une baseline auto-approuvée. La densité des filtres à
+`1024px` doit notamment être arbitrée par Soumaila. Après approbation, la suite
+est la transition `expanded` persistante et accessible, puis seulement la
+calibration visuelle. Voir
+[`c5-adapt2-preuve-medium-resize-2026-09-28.md`](./c5-adapt2-preuve-medium-resize-2026-09-28.md).
+
+La revue M3 a aussi rouvert le bouton compact pleine largeur, hérité du
+wireframe sans justification comportementale. Un FAB étendu est le candidat le
+plus solide seulement si la création est confirmée comme l'unique action
+principale/fréquente ; le générateur ne doit jamais déduire `create → FAB`.
+Cette variante recevra une preuve distincte de scroll, non-recouvrement, focus,
+permission et safe area avant toute modification de la page.
+
+L'audit de placement complet a ensuite étendu ce contrôle à tous les éléments de
+la page et à la hauteur, au zoom, au clavier virtuel et à l'ultra-wide. Il a
+identifié deux blockers avant baseline : les actions « Appliquer/Effacer » sont
+masquées en compact, et le mode `expanded` persistant n'existe pas. La matrice
+de décision et de preuve est dans
+[`c5-adapt2-audit-placement-multifenetre-2026-09-28.md`](./c5-adapt2-audit-placement-multifenetre-2026-09-28.md).
+Le porteur produit a approuvé cet audit et sa séquence le 2026-09-28. La revue
+technique de la PR reste nécessaire avant de créer le work order d'implémentation.

@@ -70,6 +70,11 @@ oracle prouvent un comportement distinct. Les seuils numériques du Web sont
 versionnés avec le design de l'application et testés à leurs limites ; ils ne
 sont pas cachés dans plusieurs composants.
 
+La largeur ne suffit pas toujours. La hauteur disponible peut interdire un mode
+multi-pane, notamment en paysage, en fenêtre desktop basse ou avec clavier
+virtuel. La décision de layout considère donc largeur, hauteur et minima du
+contenu ; elle ne se résume jamais à un type de terminal.
+
 ## 5. Sélection d'un layout canonique
 
 Le choix dépend de la relation entre les contenus, pas de leur apparence :
@@ -87,6 +92,36 @@ Une page peut combiner un layout canonique avec une stratégie de superposition,
 mais cette combinaison doit être nommée et prouvée. Le shell de navigation
 (`bar`, `rail`, drawer de navigation) est décidé au niveau de l'application ;
 une page métier ne doit pas inventer une seconde navigation globale.
+
+### 5.1 Action principale et FAB
+
+Un FAB n'est pas la décoration mobile par défaut d'une action de création. Il
+est réservé à **une seule action de plus haute importance**, idéalement le
+parcours le plus courant de la vue. Le verbe `create` ne suffit donc pas à
+l'inférer : fréquence, priorité produit, concurrence avec les autres actions et
+preuve de présentation doivent le confirmer.
+
+Lorsqu'un FAB est justifié :
+
+- préférer un FAB étendu avec libellé tant que l'icône seule n'est pas prouvée
+  suffisamment compréhensible ;
+- l'ancrer au scaffold pour qu'il reste disponible au scroll, sans le confondre
+  avec une action de navigation ;
+- ne rendre qu'un seul contrôle DOM, repositionné par le layout plutôt que
+  dupliqué entre header et coin inférieur ;
+- réserver l'espace de scroll, respecter les safe areas et le clavier virtuel,
+  et prouver qu'aucun contenu ou focus n'est masqué ;
+- conserver un bouton natif et un nom accessible explicite ; un FAB icône seul
+  exige au minimum un libellé accessible et un tooltip utilisable ;
+- ne pas importer Angular Material dans une application non déclarante. Un
+  `MatFabButton` devient le choix officiel seulement après adoption explicite de
+  la bibliothèque ; le pattern de placement peut rester réalisé localement.
+
+Le plein écran compact n'autorise pas à étirer systématiquement un bouton sur
+toute la largeur. La recommandation adaptative officielle préfère une
+présentation bornée ou un changement de composant quand l'espace varie. Un choix
+entre bouton de heading et FAB doit donc être un arbitrage produit, pas une
+conséquence automatique du breakpoint.
 
 ## 6. Application à C5 « Gestion des utilisateurs »
 
@@ -169,6 +204,11 @@ Chaque mode doit préserver :
 - cible tactile, contraste, réduction de mouvement et états visuels indépendants
   de la seule couleur.
 
+La preuve couvre au minimum le reflow à `320 CSS px`, le zoom texte à `200%`,
+l'espacement de texte, les deux orientations et les contenus longs. Les éléments
+fixes ou sticky — app bar, FAB, snackbar, footer d'actions — ne doivent masquer
+ni contenu opérable ni focus, y compris avec un clavier virtuel.
+
 Un panneau persistant ne doit pas conserver un focus trap modal. Un changement
 de classe doit donc adapter la sémantique d'interaction, pas seulement sa
 largeur.
@@ -222,6 +262,9 @@ largeur.
 - [Android — Use window size classes](https://developer.android.com/develop/adaptive-apps/guides/use-window-size-classes)
 - [Android — Adaptive do's and don'ts](https://developer.android.com/develop/adaptive-apps/guides/adaptive-dos-and-donts)
 - [Compose Material 3 Adaptive API](https://developer.android.com/reference/kotlin/androidx/compose/material3/adaptive/package-summary)
+- [Android — Floating action button](https://developer.android.com/develop/ui/compose/components/fab)
+- [Android — Layout actions et FAB dans le scaffold](https://developer.android.com/design/ui/mobile/guides/layout-and-content/layout-and-nav-patterns)
+- [Android — Adapt layouts](https://developer.android.com/design/ui/mobile/guides/layout-and-content/adapt-layout)
 
 ### Implémentation Angular
 
@@ -239,3 +282,13 @@ largeur.
 
 - [WCAG 2.2 — Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html)
 - [WAI-ARIA — Modal dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)
+- [WCAG 2.2 — Focus Not Obscured](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum)
+- [WCAG 2.2 — Target Size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum)
+- [WCAG 2.2 — Resize Text](https://www.w3.org/WAI/WCAG22/Understanding/resize-text)
+- [WCAG 2.2 — Text Spacing](https://www.w3.org/WAI/WCAG22/Understanding/text-spacing)
+- [WCAG 2.2 — Non-text Contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast)
+- [WCAG 2.2 — Content on Hover or Focus](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus)
+- [WCAG 2.2 — Input Modalities](https://www.w3.org/WAI/WCAG22/Understanding/input-modalities)
+- [WCAG 2.2 — Orientation](https://www.w3.org/WAI/WCAG22/Understanding/orientation)
+- [WAI — Forms tutorial](https://www.w3.org/WAI/tutorials/forms/)
+- [Chrome — VirtualKeyboard API](https://developer.chrome.com/docs/web-platform/virtual-keyboard)

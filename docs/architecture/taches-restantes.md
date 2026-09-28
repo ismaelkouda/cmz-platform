@@ -2259,12 +2259,32 @@ Figma, désormais source partielle différée :
   décrivent la fenêtre, jamais l'appareil. Aucun seuil Android `dp` n'est copié
   en CSS et Material reste opt-in. Restent l'approbation/fusion de cette
   doctrine, une preuve `medium`, les tests de resize sans perte d'état ni
-  réseau, puis la baseline Chromium calibrée sur les viewports approuvés. Le
-  rôle métier de liste ne fige pas la forme réseau : tableau direct et page sont
-  les deux variantes prouvées. Objet conteneur, map ou autre projection devront
-  recevoir un discriminateur et un oracle lors d'un cas réel, sans heuristique
-  liée à `data` ou au framework backend. **QUERY-1 — lecture objet unique à
-  auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
+  réseau, puis la baseline Chromium calibrée sur les viewports approuvés. Le lot
+  **ADAPT-2a** produit localement les candidats `medium` à `1024 × 768` et
+  verrouille `799/800/801px`. Le resize d'une session remplie conserve page,
+  filtre, formulaire, erreur et focus, avec égalité exacte des requêtes API
+  avant/après. Aucun fichier de page ni dépendance UI n'est modifié. Restent la
+  revue humaine des deux PNG, puis le mode `expanded` persistant sans focus trap
+  avant toute baseline bloquante. La revue M3 rouvre aussi l'action compacte :
+  comparer bouton de heading borné et FAB étendu, sans règle `create → FAB`,
+  puis prouver scroll, non-recouvrement, focus, permission et safe area. Dossier
+  : `c5-adapt2-preuve-medium-resize-2026-09-28.md`. **Audit de placement
+  multi-fenêtre ajouté localement le 2026-09-28 :** l'analyse couvre désormais
+  chaque région du scaffold, les largeurs `320` à `2560px`, les hauteurs
+  compactes, zoom/reflow, orientation, contenu long et clavier virtuel. Deux
+  blockers précèdent la baseline : `Appliquer/Effacer` sont masqués en compact
+  et le mode `expanded` persistant n'existe pas. Restent la revue de l'audit,
+  trois candidats cohérents, puis seulement le work order UI et la calibration.
+  Le porteur produit a approuvé l'audit et sa séquence le 2026-09-28 ; la revue
+  technique de la PR reste requise. Les choix de rendu précis de l'action
+  principale et de `updated_at` seront vérifiés dans les candidats, sans bloquer
+  la clôture documentaire. Dossier :
+  `c5-adapt2-audit-placement-multifenetre-2026-09-28.md`. Le rôle métier de liste ne
+  fige pas la forme réseau : tableau direct et page sont les deux variantes
+  prouvées. Objet conteneur, map ou autre projection devront recevoir un
+  discriminateur et un oracle lors d'un cas réel, sans heuristique liée à `data`
+  ou au framework backend. **QUERY-1 — lecture objet unique à auditer :** le GET
+  `RequestsDetailsApi.execute()` retourne réellement
   `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
   `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
   primitive `read-query` à cardinalités `one|many|page` et un profil
