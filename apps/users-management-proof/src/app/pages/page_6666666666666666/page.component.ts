@@ -340,10 +340,17 @@ export class PageComponent {
 
     protected showCompactFilter(key: SecondaryFilterKey): void {
         this.compactFilterDetail.set(key);
+        this.focusFilterPanelElement('[data-cmz-filter-detail-control]');
     }
 
     protected showCompactFilterSummary(): void {
+        const detail = this.compactFilterDetail();
         this.compactFilterDetail.set(null);
+        if (detail) {
+            this.focusFilterPanelElement(
+                `[data-cmz-filter-summary="${detail}"]`
+            );
+        }
     }
 
     protected setDraftStatus(status: string): void {
@@ -529,6 +536,18 @@ export class PageComponent {
     private focusFilterPanel(): void {
         afterNextRender(
             { write: () => this.filterPanel()?.nativeElement.focus() },
+            { injector: this.injector }
+        );
+    }
+
+    private focusFilterPanelElement(selector: string): void {
+        afterNextRender(
+            {
+                write: () =>
+                    this.filterPanel()
+                        ?.nativeElement.querySelector<HTMLElement>(selector)
+                        ?.focus(),
+            },
             { injector: this.injector }
         );
     }

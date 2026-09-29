@@ -229,7 +229,7 @@
                     tabindex="-1"
                     [attr.role]="layout() === 'expanded' ? 'complementary' : 'dialog'"
                     [attr.aria-modal]="isModalFilters() ? 'true' : null"
-                    aria-label="Filtres"
+                    aria-labelledby="filter-panel-title"
                     [cdkTrapFocus]="isModalFilters()"
                     (submit)="applyFilters($event)"
                     (keydown)="onFilterPanelKeydown($event)"
@@ -276,15 +276,27 @@
                         @if (layout() === 'compact') {
                             @if (!compactFilterDetail()) {
                                 <div class="compact-filter-summary">
-                                    <button type="button" (click)="showCompactFilter('profile')">
+                                    <button
+                                        type="button"
+                                        data-cmz-filter-summary="profile"
+                                        (click)="showCompactFilter('profile')"
+                                    >
                                         <span>Profil</span>
                                         <span>{{ draftFilterValue('profile') }} <b aria-hidden="true">›</b></span>
                                     </button>
-                                    <button type="button" (click)="showCompactFilter('role')">
+                                    <button
+                                        type="button"
+                                        data-cmz-filter-summary="role"
+                                        (click)="showCompactFilter('role')"
+                                    >
                                         <span>Rôle</span>
                                         <span>{{ draftFilterValue('role') }} <b aria-hidden="true">›</b></span>
                                     </button>
-                                    <button type="button" (click)="showCompactFilter('status')">
+                                    <button
+                                        type="button"
+                                        data-cmz-filter-summary="status"
+                                        (click)="showCompactFilter('status')"
+                                    >
                                         <span>Statut</span>
                                         <span>{{ draftFilterValue('status') }} <b aria-hidden="true">›</b></span>
                                     </button>
@@ -295,7 +307,11 @@
                                         @case ('profile') {
                                             <label data-cmz-id="profiles">
                                                 <span>Profil</span>
-                                                <select aria-label="Profil" [formField]="filtersForm.profile">
+                                                <select
+                                                    data-cmz-filter-detail-control
+                                                    aria-label="Profil"
+                                                    [formField]="filtersForm.profile"
+                                                >
                                                     <option value="">Tous les profils</option>
                                                     @for (profile of profiles(); track profile.value) {
                                                         <option [value]="profile.value">{{ profile.label }}</option>
@@ -306,7 +322,11 @@
                                         @case ('role') {
                                             <label>
                                                 <span>Rôle</span>
-                                                <select aria-label="Rôle" [formField]="filtersForm.role">
+                                                <select
+                                                    data-cmz-filter-detail-control
+                                                    aria-label="Rôle"
+                                                    [formField]="filtersForm.role"
+                                                >
                                                     <option value="">Tous les rôles</option>
                                                     <option value="supervisor">Superviseur</option>
                                                     <option value="team-leader">Chef d’équipe</option>
@@ -319,6 +339,7 @@
                                                 <legend class="sr-only">Statut</legend>
                                                 <label>
                                                     <input
+                                                        data-cmz-filter-detail-control
                                                         type="radio"
                                                         name="filter-status"
                                                         value=""
