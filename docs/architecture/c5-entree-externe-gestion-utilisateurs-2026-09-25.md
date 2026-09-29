@@ -924,3 +924,24 @@ Angular et ne déclenche aucune requête. Aucun filtre, tri, option ou paramètr
 métier n'entre donc dans C5. Aucun fichier de page, work order ou dépendance
 n'est modifié dans ce lot. Après revue et fusion, un nouveau work order doit
 être calculé depuis `main` avant la réalisation Angular.
+
+Soumaila a approuvé ce lot sur le commit exact
+`7daea25440b2b1abce246a280793da285d2278ff`, puis a fusionné la PR #132 dans
+`6a630046195045fbe3eb841acd72bd5f895689ad`. La CI post-fusion `36504104906` est
+verte.
+
+## ADAPT-6e — cohérence du harnais de présentation
+
+Une réalisation jetable a fait passer les dix oracles ADAPT-6, mais le passage
+Playwright complet a révélé une contradiction historique : le helper des
+candidats visuels exigeait que le `select` Profil existe avant l'ouverture du
+panneau. Réintroduire un contrôle caché aurait violé l'oracle d'unicité DOM.
+
+Le harnais attend maintenant les options Profil dans le formulaire de création
+réellement ouvert. Son scénario compact vérifie `Réinitialiser` sans réseau,
+puis `Appliquer` avec un GET unique. Il tolère l'ancien comportement uniquement
+devant la signature inline historique exacte, sans `skip` ni `todo`. Sur le
+`main` de la PR #132, le passage complet termine à `23 passed` : onze échecs
+attendus strictement bornés et douze succès réels. Aucun fichier Angular,
+dépendance ou work order n'est modifié. La fusion de ce lot doit précéder un
+nouveau work order et la réalisation.

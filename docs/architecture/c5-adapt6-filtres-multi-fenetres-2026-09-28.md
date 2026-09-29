@@ -1,13 +1,14 @@
 # C5 ADAPT-6 — filtres adaptatifs multi-fenêtres
 
-- **Statut :** décision, candidats et publication content-addressed approuvés
-  puis fusionnés ; oracles ADAPT-6d engagés localement ; réalisation non
-  commencée
+- **Statut :** décision, candidats, publication content-addressed et oracles
+  ADAPT-6d approuvés puis fusionnés ; cohérence du harnais de présentation
+  engagée ; réalisation non commencée
 - **Date :** 2026-09-28
 - **Périmètre :** présentation des filtres de la page C5 et capacité à monter à
   environ quinze critères
-- **Dépendance :** ADAPT-5 à ADAPT-6c fusionnés avec CI post-fusion verte ; les
-  nouveaux oracles restent séparés de la future réalisation
+- **Dépendance :** ADAPT-5 à ADAPT-6d fusionnés avec CI post-fusion verte ; le
+  harnais historique doit cesser d'exiger des contrôles fermés dans le DOM avant
+  de régénérer le work order
 
 ## 1. Résultat attendu
 
@@ -294,6 +295,28 @@ le scroll et la visibilité du header/footer. Elle ne lie rien à Angular et
 n'émet aucune requête. Ce lot ne modifie toujours aucun fichier de page, aucune
 dépendance et aucun work order. Après revue et fusion, le prochain lot devra
 calculer le nouveau work order depuis `main` avant toute réalisation.
+
+Soumaila a approuvé ADAPT-6d sur le commit exact
+`7daea25440b2b1abce246a280793da285d2278ff`, puis a fusionné la PR #132 dans
+`6a630046195045fbe3eb841acd72bd5f895689ad`. Les 17 contrôles de PR et la CI
+post-fusion `36504104906` sont verts.
+
+ADAPT-6e corrige un dernier conflit de harnais découvert par une réalisation
+jetable : `presentation-candidates.spec.ts` attendait globalement le `select`
+Profil avant même l'ouverture des filtres. Conserver ce contrôle caché rendrait
+mensongère la preuve ADAPT-6d qui exige zéro contrôle interactif dupliqué ou
+caché. La vérification des options Profil est donc déplacée dans le vrai
+formulaire de création ouvert, et le scénario compact attend désormais
+`Réinitialiser` sans réseau puis `Appliquer` avec un GET unique. Sur l'interface
+historique, seul le tuple exact `#secondary-user-filters` enfant direct de
+`form.filters`, sans rôle ni modalité, autorise l'échec attendu.
+
+Le passage complet reste vert à `23 passed` : les dix oracles ADAPT-6 et le
+scénario de présentation échouent pour leur cause historique exacte, tandis que
+les douze autres scénarios restent des succès réels. Ce lot ne modifie aucun
+fichier Angular, aucune dépendance et aucun work order. Après revue et fusion,
+le work order doit être recalculé depuis le nouveau `main` ; seulement ensuite
+la réalisation peut reprendre dans les cinq fichiers de page autorisés.
 
 ## Références
 

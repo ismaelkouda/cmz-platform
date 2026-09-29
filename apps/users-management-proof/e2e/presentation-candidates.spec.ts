@@ -177,9 +177,24 @@ async function openReadyPage(
     });
     await page.evaluate(async () => document.fonts.ready);
     await expect(page.locator('[data-cmz-id="ready"]')).toBeVisible();
-    await expect(page.locator('[data-cmz-id="profiles"] option')).toHaveCount(
-        PROFILES.length + 1
+}
+
+async function expectAdaptiveFiltersOrFailOnExactLegacy(
+    page: Page
+): Promise<void> {
+    const legacyInlineFilters = await page
+        .locator('#secondary-user-filters')
+        .evaluate(
+            (element) =>
+                element.parentElement?.matches('form.filters') === true &&
+                !element.hasAttribute('role') &&
+                !element.hasAttribute('aria-modal')
+        );
+    test.fail(
+        legacyInlineFilters,
+        'ADAPT-6 : le scénario de présentation attend désormais Réinitialiser sans réseau puis Appliquer dans le panneau adaptatif.'
     );
+    if (legacyInlineFilters) expect(legacyInlineFilters).toBe(false);
 }
 
 async function captureCandidate(
@@ -244,6 +259,9 @@ async function submitEmailConflict(page: Page): Promise<void> {
         .locator('[data-cmz-id="email"]')
         .fill('test.user@example.invalid');
     await dialog.locator('[data-cmz-id="phone"]').fill('+000 00 00 00 00');
+    await expect(
+        dialog.locator('[data-cmz-id="profile-id"] option')
+    ).toHaveCount(PROFILES.length + 1);
     await dialog
         .locator('[data-cmz-id="profile-id"]')
         .selectOption('profile-demo');
@@ -309,12 +327,13 @@ test('produit le candidat mobile ready avec la projection en cartes', async ({
     await captureCandidate(page, testInfo, 'mobile-ready.actual.png');
 });
 
-test('garde Appliquer et Effacer accessibles dans les filtres compacts', async ({
+test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite', async ({
     page,
 }) => {
     const apiRequests = observeApiRequests(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await openReadyPage(page);
+    await expectAdaptiveFiltersOrFailOnExactLegacy(page);
 
     const toggle = page.getByRole('button', {
         name: /^Filtres(?:\s|$)/,
@@ -327,31 +346,40 @@ test('garde Appliquer et Effacer accessibles dans les filtres compacts', async (
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(apiRequests).toEqual(requestsBeforeOpen);
 
-    const apply = page.getByRole('button', {
+    let dialog = page.getByRole('dialog', { name: 'Filtres' });
+    const apply = dialog.getByRole('button', {
         name: 'Appliquer',
         exact: true,
     });
-    const clear = page.getByRole('button', {
-        name: 'Effacer',
+    const reset = dialog.getByRole('button', {
+        name: 'Réinitialiser',
         exact: true,
     });
     await expect(apply).toBeVisible();
-    await expect(clear).toBeVisible();
+    await expect(reset).toBeVisible();
     await expect(apply).toHaveCSS('min-height', '44px');
-    await expect(clear).toHaveCSS('min-height', '44px');
+    await expect(reset).toHaveCSS('min-height', '44px');
 
-    await page.getByLabel('Profil').selectOption('profile-a');
-    await expect(toggle).toContainText('1 actif');
+    await dialog.getByRole('button', { name: /^Profil\b/ }).click();
+    await dialog.getByLabel('Profil').selectOption('profile-a');
+    expect(apiRequests).toEqual(requestsBeforeOpen);
     const requestsBeforeApply = apiRequests.length;
     await apply.click();
     await expect.poll(() => apiRequests.length).toBe(requestsBeforeApply + 1);
     expect(apiRequests.at(-1)).toContain('profile=profile-a');
+    await expect(toggle).toHaveAccessibleName('Filtres (1)');
 
-    const requestsBeforeClear = apiRequests.length;
-    await clear.click();
-    await expect.poll(() => apiRequests.length).toBe(requestsBeforeClear + 1);
-    await expect(page.getByLabel('Profil')).toHaveValue('');
-    await expect(toggle).toHaveText('Filtres');
+    await toggle.click();
+    dialog = page.getByRole('dialog', { name: 'Filtres' });
+    await dialog.getByRole('button', { name: /^Profil\b/ }).click();
+    const requestsBeforeReset = apiRequests.length;
+    await dialog.getByRole('button', { name: 'Réinitialiser' }).click();
+    await expect(dialog.getByLabel('Profil')).toHaveValue('');
+    expect(apiRequests).toHaveLength(requestsBeforeReset);
+
+    await dialog.getByRole('button', { name: 'Appliquer' }).click();
+    await expect.poll(() => apiRequests.length).toBe(requestsBeforeReset + 1);
+    await expect(toggle).toHaveAccessibleName('Filtres');
     expect(apiRequests.at(-1)).not.toContain('profile=');
 });
 
