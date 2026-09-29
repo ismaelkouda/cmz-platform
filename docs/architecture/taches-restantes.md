@@ -2350,13 +2350,28 @@ Figma, désormais source partielle différée :
   a approuvé le commit exact `81dd77e3633eada14fc1940f4a0c1cb4338aec87`, la PR
   #130 a été fusionnée dans `9b1792c9afbb31c906c69af9068a6d2e498ca043`, et la CI
   post-fusion `36471376072` est verte. **ADAPT-6c — publication
-  content-addressed engagée :** les quatre PNG et leur brief visuel stable
+  content-addressed fusionnée :** les quatre PNG et leur brief visuel stable
   entrent dans `presentation-evidence` ; les anciennes images qui montrent
   encore les filtres en ligne quittent l'autorité active sans être supprimées.
   Le brief ADAPT-2 déclare la supersession ciblée de sa section filtres et
   reçoit une nouvelle empreinte. Aucun fichier Angular, work order ou dépendance
-  n'est modifié. Restent la revue/fusion, puis les oracles en échec attendu et
-  le nouveau work order avant réalisation. Dossier :
+  n'est modifié. Soumaila a approuvé le commit exact
+  `2063b971e05cc77aac99848f336f1bc34709d7e1`, la PR #131 a été fusionnée dans
+  `d7874331583bd9ac61f84fdf96a73d3aa617c225`, et la CI post-fusion `36498236321`
+  est verte. **ADAPT-6d — oracles engagés localement :** dix scénarios
+  Playwright couvrent bottom sheet compact, `draft`/`applied`, réseau,
+  modalité/focus medium, pane expanded, stress géométrique de quinze champs,
+  chips, resize, frontières, unicité DOM et fermeture du contrat. Ils
+  reconnaissent seulement la signature inline historique exacte et donnent
+  `10 passed` en 30,2 s comme échecs attendus, sans `skip` ni `todo` ; le
+  passage complet du 2026-09-29 conserve les treize succès existants et termine
+  à `23 passed` en 39,3 s. Le stress de densité clone des groupes uniquement
+  dans le navigateur, `inert` et `aria-hidden`, sans nouveau filtre métier ni
+  requête. Aucun fichier de page, work order ou dépendance n'est modifié. Le
+  build production est vert mais rappelle une contrainte de réalisation :
+  `page.component.scss` pèse déjà `6,47 kB` pour un plafond bloquant de `8 kB` ;
+  remplacer les règles historiques sans relever ni contourner ce budget. Restent
+  la revue/fusion, puis le nouveau work order avant réalisation. Dossier :
   `examples/users-management-proof/presentation/filter-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection

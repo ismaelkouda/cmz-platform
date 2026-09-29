@@ -897,3 +897,30 @@ résoudre exactement les sources conservées et nouvelles, et refuser le retour
 silencieux d'une référence contradictoire. Aucun fichier Angular, work order ou
 dépendance n'est modifié dans ce lot. Les oracles en échec attendu restent
 l'étape suivante.
+
+Soumaila a approuvé le commit exact `2063b971e05cc77aac99848f336f1bc34709d7e1`,
+puis la PR #131 a été fusionnée dans `d7874331583bd9ac61f84fdf96a73d3aa617c225`.
+Ses 17 contrôles et la CI post-fusion `36498236321` sont verts.
+
+## ADAPT-6d — oracles de filtres avant réalisation
+
+Dix scénarios Playwright couvrent les dix familles obligatoires : bottom sheet
+compact et navigation interne, séparation `draft`/`applied`, GET unique,
+modalité et focus medium, supporting pane expanded, stress géométrique de quinze
+champs, chips bornées, continuité au resize, frontières et reflow, unicité des
+contrôles, puis fermeture des options et paramètres réseau.
+
+Les scénarios ne sont ni ignorés ni marqués `todo`. Ils deviennent des échecs
+attendus uniquement si la signature historique exacte est présente :
+`#secondary-user-filters` est encore un enfant direct de `form.filters`, sans
+rôle ni modalité. Le passage Chromium sur le `main` de la PR #131 donne
+`10 passed` en 30,2 s, chaque scénario échouant ensuite sur la première capacité
+ADAPT-6 absente. Le passage complet du 2026-09-29 conserve les treize scénarios
+existants comme succès réels et termine à `23 passed` en 39,3 s.
+
+Le stress de quinze champs est strictement test-only : il clone le groupe réel
+dans le DOM du navigateur, le rend `inert` et `aria-hidden`, ne le lie pas à
+Angular et ne déclenche aucune requête. Aucun filtre, tri, option ou paramètre
+métier n'entre donc dans C5. Aucun fichier de page, work order ou dépendance
+n'est modifié dans ce lot. Après revue et fusion, un nouveau work order doit
+être calculé depuis `main` avant la réalisation Angular.
