@@ -208,15 +208,20 @@ describe('PageComponent', () => {
     });
 
     it('applique les filtres typés et pagine sans inventer de paramètre', async () => {
-        const { fixture, loadUsers } = await setup();
+        const { fixture, loadUsers } = await setup({ layout: 'medium' });
         const root = fixture.nativeElement as HTMLElement;
-        const filters = element<HTMLFormElement>(root, '.filters');
-        const controls = filters.querySelectorAll('input, select');
+        setControl(element(root, '[type="search"]'), '  Alpha  ');
+        element<HTMLButtonElement>(root, '.filter-toggle').click();
+        await fixture.whenStable();
+        const filters = element<HTMLFormElement>(root, '[role="dialog"]');
 
-        setControl(controls[0] as HTMLInputElement, '  Alpha  ');
-        setControl(controls[1] as HTMLSelectElement, 'profile-a');
-        setControl(controls[2] as HTMLSelectElement, 'agent');
-        setControl(controls[3] as HTMLSelectElement, 'inactive');
+        setControl(
+            element(filters, '[data-cmz-id="profiles"] select'),
+            'profile-a'
+        );
+        setControl(element(filters, 'label:nth-of-type(2) select'), 'agent');
+        setControl(element(filters, 'label:nth-of-type(3) select'), 'inactive');
+        expect(loadUsers).toHaveBeenCalledTimes(1);
         filters.dispatchEvent(
             new Event('submit', { bubbles: true, cancelable: true })
         );
@@ -255,45 +260,117 @@ describe('PageComponent', () => {
     });
 
     it('rend les actions de filtres compactes accessibles sans appel implicite', async () => {
-        const { fixture, loadUsers } = await setup();
+        const { fixture, loadUsers } = await setup({ layout: 'compact' });
         const root = fixture.nativeElement as HTMLElement;
         const toggle = element<HTMLButtonElement>(root, '.filter-toggle');
-        const options = element<HTMLElement>(root, '.filter-options');
 
         expect(toggle.getAttribute('aria-controls')).toBe(
             'secondary-user-filters'
         );
         expect(toggle.getAttribute('aria-expanded')).toBe('false');
-        expect(options.classList.contains('filter-options-open')).toBe(false);
 
         toggle.click();
         await fixture.whenStable();
+        let dialog = element<HTMLElement>(root, '[role="dialog"]');
 
         expect(toggle.getAttribute('aria-expanded')).toBe('true');
-        expect(options.classList.contains('filter-options-open')).toBe(true);
+        expect(dialog.getAttribute('aria-modal')).toBe('true');
+        expect(dialog.querySelectorAll('input, select')).toHaveLength(0);
         expect(loadUsers).toHaveBeenCalledTimes(1);
 
-        setControl(element<HTMLSelectElement>(options, 'select'), 'profile-a');
+        const statusSummary = Array.from(
+            dialog.querySelectorAll('button')
+        ).find((button) => button.textContent?.trim().startsWith('Statut'));
+        if (!statusSummary) throw new Error('Filtre Statut introuvable.');
+        statusSummary.click();
         await fixture.whenStable();
-        expect(toggle.textContent).toContain('1 actif');
+        dialog = element(root, '[role="dialog"]');
+        const inactive = element<HTMLInputElement>(
+            dialog,
+            'input[type="radio"][value="inactive"]'
+        );
+        inactive.click();
+        await fixture.whenStable();
+        expect(inactive.checked).toBe(true);
+        expect(loadUsers).toHaveBeenCalledTimes(1);
 
-        element<HTMLButtonElement>(options, '[type="submit"]').click();
+        const reset = Array.from(dialog.querySelectorAll('button')).find(
+            (button) => button.textContent?.trim() === 'Réinitialiser'
+        );
+        if (!reset) throw new Error('Action Réinitialiser introuvable.');
+        reset.click();
         await fixture.whenStable();
+        expect(
+            element<HTMLInputElement>(dialog, 'input[type="radio"][value=""]')
+                .checked
+        ).toBe(true);
+        expect(loadUsers).toHaveBeenCalledTimes(1);
+
+        element<HTMLButtonElement>(
+            dialog,
+            '[aria-label="Fermer les filtres"]'
+        ).click();
+        await fixture.whenStable();
+        toggle.click();
+        await fixture.whenStable();
+        dialog = element(root, '[role="dialog"]');
+        const reopenedStatus = Array.from(
+            dialog.querySelectorAll('button')
+        ).find((button) => button.textContent?.trim().startsWith('Statut'));
+        if (!reopenedStatus) throw new Error('Filtre Statut introuvable.');
+        reopenedStatus.click();
+        await fixture.whenStable();
+        dialog = element(root, '[role="dialog"]');
+        element<HTMLInputElement>(
+            dialog,
+            'input[type="radio"][value="inactive"]'
+        ).click();
+
+        const apply = Array.from(dialog.querySelectorAll('button')).find(
+            (button) => button.textContent?.trim() === 'Appliquer'
+        );
+        if (!apply) throw new Error('Action Appliquer introuvable.');
+        apply.click();
+        await fixture.whenStable();
+
+        expect(root.querySelector('[role="dialog"]')).toBeNull();
+        expect(toggle.getAttribute('aria-label')).toBe('Filtres (1)');
+        expect(loadUsers).toHaveBeenCalledTimes(2);
         expect(loadUsers).toHaveBeenLastCalledWith({
             page: 1,
-            profile: 'profile-a',
+            isActive: false,
         });
+    });
 
-        const clear = Array.from(options.querySelectorAll('button')).find(
-            (button) => button.textContent?.trim() === 'Effacer'
-        );
-        if (!clear) throw new Error('Action Effacer introuvable.');
-        clear.click();
+    it('conserve le brouillon lors du repli du pane expanded sans appeler le réseau', async () => {
+        const { fixture, loadUsers } = await setup({ layout: 'expanded' });
+        const root = fixture.nativeElement as HTMLElement;
+        const toggle = element<HTMLButtonElement>(root, '.filter-toggle');
+        toggle.click();
         await fixture.whenStable();
 
-        expect(element<HTMLSelectElement>(options, 'select').value).toBe('');
-        expect(toggle.textContent).not.toContain('actif');
-        expect(loadUsers).toHaveBeenLastCalledWith({ page: 1 });
+        let pane = element<HTMLElement>(root, '[role="complementary"]');
+        expect(element(root, 'main').hasAttribute('inert')).toBe(false);
+        setControl(
+            element<HTMLSelectElement>(pane, 'label:nth-of-type(3) select'),
+            'inactive'
+        );
+        element<HTMLButtonElement>(
+            pane,
+            '[aria-label="Replier les filtres"]'
+        ).click();
+        await fixture.whenStable();
+        expect(root.querySelector('[role="complementary"]')).toBeNull();
+        expect(loadUsers).toHaveBeenCalledTimes(1);
+
+        toggle.click();
+        await fixture.whenStable();
+        pane = element(root, '[role="complementary"]');
+        expect(
+            element<HTMLSelectElement>(pane, 'label:nth-of-type(3) select')
+                .value
+        ).toBe('inactive');
+        expect(loadUsers).toHaveBeenCalledTimes(1);
     });
 
     it('garde les données périmées visibles quand une actualisation échoue', async () => {

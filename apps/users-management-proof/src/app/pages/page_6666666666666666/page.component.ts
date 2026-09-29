@@ -32,11 +32,22 @@ import {
 } from '../../generated/page_6666666666666666/angular/src';
 import { APP_ACCESS_DECISION } from '../../access.guard';
 
-interface FiltersModel {
+interface SearchModel {
     search: string;
+}
+
+interface SecondaryFiltersModel {
     profile: string;
     role: string;
     status: string;
+}
+
+type SecondaryFilterKey = keyof SecondaryFiltersModel;
+
+interface AppliedFilterItem {
+    key: SecondaryFilterKey;
+    label: string;
+    value: string;
 }
 
 interface CreateUserModel {
@@ -47,8 +58,11 @@ interface CreateUserModel {
     profileId: string;
 }
 
-const EMPTY_FILTERS: FiltersModel = {
+const EMPTY_SEARCH: SearchModel = {
     search: '',
+};
+
+const EMPTY_FILTERS: SecondaryFiltersModel = {
     profile: '',
     role: '',
     status: '',
@@ -111,6 +125,10 @@ export class PageComponent {
         viewChild<ElementRef<HTMLButtonElement>>('createButton');
     private readonly firstNameInput =
         viewChild<ElementRef<HTMLInputElement>>('firstNameInput');
+    private readonly filterTrigger =
+        viewChild<ElementRef<HTMLButtonElement>>('filterTrigger');
+    private readonly filterPanel =
+        viewChild<ElementRef<HTMLElement>>('filterPanel');
 
     protected readonly layout = toSignal(
         this.breakpointObserver
@@ -126,16 +144,72 @@ export class PageComponent {
         { initialValue: 'medium' as PageLayout }
     );
 
-    protected readonly filtersModel = signal<FiltersModel>({
+    protected readonly searchModel = signal<SearchModel>({ ...EMPTY_SEARCH });
+    protected readonly searchForm = form(this.searchModel);
+    protected readonly appliedFilters = signal<SecondaryFiltersModel>({
         ...EMPTY_FILTERS,
     });
-    protected readonly filtersForm = form(this.filtersModel);
+    protected readonly draftFilters = signal<SecondaryFiltersModel>({
+        ...EMPTY_FILTERS,
+    });
+    protected readonly filtersForm = form(this.draftFilters);
     protected readonly areFiltersOpen = signal(false);
+    protected readonly compactFilterDetail = signal<SecondaryFilterKey | null>(
+        null
+    );
+    private readonly preserveFilterDraft = signal(false);
+    protected readonly isModalFilters = computed(
+        () => this.areFiltersOpen() && this.layout() !== 'expanded'
+    );
     protected readonly activeSecondaryFilterCount = computed(() => {
-        const filters = this.filtersModel();
+        const filters = this.appliedFilters();
         return [filters.profile, filters.role, filters.status].filter(Boolean)
             .length;
     });
+    protected readonly filterTriggerLabel = computed(() => {
+        const count = this.activeSecondaryFilterCount();
+        return count ? `Filtres (${count})` : 'Filtres';
+    });
+    protected readonly appliedFilterItems = computed<AppliedFilterItem[]>(
+        () => {
+            const filters = this.appliedFilters();
+            const items: AppliedFilterItem[] = [];
+            if (filters.profile) {
+                items.push({
+                    key: 'profile',
+                    label: 'Profil',
+                    value:
+                        this.profiles().find(
+                            (profile) => profile.value === filters.profile
+                        )?.label ?? filters.profile,
+                });
+            }
+            if (filters.role) {
+                items.push({
+                    key: 'role',
+                    label: 'Rôle',
+                    value: this.roleLabel(filters.role),
+                });
+            }
+            if (filters.status) {
+                items.push({
+                    key: 'status',
+                    label: 'Statut',
+                    value: this.statusLabel(filters.status),
+                });
+            }
+            return items;
+        }
+    );
+    protected readonly visibleAppliedFilters = computed(() => {
+        const limit = this.layout() === 'expanded' ? 4 : 2;
+        return this.appliedFilterItems().slice(0, limit);
+    });
+    protected readonly hiddenAppliedFilterCount = computed(
+        () =>
+            this.appliedFilterItems().length -
+            this.visibleAppliedFilters().length
+    );
     protected readonly createModel = signal<CreateUserModel>({ ...EMPTY_USER });
     protected readonly isCreateOpen = signal(false);
     protected readonly isModalCreate = computed(
@@ -230,18 +304,87 @@ export class PageComponent {
         this.loadUsers(1);
     }
 
-    protected applyFilters(event: Event): void {
+    protected applySearch(event: Event): void {
         event.preventDefault();
         this.loadUsers(1);
     }
 
-    protected toggleFilters(): void {
-        this.areFiltersOpen.update((isOpen) => !isOpen);
+    protected openFilters(): void {
+        if (this.areFiltersOpen()) return;
+        if (!this.preserveFilterDraft()) {
+            this.draftFilters.set({ ...this.appliedFilters() });
+        }
+        this.preserveFilterDraft.set(false);
+        this.compactFilterDetail.set(null);
+        this.areFiltersOpen.set(true);
+        this.focusFilterPanel();
     }
 
-    protected clearFilters(): void {
-        this.filtersModel.set({ ...EMPTY_FILTERS });
+    protected closeFilters(): void {
+        if (this.layout() === 'expanded') {
+            this.preserveFilterDraft.set(true);
+        } else {
+            this.draftFilters.set({ ...this.appliedFilters() });
+            this.preserveFilterDraft.set(false);
+        }
+        this.compactFilterDetail.set(null);
+        this.areFiltersOpen.set(false);
+        this.restoreFilterTriggerFocus();
+    }
+
+    protected onFilterPanelKeydown(event: KeyboardEvent): void {
+        if (event.key !== 'Escape' || !this.isModalFilters()) return;
+        event.preventDefault();
+        this.closeFilters();
+    }
+
+    protected showCompactFilter(key: SecondaryFilterKey): void {
+        this.compactFilterDetail.set(key);
+    }
+
+    protected showCompactFilterSummary(): void {
+        this.compactFilterDetail.set(null);
+    }
+
+    protected setDraftStatus(status: string): void {
+        this.draftFilters.update((filters) => ({ ...filters, status }));
+    }
+
+    protected resetDraftFilters(): void {
+        this.draftFilters.set({ ...EMPTY_FILTERS });
+    }
+
+    protected applyFilters(event?: Event): void {
+        event?.preventDefault();
+        this.appliedFilters.set({ ...this.draftFilters() });
+        this.preserveFilterDraft.set(false);
+        this.compactFilterDetail.set(null);
+        this.areFiltersOpen.set(false);
         this.loadUsers(1);
+        this.restoreFilterTriggerFocus();
+    }
+
+    protected removeAppliedFilter(key: SecondaryFilterKey): void {
+        this.appliedFilters.update((filters) => ({
+            ...filters,
+            [key]: '',
+        }));
+        if (this.areFiltersOpen()) {
+            this.draftFilters.set({ ...this.appliedFilters() });
+        }
+        this.loadUsers(1);
+    }
+
+    protected draftFilterValue(key: SecondaryFilterKey): string {
+        const value = this.draftFilters()[key];
+        if (!value) return 'Tous';
+        if (key === 'profile') {
+            return (
+                this.profiles().find((profile) => profile.value === value)
+                    ?.label ?? value
+            );
+        }
+        return key === 'role' ? this.roleLabel(value) : this.statusLabel(value);
     }
 
     protected goToPage(page: number): void {
@@ -363,8 +506,8 @@ export class PageComponent {
     }
 
     private loadUsers(page: number): void {
-        const filters = this.filtersModel();
-        const search = filters.search.trim();
+        const filters = this.appliedFilters();
+        const search = this.searchModel().search.trim();
         this.composition.usersList.load({
             page,
             ...(search ? { search } : {}),
@@ -379,6 +522,20 @@ export class PageComponent {
     private restoreCreateButtonFocus(): void {
         afterNextRender(
             { write: () => this.createButton()?.nativeElement.focus() },
+            { injector: this.injector }
+        );
+    }
+
+    private focusFilterPanel(): void {
+        afterNextRender(
+            { write: () => this.filterPanel()?.nativeElement.focus() },
+            { injector: this.injector }
+        );
+    }
+
+    private restoreFilterTriggerFocus(): void {
+        afterNextRender(
+            { write: () => this.filterTrigger()?.nativeElement.focus() },
             { injector: this.injector }
         );
     }

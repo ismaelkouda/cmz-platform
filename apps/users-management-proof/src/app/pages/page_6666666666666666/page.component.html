@@ -1,4 +1,4 @@
-<header class="app-bar" [attr.inert]="isModalCreate() ? '' : null">
+<header class="app-bar" [attr.inert]="isModalCreate() || isModalFilters() ? '' : null">
     <div class="brand"><span aria-hidden="true"></span>CMZ Platform</div>
     <p>Opérateur connecté</p>
 </header>
@@ -9,8 +9,9 @@
     [class.layout-medium]="layout() === 'medium'"
     [class.layout-expanded]="layout() === 'expanded'"
     [class.create-open]="isCreateOpen()"
+    [class.filters-open]="areFiltersOpen()"
 >
-    <main data-cmz-id="main" class="page-shell" [attr.inert]="isModalCreate() ? '' : null">
+    <main data-cmz-id="main" class="page-shell" [attr.inert]="isModalCreate() || isModalFilters() ? '' : null">
         <section class="page-heading-row">
             <div>
                 <h1 data-cmz-id="page-heading">Gestion des utilisateurs</h1>
@@ -21,7 +22,7 @@
                 data-cmz-id="create-user"
                 type="button"
                 class="button button-primary create-button"
-                [disabled]="!composition.createUser.authorized() || isCreateOpen()"
+                [disabled]="!composition.createUser.authorized() || isCreateOpen() || areFiltersOpen()"
                 [attr.aria-describedby]="composition.createUser.authorized() ? null : 'create-denied'"
                 (click)="openCreateForm()"
             >
@@ -32,56 +33,54 @@
             }
         </section>
 
-        <form class="filters" (submit)="applyFilters($event)">
+        <form class="filters" (submit)="applySearch($event)">
             <label class="filter-search">
                 <span>Recherche</span>
-                <input type="search" [formField]="filtersForm.search" placeholder="Nom, prénom ou email" />
+                <input type="search" [formField]="searchForm.search" placeholder="Nom, prénom ou email" />
             </label>
             <button
+                #filterTrigger
                 type="button"
                 class="button button-secondary filter-toggle"
                 aria-controls="secondary-user-filters"
                 [attr.aria-expanded]="areFiltersOpen()"
-                (click)="toggleFilters()"
+                [attr.aria-label]="filterTriggerLabel()"
+                (click)="openFilters()"
             >
                 <span>Filtres</span>
                 @if (activeSecondaryFilterCount(); as count) {
-                    <span class="filter-count">{{ count }} actif{{ count > 1 ? 's' : '' }}</span>
+                    <span aria-hidden="true">({{ count }})</span>
                 }
             </button>
-            <div id="secondary-user-filters" class="filter-options" [class.filter-options-open]="areFiltersOpen()">
-                <label data-cmz-id="profiles">
-                    <span>Profil</span>
-                    <select [formField]="filtersForm.profile">
-                        <option value="">Tous les profils</option>
-                        @for (profile of profiles(); track profile.value) {
-                            <option [value]="profile.value">{{ profile.label }}</option>
-                        }
-                    </select>
-                </label>
-                <label>
-                    <span>Rôle</span>
-                    <select [formField]="filtersForm.role">
-                        <option value="">Tous les rôles</option>
-                        <option value="supervisor">Superviseur</option>
-                        <option value="team-leader">Chef d’équipe</option>
-                        <option value="agent">Agent</option>
-                    </select>
-                </label>
-                <label>
-                    <span>Statut</span>
-                    <select [formField]="filtersForm.status">
-                        <option value="">Tous les statuts</option>
-                        <option value="active">Actif</option>
-                        <option value="inactive">Inactif</option>
-                    </select>
-                </label>
-                <div class="filter-actions">
-                    <button type="button" class="button button-secondary" (click)="clearFilters()">Effacer</button>
-                    <button type="submit" class="button button-primary">Appliquer</button>
-                </div>
-            </div>
         </form>
+
+        @if (appliedFilterItems().length) {
+            <section class="applied-filters" role="region" aria-label="Filtres appliqués">
+                @for (filter of visibleAppliedFilters(); track filter.key) {
+                    <button
+                        type="button"
+                        class="button filter-chip"
+                        [attr.aria-label]="'Retirer le filtre ' + filter.label + ' : ' + filter.value"
+                        (click)="removeAppliedFilter(filter.key)"
+                    >
+                        <span>{{ filter.label }} : {{ filter.value }}</span>
+                        <span aria-hidden="true">×</span>
+                    </button>
+                }
+                @if (hiddenAppliedFilterCount(); as hiddenCount) {
+                    <button
+                        type="button"
+                        class="button filter-chip filter-chip-more"
+                        [attr.aria-label]="
+                            'Afficher ' + hiddenCount + ' filtre supplémentaire' + (hiddenCount > 1 ? 's' : '')
+                        "
+                        (click)="openFilters()"
+                    >
+                        +{{ hiddenCount }}
+                    </button>
+                }
+            </section>
+        }
 
         @if (successNotice()) {
             <div data-cmz-id="created" class="toast toast-success" role="status">
@@ -209,6 +208,195 @@
             </section>
         }
     </main>
+
+    <div id="secondary-user-filters" class="filter-region" [hidden]="isCreateOpen() && layout() === 'expanded'">
+        @if (areFiltersOpen()) {
+            <div class="filter-surface" [class.filter-surface-persistent]="layout() === 'expanded'">
+                @if (isModalFilters()) {
+                    <button
+                        data-cmz-id="filter-backdrop"
+                        type="button"
+                        class="filter-backdrop"
+                        tabindex="-1"
+                        aria-label="Fermer les filtres"
+                        (click)="closeFilters()"
+                    ></button>
+                }
+                <form
+                    #filterPanel
+                    id="user-filter-panel"
+                    class="filter-panel"
+                    tabindex="-1"
+                    [attr.role]="layout() === 'expanded' ? 'complementary' : 'dialog'"
+                    [attr.aria-modal]="isModalFilters() ? 'true' : null"
+                    aria-label="Filtres"
+                    [cdkTrapFocus]="isModalFilters()"
+                    (submit)="applyFilters($event)"
+                    (keydown)="onFilterPanelKeydown($event)"
+                >
+                    <header class="filter-panel-header">
+                        @if (layout() === 'compact' && compactFilterDetail()) {
+                            <button
+                                type="button"
+                                class="button button-secondary filter-back-button"
+                                aria-label="Retour"
+                                (click)="showCompactFilterSummary()"
+                            >
+                                <span aria-hidden="true">‹</span>
+                                Retour
+                            </button>
+                        }
+                        <h2 id="filter-panel-title">
+                            @switch (layout() === 'compact' ? compactFilterDetail() : null) {
+                                @case ('profile') {
+                                    Profil
+                                }
+                                @case ('role') {
+                                    Rôle
+                                }
+                                @case ('status') {
+                                    Statut
+                                }
+                                @default {
+                                    Filtres
+                                }
+                            }
+                        </h2>
+                        <button
+                            type="button"
+                            class="button button-secondary filter-close-button"
+                            [attr.aria-label]="layout() === 'expanded' ? 'Replier les filtres' : 'Fermer les filtres'"
+                            (click)="closeFilters()"
+                        >
+                            <span aria-hidden="true">×</span>
+                        </button>
+                    </header>
+
+                    <div data-cmz-id="filter-body" class="filter-panel-body">
+                        @if (layout() === 'compact') {
+                            @if (!compactFilterDetail()) {
+                                <div class="compact-filter-summary">
+                                    <button type="button" (click)="showCompactFilter('profile')">
+                                        <span>Profil</span>
+                                        <span>{{ draftFilterValue('profile') }} <b aria-hidden="true">›</b></span>
+                                    </button>
+                                    <button type="button" (click)="showCompactFilter('role')">
+                                        <span>Rôle</span>
+                                        <span>{{ draftFilterValue('role') }} <b aria-hidden="true">›</b></span>
+                                    </button>
+                                    <button type="button" (click)="showCompactFilter('status')">
+                                        <span>Statut</span>
+                                        <span>{{ draftFilterValue('status') }} <b aria-hidden="true">›</b></span>
+                                    </button>
+                                </div>
+                            } @else {
+                                <div class="compact-filter-detail">
+                                    @switch (compactFilterDetail()) {
+                                        @case ('profile') {
+                                            <label data-cmz-id="profiles">
+                                                <span>Profil</span>
+                                                <select aria-label="Profil" [formField]="filtersForm.profile">
+                                                    <option value="">Tous les profils</option>
+                                                    @for (profile of profiles(); track profile.value) {
+                                                        <option [value]="profile.value">{{ profile.label }}</option>
+                                                    }
+                                                </select>
+                                            </label>
+                                        }
+                                        @case ('role') {
+                                            <label>
+                                                <span>Rôle</span>
+                                                <select aria-label="Rôle" [formField]="filtersForm.role">
+                                                    <option value="">Tous les rôles</option>
+                                                    <option value="supervisor">Superviseur</option>
+                                                    <option value="team-leader">Chef d’équipe</option>
+                                                    <option value="agent">Agent</option>
+                                                </select>
+                                            </label>
+                                        }
+                                        @case ('status') {
+                                            <fieldset class="status-options">
+                                                <legend class="sr-only">Statut</legend>
+                                                <label>
+                                                    <input
+                                                        type="radio"
+                                                        name="filter-status"
+                                                        value=""
+                                                        [checked]="draftFilters().status === ''"
+                                                        (change)="setDraftStatus('')"
+                                                    />
+                                                    Tous
+                                                </label>
+                                                <label>
+                                                    <input
+                                                        type="radio"
+                                                        name="filter-status"
+                                                        value="active"
+                                                        [checked]="draftFilters().status === 'active'"
+                                                        (change)="setDraftStatus('active')"
+                                                    />
+                                                    Actif
+                                                </label>
+                                                <label>
+                                                    <input
+                                                        type="radio"
+                                                        name="filter-status"
+                                                        value="inactive"
+                                                        [checked]="draftFilters().status === 'inactive'"
+                                                        (change)="setDraftStatus('inactive')"
+                                                    />
+                                                    Inactif
+                                                </label>
+                                            </fieldset>
+                                        }
+                                    }
+                                </div>
+                            }
+                        } @else {
+                            <div data-cmz-id="filter-groups" class="filter-groups">
+                                <fieldset>
+                                    <legend>Essentiels</legend>
+                                    <label data-cmz-id="profiles">
+                                        <span>Profil</span>
+                                        <select aria-label="Profil" [formField]="filtersForm.profile">
+                                            <option value="">Tous les profils</option>
+                                            @for (profile of profiles(); track profile.value) {
+                                                <option [value]="profile.value">{{ profile.label }}</option>
+                                            }
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span>Rôle</span>
+                                        <select aria-label="Rôle" [formField]="filtersForm.role">
+                                            <option value="">Tous les rôles</option>
+                                            <option value="supervisor">Superviseur</option>
+                                            <option value="team-leader">Chef d’équipe</option>
+                                            <option value="agent">Agent</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span>Statut</span>
+                                        <select aria-label="Statut" [formField]="filtersForm.status">
+                                            <option value="">Tous les statuts</option>
+                                            <option value="active">Actif</option>
+                                            <option value="inactive">Inactif</option>
+                                        </select>
+                                    </label>
+                                </fieldset>
+                            </div>
+                        }
+                    </div>
+
+                    <footer data-cmz-id="filter-actions" class="filter-panel-actions">
+                        <button type="button" class="button button-secondary" (click)="resetDraftFilters()">
+                            Réinitialiser
+                        </button>
+                        <button type="submit" class="button button-primary">Appliquer</button>
+                    </footer>
+                </form>
+            </div>
+        }
+    </div>
 
     @if (isCreateOpen()) {
         <div class="overlay" [class.overlay-persistent]="layout() === 'expanded'">
