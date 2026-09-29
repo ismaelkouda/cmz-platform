@@ -114,6 +114,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0071](./adr/0071-arbitrer-ecarts-c5-avant-baseline-chromium.md) | Arbitrer les écarts C5 avant la baseline Chromium        |
 | [0072](./adr/0072-ui-adaptative-guidee-par-m3-et-apis-officielles.md) | Guider l'UI adaptative par M3 et les API officielles de la cible |
 | [0073](./adr/0073-filtrage-adaptatif-par-panneau-unique.md) | Filtrage adaptatif par panneau unique et état brouillon  |
+| [0074](./adr/0074-filtres-progressifs-par-blocs-actifs.md)  | Filtres progressifs par blocs actifs sur fenêtres medium et expanded |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
@@ -132,6 +133,9 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 - [C5 — entrée externe « Gestion des utilisateurs »](./architecture/c5-entree-externe-gestion-utilisateurs-2026-09-25.md)
   — demande utilisateur figée, comparaison SEOS, décision de périmètre,
   baseline exécutable et écarts avant vertical slice générique
+- [C5 ADAPT-8 — filtres progressifs Desktop et Medium](./architecture/c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md)
+  — blocs de critères brouillon, sélecteur progressif, adaptation du même
+  contenu entre side sheet modal et supporting pane persistant
 - [Validation runtime `action-request`](./architecture/validation-runtime-action-request.md)
   — cas métier exécutés sur les sorties Angular et ReactJS, avec limites
   explicites de la preuve

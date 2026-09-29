@@ -2406,7 +2406,20 @@ Figma, désormais source partielle différée :
   à `10 passed`, dont deux échecs attendus et huit succès réels, et le passage
   complet à `23 passed`, dont vingt-et-un succès réels. Après revue et fusion,
   ADAPT-7b devra recalculer le work order, corriger seulement la page, convertir
-  les dix cas en succès réels, puis reprendre la baseline Chromium.
+  les dix cas en succès réels, puis céder le chemin critique à ADAPT-8 avant la
+  baseline Chromium.
+  **ADAPT-8 — filtres progressifs Desktop/Medium :** la décision produit du
+  2026-09-29 conserve les conteneurs et l'état `draft`/`applied` d'ADAPT-6,
+  mais demande que les critères du brouillon soient présentés sous forme de
+  blocs actifs, repliables et supprimables dans les fenêtres `medium` et
+  `expanded`. `Ajouter un filtre` ne propose que les champs contractuels encore
+  disponibles. Les chips extérieures restent réservées aux valeurs réellement
+  appliquées. Aucun comportement AG Grid non contractuel ni aucune dépendance
+  de grille n'est adopté. ADAPT-7b reste prioritaire ; viennent ensuite revue de
+  décision, références propres au dépôt, oracles en échec attendu, work order,
+  réalisation bornée et preuve navigateur. Décision détaillée :
+  [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
+  ADR-0074 proposé.
   Dossier :
   `examples/users-management-proof/presentation/filter-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
