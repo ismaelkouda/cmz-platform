@@ -1,12 +1,13 @@
 # C5 ADAPT-6 — filtres adaptatifs multi-fenêtres
 
-- **Statut :** décision et candidats visuels approuvés puis fusionnés ;
-  publication content-addressed engagée ; réalisation non commencée
+- **Statut :** décision, candidats et publication content-addressed approuvés
+  puis fusionnés ; oracles ADAPT-6d engagés localement ; réalisation non
+  commencée
 - **Date :** 2026-09-28
 - **Périmètre :** présentation des filtres de la page C5 et capacité à monter à
   environ quinze critères
-- **Dépendance :** ADAPT-5 et ADAPT-6b fusionnés avec CI post-fusion verte ; les
-  nouveaux oracles restent séparés de cette publication
+- **Dépendance :** ADAPT-5 à ADAPT-6c fusionnés avec CI post-fusion verte ; les
+  nouveaux oracles restent séparés de la future réalisation
 
 ## 1. Résultat attendu
 
@@ -260,12 +261,39 @@ Soumaila a approuvé leur commit exact
 `9b1792c9afbb31c906c69af9068a6d2e498ca043`. Ses 16 contrôles et la CI
 post-fusion `36471376072` sont verts.
 
-ADAPT-6c publie maintenant ces quatre PNG et leur brief visuel stable dans le
-manifeste `presentation-evidence`. Il retire de l'autorité active les anciennes
-images qui montrent encore les filtres secondaires en ligne, sans supprimer leur
+ADAPT-6c publie ces quatre PNG et leur brief visuel stable dans le manifeste
+`presentation-evidence`. Il retire de l'autorité active les anciennes images qui
+montrent encore les filtres secondaires en ligne, sans supprimer leur
 historique. Le brief ADAPT-2 reste actif après avoir rendu explicite la
 supersession ciblée de sa section 4.3 par ADAPT-6. Aucun fichier Angular ni work
-order n'est modifié dans ce lot.
+order n'est modifié dans ce lot. Soumaila a approuvé le commit exact
+`2063b971e05cc77aac99848f336f1bc34709d7e1`, puis la PR #131 a été fusionnée dans
+`d7874331583bd9ac61f84fdf96a73d3aa617c225`. Ses 17 contrôles et la CI
+post-fusion `36498236321` sont verts.
+
+ADAPT-6d ajoute dix scénarios Playwright dans
+`apps/users-management-proof/e2e/adaptive-filter-oracles.spec.ts`. Ils couvrent
+les dix familles de la section 10 et reconnaissent uniquement la signature
+historique exacte : `#secondary-user-filters` reste un enfant direct de
+`form.filters`, sans rôle ni modalité. Sur le `main` fusionné, les dix scénarios
+échouent ensuite sur la première capacité adaptative absente et sont donc tous
+classés comme échecs attendus, sans `skip` ni `todo` (`10 passed` en 30,2 s). Le
+passage de non-régression complet du 2026-09-29 conserve les treize scénarios
+existants comme succès réels et termine à `23 passed` en 39,3 s.
+
+Le build Angular de production reste vert, mais signale que
+`page.component.scss` pèse `6,47 kB` pour un seuil d'avertissement de `4 kB` et
+un plafond bloquant de `8 kB`. La réalisation devra supprimer ou remplacer les
+règles historiques de filtres, réutiliser les règles de panneau déjà présentes
+et rester sous le plafond. Augmenter le budget ou déplacer artificiellement les
+styles hors du composant n'est pas une correction acceptable.
+
+La preuve de densité ne crée aucun filtre métier : elle clone seulement le vrai
+groupe dans le DOM du navigateur, le rend `inert` et `aria-hidden`, puis mesure
+le scroll et la visibilité du header/footer. Elle ne lie rien à Angular et
+n'émet aucune requête. Ce lot ne modifie toujours aucun fichier de page, aucune
+dépendance et aucun work order. Après revue et fusion, le prochain lot devra
+calculer le nouveau work order depuis `main` avant toute réalisation.
 
 ## Références
 
