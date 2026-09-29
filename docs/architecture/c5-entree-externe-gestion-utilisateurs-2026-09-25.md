@@ -3,8 +3,8 @@
 - **Date de réception :** 2026-09-25
 - **Origine :** description libre fournie par un utilisateur ne manipulant ni
   schéma ni code du générateur
-- **Statut :** page C5 réalisée et prouvée dans le vrai navigateur ; revue des
-  rendus, corrections visuelles traçables et baseline pixel encore ouvertes
+- **Statut :** page C5 et filtres adaptatifs réalisés, approuvés et prouvés dans
+  le vrai navigateur ; seule la décision séparée de baseline pixel reste ouverte
 - **But :** éprouver le parcours `list-query` + `action-request` + composition
   de page sur un cas produit réel
 - **Décision utilisateur du 2026-09-25 :** option A, reproduction du contrat
@@ -945,3 +945,33 @@ devant la signature inline historique exacte, sans `skip` ni `todo`. Sur le
 attendus strictement bornés et douze succès réels. Aucun fichier Angular,
 dépendance ou work order n'est modifié. La fusion de ce lot doit précéder un
 nouveau work order et la réalisation.
+
+Soumaila a approuvé le commit exact
+`397d85d8ce28608da631e39aa1f5e7ba4e954997`, puis a fusionné la PR #133 dans
+`4e65d8fb3fe8e14efdb1000c76f2577364198b18`. Ses 17 contrôles et la CI
+post-fusion `36530012640` sont verts.
+
+## ADAPT-6f — filtres adaptatifs réalisés et fusionnés
+
+Le work order
+`7db39bbe0856b8fce04f9aff6ac38ca1509b933886c35bc0fbe422561dd1d014`, recalculé
+depuis le `main` portant ADAPT-6e, borne la réalisation aux cinq fichiers de
+page. L'implémentation finale en modifie quatre et matérialise le bottom sheet
+compact, le side sheet `medium` et le supporting pane `expanded` sur un seul
+état de formulaire, sans filtre, option ou paramètre réseau inventé.
+
+Les 26 tests Angular et les 23 scénarios Playwright passent réellement, sans
+`skip`, `todo` ni échec attendu résiduel. Le work order, la compilation, le
+build production, le lint ciblé, Prettier et le diff Git sont verts. Le style du
+composant reste à `7,74 kB`, sous le plafond bloquant de `8 kB` sans déplacer la
+complexité ni relever le budget.
+
+Soumaila a approuvé la PR #134 sur le commit exact
+`d836886009e14b368ed48b94941c0462818b42a1`, puis l'a fusionnée dans
+`8a6227a7b8eacb25525e188637e91694f15fbdd2`. Ses 17 contrôles et la CI
+post-fusion `36534048265` sont verts.
+
+La réalisation C5 est donc techniquement complète. Le prochain incrément ne
+doit pas extraire prématurément un composant partagé : il doit d'abord statuer
+sur la baseline Chromium encore ouverte par ADR-0071, puis conduire la revue C6
+de promotion à partir des critères non négociables de l'audit de composition.
