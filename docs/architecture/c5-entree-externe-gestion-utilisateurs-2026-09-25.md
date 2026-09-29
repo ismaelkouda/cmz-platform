@@ -996,3 +996,40 @@ son nom initial, puis attend le nom `Profil` après navigation. L'ancienne
 signature `aria-label="Filtres"` sans `aria-labelledby` reste le seul motif
 d'échec attendu. Ce lot ne modifie ni page Angular ni work order ; sa fusion
 doit précéder un nouveau calcul du work order ADAPT-7b.
+
+Soumaila a approuvé ADAPT-7a2 et la PR #139 a été fusionnée dans
+`bdb69077664eb589815b29f20144e8eef6ae22eb` ; la CI post-fusion `36584337755`
+est verte. ADAPT-7b repart donc du work order frais
+`a9abe5a184697de6a54b71943d7f140dcbe441c367a279e2d8b20082f249278d`. Sa
+réalisation modifie seulement `page.component.html` et `page.component.ts` : le
+titre visible nomme désormais le dialogue, l'ouverture cible le premier
+contrôle et `Retour` rend le focus au critère d'origine. Les 10 oracles
+adaptatifs, les 23 scénarios Playwright, les 26 tests Angular, le lint, le build
+production et l'Oracle confiné sont verts. Soumaila a approuvé le commit exact
+`56a71baf4db9adbcd8ce6d0920ec1eec64f1ed30`, fusionné par la PR #140 dans
+`eb8be265e5843d196cff7bf10c6372e5f212f7de`. Les 17 contrôles de PR et la CI
+post-fusion `36591923635` sont verts ; ADAPT-7 est clos.
+
+## ADAPT-9 — chargement progressif mobile silencieux
+
+La décision produit validée le 2026-09-29 remplace, uniquement en fenêtre
+`compact`, les boutons de pagination par une accumulation progressive des lots
+du backend. La sentinelle demande la page suivante avant la fin de la pile et
+les cartes sont ajoutées sans spinner, skeleton ou texte de chargement visible
+dans le cas nominal. `medium` et `expanded` conservent le tableau et sa
+pagination explicite.
+
+Cette continuité visuelle ne supprime pas l'état machine : une seule requête de
+page suivante peut être active, les résultats sont ordonnés et dédupliqués par
+`uniqId`, une ancienne recherche ne peut pas polluer la nouvelle, et la
+sentinelle s'arrête exactement à `lastPage`. Une erreur conserve les cartes,
+suspend l'automatisme et expose un bouton `Réessayer`. Recherche, filtres et
+création réussie réinitialisent l'accumulation puis demandent la page `1` ; un
+resize seul ne produit aucun GET.
+
+Ce lot formalise seulement la décision et les preuves à produire. Il ne change
+ni le runtime Angular, ni `list-query`, ni le contrat réseau. Les oracles
+Playwright doivent être écrits et fusionnés avant tout nouveau work order et
+avant la réalisation. Voir
+[`c5-adapt9-chargement-progressif-mobile-2026-09-29.md`](./c5-adapt9-chargement-progressif-mobile-2026-09-29.md)
+et [ADR-0075](../adr/0075-chargement-progressif-mobile-silencieux.md).

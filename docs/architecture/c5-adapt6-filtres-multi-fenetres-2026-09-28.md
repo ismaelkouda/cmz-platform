@@ -413,3 +413,28 @@ signature exacte `aria-label="Filtres"` sans `aria-labelledby` autorise encore
 un échec attendu sur `main`. Après revue et fusion d'ADAPT-7a2, le work order
 devra être recalculé une nouvelle fois avant de reprendre les deux fichiers de
 page déjà validés par la réalisation jetable.
+
+Soumaila a approuvé ADAPT-7a2 sur le commit
+`cedb60d4a2f640674419a51740796d4c7a572986`, puis la PR #139 a été fusionnée
+dans `bdb69077664eb589815b29f20144e8eef6ae22eb`. Ses 17 contrôles et la CI
+post-fusion `36584337755` sont verts.
+
+### ADAPT-7b — réalisation confinée et fusionnée
+
+Le work order
+`a9abe5a184697de6a54b71943d7f140dcbe441c367a279e2d8b20082f249278d`, recalculé
+depuis ce `main`, autorise uniquement les cinq fichiers de la page. La
+réalisation n'en modifie que deux : le template et le contrôleur.
+Elle remplace le nom constant du panneau par `aria-labelledby`, transfère le
+focus vers le premier contrôle du critère ouvert et le restitue au bouton du
+critère quitté après `Retour`. Les marqueurs ajoutés sont locaux au parcours de
+focus ; ils ne changent ni le contrat métier, ni l'API, ni la disposition.
+
+Les dix oracles adaptatifs et les vingt-trois scénarios Playwright complets
+passent réellement, sans échec attendu résiduel. Les 26 tests Angular, le lint,
+le build production et l'Oracle du work order passent également, sans
+violation de confinement. Le bundle initial reste à `262,69 kB` et le style à
+`7,74 kB`, sous le plafond bloquant de `8 kB`. Soumaila a approuvé le commit
+exact `56a71baf4db9adbcd8ce6d0920ec1eec64f1ed30`, fusionné par la PR #140 dans
+`eb8be265e5843d196cff7bf10c6372e5f212f7de`. Les 17 contrôles de PR et la CI
+post-fusion `36591923635` sont verts. ADAPT-7 est clos.
