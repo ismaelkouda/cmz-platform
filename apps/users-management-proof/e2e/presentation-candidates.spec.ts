@@ -1,4 +1,10 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import {
+    expect,
+    test,
+    type Locator,
+    type Page,
+    type TestInfo,
+} from '@playwright/test';
 
 const USERS = [
     [
@@ -197,6 +203,23 @@ async function expectAdaptiveFiltersOrFailOnExactLegacy(
     if (legacyInlineFilters) expect(legacyInlineFilters).toBe(false);
 }
 
+async function expectDynamicCompactFilterNameOrFailOnExactLegacy(
+    panel: Locator,
+    expectedName: string
+): Promise<void> {
+    const legacyConstantName = await panel.evaluate(
+        (element) =>
+            element.getAttribute('aria-label') === 'Filtres' &&
+            !element.hasAttribute('aria-labelledby')
+    );
+
+    test.fail(
+        legacyConstantName,
+        'ADAPT-7 : le scénario de présentation attend le nom accessible du critère compact et non le nom constant « Filtres ».'
+    );
+    await expect(panel).toHaveAccessibleName(expectedName);
+}
+
 async function captureCandidate(
     page: Page,
     testInfo: TestInfo,
@@ -346,7 +369,9 @@ test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(apiRequests).toEqual(requestsBeforeOpen);
 
-    let dialog = page.getByRole('dialog', { name: 'Filtres' });
+    let dialog = page.locator('#user-filter-panel');
+    await expect(dialog).toHaveAttribute('role', 'dialog');
+    await expect(dialog).toHaveAccessibleName('Filtres');
     const apply = dialog.getByRole('button', {
         name: 'Appliquer',
         exact: true,
@@ -361,6 +386,7 @@ test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite
     await expect(reset).toHaveCSS('min-height', '44px');
 
     await dialog.getByRole('button', { name: /^Profil\b/ }).click();
+    await expectDynamicCompactFilterNameOrFailOnExactLegacy(dialog, 'Profil');
     await dialog.getByLabel('Profil').selectOption('profile-a');
     expect(apiRequests).toEqual(requestsBeforeOpen);
     const requestsBeforeApply = apiRequests.length;
@@ -370,8 +396,10 @@ test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite
     await expect(toggle).toHaveAccessibleName('Filtres (1)');
 
     await toggle.click();
-    dialog = page.getByRole('dialog', { name: 'Filtres' });
+    dialog = page.locator('#user-filter-panel');
+    await expect(dialog).toHaveAccessibleName('Filtres');
     await dialog.getByRole('button', { name: /^Profil\b/ }).click();
+    await expect(dialog).toHaveAccessibleName('Profil');
     const requestsBeforeReset = apiRequests.length;
     await dialog.getByRole('button', { name: 'Réinitialiser' }).click();
     await expect(dialog.getByLabel('Profil')).toHaveValue('');
