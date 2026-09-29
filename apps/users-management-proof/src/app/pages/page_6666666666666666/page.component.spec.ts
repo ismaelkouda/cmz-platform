@@ -252,6 +252,34 @@ describe('PageComponent', () => {
         ).toBe('page');
     });
 
+    it('expose la recherche principale avant les filtres et explicite le FAB compact', async () => {
+        const { fixture } = await setup({ layout: 'compact' });
+        const root = fixture.nativeElement as HTMLElement;
+        const search = element<HTMLInputElement>(root, '[type="search"]');
+        const label = element<HTMLLabelElement>(root, '.filter-search');
+        const filters = element<HTMLFormElement>(root, 'form.filters');
+        const toggle = element<HTMLButtonElement>(root, '.filter-toggle');
+        const create = element<HTMLButtonElement>(
+            root,
+            '[data-cmz-id="create-user"]'
+        );
+
+        expect(label.textContent).toContain('Rechercher un utilisateur');
+        expect(search.placeholder).toBe('Nom, prénom ou adresse e-mail');
+        expect(filters.contains(label)).toBe(true);
+        expect(
+            label.compareDocumentPosition(toggle) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+        ).not.toBe(0);
+        expect(
+            element(create, '.create-button-icon').getAttribute('aria-hidden')
+        ).toBe('true');
+        expect(create.getAttribute('aria-label')).toBe('Créer un utilisateur');
+        expect(create.title).toBe('Créer un utilisateur');
+        expect(create.querySelector('.create-button-icon')).not.toBeNull();
+        expect(create.querySelector('.create-button-label')).toBeNull();
+    });
+
     it('échoue fermé sans permission et ne soumet aucune commande', async () => {
         const { fixture, submitUser } = await setup({ authorized: false });
         const root = fixture.nativeElement as HTMLElement;
@@ -500,7 +528,8 @@ describe('PageComponent', () => {
         expect(
             element(root, '[data-cmz-id="created"]').getAttribute('role')
         ).toBe('status');
-        expect(loadUsers).toHaveBeenCalledTimes(1);
+        expect(loadUsers).toHaveBeenCalledTimes(2);
+        expect(loadUsers).toHaveBeenLastCalledWith({ page: 1 });
     });
 
     it('conserve le formulaire et les valeurs après un conflit email', async () => {
@@ -606,103 +635,85 @@ describe('PageComponent', () => {
         expect(document.activeElement).toBe(email);
     });
 
-    it(
-        'accumule les pages compactes dans l’ordre et déduplique uniqId',
-        { fails: true },
-        async () => {
-            const { fixture, intersectSentinel, loadUsers, setUsersPage } =
-                await setup({ layout: 'compact' });
-            const root = fixture.nativeElement as HTMLElement;
+    it('accumule les pages compactes dans l’ordre et déduplique uniqId', async () => {
+        const { fixture, intersectSentinel, loadUsers, setUsersPage } =
+            await setup({ layout: 'compact' });
+        const root = fixture.nativeElement as HTMLElement;
 
-            expect(
-                root.querySelector('[aria-label="Pagination des utilisateurs"]')
-            ).not.toBeNull();
-            expect(
-                root.querySelector('[data-cmz-id="mobile-load-sentinel"]')
-            ).not.toBeNull();
+        expect(
+            root.querySelector('[data-cmz-id="mobile-load-sentinel"]')
+        ).not.toBeNull();
 
-            loadUsers.mockClear();
-            intersectSentinel();
-            await fixture.whenStable();
-            expect(loadUsers).toHaveBeenCalledOnce();
-            expect(loadUsers).toHaveBeenCalledWith({ page: 2 });
+        loadUsers.mockClear();
+        intersectSentinel();
+        await fixture.whenStable();
+        expect(loadUsers).toHaveBeenCalledOnce();
+        expect(loadUsers).toHaveBeenCalledWith({ page: 2 });
 
-            setUsersPage({
-                items: NEXT_USERS,
-                currentPage: 2,
-                lastPage: 2,
-                pageSize: 2,
-                totalItems: 3,
-            });
-            await fixture.whenStable();
+        setUsersPage({
+            items: NEXT_USERS,
+            currentPage: 2,
+            lastPage: 2,
+            pageSize: 2,
+            totalItems: 3,
+        });
+        await fixture.whenStable();
 
-            const cards = root.querySelectorAll('.user-card');
-            expect(cards).toHaveLength(3);
-            expect(
-                root.textContent?.match(/bravo@example\.invalid/g)
-            ).toHaveLength(1);
-            expect(root.textContent).toContain('charlie@example.invalid');
-        }
-    );
+        const cards = root.querySelectorAll('.user-card');
+        expect(cards).toHaveLength(3);
+        expect(root.textContent?.match(/bravo@example\.invalid/g)).toHaveLength(
+            1
+        );
+        expect(root.textContent).toContain('charlie@example.invalid');
+    });
 
-    it(
-        'verrouille la page suivante puis expose un retry borné après erreur',
-        { fails: true },
-        async () => {
-            const { fixture, intersectSentinel, loadUsers, usersState } =
-                await setup({ layout: 'compact' });
-            const root = fixture.nativeElement as HTMLElement;
+    it('verrouille la page suivante puis expose un retry borné après erreur', async () => {
+        const { fixture, intersectSentinel, loadUsers, usersState } =
+            await setup({ layout: 'compact' });
+        const root = fixture.nativeElement as HTMLElement;
 
-            expect(
-                root.querySelector('[data-cmz-id="mobile-load-sentinel"]')
-            ).not.toBeNull();
-            loadUsers.mockClear();
-            intersectSentinel();
-            intersectSentinel();
-            await fixture.whenStable();
-            expect(loadUsers).toHaveBeenCalledOnce();
-            expect(loadUsers).toHaveBeenCalledWith({ page: 2 });
+        expect(
+            root.querySelector('[data-cmz-id="mobile-load-sentinel"]')
+        ).not.toBeNull();
+        loadUsers.mockClear();
+        intersectSentinel();
+        intersectSentinel();
+        await fixture.whenStable();
+        expect(loadUsers).toHaveBeenCalledOnce();
+        expect(loadUsers).toHaveBeenCalledWith({ page: 2 });
 
-            usersState.set('error');
-            await fixture.whenStable();
-            const retry = element<HTMLButtonElement>(
-                root,
-                '[data-cmz-id="mobile-load-retry"]'
-            );
-            retry.click();
-            await fixture.whenStable();
-            expect(loadUsers).toHaveBeenCalledTimes(2);
-            expect(loadUsers).toHaveBeenLastCalledWith({ page: 2 });
-        }
-    );
+        usersState.set('error');
+        await fixture.whenStable();
+        const retry = element<HTMLButtonElement>(
+            root,
+            '[data-cmz-id="mobile-load-retry"]'
+        );
+        retry.click();
+        await fixture.whenStable();
+        expect(loadUsers).toHaveBeenCalledTimes(2);
+        expect(loadUsers).toHaveBeenLastCalledWith({ page: 2 });
+    });
 
-    it(
-        'réinitialise explicitement la projection compacte sur page 1 après création',
-        { fails: true },
-        async () => {
-            const { fixture, loadUsers } = await setup({ layout: 'compact' });
-            const root = fixture.nativeElement as HTMLElement;
-            loadUsers.mockClear();
+    it('réinitialise explicitement la projection compacte sur page 1 après création', async () => {
+        const { fixture, loadUsers } = await setup({ layout: 'compact' });
+        const root = fixture.nativeElement as HTMLElement;
+        loadUsers.mockClear();
 
-            element<HTMLButtonElement>(
-                root,
-                '[data-cmz-id="create-user"]'
-            ).click();
-            await fixture.whenStable();
-            await fillValidForm(root);
-            await fixture.whenStable();
-            element<HTMLFormElement>(
-                root,
-                '[data-cmz-id="create-user-form"]'
-            ).dispatchEvent(
-                new Event('submit', { bubbles: true, cancelable: true })
-            );
-            await fixture.whenStable();
+        element<HTMLButtonElement>(root, '[data-cmz-id="create-user"]').click();
+        await fixture.whenStable();
+        await fillValidForm(root);
+        await fixture.whenStable();
+        element<HTMLFormElement>(
+            root,
+            '[data-cmz-id="create-user-form"]'
+        ).dispatchEvent(
+            new Event('submit', { bubbles: true, cancelable: true })
+        );
+        await fixture.whenStable();
 
-            expect(loadUsers).toHaveBeenCalledOnce();
-            expect(loadUsers).toHaveBeenCalledWith({ page: 1 });
-        }
-    );
+        expect(loadUsers).toHaveBeenCalledOnce();
+        expect(loadUsers).toHaveBeenCalledWith({ page: 1 });
+    });
 });
 
 describe('PAGE_PERMISSION_PROVIDER', () => {

@@ -65,6 +65,14 @@ verbe `create`. L'approbation produit de ce candidat signifie explicitement que
 la création doit rester disponible pendant le défilement **pour C5 seulement**.
 Elle ne crée jamais une règle de générateur `create -> FAB`.
 
+**Décision produit postérieure, 2026-09-29 :** la relecture du vrai rendu
+Angular a remplacé, uniquement en `compact`, ce libellé visible par un simple
+`+`. Le contrôle runtime reste un bouton natif de 56 px, unique, fixé au
+scaffold, nommé et décrit « Créer un utilisateur » pour l'accessibilité. Le
+wireframe et ses empreintes restent la trace historique de la décision ADAPT-4 ;
+la preuve runtime ADAPT-9 est l'autorité sur la présentation finale. Cette
+exception ne généralise ni `create -> FAB`, ni `compact -> icon-only`.
+
 ### 3.2 `medium` — side sheet temporaire et modal
 
 - La liste reste le contexte principal et demeure visible derrière un backdrop,

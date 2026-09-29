@@ -136,7 +136,7 @@ async function installHostAndBackend(page: Page): Promise<void> {
                 message: 'SUCCESS',
                 data: {
                     current_page: currentPage,
-                    last_page: 9,
+                    last_page: 2,
                     per_page: 5,
                     total: 42,
                     data: USERS,
@@ -183,6 +183,11 @@ async function openReadyPage(
     });
     await page.evaluate(async () => document.fonts.ready);
     await expect(page.locator('[data-cmz-id="ready"]')).toBeVisible();
+    if (await page.locator('[data-cmz-id="mobile-results"]').isVisible()) {
+        await expect(
+            page.locator('[data-cmz-id="mobile-load-sentinel"]')
+        ).toHaveCount(0);
+    }
 }
 
 async function expectAdaptiveFiltersOrFailOnExactLegacy(
@@ -258,18 +263,6 @@ function observeApiRequests(page: Page): string[] {
         }
     });
     return requests;
-}
-
-function boxesOverlap(
-    first: { x: number; y: number; width: number; height: number },
-    second: { x: number; y: number; width: number; height: number }
-): boolean {
-    return !(
-        first.x + first.width <= second.x ||
-        second.x + second.width <= first.x ||
-        first.y + first.height <= second.y ||
-        second.y + second.height <= first.y
-    );
 }
 
 async function submitEmailConflict(page: Page): Promise<void> {
@@ -391,7 +384,7 @@ test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite
     expect(apiRequests).toEqual(requestsBeforeOpen);
     const requestsBeforeApply = apiRequests.length;
     await apply.click();
-    await expect.poll(() => apiRequests.length).toBe(requestsBeforeApply + 1);
+    await expect.poll(() => apiRequests.length).toBe(requestsBeforeApply + 2);
     expect(apiRequests.at(-1)).toContain('profile=profile-a');
     await expect(toggle).toHaveAccessibleName('Filtres (1)');
 
@@ -406,7 +399,7 @@ test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite
     expect(apiRequests).toHaveLength(requestsBeforeReset);
 
     await dialog.getByRole('button', { name: 'Appliquer' }).click();
-    await expect.poll(() => apiRequests.length).toBe(requestsBeforeReset + 1);
+    await expect.poll(() => apiRequests.length).toBe(requestsBeforeReset + 2);
     await expect(toggle).toHaveAccessibleName('Filtres');
     expect(apiRequests.at(-1)).not.toContain('profile=');
 });
@@ -491,8 +484,15 @@ test('préserve liste, formulaire, erreur et focus sans réseau au resize compac
 
     const search = page.locator('.filters input').first();
     await search.fill('Alpha');
-    await page.getByRole('button', { name: 'Suivant' }).click();
-    await expect(page.locator('.mobile-summary')).toContainText('Page 2 / 9');
+    await expect
+        .poll(
+            () =>
+                apiRequests.filter(
+                    (request) =>
+                        request.startsWith('GET ') && request.includes('page=2')
+                ).length
+        )
+        .toBe(1);
     await submitEmailConflict(page);
 
     const email = page.locator('[data-cmz-id="email"]');
@@ -521,7 +521,7 @@ test('préserve liste, formulaire, erreur et focus sans réseau au resize compac
     );
 });
 
-test('active un FAB compact unique sans masquer la pagination ni updated_at', async ({
+test('active un FAB compact unique sans pagination et conserve updated_at', async ({
     page,
 }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -545,19 +545,14 @@ test('active un FAB compact unique sans masquer la pagination ni updated_at', as
         '26/09/2026'
     );
 
-    const next = page.getByRole('button', { name: 'Suivant' });
-    await next.focus();
-    await expect(next).toBeFocused();
-    const [rawFabBox, rawNextBox] = await Promise.all([
-        create.boundingBox(),
-        next.boundingBox(),
-    ]);
+    await expect(
+        page.getByRole('navigation', { name: 'Pagination des utilisateurs' })
+    ).toHaveCount(0);
+    const rawFabBox = await create.boundingBox();
     const fabBox = requireBox(rawFabBox, 'FAB compact');
-    const nextBox = requireBox(rawNextBox, 'pagination compacte focalisée');
     expect(fabBox.height).toBeGreaterThanOrEqual(48);
-    expect(fabBox.width).toBeLessThan(280);
+    expect(fabBox.width).toBe(56);
     expect(fabBox.x + fabBox.width).toBeLessThanOrEqual(390 - 16);
-    expect(boxesOverlap(fabBox, nextBox)).toBe(false);
 });
 
 test('rend le side sheet medium strictement modal et restitue le focus', async ({
@@ -642,7 +637,7 @@ test('rend le panneau expanded persistant, non modal et adjacent à la liste', a
     expect(paneBox.width).toBeLessThanOrEqual(440);
     expect(mainBox.x + mainBox.width).toBeLessThanOrEqual(paneBox.x);
 
-    const search = page.getByLabel('Recherche');
+    const search = page.getByLabel('Rechercher un utilisateur');
     await search.fill('Alpha');
     await expect(search).toHaveValue('Alpha');
     await expect(search).toBeFocused();
@@ -658,9 +653,17 @@ test('conserve permission, état, focus et silence réseau sur les trois classes
     await page.setViewportSize({ width: 390, height: 844 });
     await openReadyPage(page);
 
-    const search = page.getByLabel('Recherche');
+    const search = page.getByLabel('Rechercher un utilisateur');
     await search.fill('Alpha');
-    await page.getByRole('button', { name: 'Suivant' }).click();
+    await expect
+        .poll(
+            () =>
+                apiRequests.filter(
+                    (request) =>
+                        request.startsWith('GET ') && request.includes('page=2')
+                ).length
+        )
+        .toBe(1);
     await submitEmailConflict(page);
     const email = page.locator('[data-cmz-id="email"]');
     await email.focus();

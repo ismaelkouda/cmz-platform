@@ -4,6 +4,7 @@
 </header>
 
 <div
+    #workspace
     class="workspace"
     [class.layout-compact]="layout() === 'compact'"
     [class.layout-medium]="layout() === 'medium'"
@@ -15,18 +16,33 @@
         <section class="page-heading-row">
             <div>
                 <h1 data-cmz-id="page-heading">Gestion des utilisateurs</h1>
-                <p>Consulter, filtrer et créer les comptes utilisateurs.</p>
             </div>
             <button
                 #createButton
                 data-cmz-id="create-user"
                 type="button"
                 class="button button-primary create-button"
+                aria-label="Créer un utilisateur"
+                title="Créer un utilisateur"
                 [disabled]="!composition.createUser.authorized() || isCreateOpen() || areFiltersOpen()"
                 [attr.aria-describedby]="composition.createUser.authorized() ? null : 'create-denied'"
                 (click)="openCreateForm()"
             >
-                Créer un utilisateur
+                @if (layout() === 'compact') {
+                    <svg
+                        class="create-button-icon"
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        focusable="false"
+                        width="24"
+                        height="24"
+                        fill="currentColor"
+                    >
+                        <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" />
+                    </svg>
+                } @else {
+                    <span class="create-button-label">Créer un utilisateur</span>
+                }
             </button>
             @if (!composition.createUser.authorized()) {
                 <p id="create-denied" class="sr-only">Vous n’avez pas la permission de créer un utilisateur.</p>
@@ -35,8 +51,23 @@
 
         <form class="filters" (submit)="applySearch($event)">
             <label class="filter-search">
-                <span>Recherche</span>
-                <input type="search" [formField]="searchForm.search" placeholder="Nom, prénom ou email" />
+                <span class="filter-search-label">Rechercher un utilisateur</span>
+                <span class="filter-search-control">
+                    <svg
+                        class="filter-search-icon"
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        focusable="false"
+                        width="18"
+                        height="18"
+                        fill="currentColor"
+                    >
+                        <path
+                            d="M9.5 3a6.5 6.5 0 1 0 4.08 11.56L18.02 19 19.5 17.52l-4.44-4.44A6.5 6.5 0 0 0 9.5 3Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"
+                        />
+                    </svg>
+                    <input type="search" [formField]="searchForm.search" placeholder="Nom, prénom ou adresse e-mail" />
+                </span>
             </label>
             <button
                 #filterTrigger
@@ -111,100 +142,152 @@
 
         @if (isReady()) {
             <section data-cmz-id="ready" class="results" [attr.aria-busy]="isReloading()">
-                @if (isReloading()) {
+                @if (isReloading() && layout() !== 'compact') {
                     <p class="refreshing" role="status">Actualisation de la liste…</p>
                 }
                 <div data-cmz-id="users">
-                    <div data-cmz-id="users-table" class="desktop-table">
-                        <table>
-                            <caption class="sr-only">
-                                Liste des utilisateurs
-                            </caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">Nom</th>
-                                    <th scope="col">Prénom</th>
-                                    <th scope="col">Email</th>
-                                    <th scope="col">Profil</th>
-                                    <th scope="col">Rôle</th>
-                                    <th scope="col">Statut</th>
-                                    <th scope="col">Mise à jour</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for (user of users(); track user.uniqId) {
+                    @if (layout() !== 'compact') {
+                        <div data-cmz-id="users-table" class="desktop-table">
+                            <table>
+                                <caption class="sr-only">
+                                    Liste des utilisateurs
+                                </caption>
+                                <thead>
                                     <tr>
-                                        <td>{{ user.lastName }}</td>
-                                        <td>{{ user.firstName }}</td>
-                                        <td>{{ user.email }}</td>
-                                        <td>{{ user.profile }}</td>
-                                        <td>{{ roleLabel(user.role) }}</td>
-                                        <td>
-                                            <span class="status" [class.status-active]="isActiveStatus(user.status)">
-                                                {{ statusLabel(user.status) }}
-                                            </span>
-                                        </td>
-                                        <td>{{ formatDate(user.updatedAt) }}</td>
+                                        <th scope="col">Nom</th>
+                                        <th scope="col">Prénom</th>
+                                        <th scope="col">Email</th>
+                                        <th scope="col">Profil</th>
+                                        <th scope="col">Rôle</th>
+                                        <th scope="col">Statut</th>
+                                        <th scope="col">Mise à jour</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mobile-results">
-                        <div class="mobile-summary">
-                            <strong>{{ page()?.totalItems }} utilisateurs</strong>
-                            <span>Page {{ page()?.currentPage }} / {{ page()?.lastPage }}</span>
+                                </thead>
+                                <tbody>
+                                    @for (user of users(); track user.uniqId) {
+                                        <tr>
+                                            <td>{{ user.lastName }}</td>
+                                            <td>{{ user.firstName }}</td>
+                                            <td>{{ user.email }}</td>
+                                            <td>{{ user.profile }}</td>
+                                            <td>{{ roleLabel(user.role) }}</td>
+                                            <td>
+                                                <span
+                                                    class="status"
+                                                    [class.status-active]="isActiveStatus(user.status)"
+                                                >
+                                                    {{ statusLabel(user.status) }}
+                                                </span>
+                                            </td>
+                                            <td>{{ formatDate(user.updatedAt) }}</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
-                        @for (user of users(); track user.uniqId) {
-                            <article class="user-card">
-                                <div>
-                                    <strong>{{ user.lastName }} {{ user.firstName }}</strong>
-                                    <span class="status" [class.status-active]="isActiveStatus(user.status)">
-                                        {{ statusLabel(user.status) }}
-                                    </span>
+                    }
+
+                    @if (layout() === 'compact') {
+                        <section
+                            data-cmz-id="mobile-results"
+                            class="mobile-results"
+                            role="region"
+                            aria-label="Utilisateurs"
+                            [attr.aria-busy]="mobileLoadingNext() ? 'true' : null"
+                        >
+                            <div class="mobile-summary">
+                                <strong>{{ mobileTotalItems() }} utilisateurs</strong>
+                                <span>{{ mobileUsers().length }} affichés</span>
+                            </div>
+                            <ul data-cmz-id="mobile-user-list" class="mobile-user-list">
+                                @for (user of mobileUsers(); track user.uniqId) {
+                                    <li>
+                                        <article class="user-card">
+                                            <div>
+                                                <strong>{{ user.lastName }} {{ user.firstName }}</strong>
+                                                <span
+                                                    class="status"
+                                                    [class.status-active]="isActiveStatus(user.status)"
+                                                >
+                                                    {{ statusLabel(user.status) }}
+                                                </span>
+                                            </div>
+                                            <p>{{ user.email }}</p>
+                                            <p>{{ user.profile }} · {{ roleLabel(user.role) }}</p>
+                                            <p class="user-updated">Mis à jour le {{ formatDate(user.updatedAt) }}</p>
+                                        </article>
+                                    </li>
+                                }
+                            </ul>
+                            <p data-cmz-id="mobile-load-status" class="sr-only mobile-load-status" aria-live="polite">
+                                @if (mobileLoadingNext()) {
+                                    Chargement d’utilisateurs supplémentaires.
+                                } @else {
+                                    {{ mobileAnnouncement() }}
+                                }
+                            </p>
+                            @if (mobileFailedPage()) {
+                                <div class="mobile-load-error" role="alert">
+                                    <span>Les utilisateurs suivants n’ont pas pu être chargés.</span>
+                                    <button
+                                        data-cmz-id="mobile-load-retry"
+                                        type="button"
+                                        class="button button-secondary"
+                                        (click)="retryMobilePage()"
+                                    >
+                                        Réessayer
+                                    </button>
                                 </div>
-                                <p>{{ user.email }}</p>
-                                <p>{{ user.profile }} · {{ roleLabel(user.role) }}</p>
-                                <p class="user-updated">Mis à jour le {{ formatDate(user.updatedAt) }}</p>
-                            </article>
-                        }
-                    </div>
+                            }
+                            @if (
+                                mobileHasNext() || mobileLoadingNext() || mobileFailedPage() || mobileSentinelGrace()
+                            ) {
+                                <span
+                                    #mobileLoadSentinel
+                                    data-cmz-id="mobile-load-sentinel"
+                                    class="mobile-load-sentinel"
+                                    aria-hidden="true"
+                                ></span>
+                            }
+                        </section>
+                    }
                 </div>
 
-                <nav class="pagination" aria-label="Pagination des utilisateurs">
-                    <span>{{ resultRange() }}</span>
-                    <div>
-                        <button
-                            type="button"
-                            class="button button-secondary"
-                            [disabled]="!canGoPrevious()"
-                            (click)="goToPage((page()?.currentPage ?? 1) - 1)"
-                        >
-                            Précédent
-                        </button>
-                        @for (pageNumber of paginationPages(); track pageNumber) {
+                @if (layout() !== 'compact') {
+                    <nav class="pagination" aria-label="Pagination des utilisateurs">
+                        <span>{{ resultRange() }}</span>
+                        <div>
                             <button
                                 type="button"
-                                class="page-number"
-                                [class.page-number-current]="pageNumber === page()?.currentPage"
-                                [attr.aria-current]="pageNumber === page()?.currentPage ? 'page' : null"
-                                [attr.aria-label]="'Page ' + pageNumber"
-                                (click)="goToPage(pageNumber)"
+                                class="button button-secondary"
+                                [disabled]="!canGoPrevious()"
+                                (click)="goToPage((page()?.currentPage ?? 1) - 1)"
                             >
-                                {{ pageNumber }}
+                                Précédent
                             </button>
-                        }
-                        <button
-                            type="button"
-                            class="button button-secondary"
-                            [disabled]="!canGoNext()"
-                            (click)="goToPage((page()?.currentPage ?? 1) + 1)"
-                        >
-                            Suivant
-                        </button>
-                    </div>
-                </nav>
+                            @for (pageNumber of paginationPages(); track pageNumber) {
+                                <button
+                                    type="button"
+                                    class="page-number"
+                                    [class.page-number-current]="pageNumber === page()?.currentPage"
+                                    [attr.aria-current]="pageNumber === page()?.currentPage ? 'page' : null"
+                                    [attr.aria-label]="'Page ' + pageNumber"
+                                    (click)="goToPage(pageNumber)"
+                                >
+                                    {{ pageNumber }}
+                                </button>
+                            }
+                            <button
+                                type="button"
+                                class="button button-secondary"
+                                [disabled]="!canGoNext()"
+                                (click)="goToPage((page()?.currentPage ?? 1) + 1)"
+                            >
+                                Suivant
+                            </button>
+                        </div>
+                    </nav>
+                }
             </section>
         }
     </main>
