@@ -1,7 +1,7 @@
 # C5 / ADAPT-9 — Chargement progressif mobile silencieux
 
-**Date :** 2026-09-29 **Statut :** ADAPT-9a fusionné ; ADAPT-9b réalisé et
-vérifié localement, prêt pour revue humaine **Décision :**
+**Date :** 2026-09-29 **Statut :** terminé ; ADAPT-9a et ADAPT-9b approuvés,
+fusionnés et vérifiés par la CI post-fusion **Décision :**
 [ADR-0075](../adr/0075-chargement-progressif-mobile-silencieux.md)
 
 ## 1. Résultat attendu
@@ -228,9 +228,12 @@ redondantes ont été consolidées et le build reste sous sa limite stricte.
 5. ~~exécuter tests Angular, Playwright ciblé, lint, build et Oracle~~ ;
 6. ~~exécuter la régression Playwright complète et produire les captures
    réelles~~ — `33 passed` ;
-7. **en cours :** ajustements issus de la validation visuelle réalisés et preuve
-   actualisée ; restent commit, push et revue obligatoire de Soumaila ;
-8. fusion par Soumaila puis vérification de la CI exacte post-fusion.
+7. ~~ajustements issus de la validation visuelle, preuve actualisée, commit,
+   push et revue obligatoire~~ — Soumaila a approuvé le commit exact
+   `fcbd60b6d360c59d107b88518e79c83dbe1c4a02` ;
+8. ~~fusion puis vérification de la CI exacte post-fusion~~ — PR #143 fusionnée
+   dans `63318d783d8dde15ec7e9ceb15b1f61f1bb7c7d1`, CI `36615553281` verte sur
+   `main`.
 
 ## 9. Hors périmètre
 

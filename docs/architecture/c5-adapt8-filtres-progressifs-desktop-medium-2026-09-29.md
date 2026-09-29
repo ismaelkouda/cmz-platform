@@ -1,13 +1,13 @@
 # C5 ADAPT-8 — filtres progressifs Desktop et Medium
 
-- **Statut :** décision produit approuvée le 2026-09-29 ; revue technique et
-  fusion encore requises
-- **Périmètre :** refonte du contenu du panneau de filtres C5 en fenêtres
-  `medium` et `expanded`
+- **Statut :** décision et références produit approuvées le 2026-09-29 ;
+  publication ADAPT-8c en cours
+- **Périmètre :** recherche, raccourcis de colonnes et panneau progressif C5
+  intégrés à la surface tabulaire en fenêtres `medium` et `expanded`
 - **Hors périmètre :** compact, adoption d'AG Grid, modification runtime dans ce
   lot, nouvelles capacités métier
 - **Décision structurante :**
-  [ADR-0074 proposé](../adr/0074-filtres-progressifs-par-blocs-actifs.md)
+  [ADR-0074 accepté](../adr/0074-filtres-progressifs-par-blocs-actifs.md)
 
 ## 1. Résultat de l'analyse des trois captures
 
@@ -23,10 +23,14 @@ prouvent pas le comportement Medium, l'accessibilité, les appels réseau ou la
 compatibilité avec le contrat C5. Elles restent non suivies par Git et ne
 doivent pas rejoindre le manifeste de présentation.
 
-## 2. Décision retenue
+## 2. Décision retenue et précision ADAPT-8b
 
-La page conserve le modèle `draftFilters`/`appliedFilters` et les conteneurs
-réalisés par ADAPT-6. Seul le contenu `medium`/`expanded` évoluera :
+La page conserve le modèle `draftFilters`/`appliedFilters` réalisé par ADAPT-6.
+La validation visuelle ADAPT-8b précise toutefois la géométrie initialement
+envisagée : en `medium` comme en `expanded`, la recherche, les raccourcis et le
+panneau appartiennent à une seule surface tabulaire. Le panneau ne forme plus un
+side sheet modal ou un supporting pane adjacent à cette surface ; il se
+superpose à sa partie droite, sous la barre interne :
 
 ```text
 Filtres
@@ -44,38 +48,50 @@ Filtres
 Réinitialiser     Appliquer
 ```
 
-Les blocs représentent les critères présents dans le brouillon. Les chips de la
-barre de liste continuent de représenter uniquement les valeurs appliquées.
-Cette séparation doit être perceptible dans les libellés, le focus, les
-annonces accessibles et les tests réseau.
+Les blocs représentent les critères présents dans le brouillon. Les chips et les
+raccourcis de colonnes représentent uniquement les valeurs appliquées. Cette
+séparation doit être perceptible dans les libellés, le focus, les annonces
+accessibles et les tests réseau.
+
+La recherche combinée `Nom, prénom ou email` se place dans la barre interne, à
+gauche de `Filtres`. Une seconde ligne d'en-tête propose uniquement les
+raccourcis compatibles avec le backend : `Profil`, `Rôle` et `Statut`. Les
+colonnes `Nom`, `Prénom`, `Email` et `Mise à jour` ne reçoivent aucun faux
+filtre individuel.
 
 ## 3. Desktop / expanded
 
-- supporting pane droit persistant et repliable ;
-- largeur C5 bornée à `360–440px` tant que la liste conserve son minimum ;
+- panneau droit non modal superposé aux colonnes dans la surface du tableau ;
+- largeur C5 bornée à `360–440px` ;
 - blocs actifs empilés dans un corps scrollable ;
 - header et footer fixes ;
-- liste et filtres simultanément opérables ;
+- barre interne recherche/`Filtres` toujours visible ;
 - pas de backdrop, de modalité ou de focus trap ;
-- le tableau absorbe le reste de la hauteur avec header lisible, pagination et
-  état de résultats stables ;
-- le panneau devient temporaire plutôt que de rendre la table inexploitable.
+- les largeurs des colonnes et le `scrollLeft` sont préservés ;
+- le rail horizontal et le viewport visible s'arrêtent au bord gauche du
+  panneau, tandis que les colonnes continuent derrière lui ;
+- les éléments recouverts ne restent ni cliquables ni atteignables au clavier.
 
 La disposition peut s'inspirer de la densité d'un data workspace, mais ne copie
 pas les fonctions de démonstration inutiles à C5 : regroupement, déplacement de
-lignes, choix des colonnes, filtres sous chaque header, pivot ou édition.
+lignes, choix des colonnes, filtre pour une capacité backend absente, pivot ou
+édition. Les trois raccourcis sous les en-têtes ne sont admis que parce qu'ils
+projettent les paramètres serveur `profile`, `role` et `is_active`.
 
 ## 4. Medium
 
-- le même contenu de filtres est rendu dans le side sheet modal existant ;
-- largeur maximale C5 `480px` ;
-- la liste reste visible comme contexte sous un backdrop, mais devient inerte ;
-- le panneau recouvre la liste et ne lui retire pas sa largeur utile ;
-- focus initial, tabulation bornée, Échap et restitution du focus sont prouvés ;
+- le même contenu est superposé à droite dans la surface tabulaire ;
+- le panneau ne reçoit ni backdrop, ni `aria-modal`, ni focus trap ;
+- sa largeur est bornée par l'espace nécessaire pour garder un contexte de
+  colonnes exploitable ;
+- le scroll horizontal permet d'atteindre les raccourcis `Profil`, `Rôle` et
+  `Statut`, puis sa limite visible s'arrête au bord gauche du panneau ;
+- fermer restitue le focus au bouton `Filtres` sans recréer les contrôles ;
 - seule la pile de blocs défile ; header et footer restent visibles.
 
-Les captures tierces ne valident pas cette projection. Une référence Medium
-propre au dépôt devra être produite au viewport `1024 × 768` avant le runtime.
+Les six références propres au dépôt couvrent les états zéro, un et plusieurs
+filtres aux viewports `1024 × 768` et `1440 × 1024`. Elles sont des décisions de
+présentation, pas des preuves runtime, réseau ou accessibilité.
 
 ## 5. Ajout et cycle de vie d'un bloc
 
@@ -109,25 +125,24 @@ propre au dépôt devra être produite au viewport `1024 × 768` avant le runtim
 
 - `Appliquer` valide tout le brouillon, met à jour les chips, revient à la page
   1 et produit au plus un GET ;
-- fermer le side sheet Medium abandonne le brouillon ;
-- replier le pane Desktop conserve le brouillon local ;
+- fermer le panneau sans appliquer abandonne le brouillon en `medium` comme en
+  `expanded` ;
 - `Réinitialiser` ne produit aucun GET tant que l'utilisateur n'applique pas.
 
 ## 6. Politique de complexité
 
 Le profil progressif n'est pas une règle `nombre de champs → composant` :
 
-| Situation | Présentation candidate |
-| --- | --- |
-| très peu de critères simples et toujours utilisés | champs directs |
-| quelques essentiels plus des critères occasionnels | essentiels épinglés + blocs ajoutés |
-| nombreux critères optionnels | blocs progressifs + sélecteur |
-| opérateurs, groupes `ET/OU`, vues enregistrées | data-workbench dédié après contrat explicite |
+| Situation                                          | Présentation candidate                       |
+| -------------------------------------------------- | -------------------------------------------- |
+| très peu de critères simples et toujours utilisés  | champs directs                               |
+| quelques essentiels plus des critères occasionnels | essentiels épinglés + blocs ajoutés          |
+| nombreux critères optionnels                       | blocs progressifs + sélecteur                |
+| opérateurs, groupes `ET/OU`, vues enregistrées     | data-workbench dédié après contrat explicite |
 
-C5 prouve le troisième profil pour tester la montée en densité. Le générateur
-ne l'étend à une autre page qu'à partir d'une décision de présentation
-explicite. Un second cas réel reste requis avant extraction d'une primitive
-partagée.
+C5 prouve le troisième profil pour tester la montée en densité. Le générateur ne
+l'étend à une autre page qu'à partir d'une décision de présentation explicite.
+Un second cas réel reste requis avant extraction d'une primitive partagée.
 
 ## 7. Points de refus de la revue
 
@@ -136,8 +151,8 @@ Soumaila doit refuser le lot suivant si :
 1. un bloc brouillon ressemble à une valeur déjà appliquée ;
 2. les chips extérieures reflètent le brouillon ;
 3. ajouter, modifier, supprimer ou réinitialiser déclenche un GET ;
-4. Medium comprime la table au lieu de la recouvrir modalement ;
-5. Expanded garde un backdrop ou un focus trap ;
+4. ouvrir le panneau redimensionne les colonnes ou perd le `scrollLeft` ;
+5. Medium ou Expanded ajoute un backdrop, `aria-modal` ou un focus trap ;
 6. un resize recrée les contrôles, perd l'état ou déclenche le réseau ;
 7. le sélecteur invente un champ, une valeur ou un opérateur ;
 8. le même critère est ajouté deux fois sans contrat de répétabilité ;
@@ -151,10 +166,13 @@ Soumaila doit refuser le lot suivant si :
 
 1. **ADAPT-7b** : terminer d'abord la correction compacte déjà bornée par ses
    oracles ; elle ne doit pas être mélangée à cette refonte.
-2. **ADAPT-8a** : faire relire et fusionner la présente décision et ADR-0074.
+2. **ADAPT-8a** : faire relire et fusionner la présente décision et ADR-0074 —
+   terminé.
 3. **ADAPT-8b** : produire des références déterministes Medium et Expanded,
-   propres au dépôt, montrant zéro, un et plusieurs blocs.
-4. **ADAPT-8c** : après approbation produit, publier les références exactes.
+   propres au dépôt, montrant zéro, un et plusieurs blocs — terminé et approuvé
+   par le porteur produit le 2026-09-29.
+4. **ADAPT-8c** : publier les références exactes et retirer du manifeste les
+   anciennes autorités Medium/Expanded contradictoires — en cours.
 5. **ADAPT-8d** : écrire les oracles comportementaux, réseau, focus, resize,
    hauteur courte et densité ; constater leur échec exact sur `main`.
 6. **ADAPT-8e** : recalculer le work order, réaliser seulement les fichiers
@@ -180,7 +198,8 @@ maintenance.
 
 ## Références
 
-- [ADR-0074 proposé](../adr/0074-filtres-progressifs-par-blocs-actifs.md)
+- [ADR-0074 accepté](../adr/0074-filtres-progressifs-par-blocs-actifs.md)
+- [Références ADAPT-8b approuvées](../../examples/users-management-proof/presentation/progressive-filter-candidates/proposal.md)
 - [ADAPT-6](./c5-adapt6-filtres-multi-fenetres-2026-09-28.md)
 - [AG Grid — Tool Panels](https://www.ag-grid.com/angular-data-grid/tool-panel/)
 - [AG Grid — New Filters Tool Panel](https://www.ag-grid.com/javascript-data-grid/tool-panel-filters-new/)
@@ -189,4 +208,3 @@ maintenance.
 - [Material 3 — side sheets](https://m3.material.io/components/side-sheets/overview)
 - [Material 3 — canonical layouts](https://m3.material.io/foundations/layout/canonical-examples/overview)
 - [Angular Material — sidenav](https://material.angular.dev/components/sidenav/overview)
-

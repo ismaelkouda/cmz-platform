@@ -1,6 +1,6 @@
 # ADR-0074 — Filtres progressifs par blocs actifs sur fenêtres medium et expanded
 
-- **Statut :** Proposed
+- **Statut :** accepté
 - **Date :** 2026-09-29
 
 ## Contexte
@@ -9,13 +9,16 @@ ADR-0073 a établi un état unique `draft`/`applied`, un side sheet modal en
 fenêtre `medium` et un supporting pane non modal en fenêtre `expanded`. Sa
 réalisation C5 affiche actuellement les contrôles secondaires en sections
 métier. Cette organisation est lisible avec trois critères, mais occupe tout le
-panneau quand le contrat en fournit une dizaine ou davantage.
+panneau quand le contrat en fournit une dizaine ou davantage. La validation
+visuelle ADAPT-8b remplace, pour C5 `medium`/`expanded`, la géométrie de ces
+deux conteneurs par un panneau non modal intégré à la surface tabulaire et
+superposé à ses colonnes. Le modèle d'état d'ADR-0073 reste inchangé.
 
 Trois captures tierces fournies le 2026-09-29 montrent une autre interaction :
-le panneau commence par `Ajouter un filtre`, permet de rechercher un champ,
-puis matérialise chaque critère choisi dans un bloc indépendant. Les captures
-servent uniquement à observer ce parcours. Elles ne sont ni une preuve produit,
-ni une licence, ni un actif à publier dans le dépôt.
+le panneau commence par `Ajouter un filtre`, permet de rechercher un champ, puis
+matérialise chaque critère choisi dans un bloc indépendant. Les captures servent
+uniquement à observer ce parcours. Elles ne sont ni une preuve produit, ni une
+licence, ni un actif à publier dans le dépôt.
 
 ## Options envisagées
 
@@ -32,18 +35,20 @@ ni une licence, ni un actif à publier dans le dépôt.
   et choix des colonnes se concurrencent ; adoption implicite d'une dépendance
   Enterprise ; complexité et accessibilité disproportionnées pour C5.
 
-### Option C — Conserver les conteneurs C5 et introduire un filtre progressif
+### Option C — Intégrer un filtre progressif à la surface tabulaire C5
 
-- avantage : le même contenu s'insère dans le side sheet `medium` et le pane
-  `expanded`, tandis que seuls les critères utiles occupent de la place ;
+- avantage : recherche, raccourcis contractuels et panneau partagent une seule
+  surface ; seuls les critères utiles occupent de la place et les colonnes ne
+  sont pas redimensionnées ;
 - limite : ajout, suppression, ordre, focus et distinction brouillon/appliqué
   demandent des oracles supplémentaires.
 
-## Décision proposée
+## Décision
 
 **Option C.** Le compact conserve le parcours à deux niveaux d'ADR-0073. Sur
-`medium` et `expanded`, le corps du panneau devient une composition progressive
-de critères :
+`medium` et `expanded`, la recherche et `Filtres` vivent dans la barre interne
+du tableau. Le panneau s'ouvre à droite, sous cette barre et au-dessus des
+colonnes. Son corps devient une composition progressive de critères :
 
 1. les critères présents dans le brouillon sont affichés sous forme de blocs ;
 2. `Ajouter un filtre` ouvre un sélecteur recherchable quand le volume le
@@ -56,10 +61,14 @@ de critères :
 6. `Réinitialiser` et `Appliquer` restent dans le footer fixe défini par
    ADR-0073.
 
+Une seconde ligne d'en-tête expose uniquement les raccourcis reliés aux
+paramètres serveur `profile`, `role` et `is_active`. La recherche combinée
+projette `search` pour le nom, le prénom et l'email. Aucun contrôle individuel
+n'est inventé pour `Nom`, `Prénom`, `Email` ou `Mise à jour`.
+
 Un bloc actif est une représentation du **brouillon** dans le panneau. Il ne
 doit jamais être présenté comme appliqué avant `Appliquer`. Hors du panneau, les
-chips restent la représentation compacte des seuls filtres réellement
-appliqués.
+chips restent la représentation compacte des seuls filtres réellement appliqués.
 
 Le nombre de critères ne déclenche pas seul cette présentation dans le moteur
 générique. Une page simple peut garder des champs directs ; une page dense peut
@@ -87,19 +96,21 @@ modification brouillon sans annoncer une nouvelle valeur appliquée.
 
 ### Medium
 
-- le contenu vit dans le side sheet modal existant, borné à `420–480px` ;
-- le panneau recouvre la liste au lieu de la comprimer ;
-- backdrop, arrière-plan inerte, focus borné, Échap et restitution du focus
-  restent obligatoires ;
+- le panneau est superposé à la partie droite des colonnes dans la surface du
+  tableau ;
+- il ne possède ni backdrop, ni `aria-modal`, ni focus trap ;
+- le tableau conserve ses largeurs de colonnes et son décalage horizontal ;
+- les éléments recouverts deviennent inopérables et inaccessibles au clavier ;
 - header et footer sont fixes, la pile de blocs défile seule.
 
 ### Expanded
 
-- le même contenu vit dans le supporting pane persistant `360–440px` ;
-- la liste conserve sa largeur minimale et reste opérable ;
+- le même contenu est superposé à droite, avec une largeur C5 bornée à
+  `360–440px` ;
+- la barre recherche/`Filtres` reste visible et opérable ;
 - aucun backdrop, `aria-modal` ou piège de focus n'est permis ;
-- si la largeur utile devient insuffisante, le conteneur repasse en mode
-  temporaire sans recréer les blocs ni émettre de requête.
+- le viewport et le rail horizontaux visibles s'arrêtent au bord gauche du
+  panneau, mais les colonnes continuent derrière celui-ci.
 
 Les seuils sont déterminés par la largeur utile de la liste et du panneau, pas
 par un nom d'appareil. Les valeurs C5 ne deviennent pas des constantes du
@@ -112,13 +123,14 @@ générateur.
 - ajout, édition, repli, suppression brouillon, reset et resize émettent zéro
   requête ;
 - `Appliquer` produit au plus un GET et remet la pagination à la première page ;
-- fermer le side sheet sans appliquer abandonne le brouillon ;
+- fermer le panneau sans appliquer abandonne le brouillon ;
 - les chips extérieures ne reflètent jamais une valeur brouillon ;
 - le sélecteur de champs ne révèle aucun paramètre absent du contrat ;
 - un filtre distant ne charge pas une liste non bornée et prévoit chargement,
   vide, erreur et recherche serveur lorsque le contrat l'exige ;
 - aucun contrôle de filtre n'est dupliqué ou seulement caché lors d'un resize ;
-- la recherche principale reste distincte et visible hors du panneau ;
+- la recherche principale reste distincte, visible hors du panneau et dans la
+  barre interne du tableau ;
 - le tableau ne reçoit ni tri local, ni regroupement, ni choix de colonnes sans
   capacité métier et backend explicite.
 
@@ -126,10 +138,11 @@ générateur.
 
 ### Positives
 
-- une dizaine ou une quinzaine de critères n'occupe plus l'espace tant qu'ils
-  ne sont pas utilisés ;
+- une dizaine ou une quinzaine de critères n'occupe plus l'espace tant qu'ils ne
+  sont pas utilisés ;
 - les critères actifs et leurs erreurs sont localisés visuellement ;
-- Medium et Desktop partagent le même modèle sans partager la modalité ;
+- Medium et Desktop partagent le même modèle et la même interaction non modale
+  sans figer une largeur universelle ;
 - la mise en page reste compatible avec un backend Spring Boot, Laravel, .NET,
   Django ou autre, car elle dépend du contrat canonique et non du framework.
 
@@ -152,8 +165,9 @@ générateur.
 
 ## Preuves exigées avant réalisation
 
-1. références visuelles propres au dépôt pour `medium` et `expanded` ;
-2. revue humaine de la densité, de l'ordre et des états vide/actif/erreur ;
+1. références visuelles propres au dépôt pour `medium` et `expanded` — six
+   rendus zéro/un/plusieurs filtres approuvés le 2026-09-29 ;
+2. revue humaine de la densité, de l'ordre et des états vide/actif — obtenue ;
 3. oracles navigateur écrits avant le runtime et échouant pour la cause attendue
    sur `main` ;
 4. absence de GET pendant le travail sur le brouillon ;
@@ -161,7 +175,8 @@ générateur.
 6. focus correct après ajout, repli, suppression, fermeture et resize ;
 7. preuve à quinze critères synthétiques sans inventer de contrat métier C5 ;
 8. zoom `200%`, hauteur courte, clavier seul et lecteur d'écran ;
-9. largeur minimale de la liste préservée et footer toujours opérable ;
+9. largeurs de colonnes et `scrollLeft` préservés, contrôles recouverts
+   inaccessibles et footer toujours opérable ;
 10. inspection des octets finaux par revue humaine avant fusion.
 
 ## Références
@@ -174,4 +189,3 @@ générateur.
 - [Material 3 — side sheets](https://m3.material.io/components/side-sheets/overview)
 - [Material 3 — canonical layouts](https://m3.material.io/foundations/layout/canonical-examples/overview)
 - [Angular Material — sidenav](https://material.angular.dev/components/sidenav/overview)
-
