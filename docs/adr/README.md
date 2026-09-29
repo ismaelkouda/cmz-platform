@@ -108,4 +108,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0072](./0072-ui-adaptative-guidee-par-m3-et-apis-officielles.md) | Guider l'UI adaptative par M3 et les API officielles de la cible | accepté  |
 | [0073](./0073-filtrage-adaptatif-par-panneau-unique.md)   | Filtrage adaptatif par panneau unique et état brouillon  | accepté  |
 | [0074](./0074-filtres-progressifs-par-blocs-actifs.md)    | Filtres progressifs par blocs actifs sur fenêtres medium et expanded | Proposed |
+| [0075](./0075-chargement-progressif-mobile-silencieux.md) | Chargement progressif mobile silencieux                  | Proposed |
 <!-- END:GENERATED:adr-index -->

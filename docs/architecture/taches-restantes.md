@@ -2412,7 +2412,20 @@ Figma, désormais source partielle différée :
   devenait introuvable dès que le détail prenait correctement le nom `Profil`.
   **ADAPT-7a2** corrige d'abord ce harnais, avec échec attendu limité à
   `aria-label="Filtres"` sans `aria-labelledby`; aucun runtime ni work order
-  n'est modifié. Sa fusion impose un nouveau work order avant ADAPT-7b.
+  n'est modifié. Soumaila a approuvé le commit
+  `cedb60d4a2f640674419a51740796d4c7a572986`, fusionné par la PR #139 dans
+  `bdb69077664eb589815b29f20144e8eef6ae22eb`; les 17 contrôles de PR et la CI
+  post-fusion `36584337755` sont verts. **ADAPT-7b — réalisation fusionnée :**
+  le work order frais
+  `a9abe5a184697de6a54b71943d7f140dcbe441c367a279e2d8b20082f249278d` confine
+  la correction aux fichiers de page. Seuls le template et le contrôleur sont
+  modifiés pour lier le nom accessible au titre visible, cibler le premier
+  contrôle à l'ouverture et restituer le focus au critère quitté. Les 10
+  oracles adaptatifs, les 23 scénarios Playwright, les 26 tests Angular, le
+  lint, le build production et l'Oracle confiné sont verts. Soumaila a approuvé
+  le commit exact `56a71baf4db9adbcd8ce6d0920ec1eec64f1ed30`, fusionné par la
+  PR #140 dans `eb8be265e5843d196cff7bf10c6372e5f212f7de`. Les 17 contrôles
+  de PR et la CI post-fusion `36591923635` sont verts. ADAPT-7 est clos.
   **ADAPT-8 — filtres progressifs Desktop/Medium :** la décision produit du
   2026-09-29 conserve les conteneurs et l'état `draft`/`applied` d'ADAPT-6,
   mais demande que les critères du brouillon soient présentés sous forme de
@@ -2427,6 +2440,24 @@ Figma, désormais source partielle différée :
   ADR-0074 proposé.
   Dossier :
   `examples/users-management-proof/presentation/filter-candidates/proposal.md`.
+  **ADAPT-9 — chargement progressif mobile silencieux :** la décision produit
+  du 2026-09-29 retire la pagination visible uniquement en fenêtre `compact` et
+  accumule les pages normalisées à l'approche de la fin de la pile. Le cas
+  nominal ne montre ni spinner, ni skeleton, ni texte de chargement ; l'état
+  interne reste explicite et accessible. Une seule page suivante peut être en
+  vol, les cartes sont ordonnées et dédupliquées par `uniqId`, les réponses
+  obsolètes sont rejetées et `lastPage` arrête définitivement la sentinelle.
+  Une erreur conserve les cartes, suspend l'automatisme et expose
+  `Réessayer`. Recherche, filtre et création réussie repartent de la page `1` ;
+  un resize seul n'émet aucun GET. `medium` et `expanded` gardent la pagination
+  explicite. Ce lot de décision ne modifie ni runtime, ni `list-query`, ni
+  backend. Prochaine barrière : revue et fusion d'ADR-0075 et du contrat
+  ADAPT-9, puis oracles seuls en échec attendu, revue/fusion, nouveau work
+  order, réalisation confinée et preuve navigateur mobile. Cette piste ne
+  remplace pas ADAPT-8 : elle constitue le chantier compact indépendant décidé
+  après lui. Décision détaillée :
+  [`c5-adapt9-chargement-progressif-mobile-2026-09-29.md`](./c5-adapt9-chargement-progressif-mobile-2026-09-29.md),
+  ADR-0075 proposé.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
   devront recevoir un discriminateur et un oracle lors d'un cas réel, sans
