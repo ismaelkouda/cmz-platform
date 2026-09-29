@@ -1,14 +1,13 @@
 # C5 ADAPT-6 — filtres adaptatifs multi-fenêtres
 
-- **Statut :** décision, candidats, publication content-addressed et oracles
-  ADAPT-6d approuvés puis fusionnés ; cohérence du harnais de présentation
-  engagée ; réalisation non commencée
-- **Date :** 2026-09-28
+- **Statut :** clos techniquement ; décision, preuves, oracles, cohérence du
+  harnais et réalisation approuvés, fusionnés et validés en CI post-fusion
+- **Date :** 2026-09-28, clôture vérifiée le 2026-09-29
 - **Périmètre :** présentation des filtres de la page C5 et capacité à monter à
   environ quinze critères
-- **Dépendance :** ADAPT-5 à ADAPT-6d fusionnés avec CI post-fusion verte ; le
-  harnais historique doit cesser d'exiger des contrôles fermés dans le DOM avant
-  de régénérer le work order
+- **Dépendance :** ADAPT-5 à ADAPT-6e fusionnés avec CI post-fusion verte ; la
+  réalisation finale est bornée par le work order content-addressed
+  `7db39bbe0856b8fce04f9aff6ac38ca1509b933886c35bc0fbe422561dd1d014`
 
 ## 1. Résultat attendu
 
@@ -317,6 +316,45 @@ les douze autres scénarios restent des succès réels. Ce lot ne modifie aucun
 fichier Angular, aucune dépendance et aucun work order. Après revue et fusion,
 le work order doit être recalculé depuis le nouveau `main` ; seulement ensuite
 la réalisation peut reprendre dans les cinq fichiers de page autorisés.
+
+Soumaila a approuvé ADAPT-6e sur le commit exact
+`397d85d8ce28608da631e39aa1f5e7ba4e954997`, puis a fusionné la PR #133 dans
+`4e65d8fb3fe8e14efdb1000c76f2577364198b18`. Ses 17 contrôles de PR et la CI
+post-fusion `36530012640` sont verts.
+
+## 14. ADAPT-6f — réalisation et clôture technique
+
+Le work order recalculé depuis ce `main` lie le plan d'exécution et les preuves
+de présentation exactes, conserve le hash protégé du workspace et limite la
+réalisation aux cinq fichiers de page autorisés. Quatre de ces fichiers ont été
+modifiés ; aucune dépendance, aucun runtime, transport, cache, bus global ou
+contrat métier n'a été ajouté.
+
+La page matérialise désormais les trois conteneurs approuvés avec un seul état
+`draft`/`applied` et sans contrôle interactif caché ou dupliqué : bottom sheet
+compact à navigation interne, side sheet `medium` modal et supporting pane
+`expanded` non modal. `Réinitialiser` reste local, `Appliquer` et la suppression
+d'une chip émettent chacun un seul GET, et les changements de classe conservent
+le brouillon sans réseau.
+
+Les preuves finales portent sur les octets poussés : 26 tests Angular, 23
+scénarios Playwright, vérification du work order, compilation stricte, build
+production, lint ciblé, Prettier et `git diff --check`. Le style du composant
+atteint `7,74 kB`, sous le plafond bloquant de `8 kB` sans relèvement de budget.
+Le correctif de disposition découvert par le passage E2E masque explicitement
+la région des filtres quand le panneau de création `expanded` est ouvert ; il
+évite qu'une colonne vide décale le panneau et restaure la marge sous le budget.
+
+Soumaila a approuvé la PR #134 sur le commit exact
+`d836886009e14b368ed48b94941c0462818b42a1`, puis l'a fusionnée dans
+`8a6227a7b8eacb25525e188637e91694f15fbdd2`. Les 17 contrôles de PR et la CI
+post-fusion `36534048265` sont verts. ADAPT-6 est donc clos techniquement.
+
+Cette clôture ne transforme pas les wireframes en snapshots pixel. La décision
+séparée prévue par ADR-0071 reste nécessaire avant toute baseline Chromium
+bloquante. Elle devra soit calibrer une tolérance absolue sur plusieurs rendus
+du même commit, soit justifier explicitement que les oracles comportementaux et
+géométriques sont l'autorité durable la plus maintenable.
 
 ## Références
 

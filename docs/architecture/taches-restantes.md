@@ -2382,9 +2382,22 @@ Figma, désormais source partielle différée :
   sans réseau puis `Appliquer` avec un GET unique. Le passage complet sur l'UI
   historique reste vert à `23 passed`, avec onze échecs attendus bornés par la
   signature inline exacte et douze succès réels. Aucun fichier Angular, work
-  order ou dépendance n'est modifié. Restent la revue/fusion d'ADAPT-6e, puis un
-  nouveau work order depuis `main` avant de restaurer la réalisation bornée aux
-  cinq fichiers. Dossier :
+  order ou dépendance n'est modifié. Soumaila a approuvé le commit exact
+  `397d85d8ce28608da631e39aa1f5e7ba4e954997`, fusionné la PR #133 dans
+  `4e65d8fb3fe8e14efdb1000c76f2577364198b18`, et la CI post-fusion
+  `36530012640` est verte. **ADAPT-6f — réalisation fusionnée et clôture
+  technique :** le work order
+  `7db39bbe0856b8fce04f9aff6ac38ca1509b933886c35bc0fbe422561dd1d014` limite la
+  modification aux cinq fichiers de page ; quatre sont modifiés. Bottom sheet
+  compact, side sheet `medium`, pane `expanded`, séparation `draft`/`applied`,
+  chips, resize sans réseau et unicité DOM sont prouvés par 26 tests Angular et
+  23 scénarios Playwright réellement verts. Le style reste à `7,74 kB` sous le
+  plafond bloquant de `8 kB`. Soumaila a approuvé la PR #134 sur
+  `d836886009e14b368ed48b94941c0462818b42a1`, l'a fusionnée dans
+  `8a6227a7b8eacb25525e188637e91694f15fbdd2`, et les 17 contrôles de PR ainsi
+  que la CI post-fusion `36534048265` sont verts. ADAPT-6 est clos
+  techniquement ; restent la décision séparée de baseline Chromium prévue par
+  ADR-0071 puis la revue C6 de promotion. Dossier :
   `examples/users-management-proof/presentation/filter-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
