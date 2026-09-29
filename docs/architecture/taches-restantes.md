@@ -2407,7 +2407,12 @@ Figma, désormais source partielle différée :
   complet à `23 passed`, dont vingt-et-un succès réels. Après revue et fusion,
   ADAPT-7b devra recalculer le work order, corriger seulement la page, convertir
   les dix cas en succès réels, puis céder le chemin critique à ADAPT-8 avant la
-  baseline Chromium.
+  baseline Chromium. Une réalisation jetable a ensuite révélé qu'un scénario
+  de présentation conservait un locator fondé sur le nom constant `Filtres` et
+  devenait introuvable dès que le détail prenait correctement le nom `Profil`.
+  **ADAPT-7a2** corrige d'abord ce harnais, avec échec attendu limité à
+  `aria-label="Filtres"` sans `aria-labelledby`; aucun runtime ni work order
+  n'est modifié. Sa fusion impose un nouveau work order avant ADAPT-7b.
   **ADAPT-8 — filtres progressifs Desktop/Medium :** la décision produit du
   2026-09-29 conserve les conteneurs et l'état `draft`/`applied` d'ADAPT-6,
   mais demande que les critères du brouillon soient présentés sous forme de

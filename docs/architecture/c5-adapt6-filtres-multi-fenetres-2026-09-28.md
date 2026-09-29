@@ -398,3 +398,18 @@ recalculer un work order depuis `main`, modifier seulement les fichiers de page
 autorisés et faire passer les dix scénarios réellement. La refonte
 Desktop/Medium ADAPT-8, décidée ensuite, précède désormais la reprise de la
 baseline Chromium.
+
+Une première réalisation jetable d'ADAPT-7b fait passer les dix oracles
+adaptatifs, mais révèle un locator contradictoire dans le harnais de
+présentation : le scénario « Appliquer et Réinitialiser » retrouve le dialogue
+par son ancien nom constant `Filtres`, puis continue à l'utiliser après être
+entré dans le détail `Profil`. Le nom dynamique correct rend donc le locator
+introuvable alors que l'interface se comporte comme demandé.
+
+ADAPT-7a2 corrige d'abord ce harnais sans modifier le runtime : le panneau est
+identifié par son id public stable, son rôle et son nom initial sont vérifiés,
+puis le scénario attend `Profil` après l'ouverture du critère. Seule l'ancienne
+signature exacte `aria-label="Filtres"` sans `aria-labelledby` autorise encore
+un échec attendu sur `main`. Après revue et fusion d'ADAPT-7a2, le work order
+devra être recalculé une nouvelle fois avant de reprendre les deux fichiers de
+page déjà validés par la réalisation jetable.

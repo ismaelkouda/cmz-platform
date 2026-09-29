@@ -987,3 +987,12 @@ attendus bornés à l’ancienne signature `aria-label="Filtres"` sans
 `aria-labelledby`. ADAPT-7b ne pourra modifier la page qu’après fusion du
 harnais et recalcul du work order. La baseline pixel reste en attente ; sa
 calibration déjà produite n’est pas perdue.
+
+La première réalisation jetable d'ADAPT-7b convertit les dix oracles adaptatifs
+en succès réels, mais la suite complète détecte un locator de présentation
+encore attaché au nom constant `Filtres`. ADAPT-7a2 corrige ce scénario avant le
+runtime : il identifie le panneau par `#user-filter-panel`, vérifie son rôle et
+son nom initial, puis attend le nom `Profil` après navigation. L'ancienne
+signature `aria-label="Filtres"` sans `aria-labelledby` reste le seul motif
+d'échec attendu. Ce lot ne modifie ni page Angular ni work order ; sa fusion
+doit précéder un nouveau calcul du work order ADAPT-7b.
