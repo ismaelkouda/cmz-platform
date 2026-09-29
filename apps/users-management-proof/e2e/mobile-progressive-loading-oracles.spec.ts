@@ -1,4 +1,10 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import {
+    expect,
+    test,
+    type Page,
+    type Route,
+    type TestInfo,
+} from '@playwright/test';
 
 const COMPACT = { width: 390, height: 844 } as const;
 const MEDIUM = { width: 1024, height: 768 } as const;
@@ -174,7 +180,6 @@ async function installHostAndBackend(
                 body: JSON.stringify({
                     error: false,
                     message: 'SUCCESS',
-                    data: 'created-user',
                 }),
             });
             return;
@@ -255,6 +260,16 @@ async function waitForQuietWindow(page: Page): Promise<void> {
     await page.waitForTimeout(QUIET_WINDOW_MS);
 }
 
+async function captureProof(
+    page: Page,
+    testInfo: TestInfo,
+    name: string
+): Promise<void> {
+    const path = testInfo.outputPath(name);
+    await page.screenshot({ path, animations: 'disabled', caret: 'hide' });
+    await testInfo.attach(name, { path, contentType: 'image/png' });
+}
+
 test('compact : remplace la pagination par une région et une liste sémantiques', async ({
     page,
 }) => {
@@ -280,11 +295,39 @@ test('compact : remplace la pagination par une région et une liste sémantiques
     await expect(
         region.locator('[data-cmz-id="mobile-load-sentinel"]')
     ).toHaveCount(1);
+
+    const create = page.getByRole('button', { name: 'Créer un utilisateur' });
+    await expect(create.locator('.create-button-icon')).toBeVisible();
+    await expect(create.locator('.create-button-icon')).toHaveAttribute(
+        'aria-hidden',
+        'true'
+    );
+    await expect(create.locator('.create-button-label')).toHaveCount(0);
+    await expect(create).toHaveAttribute('title', 'Créer un utilisateur');
+    const search = page.getByRole('searchbox', {
+        name: 'Rechercher un utilisateur',
+    });
+    await expect(search).toHaveAttribute(
+        'placeholder',
+        'Nom, prénom ou adresse e-mail'
+    );
+    expect(
+        await search.evaluate((input) => {
+            const toggle = input
+                .closest('form')
+                ?.querySelector('.filter-toggle');
+            return (
+                !!toggle &&
+                input.getBoundingClientRect().bottom <=
+                    toggle.getBoundingClientRect().top
+            );
+        })
+    ).toBe(true);
 });
 
 test('compact : précharge avant la frontière visible, ajoute et déduplique sans loader visible', async ({
     page,
-}) => {
+}, testInfo) => {
     let sentinelStrictlyVisible: boolean | undefined;
     const harness = await installHostAndBackend(page, {
         usersResponder: async ({ pageNumber, route }) => {
@@ -316,6 +359,11 @@ test('compact : précharge avant la frontière visible, ajoute et déduplique sa
         1
     );
     await expectNoVisibleLoadingIndicator(page);
+    await captureProof(
+        page,
+        testInfo,
+        'mobile-progressive-15-users.actual.png'
+    );
 });
 
 test('compact : garde une seule page suivante en vol quand la sentinelle reste intersectée', async ({
@@ -384,7 +432,7 @@ test('compact : s’arrête exactement à lastPage sans requête ni attente term
 
 test('compact : conserve les cartes, suspend l’automatisme et reprend exactement la page échouée', async ({
     page,
-}) => {
+}, testInfo) => {
     let page2Attempts = 0;
     const harness = await installHostAndBackend(page, {
         usersResponder: async ({ pageNumber, route }) => {
@@ -420,6 +468,8 @@ test('compact : conserve les cartes, suspend l’automatisme et reprend exacteme
     await page.mouse.wheel(0, 1_500);
     await waitForQuietWindow(page);
     expect(pageRequests(harness, 2)).toHaveLength(1);
+    await retry.scrollIntoViewIfNeeded();
+    await captureProof(page, testInfo, 'mobile-progressive-retry.actual.png');
 
     await retry.click();
     await expect.poll(() => pageRequests(harness, 2).length).toBe(2);
@@ -457,7 +507,7 @@ test('compact : une recherche repart de page 1 et rejette une ancienne page 2 ta
     await expectProgressiveSentinel(page);
 
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
-    const search = page.getByLabel('Recherche');
+    const search = page.getByLabel('Rechercher un utilisateur');
     await search.fill('fraîche');
     await search.press('Enter');
     await expect
@@ -635,7 +685,7 @@ test('compact : resize et ajout silencieux conservent le focus et exposent seule
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
     const region = page.locator('[data-cmz-id="mobile-results"]');
     const status = page.locator('[data-cmz-id="mobile-load-status"]');
-    const search = page.getByLabel('Recherche');
+    const search = page.getByLabel('Rechercher un utilisateur');
     await search.focus();
     await expect(region).toHaveAttribute('aria-busy', 'true');
     await expect(status).toHaveAttribute('aria-live', 'polite');

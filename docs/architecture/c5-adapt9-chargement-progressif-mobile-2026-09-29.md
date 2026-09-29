@@ -1,9 +1,8 @@
 # C5 / ADAPT-9 — Chargement progressif mobile silencieux
 
-**Date :** 2026-09-29
-**Statut :** décision approuvée et fusionnée ; oracles ADAPT-9a réalisés
-localement ; runtime non modifié
-**Décision :** [ADR-0075](../adr/0075-chargement-progressif-mobile-silencieux.md)
+**Date :** 2026-09-29 **Statut :** ADAPT-9a fusionné ; ADAPT-9b réalisé et
+vérifié localement, prêt pour revue humaine **Décision :**
+[ADR-0075](../adr/0075-chargement-progressif-mobile-silencieux.md)
 
 ## 1. Résultat attendu
 
@@ -101,16 +100,16 @@ naturellement sans loader permanent ni message obligatoire.
 
 ## 6. Transitions qui réinitialisent l'accumulation
 
-| Événement                   | Effet compact                                              |
-| --------------------------- | ---------------------------------------------------------- |
-| recherche appliquée         | génération suivante, pages vidées, GET page `1`            |
-| filtres appliqués           | génération suivante, pages vidées, GET page `1`            |
-| chip de filtre retirée      | génération suivante, pages vidées, GET page `1`            |
-| création réussie            | génération suivante, pages vidées, GET page `1`            |
-| resize compact → medium     | aucun GET ; page courante conservée                         |
-| resize medium → compact     | aucun GET ; pages compactes connues réutilisées             |
-| erreur de page suivante     | données gardées, auto-load suspendu, retry humain           |
-| réponse ancienne/supersédée | aucune mutation visible                                     |
+| Événement                   | Effet compact                                     |
+| --------------------------- | ------------------------------------------------- |
+| recherche appliquée         | génération suivante, pages vidées, GET page `1`   |
+| filtres appliqués           | génération suivante, pages vidées, GET page `1`   |
+| chip de filtre retirée      | génération suivante, pages vidées, GET page `1`   |
+| création réussie            | génération suivante, pages vidées, GET page `1`   |
+| resize compact → medium     | aucun GET ; page courante conservée               |
+| resize medium → compact     | aucun GET ; pages compactes connues réutilisées   |
+| erreur de page suivante     | données gardées, auto-load suspendu, retry humain |
+| réponse ancienne/supersédée | aucune mutation visible                           |
 
 ## 7. Oracles à écrire avant le runtime
 
@@ -161,21 +160,77 @@ Ce lot ne modifie aucun fichier Angular de production, aucun fichier généré,
 aucune dépendance et aucun work order. Après sa revue et sa fusion, un nouveau
 work order devra être calculé depuis `main` avant tout changement runtime.
 
+### ADAPT-9b — réalisation du runtime
+
+La page réalise maintenant la projection compacte sans modifier la primitive
+`list-query` générée :
+
+- `linkedSignal` accumule les pages contiguës par génération et déduplique
+  stablement `uniqId` ;
+- `IntersectionObserver` observe la sentinelle dans le vrai conteneur scrollable
+  avec `rootMargin: 150%`, sans listener global de scroll ;
+- une seule page suivante peut être active ; une erreur suspend l'automatisme et
+  expose un retry local, sans dupliquer l'alerte globale ;
+- recherche, filtres, retrait de chip et création réussie réinitialisent
+  explicitement la projection et demandent la page `1` ;
+- les réponses qui ne correspondent plus à la génération et à la page attendues
+  ne mutent pas la liste visible ;
+- `medium` et `expanded` gardent la pagination explicite et ne déclenchent aucun
+  chargement progressif ;
+- l'état nominal reste silencieux visuellement ; `aria-busy` et un live region
+  non visuel exposent l'attente aux technologies d'assistance ;
+- la sentinelle conserve une courte grâce DOM après une réponse très rapide,
+  puis disparaît à la dernière page ; son timer et l'observer sont nettoyés à la
+  destruction.
+
+La vérification confinée du work order
+`8153714da6295f2b9edfaab31247b587ed3e819402fc2aae281beb39124b0f75` est verte :
+compilation, build, lint, tests et zéro violation de périmètre. Les trois
+anciens échecs attendus du composant sont devenus des succès réels ; le fichier
+ciblé termine à `15 passed`. Les dix oracles navigateur ADAPT-9 terminent à
+`10 passed`, dont single-flight, erreur/retry, réponse tardive, reset
+recherche/filtre/création, resize et accessibilité. La suite Angular complète
+termine à `30 passed`, la régression Playwright à `33 passed` et le build
+production passe avec `7,89 kB` de style composant pour une limite d'erreur à
+`8 kB`.
+
+Les suites de filtre et de présentation ont été raccordées au nouveau contrat :
+les fixtures de filtre restent mono-page pour isoler leur responsabilité, alors
+que la preuve de présentation attend la fin du préchargement avant de mesurer le
+silence réseau d'un resize. Deux captures issues du vrai rendu Angular sont
+attachées par Playwright : collection compacte de 15 utilisateurs et frontière
+d'erreur avec `Réessayer`.
+
+La relecture de cette preuve a fixé la hiérarchie compacte finale sans changer
+le contrat réseau : le titre suffit sans sous-titre, la recherche primaire «
+Rechercher un utilisateur » reste avant le déclencheur des filtres, et son
+indice explicite couvre nom, prénom et adresse e-mail. L'action de création
+reste l'unique FAB fixé au scaffold, mais la décision produit postérieure au
+wireframe retient un simple `+` visible. Le bouton natif conserve le nom
+accessible et le tooltip « Créer un utilisateur » ; `medium` et `expanded`
+gardent le libellé visible dans le heading. Cette exception C5 ne crée aucune
+règle génératrice `create -> FAB` ni `compact -> icon-only`.
+
+Le budget CSS n'a pas été relevé pour accepter l'ajustement : des règles
+redondantes ont été consolidées et le build reste sous sa limite stricte.
+
 ## 8. Séquence de livraison
 
 1. ~~faire revoir et fusionner ADR-0075 et le présent contrat~~ — PR #141,
    commit `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusion
    `2805763217653e85d8f125568fb1b5ccd903bcfb`, 17 contrôles et CI post-fusion
    `36596093253` verts ;
-2. **en cours de revue :** ajouter uniquement les oracles en échec attendu
-   borné — ADAPT-9a ;
-3. faire revoir et fusionner les oracles ;
-4. recalculer le work order depuis le nouveau `main` ;
-5. réaliser dans les fichiers autorisés de la page ;
-6. exécuter tests Angular, Playwright ciblé/complet, lint, build et Oracle ;
-7. fournir une session mobile visible pour revue humaine ;
-8. seulement après validation, commit, review Soumaila, fusion et CI
-   post-fusion.
+2. ~~ajouter uniquement les oracles en échec attendu borné — ADAPT-9a~~ — PR
+   #142 fusionnée ;
+3. ~~recalculer le work order depuis le nouveau `main`~~ — work order
+   `8153714d…` ;
+4. ~~réaliser dans les fichiers autorisés et convertir les échecs attendus~~ ;
+5. ~~exécuter tests Angular, Playwright ciblé, lint, build et Oracle~~ ;
+6. ~~exécuter la régression Playwright complète et produire les captures
+   réelles~~ — `33 passed` ;
+7. **en cours :** ajustements issus de la validation visuelle réalisés et preuve
+   actualisée ; restent commit, push et revue obligatoire de Soumaila ;
+8. fusion par Soumaila puis vérification de la CI exacte post-fusion.
 
 ## 9. Hors périmètre
 
@@ -189,9 +244,9 @@ work order devra être calculé depuis `main` avant tout changement runtime.
 
 ## 10. Relation avec ADAPT-8
 
-ADAPT-8 et ADAPT-9 modifient deux surfaces indépendantes : le contenu du
-panneau de filtres en `medium`/`expanded` pour le premier, la navigation dans
-les cartes `compact` pour le second. ADAPT-9 ne remplace, ne simplifie et ne
-réordonne pas implicitement ADAPT-8. Chaque chantier garde ses propres
-références, oracles, work order et revue visuelle afin qu'un défaut de l'un ne
-soit pas masqué par l'autre.
+ADAPT-8 et ADAPT-9 modifient deux surfaces indépendantes : le contenu du panneau
+de filtres en `medium`/`expanded` pour le premier, la navigation dans les cartes
+`compact` pour le second. ADAPT-9 ne remplace, ne simplifie et ne réordonne pas
+implicitement ADAPT-8. Chaque chantier garde ses propres références, oracles,
+work order et revue visuelle afin qu'un défaut de l'un ne soit pas masqué par
+l'autre.

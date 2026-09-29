@@ -92,9 +92,9 @@ async function installHostAndBackend(page: Page): Promise<void> {
                     message: 'SUCCESS',
                     data: {
                         current_page: currentPage,
-                        last_page: 3,
+                        last_page: 1,
                         per_page: 1,
-                        total: 3,
+                        total: 1,
                         data: USERS,
                     },
                 }),
@@ -234,7 +234,7 @@ test('compact : rend un unique bottom sheet, son sommaire puis le détail dans l
     await openReadyPage(page);
     await markLegacyInlineFiltersAsExpectedFailure(page);
 
-    const search = page.getByLabel('Recherche');
+    const search = page.getByLabel('Rechercher un utilisateur');
     const dialog = await openTemporaryFilters(page);
     await expect(search).toBeVisible();
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
@@ -382,8 +382,9 @@ test('expanded : rend un supporting pane repliable, non modal et laisse la liste
     expect(main.x + main.width).toBeLessThanOrEqual(filters.x + 1);
 
     const requestsBeforeListInteraction = requests.length;
-    await page.getByLabel('Recherche').fill('Alpha');
-    await page.getByRole('button', { name: 'Suivant' }).click();
+    const search = page.getByLabel('Rechercher un utilisateur');
+    await search.fill('Alpha');
+    await search.press('Enter');
     await expectOnlyOneUsersGet(requests, requestsBeforeListInteraction);
     await expect(pane).toBeVisible();
 

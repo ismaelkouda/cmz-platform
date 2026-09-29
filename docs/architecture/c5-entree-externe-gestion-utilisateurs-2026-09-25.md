@@ -946,10 +946,9 @@ attendus strictement bornés et douze succès réels. Aucun fichier Angular,
 dépendance ou work order n'est modifié. La fusion de ce lot doit précéder un
 nouveau work order et la réalisation.
 
-Soumaila a approuvé le commit exact
-`397d85d8ce28608da631e39aa1f5e7ba4e954997`, puis a fusionné la PR #133 dans
-`4e65d8fb3fe8e14efdb1000c76f2577364198b18`. Ses 17 contrôles et la CI
-post-fusion `36530012640` sont verts.
+Soumaila a approuvé le commit exact `397d85d8ce28608da631e39aa1f5e7ba4e954997`,
+puis a fusionné la PR #133 dans `4e65d8fb3fe8e14efdb1000c76f2577364198b18`. Ses
+17 contrôles et la CI post-fusion `36530012640` sont verts.
 
 ## ADAPT-6f — filtres adaptatifs réalisés et fusionnés
 
@@ -971,22 +970,22 @@ Soumaila a approuvé la PR #134 sur le commit exact
 `8a6227a7b8eacb25525e188637e91694f15fbdd2`. Ses 17 contrôles et la CI
 post-fusion `36534048265` sont verts.
 
-La réalisation C5 est donc techniquement complète. Le prochain incrément ne
-doit pas extraire prématurément un composant partagé : il doit d'abord statuer
-sur la baseline Chromium encore ouverte par ADR-0071, puis conduire la revue C6
-de promotion à partir des critères non négociables de l'audit de composition.
+La réalisation C5 est donc techniquement complète. Le prochain incrément ne doit
+pas extraire prématurément un composant partagé : il doit d'abord statuer sur la
+baseline Chromium encore ouverte par ADR-0071, puis conduire la revue C6 de
+promotion à partir des critères non négociables de l'audit de composition.
 
 ## ADAPT-7 — garde d’accessibilité avant baseline
 
-La revue de la disposition des filtres confirme le bottom sheet compact, le
-side sheet `medium` et le pane `expanded`, mais bloque la baseline sur deux
-écarts compacts : le focus n’entre pas dans le contrôle du critère choisi et le
-nom accessible reste `Filtres` lorsque le titre visible devient celui du
-critère. ADAPT-7a porte uniquement les oracles Playwright, avec deux échecs
-attendus bornés à l’ancienne signature `aria-label="Filtres"` sans
-`aria-labelledby`. ADAPT-7b ne pourra modifier la page qu’après fusion du
-harnais et recalcul du work order. La baseline pixel reste en attente ; sa
-calibration déjà produite n’est pas perdue.
+La revue de la disposition des filtres confirme le bottom sheet compact, le side
+sheet `medium` et le pane `expanded`, mais bloque la baseline sur deux écarts
+compacts : le focus n’entre pas dans le contrôle du critère choisi et le nom
+accessible reste `Filtres` lorsque le titre visible devient celui du critère.
+ADAPT-7a porte uniquement les oracles Playwright, avec deux échecs attendus
+bornés à l’ancienne signature `aria-label="Filtres"` sans `aria-labelledby`.
+ADAPT-7b ne pourra modifier la page qu’après fusion du harnais et recalcul du
+work order. La baseline pixel reste en attente ; sa calibration déjà produite
+n’est pas perdue.
 
 La première réalisation jetable d'ADAPT-7b convertit les dix oracles adaptatifs
 en succès réels, mais la suite complète détecte un locator de présentation
@@ -998,14 +997,14 @@ d'échec attendu. Ce lot ne modifie ni page Angular ni work order ; sa fusion
 doit précéder un nouveau calcul du work order ADAPT-7b.
 
 Soumaila a approuvé ADAPT-7a2 et la PR #139 a été fusionnée dans
-`bdb69077664eb589815b29f20144e8eef6ae22eb` ; la CI post-fusion `36584337755`
-est verte. ADAPT-7b repart donc du work order frais
+`bdb69077664eb589815b29f20144e8eef6ae22eb` ; la CI post-fusion `36584337755` est
+verte. ADAPT-7b repart donc du work order frais
 `a9abe5a184697de6a54b71943d7f140dcbe441c367a279e2d8b20082f249278d`. Sa
 réalisation modifie seulement `page.component.html` et `page.component.ts` : le
-titre visible nomme désormais le dialogue, l'ouverture cible le premier
-contrôle et `Retour` rend le focus au critère d'origine. Les 10 oracles
-adaptatifs, les 23 scénarios Playwright, les 26 tests Angular, le lint, le build
-production et l'Oracle confiné sont verts. Soumaila a approuvé le commit exact
+titre visible nomme désormais le dialogue, l'ouverture cible le premier contrôle
+et `Retour` rend le focus au critère d'origine. Les 10 oracles adaptatifs, les
+23 scénarios Playwright, les 26 tests Angular, le lint, le build production et
+l'Oracle confiné sont verts. Soumaila a approuvé le commit exact
 `56a71baf4db9adbcd8ce6d0920ec1eec64f1ed30`, fusionné par la PR #140 dans
 `eb8be265e5843d196cff7bf10c6372e5f212f7de`. Les 17 contrôles de PR et la CI
 post-fusion `36591923635` sont verts ; ADAPT-7 est clos.
@@ -1035,12 +1034,29 @@ avant la réalisation. Voir
 et [ADR-0075](../adr/0075-chargement-progressif-mobile-silencieux.md).
 
 Soumaila a approuvé la décision sur le commit exact
-`0db8669ef76ee9986911b2c333405667bc2ac8cc`, puis la PR #141 a été fusionnée
-dans `2805763217653e85d8f125568fb1b5ccd903bcfb`. Ses 17 contrôles et la CI
+`0db8669ef76ee9986911b2c333405667bc2ac8cc`, puis la PR #141 a été fusionnée dans
+`2805763217653e85d8f125568fb1b5ccd903bcfb`. Ses 17 contrôles et la CI
 post-fusion `36596093253` sont verts. ADAPT-9a ajoute ensuite uniquement dix
-oracles Playwright et trois oracles de composant. Le passage ciblé termine à
-`10 passed`, dont neuf échecs attendus bornés par la signature historique ; le
-passage complet à `33 passed`. Les tests Angular terminent à
-`26 passed | 3 expected fail`. Aucun runtime, fichier généré, work order ou
-dépendance n'est modifié. La fusion de ce harnais doit précéder le calcul du
-work order de réalisation.
+oracles Playwright et trois oracles de composant. Soumaila a approuvé le commit
+exact `6ff43d2bd0cbfb925aa7d1fea1733e41389c0683`, fusionné par la PR #142 dans
+`0496bbc52692b39bbf3870b083d565b5998e8318` ; les 17 contrôles et la CI
+post-fusion `36601661429` sont verts.
+
+ADAPT-9b réalise le runtime sous le work order frais `8153714d…`. La projection
+compacte accumule les pages contiguës, déduplique `uniqId`, verrouille une seule
+page suivante et rejette les réponses qui ne correspondent plus à la génération
+attendue. La sentinelle observe le vrai conteneur scrollable ; l'état nominal ne
+montre aucun loader. Une erreur garde les cartes, suspend l'automatisme et place
+`Réessayer` à la frontière, sans double alerte globale. Recherche, filtres,
+retrait de chip et création réussie repartent explicitement de page `1`.
+
+La vérification confinée passe compilation, build, lint et tests sans violation.
+Angular termine à `30 passed`, les dix oracles ADAPT-9 à `10 passed` et la
+régression Playwright complète à `33 passed`. Le build production passe avec un
+style composant à `7,89 kB`, sous la limite d'erreur de `8 kB`. Deux captures du
+vrai rendu Angular prouvent la liste compacte de 15 utilisateurs et l'erreur
+locale avec retry. La relecture visuelle conserve la recherche primaire avant
+les filtres, retire le sous-titre compact et affiche uniquement `+` dans le FAB
+compact, sans perdre son nom accessible ni son tooltip ; medium et expanded
+gardent le libellé de création visible. Restent le commit/push, la revue de
+Soumaila, la fusion et la CI post-fusion exacte.

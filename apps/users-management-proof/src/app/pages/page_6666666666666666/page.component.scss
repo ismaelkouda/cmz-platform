@@ -59,7 +59,6 @@
 }
 
 .app-bar p,
-.page-heading-row p,
 .drawer-header p {
     margin: 0;
     color: var(--muted);
@@ -117,6 +116,22 @@ h1 {
     justify-content: center;
     gap: 6px;
     min-width: 116px;
+}
+
+.filter-search-control {
+    position: relative;
+    display: block;
+}
+
+.filter-search-icon {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+}
+
+.filter-search input {
+    padding-left: 40px;
 }
 
 label {
@@ -196,12 +211,20 @@ select {
 }
 
 .compact-filter-summary button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
     min-width: 44px;
     min-height: 44px;
+    padding: 14px 4px;
     border: 0;
+    border-bottom: 1px solid var(--border);
     background: transparent;
     color: inherit;
     font: inherit;
+    text-align: left;
     cursor: pointer;
 }
 
@@ -215,10 +238,6 @@ select {
 .status-options {
     display: grid;
     gap: 16px;
-}
-
-.filter-groups fieldset,
-.status-options {
     min-width: 0;
     padding: 0;
     border: 0;
@@ -235,20 +254,8 @@ select {
     padding-bottom: max(18px, env(safe-area-inset-bottom));
 }
 
-.compact-filter-summary button {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    width: 100%;
-    padding: 14px 4px;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-}
-
 .status-options label {
     display: flex;
-    grid-template-columns: none;
     align-items: center;
     gap: 12px;
     min-height: 44px;
@@ -313,8 +320,7 @@ td,
     color: #c21d1d;
 }
 
-.status-active,
-.toast-success {
+.status-active {
     color: #087b34;
 }
 
@@ -344,10 +350,6 @@ td,
     background: var(--primary);
     color: #fff;
     font-weight: 750;
-}
-
-.mobile-results {
-    display: none;
 }
 
 .drawer {
@@ -410,7 +412,6 @@ td,
 
 .toast-success {
     background: #087b34;
-    color: #fff;
 }
 
 :where(button, input, select, [tabindex='-1']):focus-visible {
@@ -425,9 +426,14 @@ td,
     padding: 0;
     margin: -1px;
     overflow: hidden;
-    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
+}
+
+.mobile-load-status {
+    width: 0;
+    height: 0;
 }
 
 @media (max-width: 800px) {
@@ -465,8 +471,9 @@ td,
         z-index: 10;
         right: max(16px, env(safe-area-inset-right));
         bottom: max(16px, env(safe-area-inset-bottom));
-        width: auto;
-        min-height: 56px;
+        width: 56px;
+        padding: 0;
+        height: 56px;
         border-radius: 18px;
         box-shadow: 0 4px 14px rgb(15 23 42 / 24%);
     }
@@ -484,11 +491,11 @@ td,
         gap: 0;
     }
 
-    .filters label > span {
+    .filter-search-label {
         position: absolute;
         z-index: 1;
         top: 5px;
-        left: 12px;
+        left: 40px;
         color: var(--muted);
         font-size: 10px;
     }
@@ -499,19 +506,39 @@ td,
         padding: 18px 12px 5px;
     }
 
+    .filter-search input {
+        padding-left: 40px;
+    }
+
     .filter-toggle {
         justify-content: space-between;
         width: 100%;
         min-height: 44px;
     }
 
-    .desktop-table {
-        display: none;
-    }
-
     .mobile-results {
         display: grid;
         gap: 12px;
+    }
+
+    .mobile-user-list {
+        display: grid;
+        gap: 12px;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+
+    .mobile-load-error {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #a51717;
+    }
+
+    .mobile-load-sentinel {
+        height: 1px;
     }
 
     .results {
@@ -521,8 +548,7 @@ td,
     }
 
     .mobile-summary,
-    .user-card div,
-    .pagination div {
+    .user-card div {
         justify-content: space-between;
     }
 
@@ -540,20 +566,6 @@ td,
     .user-updated {
         color: var(--muted);
         font-size: 12px;
-    }
-
-    .pagination {
-        padding: 0;
-        border: 0;
-    }
-
-    .pagination > span,
-    .page-number {
-        display: none;
-    }
-
-    .pagination div {
-        width: 100%;
     }
 
     .drawer {

@@ -2,11 +2,14 @@ import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import {
     Component,
+    DestroyRef,
     ElementRef,
     Injector,
     afterNextRender,
+    afterRenderEffect,
     computed,
     inject,
+    linkedSignal,
     signal,
     viewChild,
     type Provider,
@@ -30,17 +33,14 @@ import {
     PageComposition,
     type PageActionPermissionPort,
 } from '../../generated/page_6666666666666666/angular/src';
+import type {
+    ListUsersPage,
+    UserListItem,
+} from '../../generated/page_6666666666666666/angular/src/nodes/users-list/models';
 import { APP_ACCESS_DECISION } from '../../access.guard';
 
-interface SearchModel {
-    search: string;
-}
-
-interface SecondaryFiltersModel {
-    profile: string;
-    role: string;
-    status: string;
-}
+type SearchModel = { search: string };
+type SecondaryFiltersModel = { profile: string; role: string; status: string };
 
 type SecondaryFilterKey = keyof SecondaryFiltersModel;
 
@@ -84,6 +84,57 @@ export const PAGE_EXPANDED_MEDIA_QUERY =
 
 type PageLayout = 'compact' | 'medium' | 'expanded';
 
+interface MobilePageRequest {
+    readonly attempt: number;
+    readonly generation: number;
+    readonly pageNumber: number;
+}
+
+interface MobileProjection {
+    readonly announcement: string;
+    readonly failedRequestKey?: string;
+    readonly generation: number;
+    readonly lastPage: number;
+    readonly pages: ReadonlyMap<number, readonly UserListItem[]>;
+    readonly settledRequestKey?: string;
+    readonly totalItems: number;
+}
+
+interface MobileProjectionSource {
+    readonly generation: number;
+    readonly page: ListUsersPage | undefined;
+    readonly request: MobilePageRequest | null;
+    readonly state:
+        'idle' | 'loading' | 'success' | 'empty' | 'error' | 'reloading';
+}
+
+const EMPTY_MOBILE_PROJECTION: MobileProjection = {
+    announcement: '',
+    generation: 0,
+    lastPage: 1,
+    pages: new Map(),
+    totalItems: 0,
+};
+
+function mobileRequestKey(request: MobilePageRequest): string {
+    return `${request.generation}:${request.pageNumber}:${request.attempt}`;
+}
+
+function flattenMobilePages(
+    pages: ReadonlyMap<number, readonly UserListItem[]>
+): readonly UserListItem[] {
+    const result: UserListItem[] = [];
+    const seen = new Set<string>();
+    for (let pageNumber = 1; pages.has(pageNumber); pageNumber += 1) {
+        for (const user of pages.get(pageNumber) ?? []) {
+            if (seen.has(user.uniqId)) continue;
+            seen.add(user.uniqId);
+            result.push(user);
+        }
+    }
+    return result;
+}
+
 function permissionPortFactory(): PageActionPermissionPort {
     const decision = inject(APP_ACCESS_DECISION, { optional: true });
     return {
@@ -120,6 +171,7 @@ function messageFrom(error: unknown): string {
 export class PageComponent {
     protected readonly composition = inject(PageComposition);
     private readonly breakpointObserver = inject(BreakpointObserver);
+    private readonly destroyRef = inject(DestroyRef);
     private readonly injector = inject(Injector);
     private readonly createButton =
         viewChild<ElementRef<HTMLButtonElement>>('createButton');
@@ -129,6 +181,10 @@ export class PageComponent {
         viewChild<ElementRef<HTMLButtonElement>>('filterTrigger');
     private readonly filterPanel =
         viewChild<ElementRef<HTMLElement>>('filterPanel');
+    private readonly mobileLoadSentinel =
+        viewChild<ElementRef<HTMLElement>>('mobileLoadSentinel');
+    private readonly workspace =
+        viewChild<ElementRef<HTMLElement>>('workspace');
 
     protected readonly layout = toSignal(
         this.breakpointObserver
@@ -257,6 +313,112 @@ export class PageComponent {
     protected readonly page = this.composition.usersList.page;
     protected readonly usersState = this.composition.usersList.state;
     protected readonly profilesState = this.composition.profilesSelect.state;
+    private readonly mobileGeneration = signal(0);
+    private readonly mobileRequest = signal<MobilePageRequest | null>(null);
+    private mobileSentinelGraceTimer: ReturnType<typeof setTimeout> | undefined;
+    protected readonly mobileSentinelGrace = signal(false);
+    private readonly mobileProjection = linkedSignal<
+        MobileProjectionSource,
+        MobileProjection
+    >({
+        source: () => ({
+            generation: this.mobileGeneration(),
+            page: this.page(),
+            request: this.mobileRequest(),
+            state: this.usersState(),
+        }),
+        computation: (source, previous) => {
+            const current =
+                previous?.value.generation === source.generation
+                    ? previous.value
+                    : {
+                          ...EMPTY_MOBILE_PROJECTION,
+                          generation: source.generation,
+                      };
+            const request = source.request;
+            if (!request || request.generation !== source.generation) {
+                return current;
+            }
+
+            const requestKey = mobileRequestKey(request);
+            if (source.state === 'error') {
+                return current.failedRequestKey === requestKey
+                    ? current
+                    : { ...current, failedRequestKey: requestKey };
+            }
+            if (source.state !== 'success' && source.state !== 'empty') {
+                return current;
+            }
+            if (
+                !source.page ||
+                source.page.currentPage !== request.pageNumber ||
+                current.settledRequestKey === requestKey
+            ) {
+                return current;
+            }
+
+            const before = flattenMobilePages(current.pages);
+            const pages =
+                request.pageNumber === 1
+                    ? new Map<number, readonly UserListItem[]>()
+                    : new Map(current.pages);
+            pages.set(request.pageNumber, source.page.items);
+            const added = Math.max(
+                0,
+                flattenMobilePages(pages).length -
+                    (request.pageNumber === 1 ? 0 : before.length)
+            );
+            return {
+                announcement:
+                    request.pageNumber > 1 && added > 0
+                        ? `${added} utilisateur${added > 1 ? 's' : ''} supplémentaire${added > 1 ? 's' : ''}.`
+                        : '',
+                generation: source.generation,
+                lastPage: source.page.lastPage,
+                pages,
+                settledRequestKey: requestKey,
+                totalItems: source.page.totalItems,
+            };
+        },
+    });
+    protected readonly mobileUsers = computed(() =>
+        flattenMobilePages(this.mobileProjection().pages)
+    );
+    private readonly mobileLastLoadedPage = computed(() => {
+        const pages = this.mobileProjection().pages;
+        let pageNumber = 0;
+        while (pages.has(pageNumber + 1)) pageNumber += 1;
+        return pageNumber;
+    });
+    protected readonly mobileHasNext = computed(() => {
+        const projection = this.mobileProjection();
+        const lastLoaded = this.mobileLastLoadedPage();
+        return lastLoaded > 0 && lastLoaded < projection.lastPage;
+    });
+    protected readonly mobileLoadingNext = computed(() => {
+        const request = this.mobileRequest();
+        if (!request || request.pageNumber <= 1) return false;
+        const projection = this.mobileProjection();
+        const key = mobileRequestKey(request);
+        return (
+            projection.settledRequestKey !== key &&
+            projection.failedRequestKey !== key
+        );
+    });
+    protected readonly mobileFailedPage = computed(() => {
+        const request = this.mobileRequest();
+        if (!request || request.pageNumber <= 1) return null;
+        return this.mobileProjection().failedRequestKey ===
+            mobileRequestKey(request)
+            ? request.pageNumber
+            : null;
+    });
+    protected readonly mobileAnnouncement = computed(
+        () => this.mobileProjection().announcement
+    );
+    protected readonly mobileTotalItems = computed(
+        () => this.mobileProjection().totalItems
+    );
     protected readonly isInitialLoading = computed(
         () =>
             this.users().length === 0 &&
@@ -266,7 +428,10 @@ export class PageComponent {
         () => this.usersState() === 'reloading'
     );
     protected readonly hasQueryError = computed(
-        () => this.usersState() === 'error' || this.profilesState() === 'error'
+        () =>
+            this.profilesState() === 'error' ||
+            (this.usersState() === 'error' &&
+                (this.layout() !== 'compact' || !this.mobileFailedPage()))
     );
     protected readonly isReady = computed(() => this.users().length > 0);
     protected readonly isEmpty = computed(
@@ -301,12 +466,42 @@ export class PageComponent {
 
     constructor() {
         this.composition.profilesSelect.load();
-        this.loadUsers(1);
+        this.resetMobileProjection();
+        this.destroyRef.onDestroy(() => {
+            if (this.mobileSentinelGraceTimer) {
+                clearTimeout(this.mobileSentinelGraceTimer);
+            }
+        });
+        afterRenderEffect({
+            read: (onCleanup) => {
+                const sentinel = this.mobileLoadSentinel()?.nativeElement;
+                if (
+                    this.layout() !== 'compact' ||
+                    !sentinel ||
+                    !this.mobileHasNext() ||
+                    this.mobileLoadingNext() ||
+                    this.mobileFailedPage()
+                ) {
+                    return;
+                }
+                const root = this.workspace()?.nativeElement ?? null;
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        if (entries.some((entry) => entry.isIntersecting)) {
+                            this.loadNextMobilePage();
+                        }
+                    },
+                    { root, rootMargin: '0px 0px 150% 0px', threshold: 0 }
+                );
+                observer.observe(sentinel);
+                onCleanup(() => observer.disconnect());
+            },
+        });
     }
 
     protected applySearch(event: Event): void {
         event.preventDefault();
-        this.loadUsers(1);
+        this.resetMobileProjection();
     }
 
     protected openFilters(): void {
@@ -367,7 +562,7 @@ export class PageComponent {
         this.preserveFilterDraft.set(false);
         this.compactFilterDetail.set(null);
         this.areFiltersOpen.set(false);
-        this.loadUsers(1);
+        this.resetMobileProjection();
         this.restoreFilterTriggerFocus();
     }
 
@@ -379,7 +574,7 @@ export class PageComponent {
         if (this.areFiltersOpen()) {
             this.draftFilters.set({ ...this.appliedFilters() });
         }
-        this.loadUsers(1);
+        this.resetMobileProjection();
     }
 
     protected draftFilterValue(key: SecondaryFilterKey): string {
@@ -445,6 +640,7 @@ export class PageComponent {
                 this.successNotice.set("L'utilisateur a été créé.");
                 this.isCreateOpen.set(false);
                 this.createForm().reset({ ...EMPTY_USER });
+                this.resetMobileProjection();
                 this.restoreCreateButtonFocus();
                 return undefined;
             } catch (error: unknown) {
@@ -512,6 +708,52 @@ export class PageComponent {
             : new Intl.DateTimeFormat('fr-FR').format(date);
     }
 
+    protected retryMobilePage(): void {
+        const request = this.mobileRequest();
+        if (!request || this.mobileFailedPage() !== request.pageNumber) return;
+        const retry = { ...request, attempt: request.attempt + 1 };
+        this.keepMobileSentinelForImmediateFeedback();
+        this.mobileRequest.set(retry);
+        this.loadUsers(retry.pageNumber);
+    }
+
+    private loadNextMobilePage(): void {
+        if (
+            this.layout() !== 'compact' ||
+            !this.mobileHasNext() ||
+            this.mobileLoadingNext() ||
+            this.mobileFailedPage()
+        ) {
+            return;
+        }
+        const request: MobilePageRequest = {
+            attempt: 0,
+            generation: this.mobileGeneration(),
+            pageNumber: this.mobileLastLoadedPage() + 1,
+        };
+        this.keepMobileSentinelForImmediateFeedback();
+        this.mobileRequest.set(request);
+        this.loadUsers(request.pageNumber);
+    }
+
+    private resetMobileProjection(): void {
+        const generation = this.mobileGeneration() + 1;
+        this.mobileGeneration.set(generation);
+        this.mobileRequest.set({ attempt: 0, generation, pageNumber: 1 });
+        this.loadUsers(1);
+    }
+
+    private keepMobileSentinelForImmediateFeedback(): void {
+        if (this.mobileSentinelGraceTimer) {
+            clearTimeout(this.mobileSentinelGraceTimer);
+        }
+        this.mobileSentinelGrace.set(true);
+        this.mobileSentinelGraceTimer = setTimeout(
+            () => this.mobileSentinelGrace.set(false),
+            200
+        );
+    }
+
     private loadUsers(page: number): void {
         const filters = this.appliedFilters();
         const search = this.searchModel().search.trim();
@@ -526,36 +768,32 @@ export class PageComponent {
         });
     }
 
-    private restoreCreateButtonFocus(): void {
+    private focusAfterRender(
+        resolve: () => HTMLElement | null | undefined
+    ): void {
         afterNextRender(
-            { write: () => this.createButton()?.nativeElement.focus() },
+            { write: () => resolve()?.focus() },
             { injector: this.injector }
         );
+    }
+
+    private restoreCreateButtonFocus(): void {
+        this.focusAfterRender(() => this.createButton()?.nativeElement);
     }
 
     private focusFilterPanel(): void {
-        afterNextRender(
-            { write: () => this.filterPanel()?.nativeElement.focus() },
-            { injector: this.injector }
-        );
+        this.focusAfterRender(() => this.filterPanel()?.nativeElement);
     }
 
     private focusFilterPanelElement(selector: string): void {
-        afterNextRender(
-            {
-                write: () =>
-                    this.filterPanel()
-                        ?.nativeElement.querySelector<HTMLElement>(selector)
-                        ?.focus(),
-            },
-            { injector: this.injector }
+        this.focusAfterRender(() =>
+            this.filterPanel()?.nativeElement.querySelector<HTMLElement>(
+                selector
+            )
         );
     }
 
     private restoreFilterTriggerFocus(): void {
-        afterNextRender(
-            { write: () => this.filterTrigger()?.nativeElement.focus() },
-            { injector: this.injector }
-        );
+        this.focusAfterRender(() => this.filterTrigger()?.nativeElement);
     }
 }

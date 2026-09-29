@@ -2384,31 +2384,30 @@ Figma, désormais source partielle différée :
   signature inline exacte et douze succès réels. Aucun fichier Angular, work
   order ou dépendance n'est modifié. Soumaila a approuvé le commit exact
   `397d85d8ce28608da631e39aa1f5e7ba4e954997`, fusionné la PR #133 dans
-  `4e65d8fb3fe8e14efdb1000c76f2577364198b18`, et la CI post-fusion
-  `36530012640` est verte. **ADAPT-6f — réalisation fusionnée et clôture
-  technique :** le work order
-  `7db39bbe0856b8fce04f9aff6ac38ca1509b933886c35bc0fbe422561dd1d014` limite la
-  modification aux cinq fichiers de page ; quatre sont modifiés. Bottom sheet
-  compact, side sheet `medium`, pane `expanded`, séparation `draft`/`applied`,
-  chips, resize sans réseau et unicité DOM sont prouvés par 26 tests Angular et
-  23 scénarios Playwright réellement verts. Le style reste à `7,74 kB` sous le
-  plafond bloquant de `8 kB`. Soumaila a approuvé la PR #134 sur
-  `d836886009e14b368ed48b94941c0462818b42a1`, l'a fusionnée dans
+  `4e65d8fb3fe8e14efdb1000c76f2577364198b18`, et la CI post-fusion `36530012640`
+  est verte. **ADAPT-6f — réalisation fusionnée et clôture technique :** le work
+  order `7db39bbe0856b8fce04f9aff6ac38ca1509b933886c35bc0fbe422561dd1d014`
+  limite la modification aux cinq fichiers de page ; quatre sont modifiés.
+  Bottom sheet compact, side sheet `medium`, pane `expanded`, séparation
+  `draft`/`applied`, chips, resize sans réseau et unicité DOM sont prouvés par
+  26 tests Angular et 23 scénarios Playwright réellement verts. Le style reste à
+  `7,74 kB` sous le plafond bloquant de `8 kB`. Soumaila a approuvé la PR #134
+  sur `d836886009e14b368ed48b94941c0462818b42a1`, l'a fusionnée dans
   `8a6227a7b8eacb25525e188637e91694f15fbdd2`, et les 17 contrôles de PR ainsi
-  que la CI post-fusion `36534048265` sont verts. ADAPT-6 est clos
-  techniquement ; restent la décision séparée de baseline Chromium prévue par
-  ADR-0071 puis la revue C6 de promotion. **ADAPT-7 — accessibilité compacte
-  avant baseline :** la revue visuelle valide les trois dispositions mais
-  détecte que le sous-écran compact garde le nom accessible `Filtres` et ne
-  transfère pas le focus vers son contrôle. ADAPT-7a ajoute deux oracles
-  Playwright en échec attendu uniquement pour la signature historique exacte
-  (`aria-label="Filtres"` sans `aria-labelledby`) ; le passage ciblé reste vert
-  à `10 passed`, dont deux échecs attendus et huit succès réels, et le passage
-  complet à `23 passed`, dont vingt-et-un succès réels. Après revue et fusion,
-  ADAPT-7b devra recalculer le work order, corriger seulement la page, convertir
-  les dix cas en succès réels, puis céder le chemin critique à ADAPT-8 avant la
-  baseline Chromium. Une réalisation jetable a ensuite révélé qu'un scénario
-  de présentation conservait un locator fondé sur le nom constant `Filtres` et
+  que la CI post-fusion `36534048265` sont verts. ADAPT-6 est clos techniquement
+  ; restent la décision séparée de baseline Chromium prévue par ADR-0071 puis la
+  revue C6 de promotion. **ADAPT-7 — accessibilité compacte avant baseline :**
+  la revue visuelle valide les trois dispositions mais détecte que le sous-écran
+  compact garde le nom accessible `Filtres` et ne transfère pas le focus vers
+  son contrôle. ADAPT-7a ajoute deux oracles Playwright en échec attendu
+  uniquement pour la signature historique exacte (`aria-label="Filtres"` sans
+  `aria-labelledby`) ; le passage ciblé reste vert à `10 passed`, dont deux
+  échecs attendus et huit succès réels, et le passage complet à `23 passed`,
+  dont vingt-et-un succès réels. Après revue et fusion, ADAPT-7b devra
+  recalculer le work order, corriger seulement la page, convertir les dix cas en
+  succès réels, puis céder le chemin critique à ADAPT-8 avant la baseline
+  Chromium. Une réalisation jetable a ensuite révélé qu'un scénario de
+  présentation conservait un locator fondé sur le nom constant `Filtres` et
   devenait introuvable dès que le détail prenait correctement le nom `Profil`.
   **ADAPT-7a2** corrige d'abord ce harnais, avec échec attendu limité à
   `aria-label="Filtres"` sans `aria-labelledby`; aucun runtime ni work order
@@ -2417,63 +2416,71 @@ Figma, désormais source partielle différée :
   `bdb69077664eb589815b29f20144e8eef6ae22eb`; les 17 contrôles de PR et la CI
   post-fusion `36584337755` sont verts. **ADAPT-7b — réalisation fusionnée :**
   le work order frais
-  `a9abe5a184697de6a54b71943d7f140dcbe441c367a279e2d8b20082f249278d` confine
-  la correction aux fichiers de page. Seuls le template et le contrôleur sont
+  `a9abe5a184697de6a54b71943d7f140dcbe441c367a279e2d8b20082f249278d` confine la
+  correction aux fichiers de page. Seuls le template et le contrôleur sont
   modifiés pour lier le nom accessible au titre visible, cibler le premier
-  contrôle à l'ouverture et restituer le focus au critère quitté. Les 10
-  oracles adaptatifs, les 23 scénarios Playwright, les 26 tests Angular, le
-  lint, le build production et l'Oracle confiné sont verts. Soumaila a approuvé
-  le commit exact `56a71baf4db9adbcd8ce6d0920ec1eec64f1ed30`, fusionné par la
-  PR #140 dans `eb8be265e5843d196cff7bf10c6372e5f212f7de`. Les 17 contrôles
-  de PR et la CI post-fusion `36591923635` sont verts. ADAPT-7 est clos.
-  **ADAPT-8 — filtres progressifs Desktop/Medium :** la décision produit du
-  2026-09-29 conserve les conteneurs et l'état `draft`/`applied` d'ADAPT-6,
-  mais demande que les critères du brouillon soient présentés sous forme de
-  blocs actifs, repliables et supprimables dans les fenêtres `medium` et
-  `expanded`. `Ajouter un filtre` ne propose que les champs contractuels encore
-  disponibles. Les chips extérieures restent réservées aux valeurs réellement
-  appliquées. Aucun comportement AG Grid non contractuel ni aucune dépendance
-  de grille n'est adopté. ADAPT-7b reste prioritaire ; viennent ensuite revue de
-  décision, références propres au dépôt, oracles en échec attendu, work order,
-  réalisation bornée et preuve navigateur. Décision détaillée :
+  contrôle à l'ouverture et restituer le focus au critère quitté. Les 10 oracles
+  adaptatifs, les 23 scénarios Playwright, les 26 tests Angular, le lint, le
+  build production et l'Oracle confiné sont verts. Soumaila a approuvé le commit
+  exact `56a71baf4db9adbcd8ce6d0920ec1eec64f1ed30`, fusionné par la PR #140 dans
+  `eb8be265e5843d196cff7bf10c6372e5f212f7de`. Les 17 contrôles de PR et la CI
+  post-fusion `36591923635` sont verts. ADAPT-7 est clos. **ADAPT-8 — filtres
+  progressifs Desktop/Medium :** la décision produit du 2026-09-29 conserve les
+  conteneurs et l'état `draft`/`applied` d'ADAPT-6, mais demande que les
+  critères du brouillon soient présentés sous forme de blocs actifs, repliables
+  et supprimables dans les fenêtres `medium` et `expanded`. `Ajouter un filtre`
+  ne propose que les champs contractuels encore disponibles. Les chips
+  extérieures restent réservées aux valeurs réellement appliquées. Aucun
+  comportement AG Grid non contractuel ni aucune dépendance de grille n'est
+  adopté. ADAPT-7b reste prioritaire ; viennent ensuite revue de décision,
+  références propres au dépôt, oracles en échec attendu, work order, réalisation
+  bornée et preuve navigateur. Décision détaillée :
   [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
-  ADR-0074 proposé.
-  Dossier :
+  ADR-0074 proposé. Dossier :
   `examples/users-management-proof/presentation/filter-candidates/proposal.md`.
-  **ADAPT-9 — chargement progressif mobile silencieux :** la décision produit
-  du 2026-09-29 retire la pagination visible uniquement en fenêtre `compact` et
+  **ADAPT-9 — chargement progressif mobile silencieux :** la décision produit du
+  2026-09-29 retire la pagination visible uniquement en fenêtre `compact` et
   accumule les pages normalisées à l'approche de la fin de la pile. Le cas
   nominal ne montre ni spinner, ni skeleton, ni texte de chargement ; l'état
   interne reste explicite et accessible. Une seule page suivante peut être en
   vol, les cartes sont ordonnées et dédupliquées par `uniqId`, les réponses
-  obsolètes sont rejetées et `lastPage` arrête définitivement la sentinelle.
-  Une erreur conserve les cartes, suspend l'automatisme et expose
-  `Réessayer`. Recherche, filtre et création réussie repartent de la page `1` ;
-  un resize seul n'émet aucun GET. `medium` et `expanded` gardent la pagination
-  explicite. Ce lot de décision ne modifie ni runtime, ni `list-query`, ni
-  backend. Soumaila a approuvé le commit exact
+  obsolètes sont rejetées et `lastPage` arrête définitivement la sentinelle. Une
+  erreur conserve les cartes, suspend l'automatisme et expose `Réessayer`.
+  Recherche, filtre et création réussie repartent de la page `1` ; un resize
+  seul n'émet aucun GET. `medium` et `expanded` gardent la pagination explicite.
+  Ce lot de décision ne modifie ni runtime, ni `list-query`, ni backend.
+  Soumaila a approuvé le commit exact
   `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusionné par la PR #141 dans
   `2805763217653e85d8f125568fb1b5ccd903bcfb` ; les 17 contrôles et la CI
-  post-fusion `36596093253` sont verts. **ADAPT-9a — oracles réalisés
-  localement :** dix scénarios Playwright donnent `10 passed`, dont neuf échecs
-  attendus bornés par la pagination compacte historique ; la suite complète
-  donne `33 passed`. Trois oracles composants portent
-  l'accumulation/déduplication, le mono-vol/retry et le reset après création ;
-  Angular donne `26 passed | 3 expected fail`. Aucun runtime, fichier généré,
-  work order ou dépendance n'est modifié. Prochaine barrière : revue/fusion du
-  harnais, nouveau work order, réalisation confinée et preuve navigateur
-  mobile. Cette piste ne remplace pas ADAPT-8 : elle constitue le chantier
-  compact indépendant décidé après lui. Décision détaillée :
+  post-fusion `36596093253` sont verts. **ADAPT-9a — oracles fusionnés :**
+  Soumaila a approuvé le commit exact
+  `6ff43d2bd0cbfb925aa7d1fea1733e41389c0683`, fusionné par la PR #142 dans
+  `0496bbc52692b39bbf3870b083d565b5998e8318` ; les 17 contrôles et la CI
+  post-fusion `36601661429` sont verts. **ADAPT-9b — runtime réalisé et vérifié
+  localement :** la projection compacte accumule et déduplique les pages, borne
+  le mono-vol et les générations, arrête la sentinelle à `lastPage`, conserve
+  les cartes sur erreur avec retry local, puis repart de page `1` après
+  recherche, filtre ou création. `medium` et `expanded` gardent leur pagination.
+  Le work order `8153714d…` passe compilation, build, lint, tests et contrôle de
+  confinement sans violation. Angular donne `30 passed`, Playwright complet
+  `33 passed`, et le build production reste sous l'erreur CSS à `7,89 kB`. Deux
+  captures réelles documentent les 15 cartes accumulées et la frontière de
+  retry. La relecture visuelle supprime le sous-titre compact, conserve la
+  recherche primaire avant les filtres et réduit le FAB compact à `+`, avec nom
+  accessible et tooltip ; les libellés medium/expanded restent visibles. Cette
+  exception C5 ne généralise aucune règle de génération. Prochaine barrière :
+  commit/push, revue obligatoire de Soumaila, fusion puis CI exacte post-fusion.
+  Cette piste ne remplace pas ADAPT-8 : elle constitue le chantier compact
+  indépendant décidé après lui. Décision détaillée :
   [`c5-adapt9-chargement-progressif-mobile-2026-09-29.md`](./c5-adapt9-chargement-progressif-mobile-2026-09-29.md),
-  ADR-0075 accepté.
-  Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
-  sont les deux variantes prouvées. Objet conteneur, map ou autre projection
-  devront recevoir un discriminateur et un oracle lors d'un cas réel, sans
-  heuristique liée à `data` ou au framework backend. **QUERY-1 — lecture objet
-  unique à auditer :** le GET `RequestsDetailsApi.execute()` retourne réellement
-  `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un seul
-  `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre une
-  primitive `read-query` à cardinalités `one|many|page` et un profil
+  ADR-0075 accepté. Le rôle métier de liste ne fige pas la forme réseau :
+  tableau direct et page sont les deux variantes prouvées. Objet conteneur, map
+  ou autre projection devront recevoir un discriminateur et un oracle lors d'un
+  cas réel, sans heuristique liée à `data` ou au framework backend. **QUERY-1 —
+  lecture objet unique à auditer :** le GET `RequestsDetailsApi.execute()`
+  retourne réellement `SimpleResponseDto<RequestsDetailsItemApiDto>` puis un
+  seul `RequestsDetailsEntity`. Décider, preuves comparatives à l'appui, entre
+  une primitive `read-query` à cardinalités `one|many|page` et un profil
   `detail-query` mince. Refus de dupliquer transport, cache, erreurs, contrôleur
   ou renderers ; aucun objet n'est accepté par `list-query` avant cet audit.
   **Audit préalable de la composition N×N (2026-09-15) :**
