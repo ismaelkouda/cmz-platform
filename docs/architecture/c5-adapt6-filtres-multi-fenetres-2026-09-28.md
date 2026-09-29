@@ -395,5 +395,6 @@ sans `skip` ni `todo`. Le passage Playwright complet termine à `23 passed`,
 avec ces deux seuls échecs attendus et vingt-et-un succès réels. Après revue et
 fusion de ce harnais, ADAPT-7b devra
 recalculer un work order depuis `main`, modifier seulement les fichiers de page
-autorisés, faire passer les dix scénarios réellement, puis reprendre la
+autorisés et faire passer les dix scénarios réellement. La refonte
+Desktop/Medium ADAPT-8, décidée ensuite, précède désormais la reprise de la
 baseline Chromium.

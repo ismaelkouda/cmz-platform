@@ -107,4 +107,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0071](./0071-arbitrer-ecarts-c5-avant-baseline-chromium.md) | Arbitrer les écarts C5 avant la baseline Chromium        | accepté  |
 | [0072](./0072-ui-adaptative-guidee-par-m3-et-apis-officielles.md) | Guider l'UI adaptative par M3 et les API officielles de la cible | accepté  |
 | [0073](./0073-filtrage-adaptatif-par-panneau-unique.md)   | Filtrage adaptatif par panneau unique et état brouillon  | accepté  |
+| [0074](./0074-filtres-progressifs-par-blocs-actifs.md)    | Filtres progressifs par blocs actifs sur fenêtres medium et expanded | Proposed |
 <!-- END:GENERATED:adr-index -->
