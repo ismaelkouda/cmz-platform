@@ -2451,13 +2451,21 @@ Figma, désormais source partielle différée :
   `Réessayer`. Recherche, filtre et création réussie repartent de la page `1` ;
   un resize seul n'émet aucun GET. `medium` et `expanded` gardent la pagination
   explicite. Ce lot de décision ne modifie ni runtime, ni `list-query`, ni
-  backend. Prochaine barrière : revue et fusion d'ADR-0075 et du contrat
-  ADAPT-9, puis oracles seuls en échec attendu, revue/fusion, nouveau work
-  order, réalisation confinée et preuve navigateur mobile. Cette piste ne
-  remplace pas ADAPT-8 : elle constitue le chantier compact indépendant décidé
-  après lui. Décision détaillée :
+  backend. Soumaila a approuvé le commit exact
+  `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusionné par la PR #141 dans
+  `2805763217653e85d8f125568fb1b5ccd903bcfb` ; les 17 contrôles et la CI
+  post-fusion `36596093253` sont verts. **ADAPT-9a — oracles réalisés
+  localement :** dix scénarios Playwright donnent `10 passed`, dont neuf échecs
+  attendus bornés par la pagination compacte historique ; la suite complète
+  donne `33 passed`. Trois oracles composants portent
+  l'accumulation/déduplication, le mono-vol/retry et le reset après création ;
+  Angular donne `26 passed | 3 expected fail`. Aucun runtime, fichier généré,
+  work order ou dépendance n'est modifié. Prochaine barrière : revue/fusion du
+  harnais, nouveau work order, réalisation confinée et preuve navigateur
+  mobile. Cette piste ne remplace pas ADAPT-8 : elle constitue le chantier
+  compact indépendant décidé après lui. Décision détaillée :
   [`c5-adapt9-chargement-progressif-mobile-2026-09-29.md`](./c5-adapt9-chargement-progressif-mobile-2026-09-29.md),
-  ADR-0075 proposé.
+  ADR-0075 accepté.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
   devront recevoir un discriminateur et un oracle lors d'un cas réel, sans

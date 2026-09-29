@@ -1,8 +1,8 @@
 # C5 / ADAPT-9 — Chargement progressif mobile silencieux
 
 **Date :** 2026-09-29
-**Statut :** décision produit approuvée le 2026-09-29 ; revue technique et
-fusion encore requises ; runtime non modifié
+**Statut :** décision approuvée et fusionnée ; oracles ADAPT-9a réalisés
+localement ; runtime non modifié
 **Décision :** [ADR-0075](../adr/0075-chargement-progressif-mobile-silencieux.md)
 
 ## 1. Résultat attendu
@@ -138,10 +138,37 @@ naturellement sans loader permanent ni message obligatoire.
 - reprise de la page échouée ;
 - reset après création réussie.
 
+### ADAPT-9a — réalisation des oracles
+
+Le fichier
+`apps/users-management-proof/e2e/mobile-progressive-loading-oracles.spec.ts`
+porte dix scénarios navigateur. Sur le runtime historique, neuf échouent de
+façon attendue uniquement lorsque la pagination compacte est visible et que la
+sentinelle progressive est absente. Le dixième est déjà un succès réel :
+`medium` et `expanded` conservent leur pagination sans chargement automatique.
+Le passage ciblé termine à `10 passed` en 10,2 s ; le passage Playwright complet
+termine à `33 passed` en 27,6 s, sans régression des vingt-trois scénarios
+préexistants.
+
+Trois oracles de composant complètent la frontière navigateur dans
+`page.component.spec.ts` : accumulation ordonnée avec déduplication `uniqId`,
+verrou de page suivante avec retry borné, et reset page `1` après création. Le
+passage Angular termine à `26 passed | 3 expected fail`, soit vingt-neuf tests
+exécutés. Les échecs attendus restent déclarés dans les tests et devront être
+convertis en succès réels pendant la réalisation.
+
+Ce lot ne modifie aucun fichier Angular de production, aucun fichier généré,
+aucune dépendance et aucun work order. Après sa revue et sa fusion, un nouveau
+work order devra être calculé depuis `main` avant tout changement runtime.
+
 ## 8. Séquence de livraison
 
-1. faire revoir et fusionner ADR-0075 et le présent contrat ;
-2. ajouter uniquement les oracles en échec attendu borné ;
+1. ~~faire revoir et fusionner ADR-0075 et le présent contrat~~ — PR #141,
+   commit `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusion
+   `2805763217653e85d8f125568fb1b5ccd903bcfb`, 17 contrôles et CI post-fusion
+   `36596093253` verts ;
+2. **en cours de revue :** ajouter uniquement les oracles en échec attendu
+   borné — ADAPT-9a ;
 3. faire revoir et fusionner les oracles ;
 4. recalculer le work order depuis le nouveau `main` ;
 5. réaliser dans les fichiers autorisés de la page ;

@@ -1033,3 +1033,14 @@ Playwright doivent être écrits et fusionnés avant tout nouveau work order et
 avant la réalisation. Voir
 [`c5-adapt9-chargement-progressif-mobile-2026-09-29.md`](./c5-adapt9-chargement-progressif-mobile-2026-09-29.md)
 et [ADR-0075](../adr/0075-chargement-progressif-mobile-silencieux.md).
+
+Soumaila a approuvé la décision sur le commit exact
+`0db8669ef76ee9986911b2c333405667bc2ac8cc`, puis la PR #141 a été fusionnée
+dans `2805763217653e85d8f125568fb1b5ccd903bcfb`. Ses 17 contrôles et la CI
+post-fusion `36596093253` sont verts. ADAPT-9a ajoute ensuite uniquement dix
+oracles Playwright et trois oracles de composant. Le passage ciblé termine à
+`10 passed`, dont neuf échecs attendus bornés par la signature historique ; le
+passage complet à `33 passed`. Les tests Angular terminent à
+`26 passed | 3 expected fail`. Aucun runtime, fichier généré, work order ou
+dépendance n'est modifié. La fusion de ce harnais doit précéder le calcul du
+work order de réalisation.
