@@ -2370,8 +2370,21 @@ Figma, désormais source partielle différée :
   requête. Aucun fichier de page, work order ou dépendance n'est modifié. Le
   build production est vert mais rappelle une contrainte de réalisation :
   `page.component.scss` pèse déjà `6,47 kB` pour un plafond bloquant de `8 kB` ;
-  remplacer les règles historiques sans relever ni contourner ce budget. Restent
-  la revue/fusion, puis le nouveau work order avant réalisation. Dossier :
+  remplacer les règles historiques sans relever ni contourner ce budget.
+  Soumaila a approuvé le commit exact
+  `7daea25440b2b1abce246a280793da285d2278ff`, puis a fusionné la PR #132 dans
+  `6a630046195045fbe3eb841acd72bd5f895689ad` ; la CI post-fusion `36504104906`
+  est verte. **ADAPT-6e — cohérence du harnais engagée localement :** une
+  réalisation jetable a prouvé les dix oracles mais révélé que le harnais de
+  présentation exigeait encore un `select` Profil fermé dans le DOM, en conflit
+  direct avec l'oracle d'unicité. La preuve Profil est déplacée dans le
+  formulaire réellement ouvert et le scénario compact attend `Réinitialiser`
+  sans réseau puis `Appliquer` avec un GET unique. Le passage complet sur l'UI
+  historique reste vert à `23 passed`, avec onze échecs attendus bornés par la
+  signature inline exacte et douze succès réels. Aucun fichier Angular, work
+  order ou dépendance n'est modifié. Restent la revue/fusion d'ADAPT-6e, puis un
+  nouveau work order depuis `main` avant de restaurer la réalisation bornée aux
+  cinq fichiers. Dossier :
   `examples/users-management-proof/presentation/filter-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
