@@ -51,18 +51,6 @@
       "viewport": null
     },
     {
-      "id": "adaptive-filter-brief",
-      "source_kind": "design-brief",
-      "purpose": "responsive-layout",
-      "snapshot_uri": "examples/users-management-proof/presentation/filter-candidates/proposal.md",
-      "media_type": "text/markdown",
-      "bytes": 10636,
-      "sha256": "17b88e858ade6dd24f7c2714fba2949c6ed1d54d74e8550767ecac8149c9d7c4",
-      "trust": "untrusted-content",
-      "state_ids": [],
-      "viewport": null
-    },
-    {
       "id": "compact-filter-summary",
       "source_kind": "wireframe",
       "purpose": "responsive-layout",
@@ -95,13 +83,25 @@
       }
     },
     {
-      "id": "medium-filters-adaptive",
+      "id": "progressive-filter-brief",
+      "source_kind": "design-brief",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/progressive-filter-candidates/proposal.md",
+      "media_type": "text/markdown",
+      "bytes": 7820,
+      "sha256": "b78274c2d5cc0ada90f05c78b81be6fcdc67ef06b07151e30ec0dc0169fdb969",
+      "trust": "untrusted-content",
+      "state_ids": [],
+      "viewport": null
+    },
+    {
+      "id": "medium-progressive-filter-empty",
       "source_kind": "wireframe",
       "purpose": "responsive-layout",
-      "snapshot_uri": "examples/users-management-proof/presentation/filter-candidates/medium-filters.proposed.png",
+      "snapshot_uri": "examples/users-management-proof/presentation/progressive-filter-candidates/medium-empty.proposed.png",
       "media_type": "image/png",
-      "bytes": 61384,
-      "sha256": "222a9fdf6b0117af68362e854dc21f86b7b53d294dd97d9e4482e9de130ed8e0",
+      "bytes": 51217,
+      "sha256": "a6e2b73b149b06c7090c0d03b2fc02f89aaf0960ec3af13fd924ae746e9e0a01",
       "trust": "untrusted-content",
       "state_ids": ["ready"],
       "viewport": {
@@ -111,13 +111,77 @@
       }
     },
     {
-      "id": "expanded-filters-adaptive",
+      "id": "medium-progressive-filter-one",
       "source_kind": "wireframe",
       "purpose": "responsive-layout",
-      "snapshot_uri": "examples/users-management-proof/presentation/filter-candidates/expanded-filters.proposed.png",
+      "snapshot_uri": "examples/users-management-proof/presentation/progressive-filter-candidates/medium-one-filter.proposed.png",
       "media_type": "image/png",
-      "bytes": 88132,
-      "sha256": "6154ffcd008ad3ccdd4d1c52388fcc612b93a9940d51f0e6fe3f5ee5c8180c3c",
+      "bytes": 59877,
+      "sha256": "efc918c2341aafa00d289afc8ec98eacea01b30eb41ef5b492db14eb629d7cbd",
+      "trust": "untrusted-content",
+      "state_ids": ["ready"],
+      "viewport": {
+        "width": 1024,
+        "height": 768,
+        "pixel_ratio": 1
+      }
+    },
+    {
+      "id": "medium-progressive-filter-multiple",
+      "source_kind": "wireframe",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/progressive-filter-candidates/medium-multiple-filters.proposed.png",
+      "media_type": "image/png",
+      "bytes": 59512,
+      "sha256": "24f4e8829ec742cbf61862cf050a9d96c20b057ba30a39d09116f18ca804dd8c",
+      "trust": "untrusted-content",
+      "state_ids": ["ready"],
+      "viewport": {
+        "width": 1024,
+        "height": 768,
+        "pixel_ratio": 1
+      }
+    },
+    {
+      "id": "expanded-progressive-filter-empty",
+      "source_kind": "wireframe",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/progressive-filter-candidates/expanded-empty.proposed.png",
+      "media_type": "image/png",
+      "bytes": 68000,
+      "sha256": "16a60e4b488dcf8a91eea59bda7606c07c4f4986d99bcd89c69bd10ceee86fd3",
+      "trust": "untrusted-content",
+      "state_ids": ["ready"],
+      "viewport": {
+        "width": 1440,
+        "height": 1024,
+        "pixel_ratio": 1
+      }
+    },
+    {
+      "id": "expanded-progressive-filter-one",
+      "source_kind": "wireframe",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/progressive-filter-candidates/expanded-one-filter.proposed.png",
+      "media_type": "image/png",
+      "bytes": 71582,
+      "sha256": "a3dadbb9196022d680fb2649ee126a2030f99730e2ace7a7516dd730114725e8",
+      "trust": "untrusted-content",
+      "state_ids": ["ready"],
+      "viewport": {
+        "width": 1440,
+        "height": 1024,
+        "pixel_ratio": 1
+      }
+    },
+    {
+      "id": "expanded-progressive-filter-multiple",
+      "source_kind": "wireframe",
+      "purpose": "responsive-layout",
+      "snapshot_uri": "examples/users-management-proof/presentation/progressive-filter-candidates/expanded-multiple-filters.proposed.png",
+      "media_type": "image/png",
+      "bytes": 71484,
+      "sha256": "36143bf636ac40dcf2c03a6d4d55bfe3418d5c869f8a712c118c3003bc6be5a5",
       "trust": "untrusted-content",
       "state_ids": ["ready"],
       "viewport": {

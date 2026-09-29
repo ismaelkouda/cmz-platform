@@ -2432,12 +2432,17 @@ Figma, désormais source partielle différée :
   ne propose que les champs contractuels encore disponibles. Les chips
   extérieures restent réservées aux valeurs réellement appliquées. Aucun
   comportement AG Grid non contractuel ni aucune dépendance de grille n'est
-  adopté. ADAPT-7b reste prioritaire ; viennent ensuite revue de décision,
-  références propres au dépôt, oracles en échec attendu, work order, réalisation
-  bornée et preuve navigateur. Décision détaillée :
+  adopté. ADAPT-7 est clos et la décision ADAPT-8 est fusionnée. Les six
+  références Medium/Expanded zéro, un et plusieurs filtres sont approuvées :
+  recherche dans la barre interne du tableau, raccourcis serveur `Profil`,
+  `Rôle`, `Statut`, et panneau non modal superposé aux colonnes sans les
+  redimensionner. ADAPT-8c publie maintenant ces octets et retire les anciennes
+  autorités Medium/Expanded contradictoires ; viendront ensuite oracles en échec
+  attendu, work order, réalisation bornée et preuve navigateur. Décision
+  détaillée :
   [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
-  ADR-0074 proposé. Dossier :
-  `examples/users-management-proof/presentation/filter-candidates/proposal.md`.
+  ADR-0074 accepté. Dossier approuvé :
+  `examples/users-management-proof/presentation/progressive-filter-candidates/`.
   **ADAPT-9 — chargement progressif mobile silencieux :** la décision produit du
   2026-09-29 retire la pagination visible uniquement en fenêtre `compact` et
   accumule les pages normalisées à l'approche de la fin de la pile. Le cas
@@ -2468,10 +2473,12 @@ Figma, désormais source partielle différée :
   retry. La relecture visuelle supprime le sous-titre compact, conserve la
   recherche primaire avant les filtres et réduit le FAB compact à `+`, avec nom
   accessible et tooltip ; les libellés medium/expanded restent visibles. Cette
-  exception C5 ne généralise aucune règle de génération. Prochaine barrière :
-  commit/push, revue obligatoire de Soumaila, fusion puis CI exacte post-fusion.
-  Cette piste ne remplace pas ADAPT-8 : elle constitue le chantier compact
-  indépendant décidé après lui. Décision détaillée :
+  exception C5 ne généralise aucune règle de génération. Soumaila a approuvé le
+  commit exact `fcbd60b6d360c59d107b88518e79c83dbe1c4a02`, fusionné par la PR
+  #143 dans `63318d783d8dde15ec7e9ceb15b1f61f1bb7c7d1` ; la CI post-fusion
+  `36615553281` est verte. ADAPT-9 est clos. Cette piste ne remplace pas ADAPT-8
+  : elle constitue le chantier compact indépendant décidé après lui. Décision
+  détaillée :
   [`c5-adapt9-chargement-progressif-mobile-2026-09-29.md`](./c5-adapt9-chargement-progressif-mobile-2026-09-29.md),
   ADR-0075 accepté. Le rôle métier de liste ne fige pas la forme réseau :
   tableau direct et page sont les deux variantes prouvées. Objet conteneur, map
