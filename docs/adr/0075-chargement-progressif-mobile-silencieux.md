@@ -1,6 +1,6 @@
 # ADR-0075 — Chargement progressif mobile silencieux
 
-- **Statut :** Proposed
+- **Statut :** accepté
 - **Date :** 2026-09-29
 
 ## Contexte

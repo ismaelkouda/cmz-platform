@@ -8,6 +8,10 @@ import {
     PAGE_ACTION_PERMISSION_PORT,
     PageComposition,
 } from '../../generated/page_6666666666666666/angular/src';
+import type {
+    ListUsersPage,
+    UserListItem,
+} from '../../generated/page_6666666666666666/angular/src/nodes/users-list/models';
 import { APP_ACCESS_DECISION } from '../../access.guard';
 import {
     PAGE_COMPACT_MEDIA_QUERY,
@@ -16,7 +20,7 @@ import {
     PageComponent,
 } from './page.component';
 
-const USERS = [
+const USERS: readonly UserListItem[] = [
     {
         uniqId: 'user-1',
         firstName: 'Test',
@@ -39,7 +43,25 @@ const USERS = [
         status: 'inactive',
         updatedAt: '2026-09-25T08:00:00Z',
     },
-] as const;
+];
+
+const DUPLICATED_USER = USERS[1];
+if (!DUPLICATED_USER) throw new Error('Fixture utilisateur incomplète.');
+
+const NEXT_USERS: readonly UserListItem[] = [
+    DUPLICATED_USER,
+    {
+        uniqId: 'user-3',
+        firstName: 'Test',
+        lastName: 'Charlie',
+        email: 'charlie@example.invalid',
+        phone: '+225 00 00 00 02',
+        profile: 'Profil C',
+        role: 'agent',
+        status: 'active',
+        updatedAt: '2026-09-24T08:00:00Z',
+    },
+];
 
 interface SetupOptions {
     authorized?: boolean;
@@ -49,13 +71,32 @@ interface SetupOptions {
 }
 
 async function setup(options: SetupOptions = {}) {
+    let observerCallback: IntersectionObserverCallback | undefined;
+    vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+            readonly disconnect = vi.fn();
+            readonly observe = vi.fn();
+            readonly unobserve = vi.fn();
+
+            constructor(callback: IntersectionObserverCallback) {
+                observerCallback = callback;
+            }
+
+            takeRecords(): IntersectionObserverEntry[] {
+                return [];
+            }
+        }
+    );
     const layoutState = new BehaviorSubject<BreakpointState>(
         breakpointState(options.layout ?? 'medium')
     );
     const usersState = signal(options.usersState ?? 'success');
     const profilesState = signal<'success' | 'error'>('success');
-    const items = signal(options.usersState === 'empty' ? [] : USERS);
-    const page = signal({
+    const items = signal<readonly UserListItem[]>(
+        options.usersState === 'empty' ? [] : USERS
+    );
+    const page = signal<ListUsersPage>({
         items: items(),
         currentPage: 1,
         lastPage: 3,
@@ -113,8 +154,27 @@ async function setup(options: SetupOptions = {}) {
     await fixture.whenStable();
     return {
         fixture,
+        intersectSentinel: () => {
+            if (!observerCallback) {
+                throw new Error('IntersectionObserver non initialisé.');
+            }
+            observerCallback(
+                [
+                    {
+                        isIntersecting: true,
+                        intersectionRatio: 1,
+                    } as IntersectionObserverEntry,
+                ],
+                {} as IntersectionObserver
+            );
+        },
         loadProfiles,
         loadUsers,
+        setUsersPage: (nextPage: ListUsersPage) => {
+            items.set(nextPage.items);
+            page.set(nextPage);
+            usersState.set(nextPage.items.length === 0 ? 'empty' : 'success');
+        },
         setLayout: (layout: NonNullable<SetupOptions['layout']>) =>
             layoutState.next(breakpointState(layout)),
         submitUser,
@@ -167,6 +227,7 @@ async function fillValidForm(root: HTMLElement): Promise<void> {
 afterEach(() => {
     TestBed.resetTestingModule();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
 });
 
 describe('PageComponent', () => {
@@ -544,6 +605,104 @@ describe('PageComponent', () => {
         expect(element(root, '[data-cmz-id="email"]')).toBe(email);
         expect(document.activeElement).toBe(email);
     });
+
+    it(
+        'accumule les pages compactes dans l’ordre et déduplique uniqId',
+        { fails: true },
+        async () => {
+            const { fixture, intersectSentinel, loadUsers, setUsersPage } =
+                await setup({ layout: 'compact' });
+            const root = fixture.nativeElement as HTMLElement;
+
+            expect(
+                root.querySelector('[aria-label="Pagination des utilisateurs"]')
+            ).not.toBeNull();
+            expect(
+                root.querySelector('[data-cmz-id="mobile-load-sentinel"]')
+            ).not.toBeNull();
+
+            loadUsers.mockClear();
+            intersectSentinel();
+            await fixture.whenStable();
+            expect(loadUsers).toHaveBeenCalledOnce();
+            expect(loadUsers).toHaveBeenCalledWith({ page: 2 });
+
+            setUsersPage({
+                items: NEXT_USERS,
+                currentPage: 2,
+                lastPage: 2,
+                pageSize: 2,
+                totalItems: 3,
+            });
+            await fixture.whenStable();
+
+            const cards = root.querySelectorAll('.user-card');
+            expect(cards).toHaveLength(3);
+            expect(
+                root.textContent?.match(/bravo@example\.invalid/g)
+            ).toHaveLength(1);
+            expect(root.textContent).toContain('charlie@example.invalid');
+        }
+    );
+
+    it(
+        'verrouille la page suivante puis expose un retry borné après erreur',
+        { fails: true },
+        async () => {
+            const { fixture, intersectSentinel, loadUsers, usersState } =
+                await setup({ layout: 'compact' });
+            const root = fixture.nativeElement as HTMLElement;
+
+            expect(
+                root.querySelector('[data-cmz-id="mobile-load-sentinel"]')
+            ).not.toBeNull();
+            loadUsers.mockClear();
+            intersectSentinel();
+            intersectSentinel();
+            await fixture.whenStable();
+            expect(loadUsers).toHaveBeenCalledOnce();
+            expect(loadUsers).toHaveBeenCalledWith({ page: 2 });
+
+            usersState.set('error');
+            await fixture.whenStable();
+            const retry = element<HTMLButtonElement>(
+                root,
+                '[data-cmz-id="mobile-load-retry"]'
+            );
+            retry.click();
+            await fixture.whenStable();
+            expect(loadUsers).toHaveBeenCalledTimes(2);
+            expect(loadUsers).toHaveBeenLastCalledWith({ page: 2 });
+        }
+    );
+
+    it(
+        'réinitialise explicitement la projection compacte sur page 1 après création',
+        { fails: true },
+        async () => {
+            const { fixture, loadUsers } = await setup({ layout: 'compact' });
+            const root = fixture.nativeElement as HTMLElement;
+            loadUsers.mockClear();
+
+            element<HTMLButtonElement>(
+                root,
+                '[data-cmz-id="create-user"]'
+            ).click();
+            await fixture.whenStable();
+            await fillValidForm(root);
+            await fixture.whenStable();
+            element<HTMLFormElement>(
+                root,
+                '[data-cmz-id="create-user-form"]'
+            ).dispatchEvent(
+                new Event('submit', { bubbles: true, cancelable: true })
+            );
+            await fixture.whenStable();
+
+            expect(loadUsers).toHaveBeenCalledOnce();
+            expect(loadUsers).toHaveBeenCalledWith({ page: 1 });
+        }
+    );
 });
 
 describe('PAGE_PERMISSION_PROVIDER', () => {
