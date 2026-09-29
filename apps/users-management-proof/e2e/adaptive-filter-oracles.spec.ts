@@ -168,8 +168,10 @@ async function openTemporaryFilters(page: Page): Promise<Locator> {
     const trigger = filterTrigger(page);
     await expect(trigger).toBeVisible({ timeout: 2_000 });
     await trigger.click();
-    const dialog = page.getByRole('dialog', { name: 'Filtres' });
+    const dialog = page.locator('#user-filter-panel');
     await expect(dialog).toBeVisible({ timeout: 2_000 });
+    await expect(dialog).toHaveAttribute('role', 'dialog');
+    await expect(dialog).toHaveAccessibleName('Filtres');
     return dialog;
 }
 
@@ -180,6 +182,21 @@ async function openPersistentFilters(page: Page): Promise<Locator> {
     const pane = page.getByRole('complementary', { name: 'Filtres' });
     await expect(pane).toBeVisible({ timeout: 2_000 });
     return pane;
+}
+
+async function markLegacyCompactFilterA11yAsExpectedFailure(
+    panel: Locator
+): Promise<void> {
+    const legacyConstantName = await panel.evaluate(
+        (element) =>
+            element.getAttribute('aria-label') === 'Filtres' &&
+            !element.hasAttribute('aria-labelledby')
+    );
+
+    test.fail(
+        legacyConstantName,
+        'ADAPT-7 : le détail compact conserve encore le nom accessible constant « Filtres » et ne garantit pas le transfert de focus.'
+    );
 }
 
 async function expectOnlyOneUsersGet(
@@ -238,11 +255,23 @@ test('compact : rend un unique bottom sheet, son sommaire puis le détail dans l
         ).toBeVisible();
     }
 
-    await dialog.getByRole('button', { name: /^Statut\b/ }).click();
+    const statusSummary = dialog.getByRole('button', { name: /^Statut\b/ });
+    await statusSummary.focus();
+    await statusSummary.click();
+    await markLegacyCompactFilterA11yAsExpectedFailure(dialog);
+    await expect(dialog).toHaveAccessibleName('Statut');
     await expect(dialog.getByRole('heading', { name: 'Statut' })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Retour' })).toBeVisible();
     await expect(dialog.getByRole('radio')).toHaveCount(3);
+    await expect(dialog.getByRole('radio', { name: 'Tous' })).toBeFocused();
     await expect(page.getByRole('dialog')).toHaveCount(1);
+
+    await dialog.getByRole('button', { name: 'Retour' }).click();
+    await expect(dialog).toHaveAccessibleName('Filtres');
+    await expect(
+        dialog.getByRole('button', { name: /^Statut\b/ })
+    ).toBeFocused();
+    await dialog.getByRole('button', { name: /^Statut\b/ }).click();
 
     for (const action of ['Réinitialiser', 'Appliquer']) {
         const button = dialog.getByRole('button', { name: action });
@@ -493,7 +522,10 @@ test('resize compact → medium → expanded → compact : conserve le draft san
 
     await page.setViewportSize(COMPACT);
     await waitForResponsiveLayout(page);
-    container = page.getByRole('dialog', { name: 'Filtres' });
+    container = page.locator('#user-filter-panel');
+    await expect(container).toHaveAttribute('role', 'dialog');
+    await markLegacyCompactFilterA11yAsExpectedFailure(container);
+    await expect(container).toHaveAccessibleName('Statut');
     await expect(
         container.getByRole('radio', { name: 'Inactif' })
     ).toBeChecked();

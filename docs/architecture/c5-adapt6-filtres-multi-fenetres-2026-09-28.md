@@ -369,3 +369,31 @@ géométriques sont l'autorité durable la plus maintenable.
 - [Angular Material — chips](https://material.angular.dev/components/chips/overview)
 - [WAI-ARIA — dialog modal](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)
 - [WCAG 2.2 — Focus Not Obscured](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum)
+
+## 15. ADAPT-7 — revue d’accessibilité du parcours compact
+
+La revue humaine préalable à la baseline Chromium valide la géométrie et la
+hiérarchie des trois dispositions ADAPT-6. Elle détecte toutefois deux défauts
+fonctionnels dans la navigation interne du bottom sheet compact : le bouton de
+critère retiré du DOM conserve le focus, qui retombe alors hors du contrôle
+utile, et le dialogue garde le nom accessible constant `Filtres` alors que son
+titre visible devient `Profil`, `Rôle` ou `Statut`.
+
+Ces défauts ne justifient ni une refonte visuelle ni une primitive partagée. Le
+contrat minimal attendu est le suivant :
+
+- ouvrir un critère transfère le focus vers son premier contrôle ;
+- le nom accessible du panneau suit son titre visible ;
+- `Retour` restitue le focus au bouton du critère quitté ;
+- un redimensionnement conserve le brouillon, le sous-écran et son nom sans GET.
+
+ADAPT-7a modifie seulement le harnais Playwright. Deux scénarios reconnaissent
+l’ancienne signature exacte — `aria-label="Filtres"` sans
+`aria-labelledby` — comme échec attendu. Les huit autres scénarios restent des
+succès réels ; le passage ciblé termine à `10 passed`, dont deux échecs attendus,
+sans `skip` ni `todo`. Le passage Playwright complet termine à `23 passed`,
+avec ces deux seuls échecs attendus et vingt-et-un succès réels. Après revue et
+fusion de ce harnais, ADAPT-7b devra
+recalculer un work order depuis `main`, modifier seulement les fichiers de page
+autorisés, faire passer les dix scénarios réellement, puis reprendre la
+baseline Chromium.

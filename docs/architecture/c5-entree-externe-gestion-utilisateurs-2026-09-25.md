@@ -975,3 +975,15 @@ La réalisation C5 est donc techniquement complète. Le prochain incrément ne
 doit pas extraire prématurément un composant partagé : il doit d'abord statuer
 sur la baseline Chromium encore ouverte par ADR-0071, puis conduire la revue C6
 de promotion à partir des critères non négociables de l'audit de composition.
+
+## ADAPT-7 — garde d’accessibilité avant baseline
+
+La revue de la disposition des filtres confirme le bottom sheet compact, le
+side sheet `medium` et le pane `expanded`, mais bloque la baseline sur deux
+écarts compacts : le focus n’entre pas dans le contrôle du critère choisi et le
+nom accessible reste `Filtres` lorsque le titre visible devient celui du
+critère. ADAPT-7a porte uniquement les oracles Playwright, avec deux échecs
+attendus bornés à l’ancienne signature `aria-label="Filtres"` sans
+`aria-labelledby`. ADAPT-7b ne pourra modifier la page qu’après fusion du
+harnais et recalcul du work order. La baseline pixel reste en attente ; sa
+calibration déjà produite n’est pas perdue.
