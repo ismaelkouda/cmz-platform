@@ -2397,7 +2397,17 @@ Figma, désormais source partielle différée :
   `8a6227a7b8eacb25525e188637e91694f15fbdd2`, et les 17 contrôles de PR ainsi
   que la CI post-fusion `36534048265` sont verts. ADAPT-6 est clos
   techniquement ; restent la décision séparée de baseline Chromium prévue par
-  ADR-0071 puis la revue C6 de promotion. Dossier :
+  ADR-0071 puis la revue C6 de promotion. **ADAPT-7 — accessibilité compacte
+  avant baseline :** la revue visuelle valide les trois dispositions mais
+  détecte que le sous-écran compact garde le nom accessible `Filtres` et ne
+  transfère pas le focus vers son contrôle. ADAPT-7a ajoute deux oracles
+  Playwright en échec attendu uniquement pour la signature historique exacte
+  (`aria-label="Filtres"` sans `aria-labelledby`) ; le passage ciblé reste vert
+  à `10 passed`, dont deux échecs attendus et huit succès réels, et le passage
+  complet à `23 passed`, dont vingt-et-un succès réels. Après revue et fusion,
+  ADAPT-7b devra recalculer le work order, corriger seulement la page, convertir
+  les dix cas en succès réels, puis reprendre la baseline Chromium.
+  Dossier :
   `examples/users-management-proof/presentation/filter-candidates/proposal.md`.
   Le rôle métier de liste ne fige pas la forme réseau : tableau direct et page
   sont les deux variantes prouvées. Objet conteneur, map ou autre projection
