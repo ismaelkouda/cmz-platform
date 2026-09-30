@@ -2471,17 +2471,31 @@ Figma, désormais source partielle différée :
   jusqu'à leur revue technique et leur publication séparée par ADAPT-10c ; aucun
   runtime, contrat API, work order ou dépendance n'est modifié. Dossier candidat
   : `examples/users-management-proof/presentation/adaptive-create-candidates/`.
-  **ADAPT-10c est engagé localement le 2026-09-30 :** le manifeste actif publie
-  exactement les sept PNG approuvés avec leurs tailles, SHA-256, viewports,
-  usages et états de page résolus. La référence progressive Expanded existante
-  reste l'unique `primary-layout` ; les créations ajoutent uniquement des
-  autorités `responsive-layout`, `feedback` et `state-reference`. Un oracle
-  compare les sept sources résolues, chemins et empreintes octet par octet et
-  maintient les anciens identifiants et chemins rejetés hors du work order. Le
-  test de publication C5 passe 4/4 sans modifier runtime, contrat API, work
-  order, dépendance ou capture tierce non suivie. Restent la revue, la fusion et
-  la CI exacte de ce lot ; ADAPT-10d écrira ensuite les oracles en échec
-  attendu, avant work order et réalisation bornée. Décision détaillée :
+  **ADAPT-10c est fusionné :** le manifeste actif publie exactement les sept PNG
+  approuvés avec leurs tailles, SHA-256, viewports, usages et états de page
+  résolus. La référence progressive Expanded existante reste l'unique
+  `primary-layout` ; les créations ajoutent uniquement des autorités
+  `responsive-layout`, `feedback` et `state-reference`. Un oracle compare les
+  sept sources résolues, chemins et empreintes octet par octet et maintient les
+  anciens identifiants et chemins rejetés hors du work order. Le test de
+  publication C5 passe 4/4 sans modifier runtime, contrat API, work order,
+  dépendance ou capture tierce non suivie. Soumaila a approuvé le commit exact
+  `86d682957e4174ae0b02bca4d383119e55c50249`, puis fusionné la PR #154 dans
+  `0fa59c6620944595ba48958a90096601ee6bdcf0` ; les 17 contrôles de PR et la CI
+  post-fusion `36711358347` sont verts. **ADAPT-10d est engagé localement :**
+  onze scénarios Playwright dédiés couvrent géométries Compact/Medium/Expanded,
+  ordre et focus, validation sans POST, confirmation d'abandon, conflit email,
+  mono-vol, succès, resize et reflow. Neuf écarts sont attendus uniquement sur
+  leur signature historique exacte ; mono-vol et succès restent deux succès
+  réels. Le harnais de présentation remplace cinq attentes devenues
+  contradictoires et trois oracles de composant bornent validation, focus email
+  et modalité Expanded. Le passage local donne 11/11 sur la suite dédiée (9
+  attendus, 2 réels), 13/13 sur la présentation (5 attendus, 8 réels), 30/30
+  côté Angular (3 attendus, 27 réels) et 44/44 sur la régression navigateur
+  complète (14 attendus, 30 réels) ; lint et build production sont verts. Aucun
+  runtime, contrat API, work order ou dépendance ne change. Après revue, fusion
+  et CI post-fusion, ADAPT-10e devra recalculer le work order depuis le nouveau
+  `main` avant toute réalisation. Décision détaillée :
   [`c5-adapt10-surface-creation-adaptative-2026-09-29.md`](./c5-adapt10-surface-creation-adaptative-2026-09-29.md),
   ADR-0076 accepté. ADAPT-8d reste indépendant et ouvert. **PRES-AUTH-1 —
   autorités de présentation rejetées :** le 2026-09-30, le porteur produit
