@@ -5,12 +5,12 @@
   "description": "Profil de convention Angular 22. Source unique des choix de code qui changent d'une version majeure à l'autre. Le générateur et l'IA le LISENT ; ils ne le contiennent pas (ADR-0010). Pour Angular 23, créer angular-23.profile.json — ne pas modifier les générateurs.",
   "source_of_truth": {
     "origin": "https://angular.dev/ai/develop-with-ai",
-    "verified_for": "22.0.7",
+    "verified_for": "22.2.0",
     "note": "Copie de travail narrative : conventions/best-practices.md. Le sous-ensemble mécaniquement vérifiable est appliqué par le plugin Angular de tools/check-convention-profile.mjs."
   },
   "version_pin": {
     "source": "package.json → workspaces.catalog['@angular/core']",
-    "must_match": "22.0.x"
+    "must_match": "22.2.x"
   },
   "conventions": {
     "component_model": {

@@ -461,10 +461,12 @@ test('une bibliothèque indépendante ne périme ni la projection initiale ni la
     );
 
     const manifest = JSON.parse(readFileSync(join(root, 'package.json')));
+    const materialVersion = track().packages['@angular/material'];
+    const cdkVersion = track().packages['@angular/cdk'];
     manifest.dependencies['@angular/material'] = 'catalog:';
     manifest.dependencies['@angular/cdk'] = 'catalog:';
-    manifest.workspaces.catalog['@angular/material'] = '22.0.5';
-    manifest.workspaces.catalog['@angular/cdk'] = '22.0.5';
+    manifest.workspaces.catalog['@angular/material'] = materialVersion;
+    manifest.workspaces.catalog['@angular/cdk'] = cdkVersion;
     const finalLock = {
         workspaces: {
             '': {
@@ -475,17 +477,22 @@ test('une bibliothèque indépendante ne périme ni la projection initiale ni la
             },
         },
         catalog: {
-            '@angular/material': '22.0.5',
-            '@angular/cdk': '22.0.5',
+            '@angular/material': materialVersion,
+            '@angular/cdk': cdkVersion,
         },
         packages: {
             '@angular/material': [
-                '@angular/material@22.0.5',
+                `@angular/material@${materialVersion}`,
                 '',
-                { dependencies: { '@angular/cdk': '22.0.5' } },
+                { dependencies: { '@angular/cdk': cdkVersion } },
                 'sha512-material',
             ],
-            '@angular/cdk': ['@angular/cdk@22.0.5', '', {}, 'sha512-cdk'],
+            '@angular/cdk': [
+                `@angular/cdk@${cdkVersion}`,
+                '',
+                {},
+                'sha512-cdk',
+            ],
         },
     };
     writeFileSync(join(root, 'package.json'), `${JSON.stringify(manifest)}\n`);
