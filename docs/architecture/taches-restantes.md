@@ -2445,6 +2445,8 @@ Figma, désormais source partielle différée :
   [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
   ADR-0074 accepté. Dossier approuvé :
   `examples/users-management-proof/presentation/progressive-filter-candidates/`.
+  Le porteur produit a reconfirmé explicitement l'intégralité de ce dossier le
+  2026-09-30, sans changement d'octet ni d'autorité publiée.
   **ADAPT-10 — surface de création adaptative :** la décision produit du
   2026-09-29 remplace le tiroir C5 étroit, pleine hauteur et non modal en
   `expanded` par une tâche de création modale aux trois classes de fenêtre. La
@@ -2458,8 +2460,19 @@ Figma, désormais source partielle différée :
   première erreur sans POST ; un conflit email conserve le brouillon ; un succès
   ferme, rafraîchit exactement une fois et restitue le focus. Aucun runtime,
   work order, contrat API ou composant partagé n'est modifié dans ADAPT-10a.
-  Après revue et fusion viendront références produit, publication, oracles en
-  échec attendu, work order et réalisation bornée. Décision détaillée :
+  **ADAPT-10a est fusionné :** Soumaila a approuvé le commit exact
+  `9057d9f142f160eb66e044b3695c67093a58733d`, fusionné par la PR #145 dans
+  `0d64a41acd24373b0490871597a2e530400f0978` ; les 17 contrôles de PR et la CI
+  post-fusion `36648684833` sont verts. **ADAPT-10b est validé par le porteur
+  produit :** sept références déterministes couvrent les trois géométries,
+  l'état vierge, le clavier compact, la soumission invalide, le conflit email et
+  la soumission en cours. Un second rendu Chromium reproduit leurs empreintes
+  octet par octet. Elles restent `candidate-only`, hors du manifeste actif,
+  jusqu'à leur revue technique et leur publication séparée par ADAPT-10c ; aucun
+  runtime, contrat API, work order ou dépendance n'est modifié. Dossier candidat
+  : `examples/users-management-proof/presentation/adaptive-create-candidates/`.
+  Viendront ensuite publication, oracles en échec attendu, work order et
+  réalisation bornée. Décision détaillée :
   [`c5-adapt10-surface-creation-adaptative-2026-09-29.md`](./c5-adapt10-surface-creation-adaptative-2026-09-29.md),
   ADR-0076 accepté. ADAPT-8d reste indépendant et ouvert. **PRES-AUTH-1 —
   autorités de présentation rejetées :** le 2026-09-30, le porteur produit
@@ -2476,8 +2489,10 @@ Figma, désormais source partielle différée :
   exigeant exactement une source principale, la référence déjà approuvée
   `expanded-progressive-filter-empty` devient `primary-layout` ; aucune image
   rejetée ou nouvelle proposition non approuvée n'est utilisée comme solution de
-  repli. Les nouvelles propositions de création `adaptive-create-candidates/`
-  restent soumises à leur propre revue ADAPT-10b. **ADAPT-9 — chargement
+  repli. Les propositions de création `adaptive-create-candidates/` sont
+  désormais validées par le porteur produit, mais restent sans autorité active
+  tant que leur revue ADAPT-10b et leur publication ADAPT-10c ne sont pas
+  fusionnées. **ADAPT-9 — chargement
   progressif mobile silencieux :** la décision produit du 2026-09-29 retire la
   pagination visible uniquement en fenêtre `compact` et accumule les pages
   normalisées à l'approche de la fin de la pile. Le cas nominal ne montre ni
