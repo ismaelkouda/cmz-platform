@@ -12,6 +12,16 @@ updates:
       day: 'monday'
     open-pull-requests-limit: 10
     groups:
+      # React publie react/react-dom comme une unité de compatibilité : leurs
+      # versions runtime doivent rester strictement identiques. Inclure aussi
+      # les types évite deux PR concurrentes qui rendent chacune le workspace
+      # non installable (incident observé sur les PR #81/#84, 2026-09-30).
+      react:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
       angular:
         patterns:
           - '@angular/*'

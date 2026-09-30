@@ -77,6 +77,11 @@ jobs:
       - name: check:bun-lock-catalog-integrity (miroir catalog du lockfile)
         run: bun run check:bun-lock-catalog-integrity
 
+      # React et react-dom forment une unité de compatibilité stricte. Ce gate
+      # empêche Dependabot (ou un humain) de les faire évoluer séparément.
+      - name: check:dependabot-policy (groupes de mises à jour atomiques)
+        run: bun run check:dependabot-policy
+
       - name: check:weight (poids + plafond lignes, tools/ inclus)
         run: node tools/check-file-weight.mjs --all
 
