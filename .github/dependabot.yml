@@ -5,6 +5,10 @@ updates:
   # `package-ecosystem: bun`. Canary OPS-26 : chaque PR doit modifier le
   # lockfile sans altérer ses sections catalog/catalogs, vérifiées par
   # `check:bun-lock-catalog-integrity` avant toute fusion.
+  # Les alertes et security updates du dépôt sont activées depuis le
+  # 2026-09-30, mais le Dependency Graph GitHub ne référence pas encore Bun :
+  # elles restent une défense additionnelle et non la preuve de réparation des
+  # transitives. `security-overrides-repair.yml` couvre explicitement ce gap.
   - package-ecosystem: 'bun'
     directory: '/'
     schedule:
@@ -26,6 +30,7 @@ updates:
         patterns:
           - '@angular/*'
           - '@angular-devkit/*'
+          - '@schematics/angular'
       nx:
         patterns:
           - 'nx'

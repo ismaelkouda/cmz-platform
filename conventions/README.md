@@ -68,7 +68,7 @@ reflète `platform` + version majeure ; `version_pin` dit où la version est
 
 | Profil | Plateforme | Vérifié pour |
 | --- | --- | --- |
-| [`angular-22.profile.json`](./angular-22.profile.json) | Angular | v22.0.7 |
+| [`angular-22.profile.json`](./angular-22.profile.json) | Angular | v22.2.0 |
 
 Le profil dit _comment_ écrire. Les **archétypes de types de fichier** d'une
 cible — _quoi_ produire par type de fichier — sont un jeu par stack sous

@@ -3708,7 +3708,45 @@ gouvernance, sécurité, licences.
   (confirmé registre npm : deps 23.1.0 → 23.2.0), le dépôt n'a aucun build
   webpack (`@angular/build` esbuild uniquement), donc `@svgr/plugin-svgo` /
   `postcss-svgo` / `svgo` ont entièrement quitté l'arbre (`grep svgo bun.lock` =
-  0, `bun audit` = 0 vuln). Voir OPS-26 (bump nx via lockfile régénéré).
+  0, `bun audit` = 0 vuln). **2026-09-30** : cinq nouveaux avis high Axios
+  (GHSA-c29m-xwm3-cm6r, GHSA-mghh-pgcx-3jjj, GHSA-x97p-jq2g-jp4f,
+  GHSA-3pq3-5fj3-cg6v, GHSA-542g-h47m-68v8) ont invalidé l'override exact
+  1.19.0. Correction durable : alertes + Dependabot Security Updates activés au
+  niveau du dépôt ; override remplacé par `axios@^1.20.0` pour conserver le
+  plancher corrigé tout en autorisant l'auto-mise à jour 1.x du lockfile ; tous
+  les autres overrides de sécurité exacts suivent désormais la même règle de
+  plancher caret dans leur majeure. `check:dependabot-policy` interdit le retour
+  aux pins exacts, vérifie chaque résolution et l'absence de dépendance Axios
+  directe artificielle, puis s'auto-invalide lorsque Nx accepte nativement la
+  version sûre. Le canary local confirme que Bun 1.3.14 ne fournit pas encore
+  `bun audit fix` (la commande n'expose que l'audit). Deuxième limite vérifiée,
+  et non supposée : le Dependency Graph officiel ne liste pas encore Bun et le
+  SBOM GitHub du dépôt ne voit pas Axios dans `bun.lock` ; les Security Updates
+  seules ne garantissent donc pas le déclenchement. Le fallback quotidien
+  `security-overrides-repair.yml` parse l'audit, refuse toute vulnérabilité hors
+  overrides, exécute le même update transitif que Dependabot Bun sans lifecycle
+  scripts, restaure `package.json` octet par octet, ne publie que `bun.lock`,
+  ouvre une PR assignée à Soumaila puis déclenche explicitement la CI complète.
+  Le job de calcul reste en lecture seule ; les droits
+  `contents/pull-requests/ actions: write` n'existent que dans le job de
+  publication après revalidation. Aucun PAT permanent et aucun nouvel ignore
+  d'audit. Le même audit final a détecté `GHSA-ff3f-86qr-9cv3` sur
+  `@angular/router@22.0.7` (DoS SSR, CVSS 8.2, correctif officiel 22.2.0) : la
+  dépendance directe a été traitée séparément par une montée atomique de toute
+  la famille Angular framework/tooling vers 22.2.0 et Material/CDK vers 22.2.1,
+  sans ignore. Les trois pistes Transloco, Material et Tailwind ont été remises
+  en `candidate`, puis requalifiées par leurs vrais oracles contre la nouvelle
+  version ; la dérive réelle du schematic Material (`Material Icons` devenu
+  `Material Symbols Outlined`) a été détectée avant adaptation de la recette.
+  Retour d'exploitation des PR empilées #160/#161 : avec
+  `dismiss_stale_reviews` et `require_last_push_approval`, la personne qui
+  fusionne une PR enfant dans la branche de la PR parente devient l'auteur du
+  dernier push et ne peut plus être son unique approbateur valide. Dans une
+  équipe à deux, l'auteur de la PR parente fusionne donc la PR enfant après sa
+  revue ; le reviewer approuve ensuite la PR parente sur son nouveau HEAD et
+  après la CI. Sinon, un troisième reviewer indépendant est requis. Aucun
+  contournement administrateur de la protection de `main` n'est autorisé.
+  Voir OPS-26 (Dependabot Bun natif + lockfile régénéré).
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
 - **T4-5** — fait, S, P1, alias `Big Tech gap`. Secret scanning pre-push + CI

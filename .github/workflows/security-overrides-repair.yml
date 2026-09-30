@@ -1,0 +1,156 @@
+# Fallback Bun vérifiable pour les dépendances transitives sécurisées par un
+# override racine. GitHub sait mettre à jour bun.lock via Dependabot, mais son
+# Dependency Graph ne référence pas encore Bun : sans alerte, une Security
+# Update transitive n'est pas garantie. Ce workflow ne dépend donc pas de ce
+# signal incomplet.
+
+name: Security overrides — auto-repair
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: security-overrides-auto-repair
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22.22.3'
+  BUN_VERSION: '1.3.14'
+  REPAIR_BRANCH: automation/security-overrides
+
+jobs:
+  repair:
+    name: Audit et réparation confinée
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      repaired: ${{ steps.repair.outputs.repaired }}
+      packages: ${{ steps.repair.outputs.packages }}
+    steps:
+      - name: Ne pas concurrencer une PR de réparation ouverte
+        id: pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count="$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --state open \
+            --head "$REPAIR_BRANCH" \
+            --json number \
+            --jq 'length')"
+          if [ "$count" -gt 0 ]; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+            echo "Une PR de réparation est déjà ouverte ; aucune branche n'est réécrite."
+          else
+            echo "open=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.pending.outputs.open == 'false'
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        if: steps.pending.outputs.open == 'false'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        if: steps.pending.outputs.open == 'false'
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Installation sans lifecycle scripts
+        if: steps.pending.outputs.open == 'false'
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Réparer uniquement les overrides high/critical
+        if: steps.pending.outputs.open == 'false'
+        id: repair
+        run: bun run repair:security-overrides
+
+      - name: Publier le lockfile candidat
+        if: steps.repair.outputs.repaired == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-overrides-lockfile
+          path: bun.lock
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: PR de réparation reviewable
+    needs: repair
+    if: needs.repair.outputs.repaired == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: security-overrides-lockfile
+          path: .
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Revalider le candidat sans lifecycle scripts
+        run: |
+          bun install --frozen-lockfile --ignore-scripts
+          bun run check:bun-lock-catalog-integrity
+          bun run check:dependabot-policy
+          bun run check:dependency-audit-exception
+          bun audit --audit-level=high \
+            --ignore GHSA-w3rx-r6r6-pgpr \
+            --ignore GHSA-5p2g-fcmc-qvqq
+          git diff --check
+          test "$(git diff --name-only)" = "bun.lock"
+
+      - name: Ouvrir la PR puis déclencher explicitement sa CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPAIRED_PACKAGES: ${{ needs.repair.outputs.packages }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$REPAIR_BRANCH"
+          git add bun.lock
+          git commit -m "fix(deps): auto-repair vulnerable security overrides"
+          gh auth setup-git
+          git push --set-upstream origin "$REPAIR_BRANCH"
+
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$REPAIR_BRANCH" \
+            --title "fix(deps): auto-repair vulnerable security overrides" \
+            --body "Réparation automatique confinée de bun.lock pour : $REPAIRED_PACKAGES. package.json est inchangé, aucun lifecycle script de dépendance n'a été exécuté et l'audit high/critical est vert. Une review humaine et la CI complète restent obligatoires."
+          gh pr edit "$REPAIR_BRANCH" \
+            --repo "$GITHUB_REPOSITORY" \
+            --add-assignee soumailakouda \
+            --add-reviewer soumailakouda
+
+          # Les événements créés avec GITHUB_TOKEN ne redéclenchent pas un
+          # workflow pull_request. workflow_dispatch est l'exception native :
+          # les mêmes checks requis sont attachés au SHA de tête de la PR.
+          gh workflow run ci.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$REPAIR_BRANCH"

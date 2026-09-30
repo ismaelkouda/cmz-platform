@@ -32,6 +32,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Le workflow d'auto-réparation crée sa PR avec GITHUB_TOKEN. GitHub ne
+  # redéclenche pas pull_request dans ce cas ; ce dispatch explicite attache
+  # exactement les mêmes checks requis au SHA de la branche automatisée.
+  workflow_dispatch:
 
 # Audit G-8 : un seul run actif par PR / branche — annule le précédent.
 concurrency:
@@ -686,7 +690,8 @@ jobs:
   # `unzipper → fstream → rimraf@2 → glob@7 → minimatch@3` — la vérification
   # d'origine, limitée au seul champ `browser` d'exceljs, n'avait pas vu cette
   # chaîne Node-only). Les 8 corrigés par un bloc `overrides` racine
-  # (`package.json`) forçant `axios@1.19.0`/`brace-expansion@5.0.9`/
+  # (`package.json`) forçant initialement `axios@1.19.0`/
+  # `brace-expansion@5.0.9`/
   # `fast-uri@4.1.2`/`ip-address@10.4.0` dans tout l'arbre — sans les ajouter
   # en dépendance directe (`bun update <pkg>` seul les ajoute à tort en
   # dépendance directe de l'app, testé et annulé avant ce commit). `bun audit
@@ -701,6 +706,16 @@ jobs:
   # a supprimé `@svgr/webpack` de ses dépendances, et le dépôt n'a aucun build
   # webpack — toute la chaîne `@svgr/plugin-svgo`/`postcss-svgo`/`svgo` a quitté
   # l'arbre, `bun audit` le confirme. Détail : taches-restantes T4-2.)
+  # Le 2026-09-30, cinq nouveaux avis high publiés pour axios>=1.16.1<1.20.0
+  # ont invalidé l'override exact 1.19.0. L'override impose désormais la plage
+  # ^1.20.0 : plancher corrigé et mises à jour 1.x futures autorisées dans le
+  # lockfile. `security-overrides-repair.yml` audite chaque jour et ouvre une
+  # PR confinée à bun.lock lorsque l'un de ces overrides redevient vulnérable.
+  # `check:dependabot-policy` refuse
+  # un retour au pin exact/vulnérable et invalide l'override dès que Nx accepte
+  # lui-même la résolution sûre. Le même garde impose des planchers caret à
+  # tous les overrides de sécurité afin d'éviter la répétition de cette classe
+  # d'incident dans une autre dépendance. Aucun de ces cinq GHSA n'est ignoré.
   security-audit:
     name: Dependency audit (bun audit)
     runs-on: ubuntu-latest
