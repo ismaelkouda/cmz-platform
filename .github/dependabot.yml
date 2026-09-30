@@ -30,6 +30,7 @@ updates:
         patterns:
           - '@angular/*'
           - '@angular-devkit/*'
+          - '@schematics/angular'
       nx:
         patterns:
           - 'nx'

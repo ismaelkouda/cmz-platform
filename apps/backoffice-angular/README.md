@@ -4,7 +4,7 @@ Application back-office CMZ, reconstruction de `cmz-backoffice-frontend` en
 Angular 22.
 
 - **Généré par :** `@nx/angular:application` 23.1.0
-- **Angular :** 22.0.7 (via le catalog —
+- **Angular :** 22.2.0 (via le catalog —
   [ADR-0005](../../docs/adr/0005-versions-du-socle.md))
 - **Build :** `@angular/build` (esbuild)
 - **Tests unitaires :** Vitest (`vitest-angular`)

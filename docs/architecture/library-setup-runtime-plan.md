@@ -582,7 +582,7 @@ irréproductible. D'où :
    d'une sortie `--version`).
 
 La collection locale ne suffit pas à garantir l'absence d'installation : mesuré,
-`@angular/material:ng-add` 22.0.5 planifie systématiquement un
+`@angular/material:ng-add` 22.2.1 planifie systématiquement un
 `NodePackageInstallTask`. La recette appelle donc son entrée
 `ng-add-setup-project`, liée à la piste exacte, après l'installation gouvernée.
 Le `PATH` vide empêche en plus toute tâche implicite de résoudre par son nom un

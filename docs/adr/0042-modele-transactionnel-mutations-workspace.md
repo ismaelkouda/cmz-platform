@@ -449,7 +449,7 @@ publie**, au lieu d'attendre qu'une gate de dépôt le découvre.
 **9 bis. Une tâche d'installation implicite échoue en phase d'exécution.** Le
 réseau et le cache y étaient déjà fermés, mais le `PATH` hôte restait transmis
 sur macOS. Cela a masqué un défaut que Docker a révélé :
-`@angular/material:ng-add` 22.0.5 planifie toujours un `NodePackageInstallTask`,
+`@angular/material:ng-add` 22.2.1 planifie toujours un `NodePackageInstallTask`,
 qui trouvait Bun sur l'hôte et échouait seulement dans l'image Linux. Le `PATH`
 est désormais vide dans les deux backends ; les exécutables de confiance (Node,
 Nx, Prettier, moteur de rendu) sont invoqués par chemin absolu. La recette

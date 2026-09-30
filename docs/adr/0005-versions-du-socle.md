@@ -34,13 +34,13 @@ versions de TypeScript font diverger le typage entre packages qui se consomment.
 
 ## Décision
 
-### Angular 22.0.7, la version stable courante
+### Angular 22.2.0, la version stable courante
 
 | Dépendance                              | Version                                | Contrainte d'origine             |
 | --------------------------------------- | -------------------------------------- | -------------------------------- |
-| `@angular/*` (framework)                | 22.0.7                                 | —                                |
-| `@angular/cdk`                          | 22.0.5                                 | dernière publiée                 |
-| `@angular/build`, `cli`, `compiler-cli` | 22.0.7                                 | lockstep avec le framework       |
+| `@angular/*` (framework)                | 22.2.0                                 | —                                |
+| `@angular/cdk`, `@angular/material`     | 22.2.1                                 | dernière publiée                 |
+| `@angular/build`, `cli`, `compiler-cli` | 22.2.0                                 | lockstep avec le framework       |
 | `typescript`                            | 6.0.3                                  | Angular 22 exige `>=6.0 <6.1`    |
 | `rxjs`                                  | 7.8.2                                  | `^6.5.3 \|\| ^7.4.0`             |
 | `zone.js`                               | 0.16.2                                 | `~0.15.0 \|\| ~0.16.0`           |
@@ -131,15 +131,16 @@ qui l'a créé ([ADR-0001](./0001-monorepo-nx-package-based.md)).
 
 ### Points à réévaluer
 
-- Angular 22.1 est en préparation (`22.1.0-next.6`) : rester sur la branche
-  stable, monter par le catalog en une ligne quand elle sortira.
-- Étendre le catalog aux dépendances métier (PrimeNG, NgRx…) quand elles seront
+- Suivre les correctifs Angular 22 par le groupe Dependabot atomique ; une
+  montée framework doit conserver les peers exacts alignés et requalifier les
+  trois pistes de bibliothèques contre la version effective.
+- Étendre le catalog aux dépendances métier quand elles seront réellement
   introduites.
 
 ## Références
 
-- `npm view @angular/core@22.0.7 engines peerDependencies`
-- `npm view @angular/compiler-cli@22.0.7 peerDependencies` →
+- `npm view @angular/core@22.2.0 engines peerDependencies`
+- `npm view @angular/compiler-cli@22.2.0 peerDependencies` →
   `typescript: >=6.0 <6.1`
 - Mécanisme de catalog validé sur bun 1.3.14 (résolution confirmée dans
   `bun.lock`)
