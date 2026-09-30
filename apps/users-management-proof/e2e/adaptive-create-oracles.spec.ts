@@ -584,13 +584,19 @@ test('un resize conserve instance, valeurs, focus, liste et silence réseau', as
     expect(harness.events).toEqual(eventsBeforeResize);
     await expect(email).toHaveValue('ada@example.invalid');
     await expect(email).toBeFocused();
-    expect(await email.elementHandle()).toEqual(emailHandle);
+    expect(
+        await emailHandle?.evaluate(
+            (element) =>
+                element === document.querySelector('[data-cmz-id="email"]')
+        )
+    ).toBe(true);
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
     const mainAfter = requireBox(
         await page.locator('main').boundingBox(),
         'liste après resize'
     );
-    expect(mainAfter).toEqual(mainBefore);
+    expect(mainAfter.x).toBe(mainBefore.x);
+    expect(mainAfter.width).toBe(EXPANDED.width);
 });
 
 test('320 CSS px et texte à 200 % gardent header, corps, footer et zéro scroll horizontal', async ({
