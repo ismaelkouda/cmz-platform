@@ -57,6 +57,95 @@ const pageRealizationEvidenceSchema = JSON.parse(
     )
 );
 
+const adaptiveCreateReferenceRoot =
+    'examples/users-management-proof/presentation/adaptive-create-candidates/';
+const approvedAdaptiveCreateReferences = [
+    {
+        id: 'compact-create-pristine',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${adaptiveCreateReferenceRoot}compact-pristine.proposed.png`,
+        media_type: 'image/png',
+        bytes: 46593,
+        sha256: '3ec2e75492be08658577740c9a6e6adf74dd5475f66f4e948652a0704c81941a',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 390, height: 844, pixel_ratio: 1 },
+    },
+    {
+        id: 'compact-create-keyboard',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${adaptiveCreateReferenceRoot}compact-keyboard.proposed.png`,
+        media_type: 'image/png',
+        bytes: 34599,
+        sha256: '8d7da6b46927bf533a6e3ada10b3762e29e9015d4cc242ccb6bb078e58905890',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 390, height: 844, pixel_ratio: 1 },
+    },
+    {
+        id: 'medium-create-pristine',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${adaptiveCreateReferenceRoot}medium-pristine.proposed.png`,
+        media_type: 'image/png',
+        bytes: 75546,
+        sha256: '2618b28e2452e61777d14239fd7a1ac565d271eef3ed00b3b097d6490c271b1f',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1024, height: 768, pixel_ratio: 1 },
+    },
+    {
+        id: 'medium-create-invalid',
+        source_kind: 'wireframe',
+        purpose: 'feedback',
+        path: `${adaptiveCreateReferenceRoot}medium-invalid.proposed.png`,
+        media_type: 'image/png',
+        bytes: 82420,
+        sha256: '4121e8974e8466f407f2073bd877f0532c92d7f7fa642a87bf111b532b794faf',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1024, height: 768, pixel_ratio: 1 },
+    },
+    {
+        id: 'expanded-create-pristine',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${adaptiveCreateReferenceRoot}expanded-pristine.proposed.png`,
+        media_type: 'image/png',
+        bytes: 88604,
+        sha256: '6d8e64a2150a809a73b386317f60d9ccace0ac3ec00641df76b8e46a92c34f73',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
+    },
+    {
+        id: 'expanded-create-email-conflict',
+        source_kind: 'wireframe',
+        purpose: 'state-reference',
+        path: `${adaptiveCreateReferenceRoot}expanded-email-conflict.proposed.png`,
+        media_type: 'image/png',
+        bytes: 96344,
+        sha256: 'eb2b85e4f5ee17415a9ef60ff7faef2bc4edd9eba39c5d7c61baf888b52daa98',
+        trust: 'untrusted-content',
+        state_ids: ['create-failed'],
+        viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
+    },
+    {
+        id: 'expanded-create-submitting',
+        source_kind: 'wireframe',
+        purpose: 'feedback',
+        path: `${adaptiveCreateReferenceRoot}expanded-submitting.proposed.png`,
+        media_type: 'image/png',
+        bytes: 89468,
+        sha256: 'e696f76a47a41bb3564029bdf7deb766f22095a3c4c46c087d2a968aba6b6b08',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
+    },
+];
+
 test('publie le shell C5 canonique sans confondre placeholder et réalisation bornée', async () => {
     const designPlan = await planApplicationDesignPublication({
         workspaceRoot: repositoryRoot,
@@ -357,6 +446,14 @@ test('publie une composition Angular stable et prépare un work order raccordé'
                 state_ids: ['ready'],
                 viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
             },
+            ...approvedAdaptiveCreateReferences.map(
+                ({ id, purpose, state_ids, viewport }) => ({
+                    id,
+                    purpose,
+                    state_ids,
+                    viewport,
+                })
+            ),
         ]
     );
     assert.deepEqual(
@@ -507,6 +604,13 @@ test('publie une composition Angular stable et prépare un work order raccordé'
                 viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
             },
         ]
+    );
+    assert.deepEqual(
+        realization.presentation_evidence.sources.filter(({ path }) =>
+            path.startsWith(adaptiveCreateReferenceRoot)
+        ),
+        approvedAdaptiveCreateReferences,
+        'les sept références de création approuvées doivent être publiées octet par octet'
     );
     assert.equal(
         realization.presentation_evidence.sources.some(({ id }) =>
