@@ -14,16 +14,18 @@ npx license-checker-rseidelsohn --summary
 
 `license-checker-rseidelsohn` lit le champ `license` déclaré par chaque
 paquet résolu dans `node_modules` (pas une supposition à partir du nom du
-paquet). Rejoué le 2026-08-03.
+paquet). Rejoué le 2026-09-30 après la montée Angular 22.2.
 
 ## Dépendances de production (ce qui est réellement livré au navigateur)
 
-**13 paquets, tous à licence permissive — aucune licence copyleft (GPL/AGPL/
+**15 paquets tiers, tous à licence permissive — aucune licence copyleft (GPL/AGPL/
 LGPL/MPL) détectée :**
 
 | Paquet | Version | Licence | Obligation pratique |
 | --- | --- | --- | --- |
-| `@angular/common`, `@angular/compiler`, `@angular/core`, `@angular/forms`, `@angular/platform-browser`, `@angular/router` | 22.0.7 | MIT | Conserver la notice de copyright |
+| `@angular/common`, `@angular/compiler`, `@angular/core`, `@angular/forms`, `@angular/platform-browser`, `@angular/router` | 22.2.0 | MIT | Conserver la notice de copyright |
+| `@angular/cdk`, `@angular/material` | 22.2.1 | MIT | Conserver la notice de copyright |
+| `@jsverse/transloco` | 8.4.0 | MIT | Conserver la notice de copyright |
 | `date-fns` | 4.4.0 | MIT | Conserver la notice de copyright |
 | `exceljs` | 4.4.0 | MIT | Conserver la notice de copyright |
 | `i18next` | 26.3.6 | MIT | Conserver la notice de copyright |
@@ -42,7 +44,7 @@ un import du paquet npm — ce projet ne dépend pas de `sweetalert2`.
 ## Ensemble du dépôt (production + outillage de build)
 
 **Correction (2026-08-11, T6-2)** : le compte ci-dessous (rejoué le
-2026-08-03) est corrigé — `axe-core` (MPL-2.0, devDependency ajoutée le
+2026-09-30) est corrigé — `axe-core` (MPL-2.0, devDependency ajoutée le
 2026-08-04, gate a11y T12-8) manquait, la relecture manuelle n'ayant jamais
 été rejouée depuis son ajout. C'est exactement la dérive que ce document
 annonçait lui-même comme possible (« pas de garantie de fraîcheur
@@ -50,9 +52,10 @@ automatique », section précédente) — corrigée en l'outillant (`check:
 licenses`, ci-dessous), pas seulement en mettant à jour le chiffre une fois
 de plus.
 
-54 paquets résolus au total : 43 MIT, 5 Apache-2.0, 1 BSD-2-Clause, 1
-BSD-3-Clause, 1 ISC, 1 0BSD, 1 **MPL-2.0** (`axe-core@4.12.1`), 1
-`UNLICENSED` (ce dépôt). Aucune licence copyleft **côté production** ; une
+92 paquets résolus au total : 77 MIT, 6 Apache-2.0, 1 BSD-2-Clause, 1
+BSD-3-Clause, 3 ISC, 1 0BSD, 1 Unlicense, 1 **MPL-2.0**
+(`axe-core@4.12.1`), 1 `UNLICENSED` (ce dépôt). Aucune licence copyleft
+**côté production** ; une
 seule licence copyleft faible (MPL-2.0, fichier par fichier) côté
 outillage, jamais bundlée dans le livrable navigateur — voir §
 « Exception documentée » ci-dessous.

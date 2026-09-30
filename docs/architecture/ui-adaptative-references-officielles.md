@@ -151,8 +151,8 @@ focus et continuité restent requis avant toute baseline visuelle.
 
 ## 7. Règles d'implémentation Angular
 
-Le workspace courant aligne Angular `22.0.7`, Angular Material `22.0.5` et CDK
-`22.0.5` dans son catalogue. Toute réalisation doit consulter la documentation
+Le workspace courant aligne Angular `22.2.0`, Angular Material `22.2.1` et CDK
+`22.2.1` dans son catalogue. Toute réalisation doit consulter la documentation
 de cette version effective plutôt qu'un exemple historique trouvé sur le Web.
 
 ### 7.1 CSS avant JavaScript

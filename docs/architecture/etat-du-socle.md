@@ -19,7 +19,7 @@ consulter, l'historique Git fait foi.
 ## Contenu du dépôt
 
 ```
-apps/backoffice-angular   application Angular 22.0.7 — compilante, routes câblées
+apps/backoffice-angular   application Angular 22.2.0 — compilante, routes câblées
 libs/core                 configuration runtime & tokens d'injection (@cmz/core)
 libs/shared               Kernel transverse (@cmz/shared-{domain,data,application,ui,constants})
 libs/<module>             packages découplés (@cmz/<module>-{domain,data,application,ui})
@@ -40,7 +40,7 @@ d'imports, `package.json`/`project.json`/paths TS. Voir son
 
 ## Application Angular
 
-`apps/backoffice-angular` (`@nx/angular` 23.1.0, Angular 22.0.7, esbuild,
+`apps/backoffice-angular` (`@nx/angular` 23.1.0, Angular 22.2.0, esbuild,
 Vitest). Build production : `bunx nx run backoffice-angular:build:production`.
 
 <!-- BEGIN:GENERATED:bundle-metrics -->
@@ -60,7 +60,7 @@ Détails et notes d'intégration :
 | Gestionnaire de paquets | bun 1.3.14                        | [ADR-0002](../adr/0002-bun-package-manager.md)                 |
 | Structure               | `apps/` + `libs/`, scope `@cmz/*` | [ADR-0003](../adr/0003-nommage-et-structure.md)                |
 | Graphe de dépendances   | Déclaré en `workspace:*`          | [ADR-0004](../adr/0004-graphe-de-dependances-declarees.md)     |
-| Framework               | Angular 22.0.7                    | [ADR-0005](../adr/0005-versions-du-socle.md)                   |
+| Framework               | Angular 22.2.0                    | [ADR-0005](../adr/0005-versions-du-socle.md)                   |
 | Versions                | Catalog bun centralisé            | [ADR-0005](../adr/0005-versions-du-socle.md)                   |
 | Collaboration           | Conventional Commits, hooks       | [ADR-0006](../adr/0006-conventions-de-collaboration.md)        |
 | Configuration           | Injectée à l'exécution            | [ADR-0007](../adr/0007-configuration-runtime.md)               |
@@ -74,12 +74,12 @@ redéclare jamais.
 
 | Catalog    | Contenu                                 | Version |
 | ---------- | --------------------------------------- | ------- |
-| par défaut | `@angular/*` (framework)                | 22.0.7  |
-| par défaut | `@angular/cdk`                          | 22.0.5  |
+| par défaut | `@angular/*` (framework)                | 22.2.0  |
+| par défaut | `@angular/cdk`                          | 22.2.1  |
 | par défaut | `rxjs`                                  | 7.8.2   |
 | par défaut | `zone.js`                               | 0.16.2  |
 | par défaut | `tslib`                                 | 2.8.1   |
-| `tooling`  | `@angular/build`, `cli`, `compiler-cli` | 22.0.7  |
+| `tooling`  | `@angular/build`, `cli`, `compiler-cli` | 22.2.0  |
 | `tooling`  | `typescript`                            | 6.0.3   |
 
 Usage dans un package :

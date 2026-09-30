@@ -3730,7 +3730,15 @@ gouvernance, sécurité, licences.
   Le job de calcul reste en lecture seule ; les droits
   `contents/pull-requests/ actions: write` n'existent que dans le job de
   publication après revalidation. Aucun PAT permanent et aucun nouvel ignore
-  d'audit. Voir OPS-26 (Dependabot Bun natif + lockfile régénéré).
+  d'audit. Le même audit final a détecté `GHSA-ff3f-86qr-9cv3` sur
+  `@angular/router@22.0.7` (DoS SSR, CVSS 8.2, correctif officiel 22.2.0) : la
+  dépendance directe a été traitée séparément par une montée atomique de toute
+  la famille Angular framework/tooling vers 22.2.0 et Material/CDK vers 22.2.1,
+  sans ignore. Les trois pistes Transloco, Material et Tailwind ont été remises
+  en `candidate`, puis requalifiées par leurs vrais oracles contre la nouvelle
+  version ; la dérive réelle du schematic Material (`Material Icons` devenu
+  `Material Symbols Outlined`) a été détectée avant adaptation de la recette.
+  Voir OPS-26 (Dependabot Bun natif + lockfile régénéré).
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
 - **T4-5** — fait, S, P1, alias `Big Tech gap`. Secret scanning pre-push + CI

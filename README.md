@@ -32,7 +32,7 @@ plateforme.
 | Gestionnaire de paquets    | bun 1.3.x (catalog centralisé)        | [ADR-0002](./docs/adr/0002-bun-package-manager.md)                 |
 | Structure & Scope          | `apps/` + `libs/`, scope `@cmz/*`     | [ADR-0003](./docs/adr/0003-nommage-et-structure.md)                |
 | Dépendances entre packages | Déclarées en `workspace:*`            | [ADR-0004](./docs/adr/0004-graphe-de-dependances-declarees.md)     |
-| Framework & Versions       | Angular 22.0.7, catalog bun           | [ADR-0005](./docs/adr/0005-versions-du-socle.md)                   |
+| Framework & Versions       | Angular 22.2.0, catalog bun           | [ADR-0005](./docs/adr/0005-versions-du-socle.md)                   |
 | Architecture & Patterns    | SEOS (Software Architecture Compiler) | [ADR-0009](./docs/adr/0009-reconstruction-pilotee-par-patterns.md) |
 | Méthode d'exécution IA     | Closed MDE + LLM Oracle Loop          | [LLM_CONTEXT.md](./LLM_CONTEXT.md)                                 |
 

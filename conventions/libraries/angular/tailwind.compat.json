@@ -18,21 +18,21 @@
       },
       "dependency_section": "devDependencies",
       "catalog": "default",
-      "reason": "Piste initiale Tailwind 4 ; passe en verified après règle CSS compilée.",
+      "reason": "Piste Tailwind 4 ; vérification complète requise pour chaque nouvelle version effective du framework.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "a93df8bf5453200b6f19d61d4505095c2a8ed058",
-        "source_context_sha256": "d32f61e76c66706621bd7cb4e27fbbc8f8603a7ef741b269b526b77a63017958",
+        "commit": "94f409e2641bd9170b379e21b4b81b40f30cf2ec",
+        "source_context_sha256": "b21259a0d78260e90ad73a448a48757fc6c9936e90d316da3700087cdb3e798a",
         "app": "library-qualification-angular",
-        "plan_id": "library-plan:edcfdcd1c092cab4a0cca4e8eca3c5f000516b467b2997551d0a1ad744bc05a6",
+        "plan_id": "library-plan:875359645178788704e6a43706256b29fcc3d9e88ff213162b5651ad5c6fd862",
         "change_set_id": "changes:92cc7e17c2deda40e0fac8c3f22877c17c5c37fd5beda1400e57411936bd6616",
         "app_tree_sha256": "e258093c3fe1c4ded44ed01700b0f91e91622d23046bc0bf1b1219c9dab2afb3",
-        "track_sha256": "3981808faf08c915f19f81f10c72f84c674323e40a2a83076f2a1b2c4d96923e",
+        "track_sha256": "c0f7997ce7f4bd97f9b872e7c7eb55ed2fc073f16531690f53b30784a68b2e78",
         "tested_versions": {
           "node": "22.22.3",
           "bun": "1.3.14",
           "nx": "23.2.1",
-          "framework": "22.0.7",
+          "framework": "22.2.0",
           "packages": {
             "@tailwindcss/postcss": "4.1.13",
             "tailwindcss": "4.1.13"
@@ -40,7 +40,7 @@
         },
         "dependency_state_sha256": {
           "initial": "eb898c21874cb166ccbf5a07ea260b02c31f275e6b6b9368eefdfdce015741e8",
-          "final": "52311da3e604a10eda3065e4a7664d8566514bf29dd63f58dce92734c1cd4142"
+          "final": "075be2cd8082e583bd05eee2ae2cc2c8e23b5bdb78ed111c4029470ac44a0cca"
         },
         "proofs": [
           "material-tailwind-cascade-order",
@@ -101,7 +101,7 @@
             "tools/scaffold-tailwind.mjs": "54db36505b58d33a6330d7f8ada9dc149076f1305d2aa54d71bd1ad03ead96fb"
           }
         },
-        "evidence_sha256": "017a44d48f3f6e9cd92d575eaa377ca21147c7f060c6fa9cf9271d56ed6da595"
+        "evidence_sha256": "f6fe48bba8cbfe54dcad6b6ba697811fc49868121be70ecf7518a70c2d5948f6"
       }
     }
   ]
