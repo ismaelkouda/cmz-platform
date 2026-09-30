@@ -1,10 +1,17 @@
 # C5 ADAPT-4 — proposition de composition adaptative
 
-- **Statut :** Approved — décision produit, revue et fusion de la PR #124
-- **Autorité :** `presentation-only` après publication par ADAPT-4b
+- **Statut :** historique — rejeté comme référence courante le 2026-09-30
+- **Autorité :** `historical-only`, absente du manifeste actif après PRES-AUTH-1
 - **Page :** `page_6666666666666666`
 - **Route :** `/settings-security/users`
 - **Date de production :** 2026-09-28
+
+> **Correction d'autorité du 2026-09-30 :** le porteur produit rejette
+> explicitement l'ensemble du dossier `adaptive-candidates/` comme référence
+> courante. L'approbation et les empreintes de 2026-09-28 restent ci-dessous
+> uniquement comme trace historique. Aucun fichier de ce dossier ne peut guider
+> un nouveau work order ou une réalisation. PRES-AUTH-1 retire du manifeste le
+> dernier identifiant encore actif, `compact-ready-adaptive`.
 
 ## 1. Objet et frontière du lot
 

@@ -7,38 +7,6 @@
   "authority": "presentation-only",
   "sources": [
     {
-      "id": "compact-ready-adaptive",
-      "source_kind": "wireframe",
-      "purpose": "primary-layout",
-      "snapshot_uri": "examples/users-management-proof/presentation/adaptive-candidates/compact-ready.proposed.png",
-      "media_type": "image/png",
-      "bytes": 48279,
-      "sha256": "18a08587a9ef143540287d273ae89ea55c4b3f27ec95b1d5486e3dec3c843b07",
-      "trust": "untrusted-content",
-      "state_ids": ["ready"],
-      "viewport": {
-        "width": 390,
-        "height": 844,
-        "pixel_ratio": 1
-      }
-    },
-    {
-      "id": "mobile-create-error",
-      "source_kind": "wireframe",
-      "purpose": "state-reference",
-      "snapshot_uri": "examples/users-management-proof/presentation/mobile-create-error.proposed.png",
-      "media_type": "image/png",
-      "bytes": 34485,
-      "sha256": "34715ffd9b7de4781e8bc89469ea27d25884ccaf9892d9690513e57331db4fc1",
-      "trust": "untrusted-content",
-      "state_ids": ["create-failed"],
-      "viewport": {
-        "width": 390,
-        "height": 844,
-        "pixel_ratio": 1
-      }
-    },
-    {
       "id": "adaptive-placement-audit",
       "source_kind": "design-brief",
       "purpose": "responsive-layout",
@@ -49,38 +17,6 @@
       "trust": "untrusted-content",
       "state_ids": [],
       "viewport": null
-    },
-    {
-      "id": "compact-filter-summary",
-      "source_kind": "wireframe",
-      "purpose": "responsive-layout",
-      "snapshot_uri": "examples/users-management-proof/presentation/filter-candidates/compact-filter-list.proposed.png",
-      "media_type": "image/png",
-      "bytes": 34192,
-      "sha256": "6dc0b706dd0fcf2526d489a0ce63533a60de4ad1f70ea946d01c27a990753e44",
-      "trust": "untrusted-content",
-      "state_ids": ["ready"],
-      "viewport": {
-        "width": 390,
-        "height": 844,
-        "pixel_ratio": 1
-      }
-    },
-    {
-      "id": "compact-filter-detail",
-      "source_kind": "wireframe",
-      "purpose": "responsive-layout",
-      "snapshot_uri": "examples/users-management-proof/presentation/filter-candidates/compact-filter-detail.proposed.png",
-      "media_type": "image/png",
-      "bytes": 32034,
-      "sha256": "7d8bf42fa6c0a828e77c9b60f7da5cc6d33140dbffb7d7b9ffa8a22340049719",
-      "trust": "untrusted-content",
-      "state_ids": ["ready"],
-      "viewport": {
-        "width": 390,
-        "height": 844,
-        "pixel_ratio": 1
-      }
     },
     {
       "id": "progressive-filter-brief",
@@ -145,7 +81,7 @@
     {
       "id": "expanded-progressive-filter-empty",
       "source_kind": "wireframe",
-      "purpose": "responsive-layout",
+      "purpose": "primary-layout",
       "snapshot_uri": "examples/users-management-proof/presentation/progressive-filter-candidates/expanded-empty.proposed.png",
       "media_type": "image/png",
       "bytes": 68000,

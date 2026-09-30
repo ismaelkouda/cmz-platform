@@ -310,34 +310,10 @@ test('publie une composition Angular stable et prépare un work order raccordé'
         ),
         [
             {
-                id: 'compact-ready-adaptive',
-                purpose: 'primary-layout',
-                state_ids: ['ready'],
-                viewport: { width: 390, height: 844, pixel_ratio: 1 },
-            },
-            {
-                id: 'mobile-create-error',
-                purpose: 'state-reference',
-                state_ids: ['create-failed'],
-                viewport: { width: 390, height: 844, pixel_ratio: 1 },
-            },
-            {
                 id: 'adaptive-placement-audit',
                 purpose: 'responsive-layout',
                 state_ids: [],
                 viewport: null,
-            },
-            {
-                id: 'compact-filter-summary',
-                purpose: 'responsive-layout',
-                state_ids: ['ready'],
-                viewport: { width: 390, height: 844, pixel_ratio: 1 },
-            },
-            {
-                id: 'compact-filter-detail',
-                purpose: 'responsive-layout',
-                state_ids: ['ready'],
-                viewport: { width: 390, height: 844, pixel_ratio: 1 },
             },
             {
                 id: 'progressive-filter-brief',
@@ -365,7 +341,7 @@ test('publie une composition Angular stable et prépare un work order raccordé'
             },
             {
                 id: 'expanded-progressive-filter-empty',
-                purpose: 'responsive-layout',
+                purpose: 'primary-layout',
                 state_ids: ['ready'],
                 viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
             },
@@ -447,30 +423,6 @@ test('publie une composition Angular stable et prépare un work order raccordé'
             ),
         [
             {
-                id: 'compact-filter-summary',
-                source_kind: 'wireframe',
-                purpose: 'responsive-layout',
-                path: 'examples/users-management-proof/presentation/filter-candidates/compact-filter-list.proposed.png',
-                media_type: 'image/png',
-                bytes: 34192,
-                sha256: '6dc0b706dd0fcf2526d489a0ce63533a60de4ad1f70ea946d01c27a990753e44',
-                trust: 'untrusted-content',
-                state_ids: ['ready'],
-                viewport: { width: 390, height: 844, pixel_ratio: 1 },
-            },
-            {
-                id: 'compact-filter-detail',
-                source_kind: 'wireframe',
-                purpose: 'responsive-layout',
-                path: 'examples/users-management-proof/presentation/filter-candidates/compact-filter-detail.proposed.png',
-                media_type: 'image/png',
-                bytes: 32034,
-                sha256: '7d8bf42fa6c0a828e77c9b60f7da5cc6d33140dbffb7d7b9ffa8a22340049719',
-                trust: 'untrusted-content',
-                state_ids: ['ready'],
-                viewport: { width: 390, height: 844, pixel_ratio: 1 },
-            },
-            {
                 id: 'progressive-filter-brief',
                 source_kind: 'design-brief',
                 purpose: 'responsive-layout',
@@ -521,7 +473,7 @@ test('publie une composition Angular stable et prépare un work order raccordé'
             {
                 id: 'expanded-progressive-filter-empty',
                 source_kind: 'wireframe',
-                purpose: 'responsive-layout',
+                purpose: 'primary-layout',
                 path: 'examples/users-management-proof/presentation/progressive-filter-candidates/expanded-empty.proposed.png',
                 media_type: 'image/png',
                 bytes: 68000,
@@ -562,8 +514,12 @@ test('publie une composition Angular stable et prépare un work order raccordé'
                 'desktop-ready',
                 'desktop-create-error',
                 'mobile-ready',
+                'mobile-create-error',
+                'compact-ready-adaptive',
                 'medium-create-adaptive',
                 'expanded-create-adaptive',
+                'compact-filter-summary',
+                'compact-filter-detail',
                 'adaptive-filter-brief',
                 'medium-filters-adaptive',
                 'expanded-filters-adaptive',
@@ -571,5 +527,25 @@ test('publie une composition Angular stable et prépare un work order raccordé'
         ),
         false,
         'les références remplacées ne doivent plus guider la réalisation'
+    );
+    const rejectedPresentationRoots = [
+        'examples/users-management-proof/presentation/adaptive-candidates/',
+        'examples/users-management-proof/presentation/filter-candidates/',
+    ];
+    const rejectedPresentationFiles = new Set([
+        'examples/users-management-proof/presentation/desktop-create-error.proposed.png',
+        'examples/users-management-proof/presentation/desktop-ready.proposed.png',
+        'examples/users-management-proof/presentation/mobile-create-error.proposed.png',
+        'examples/users-management-proof/presentation/mobile-ready.proposed.png',
+    ]);
+    assert.equal(
+        realization.presentation_evidence.sources.some(
+            ({ path }) =>
+                rejectedPresentationRoots.some((root) =>
+                    path.startsWith(root)
+                ) || rejectedPresentationFiles.has(path)
+        ),
+        false,
+        'les dossiers et fichiers explicitement rejetés ne doivent pas revenir sous un autre identifiant'
     );
 });
