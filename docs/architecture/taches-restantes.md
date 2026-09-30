@@ -3738,6 +3738,14 @@ gouvernance, sécurité, licences.
   en `candidate`, puis requalifiées par leurs vrais oracles contre la nouvelle
   version ; la dérive réelle du schematic Material (`Material Icons` devenu
   `Material Symbols Outlined`) a été détectée avant adaptation de la recette.
+  Retour d'exploitation des PR empilées #160/#161 : avec
+  `dismiss_stale_reviews` et `require_last_push_approval`, la personne qui
+  fusionne une PR enfant dans la branche de la PR parente devient l'auteur du
+  dernier push et ne peut plus être son unique approbateur valide. Dans une
+  équipe à deux, l'auteur de la PR parente fusionne donc la PR enfant après sa
+  revue ; le reviewer approuve ensuite la PR parente sur son nouveau HEAD et
+  après la CI. Sinon, un troisième reviewer indépendant est requis. Aucun
+  contournement administrateur de la protection de `main` n'est autorisé.
   Voir OPS-26 (Dependabot Bun natif + lockfile régénéré).
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
