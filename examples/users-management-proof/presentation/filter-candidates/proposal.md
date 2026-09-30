@@ -1,12 +1,21 @@
 # C5 ADAPT-6b — proposition visuelle des filtres adaptatifs
 
-- **Statut :** Approved — décision produit, revue et fusion de la PR #130
-- **Autorité :** `presentation-only` après publication par ADAPT-6c
+- **Statut :** historique — rejeté comme référence courante le 2026-09-30
+- **Autorité :** `historical-only`, absente du manifeste actif après PRES-AUTH-1
 - **Page :** `page_6666666666666666`
 - **Route :** `/settings-security/users`
 - **Date de production :** 2026-09-28
 - **Décision source :**
   [ADR-0073](../../../../docs/adr/0073-filtrage-adaptatif-par-panneau-unique.md)
+
+> **Correction d'autorité du 2026-09-30 :** le porteur produit rejette
+> explicitement l'ensemble du dossier `filter-candidates/` comme référence
+> courante. L'approbation et les empreintes de 2026-09-28 restent ci-dessous
+> uniquement comme trace historique. Aucun fichier de ce dossier ne peut guider
+> un nouveau work order ou une réalisation. PRES-AUTH-1 retire du manifeste les
+> identifiants `compact-filter-summary` et `compact-filter-detail`. Le dossier
+> distinct `progressive-filter-candidates/` n'est pas concerné par cette
+> correction.
 
 ## 1. Objet et frontière
 

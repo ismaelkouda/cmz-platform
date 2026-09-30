@@ -2461,7 +2461,23 @@ Figma, désormais source partielle différée :
   Après revue et fusion viendront références produit, publication, oracles en
   échec attendu, work order et réalisation bornée. Décision détaillée :
   [`c5-adapt10-surface-creation-adaptative-2026-09-29.md`](./c5-adapt10-surface-creation-adaptative-2026-09-29.md),
-  ADR-0076 accepté. ADAPT-8d reste indépendant et ouvert. **ADAPT-9 — chargement
+  ADR-0076 accepté. ADAPT-8d reste indépendant et ouvert. **PRES-AUTH-1 —
+  autorités de présentation rejetées :** le 2026-09-30, le porteur produit
+  rejette explicitement comme références courantes les dossiers
+  `adaptive-candidates/` et `filter-candidates/`, ainsi que les quatre PNG
+  racine `desktop-create-error`, `desktop-ready`, `mobile-create-error` et
+  `mobile-ready`. Les fichiers restent versionnés comme historique, mais le
+  manifeste retire les quatre dernières sources encore actives qui en
+  provenaient : `compact-ready-adaptive`, `mobile-create-error`,
+  `compact-filter-summary` et `compact-filter-detail`. Un oracle refuse aussi
+  tout retour de ces chemins sous un nouvel identifiant. Cette correction
+  n'approuve aucun nouvel octet, ne touche pas au runtime et ne retire pas
+  `progressive-filter-candidates/`. Pour conserver l'invariant du manifeste
+  exigeant exactement une source principale, la référence déjà approuvée
+  `expanded-progressive-filter-empty` devient `primary-layout` ; aucune image
+  rejetée ou nouvelle proposition non approuvée n'est utilisée comme solution de
+  repli. Les nouvelles propositions de création `adaptive-create-candidates/`
+  restent soumises à leur propre revue ADAPT-10b. **ADAPT-9 — chargement
   progressif mobile silencieux :** la décision produit du 2026-09-29 retire la
   pagination visible uniquement en fenêtre `compact` et accumule les pages
   normalisées à l'approche de la fin de la pile. Le cas nominal ne montre ni
