@@ -33,63 +33,40 @@ import {
     PageComposition,
     type PageActionPermissionPort,
 } from '../../generated/page_6666666666666666/angular/src';
-import type {
-    ListUsersPage,
-    UserListItem,
-} from '../../generated/page_6666666666666666/angular/src/nodes/users-list/models';
+import type { UserListItem } from '../../generated/page_6666666666666666/angular/src/nodes/users-list/models';
 import { APP_ACCESS_DECISION } from '../../access.guard';
-
-type SearchModel = { search: string };
 type SecondaryFiltersModel = { profile: string; role: string; status: string };
-
 type SecondaryFilterKey = keyof SecondaryFiltersModel;
-
 interface AppliedFilterItem {
     key: SecondaryFilterKey;
     label: string;
     value: string;
 }
-
-interface CreateUserModel {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    profileId: string;
-}
-
-const EMPTY_SEARCH: SearchModel = {
+const EMPTY_SEARCH = {
     search: '',
 };
-
 const EMPTY_FILTERS: SecondaryFiltersModel = {
     profile: '',
     role: '',
     status: '',
 };
-
-const EMPTY_USER: CreateUserModel = {
+const EMPTY_USER = {
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     profileId: '',
 };
-
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export const PAGE_COMPACT_MEDIA_QUERY = '(max-width: 800px)';
 export const PAGE_EXPANDED_MEDIA_QUERY =
     '(min-width: 1200px) and (min-height: 800px)';
-
 type PageLayout = 'compact' | 'medium' | 'expanded';
-
 interface MobilePageRequest {
     readonly attempt: number;
     readonly generation: number;
     readonly pageNumber: number;
 }
-
 interface MobileProjection {
     readonly announcement: string;
     readonly failedRequestKey?: string;
@@ -99,15 +76,6 @@ interface MobileProjection {
     readonly settledRequestKey?: string;
     readonly totalItems: number;
 }
-
-interface MobileProjectionSource {
-    readonly generation: number;
-    readonly page: ListUsersPage | undefined;
-    readonly request: MobilePageRequest | null;
-    readonly state:
-        'idle' | 'loading' | 'success' | 'empty' | 'error' | 'reloading';
-}
-
 const EMPTY_MOBILE_PROJECTION: MobileProjection = {
     announcement: '',
     generation: 0,
@@ -115,11 +83,9 @@ const EMPTY_MOBILE_PROJECTION: MobileProjection = {
     pages: new Map(),
     totalItems: 0,
 };
-
 function mobileRequestKey(request: MobilePageRequest): string {
     return `${request.generation}:${request.pageNumber}:${request.attempt}`;
 }
-
 function flattenMobilePages(
     pages: ReadonlyMap<number, readonly UserListItem[]>
 ): readonly UserListItem[] {
@@ -134,7 +100,6 @@ function flattenMobilePages(
     }
     return result;
 }
-
 function permissionPortFactory(): PageActionPermissionPort {
     const decision = inject(APP_ACCESS_DECISION, { optional: true });
     return {
@@ -150,14 +115,8 @@ export const PAGE_PERMISSION_PROVIDER: Provider = {
 
 function messageFrom(error: unknown): string {
     if (error instanceof Error && error.message.trim()) return error.message;
-    if (
-        error &&
-        typeof error === 'object' &&
-        'message' in error &&
-        typeof error.message === 'string'
-    ) {
-        return error.message;
-    }
+    const message = (error as { message?: unknown } | null)?.message;
+    if (typeof message === 'string' && message.trim()) return message;
     return 'Une erreur inattendue est survenue.';
 }
 
@@ -175,8 +134,8 @@ export class PageComponent {
     private readonly injector = inject(Injector);
     private readonly createButton =
         viewChild<ElementRef<HTMLButtonElement>>('createButton');
-    private readonly firstNameInput =
-        viewChild<ElementRef<HTMLInputElement>>('firstNameInput');
+    private readonly lastNameInput =
+        viewChild<ElementRef<HTMLInputElement>>('lastNameInput');
     private readonly filterTrigger =
         viewChild<ElementRef<HTMLButtonElement>>('filterTrigger');
     private readonly filterPanel =
@@ -200,7 +159,7 @@ export class PageComponent {
         { initialValue: 'medium' as PageLayout }
     );
 
-    protected readonly searchModel = signal<SearchModel>({ ...EMPTY_SEARCH });
+    protected readonly searchModel = signal({ ...EMPTY_SEARCH });
     protected readonly searchForm = form(this.searchModel);
     protected readonly appliedFilters = signal<SecondaryFiltersModel>({
         ...EMPTY_FILTERS,
@@ -266,14 +225,14 @@ export class PageComponent {
             this.appliedFilterItems().length -
             this.visibleAppliedFilters().length
     );
-    protected readonly createModel = signal<CreateUserModel>({ ...EMPTY_USER });
+    protected readonly createModel = signal({ ...EMPTY_USER });
     protected readonly isCreateOpen = signal(false);
-    protected readonly isModalCreate = computed(
-        () => this.isCreateOpen() && this.layout() !== 'expanded'
-    );
+    protected readonly isDiscardConfirmOpen = signal(false);
+    protected readonly invalidCreateAttempt = signal(false);
     protected readonly successNotice = signal('');
     protected readonly failureNotice = signal('');
     protected readonly emailConflict = signal(false);
+    private createReturnFocus: HTMLElement | null = null;
 
     protected readonly isSubmitting = computed(
         () => this.composition.createUser.state() === 'submitting'
@@ -317,17 +276,14 @@ export class PageComponent {
     private readonly mobileRequest = signal<MobilePageRequest | null>(null);
     private mobileSentinelGraceTimer: ReturnType<typeof setTimeout> | undefined;
     protected readonly mobileSentinelGrace = signal(false);
-    private readonly mobileProjection = linkedSignal<
-        MobileProjectionSource,
-        MobileProjection
-    >({
+    protected readonly mobileProjection = linkedSignal({
         source: () => ({
             generation: this.mobileGeneration(),
             page: this.page(),
             request: this.mobileRequest(),
             state: this.usersState(),
         }),
-        computation: (source, previous) => {
+        computation: (source, previous): MobileProjection => {
             const current =
                 previous?.value.generation === source.generation
                     ? previous.value
@@ -413,12 +369,6 @@ export class PageComponent {
             ? request.pageNumber
             : null;
     });
-    protected readonly mobileAnnouncement = computed(
-        () => this.mobileProjection().announcement
-    );
-    protected readonly mobileTotalItems = computed(
-        () => this.mobileProjection().totalItems
-    );
     protected readonly isInitialLoading = computed(
         () =>
             this.users().length === 0 &&
@@ -599,31 +549,69 @@ export class PageComponent {
         this.createForm().reset({ ...EMPTY_USER });
         this.failureNotice.set('');
         this.emailConflict.set(false);
+        this.invalidCreateAttempt.set(false);
+        this.isDiscardConfirmOpen.set(false);
         this.isCreateOpen.set(true);
         afterNextRender(
-            { write: () => this.firstNameInput()?.nativeElement.focus() },
+            { write: () => this.lastNameInput()?.nativeElement.focus() },
             { injector: this.injector }
         );
     }
 
-    protected closeCreateForm(): void {
+    protected requestCloseCreateForm(): void {
         if (this.isSubmitting()) return;
+        if (Object.values(this.createModel()).some((value) => value.trim())) {
+            this.createReturnFocus =
+                document.activeElement instanceof HTMLElement
+                    ? document.activeElement
+                    : (this.lastNameInput()?.nativeElement ?? null);
+            this.isDiscardConfirmOpen.set(true);
+            return;
+        }
+        this.finishCloseCreateForm();
+    }
+
+    protected continueCreating(): void {
+        this.isDiscardConfirmOpen.set(false);
+        const target = this.createReturnFocus;
+        this.focusAfterRender(
+            () => target ?? this.lastNameInput()?.nativeElement
+        );
+    }
+
+    protected abandonCreateForm(): void {
+        this.isDiscardConfirmOpen.set(false);
+        this.finishCloseCreateForm();
+    }
+
+    private finishCloseCreateForm(): void {
         this.isCreateOpen.set(false);
         this.failureNotice.set('');
         this.emailConflict.set(false);
+        this.invalidCreateAttempt.set(false);
+        this.createReturnFocus = null;
         this.restoreCreateButtonFocus();
     }
 
     protected onDialogKeydown(event: KeyboardEvent): void {
-        if (event.key !== 'Escape' || !this.isModalCreate()) return;
+        if (event.key !== 'Escape' || this.isDiscardConfirmOpen()) return;
         event.preventDefault();
-        this.closeCreateForm();
+        this.requestCloseCreateForm();
+    }
+
+    protected onDiscardKeydown(event: KeyboardEvent): void {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        event.stopPropagation();
+        this.continueCreating();
     }
 
     protected async createUser(event: Event): Promise<void> {
         event.preventDefault();
         this.failureNotice.set('');
         this.emailConflict.set(false);
+        const invalid = this.createForm().invalid();
+        this.invalidCreateAttempt.set(invalid);
 
         await submit(this.createForm, async () => {
             const value = this.createModel();
@@ -639,6 +627,7 @@ export class PageComponent {
                 );
                 this.successNotice.set("L'utilisateur a été créé.");
                 this.isCreateOpen.set(false);
+                this.invalidCreateAttempt.set(false);
                 this.createForm().reset({ ...EMPTY_USER });
                 this.resetMobileProjection();
                 this.restoreCreateButtonFocus();
@@ -661,6 +650,15 @@ export class PageComponent {
                 ];
             }
         });
+        if (invalid) {
+            this.focusAfterRender(() => this.lastNameInput()?.nativeElement);
+        } else if (this.emailConflict()) {
+            this.focusAfterRender(() =>
+                this.lastNameInput()?.nativeElement.form?.querySelector(
+                    '[data-cmz-id="email"]'
+                )
+            );
+        }
     }
 
     protected onEmailInput(): void {
