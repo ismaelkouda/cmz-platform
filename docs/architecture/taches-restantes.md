@@ -1481,6 +1481,23 @@ Figma, désormais source partielle différée :
   privilégiée aux PR non fiables. Un test d'intégration doit reproduire le cycle
   complet ; la politique squash-only, l'historique linéaire et les protections
   de `main` restent inchangés.
+- **OPS-34** — ouvert, S, P1 Ops. Rendre la détection du backend Docker du
+  sandbox diagnostiquable et résiliente aux indisponibilités transitoires, sans
+  jamais relâcher le confinement. La PR Dependabot #153 (`knip` 6.38.0) a
+  échoué dans le run `36770686632`, avant l'exécution de Knip : `docker info`
+  n'a pas répondu dans le délai fixe de 10 s et
+  `sandboxBackendAvailable()` a réduit toute erreur au même booléen, exposé
+  ensuite comme « aucun backend de confinement opérationnel pour linux ». Le
+  même changement avait déjà passé la CI, le run contemporain de `main` était
+  vert et le job d'isolation Linux de la PR était vert : le signal observé est
+  donc un problème de disponibilité du runner, pas une incompatibilité Knip.
+  Sortie attendue : distinguer au minimum binaire absent, accès/socket refusé,
+  daemon indisponible et timeout ; journaliser le diagnostic utile sans secret ;
+  appliquer un retry court et borné uniquement aux états transitoires ; échouer
+  fermé après épuisement, sans backend non confiné de secours. Des tests purs
+  doivent couvrir chaque classe d'échec et le retry, puis une CI réelle doit
+  prouver que l'isolation Linux et `check:application-pipeline` restent
+  bloquants.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
