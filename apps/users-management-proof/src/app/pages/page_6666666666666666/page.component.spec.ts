@@ -478,6 +478,27 @@ describe('PageComponent', () => {
         const root = fixture.nativeElement as HTMLElement;
         element<HTMLButtonElement>(root, '[data-cmz-id="create-user"]').click();
         await fixture.whenStable();
+        const fieldIds = [
+            'last-name',
+            'first-name',
+            'email',
+            'phone',
+            'profile-id',
+        ];
+        for (const id of fieldIds) {
+            expect(
+                element(root, `[data-cmz-id="${id}"]`).getAttribute(
+                    'aria-invalid'
+                )
+            ).toBeNull();
+        }
+        expect(
+            element<HTMLInputElement>(root, '[data-cmz-id="last-name"]')
+                .placeholder
+        ).toBe('Saisir le nom');
+        expect(
+            element<HTMLInputElement>(root, '[data-cmz-id="email"]').placeholder
+        ).toBe('nom@example.com');
         const create = element<HTMLButtonElement>(
             root,
             '[data-cmz-id="create-user-form"] [type="submit"]'
@@ -497,6 +518,13 @@ describe('PageComponent', () => {
         expect(
             element(root, '[data-cmz-id="email"]').getAttribute('aria-invalid')
         ).toBe('true');
+        for (const id of fieldIds.filter((id) => id !== 'email')) {
+            expect(
+                element(root, `[data-cmz-id="${id}"]`).getAttribute(
+                    'aria-invalid'
+                )
+            ).toBe('true');
+        }
         expect(document.activeElement).toBe(
             element(root, '[data-cmz-id="last-name"]')
         );
