@@ -1,7 +1,7 @@
 # C5 ADAPT-10 — surface de création adaptative
 
-- **Statut :** décision produit approuvée le 2026-09-29 ; revue technique du lot
-  documentaire requise
+- **Statut :** décision, références et publication approuvées et fusionnées ;
+  oracles ADAPT-10d engagés avant réalisation
 - **Périmètre :** placement, dimensionnement, focus, validation et cycle réseau
   du formulaire de création C5
 - **Hors périmètre :** runtime dans ce lot, filtres ADAPT-8, contrat API,
@@ -220,6 +220,20 @@ Soumaila doit refuser un lot ultérieur si :
    seulement les fichiers autorisés et convertir les échecs en succès réels.
 6. **ADAPT-10f** : produire les captures navigateur réelles, faire relire les
    octets finaux, fusionner et vérifier la CI post-fusion.
+
+### Avancement au 2026-09-30
+
+- ADAPT-10a, ADAPT-10b et ADAPT-10c sont fusionnés. La PR #154 publie les sept
+  références approuvées sur le merge commit
+  `0fa59c6620944595ba48958a90096601ee6bdcf0` ; ses contrôles et la CI
+  post-fusion `36711358347` sont verts.
+- ADAPT-10d ajoute un oracle Playwright dédié, retourne les anciennes attentes
+  de présentation devenues contradictoires et borne trois attentes de composant
+  Angular. Ce lot ne modifie ni runtime, ni work order, ni contrat API, ni
+  dépendance.
+- ADAPT-10e reste interdit tant que les oracles ADAPT-10d ne sont pas relus,
+  fusionnés et attestés par la CI post-fusion ; son work order devra être
+  recalculé depuis ce nouveau `main`.
 
 ADAPT-8d reste un chantier indépendant : décider la création ne termine pas les
 oracles du panneau de filtres.
