@@ -2446,21 +2446,21 @@ Figma, désormais source partielle différée :
   ADR-0074 accepté. Dossier approuvé :
   `examples/users-management-proof/presentation/progressive-filter-candidates/`.
   Le porteur produit a reconfirmé explicitement l'intégralité de ce dossier le
-  2026-09-30, sans changement d'octet ni d'autorité publiée.
-  **ADAPT-10 — surface de création adaptative :** la décision produit du
-  2026-09-29 remplace le tiroir C5 étroit, pleine hauteur et non modal en
-  `expanded` par une tâche de création modale aux trois classes de fenêtre. La
-  surface survole la liste sans la redimensionner ; header et footer restent
-  fixes, le corps seul défile, et la taille naturelle est bornée par l'espace
-  utile. Compact reste en une colonne depuis le bas, Medium utilise une surface
-  latérale droite d'une colonne, tandis qu'Expanded centre un dialogue à deux
-  colonnes au maximum avec `Email` pleine largeur. Ce centrage distingue la
-  création modale du panneau de filtres latéral. L'ordre canonique est `Nom`,
-  `Prénom`, `Email`, `Téléphone`, `Profil`. Un submit invalide focalise la
-  première erreur sans POST ; un conflit email conserve le brouillon ; un succès
-  ferme, rafraîchit exactement une fois et restitue le focus. Aucun runtime,
-  work order, contrat API ou composant partagé n'est modifié dans ADAPT-10a.
-  **ADAPT-10a est fusionné :** Soumaila a approuvé le commit exact
+  2026-09-30, sans changement d'octet ni d'autorité publiée. **ADAPT-10 —
+  surface de création adaptative :** la décision produit du 2026-09-29 remplace
+  le tiroir C5 étroit, pleine hauteur et non modal en `expanded` par une tâche
+  de création modale aux trois classes de fenêtre. La surface survole la liste
+  sans la redimensionner ; header et footer restent fixes, le corps seul défile,
+  et la taille naturelle est bornée par l'espace utile. Compact reste en une
+  colonne depuis le bas, Medium utilise une surface latérale droite d'une
+  colonne, tandis qu'Expanded centre un dialogue à deux colonnes au maximum avec
+  `Email` pleine largeur. Ce centrage distingue la création modale du panneau de
+  filtres latéral. L'ordre canonique est `Nom`, `Prénom`, `Email`, `Téléphone`,
+  `Profil`. Un submit invalide focalise la première erreur sans POST ; un
+  conflit email conserve le brouillon ; un succès ferme, rafraîchit exactement
+  une fois et restitue le focus. Aucun runtime, work order, contrat API ou
+  composant partagé n'est modifié dans ADAPT-10a. **ADAPT-10a est fusionné :**
+  Soumaila a approuvé le commit exact
   `9057d9f142f160eb66e044b3695c67093a58733d`, fusionné par la PR #145 dans
   `0d64a41acd24373b0490871597a2e530400f0978` ; les 17 contrôles de PR et la CI
   post-fusion `36648684833` sont verts. **ADAPT-10b est validé par le porteur
@@ -2471,8 +2471,17 @@ Figma, désormais source partielle différée :
   jusqu'à leur revue technique et leur publication séparée par ADAPT-10c ; aucun
   runtime, contrat API, work order ou dépendance n'est modifié. Dossier candidat
   : `examples/users-management-proof/presentation/adaptive-create-candidates/`.
-  Viendront ensuite publication, oracles en échec attendu, work order et
-  réalisation bornée. Décision détaillée :
+  **ADAPT-10c est engagé localement le 2026-09-30 :** le manifeste actif publie
+  exactement les sept PNG approuvés avec leurs tailles, SHA-256, viewports,
+  usages et états de page résolus. La référence progressive Expanded existante
+  reste l'unique `primary-layout` ; les créations ajoutent uniquement des
+  autorités `responsive-layout`, `feedback` et `state-reference`. Un oracle
+  compare les sept sources résolues, chemins et empreintes octet par octet et
+  maintient les anciens identifiants et chemins rejetés hors du work order. Le
+  test de publication C5 passe 4/4 sans modifier runtime, contrat API, work
+  order, dépendance ou capture tierce non suivie. Restent la revue, la fusion et
+  la CI exacte de ce lot ; ADAPT-10d écrira ensuite les oracles en échec
+  attendu, avant work order et réalisation bornée. Décision détaillée :
   [`c5-adapt10-surface-creation-adaptative-2026-09-29.md`](./c5-adapt10-surface-creation-adaptative-2026-09-29.md),
   ADR-0076 accepté. ADAPT-8d reste indépendant et ouvert. **PRES-AUTH-1 —
   autorités de présentation rejetées :** le 2026-09-30, le porteur produit
@@ -2492,19 +2501,19 @@ Figma, désormais source partielle différée :
   repli. Les propositions de création `adaptive-create-candidates/` sont
   désormais validées par le porteur produit, mais restent sans autorité active
   tant que leur revue ADAPT-10b et leur publication ADAPT-10c ne sont pas
-  fusionnées. **ADAPT-9 — chargement
-  progressif mobile silencieux :** la décision produit du 2026-09-29 retire la
-  pagination visible uniquement en fenêtre `compact` et accumule les pages
-  normalisées à l'approche de la fin de la pile. Le cas nominal ne montre ni
-  spinner, ni skeleton, ni texte de chargement ; l'état interne reste explicite
-  et accessible. Une seule page suivante peut être en vol, les cartes sont
-  ordonnées et dédupliquées par `uniqId`, les réponses obsolètes sont rejetées
-  et `lastPage` arrête définitivement la sentinelle. Une erreur conserve les
-  cartes, suspend l'automatisme et expose `Réessayer`. Recherche, filtre et
-  création réussie repartent de la page `1` ; un resize seul n'émet aucun GET.
-  `medium` et `expanded` gardent la pagination explicite. Ce lot de décision ne
-  modifie ni runtime, ni `list-query`, ni backend. Soumaila a approuvé le commit
-  exact `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusionné par la PR #141 dans
+  fusionnées. **ADAPT-9 — chargement progressif mobile silencieux :** la
+  décision produit du 2026-09-29 retire la pagination visible uniquement en
+  fenêtre `compact` et accumule les pages normalisées à l'approche de la fin de
+  la pile. Le cas nominal ne montre ni spinner, ni skeleton, ni texte de
+  chargement ; l'état interne reste explicite et accessible. Une seule page
+  suivante peut être en vol, les cartes sont ordonnées et dédupliquées par
+  `uniqId`, les réponses obsolètes sont rejetées et `lastPage` arrête
+  définitivement la sentinelle. Une erreur conserve les cartes, suspend
+  l'automatisme et expose `Réessayer`. Recherche, filtre et création réussie
+  repartent de la page `1` ; un resize seul n'émet aucun GET. `medium` et
+  `expanded` gardent la pagination explicite. Ce lot de décision ne modifie ni
+  runtime, ni `list-query`, ni backend. Soumaila a approuvé le commit exact
+  `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusionné par la PR #141 dans
   `2805763217653e85d8f125568fb1b5ccd903bcfb` ; les 17 contrôles et la CI
   post-fusion `36596093253` sont verts. **ADAPT-9a — oracles fusionnés :**
   Soumaila a approuvé le commit exact
