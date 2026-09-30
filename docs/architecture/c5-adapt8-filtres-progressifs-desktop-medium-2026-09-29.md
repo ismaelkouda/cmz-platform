@@ -1,7 +1,7 @@
 # C5 ADAPT-8 — filtres progressifs Desktop et Medium
 
-- **Statut :** décision et références produit approuvées le 2026-09-29 ;
-  publication ADAPT-8c en cours
+- **Statut :** décision, références et publication ADAPT-8c fusionnées ;
+  ADAPT-8d (oracles) reste à réaliser
 - **Périmètre :** recherche, raccourcis de colonnes et panneau progressif C5
   intégrés à la surface tabulaire en fenêtres `medium` et `expanded`
 - **Hors périmètre :** compact, adoption d'AG Grid, modification runtime dans ce
@@ -172,7 +172,10 @@ Soumaila doit refuser le lot suivant si :
    propres au dépôt, montrant zéro, un et plusieurs blocs — terminé et approuvé
    par le porteur produit le 2026-09-29.
 4. **ADAPT-8c** : publier les références exactes et retirer du manifeste les
-   anciennes autorités Medium/Expanded contradictoires — en cours.
+   anciennes autorités Medium/Expanded contradictoires — terminé. Soumaila a
+   approuvé le commit exact `c1aba98edb910f2f9149b0ee669c74809d66f468`, fusionné
+   par la PR #144 dans `fe9e3e558539ef062173febfe17fcd5eb6ee2754` ; les 17
+   contrôles de PR et la CI post-fusion `36644233400` sont verts.
 5. **ADAPT-8d** : écrire les oracles comportementaux, réseau, focus, resize,
    hauteur courte et densité ; constater leur échec exact sur `main`.
 6. **ADAPT-8e** : recalculer le work order, réaliser seulement les fichiers

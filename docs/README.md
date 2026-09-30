@@ -116,6 +116,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0073](./adr/0073-filtrage-adaptatif-par-panneau-unique.md) | Filtrage adaptatif par panneau unique et état brouillon  |
 | [0074](./adr/0074-filtres-progressifs-par-blocs-actifs.md)  | Filtres progressifs par blocs actifs sur fenêtres medium et expanded |
 | [0075](./adr/0075-chargement-progressif-mobile-silencieux.md) | Chargement progressif mobile silencieux                  |
+| [0076](./adr/0076-surface-creation-adaptative-bornee-par-contenu.md) | Surface de création adaptative bornée par le contenu     |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

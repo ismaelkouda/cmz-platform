@@ -2436,26 +2436,44 @@ Figma, désormais source partielle différée :
   références Medium/Expanded zéro, un et plusieurs filtres sont approuvées :
   recherche dans la barre interne du tableau, raccourcis serveur `Profil`,
   `Rôle`, `Statut`, et panneau non modal superposé aux colonnes sans les
-  redimensionner. ADAPT-8c publie maintenant ces octets et retire les anciennes
-  autorités Medium/Expanded contradictoires ; viendront ensuite oracles en échec
-  attendu, work order, réalisation bornée et preuve navigateur. Décision
-  détaillée :
+  redimensionner. **ADAPT-8c est fusionné :** Soumaila a approuvé le commit
+  exact `c1aba98edb910f2f9149b0ee669c74809d66f468`, fusionné par la PR #144 dans
+  `fe9e3e558539ef062173febfe17fcd5eb6ee2754` ; les 17 contrôles de PR et la CI
+  post-fusion `36644233400` sont verts. ADAPT-8d doit maintenant écrire les
+  oracles en échec attendu ; viendront ensuite work order, réalisation bornée et
+  preuve navigateur. Décision détaillée :
   [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
   ADR-0074 accepté. Dossier approuvé :
   `examples/users-management-proof/presentation/progressive-filter-candidates/`.
-  **ADAPT-9 — chargement progressif mobile silencieux :** la décision produit du
-  2026-09-29 retire la pagination visible uniquement en fenêtre `compact` et
-  accumule les pages normalisées à l'approche de la fin de la pile. Le cas
-  nominal ne montre ni spinner, ni skeleton, ni texte de chargement ; l'état
-  interne reste explicite et accessible. Une seule page suivante peut être en
-  vol, les cartes sont ordonnées et dédupliquées par `uniqId`, les réponses
-  obsolètes sont rejetées et `lastPage` arrête définitivement la sentinelle. Une
-  erreur conserve les cartes, suspend l'automatisme et expose `Réessayer`.
-  Recherche, filtre et création réussie repartent de la page `1` ; un resize
-  seul n'émet aucun GET. `medium` et `expanded` gardent la pagination explicite.
-  Ce lot de décision ne modifie ni runtime, ni `list-query`, ni backend.
-  Soumaila a approuvé le commit exact
-  `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusionné par la PR #141 dans
+  **ADAPT-10 — surface de création adaptative :** la décision produit du
+  2026-09-29 remplace le tiroir C5 étroit, pleine hauteur et non modal en
+  `expanded` par une tâche de création modale aux trois classes de fenêtre. La
+  surface survole la liste sans la redimensionner ; header et footer restent
+  fixes, le corps seul défile, et la taille naturelle est bornée par l'espace
+  utile. Compact reste en une colonne depuis le bas, Medium utilise une surface
+  latérale droite d'une colonne, tandis qu'Expanded centre un dialogue à deux
+  colonnes au maximum avec `Email` pleine largeur. Ce centrage distingue la
+  création modale du panneau de filtres latéral. L'ordre canonique est `Nom`,
+  `Prénom`, `Email`, `Téléphone`, `Profil`. Un submit invalide focalise la
+  première erreur sans POST ; un conflit email conserve le brouillon ; un succès
+  ferme, rafraîchit exactement une fois et restitue le focus. Aucun runtime,
+  work order, contrat API ou composant partagé n'est modifié dans ADAPT-10a.
+  Après revue et fusion viendront références produit, publication, oracles en
+  échec attendu, work order et réalisation bornée. Décision détaillée :
+  [`c5-adapt10-surface-creation-adaptative-2026-09-29.md`](./c5-adapt10-surface-creation-adaptative-2026-09-29.md),
+  ADR-0076 accepté. ADAPT-8d reste indépendant et ouvert. **ADAPT-9 — chargement
+  progressif mobile silencieux :** la décision produit du 2026-09-29 retire la
+  pagination visible uniquement en fenêtre `compact` et accumule les pages
+  normalisées à l'approche de la fin de la pile. Le cas nominal ne montre ni
+  spinner, ni skeleton, ni texte de chargement ; l'état interne reste explicite
+  et accessible. Une seule page suivante peut être en vol, les cartes sont
+  ordonnées et dédupliquées par `uniqId`, les réponses obsolètes sont rejetées
+  et `lastPage` arrête définitivement la sentinelle. Une erreur conserve les
+  cartes, suspend l'automatisme et expose `Réessayer`. Recherche, filtre et
+  création réussie repartent de la page `1` ; un resize seul n'émet aucun GET.
+  `medium` et `expanded` gardent la pagination explicite. Ce lot de décision ne
+  modifie ni runtime, ni `list-query`, ni backend. Soumaila a approuvé le commit
+  exact `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusionné par la PR #141 dans
   `2805763217653e85d8f125568fb1b5ccd903bcfb` ; les 17 contrôles et la CI
   post-fusion `36596093253` sont verts. **ADAPT-9a — oracles fusionnés :**
   Soumaila a approuvé le commit exact
