@@ -93,7 +93,8 @@ h1 {
     cursor: pointer;
 }
 
-.button-primary {
+.button-primary,
+.page-number-current {
     border-color: var(--primary);
     background: var(--primary);
     color: #fff;
@@ -144,10 +145,10 @@ label {
 input,
 select {
     width: 100%;
-    min-height: 40px;
+    min-height: 48px;
     padding: 9px 12px;
     border: 1px solid var(--control-border);
-    border-radius: 6px;
+    border-radius: 9px;
     background: #fff;
     color: inherit;
     font: inherit;
@@ -177,6 +178,7 @@ select {
 
 .overlay {
     align-items: center;
+    padding: 32px;
 }
 
 .filter-backdrop,
@@ -329,19 +331,13 @@ td,
     padding: 0;
 }
 
-.page-number-current {
-    border-color: var(--primary);
-    background: var(--primary);
-    color: #fff;
-}
-
 .drawer {
     display: flex;
     flex-direction: column;
-    width: clamp(520px, 60vw, 640px);
-    max-height: calc(100dvh - 32px);
+    width: min(600px, calc(100vw - 64px));
+    max-height: calc(100dvh - 64px);
     overflow: hidden;
-    border-radius: 16px 0 0 16px;
+    border-radius: 18px;
 }
 
 .drawer-header {
@@ -356,11 +352,11 @@ td,
 }
 
 .close-button {
-    flex: none;
     width: 44px;
     padding: 0;
     border: 0;
     border-radius: 50%;
+    background: #edf2f8;
     font-size: 28px;
 }
 
@@ -403,10 +399,14 @@ td,
 }
 
 .drawer-actions {
-    justify-content: flex-end;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 16px;
     padding: 16px 24px max(16px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
+}
+
+.drawer-actions .button-primary {
+    min-width: clamp(128px, 33vw, 150px);
 }
 
 .discard-layer {
@@ -601,6 +601,7 @@ td,
 
     .overlay {
         align-items: flex-end;
+        padding: 0;
     }
 
     .toast {
@@ -663,12 +664,12 @@ td,
 
     .overlay {
         justify-content: center;
-        padding: 24px;
+        padding: 40px 48px;
     }
 
     .drawer {
-        width: clamp(640px, 54vw, 760px);
-        border-radius: 16px;
+        width: min(720px, calc(100vw - 96px));
+        border-radius: 20px;
     }
 
     .create-fields {
