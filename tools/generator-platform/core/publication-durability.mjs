@@ -177,9 +177,13 @@ export function validatePublicationDurabilityContract(contract) {
     }
     if (
         [...ids].join('\0') !==
-        ['linux-ext4', 'macos-apfs', 'macos-apfs-25', 'macos-apfs-27'].join(
-            '\0'
-        )
+        [
+            'linux-ext4',
+            'macos-apfs',
+            'macos-apfs-25',
+            'macos-apfs-27',
+            'macos-apfs-28',
+        ].join('\0')
     ) {
         fail('filesystem profiles do not match the accepted contract');
     }
