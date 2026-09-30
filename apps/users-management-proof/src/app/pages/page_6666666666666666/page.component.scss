@@ -22,10 +22,12 @@
     .filter-chip,
     .filter-panel-header,
     .filter-panel-actions,
+    .compact-filter-button,
     .pagination,
     .pagination div,
     .drawer-header,
     .drawer-actions,
+    .discard-actions,
     .mobile-summary,
     .user-card div
 ) {
@@ -66,7 +68,6 @@
 
 .page-shell {
     padding: 36px 4.5% 64px;
-    container-type: inline-size;
 }
 
 .page-heading-row {
@@ -99,7 +100,6 @@ h1 {
 }
 
 .button:disabled {
-    cursor: not-allowed;
     opacity: 0.52;
 }
 
@@ -120,7 +120,6 @@ h1 {
 
 .filter-search-control {
     position: relative;
-    display: block;
 }
 
 .filter-search-icon {
@@ -154,10 +153,6 @@ select {
     font: inherit;
 }
 
-.pagination div {
-    gap: 8px;
-}
-
 .applied-filters {
     gap: 8px;
     margin: -12px 0 24px;
@@ -178,6 +173,10 @@ select {
     inset: 0;
     display: flex;
     justify-content: flex-end;
+}
+
+.overlay {
+    align-items: center;
 }
 
 .filter-backdrop,
@@ -210,22 +209,15 @@ select {
     border-bottom: 1px solid var(--border);
 }
 
-.compact-filter-summary button {
-    display: flex;
-    align-items: center;
+.compact-filter-button {
     justify-content: space-between;
     gap: 16px;
     width: 100%;
-    min-width: 44px;
-    min-height: 44px;
     padding: 14px 4px;
     border: 0;
     border-bottom: 1px solid var(--border);
-    background: transparent;
-    color: inherit;
-    font: inherit;
+    border-radius: 0;
     text-align: left;
-    cursor: pointer;
 }
 
 .filter-panel-body {
@@ -333,41 +325,43 @@ td,
 }
 
 .page-number {
-    width: 40px;
-    min-width: 40px;
-    min-height: 40px;
+    flex: 0 0 40px;
     padding: 0;
-    border: 1px solid var(--control-border);
-    border-radius: 7px;
-    background: #fff;
-    color: inherit;
-    font: inherit;
-    cursor: pointer;
 }
 
 .page-number-current {
     border-color: var(--primary);
     background: var(--primary);
     color: #fff;
-    font-weight: 750;
 }
 
 .drawer {
-    width: min(480px, 100%);
-    height: 100%;
-    overflow: auto;
-    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    width: clamp(520px, 60vw, 640px);
+    max-height: calc(100dvh - 32px);
+    overflow: hidden;
+    border-radius: 16px 0 0 16px;
 }
 
 .drawer-header {
     align-items: start;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 20px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
 }
 
 .drawer-header h2 {
-    margin: 0 0 6px;
+    margin: 0;
+}
+
+.close-button {
+    flex: none;
+    width: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    font-size: 28px;
 }
 
 .form-error {
@@ -381,6 +375,19 @@ td,
 }
 
 .create-form {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+}
+
+.create-body {
+    min-height: 0;
+    padding: 20px 24px;
+    overflow: auto;
+}
+
+.create-fields {
     display: grid;
     gap: 16px;
 }
@@ -398,7 +405,23 @@ td,
 .drawer-actions {
     justify-content: flex-end;
     gap: 10px;
-    margin-top: 16px;
+    padding: 16px 24px max(16px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+}
+
+.discard-layer {
+    z-index: 2;
+    display: grid;
+    place-items: center;
+}
+
+.discard-dialog {
+    width: min(440px, 100%);
+}
+
+.discard-actions {
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 .toast {
@@ -475,7 +498,6 @@ td,
         padding: 0;
         height: 56px;
         border-radius: 18px;
-        box-shadow: 0 4px 14px rgb(15 23 42 / 24%);
     }
 
     .filters {
@@ -570,21 +592,15 @@ td,
 
     .drawer {
         width: 100%;
-        padding: 20px 16px;
+        border-radius: 18px 18px 0 0;
     }
 
     .drawer-header h2 {
-        white-space: nowrap;
         font-size: 20px;
     }
 
-    .drawer-actions {
-        flex-direction: column;
+    .overlay {
         align-items: flex-end;
-    }
-
-    .drawer-actions .button-primary {
-        order: -1;
     }
 
     .toast {
@@ -614,7 +630,6 @@ td,
 }
 
 @media (min-width: 1200px) and (min-height: 800px) {
-    .workspace.layout-expanded.create-open,
     .workspace.layout-expanded.filters-open {
         display: grid;
         grid-template-columns: minmax(720px, 1fr) clamp(360px, 28vw, 440px);
@@ -625,13 +640,11 @@ td,
         margin: 0 auto;
     }
 
-    .workspace.layout-expanded.create-open .page-shell,
     .workspace.layout-expanded.filters-open .page-shell {
         min-width: 0;
         padding: 0;
     }
 
-    .overlay-persistent,
     .filter-surface-persistent {
         position: sticky;
         z-index: 1;
@@ -648,13 +661,21 @@ td,
         border: 1px solid var(--border);
     }
 
-    .overlay-persistent .drawer {
-        width: 100%;
-        max-width: 440px;
-        height: auto;
-        max-height: calc(100vh - 120px);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        box-shadow: 0 8px 28px rgb(15 23 42 / 12%);
+    .overlay {
+        justify-content: center;
+        padding: 24px;
+    }
+
+    .drawer {
+        width: clamp(640px, 54vw, 760px);
+        border-radius: 16px;
+    }
+
+    .create-fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .create-field-email {
+        grid-column: 1 / -1;
     }
 }

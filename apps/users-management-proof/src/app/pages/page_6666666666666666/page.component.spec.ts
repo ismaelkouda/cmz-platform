@@ -473,46 +473,34 @@ describe('PageComponent', () => {
         expect(root.textContent).toContain('alpha@example.invalid');
     });
 
-    it(
-        'active Créer, expose les erreurs sans commande et focalise Nom',
-        { fails: true },
-        async () => {
-            const { fixture, submitUser } = await setup();
-            const root = fixture.nativeElement as HTMLElement;
-            element<HTMLButtonElement>(
-                root,
-                '[data-cmz-id="create-user"]'
-            ).click();
-            await fixture.whenStable();
-            const create = element<HTMLButtonElement>(
-                root,
-                '[data-cmz-id="create-user-form"] [type="submit"]'
-            );
+    it('active Créer, expose les erreurs sans commande et focalise Nom', async () => {
+        const { fixture, submitUser } = await setup();
+        const root = fixture.nativeElement as HTMLElement;
+        element<HTMLButtonElement>(root, '[data-cmz-id="create-user"]').click();
+        await fixture.whenStable();
+        const create = element<HTMLButtonElement>(
+            root,
+            '[data-cmz-id="create-user-form"] [type="submit"]'
+        );
 
-            setControl(element(root, '[data-cmz-id="first-name"]'), '   ');
-            setControl(
-                element(root, '[data-cmz-id="email"]'),
-                'adresse-invalide'
-            );
-            expect(create.disabled).toBe(false);
-            create.click();
-            await fixture.whenStable();
+        setControl(element(root, '[data-cmz-id="first-name"]'), '   ');
+        setControl(element(root, '[data-cmz-id="email"]'), 'adresse-invalide');
+        expect(create.disabled).toBe(false);
+        create.click();
+        await fixture.whenStable();
 
-            expect(submitUser).not.toHaveBeenCalled();
-            expect(root.textContent).toContain('Le prénom est obligatoire.');
-            expect(root.textContent).toContain(
-                'Saisissez une adresse email valide.'
-            );
-            expect(
-                element(root, '[data-cmz-id="email"]').getAttribute(
-                    'aria-invalid'
-                )
-            ).toBe('true');
-            expect(document.activeElement).toBe(
-                element(root, '[data-cmz-id="last-name"]')
-            );
-        }
-    );
+        expect(submitUser).not.toHaveBeenCalled();
+        expect(root.textContent).toContain('Le prénom est obligatoire.');
+        expect(root.textContent).toContain(
+            'Saisissez une adresse email valide.'
+        );
+        expect(
+            element(root, '[data-cmz-id="email"]').getAttribute('aria-invalid')
+        ).toBe('true');
+        expect(document.activeElement).toBe(
+            element(root, '[data-cmz-id="last-name"]')
+        );
+    });
 
     it('soumet un payload normalisé, ferme le dialogue et annonce le succès', async () => {
         const { fixture, submitUser, loadUsers } = await setup();
@@ -546,64 +534,51 @@ describe('PageComponent', () => {
         expect(loadUsers).toHaveBeenLastCalledWith({ page: 1 });
     });
 
-    it(
-        'conserve le formulaire et focalise Email après un conflit',
-        { fails: true },
-        async () => {
-            const { fixture, submitUser } = await setup({
-                submitError: new Error('email existe déjà'),
-            });
-            const root = fixture.nativeElement as HTMLElement;
-            element<HTMLButtonElement>(
-                root,
-                '[data-cmz-id="create-user"]'
-            ).click();
-            await fixture.whenStable();
-            await fillValidForm(root);
-            await fixture.whenStable();
+    it('conserve le formulaire et focalise Email après un conflit', async () => {
+        const { fixture, submitUser } = await setup({
+            submitError: new Error('email existe déjà'),
+        });
+        const root = fixture.nativeElement as HTMLElement;
+        element<HTMLButtonElement>(root, '[data-cmz-id="create-user"]').click();
+        await fixture.whenStable();
+        await fillValidForm(root);
+        await fixture.whenStable();
 
-            element<HTMLFormElement>(
-                root,
-                '[data-cmz-id="create-user-form"]'
-            ).dispatchEvent(
-                new Event('submit', { bubbles: true, cancelable: true })
-            );
-            await fixture.whenStable();
+        element<HTMLFormElement>(
+            root,
+            '[data-cmz-id="create-user-form"]'
+        ).dispatchEvent(
+            new Event('submit', { bubbles: true, cancelable: true })
+        );
+        await fixture.whenStable();
 
-            expect(submitUser).toHaveBeenCalledOnce();
-            expect(root.querySelector('[role="dialog"]')).not.toBeNull();
-            expect(
-                element<HTMLInputElement>(root, '[data-cmz-id="email"]').value
-            ).toContain('ada@example.test');
-            expect(root.textContent).toContain(
-                'Cette adresse email existe déjà.'
-            );
-            expect(
-                element(root, '[data-cmz-id="create-failed"]').getAttribute(
-                    'role'
-                )
-            ).toBe('alert');
-            expect(document.activeElement).toBe(
-                element(root, '[data-cmz-id="email"]')
-            );
+        expect(submitUser).toHaveBeenCalledOnce();
+        expect(root.querySelector('[role="dialog"]')).not.toBeNull();
+        expect(
+            element<HTMLInputElement>(root, '[data-cmz-id="email"]').value
+        ).toContain('ada@example.test');
+        expect(root.textContent).toContain('Cette adresse email existe déjà.');
+        expect(
+            element(root, '[data-cmz-id="create-failed"]').getAttribute('role')
+        ).toBe('alert');
+        expect(document.activeElement).toBe(
+            element(root, '[data-cmz-id="email"]')
+        );
 
-            const create = element<HTMLButtonElement>(
-                root,
-                '[data-cmz-id="create-user-form"] [type="submit"]'
-            );
-            expect(create.disabled).toBe(true);
-            setControl(
-                element(root, '[data-cmz-id="email"]'),
-                'autre@example.test'
-            );
-            await fixture.whenStable();
-            expect(create.disabled).toBe(false);
-            expect(
-                root.querySelector('[data-cmz-id="create-failed"]')
-            ).toBeNull();
-            expect(root.querySelector('.toast-error')).toBeNull();
-        }
-    );
+        const create = element<HTMLButtonElement>(
+            root,
+            '[data-cmz-id="create-user-form"] [type="submit"]'
+        );
+        expect(create.disabled).toBe(false);
+        setControl(
+            element(root, '[data-cmz-id="email"]'),
+            'autre@example.test'
+        );
+        await fixture.whenStable();
+        expect(create.disabled).toBe(false);
+        expect(root.querySelector('[data-cmz-id="create-failed"]')).toBeNull();
+        expect(root.querySelector('.toast-error')).toBeNull();
+    });
 
     it('ferme par Échap et rend le focus au déclencheur', async () => {
         const { fixture } = await setup();
@@ -627,53 +602,43 @@ describe('PageComponent', () => {
         expect(document.activeElement).toBe(create);
     });
 
-    it(
-        'reste modal sans recréer le formulaire ni perdre son focus',
-        { fails: true },
-        async () => {
-            const { fixture, setLayout } = await setup({ layout: 'compact' });
-            const root = fixture.nativeElement as HTMLElement;
-            const create = element<HTMLButtonElement>(
-                root,
-                '[data-cmz-id="create-user"]'
-            );
-            create.click();
-            await fixture.whenStable();
+    it('reste modal sans recréer le formulaire ni perdre son focus', async () => {
+        const { fixture, setLayout } = await setup({ layout: 'compact' });
+        const root = fixture.nativeElement as HTMLElement;
+        const create = element<HTMLButtonElement>(
+            root,
+            '[data-cmz-id="create-user"]'
+        );
+        create.click();
+        await fixture.whenStable();
 
-            const email = element<HTMLInputElement>(
-                root,
-                '[data-cmz-id="email"]'
-            );
-            setControl(email, 'conserve@example.test');
-            email.focus();
+        const email = element<HTMLInputElement>(root, '[data-cmz-id="email"]');
+        setControl(email, 'conserve@example.test');
+        email.focus();
 
-            setLayout('expanded');
-            await fixture.whenStable();
+        setLayout('expanded');
+        await fixture.whenStable();
 
-            const expandedDialog = element<HTMLElement>(
-                root,
-                '[role="dialog"]'
-            );
-            expect(expandedDialog.getAttribute('aria-modal')).toBe('true');
-            expect(root.querySelector('.backdrop')).not.toBeNull();
-            expect(element(root, 'main').hasAttribute('inert')).toBe(true);
-            expect(element(root, '[data-cmz-id="email"]')).toBe(email);
-            expect(email.value).toBe('conserve@example.test');
-            expect(document.activeElement).toBe(email);
-            expect(create.disabled).toBe(true);
+        const expandedDialog = element<HTMLElement>(root, '[role="dialog"]');
+        expect(expandedDialog.getAttribute('aria-modal')).toBe('true');
+        expect(root.querySelector('.backdrop')).not.toBeNull();
+        expect(element(root, 'main').hasAttribute('inert')).toBe(true);
+        expect(element(root, '[data-cmz-id="email"]')).toBe(email);
+        expect(email.value).toBe('conserve@example.test');
+        expect(document.activeElement).toBe(email);
+        expect(create.disabled).toBe(true);
 
-            setLayout('compact');
-            await fixture.whenStable();
+        setLayout('compact');
+        await fixture.whenStable();
 
-            expect(
-                element(root, '[role="dialog"]').getAttribute('aria-modal')
-            ).toBe('true');
-            expect(root.querySelector('.backdrop')).not.toBeNull();
-            expect(element(root, 'main').hasAttribute('inert')).toBe(true);
-            expect(element(root, '[data-cmz-id="email"]')).toBe(email);
-            expect(document.activeElement).toBe(email);
-        }
-    );
+        expect(
+            element(root, '[role="dialog"]').getAttribute('aria-modal')
+        ).toBe('true');
+        expect(root.querySelector('.backdrop')).not.toBeNull();
+        expect(element(root, 'main').hasAttribute('inert')).toBe(true);
+        expect(element(root, '[data-cmz-id="email"]')).toBe(email);
+        expect(document.activeElement).toBe(email);
+    });
 
     it('accumule les pages compactes dans l’ordre et déduplique uniqId', async () => {
         const { fixture, intersectSentinel, loadUsers, setUsersPage } =
