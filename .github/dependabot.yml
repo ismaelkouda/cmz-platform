@@ -5,6 +5,9 @@ updates:
   # `package-ecosystem: bun`. Canary OPS-26 : chaque PR doit modifier le
   # lockfile sans altérer ses sections catalog/catalogs, vérifiées par
   # `check:bun-lock-catalog-integrity` avant toute fusion.
+  # Les alertes et security updates du dépôt sont activées depuis le
+  # 2026-09-30. Cette même entrée racine, sans target-branch, permet à
+  # Dependabot de proposer aussi les correctifs transitifs dès publication.
   - package-ecosystem: 'bun'
     directory: '/'
     schedule:
