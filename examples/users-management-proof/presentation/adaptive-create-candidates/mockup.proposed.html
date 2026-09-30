@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>C5 — proposition de surface de création adaptative</title>
+        <style>
+            :root {
+                color-scheme: light;
+                font-family:
+                    Inter,
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    'Segoe UI',
+                    sans-serif;
+                color: #172033;
+                background: #f4f6fa;
+                --blue: #2864e8;
+                --line: #d6deea;
+                --muted: #5e6d86;
+                --control: #6e7d94;
+                --danger: #b42318;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                min-width: 320px;
+                min-height: 100dvh;
+                margin: 0;
+                overflow: hidden;
+            }
+
+            button,
+            input,
+            select {
+                font: inherit;
+            }
+
+            .app-bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                height: 72px;
+                padding: 0 4.5%;
+                border-bottom: 1px solid var(--line);
+                background: #fff;
+            }
+
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-weight: 800;
+            }
+
+            .brand-mark {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                background: var(--blue);
+            }
+
+            .operator,
+            .muted {
+                color: var(--muted);
+            }
+
+            .workspace {
+                padding: 34px 4.5% 64px;
+            }
+
+            .heading,
+            .toolbar,
+            .table-heading,
+            .pagination {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+            }
+
+            h1 {
+                margin: 0;
+                font-size: 28px;
+                letter-spacing: -0.03em;
+            }
+
+            .plus {
+                display: grid;
+                width: 48px;
+                height: 48px;
+                place-items: center;
+                border: 0;
+                border-radius: 14px;
+                background: var(--blue);
+                color: #fff;
+                font-size: 28px;
+            }
+
+            .table-shell {
+                margin-top: 24px;
+                overflow: hidden;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                background: #fff;
+            }
+
+            .toolbar {
+                padding: 18px;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .search {
+                width: min(520px, 68%);
+                padding: 13px 16px;
+                border: 1px solid var(--control);
+                border-radius: 9px;
+                color: var(--muted);
+            }
+
+            .filter {
+                padding: 12px 18px;
+                border: 1px solid var(--control);
+                border-radius: 9px;
+                background: #fff;
+                font-weight: 750;
+            }
+
+            .table-heading,
+            .row {
+                display: grid;
+                grid-template-columns: 1.1fr 1fr 1.8fr 1fr 0.8fr 0.8fr 1fr;
+                align-items: center;
+                min-width: 980px;
+                padding: 0 20px;
+            }
+
+            .table-heading {
+                height: 58px;
+                background: #edf2f8;
+                font-size: 13px;
+                font-weight: 800;
+            }
+
+            .row {
+                height: 62px;
+                border-top: 1px solid var(--line);
+                font-size: 13px;
+            }
+
+            .status {
+                width: max-content;
+                padding: 5px 9px;
+                border-radius: 999px;
+                background: #dcf7e7;
+                color: #087b34;
+                font-weight: 750;
+            }
+
+            .pagination {
+                padding: 18px 20px;
+                border-top: 1px solid var(--line);
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+            .cards {
+                display: none;
+            }
+
+            .scrim {
+                position: fixed;
+                z-index: 10;
+                inset: 0;
+                background: rgb(12 24 47 / 48%);
+            }
+
+            .dialog-wrap {
+                position: fixed;
+                z-index: 11;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 40px 48px;
+                pointer-events: none;
+            }
+
+            .dialog {
+                display: grid;
+                grid-template-rows: auto minmax(0, 1fr) auto;
+                width: min(720px, calc(100vw - 96px));
+                max-height: calc(100dvh - 80px);
+                overflow: hidden;
+                border: 1px solid #c7d1df;
+                border-radius: 20px;
+                background: #fff;
+                box-shadow: 0 24px 80px rgb(7 21 47 / 34%);
+                pointer-events: auto;
+            }
+
+            .dialog-header {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 20px;
+                padding: 24px 28px 22px;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .dialog-header h2 {
+                margin: 0 0 6px;
+                font-size: 24px;
+                letter-spacing: -0.02em;
+            }
+
+            .dialog-header p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 14px;
+            }
+
+            .close {
+                display: grid;
+                width: 44px;
+                height: 44px;
+                place-items: center;
+                border: 0;
+                border-radius: 50%;
+                background: #edf2f8;
+                color: #273650;
+                font-size: 24px;
+            }
+
+            .form-body {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 20px;
+                min-height: 0;
+                padding: 26px 28px 30px;
+                overflow: auto;
+            }
+
+            .field {
+                display: grid;
+                gap: 8px;
+                min-width: 0;
+            }
+
+            .field label {
+                font-size: 13px;
+                font-weight: 800;
+            }
+
+            .field input,
+            .field select {
+                width: 100%;
+                min-height: 48px;
+                padding: 11px 13px;
+                border: 1px solid var(--control);
+                border-radius: 9px;
+                background: #fff;
+                color: #172033;
+            }
+
+            .field input::placeholder {
+                color: #7b879a;
+            }
+
+            .wide {
+                grid-column: 1 / -1;
+            }
+
+            .field-error {
+                display: none;
+                margin: 0;
+                color: var(--danger);
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .global-error {
+                display: none;
+                grid-column: 1 / -1;
+                margin: 0;
+                padding: 12px 14px;
+                border: 1px solid #f1a9a4;
+                border-radius: 9px;
+                background: #fff1f0;
+                color: #7a271a;
+                font-size: 13px;
+            }
+
+            body[data-state='conflict'] .conflict-message,
+            body[data-state='conflict'] .conflict-error,
+            body[data-state='invalid'] .invalid-message,
+            body[data-state='invalid'] .required-error {
+                display: block;
+            }
+
+            body[data-state='conflict'] .email input {
+                border: 2px solid var(--danger);
+                outline: 3px solid rgb(180 35 24 / 14%);
+            }
+
+            body[data-state='invalid'] .field input,
+            body[data-state='invalid'] .field select {
+                border-color: var(--danger);
+            }
+
+            body[data-state='invalid'] .field:first-of-type input {
+                border-width: 2px;
+                outline: 3px solid rgb(180 35 24 / 14%);
+            }
+
+            .dialog-actions {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                padding: 18px 28px max(18px, env(safe-area-inset-bottom));
+                border-top: 1px solid var(--line);
+                background: #fff;
+            }
+
+            .button {
+                min-height: 46px;
+                padding: 11px 20px;
+                border: 1px solid var(--control);
+                border-radius: 9px;
+                background: #fff;
+                color: #172033;
+                font-weight: 800;
+            }
+
+            .primary {
+                min-width: 150px;
+                border-color: var(--blue);
+                background: var(--blue);
+                color: #fff;
+            }
+
+            .primary:disabled {
+                cursor: wait;
+                opacity: 0.68;
+            }
+
+            .button-spinner {
+                display: none;
+                width: 16px;
+                height: 16px;
+                margin-right: 8px;
+                border: 2px solid rgb(255 255 255 / 48%);
+                border-top-color: #fff;
+                border-radius: 50%;
+                vertical-align: -3px;
+            }
+
+            body[data-state='submitting'] .button-spinner {
+                display: inline-block;
+            }
+
+            .virtual-keyboard {
+                display: none;
+            }
+
+            body[data-layout='medium'] .dialog-wrap {
+                justify-content: flex-end;
+                padding: 32px;
+            }
+
+            body[data-layout='medium'] .dialog {
+                width: min(600px, calc(100vw - 64px));
+                max-height: calc(100dvh - 64px);
+                border-radius: 18px;
+            }
+
+            body[data-layout='medium'] .form-body {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 16px;
+            }
+
+            body[data-layout='medium'] .wide {
+                grid-column: auto;
+            }
+
+            body[data-layout='compact'] .app-bar {
+                height: 58px;
+                padding: 0 18px;
+            }
+
+            body[data-layout='compact'] .operator {
+                display: none;
+            }
+
+            body[data-layout='compact'] .workspace {
+                padding: 24px 16px 96px;
+            }
+
+            body[data-layout='compact'] h1 {
+                font-size: 23px;
+            }
+
+            body[data-layout='compact'] .table-shell {
+                border: 0;
+                background: transparent;
+            }
+
+            body[data-layout='compact'] .toolbar {
+                padding: 12px;
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                background: #fff;
+            }
+
+            body[data-layout='compact'] .search {
+                width: 100%;
+            }
+
+            body[data-layout='compact'] .filter {
+                padding-inline: 13px;
+            }
+
+            body[data-layout='compact'] .table-heading,
+            body[data-layout='compact'] .row,
+            body[data-layout='compact'] .pagination {
+                display: none;
+            }
+
+            body[data-layout='compact'] .cards {
+                display: grid;
+                gap: 12px;
+                padding: 16px 0;
+            }
+
+            .card {
+                padding: 16px;
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                background: #fff;
+            }
+
+            .card strong,
+            .card span {
+                display: block;
+            }
+
+            .card span {
+                margin-top: 6px;
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+            body[data-layout='compact'] .dialog-wrap {
+                align-items: flex-end;
+                padding: 0;
+            }
+
+            body[data-layout='compact'] .dialog {
+                width: 100%;
+                max-height: calc(100dvh - 56px);
+                border: 0;
+                border-radius: 24px 24px 0 0;
+                box-shadow: 0 -18px 60px rgb(7 21 47 / 28%);
+            }
+
+            body[data-layout='compact'] .dialog-header {
+                padding: 20px 20px 18px;
+            }
+
+            body[data-layout='compact'] .dialog-header h2 {
+                font-size: 21px;
+            }
+
+            body[data-layout='compact'] .form-body {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 16px;
+                padding: 20px;
+            }
+
+            body[data-layout='compact'] .wide {
+                grid-column: auto;
+            }
+
+            body[data-layout='compact'] .dialog-actions {
+                padding: 14px 20px max(16px, env(safe-area-inset-bottom));
+            }
+
+            body[data-layout='compact'] .primary {
+                min-width: 128px;
+            }
+
+            body[data-layout='compact'][data-state='keyboard'] .dialog-wrap {
+                inset: 0 0 260px;
+            }
+
+            body[data-layout='compact'][data-state='keyboard'] .dialog {
+                max-height: calc(100dvh - 276px);
+            }
+
+            body[data-state='keyboard'] .virtual-keyboard {
+                position: fixed;
+                z-index: 12;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                display: grid;
+                grid-template-columns: repeat(10, minmax(0, 1fr));
+                gap: 6px;
+                height: 260px;
+                padding: 12px 8px 22px;
+                border-top: 1px solid #a8b1bf;
+                background: #d6d9df;
+            }
+
+            .keyboard-key {
+                display: grid;
+                min-width: 0;
+                place-items: center;
+                border-radius: 6px;
+                background: #fff;
+                box-shadow: 0 1px 1px rgb(21 31 48 / 28%);
+                color: #172033;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .keyboard-key.space {
+                grid-column: 3 / 9;
+            }
+
+            @media (max-width: 360px) {
+                .dialog-actions {
+                    padding-inline: 16px;
+                }
+
+                .button {
+                    padding-inline: 15px;
+                }
+            }
+        </style>
+    </head>
+    <body data-layout="expanded" data-state="pristine">
+        <header class="app-bar">
+            <div class="brand"><span class="brand-mark"></span>CMZ Platform</div>
+            <span class="operator">Opérateur connecté</span>
+        </header>
+        <main class="workspace">
+            <section class="heading">
+                <h1>Gestion des utilisateurs</h1>
+                <button class="plus" aria-label="Créer un utilisateur">+</button>
+            </section>
+            <section class="table-shell">
+                <div class="toolbar">
+                    <div class="search">⌕&nbsp;&nbsp; Nom, prénom ou adresse e-mail</div>
+                    <button class="filter">Filtres</button>
+                </div>
+                <div class="table-heading">
+                    <span>Nom</span><span>Prénom</span><span>Email</span><span>Profil</span><span>Rôle</span
+                    ><span>Statut</span><span>Mise à jour</span>
+                </div>
+                <div class="row">
+                    <span>Kouassi</span><span>Aya</span><span>aya.kouassi@example.invalid</span><span>Profil A</span
+                    ><span>Agent</span><span class="status">Actif</span><span>29/09/2026</span>
+                </div>
+                <div class="row">
+                    <span>Traoré</span><span>Moussa</span><span>moussa.traore@example.invalid</span><span>Profil B</span
+                    ><span>Admin</span><span class="status">Actif</span><span>28/09/2026</span>
+                </div>
+                <div class="row">
+                    <span>Yao</span><span>Aminata</span><span>aminata.yao@example.invalid</span><span>Profil A</span
+                    ><span>Agent</span><span class="status">Actif</span><span>27/09/2026</span>
+                </div>
+                <div class="pagination">
+                    <span>1–5 sur 42 utilisateurs</span><span>Précédent&nbsp;&nbsp; 1&nbsp;&nbsp; Suivant</span>
+                </div>
+                <div class="cards">
+                    <article class="card"><strong>Kouassi Aya</strong><span>aya.kouassi@example.invalid</span></article>
+                    <article class="card">
+                        <strong>Traoré Moussa</strong><span>moussa.traore@example.invalid</span>
+                    </article>
+                    <article class="card"><strong>Yao Aminata</strong><span>aminata.yao@example.invalid</span></article>
+                </div>
+            </section>
+        </main>
+
+        <div class="scrim"></div>
+        <div class="dialog-wrap">
+            <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="create-title">
+                <header class="dialog-header">
+                    <div>
+                        <h2 id="create-title">Créer un utilisateur</h2>
+                        <p>Tous les champs sont obligatoires.</p>
+                    </div>
+                    <button class="close" aria-label="Fermer">×</button>
+                </header>
+                <form class="form-body">
+                    <p class="global-error conflict-message" role="alert">
+                        Cet e-mail existe déjà. Modifiez-le avant de réessayer.
+                    </p>
+                    <p class="global-error invalid-message" role="alert">
+                        Complétez les champs obligatoires indiqués ci-dessous.
+                    </p>
+                    <div class="field">
+                        <label for="last-name">Nom</label>
+                        <input id="last-name" placeholder="Saisir le nom" />
+                        <p class="field-error required-error">Le nom est obligatoire.</p>
+                    </div>
+                    <div class="field">
+                        <label for="first-name">Prénom</label>
+                        <input id="first-name" placeholder="Saisir le prénom" />
+                        <p class="field-error required-error">Le prénom est obligatoire.</p>
+                    </div>
+                    <div class="field wide email">
+                        <label for="email">Email</label>
+                        <input id="email" type="email" placeholder="nom@example.com" />
+                        <p class="field-error required-error">L’e-mail est obligatoire.</p>
+                        <p class="field-error conflict-error">Cet e-mail existe déjà.</p>
+                    </div>
+                    <div class="field">
+                        <label for="phone">Téléphone</label>
+                        <input id="phone" placeholder="+225 00 00 00 00 00" />
+                        <p class="field-error required-error">Le téléphone est obligatoire.</p>
+                    </div>
+                    <div class="field">
+                        <label for="profile">Profil</label>
+                        <select id="profile">
+                            <option>Choisir un profil</option>
+                            <option>Profil A</option>
+                        </select>
+                        <p class="field-error required-error">Le profil est obligatoire.</p>
+                    </div>
+                </form>
+                <footer class="dialog-actions">
+                    <button class="button">Annuler</button>
+                    <button class="button primary"><span class="button-spinner"></span><span>Créer</span></button>
+                </footer>
+            </section>
+        </div>
+        <div class="virtual-keyboard" aria-hidden="true">
+            <span class="keyboard-key">A</span><span class="keyboard-key">Z</span><span class="keyboard-key">E</span
+            ><span class="keyboard-key">R</span><span class="keyboard-key">T</span><span class="keyboard-key">Y</span
+            ><span class="keyboard-key">U</span><span class="keyboard-key">I</span><span class="keyboard-key">O</span
+            ><span class="keyboard-key">P</span><span class="keyboard-key">Q</span><span class="keyboard-key">S</span
+            ><span class="keyboard-key">D</span><span class="keyboard-key">F</span><span class="keyboard-key">G</span
+            ><span class="keyboard-key">H</span><span class="keyboard-key">J</span><span class="keyboard-key">K</span
+            ><span class="keyboard-key">L</span><span class="keyboard-key">M</span
+            ><span class="keyboard-key space">espace</span>
+        </div>
+        <script>
+            const params = new URLSearchParams(window.location.search);
+            document.body.dataset.layout = params.get('layout') || 'expanded';
+            document.body.dataset.state = params.get('state') || 'pristine';
+            if (['conflict', 'submitting', 'keyboard'].includes(document.body.dataset.state)) {
+                document.querySelector('#last-name').value = 'Kouassi';
+                document.querySelector('#first-name').value = 'Aya';
+                document.querySelector('#email').value = 'aya.kouassi@example.invalid';
+                document.querySelector('#phone').value = '+225 01 02 03 04 05';
+                document.querySelector('#profile').selectedIndex = 1;
+            }
+            if (document.body.dataset.state === 'submitting') {
+                const createButton = document.querySelector('.primary');
+                createButton.disabled = true;
+                createButton.querySelector('span:last-child').textContent = 'Création…';
+            }
+            if (document.body.dataset.state === 'keyboard') {
+                const email = document.querySelector('#email');
+                const formBody = document.querySelector('.form-body');
+                email.focus({ preventScroll: true });
+                formBody.scrollTop = Math.max(0, email.offsetTop - formBody.clientHeight / 2);
+            }
+        </script>
+    </body>
+</html>
