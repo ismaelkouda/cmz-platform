@@ -1480,6 +1480,13 @@ Figma, désormais source partielle différée :
   refusée. La sonde réelle de renommage atomique et `fsync` demeure obligatoire
   après sélection. OPS-32 ne passe à **fait** qu'après une CI verte ayant
   réellement sélectionné `macos-apfs-28`, et non après un rerun tombé sur 26.
+  **Qualification post-rebase 2026-09-30 :** les 17 contrôles de la PR #159 sont
+  verts sur le commit `bb0d5ec` (run `36791246695`). Le job macOS `110144400292`
+  a exécuté avec succès la sonde réelle et les scénarios de récupération, mais
+  le worker attribué exposait `darwin:26` et a donc sélectionné `macos-apfs`.
+  Cette preuve ferme la non-régression du correctif, sans être présentée comme
+  une preuve runtime de `macos-apfs-28` ; le statut **fait localement** reste
+  volontairement inchangé.
 - **OPS-33** — ouvert, M, P0 Ops,
   [issue #63](https://github.com/ismaelkouda/cmz-platform/issues/63). Rendre les
   attestations de compatibilité durables après une fusion squash. La PR #62 a
