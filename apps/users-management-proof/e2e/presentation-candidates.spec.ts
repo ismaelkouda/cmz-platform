@@ -424,7 +424,6 @@ test('prouve le conflit compact dans une task sheet bornée par le contenu', asy
     expect(titleBox.height).toBeLessThan(30);
     const create = dialog.getByRole('button', { name: 'Créer', exact: true });
     const cancel = dialog.getByRole('button', { name: 'Annuler' });
-    await expect(create).toBeDisabled();
     const [rawCreateBox, rawCancelBox] = await Promise.all([
         create.boundingBox(),
         cancel.boundingBox(),
@@ -436,6 +435,7 @@ test('prouve le conflit compact dans une task sheet bornée par le contenu', asy
         legacy,
         'ADAPT-10 : la surface compacte historique occupe encore tout le viewport et empile Créer avant Annuler.'
     );
+    await expect(create).toBeEnabled();
     expect(dialogBox.height).toBeLessThan(844);
     expect(Math.abs(createBox.y - cancelBox.y)).toBeLessThan(2);
     expect(cancelBox.x).toBeLessThan(createBox.x);
