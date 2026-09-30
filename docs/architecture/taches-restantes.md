@@ -3719,10 +3719,18 @@ gouvernance, sécurité, licences.
   aux pins exacts, vérifie chaque résolution et l'absence de dépendance Axios
   directe artificielle, puis s'auto-invalide lorsque Nx accepte nativement la
   version sûre. Le canary local confirme que Bun 1.3.14 ne fournit pas encore
-  `bun audit fix` (la commande n'expose que l'audit) : pas de workflow maison
-  dépendant d'une fonction absente ; l'auto-réparation repose sur Dependabot
-  Security Updates natif. Aucun nouvel ignore d'audit. Voir OPS-26 (Dependabot
-  Bun natif + lockfile régénéré).
+  `bun audit fix` (la commande n'expose que l'audit). Deuxième limite vérifiée,
+  et non supposée : le Dependency Graph officiel ne liste pas encore Bun et le
+  SBOM GitHub du dépôt ne voit pas Axios dans `bun.lock` ; les Security Updates
+  seules ne garantissent donc pas le déclenchement. Le fallback quotidien
+  `security-overrides-repair.yml` parse l'audit, refuse toute vulnérabilité hors
+  overrides, exécute le même update transitif que Dependabot Bun sans lifecycle
+  scripts, restaure `package.json` octet par octet, ne publie que `bun.lock`,
+  ouvre une PR assignée à Soumaila puis déclenche explicitement la CI complète.
+  Le job de calcul reste en lecture seule ; les droits
+  `contents/pull-requests/ actions: write` n'existent que dans le job de
+  publication après revalidation. Aucun PAT permanent et aucun nouvel ignore
+  d'audit. Voir OPS-26 (Dependabot Bun natif + lockfile régénéré).
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
 - **T4-5** — fait, S, P1, alias `Big Tech gap`. Secret scanning pre-push + CI

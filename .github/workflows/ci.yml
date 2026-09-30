@@ -32,6 +32,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Le workflow d'auto-réparation crée sa PR avec GITHUB_TOKEN. GitHub ne
+  # redéclenche pas pull_request dans ce cas ; ce dispatch explicite attache
+  # exactement les mêmes checks requis au SHA de la branche automatisée.
+  workflow_dispatch:
 
 # Audit G-8 : un seul run actif par PR / branche — annule le précédent.
 concurrency:
@@ -705,7 +709,9 @@ jobs:
   # Le 2026-09-30, cinq nouveaux avis high publiés pour axios>=1.16.1<1.20.0
   # ont invalidé l'override exact 1.19.0. L'override impose désormais la plage
   # ^1.20.0 : plancher corrigé et mises à jour 1.x futures autorisées dans le
-  # lockfile par Dependabot Security Updates. `check:dependabot-policy` refuse
+  # lockfile. `security-overrides-repair.yml` audite chaque jour et ouvre une
+  # PR confinée à bun.lock lorsque l'un de ces overrides redevient vulnérable.
+  # `check:dependabot-policy` refuse
   # un retour au pin exact/vulnérable et invalide l'override dès que Nx accepte
   # lui-même la résolution sûre. Le même garde impose des planchers caret à
   # tous les overrides de sécurité afin d'éviter la répétition de cette classe
