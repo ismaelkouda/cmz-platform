@@ -566,8 +566,10 @@
                                     data-cmz-id="last-name"
                                     type="text"
                                     autocomplete="family-name"
+                                    placeholder="Saisir le nom"
                                     [formField]="createForm.lastName"
                                     [attr.aria-describedby]="fieldError(createForm.lastName) ? 'last-name-error' : null"
+                                    [attr.aria-invalid]="fieldError(createForm.lastName) ? 'true' : null"
                                 />
                                 @if (fieldError(createForm.lastName); as error) {
                                     <small id="last-name-error" class="field-error">{{ error }}</small>
@@ -579,10 +581,12 @@
                                     data-cmz-id="first-name"
                                     type="text"
                                     autocomplete="given-name"
+                                    placeholder="Saisir le prénom"
                                     [formField]="createForm.firstName"
                                     [attr.aria-describedby]="
                                         fieldError(createForm.firstName) ? 'first-name-error' : null
                                     "
+                                    [attr.aria-invalid]="fieldError(createForm.firstName) ? 'true' : null"
                                 />
                                 @if (fieldError(createForm.firstName); as error) {
                                     <small id="first-name-error" class="field-error">{{ error }}</small>
@@ -594,12 +598,15 @@
                                     data-cmz-id="email"
                                     type="email"
                                     autocomplete="email"
+                                    placeholder="nom@example.com"
                                     [formField]="createForm.email"
                                     [class.invalid]="emailConflict()"
                                     [attr.aria-describedby]="
                                         emailConflict() || fieldError(createForm.email) ? 'email-error' : null
                                     "
-                                    [attr.aria-invalid]="emailConflict() || createForm.email().invalid()"
+                                    [attr.aria-invalid]="
+                                        emailConflict() || fieldError(createForm.email) ? 'true' : null
+                                    "
                                     (input)="onEmailInput()"
                                 />
                                 @if (emailConflict()) {
@@ -616,8 +623,10 @@
                                     data-cmz-id="phone"
                                     type="tel"
                                     autocomplete="tel"
+                                    placeholder="+225 00 00 00 00"
                                     [formField]="createForm.phone"
                                     [attr.aria-describedby]="fieldError(createForm.phone) ? 'phone-error' : null"
+                                    [attr.aria-invalid]="fieldError(createForm.phone) ? 'true' : null"
                                 />
                                 @if (fieldError(createForm.phone); as error) {
                                     <small id="phone-error" class="field-error">{{ error }}</small>
@@ -629,8 +638,9 @@
                                     data-cmz-id="profile-id"
                                     [formField]="createForm.profileId"
                                     [attr.aria-describedby]="fieldError(createForm.profileId) ? 'profile-error' : null"
+                                    [attr.aria-invalid]="fieldError(createForm.profileId) ? 'true' : null"
                                 >
-                                    <option value="">Sélectionner un profil</option>
+                                    <option value="">Choisir un profil</option>
                                     @for (profile of profiles(); track profile.value) {
                                         <option [value]="profile.value">{{ profile.label }}</option>
                                     }
