@@ -1,7 +1,7 @@
 # C5 ADAPT-8 — filtres progressifs Desktop et Medium
 
 - **Statut :** décision, références et publication ADAPT-8c fusionnées ;
-  ADAPT-8d (oracles) reste à réaliser
+  ADAPT-8d (oracles) engagé localement avant revue
 - **Périmètre :** recherche, raccourcis de colonnes et panneau progressif C5
   intégrés à la surface tabulaire en fenêtres `medium` et `expanded`
 - **Hors périmètre :** compact, adoption d'AG Grid, modification runtime dans ce
@@ -177,12 +177,41 @@ Soumaila doit refuser le lot suivant si :
    par la PR #144 dans `fe9e3e558539ef062173febfe17fcd5eb6ee2754` ; les 17
    contrôles de PR et la CI post-fusion `36644233400` sont verts.
 5. **ADAPT-8d** : écrire les oracles comportementaux, réseau, focus, resize,
-   hauteur courte et densité ; constater leur échec exact sur `main`.
+   hauteur courte et densité ; constater leur échec exact sur `main` — engagé
+   localement. Neuf scénarios futurs sont bornés par quatre signatures
+   historiques exactes, sans `skip`, sans timeout utilisé comme verdict et sans
+   modification runtime. Le passage ciblé donne `19/19` : dix succès réels
+   hérités et neuf échecs attendus ; la régression C5 complète donne `53/53`.
+   Le support réseau et responsive commun est extrait dans le seul harnais E2E
+   afin d'éviter la duplication, sans créer de primitive applicative.
 6. **ADAPT-8e** : recalculer le work order, réaliser seulement les fichiers
    autorisés, puis exécuter Angular, Playwright, accessibilité et inspection
    visuelle.
 7. **ADAPT-8f** : faire approuver et fusionner, vérifier la CI post-fusion, puis
    seulement reprendre la décision de baseline Chromium.
+
+### Preuve locale ADAPT-8d au 2026-10-01
+
+Les neuf nouveaux oracles couvrent exactement :
+
+1. l'intégration de la recherche, du déclencheur et des trois seuls raccourcis
+   contractuels à la surface tabulaire ;
+2. l'application serveur d'un raccourci, le retour page 1 et l'unique GET ;
+3. la superposition Medium non modale sans variation de géométrie ou de scroll ;
+4. la superposition Expanded et l'inaccessibilité clavier des contrôles
+   recouverts ;
+5. l'ajout progressif, la disponibilité des champs et le focus initial ;
+6. le cycle brouillon/repli/suppression/application et son budget réseau ;
+7. l'abandon du brouillon à la fermeture en Medium comme en Expanded ;
+8. le resize Medium ↔ Expanded sans recréation, perte de focus, de scroll ou
+   appel réseau ;
+9. le stress de quinze blocs en hauteur courte, avec seul le corps scrollable.
+
+Les détecteurs refusent seulement les quatre formes actuellement observées :
+barre d'outils détachée, fieldset groupé à trois selects, side sheet Medium
+modal et supporting pane Expanded adjacent. Si une signature disparaît, le
+scénario poursuit immédiatement les assertions du contrat futur ; un échec ne
+peut donc pas être masqué par un `todo`, un `skip` ou un détecteur générique.
 
 ## 9. Pourquoi AG Grid reste une inspiration et non une dépendance
 
