@@ -2493,18 +2493,23 @@ Figma, désormais source partielle différée :
   réels. Soumaila a approuvé le commit exact
   `44e6b95ae6dc1d158b060e2e3d3438bdab5ee74c`, fusionné par la PR #167 dans
   `82a9f7cf9c267af8b6100c80f1d50a71375eca15` ; les 17 contrôles de PR et les 17
-  jobs de la CI post-fusion `36826709105` sont verts. **ADAPT-8d2 est engagé
-  localement :** trois oracles ADAPT-6 devenus contradictoires — modal Medium,
+  jobs de la CI post-fusion `36826709105` sont verts. **ADAPT-8d2 est
+  fusionné.** Trois oracles ADAPT-6 devenus contradictoires — modal Medium,
   panneau adjacent Expanded et fieldset groupé — sont retirés au profit des
   oracles progressifs plus forts déjà fusionnés. Les sept invariants transverses
   restants acceptent l'ancienne et la future structure sans relâcher réseau,
-  brouillon, resize, frontières, unicité ou neutralité backend ; le passage
-  ciblé donne `16/16`, dont neuf échecs futurs attendus. `@angular/aria` 22.2.1
-  est retenu pour le runtime, aligné sur CDK 22.2.1 ; il sera déclaré avec son
-  premier usage afin que Knip ne masque aucune dépendance inutilisée. Le work
-  order provisoire `1c8a9d49…` est invalidé. Après revue, fusion et CI
-  post-fusion d'ADAPT-8d2, ADAPT-8e devra recalculer le work order avant la
-  réalisation bornée et la preuve navigateur. Décision détaillée :
+  brouillon, resize, frontières, unicité ou neutralité backend. Soumaila a
+  approuvé le commit exact `baa9218300a4efe3e5bf827adde808dfc3fc4690`, fusionné
+  par la PR #168 dans `8383a06ad8b6e45fe2968f7d8c5b83219588f8b2` ; ses 17
+  contrôles sont verts. **ADAPT-8e est fusionné et ADAPT-8 est clos
+  techniquement :** le runtime réalise le panneau progressif Medium/Expanded
+  avec Angular Aria 22.2.1, conserve la séparation `draft`/`applied`, les
+  raccourcis serveur, les frontières réseau et la neutralité backend, puis
+  convertit les neuf écarts futurs en succès réels. La dépendance officielle est
+  déclarée avec son usage, sans exemption Knip. Soumaila a approuvé le commit
+  exact `7a894296f407dcdfc80df545448976fb5513dbfe`, fusionné par la PR #171 dans
+  `b70037c51387b309752965e9a2ebf9e3c317919b` ; ses 17 contrôles et la CI
+  post-fusion `36904438086` sont verts. Décision détaillée :
   [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
   ADR-0074 accepté. Dossier approuvé :
   `examples/users-management-proof/presentation/progressive-filter-candidates/`.
@@ -2566,8 +2571,34 @@ Figma, désormais source partielle différée :
   post-fusion `36794101702` sont verts. La surface de création adaptative et son
   alignement visuel final sont réalisés ; ADAPT-10 est clos. Décision détaillée :
   [`c5-adapt10-surface-creation-adaptative-2026-09-29.md`](./c5-adapt10-surface-creation-adaptative-2026-09-29.md),
-  ADR-0076 accepté. ADAPT-8 reste indépendant et ouvert à partir d'ADAPT-8d2.
-  **PRES-AUTH-1 —
+  ADR-0076 accepté. **DATA-VIEW-0 — décision et corpus de capacités :** le
+  composant `table` de `cmz-backoffice` à
+  `feat/config@f064d1d8e50190cd33e9ace096d51710d2474f2f` est retenu comme corpus
+  empirique de besoins et contre-exemple architectural, jamais comme dépendance,
+  autorité visuelle ou code à copier. ADR-0078 impose des capacités optionnelles
+  et explicites : `list-query` garde lecture/pagination/tri/filtres,
+  `action-request` garde mutation/permission/effets/invalidation, et le plan de
+  page relie les nœuds sans créer une quatrième primitive `data-view`. Une
+  réalisation locale est permise au premier cas ; une primitive partagée exige
+  un second cas indépendant, un contrat stable et des oracles communs. Audit et
+  séquence :
+  [`data-view-capabilities-cmz-backoffice-2026-10-01.md`](./data-view-capabilities-cmz-backoffice-2026-10-01.md).
+  **ADAPT-11a — prochaine tranche :** reproduire déterministement les six
+  visuels validés Medium/Expanded, aujourd'hui locaux et ignorés, sous le
+  plafond de 1 Mo, puis publier chemins, dimensions, usages et SHA-256 sans
+  toucher au runtime. Les empreintes approuvées sont consignées dans l'audit et
+  les fichiers locaux ne doivent pas être nettoyés avant cette publication.
+  **ADAPT-11b — après fusion d'ADAPT-11a :** écrire les oracles futurs pour la
+  toolbar partielle, les actions de ligne, leurs menus et la géométrie bornée du
+  panneau ; une ligne reste non interactive par défaut et ses contrôles ne
+  déclenchent jamais une activation de ligne optionnelle. **ADAPT-11c — après
+  fusion des oracles :** recalculer le work order et réaliser uniquement les
+  capacités C5 demandées, avec primitives Angular officielles avant custom et
+  preuve build, lint, tests, Playwright, accessibilité, bundle et confinement.
+  **DATA-VIEW-1 — différé :** n'extraire un contrat ou renderer partagé qu'après
+  comparaison avec une seconde fonctionnalité indépendante et preuve Angular +
+  React. Aucun schéma universel ni migration du `cmz-table` n'est autorisé dans
+  ADAPT-11. **PRES-AUTH-1 —
   autorités de présentation rejetées :** le 2026-09-30, le porteur produit
   rejette explicitement comme références courantes les dossiers
   `adaptive-candidates/` et `filter-candidates/`, ainsi que les quatre PNG

@@ -118,6 +118,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0075](./adr/0075-chargement-progressif-mobile-silencieux.md) | Chargement progressif mobile silencieux                  |
 | [0076](./adr/0076-surface-creation-adaptative-bornee-par-contenu.md) | Surface de création adaptative bornée par le contenu     |
 | [0077](./adr/0077-ui-angular-officielle-avant-custom.md)    | UI Angular officielle avant comportement custom          |
+| [0078](./adr/0078-vues-de-donnees-par-capacites-optionnelles.md) | Vues de données par capacités optionnelles               |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
