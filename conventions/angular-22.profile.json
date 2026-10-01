@@ -77,9 +77,10 @@
       "guidance": "ADR-0036"
     },
     "styling": {
-      "native": "Deux couches complémentaires (ADR-0041). Primitives de composant interactif (boutons, champs, dialogs, menus, tables, tabs…) : Angular Material standalone, thème M3 via `mat.theme()` dans les styles globaux. Mise en page, espacement, échelle typographique, one-offs : classes utilitaires Tailwind dans les templates. `NgOptimizedImage` pour les images statiques ; styles de composant scopés pour le résiduel.",
+      "native": "Hiérarchie officielle (ADR-0077) : HTML sémantique pour les contrôles simples ; Angular Material standalone pour un composant visuel M3 dans une app qui l'a adopté ; Angular Aria pour un motif WAI-ARIA headless au visuel propre ; CDK pour une primitive bas niveau manquante. Mise en page, espacement, échelle typographique et one-offs : Tailwind ou styles de composant scopés. `NgOptimizedImage` pour les images statiques.",
       "packages": [
         "@angular/material",
+        "@angular/aria",
         "@angular/cdk",
         "tailwindcss",
         "@tailwindcss/postcss"
@@ -88,20 +89,25 @@
         "ngClass / ngStyle (bindings natifs class / style à la place)",
         "CSS global hors thème M3 / couche `@theme` Tailwind",
         "autre librairie de composants (PrimeNG, NG-ZORRO, Nebular…) — Material est la seule",
-        "le reset Tailwind qui réinitialise les composants Material (préserver la frontière ADR-0041)"
+        "le reset Tailwind qui réinitialise les composants Material (préserver la frontière ADR-0041)",
+        "Material et Angular Aria superposés sur le même comportement interactif",
+        "style Tailwind / CSS utilisé pour simuler une sémantique ou une gestion clavier absente"
       ],
-      "guidance": "https://material.angular.dev/guide/theming",
-      "notes": "Dérive de setup gardée par conventions/libraries/angular/{angular-material,tailwind}.setup.json + check:library-setup ; add-library exécute aussi les preuves runtime (compilation stricte, règle CSS, build de production, coexistence navigateur). `@cmz/shared-ui` reste le design system de `backoffice-angular` uniquement (gelé, non rétro-porté sur Material — ADR-0041) ; Material et Tailwind sont ajoutés à la demande (ADR-0044), sans wrapper maison."
+      "guidance": "ADR-0077",
+      "notes": "Material et Tailwind restent opt-in via leurs recettes (ADR-0044). Angular Aria est un paquet headless sans setup d'application : catalogue + lockfile + premier usage réel, sans recette artificielle ; une recette ne devient candidate qu'après deux configurations d'app concordantes. `@cmz/shared-ui` reste le design system de `backoffice-angular` uniquement (ADR-0041)."
     },
     "accessibility": {
-      "native": "WCAG AA : focus géré, contraste, ARIA ; boutons nommés (texte ou `aria-label`) ; champs avec `<label for>` ; icônes décoratives `aria-hidden=\"true\"` ; groupes de toggle `role=\"group\"` + `aria-pressed`.",
-      "packages": [],
+      "native": "WCAG AA et HTML sémantique d'abord. Pour un motif composite au visuel propre, utiliser la directive Angular Aria officielle ; pour une UI M3 adoptée, le composant Angular Material ; CDK A11y seulement pour une primitive manquante. Boutons nommés, champs avec `<label for>`, icônes décoratives `aria-hidden=\"true\"`, focus visible et parcours clavier/lecteur d'écran prouvé.",
+      "packages": ["@angular/aria", "@angular/cdk", "@angular/material"],
       "forbid": [
         "div cliquable sans rôle ni gestion clavier",
-        "bouton icône sans nom accessible"
+        "bouton icône sans nom accessible",
+        "rôle ARIA redondant ou contradictoire avec la sémantique HTML native",
+        "réimplémentation manuelle d'un motif clavier/focus couvert par une primitive officielle applicable",
+        "AXE présenté comme unique preuve d'accessibilité"
       ],
-      "guidance": "https://angular.dev/best-practices/a11y",
-      "notes": "Doit passer tous les contrôles AXE — outil runtime, hors du check statique."
+      "guidance": "ADR-0077",
+      "notes": "AXE est un gate structurel, pas une preuve complète. Ajouter tests de composant/harness, Playwright clavier/focus et validation manuelle sur la matrice navigateur/technologie d'assistance pertinente."
     },
     "testing": {
       "native": "Vitest + `TestBed` (`@angular/core/testing`) pour les composants ; tests de règle unitaires purs pour domain/application ; Playwright pour la navigation bout-en-bout.",

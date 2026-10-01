@@ -80,8 +80,9 @@ Convention transverse (indépendante de la plateforme) :
 
 ## Recettes de setup de bibliothèque — `libraries/`
 
-Le profil dit _quel_ mécanisme utiliser (`styling` → Angular Material + Tailwind
-pour Angular). Il ne dit pas _comment_ installer et configurer ces bibliothèques
+Le profil dit _quel_ mécanisme utiliser (`styling` → hiérarchie HTML,
+Material/Aria, CDK puis Tailwind/CSS pour Angular). Il ne dit pas _comment_
+installer et configurer les bibliothèques qui possèdent un setup d'application
 — et ce « comment » change vite (Tailwind v3 `tailwind.config.js` → v4 `@theme` ;
 `provideAnimations` déprécié en Angular 20.2 ; flags de schematic d'une version à
 l'autre).
@@ -118,6 +119,15 @@ sous la racine du dépôt, en **traversant zéro lien symbolique** (le dossier
 d'app inclus) ; **échoue** si la plateforme Nx est indéterminable, si le
 manifeste manque, ou si une lib gouvernée est utilisée (empreinte détectée) sans
 être déclarée. `backoffice-angular` déclare `["tailwind", "transloco"]`.
+
+Une recette n'est pas obligatoire pour chaque paquet officiel. Elle gouverne un
+**setup d'application répétable** : schématique, provider, thème, fichier de
+configuration ou coexistence à prouver. Un paquet de directives sans
+configuration, tel qu'Angular Aria, suit la politique ordinaire des dépendances
+: catalogue central, lockfile, déclaration avec le premier usage, Knip, audit,
+licences, build et tests. Créer une recette avec une empreinte factice serait
+une automatisation sans contrat observable. Une recette devient candidate
+lorsque deux applications exigent le même setup réel.
 
 | Recette | `install.method` |
 | --- | --- |
