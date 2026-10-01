@@ -51,7 +51,12 @@ décoration.
 2. **Source exécutable de la mesure :**
    `apps/backoffice-angular/bundle-metrics.json` (régénérée par
    `bun run bundle:record` / `bun run bundle:metrics`). Métrique citée dans les
-   docs = `initial_raw_kb` uniquement.
+   docs = `initial_raw_kb` uniquement. Elle additionne les modules construits
+   chargés initialement (`script[type=module]` et
+   `link[rel=modulepreload]`) ainsi que les feuilles de style initiales. Les
+   scripts hôte externes au build, comme `env.js`, n'entrent pas dans cette
+   mesure. Cette définition reste alignée sur le total `initial` du builder
+   lorsque l'optimiseur extrait du code de `main` vers un chunk préchargé.
 3. **Plafonds en vigueur (Accepted 2026-08-02) :**
 
    | Budget              | maximumWarning | maximumError |

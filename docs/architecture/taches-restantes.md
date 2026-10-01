@@ -1516,6 +1516,17 @@ Figma, désormais source partielle différée :
   doivent couvrir chaque classe d'échec et le retry, puis une CI réelle doit
   prouver que l'isolation Linux et `check:application-pipeline` restent
   bloquants.
+- **OPS-35** — engagé localement le 2026-10-01, S, P0 Ops. Le Nightly
+  `36844755579` a signalé un faux recul du bundle initial de `521,22 kB` à
+  `321,85 kB`. La reproduction sans cache montre que le builder Angular produit
+  en réalité `522,75 kB` : l'optimiseur a extrait environ `201,60 kB` de
+  `main` vers deux liens `modulepreload`, mais `record-bundle-metrics.mjs` ne
+  comptait que les balises `script` et la feuille `styles`. La correction doit
+  compter `script[type=module]`, `link[rel=modulepreload]` et les styles,
+  dédupliquer les chemins, exclure le script hôte `env.js`, refuser un asset
+  initial absent et ajouter des tests de non-régression. La baseline finale ne
+  sera commitée qu'à partir d'un build Linux CI réel, puis le Nightly devra
+  être rejoué vert avant ADAPT-8e.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
