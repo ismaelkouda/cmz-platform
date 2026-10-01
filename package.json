@@ -129,6 +129,7 @@
     "e2e:ui": "bunx playwright test -c apps/backoffice-angular/playwright.config.mjs --ui"
   },
   "dependencies": {
+    "@angular/aria": "catalog:",
     "@angular/cdk": "catalog:",
     "@angular/common": "catalog:",
     "@angular/compiler": "catalog:",
@@ -214,6 +215,7 @@
     ],
     "catalog": {
       "@angular/animations": "22.2.0",
+      "@angular/aria": "22.2.1",
       "@angular/cdk": "22.2.1",
       "@angular/common": "22.2.0",
       "@angular/compiler": "22.2.0",
