@@ -2474,9 +2474,16 @@ Figma, désormais source partielle différée :
   redimensionner. **ADAPT-8c est fusionné :** Soumaila a approuvé le commit
   exact `c1aba98edb910f2f9149b0ee669c74809d66f468`, fusionné par la PR #144 dans
   `fe9e3e558539ef062173febfe17fcd5eb6ee2754` ; les 17 contrôles de PR et la CI
-  post-fusion `36644233400` sont verts. ADAPT-8d doit maintenant écrire les
-  oracles en échec attendu ; viendront ensuite work order, réalisation bornée et
-  preuve navigateur. Décision détaillée :
+  post-fusion `36644233400` sont verts. **ADAPT-8d est engagé localement :** neuf
+  oracles futurs couvrent intégration au tableau, raccourcis serveur, overlays
+  Medium/Expanded, blocs progressifs, brouillon, fermeture, resize et stress de
+  quinze blocs. Quatre signatures historiques exactes produisent neuf échecs
+  attendus sans `skip` ; les dix oracles adaptatifs existants restent dix succès
+  réels. Le passage ciblé donne `19/19`, la régression C5 complète `53/53`, et
+  lint, tests Angular et build production sont verts. Aucun runtime, contrat
+  API, work order ou dépendance ne change. Après revue, fusion et CI
+  post-fusion, ADAPT-8e devra recalculer le work order avant la réalisation
+  bornée et la preuve navigateur. Décision détaillée :
   [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
   ADR-0074 accepté. Dossier approuvé :
   `examples/users-management-proof/presentation/progressive-filter-candidates/`.
@@ -2528,9 +2535,15 @@ Figma, désormais source partielle différée :
   attendus, 2 réels), 13/13 sur la présentation (5 attendus, 8 réels), 30/30
   côté Angular (3 attendus, 27 réels) et 44/44 sur la régression navigateur
   complète (14 attendus, 30 réels) ; lint et build production sont verts. Aucun
-  runtime, contrat API, work order ou dépendance ne change. Après revue, fusion
-  et CI post-fusion, ADAPT-10e devra recalculer le work order depuis le nouveau
-  `main` avant toute réalisation. Décision détaillée :
+  runtime, contrat API, work order ou dépendance ne change. **ADAPT-10e et
+  ADAPT-10f sont fusionnés :** Soumaila a approuvé le commit exact
+  `aa459f27ff292eb4a3ea96f1f0abe096b1cff511`, fusionné par la PR #158 dans
+  `95795b02fa1c05db69d4d9c0853c004be7a52826` ; la CI post-fusion
+  `36738346073` est verte. Il a ensuite approuvé le commit exact
+  `c47c5057cda0843b2831092882d3635ca95b84ab`, fusionné par la PR #159 dans
+  `636feac8d982233ca54eac9045d3cf81a815171b` ; les 17 jobs de la CI
+  post-fusion `36794101702` sont verts. La surface de création adaptative et son
+  alignement visuel final sont réalisés ; ADAPT-10 est clos. Décision détaillée :
   [`c5-adapt10-surface-creation-adaptative-2026-09-29.md`](./c5-adapt10-surface-creation-adaptative-2026-09-29.md),
   ADR-0076 accepté. ADAPT-8d reste indépendant et ouvert. **PRES-AUTH-1 —
   autorités de présentation rejetées :** le 2026-09-30, le porteur produit

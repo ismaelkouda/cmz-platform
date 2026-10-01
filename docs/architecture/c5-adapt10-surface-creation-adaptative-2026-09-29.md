@@ -1,7 +1,7 @@
 # C5 ADAPT-10 — surface de création adaptative
 
-- **Statut :** décision, références et publication approuvées et fusionnées ;
-  oracles ADAPT-10d engagés avant réalisation
+- **Statut :** ADAPT-10 réalisé, approuvé, fusionné et qualifié par CI ; chantier
+  clos
 - **Périmètre :** placement, dimensionnement, focus, validation et cycle réseau
   du formulaire de création C5
 - **Hors périmètre :** runtime dans ce lot, filtres ADAPT-8, contrat API,
@@ -221,7 +221,7 @@ Soumaila doit refuser un lot ultérieur si :
 6. **ADAPT-10f** : produire les captures navigateur réelles, faire relire les
    octets finaux, fusionner et vérifier la CI post-fusion.
 
-### Avancement au 2026-09-30
+### Avancement au 2026-10-01
 
 - ADAPT-10a, ADAPT-10b et ADAPT-10c sont fusionnés. La PR #154 publie les sept
   références approuvées sur le merge commit
@@ -231,9 +231,16 @@ Soumaila doit refuser un lot ultérieur si :
   de présentation devenues contradictoires et borne trois attentes de composant
   Angular. Ce lot ne modifie ni runtime, ni work order, ni contrat API, ni
   dépendance.
-- ADAPT-10e reste interdit tant que les oracles ADAPT-10d ne sont pas relus,
-  fusionnés et attestés par la CI post-fusion ; son work order devra être
-  recalculé depuis ce nouveau `main`.
+- ADAPT-10e réalise la surface adaptative bornée par le work order recalculé.
+  Soumaila a approuvé le commit exact
+  `aa459f27ff292eb4a3ea96f1f0abe096b1cff511`, fusionné par la PR #158 dans
+  `95795b02fa1c05db69d4d9c0853c004be7a52826`. La CI post-fusion
+  `36738346073` est verte.
+- ADAPT-10f aligne les derniers écarts entre runtime et autorités visuelles,
+  sans changer le contrat métier. Soumaila a approuvé le commit exact
+  `c47c5057cda0843b2831092882d3635ca95b84ab`, fusionné par la PR #159 dans
+  `636feac8d982233ca54eac9045d3cf81a815171b`. Les 17 jobs de la CI
+  post-fusion `36794101702` sont verts. ADAPT-10 est clos.
 
 ADAPT-8d reste un chantier indépendant : décider la création ne termine pas les
 oracles du panneau de filtres.
