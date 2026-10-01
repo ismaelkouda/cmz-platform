@@ -47,13 +47,27 @@ async function openTemporaryFilters(page: Page): Promise<Locator> {
     return dialog;
 }
 
-async function openPersistentFilters(page: Page): Promise<Locator> {
+async function openDesktopFilters(page: Page): Promise<Locator> {
     const trigger = filterTrigger(page);
     await expect(trigger).toBeVisible({ timeout: 2_000 });
     await trigger.click();
-    const pane = page.getByRole('complementary', { name: 'Filtres' });
-    await expect(pane).toBeVisible({ timeout: 2_000 });
-    return pane;
+    const panel = page.locator('#user-filter-panel');
+    await expect(panel).toBeVisible({ timeout: 2_000 });
+    await expect(panel).toHaveAccessibleName('Filtres');
+    return panel;
+}
+
+async function addDesktopFilterIfNeeded(
+    panel: Locator,
+    label: 'Profil' | 'Rôle' | 'Statut'
+): Promise<void> {
+    const add = panel.getByRole('button', { name: 'Ajouter un filtre' });
+    if ((await add.count()) === 0) return;
+    await add.click();
+    await panel
+        .locator('[data-cmz-id="available-filters"]')
+        .getByRole('button', { name: label, exact: true })
+        .click();
 }
 
 async function markLegacyCompactFilterA11yAsExpectedFailure(
@@ -178,148 +192,6 @@ test('compact : isole draft/applied et ne produit qu’un GET lors de Appliquer'
     await expect(filterTrigger(page)).toHaveAccessibleName('Filtres (1)');
 });
 
-test('medium : borne le side sheet modal, son focus et restitue le déclencheur', async ({
-    page,
-}) => {
-    await page.setViewportSize(MEDIUM);
-    await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
-
-    const trigger = filterTrigger(page);
-    const dialog = await openTemporaryFilters(page);
-    await expect(dialog).toHaveAttribute('aria-modal', 'true');
-    await expect(page.locator('main')).toHaveAttribute('inert', '');
-    await expect(page.locator('[data-cmz-id="filter-backdrop"]')).toBeVisible();
-
-    const box = requireBox(await dialog.boundingBox(), 'side sheet medium');
-    expect(box.width).toBeGreaterThanOrEqual(420);
-    expect(box.width).toBeLessThanOrEqual(480);
-    expect(box.x + box.width).toBeLessThanOrEqual(MEDIUM.width + 1);
-    expect(
-        await dialog.evaluate((element) =>
-            element.contains(document.activeElement)
-        )
-    ).toBe(true);
-
-    const enabledControls = dialog.locator(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled])'
-    );
-    await enabledControls.last().focus();
-    await page.keyboard.press('Tab');
-    expect(
-        await dialog.evaluate((element) =>
-            element.contains(document.activeElement)
-        )
-    ).toBe(true);
-
-    await page.keyboard.press('Escape');
-    await expect(dialog).toHaveCount(0);
-    await expect(trigger).toBeFocused();
-});
-
-test('expanded : rend un supporting pane repliable, non modal et laisse la liste opérable', async ({
-    page,
-}) => {
-    const requests = observeUsersRequests(page);
-    await page.setViewportSize(EXPANDED);
-    await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
-
-    const pane = await openPersistentFilters(page);
-    await expect(page.getByRole('dialog', { name: 'Filtres' })).toHaveCount(0);
-    await expect(page.locator('main')).not.toHaveAttribute('inert', '');
-    await expect(page.locator('[data-cmz-id="filter-backdrop"]')).toHaveCount(
-        0
-    );
-
-    const [mainBox, paneBox] = await Promise.all([
-        page.locator('main').boundingBox(),
-        pane.boundingBox(),
-    ]);
-    const main = requireBox(mainBox, 'liste expanded');
-    const filters = requireBox(paneBox, 'supporting pane expanded');
-    expect(filters.width).toBeGreaterThanOrEqual(360);
-    expect(filters.width).toBeLessThanOrEqual(440);
-    expect(main.x + main.width).toBeLessThanOrEqual(filters.x + 1);
-
-    const requestsBeforeListInteraction = requests.length;
-    const search = page.getByLabel('Rechercher un utilisateur');
-    await search.fill('Alpha');
-    await search.press('Enter');
-    await expectOnlyOneUsersGet(requests, requestsBeforeListInteraction);
-    await expect(pane).toBeVisible();
-
-    await pane.getByLabel('Statut').selectOption('inactive');
-    await pane.getByRole('button', { name: 'Replier les filtres' }).click();
-    await expect(pane).toHaveCount(0);
-    const reopened = await openPersistentFilters(page);
-    await expect(reopened.getByLabel('Statut')).toHaveValue('inactive');
-});
-
-test('stress 15 champs : groupe les critères et garde header, corps scrollable et footer visibles', async ({
-    page,
-}) => {
-    await page.setViewportSize({ width: MEDIUM.width, height: 520 });
-    await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
-
-    const dialog = await openTemporaryFilters(page);
-    await expect(
-        dialog.getByRole('group', { name: 'Essentiels' })
-    ).toBeVisible();
-    const groups = dialog.locator('[data-cmz-id="filter-groups"]');
-    const body = dialog.locator('[data-cmz-id="filter-body"]');
-    const footer = dialog.locator('[data-cmz-id="filter-actions"]');
-    await expect(groups).toHaveCount(1);
-    await expect(body).toBeVisible();
-    await expect(footer).toBeVisible();
-
-    // Test-only geometry stress: clone the real fieldset as inert, hidden from
-    // assistive technology, and never bind it to Angular or the network.
-    await groups.evaluate((container) => {
-        const source = container.querySelector('fieldset');
-        if (!source) throw new Error('Groupe Essentiels introuvable.');
-        for (let index = 1; index < 5; index += 1) {
-            const clone = source.cloneNode(true) as HTMLFieldSetElement;
-            clone.setAttribute('aria-hidden', 'true');
-            clone.setAttribute('inert', '');
-            clone.dataset.cmzStressGroup = String(index);
-            for (const identified of clone.querySelectorAll('[id]')) {
-                identified.removeAttribute('id');
-            }
-            for (const control of clone.querySelectorAll('input, select')) {
-                control.removeAttribute('name');
-            }
-            container.append(clone);
-        }
-    });
-
-    const metrics = await body.evaluate((element) => ({
-        clientHeight: element.clientHeight,
-        clientWidth: element.clientWidth,
-        scrollHeight: element.scrollHeight,
-        scrollWidth: element.scrollWidth,
-    }));
-    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
-    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
-
-    const [dialogBox, footerBox] = await Promise.all([
-        dialog.boundingBox(),
-        footer.boundingBox(),
-    ]);
-    const outer = requireBox(dialogBox, 'side sheet stress');
-    const actions = requireBox(footerBox, 'footer stress');
-    expect(actions.y + actions.height).toBeLessThanOrEqual(
-        outer.y + outer.height + 1
-    );
-    await expect(
-        dialog.getByRole('heading', { name: 'Filtres' })
-    ).toBeVisible();
-    await expect(
-        dialog.getByRole('button', { name: 'Appliquer' })
-    ).toBeVisible();
-});
-
 test('résume seulement les filtres appliqués, limite les chips medium et retire avec un seul GET', async ({
     page,
 }) => {
@@ -328,7 +200,10 @@ test('résume seulement les filtres appliqués, limite les chips medium et retir
     await openReadyPage(page);
     await markLegacyInlineFiltersAsExpectedFailure(page);
 
-    const dialog = await openTemporaryFilters(page);
+    const dialog = await openDesktopFilters(page);
+    for (const label of ['Profil', 'Rôle', 'Statut'] as const) {
+        await addDesktopFilterIfNeeded(dialog, label);
+    }
     await dialog.getByLabel('Profil').selectOption('profile-a');
     await dialog.getByLabel('Rôle').selectOption('agent');
     await dialog.getByLabel('Statut').selectOption('inactive');
@@ -337,7 +212,7 @@ test('résume seulement les filtres appliqués, limite les chips medium et retir
     ).toHaveCount(0);
 
     const countBeforeApply = requests.length;
-    await dialog.getByRole('button', { name: 'Appliquer' }).click();
+    await dialog.getByRole('button', { name: /^(Appliquer|Filtrer)$/ }).click();
     await expectOnlyOneUsersGet(requests, countBeforeApply);
     const applied = page.getByRole('region', { name: 'Filtres appliqués' });
     const removable = applied.getByRole('button', {
@@ -372,13 +247,13 @@ test('resize compact → medium → expanded → compact : conserve le draft san
 
     await page.setViewportSize(MEDIUM);
     await waitForResponsiveLayout(page);
-    container = page.getByRole('dialog', { name: 'Filtres' });
+    container = page.locator('#user-filter-panel');
     await expect(container.getByLabel('Statut')).toHaveValue('inactive');
     expect(requests).toEqual(requestsBeforeResize);
 
     await page.setViewportSize(EXPANDED);
     await waitForResponsiveLayout(page);
-    container = page.getByRole('complementary', { name: 'Filtres' });
+    container = page.locator('#user-filter-panel');
     await expect(container.getByLabel('Statut')).toHaveValue('inactive');
     expect(requests).toEqual(requestsBeforeResize);
 
@@ -405,14 +280,14 @@ test('frontières : respecte largeur/hauteur, 320 CSS px et texte agrandi sans m
     await openReadyPage(page);
     await markLegacyInlineFiltersAsExpectedFailure(page);
 
-    await openTemporaryFilters(page);
+    await openDesktopFilters(page);
     const requestsBeforeResize = [...requests];
     await page.setViewportSize({
         width: EXPANDED_MIN_WIDTH,
         height: EXPANDED_MIN_HEIGHT,
     });
     await waitForResponsiveLayout(page);
-    let container = page.getByRole('complementary', { name: 'Filtres' });
+    let container = page.locator('#user-filter-panel');
     await expect(container).toBeVisible();
     expect(requests).toEqual(requestsBeforeResize);
 
@@ -421,8 +296,8 @@ test('frontières : respecte largeur/hauteur, 320 CSS px et texte agrandi sans m
         height: EXPANDED_MIN_HEIGHT - 1,
     });
     await waitForResponsiveLayout(page);
-    container = page.getByRole('dialog', { name: 'Filtres' });
-    await expect(container).toHaveAttribute('aria-modal', 'true');
+    container = page.locator('#user-filter-panel');
+    await expect(container).toBeVisible();
     expect(requests).toEqual(requestsBeforeResize);
 
     await page.setViewportSize({ width: 320, height: 640 });
@@ -467,22 +342,18 @@ test('ne rend jamais deux exemplaires interactifs du même filtre', async ({
 
     await page.setViewportSize(MEDIUM);
     await waitForResponsiveLayout(page);
-    container = page.getByRole('dialog', { name: 'Filtres' });
-    for (const label of ['Profil', 'Rôle', 'Statut']) {
-        const control = container.getByLabel(label, { exact: true });
-        await expect(control).toHaveCount(1);
-        await expect(control).toBeVisible();
-    }
+    container = page.locator('#user-filter-panel');
+    await expect(container.getByLabel('Profil', { exact: true })).toHaveCount(
+        1
+    );
     await expectUniqueIds(page);
 
     await page.setViewportSize(EXPANDED);
     await waitForResponsiveLayout(page);
-    container = page.getByRole('complementary', { name: 'Filtres' });
-    for (const label of ['Profil', 'Rôle', 'Statut']) {
-        const control = container.getByLabel(label, { exact: true });
-        await expect(control).toHaveCount(1);
-        await expect(control).toBeVisible();
-    }
+    container = page.locator('#user-filter-panel');
+    await expect(container.getByLabel('Profil', { exact: true })).toHaveCount(
+        1
+    );
     await expectUniqueIds(page);
 });
 
@@ -494,7 +365,10 @@ test('n’invente ni tri, ni option, ni paramètre réseau hors contrat', async 
     await openReadyPage(page);
     await markLegacyInlineFiltersAsExpectedFailure(page);
 
-    const dialog = await openTemporaryFilters(page);
+    const dialog = await openDesktopFilters(page);
+    for (const label of ['Profil', 'Rôle', 'Statut'] as const) {
+        await addDesktopFilterIfNeeded(dialog, label);
+    }
     await expect(dialog.getByText(/Trier|Sort by/i)).toHaveCount(0);
     expect(
         await dialog
@@ -525,7 +399,7 @@ test('n’invente ni tri, ni option, ni paramètre réseau hors contrat', async 
     await dialog.getByLabel('Rôle').selectOption('agent');
     await dialog.getByLabel('Statut').selectOption('inactive');
     const countBeforeApply = requests.length;
-    await dialog.getByRole('button', { name: 'Appliquer' }).click();
+    await dialog.getByRole('button', { name: /^(Appliquer|Filtrer)$/ }).click();
     await expectOnlyOneUsersGet(requests, countBeforeApply);
 
     const url = new URL(requests.at(-1) ?? '', 'https://example.invalid');

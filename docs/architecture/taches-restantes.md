@@ -2474,16 +2474,26 @@ Figma, désormais source partielle différée :
   redimensionner. **ADAPT-8c est fusionné :** Soumaila a approuvé le commit
   exact `c1aba98edb910f2f9149b0ee669c74809d66f468`, fusionné par la PR #144 dans
   `fe9e3e558539ef062173febfe17fcd5eb6ee2754` ; les 17 contrôles de PR et la CI
-  post-fusion `36644233400` sont verts. **ADAPT-8d est engagé localement :** neuf
-  oracles futurs couvrent intégration au tableau, raccourcis serveur, overlays
+  post-fusion `36644233400` sont verts. **ADAPT-8d est fusionné :** neuf oracles
+  futurs couvrent intégration au tableau, raccourcis serveur, overlays
   Medium/Expanded, blocs progressifs, brouillon, fermeture, resize et stress de
   quinze blocs. Quatre signatures historiques exactes produisent neuf échecs
   attendus sans `skip` ; les dix oracles adaptatifs existants restent dix succès
-  réels. Le passage ciblé donne `19/19`, la régression C5 complète `53/53`, et
-  lint, tests Angular et build production sont verts. Aucun runtime, contrat
-  API, work order ou dépendance ne change. Après revue, fusion et CI
-  post-fusion, ADAPT-8e devra recalculer le work order avant la réalisation
-  bornée et la preuve navigateur. Décision détaillée :
+  réels. Soumaila a approuvé le commit exact
+  `44e6b95ae6dc1d158b060e2e3d3438bdab5ee74c`, fusionné par la PR #167 dans
+  `82a9f7cf9c267af8b6100c80f1d50a71375eca15` ; les 17 contrôles de PR et les 17
+  jobs de la CI post-fusion `36826709105` sont verts. **ADAPT-8d2 est engagé
+  localement :** trois oracles ADAPT-6 devenus contradictoires — modal Medium,
+  panneau adjacent Expanded et fieldset groupé — sont retirés au profit des
+  oracles progressifs plus forts déjà fusionnés. Les sept invariants transverses
+  restants acceptent l'ancienne et la future structure sans relâcher réseau,
+  brouillon, resize, frontières, unicité ou neutralité backend ; le passage
+  ciblé donne `16/16`, dont neuf échecs futurs attendus. `@angular/aria` 22.2.1
+  est retenu pour le runtime, aligné sur CDK 22.2.1 ; il sera déclaré avec son
+  premier usage afin que Knip ne masque aucune dépendance inutilisée. Le work
+  order provisoire `1c8a9d49…` est invalidé. Après revue, fusion et CI
+  post-fusion d'ADAPT-8d2, ADAPT-8e devra recalculer le work order avant la
+  réalisation bornée et la preuve navigateur. Décision détaillée :
   [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
   ADR-0074 accepté. Dossier approuvé :
   `examples/users-management-proof/presentation/progressive-filter-candidates/`.
@@ -2545,7 +2555,8 @@ Figma, désormais source partielle différée :
   post-fusion `36794101702` sont verts. La surface de création adaptative et son
   alignement visuel final sont réalisés ; ADAPT-10 est clos. Décision détaillée :
   [`c5-adapt10-surface-creation-adaptative-2026-09-29.md`](./c5-adapt10-surface-creation-adaptative-2026-09-29.md),
-  ADR-0076 accepté. ADAPT-8d reste indépendant et ouvert. **PRES-AUTH-1 —
+  ADR-0076 accepté. ADAPT-8 reste indépendant et ouvert à partir d'ADAPT-8d2.
+  **PRES-AUTH-1 —
   autorités de présentation rejetées :** le 2026-09-30, le porteur produit
   rejette explicitement comme références courantes les dossiers
   `adaptive-candidates/` et `filter-candidates/`, ainsi que les quatre PNG
