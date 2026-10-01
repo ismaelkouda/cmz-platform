@@ -111,4 +111,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0075](./0075-chargement-progressif-mobile-silencieux.md) | Chargement progressif mobile silencieux                  | accepté  |
 | [0076](./0076-surface-creation-adaptative-bornee-par-contenu.md) | Surface de création adaptative bornée par le contenu     | accepté  |
 | [0077](./0077-ui-angular-officielle-avant-custom.md)      | UI Angular officielle avant comportement custom          | Accepted |
+| [0078](./0078-vues-de-donnees-par-capacites-optionnelles.md) | Vues de données par capacités optionnelles               | Accepted |
 <!-- END:GENERATED:adr-index -->
