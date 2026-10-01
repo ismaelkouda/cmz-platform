@@ -13,7 +13,7 @@ function fail(message) {
 }
 
 export function parseArgs(argv) {
-    const options = { dryRun: false };
+    const options = { dryRun: false, additionalFiles: [] };
     const valueAfter = (index, flag) => {
         const value = argv[index + 1];
         if (!value || value.startsWith('--')) fail(`${flag} exige une valeur.`);
@@ -32,6 +32,9 @@ export function parseArgs(argv) {
             index += 1;
         } else if (argument === '--execution-plan') {
             options.pageExecutionPlanPath = valueAfter(index, argument);
+            index += 1;
+        } else if (argument === '--allow-file') {
+            options.additionalFiles.push(valueAfter(index, argument));
             index += 1;
         } else if (argument === '--dry-run') options.dryRun = true;
         else if (argument === '--apply') {
@@ -83,6 +86,7 @@ export async function main(argv = process.argv.slice(2)) {
         pageExecutionPlanPath: options.pageExecutionPlanPath,
         pageExecutionPlanSchema,
         applicationDesignSchema,
+        additionalFiles: options.additionalFiles,
     };
     if (options.dryRun) {
         console.log(

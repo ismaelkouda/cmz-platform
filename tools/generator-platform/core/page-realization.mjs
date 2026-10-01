@@ -12,16 +12,14 @@ import {
 import { producePageRoleNode } from './role-production.mjs';
 import { createPageRealizationOracle } from './page-realization-sandbox.mjs';
 import { resolvePageExecutionBinding } from './page-execution-binding.mjs';
+import {
+    REQUIRED_PAGE_REALIZATION_FILES,
+    additionalPageRealizationFiles,
+    pageRealizationAllowedFiles,
+} from './page-realization-files.mjs';
 import { resolvePresentationEvidence } from './presentation-evidence.mjs';
 
 const STATE_ROOT = '.cmz/page-realization-work-orders';
-const ALLOWED_FILES = [
-    'page.component.html',
-    'page.component.scss',
-    'page.component.spec.ts',
-    'page.component.ts',
-    'realization-evidence.json',
-];
 const FORBIDDEN_NETWORK = [
     /\bHttpClient\b/,
     /\bXMLHttpRequest\b/,
@@ -61,6 +59,7 @@ function deriveWorkOrderId({
     realizationContract,
     presentationEvidence,
     pageExecution,
+    allowedFiles,
 }) {
     return sha256(
         JSON.stringify({
@@ -68,7 +67,7 @@ function deriveWorkOrderId({
             page_id: pageId,
             page_contract_sha256: pageContractHash,
             protected_workspace_sha256: protectedWorkspaceHash,
-            allowed_files: ALLOWED_FILES,
+            allowed_files: allowedFiles,
             oracle_policy: ORACLE_POLICY,
             realization_contract: realizationContract,
             presentation_evidence: presentationEvidence,
@@ -234,6 +233,7 @@ function publicWorkOrder({
     realizationContract,
     presentationEvidence,
     pageExecution,
+    allowedFiles,
 }) {
     return {
         schema_version: '3.0.0',
@@ -246,7 +246,7 @@ function publicWorkOrder({
             sha256: pageContractHash,
         },
         allowed_write_root: writeRoot,
-        allowed_files: ALLOWED_FILES,
+        allowed_files: allowedFiles,
         protected_workspace_sha256: baselineSha256,
         oracle_policy: ORACLE_POLICY,
         realization_contract: realizationContract,
@@ -334,6 +334,7 @@ export function planPageRealization({
     pageExecutionPlanPath,
     pageExecutionPlanSchema,
     applicationDesignSchema,
+    additionalFiles = [],
 }) {
     assertAppPageIdentity(appName, pageId);
     const root = resolve(workspaceRoot);
@@ -388,6 +389,7 @@ export function planPageRealization({
         .join('/');
     const baseline = gitInventory(root, relativeWriteRoot);
     const protectedHash = baselineHash(baseline);
+    const files = pageRealizationAllowedFiles(additionalFiles);
     const workOrderId = deriveWorkOrderId({
         appName,
         pageId,
@@ -396,6 +398,7 @@ export function planPageRealization({
         realizationContract,
         presentationEvidence,
         pageExecution,
+        allowedFiles: files,
     });
     const state = statePaths(root, appName, pageId, workOrderId);
     const workOrder = publicWorkOrder({
@@ -409,6 +412,7 @@ export function planPageRealization({
         realizationContract,
         presentationEvidence,
         pageExecution,
+        allowedFiles: files,
     });
     return {
         work_order_id: workOrderId,
@@ -559,6 +563,15 @@ export function verifyPageRealization(
     const pageContractContent = readFileSync(paths.pageContract);
     const pageContractHash = sha256(pageContractContent);
     const pageContract = JSON.parse(pageContractContent.toString('utf8'));
+    const violations = [];
+    let files = [...REQUIRED_PAGE_REALIZATION_FILES];
+    try {
+        files = pageRealizationAllowedFiles(
+            additionalPageRealizationFiles(workOrder)
+        );
+    } catch (error) {
+        violations.push(error.message);
+    }
     const expectedRealizationContract = resolveRealizationContract(
         root,
         pageContract,
@@ -594,6 +607,7 @@ export function verifyPageRealization(
         realizationContract: expectedRealizationContract,
         presentationEvidence: expectedPresentationEvidence,
         pageExecution: expectedPageExecution,
+        allowedFiles: files,
     });
     const expectedWorkOrder = publicWorkOrder({
         workOrderId: expectedWorkOrderId,
@@ -606,8 +620,8 @@ export function verifyPageRealization(
         realizationContract: expectedRealizationContract,
         presentationEvidence: expectedPresentationEvidence,
         pageExecution: expectedPageExecution,
+        allowedFiles: files,
     });
-    const violations = [];
     if (
         expectedWorkOrderId !== workOrderId ||
         JSON.stringify(workOrder) !== JSON.stringify(expectedWorkOrder)
@@ -640,10 +654,8 @@ export function verifyPageRealization(
     } catch (error) {
         violations.push(error.message);
     }
-    if (JSON.stringify(actualFiles) !== JSON.stringify(ALLOWED_FILES))
-        violations.push(
-            `page files must be exactly: ${ALLOWED_FILES.join(', ')}`
-        );
+    if (JSON.stringify(actualFiles) !== JSON.stringify([...files].sort()))
+        violations.push(`page files must be exactly: ${files.join(', ')}`);
     let source = '';
     for (const path of actualFiles.filter((entry) =>
         /\.(?:ts|html)$/.test(entry)

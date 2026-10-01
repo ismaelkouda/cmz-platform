@@ -184,8 +184,18 @@ bun run prepare:page-realization -- --app my-app --page <page_id> \
   --presentation-evidence designs/my-page.presentation.json --dry-run
 bun run prepare:page-realization -- --app my-app --page <page_id> \
   --presentation-evidence designs/my-page.presentation.json --apply <work_order_id>
+bun run prepare:page-realization -- --app my-app --page <page_id> \
+  --allow-file page.filters.component.ts \
+  --allow-file page.filters.component.html --dry-run
 bun run verify:page-realization -- --app my-app --page <page_id> --work-order <work_order_id>
 ```
+
+`--allow-file` déclare explicitement un sous-composant colocalisé nommé
+`page.<part>.component.{ts,html,scss,spec.ts}`. Chaque nom rejoint l'allowlist
+content-adressée du work order : le vérificateur exige ensuite exactement ces
+fichiers, toujours sous la racine de la page. Cette extension bornée permet de
+respecter le plafond de 800 lignes sans élargir le confinement à un glob ou à
+un répertoire arbitraire.
 
 Applications have the same plan/apply and recovery discipline on removal:
 

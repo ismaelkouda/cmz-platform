@@ -19,6 +19,32 @@ test('parse le plan d’exécution optionnel sans ambiguïté', () => {
             pageId: 'page_aaaaaaaaaaaaaaaa',
             pageExecutionPlanPath: 'generated/page-plan.json',
             dryRun: true,
+            additionalFiles: [],
+        }
+    );
+});
+
+test('collecte une allowlist explicite de sous-composants colocalisés', () => {
+    assert.deepEqual(
+        parseArgs([
+            '--app',
+            'proof-app',
+            '--page',
+            'page_aaaaaaaaaaaaaaaa',
+            '--allow-file',
+            'page.filters.component.ts',
+            '--allow-file',
+            'page.filters.component.html',
+            '--dry-run',
+        ]),
+        {
+            appName: 'proof-app',
+            pageId: 'page_aaaaaaaaaaaaaaaa',
+            dryRun: true,
+            additionalFiles: [
+                'page.filters.component.ts',
+                'page.filters.component.html',
+            ],
         }
     );
 });
