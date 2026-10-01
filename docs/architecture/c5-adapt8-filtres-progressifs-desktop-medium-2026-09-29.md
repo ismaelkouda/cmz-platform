@@ -1,7 +1,7 @@
 # C5 ADAPT-8 — filtres progressifs Desktop et Medium
 
-- **Statut :** décision, références et publication ADAPT-8c fusionnées ;
-  ADAPT-8d (oracles) engagé localement avant revue
+- **Statut :** décision, références, publication et oracles ADAPT-8d fusionnés ;
+  ADAPT-8d2 aligne les anciens oracles avant le runtime
 - **Périmètre :** recherche, raccourcis de colonnes et panneau progressif C5
   intégrés à la surface tabulaire en fenêtres `medium` et `expanded`
 - **Hors périmètre :** compact, adoption d'AG Grid, modification runtime dans ce
@@ -177,17 +177,28 @@ Soumaila doit refuser le lot suivant si :
    par la PR #144 dans `fe9e3e558539ef062173febfe17fcd5eb6ee2754` ; les 17
    contrôles de PR et la CI post-fusion `36644233400` sont verts.
 5. **ADAPT-8d** : écrire les oracles comportementaux, réseau, focus, resize,
-   hauteur courte et densité ; constater leur échec exact sur `main` — engagé
-   localement. Neuf scénarios futurs sont bornés par quatre signatures
-   historiques exactes, sans `skip`, sans timeout utilisé comme verdict et sans
-   modification runtime. Le passage ciblé donne `19/19` : dix succès réels
-   hérités et neuf échecs attendus ; la régression C5 complète donne `53/53`.
-   Le support réseau et responsive commun est extrait dans le seul harnais E2E
-   afin d'éviter la duplication, sans créer de primitive applicative.
-6. **ADAPT-8e** : recalculer le work order, réaliser seulement les fichiers
-   autorisés, puis exécuter Angular, Playwright, accessibilité et inspection
-   visuelle.
-7. **ADAPT-8f** : faire approuver et fusionner, vérifier la CI post-fusion, puis
+   hauteur courte et densité ; constater leur échec exact sur `main` — terminé.
+   Neuf scénarios futurs sont bornés par quatre signatures historiques exactes,
+   sans `skip`, sans timeout utilisé comme verdict et sans modification runtime.
+   Le passage ciblé donne `19/19` : dix succès réels hérités et neuf échecs
+   attendus ; la régression C5 complète donne `53/53`. Le support réseau et
+   responsive commun est extrait dans le seul harnais E2E afin d'éviter la
+   duplication, sans créer de primitive applicative. Soumaila a approuvé le
+   commit exact `44e6b95ae6dc1d158b060e2e3d3438bdab5ee74c`, fusionné par la PR
+   #167 dans `82a9f7cf9c267af8b6100c80f1d50a71375eca15` ; les 17 contrôles de PR
+   et les 17 jobs de la CI post-fusion `36826709105` sont verts.
+6. **ADAPT-8d2** : supprimer la contradiction résiduelle des oracles ADAPT-6
+   avant le runtime. Trois scénarios imposaient encore un side sheet Medium
+   modal, un supporting pane Expanded adjacent et un fieldset groupé ; ils sont
+   remplacés, avec une couverture plus forte, par les oracles progressifs
+   fusionnés. Les sept invariants encore valides deviennent compatibles avec les
+   deux générations d'interface sans relâcher leurs assertions réseau, resize,
+   unicité, contrat et filtres appliqués. Le passage ciblé donne `16/16` : sept
+   succès réels et neuf échecs futurs attendus.
+7. **ADAPT-8e** : intégrer `@angular/aria` dans le vrai composant, recalculer le
+   work order après le prérequis, réaliser seulement les fichiers autorisés,
+   puis exécuter Angular, Playwright, accessibilité et inspection visuelle.
+8. **ADAPT-8f** : faire approuver et fusionner, vérifier la CI post-fusion, puis
    seulement reprendre la décision de baseline Chromium.
 
 ### Preuve locale ADAPT-8d au 2026-10-01
@@ -212,6 +223,24 @@ barre d'outils détachée, fieldset groupé à trois selects, side sheet Medium
 modal et supporting pane Expanded adjacent. Si une signature disparaît, le
 scénario poursuit immédiatement les assertions du contrat futur ; un échec ne
 peut donc pas être masqué par un `todo`, un `skip` ou un détecteur générique.
+
+### Cohérence des générations d'oracles
+
+La prélecture du runtime a révélé que trois scénarios antérieurs exprimaient
+encore les géométries explicitement remplacées par ADAPT-8 : modal Medium,
+panneau adjacent Expanded et formulaire groupé toujours entièrement rendu. Les
+conserver aurait rendu le contrat impossible à satisfaire. ADAPT-8d2 ne retire
+aucune capacité : les scénarios progressifs vérifient déjà ces mêmes dimensions
+avec les nouvelles décisions, et les sept scénarios transverses conservés
+continuent de contrôler le réseau, le brouillon, le resize, les frontières, les
+identifiants et la neutralité backend.
+
+`@angular/aria` `22.2.1`, aligné sur `@angular/cdk` `22.2.1` et compatible avec
+Angular `22.2.0`, est retenu pour les comportements accessibles qui seront
+réellement consommés par la réalisation. La dépendance ne doit jamais être
+masquée dans Knip : elle sera déclarée dans le même lot final que son premier
+usage. Le work order provisoire `1c8a9d49…`, calculé avant ces prérequis, est
+invalide et ne doit autoriser aucune écriture runtime.
 
 ## 9. Pourquoi AG Grid reste une inspiration et non une dépendance
 

@@ -141,7 +141,7 @@ async function addFilter(
     await panel.getByRole('button', { name: 'Ajouter un filtre' }).click();
     const available = panel.locator('[data-cmz-id="available-filters"]');
     await expect(available).toBeVisible();
-    await available.getByRole('button', { name: label, exact: true }).click();
+    await available.getByRole('menuitem', { name: label, exact: true }).click();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -330,10 +330,10 @@ test('blocs progressifs : ajoute seulement un critère disponible, l’ouvre, le
     await panel.getByRole('button', { name: 'Ajouter un filtre' }).click();
     const available = panel.locator('[data-cmz-id="available-filters"]');
     await expect(
-        available.getByRole('button', { name: 'Statut', exact: true })
+        available.getByRole('menuitem', { name: 'Statut', exact: true })
     ).toHaveCount(0);
     await expect(
-        available.getByRole('button', { name: /^(Profil|Rôle)$/ })
+        available.getByRole('menuitem', { name: /^(Profil|Rôle)$/ })
     ).toHaveCount(2);
     await expectUsersGetCountStable(requests, countBefore);
 });
