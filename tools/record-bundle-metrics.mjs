@@ -12,8 +12,11 @@
  *   node tools/record-bundle-metrics.mjs
  *   bun run bundle:record
  *
- * Métrique canonique : Initial total (raw) = main-*.js + styles-*.css
- * (identique à la ligne « Initial total » du builder Angular).
+ * Métrique canonique : tous les modules JavaScript initiaux déclarés par
+ * l'index (`script[type=module]` + `link[rel=modulepreload]`) et les feuilles
+ * de style initiales. Elle reste ainsi alignée sur la ligne « Initial total »
+ * du builder Angular même quand l'optimiseur extrait un chunk partagé hors de
+ * `main-*.js`. Les scripts hôte non construits, comme `env.js`, sont exclus.
  *
  * ATTENTION — toujours committer une mesure produite par la CI
  * (`nightly-integration.yml`, `workflow_dispatch` si besoin hors schedule),
@@ -67,12 +70,61 @@ if (!existsSync(indexHtml)) {
 }
 
 const html = readFileSync(indexHtml, 'utf8');
-const jsInitial = [...html.matchAll(/src="([^"]+\.js)"/g)].map((m) => m[1]);
-const cssInitial = [
-    ...new Set(
-        [...html.matchAll(/href="(styles-[^"]+\.css)"/g)].map((m) => m[1])
-    ),
-];
+
+function tags(name) {
+    return [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, 'gi'))].map(
+        (match) => match[0]
+    );
+}
+
+function attribute(tag, name) {
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = tag.match(
+        new RegExp(
+            `\\b${escapedName}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`,
+            'i'
+        )
+    );
+    return match?.[1] ?? match?.[2] ?? match?.[3] ?? null;
+}
+
+function localAsset(value, extension) {
+    if (!value) return null;
+    const path = value.split(/[?#]/, 1)[0].replace(/^\.\//, '');
+    if (
+        !path.endsWith(extension) ||
+        path.startsWith('/') ||
+        path.includes('..') ||
+        /^[a-z][a-z\d+.-]*:/i.test(path)
+    ) {
+        return null;
+    }
+    return path;
+}
+
+const moduleScripts = tags('script')
+    .filter((tag) => attribute(tag, 'type')?.toLowerCase() === 'module')
+    .map((tag) => localAsset(attribute(tag, 'src'), '.js'))
+    .filter(Boolean);
+const modulePreloads = tags('link')
+    .filter((tag) =>
+        (attribute(tag, 'rel') ?? '')
+            .toLowerCase()
+            .split(/\s+/)
+            .includes('modulepreload')
+    )
+    .map((tag) => localAsset(attribute(tag, 'href'), '.js'))
+    .filter(Boolean);
+const cssInitial = tags('link')
+    .filter((tag) =>
+        (attribute(tag, 'rel') ?? '')
+            .toLowerCase()
+            .split(/\s+/)
+            .includes('stylesheet')
+    )
+    .map((tag) => localAsset(attribute(tag, 'href'), '.css'))
+    .filter(Boolean);
+const jsInitial = [...new Set([...moduleScripts, ...modulePreloads])];
 
 if (jsInitial.length === 0) {
     die('FAIL  aucun script initial dans index.html');
