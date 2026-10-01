@@ -13,7 +13,13 @@ test('publication durability contract is closed, unique, and fail-closed', async
     const contract = await loadPublicationDurabilityContract();
     assert.deepEqual(
         contract.filesystem_profiles.map(({ id }) => id),
-        ['linux-ext4', 'macos-apfs', 'macos-apfs-25', 'macos-apfs-27']
+        [
+            'linux-ext4',
+            'macos-apfs',
+            'macos-apfs-25',
+            'macos-apfs-27',
+            'macos-apfs-28',
+        ]
     );
     assert.equal(contract.reader_contract.mode, 'offline-activation');
     assert.equal(
@@ -39,22 +45,22 @@ test('publication durability contract is closed, unique, and fail-closed', async
 test('known Darwin signatures resolve explicitly and unknown signatures stay rejected', async () => {
     const contract = await loadPublicationDurabilityContract();
     assert.deepEqual(
-        [25, 26, 27].map(
+        [25, 26, 27, 28].map(
             (statfs_type) =>
                 selectPublicationFilesystemProfile(contract, {
                     platform: 'darwin',
                     statfs_type,
                 }).id
         ),
-        ['macos-apfs-25', 'macos-apfs', 'macos-apfs-27']
+        ['macos-apfs-25', 'macos-apfs', 'macos-apfs-27', 'macos-apfs-28']
     );
     assert.throws(
         () =>
             selectPublicationFilesystemProfile(contract, {
                 platform: 'darwin',
-                statfs_type: 28,
+                statfs_type: 29,
             }),
-        /unsupported filesystem darwin:28/
+        /unsupported filesystem darwin:29/
     );
 });
 
@@ -63,9 +69,13 @@ test('current filesystem matches a supported profile and executes the real publi
         root: tmpdir(),
     });
     assert.ok(
-        ['linux-ext4', 'macos-apfs', 'macos-apfs-25', 'macos-apfs-27'].includes(
-            result.profile.id
-        )
+        [
+            'linux-ext4',
+            'macos-apfs',
+            'macos-apfs-25',
+            'macos-apfs-27',
+            'macos-apfs-28',
+        ].includes(result.profile.id)
     );
     assert.ok(result.detected.block_size > 0);
 });
