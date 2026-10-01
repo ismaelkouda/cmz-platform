@@ -110,4 +110,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0074](./0074-filtres-progressifs-par-blocs-actifs.md)    | Filtres progressifs par blocs actifs sur fenêtres medium et expanded | accepté  |
 | [0075](./0075-chargement-progressif-mobile-silencieux.md) | Chargement progressif mobile silencieux                  | accepté  |
 | [0076](./0076-surface-creation-adaptative-bornee-par-contenu.md) | Surface de création adaptative bornée par le contenu     | accepté  |
+| [0077](./0077-ui-angular-officielle-avant-custom.md)      | UI Angular officielle avant comportement custom          | Accepted |
 <!-- END:GENERATED:adr-index -->

@@ -1,7 +1,9 @@
 # ADR-0041 — Angular Material + Tailwind comme défauts d'app Angular
 
 - **Statut :** Accepted — installation automatique par défaut supersédée par
-  [ADR-0044](./0044-bibliotheques-ui-opt-in-apres-create-app.md)
+  [ADR-0044](./0044-bibliotheques-ui-opt-in-apres-create-app.md) ; Material pour
+  toute primitive interactive supersédé par
+  [ADR-0077](./0077-ui-angular-officielle-avant-custom.md)
 - **Date :** 2026-09-03
 
 ## Contexte

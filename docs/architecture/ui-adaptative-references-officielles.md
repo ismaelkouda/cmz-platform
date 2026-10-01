@@ -28,8 +28,8 @@ suivant s'applique :
    états représentés, avec l'autorité bornée définie par ADR-0066.
 4. **Material Design 3** : principes UX, scaffold, layouts canoniques, tokens et
    états d'interaction.
-5. **Documentation officielle de la cible** : Angular Material et Angular CDK
-   pour une application Angular qui les déclare.
+5. **Documentation officielle de la cible** : HTML, Angular core, Angular
+   Material, Angular Aria et Angular CDK selon la capacité réellement utilisée.
 6. **Preuves locales** : tests de composant, tests navigateur, accessibilité et
    inspection humaine des rendus.
 
@@ -45,6 +45,7 @@ peut pas ignorer une exigence d'accessibilité.
 | Layouts canoniques M3                   | choix raisonné entre `feed`, `list-detail`, `supporting pane` et composition du scaffold | composant web précis ou seuil numérique imposé                  |
 | Android Adaptive / `material3-adaptive` | référence éprouvée pour raisonner en taille de fenêtre, panes et changement dynamique    | dépendance ou code réutilisable dans Angular                    |
 | Angular Material                        | composants Angular maintenus, thème M3, comportements documentés et harnesses            | architecture métier ou obligation de remplacer une UI existante |
+| Angular Aria                            | motifs WAI-ARIA headless, clavier, focus, attributs et harnesses officiels               | style, layout, contrat métier ou effets réseau                  |
 | Angular CDK                             | primitives de layout, overlay, focus, clavier et annonces accessibles                    | design produit complet ou breakpoint métier universel           |
 
 Les exemples Compose sont donc des **références de comportement**, jamais une
@@ -168,18 +169,28 @@ de cette version effective plutôt qu'un exemple historique trouvé sur le Web.
 - Isoler les API navigateur derrière une abstraction testable lorsqu'une cible
   SSR ou hydratée les exécute.
 
-### 7.2 Angular Material et CDK restent opt-in
+### 7.2 Hiérarchie officielle et dépendances opt-in
 
 ADR-0044 reste l'autorité d'installation. Une application qui ne déclare que
 Transloco ne reçoit pas Material par une modification de page cachée. Après
 adoption explicite :
 
-- préférer le composant Material officiel lorsqu'il couvre le comportement ;
-- utiliser CDK Layout, Overlay et A11y pour les primitives manquantes ;
+- utiliser d'abord l'élément HTML sémantique lorsqu'il couvre le besoin ;
+- préférer Material pour un composant visuel M3 dans une app qui l'a adopté ;
+- préférer Angular Aria pour un motif WAI-ARIA headless au visuel propre ;
+- utiliser CDK Layout, Overlay et A11y seulement pour les primitives manquantes
+  ;
 - utiliser les API de thème M3 pour couleur, typographie et densité ;
 - ne jamais cibler la structure DOM ou les classes CSS internes de Material ;
-- tester les composants Material avec leurs component harnesses ;
-- éviter un wrapper générique qui recopierait toute l'API Material.
+- tester Material et Angular Aria avec leurs component harnesses ;
+- ne pas superposer Material et Aria sur le même contrôle ;
+- éviter un wrapper générique qui recopierait toute l'API officielle.
+
+Tailwind et les styles scopés rendent les états ; ils ne créent ni sémantique,
+ni clavier, ni focus. Une dépendance sans setup d'application, comme Angular
+Aria, est déclarée avec son premier usage réel et ne reçoit pas une recette
+`add-library` artificielle. Voir ADR-0077 et l'audit détaillé
+`ui-angular-officiel-avant-custom-2026-10-01.md`.
 
 `MatDrawer`/`MatSidenav`, `MatDialog` ou CDK Overlay sont des candidats, pas une
 décision automatique. Le choix dépend de la sémantique : navigation globale,
@@ -268,6 +279,11 @@ largeur.
 - [Android — Adapt layouts](https://developer.android.com/design/ui/mobile/guides/layout-and-content/adapt-layout)
 
 ### Implémentation Angular
+
+- [Angular Aria — overview](https://angular.dev/guide/aria/overview)
+- [Angular Aria — accordion](https://angular.dev/guide/aria/accordion)
+- [Angular Aria — menu](https://angular.dev/guide/aria/menu)
+- [Angular roadmap](https://angular.dev/roadmap)
 
 - [Angular Material](https://material.angular.dev/)
 - [Angular Material — components](https://material.angular.dev/components/categories)
