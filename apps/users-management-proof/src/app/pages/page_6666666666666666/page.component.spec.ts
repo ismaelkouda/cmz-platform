@@ -300,19 +300,14 @@ describe('PageComponent', () => {
         const { fixture, loadUsers } = await setup({ layout: 'medium' });
         const root = fixture.nativeElement as HTMLElement;
         setControl(element(root, '[type="search"]'), '  Alpha  ');
-        element<HTMLButtonElement>(root, '.filter-toggle').click();
-        await fixture.whenStable();
-        const filters = element<HTMLFormElement>(root, '[role="dialog"]');
-
         setControl(
-            element(filters, '[data-cmz-id="profiles"] select'),
+            element(root, '[data-cmz-filter-shortcut="profile"]'),
             'profile-a'
         );
-        setControl(element(filters, 'label:nth-of-type(2) select'), 'agent');
-        setControl(element(filters, 'label:nth-of-type(3) select'), 'inactive');
-        expect(loadUsers).toHaveBeenCalledTimes(1);
-        filters.dispatchEvent(
-            new Event('submit', { bubbles: true, cancelable: true })
+        setControl(element(root, '[data-cmz-filter-shortcut="role"]'), 'agent');
+        setControl(
+            element(root, '[data-cmz-filter-shortcut="status"]'),
+            'inactive'
         );
         await fixture.whenStable();
 
@@ -431,35 +426,36 @@ describe('PageComponent', () => {
         });
     });
 
-    it('conserve le brouillon lors du repli du pane expanded sans appeler le réseau', async () => {
+    it('abandonne le brouillon à la fermeture du panneau expanded sans appeler le réseau', async () => {
         const { fixture, loadUsers } = await setup({ layout: 'expanded' });
         const root = fixture.nativeElement as HTMLElement;
+        setControl(element(root, '[data-cmz-filter-shortcut="role"]'), 'agent');
+        await fixture.whenStable();
         const toggle = element<HTMLButtonElement>(root, '.filter-toggle');
         toggle.click();
         await fixture.whenStable();
 
-        let pane = element<HTMLElement>(root, '[role="complementary"]');
+        let pane = element<HTMLElement>(root, '#user-filter-panel');
         expect(element(root, 'main').hasAttribute('inert')).toBe(false);
         setControl(
-            element<HTMLSelectElement>(pane, 'label:nth-of-type(3) select'),
-            'inactive'
+            element<HTMLSelectElement>(pane, '[aria-label="Rôle"]'),
+            'supervisor'
         );
         element<HTMLButtonElement>(
             pane,
-            '[aria-label="Replier les filtres"]'
+            '[aria-label="Fermer les filtres"]'
         ).click();
         await fixture.whenStable();
-        expect(root.querySelector('[role="complementary"]')).toBeNull();
-        expect(loadUsers).toHaveBeenCalledTimes(1);
+        expect(root.querySelector('#user-filter-panel')).toBeNull();
+        expect(loadUsers).toHaveBeenCalledTimes(2);
 
         toggle.click();
         await fixture.whenStable();
-        pane = element(root, '[role="complementary"]');
+        pane = element(root, '#user-filter-panel');
         expect(
-            element<HTMLSelectElement>(pane, 'label:nth-of-type(3) select')
-                .value
-        ).toBe('inactive');
-        expect(loadUsers).toHaveBeenCalledTimes(1);
+            element<HTMLSelectElement>(pane, '[aria-label="Rôle"]').value
+        ).toBe('agent');
+        expect(loadUsers).toHaveBeenCalledTimes(2);
     });
 
     it('garde les données périmées visibles quand une actualisation échoue', async () => {

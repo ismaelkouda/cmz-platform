@@ -1,0 +1,384 @@
+<div id="secondary-user-filters" class="filter-region">
+    @if (open()) {
+        <div class="filter-surface">
+            @if (modal()) {
+                <button
+                    data-cmz-id="filter-backdrop"
+                    type="button"
+                    class="filter-backdrop"
+                    tabindex="-1"
+                    aria-label="Fermer les filtres"
+                    (click)="requestClose()"
+                ></button>
+            }
+            <form
+                #filterPanel
+                id="user-filter-panel"
+                class="filter-panel"
+                tabindex="-1"
+                [attr.role]="layout() === 'compact' ? 'dialog' : 'region'"
+                [attr.aria-modal]="modal() ? 'true' : null"
+                aria-labelledby="filter-panel-title"
+                [cdkTrapFocus]="modal()"
+                (submit)="submit($event)"
+                (keydown)="onPanelKeydown($event)"
+            >
+                <header class="filter-panel-header">
+                    @if (layout() === 'compact' && compactDetail()) {
+                        <button
+                            type="button"
+                            class="button button-secondary filter-back-button"
+                            aria-label="Retour"
+                            (click)="showCompactSummary()"
+                        >
+                            <span aria-hidden="true">‹</span>
+                            Retour
+                        </button>
+                    }
+                    <h2 id="filter-panel-title">
+                        @switch (layout() === 'compact' ? compactDetail() : null) {
+                            @case ('profile') {
+                                Profil
+                            }
+                            @case ('role') {
+                                Rôle
+                            }
+                            @case ('status') {
+                                Statut
+                            }
+                            @default {
+                                Filtres
+                            }
+                        }
+                    </h2>
+                    <button
+                        type="button"
+                        class="button button-secondary filter-close-button"
+                        aria-label="Fermer les filtres"
+                        (click)="requestClose()"
+                    >
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </header>
+
+                <div data-cmz-id="filter-body" class="filter-panel-body">
+                    @if (layout() === 'compact') {
+                        @if (!compactDetail()) {
+                            <div class="compact-filter-summary">
+                                <button
+                                    type="button"
+                                    class="button compact-filter-button"
+                                    data-cmz-filter-summary="profile"
+                                    (click)="showCompactFilter('profile')"
+                                >
+                                    <span>Profil</span>
+                                    <span>{{ draftValue('profile') }} <b aria-hidden="true">›</b></span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="button compact-filter-button"
+                                    data-cmz-filter-summary="role"
+                                    (click)="showCompactFilter('role')"
+                                >
+                                    <span>Rôle</span>
+                                    <span>{{ draftValue('role') }} <b aria-hidden="true">›</b></span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="button compact-filter-button"
+                                    data-cmz-filter-summary="status"
+                                    (click)="showCompactFilter('status')"
+                                >
+                                    <span>Statut</span>
+                                    <span>{{ draftValue('status') }} <b aria-hidden="true">›</b></span>
+                                </button>
+                            </div>
+                        } @else {
+                            <div class="compact-filter-detail">
+                                @switch (compactDetail()) {
+                                    @case ('profile') {
+                                        <label data-cmz-id="profiles">
+                                            <span>Profil</span>
+                                            <select
+                                                data-cmz-filter-detail-control
+                                                aria-label="Profil"
+                                                [formField]="filtersForm.profile"
+                                            >
+                                                <option value="">Tous les profils</option>
+                                                @for (profile of profiles(); track profile.value) {
+                                                    <option [value]="profile.value">{{ profile.label }}</option>
+                                                }
+                                            </select>
+                                        </label>
+                                    }
+                                    @case ('role') {
+                                        <label>
+                                            <span>Rôle</span>
+                                            <select
+                                                data-cmz-filter-detail-control
+                                                aria-label="Rôle"
+                                                [formField]="filtersForm.role"
+                                            >
+                                                <option value="">Tous les rôles</option>
+                                                <option value="supervisor">Superviseur</option>
+                                                <option value="team-leader">Chef d’équipe</option>
+                                                <option value="agent">Agent</option>
+                                            </select>
+                                        </label>
+                                    }
+                                    @case ('status') {
+                                        <fieldset class="status-options">
+                                            <legend class="sr-only">Statut</legend>
+                                            <label>
+                                                <input
+                                                    data-cmz-filter-detail-control
+                                                    type="radio"
+                                                    name="filter-status"
+                                                    value=""
+                                                    [checked]="draft().status === ''"
+                                                    (change)="setDraftStatus('')"
+                                                />
+                                                Tous
+                                            </label>
+                                            <label>
+                                                <input
+                                                    type="radio"
+                                                    name="filter-status"
+                                                    value="active"
+                                                    [checked]="draft().status === 'active'"
+                                                    (change)="setDraftStatus('active')"
+                                                />
+                                                Actif
+                                            </label>
+                                            <label>
+                                                <input
+                                                    type="radio"
+                                                    name="filter-status"
+                                                    value="inactive"
+                                                    [checked]="draft().status === 'inactive'"
+                                                    (change)="setDraftStatus('inactive')"
+                                                />
+                                                Inactif
+                                            </label>
+                                        </fieldset>
+                                    }
+                                }
+                            </div>
+                        }
+                    } @else {
+                        <div class="progressive-filter-stack">
+                            @if (!progressiveFilterKeys().length) {
+                                <div class="state progressive-filter-empty">
+                                    <span aria-hidden="true">＋</span>
+                                    <strong>Aucun filtre ajouté</strong>
+                                    <p>Ajoutez uniquement les critères utiles.</p>
+                                </div>
+                            }
+
+                            <div
+                                data-cmz-id="filter-blocks"
+                                class="progressive-filter-blocks"
+                                ngAccordionGroup
+                                [multiExpandable]="true"
+                            >
+                                @for (key of progressiveFilterKeys(); track key) {
+                                    <section
+                                        class="progressive-filter-block"
+                                        [attr.data-cmz-filter-block]="key"
+                                        [attr.data-cmz-expanded]="filterTrigger.expanded()"
+                                    >
+                                        <header class="progressive-filter-block-header">
+                                            <h3>
+                                                <button
+                                                    #filterTrigger="ngAccordionTrigger"
+                                                    type="button"
+                                                    class="button progressive-filter-heading"
+                                                    ngAccordionTrigger
+                                                    [panel]="filterPanelContent"
+                                                    [expanded]="isProgressiveFilterExpanded(key)"
+                                                    (expandedChange)="setProgressiveFilterExpanded(key, $event)"
+                                                >
+                                                    <span class="sr-only">
+                                                        {{ filterTrigger.expanded() ? 'Replier' : 'Déplier' }} le filtre
+                                                        {{ filterLabel(key) }}
+                                                    </span>
+                                                    <span aria-hidden="true">{{ filterLabel(key) }}</span>
+                                                    <span aria-hidden="true">
+                                                        {{ filterTrigger.expanded() ? '⌃' : '⌄' }}
+                                                    </span>
+                                                </button>
+                                            </h3>
+                                            <button
+                                                type="button"
+                                                class="button progressive-filter-remove"
+                                                (click)="removeProgressiveFilter(key)"
+                                            >
+                                                <span aria-hidden="true">×</span>
+                                                <span class="sr-only">Retirer le filtre {{ filterLabel(key) }}</span>
+                                            </button>
+                                        </header>
+                                        <div
+                                            #filterPanelContent="ngAccordionPanel"
+                                            class="progressive-filter-content"
+                                            ngAccordionPanel
+                                            [preserveContent]="true"
+                                        >
+                                            <ng-template ngAccordionContent>
+                                                @switch (key) {
+                                                    @case ('profile') {
+                                                        <label
+                                                            data-cmz-id="profiles"
+                                                            class="progressive-filter-control"
+                                                        >
+                                                            <span>Valeur du brouillon</span>
+                                                            <select
+                                                                data-cmz-filter-control
+                                                                aria-label="Profil"
+                                                                [formField]="filtersForm.profile"
+                                                            >
+                                                                <option value="">Tous les profils</option>
+                                                                @for (profile of profiles(); track profile.value) {
+                                                                    <option [value]="profile.value">
+                                                                        {{ profile.label }}
+                                                                    </option>
+                                                                }
+                                                            </select>
+                                                        </label>
+                                                    }
+                                                    @case ('role') {
+                                                        <label class="progressive-filter-control">
+                                                            <span>Valeur du brouillon</span>
+                                                            <select
+                                                                data-cmz-filter-control
+                                                                aria-label="Rôle"
+                                                                [formField]="filtersForm.role"
+                                                            >
+                                                                <option value="">Tous les rôles</option>
+                                                                <option value="supervisor">Superviseur</option>
+                                                                <option value="team-leader">Chef d’équipe</option>
+                                                                <option value="agent">Agent</option>
+                                                            </select>
+                                                        </label>
+                                                    }
+                                                    @case ('status') {
+                                                        <fieldset
+                                                            class="status-options progressive-filter-control progressive-status-options"
+                                                        >
+                                                            <legend>Valeur du brouillon</legend>
+                                                            <label>
+                                                                <input
+                                                                    data-cmz-filter-control
+                                                                    type="radio"
+                                                                    name="progressive-filter-status"
+                                                                    value=""
+                                                                    [checked]="draft().status === ''"
+                                                                    (change)="setDraftStatus('')"
+                                                                />
+                                                                Tous
+                                                            </label>
+                                                            <label>
+                                                                <input
+                                                                    type="radio"
+                                                                    name="progressive-filter-status"
+                                                                    value="active"
+                                                                    [checked]="draft().status === 'active'"
+                                                                    (change)="setDraftStatus('active')"
+                                                                />
+                                                                Actif
+                                                            </label>
+                                                            <label>
+                                                                <input
+                                                                    type="radio"
+                                                                    name="progressive-filter-status"
+                                                                    value="inactive"
+                                                                    [checked]="draft().status === 'inactive'"
+                                                                    (change)="setDraftStatus('inactive')"
+                                                                />
+                                                                Inactif
+                                                            </label>
+                                                        </fieldset>
+                                                    }
+                                                }
+                                            </ng-template>
+                                        </div>
+                                    </section>
+                                }
+                            </div>
+
+                            @if (availableFilters().length) {
+                                <button
+                                    #addFilterOrigin="cdkOverlayOrigin"
+                                    data-cmz-id="add-filter-trigger"
+                                    type="button"
+                                    class="button add-filter-button"
+                                    cdkOverlayOrigin
+                                    aria-haspopup="menu"
+                                    aria-controls="available-user-filters"
+                                    [attr.aria-expanded]="addMenuOpen()"
+                                    (click)="toggleAddMenu()"
+                                >
+                                    + Ajouter un filtre
+                                </button>
+                                <ng-template
+                                    [cdkConnectedOverlay]="{
+                                        origin: addFilterOrigin,
+                                        usePopover: 'inline',
+                                        matchWidth: true,
+                                        viewportMargin: 12,
+                                    }"
+                                    [cdkConnectedOverlayOpen]="addMenuOpen()"
+                                    [cdkConnectedOverlayPositions]="[
+                                        {
+                                            originX: 'start',
+                                            originY: 'bottom',
+                                            overlayX: 'start',
+                                            overlayY: 'top',
+                                            offsetY: 6,
+                                        },
+                                        {
+                                            originX: 'start',
+                                            originY: 'top',
+                                            overlayX: 'start',
+                                            overlayY: 'bottom',
+                                            offsetY: -6,
+                                        },
+                                    ]"
+                                    (overlayOutsideClick)="closeAddMenu()"
+                                    (overlayKeydown)="onAddMenuKeydown($event)"
+                                >
+                                    <div
+                                        id="available-user-filters"
+                                        data-cmz-id="available-filters"
+                                        class="available-filters-menu"
+                                        ngMenu
+                                        (itemSelected)="addProgressiveFilter($event)"
+                                    >
+                                        <ng-template ngMenuContent>
+                                            @for (key of availableFilters(); track key) {
+                                                <button
+                                                    type="button"
+                                                    class="button available-filter-option"
+                                                    ngMenuItem
+                                                    [value]="key"
+                                                >
+                                                    {{ filterLabel(key) }}
+                                                </button>
+                                            }
+                                        </ng-template>
+                                    </div>
+                                </ng-template>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <footer data-cmz-id="filter-actions" class="filter-panel-actions">
+                    <button type="button" class="button button-secondary" (click)="resetDraft()">Réinitialiser</button>
+                    <button type="submit" class="button button-primary">
+                        {{ layout() === 'compact' ? 'Appliquer' : 'Filtrer' }}
+                    </button>
+                </footer>
+            </form>
+        </div>
+    }
+</div>

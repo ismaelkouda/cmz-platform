@@ -35,8 +35,12 @@ import {
 } from '../../generated/page_6666666666666666/angular/src';
 import type { UserListItem } from '../../generated/page_6666666666666666/angular/src/nodes/users-list/models';
 import { APP_ACCESS_DECISION } from '../../access.guard';
-type SecondaryFiltersModel = { profile: string; role: string; status: string };
-type SecondaryFilterKey = keyof SecondaryFiltersModel;
+import {
+    PageFiltersComponent,
+    type PageLayout,
+    type SecondaryFilterKey,
+    type SecondaryFiltersModel,
+} from './page.filters.component';
 interface AppliedFilterItem {
     key: SecondaryFilterKey;
     label: string;
@@ -61,7 +65,6 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const PAGE_COMPACT_MEDIA_QUERY = '(max-width: 800px)';
 export const PAGE_EXPANDED_MEDIA_QUERY =
     '(min-width: 1200px) and (min-height: 800px)';
-type PageLayout = 'compact' | 'medium' | 'expanded';
 interface MobilePageRequest {
     readonly attempt: number;
     readonly generation: number;
@@ -121,7 +124,7 @@ function messageFrom(error: unknown): string {
 }
 
 @Component({
-    imports: [CdkTrapFocus, FormField],
+    imports: [CdkTrapFocus, FormField, PageFiltersComponent],
     providers: [...PAGE_COMPOSITION_PROVIDERS, PAGE_PERMISSION_PROVIDER],
     selector: 'app-page-66666666',
     styleUrl: './page.component.scss',
@@ -138,8 +141,6 @@ export class PageComponent {
         viewChild<ElementRef<HTMLInputElement>>('lastNameInput');
     private readonly filterTrigger =
         viewChild<ElementRef<HTMLButtonElement>>('filterTrigger');
-    private readonly filterPanel =
-        viewChild<ElementRef<HTMLElement>>('filterPanel');
     private readonly mobileLoadSentinel =
         viewChild<ElementRef<HTMLElement>>('mobileLoadSentinel');
     private readonly workspace =
@@ -164,17 +165,9 @@ export class PageComponent {
     protected readonly appliedFilters = signal<SecondaryFiltersModel>({
         ...EMPTY_FILTERS,
     });
-    protected readonly draftFilters = signal<SecondaryFiltersModel>({
-        ...EMPTY_FILTERS,
-    });
-    protected readonly filtersForm = form(this.draftFilters);
     protected readonly areFiltersOpen = signal(false);
-    protected readonly compactFilterDetail = signal<SecondaryFilterKey | null>(
-        null
-    );
-    private readonly preserveFilterDraft = signal(false);
     protected readonly isModalFilters = computed(
-        () => this.areFiltersOpen() && this.layout() !== 'expanded'
+        () => this.areFiltersOpen() && this.layout() === 'compact'
     );
     protected readonly activeSecondaryFilterCount = computed(() => {
         const filters = this.appliedFilters();
@@ -456,61 +449,25 @@ export class PageComponent {
 
     protected openFilters(): void {
         if (this.areFiltersOpen()) return;
-        if (!this.preserveFilterDraft()) {
-            this.draftFilters.set({ ...this.appliedFilters() });
-        }
-        this.preserveFilterDraft.set(false);
-        this.compactFilterDetail.set(null);
         this.areFiltersOpen.set(true);
-        this.focusFilterPanel();
     }
 
     protected closeFilters(): void {
-        if (this.layout() === 'expanded') {
-            this.preserveFilterDraft.set(true);
-        } else {
-            this.draftFilters.set({ ...this.appliedFilters() });
-            this.preserveFilterDraft.set(false);
-        }
-        this.compactFilterDetail.set(null);
         this.areFiltersOpen.set(false);
         this.restoreFilterTriggerFocus();
     }
 
-    protected onFilterPanelKeydown(event: KeyboardEvent): void {
-        if (event.key !== 'Escape' || !this.isModalFilters()) return;
-        event.preventDefault();
-        this.closeFilters();
+    protected applyFilterShortcut(key: SecondaryFilterKey, event: Event): void {
+        const value = (event.target as HTMLSelectElement).value;
+        this.appliedFilters.update((filters) => ({
+            ...filters,
+            [key]: value,
+        }));
+        this.resetMobileProjection();
     }
 
-    protected showCompactFilter(key: SecondaryFilterKey): void {
-        this.compactFilterDetail.set(key);
-        this.focusFilterPanelElement('[data-cmz-filter-detail-control]');
-    }
-
-    protected showCompactFilterSummary(): void {
-        const detail = this.compactFilterDetail();
-        this.compactFilterDetail.set(null);
-        if (detail) {
-            this.focusFilterPanelElement(
-                `[data-cmz-filter-summary="${detail}"]`
-            );
-        }
-    }
-
-    protected setDraftStatus(status: string): void {
-        this.draftFilters.update((filters) => ({ ...filters, status }));
-    }
-
-    protected resetDraftFilters(): void {
-        this.draftFilters.set({ ...EMPTY_FILTERS });
-    }
-
-    protected applyFilters(event?: Event): void {
-        event?.preventDefault();
-        this.appliedFilters.set({ ...this.draftFilters() });
-        this.preserveFilterDraft.set(false);
-        this.compactFilterDetail.set(null);
+    protected applyFilters(filters: SecondaryFiltersModel): void {
+        this.appliedFilters.set(filters);
         this.areFiltersOpen.set(false);
         this.resetMobileProjection();
         this.restoreFilterTriggerFocus();
@@ -521,22 +478,7 @@ export class PageComponent {
             ...filters,
             [key]: '',
         }));
-        if (this.areFiltersOpen()) {
-            this.draftFilters.set({ ...this.appliedFilters() });
-        }
         this.resetMobileProjection();
-    }
-
-    protected draftFilterValue(key: SecondaryFilterKey): string {
-        const value = this.draftFilters()[key];
-        if (!value) return 'Tous';
-        if (key === 'profile') {
-            return (
-                this.profiles().find((profile) => profile.value === value)
-                    ?.label ?? value
-            );
-        }
-        return key === 'role' ? this.roleLabel(value) : this.statusLabel(value);
     }
 
     protected goToPage(page: number): void {
@@ -777,18 +719,6 @@ export class PageComponent {
 
     private restoreCreateButtonFocus(): void {
         this.focusAfterRender(() => this.createButton()?.nativeElement);
-    }
-
-    private focusFilterPanel(): void {
-        this.focusAfterRender(() => this.filterPanel()?.nativeElement);
-    }
-
-    private focusFilterPanelElement(selector: string): void {
-        this.focusAfterRender(() =>
-            this.filterPanel()?.nativeElement.querySelector<HTMLElement>(
-                selector
-            )
-        );
     }
 
     private restoreFilterTriggerFocus(): void {
