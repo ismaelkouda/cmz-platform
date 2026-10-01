@@ -142,6 +142,9 @@ async function addFilter(
     const available = panel.locator('[data-cmz-id="available-filters"]');
     await expect(available).toBeVisible();
     await available.getByRole('menuitem', { name: label, exact: true }).click();
+    const key =
+        label === 'Profil' ? 'profile' : label === 'Rôle' ? 'role' : 'status';
+    await expect(filterBlock(panel, key)).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -350,7 +353,9 @@ test('brouillon : replie, supprime avec un focus déterministe et publie au plus
 
     await addFilter(panel, 'Rôle');
     const role = filterBlock(panel, 'role');
-    await role.getByLabel('Rôle').selectOption('supervisor');
+    await role
+        .getByRole('combobox', { name: 'Rôle', exact: true })
+        .selectOption('supervisor');
     await addFilter(panel, 'Statut');
     const status = filterBlock(panel, 'status');
     await status.getByRole('radio', { name: 'Inactif' }).check();
@@ -397,15 +402,22 @@ test('fermeture : abandonne le brouillon en Medium et Expanded sans requête', a
         let panel = await openFilters(page);
         const countAfterOpen = requests.length;
         const role = filterBlock(panel, 'role');
-        await expect(role.getByLabel('Rôle')).toHaveValue('agent');
-        await role.getByLabel('Rôle').selectOption('supervisor');
+        const roleControl = role.getByRole('combobox', {
+            name: 'Rôle',
+            exact: true,
+        });
+        await expect(roleControl).toHaveValue('agent');
+        await roleControl.selectOption('supervisor');
         await panel.getByRole('button', { name: 'Fermer les filtres' }).click();
         await expectUsersGetCountStable(requests, countAfterOpen);
 
         panel = await openFilters(page);
-        await expect(filterBlock(panel, 'role').getByLabel('Rôle')).toHaveValue(
-            'agent'
-        );
+        await expect(
+            filterBlock(panel, 'role').getByRole('combobox', {
+                name: 'Rôle',
+                exact: true,
+            })
+        ).toHaveValue('agent');
         await panel.getByRole('button', { name: 'Fermer les filtres' }).click();
     }
 });
@@ -419,7 +431,10 @@ test('resize Medium ↔ Expanded : conserve le même contrôle, le brouillon, le
     const panel = await openFilters(page);
     await markLegacyGroupedPanel(panel);
     await addFilter(panel, 'Profil');
-    const profile = filterBlock(panel, 'profile').getByLabel('Profil');
+    const profile = filterBlock(panel, 'profile').getByRole('combobox', {
+        name: 'Profil',
+        exact: true,
+    });
     await profile.selectOption('profile-b');
     await profile.focus();
     await profile.evaluate((element) => {
@@ -444,7 +459,7 @@ test('resize Medium ↔ Expanded : conserve le même contrôle, le brouillon, le
     const expandedProfile = filterBlock(
         page.locator('#user-filter-panel'),
         'profile'
-    ).getByLabel('Profil');
+    ).getByRole('combobox', { name: 'Profil', exact: true });
     expect(
         await expandedProfile.evaluate(
             (element) =>
@@ -488,7 +503,7 @@ test('hauteur courte et densité : seule la pile défile, header/footer restent 
         const sources = [...container.children];
         if (sources.length !== 3) {
             throw new Error(
-                'Trois blocs contractuels sont requis avant le stress.'
+                `Trois blocs contractuels sont requis avant le stress ; reçu ${sources.length}.`
             );
         }
         for (let copy = 1; copy < 5; copy += 1) {

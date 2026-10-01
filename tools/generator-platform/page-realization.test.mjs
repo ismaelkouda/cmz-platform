@@ -209,7 +209,7 @@ async function writePresentationEvidence(data, overrides = {}) {
     };
 }
 
-test('prépare un work order immuable et borné à cinq fichiers', async () => {
+test('prépare un work order immuable et borné aux fichiers déclarés', async () => {
     const data = await fixture();
     const common = {
         workspaceRoot: data.root,
@@ -266,6 +266,48 @@ test('prépare un work order immuable et borné à cinq fichiers', async () => {
             })
         ).already_published,
         true
+    );
+});
+
+test('borne les sous-composants colocalisés par une allowlist content-adressée', async () => {
+    const data = await fixture();
+    const common = {
+        workspaceRoot: data.root,
+        appName: 'clean-street',
+        pageId: data.pageId,
+        additionalFiles: [
+            'page.filters.component.ts',
+            'page.filters.component.html',
+        ],
+    };
+    const plan = planPageRealization(common);
+
+    assert.deepEqual(plan.workOrder.allowed_files.slice(-2), [
+        'page.filters.component.html',
+        'page.filters.component.ts',
+    ]);
+    assert.notEqual(
+        plan.work_order_id,
+        planPageRealization({ ...common, additionalFiles: [] }).work_order_id
+    );
+    assert.throws(
+        () =>
+            planPageRealization({
+                ...common,
+                additionalFiles: ['../outside.ts'],
+            }),
+        /additional page files must be unique/
+    );
+    assert.throws(
+        () =>
+            planPageRealization({
+                ...common,
+                additionalFiles: [
+                    'page.filters.component.ts',
+                    'page.filters.component.ts',
+                ],
+            }),
+        /additional page files must be unique/
     );
 });
 

@@ -66,8 +66,13 @@ async function addDesktopFilterIfNeeded(
     await add.click();
     await panel
         .locator('[data-cmz-id="available-filters"]')
-        .getByRole('button', { name: label, exact: true })
+        .getByRole('menuitem', { name: label, exact: true })
         .click();
+    const key =
+        label === 'Profil' ? 'profile' : label === 'Rôle' ? 'role' : 'status';
+    await expect(
+        panel.locator(`[data-cmz-filter-block="${key}"]`)
+    ).toBeVisible();
 }
 
 async function markLegacyCompactFilterA11yAsExpectedFailure(
@@ -204,9 +209,13 @@ test('résume seulement les filtres appliqués, limite les chips medium et retir
     for (const label of ['Profil', 'Rôle', 'Statut'] as const) {
         await addDesktopFilterIfNeeded(dialog, label);
     }
-    await dialog.getByLabel('Profil').selectOption('profile-a');
-    await dialog.getByLabel('Rôle').selectOption('agent');
-    await dialog.getByLabel('Statut').selectOption('inactive');
+    await dialog
+        .getByRole('combobox', { name: 'Profil', exact: true })
+        .selectOption('profile-a');
+    await dialog
+        .getByRole('combobox', { name: 'Rôle', exact: true })
+        .selectOption('agent');
+    await dialog.getByRole('radio', { name: 'Inactif' }).check();
     await expect(
         page.getByRole('region', { name: 'Filtres appliqués' })
     ).toHaveCount(0);
@@ -248,13 +257,17 @@ test('resize compact → medium → expanded → compact : conserve le draft san
     await page.setViewportSize(MEDIUM);
     await waitForResponsiveLayout(page);
     container = page.locator('#user-filter-panel');
-    await expect(container.getByLabel('Statut')).toHaveValue('inactive');
+    await expect(
+        container.getByRole('radio', { name: 'Inactif' })
+    ).toBeChecked();
     expect(requests).toEqual(requestsBeforeResize);
 
     await page.setViewportSize(EXPANDED);
     await waitForResponsiveLayout(page);
     container = page.locator('#user-filter-panel');
-    await expect(container.getByLabel('Statut')).toHaveValue('inactive');
+    await expect(
+        container.getByRole('radio', { name: 'Inactif' })
+    ).toBeChecked();
     expect(requests).toEqual(requestsBeforeResize);
 
     await page.setViewportSize(COMPACT);
@@ -334,7 +347,9 @@ test('ne rend jamais deux exemplaires interactifs du même filtre', async ({
         container.locator('input, select, [role="radio"]')
     ).toHaveCount(0);
     await container.getByRole('button', { name: /^Profil\b/ }).click();
-    await expect(container.getByLabel('Profil')).toHaveCount(1);
+    await expect(
+        container.getByRole('combobox', { name: 'Profil', exact: true })
+    ).toHaveCount(1);
     await expect(
         container.getByRole('button', { name: /^Rôle\b/ })
     ).toHaveCount(0);
@@ -372,7 +387,7 @@ test('n’invente ni tri, ni option, ni paramètre réseau hors contrat', async 
     await expect(dialog.getByText(/Trier|Sort by/i)).toHaveCount(0);
     expect(
         await dialog
-            .getByLabel('Profil')
+            .getByRole('combobox', { name: 'Profil', exact: true })
             .locator('option')
             .evaluateAll((options) =>
                 options.map((option) => (option as HTMLOptionElement).value)
@@ -380,7 +395,7 @@ test('n’invente ni tri, ni option, ni paramètre réseau hors contrat', async 
     ).toEqual(['', 'profile-a', 'profile-b', 'profile-c', 'profile-demo']);
     expect(
         await dialog
-            .getByLabel('Rôle')
+            .getByRole('combobox', { name: 'Rôle', exact: true })
             .locator('option')
             .evaluateAll((options) =>
                 options.map((option) => (option as HTMLOptionElement).value)
@@ -388,16 +403,19 @@ test('n’invente ni tri, ni option, ni paramètre réseau hors contrat', async 
     ).toEqual(['', 'supervisor', 'team-leader', 'agent']);
     expect(
         await dialog
-            .getByLabel('Statut')
-            .locator('option')
+            .getByRole('radio')
             .evaluateAll((options) =>
-                options.map((option) => (option as HTMLOptionElement).value)
+                options.map((option) => (option as HTMLInputElement).value)
             )
     ).toEqual(['', 'active', 'inactive']);
 
-    await dialog.getByLabel('Profil').selectOption('profile-a');
-    await dialog.getByLabel('Rôle').selectOption('agent');
-    await dialog.getByLabel('Statut').selectOption('inactive');
+    await dialog
+        .getByRole('combobox', { name: 'Profil', exact: true })
+        .selectOption('profile-a');
+    await dialog
+        .getByRole('combobox', { name: 'Rôle', exact: true })
+        .selectOption('agent');
+    await dialog.getByRole('radio', { name: 'Inactif' }).check();
     const countBeforeApply = requests.length;
     await dialog.getByRole('button', { name: /^(Appliquer|Filtrer)$/ }).click();
     await expectOnlyOneUsersGet(requests, countBeforeApply);
