@@ -264,15 +264,25 @@ hash documente l'identité approuvée ; il ne rend pas le stockage durable.
 - fermer administrativement ADAPT-8d2/8e après fusion de #168/#171 ;
 - ne modifier aucun runtime.
 
-### ADAPT-11a — prochaine tranche, références
+### ADAPT-11a — réalisé localement, références
 
-- reconstruire les six visuels approuvés depuis une source déterministe ;
-- respecter le plafond de 1 Mo par fichier ;
-- publier chemins, dimensions, usages et SHA-256 ;
-- préserver les autorités progressives et création déjà actives ;
-- aucun runtime dans cette tranche.
+- les six intentions approuvées sont reconstruites par un HTML paramétrable et
+  un script Playwright à écriture explicitement autorisée ;
+- les dimensions d'origine sont conservées : `1484 × 1060` en `expanded` et
+  `1448 × 1086` en `medium` ;
+- les PNG pèsent entre 177 681 et 203 125 octets, loin du plafond de 1 Mo ;
+- un second rendu reproduit les six SHA-256 octet par octet ;
+- le manifeste publie le brief et les six PNG sans retirer les quinze autorités
+  progressives et création déjà actives ;
+- un oracle dédié relit identité des sources, IHDR, poids, taille et hash ;
+- aucun runtime, contrat API, work order ou dépendance n'est modifié.
 
-### ADAPT-11b — oracles futurs
+Dossier :
+[`data-view-reference-candidates/`](../../examples/users-management-proof/presentation/data-view-reference-candidates/).
+La suppression des originaux locaux reste interdite avant revue, fusion et CI
+post-fusion de cette tranche.
+
+### ADAPT-11b — oracles futurs après fusion d'ADAPT-11a
 
 - toolbar `Créer`, `Rafraîchir`, `Exporter`, `Filtres` ;
 - colonne d'actions fixe et menu éventuel ;

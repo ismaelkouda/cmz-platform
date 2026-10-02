@@ -2583,11 +2583,16 @@ Figma, désormais source partielle différée :
   un second cas indépendant, un contrat stable et des oracles communs. Audit et
   séquence :
   [`data-view-capabilities-cmz-backoffice-2026-10-01.md`](./data-view-capabilities-cmz-backoffice-2026-10-01.md).
-  **ADAPT-11a — prochaine tranche :** reproduire déterministement les six
-  visuels validés Medium/Expanded, aujourd'hui locaux et ignorés, sous le
-  plafond de 1 Mo, puis publier chemins, dimensions, usages et SHA-256 sans
-  toucher au runtime. Les empreintes approuvées sont consignées dans l'audit et
-  les fichiers locaux ne doivent pas être nettoyés avant cette publication.
+  **ADAPT-11a — réalisé localement le 2026-10-02 :** un HTML paramétrable et un
+  script Playwright borné reconstruisent les six intentions validées en
+  Medium/Expanded. Un second rendu reproduit leurs SHA-256 octet par octet ; les
+  PNG conservent les dimensions d'origine et pèsent de 177 681 à 203 125 octets,
+  sous le plafond de 1 Mo. Le manifeste publie un brief et les six PNG sans
+  retirer les quinze autorités progressives et création déjà actives. L'oracle
+  dédié vérifie en plus les sources de reproduction, l'IHDR, le poids, les
+  dimensions et les hashes ; la publication C5 passe 5/5. Aucun runtime,
+  contrat API, work order ou dépendance ne change. Les originaux locaux restent
+  conservés jusqu'à la revue, la fusion et la CI post-fusion.
   **ADAPT-11b — après fusion d'ADAPT-11a :** écrire les oracles futurs pour la
   toolbar partielle, les actions de ligne, leurs menus et la géométrie bornée du
   panneau ; une ligne reste non interactive par défaut et ses contrôles ne
