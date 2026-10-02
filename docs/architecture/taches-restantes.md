@@ -2590,22 +2590,30 @@ Figma, désormais source partielle différée :
   sous le plafond de 1 Mo. Le manifeste publie un brief et les six PNG sans
   retirer les quinze autorités progressives et création déjà actives. L'oracle
   dédié vérifie en plus les sources de reproduction, l'IHDR, le poids, les
-  dimensions et les hashes ; la publication C5 passe 5/5. Aucun runtime,
-  contrat API, work order ou dépendance ne change. Les originaux locaux restent
-  conservés jusqu'à la revue, la fusion et la CI post-fusion.
-  **ADAPT-11b — après fusion d'ADAPT-11a :** écrire les oracles futurs pour la
-  toolbar partielle, les actions de ligne, leurs menus et la géométrie bornée du
-  panneau ; une ligne reste non interactive par défaut et ses contrôles ne
-  déclenchent jamais une activation de ligne optionnelle. **ADAPT-11c — après
-  fusion des oracles :** recalculer le work order et réaliser uniquement les
-  capacités C5 demandées, avec primitives Angular officielles avant custom et
-  preuve build, lint, tests, Playwright, accessibilité, bundle et confinement.
-  **DATA-VIEW-1 — différé :** n'extraire un contrat ou renderer partagé qu'après
-  comparaison avec une seconde fonctionnalité indépendante et preuve Angular +
-  React. Aucun schéma universel ni migration du `cmz-table` n'est autorisé dans
-  ADAPT-11. **PRES-AUTH-1 —
-  autorités de présentation rejetées :** le 2026-09-30, le porteur produit
-  rejette explicitement comme références courantes les dossiers
+  dimensions et les hashes ; la publication C5 passe 5/5. Aucun runtime, contrat
+  API, work order ou dépendance ne change. Les originaux locaux restent
+  conservés jusqu'à la revue, la fusion et la CI post-fusion. **ADAPT-11b —
+  engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
+  bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
+  capacités non déclarées, la non-activation des lignes et la géométrie
+  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
+  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
+  fournit aucun `action-request` correspondant : les rendre opérables maintenant
+  inventerait transport, permissions et effets. Les oracles exigent donc
+  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
+  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
+  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
+  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
+  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
+  lint, tests Angular et build production verts. **ADAPT-11c — après fusion des
+  oracles :** recalculer le work order et réaliser uniquement les capacités C5
+  demandées, avec primitives Angular officielles avant custom et preuve build,
+  lint, tests, Playwright, accessibilité, bundle et confinement. **DATA-VIEW-1 —
+  différé :** n'extraire un contrat ou renderer partagé qu'après comparaison
+  avec une seconde fonctionnalité indépendante et preuve Angular + React. Aucun
+  schéma universel ni migration du `cmz-table` n'est autorisé dans ADAPT-11.
+  **PRES-AUTH-1 — autorités de présentation rejetées :** le 2026-09-30, le
+  porteur produit rejette explicitement comme références courantes les dossiers
   `adaptive-candidates/` et `filter-candidates/`, ainsi que les quatre PNG
   racine `desktop-create-error`, `desktop-ready`, `mobile-create-error` et
   `mobile-ready`. Les fichiers restent versionnés comme historique, mais le
