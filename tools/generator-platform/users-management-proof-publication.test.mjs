@@ -57,6 +57,96 @@ const pageRealizationEvidenceSchema = JSON.parse(
     )
 );
 
+const progressiveFilterReferenceRoot =
+    'examples/users-management-proof/presentation/progressive-filter-candidates/';
+const dataViewReferenceRoot =
+    'examples/users-management-proof/presentation/data-view-reference-candidates/';
+const approvedDataViewReferences = [
+    {
+        id: 'data-view-capabilities-brief',
+        source_kind: 'design-brief',
+        purpose: 'responsive-layout',
+        path: `${dataViewReferenceRoot}proposal.md`,
+        media_type: 'text/markdown',
+        bytes: 7608,
+        sha256: '35174f32ff2b8caec90492e10bcfba6a46b14807aa81974855617b99bc4987e3',
+        trust: 'untrusted-content',
+        state_ids: [],
+        viewport: null,
+    },
+    {
+        id: 'expanded-data-view-filter-workspace',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${dataViewReferenceRoot}expanded-filter-workspace.proposed.png`,
+        media_type: 'image/png',
+        bytes: 193173,
+        sha256: '575ff6852a78f87fdd71fc410d431bce21fcd93862350c8c8d78b5bca48d956b',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1484, height: 1060, pixel_ratio: 1 },
+    },
+    {
+        id: 'expanded-data-view-row-actions',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${dataViewReferenceRoot}expanded-row-actions.proposed.png`,
+        media_type: 'image/png',
+        bytes: 202433,
+        sha256: '74ad0b3cf192e83b8449d02833e3daab1494a24255c6cda6a027046a3282366f',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1484, height: 1060, pixel_ratio: 1 },
+    },
+    {
+        id: 'expanded-data-view-row-actions-with-filters',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${dataViewReferenceRoot}expanded-row-actions-with-filters.proposed.png`,
+        media_type: 'image/png',
+        bytes: 200739,
+        sha256: '2d7469accf8168355e0211ea297dc7dd5bed2cdd35162089a95572fab26800a9',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1484, height: 1060, pixel_ratio: 1 },
+    },
+    {
+        id: 'medium-data-view-filter-workspace',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${dataViewReferenceRoot}medium-filter-workspace.proposed.png`,
+        media_type: 'image/png',
+        bytes: 177681,
+        sha256: '5bef46e5dbd63f9ba53a616dd36dd9d7bcd7fa19419fa60870dbc4d8bf40ef82',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1448, height: 1086, pixel_ratio: 1 },
+    },
+    {
+        id: 'medium-data-view-row-actions',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${dataViewReferenceRoot}medium-row-actions.proposed.png`,
+        media_type: 'image/png',
+        bytes: 203125,
+        sha256: '1765b15cabc9dc4faefe6949820a7c16035bf7b6ebe68741c4f2fe9d134e1675',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1448, height: 1086, pixel_ratio: 1 },
+    },
+    {
+        id: 'medium-data-view-row-actions-with-filters',
+        source_kind: 'wireframe',
+        purpose: 'responsive-layout',
+        path: `${dataViewReferenceRoot}medium-row-actions-with-filters.proposed.png`,
+        media_type: 'image/png',
+        bytes: 192198,
+        sha256: 'eed7ca5124e0e9900796aa219e9f0aa6861ffb0ac745f56663744095fc22a8ec',
+        trust: 'untrusted-content',
+        state_ids: ['ready'],
+        viewport: { width: 1448, height: 1086, pixel_ratio: 1 },
+    },
+];
 const adaptiveCreateReferenceRoot =
     'examples/users-management-proof/presentation/adaptive-create-candidates/';
 const approvedAdaptiveCreateReferences = [
@@ -446,6 +536,14 @@ test('publie une composition Angular stable et prépare un work order raccordé'
                 state_ids: ['ready'],
                 viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
             },
+            ...approvedDataViewReferences.map(
+                ({ id, purpose, state_ids, viewport }) => ({
+                    id,
+                    purpose,
+                    state_ids,
+                    viewport,
+                })
+            ),
             ...approvedAdaptiveCreateReferences.map(
                 ({ id, purpose, state_ids, viewport }) => ({
                     id,
@@ -492,7 +590,9 @@ test('publie une composition Angular stable et prépare un work order raccordé'
     );
     assert.deepEqual(
         realization.presentation_evidence.sources
-            .filter(({ id }) => id.includes('filter'))
+            .filter(({ path }) =>
+                path.startsWith(progressiveFilterReferenceRoot)
+            )
             .map(
                 ({
                     id,
@@ -604,6 +704,13 @@ test('publie une composition Angular stable et prépare un work order raccordé'
                 viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
             },
         ]
+    );
+    assert.deepEqual(
+        realization.presentation_evidence.sources.filter(({ path }) =>
+            path.startsWith(dataViewReferenceRoot)
+        ),
+        approvedDataViewReferences,
+        'les six références de vue de données et leur brief doivent être publiés octet par octet'
     );
     assert.deepEqual(
         realization.presentation_evidence.sources.filter(({ path }) =>
