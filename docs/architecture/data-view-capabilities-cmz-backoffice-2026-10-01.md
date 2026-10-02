@@ -282,14 +282,39 @@ Dossier :
 La suppression des originaux locaux reste interdite avant revue, fusion et CI
 post-fusion de cette tranche.
 
-### ADAPT-11b — oracles futurs après fusion d'ADAPT-11a
+### ADAPT-11b — oracles engagés après fusion d'ADAPT-11a
 
-- toolbar `Créer`, `Rafraîchir`, `Exporter`, `Filtres` ;
-- colonne d'actions fixe et menu éventuel ;
-- panneau de filtres borné entre header et scrollbar ;
-- défilement horizontal arrêté avant actions ou filtre ;
-- aucun dialogue ou clic de ligne imposé ;
-- signatures historiques bornées, sans `skip` ni `todo`.
+La référence visuelle montre la famille complète `Créer`, `Rafraîchir`,
+`Exporter`, `Filtres` et une colonne d'actions. Le contrat C5 publié ne déclare
+cependant que `create-user`, `users-list` et `profiles-select`. Il ne fournit
+aucun `action-request` pour exporter, modifier, supprimer, activer ou
+désactiver. Les wireframes préservent donc ces capacités optionnelles, mais le
+runtime C5 doit échouer fermé au lieu d'inventer leur sémantique.
+
+Les oracles locaux couvrent :
+
+- une toolbar unique `Créer`, `Rafraîchir`, `Filtres`, dans cet ordre, avec
+  recherche à gauche et absence d'`Exporter` tant qu'aucun contrat ne l'active ;
+- un rafraîchissement qui conserve la requête appliquée et émet exactement un
+  GET `users` ;
+- l'absence de colonne, menu et contrôles d'actions non déclarés ;
+- une ligne non activable, sans curseur, `tabindex`, handler, navigation ou
+  dialogue implicite ;
+- le panneau Medium/Expanded borné entre le haut de la table et le haut du rail
+  horizontal visible ;
+- le rail horizontal arrêté au bord gauche du panneau ;
+- deux signatures historiques exactes seulement : toolbar détachée sans
+  rafraîchissement, et panneau étendu jusqu'au bas du workspace sans rail borné.
+
+Le lot reste sans `skip`, `todo`, runtime, work order, contrat API ou
+dépendance. Les comportements positifs des actions de ligne et de l'export
+seront spécifiés seulement avec leurs vrais `action-request` et permissions ; un
+faux bouton décoratif n'est pas une preuve.
+
+La passe Chromium ciblée donne `5/5` : quatre échecs attendus sur les deux
+signatures historiques exactes et un succès réel sur l'absence des capacités non
+déclarées. La régression C5 complète donne `55/55`. Lint, tests Angular, builds
+de développement et de production sont verts ; aucun octet runtime ne change.
 
 ### ADAPT-11c — réalisation C5
 
