@@ -291,10 +291,10 @@ aucun `action-request` pour exporter, modifier, supprimer, activer ou
 désactiver. Les wireframes préservent donc ces capacités optionnelles, mais le
 runtime C5 doit échouer fermé au lieu d'inventer leur sémantique.
 
-Les oracles locaux couvrent :
+Les oracles locaux couvrent l'état historique antérieur à ADAPT-11c :
 
-- une toolbar unique `Créer`, `Rafraîchir`, `Filtres`, dans cet ordre, avec
-  recherche à gauche et absence d'`Exporter` tant qu'aucun contrat ne l'active ;
+- une toolbar unique `Créer`, `Rafraîchir`, `Filtres`, avec absence d'`Exporter`
+  tant qu'aucun contrat ne l'active ;
 - un rafraîchissement qui conserve la requête appliquée et émet exactement un
   GET `users` ;
 - l'absence de colonne, menu et contrôles d'actions non déclarés ;
@@ -318,6 +318,12 @@ de développement et de production sont verts ; aucun octet runtime ne change.
 
 ### ADAPT-11c — réalisation C5
 
+- appliquer l'autorité exhaustive
+  [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md) ;
+- remplacer localement l'ancienne disposition « recherche à gauche » par le
+  titre de table à gauche, puis recherche et commandes à droite ;
+- conserver l'ordre logique C5 `Recherche`, `Créer`, `Rafraîchir`, `Filtres`,
+  avec reflow explicite en largeur Medium contrainte ;
 - recalculer le work order après fusion des oracles ;
 - réaliser seulement les capacités demandées par C5 ;
 - Angular natif/Aria/Material avant custom selon ADR-0077 ;
@@ -353,4 +359,5 @@ La suite est refusée si elle :
 - [WAI-ARIA APG — Table](https://www.w3.org/WAI/ARIA/apg/patterns/table/)
 - [Angular Material Table](https://material.angular.dev/components/table/overview)
 - [UI officielle avant custom](./ui-angular-officiel-avant-custom-2026-10-01.md)
+- [Autorité C5 ADAPT-11c](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
 - [Filtres progressifs C5](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md)
