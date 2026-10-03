@@ -436,7 +436,7 @@ directives suivantes :
 <!-- BEGIN:GENERATED:monorepo-status -->
 | Indicateur                | Valeur                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Dernière génération       | **2026-09-25** (`bun run generate:status`)                                                                      |
+| Dernière génération       | **2026-10-03** (`bun run generate:status`)                                                                      |
 | Modules livrés            | **19** (voir [`STATUS.md`](./STATUS.md))                                                         |
 | Packages Nx               | **75** (72 libs + 3 app)                                              |
 | Fichiers TypeScript       | **2 730** hors tests / **2 981** total (251 specs)                 |

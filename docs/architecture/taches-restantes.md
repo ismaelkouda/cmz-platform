@@ -2781,6 +2781,30 @@ Figma, désormais source partielle différée :
   graphe typé : un cas réel où un nœud dépend du succès d'un autre (« Déposer un
   signalement » : charger les catégories puis soumettre).
 
+#### JEV — expérimentation de jugements étroits
+
+- **JEV-0 — fait :** la preuve de composition préalable est close ; JEV ne
+  bloque ni ne remplace le générateur déterministe.
+- **JEV-1 — décision formalisée :** ADR-0079 accepte seulement un POC
+  provider-neutral en replay/shadow. Aucun appel live n'entre dans la CI, le
+  runtime produit, une permission, une approbation ou une publication.
+- **JEV-2 — en attente après fusion de l'ADR :** construire le harnais isolé,
+  les schémas versionnés, l'adaptateur fournisseur et le replay hors ligne. Le
+  smoke test valide le harnais mais ne vaut pas preuve d'adoption.
+- **JEV-3 — données et validation humaines requises :** préenregistrer le guide,
+  les strates, la taille, les splits, les métriques et les seuils ; constituer
+  des demandes françaises synthétiques ou assainies ; produire les étiquettes
+  avant toute sortie JEV et arbitrer les désaccords.
+- **JEV-4 — en attente :** exécuter la campagne épinglée et mesurer qualité,
+  calibration, faux négatifs critiques, répétabilité, résistance aux
+  injections, indisponibilité, latence et coût.
+- **JEV-5 — décision séparée :** publier le rapport et les fixtures replay, puis
+  accepter le rejet, une poursuite bornée ou une proposition de promotion par
+  un nouvel ADR. Aucune intégration de production n'est actuellement décidée.
+
+Décision détaillée :
+[`ADR-0079`](../adr/0079-jev-evaluateur-probabiliste-replay-shadow.md).
+
 ### 2.1 Preuves empiriques déjà produites
 
 - **ROAD-3c** — **fait** (2026-08-12), M, P2, alias `React POC 2026-08-12`. POC
