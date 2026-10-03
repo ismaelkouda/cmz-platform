@@ -111,4 +111,7 @@ envisagées, le choix retenu et ses conséquences.
 | [0075](./0075-chargement-progressif-mobile-silencieux.md) | Chargement progressif mobile silencieux                  | accepté  |
 | [0076](./0076-surface-creation-adaptative-bornee-par-contenu.md) | Surface de création adaptative bornée par le contenu     | accepté  |
 | [0077](./0077-ui-angular-officielle-avant-custom.md)      | UI Angular officielle avant comportement custom          | Accepted |
+| [0078](./0078-vues-de-donnees-par-capacites-optionnelles.md) | Vues de données par capacités optionnelles               | Accepted |
+| [0079](./0079-jev-evaluateur-probabiliste-replay-shadow.md) | JEV comme évaluateur probabiliste en replay/shadow       | Accepted |
+| [0080](./0080-prouver-la-valeur-avant-nouvelle-automatisation.md) | Prouver la valeur avant toute nouvelle automatisation    | Accepted |
 <!-- END:GENERATED:adr-index -->

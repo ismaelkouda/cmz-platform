@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>C5 — références déterministes de vue de données</title>
+        <style>
+            :root {
+                color-scheme: light;
+                font-family:
+                    Inter,
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    'Segoe UI',
+                    sans-serif;
+                color: #0b238f;
+                background: #f5fbff;
+                --primary: #0057f8;
+                --primary-dark: #071b91;
+                --primary-soft: #e3f1ff;
+                --line: #b8d8f5;
+                --line-strong: #86b9e8;
+                --muted: #6672ae;
+                --success: #0a8d43;
+                --danger: #ef233c;
+                --surface: #ffffff;
+                --panel: #fbfdff;
+                --panel-width: 340px;
+                --actions-width: 160px;
+                --scroll-height: 28px;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                width: 100%;
+                min-width: 100%;
+                min-height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }
+            body {
+                background:
+                    radial-gradient(circle at 8% 20%, #e6f8ff 0, transparent 28%),
+                    radial-gradient(circle at 88% 24%, #edf9ff 0, transparent 25%), #f8fcff;
+            }
+            button,
+            input,
+            select {
+                font: inherit;
+            }
+            button,
+            select {
+                color: inherit;
+            }
+            .app-bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                height: 58px;
+                padding: 0 34px;
+                border-bottom: 1px solid var(--line);
+                background: rgb(255 255 255 / 94%);
+            }
+            .brand,
+            .operator,
+            .toolbar-actions,
+            .tool-button,
+            .title-row {
+                display: flex;
+                align-items: center;
+            }
+            .brand {
+                gap: 14px;
+                color: var(--primary-dark);
+                font-size: 20px;
+                font-weight: 800;
+            }
+            .brand-mark {
+                width: 30px;
+                height: 30px;
+                border-radius: 5px;
+                background: linear-gradient(145deg, #076af8, #004ed7);
+            }
+            .operator {
+                gap: 16px;
+                color: #0048d9;
+                font-size: 15px;
+            }
+            .operator::after {
+                content: '';
+                width: 8px;
+                height: 8px;
+                border-right: 2px solid currentcolor;
+                border-bottom: 2px solid currentcolor;
+                transform: rotate(45deg) translateY(-3px);
+            }
+            main {
+                padding: 28px 30px 40px;
+            }
+            .title-row {
+                gap: 14px;
+                margin: 0 12px 28px;
+            }
+            h1 {
+                margin: 0;
+                color: var(--primary-dark);
+                font-size: 32px;
+                line-height: 1;
+                letter-spacing: -0.035em;
+            }
+            .count {
+                display: grid;
+                min-width: 48px;
+                height: 40px;
+                padding: 0 12px;
+                place-items: center;
+                border-radius: 999px;
+                background: #cfe8ff;
+                color: var(--primary);
+                font-size: 18px;
+                font-weight: 750;
+            }
+            .data-shell {
+                overflow: hidden;
+                border: 1px solid var(--line-strong);
+                border-radius: 7px;
+                background: var(--surface);
+                box-shadow: 0 10px 35px rgb(32 109 173 / 5%);
+            }
+            .toolbar {
+                display: grid;
+                grid-template-columns: minmax(320px, 1fr) auto;
+                gap: 24px;
+                align-items: center;
+                min-height: 84px;
+                padding: 16px;
+                border-bottom: 1px solid var(--line-strong);
+            }
+            .search-wrap {
+                position: relative;
+                width: min(100%, 395px);
+            }
+            .search-wrap::before {
+                position: absolute;
+                top: 50%;
+                left: 16px;
+                content: '⌕';
+                color: var(--primary-dark);
+                font-size: 28px;
+                line-height: 1;
+                transform: translateY(-55%);
+            }
+            .search {
+                width: 100%;
+                height: 46px;
+                padding: 0 14px 0 48px;
+                border: 1px solid #9494e5;
+                border-radius: 6px;
+                outline: 0;
+                color: var(--primary-dark);
+                background: #fff;
+                font-size: 15px;
+            }
+            .search::placeholder,
+            .filter-control::placeholder {
+                color: #7c79d8;
+                opacity: 1;
+            }
+            .toolbar-actions {
+                gap: 10px;
+            }
+            .tool-button {
+                height: 50px;
+                gap: 12px;
+                justify-content: center;
+                padding: 0 18px;
+                border: 1px solid var(--primary);
+                border-radius: 6px;
+                background: #fff;
+                color: #0047dc;
+                font-size: 16px;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+            .tool-button .icon {
+                font-size: 25px;
+                font-weight: 400;
+                line-height: 1;
+            }
+            .tool-button.create {
+                border-color: var(--primary);
+                background: var(--primary);
+                color: #fff;
+            }
+            .tool-button.export {
+                border-color: #00a342;
+                color: #008436;
+                background: #effcf3;
+            }
+            .tool-button.filters[aria-pressed='true'] {
+                background: #eff6ff;
+                box-shadow: inset 0 0 0 1px #bcd7ff;
+            }
+            .table-stage {
+                position: relative;
+                height: 660px;
+                overflow: hidden;
+                background: #fff;
+            }
+            .table-window {
+                position: absolute;
+                inset: 0 0 var(--scroll-height) 0;
+                overflow: hidden;
+            }
+            body[data-panel='open'] .table-window {
+                right: var(--panel-width);
+            }
+            .grid {
+                min-width: 1220px;
+                color: #003ff0;
+                font-size: 14px;
+            }
+            .grid-row {
+                display: grid;
+                grid-template-columns: 44px 1fr 1fr 2.1fr 1.1fr 1fr 1.1fr 1.55fr;
+                min-width: 1220px;
+            }
+            body[data-layout='medium'] .grid-row {
+                grid-template-columns: 52px 1.1fr 1.05fr 1.85fr 1.02fr 0.9fr 1.15fr 1.5fr;
+            }
+            body[data-actions='true'] .grid {
+                width: calc(100% - var(--actions-width));
+                min-width: 1180px;
+            }
+            body[data-actions='true'] .grid-row {
+                min-width: 1180px;
+            }
+            .cell {
+                display: flex;
+                min-width: 0;
+                align-items: center;
+                height: 49px;
+                padding: 0 12px;
+                overflow: hidden;
+                border-right: 1px solid #d8e8f5;
+                border-bottom: 1px solid #d8e8f5;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .header .cell {
+                height: 58px;
+                color: var(--primary-dark);
+                background: linear-gradient(#f8fcff, #edf6fa);
+                font-weight: 800;
+            }
+            .filters-row .cell {
+                height: 58px;
+                background: #fff;
+            }
+            .index {
+                justify-content: center;
+                color: #4459d7;
+            }
+            .header-label {
+                display: flex;
+                width: 100%;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+            }
+            .sort {
+                display: grid;
+                gap: 1px;
+                color: #6e71bc;
+                font-size: 11px;
+                line-height: 0.75;
+            }
+            .sort.active {
+                color: var(--primary);
+                font-size: 18px;
+            }
+            .filter-control {
+                width: 100%;
+                height: 41px;
+                padding: 0 12px;
+                border: 1px solid #9e96ea;
+                border-radius: 5px;
+                outline: 0;
+                background: #fff;
+                color: #003ff0;
+            }
+            .filter-control.active {
+                border: 2px solid var(--primary);
+                background: #f4f9ff;
+            }
+            .status {
+                min-width: 58px;
+                padding: 6px 10px;
+                border-radius: 5px;
+                background: #d5f7e1;
+                color: var(--success);
+                text-align: center;
+            }
+            .status.inactive {
+                background: #f0f1f5;
+                color: #666ea7;
+            }
+            .horizontal-scroll {
+                position: absolute;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                display: flex;
+                height: var(--scroll-height);
+                align-items: center;
+                padding: 0 12px;
+                border-top: 1px solid #d8e8f5;
+                border-bottom: 1px solid var(--line);
+                background: #f5faff;
+            }
+            body[data-panel='open'] .horizontal-scroll {
+                right: var(--panel-width);
+            }
+            .scroll-track {
+                width: 100%;
+                height: 12px;
+                border-radius: 999px;
+                background: #e4edf5;
+            }
+            .scroll-thumb {
+                width: 68%;
+                height: 100%;
+                border-radius: inherit;
+                background: #aebccc;
+            }
+            .actions-rail {
+                position: absolute;
+                z-index: 2;
+                top: 0;
+                right: 0;
+                bottom: var(--scroll-height);
+                display: none;
+                width: var(--actions-width);
+                border-left: 1px solid var(--line-strong);
+                background: #fff;
+            }
+            body[data-actions='true'] .actions-rail {
+                display: block;
+            }
+            body[data-panel='open'] .actions-rail {
+                right: var(--panel-width);
+            }
+            .action-heading,
+            .action-filter,
+            .action-cell {
+                display: flex;
+                align-items: center;
+                border-bottom: 1px solid #d8e8f5;
+            }
+            .action-heading {
+                height: 58px;
+                padding: 0 18px;
+                color: var(--primary-dark);
+                background: linear-gradient(#f8fcff, #edf6fa);
+                font-weight: 800;
+            }
+            .action-filter {
+                height: 58px;
+            }
+            .action-cell {
+                height: 49px;
+                gap: 8px;
+                justify-content: center;
+                padding: 0 8px;
+            }
+            .icon-button {
+                display: grid;
+                width: 34px;
+                height: 34px;
+                padding: 0;
+                place-items: center;
+                border: 1px solid #85b9f4;
+                border-radius: 5px;
+                background: #fff;
+                color: #003bdc;
+                font-weight: 800;
+            }
+            .icon-button svg {
+                width: 18px;
+                height: 18px;
+                fill: none;
+                stroke: currentcolor;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                stroke-width: 1.8;
+            }
+            .icon-button.danger {
+                border-color: #ff9eaa;
+                color: var(--danger);
+                background: #fff7f7;
+            }
+            .switch {
+                position: relative;
+                width: 39px;
+                height: 23px;
+                border-radius: 999px;
+                background: #aeb2c4;
+            }
+            .switch::after {
+                position: absolute;
+                top: 3px;
+                left: 3px;
+                width: 17px;
+                height: 17px;
+                border-radius: 50%;
+                background: #fff;
+                box-shadow: 0 1px 3px rgb(0 0 0 / 24%);
+                content: '';
+            }
+            .switch.on {
+                background: #0eb464;
+            }
+            .switch.on::after {
+                left: 19px;
+            }
+            .filter-panel {
+                position: absolute;
+                z-index: 3;
+                top: 0;
+                right: 0;
+                bottom: var(--scroll-height);
+                display: none;
+                width: var(--panel-width);
+                grid-template-rows: auto minmax(0, 1fr) auto;
+                border-left: 1px solid var(--line-strong);
+                background: rgb(251 253 255 / 98%);
+                box-shadow: -12px 0 28px rgb(38 101 159 / 8%);
+            }
+            body[data-panel='open'] .filter-panel {
+                display: grid;
+            }
+            .add-filter {
+                height: 51px;
+                margin: 10px 12px 8px;
+                border: 1px solid var(--primary);
+                border-radius: 5px;
+                background: #fff;
+                color: #0045dd;
+                font-size: 15px;
+                font-weight: 750;
+            }
+            .panel-body {
+                display: grid;
+                align-content: start;
+                gap: 10px;
+                padding: 0 12px 16px;
+                overflow: hidden;
+            }
+            .filter-block {
+                padding: 14px;
+                border: 1px solid #c8dced;
+                border-radius: 6px;
+                background: #fff;
+            }
+            .filter-block-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12px;
+                color: var(--primary-dark);
+                font-size: 16px;
+                font-weight: 800;
+            }
+            .chevron {
+                width: 9px;
+                height: 9px;
+                border-top: 2px solid currentcolor;
+                border-left: 2px solid currentcolor;
+                transform: rotate(45deg) translateY(3px);
+            }
+            .chevron.down {
+                transform: rotate(225deg) translateY(3px);
+            }
+            .block-value {
+                color: #7770d6;
+            }
+            .radios {
+                display: grid;
+                gap: 12px;
+            }
+            .radio {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: #003ff0;
+            }
+            .radio::before {
+                width: 19px;
+                height: 19px;
+                border: 2px solid #9d98ec;
+                border-radius: 50%;
+                content: '';
+            }
+            .radio.selected::before {
+                border: 6px solid #0787ff;
+            }
+            .panel-footer {
+                display: flex;
+                min-height: 82px;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                padding: 14px 12px;
+                border-top: 1px solid var(--line);
+                background: #fff;
+            }
+            .panel-footer button {
+                min-width: 118px;
+                height: 51px;
+                border: 1px solid var(--primary);
+                border-radius: 5px;
+                background: #fff;
+                color: var(--primary-dark);
+                font-weight: 800;
+            }
+            .panel-footer .apply {
+                color: #fff;
+                background: var(--primary);
+            }
+            .table-footer {
+                display: flex;
+                height: 64px;
+                align-items: center;
+                padding: 0 12px;
+                border-top: 1px solid var(--line);
+                color: #6c70c6;
+                font-size: 14px;
+            }
+            body[data-layout='medium'] {
+                --panel-width: 390px;
+                --actions-width: 150px;
+            }
+            body[data-layout='medium'][data-actions='false'] {
+                --panel-width: 425px;
+            }
+            body[data-layout='medium'] main {
+                padding-right: 35px;
+                padding-left: 35px;
+            }
+            body[data-layout='medium'] .toolbar {
+                grid-template-columns: minmax(400px, 1fr) auto;
+            }
+            body[data-layout='medium'] .search-wrap {
+                width: min(100%, 605px);
+            }
+            body[data-layout='medium'] .table-stage {
+                height: 700px;
+            }
+            body[data-layout='medium'] .tool-button {
+                padding: 0 17px;
+            }
+            body[data-layout='medium'] .tool-button .label {
+                display: inline;
+            }
+            @media (max-width: 1200px) {
+                .toolbar {
+                    gap: 16px;
+                }
+                .toolbar-actions {
+                    gap: 8px;
+                }
+                .tool-button {
+                    padding: 0 13px;
+                }
+            }
+        </style>
+    </head>
+    <body data-layout="expanded" data-actions="false" data-panel="open">
+        <header class="app-bar">
+            <div class="brand"><span class="brand-mark"></span>CMZ Platform</div>
+            <div class="operator">Opérateur connecté</div>
+        </header>
+        <main>
+            <div class="title-row">
+                <h1>Gestion des utilisateurs</h1>
+                <span class="count" aria-label="42 utilisateurs">42</span>
+            </div>
+            <section class="data-shell" aria-label="Vue de données utilisateurs">
+                <div class="toolbar">
+                    <div class="search-wrap">
+                        <input
+                            class="search"
+                            aria-label="Rechercher un utilisateur"
+                            placeholder="Nom, prénom ou adresse e-mail"
+                        />
+                    </div>
+                    <div class="toolbar-actions">
+                        <button class="tool-button create" type="button">
+                            <span class="icon">＋</span><span class="label">Créer</span>
+                        </button>
+                        <button class="tool-button" type="button">
+                            <span class="icon">↻</span><span class="label">Rafraîchir</span>
+                        </button>
+                        <button class="tool-button export" type="button">
+                            <span class="icon">⇩</span><span class="label">Exporter</span>
+                        </button>
+                        <button class="tool-button filters" type="button" aria-pressed="true">
+                            <span class="icon">≡</span><span class="label">Filtres (3)</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-stage">
+                    <div class="table-window"><div class="grid" id="grid"></div></div>
+                    <div class="actions-rail" id="actions"></div>
+                    <aside class="filter-panel" aria-label="Filtres utilisateurs">
+                        <button class="add-filter" type="button">＋ &nbsp; Ajouter un filtre</button>
+                        <div class="panel-body">
+                            <section class="filter-block">
+                                <div class="filter-block-header"><span>Nom</span><span class="chevron"></span></div>
+                                <input class="filter-control" value="Mar" aria-label="Nom" />
+                            </section>
+                            <section class="filter-block">
+                                <div class="filter-block-header">
+                                    <span>Profil</span><span class="chevron down"></span>
+                                </div>
+                                <div class="block-value">Profil B</div>
+                            </section>
+                            <section class="filter-block">
+                                <div class="filter-block-header"><span>Statut</span><span class="chevron"></span></div>
+                                <div class="radios">
+                                    <span class="radio">Tous</span>
+                                    <span class="radio selected">Actif</span>
+                                    <span class="radio">Inactif</span>
+                                </div>
+                            </section>
+                        </div>
+                        <div class="panel-footer">
+                            <button type="button">Réinitialiser</button>
+                            <button class="apply" type="button">Filtrer</button>
+                        </div>
+                    </aside>
+                    <div class="horizontal-scroll">
+                        <div class="scroll-track"><div class="scroll-thumb"></div></div>
+                    </div>
+                </div>
+                <footer class="table-footer">10 sur 42 utilisateurs</footer>
+            </section>
+        </main>
+        <script>
+            const params = new URLSearchParams(location.search);
+            const layout = params.get('layout') === 'medium' ? 'medium' : 'expanded';
+            const mode = ['filters', 'actions-closed', 'actions-open'].includes(params.get('mode'))
+                ? params.get('mode')
+                : 'filters';
+            const actionsEnabled = mode !== 'filters';
+            const panelOpen = mode !== 'actions-closed';
+            document.body.dataset.layout = layout;
+            document.body.dataset.actions = String(actionsEnabled);
+            document.body.dataset.panel = panelOpen ? 'open' : 'closed';
+            document.querySelector('.filters').setAttribute('aria-pressed', String(panelOpen));
+            const users = [
+                ['Martin', 'Lucas', 'lucas.martin@example.com', 'Profil B', 'Agent', true, '03/06/2024 10:24'],
+                ['Marceau', 'Sophie', 'sophie.marceau@example.com', 'Profil B', 'Agent', true, '02/06/2024 14:18'],
+                ['Marchand', 'Antoine', 'antoine.marchand@example.com', 'Profil A', 'Agent', false, '28/05/2024 09:12'],
+                ['Moreau', 'Marine', 'marine.moreau@example.com', 'Profil B', 'Agent', true, '01/06/2024 16:43'],
+                ['Dupont', 'Marc', 'marc.dupont@example.com', 'Profil B', 'Agent', true, '27/05/2024 11:02'],
+                ['Marin', 'Julien', 'julien.marin@example.com', 'Profil C', 'Agent', false, '25/05/2024 08:37'],
+                ['Marquette', 'Élodie', 'elodie.marquette@example.com', 'Profil B', 'Agent', true, '24/05/2024 17:56'],
+                ['Lambert', 'Marie', 'marie.lambert@example.com', 'Profil B', 'Agent', true, '21/05/2024 13:11'],
+                ['Martel', 'Nicolas', 'nicolas.martel@example.com', 'Profil A', 'Agent', false, '18/05/2024 10:09'],
+                ['Richard', 'Marion', 'marion.richard@example.com', 'Profil B', 'Agent', true, '15/05/2024 09:45'],
+            ];
+            const headers = ['#', 'Nom', 'Prénom', 'Email', 'Profil', 'Rôle', 'Statut', 'Mise à jour'];
+            const filterValues = ['', 'Mar', 'Prénom', 'E-mail', 'Profil B', 'Tous', 'Actif', 'jj/mm/aaaa'];
+            function cell(content, className = '') {
+                return `<div class="cell ${className}">${content}</div>`;
+            }
+            function sortIcon(index) {
+                return index === 1
+                    ? '<span class="sort active">↑</span>'
+                    : '<span class="sort"><span>▲</span><span>▼</span></span>';
+            }
+            const header = headers
+                .map((label, index) =>
+                    cell(
+                        index === 0
+                            ? label
+                            : `<span class="header-label"><span>${label}</span>${sortIcon(index)}</span>`,
+                        index === 0 ? 'index' : ''
+                    )
+                )
+                .join('');
+            const filters = filterValues
+                .map((value, index) => {
+                    if (index === 0) return cell('', 'index');
+                    if ([4, 5, 6].includes(index)) {
+                        return cell(
+                            `<select class="filter-control active" aria-label="${headers[index]}"><option>${value}</option></select>`
+                        );
+                    }
+                    return cell(
+                        `<input class="filter-control ${index === 1 ? 'active' : ''}" aria-label="${headers[index]}" ${index === 1 ? `value="${value}"` : `placeholder="${value}"`} />`
+                    );
+                })
+                .join('');
+            const rows = users
+                .map((user, rowIndex) => {
+                    const values = [
+                        String(rowIndex + 1),
+                        user[0],
+                        user[1],
+                        user[2],
+                        user[3],
+                        user[4],
+                        `<span class="status ${user[5] ? '' : 'inactive'}">${user[5] ? 'Actif' : 'Inactif'}</span>`,
+                        user[6],
+                    ];
+                    return `<div class="grid-row">${values
+                        .map((value, index) => cell(value, index === 0 ? 'index' : ''))
+                        .join('')}</div>`;
+                })
+                .join('');
+            document.querySelector('#grid').innerHTML =
+                `<div class="grid-row header">${header}</div>` +
+                `<div class="grid-row filters-row">${filters}</div>` +
+                rows;
+            if (actionsEnabled) {
+                const editIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.2-1 10-10a2 2 0 0 0-2.8-2.8l-10 10L4 20Z"></path><path d="m13.8 7.8 2.8 2.8"></path></svg>`;
+                const deleteIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3m2 0-1 13H8L7 7m3 4v5m4-5v5"></path></svg>`;
+                const actionRows = users
+                    .map(
+                        (user) => `<div class="action-cell">
+                            <button class="icon-button" type="button" aria-label="Modifier">${editIcon}</button>
+                            <span class="switch ${user[5] ? 'on' : ''}" aria-label="${user[5] ? 'Désactiver' : 'Activer'}"></span>
+                            <button class="icon-button danger" type="button" aria-label="Supprimer">${deleteIcon}</button>
+                        </div>`
+                    )
+                    .join('');
+                document.querySelector('#actions').innerHTML =
+                    '<div class="action-heading">Actions</div><div class="action-filter"></div>' + actionRows;
+            }
+            document.documentElement.dataset.ready = 'true';
+        </script>
+    </body>
+</html>

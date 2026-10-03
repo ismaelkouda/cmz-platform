@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "visual-evaluation-plan",
+  "evaluation_id": "visual-evaluation_27e1c91624b90571",
+  "page_id": "page_6666666666666666",
+  "presentation_id": "presentation_5627f087550dd218",
+  "presentation_evidence_uri": "designs/users-management-proof.presentation-evidence.json",
+  "cases": [
+    {
+      "id": "medium-create-invalid",
+      "reference_source_id": "medium-create-invalid",
+      "viewport": {
+        "width": 1024,
+        "height": 768,
+        "pixel_ratio": 1
+      },
+      "runtime_scenario": {
+        "spec_uri": "apps/users-management-proof/e2e/adaptive-create-oracles.spec.ts",
+        "test_title": "une soumission invalide ne POST pas, annonce les erreurs et focalise Nom",
+        "capture_name": "medium-create-invalid.actual.png"
+      },
+      "review_dimensions": [
+        "content-hierarchy",
+        "feedback-state",
+        "layout-geometry",
+        "responsive-placement",
+        "visual-styling"
+      ]
+    }
+  ]
+}

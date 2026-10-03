@@ -265,6 +265,13 @@ export class PageComponent {
     protected readonly page = this.composition.usersList.page;
     protected readonly usersState = this.composition.usersList.state;
     protected readonly profilesState = this.composition.profilesSelect.state;
+    protected readonly totalUsers = computed(
+        () => this.page()?.totalItems ?? 0
+    );
+    protected readonly totalUsersLabel = computed(() => {
+        const total = this.totalUsers();
+        return `${total} utilisateur${total > 1 ? 's' : ''} au total`;
+    });
     private readonly mobileGeneration = signal(0);
     private readonly mobileRequest = signal<MobilePageRequest | null>(null);
     private mobileSentinelGraceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -445,6 +452,14 @@ export class PageComponent {
     protected applySearch(event: Event): void {
         event.preventDefault();
         this.resetMobileProjection();
+    }
+
+    protected refreshUsers(): void {
+        if (this.layout() === 'compact') {
+            this.resetMobileProjection();
+            return;
+        }
+        this.loadUsers(this.page()?.currentPage ?? 1);
     }
 
     protected openFilters(): void {

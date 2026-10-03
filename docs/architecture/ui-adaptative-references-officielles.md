@@ -16,6 +16,12 @@ Une UI adaptative ne consiste pas à réduire une page desktop. Elle conserve le
 mêmes capacités, données et états tout en changeant leur organisation lorsque
 l'espace réellement disponible l'exige.
 
+Pour la réalisation C5, la traduction exhaustive de cette doctrine en règles
+numérotées, choix de primitives et oracles est publiée dans
+[`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md).
+Ce document C5 évite à un humain ou à un LLM de recommencer la recherche, sans
+transformer sa disposition locale en modèle universel.
+
 ## 2. Hiérarchie d'autorité
 
 Les sources ne répondent pas aux mêmes questions. En cas de conflit, l'ordre
@@ -309,3 +315,17 @@ largeur.
 - [WCAG 2.2 — Orientation](https://www.w3.org/WAI/WCAG22/Understanding/orientation)
 - [WAI — Forms tutorial](https://www.w3.org/WAI/tutorials/forms/)
 - [Chrome — VirtualKeyboard API](https://developer.chrome.com/docs/web-platform/virtual-keyboard)
+
+### Heuristiques d'interface d'entreprise SAP Fiori
+
+SAP Fiori complète Material et Angular sur les tables métier, la proximité des
+actions, les toolbars et la densité. Il reste une source d'heuristiques : WCAG,
+HTML, les contrats produit et l'API officielle Angular gardent la priorité.
+
+- [Fiori 1.96 — UI Elements](https://www.sap.com/design-system/fiori-design-web/v1-96/ui-elements)
+- [Fiori 1.96 — Table toolbar](https://www.sap.com/design-system/fiori-design-web/v1-96/ui-elements/table-bar/)
+- [Fiori — Action placement](https://www.sap.com/design-system/fiori-design-web/v1-108/foundations/best-practices/global-patterns/action-placement)
+- [Fiori 1.96 — Table overview](https://www.sap.com/design-system/fiori-design-web/v1-96/foundations/best-practices/ui-elements/tables/table-overview)
+- [Fiori — Accessibility](https://www.sap.com/design-system/fiori-design-web/v1-148/discover/sap-design-system/product-standards/accessibility-in-sap-fiori)
+- [Fiori — Cozy and compact](https://www.sap.com/design-system/fiori-design-web/v1-84/foundations/visual/cozy-compact)
+- [Fiori — Tooltips](https://www.sap.com/design-system/fiori-design-web/v1-120/foundations/best-practices/ui-elements/using-tooltips)

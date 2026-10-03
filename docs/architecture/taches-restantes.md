@@ -2493,18 +2493,23 @@ Figma, désormais source partielle différée :
   réels. Soumaila a approuvé le commit exact
   `44e6b95ae6dc1d158b060e2e3d3438bdab5ee74c`, fusionné par la PR #167 dans
   `82a9f7cf9c267af8b6100c80f1d50a71375eca15` ; les 17 contrôles de PR et les 17
-  jobs de la CI post-fusion `36826709105` sont verts. **ADAPT-8d2 est engagé
-  localement :** trois oracles ADAPT-6 devenus contradictoires — modal Medium,
+  jobs de la CI post-fusion `36826709105` sont verts. **ADAPT-8d2 est
+  fusionné.** Trois oracles ADAPT-6 devenus contradictoires — modal Medium,
   panneau adjacent Expanded et fieldset groupé — sont retirés au profit des
   oracles progressifs plus forts déjà fusionnés. Les sept invariants transverses
   restants acceptent l'ancienne et la future structure sans relâcher réseau,
-  brouillon, resize, frontières, unicité ou neutralité backend ; le passage
-  ciblé donne `16/16`, dont neuf échecs futurs attendus. `@angular/aria` 22.2.1
-  est retenu pour le runtime, aligné sur CDK 22.2.1 ; il sera déclaré avec son
-  premier usage afin que Knip ne masque aucune dépendance inutilisée. Le work
-  order provisoire `1c8a9d49…` est invalidé. Après revue, fusion et CI
-  post-fusion d'ADAPT-8d2, ADAPT-8e devra recalculer le work order avant la
-  réalisation bornée et la preuve navigateur. Décision détaillée :
+  brouillon, resize, frontières, unicité ou neutralité backend. Soumaila a
+  approuvé le commit exact `baa9218300a4efe3e5bf827adde808dfc3fc4690`, fusionné
+  par la PR #168 dans `8383a06ad8b6e45fe2968f7d8c5b83219588f8b2` ; ses 17
+  contrôles sont verts. **ADAPT-8e est fusionné et ADAPT-8 est clos
+  techniquement :** le runtime réalise le panneau progressif Medium/Expanded
+  avec Angular Aria 22.2.1, conserve la séparation `draft`/`applied`, les
+  raccourcis serveur, les frontières réseau et la neutralité backend, puis
+  convertit les neuf écarts futurs en succès réels. La dépendance officielle est
+  déclarée avec son usage, sans exemption Knip. Soumaila a approuvé le commit
+  exact `7a894296f407dcdfc80df545448976fb5513dbfe`, fusionné par la PR #171 dans
+  `b70037c51387b309752965e9a2ebf9e3c317919b` ; ses 17 contrôles et la CI
+  post-fusion `36904438086` sont verts. Décision détaillée :
   [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
   ADR-0074 accepté. Dossier approuvé :
   `examples/users-management-proof/presentation/progressive-filter-candidates/`.
@@ -2566,7 +2571,89 @@ Figma, désormais source partielle différée :
   post-fusion `36794101702` sont verts. La surface de création adaptative et son
   alignement visuel final sont réalisés ; ADAPT-10 est clos. Décision détaillée :
   [`c5-adapt10-surface-creation-adaptative-2026-09-29.md`](./c5-adapt10-surface-creation-adaptative-2026-09-29.md),
-  ADR-0076 accepté. ADAPT-8 reste indépendant et ouvert à partir d'ADAPT-8d2.
+  ADR-0076 accepté. **DATA-VIEW-0 — décision et corpus de capacités :** le
+  composant `table` de `cmz-backoffice` à
+  `feat/config@f064d1d8e50190cd33e9ace096d51710d2474f2f` est retenu comme corpus
+  empirique de besoins et contre-exemple architectural, jamais comme dépendance,
+  autorité visuelle ou code à copier. ADR-0078 impose des capacités optionnelles
+  et explicites : `list-query` garde lecture/pagination/tri/filtres,
+  `action-request` garde mutation/permission/effets/invalidation, et le plan de
+  page relie les nœuds sans créer une quatrième primitive `data-view`. Une
+  réalisation locale est permise au premier cas ; une primitive partagée exige
+  un second cas indépendant, un contrat stable et des oracles communs. Audit et
+  séquence :
+  [`data-view-capabilities-cmz-backoffice-2026-10-01.md`](./data-view-capabilities-cmz-backoffice-2026-10-01.md).
+  **ADAPT-11a — réalisé localement le 2026-10-02 :** un HTML paramétrable et un
+  script Playwright borné reconstruisent les six intentions validées en
+  Medium/Expanded. Un second rendu reproduit leurs SHA-256 octet par octet ; les
+  PNG conservent les dimensions d'origine et pèsent de 177 681 à 203 125 octets,
+  sous le plafond de 1 Mo. Le manifeste publie un brief et les six PNG sans
+  retirer les quinze autorités progressives et création déjà actives. L'oracle
+  dédié vérifie en plus les sources de reproduction, l'IHDR, le poids, les
+  dimensions et les hashes ; la publication C5 passe 5/5. Aucun runtime, contrat
+  API, work order ou dépendance ne change. Les originaux locaux restent
+  conservés jusqu'à la revue, la fusion et la CI post-fusion. **ADAPT-11b —
+  engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
+  bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
+  capacités non déclarées, la non-activation des lignes et la géométrie
+  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
+  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
+  fournit aucun `action-request` correspondant : les rendre opérables maintenant
+  inventerait transport, permissions et effets. Les oracles exigent donc
+  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
+  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
+  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
+  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
+  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
+  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
+  réalisation formalisée le 2026-10-02 :** le guide exhaustif
+  [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
+  donne à un humain ou à un LLM la hiérarchie des sources, les règles
+  numérotées, la matrice Compact/Medium/Expanded, le choix des primitives
+  Angular, les contrats clavier/focus/ARIA, les interdictions et les oracles de
+  sortie. La décision produit la plus récente remplace uniquement la disposition
+  C5 « recherche à gauche » : le titre de la table est désormais à gauche, puis
+  `Recherche`, `Créer`, `Rafraîchir`, `Filtres` forment le groupe droit. En
+  Medium contraint, la recherche se réduit dans ses bornes puis la barre reflow
+  avant qu'une action primaire soit masquée. Cette anatomie reste locale à C5 ;
+  le protocole est réutilisable, pas le layout par défaut. La revue a aussi
+  identifié une lacune de méthode : l'ancienne disposition avait été protégée
+  jusqu'à ce que le produit propose lui-même la meilleure anatomie. Désormais,
+  un humain ou LLM doit auditer proactivement chaque visuel, recommander les
+  améliorations issues des sources officielles et exposer leurs compromis avant
+  implémentation ; cette initiative ne vaut jamais autorisation de modifier une
+  décision produit. Après fusion de cette autorité, recalculer le work order et
+  réaliser uniquement les capacités C5 demandées, avec primitives Angular
+  officielles avant custom et preuve build, lint, tests, Playwright,
+  accessibilité, bundle et confinement. **ADAPT-11c1 — oracles engagés
+  localement le 2026-10-03 :** sans toucher au runtime, au work order, aux
+  contrats, dépendances ou images, la suite navigateur exige désormais le titre
+  `h2` et le total backend autoritatif à gauche, puis recherche locale et groupe
+  natif `Créer`, `Rafraîchir`, `Filtres` à droite. Elle refuse le faux rôle
+  `toolbar`, vérifie l'ordre DOM, le nom de table, les libellés contextualisés et
+  un reflow `820 × 900` sans chevauchement, débordement, disparition ni cible
+  inférieure à `48 × 48 CSS px`. L'échec attendu reste fermé sur la signature
+  historique exacte ; toute réalisation partielle différente échoue réellement.
+  La passe ciblée donne `6/6` — cinq attendus, un réel — et la régression C5
+  complète `56/56`, sans `skip` ni `todo` ; ESLint, Prettier et le diff sont
+  verts. Après fusion et CI post-fusion, ADAPT-11c2 recalculera seulement alors
+  le work order et réalisera le runtime borné. **ADAPT-11c2 — réalisé, approuvé,
+  fusionné et vérifié le 2026-10-03 :** le work order recalculé
+  `3b889daa5819ee1ce1af85d4e0120b5fee47dff84bf3a60e7065d092d3d5ac52`
+  borne neuf fichiers ; le commit
+  `6fdbd64ac8423a0bf938c492ec7b3af08cce617b` en modifie six autorisés et
+  matérialise titre/total, recherche locale, groupe natif
+  `Créer`/`Rafraîchir`/`Filtres`, reflow Medium et géométrie panneau/rail. Il
+  conserve Tab natif sans faux `toolbar`, émet un seul GET au rafraîchissement
+  et n'invente ni export, action de ligne, dialogue ou endpoint. Les preuves
+  donnent `56/56` Playwright, `31/31` tests Angular, lint, build, Knip,
+  Prettier, bundle et confinement verts. Soumaila a approuvé le commit exact,
+  la PR #177 l'a fusionné dans
+  `8c2129e45bfe6101421fec478729e2f631e7018a`, ses `17/17` contrôles et la CI
+  post-fusion #37116794308 sont verts. ADAPT-11 est clos. **DATA-VIEW-1 — différé :**
+  n'extraire un contrat ou renderer partagé qu'après comparaison avec une
+  seconde fonctionnalité indépendante et preuve Angular + React. Aucun schéma
+  universel ni migration du `cmz-table` n'est autorisé dans ADAPT-11.
   **PRES-AUTH-1 —
   autorités de présentation rejetées :** le 2026-09-30, le porteur produit
   rejette explicitement comme références courantes les dossiers
@@ -2693,6 +2780,63 @@ Figma, désormais source partielle différée :
   de sélecteur `data-cmz-id` exigé). Condition de sortie pour rouvrir le lot
   graphe typé : un cas réel où un nœud dépend du succès d'un autre (« Déposer un
   signalement » : charger les catégories puis soumettre).
+
+#### JEV — expérimentation de jugements étroits
+
+- **JEV-0 — fait :** la preuve de composition préalable est close ; JEV ne
+  bloque ni ne remplace le générateur déterministe.
+- **JEV-1 — décision formalisée :** ADR-0079 accepte seulement un POC
+  provider-neutral en replay/shadow. Aucun appel live n'entre dans la CI, le
+  runtime produit, une permission, une approbation ou une publication.
+- **JEV-2 — différé, gate de valeur non franchi :** ADR-0079 définit une
+  expérimentation sûre mais ne démontre pas un besoin marginal face aux schémas,
+  au LLM généraliste et à la revue humaine déjà présents. ADR-0080 interdit de
+  construire le harnais tant qu'une famille de décisions étroites, récurrentes
+  et coûteuses n'est pas observée avec une baseline.
+- **JEV-VIS — hypothèse recentrée, non décidée :** l'angle mort légitime est la
+  fidélité sémantique d'une interface produite par un LLM depuis Figma, une
+  capture ou un wireframe. JEV ne voit pas les images : il pourrait seulement
+  arbitrer en shadow des constats structurés produits par des extracteurs et un
+  observateur multimodal. Comparer obligatoirement revue humaine, juge
+  multimodal direct et variante avec JEV ; abandonner JEV sans gain marginal.
+- **JEV-CODE — seconde piste, non décidée :** évaluer séparément la pertinence
+  des primitives/outils employés et les risques contextuels KISS, DRY, YAGNI,
+  SRP, OCP, LSP, ISP et DIP. L'entrée doit relier work order, diff borné,
+  versions, règles officielles applicables, preuves de gates et journal factuel
+  des outils. Aucun score SOLID global, aucune lecture web live, aucune chaîne
+  de pensée conservée. Comparer reviewer de code outillé avec et sans JEV.
+  Analyse :
+  [`evaluation-qualite-interface-generee-jev-ci-2026-10-03.md`](./evaluation-qualite-interface-generee-jev-ci-2026-10-03.md).
+- **JEV-VIS-PAIR-1 — réalisé localement le 2026-10-03 :** un plan
+  provider-neutral relie le cas comparable `medium-create-invalid` à sa
+  référence approuvée, au scénario Playwright exact et au viewport
+  `1024 × 768`. Le scénario produit maintenant
+  `medium-create-invalid.actual.png`; le collecteur CI refuse référence ou
+  scénario périmé, hash, dimensions ou viewport divergents, capture absente ou
+  dupliquée, puis publie un bundle avec provenance et environnement de rendu.
+  Le statut reste obligatoirement `captured-unreviewed`, l'autorité de revue
+  reste humaine et aucun score, verdict ou appel JEV n'existe. Les trois tests
+  hostiles dédiés et la suite generator-platform complète passent
+  (`421/421`). Ce pilote ne généralise pas encore la comparaison : chaque état
+  supplémentaire exigera une équivalence métier explicite entre référence et
+  scénario runtime. Prochaine étape autorisée après revue, fusion et CI :
+  définir la baseline humaine et son protocole de décision, puis étendre la
+  matrice seulement aux états réellement comparables.
+- **JEV-3 — conditionnel à la réouverture :** préenregistrer le guide, les
+  strates, la taille, les splits, les métriques et les seuils ; constituer des
+  demandes ou diffs français synthétiques/assainis ; produire les étiquettes
+  avant toute sortie JEV et arbitrer les désaccords.
+- **JEV-4 — conditionnel :** exécuter seulement la campagne épinglée autorisée
+  et mesurer signal additionnel, calibration, faux négatifs critiques,
+  répétabilité, résistance aux injections, indisponibilité, latence et coût.
+- **JEV-5 — décision séparée :** publier le rapport et les fixtures replay, puis
+  accepter le rejet, une poursuite bornée ou une proposition de promotion par
+  un nouvel ADR. Aucune intégration de production n'est actuellement décidée.
+
+Décision détaillée :
+[`ADR-0079`](../adr/0079-jev-evaluateur-probabiliste-replay-shadow.md) et gate
+d'admission général
+[`ADR-0080`](../adr/0080-prouver-la-valeur-avant-nouvelle-automatisation.md).
 
 ### 2.1 Preuves empiriques déjà produites
 

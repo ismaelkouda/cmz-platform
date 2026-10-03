@@ -126,6 +126,36 @@ séparés : **lire**, **proposer**, **préparer**, **appliquer**, **publier**. L
 mode par défaut est la lecture ou la proposition. Chaque élévation est
 explicite, journalisée et attribuable.
 
+### JEV et les jugements étroits
+
+JEV peut compléter ce modèle comme évaluateur probabiliste optionnel, jamais
+comme générateur, observateur d'images, oracle, autorité de permission ou
+approbateur. Le besoin le plus crédible à étudier est le résidu visuel que les
+oracles ne savent pas entièrement déterminer lorsqu'un LLM traduit Figma, une
+capture ou un wireframe : hiérarchie, intention responsive et gravité d'un
+écart.
+
+JEV ne reçoit officiellement que du texte ou du JSON. Un observateur multimodal
+ou humain doit donc d'abord comparer les images et produire des constats
+localisés. JEV pourrait ensuite arbitrer quelques questions fermées sur ce
+dossier, uniquement si son apport par rapport au juge multimodal direct est
+mesuré.
+
+Une seconde piste indépendante peut évaluer la réalisation elle-même : choix
+des primitives natives/officielles, dépendances, outils employés et risques
+contextuels KISS, DRY, YAGNI ou SOLID. Elle reçoit un diff borné, les règles
+officielles applicables aux versions épinglées, les gates et un journal factuel
+des outils ; elle ne reçoit ni chaîne de pensée ni documentation web mutable.
+Chaque principe est d'abord déclaré applicable ou non et aucun score composite
+ne mélange qualité visuelle et qualité du code.
+
+La phase éventuelle reste provider-neutral, replay/shadow et sans effet sur la
+fusion. Le chemin déterministe et humain demeure fonctionnel quand le modèle
+est absent, invalide ou incertain. Détails et conditions d'abandon :
+[analyse de qualité d'une interface générée](./evaluation-qualite-interface-generee-jev-ci-2026-10-03.md),
+[ADR-0079](../adr/0079-jev-evaluateur-probabiliste-replay-shadow.md) et
+[ADR-0080](../adr/0080-prouver-la-valeur-avant-nouvelle-automatisation.md).
+
 ## Architecture cible sans dépendance à un fournisseur
 
 Le moteur actuel reste sous `tools/generator-platform/` et demeure déterministe.
@@ -157,6 +187,12 @@ Avant de permettre l'application automatique d'une proposition, il faut :
 - une isolation réelle de l'aperçu et des commandes ;
 - des diagnostics corrélés du besoin initial jusqu'au fichier produit ;
 - des permissions minimales, une approbation distincte et un audit durable.
+
+Avant même d'ajouter un modèle, un service ou un gate à cette chaîne, son gain
+marginal doit être démontré face aux capacités existantes. Sécurité technique,
+faisabilité et approbation ne remplacent pas le problème observé, la baseline,
+le coût total et la condition d'abandon exigés par
+[ADR-0080](../adr/0080-prouver-la-valeur-avant-nouvelle-automatisation.md).
 
 La qualité d'une suggestion IA se mesure par son taux d'acceptation sans
 correction, ses faux positifs/faux négatifs et les défauts trouvés après revue,
@@ -199,6 +235,12 @@ rester utilisable sans IA quand le modèle est indisponible.
   fixe la frontière de confiance entre conception, LLM et réalisation.
 - [ADR-0066](../adr/0066-preuve-presentation-bornee-pour-realisation-llm.md)
   borne la preuve visuelle et son autorité de présentation.
+- [ADR-0079](../adr/0079-jev-evaluateur-probabiliste-replay-shadow.md)
+  borne l'évaluation JEV à un POC provider-neutral en replay/shadow avant toute
+  décision d'adoption.
+- [ADR-0080](../adr/0080-prouver-la-valeur-avant-nouvelle-automatisation.md)
+  exige une preuve de valeur avant tout POC, service, dépendance ou gate
+  supplémentaire, y compris ceux déjà conçus de manière sûre.
 - [ADR-0033](../adr/0033-propriete-artefacts-regeneration-non-destructive.md) et
   [ADR-0035](../adr/0035-contrat-durabilite-publication-generation.md)
   gouvernent la propriété et la publication des artefacts.

@@ -71,6 +71,7 @@ export class PageFiltersComponent {
     readonly filtersApplied = output<SecondaryFiltersModel>();
 
     private readonly destroyRef = inject(DestroyRef);
+    private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
     private readonly injector = inject(Injector);
     private readonly panel = viewChild<ElementRef<HTMLElement>>('filterPanel');
     private progressiveFilterFocusFrame: number | undefined;
@@ -103,8 +104,23 @@ export class PageFiltersComponent {
     });
 
     constructor() {
+        let boundsObserver: ResizeObserver | undefined;
+        afterNextRender(
+            {
+                write: () => {
+                    const root = this.filterWorkspace();
+                    if (!root || typeof ResizeObserver === 'undefined') return;
+                    boundsObserver = new ResizeObserver(() =>
+                        this.syncPanelBounds()
+                    );
+                    boundsObserver.observe(root);
+                },
+            },
+            { injector: this.injector }
+        );
         effect(() => {
             const open = this.open();
+            this.layout();
             const applied = this.applied();
             if (open && !this.wasOpen) {
                 const appliedKeys = FILTER_KEYS.filter((key) => !!applied[key]);
@@ -116,8 +132,15 @@ export class PageFiltersComponent {
             }
             if (!open && this.wasOpen) this.resetTransientState();
             this.wasOpen = open;
+            afterNextRender(
+                { write: () => this.syncPanelBounds() },
+                { injector: this.injector }
+            );
         });
-        this.destroyRef.onDestroy(() => this.cancelProgressiveFilterFocus());
+        this.destroyRef.onDestroy(() => {
+            boundsObserver?.disconnect();
+            this.cancelProgressiveFilterFocus();
+        });
     }
 
     protected requestClose(): void {
@@ -261,6 +284,37 @@ export class PageFiltersComponent {
             'team-leader': 'Chef d’équipe',
         };
         return labels[role] ?? role;
+    }
+
+    private filterWorkspace(): HTMLElement | null {
+        return this.host.nativeElement.closest<HTMLElement>(
+            '[data-cmz-id="users-table-workspace"]'
+        );
+    }
+
+    private syncPanelBounds(): void {
+        const root = this.filterWorkspace();
+        const table = root?.querySelector<HTMLElement>(
+            '[data-cmz-id="users-table"]'
+        );
+        const rail = root?.querySelector<HTMLElement>(
+            '[data-cmz-id="table-horizontal-scroll"]'
+        );
+        if (!root) return;
+        if (!this.open() || this.layout() === 'compact' || !table || !rail) {
+            root.style.removeProperty('--filter-panel-top');
+            root.style.removeProperty('--filter-panel-bottom');
+            return;
+        }
+        const rootBox = root.getBoundingClientRect();
+        root.style.setProperty(
+            '--filter-panel-top',
+            `${Math.max(0, table.getBoundingClientRect().top - rootBox.top)}px`
+        );
+        root.style.setProperty(
+            '--filter-panel-bottom',
+            `${Math.max(0, rootBox.bottom - rail.getBoundingClientRect().top)}px`
+        );
     }
 
     private focusAfterRender(
