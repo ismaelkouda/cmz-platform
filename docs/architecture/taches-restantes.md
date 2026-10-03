@@ -2637,7 +2637,20 @@ Figma, désormais source partielle différée :
   La passe ciblée donne `6/6` — cinq attendus, un réel — et la régression C5
   complète `56/56`, sans `skip` ni `todo` ; ESLint, Prettier et le diff sont
   verts. Après fusion et CI post-fusion, ADAPT-11c2 recalculera seulement alors
-  le work order et réalisera le runtime borné. **DATA-VIEW-1 — différé :**
+  le work order et réalisera le runtime borné. **ADAPT-11c2 — réalisé, approuvé,
+  fusionné et vérifié le 2026-10-03 :** le work order recalculé
+  `3b889daa5819ee1ce1af85d4e0120b5fee47dff84bf3a60e7065d092d3d5ac52`
+  borne neuf fichiers ; le commit
+  `6fdbd64ac8423a0bf938c492ec7b3af08cce617b` en modifie six autorisés et
+  matérialise titre/total, recherche locale, groupe natif
+  `Créer`/`Rafraîchir`/`Filtres`, reflow Medium et géométrie panneau/rail. Il
+  conserve Tab natif sans faux `toolbar`, émet un seul GET au rafraîchissement
+  et n'invente ni export, action de ligne, dialogue ou endpoint. Les preuves
+  donnent `56/56` Playwright, `31/31` tests Angular, lint, build, Knip,
+  Prettier, bundle et confinement verts. Soumaila a approuvé le commit exact,
+  la PR #177 l'a fusionné dans
+  `8c2129e45bfe6101421fec478729e2f631e7018a`, ses `17/17` contrôles et la CI
+  post-fusion #37116794308 sont verts. ADAPT-11 est clos. **DATA-VIEW-1 — différé :**
   n'extraire un contrat ou renderer partagé qu'après comparaison avec une
   seconde fonctionnalité indépendante et preuve Angular + React. Aucun schéma
   universel ni migration du `cmz-table` n'est autorisé dans ADAPT-11.
