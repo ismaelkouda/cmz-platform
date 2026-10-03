@@ -8,6 +8,14 @@
 - **Date :** 2026-10-02
 - **Décision source :**
   [ADR-0078](../../../../docs/adr/0078-vues-de-donnees-par-capacites-optionnelles.md)
+- **Autorité de réalisation courante :**
+  [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](../../../../docs/architecture/c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
+
+> **Supersession locale ADAPT-11c :** les PNG restent les références approuvées
+> de géométrie, panneau, scroll et capacités optionnelles. Leur disposition
+> historique « recherche à gauche » n'est plus l'autorité de réalisation. Le
+> runtime C5 place le titre de table à gauche, puis la recherche et les
+> commandes à droite, avec le reflow défini par l'autorité courante.
 
 ## 1. But du lot
 
@@ -16,9 +24,10 @@ de la vue de données C5. Les PNG originaux dépassent le plafond de 1 Mo et son
 conservés localement dans un répertoire ignoré ; ils ne pouvaient donc pas
 devenir une autorité Git fiable.
 
-La reconstruction conserve les décisions produit :
+La reconstruction conserve les décisions produit historiques :
 
-- recherche à gauche et actions globales à droite ;
+- recherche à gauche et actions globales à droite dans les PNG ADAPT-11a ; cette
+  seule disposition est supersédée pour le runtime par l'autorité ADAPT-11c ;
 - ordre `Créer`, `Rafraîchir`, `Exporter`, `Filtres` ;
 - raccourcis de filtres synchronisés sous les en-têtes ;
 - colonne `Actions` optionnelle, fixe et distincte du contenu défilant ;
@@ -102,7 +111,9 @@ Ces images fixent la composition et les états visibles. Elles ne prouvent pas :
 
 Ces garanties appartiennent aux oracles ADAPT-11b puis à la réalisation
 ADAPT-11c. Le HTML de ce dossier n'est ni un composant Angular, ni une primitive
-de plateforme, ni une implémentation à copier dans le runtime.
+de plateforme, ni une implémentation à copier dans le runtime. En cas d'écart de
+placement, l'autorité ADAPT-11c prévaut sur les pixels historiques ; les autres
+intentions restent applicables dans leur périmètre.
 
 ## 6. Refus de revue
 

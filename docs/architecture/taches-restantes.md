@@ -2605,15 +2605,32 @@ Figma, désormais source partielle différée :
   signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
   contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
   attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
-  lint, tests Angular et build production verts. **ADAPT-11c — après fusion des
-  oracles :** recalculer le work order et réaliser uniquement les capacités C5
-  demandées, avec primitives Angular officielles avant custom et preuve build,
-  lint, tests, Playwright, accessibilité, bundle et confinement. **DATA-VIEW-1 —
-  différé :** n'extraire un contrat ou renderer partagé qu'après comparaison
-  avec une seconde fonctionnalité indépendante et preuve Angular + React. Aucun
-  schéma universel ni migration du `cmz-table` n'est autorisé dans ADAPT-11.
-  **PRES-AUTH-1 — autorités de présentation rejetées :** le 2026-09-30, le
-  porteur produit rejette explicitement comme références courantes les dossiers
+  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
+  réalisation formalisée le 2026-10-02 :** le guide exhaustif
+  [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
+  donne à un humain ou à un LLM la hiérarchie des sources, les règles
+  numérotées, la matrice Compact/Medium/Expanded, le choix des primitives
+  Angular, les contrats clavier/focus/ARIA, les interdictions et les oracles de
+  sortie. La décision produit la plus récente remplace uniquement la disposition
+  C5 « recherche à gauche » : le titre de la table est désormais à gauche, puis
+  `Recherche`, `Créer`, `Rafraîchir`, `Filtres` forment le groupe droit. En
+  Medium contraint, la recherche se réduit dans ses bornes puis la barre reflow
+  avant qu'une action primaire soit masquée. Cette anatomie reste locale à C5 ;
+  le protocole est réutilisable, pas le layout par défaut. La revue a aussi
+  identifié une lacune de méthode : l'ancienne disposition avait été protégée
+  jusqu'à ce que le produit propose lui-même la meilleure anatomie. Désormais,
+  un humain ou LLM doit auditer proactivement chaque visuel, recommander les
+  améliorations issues des sources officielles et exposer leurs compromis avant
+  implémentation ; cette initiative ne vaut jamais autorisation de modifier une
+  décision produit. Après fusion de cette autorité, recalculer le work order et
+  réaliser uniquement les capacités C5 demandées, avec primitives Angular
+  officielles avant custom et preuve build, lint, tests, Playwright,
+  accessibilité, bundle et confinement. **DATA-VIEW-1 — différé :** n'extraire
+  un contrat ou renderer partagé qu'après comparaison avec une seconde
+  fonctionnalité indépendante et preuve Angular + React. Aucun schéma universel
+  ni migration du `cmz-table` n'est autorisé dans ADAPT-11. **PRES-AUTH-1 —
+  autorités de présentation rejetées :** le 2026-09-30, le porteur produit
+  rejette explicitement comme références courantes les dossiers
   `adaptive-candidates/` et `filter-candidates/`, ainsi que les quatre PNG
   racine `desktop-create-error`, `desktop-ready`, `mobile-create-error` et
   `mobile-ready`. Les fichiers restent versionnés comme historique, mais le
