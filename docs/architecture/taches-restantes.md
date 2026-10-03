@@ -2807,6 +2807,21 @@ Figma, désormais source partielle différée :
   de pensée conservée. Comparer reviewer de code outillé avec et sans JEV.
   Analyse :
   [`evaluation-qualite-interface-generee-jev-ci-2026-10-03.md`](./evaluation-qualite-interface-generee-jev-ci-2026-10-03.md).
+- **JEV-VIS-PAIR-1 — réalisé localement le 2026-10-03 :** un plan
+  provider-neutral relie le cas comparable `medium-create-invalid` à sa
+  référence approuvée, au scénario Playwright exact et au viewport
+  `1024 × 768`. Le scénario produit maintenant
+  `medium-create-invalid.actual.png`; le collecteur CI refuse référence ou
+  scénario périmé, hash, dimensions ou viewport divergents, capture absente ou
+  dupliquée, puis publie un bundle avec provenance et environnement de rendu.
+  Le statut reste obligatoirement `captured-unreviewed`, l'autorité de revue
+  reste humaine et aucun score, verdict ou appel JEV n'existe. Les trois tests
+  hostiles dédiés et la suite generator-platform complète passent
+  (`421/421`). Ce pilote ne généralise pas encore la comparaison : chaque état
+  supplémentaire exigera une équivalence métier explicite entre référence et
+  scénario runtime. Prochaine étape autorisée après revue, fusion et CI :
+  définir la baseline humaine et son protocole de décision, puis étendre la
+  matrice seulement aux états réellement comparables.
 - **JEV-3 — conditionnel à la réouverture :** préenregistrer le guide, les
   strates, la taille, les splits, les métriques et les seuils ; constituer des
   demandes ou diffs français synthétiques/assainis ; produire les étiquettes

@@ -4,7 +4,9 @@ import {
     type Locator,
     type Page,
     type Route,
+    type TestInfo,
 } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
 
 const COMPACT = { width: 390, height: 844 } as const;
 const MEDIUM = { width: 1024, height: 768 } as const;
@@ -48,6 +50,35 @@ interface Box {
 function requireBox(box: Box | null, label: string): Box {
     if (!box) throw new Error(`Géométrie introuvable : ${label}`);
     return box;
+}
+
+async function captureEvaluationCandidate(
+    page: Page,
+    testInfo: TestInfo,
+    name: string
+): Promise<void> {
+    const path = testInfo.outputPath(name);
+    await page.screenshot({
+        path,
+        animations: 'disabled',
+        caret: 'hide',
+        fullPage: false,
+    });
+    await testInfo.attach(name, { path, contentType: 'image/png' });
+    const browser = page.context().browser();
+    if (!browser) throw new Error('Navigateur de capture introuvable');
+    await writeFile(
+        testInfo.outputPath(`${name}.metadata.json`),
+        `${JSON.stringify(
+            {
+                browser_name: browser.browserType().name(),
+                browser_version: browser.version(),
+                browser_channel: testInfo.project.use.channel ?? 'bundled',
+            },
+            null,
+            2
+        )}\n`
+    );
 }
 
 async function fulfillCreateSuccess(route: Route): Promise<void> {
@@ -375,7 +406,7 @@ test('conserve l’ordre Nom, Prénom, Email, Téléphone, Profil et focalise No
 
 test('une soumission invalide ne POST pas, annonce les erreurs et focalise Nom', async ({
     page,
-}) => {
+}, testInfo) => {
     const harness = await installHostAndBackend(page);
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
@@ -403,6 +434,11 @@ test('une soumission invalide ne POST pas, annonce les erreurs et focalise Nom',
         await expect(dialog.locator(`#${id}`)).toBeVisible();
     }
     await expect(dialog.locator('[data-cmz-id="last-name"]')).toBeFocused();
+    await captureEvaluationCandidate(
+        page,
+        testInfo,
+        'medium-create-invalid.actual.png'
+    );
 });
 
 test('un brouillon modifié demande confirmation pour Échap puis restitue le focus', async ({

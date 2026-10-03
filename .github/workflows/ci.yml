@@ -583,7 +583,14 @@ jobs:
         id: c5-browser-proof
         run: |
           if bunx nx show projects --affected --base=${{ env.NX_BASE }} | grep -qx users-management-proof \
-            || ! git diff --quiet ${{ env.NX_BASE }}...HEAD -- tools/e2e-static-server.mjs; then
+            || ! git diff --quiet ${{ env.NX_BASE }}...HEAD -- \
+              tools/e2e-static-server.mjs \
+              tools/generator-platform/collect-visual-evaluation.mjs \
+              tools/generator-platform/core/visual-evaluation.mjs \
+              tools/generator-platform/schemas/visual-evaluation-plan.schema.json \
+              tools/generator-platform/schemas/visual-evaluation-bundle.schema.json \
+              designs/users-management-proof.presentation-evidence.json \
+              designs/users-management-proof.visual-evaluation.json; then
             echo "run=true" >> $GITHUB_OUTPUT
           else
             echo "run=false" >> $GITHUB_OUTPUT
@@ -595,12 +602,18 @@ jobs:
         env:
           CI: 'true'
 
+      - name: Assemble C5 visual evaluation bundle
+        if: steps.c5-browser-proof.outputs.run == 'true'
+        run: node tools/generator-platform/collect-visual-evaluation.mjs
+
       - name: Upload C5 rendered candidates
         if: always() && steps.c5-browser-proof.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: c5-rendered-candidates
-          path: test-results/users-management-proof/**/*.actual.png
+          path: |
+            test-results/users-management-proof/**/*.actual.png
+            test-results/users-management-proof/visual-evaluation.bundle.json
           if-no-files-found: error
           retention-days: 7
 
