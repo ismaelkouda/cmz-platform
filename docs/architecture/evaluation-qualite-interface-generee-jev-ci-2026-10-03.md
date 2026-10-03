@@ -642,6 +642,51 @@ ne ferme pas encore celui du jugement visuel. La prochaine étape est de défini
 et mesurer une baseline de revue humaine sur ces dossiers, avant tout observateur
 multimodal ou expérimentation JEV.
 
+## Protocole pilote — accessibilité, mise en page et jugement humain
+
+Le second incrément couple désormais le cas `medium-create-invalid` à un
+protocole de revue explicite sans demander à un modèle de réinterpréter les
+faits mesurables. Le protocole
+`designs/users-management-proof.visual-review.json` sépare trois modes de
+preuve :
+
+- `deterministic` pour un fait qui doit être affirmé par le navigateur et qui
+  bloque la collecte s'il échoue ;
+- `human` pour une appréciation visuelle qui reste en attente d'une personne ;
+- `hybrid` lorsque le navigateur prouve la présence mécanique et que la
+  lisibilité de sa présentation exige encore une revue.
+
+Le scénario qui produit la capture écrit maintenant, dans le même répertoire,
+une preuve JSON de version `1.0.0`. Pour l'état invalide Medium, elle consigne :
+
+- le rôle, le nom accessible, `aria-modal` et l'arrière-plan inerte ;
+- l'absence de POST, l'alerte, les cinq erreurs et le focus sur `Nom` ;
+- la stabilité de la liste, la largeur réelle du dialogue et ses bornes
+  `520–640 px`, sa présence dans le viewport et sa hauteur bornée ;
+- l'absence de débordement horizontal du document ;
+- la présence d'un résumé textuel et de cinq messages visibles, sans prétendre
+  que ces faits prouvent à eux seuls leur bonne lisibilité.
+
+Le collecteur refuse une preuve absente, détachée de la capture, mal formée,
+liée à un autre cas ou viewport, incomplète, dupliquée ou en échec sur un
+critère bloquant. Il refuse également un critère inconnu, une source de règle
+ambiguë et toute politique locale dont le SHA-256 a dérivé. Le plan et le bundle
+passent en `2.0.0`, car ces preuves et le protocole sont désormais obligatoires.
+
+Le bundle expose chaque question avec son mode, ses sources et deux résultats
+séparés : `deterministic_outcome` et `human_outcome`. Les quatre critères
+mécaniques et la partie mécanique du critère hybride doivent être `pass` ; la
+hiérarchie, la lisibilité finale du retour d'erreur et la fidélité sémantique
+restent `pending`. Tant qu'un de ces jugements humains manque, la politique
+interdit le statut `approved`.
+
+Il n'existe toujours ni moyenne, ni note sur 100, ni appel réseau, ni client JEV
+et ni décision automatique de fusion. Cet incrément construit la baseline dont
+un futur évaluateur devra démontrer qu'il améliore le coût ou la cohérence.
+L'étape suivante n'est pas d'ajouter un modèle : elle consiste à faire appliquer
+ce protocole humain au premier couple, conserver le résultat comme vérité de
+comparaison, puis n'ajouter que des états dont l'équivalence métier est établie.
+
 ## Références officielles
 
 - [JEV — API de décision](https://jev-ai.org/docs/)

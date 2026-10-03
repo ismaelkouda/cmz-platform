@@ -4,9 +4,12 @@ import {
     type Locator,
     type Page,
     type Route,
-    type TestInfo,
 } from '@playwright/test';
-import { writeFile } from 'node:fs/promises';
+
+import {
+    captureEvaluationCandidate,
+    mediumCreateInvalidEvidence,
+} from './visual-evaluation.support';
 
 const COMPACT = { width: 390, height: 844 } as const;
 const MEDIUM = { width: 1024, height: 768 } as const;
@@ -50,35 +53,6 @@ interface Box {
 function requireBox(box: Box | null, label: string): Box {
     if (!box) throw new Error(`Géométrie introuvable : ${label}`);
     return box;
-}
-
-async function captureEvaluationCandidate(
-    page: Page,
-    testInfo: TestInfo,
-    name: string
-): Promise<void> {
-    const path = testInfo.outputPath(name);
-    await page.screenshot({
-        path,
-        animations: 'disabled',
-        caret: 'hide',
-        fullPage: false,
-    });
-    await testInfo.attach(name, { path, contentType: 'image/png' });
-    const browser = page.context().browser();
-    if (!browser) throw new Error('Navigateur de capture introuvable');
-    await writeFile(
-        testInfo.outputPath(`${name}.metadata.json`),
-        `${JSON.stringify(
-            {
-                browser_name: browser.browserType().name(),
-                browser_version: browser.version(),
-                browser_channel: testInfo.project.use.channel ?? 'bundled',
-            },
-            null,
-            2
-        )}\n`
-    );
 }
 
 async function fulfillCreateSuccess(route: Route): Promise<void> {
@@ -410,6 +384,10 @@ test('une soumission invalide ne POST pas, annonce les erreurs et focalise Nom',
     const harness = await installHostAndBackend(page);
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
+    const mainBefore = requireBox(
+        await page.locator('main').boundingBox(),
+        'liste Medium avant erreur de création'
+    );
     const dialog = await openCreate(page);
     const create = dialog.getByRole('button', { name: 'Créer', exact: true });
     const legacy = await create.isDisabled();
@@ -434,10 +412,82 @@ test('une soumission invalide ne POST pas, annonce les erreurs et focalise Nom',
         await expect(dialog.locator(`#${id}`)).toBeVisible();
     }
     await expect(dialog.locator('[data-cmz-id="last-name"]')).toBeFocused();
+    const errorSelector = [
+        'last-name-error',
+        'first-name-error',
+        'email-error',
+        'phone-error',
+        'profile-error',
+    ]
+        .map((id) => `#${id}:visible`)
+        .join(', ');
+    const [
+        dialogBoxRaw,
+        mainAfterRaw,
+        documentOverflows,
+        dialogRole,
+        accessibleName,
+        ariaModal,
+        backgroundInert,
+        alertVisible,
+        fieldErrorCount,
+        focusedControl,
+        alertText,
+    ] = await Promise.all([
+        dialog.boundingBox(),
+        page.locator('main').boundingBox(),
+        page.evaluate(
+            () => document.documentElement.scrollWidth > window.innerWidth + 1
+        ),
+        dialog.getAttribute('role'),
+        dialog.locator('#create-title').innerText(),
+        dialog.getAttribute('aria-modal'),
+        page.locator('main').getAttribute('inert'),
+        dialog.locator('[role="alert"]').isVisible(),
+        dialog.locator(errorSelector).count(),
+        page.evaluate(() =>
+            document.activeElement?.getAttribute('data-cmz-id')
+        ),
+        dialog.locator('[role="alert"]').innerText(),
+    ]);
+    const dialogBox = requireBox(dialogBoxRaw, 'dialogue Medium invalide');
+    const mainAfter = requireBox(
+        mainAfterRaw,
+        'liste Medium après erreur de création'
+    );
+    expect(mainAfter).toEqual(mainBefore);
+    expect(dialogBox.width).toBeGreaterThanOrEqual(520);
+    expect(dialogBox.width).toBeLessThanOrEqual(640);
+    expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(MEDIUM.width + 1);
+    expect(dialogBox.height).toBeLessThan(MEDIUM.height);
+    expect(documentOverflows).toBe(false);
+    await expect(dialog).toHaveAttribute('aria-modal', 'true');
+    await expect(page.locator('main')).toHaveAttribute('inert', '');
+
     await captureEvaluationCandidate(
         page,
         testInfo,
-        'medium-create-invalid.actual.png'
+        'medium-create-invalid.actual.png',
+        'medium-create-invalid.evidence.json',
+        mediumCreateInvalidEvidence(MEDIUM, {
+            dialogRole,
+            accessibleName,
+            ariaModal,
+            backgroundInert: backgroundInert !== null,
+            createPosts: harness.createPosts,
+            alertVisible,
+            fieldErrorCount,
+            focusedControl: focusedControl ?? null,
+            backgroundLayoutStable:
+                JSON.stringify(mainAfter) === JSON.stringify(mainBefore),
+            dialogWidth: dialogBox.width,
+            meetsMinimumWidth: dialogBox.width >= 520,
+            meetsMaximumWidth: dialogBox.width <= 640,
+            insideViewport: dialogBox.x + dialogBox.width <= MEDIUM.width + 1,
+            heightBelowViewport: dialogBox.height < MEDIUM.height,
+            documentOverflows,
+            alertText,
+        })
     );
 });
 

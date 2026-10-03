@@ -134,6 +134,120 @@ function validatePlanSemantics(plan, presentation) {
     }
 }
 
+function validateReviewProtocolSemantics(protocol) {
+    assertUnique(
+        protocol.sources.map(({ id }) => id),
+        'review protocol source ids'
+    );
+    assertUnique(
+        protocol.criteria.map(({ id }) => id),
+        'review protocol criterion ids'
+    );
+    const sourceIds = new Set(protocol.sources.map(({ id }) => id));
+    const referencedSourceIds = new Set();
+    for (const criterion of protocol.criteria) {
+        for (const sourceRef of criterion.source_refs) {
+            const [sourceId, anchor, ...rest] = sourceRef.split('#');
+            if (!sourceIds.has(sourceId) || !anchor || rest.length > 0)
+                fail(
+                    `criterion ${criterion.id} has invalid source reference ${sourceRef}`
+                );
+            referencedSourceIds.add(sourceId);
+        }
+    }
+    for (const sourceId of sourceIds) {
+        if (!referencedSourceIds.has(sourceId))
+            fail(`review protocol source ${sourceId} is unused`);
+    }
+}
+
+async function validateReviewProtocolSources(root, protocol) {
+    for (const source of protocol.sources) {
+        if (source.source_kind !== 'repository-policy') continue;
+        if (!source.sha256)
+            fail(`repository policy source ${source.id} must declare sha256`);
+        const sourcePath = await workspaceFile(
+            root,
+            source.uri,
+            `review protocol source ${source.id}`
+        );
+        if (sha256(await readFile(sourcePath)) !== source.sha256)
+            fail(`review protocol source ${source.id} sha256 drifted`);
+    }
+}
+
+function validateCaseCriteria(plan, protocol) {
+    const criteria = new Map(
+        protocol.criteria.map((criterion) => [criterion.id, criterion])
+    );
+    for (const evaluationCase of plan.cases) {
+        assertUnique(
+            evaluationCase.criterion_ids,
+            `case ${evaluationCase.id} criterion ids`
+        );
+        for (const criterionId of evaluationCase.criterion_ids) {
+            if (!criteria.has(criterionId))
+                fail(
+                    `case ${evaluationCase.id} references unknown review criterion ${criterionId}`
+                );
+        }
+    }
+    return criteria;
+}
+
+function validateRuntimeEvidence(evaluationCase, evidence, criteria) {
+    if (evidence.case_id !== evaluationCase.id)
+        fail(`case ${evaluationCase.id} runtime evidence has a different id`);
+    if (
+        JSON.stringify(evidence.viewport) !==
+        JSON.stringify(evaluationCase.viewport)
+    )
+        fail(`case ${evaluationCase.id} runtime evidence viewport differs`);
+
+    const findingIds = evidence.findings.map(
+        ({ criterion_id }) => criterion_id
+    );
+    assertUnique(
+        findingIds,
+        `case ${evaluationCase.id} evidence criterion ids`
+    );
+    const expected = evaluationCase.criterion_ids.filter(
+        (criterionId) => criteria.get(criterionId).evidence_mode !== 'human'
+    );
+    if (
+        JSON.stringify([...findingIds].sort()) !==
+        JSON.stringify([...expected].sort())
+    ) {
+        fail(
+            `case ${evaluationCase.id} runtime evidence must cover exactly its deterministic and hybrid criteria`
+        );
+    }
+    for (const finding of evidence.findings) {
+        const criterion = criteria.get(finding.criterion_id);
+        if (criterion.blocking && finding.outcome !== 'pass')
+            fail(
+                `case ${evaluationCase.id} blocking criterion ${criterion.id} did not pass`
+            );
+        assertUnique(
+            finding.facts.map(({ id }) => id),
+            `case ${evaluationCase.id} finding ${finding.criterion_id} fact ids`
+        );
+        if (
+            finding.outcome === 'pass' &&
+            finding.facts.some(
+                (fact) =>
+                    Object.hasOwn(fact, 'expected') &&
+                    JSON.stringify(fact.actual) !==
+                        JSON.stringify(fact.expected)
+            )
+        ) {
+            fail(
+                `case ${evaluationCase.id} passing criterion ${criterion.id} contradicts its facts`
+            );
+        }
+    }
+}
+
 async function renderEnvironment(browserMetadata) {
     const playwrightPackagePath =
         require.resolve('@playwright/test/package.json');
@@ -158,6 +272,8 @@ export async function collectVisualEvaluation({
     planPath,
     planSchema,
     presentationSchema,
+    reviewProtocolSchema,
+    runtimeEvidenceSchema,
     bundleSchema,
     resultsRoot,
 }) {
@@ -183,6 +299,28 @@ export async function collectVisualEvaluation({
             `presentation evidence violates schema\n${presentationErrors.join('\n')}`
         );
     validatePlanSemantics(plan, presentation);
+
+    const reviewProtocolPath = await workspaceFile(
+        root,
+        plan.review_protocol_uri,
+        'review protocol'
+    );
+    const reviewProtocolContent = await readFile(reviewProtocolPath);
+    const reviewProtocol = await readJson(
+        reviewProtocolPath,
+        'review protocol'
+    );
+    const reviewProtocolErrors = validateJsonSchema(
+        reviewProtocol,
+        reviewProtocolSchema
+    );
+    if (reviewProtocolErrors.length > 0)
+        fail(
+            `review protocol violates schema\n${reviewProtocolErrors.join('\n')}`
+        );
+    validateReviewProtocolSemantics(reviewProtocol);
+    await validateReviewProtocolSources(root, reviewProtocol);
+    const criteria = validateCaseCriteria(plan, reviewProtocol);
 
     const absoluteResults = await realpath(resolve(resultsRoot));
     const resultsRelative = relative(root, absoluteResults);
@@ -236,6 +374,31 @@ export async function collectVisualEvaluation({
             );
         const actualPath = matches[0];
         const actualContent = await readFile(actualPath);
+        const evidenceMatches = await findFilesNamed(
+            absoluteResults,
+            evaluationCase.runtime_scenario.evidence_name
+        );
+        if (evidenceMatches.length !== 1)
+            fail(
+                `case ${evaluationCase.id} expected exactly one ${evaluationCase.runtime_scenario.evidence_name}, found ${evidenceMatches.length}`
+            );
+        const evidencePath = evidenceMatches[0];
+        if (dirname(evidencePath) !== dirname(actualPath))
+            fail(`case ${evaluationCase.id} runtime evidence is detached`);
+        const evidenceContent = await readFile(evidencePath);
+        const evidence = await readJson(
+            evidencePath,
+            `case ${evaluationCase.id} runtime evidence`
+        );
+        const evidenceErrors = validateJsonSchema(
+            evidence,
+            runtimeEvidenceSchema
+        );
+        if (evidenceErrors.length > 0)
+            fail(
+                `case ${evaluationCase.id} runtime evidence violates schema\n${evidenceErrors.join('\n')}`
+            );
+        validateRuntimeEvidence(evaluationCase, evidence, criteria);
         const metadataName = `${evaluationCase.runtime_scenario.capture_name}.metadata.json`;
         const metadataMatches = await findFilesNamed(
             absoluteResults,
@@ -300,11 +463,37 @@ export async function collectVisualEvaluation({
                 sha256: sha256(actualContent),
                 ...actualDimensions,
             },
+            runtime_evidence: {
+                asset: {
+                    uri: relative(absoluteResults, evidencePath)
+                        .split(sep)
+                        .join('/'),
+                    bytes: evidenceContent.byteLength,
+                    sha256: sha256(evidenceContent),
+                },
+                findings: evidence.findings,
+            },
             runtime_scenario: evaluationCase.runtime_scenario,
             review: {
                 status: 'pending-human-review',
                 authority: 'human',
-                dimensions: evaluationCase.review_dimensions,
+                criteria: evaluationCase.criterion_ids.map((criterionId) => {
+                    const criterion = criteria.get(criterionId);
+                    const finding = evidence.findings.find(
+                        ({ criterion_id }) => criterion_id === criterionId
+                    );
+                    return {
+                        ...criterion,
+                        deterministic_outcome:
+                            criterion.evidence_mode === 'human'
+                                ? 'not-applicable'
+                                : finding.outcome,
+                        human_outcome:
+                            criterion.evidence_mode === 'deterministic'
+                                ? 'not-applicable'
+                                : 'pending',
+                    };
+                }),
             },
         });
     }
@@ -319,12 +508,18 @@ export async function collectVisualEvaluation({
         fail('all cases must use the same browser environment');
 
     const bundle = {
-        schema_version: '1.0.0',
+        schema_version: '2.0.0',
         kind: 'visual-evaluation-bundle',
         evaluation_id: plan.evaluation_id,
         page_id: plan.page_id,
         presentation_id: plan.presentation_id,
         status: 'captured-unreviewed',
+        review_protocol: {
+            protocol_id: reviewProtocol.protocol_id,
+            uri: plan.review_protocol_uri,
+            bytes: reviewProtocolContent.byteLength,
+            sha256: sha256(reviewProtocolContent),
+        },
         render_environment: await renderEnvironment(browserEnvironments[0]),
         cases,
     };

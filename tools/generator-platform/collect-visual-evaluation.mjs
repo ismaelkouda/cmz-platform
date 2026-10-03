@@ -30,6 +30,8 @@ const schemas = await Promise.all(
     [
         'visual-evaluation-plan',
         'presentation-evidence',
+        'visual-review-protocol',
+        'visual-runtime-evidence',
         'visual-evaluation-bundle',
     ].map(async (name) =>
         JSON.parse(
@@ -46,7 +48,9 @@ const bundle = await collectVisualEvaluation({
     planPath,
     planSchema: schemas[0],
     presentationSchema: schemas[1],
-    bundleSchema: schemas[2],
+    reviewProtocolSchema: schemas[2],
+    runtimeEvidenceSchema: schemas[3],
+    bundleSchema: schemas[4],
     resultsRoot,
 });
 await writeFile(outputPath, `${JSON.stringify(bundle, null, 2)}\n`);
