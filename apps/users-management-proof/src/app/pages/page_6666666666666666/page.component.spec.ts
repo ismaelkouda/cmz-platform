@@ -238,8 +238,11 @@ describe('PageComponent', () => {
         expect(loadProfiles).toHaveBeenCalledOnce();
         expect(loadUsers).toHaveBeenCalledWith({ page: 1 });
         expect(element(root, 'main').getAttribute('data-cmz-id')).toBe('main');
-        expect(element(root, 'table caption').textContent).toContain(
-            'Liste des utilisateurs'
+        expect(element(root, 'table').getAttribute('aria-labelledby')).toBe(
+            'users-table-title'
+        );
+        expect(element(root, '#users-table-title').textContent).toContain(
+            'Utilisateurs'
         );
         expect(root.querySelectorAll('tbody tr')).toHaveLength(2);
         expect(root.textContent).toContain('alpha@example.invalid');
@@ -257,7 +260,10 @@ describe('PageComponent', () => {
         const root = fixture.nativeElement as HTMLElement;
         const search = element<HTMLInputElement>(root, '[type="search"]');
         const label = element<HTMLLabelElement>(root, '.filter-search');
-        const filters = element<HTMLFormElement>(root, 'form.filters');
+        const searchRegion = element<HTMLFormElement>(
+            root,
+            '[data-cmz-id="table-search"]'
+        );
         const toggle = element<HTMLButtonElement>(root, '.filter-toggle');
         const create = element<HTMLButtonElement>(
             root,
@@ -266,7 +272,8 @@ describe('PageComponent', () => {
 
         expect(label.textContent).toContain('Rechercher un utilisateur');
         expect(search.placeholder).toBe('Nom, prénom ou adresse e-mail');
-        expect(filters.contains(label)).toBe(true);
+        expect(searchRegion.getAttribute('role')).toBe('search');
+        expect(searchRegion.contains(label)).toBe(true);
         expect(
             label.compareDocumentPosition(toggle) &
                 Node.DOCUMENT_POSITION_FOLLOWING

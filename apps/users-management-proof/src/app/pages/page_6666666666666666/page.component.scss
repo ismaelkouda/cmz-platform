@@ -17,6 +17,10 @@
     .app-bar,
     .page-heading-row,
     .brand,
+    .table-tools,
+    .table-title,
+    .table-command-cluster,
+    .table-actions,
     .filter-toggle,
     .applied-filters,
     .filter-chip,
@@ -32,7 +36,7 @@
     align-items: center;
 }
 
-:where(.filters, .state, .results, .user-card) {
+:where(.table-tools, .state, .results, .user-card) {
     border: 1px solid var(--border);
     border-radius: 8px;
     background: #fff;
@@ -105,13 +109,59 @@ h1 {
     opacity: 0.52;
 }
 
-.filters {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: 12px;
+.table-tools {
+    gap: 20px;
     padding: 16px;
     margin-bottom: 24px;
+}
+
+.table-title {
+    flex: 0 0 auto;
+    gap: 10px;
+    margin: 0 auto 0 0;
+    font-size: 18px;
+}
+
+.table-total {
+    display: inline-grid;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 3px 8px;
+    place-items: center;
+    border-radius: 999px;
+    background: #e8f0ff;
+    color: #174ea6;
+    font-size: 13px;
+}
+
+.table-command-cluster {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    gap: 12px;
+    min-width: 0;
+}
+
+.table-search {
+    flex: 1 1 300px;
+    min-width: 220px;
+    max-width: 420px;
+}
+
+.table-actions {
+    flex: 0 0 auto;
+    gap: 8px;
+}
+
+.table-actions .button {
+    min-width: 48px;
+    min-height: 48px;
+}
+
+.refresh-button {
+    justify-content: center;
+    width: 48px;
+    padding: 0;
+    color: #174ea6;
 }
 
 .filter-toggle {
@@ -222,7 +272,17 @@ select {
 }
 
 .desktop-table {
+    min-height: 360px;
     overflow-x: auto;
+}
+
+.table-horizontal-scroll {
+    width: 100%;
+    height: 1px;
+}
+
+.filters-open:not(.layout-compact) .table-horizontal-scroll {
+    width: calc(100% - clamp(380px, 42%, 440px));
 }
 
 .desktop-table table {
@@ -442,15 +502,29 @@ td,
         border-radius: 18px;
     }
 
-    .filters {
-        grid-template-columns: 1fr;
-        gap: 8px;
+    .table-tools {
+        display: grid;
+        gap: 10px;
         padding: 0;
         border: 0;
         background: transparent;
     }
 
-    .filters label {
+    .table-title {
+        display: none;
+    }
+
+    .table-command-cluster {
+        display: grid;
+        gap: 8px;
+    }
+
+    .table-search {
+        width: 100%;
+        max-width: none;
+    }
+
+    .table-search label {
         position: relative;
         gap: 0;
     }
@@ -464,8 +538,7 @@ td,
         font-size: 10px;
     }
 
-    .filters input,
-    .filters select {
+    .table-search input {
         min-height: 44px;
         padding: 18px 12px 5px;
     }
@@ -477,7 +550,12 @@ td,
     .filter-toggle {
         justify-content: space-between;
         width: 100%;
-        min-height: 44px;
+    }
+
+    .table-actions {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: 8px;
     }
 
     .mobile-results {
