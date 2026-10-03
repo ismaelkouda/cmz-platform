@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/visual-review-protocol.schema.json",
+  "title": "CMZ Visual Review Protocol",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "protocol_id",
+    "status",
+    "authority",
+    "sources",
+    "criteria",
+    "decision_policy"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "visual-review-protocol" },
+    "protocol_id": {
+      "type": "string",
+      "pattern": "^visual-review_[a-f0-9]{16}$"
+    },
+    "status": { "const": "approved" },
+    "authority": { "const": "human" },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/criterion" }
+    },
+    "decision_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_outcomes",
+        "deterministic_failure",
+        "missing_evidence",
+        "human_pending",
+        "aggregate_score"
+      ],
+      "properties": {
+        "allowed_outcomes": {
+          "const": ["approved", "changes-requested", "insufficient-evidence"]
+        },
+        "deterministic_failure": { "const": "changes-requested" },
+        "missing_evidence": { "const": "insufficient-evidence" },
+        "human_pending": { "const": "blocks-approval" },
+        "aggregate_score": { "const": "forbidden" }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_kind",
+        "title",
+        "uri",
+        "version",
+        "verified_on"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source_kind": { "enum": ["official", "repository-policy"] },
+        "title": { "type": "string", "minLength": 1 },
+        "uri": {
+          "type": "string",
+          "pattern": "^(?:https://.+|docs/[A-Za-z0-9._/-]+)$"
+        },
+        "version": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "verified_on": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        }
+      }
+    },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "dimension",
+        "title",
+        "question",
+        "evidence_mode",
+        "blocking",
+        "source_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "dimension": {
+          "enum": [
+            "accessibility-semantics",
+            "accessibility-feedback",
+            "layout-geometry",
+            "content-hierarchy",
+            "feedback-legibility",
+            "reference-fidelity"
+          ]
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "question": { "type": "string", "minLength": 1 },
+        "evidence_mode": {
+          "enum": ["deterministic", "human", "hybrid"]
+        },
+        "blocking": { "type": "boolean" },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

@@ -2819,9 +2819,20 @@ Figma, désormais source partielle différée :
   hostiles dédiés et la suite generator-platform complète passent
   (`421/421`). Ce pilote ne généralise pas encore la comparaison : chaque état
   supplémentaire exigera une équivalence métier explicite entre référence et
-  scénario runtime. Prochaine étape autorisée après revue, fusion et CI :
-  définir la baseline humaine et son protocole de décision, puis étendre la
-  matrice seulement aux états réellement comparables.
+  scénario runtime. La PR #181 a été approuvée et fusionnée par
+  `soumailakouda`, avec les 17 contrôles CI verts. Le lot est clos.
+- **JEV-VIS-PAIR-2 — réalisé localement le 2026-10-03, revue requise :** le
+  protocole `users-management-proof.visual-review.json` lie maintenant chaque
+  critère à une source, un mode de preuve `deterministic|human|hybrid`, une
+  question atomique et une politique sans score global. Le même scénario
+  Playwright que la capture produit des faits d'accessibilité, de feedback et
+  de géométrie ; le collecteur les valide, bloque toute preuve manquante ou
+  déterministe en échec et laisse seulement les trois jugements réellement
+  visuels en `pending`. Les politiques locales sont hashées et les contrats
+  plan/bundle passent en `2.0.0`. Aucun client ou appel JEV n'est ajouté.
+  Prochaine étape après revue, fusion et CI : appliquer le protocole au premier
+  couple et conserver une première étiquette humaine ; étendre ensuite
+  uniquement aux états runtime réellement équivalents.
 - **JEV-3 — conditionnel à la réouverture :** préenregistrer le guide, les
   strates, la taille, les splits, les métriques et les seuils ; constituer des
   demandes ou diffs français synthétiques/assainis ; produire les étiquettes

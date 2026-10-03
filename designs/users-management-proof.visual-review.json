@@ -1,0 +1,114 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "visual-review-protocol",
+  "protocol_id": "visual-review_b6aa8ca1ee019167",
+  "status": "approved",
+  "authority": "human",
+  "sources": [
+    {
+      "id": "wcag-2.2",
+      "source_kind": "official",
+      "title": "Web Content Accessibility Guidelines 2.2",
+      "uri": "https://www.w3.org/TR/WCAG22/",
+      "version": "W3C Recommendation 2024-12-12",
+      "verified_on": "2026-10-03"
+    },
+    {
+      "id": "angular-accessibility-22",
+      "source_kind": "official",
+      "title": "Angular accessibility best practices",
+      "uri": "https://angular.dev/best-practices/a11y",
+      "version": "Angular 22",
+      "verified_on": "2026-10-03"
+    },
+    {
+      "id": "cmz-c5-layout-authority",
+      "source_kind": "repository-policy",
+      "title": "C5 ADAPT-11c accessibility and layout authority",
+      "uri": "docs/architecture/c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md",
+      "version": "2026-10-02",
+      "sha256": "45f39bad71f150cd0ec06797a5bb7cd0dc7192790961526601f3a618f0c518ab",
+      "verified_on": "2026-10-03"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "accessibility.dialog-semantics",
+      "dimension": "accessibility-semantics",
+      "title": "Dialogue identifiable et modal",
+      "question": "Le dialogue expose-t-il un nom, un rôle et un état modal programmatiquement déterminables, avec le contenu arrière rendu inerte ?",
+      "evidence_mode": "deterministic",
+      "blocking": true,
+      "source_refs": [
+        "wcag-2.2#4.1.2",
+        "angular-accessibility-22#aria-attributes",
+        "cmz-c5-layout-authority#FORM-03"
+      ]
+    },
+    {
+      "id": "accessibility.invalid-feedback",
+      "dimension": "accessibility-feedback",
+      "title": "Erreur de formulaire annoncée et focalisée",
+      "question": "Une soumission invalide est-elle annoncée, reliée aux champs et suivie d'un focus sur le premier champ invalide sans requête réseau ?",
+      "evidence_mode": "deterministic",
+      "blocking": true,
+      "source_refs": ["wcag-2.2#3.3.1", "wcag-2.2#4.1.3"]
+    },
+    {
+      "id": "layout.medium-create-geometry",
+      "dimension": "layout-geometry",
+      "title": "Géométrie Medium de la création",
+      "question": "La surface Medium reste-t-elle superposée, entièrement visible, bornée par son contenu et sans redimensionner la liste ?",
+      "evidence_mode": "deterministic",
+      "blocking": true,
+      "source_refs": ["wcag-2.2#1.4.10", "cmz-c5-layout-authority#CREATE-03"]
+    },
+    {
+      "id": "layout.no-horizontal-overflow",
+      "dimension": "layout-geometry",
+      "title": "Absence de débordement horizontal du viewport",
+      "question": "Le rendu de l'état évalué tient-il dans le viewport sans scroll horizontal de document ?",
+      "evidence_mode": "deterministic",
+      "blocking": true,
+      "source_refs": ["wcag-2.2#1.4.10"]
+    },
+    {
+      "id": "visual.content-hierarchy",
+      "dimension": "content-hierarchy",
+      "title": "Hiérarchie du contenu",
+      "question": "Le titre, les champs, les erreurs et l'action primaire conservent-ils un ordre de lecture et une importance relative immédiatement compréhensibles ?",
+      "evidence_mode": "human",
+      "blocking": true,
+      "source_refs": ["wcag-2.2#1.3.2", "cmz-c5-layout-authority#FORM-01"]
+    },
+    {
+      "id": "visual.feedback-legibility",
+      "dimension": "feedback-legibility",
+      "title": "Lisibilité du retour d'erreur",
+      "question": "L'état invalide permet-il d'identifier rapidement les erreurs sans dépendre uniquement de la couleur ?",
+      "evidence_mode": "hybrid",
+      "blocking": true,
+      "source_refs": ["wcag-2.2#1.4.1", "wcag-2.2#3.3.3"]
+    },
+    {
+      "id": "visual.reference-fidelity",
+      "dimension": "reference-fidelity",
+      "title": "Fidélité sémantique à la référence",
+      "question": "Les différences entre référence et rendu préservent-elles l'intention validée plutôt que de supprimer, déplacer ou suraccentuer un élément essentiel ?",
+      "evidence_mode": "human",
+      "blocking": true,
+      "source_refs": ["cmz-c5-layout-authority#authority"]
+    }
+  ],
+  "decision_policy": {
+    "allowed_outcomes": [
+      "approved",
+      "changes-requested",
+      "insufficient-evidence"
+    ],
+    "deterministic_failure": "changes-requested",
+    "missing_evidence": "insufficient-evidence",
+    "human_pending": "blocks-approval",
+    "aggregate_score": "forbidden"
+  }
+}
