@@ -57,7 +57,7 @@ select {
 .filter-surface {
     position: absolute;
     z-index: 25;
-    inset: 105px 0 0 auto;
+    inset: var(--filter-panel-top, 105px) 0 var(--filter-panel-bottom, 0) auto;
     width: clamp(380px, 42%, 440px);
 }
 
