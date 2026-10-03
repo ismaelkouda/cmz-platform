@@ -329,6 +329,33 @@ de développement et de production sont verts ; aucun octet runtime ne change.
 - Angular natif/Aria/Material avant custom selon ADR-0077 ;
 - prouver build, lint, tests, Playwright, a11y, bundle et confinement.
 
+#### ADAPT-11c1 — oracles de la nouvelle autorité
+
+Avant tout nouveau work order et sans modifier le runtime, la suite navigateur
+doit désormais exiger :
+
+- un titre `h2` local « Utilisateurs » et le total backend autoritatif à gauche ;
+- une région de recherche locale, puis le groupe natif `Créer`, `Rafraîchir`,
+  `Filtres` à droite, dans le même ordre DOM et visuel ;
+- aucun rôle `toolbar` tant que la navigation composite aux flèches n'existe
+  pas ;
+- la table nommée par son titre, le libellé `Créer` visible et les noms
+  accessibles contextualisés ;
+- à `820 × 900`, un reflow sans chevauchement, disparition, débordement de page
+  ni cible d'action inférieure à `48 × 48 CSS px` ;
+- l'absence maintenue de toute capacité non déclarée.
+
+L'échec attendu est limité à la signature historique exacte :
+`table-tools` est encore le formulaire de recherche, `Créer` reste dans le
+heading, seul `Filtres` se trouve dans les outils, et titre local, région de
+recherche dédiée, groupe d'actions et rafraîchissement sont absents. Une
+implémentation partielle différente échoue réellement.
+
+La passe ciblée donne `6/6` : cinq échecs attendus bornés et un succès réel. La
+régression Playwright C5 complète donne `56/56`, sans `skip` ni `todo`. ESLint,
+Prettier et `git diff --check` sont verts. Aucun runtime, work order, contrat,
+dépendance ou image n'est modifié.
+
 ### DATA-VIEW-1 — extraction générique ultérieure
 
 - choisir au moins un second écran indépendant ;

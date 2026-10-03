@@ -2625,10 +2625,23 @@ Figma, désormais source partielle différée :
   décision produit. Après fusion de cette autorité, recalculer le work order et
   réaliser uniquement les capacités C5 demandées, avec primitives Angular
   officielles avant custom et preuve build, lint, tests, Playwright,
-  accessibilité, bundle et confinement. **DATA-VIEW-1 — différé :** n'extraire
-  un contrat ou renderer partagé qu'après comparaison avec une seconde
-  fonctionnalité indépendante et preuve Angular + React. Aucun schéma universel
-  ni migration du `cmz-table` n'est autorisé dans ADAPT-11. **PRES-AUTH-1 —
+  accessibilité, bundle et confinement. **ADAPT-11c1 — oracles engagés
+  localement le 2026-10-03 :** sans toucher au runtime, au work order, aux
+  contrats, dépendances ou images, la suite navigateur exige désormais le titre
+  `h2` et le total backend autoritatif à gauche, puis recherche locale et groupe
+  natif `Créer`, `Rafraîchir`, `Filtres` à droite. Elle refuse le faux rôle
+  `toolbar`, vérifie l'ordre DOM, le nom de table, les libellés contextualisés et
+  un reflow `820 × 900` sans chevauchement, débordement, disparition ni cible
+  inférieure à `48 × 48 CSS px`. L'échec attendu reste fermé sur la signature
+  historique exacte ; toute réalisation partielle différente échoue réellement.
+  La passe ciblée donne `6/6` — cinq attendus, un réel — et la régression C5
+  complète `56/56`, sans `skip` ni `todo` ; ESLint, Prettier et le diff sont
+  verts. Après fusion et CI post-fusion, ADAPT-11c2 recalculera seulement alors
+  le work order et réalisera le runtime borné. **DATA-VIEW-1 — différé :**
+  n'extraire un contrat ou renderer partagé qu'après comparaison avec une
+  seconde fonctionnalité indépendante et preuve Angular + React. Aucun schéma
+  universel ni migration du `cmz-table` n'est autorisé dans ADAPT-11.
+  **PRES-AUTH-1 —
   autorités de présentation rejetées :** le 2026-09-30, le porteur produit
   rejette explicitement comme références courantes les dossiers
   `adaptive-candidates/` et `filter-candidates/`, ainsi que les quatre PNG
