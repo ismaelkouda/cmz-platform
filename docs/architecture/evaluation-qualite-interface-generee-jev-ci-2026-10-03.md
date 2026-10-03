@@ -605,6 +605,43 @@ Le premier livrable utile n'est donc pas un client JEV. C'est une paire fiable
 et règles ↔ diff**, accompagnés de preuves comparables. Sans eux, aucun juge —
 humain, multimodal, reviewer de code ou JEV — ne peut être correctement évalué.
 
+## Mise en œuvre pilote — paire visuelle C5
+
+Le premier cas comparable est désormais décrit par
+`designs/users-management-proof.visual-evaluation.json` : l'état
+`medium-create-invalid` relie une source approuvée du
+`presentation-evidence` au scénario Playwright exact qui produit le même état au
+même viewport `1024 × 768`.
+
+Le collecteur provider-neutral :
+
+- refuse une référence absente, modifiée ou non visuelle ;
+- exige l'identité exacte des viewports et dimensions PNG ;
+- refuse un scénario renommé, une capture absente ou plusieurs captures de même
+  nom ;
+- consigne les SHA-256, tailles, chemins et versions de rendu ;
+- publie uniquement le statut `captured-unreviewed` et une revue
+  `pending-human-review` ;
+- n'émet ni score, ni verdict, ni correction, ni appel à un fournisseur.
+
+Après le scénario Playwright, le dossier se reconstruit localement avec :
+
+```bash
+node tools/generator-platform/collect-visual-evaluation.mjs
+```
+
+La CI assemble le dossier après le passage Playwright puis conserve ensemble la
+capture réelle et `visual-evaluation.bundle.json`. Le lot pilote ne couvre
+volontairement qu'un état dont l'équivalence métier est établie. Une référence
+historique supersédée, un état voisin ou une capture au bon viewport ne doivent
+jamais être appariés par simple ressemblance. L'extension à d'autres états exige
+donc un scénario runtime équivalent et une revue explicite de la paire.
+
+Cette mise en œuvre ferme le problème de provenance et de comparabilité ; elle
+ne ferme pas encore celui du jugement visuel. La prochaine étape est de définir
+et mesurer une baseline de revue humaine sur ces dossiers, avant tout observateur
+multimodal ou expérimentation JEV.
+
 ## Références officielles
 
 - [JEV — API de décision](https://jev-ai.org/docs/)
