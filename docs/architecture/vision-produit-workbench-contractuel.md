@@ -126,6 +126,23 @@ séparés : **lire**, **proposer**, **préparer**, **appliquer**, **publier**. L
 mode par défaut est la lecture ou la proposition. Chaque élévation est
 explicite, journalisée et attribuable.
 
+### JEV et les jugements étroits
+
+JEV peut compléter ce modèle comme évaluateur probabiliste optionnel, jamais
+comme générateur, oracle, autorité de permission ou approbateur. Son premier
+usage envisagé est borné à trois signaux sur une demande française : besoin de
+clarification produit, besoin de clarification du contrat backend et sortie du
+périmètre supporté.
+
+La phase autorisée reste un POC provider-neutral en replay/shadow : ses réponses
+sont comparées à des étiquettes humaines préexistantes mais ne changent aucun
+comportement. Entrées, questions, fournisseur, version exacte, seuils et
+résultats sont versionnés ; le français original est conservé et les critères
+peuvent être écrits en anglais. Le chemin déterministe et humain demeure
+fonctionnel quand le modèle est absent, invalide ou incertain. Toute promotion
+hors shadow exige une nouvelle décision explicite et des preuves mesurées selon
+[ADR-0079](../adr/0079-jev-evaluateur-probabiliste-replay-shadow.md).
+
 ## Architecture cible sans dépendance à un fournisseur
 
 Le moteur actuel reste sous `tools/generator-platform/` et demeure déterministe.
@@ -199,6 +216,9 @@ rester utilisable sans IA quand le modèle est indisponible.
   fixe la frontière de confiance entre conception, LLM et réalisation.
 - [ADR-0066](../adr/0066-preuve-presentation-bornee-pour-realisation-llm.md)
   borne la preuve visuelle et son autorité de présentation.
+- [ADR-0079](../adr/0079-jev-evaluateur-probabiliste-replay-shadow.md)
+  borne l'évaluation JEV à un POC provider-neutral en replay/shadow avant toute
+  décision d'adoption.
 - [ADR-0033](../adr/0033-propriete-artefacts-regeneration-non-destructive.md) et
   [ADR-0035](../adr/0035-contrat-durabilite-publication-generation.md)
   gouvernent la propriété et la publication des artefacts.
