@@ -33,6 +33,22 @@ Décision de cet audit :
 - soumettre `list-query` 2.0 et toute nouvelle automatisation au budget de
   complexité défini dans ce document.
 
+### Règle générale ajoutée après retour d'expérience
+
+La sécurité d'une solution et l'approbation de son plan ne démontrent pas sa
+valeur. Avant de concevoir un nouveau modèle, service, wrapper, gate CI,
+dépendance ou POC, le responsable technique doit d'abord challenger le besoin :
+problème observé, baseline, alternatives déjà présentes, gain marginal, coût
+total et condition d'abandon.
+
+L'ordre « pourquoi maintenant ? » puis « comment ? » est obligatoire. Si les
+schémas, outils natifs, gates déterministes ou revues existantes couvrent déjà
+le besoin sans écart mesuré, l'automatisation est différée. Un spike ne sert pas
+à fabriquer artificiellement la justification de son existence ; il sert à
+réduire une incertitude identifiée, avec budget et retrait bornés. Cette règle
+est généralisée et rendue normative par
+[ADR-0080](../adr/0080-prouver-la-valeur-avant-nouvelle-automatisation.md).
+
 Ce verdict ne demande pas de réécrire immédiatement tout le socle. Il interdit
 en revanche de l'étendre dans sa forme actuelle.
 

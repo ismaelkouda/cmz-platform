@@ -2788,22 +2788,40 @@ Figma, désormais source partielle différée :
 - **JEV-1 — décision formalisée :** ADR-0079 accepte seulement un POC
   provider-neutral en replay/shadow. Aucun appel live n'entre dans la CI, le
   runtime produit, une permission, une approbation ou une publication.
-- **JEV-2 — en attente après fusion de l'ADR :** construire le harnais isolé,
-  les schémas versionnés, l'adaptateur fournisseur et le replay hors ligne. Le
-  smoke test valide le harnais mais ne vaut pas preuve d'adoption.
-- **JEV-3 — données et validation humaines requises :** préenregistrer le guide,
-  les strates, la taille, les splits, les métriques et les seuils ; constituer
-  des demandes françaises synthétiques ou assainies ; produire les étiquettes
+- **JEV-2 — différé, gate de valeur non franchi :** ADR-0079 définit une
+  expérimentation sûre mais ne démontre pas un besoin marginal face aux schémas,
+  au LLM généraliste et à la revue humaine déjà présents. ADR-0080 interdit de
+  construire le harnais tant qu'une famille de décisions étroites, récurrentes
+  et coûteuses n'est pas observée avec une baseline.
+- **JEV-VIS — hypothèse recentrée, non décidée :** l'angle mort légitime est la
+  fidélité sémantique d'une interface produite par un LLM depuis Figma, une
+  capture ou un wireframe. JEV ne voit pas les images : il pourrait seulement
+  arbitrer en shadow des constats structurés produits par des extracteurs et un
+  observateur multimodal. Comparer obligatoirement revue humaine, juge
+  multimodal direct et variante avec JEV ; abandonner JEV sans gain marginal.
+- **JEV-CODE — seconde piste, non décidée :** évaluer séparément la pertinence
+  des primitives/outils employés et les risques contextuels KISS, DRY, YAGNI,
+  SRP, OCP, LSP, ISP et DIP. L'entrée doit relier work order, diff borné,
+  versions, règles officielles applicables, preuves de gates et journal factuel
+  des outils. Aucun score SOLID global, aucune lecture web live, aucune chaîne
+  de pensée conservée. Comparer reviewer de code outillé avec et sans JEV.
+  Analyse :
+  [`evaluation-qualite-interface-generee-jev-ci-2026-10-03.md`](./evaluation-qualite-interface-generee-jev-ci-2026-10-03.md).
+- **JEV-3 — conditionnel à la réouverture :** préenregistrer le guide, les
+  strates, la taille, les splits, les métriques et les seuils ; constituer des
+  demandes ou diffs français synthétiques/assainis ; produire les étiquettes
   avant toute sortie JEV et arbitrer les désaccords.
-- **JEV-4 — en attente :** exécuter la campagne épinglée et mesurer qualité,
-  calibration, faux négatifs critiques, répétabilité, résistance aux
-  injections, indisponibilité, latence et coût.
+- **JEV-4 — conditionnel :** exécuter seulement la campagne épinglée autorisée
+  et mesurer signal additionnel, calibration, faux négatifs critiques,
+  répétabilité, résistance aux injections, indisponibilité, latence et coût.
 - **JEV-5 — décision séparée :** publier le rapport et les fixtures replay, puis
   accepter le rejet, une poursuite bornée ou une proposition de promotion par
   un nouvel ADR. Aucune intégration de production n'est actuellement décidée.
 
 Décision détaillée :
-[`ADR-0079`](../adr/0079-jev-evaluateur-probabiliste-replay-shadow.md).
+[`ADR-0079`](../adr/0079-jev-evaluateur-probabiliste-replay-shadow.md) et gate
+d'admission général
+[`ADR-0080`](../adr/0080-prouver-la-valeur-avant-nouvelle-automatisation.md).
 
 ### 2.1 Preuves empiriques déjà produites
 
