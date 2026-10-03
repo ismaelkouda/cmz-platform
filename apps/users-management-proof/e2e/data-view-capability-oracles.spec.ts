@@ -11,6 +11,7 @@ import {
 } from './filter-oracle.support';
 
 const toolbarActionIds = ['create', 'refresh', 'filters'] as const;
+const MEDIUM_CONSTRAINED = { width: 820, height: 900 } as const;
 
 function tableTools(page: Page): Locator {
     return page.locator('[data-cmz-id="table-tools"]');
@@ -28,6 +29,14 @@ async function markExactLegacyToolbar(page: Page): Promise<void> {
         const tools = document.querySelector('[data-cmz-id="table-tools"]');
         const create = document.querySelector('[data-cmz-id="create-user"]');
         const filter = tools?.querySelector('button.filter-toggle');
+        const tableTitle = tools?.querySelector('[data-cmz-id="table-title"]');
+        const tableSearch = tools?.querySelector(
+            '[data-cmz-id="table-search"]'
+        );
+        const commandCluster = tools?.querySelector(
+            '[data-cmz-id="table-command-cluster"]'
+        );
+        const actionGroup = tools?.querySelector('[data-cmz-toolbar-actions]');
         const buttonNames = [...document.querySelectorAll('button')].map(
             (button) =>
                 button.getAttribute('aria-label') ??
@@ -41,6 +50,10 @@ async function markExactLegacyToolbar(page: Page): Promise<void> {
             create.closest('.page-heading-row') !== null &&
             create.closest('[data-cmz-id="table-tools"]') === null &&
             filter instanceof HTMLButtonElement &&
+            tableTitle === null &&
+            tableSearch === null &&
+            commandCluster === null &&
+            actionGroup === null &&
             tools.querySelectorAll('button').length === 1 &&
             !buttonNames.some((name) => /^Rafraîchir$/.test(name)) &&
             !buttonNames.some((name) => /^Exporter$/.test(name)) &&
@@ -48,9 +61,43 @@ async function markExactLegacyToolbar(page: Page): Promise<void> {
         );
     });
     const reason =
-        'ADAPT-11b : la signature historique conserve Créer dans le heading, seulement Filtres dans les outils et aucun Rafraîchir.';
+        'ADAPT-11c1 : la signature historique conserve Créer dans le heading, le formulaire de recherche comme conteneur, seulement Filtres dans les outils et aucun titre local ni Rafraîchir.';
     test.fail(legacy, reason);
     if (legacy) expect(legacy, reason).toBe(false);
+}
+
+async function expectDocumentOrder(locators: Locator[]): Promise<void> {
+    const handles = await Promise.all(
+        locators.map((locator) => locator.elementHandle())
+    );
+    for (let index = 0; index < handles.length - 1; index += 1) {
+        const current = handles[index];
+        const next = handles[index + 1];
+        if (!current || !next)
+            throw new Error('Contrôle de toolbar introuvable.');
+        expect(
+            await current.evaluate(
+                (element, following) =>
+                    Boolean(
+                        element.compareDocumentPosition(following) &
+                        Node.DOCUMENT_POSITION_FOLLOWING
+                    ),
+                next
+            )
+        ).toBe(true);
+    }
+}
+
+function overlap(
+    first: { x: number; y: number; width: number; height: number },
+    second: { x: number; y: number; width: number; height: number }
+): boolean {
+    return !(
+        first.x + first.width <= second.x ||
+        second.x + second.width <= first.x ||
+        first.y + first.height <= second.y ||
+        second.y + second.height <= first.y
+    );
 }
 
 async function openFilters(page: Page): Promise<Locator> {
@@ -97,7 +144,7 @@ test.beforeEach(async ({ page }) => {
     await installFilterOracleBackend(page);
 });
 
-test('Medium/Expanded : regroupe seulement les capacités C5 déclarées dans une toolbar unique', async ({
+test('Expanded : nomme la table à gauche puis regroupe recherche et capacités C5 à droite', async ({
     page,
 }) => {
     await page.setViewportSize(EXPANDED);
@@ -105,9 +152,35 @@ test('Medium/Expanded : regroupe seulement les capacités C5 déclarées dans un
     await markExactLegacyToolbar(page);
 
     const tools = tableTools(page);
+    const title = tools.locator('[data-cmz-id="table-title"]');
+    const titleLabel = title.locator('[data-cmz-id="table-title-label"]');
+    const total = title.locator('[data-cmz-id="table-total"]');
+    const searchRegion = tools.locator('[data-cmz-id="table-search"]');
+    const commandCluster = tools.locator(
+        '[data-cmz-id="table-command-cluster"]'
+    );
     const actions = tools.locator('[data-cmz-toolbar-actions]');
-    await expect(tools.getByLabel('Rechercher un utilisateur')).toBeVisible();
+    await expect(
+        tools.getByRole('heading', { level: 2, name: /Utilisateurs/ })
+    ).toHaveCount(1);
+    await expect(title).toHaveAttribute('id', 'users-table-title');
+    await expect(titleLabel).toHaveText('Utilisateurs');
+    await expect(total).toHaveText('1');
+    await expect(total).toHaveAccessibleName('1 utilisateur au total');
+    await expect(searchRegion).toHaveRole('search');
+    await expect(searchRegion).toHaveAccessibleName(
+        'Recherche dans les utilisateurs'
+    );
+    await expect(
+        searchRegion.getByLabel('Rechercher un utilisateur')
+    ).toBeVisible();
+    await expect(commandCluster).toBeVisible();
     await expect(actions).toBeVisible();
+    await expect(actions).toHaveRole('group');
+    await expect(actions).toHaveAccessibleName(
+        'Actions de la liste des utilisateurs'
+    );
+    await expect(tools.getByRole('toolbar')).toHaveCount(0);
     expect(
         await actions
             .locator('[data-cmz-toolbar-action]')
@@ -120,8 +193,9 @@ test('Medium/Expanded : regroupe seulement les capacités C5 déclarées dans un
     await expect(toolbarAction(page, 'create')).toHaveAccessibleName(
         'Créer un utilisateur'
     );
+    await expect(toolbarAction(page, 'create')).toHaveText('Créer');
     await expect(toolbarAction(page, 'refresh')).toHaveAccessibleName(
-        'Rafraîchir'
+        'Rafraîchir la liste des utilisateurs'
     );
     await expect(toolbarAction(page, 'filters')).toHaveAccessibleName(
         /^Filtres(?: \(\d+\))?$/
@@ -130,19 +204,100 @@ test('Medium/Expanded : regroupe seulement les capacités C5 déclarées dans un
         page.locator('[data-cmz-toolbar-action="export"]')
     ).toHaveCount(0);
     await expect(page.locator('[data-cmz-id="create-user"]')).toHaveCount(1);
+    const table = page.getByRole('table', {
+        name: /Utilisateurs.*1 utilisateur au total/,
+    });
+    await expect(table).toHaveAttribute('aria-labelledby', 'users-table-title');
 
-    const [searchBox, actionsBox, toolsBox] = await Promise.all([
-        tools.getByLabel('Rechercher un utilisateur').boundingBox(),
+    await expectDocumentOrder([title, searchRegion, actions]);
+
+    const [titleBox, searchBox, actionsBox, toolsBox] = await Promise.all([
+        title.boundingBox(),
+        searchRegion.boundingBox(),
         actions.boundingBox(),
         tools.boundingBox(),
     ]);
-    const search = requireBox(searchBox, 'recherche de la toolbar');
+    const tableTitle = requireBox(titleBox, 'titre de la table');
+    const searchGeometry = requireBox(searchBox, 'recherche de la toolbar');
     const actionGroup = requireBox(actionsBox, 'actions de la toolbar');
     const toolbar = requireBox(toolsBox, 'toolbar');
-    expect(search.x).toBeLessThan(actionGroup.x);
+    expect(tableTitle.x).toBeLessThan(searchGeometry.x);
+    expect(searchGeometry.x).toBeLessThan(actionGroup.x);
     expect(actionGroup.x + actionGroup.width).toBeLessThanOrEqual(
         toolbar.x + toolbar.width + 1
     );
+});
+
+test('Medium contraint : reflow sans chevauchement ni disparition des commandes essentielles', async ({
+    page,
+}) => {
+    await page.setViewportSize(MEDIUM_CONSTRAINED);
+    await openReadyPage(page);
+    await markExactLegacyToolbar(page);
+
+    const tools = tableTools(page);
+    const title = tools.locator('[data-cmz-id="table-title"]');
+    const search = tools.locator('[data-cmz-id="table-search"]');
+    const actions = tools.locator('[data-cmz-toolbar-actions]');
+    const controls = toolbarActionIds.map((id) => toolbarAction(page, id));
+
+    await expect(title).toBeVisible();
+    await expect(search).toBeVisible();
+    await expect(actions).toBeVisible();
+    for (const control of controls) await expect(control).toBeVisible();
+    await expectDocumentOrder([title, search, actions]);
+
+    expect(
+        await actions
+            .locator('[data-cmz-toolbar-action]')
+            .evaluateAll((items) =>
+                items.map((item) =>
+                    item.getAttribute('data-cmz-toolbar-action')
+                )
+            )
+    ).toEqual(toolbarActionIds);
+
+    const toolsBox = requireBox(await tools.boundingBox(), 'toolbar Medium');
+    const regions = await Promise.all(
+        [title, search, actions].map(async (locator, index) =>
+            requireBox(
+                await locator.boundingBox(),
+                ['titre Medium', 'recherche Medium', 'actions Medium'][index]
+            )
+        )
+    );
+    for (const region of regions) {
+        expect(region.x).toBeGreaterThanOrEqual(toolsBox.x - 1);
+        expect(region.x + region.width).toBeLessThanOrEqual(
+            toolsBox.x + toolsBox.width + 1
+        );
+        expect(region.y).toBeGreaterThanOrEqual(toolsBox.y - 1);
+        expect(region.y + region.height).toBeLessThanOrEqual(
+            toolsBox.y + toolsBox.height + 1
+        );
+    }
+    for (let first = 0; first < regions.length; first += 1) {
+        for (let second = first + 1; second < regions.length; second += 1) {
+            expect(overlap(regions[first], regions[second])).toBe(false);
+        }
+    }
+
+    for (const control of controls) {
+        const box = requireBox(
+            await control.boundingBox(),
+            (await control.getAttribute('data-cmz-toolbar-action')) ??
+                'action de toolbar'
+        );
+        expect(box.width).toBeGreaterThanOrEqual(48);
+        expect(box.height).toBeGreaterThanOrEqual(48);
+    }
+    expect(
+        await page.evaluate(
+            () =>
+                document.documentElement.scrollWidth <=
+                document.documentElement.clientWidth + 1
+        )
+    ).toBe(true);
 });
 
 test('Rafraîchir : conserve la requête appliquée et émet exactement un GET users', async ({
