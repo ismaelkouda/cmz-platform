@@ -1,7 +1,7 @@
 # C5 ADAPT-11c — autorité d'accessibilité et de mise en page
 
-- **Date de vérification :** 2026-10-02
-- **Statut :** autorité de réalisation C5 ; runtime à réaliser
+- **Date de vérification :** 2026-10-03
+- **Statut :** autorité appliquée ; runtime ADAPT-11c2 fusionné et vérifié
 - **Fonctionnalité :** Gestion des utilisateurs
 - **Fenêtres :** `compact`, `medium`, `expanded`
 - **Socle vérifié :** Angular `22.2.0`, Angular Material/CDK/Aria `22.2.1`
@@ -744,3 +744,45 @@ autorité supérieure à WCAG, Angular ou aux contrats C5.
 
 Ces points ne sont ni oubliés ni implicitement autorisés. Ils restent hors du
 runtime C5 jusqu'à une définition, un contrat et des oracles dédiés.
+
+## 22. Réalisation et preuves ADAPT-11c2
+
+L'autorité de ce document est réalisée par le commit
+`6fdbd64ac8423a0bf938c492ec7b3af08cce617b`, approuvé sur cet objet exact par
+Soumaila puis fusionné par la PR
+[#177](https://github.com/ismaelkouda/cmz-platform/pull/177) dans le commit
+`8c2129e45bfe6101421fec478729e2f631e7018a` le 2026-10-03.
+
+Le work order a été recalculé depuis la base fusionnée avant réalisation. Son
+identifiant est
+`3b889daa5819ee1ce1af85d4e0120b5fee47dff84bf3a60e7065d092d3d5ac52` et son
+allowlist borne neuf fichiers de la page C5. La réalisation en modifie six,
+tous autorisés : composant de page HTML, SCSS, TypeScript et test, puis
+composant de filtres SCSS et TypeScript. Le contrat, les modèles d'exécution,
+les dépendances et les références visuelles restent inchangés.
+
+La réalisation fournit notamment :
+
+- le titre local et le total backend autoritatif ;
+- la recherche locale et le groupe natif de commandes dans l'ordre approuvé ;
+- `Créer` adaptatif, le rafraîchissement à requête conservée et `Filtres` ;
+- le reflow Medium sans chevauchement ni cible inférieure à `48 × 48 CSS px` ;
+- la géométrie panneau/rail mesurée sur le conteneur réel ;
+- l'absence maintenue d'export, actions de ligne, dialogue ou endpoint inventé.
+
+Le rôle ARIA `toolbar` reste volontairement absent : sans navigation composite
+aux flèches et roving tabindex, le groupe natif parcouru avec Tab est la
+sémantique correcte.
+
+Les preuves de sortie sont vertes : `56/56` scénarios Playwright sans
+`skip`, `todo` ni échec attendu résiduel, `31/31` tests Angular, lint, build de
+production, Knip, Prettier, fraîcheur documentaire et oracle de confinement.
+Le chunk lazy de la page passe de `232,55 kB` à `236,43 kB` brut, soit
+`+3,88 kB` brut et `+0,70 kB` estimé transféré ; le bundle initial reste
+inchangé. Les `17/17` contrôles de la PR sont verts, ainsi que la CI post-fusion
+de `main`, run
+[#37116794308](https://github.com/ismaelkouda/cmz-platform/actions/runs/37116794308).
+
+ADAPT-11c est donc clos. Les questions de la section 21 et `DATA-VIEW-1`
+restent différées jusqu'à l'existence de contrats réels et d'un second cas
+indépendant.
