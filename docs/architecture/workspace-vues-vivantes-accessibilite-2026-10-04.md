@@ -199,8 +199,8 @@ contourner leur garde.
 
 **CLOSE-07.** Une fermeture groupée prévalide toutes ses cibles puis, si la vue
 active en fait partie, navigue une seule fois vers une vue survivante avant de
-détruire le moindre handle. Une navigation refusée ou en erreur conserve tout
-le groupe ; aucune fermeture partielle silencieuse n'est autorisée.
+détruire le moindre handle. Une navigation refusée ou en erreur conserve tout le
+groupe ; aucune fermeture partielle silencieuse n'est autorisée.
 
 ## 7. Accessibilité du composant Tabs
 
@@ -325,13 +325,39 @@ Prouvé localement dans la tranche de révocation du 2026-10-04 :
   cycle de destruction ;
 - une vue interdite enregistrée après l'hydratation est également retirée ;
 - un snapshot absent est interprété fail-closed ;
-- une navigation impossible ou une exception purge tous les handles et ferme
-  la session, avec erreur transmise au `ErrorHandler` ;
+- une navigation impossible ou une exception purge tous les handles et ferme la
+  session, avec erreur transmise au `ErrorHandler` ;
 - le reload de session reste garanti lorsque `storage.clearAll()` échoue.
+
+Prouvé localement dans la tranche accessibilité/RTL du 2026-10-04 :
+
+- un parcours Chromium authentifié vérifie les relations `tablist`/`tab` via
+  `aria-owns`, l'onglet sélectionné, le panneau unique et son `aria-labelledby`
+  dynamique ;
+- `axe-core` contrôle sur le shell réel les relations ARIA, attributs requis,
+  valeurs et noms de boutons. Ce contrôle machine ne vaut explicitement pas
+  parcours lecteur d'écran ;
+- un agrandissement du texte à `200 %` sur un viewport reflué conserve la barre,
+  ses commandes, ses noms, son focus visible et toute sa fonctionnalité sans
+  troncature des contrôles ;
+- la navigation au clavier suit le sens visuel LTR ou RTL et boucle aux
+  extrémités conformément au pattern Tabs ;
+- sous RTL, le rail conserve un début logique à zéro, `suivant` avance
+  réellement, `précédent` revient au début et le menu de commandes reste
+  entièrement dans le viewport ;
+- espacements, séparateurs et alignements utilisent les propriétés logiques
+  Tailwind (`ps`/`pe`, `me`, `border-s`/`border-e`, `text-start`). L'ancrage
+  physique `right-0` du menu est volontairement conservé : la preuve géométrique
+  montre qu'un remplacement mécanique par `end-0` le fait sortir du viewport en
+  RTL.
 
 Restent bloquants avant de qualifier l'ensemble « terminé de bout en bout » :
 
-- parcours manuel lecteur d'écran, zoom `200 %` et RTL ;
+- parcours manuel VoiceOver et NVDA sur les annonces d'onglet, d'état dirty, de
+  fermeture et de confirmation ; axe ne peut pas remplacer cette preuve ;
+- passage manuel du zoom navigateur à `200 %` sur les navigateurs supportés ; le
+  redimensionnement automatisé du texte à `200 %` est désormais prouvé mais ne
+  simule pas toutes les combinaisons navigateur/OS ;
 - mesure de heap navigateur représentative sur ces 100 cycles et calibration du
   plafond provisoire `8` ;
 - raccordement explicite des futures pages qui introduisent polling, timer,
@@ -365,11 +391,14 @@ oracles.
 - [Angular — destroyDetachedRouteHandle](https://angular.dev/api/router/destroyDetachedRouteHandle)
 - [Angular — withAutoCleanupInjectors](https://angular.dev/api/router/withAutoCleanupInjectors)
 - [Angular Aria — Tabs](https://angular.dev/guide/aria/tabs)
+- [Angular Aria — Toolbar](https://angular.dev/guide/aria/toolbar)
 - [Tailwind CSS — detecting classes in source files](https://tailwindcss.com/docs/detecting-classes-in-source-files)
 - [Tailwind CSS — responsive design](https://tailwindcss.com/docs/responsive-design)
 - [Sass — parent selector and structured nesting](https://sass-lang.com/documentation/style-rules/parent-selector/)
 - [React — Preserving and Resetting State](https://react.dev/learn/preserving-and-resetting-state)
 - [React — Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects)
 - [WAI-ARIA APG — Tabs Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
+- [WCAG 2.2 — Resize Text](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)
+- [WCAG 2.2 — Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html)
 - [WCAG 2.2 — Focus Order](https://www.w3.org/WAI/WCAG22/Understanding/focus-order.html)
 - [WCAG 2.2 — Target Size Minimum](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum)

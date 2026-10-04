@@ -12,12 +12,12 @@
     <div #strip class="workspace__strip flex min-w-0 flex-1 overflow-x-auto" (scroll)="updateOverflow()">
         @for (view of views(); track view.id) {
             <div
-                class="workspace__item relative flex shrink-0 items-center border-r border-border text-muted"
+                class="workspace__item relative flex shrink-0 items-center border-e border-border text-muted"
                 [class.workspace__item--active]="view.lifecycle === 'active'"
             >
                 <button
                     type="button"
-                    class="workspace__tab flex h-full cursor-pointer items-center gap-1.5 whitespace-nowrap border-0 bg-transparent py-0 pr-1.5 pl-4 font-bold text-inherit"
+                    class="workspace__tab flex h-full cursor-pointer items-center gap-1.5 whitespace-nowrap border-0 bg-transparent py-0 ps-4 pe-1.5 font-bold text-inherit"
                     role="tab"
                     [id]="tabDomId(view.id)"
                     [attr.aria-selected]="view.lifecycle === 'active'"
@@ -43,7 +43,7 @@
                 @if (view.closable) {
                     <button
                         type="button"
-                        class="workspace__close mr-1 grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-xl text-inherit hover:bg-surface-hover"
+                        class="workspace__close me-1 grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-xl text-inherit hover:bg-surface-hover"
                         tabindex="-1"
                         [attr.aria-label]="translate('WORKSPACE.CLOSE_VIEW', { title: view.title })"
                         (click)="requestClose(view)"
@@ -58,7 +58,7 @@
     @if (overflowing()) {
         <div
             ngToolbar
-            class="workspace__scroll flex shrink-0 border-l border-border"
+            class="workspace__scroll flex shrink-0 border-s border-border"
             [attr.aria-label]="translate('WORKSPACE.SCROLL_LABEL')"
         >
             @if (canScrollPrevious()) {
@@ -88,7 +88,7 @@
         </div>
     }
 
-    <details class="workspace__commands relative shrink-0 border-l border-border">
+    <details class="workspace__commands relative shrink-0 border-s border-border">
         <summary
             class="workspace__commands-trigger grid h-full w-12 cursor-pointer place-items-center text-xl"
             [attr.aria-label]="translate('WORKSPACE.ACTIONS')"
@@ -100,7 +100,7 @@
         >
             <button
                 type="button"
-                class="cursor-pointer rounded border-0 bg-transparent px-3 py-2.5 text-left text-inherit hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                class="cursor-pointer rounded border-0 bg-transparent px-3 py-2.5 text-start text-inherit hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                 [disabled]="!canCloseCurrent()"
                 (click)="closeCurrent()"
             >
@@ -108,7 +108,7 @@
             </button>
             <button
                 type="button"
-                class="cursor-pointer rounded border-0 bg-transparent px-3 py-2.5 text-left text-inherit hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                class="cursor-pointer rounded border-0 bg-transparent px-3 py-2.5 text-start text-inherit hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                 [disabled]="!canCloseOthers()"
                 (click)="closeOthers()"
             >
@@ -116,7 +116,7 @@
             </button>
             <button
                 type="button"
-                class="cursor-pointer rounded border-0 bg-transparent px-3 py-2.5 text-left text-inherit hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                class="cursor-pointer rounded border-0 bg-transparent px-3 py-2.5 text-start text-inherit hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                 [disabled]="!canCloseAny()"
                 (click)="closeAllExceptPinned()"
             >
