@@ -11,6 +11,11 @@ export interface WorkspaceView {
     pinned: boolean;
     closable: boolean;
     dirty: boolean;
+    /**
+     * Chemin d'accès émis par l'autorité de session pour cette page.
+     * `null` signifie que la vue dépend seulement de la session authentifiée.
+     */
+    accessPath: string | null;
     lifecycle: WorkspaceViewLifecycle;
     /** Horodatage monotone interne utilisé seulement pour le retour MRU. */
     lastActivatedAt: number;
@@ -21,4 +26,5 @@ export interface WorkspaceViewRegistration {
     url: string;
     title: string;
     pinned?: boolean;
+    accessPath?: string | null;
 }

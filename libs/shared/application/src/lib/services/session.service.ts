@@ -104,7 +104,12 @@ export class SessionService {
 
     async clear(): Promise<void> {
         this._token.set(null);
-        this.storage.clearAll();
-        this.navigation.reload();
+        try {
+            this.storage.clearAll();
+        } finally {
+            // Une panne de stockage ne doit jamais maintenir à l'écran une
+            // vue dont la session ou les droits viennent d'être révoqués.
+            this.navigation.reload();
+        }
     }
 }

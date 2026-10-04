@@ -67,7 +67,9 @@ conformité navigateur le sont.
 - `Tableau de bord` est épinglé, premier et non fermable.
 - Chaque vue ouverte possède une identité de chemin stable, une URL d'activation
   exacte, un titre traduit, un état `active` ou `suspended`, et un indicateur
-  `dirty`.
+  `dirty`. Elle mémorise aussi le chemin d'autorisation effectivement contrôlé
+  par le guard de page ; une vue protégée seulement par la session porte
+  explicitement `null`.
 - Une même identité de vue ne peut apparaître deux fois.
 - Les routes paramétrées exigent une politique d'identité explicite. Query
   params et fragments sont exclus de l'identité v1, mais conservés dans l'URL
@@ -98,6 +100,14 @@ conformité navigateur le sont.
   un menu secondaire, jamais dans un bouton destructif principal.
 - Une perte d'autorisation, une déconnexion ou un changement d'identité détruit
   immédiatement les handles concernés.
+- Le shell observe le snapshot réactif des chemins de session. Une vue devenue
+  interdite est retirée même si elle est suspendue, épinglée ou `dirty`. Si elle
+  est active, le Router rejoint d'abord une vue survivante autorisée afin de
+  détruire l'instance au lieu de la détacher. Si cette sortie échoue, tous les
+  handles sont purgés et la session est fermée.
+- Le workspace ne sonde pas lui-même le backend et n'invente aucun canal de
+  révocation. Le fournisseur de session doit remplacer son snapshot lorsqu'il
+  reçoit de nouveaux droits ; un refus serveur continue de fermer la session.
 - La fermeture appelle `destroyDetachedRouteHandle` et permet au router de
   nettoyer les injecteurs ; retirer seulement le libellé est interdit.
 

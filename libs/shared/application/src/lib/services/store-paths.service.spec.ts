@@ -99,6 +99,26 @@ describe('StorePathsService', () => {
         ]);
     });
 
+    it('applique immédiatement une révocation même si sa persistance échoue', async () => {
+        const storage = makeFakeStorage();
+        const injector = createEnvironmentInjector(
+            [{ provide: STORAGE_PORT, useValue: storage }, StorePathsService],
+            null as never
+        );
+        const service = injector.get(StorePathsService);
+        await service.whenReady();
+        await service.setPaths(['/users']);
+        storage.saveObfuscated = vi.fn(async () => {
+            throw new Error('storage unavailable');
+        });
+
+        const replacement = service.setPaths([]);
+
+        expect(service.paths()).toEqual([]);
+        await expect(replacement).rejects.toThrow('storage unavailable');
+        expect(service.paths()).toEqual([]);
+    });
+
     it('ready() reste true et paths() reste null si l’hydratation initiale échoue (catch + finally garantis, T3-7)', async () => {
         // Régression T3-7 (corrigée 2026-08-13) — même défaut et même
         // correctif que `session.service.spec.ts` (voir sa docstring pour le

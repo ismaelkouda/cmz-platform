@@ -49,6 +49,7 @@ describe('WorkspaceService', () => {
             id: '/users',
             url: '/users',
             title: 'Utilisateurs renommés',
+            accessPath: '/users',
         });
 
         expect(service.views().map(({ id }) => id)).toEqual([
@@ -62,6 +63,7 @@ describe('WorkspaceService', () => {
         expect(service.activeView()?.id).toBe('/users');
         expect(service.views()[1].title).toBe('Utilisateurs renommés');
         expect(service.views()[1].url).toBe('/users');
+        expect(service.views()[1].accessPath).toBe('/users');
     });
 
     it("conserve l'URL paramétrée tout en dédupliquant par identité canonique", () => {
@@ -232,6 +234,62 @@ describe('WorkspaceService', () => {
         expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
         expect(discard).toHaveBeenCalledWith('/a');
         expect(service.views().map(({ id }) => id)).toEqual(['/dashboard']);
+    });
+
+    it('révoque une vue suspendue même dirty sans navigation ni confirmation', async () => {
+        const { service, router, strategy } = createService();
+        registerDashboard(service);
+        service.registerNavigation({
+            id: '/users',
+            url: '/users',
+            title: 'Users',
+            accessPath: '/users',
+        });
+        service.markDirty('/users', true);
+        service.registerNavigation({ id: '/a', url: '/a', title: 'A' });
+        const discard = vi.spyOn(strategy, 'discard');
+
+        await expect(service.revokeAccess(['/users'])).resolves.toBe(true);
+
+        expect(router.navigateByUrl).not.toHaveBeenCalled();
+        expect(discard).toHaveBeenCalledWith('/users');
+        expect(service.views().some(({ id }) => id === '/users')).toBe(false);
+    });
+
+    it('quitte puis détruit une vue active dont le droit vient d’être révoqué', async () => {
+        const { service, router, strategy } = createService();
+        registerDashboard(service);
+        service.registerNavigation({
+            id: '/users',
+            url: '/users',
+            title: 'Users',
+            accessPath: '/users',
+        });
+        service.markDirty('/users', true);
+        const finishClosure = vi.spyOn(strategy, 'finishClosure');
+
+        await expect(service.revokeAccess(['/users'])).resolves.toBe(true);
+
+        expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
+        expect(finishClosure).toHaveBeenCalledWith('/users');
+        expect(service.views().map(({ id }) => id)).toEqual(['/dashboard']);
+    });
+
+    it('échoue fermé sans mutation partielle si aucune vue autorisée ne survit', async () => {
+        const { service, router, strategy } = createService();
+        service.registerNavigation({
+            id: '/users',
+            url: '/users',
+            title: 'Users',
+            accessPath: '/users',
+        });
+        const discard = vi.spyOn(strategy, 'discard');
+
+        await expect(service.revokeAccess(['/users'])).resolves.toBe(false);
+
+        expect(router.navigateByUrl).not.toHaveBeenCalled();
+        expect(discard).not.toHaveBeenCalled();
+        expect(service.views().map(({ id }) => id)).toEqual(['/users']);
     });
 
     it('détruit toutes les vues détachées à une frontière de sécurité', () => {

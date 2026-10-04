@@ -55,6 +55,7 @@ export class WorkspaceService {
                     ...next[index],
                     title: normalized.title,
                     url: normalized.url,
+                    accessPath: normalized.accessPath,
                     lifecycle: 'active',
                     lastActivatedAt: activatedAt,
                 };
@@ -208,6 +209,59 @@ export class WorkspaceService {
         return true;
     }
 
+    /**
+     * Détruit des vues dont l'autorisation vient d'être retirée.
+     *
+     * Cette frontière de sécurité ignore volontairement `closable` et `dirty` :
+     * un brouillon ne peut jamais maintenir une page devenue interdite. Si la
+     * vue active est ciblée, le Router rejoint d'abord une vue survivante afin
+     * de détruire son instance active au lieu de la détacher. Une impossibilité
+     * de sortir est signalée au coordinateur hôte, qui doit fermer la session.
+     */
+    async revokeAccess(ids: readonly string[]): Promise<boolean> {
+        const targets = new Set(ids);
+        if (targets.size === 0) return true;
+
+        const views = this.state();
+        const selected = views.filter((view) => targets.has(view.id));
+        if (selected.length !== targets.size) return false;
+
+        const activeTarget = selected.find(
+            ({ lifecycle }) => lifecycle === 'active'
+        );
+        if (activeTarget) {
+            const fallback = views
+                .filter((view) => !targets.has(view.id))
+                .sort(
+                    (left, right) =>
+                        right.lastActivatedAt - left.lastActivatedAt
+                )[0];
+            if (!fallback) return false;
+
+            this.reuseStrategy.prepareForClosure(activeTarget.id);
+            try {
+                if (!(await this.router.navigateByUrl(fallback.url))) {
+                    this.reuseStrategy.cancelClosure(activeTarget.id);
+                    return false;
+                }
+                this.reuseStrategy.finishClosure(activeTarget.id);
+            } catch (error) {
+                this.reuseStrategy.cancelClosure(activeTarget.id);
+                throw error;
+            }
+        }
+
+        for (const view of selected) {
+            if (view.id !== activeTarget?.id) {
+                this.reuseStrategy.discard(view.id);
+            }
+        }
+        this.state.update((current) =>
+            current.filter((view) => !targets.has(view.id))
+        );
+        return true;
+    }
+
     clearForSecurityBoundary(): void {
         this.reuseStrategy.discardAll();
         this.state.set([]);
@@ -219,7 +273,7 @@ export class WorkspaceService {
 
     private normalizeRegistration(
         registration: WorkspaceViewRegistration
-    ): WorkspaceViewRegistration {
+    ): WorkspaceViewRegistration & { accessPath: string | null } {
         if (
             !registration.id.startsWith('/') ||
             !registration.url.startsWith('/')
@@ -235,6 +289,7 @@ export class WorkspaceService {
             // contexte exact requis pour réactiver une vue (mode, uniqId…).
             url: registration.url,
             title: registration.title.trim() || registration.id,
+            accessPath: registration.accessPath ?? null,
         };
     }
 

@@ -97,6 +97,7 @@ type WorkspaceView = {
     pinned: boolean;
     closable: boolean;
     dirty: boolean;
+    accessPath: string | null;
     lifecycle: 'active' | 'suspended';
     lastActivatedAt: number;
 };
@@ -118,6 +119,10 @@ distincts.
 
 **MODEL-05.** Le registre expose des signaux en lecture seule. Seul le service
 du shell peut ouvrir, activer, fermer ou réordonner une vue.
+
+**MODEL-06.** `accessPath` reprend exactement le chemin contrôlé par le guard de
+page. Il vaut `null` pour une vue protégée seulement par la session. Une seconde
+table de correspondance entre routes Angular et chemins backend est interdite.
 
 ## 4. Conservation Angular
 
@@ -244,6 +249,22 @@ révoquée est détruite, pas seulement masquée.
 activent la protection de sortie du navigateur. Restaurer des onglets ou drafts
 depuis un stockage exige une décision de confidentialité distincte.
 
+**SEC-04.** Le shell observe le snapshot réactif `StorePathsService.paths`. À
+chaque remplacement, et à chaque enregistrement de vue, il détruit toute vue
+dont `accessPath` n'est plus accordé. Une révocation ignore `dirty` et
+`closable` : un brouillon ne maintient jamais un accès interdit.
+
+**SEC-05.** Une vue active révoquée rejoint d'abord une vue survivante autorisée
+afin que le Router détruise son instance. Une vue suspendue est détruite via
+`destroyDetachedRouteHandle`. Si la navigation échoue, le workspace entier est
+purgé et la session est fermée. Le reload de sécurité se produit même si
+l'effacement du stockage local lève une erreur.
+
+**SEC-06.** Ce mécanisme consomme un nouveau snapshot ; il ne découvre pas à lui
+seul une modification distante. Aucun polling, WebSocket ou endpoint de refresh
+des droits n'est inventé sans contrat backend. Le backend reste l'autorité et un
+refus HTTP ferme la session par le chemin d'erreur existant.
+
 ## 9. Oracles bloquants
 
 1. même instance avant/après activation d'un autre onglet ;
@@ -294,6 +315,20 @@ Prouvé localement le 2026-10-04 :
 - type-check, tests unitaires/intégration, lint, dead-code et builds
   développement/production sont verts sur cette tranche.
 
+Prouvé localement dans la tranche de révocation du 2026-10-04 :
+
+- le chemin d'autorisation d'une vue est dérivé du même `pathsGuard`, sans
+  registre parallèle ;
+- le retrait d'un chemin détruit automatiquement une vue suspendue et son vrai
+  handle Router ;
+- une vue active, y compris `dirty`, rejoint une survivante puis exécute son
+  cycle de destruction ;
+- une vue interdite enregistrée après l'hydratation est également retirée ;
+- un snapshot absent est interprété fail-closed ;
+- une navigation impossible ou une exception purge tous les handles et ferme
+  la session, avec erreur transmise au `ErrorHandler` ;
+- le reload de session reste garanti lorsque `storage.clearAll()` échoue.
+
 Restent bloquants avant de qualifier l'ensemble « terminé de bout en bout » :
 
 - parcours manuel lecteur d'écran, zoom `200 %` et RTL ;
@@ -303,9 +338,9 @@ Restent bloquants avant de qualifier l'ensemble « terminé de bout en bout » :
   média ou calcul continu au signal `active/suspended` ;
 - déploiement progressif de `[cmzWorkspaceDirty]` sur les autres formulaires
   métier, après vérification de leur définition réelle de « modifié » ;
-- oracle de révocation de permission en cours de session. La déconnexion
-  actuelle recharge le document et détruit donc les instances ; si ce reload
-  disparaît, `clearForSecurityBoundary()` devra être appelé explicitement ;
+- transport applicatif du nouveau snapshot de droits depuis le backend : le
+  monitor et ses oracles sont présents, mais aucun endpoint de refresh, polling
+  ou push n'existe dans le contrat actuel et ne doit être inventé ;
 - conception puis qualification de l'adaptateur ReactJS : même contrat
   observable, conservation réelle de l'instance, suspension des effets,
   démontage prouvé, aucune dépendance au Router ou aux handles Angular, et
