@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessagingFacade } from '@cmz/communication-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -21,7 +22,6 @@ import { MESSAGING_TARGET_LABEL } from '../constants/messaging-target-label.cons
 import { MessagingVmProps } from '../adapters/messaging-vm-props.interface';
 import { MessagingPresenter } from '../adapters/messaging-vm.presenter';
 import { MessagingFilterStore } from '../stores/messaging-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/communication/messaging';
 const T = 'COMMUNICATION.MESSAGING';
@@ -88,7 +88,7 @@ export class MessagingListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

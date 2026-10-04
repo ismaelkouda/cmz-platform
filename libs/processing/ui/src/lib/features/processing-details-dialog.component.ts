@@ -15,7 +15,7 @@ import {
     CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { ProcessingDetailsEntity } from '@cmz/processing-domain';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 /**
  * Dialog fiche signalement — tranche B (substitut minimal de `ManagementDialog`).
@@ -113,7 +113,7 @@ export class ProcessingDetailsDialogComponent {
     readonly actionCompleted = output<void>();
 
     protected readonly facade = inject(ProcessingDetailsFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
 
     private readonly dialogRef =

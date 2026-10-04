@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TeamsFacade } from '@cmz/team-organization-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -20,7 +21,6 @@ import { TEAMS_TABLE } from '../constants/teams-table.constant';
 import { TeamsVmProps } from '../adapters/teams-vm-props.interface';
 import { TeamsPresenter } from '../adapters/teams-vm.presenter';
 import { TeamsFilterStore } from '../stores/teams-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/team-organization/teams';
 const T = 'TEAM_ORGANIZATION.TEAMS';
@@ -87,7 +87,7 @@ export class TeamsListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

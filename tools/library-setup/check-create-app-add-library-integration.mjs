@@ -172,7 +172,7 @@ function assertFinalState(repository, baseCommit) {
         )
     );
     const libraries = [...manifest.libraries].sort();
-    const expectedLibraries = ['angular-material', 'tailwind', 'transloco'];
+    const expectedLibraries = ['angular-material', 'tailwind'];
     if (
         manifest.kind !== 'app-library-manifest' ||
         manifest.platform !== 'angular' ||

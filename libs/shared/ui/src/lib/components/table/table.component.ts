@@ -3,7 +3,7 @@ import { TableColumn } from '../../interfaces/table-column.interface';
 import { TableRowActionDefinition } from '../../interfaces/table-row-action.interface';
 import { TableRowBase } from '../../interfaces/table-row.interface';
 import { ActionDropdownComponent } from '../action-dropdown/action-dropdown.component';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 /** Champs de colonne spéciaux (rendus par le composant, pas par une donnée). */
 const INDEX_FIELD = '__index';
@@ -18,7 +18,7 @@ const ACTIONS_FIELD = '__actionDropdown';
  * `any`). Pagination = composant séparé `cmz-pagination` (composition).
  *
  * Accessible : `<table>` sémantique, `<th scope="col">`, `aria-busy`. Libellés
- * d'en-tête traduits via Transloco. Générique (`T extends TableRowBase`).
+ * d'en-tête traduits via `$localize`. Générique (`T extends TableRowBase`).
  */
 @Component({
     selector: 'cmz-table',
@@ -211,7 +211,7 @@ const ACTIONS_FIELD = '__actionDropdown';
     `,
 })
 export class TableComponent<T extends TableRowBase> {
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     protected readonly INDEX_FIELD = INDEX_FIELD;
     protected readonly ACTION_BUTTONS_FIELD = ACTION_BUTTONS_FIELD;

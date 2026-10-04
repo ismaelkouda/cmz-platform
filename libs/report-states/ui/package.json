@@ -16,8 +16,7 @@
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
-    "rxjs": "catalog:",
-    "@jsverse/transloco": "catalog:"
+    "rxjs": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:tooling"

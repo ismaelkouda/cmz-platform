@@ -220,44 +220,6 @@ function applyTailwind(workspace, context, track) {
     );
 }
 
-function applyTransloco(workspace, context) {
-    const configPath = `${context.sourceRoot}/app/app.config.ts`;
-    let config = readRegular(workspace, configPath);
-    const alreadyWired =
-        config.includes('provideTransloco(') &&
-        existsSync(
-            safePath(workspace, `${context.sourceRoot}/app/transloco-loader.ts`)
-        );
-    if (!alreadyWired) {
-        const exportAnchor = 'export const appConfig: ApplicationConfig = {';
-        const providersAnchor = 'providers: [';
-        if (
-            !config.includes(exportAnchor) ||
-            config.split(providersAnchor).length !== 2
-        ) {
-            fail('forme app.config.ts non reconnue pour Transloco');
-        }
-        const imports = `import { provideHttpClient } from '@angular/common/http';\nimport { isDevMode } from '@angular/core';\nimport { provideTransloco } from '@jsverse/transloco';\nimport { TranslocoHttpLoader } from './transloco-loader';\n`;
-        const providers = `providers: [\n        provideHttpClient(),\n        provideTransloco({\n            config: {\n                availableLangs: ['en', 'es'],\n                defaultLang: 'en',\n                reRenderOnLangChange: true,\n                prodMode: !isDevMode(),\n            },\n            loader: TranslocoHttpLoader,\n        }),\n        `;
-        config = `${imports}${config.replace(providersAnchor, providers)}`;
-        writeOwned(workspace, configPath, config);
-        writeOwned(
-            workspace,
-            `${context.sourceRoot}/app/transloco-loader.ts`,
-            `import { HttpClient } from '@angular/common/http';\nimport { inject, Injectable } from '@angular/core';\nimport { Translation, TranslocoLoader } from '@jsverse/transloco';\n\n@Injectable({ providedIn: 'root' })\nexport class TranslocoHttpLoader implements TranslocoLoader {\n    private readonly http = inject(HttpClient);\n\n    getTranslation(language: string) {\n        return this.http.get<Translation>(\`i18n/\${language}.json\`);\n    }\n}\n`,
-            { createOnly: true }
-        );
-        for (const language of ['en', 'es']) {
-            writeOwned(
-                workspace,
-                `${context.appRoot}/public/i18n/${language}.json`,
-                '{}\n',
-                { createOnly: true }
-            );
-        }
-    }
-}
-
 function descriptorInputs(repository, platform, library) {
     const paths = ['tools/library-setup/qualified-adapters.mjs'];
     if (platform === 'angular' && library === 'tailwind') {
@@ -274,11 +236,7 @@ function descriptorInputs(repository, platform, library) {
 }
 
 export function qualifiedAdapterDescriptor(repository, platform, library) {
-    const supported = new Set([
-        'angular/angular-material',
-        'angular/tailwind',
-        'angular/transloco',
-    ]);
+    const supported = new Set(['angular/angular-material', 'angular/tailwind']);
     const key = `${platform}/${library}`;
     if (!supported.has(key)) fail(`adaptateur absent : ${key}`);
     const payload = {
@@ -307,7 +265,6 @@ export function applyQualifiedAdapter({
     const context = appContext(workspace, app, platform);
     if (library === 'angular-material') applyMaterial(workspace, context);
     else if (library === 'tailwind') applyTailwind(workspace, context, track);
-    else if (library === 'transloco') applyTransloco(workspace, context);
     else fail(`adaptateur absent : ${platform}/${library}`);
     updateManifest(workspace, context.appRoot, platform, library);
     return qualifiedAdapterDescriptor(workspace, platform, library);

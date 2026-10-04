@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { DomainError, PageResult, UnknownError } from '@cmz/shared-domain';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '../i18n/localize-translation.service';
 import { ErrorHandlerRegistry } from '../services/error-handler-registry.service';
 import { NOTIFICATION_PORT } from '../tokens/notification-port.token';
 import { CollectionResourceFacade } from './collection-resource.facade';
@@ -55,15 +55,13 @@ function setup() {
     };
     const translation = {
         translate: vi.fn((key: string) => `translated:${key}`),
-        setActiveLang: vi.fn(),
-        getActiveLang: vi.fn(() => 'fr'),
     };
     const mutationErrorHandler = { handle: vi.fn() };
     TestBed.configureTestingModule({
         providers: [
             TestCollectionFacade,
             { provide: NOTIFICATION_PORT, useValue: notification },
-            { provide: TranslocoService, useValue: translation },
+            { provide: LocalizeTranslationService, useValue: translation },
             { provide: ErrorHandlerRegistry, useValue: mutationErrorHandler },
         ],
     });

@@ -9,7 +9,7 @@ import { MESSAGING_TYPE_OPTIONS } from '../constants/messaging-type-label.consta
 import { MESSAGING_TARGET_OPTIONS } from '../constants/messaging-target-label.constant';
 import { MESSAGING_CHANNEL_OPTIONS } from '../constants/messaging-channel-label.constant';
 import { MessagingFormStore } from '../stores/messaging-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'COMMUNICATION.MESSAGING';
 
@@ -243,7 +243,7 @@ const T = 'COMMUNICATION.MESSAGING';
 export class MessagingFormComponent {
     protected readonly store = inject(MessagingFormStore);
     private readonly facade = inject(MessagingFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

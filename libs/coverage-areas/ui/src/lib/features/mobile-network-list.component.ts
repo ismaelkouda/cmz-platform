@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MobileNetworkFacade } from '@cmz/coverage-areas-application';
 import { Operator, Technology } from '@cmz/coverage-areas-domain';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -19,7 +20,6 @@ import { MOBILE_NETWORK_TABLE } from '../constants/mobile-network-table.constant
 import { MobileNetworkVmProps } from '../adapters/mobile-network-vm-props.interface';
 import { MobileNetworkPresenter } from '../adapters/mobile-network-vm.presenter';
 import { MobileNetworkFilterStore } from '../stores/mobile-network-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/coverage-areas/mobile-networks';
 const T = 'COVERAGE_AREAS.MOBILE_NETWORK';
@@ -90,7 +90,7 @@ export class MobileNetworkListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

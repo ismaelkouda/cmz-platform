@@ -13,7 +13,7 @@ import { AGENTS_PERFORMANCES_HISTORY_TABLE } from '../constants/agents-performan
 import { AgentsPerformancesHistoryVmProps } from '../adapters/agents-performances-history-vm-props.interface';
 import { AgentsPerformancesHistoryPresenter } from '../adapters/agents-performances-history-vm.presenter';
 import { AgentsPerformancesHistoryFilterStore } from '../stores/agents-performances-history-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'TEAM_ORGANIZATION.AGENTS_PERFORMANCES.HISTORY';
 
@@ -64,7 +64,7 @@ const T = 'TEAM_ORGANIZATION.AGENTS_PERFORMANCES.HISTORY';
 export class AgentsPerformancesHistoryListComponent {
     protected readonly facade = inject(AgentsPerformancesHistoryFacade);
     private readonly store = inject(AgentsPerformancesHistoryFilterStore);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly route = inject(ActivatedRoute);
 
     protected readonly ns = T;

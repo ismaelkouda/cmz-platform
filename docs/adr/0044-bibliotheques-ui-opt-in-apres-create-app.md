@@ -5,6 +5,10 @@
 - **Supersède :** uniquement le caractère « installé par défaut » de Material et
   Tailwind dans [ADR-0041](./0041-angular-material-tailwind-defaults.md)
 
+> **Révision i18n (2026-10-04)** : `create-app` produit toujours l'i18n Angular
+> par défaut, mais avec `@angular/localize` natif, sans recette opt-in ni
+> Transloco ([ADR-0085](./0085-angular-i18n-native-localize.md)).
+
 ## Contexte
 
 ADR-0041 a correctement retenu Angular Material + Tailwind comme composition UI
@@ -18,8 +22,8 @@ lockfile, le temps de génération et la surface de maintenance.
 
 ## Décision
 
-- `create-app` produit le shell Angular/PWA minimal et son i18n Transloco, car
-  les pages générées utilisent déjà ce contrat.
+- `create-app` produit le shell Angular/PWA minimal et son i18n
+  `@angular/localize`, car les pages générées utilisent déjà ce contrat natif.
 - Angular Material et Tailwind sont **opt-in**, chacune par la commande
   `bun run add-library --app <app> --library <library>`.
 - Les installer toutes les deux reste la composition UI recommandée lorsqu’une

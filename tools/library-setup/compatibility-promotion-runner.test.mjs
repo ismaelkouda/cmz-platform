@@ -71,7 +71,7 @@ function repository(t) {
     ]) {
         cpSync(join(SOURCE, path), join(root, path));
     }
-    for (const library of ['angular-material', 'tailwind', 'transloco']) {
+    for (const library of ['angular-material', 'tailwind']) {
         const path = join(
             root,
             `conventions/libraries/angular/${library}.compat.json`

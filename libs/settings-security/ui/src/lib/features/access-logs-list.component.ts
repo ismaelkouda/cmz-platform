@@ -13,7 +13,7 @@ import { ACCESS_LOGS_TABLE } from '../constants/access-logs-table.constant';
 import { AccessLogsVmProps } from '../adapters/access-logs-vm-props.interface';
 import { AccessLogsPresenter } from '../adapters/access-logs-vm.presenter';
 import { AccessLogsFilterStore } from '../stores/access-logs-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'SETTINGS_SECURITY.ACCESS_LOGS';
 
@@ -70,7 +70,7 @@ const T = 'SETTINGS_SECURITY.ACCESS_LOGS';
 export class AccessLogsListComponent {
     protected readonly facade = inject(AccessLogsFacade);
     private readonly store = inject(AccessLogsFilterStore);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;

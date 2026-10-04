@@ -1,13 +1,13 @@
 import { Component, computed, inject, input, output } from '@angular/core';
 import { PaginationMeta } from '@cmz/shared-domain';
 import { pageWindow } from './page-window.util';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 /**
  * Composant de pagination — **design-system**, sans dépendance à une lib UI
  * tierce. Présentation pure : reçoit les métadonnées ([[PaginationMeta]]),
  * émet la page demandée. Accessible (`<nav>`, `aria-current`, boutons
- * désactivés aux bornes) ; libellés traduits via Transloco.
+ * désactivés aux bornes) ; libellés traduits via `$localize`.
  * Stylé par tokens CSS (`--cmz-*`) → thémable et réplicable en React.
  */
 @Component({
@@ -137,7 +137,7 @@ import { TranslocoService } from '@jsverse/transloco';
     `,
 })
 export class PaginationComponent {
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     /** Métadonnées de pagination (structurellement satisfaites par `PageResult`). */
     readonly meta = input.required<PaginationMeta>();

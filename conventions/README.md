@@ -31,7 +31,7 @@ Exemple `i18n` :
 
 | Plateforme | `native` | `packages` |
 | --- | --- | --- |
-| Angular | `TranslocoDirective` / pipe `transloco` | `@jsverse/transloco` |
+| Angular | attributs `i18n` / `i18n-*` et `$localize` | `@angular/localize` |
 | React | hook `useTranslation` de react-i18next | `react-i18next` |
 | Kotlin | ressources `strings.xml` + `stringResource()` | — |
 | Swift | String Catalogs + `LocalizedStringKey` | — |
@@ -39,8 +39,10 @@ Exemple `i18n` :
 ### Zéro abstraction cross-platform
 
 Un profil nomme le mécanisme natif de sa plateforme, jamais un wrapper conçu
-pour masquer une différence entre plateformes (l'anti-pattern `TranslationPort`,
-retiré du repo — [ADR-0036](../docs/adr/0036-convergence-transloco-angular.md)).
+pour masquer une différence entre plateformes. Le pont Angular borné qui
+résout les anciennes clés dynamiques du backoffice n'est ni cross-platform ni
+le défaut des nouvelles pages ; voir
+[ADR-0085](../docs/adr/0085-angular-i18n-native-localize.md).
 `tools/check-convention-profile.mjs` échoue si un `native` se revendique
 inter-plateforme ou si un `packages[]` nomme un `*-port` / `*-wrapper` /
 `*-abstraction`.
@@ -118,7 +120,8 @@ Chaque app avec un `project.json` **régulier doit** déclarer
 sous la racine du dépôt, en **traversant zéro lien symbolique** (le dossier
 d'app inclus) ; **échoue** si la plateforme Nx est indéterminable, si le
 manifeste manque, ou si une lib gouvernée est utilisée (empreinte détectée) sans
-être déclarée. `backoffice-angular` déclare `["tailwind", "transloco"]`.
+être déclarée. `backoffice-angular` déclare `["tailwind"]`. L'i18n native fait
+partie du baseline du shell Angular ; ce n'est pas une bibliothèque opt-in.
 
 Une recette n'est pas obligatoire pour chaque paquet officiel. Elle gouverne un
 **setup d'application répétable** : schématique, provider, thème, fichier de
@@ -133,7 +136,6 @@ lorsque deux applications exigent le même setup réel.
 | --- | --- |
 | [`angular/angular-material.setup.json`](./libraries/angular/angular-material.setup.json) | `official-schematic` |
 | [`angular/tailwind.setup.json`](./libraries/angular/tailwind.setup.json) | `reference-derived` |
-| [`angular/transloco.setup.json`](./libraries/angular/transloco.setup.json) | `official-schematic` |
 
 `add-library` applique désormais un adaptateur plateforme qualifié dans un
 worktree Git jetable. Le schematic, le sandbox, le navigateur et le harnais

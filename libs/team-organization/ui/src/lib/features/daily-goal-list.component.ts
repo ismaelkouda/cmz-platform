@@ -1,6 +1,9 @@
 import { Component, Signal, computed, inject } from '@angular/core';
 import { DailyGoalFacade } from '@cmz/team-organization-application';
-import { PermissionActionsService } from '@cmz/shared-application';
+import {
+    LocalizeTranslationService,
+    PermissionActionsService,
+} from '@cmz/shared-application';
 import {
     FilterComponent,
     FilterField,
@@ -12,7 +15,6 @@ import { DAILY_GOAL_TABLE } from '../constants/daily-goal-table.constant';
 import { DailyGoalVmProps } from '../adapters/daily-goal-vm-props.interface';
 import { DailyGoalPresenter } from '../adapters/daily-goal-vm.presenter';
 import { DailyGoalFilterStore } from '../stores/daily-goal-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/team-organization/daily-goal';
 const T = 'TEAM_ORGANIZATION.DAILY_GOAL';
@@ -67,7 +69,7 @@ export class DailyGoalListComponent {
     protected readonly facade = inject(DailyGoalFacade);
     private readonly store = inject(DailyGoalFilterStore);
     private readonly permissions = inject(PermissionActionsService);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;

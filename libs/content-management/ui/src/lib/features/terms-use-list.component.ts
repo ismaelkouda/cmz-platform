@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TermsUseFacade } from '@cmz/content-management-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -20,7 +21,6 @@ import { TERMS_USE_STATUS_LABEL } from '../constants/terms-use-status-label.cons
 import { TermsUseVmProps } from '../adapters/terms-use-vm-props.interface';
 import { TermsUsePresenter } from '../adapters/terms-use-vm.presenter';
 import { TermsUseFilterStore } from '../stores/terms-use-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/content-management/terms-use';
 const T = 'CONTENT_MANAGEMENT.TERMS_USE';
@@ -87,7 +87,7 @@ export class TermsUseListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

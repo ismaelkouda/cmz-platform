@@ -3,7 +3,7 @@ import { RequestsDetailsEntity } from '@cmz/requests-domain';
 import { REPORT_SOURCE_LABEL } from '@cmz/shared-ui';
 import { REQUESTS_DETAILS_STATUS_BADGE_CLASS } from '../constants/requests-details-status-badge.constant';
 import { REQUESTS_DETAILS_STATUS_LABEL } from '../constants/requests-details-status-label.constant';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 @Component({
     selector: 'cmz-requests-details-header',
@@ -62,7 +62,7 @@ export class RequestsDetailsHeaderComponent {
 
     readonly copyRequested = output<string>();
 
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     protected sourceLabel(item: RequestsDetailsEntity): string {
         return this.t(REPORT_SOURCE_LABEL[item.source]);

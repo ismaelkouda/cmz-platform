@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 import {
     CmzConfirmDialogService,
     CmzNotificationService,
@@ -96,7 +96,7 @@ describe('DialogOutletComponent', () => {
             imports: [DialogOutletComponent],
             providers: [
                 {
-                    provide: TranslocoService,
+                    provide: LocalizeTranslationService,
                     useValue: { translate: (key: string) => key },
                 },
             ],

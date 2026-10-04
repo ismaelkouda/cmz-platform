@@ -11,10 +11,10 @@
         "@angular/compiler": "catalog:",
         "@angular/core": "catalog:",
         "@angular/forms": "catalog:",
+        "@angular/localize": "catalog:",
         "@angular/material": "catalog:",
         "@angular/platform-browser": "catalog:",
         "@angular/router": "catalog:",
-        "@jsverse/transloco": "catalog:",
         "date-fns": "catalog:",
         "exceljs": "^4.4.0",
         "i18next": "catalog:",
@@ -130,7 +130,6 @@
         "@cmz/administrative-boundary-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
       },
     },
     "libs/administrative-infrastructure/application": {
@@ -179,7 +178,6 @@
         "@cmz/administrative-infrastructure-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
       },
     },
     "libs/authentication/application": {
@@ -224,8 +222,8 @@
         "@angular/forms": "catalog:",
         "@angular/router": "catalog:",
         "@cmz/authentication-application": "workspace:*",
+        "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
       },
     },
     "libs/communication/application": {
@@ -277,7 +275,6 @@
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
       },
     },
     "libs/content-management/application": {
@@ -327,7 +324,6 @@
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
       },
     },
     "libs/core": {
@@ -390,7 +386,6 @@
         "@cmz/coverage-areas-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
       },
     },
     "libs/dashboard/application": {
@@ -441,9 +436,9 @@
         "@angular/router": "catalog:",
         "@cmz/dashboard-application": "workspace:*",
         "@cmz/dashboard-domain": "workspace:*",
+        "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
       },
       "devDependencies": {
         "typescript": "catalog:tooling",
@@ -458,7 +453,6 @@
         "@cmz/finalization-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "rxjs": "catalog:",
       },
       "devDependencies": {
@@ -504,7 +498,6 @@
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "rxjs": "catalog:",
       },
     },
@@ -558,8 +551,8 @@
         "@angular/router": "catalog:",
         "@cmz/interactive-map-application": "workspace:*",
         "@cmz/interactive-map-domain": "workspace:*",
+        "@cmz/shared-application": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "ol": "catalog:",
       },
       "devDependencies": {
@@ -620,7 +613,6 @@
         "@cmz/processing-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "rxjs": "catalog:",
       },
       "devDependencies": {
@@ -666,7 +658,6 @@
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "rxjs": "catalog:",
       },
     },
@@ -678,7 +669,6 @@
         "@cmz/report-states-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "rxjs": "catalog:",
       },
       "devDependencies": {
@@ -728,7 +718,6 @@
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "rxjs": "catalog:",
       },
       "devDependencies": {
@@ -789,7 +778,6 @@
         "@cmz/requests-domain": "workspace:*",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "rxjs": "catalog:",
       },
       "devDependencies": {
@@ -837,7 +825,6 @@
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "rxjs": "catalog:",
       },
     },
@@ -888,7 +875,6 @@
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
         "@cmz/shared-ui": "workspace:*",
-        "@jsverse/transloco": "catalog:",
       },
     },
     "libs/shared/application": {
@@ -898,7 +884,6 @@
         "@angular/core": "catalog:",
         "@cmz/shared-constants": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "rxjs": "catalog:",
       },
       "devDependencies": {
@@ -952,7 +937,6 @@
         "@angular/router": "catalog:",
         "@cmz/shared-application": "workspace:*",
         "@cmz/shared-domain": "workspace:*",
-        "@jsverse/transloco": "catalog:",
         "date-fns": "catalog:",
         "rxjs": "catalog:",
       },
@@ -1007,7 +991,6 @@
         "@cmz/shared-ui": "workspace:*",
         "@cmz/team-organization-application": "workspace:*",
         "@cmz/team-organization-domain": "workspace:*",
-        "@jsverse/transloco": "catalog:",
       },
     },
     "libs/workflow-details/domain": {
@@ -1046,7 +1029,6 @@
     "@angular/platform-browser": "22.2.0",
     "@angular/router": "22.2.0",
     "@angular/service-worker": "22.2.0",
-    "@jsverse/transloco": "8.4.0",
     "@tailwindcss/postcss": "4.1.13",
     "date-fns": "4.4.0",
     "exceljs": "4.4.0",
@@ -1114,6 +1096,8 @@
     "@angular/forms": ["@angular/forms@22.2.0", "", { "dependencies": { "@standard-schema/spec": "^1.0.0", "tslib": "^2.3.0", "zod": "^4.0.10" }, "peerDependencies": { "@angular/common": "22.2.0", "@angular/core": "22.2.0", "@angular/platform-browser": "22.2.0", "rxjs": "^6.5.3 || ^7.4.0" } }, "sha512-Nm8o1uBk31EuQGzsK5EunNBVFzTN9MuTYLSrmg1SCPTcava4qK3AzSpl1+Put+cZTTnGtEBIy45AFaxHR2oryg=="],
 
     "@angular/language-service": ["@angular/language-service@22.2.0", "", {}, "sha512-J1uqzKP2/u5hWp8ShskUyuwp8J9EjbNnAjvmp4Klor9hwtlQ48e4wW8+Wd7ugrxbjDQ57dwHlOoeXuQLRCjonQ=="],
+
+    "@angular/localize": ["@angular/localize@22.2.0", "", { "dependencies": { "@babel/core": "8.0.1", "tinyglobby": "^0.2.12", "yargs": "^18.0.0" }, "peerDependencies": { "@angular/compiler": "22.2.0", "@angular/compiler-cli": "22.2.0" }, "bin": { "localize-extract": "tools/bundles/src/extract/cli.js", "localize-migrate": "tools/bundles/src/migrate/cli.js", "localize-translate": "tools/bundles/src/translate/cli.js" } }, "sha512-RfaF5tAKWyQwGzu0P5bJUavB8QWrWdM/xU5gDXydIFopBk4WERaMYh5E5fGm39h09dod2vmFH3JND1Ht0Vgy6w=="],
 
     "@angular/material": ["@angular/material@22.2.1", "", { "dependencies": { "tslib": "^2.3.0" }, "peerDependencies": { "@angular/cdk": "22.2.1", "@angular/common": "^22.0.0 || ^23.0.0", "@angular/core": "^22.0.0 || ^23.0.0", "@angular/forms": "^22.0.0 || ^23.0.0", "@angular/platform-browser": "^22.0.0 || ^23.0.0", "rxjs": "^6.5.3 || ^7.4.0" } }, "sha512-qw+/aJBV4lqqoJgv1VBWbMBVnE7431SX0Mew1j7PO+s1UcTushbG7CIAEo1hwmRq3kyo4Qqch8+uzFq4R631HQ=="],
 
@@ -1678,12 +1662,6 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.6.0", "", {}, "sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
-
-    "@jsverse/transloco": ["@jsverse/transloco@8.4.0", "", { "dependencies": { "@jsverse/transloco-utils": "^8.4.0", "@jsverse/utils": "1.0.0-beta.5", "tslib": "^2.2.0" }, "peerDependencies": { "@angular/core": ">=16.0.0", "rxjs": ">=6.0.0" } }, "sha512-dGeD2gkYqnSgbG/j6ILXCafgnrGbwcfgpL48m42DoemXutkuN2k/TFskaU27yNM9BeeaNX7zqQtFGdKmz/2wXw=="],
-
-    "@jsverse/transloco-utils": ["@jsverse/transloco-utils@8.4.0", "", { "dependencies": { "cosmiconfig": "^8.1.3", "tslib": "^2.3.0" } }, "sha512-0gJIpjX15a1UmBmwxHI3fXDu0VElU4FaunbYv6O13DOkhdSY8eV6Whdljokv5dJqXSLKdMxI624upkN13enKJg=="],
-
-    "@jsverse/utils": ["@jsverse/utils@1.0.0-beta.5", "", {}, "sha512-z7IdlV6BdSeF3Veii8Yyk64KuyTjNIQnFaW5PAhmDx0wN29lB2BFp8WO6+tJPLPjtlz2yKeNrjkp1XqnMPaeHA=="],
 
     "@keyv/bigmap": ["@keyv/bigmap@1.3.1", "", { "dependencies": { "hashery": "^1.4.0", "hookified": "^1.15.0" }, "peerDependencies": { "keyv": "^5.6.0" } }, "sha512-WbzE9sdmQtKy8vrNPa9BRnwZh5UF4s1KTmSK0KUVLo3eff5BlQNNWDnFOouNpKfPKDnms9xynJjsMYjMaT/aFQ=="],
 
@@ -3463,6 +3441,8 @@
 
     "@angular/compiler-cli/yargs": ["yargs@18.0.0", "", { "dependencies": { "cliui": "^9.0.1", "escalade": "^3.1.1", "get-caller-file": "^2.0.5", "string-width": "^7.2.0", "y18n": "^5.0.5", "yargs-parser": "^22.0.0" } }, "sha512-4UEqdc2RYGHZc7Doyqkrqiln3p9X2DZVxaGbwhn2pi7MrRagKaOcIKe8L3OxYcbhXLgLFUS3zAYuQjKBQgmuNg=="],
 
+    "@angular/localize/@babel/core": ["@babel/core@8.0.1", "", { "dependencies": { "@babel/code-frame": "^8.0.0", "@babel/generator": "^8.0.0", "@babel/helper-compilation-targets": "^8.0.0", "@babel/helpers": "^8.0.0", "@babel/parser": "^8.0.0", "@babel/template": "^8.0.0", "@babel/traverse": "^8.0.0", "@babel/types": "^8.0.0", "@types/gensync": "^1.0.5", "convert-source-map": "^2.0.0", "empathic": "^2.0.1", "gensync": "^1.0.0-beta.2", "import-meta-resolve": "^4.2.0", "json5": "^2.2.3", "obug": "^2.1.1", "semver": "^7.7.3" } }, "sha512-5FgxM4dLQpMJHSiVATk8foW263dVHQHBVpXYiimNECVWG01f4nFyEbQixeT6Mwvg7TayREJ2gpKl3o2RoMdnqw=="],
+
     "@babel/core/@babel/code-frame": ["@babel/code-frame@8.0.6", "", { "dependencies": { "@babel/helper-validator-identifier": "^8.0.6", "js-tokens": "^10.0.0" } }, "sha512-uMHhvmDmwFiLuiozaoRYTZHqMFuu3fem/X9JY78lohAuLoh8LSGGC8JqUzo2cVuBsBxkjMZNk56CE7ock8Xxkw=="],
 
     "@babel/core/@babel/parser": ["@babel/parser@8.0.6", "", { "dependencies": { "@babel/types": "^8.0.6" }, "bin": "./bin/babel-parser.js" }, "sha512-LpGDIYJAzc3Y3PT9x+FxBrGYu2PlWxLmyN7SwPTzaX0LSwEmFJBsRnPBqmaXF2r1v+Zhz6lNiEJ+7yKtM5+Ugg=="],
@@ -3748,8 +3728,6 @@
     "@jridgewell/gen-mapping/@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
 
     "@jridgewell/trace-mapping/@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
-
-    "@jsverse/transloco-utils/cosmiconfig": ["cosmiconfig@8.3.6", "", { "dependencies": { "import-fresh": "^3.3.0", "js-yaml": "^4.1.0", "parse-json": "^5.2.0", "path-type": "^4.0.0" }, "peerDependencies": { "typescript": ">=4.9.5" }, "optionalPeers": ["typescript"] }, "sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA=="],
 
     "@nx/angular/magic-string": ["magic-string@0.30.21", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.5" } }, "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ=="],
 
@@ -4106,6 +4084,12 @@
     "@angular/compiler-cli/yargs/string-width": ["string-width@7.2.0", "", { "dependencies": { "emoji-regex": "^10.3.0", "get-east-asian-width": "^1.0.0", "strip-ansi": "^7.1.0" } }, "sha512-tsaTIkKW9b4N+AEj+SVA+WhJzV7/zMhcSu78mLKWSk7cXMOSHsBKFWUs0fWwq8QyK3MgJBQRX6Gbi4kYbdvGkQ=="],
 
     "@angular/compiler-cli/yargs/yargs-parser": ["yargs-parser@22.0.0", "", {}, "sha512-rwu/ClNdSMpkSrUb+d6BRsSkLUq1fmfsY6TOpYzTwvwkg1/NRG85KBy3kq++A8LKQwX6lsu+aWad+2khvuXrqw=="],
+
+    "@angular/localize/@babel/core/@babel/code-frame": ["@babel/code-frame@8.0.6", "", { "dependencies": { "@babel/helper-validator-identifier": "^8.0.6", "js-tokens": "^10.0.0" } }, "sha512-uMHhvmDmwFiLuiozaoRYTZHqMFuu3fem/X9JY78lohAuLoh8LSGGC8JqUzo2cVuBsBxkjMZNk56CE7ock8Xxkw=="],
+
+    "@angular/localize/@babel/core/@babel/parser": ["@babel/parser@8.0.6", "", { "dependencies": { "@babel/types": "^8.0.6" }, "bin": "./bin/babel-parser.js" }, "sha512-LpGDIYJAzc3Y3PT9x+FxBrGYu2PlWxLmyN7SwPTzaX0LSwEmFJBsRnPBqmaXF2r1v+Zhz6lNiEJ+7yKtM5+Ugg=="],
+
+    "@angular/localize/@babel/core/convert-source-map": ["convert-source-map@2.0.0", "", {}, "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="],
 
     "@babel/core/@babel/code-frame/@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@8.0.6", "", {}, "sha512-HYx0YmuchRxRSpnjvcNffnPS8DCauKNmnumIuHG3jnQAVewRA7kfJGwF13ayEpSZs7s4R/oBH4eppuXcAQd5JQ=="],
 
@@ -5850,6 +5834,10 @@
     "@angular/compiler-cli/yargs/string-width/emoji-regex": ["emoji-regex@10.6.0", "", {}, "sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A=="],
 
     "@angular/compiler-cli/yargs/string-width/strip-ansi": ["strip-ansi@7.2.0", "", { "dependencies": { "ansi-regex": "^6.2.2" } }, "sha512-yDPMNjp4WyfYBkHnjIRLfca1i6KMyGCtsVgoKe/z1+6vukgaENdgGBZt+ZmKPc4gavvEZ5OgHfHdrazhgNyG7w=="],
+
+    "@angular/localize/@babel/core/@babel/code-frame/@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@8.0.6", "", {}, "sha512-HYx0YmuchRxRSpnjvcNffnPS8DCauKNmnumIuHG3jnQAVewRA7kfJGwF13ayEpSZs7s4R/oBH4eppuXcAQd5JQ=="],
+
+    "@angular/localize/@babel/core/@babel/code-frame/js-tokens": ["js-tokens@10.0.0", "", {}, "sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q=="],
 
     "@babel/helper-create-class-features-plugin/@babel/core/@babel/helper-compilation-targets/lru-cache": ["lru-cache@5.1.1", "", { "dependencies": { "yallist": "^3.0.2" } }, "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w=="],
 

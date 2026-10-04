@@ -146,36 +146,6 @@ test('Tailwind dérive les fichiers relus et câble exactement l’app cible', (
     assert.deepEqual(manifest(root).libraries, ['tailwind']);
 });
 
-test('Transloco produit un câblage standalone explicite et déterministe', (t) => {
-    const root = fixture(t);
-    applyQualifiedAdapter({
-        workspace: root,
-        app: 'demo',
-        platform: 'angular',
-        library: 'transloco',
-        track: { packages: { '@jsverse/transloco': '8.4.0' } },
-    });
-    const config = readFileSync(
-        join(root, 'apps/demo/src/app/app.config.ts'),
-        'utf8'
-    );
-    assert.match(config, /provideHttpClient\(\)/);
-    assert.match(config, /provideTransloco\(/);
-    assert.match(config, /loader: TranslocoHttpLoader/);
-    assert.match(
-        readFileSync(
-            join(root, 'apps/demo/src/app/transloco-loader.ts'),
-            'utf8'
-        ),
-        /implements TranslocoLoader/
-    );
-    assert.equal(
-        readFileSync(join(root, 'apps/demo/public/i18n/en.json'), 'utf8'),
-        '{}\n'
-    );
-    assert.deepEqual(manifest(root).libraries, ['transloco']);
-});
-
 test('les conflits et la dérive d’une entrée qualifiée échouent fermés', (t) => {
     const root = fixture(t, { libraries: ['tailwind'] });
     assert.throws(

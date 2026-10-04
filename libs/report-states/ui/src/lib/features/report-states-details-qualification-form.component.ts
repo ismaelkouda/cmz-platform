@@ -12,7 +12,7 @@ import { REPORT_STATES_DETAILS_APPROVAL_TYPES } from '../constants/report-states
 import { REPORT_STATES_DETAILS_CALLBACK_TYPES } from '../constants/report-states-details-callback-type.constant';
 import { REPORT_STATES_DETAILS_REJECT_MOTIFS } from '../constants/report-states-details-reject-motif.constant';
 import { ReportStatesDetailsQualificationFormStore } from '../stores/report-states-details-qualification-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const Q = 'REPORT_STATES.DETAILS.QUALIFICATION';
 const E = 'REPORT_STATES.DETAILS.EDIT';
@@ -355,7 +355,7 @@ export class ReportStatesDetailsQualificationFormComponent {
     readonly submitted = output<ReportStatesDetailsQualificationContract>();
     readonly cancelled = output<void>();
 
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     constructor() {
         effect(() => {

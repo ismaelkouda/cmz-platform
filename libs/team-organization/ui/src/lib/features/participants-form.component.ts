@@ -9,7 +9,7 @@ import {
 import { Role } from '@cmz/shared-domain';
 import { FieldComponent, FormMode, ROLE_OPTIONS } from '@cmz/shared-ui';
 import { ParticipantsFormStore } from '../stores/participants-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'TEAM_ORGANIZATION.PARTICIPANTS';
 
@@ -148,7 +148,7 @@ export class ParticipantsFormComponent {
     protected readonly store = inject(ParticipantsFormStore);
     private readonly facade = inject(ParticipantsFacade);
     private readonly teamsSelectFacade = inject(TeamsSelectFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

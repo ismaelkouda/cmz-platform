@@ -2,6 +2,7 @@ import { inject, Service, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     ResourceFacade,
     NOTIFICATION_PORT,
@@ -22,7 +23,6 @@ import {
 import { AllFinalizationFacade } from './all-finalization.facade';
 import { QueuesFinalizationFacade } from './queues-finalization.facade';
 import { TasksFinalizationFacade } from './tasks-finalization.facade';
-import { TranslocoService } from '@jsverse/transloco';
 
 export interface FinalizationDetailsLoadParams {
     filter: FinalizationDetailsFilterContract;
@@ -38,7 +38,7 @@ export class FinalizationDetailsFacade extends ResourceFacade<
     private readonly useCase = inject(FinalizationDetailsUseCase);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly queuesFacade = inject(QueuesFinalizationFacade);
     private readonly tasksFacade = inject(TasksFinalizationFacade);
     private readonly allFacade = inject(AllFinalizationFacade);

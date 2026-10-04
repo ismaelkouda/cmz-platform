@@ -2,6 +2,7 @@ import { inject, Service, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     ResourceFacade,
     NOTIFICATION_PORT,
@@ -22,7 +23,6 @@ import {
 import { ApproveReportStatesFacade } from './approve-report-states.facade';
 import { EvaluateReportStatesFacade } from './evaluate-report-states.facade';
 import { RejectReportStatesFacade } from './reject-report-states.facade';
-import { TranslocoService } from '@jsverse/transloco';
 
 export interface ReportStatesDetailsLoadParams {
     filter: ReportStatesDetailsFilterContract;
@@ -39,7 +39,7 @@ export class ReportStatesDetailsFacade extends ResourceFacade<
     private readonly useCase = inject(ReportStatesDetailsUseCase);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly approveFacade = inject(ApproveReportStatesFacade);
     private readonly evaluateFacade = inject(EvaluateReportStatesFacade);
     private readonly rejectFacade = inject(RejectReportStatesFacade);

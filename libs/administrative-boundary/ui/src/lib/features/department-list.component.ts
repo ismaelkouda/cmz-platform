@@ -5,6 +5,7 @@ import {
     RegionSelectFacade,
 } from '@cmz/administrative-boundary-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -21,7 +22,6 @@ import { DEPARTMENT_TABLE } from '../constants/department-table.constant';
 import { DepartmentVmProps } from '../adapters/department-vm-props.interface';
 import { DepartmentPresenter } from '../adapters/department-vm.presenter';
 import { DepartmentFilterStore } from '../stores/department-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/territorial-structures/departments';
 const T = 'ADMINISTRATIVE_BOUNDARY.DEPARTMENT';
@@ -89,7 +89,7 @@ export class DepartmentListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

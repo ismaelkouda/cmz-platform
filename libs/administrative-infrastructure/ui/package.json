@@ -9,7 +9,6 @@
     "@cmz/shared-application": "workspace:*",
     "@angular/core": "catalog:",
     "@angular/router": "catalog:",
-    "@angular/forms": "catalog:",
-    "@jsverse/transloco": "catalog:"
+    "@angular/forms": "catalog:"
   }
 }

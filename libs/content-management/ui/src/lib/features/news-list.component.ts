@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NewsFacade } from '@cmz/content-management-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -20,7 +21,6 @@ import { NEWS_STATUS_LABEL } from '../constants/news-status-label.constant';
 import { NewsVmProps } from '../adapters/news-vm-props.interface';
 import { NewsPresenter } from '../adapters/news-vm.presenter';
 import { NewsFilterStore } from '../stores/news-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/content-management/news';
 const T = 'CONTENT_MANAGEMENT.NEWS';
@@ -87,7 +87,7 @@ export class NewsListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

@@ -69,7 +69,7 @@ envisagées, le choix retenu et ses conséquences.
 | [0033](./0033-propriete-artefacts-regeneration-non-destructive.md) | Propriété des artefacts et régénération non destructive  | Accepted |
 | [0034](./0034-plateforme-multi-stack-renderers-separes-sorties-mono-stack.md) | Plateforme multi-stack, renderers séparés, sorties mono-stack | Accepted |
 | [0035](./0035-contrat-durabilite-publication-generation.md) | Contrat de durabilité de la publication générée          | Accepted |
-| [0036](./0036-convergence-transloco-angular.md)           | Convergence de tout l'Angular du repo sur Transloco      | Accepted |
+| [0036](./0036-convergence-transloco-angular.md)           | Convergence de tout l'Angular du repo sur Transloco      | Superseded |
 | [0037](./0037-plateforme-intention-utilisateur-vers-application.md) | Génération assistée par langage naturel pour un utilisateur du dépôt | Proposed |
 | [0038](./0038-nature-produit-public-multi-locataire.md)   | Nature de produit : exposition publique et multi-location | Proposed |
 | [0039](./0039-frontiere-contractuelle-conception-realisation-llm.md) | Frontière contractuelle entre conception et réalisation par LLM | Accepted |
@@ -114,4 +114,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0078](./0078-vues-de-donnees-par-capacites-optionnelles.md) | Vues de données par capacités optionnelles               | Accepted |
 | [0079](./0079-jev-evaluateur-probabiliste-replay-shadow.md) | JEV comme évaluateur probabiliste en replay/shadow       | Accepted |
 | [0080](./0080-prouver-la-valeur-avant-nouvelle-automatisation.md) | Prouver la valeur avant toute nouvelle automatisation    | Accepted |
+| [0085](./0085-angular-i18n-native-localize.md)            | Internationalisation Angular native avec `@angular/localize` | Accepted |
 <!-- END:GENERATED:adr-index -->

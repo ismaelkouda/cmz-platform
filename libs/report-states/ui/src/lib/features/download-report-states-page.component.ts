@@ -3,6 +3,7 @@ import { Component, Signal, computed, inject, signal } from '@angular/core';
 import { DownloadReportStatesFacade } from '@cmz/report-states-application';
 import { DownloadReportStatesStatus } from '@cmz/report-states-domain';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -19,7 +20,6 @@ import { DOWNLOAD_REPORT_STATES_FILTER_KEYS } from '../constants/download-report
 import { REPORT_STATES_DOWNLOAD_ROUTE } from '../constants/report-states-paths.constant';
 import { DOWNLOAD_REPORT_STATES_TABLE } from '../constants/download-report-states-table.constant';
 import { DownloadReportStatesFilterStore } from '../stores/download-report-states-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 import {
     exportReportStatesList,
     reportStatesListExportDisabled,
@@ -109,7 +109,7 @@ export class DownloadReportStatesPageComponent {
     private readonly store = inject(DownloadReportStatesFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;

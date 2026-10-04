@@ -6,7 +6,7 @@ import {
     TELECOM_OPERATOR_LABEL,
 } from '@cmz/shared-ui';
 import { REQUESTS_DETAILS_STATUS_LABEL } from '../constants/requests-details-status-label.constant';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'REQUESTS.DETAILS';
 
@@ -72,7 +72,7 @@ export class RequestsDetailsInfoPanelComponent {
 
     readonly details = input.required<RequestsDetailsEntity>();
 
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     protected statusLabel(): string {
         const status = this.details().status;

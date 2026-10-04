@@ -1,5 +1,10 @@
 # Plan — installation réelle + preuves runtime des bibliothèques
 
+> **Mise à jour 2026-10-04** : la piste Transloco décrite dans l'historique a
+> été retirée. `@angular/localize` est un baseline du shell Angular et non une
+> bibliothèque `add-library`
+> ([ADR-0085](../adr/0085-angular-i18n-native-localize.md)).
+
 - **Statut :** Livré et qualifié. Depuis SIMPL-4, ce document décrit la voie
   rare de qualification : ses neuf étapes, les oracles runtime, le confinement
   macOS **et** conteneur, l'intégration `create-app`, la gate d'intégration en

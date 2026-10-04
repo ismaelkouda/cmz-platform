@@ -67,14 +67,17 @@
       "notes": "Reactive Forms toléré uniquement si Signal Forms ne couvre pas le cas."
     },
     "i18n": {
-      "native": "Transloco : `TranslocoDirective` (`*transloco=\"let t\"`) ou pipe `transloco` dans le template ; `inject(TranslocoService)` pour une traduction impérative ; `provideTransloco()` au bootstrap.",
-      "packages": ["@jsverse/transloco"],
+      "native": "Internationalisation Angular native : attributs `i18n`, `i18n-*` et métadonnées stables sur les textes statiques des templates ; `$localize` pour les messages TypeScript. Déclarer `sourceLocale`, charger `@angular/localize/init` et produire une variante compilée par locale. Le pont `LocalizeTranslationService` est borné aux clés historiques réellement dynamiques et reçoit exclusivement un catalogue `$localize` généré statiquement.",
+      "packages": ["@angular/localize"],
       "forbid": [
         "@ngx-translate/core",
-        "$localize / @angular/localize pour des chaînes dynamiques d'application",
-        "abstraction maison TranslationPort / I18nPort / provideI18n() (retirées du repo — ADR-0036)"
+        "@jsverse/transloco",
+        "dictionnaire de traduction chargé par HTTP au runtime comme défaut Angular",
+        "clé dynamique sans inventaire compilé et sans identifiant de message stable",
+        "abstraction cross-platform TranslationPort / I18nPort / provideI18n()"
       ],
-      "guidance": "ADR-0036"
+      "guidance": "https://angular.dev/guide/i18n",
+      "notes": "Le pont historique du backoffice n'est ni une API portable ni le défaut du générateur. Une nouvelle page emploie directement les primitives Angular. React conserve son propre mécanisme natif. Voir ADR-0085."
     },
     "styling": {
       "native": "Hiérarchie officielle (ADR-0077) : HTML sémantique pour les contrôles simples ; Angular Material standalone pour un composant visuel M3 dans une app qui l'a adopté ; Angular Aria pour un motif WAI-ARIA headless au visuel propre ; CDK pour une primitive bas niveau manquante. Mise en page, espacement, échelle typographique et one-offs : Tailwind ou styles de composant scopés. `NgOptimizedImage` pour les images statiques.",

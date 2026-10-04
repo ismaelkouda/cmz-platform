@@ -11,7 +11,7 @@ import {
     TYPE_MEDIA_OPTIONS,
 } from '@cmz/shared-ui';
 import { SlideFormStore } from '../stores/slide-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'CONTENT_MANAGEMENT.SLIDE';
 
@@ -236,7 +236,7 @@ const T = 'CONTENT_MANAGEMENT.SLIDE';
 export class SlideFormComponent {
     protected readonly store = inject(SlideFormStore);
     private readonly facade = inject(SlideFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

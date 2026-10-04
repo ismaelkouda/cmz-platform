@@ -8,16 +8,15 @@
  * gardé dans `tools/` pour traçabilité, comme
  * `codemod-strip-redundant-component-flags.mjs` (chantier J).
  *
- * ARCHIVÉ (2026-08-28) — NE PLUS RELANCER TEL QUEL : la migration Transloco
- * (ADR-0030/0036) a supprimé `apps/backoffice-angular/src/app/i18n/
- * fr.translation.ts`, la cible d'écriture de ce script — le fichier vit
- * désormais en JSON statique (`apps/backoffice-angular/public/i18n/fr.json`,
- * voir tools/load-fr-i18n.mjs). Ce script écrirait vers un chemin qui
- * n'existe plus et `loadFrModule()` a changé de signature (objet direct,
- * plus `{ FR, tmpDir }`) — cassé par construction si exécuté aujourd'hui.
- * Conservé uniquement pour traçabilité de la méthode K-4 (règles de
- * traduction par motif de clé) ; à réécrire entièrement pour cibler le JSON
- * si un futur besoin similaire se présente, pas à corriger mécaniquement.
+ * ARCHIVÉ — NE PLUS RELANCER TEL QUEL : la cible TypeScript historique a
+ * d'abord été remplacée par Transloco, puis Transloco a lui-même été retiré
+ * par ADR-0085. La source d'édition actuelle est
+ * `apps/backoffice-angular/src/locale/messages.fr.source.json` et son
+ * catalogue `$localize` est généré par
+ * `tools/generate-angular-localize-catalog.mjs`. Ce script écrit encore vers
+ * un ancien chemin et son protocole n'est donc plus valide. Conservé
+ * uniquement pour la traçabilité de la méthode K-4 ; ne pas l'adapter sans
+ * redéfinir puis tester explicitement son contrat sur la source actuelle.
  *
  * Méthode : charge `FR` réellement (comme le fait check-i18n.mjs — API
  * TypeScript, pas d'eval sur du texte non validé), construit un objet

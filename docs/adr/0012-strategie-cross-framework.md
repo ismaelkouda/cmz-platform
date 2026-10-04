@@ -3,6 +3,11 @@
 - **Statut :** Accepted
 - **Date :** 2026-07-22
 
+> **Révision i18n (2026-10-04)** : la ligne i18n et le `TranslationPort`
+> ci-dessous sont historiques. Angular utilise désormais `@angular/localize`
+> sans port cross-platform ([ADR-0085](./0085-angular-i18n-native-localize.md)).
+> Les autres décisions cross-framework restent applicables.
+
 ## Contexte
 
 Le dépôt hébergera Angular **puis** React (entre autres). Pour ne pas se

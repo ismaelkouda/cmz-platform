@@ -5,6 +5,7 @@ import {
     InfrastructureTypeSelectFacade,
 } from '@cmz/administrative-infrastructure-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -21,7 +22,6 @@ import { INFRASTRUCTURE_TABLE } from '../constants/infrastructure-table.constant
 import { InfrastructureVmProps } from '../adapters/infrastructure-vm-props.interface';
 import { InfrastructurePresenter } from '../adapters/infrastructure-vm.presenter';
 import { InfrastructureFilterStore } from '../stores/infrastructure-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/equipments/list';
 const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE';
@@ -94,7 +94,7 @@ export class InfrastructureListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

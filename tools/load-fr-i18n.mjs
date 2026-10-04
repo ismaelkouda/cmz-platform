@@ -2,22 +2,10 @@
  * Charge le dictionnaire FR pour les tools (check-i18n, fill-missing, …) sans
  * Angular ni bundler.
  *
- * Historique (avant ADR-0030/0036, convergence Transloco) : la source de
- * vérité était `apps/backoffice-angular/src/app/i18n/fr.translation.ts` (+
- * packs `fr/fr-pack-*.ts`), un module TypeScript transpilé à la volée (API
- * `typescript`) puis importé dynamiquement. La migration vers Transloco a
- * remplacé ce module par un fichier JSON statique servi en HTTP
- * (`TranslocoHttpLoader` → `i18n/${lang}.json`), cohérent avec le pattern
- * documenté dans docs/architecture/i18n-generator-scope.md pour toute app de
- * ce repo. `fr.translation.ts` et les packs associés ont été supprimés avec
- * le reste de `TranslationPort` (ADR-0036) — cette fonction lisait encore
- * l'ancien chemin, cassant check:i18n (ENOENT) sans que personne ne l'ait
- * remarqué avant un run CI complet.
- *
- * Correction : lire directement le JSON, pas de transpilation ni d'import
- * dynamique nécessaires — le format de clé (chemins pointés MAJUSCULES,
- * ex. `COMMON.CREATE`) est resté identique, donc `flattenFrKeys` (le
- * contrat consommé par check-i18n.mjs) n'a besoin d'aucun changement.
+ * Le JSON reste la source d'édition contrôlée des identifiants dynamiques
+ * hérités. Il n'est plus copié dans `public/` ni chargé par HTTP :
+ * `generate-angular-localize-catalog.mjs` produit des tagged templates
+ * `$localize` statiques, extrayables et remplaçables par Angular au build.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -25,8 +13,8 @@ import { fileURLToPath } from 'node:url';
 
 const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = join(TOOLS_DIR, '..');
-export const I18N_DIR = join(REPO_ROOT, 'apps/backoffice-angular/public/i18n');
-export const FR_TRANSLATION_ENTRY = join(I18N_DIR, 'fr.json');
+export const I18N_DIR = join(REPO_ROOT, 'apps/backoffice-angular/src/locale');
+export const FR_TRANSLATION_ENTRY = join(I18N_DIR, 'messages.fr.source.json');
 
 /**
  * @returns {Record<string, unknown>}

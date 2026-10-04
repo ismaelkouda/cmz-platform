@@ -16,7 +16,7 @@ import {
     CONFIRM_DIALOG_PORT,
 } from '@cmz/shared-ui';
 import { FinalizationDetailsEntity } from '@cmz/finalization-domain';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 @Component({
     selector: 'cmz-finalization-details-dialog',
@@ -122,7 +122,7 @@ export class FinalizationDetailsDialogComponent {
     readonly actionCompleted = output<void>();
 
     protected readonly facade = inject(FinalizationDetailsFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
 
     protected comment = '';

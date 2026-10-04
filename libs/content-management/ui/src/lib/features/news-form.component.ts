@@ -9,7 +9,7 @@ import {
 } from '@cmz/content-management-application';
 import { FieldComponent, FormMode, TYPE_MEDIA_OPTIONS } from '@cmz/shared-ui';
 import { NewsFormStore } from '../stores/news-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'CONTENT_MANAGEMENT.NEWS';
 
@@ -242,7 +242,7 @@ export class NewsFormComponent {
     protected readonly store = inject(NewsFormStore);
     private readonly facade = inject(NewsFacade);
     private readonly categoriesFacade = inject(NewsCategoriesSelectFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

@@ -1,233 +1,128 @@
-# Internationalisation (i18n) et `tools/generator-platform/` — pourquoi les renderers ne changent pas
+# Internationalisation et générateur multi-stack
 
-> **Pour tout Agent IA / LLM lisant ce document sans contexte préalable de la
-> session qui l'a produit** : ce document explique une décision négative — ne
-> pas modifier `tools/generator-platform/` pour l'i18n — et où se trouve
-> réellement la responsabilité de l'internationalisation dans ce repo. Lis-le
-> avant de proposer un changement aux renderers pour "les rendre i18n-ready".
+> Référence courante pour un humain ou un LLM. La décision normative Angular est
+> [ADR-0085](../adr/0085-angular-i18n-native-localize.md). Les décisions
+> Transloco de l'ADR-0036 sont historiques et supersédées.
 
-> **Note du 2026-08-29** : les deux apps de référence citées tout au long de
-> ce document (`apps/newsletter-test` en Angular, `apps/newsletter` en React)
-> ont été intégralement retirées du repo — c'était un module de
-> démonstration/POC écrit à la main, pas une app métier destinée à durer. Les
-> constats techniques ci-dessous (audits, pièges rencontrés, corrections
-> appliquées) restent vrais historiquement ; ils ne sont simplement plus
-> vérifiables sur le repo dans son état actuel. La fixture
-> `newsletter-subscribe.definition.json` reste dans le repo comme cas de test
-> du générateur, indépendamment des apps supprimées.
+## Frontière de responsabilité
 
-## L'exigence de départ
+Les moteurs métier `action-request`, `list-query` et leurs compositions
+produisent des modèles, clients, commandes et validateurs. Ils n'inventent pas
+les titres, labels ou messages d'une interface. L'internationalisation du texte
+visible appartient au renderer de la stack et au code de présentation.
 
-Toute application générée dans ce repo doit prendre en charge le multilingue,
-avec les outils recommandés par la documentation officielle de chaque framework
-cible — pas de bibliothèque douteuse ou non maintenue (voir la note sur
-`fbt`/Meta ci-dessous). Cette exigence a d'abord été traitée comme si elle
-impliquait de faire évoluer `tools/generator-platform/` lui-même pour qu'il
-émette du code "i18n-ready" par défaut.
+Le générateur ne doit donc pas introduire une abstraction i18n neutre. Il doit
+émettre le mécanisme idiomatique de sa cible :
 
-## Ce que l'audit a montré
+- Angular : `@angular/localize`, attributs `i18n` / `i18n-*`, `$localize` ;
+- ReactJS : mécanisme React qualifié séparément lorsque le renderer React UI
+  sera construit ;
+- une future stack mobile : ressources natives de cette stack.
 
-Un audit direct des renderers des deux moteurs de génération (`action-request`
-et `workflow-action` — voir `tools/generator-platform/renderers/*.mjs`) montre
-qu'**aucun** d'entre eux n'émet de texte destiné à l'utilisateur final. Ils
-produisent exclusivement :
+Les stacks peuvent partager les identifiants métier et les scénarios de test,
+pas un service de traduction runtime.
 
-- des modèles TypeScript (`models.ts`) ;
-- un client HTTP (`action-request-client.ts`) ;
-- un service/hook de commandes (`action-request-commands.ts`,
-  `use-action-request-commands.ts`) ;
-- un validateur (`validation.ts`).
+## Baseline obligatoire d'une application Angular
 
-Aucun de ces fichiers ne contient de titre, de label, de placeholder ou de
-message destiné à être lu par un utilisateur — le seul texte qu'ils manipulent
-est un identifiant de champ (`email`) ou un code d'erreur HTTP, jamais un
-wording. Le vocabulaire visible (titres, labels, messages de succès/échec) est
-systématiquement écrit à la main dans le composant consommateur de l'app finale
-— exactement ce qui a été fait dans `apps/newsletter-test` (Angular) et
-`apps/newsletter` (React).
+Le renderer `angular-pwa-shell-renderer.mjs` doit produire :
 
-**Conséquence directe** : "rendre le générateur i18n-ready" n'a pas d'objet sur
-le code généré lui-même, puisqu'il n'y a rien à traduire dedans. La
-responsabilité de l'i18n revient entièrement à l'app consommatrice, au même
-endroit que le reste du câblage UI (voir
-[`scaffold-lib-wiring.md`](./scaffold-lib-wiring.md) pour la même logique
-appliquée au câblage lib → app).
+1. `project.json.i18n.sourceLocale = "fr"` ;
+2. `@angular/localize/init` dans les polyfills de build ;
+3. `@angular/localize` dans les types de compilation et de test ;
+4. des textes statiques annotés avec `i18n="sens@@identifiant.stable"` ;
+5. aucun loader de dictionnaire, aucun `public/i18n/*.json`, aucun provider de
+   bibliothèque tierce ;
+6. un manifeste `.cmz/libraries.json` qui ne déclare pas l'i18n : celle-ci est
+   une capacité native du shell, pas un opt-in.
 
-## Ce que ça change concrètement : le pattern de référence à suivre
+Pour un attribut visible ou accessible, employer `i18n-placeholder`,
+`i18n-title`, `i18n-aria-label`, etc. Un message construit en TypeScript utilise
+un tagged template `$localize` et un identifiant stable. Une concaténation de
+fragments traduits est interdite : le traducteur doit voir la phrase entière.
 
-Deux POC réels ont validé le pattern à reproduire pour toute future app de ce
-repo, dans le respect strict de la recommandation officielle de chaque framework
-:
+## Cas historique du backoffice
 
-- **Angular** : [Transloco](https://jsverse.gitbook.io/transloco) (schematic
-  officiel `nx g @jsverse/transloco:ng-add`), pas `@angular/localize`. Voir la
-  note ci-dessous sur pourquoi ce choix diverge délibérément du pattern
-  `i18next`/`TranslationPort` déjà en place dans `backoffice-angular`
-  (ADR-0024).
-- **React** : [react-i18next](https://react.i18next.com/) + `i18next` +
-  `i18next-http-backend` — c'est le standard de facto le plus largement adopté
-  de l'écosystème React ; react.dev ne recommande officiellement aucune
-  bibliothèque i18n, et l'outil historique de Meta (`fbt`) a été archivé en
-  novembre 2024 (non maintenu depuis).
+Le backoffice adresse encore 1 869 messages français par clés dynamiques. Ces
+clés alimentent des erreurs, routes et composants produits avant la décision
+native. Elles ne peuvent pas être converties automatiquement en attributs de
+template sans modifier leur contrat.
 
-Concrètement, sur les deux stacks :
+La solution transitoire est volontairement bornée :
 
-1. Les traductions vivent dans des fichiers JSON statiques servis en dehors du
-   bundle JS (`public/i18n/{lang}.json`), chargés via HTTP au runtime — jamais
-   embarquées en dur dans le code généré ou écrit à la main.
-2. Le composant applicatif consomme les clés via le mécanisme idiomatique du
-   framework (`*transloco="let t"` côté Angular, `useTranslation()` côté React)
-   — jamais de texte en dur dans le JSX/template.
-3. Le changement de langue est possible en runtime, sans rechargement de page,
-   sur les deux stacks.
+```text
+messages.fr.source.json
+        │ génération déterministe
+        ▼
+messages.fr.generated.ts           (index agrégateur borné)
+messages.fr.pack-NNN.generated.ts  ($localize`:@@KEY:message`)
+        │ provider Angular
+        ▼
+LocalizeTranslationService.translate(key, params)
+```
 
-## Piège réel rencontré en testant : Vite copie `public/`, Angular non
+Le JSON :
 
-Angular exige une entrée explicite dans `project.json`
-`targets.build.options.assets` pour qu'un dossier soit servi tel quel —
-`apps/newsletter-test` ne déclarait que `public/` (pas `src/assets/`, la
-convention historique Angular CLI que suppose le schematic
-`@jsverse/transloco:ng-add` par défaut). Vite, à l'inverse, copie `public/` vers
-la racine du build nativement, sans configuration. Résultat concret : le
-schematic Transloco a généré un `TranslocoHttpLoader` pointant vers un chemin
-(`src/assets/i18n/`) qui n'existait pas dans le build final — corrigé en
-déplaçant les fichiers vers `public/i18n/` et en adaptant le loader. **Retenir
-de cet épisode** : ne jamais supposer qu'un schematic ou générateur officiel
-connaît la structure exacte d'une app Nx particulière — vérifier où le build
-sert réellement les assets avant de faire confiance au chemin généré par défaut.
+- vit dans `src/locale`, pas dans `public` ;
+- n'est jamais téléchargé par le navigateur ;
+- contient uniquement des feuilles `string` ;
+- génère une entrée `$localize` statique par clé ;
+- est contrôlé par `check:i18n` et un test de bijection source/généré.
 
-## Piège réel rencontré : le schematic Transloco génère `@Injectable`, pas `@Service()`
+Le service retourne la clé absente au lieu de masquer une erreur et préserve un
+placeholder `{{name}}` si son paramètre manque. Il n'offre aucun changement de
+langue runtime et ne doit pas être copié dans une application nouvelle.
 
-Le schematic officiel `nx g @jsverse/transloco:ng-add` génère
-`transloco-loader.ts` avec `@Injectable({ providedIn: 'root' })` — l'idiome
-Angular pré-19, alors que ce repo a déjà tranché (voir le commit `b5d94dd`,
-incident OPS-25bis) que `@Service()` est l'idiome à utiliser partout, y compris
-pour du code produit par un outil tiers. **Ce n'est pas automatique** : corrigé
-manuellement une fois après génération, mais le schematic régénérera
-`@Injectable` à l'identique si quelqu'un le relance sur une future app. Vérifie
-systématiquement ce fichier après tout `nx g @jsverse/transloco:ng-add` — ce
-n'est pas un problème que ce repo peut corriger dans le schematic tiers
-lui-même, seulement un point de vigilance documenté ici.
+## Ajouter une nouvelle langue Angular
 
-## Convergence complète sur Transloco (ADR-0036, 2026-08-27)
+Ne pas ajouter un sélecteur ou un loader HTTP par réflexe. D'abord confirmer le
+besoin produit, les locales, le fallback, la traduction des données backend, les
+formats date/nombre/devise, les URL et la stratégie de déploiement.
 
-**Mise à jour** : la coexistence initialement décrite ci-dessous (deux
-mécanismes i18n Angular distincts) a été tranchée et close. Voir
-[ADR-0036](../adr/0036-convergence-transloco-angular.md) pour l'historique
-complet : `backoffice-angular` a migré ses 101 fichiers consommateurs de
-`TranslationPort`/i18next vers Transloco. `TranslationPort`,
-`TRANSLATION_PORT`, `I18nextTranslationService` et `provideI18n()` ont été
-**supprimés** du repo — pas dépréciés. Transloco est désormais l'unique
-mécanisme i18n pour tout Angular de ce repo, sur les deux apps
-(`newsletter-test` et `backoffice-angular`).
+Puis suivre le pipeline Angular officiel :
 
-Le paragraphe suivant décrit le contexte **historique** (avant la
-migration), conservé pour comprendre le raisonnement original derrière le
-choix initial de Transloco face au pattern déjà en place :
+1. annoter les sources et stabiliser les identifiants ;
+2. extraire les messages (`ng extract-i18n`) vers XLIFF ;
+3. faire traduire et valider le catalogue ;
+4. déclarer les locales et fichiers dans `project.json` ;
+5. construire et déployer une variante compilée par locale ;
+6. tester navigation, langue du document, pluralisation, formats, a11y et
+   absence de texte source inattendu.
 
-`backoffice-angular` utilisait un `TranslationPort` agnostique
-(`libs/shared/application/src/lib/ports/translation.port.ts`, supprimé) avec un
-adaptateur i18next (`I18nextTranslationService`, supprimé), motivé par
-l'ADR-0024 : garder un contrat de traduction portable entre Angular et un futur
-consommateur React, sans dépendre d'un mécanisme propre à Angular. Le choix de
-Transloco pour les apps de test (`newsletter-test`) avait d'abord divergé
-**délibérément** de ce pattern existant, sur la base de deux critères
-explicitement posés par l'utilisateur : facilité d'automatisation (schematic Nx
-officiel `nx g @jsverse/transloco:ng-add`) et minimisation de l'action
-humaine. Cette divergence, qui devait initialement rester ouverte à
-réévaluation, a ensuite été tranchée par l'utilisateur en faveur d'une
-convergence complète — voir ADR-0036 pour le détail de la migration et sa
-justification (le bénéfice de portabilité React de `TranslationPort` ne
-s'était jamais matérialisé en pratique).
+Une exigence explicite de changement de langue sans rechargement constituerait
+un nouveau problème produit. Elle exige une ADR et une comparaison mesurée ;
+elle ne réactive pas automatiquement Transloco.
 
-## Audit de conformité version-spécifique (Angular 22.0.7 / React 19.2.8)
+## ReactJS
 
-Après validation initiale des deux POC, un audit dédié a vérifié que
-l'implémentation respecte bien les recommandations officielles **pour les
-versions précises installées dans ce repo** (`@angular/core: 22.0.7`,
-`react`/`react-dom`: `19.2.8`) — pas seulement "ça compile et les tests
-passent". Deux écarts réels ont été trouvés et corrigés.
+React n'hérite ni de `$localize` ni du service Angular. Le moment venu, son
+choix doit être évalué sur le besoin réel (compilation ou runtime, SSR,
+Suspense, découpage des catalogues, fallback, extraction) et sur la version
+installée. La présence historique d'i18next dans le dépôt ne vaut pas décision
+automatique pour le futur renderer.
 
-### React : `Suspense` manquant autour de l'arbre applicatif
+## Gates et commandes
 
-La doc officielle react-i18next est explicite : `useTranslation()` a
-`useSuspense: true` par défaut, et sans `<Suspense>` englobant, un chargement
-asynchrone des traductions (notre cas : `i18next-http-backend` sur
-`public/i18n/{lng}.json`) provoque *"A component suspended while rendering,
-but no fallback UI was specified"*. `apps/newsletter/src/main.tsx` ne
-plaçait aucun `<Suspense>` autour de `<App />` — corrigé en enveloppant
-`<BrowserRouter><App /></BrowserRouter>` dans `<Suspense fallback={null}>`.
-`fallback={null}` plutôt qu'un spinner : formulaire minimal, chargement JSON
-quasi instantané en local, pas de valeur ajoutée à un état de chargement
-visible ici — à réévaluer si l'app grossit ou si le backend réel introduit de
-la latence réseau significative.
+- `bun run i18n:generate:angular` régénère le pont historique ;
+- `bun run check:i18n` prouve fraîcheur, bijection, clés et absence de runtime
+  Transloco/dictionnaire public ;
+- `bunx ngc -p <app>/tsconfig.app.json --noEmit` valide les templates ;
+- les builds de production valident la transformation `$localize` ;
+- l'E2E vérifie le rendu français et l'absence de requête `/i18n/fr.json`.
 
-### Angular : API Signals de Transloco (`activeLang`) sous-exploitée
+## Anti-patterns
 
-Transloco v8.4.0 (version installée, pas une nouveauté v9-alpha) expose une
-API Signals dédiée (`translateSignal`, `translateObjectSignal`,
-`activeLang` sur `TranslocoService`) — vérifiée sur la doc officielle
-`core-concepts/signals.md`. **Important** : la doc Transloco recommande
-toujours explicitement la directive structurelle (`*transloco="let t"`) pour
-le template ("the recommended approach as it is DRY and efficient... single
-subscription per template") — ce n'est donc PAS un remplacement de `t()`
-dans un template avec de nombreuses clés interpolées comme le nôtre.
-
-En revanche, `apps/newsletter-test/src/app/app.ts` appelait
-`transloco.getActiveLang()` (méthode impérative, ré-évaluée à chaque cycle de
-détection de changement) dans le template pour surligner le bouton de langue
-actif, alors que le composant utilise déjà `signal()` pour son propre état
-(`state`). Incohérent avec un composant par ailleurs Signals-first, sous un
-Angular 22 où les Signals sont l'idiome poussé par la doc officielle
-elle-même. Corrigé : `protected readonly activeLang = this.transloco.activeLang`
-(Signal natif), consommé dans le template via `activeLang() === 'fr'`.
-`t()` via la directive structurelle reste inchangé — conforme à la
-recommandation officielle actuelle, pas un oubli.
-
-### Méthode de vérification
-
-Chaque correction validée par un cycle complet réel (pas seulement une
-lecture de doc) : `nx run newsletter-test:build` (inclut `ngc
---strictTemplates`), `nx run newsletter-test:test`, `nx run newsletter:build`,
-`nx run newsletter:test`, `eslint --max-warnings=0` sur les fichiers
-modifiés — tous verts après correction.
-
-**Retenir pour toute future app suivant ce pattern** : vérifier
-systématiquement (1) qu'un `<Suspense>` englobe l'arbre React si
-`useTranslation()` est utilisé avec un backend HTTP asynchrone, et (2)
-préférer les Signals natifs de `TranslocoService` (`activeLang`, etc.) à
-leurs équivalents impératifs partout où Angular Signals est déjà la
-convention du composant — sans pour autant abandonner la directive
-structurelle recommandée pour la traduction de clés dans le template.
-
-## Ce que ce document ne couvre pas
-
-- Il ne documente pas comment câbler Transloco/react-i18next pas à pas (voir
-  directement les fichiers de `apps/newsletter-test/src/app/` et
-  `apps/newsletter/src/app/` comme référence vivante, dans le même esprit que
-  [`scaffold-tailwind-apps.md`](./scaffold-tailwind-apps.md) renvoie aux apps de
-  référence plutôt qu'à un template figé).
-- ~~Il ne tranche pas la question de la consolidation entre les deux mécanismes
-  i18n Angular coexistants~~ — tranché depuis par ADR-0036 (2026-08-27) :
-  convergence complète sur Transloco, voir la section « Convergence complète
-  sur Transloco » ci-dessus.
-- Il n'automatise pas l'installation de Transloco/react-i18next sur une future
-  app — contrairement à `tools/scaffold-tailwind.mjs` (Tailwind) et
-  `tools/scaffold-lib-wiring.mjs` (câblage lib→app), aucun script équivalent
-  n'existe pour l'i18n à la date de ce document. Décision explicite de ne pas
-  l'automatiser dans l'immédiat, faute d'un deuxième cas réel après
-  `newsletter-test`/`newsletter` pour valider le pattern avant de l'outiller
-  (même discipline que celle qui a précédé `scaffold-tailwind.mjs` : 2 cas réels
-  avant d'automatiser).
+- considérer un schematic tiers comme recommandation officielle Angular ;
+- charger par HTTP un catalogue mono-langue qui peut être compilé ;
+- créer une recette `add-library` pour une capacité native du shell ;
+- utiliser le pont de clés historiques comme API par défaut ;
+- créer un `TranslationPort` pour donner une fausse portabilité Angular/React ;
+- laisser une documentation historique sans marqueur « supersédé » ;
+- déclarer la migration terminée sans build ni preuve d'absence de réseau.
 
 ## Historique
 
-Écrit le 2026-08-27, après avoir validé Transloco (Angular) et react-i18next
-(React) sur les deux apps de test `newsletter-test`/`newsletter` — d'abord
-recommandé par erreur `@angular/localize` côté Angular sans avoir vérifié
-l'existant, corrigé après découverte de l'ADR-0024 et du pattern
-`TranslationPort`/`i18next` déjà en place dans `backoffice-angular`. Voir aussi
-[`scaffold-tailwind-apps.md`](./scaffold-tailwind-apps.md) et
-[`scaffold-lib-wiring.md`](./scaffold-lib-wiring.md) pour le même type de
-décision (documenter une frontière ou une divergence assumée plutôt que de la
-deviner ou de la cacher).
+Le dépôt a d'abord utilisé i18next derrière un port, puis Transloco en 2026-08.
+Ces étapes restent décrites dans les ADR historiques pour expliquer les choix et
+incidents, mais ne constituent plus des instructions. Le 2026-10-04, le besoin
+réel (application Angular française, sans switch runtime) et la politique «
+natif d'abord » ont conduit à la migration vers `@angular/localize`.

@@ -13,7 +13,7 @@ import { MUNICIPALITIES_BY_DEPARTMENT_ID_TABLE } from '../constants/municipaliti
 import { MunicipalitiesByDepartmentIdVmProps } from '../adapters/municipalities-by-department-id-vm-props.interface';
 import { MunicipalitiesByDepartmentIdPresenter } from '../adapters/municipalities-by-department-id-vm.presenter';
 import { MunicipalitiesByDepartmentIdFilterStore } from '../stores/municipalities-by-department-id-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'ADMINISTRATIVE_BOUNDARY.MUNICIPALITIES_BY_DEPARTMENT_ID';
 
@@ -68,7 +68,7 @@ const T = 'ADMINISTRATIVE_BOUNDARY.MUNICIPALITIES_BY_DEPARTMENT_ID';
 export class MunicipalitiesByDepartmentIdComponent {
     protected readonly facade = inject(MunicipalitiesByDepartmentIdFacade);
     private readonly store = inject(MunicipalitiesByDepartmentIdFilterStore);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

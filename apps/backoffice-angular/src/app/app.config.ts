@@ -2,7 +2,6 @@ import {
     ApplicationConfig,
     ErrorHandler,
     provideBrowserGlobalErrorListeners,
-    isDevMode,
 } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -13,6 +12,7 @@ import {
     cacheInterceptor,
 } from '@cmz/core';
 import {
+    LOCALIZED_MESSAGE_CATALOG,
     NAVIGATION_PORT,
     NOTIFICATION_PORT,
     STORAGE_PORT,
@@ -34,9 +34,8 @@ import {
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { provideDevPermissions } from './dev/dev-permissions.provider';
+import { FR_LOCALIZED_MESSAGES } from './i18n/messages.fr.generated';
 import { provideAdministrativeBoundary } from './providers/administrative-boundary.providers';
-import { TranslocoHttpLoader } from './transloco-loader';
-import { provideTransloco } from '@jsverse/transloco';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -55,19 +54,12 @@ export const appConfig: ApplicationConfig = {
             ])
         ),
         provideRouter(appRoutes),
-        // i18n : Transloco (convergence de tout l'Angular du repo sur un seul
-        // mécanisme — voir docs/architecture/i18n-generator-scope.md). Ancien
-        // TranslationPort/I18nextTranslationService/provideI18n() retirés :
-        // migration complète, pas de coexistence des deux mécanismes ici.
-        provideTransloco({
-            config: {
-                availableLangs: ['fr'],
-                defaultLang: 'fr',
-                reRenderOnLangChange: true,
-                prodMode: !isDevMode(),
-            },
-            loader: TranslocoHttpLoader,
-        }),
+        // Catalogue natif `$localize`, remplacé à la compilation. Aucun
+        // dictionnaire HTTP ni changement de langue implicite au runtime.
+        {
+            provide: LOCALIZED_MESSAGE_CATALOG,
+            useValue: FR_LOCALIZED_MESSAGES,
+        },
         // Adaptateurs des ports (design-system + moteurs agnostiques).
         { provide: STORAGE_PORT, useExisting: BrowserStorageAdapter },
         // Jeton NAVIGATION_PORT séparé du contrat (interface pure) depuis
