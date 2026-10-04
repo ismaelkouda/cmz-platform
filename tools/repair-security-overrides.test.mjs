@@ -46,7 +46,7 @@ test('déduplique les paquets tout en conservant les avis pour la preuve', () =>
 });
 
 test('respecte uniquement les exceptions GHSA explicites', () => {
-    const ignored = 'GHSA-w3rx-r6r6-pgpr';
+    const ignored = 'GHSA-7777-8888-9999';
     const plan = securityRepairPlan(
         { 'image-size': [high(ignored), high('GHSA-1111-2222-3333')] },
         { 'image-size': '^2.0.0' },

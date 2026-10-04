@@ -3517,10 +3517,10 @@ gouvernance, sécurité, licences.
           `overrides["js-yaml"] = "4.3.1"`, version publiée 2026-07-31 (plus
           d'un mois après `4.3.0`, cohérent avec un correctif de sécurité),
           confirmée existante sur le registre.
-        - **`image-size` `<=2.0.2` — non corrigé, exception assumée et
-          documentée.** Vérification sur le registre npm : **`image-size@2.0.2`
-          est la dernière version publiée** ; aucun correctif n'est disponible
-          en amont à ce jour. Une première tentative
+        - **Historique clos le 2026-10-04 — `image-size` `<=2.0.2`, exception
+          alors assumée et documentée.** Vérification sur le registre npm :
+          **`image-size@2.0.2` est la dernière version publiée** ; aucun
+          correctif n'est disponible en amont à ce jour. Une première tentative
           d'`overrides["image-size"] = "2.0.3"` a été écrite par erreur (version
           inventée sans vérification préalable), détectée et corrigée avant tout
           commit en revérifiant le registre. Un `overrides` vers `2.0.2` (seule
@@ -3567,7 +3567,20 @@ gouvernance, sécurité, licences.
           avec une couverture de toute la ligne 0.x/2.x tant qu'aucun correctif
           n'est publié. À rouvrir si `less` cesse d'être une dépendance dormante
           (ajout d'un fichier `.less`) ou si les mainteneurs d'`image-size`
-          publient un correctif.
+          publient un correctif. **Révision staff du 2026-10-04 : exception
+          supprimée, pas prolongée.** Les avis ont depuis été structurés avec un
+          correctif disponible. Une mise à jour ciblée de `less` `4.5.1` vers
+          `4.9.1` remplace sa dépendance historique `image-size` par
+          `probe-image-size`; `image-size` n'est donc plus résolu dans
+          `bun.lock`. Less reste uniquement une peer optionnelle dormante des
+          outils Angular/Vite : aucun fichier `.less`, aucune dépendance racine
+          et aucun override ne l'activent dans ce dépôt. Les deux `--ignore` ont
+          été retirés de `ci.yml` et de l'auto-réparation;
+          `bun audit --audit-level=high` redevient strict, sans exception. La
+          gate `check:image-size-security` interdit toute résolution de
+          `image-size`, y compris sous une clé de lockfile imbriquée, ainsi que
+          tout usage Less non formalisé. Si Less devient réellement nécessaire,
+          son adoption devra être explicite, documentée et revue.
     - **OPS-12e — fait** (2026-08-17). `bun audit` (sans `--audit-level`, donc
       incluant `moderate`/`low`, non bloquant en CI qui ne filtre que `high`)
       remonte 13 vulnérabilités sur 6 paquets supplémentaires. Analysés un par
@@ -3881,7 +3894,10 @@ gouvernance, sécurité, licences.
            `--ignore GHSA-w3rx-r6r6-pgpr --ignore GHSA-5p2g-fcmc-qvqq` ajoutés à
            l'étape `bun audit` de `ci.yml`, avec commentaire expliquant pourquoi
            (renvoie aussi vers le risque déjà documenté OPS-12e plutôt que de le
-           dupliquer).
+           dupliquer). **Mesure historique retirée le 2026-10-04** : voir la
+           révision OPS-12c ci-dessus; la CI n'ignore plus aucun avis
+           high/critical et protège désormais l'absence de `image-size` avec
+           `check:image-size-security`.
         2. `check:licenses` (`node tools/check-licenses.mjs`, qui invoque
            `npx license-checker-rseidelsohn`) :
            `npm error code EOVERRIDE — Override for postcss@catalog: conflicts with direct dependency`.
