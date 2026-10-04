@@ -419,15 +419,16 @@ directives suivantes :
    avant de toucher à l'i18n dans ce repo. Point clé : `tools/generator-
    platform/` n'émet jamais de wording utilisateur (titres, labels,
    messages) — inutile de modifier les renderers pour « les rendre
-   i18n-ready ». Le pattern de référence validé (deux POC, retirés du repo le
-   2026-08-29 — voir `i18n-generator-scope.md` pour le détail) est
-   **Transloco** côté Angular (schematic officiel `nx g
-   @jsverse/transloco:ng-add`) et **react-i18next** côté React. Angular a
-   depuis convergé entièrement sur Transloco (ADR-0036, 2026-08-27) :
-   `TranslationPort`/`I18nextTranslationService` ont été supprimés du repo, il
-   n'y a plus qu'un seul mécanisme i18n Angular actif (`backoffice-angular`
-   inclus) — la coexistence évoquée par ADR-0024 est close, pas une
-   incohérence à corriger.
+   i18n-ready ». Le mécanisme Angular courant est exclusivement **natif** :
+   `@angular/localize`, attributs `i18n` / `i18n-*` et `$localize`
+   ([ADR-0085](./docs/adr/0085-angular-i18n-native-localize.md)). Le renderer
+   configure cette capacité dans le shell ; ne créez ni recette opt-in, ni
+   loader HTTP, ni dictionnaire sous `public/i18n`. Le backoffice conserve
+   seulement un pont local et borné pour ses 1 869 clés historiques : sa source
+   JSON privée est compilée déterministement en messages `$localize` et ne doit
+   pas servir de modèle aux nouvelles pages. L'ADR-0036 Transloco est
+   supersédée. React reste une décision stack-native séparée : ne copiez ni le
+   runtime Angular ni une abstraction i18n cross-platform.
 
 ---
 
