@@ -109,10 +109,13 @@ envisagées, le choix retenu et ses conséquences.
 | [0073](./0073-filtrage-adaptatif-par-panneau-unique.md)   | Filtrage adaptatif par panneau unique et état brouillon  | accepté  |
 | [0074](./0074-filtres-progressifs-par-blocs-actifs.md)    | Filtres progressifs par blocs actifs sur fenêtres medium et expanded | accepté  |
 | [0075](./0075-chargement-progressif-mobile-silencieux.md) | Chargement progressif mobile silencieux                  | accepté  |
-| [0076](./0076-surface-creation-adaptative-bornee-par-contenu.md) | Surface de création adaptative bornée par le contenu     | accepté  |
+| [0076](./0076-surface-creation-adaptative-bornee-par-contenu.md) | Surface de création adaptative bornée par le contenu     | Retiré le 2026-10-03 |
 | [0077](./0077-ui-angular-officielle-avant-custom.md)      | UI Angular officielle avant comportement custom          | Accepted |
 | [0078](./0078-vues-de-donnees-par-capacites-optionnelles.md) | Vues de données par capacités optionnelles               | Accepted |
 | [0079](./0079-jev-evaluateur-probabiliste-replay-shadow.md) | JEV comme évaluateur probabiliste en replay/shadow       | Accepted |
 | [0080](./0080-prouver-la-valeur-avant-nouvelle-automatisation.md) | Prouver la valeur avant toute nouvelle automatisation    | Accepted |
+| [0081](./0081-surface-creation-selon-tache-et-espace-utile.md) | Choisir une surface de création selon la tâche et l'espace utile | Accepted |
+| [0082](./0082-cycle-de-vie-des-references-de-presentation.md) | Séparer références actives et archives de présentation   | Superseded |
+| [0083](./0083-preuve-page-exemple-mise-en-page-et-archive.md) | Distinguer preuve de page, exemple de mise en page et archive | Accepted |
 | [0085](./0085-angular-i18n-native-localize.md)            | Internationalisation Angular native avec `@angular/localize` | Accepted |
 <!-- END:GENERATED:adr-index -->

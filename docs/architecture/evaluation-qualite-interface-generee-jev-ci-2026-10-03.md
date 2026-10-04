@@ -8,6 +8,13 @@
   architecturaux que les oracles déterministes du dépôt ne savent pas
   entièrement couvrir ?
 
+> [!WARNING] Le pilote `medium-create-invalid` décrit plus bas est suspendu
+> depuis le 2026-10-03. Sa référence visuelle et son critère de largeur
+> provenaient d'ADR-0076, désormais retiré. L'architecture provider-neutral et
+> la séparation des preuves restent valides ; cette paire ne doit plus produire
+> de baseline ni de verdict humain avant la publication d'une nouvelle autorité
+> visuelle conforme à ADR-0081.
+
 ## Verdict exécutif
 
 **Le problème est réel, mais il contient deux évaluations différentes.**
@@ -23,9 +30,9 @@ page. Ils ne savent pas complètement déterminer si le rendu produit :
 - constitue une interprétation acceptable plutôt qu'une copie pixel parfaite.
 
 Ils ne déterminent pas non plus entièrement si le LLM a réalisé cette interface
-avec le meilleur moyen disponible : primitive HTML ou Angular native,
-composant Material, motif Angular Aria, CDK, Tailwind, composant existant ou
-code spécifique. Une implémentation peut compiler, passer les tests et rester
+avec le meilleur moyen disponible : primitive HTML ou Angular native, composant
+Material, motif Angular Aria, CDK, Tailwind, composant existant ou code
+spécifique. Une implémentation peut compiler, passer les tests et rester
 inutilement complexe, dupliquer une règle conceptuelle, mélanger des
 responsabilités ou ajouter une abstraction sans variation réelle.
 
@@ -38,8 +45,8 @@ Sur la piste visuelle, son utilité plausible est donc **en aval d'un observateu
 visuel** : JEV peut transformer un dossier d'écarts structuré en quelques
 décisions étroites, probabilisées et comparables dans le temps.
 
-Sur la piste code et outillage, JEV peut lire un état textuel borné : work order,
-diff pertinent, dépendances, primitives disponibles, règles officielles
+Sur la piste code et outillage, JEV peut lire un état textuel borné : work
+order, diff pertinent, dépendances, primitives disponibles, règles officielles
 versionnées, traces d'outils et résultats des gates. Il peut alors estimer des
 risques atomiques comme le contournement injustifié d'une primitive native ou
 une abstraction tournée uniquement vers un futur hypothétique. Cette piste est
@@ -52,8 +59,8 @@ La décision actuelle est :
 
 1. reconnaître deux angles morts résiduels : fidélité visuelle et pertinence de
    la réalisation technique ;
-2. conserver deux scorecards indépendantes afin qu'un bon rendu ne masque pas
-   un mauvais code, et inversement ;
+2. conserver deux scorecards indépendantes afin qu'un bon rendu ne masque pas un
+   mauvais code, et inversement ;
 3. ne pas présenter JEV comme un modèle multimodal ;
 4. définir des dossiers de preuve provider-neutral avant tout client JEV ;
 5. comparer en laboratoire son apport marginal au juge multimodal, au reviewer
@@ -92,8 +99,8 @@ donc être capturés dans le même environnement épinglé.
 
 ### Piste A — résultat visuel et adaptatif
 
-Après les contrôles déterministes, les questions suivantes restent
-contextuelles :
+Après les contrôles déterministes, les questions suivantes restent contextuelles
+:
 
 - la hiérarchie visuelle communique-t-elle le bon ordre de lecture ?
 - l'action primaire est-elle identifiable sans écraser les actions secondaires ?
@@ -165,11 +172,10 @@ locales, hashées, bornées par page, état et viewport, avec l'autorité
 `presentation-only`. Une URL Figma vivante ou une nouvelle capture récupérée au
 moment de la CI ne peut pas changer la référence silencieusement.
 
-Pour une source Figma structurée, le snapshot doit conserver autant que
-possible : frames, composants, variables, Auto Layout, noms sémantiques,
-annotations et mappings Code Connect. Figma indique lui-même que ce contexte
-aide l'agent à interpréter le design mais ne constitue pas du code de production
-canonique.
+Pour une source Figma structurée, le snapshot doit conserver autant que possible
+: frames, composants, variables, Auto Layout, noms sémantiques, annotations et
+mappings Code Connect. Figma indique lui-même que ce contexte aide l'agent à
+interpréter le design mais ne constitue pas du code de production canonique.
 
 ### 2. Rendu réel comparable
 
@@ -189,35 +195,35 @@ Le format exact reste à décider, mais son contenu minimal serait :
 
 ```json
 {
-  "reference": {
-    "presentation_id": "presentation_...",
-    "source_id": "expanded-ready",
-    "sha256": "...",
-    "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 }
-  },
-  "actual": {
-    "run_id": "run_...",
-    "sha256": "...",
-    "browser_profile": "chromium-pinned"
-  },
-  "deterministic_findings": [
-    {
-      "rule_id": "no-horizontal-overflow",
-      "outcome": "pass",
-      "evidence": "viewport:1440x1024"
-    }
-  ],
-  "visual_observations": [
-    {
-      "observation_id": "obs_...",
-      "category": "visual-hierarchy",
-      "claim": "secondary action dominates the primary action",
-      "reference_region": [1180, 28, 1320, 76],
-      "actual_region": [1040, 20, 1400, 92],
-      "observer": "multimodal-model-or-human",
-      "confidence": 0.78
-    }
-  ]
+    "reference": {
+        "presentation_id": "presentation_...",
+        "source_id": "expanded-ready",
+        "sha256": "...",
+        "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 }
+    },
+    "actual": {
+        "run_id": "run_...",
+        "sha256": "...",
+        "browser_profile": "chromium-pinned"
+    },
+    "deterministic_findings": [
+        {
+            "rule_id": "no-horizontal-overflow",
+            "outcome": "pass",
+            "evidence": "viewport:1440x1024"
+        }
+    ],
+    "visual_observations": [
+        {
+            "observation_id": "obs_...",
+            "category": "visual-hierarchy",
+            "claim": "secondary action dominates the primary action",
+            "reference_region": [1180, 28, 1320, 76],
+            "actual_region": [1040, 20, 1400, 92],
+            "observer": "multimodal-model-or-human",
+            "confidence": 0.78
+        }
+    ]
 }
 ```
 
@@ -227,8 +233,8 @@ localisable est insuffisant pour corriger l'interface et difficile à auditer.
 ### 4. Observateur multimodal
 
 Une capture ou un frame Figma exige un modèle qui accepte réellement les images
-ou une inspection humaine. Cet observateur compare référence et rendu, puis
-émet un vocabulaire fermé de constats, par exemple :
+ou une inspection humaine. Cet observateur compare référence et rendu, puis émet
+un vocabulaire fermé de constats, par exemple :
 
 - `missing-content` ;
 - `visual-hierarchy` ;
@@ -240,7 +246,8 @@ ou une inspection humaine. Cet observateur compare référence et rendu, puis
 - `unsupported-observation`.
 
 Il doit pouvoir répondre `unknown` et pointer les zones comparées. Ses constats
-sont des **candidats**, pas des faits, jusqu'à confirmation mécanique ou humaine.
+sont des **candidats**, pas des faits, jusqu'à confirmation mécanique ou
+humaine.
 
 ### 5. JEV comme arbitre étroit optionnel
 
@@ -299,8 +306,8 @@ dépôt n'utilise pas. La source d'autorité est :
 4. une exception explicite et relue lorsqu'une recommandation n'est pas adaptée
    au contexte produit.
 
-Ce dépôt cible actuellement Angular `22.2.0`, Angular Aria/Material/CDK
-`22.2.1` et Tailwind `4.1.13`. Le profil
+Ce dépôt cible actuellement Angular `22.2.0`, Angular Aria/Material/CDK `22.2.1`
+et Tailwind `4.1.13`. Le profil
 [`angular-22.profile.json`](../../conventions/angular-22.profile.json) lie déjà
 les choix volatils à Angular 22. Une veille séparée peut détecter une nouvelle
 version officielle et proposer une PR de mise à jour ; elle ne change jamais la
@@ -324,10 +331,10 @@ mode de preuve : déterministe | probabiliste | humain
 identifiant de la règle remplacée, le cas échéant
 ```
 
-La veille suit le chemin `source officielle → analyse d'applicabilité → PR du
-profil → tests → revue humaine`. L'upgrade d'une bibliothèque et l'upgrade des
-règles qui la gouvernent sont corrélées, sans être appliquées silencieusement
-par un job planifié.
+La veille suit le chemin
+`source officielle → analyse d'applicabilité → PR du profil → tests → revue humaine`.
+L'upgrade d'une bibliothèque et l'upgrade des règles qui la gouvernent sont
+corrélées, sans être appliquées silencieusement par un job planifié.
 
 ### Hiérarchie des moyens à vérifier
 
@@ -377,16 +384,16 @@ Chaque principe possède un prérequis. L'évaluateur doit d'abord établir
 `applicable`, `not_applicable` ou `insufficient_evidence`, puis seulement
 examiner un risque.
 
-| Principe | Question utile et bornée | Erreur à éviter |
-| --- | --- | --- |
-| KISS | le diff ajoute-t-il des mécanismes sans nécessité démontrée par le work order ? | confondre peu de lignes et simplicité du système |
-| YAGNI | une branche, extension ou configuration ne sert-elle qu'une variation future non demandée ? | interdire une extension déjà exigée par deux cas réels |
-| DRY | la même règle métier ou décision change-t-elle à plusieurs endroits ? | abstraire deux fragments seulement similaires visuellement |
-| SRP | l'unité modifiée possède-t-elle plusieurs raisons indépendantes de changer ? | exiger un fichier ou composant par fonction |
-| OCP | une frontière stable avec variations réelles est-elle modifiée par branches répétées ? | créer une stratégie pour un seul cas hypothétique |
-| LSP | existe-t-il réellement des implémentations substituables avec un contrat comportemental ? | déduire une violation d'une simple forme TypeScript |
-| ISP | plusieurs consommateurs sont-ils forcés de dépendre de capacités inutiles ? | fragmenter une interface locale à consommateur unique |
-| DIP | une politique de haut niveau dépend-elle d'un détail externe volatil qui mérite un port ? | ajouter un port autour de toute fonction ou composant local |
+| Principe | Question utile et bornée                                                                    | Erreur à éviter                                             |
+| -------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| KISS     | le diff ajoute-t-il des mécanismes sans nécessité démontrée par le work order ?             | confondre peu de lignes et simplicité du système            |
+| YAGNI    | une branche, extension ou configuration ne sert-elle qu'une variation future non demandée ? | interdire une extension déjà exigée par deux cas réels      |
+| DRY      | la même règle métier ou décision change-t-elle à plusieurs endroits ?                       | abstraire deux fragments seulement similaires visuellement  |
+| SRP      | l'unité modifiée possède-t-elle plusieurs raisons indépendantes de changer ?                | exiger un fichier ou composant par fonction                 |
+| OCP      | une frontière stable avec variations réelles est-elle modifiée par branches répétées ?      | créer une stratégie pour un seul cas hypothétique           |
+| LSP      | existe-t-il réellement des implémentations substituables avec un contrat comportemental ?   | déduire une violation d'une simple forme TypeScript         |
+| ISP      | plusieurs consommateurs sont-ils forcés de dépendre de capacités inutiles ?                 | fragmenter une interface locale à consommateur unique       |
+| DIP      | une politique de haut niveau dépend-elle d'un détail externe volatil qui mérite un port ?   | ajouter un port autour de toute fonction ou composant local |
 
 Cette matrice empêche un reviewer probabiliste de fabriquer de « bonnes
 pratiques » hors contexte. DRY peut céder devant KISS/YAGNI ; OCP ne prime pas
@@ -399,38 +406,38 @@ Le format exact reste à décider. Il doit au minimum relier :
 
 ```json
 {
-  "task": { "work_order_id": "...", "acceptance_ids": ["..."] },
-  "versions": {
-    "angular": "22.2.0",
-    "angular_aria": "22.2.1",
-    "angular_material": "22.2.1",
-    "tailwind": "4.1.13"
-  },
-  "applicable_rules": [
-    {
-      "rule_id": "angular22.ui.native-first",
-      "source": "ADR-0077",
-      "evidence_refs": ["diff:file:line", "import-graph:node"]
-    }
-  ],
-  "tool_events": [
-    {
-      "tool_id": "browser-render",
-      "version": "pinned",
-      "outcome": "success",
-      "artifact_refs": ["sha256:..."]
-    }
-  ],
-  "deterministic_results": [{ "gate_id": "lint", "outcome": "pass" }],
-  "diff_evidence": [{ "file": "...", "lines": [42, 71] }],
-  "waivers": []
+    "task": { "work_order_id": "...", "acceptance_ids": ["..."] },
+    "versions": {
+        "angular": "22.2.0",
+        "angular_aria": "22.2.1",
+        "angular_material": "22.2.1",
+        "tailwind": "4.1.13"
+    },
+    "applicable_rules": [
+        {
+            "rule_id": "angular22.ui.native-first",
+            "source": "ADR-0077",
+            "evidence_refs": ["diff:file:line", "import-graph:node"]
+        }
+    ],
+    "tool_events": [
+        {
+            "tool_id": "browser-render",
+            "version": "pinned",
+            "outcome": "success",
+            "artifact_refs": ["sha256:..."]
+        }
+    ],
+    "deterministic_results": [{ "gate_id": "lint", "outcome": "pass" }],
+    "diff_evidence": [{ "file": "...", "lines": [42, 71] }],
+    "waivers": []
 }
 ```
 
-Le dossier ne contient pas le dépôt entier. Un producteur déterministe résout
-le graphe minimal des fichiers concernés, rattache les règles applicables et
-refuse les preuves ambiguës. Les contenus issus de Figma, commentaires et noms
-de fichiers restent non fiables et ne peuvent pas devenir des instructions.
+Le dossier ne contient pas le dépôt entier. Un producteur déterministe résout le
+graphe minimal des fichiers concernés, rattache les règles applicables et refuse
+les preuves ambiguës. Les contenus issus de Figma, commentaires et noms de
+fichiers restent non fiables et ne peuvent pas devenir des instructions.
 
 ### Questions JEV admissibles pour cette piste
 
@@ -460,18 +467,19 @@ calibration.
 ### Scorecard attendue, sans moyenne trompeuse
 
 « Noter » signifie attribuer un résultat **par axe atomique**, jamais fabriquer
-un `82/100` à partir de critères incompatibles. Chaque ligne de scorecard porte :
+un `82/100` à partir de critères incompatibles. Chaque ligne de scorecard porte
+:
 
 ```json
 {
-  "axis": "native-primitive-selection",
-  "scope": "user-filter.component.ts:40-96",
-  "applicability": "applicable",
-  "verdict": "probable-deviation",
-  "severity": "major",
-  "confidence": 0.81,
-  "evidence_refs": ["rule:angular22.ui.native-first", "diff:..."],
-  "authority": "probabilistic-shadow"
+    "axis": "native-primitive-selection",
+    "scope": "user-filter.component.ts:40-96",
+    "applicability": "applicable",
+    "verdict": "probable-deviation",
+    "severity": "major",
+    "confidence": 0.81,
+    "evidence_refs": ["rule:angular22.ui.native-first", "diff:..."],
+    "authority": "probabilistic-shadow"
 }
 ```
 
@@ -513,11 +521,11 @@ règle, zone du diff, applicabilité et preuve.
 Le laboratoire visuel doit comparer aveuglément, sur les mêmes paires
 référence/rendu :
 
-| Variante | Contenu |
-| --- | --- |
-| A | oracles déterministes + revue humaine |
-| B | A + constats du modèle multimodal |
-| C | B + décisions JEV sur le dossier structuré |
+| Variante | Contenu                                    |
+| -------- | ------------------------------------------ |
+| A        | oracles déterministes + revue humaine      |
+| B        | A + constats du modèle multimodal          |
+| C        | B + décisions JEV sur le dossier structuré |
 
 La variante C n'est retenue que si JEV apporte un gain marginal mesuré par
 rapport à B :
@@ -540,11 +548,11 @@ les cas de calibration sont séparés des cas de validation.
 
 Le laboratoire de réalisation compare séparément :
 
-| Variante | Contenu |
-| --- | --- |
-| D | gates déterministes + revue humaine |
-| E | D + reviewer de code outillé produisant diagnostics et lignes |
-| F | E + décisions JEV sur le dossier de réalisation |
+| Variante | Contenu                                                       |
+| -------- | ------------------------------------------------------------- |
+| D        | gates déterministes + revue humaine                           |
+| E        | D + reviewer de code outillé produisant diagnostics et lignes |
+| F        | E + décisions JEV sur le dossier de réalisation               |
 
 La variante F doit trouver des risques pertinents manqués par E, mieux calibrer
 la priorité ou réduire le temps de revue. Si elle ne fait que répéter un lint,
@@ -586,8 +594,7 @@ supprimable.
 À court terme :
 
 1. ne pas installer JEV dans la CI ;
-2. conserver les références approuvées déjà liées au
-   `presentation-evidence` ;
+2. conserver les références approuvées déjà liées au `presentation-evidence` ;
 3. produire des captures réelles et déterministes pour les mêmes états et
    viewports ;
 4. formaliser un journal minimal des outils et un dossier de réalisation sans
@@ -601,17 +608,20 @@ supprimable.
    chacune des pistes.
 
 Le premier livrable utile n'est donc pas un client JEV. C'est une paire fiable
-**référence approuvée ↔ rendu réel** et un triplet traçable **work order ↔ outils
-et règles ↔ diff**, accompagnés de preuves comparables. Sans eux, aucun juge —
-humain, multimodal, reviewer de code ou JEV — ne peut être correctement évalué.
+**référence approuvée ↔ rendu réel** et un triplet traçable **work order ↔
+outils et règles ↔ diff**, accompagnés de preuves comparables. Sans eux, aucun
+juge — humain, multimodal, reviewer de code ou JEV — ne peut être correctement
+évalué.
 
-## Mise en œuvre pilote — paire visuelle C5
+## Mise en œuvre pilote historique — paire visuelle C5
 
-Le premier cas comparable est désormais décrit par
-`designs/users-management-proof.visual-evaluation.json` : l'état
-`medium-create-invalid` relie une source approuvée du
-`presentation-evidence` au scénario Playwright exact qui produit le même état au
-même viewport `1024 × 768`.
+Le premier cas comparable était décrit par
+`designs/users-management-proof.visual-evaluation.json`. Ce plan n'est plus
+actif : il est archivé, sans autorité, sous
+`examples/users-management-proof/presentation/historical/adaptive-create-candidates/visual-evaluation.json`.
+L'état `medium-create-invalid` reliait une source alors approuvée du
+`presentation-evidence` au scénario Playwright exact qui produisait le même état
+au même viewport `1024 × 768`.
 
 Le collecteur provider-neutral :
 
@@ -624,14 +634,14 @@ Le collecteur provider-neutral :
   `pending-human-review` ;
 - n'émet ni score, ni verdict, ni correction, ni appel à un fournisseur.
 
-Après le scénario Playwright, le dossier se reconstruit localement avec :
+Lorsque le plan était actif, le dossier se reconstruisait localement avec :
 
 ```bash
 node tools/generator-platform/collect-visual-evaluation.mjs
 ```
 
-La CI assemble le dossier après le passage Playwright puis conserve ensemble la
-capture réelle et `visual-evaluation.bundle.json`. Le lot pilote ne couvre
+La CI n'assemble désormais ce dossier que si un nouveau plan et un nouveau
+protocole actifs existent ensemble. Le lot pilote historique ne couvrait
 volontairement qu'un état dont l'équivalence métier est établie. Une référence
 historique supersédée, un état voisin ou une capture au bon viewport ne doivent
 jamais être appariés par simple ressemblance. L'extension à d'autres états exige
@@ -639,16 +649,16 @@ donc un scénario runtime équivalent et une revue explicite de la paire.
 
 Cette mise en œuvre ferme le problème de provenance et de comparabilité ; elle
 ne ferme pas encore celui du jugement visuel. La prochaine étape est de définir
-et mesurer une baseline de revue humaine sur ces dossiers, avant tout observateur
-multimodal ou expérimentation JEV.
+et mesurer une baseline de revue humaine sur ces dossiers, avant tout
+observateur multimodal ou expérimentation JEV.
 
-## Protocole pilote — accessibilité, mise en page et jugement humain
+## Protocole pilote suspendu — accessibilité, mise en page et jugement humain
 
-Le second incrément couple désormais le cas `medium-create-invalid` à un
-protocole de revue explicite sans demander à un modèle de réinterpréter les
-faits mesurables. Le protocole
-`designs/users-management-proof.visual-review.json` sépare trois modes de
-preuve :
+Le second incrément couplait le cas `medium-create-invalid` à un protocole de
+revue explicite sans demander à un modèle de réinterpréter les faits mesurables.
+Le protocole, désormais archivé sous
+`examples/users-management-proof/presentation/historical/adaptive-create-candidates/visual-review.json`,
+séparait trois modes de preuve :
 
 - `deterministic` pour un fait qui doit être affirmé par le navigateur et qui
   bloque la collecte s'il échoue ;
@@ -661,8 +671,8 @@ une preuve JSON de version `1.0.0`. Pour l'état invalide Medium, elle consigne 
 
 - le rôle, le nom accessible, `aria-modal` et l'arrière-plan inerte ;
 - l'absence de POST, l'alerte, les cinq erreurs et le focus sur `Nom` ;
-- la stabilité de la liste, la largeur réelle du dialogue et ses bornes
-  `520–640 px`, sa présence dans le viewport et sa hauteur bornée ;
+- la stabilité de la liste et l'ancienne géométrie du dialogue, désormais
+  invalidée par ADR-0081 ;
 - l'absence de débordement horizontal du document ;
 - la présence d'un résumé textuel et de cinq messages visibles, sans prétendre
   que ces faits prouvent à eux seuls leur bonne lisibilité.

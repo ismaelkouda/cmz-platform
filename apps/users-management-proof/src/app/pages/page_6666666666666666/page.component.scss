@@ -223,7 +223,7 @@ select {
     z-index: 25;
     inset: 0;
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
 }
 
 .overlay {
@@ -340,6 +340,7 @@ td,
     max-height: calc(100dvh - 64px);
     overflow: hidden;
     border-radius: 18px;
+    container-type: inline-size;
 }
 
 .drawer-header {
@@ -612,7 +613,9 @@ td,
 
     .drawer {
         width: 100%;
-        border-radius: 18px 18px 0 0;
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
     }
 
     .drawer-header h2 {
@@ -620,7 +623,7 @@ td,
     }
 
     .overlay {
-        align-items: flex-end;
+        align-items: center;
         padding: 0;
     }
 
@@ -643,7 +646,9 @@ td,
         width: min(720px, calc(100vw - 96px));
         border-radius: 20px;
     }
+}
 
+@container (min-width: 640px) {
     .create-fields {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

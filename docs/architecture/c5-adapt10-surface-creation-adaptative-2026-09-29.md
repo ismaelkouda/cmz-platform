@@ -1,13 +1,24 @@
 # C5 ADAPT-10 — surface de création adaptative
 
-- **Statut :** ADAPT-10 réalisé, approuvé, fusionné et qualifié par CI ; chantier
-  clos
+- **Statut :** historique retiré le 2026-10-03 ; les comportements métier et
+  d'accessibilité restent utiles, mais la matrice géométrique n'est plus une
+  autorité active
 - **Périmètre :** placement, dimensionnement, focus, validation et cycle réseau
   du formulaire de création C5
 - **Hors périmètre :** runtime dans ce lot, filtres ADAPT-8, contrat API,
   primitive générique, dépendance UI
-- **Décision structurante :**
-  [ADR-0076 accepté](../adr/0076-surface-creation-adaptative-bornee-par-contenu.md)
+- **Décision retirée :**
+  [ADR-0076](../adr/0076-surface-creation-adaptative-bornee-par-contenu.md)
+- **Remplacement accepté :**
+  [ADR-0081](../adr/0081-surface-creation-selon-tache-et-espace-utile.md)
+
+> [!WARNING] Ce document explique le chantier ADAPT-10 tel qu'il a été fusionné.
+> Il ne doit plus servir à imposer un bottom sheet compact, un dialogue Medium
+> ancré à droite, les fourchettes `520–640` / `640–760`, ni un nombre de
+> colonnes déduit du breakpoint. Ces choix ont été retirés après confrontation
+> aux sources officielles. Les règles de focus, modalité, validation, réseau et
+> conservation du brouillon restent applicables jusqu'à leur reprise par la
+> nouvelle autorité.
 
 ## 1. Pourquoi ce chantier est séparé
 
@@ -234,20 +245,21 @@ Soumaila doit refuser un lot ultérieur si :
 - ADAPT-10e réalise la surface adaptative bornée par le work order recalculé.
   Soumaila a approuvé le commit exact
   `aa459f27ff292eb4a3ea96f1f0abe096b1cff511`, fusionné par la PR #158 dans
-  `95795b02fa1c05db69d4d9c0853c004be7a52826`. La CI post-fusion
-  `36738346073` est verte.
+  `95795b02fa1c05db69d4d9c0853c004be7a52826`. La CI post-fusion `36738346073`
+  est verte.
 - ADAPT-10f aligne les derniers écarts entre runtime et autorités visuelles,
   sans changer le contrat métier. Soumaila a approuvé le commit exact
   `c47c5057cda0843b2831092882d3635ca95b84ab`, fusionné par la PR #159 dans
-  `636feac8d982233ca54eac9045d3cf81a815171b`. Les 17 jobs de la CI
-  post-fusion `36794101702` sont verts. ADAPT-10 est clos.
+  `636feac8d982233ca54eac9045d3cf81a815171b`. Les 17 jobs de la CI post-fusion
+  `36794101702` sont verts. ADAPT-10 est clos.
 
 ADAPT-8d reste un chantier indépendant : décider la création ne termine pas les
 oracles du panneau de filtres.
 
 ## 9. Références
 
-- [ADR-0076 accepté](../adr/0076-surface-creation-adaptative-bornee-par-contenu.md)
+- [ADR-0076 retiré](../adr/0076-surface-creation-adaptative-bornee-par-contenu.md)
+- [ADR-0081 accepté](../adr/0081-surface-creation-selon-tache-et-espace-utile.md)
 - [ADR-0072 — UI adaptative](../adr/0072-ui-adaptative-guidee-par-m3-et-apis-officielles.md)
 - [Entrée externe C5](./c5-entree-externe-gestion-utilisateurs-2026-09-25.md)
 - [ADAPT-8 — filtres progressifs](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md)

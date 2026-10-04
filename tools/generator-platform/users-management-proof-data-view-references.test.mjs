@@ -4,31 +4,60 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import test from 'node:test';
 
-import { repositoryRoot } from './validate-ir.mjs';
+import { repositoryRoot, validateJsonSchema } from './validate-ir.mjs';
 
-const referenceRoot =
-    'examples/users-management-proof/presentation/data-view-reference-candidates/';
-const manifestPath =
+const activeManifestPath =
     'designs/users-management-proof.presentation-evidence.json';
-const reproductionSources = [
-    {
-        path: `${referenceRoot}mockup.proposed.html`,
-        bytes: 28493,
-        sha256: '2b35e6a51d0892a7b5129749d1706ffe4d24648eb309833b1b13e930412bdf6d',
-    },
-    {
-        path: `${referenceRoot}render.mjs`,
-        bytes: 2691,
-        sha256: 'a57e2213393943611ef5e1885609c377ad65af6aac821c34f0e02e6f73e75330',
-    },
-];
+const historicalRoot =
+    'examples/users-management-proof/presentation/historical/';
+const archivePath = `${historicalRoot}data-view-reference-candidates/archive.json`;
+const archiveSchema = JSON.parse(
+    await readFile(
+        new URL(
+            './schemas/historical-presentation-reference-set.schema.json',
+            import.meta.url
+        ),
+        'utf8'
+    )
+);
 
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
 }
 
-test('borne et rend reproductibles les six références de vue de données', async () => {
-    for (const source of reproductionSources) {
+test('conserve les anciennes vues de données comme archive sans autorité', async () => {
+    const archive = JSON.parse(
+        await readFile(resolve(repositoryRoot, archivePath), 'utf8')
+    );
+    assert.deepEqual(validateJsonSchema(archive, archiveSchema), []);
+    assert.equal(archive.status, 'historical');
+    assert.equal(archive.authority, 'none');
+    assert.deepEqual(
+        archive.forbidden_uses,
+        [
+            'active-presentation-evidence',
+            'code-generation-authority',
+            'visual-regression-baseline',
+            'capability-inference',
+            'runtime-source-copy',
+        ],
+        'les usages dangereux doivent rester explicitement interdits'
+    );
+
+    const sourceIds = new Set();
+    for (const source of archive.sources) {
+        assert.equal(
+            source.path.startsWith(historicalRoot),
+            true,
+            `${source.path} must stay under the historical root`
+        );
+        assert.equal(
+            sourceIds.has(source.id),
+            false,
+            `duplicate historical source id ${source.id}`
+        );
+        sourceIds.add(source.id);
+
         const content = await readFile(resolve(repositoryRoot, source.path));
         assert.equal(
             content.byteLength,
@@ -36,55 +65,49 @@ test('borne et rend reproductibles les six références de vue de données', asy
             `${source.path} byte length drifted`
         );
         assert.equal(sha256(content), source.sha256, `${source.path} drifted`);
+        if (source.media_type === 'image/png') {
+            assert.ok(
+                source.viewport,
+                `${source.path} must retain its historical viewport`
+            );
+            assert.equal(
+                content.readUInt32BE(16),
+                source.viewport.width,
+                `${source.path} PNG width drifted`
+            );
+            assert.equal(
+                content.readUInt32BE(20),
+                source.viewport.height,
+                `${source.path} PNG height drifted`
+            );
+        } else {
+            assert.equal(source.viewport, null);
+        }
     }
+});
 
-    const manifest = JSON.parse(
-        await readFile(resolve(repositoryRoot, manifestPath), 'utf8')
+test('interdit toute republication active des références historiques', async () => {
+    const activeManifest = JSON.parse(
+        await readFile(resolve(repositoryRoot, activeManifestPath), 'utf8')
     );
-    const visuals = manifest.sources.filter(
-        ({ source_kind, snapshot_uri }) =>
-            source_kind === 'wireframe' &&
-            snapshot_uri.startsWith(referenceRoot)
-    );
-    assert.deepEqual(
-        visuals.map(({ id }) => id),
-        [
-            'expanded-data-view-filter-workspace',
-            'expanded-data-view-row-actions',
-            'expanded-data-view-row-actions-with-filters',
-            'medium-data-view-filter-workspace',
-            'medium-data-view-row-actions',
-            'medium-data-view-row-actions-with-filters',
-        ]
-    );
+    const retiredIds = new Set([
+        'data-view-capabilities-brief',
+        'expanded-data-view-filter-workspace',
+        'expanded-data-view-row-actions',
+        'expanded-data-view-row-actions-with-filters',
+        'medium-data-view-filter-workspace',
+        'medium-data-view-row-actions',
+        'medium-data-view-row-actions-with-filters',
+    ]);
 
-    for (const visual of visuals) {
-        const content = await readFile(
-            resolve(repositoryRoot, visual.snapshot_uri)
-        );
-        assert.ok(
-            content.byteLength < 1024 * 1024,
-            `${visual.snapshot_uri} must remain below 1 MiB`
-        );
-        assert.equal(
-            content.readUInt32BE(16),
-            visual.viewport.width,
-            `${visual.snapshot_uri} PNG width drifted`
-        );
-        assert.equal(
-            content.readUInt32BE(20),
-            visual.viewport.height,
-            `${visual.snapshot_uri} PNG height drifted`
-        );
-        assert.equal(
-            content.byteLength,
-            visual.bytes,
-            `${visual.snapshot_uri} byte length drifted`
-        );
-        assert.equal(
-            sha256(content),
-            visual.sha256,
-            `${visual.snapshot_uri} sha256 drifted`
-        );
-    }
+    assert.equal(
+        activeManifest.sources.some(
+            ({ id, snapshot_uri }) =>
+                retiredIds.has(id) ||
+                snapshot_uri.startsWith(historicalRoot) ||
+                snapshot_uri.includes('/data-view-reference-candidates/')
+        ),
+        false,
+        'une source retirée ne doit jamais être consommée par la réalisation active'
+    );
 });

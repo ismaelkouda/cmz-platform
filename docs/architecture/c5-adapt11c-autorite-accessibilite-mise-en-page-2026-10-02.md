@@ -161,18 +161,18 @@ Les classes représentent l'espace disponible, jamais un modèle d'appareil.
 Largeur, hauteur, zoom, contenu traduit et clavier virtuel peuvent changer la
 classe ou imposer un reflow.
 
-| Région             | `compact`                                           | `medium`                                  | `expanded`                                 |
-| ------------------ | --------------------------------------------------- | ----------------------------------------- | ------------------------------------------ |
-| collection         | cartes/liste progressive C5                         | table                                     | table                                      |
-| titre              | titre de page/collection ; total seulement fiable   | titre de table à gauche                   | titre de table à gauche                    |
-| recherche          | ligne propre si nécessaire                          | à droite, avant les actions ; wrap permis | à droite, avant les actions                |
-| créer              | FAB `+`, nom accessible                             | bouton texte `Créer`                      | bouton texte `Créer`                       |
-| rafraîchir         | contrôle accessible si retenu dans le rendu compact | icône, nom + tooltip                      | icône, nom + tooltip                       |
-| filtres            | déclencheur puis bottom sheet modal                 | panneau temporaire droit non modal        | panneau temporaire droit non modal         |
-| pagination         | chargement progressif silencieux                    | pagination explicite                      | pagination explicite                       |
-| filtres de colonne | non affichés dans la pile compacte                  | seconde ligne d'en-tête                   | seconde ligne d'en-tête                    |
-| création           | surface modale adaptée au contenu                   | panneau modal droit, une colonne          | panneau modal droit, deux colonnes au plus |
-| densité            | cible tactile confortable                           | cible tactile conservée                   | cible tactile conservée                    |
+| Région             | `compact`                                           | `medium`                                  | `expanded`                                   |
+| ------------------ | --------------------------------------------------- | ----------------------------------------- | -------------------------------------------- |
+| collection         | cartes/liste progressive C5                         | table                                     | table                                        |
+| titre              | titre de page/collection ; total seulement fiable   | titre de table à gauche                   | titre de table à gauche                      |
+| recherche          | ligne propre si nécessaire                          | à droite, avant les actions ; wrap permis | à droite, avant les actions                  |
+| créer              | FAB `+`, nom accessible                             | bouton texte `Créer`                      | bouton texte `Créer`                         |
+| rafraîchir         | contrôle accessible si retenu dans le rendu compact | icône, nom + tooltip                      | icône, nom + tooltip                         |
+| filtres            | déclencheur puis bottom sheet modal                 | panneau temporaire droit non modal        | panneau temporaire droit non modal           |
+| pagination         | chargement progressif silencieux                    | pagination explicite                      | pagination explicite                         |
+| filtres de colonne | non affichés dans la pile compacte                  | seconde ligne d'en-tête                   | seconde ligne d'en-tête                      |
+| création           | ADR-0081 ; nouvelle preuve requise                  | ADR-0081 ; dialogue centré à prouver      | ADR-0081 ; colonnes selon largeur intérieure |
+| densité            | cible tactile confortable                           | cible tactile conservée                   | cible tactile conservée                      |
 
 **RESP-01 — Espace réel.** La décision de classe DOIT provenir de l'espace
 disponible. La détection du user-agent ou de la marque d'appareil est interdite.
@@ -756,10 +756,10 @@ Soumaila puis fusionné par la PR
 Le work order a été recalculé depuis la base fusionnée avant réalisation. Son
 identifiant est
 `3b889daa5819ee1ce1af85d4e0120b5fee47dff84bf3a60e7065d092d3d5ac52` et son
-allowlist borne neuf fichiers de la page C5. La réalisation en modifie six,
-tous autorisés : composant de page HTML, SCSS, TypeScript et test, puis
-composant de filtres SCSS et TypeScript. Le contrat, les modèles d'exécution,
-les dépendances et les références visuelles restent inchangés.
+allowlist borne neuf fichiers de la page C5. La réalisation en modifie six, tous
+autorisés : composant de page HTML, SCSS, TypeScript et test, puis composant de
+filtres SCSS et TypeScript. Le contrat, les modèles d'exécution, les dépendances
+et les références visuelles restent inchangés.
 
 La réalisation fournit notamment :
 
@@ -774,15 +774,14 @@ Le rôle ARIA `toolbar` reste volontairement absent : sans navigation composite
 aux flèches et roving tabindex, le groupe natif parcouru avec Tab est la
 sémantique correcte.
 
-Les preuves de sortie sont vertes : `56/56` scénarios Playwright sans
-`skip`, `todo` ni échec attendu résiduel, `31/31` tests Angular, lint, build de
-production, Knip, Prettier, fraîcheur documentaire et oracle de confinement.
-Le chunk lazy de la page passe de `232,55 kB` à `236,43 kB` brut, soit
-`+3,88 kB` brut et `+0,70 kB` estimé transféré ; le bundle initial reste
-inchangé. Les `17/17` contrôles de la PR sont verts, ainsi que la CI post-fusion
-de `main`, run
+Les preuves de sortie sont vertes : `56/56` scénarios Playwright sans `skip`,
+`todo` ni échec attendu résiduel, `31/31` tests Angular, lint, build de
+production, Knip, Prettier, fraîcheur documentaire et oracle de confinement. Le
+chunk lazy de la page passe de `232,55 kB` à `236,43 kB` brut, soit `+3,88 kB`
+brut et `+0,70 kB` estimé transféré ; le bundle initial reste inchangé. Les
+`17/17` contrôles de la PR sont verts, ainsi que la CI post-fusion de `main`,
+run
 [#37116794308](https://github.com/ismaelkouda/cmz-platform/actions/runs/37116794308).
 
-ADAPT-11c est donc clos. Les questions de la section 21 et `DATA-VIEW-1`
-restent différées jusqu'à l'existence de contrats réels et d'un second cas
-indépendant.
+ADAPT-11c est donc clos. Les questions de la section 21 et `DATA-VIEW-1` restent
+différées jusqu'à l'existence de contrats réels et d'un second cas indépendant.
