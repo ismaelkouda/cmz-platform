@@ -1,0 +1,82 @@
+$active-indicator-inset: 0.75rem;
+
+@mixin focus-ring {
+    outline: 2px solid var(--cmz-color-focus, #2563eb);
+    outline-offset: -3px;
+}
+
+:host {
+    display: block;
+    min-width: 0;
+}
+
+.workspace {
+    // Le tablist sémantique ne contient que les rôles `tab`. Les boutons de
+    // fermeture restent leurs frères visuels, jamais des contrôles imbriqués.
+    &__semantic-list {
+        clip-path: inset(50%);
+    }
+
+    &__strip {
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    &__item--active {
+        color: var(--cmz-color-primary, #2563eb);
+        background: color-mix(
+            in srgb,
+            var(--cmz-color-primary, #2563eb) 10%,
+            transparent
+        );
+
+        &::after {
+            position: absolute;
+            right: $active-indicator-inset;
+            bottom: 0;
+            left: $active-indicator-inset;
+            height: 3px;
+            border-radius: 3px 3px 0 0;
+            background: currentcolor;
+            content: '';
+        }
+    }
+
+    &__item:first-child &__tab {
+        padding-right: 1rem;
+    }
+
+    :is(
+        &__tab,
+        &__close,
+        &__scroll-button,
+        &__commands-trigger,
+        &__command-list button
+    ):focus-visible {
+        @include focus-ring;
+    }
+
+    &__commands {
+        > summary {
+            list-style: none;
+
+            &::-webkit-details-marker {
+                display: none;
+            }
+        }
+    }
+
+    &__command-list {
+        top: calc(100% + 0.35rem);
+        box-shadow: var(--cmz-shadow-lg, 0 10px 30px rgb(15 23 42 / 18%));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .workspace__strip {
+        scroll-behavior: auto;
+    }
+}

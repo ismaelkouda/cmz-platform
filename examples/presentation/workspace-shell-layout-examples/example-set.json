@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "presentation-layout-example-set",
+  "set_id": "generic-live-workspace-tabs-2026-10-04",
+  "status": "approved-example",
+  "authority": "layout-guidance-only",
+  "subject": "generic-workspace-shell",
+  "authority_scope": [
+    "region-order",
+    "visual-hierarchy",
+    "responsive-priority",
+    "workspace-navigation-placement"
+  ],
+  "forbidden_inferences": [
+    "backend-contract",
+    "business-domain",
+    "column-contract",
+    "permission-contract",
+    "capability-presence",
+    "component-choice",
+    "dependency-choice",
+    "runtime-accessibility-proof",
+    "pixel-perfect-copy"
+  ],
+  "usage_protocol": {
+    "requires_page_contract": true,
+    "requires_capability_match": true,
+    "requires_runtime_proof": true
+  },
+  "render_sources": [
+    {
+      "path": "examples/presentation/workspace-shell-layout-examples/mockup.html",
+      "media_type": "text/html",
+      "bytes": 9885,
+      "sha256": "26024284f8567be8cd2e79077b88bf435564711e6695bdd42f9ce8f028de7fe5",
+      "authority": "reproduction-only"
+    },
+    {
+      "path": "examples/presentation/workspace-shell-layout-examples/mockup.css",
+      "media_type": "text/css",
+      "bytes": 7289,
+      "sha256": "654675cc3186b2a37ae08fc49e1c0fff88f419ddc68ed16d81230ee4ea6b5a7a",
+      "authority": "reproduction-only"
+    },
+    {
+      "path": "examples/presentation/workspace-shell-layout-examples/render.mjs",
+      "media_type": "text/javascript",
+      "bytes": 1863,
+      "sha256": "0d4909dfbb002fe320ac02d6847990b7132b3b4eeda54f36df592a32ec860cdc",
+      "authority": "reproduction-only"
+    }
+  ],
+  "sources": [
+    {
+      "id": "expanded-live-workspace-tabs",
+      "path": "examples/presentation/workspace-shell-layout-examples/expanded-live-workspace-tabs.proposed.png",
+      "media_type": "image/png",
+      "bytes": 111681,
+      "sha256": "400a221da36d9018efffd2be80370ef91c2b2840f023e29ab0b6081d4fe262c7",
+      "layout_class": "expanded",
+      "space": "comfortable",
+      "state": "active-workspace-tab-visible",
+      "capabilities_shown": [
+        "workspace-tabs",
+        "individual-tab-close",
+        "close-all-except-pinned",
+        "horizontal-tab-overflow"
+      ],
+      "authoritative_regions": ["workspace-navigation-strip"],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 }
+    },
+    {
+      "id": "medium-live-workspace-tabs-overflow",
+      "path": "examples/presentation/workspace-shell-layout-examples/medium-live-workspace-tabs-overflow.proposed.png",
+      "media_type": "image/png",
+      "bytes": 98053,
+      "sha256": "f1297fe630080e554da864dec9ef730f446defdbf010fa3cc373940b30a9b058",
+      "layout_class": "medium",
+      "space": "constrained",
+      "state": "active-workspace-tab-visible",
+      "capabilities_shown": [
+        "workspace-tabs",
+        "individual-tab-close",
+        "close-all-except-pinned",
+        "horizontal-tab-overflow"
+      ],
+      "authoritative_regions": ["workspace-navigation-strip"],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 960, "height": 900, "pixel_ratio": 1 }
+    }
+  ]
+}

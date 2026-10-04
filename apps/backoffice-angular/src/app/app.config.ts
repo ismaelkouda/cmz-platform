@@ -4,7 +4,11 @@ import {
     provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import {
+    RouteReuseStrategy,
+    provideRouter,
+    withAutoCleanupInjectors,
+} from '@angular/router';
 import {
     GlobalErrorHandler,
     LOGGER_PORT,
@@ -29,6 +33,8 @@ import {
     CmzConfirmDialogService,
     CmzNotificationService,
     EXCEL_EXPORT_PORT,
+    WORKSPACE_CONFIG,
+    WorkspaceRouteReuseStrategy,
     TRUSTED_ORIGIN_PORT,
 } from '@cmz/shared-ui';
 import { appRoutes } from './app.routes';
@@ -53,7 +59,15 @@ export const appConfig: ApplicationConfig = {
                 cacheInterceptor,
             ])
         ),
-        provideRouter(appRoutes),
+        provideRouter(appRoutes, withAutoCleanupInjectors()),
+        WorkspaceRouteReuseStrategy,
+        {
+            provide: RouteReuseStrategy,
+            useExisting: WorkspaceRouteReuseStrategy,
+        },
+        // Plafond de sûreté v1. La calibration mémoire multi-pages reste un
+        // oracle de promotion avant d'augmenter cette valeur.
+        { provide: WORKSPACE_CONFIG, useValue: { maxOpenViews: 8 } },
         // Catalogue natif `$localize`, remplacé à la compilation. Aucun
         // dictionnaire HTTP ni changement de langue implicite au runtime.
         {

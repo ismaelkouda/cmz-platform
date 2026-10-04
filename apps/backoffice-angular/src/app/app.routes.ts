@@ -1,6 +1,7 @@
 import { Route } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { pathsGuard } from './guards/paths.guard';
+import { workspaceCapacityGuard } from './workspace/workspace-capacity.guard';
 
 export const appRoutes: Route[] = [
     // Hors périmètre protégé : login/forgot/reset — accessible sans session
@@ -44,6 +45,12 @@ export const appRoutes: Route[] = [
         // audit-workspace-2026-08-02-revue-finale.md, débloqué 2026-08-03).
         path: '',
         canActivate: [authGuard],
+        canActivateChild: [workspaceCapacityGuard],
+        data: { workspaceRoot: true },
+        loadComponent: () =>
+            import('./workspace/workspace-shell.component').then(
+                (module) => module.WorkspaceShellComponent
+            ),
         children: [
             // Redirige vers `dashboard` maintenant que le module existe —
             // c'était `equipments/types` par défaut faute d'accueil

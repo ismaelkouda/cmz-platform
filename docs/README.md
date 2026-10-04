@@ -124,6 +124,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0081](./adr/0081-surface-creation-selon-tache-et-espace-utile.md) | Choisir une surface de création selon la tâche et l'espace utile |
 | [0082](./adr/0082-cycle-de-vie-des-references-de-presentation.md) | Séparer références actives et archives de présentation   |
 | [0083](./adr/0083-preuve-page-exemple-mise-en-page-et-archive.md) | Distinguer preuve de page, exemple de mise en page et archive |
+| [0084](./adr/0084-workspace-a-vues-vivantes-et-fermables.md) | Workspace à vues vivantes et fermables                   |
 | [0085](./adr/0085-angular-i18n-native-localize.md)          | Internationalisation Angular native avec `@angular/localize` |
 <!-- END:GENERATED:adr-index -->
 

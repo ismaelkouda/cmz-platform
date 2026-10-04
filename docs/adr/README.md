@@ -117,5 +117,6 @@ envisagées, le choix retenu et ses conséquences.
 | [0081](./0081-surface-creation-selon-tache-et-espace-utile.md) | Choisir une surface de création selon la tâche et l'espace utile | Accepted |
 | [0082](./0082-cycle-de-vie-des-references-de-presentation.md) | Séparer références actives et archives de présentation   | Superseded |
 | [0083](./0083-preuve-page-exemple-mise-en-page-et-archive.md) | Distinguer preuve de page, exemple de mise en page et archive | Accepted |
+| [0084](./0084-workspace-a-vues-vivantes-et-fermables.md)  | Workspace à vues vivantes et fermables                   | Accepted |
 | [0085](./0085-angular-i18n-native-localize.md)            | Internationalisation Angular native avec `@angular/localize` | Accepted |
 <!-- END:GENERATED:adr-index -->

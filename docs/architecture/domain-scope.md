@@ -1,6 +1,6 @@
 # Périmètre du domaine `shared-domain` — ce qui entre, ce qui sort
 
-- **Dernière mise à jour :** 2026-07-22
+- **Dernière mise à jour :** 2026-10-04
 
 Le domaine est **métier pur** : zéro dépendance framework / UI / HTTP / infra.
 Comme `services/`, les dossiers `utils/`, `functions/`, `types/`, `constants/`,
@@ -27,7 +27,7 @@ couche. Ce document est la carte d'ensemble (voir aussi
 | Source                                                                                 | Couche cible           | Raison                                |
 | -------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------- |
 | `utils/build-http-params`, `build-http-payload`, `mapper-utils`, `date-range` (moment) | **data**               | HTTP / moment / support de mapper     |
-| `utils/custom-route-reuse-strategy`, `crud-form-utils`                                 | **ui**                 | `@angular/router` / formes            |
+| ancienne stratégie de réutilisation de route, `crud-form-utils`                        | **ui**                 | `@angular/router` / formes            |
 | `functions/*` de formatage (`format-*`, `separator-thousands`, `*-style`)              | **ui**                 | présentation                          |
 | `functions/control-date`, `semantic-version-validator`                                 | **ui**                 | `@angular/forms` (`ValidatorFn`)      |
 | `functions/convertUrlToBase64`, `load-image`, `url-to-file`                            | **infra**              | DOM / fetch / File                    |
@@ -44,3 +44,6 @@ couche. Ce document est la carte d'ensemble (voir aussi
 - **`normalizePhoneNumber`** : `replaceAll` (lib ES2021) → `replace(/\D/g,'')`
   (socle es2020).
 - **`.types.ts` → `.type.ts`** (un fichier = un type).
+- L'ancienne stratégie de route n'est pas une primitive du domaine et n'a pas
+  été conservée comme référence active. Elle est remplacée côté UI par le
+  workspace borné de l'ADR-0084.
