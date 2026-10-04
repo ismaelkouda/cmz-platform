@@ -117,10 +117,8 @@ jobs:
           bun install --frozen-lockfile --ignore-scripts
           bun run check:bun-lock-catalog-integrity
           bun run check:dependabot-policy
-          bun run check:dependency-audit-exception
-          bun audit --audit-level=high \
-            --ignore GHSA-w3rx-r6r6-pgpr \
-            --ignore GHSA-5p2g-fcmc-qvqq
+          bun run check:image-size-security
+          bun audit --audit-level=high
           git diff --check
           test "$(git diff --name-only)" = "bun.lock"
 
