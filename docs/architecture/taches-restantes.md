@@ -2580,11 +2580,11 @@ Figma, désormais source partielle différée :
   cours :** le runtime utilise un dialogue plein écran en espace étroit, un
   dialogue centré ailleurs et un reflow une/deux colonnes piloté par la largeur
   intérieure. Les 24 scénarios ciblés sont de vrais succès et conservent les
-  invariants de modalité, focus, validation, réseau, brouillon, resize, zoom
-  200 % et absence de scroll horizontal. L'ancienne paire visuelle et son
-  protocole sont archivés avec `authority: none`; aucune nouvelle baseline
-  visuelle C5 n'est publiée par ce lot. **DATA-VIEW-0 — décision et corpus
-  de capacités :** le composant `table` de `cmz-backoffice` à
+  invariants de modalité, focus, validation, réseau, brouillon, resize, zoom 200
+  % et absence de scroll horizontal. L'ancienne paire visuelle et son protocole
+  sont archivés avec `authority: none`; aucune nouvelle baseline visuelle C5
+  n'est publiée par ce lot. **DATA-VIEW-0 — décision et corpus de capacités :**
+  le composant `table` de `cmz-backoffice` à
   `feat/config@f064d1d8e50190cd33e9ace096d51710d2474f2f` est retenu comme corpus
   empirique de besoins et contre-exemple architectural, jamais comme dépendance,
   autorité visuelle ou code à copier. ADR-0078 impose des capacités optionnelles
@@ -2624,21 +2624,67 @@ Figma, désormais source partielle différée :
   rend découvrables ; un oracle refuse les manifestes orphelins, valide le
   schéma et exige la couverture `compact`/`medium`/`expanded`. Cette autorité
   générique ne remplace ni la preuve runtime C5 ni les nouveaux candidats de
-  création exigés par ADAPT-12. **ADAPT-11b — engagé localement après fusion
-  d'ADAPT-11a :** cinq scénarios navigateur bornent la toolbar C5, le GET unique
-  de rafraîchissement, l'absence des capacités non déclarées, la non-activation
-  des lignes et la géométrie panneau/rail Medium + Expanded. La référence
-  visuelle conserve `Exporter` et les actions de ligne comme capacités
-  optionnelles, mais le contrat C5 ne fournit aucun `action-request`
-  correspondant : les rendre opérables maintenant inventerait transport,
-  permissions et effets. Les oracles exigent donc `Créer`, `Rafraîchir`,
-  `Filtres` et refusent export, colonne d'actions, menu, dialogue ou activation
-  implicite. Quatre échecs attendus sont bornés par deux signatures historiques
-  exactes, sans `skip`, `todo`, runtime, work order, contrat API ou dépendance.
-  La passe Chromium ciblée donne `5/5` : quatre attendus et un succès réel ; la
-  régression C5 complète donne `55/55`, avec lint, tests Angular et build
-  production verts. **ADAPT-11c — autorité de réalisation formalisée le
-  2026-10-02 :** le guide exhaustif
+  création exigés par ADAPT-12. **WORKSPACE-TABS-1 — décision Staff et première
+  tranche runtime engagées localement le 2026-10-04 :** la barre représente de
+  vraies vues de travail ouvertes, pas un historique de routes. ADR-0084 exige
+  qu'un changement d'onglet rattache la même instance Angular et conserve
+  formulaires, erreurs, filtres, sélection et état local. `Tableau de bord` est
+  épinglé ; chaque autre vue est fermable individuellement, tandis qu'un menu
+  secondaire regroupe les fermetures globales. Une `RouteReuseStrategy`
+  sélective, la destruction officielle des handles, un lifecycle
+  `active/suspended` et une capacité mémoire mesurée rendent cette promesse
+  explicite et testable. Le contrat
+  [`workspace-vues-vivantes-accessibilite-2026-10-04.md`](./workspace-vues-vivantes-accessibilite-2026-10-04.md)
+  fixe identité, permissions, garde dirty, réseau, nettoyage, clavier Tabs,
+  overflow horizontal sans `Plus (n)` permanent et quinze familles d'oracles.
+  Deux PNG génériques Medium/Expanded sont publiés dans
+  [`workspace-shell-layout-examples`](../../examples/presentation/workspace-shell-layout-examples/README.md)
+  comme `approved-example` après validation visuelle humaine : leur autorité
+  reste limitée à la disposition du shell et n'autorise aucune capacité métier
+  ni preuve runtime. Le vieux couple mort
+  `TabService`/`CustomRouteReuseStrategy` est remplacé par un shell réellement
+  routé, un registre mémoire borné et une stratégie de handles exacts. Un test
+  avec le Router réel prouve même instance et état conservé ; un second prouve
+  la destruction du composant lors d'une fermeture active ; un stress de 100
+  cycles confirme 100 créations, 100 destructions et zéro handle fermé résiduel.
+  Le cache ne prend que le premier composant sous `workspaceRoot`, afin qu'une
+  route composant enfant ne puisse jamais écraser le handle parent. Dashboard
+  épinglé, fermeture MRU, confirmation dirty, limite explicite sans éviction,
+  navigation clavier APG et overflow mesuré sont câblés. Angular Aria Toolbar
+  est utilisée ; Tabs reste une implémentation APG locale justifiée par le
+  panneau Router unique et les actions de fermeture sœurs. Tailwind porte les
+  utilitaires stables du template ; le SCSS scopé conserve nesting,
+  pseudo-éléments, focus partagé, scrollbar multi-moteur et mouvement réduit,
+  sans double autorité de style. Le plafond `8` reste un garde-fou provisoire,
+  pas une calibration. Deux parcours Chromium authentifiés contre le mock local
+  prouvent désormais le vrai shell : instance et état Dashboard conservés sans
+  GET au switch ou au resize, clavier/overflow/fermeture ; puis formulaire
+  pilote dirty conservé, confirmation annulable, URL paramétrée exacte,
+  destruction sans POST et focus restitué. La directive générique
+  `[cmzWorkspaceDirty]` fournit le raccordement réutilisable. Avant promotion
+  complète, restent lecteur d'écran/zoom/RTL, le profil de heap sur 100 cycles,
+  le raccordement futur des pages polling au lifecycle, le déploiement dirty sur
+  les autres formulaires et l'oracle de révocation de permission en session.
+  **Parité ReactJS explicitement non acquise :** le contrat est formulé au
+  niveau produit et ses scénarios navigateur seront partagés, mais ReactJS exige
+  encore un adaptateur natif distinct prouvant conservation de l'instance,
+  suspension des effets, destruction, réseau, sécurité, dirty et accessibilité.
+  Il est interdit de traduire mécaniquement `RouteReuseStrategy` ou de déclarer
+  la parité sur la seule présence du renderer React existant. **ADAPT-11b —
+  engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
+  bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
+  capacités non déclarées, la non-activation des lignes et la géométrie
+  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
+  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
+  fournit aucun `action-request` correspondant : les rendre opérables maintenant
+  inventerait transport, permissions et effets. Les oracles exigent donc
+  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
+  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
+  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
+  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
+  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
+  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
+  réalisation formalisée le 2026-10-02 :** le guide exhaustif
   [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
   donne à un humain ou à un LLM la hiérarchie des sources, les règles
   numérotées, la matrice Compact/Medium/Expanded, le choix des primitives
@@ -2700,19 +2746,19 @@ Figma, désormais source partielle différée :
   rejetée ou nouvelle proposition non approuvée n'est utilisée comme solution de
   repli. Les anciennes propositions de création sont désormais archivées sous
   `presentation/historical/adaptive-create-candidates/` avec `authority: none`;
-  leur validation passée ne leur confère plus aucune autorité active.
-  **ADAPT-9 — chargement progressif mobile silencieux :** la
-  décision produit du 2026-09-29 retire la pagination visible uniquement en
-  fenêtre `compact` et accumule les pages normalisées à l'approche de la fin de
-  la pile. Le cas nominal ne montre ni spinner, ni skeleton, ni texte de
-  chargement ; l'état interne reste explicite et accessible. Une seule page
-  suivante peut être en vol, les cartes sont ordonnées et dédupliquées par
-  `uniqId`, les réponses obsolètes sont rejetées et `lastPage` arrête
-  définitivement la sentinelle. Une erreur conserve les cartes, suspend
-  l'automatisme et expose `Réessayer`. Recherche, filtre et création réussie
-  repartent de la page `1` ; un resize seul n'émet aucun GET. `medium` et
-  `expanded` gardent la pagination explicite. Ce lot de décision ne modifie ni
-  runtime, ni `list-query`, ni backend. Soumaila a approuvé le commit exact
+  leur validation passée ne leur confère plus aucune autorité active. **ADAPT-9
+  — chargement progressif mobile silencieux :** la décision produit du
+  2026-09-29 retire la pagination visible uniquement en fenêtre `compact` et
+  accumule les pages normalisées à l'approche de la fin de la pile. Le cas
+  nominal ne montre ni spinner, ni skeleton, ni texte de chargement ; l'état
+  interne reste explicite et accessible. Une seule page suivante peut être en
+  vol, les cartes sont ordonnées et dédupliquées par `uniqId`, les réponses
+  obsolètes sont rejetées et `lastPage` arrête définitivement la sentinelle. Une
+  erreur conserve les cartes, suspend l'automatisme et expose `Réessayer`.
+  Recherche, filtre et création réussie repartent de la page `1` ; un resize
+  seul n'émet aucun GET. `medium` et `expanded` gardent la pagination explicite.
+  Ce lot de décision ne modifie ni runtime, ni `list-query`, ni backend.
+  Soumaila a approuvé le commit exact
   `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusionné par la PR #141 dans
   `2805763217653e85d8f125568fb1b5ccd903bcfb` ; les 17 contrôles et la CI
   post-fusion `36596093253` sont verts. **ADAPT-9a — oracles fusionnés :**

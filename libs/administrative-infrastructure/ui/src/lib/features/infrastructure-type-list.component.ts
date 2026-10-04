@@ -1,5 +1,5 @@
 import { Component, Signal, computed, inject } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
 import {
     LocalizeTranslationService,
@@ -96,7 +96,6 @@ export class InfrastructureTypeListComponent {
     private readonly notification = inject(NOTIFICATION_PORT);
     private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
-    private readonly route = inject(ActivatedRoute);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;
@@ -259,8 +258,7 @@ export class InfrastructureTypeListComponent {
         uniqId: string | undefined,
         ref: 'create' | 'edit'
     ): void {
-        void this.router.navigate(['../', INFRASTRUCTURE_TYPE_FORM], {
-            relativeTo: this.route,
+        void this.router.navigate([ROUTE, INFRASTRUCTURE_TYPE_FORM], {
             queryParams: uniqId ? { uniqId, ref } : { ref },
         });
     }

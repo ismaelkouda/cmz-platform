@@ -35,6 +35,7 @@ test('catalogue chaque ensemble générique sans manifeste orphelin', async () =
     assert.deepEqual(directories, [
         'compact-data-view-layout-examples',
         'data-view-layout-examples',
+        'workspace-shell-layout-examples',
     ]);
 
     const setIds = new Set();

@@ -1,0 +1,136 @@
+<section
+    class="workspace relative m-4 flex h-14 min-w-0 overflow-visible rounded-lg border border-border bg-surface max-[599px]:hidden"
+    [attr.aria-label]="translate('WORKSPACE.LABEL')"
+>
+    <div
+        class="workspace__semantic-list absolute size-px overflow-hidden"
+        role="tablist"
+        [attr.aria-label]="translate('WORKSPACE.OPEN_VIEWS')"
+        [attr.aria-owns]="ownedTabIds()"
+    ></div>
+
+    <div #strip class="workspace__strip flex min-w-0 flex-1 overflow-x-auto" (scroll)="updateOverflow()">
+        @for (view of views(); track view.id) {
+            <div
+                class="workspace__item relative flex shrink-0 items-center border-r border-border text-muted"
+                [class.workspace__item--active]="view.lifecycle === 'active'"
+            >
+                <button
+                    type="button"
+                    class="workspace__tab flex h-full cursor-pointer items-center gap-1.5 whitespace-nowrap border-0 bg-transparent py-0 pr-1.5 pl-4 font-bold text-inherit"
+                    role="tab"
+                    [id]="tabDomId(view.id)"
+                    [attr.aria-selected]="view.lifecycle === 'active'"
+                    [attr.aria-label]="
+                        translate(view.closable ? 'WORKSPACE.CLOSABLE_TAB_LABEL' : 'WORKSPACE.TAB_LABEL', {
+                            title: view.title,
+                        })
+                    "
+                    [attr.aria-controls]="view.lifecycle === 'active' ? 'workspace-active-panel' : null"
+                    [attr.tabindex]="view.lifecycle === 'active' ? 0 : -1"
+                    (click)="activate(view.id)"
+                    (keydown)="onTabKeydown($event, view)"
+                >
+                    <span>{{ view.title }}</span>
+                    @if (view.dirty) {
+                        <span
+                            class="workspace__dirty text-xl leading-none"
+                            [attr.aria-label]="translate('WORKSPACE.DIRTY')"
+                            >•</span
+                        >
+                    }
+                </button>
+                @if (view.closable) {
+                    <button
+                        type="button"
+                        class="workspace__close mr-1 grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-xl text-inherit hover:bg-surface-hover"
+                        tabindex="-1"
+                        [attr.aria-label]="translate('WORKSPACE.CLOSE_VIEW', { title: view.title })"
+                        (click)="requestClose(view)"
+                    >
+                        ×
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (overflowing()) {
+        <div
+            ngToolbar
+            class="workspace__scroll flex shrink-0 border-l border-border"
+            [attr.aria-label]="translate('WORKSPACE.SCROLL_LABEL')"
+        >
+            @if (canScrollPrevious()) {
+                <button
+                    ngToolbarWidget
+                    type="button"
+                    value="previous"
+                    class="workspace__scroll-button grid h-full w-12 cursor-pointer place-items-center border-0 bg-transparent text-xl text-inherit"
+                    [attr.aria-label]="translate('WORKSPACE.SCROLL_PREVIOUS')"
+                    (click)="scrollTabs(-1)"
+                >
+                    ‹
+                </button>
+            }
+            @if (canScrollNext()) {
+                <button
+                    ngToolbarWidget
+                    type="button"
+                    value="next"
+                    class="workspace__scroll-button grid h-full w-12 cursor-pointer place-items-center border-0 bg-transparent text-xl text-inherit"
+                    [attr.aria-label]="translate('WORKSPACE.SCROLL_NEXT')"
+                    (click)="scrollTabs(1)"
+                >
+                    ›
+                </button>
+            }
+        </div>
+    }
+
+    <details class="workspace__commands relative shrink-0 border-l border-border">
+        <summary
+            class="workspace__commands-trigger grid h-full w-12 cursor-pointer place-items-center text-xl"
+            [attr.aria-label]="translate('WORKSPACE.ACTIONS')"
+        >
+            ⋮
+        </summary>
+        <div
+            class="workspace__command-list absolute right-0 z-20 grid w-max min-w-60 rounded-lg border border-border bg-surface p-1.5 shadow-lg"
+        >
+            <button
+                type="button"
+                class="cursor-pointer rounded border-0 bg-transparent px-3 py-2.5 text-left text-inherit hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="!canCloseCurrent()"
+                (click)="closeCurrent()"
+            >
+                {{ translate('WORKSPACE.CLOSE_CURRENT') }}
+            </button>
+            <button
+                type="button"
+                class="cursor-pointer rounded border-0 bg-transparent px-3 py-2.5 text-left text-inherit hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="!canCloseOthers()"
+                (click)="closeOthers()"
+            >
+                {{ translate('WORKSPACE.CLOSE_OTHERS') }}
+            </button>
+            <button
+                type="button"
+                class="cursor-pointer rounded border-0 bg-transparent px-3 py-2.5 text-left text-inherit hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="!canCloseAny()"
+                (click)="closeAllExceptPinned()"
+            >
+                {{ translate('WORKSPACE.CLOSE_ALL_EXCEPT_DASHBOARD') }}
+            </button>
+        </div>
+    </details>
+</section>
+
+<main
+    id="workspace-active-panel"
+    class="workspace-panel min-w-0"
+    role="tabpanel"
+    [attr.aria-labelledby]="activeTabId()"
+>
+    <router-outlet />
+</main>

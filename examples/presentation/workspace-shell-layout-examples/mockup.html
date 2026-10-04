@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Workspace à vues vivantes</title>
+        <link rel="stylesheet" href="./mockup.css" />
+    </head>
+    <body data-layout="expanded">
+        <header class="app-bar" aria-label="Région illustrative hors autorité">
+            <div class="brand"><span class="brand-mark"></span>CMZ Platform</div>
+            <div class="operator">Espace de travail</div>
+        </header>
+        <main>
+            <section class="workspace-tabs" aria-label="Vues ouvertes du workspace">
+                <ol class="workspace-tab-list" role="tablist" aria-label="Vues ouvertes">
+                    <li class="workspace-tab pinned" role="presentation">
+                        <button
+                            class="tab-trigger"
+                            type="button"
+                            role="tab"
+                            aria-selected="false"
+                            tabindex="-1"
+                            aria-controls="workspace-panel"
+                        >
+                            Tableau de bord
+                        </button>
+                    </li>
+                    <li class="workspace-tab" role="presentation">
+                        <button
+                            class="tab-trigger"
+                            type="button"
+                            role="tab"
+                            aria-selected="false"
+                            tabindex="-1"
+                            aria-controls="workspace-panel"
+                        >
+                            Utilisateurs
+                        </button>
+                        <button class="tab-close" type="button" aria-label="Fermer Utilisateurs">×</button>
+                    </li>
+                    <li class="workspace-tab medium-overflow-hidden" role="presentation">
+                        <button
+                            class="tab-trigger"
+                            type="button"
+                            role="tab"
+                            aria-selected="false"
+                            tabindex="-1"
+                            aria-controls="workspace-panel"
+                        >
+                            Rôles et permissions
+                        </button>
+                        <button class="tab-close" type="button" aria-label="Fermer Rôles et permissions">×</button>
+                    </li>
+                    <li class="workspace-tab active" role="presentation">
+                        <button
+                            id="tab-activity"
+                            class="tab-trigger"
+                            type="button"
+                            role="tab"
+                            aria-selected="true"
+                            tabindex="0"
+                            aria-controls="workspace-panel"
+                        >
+                            Journal d'activité
+                        </button>
+                        <button class="tab-close" type="button" aria-label="Fermer Journal d'activité">×</button>
+                    </li>
+                    <li class="workspace-tab medium-overflow-hidden" role="presentation">
+                        <button
+                            class="tab-trigger"
+                            type="button"
+                            role="tab"
+                            aria-selected="false"
+                            tabindex="-1"
+                            aria-controls="workspace-panel"
+                        >
+                            Rapports
+                        </button>
+                        <button class="tab-close" type="button" aria-label="Fermer Rapports">×</button>
+                    </li>
+                    <li class="tab-scroll-controls" aria-label="Défilement des onglets">
+                        <button class="tab-scroll-button" type="button" aria-label="Voir les onglets précédents">
+                            ‹
+                        </button>
+                        <button class="tab-scroll-button" type="button" aria-label="Voir les onglets suivants">
+                            ›
+                        </button>
+                    </li>
+                    <li class="workspace-menu-item">
+                        <button class="workspace-menu" type="button" aria-label="Actions des onglets">⋮</button>
+                    </li>
+                </ol>
+            </section>
+
+            <section id="workspace-panel" class="data-card" role="tabpanel" aria-labelledby="tab-activity">
+                <div class="table-toolbar">
+                    <div class="table-title">
+                        <h1 id="page-title">Journal d'activité</h1>
+                        <span class="count" aria-label="128 éléments">128</span>
+                    </div>
+                    <div class="table-actions" aria-label="Actions de la vue illustrative">
+                        <label class="search-wrap">
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <circle cx="11" cy="11" r="7"></circle>
+                                <path d="m20 20-4-4"></path>
+                            </svg>
+                            <span hidden>Rechercher dans les événements</span>
+                            <input placeholder="Rechercher dans les événements" />
+                        </label>
+                        <button class="action-button primary" type="button">
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="M12 5v14M5 12h14"></path>
+                            </svg>
+                            <span class="button-label">Créer</span>
+                        </button>
+                        <button class="action-button" type="button">
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="M20 11a8 8 0 1 0 2 5"></path>
+                                <path d="M20 4v7h-7"></path>
+                            </svg>
+                            <span class="button-label">Rafraîchir</span>
+                        </button>
+                        <button class="action-button" type="button">
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="M4 6h16M7 12h10M10 18h4"></path>
+                            </svg>
+                            <span class="button-label">Filtres</span>
+                        </button>
+                    </div>
+                </div>
+                <table aria-label="Contenu illustratif sans autorité métier">
+                    <thead>
+                        <tr>
+                            <th class="rank">#</th>
+                            <th>Événement</th>
+                            <th>Catégorie</th>
+                            <th>Responsable</th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rows"></tbody>
+                </table>
+                <div class="table-footer">
+                    <span>1–8 sur 128</span><span class="pager">‹ &nbsp; 1 &nbsp; 2 &nbsp; 3 &nbsp; ›</span>
+                </div>
+            </section>
+        </main>
+        <script>
+            const params = new URLSearchParams(window.location.search);
+            document.body.dataset.layout = params.get('layout') === 'medium' ? 'medium' : 'expanded';
+            const rows = [
+                ['Connexion réussie', 'Sécurité', 'A. Martin', 'Terminé', '04/10/2026 09:42'],
+                ['Mise à jour du profil', 'Compte', 'L. Diallo', 'Terminé', '04/10/2026 09:31'],
+                ['Export demandé', 'Données', 'S. Kouda', 'En cours', '04/10/2026 09:18'],
+                ['Rôle attribué', 'Permissions', 'M. Traoré', 'Terminé', '04/10/2026 08:57'],
+                ['Invitation envoyée', 'Compte', 'C. Bernard', 'Terminé', '04/10/2026 08:41'],
+                ['Filtre enregistré', 'Préférences', 'N. Koné', 'Terminé', '04/10/2026 08:25'],
+                ['Rapport consulté', 'Données', 'D. Morel', 'Terminé', '04/10/2026 08:04'],
+                ['Session fermée', 'Sécurité', 'A. Martin', 'Terminé', '04/10/2026 07:52'],
+            ];
+            document.querySelector('#rows').innerHTML = rows
+                .map(
+                    (row, index) =>
+                        `<tr><td class="rank">${index + 1}</td><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td><span class="status">${row[3]}</span></td><td>${row[4]}</td></tr>`
+                )
+                .join('');
+            document.documentElement.dataset.ready = 'true';
+        </script>
+    </body>
+</html>

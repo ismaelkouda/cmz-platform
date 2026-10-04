@@ -4,7 +4,11 @@ import { FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
 import { LocalizeTranslationService } from '@cmz/shared-application';
-import { FieldComponent, FormMode } from '@cmz/shared-ui';
+import {
+    FieldComponent,
+    FormMode,
+    WorkspaceDirtyDirective,
+} from '@cmz/shared-ui';
 import { InfrastructureTypeFormStore } from '../stores/infrastructure-type-form.store';
 
 const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
@@ -17,10 +21,14 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
  */
 @Component({
     selector: 'cmz-infrastructure-type-form',
-    imports: [FormField, FieldComponent],
+    imports: [FormField, FieldComponent, WorkspaceDirtyDirective],
     providers: [InfrastructureTypeFormStore],
     template: `
-        <form (submit)="onSubmit($event)" class="flex max-w-xl flex-col gap-4">
+        <form
+            [cmzWorkspaceDirty]="store.form().dirty()"
+            (submit)="onSubmit($event)"
+            class="flex max-w-xl flex-col gap-4"
+        >
             <h1 class="text-lg font-semibold text-text">
                 {{ t(ns + '.FORM.TITLE.' + mode().toUpperCase()) }}
             </h1>

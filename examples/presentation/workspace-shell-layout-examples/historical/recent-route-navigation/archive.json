@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "historical-presentation-reference-set",
+  "set_id": "historical_workspace_recent_route_navigation",
+  "subject": "generic-workspace-shell",
+  "status": "historical",
+  "authority": "none",
+  "retired_on": "2026-10-04",
+  "reason": "Ces candidats représentaient un historique de routes reconstruites et un regroupement Plus (n). Ils contredisent la décision approuvée de conserver les mêmes instances Angular dans un workspace à vues vivantes et fermables.",
+  "superseded_by": [
+    "docs/adr/0084-workspace-a-vues-vivantes-et-fermables.md",
+    "docs/architecture/workspace-vues-vivantes-accessibilite-2026-10-04.md",
+    "examples/presentation/workspace-shell-layout-examples/expanded-live-workspace-tabs.proposed.png",
+    "examples/presentation/workspace-shell-layout-examples/medium-live-workspace-tabs-overflow.proposed.png"
+  ],
+  "forbidden_uses": [
+    "active-presentation-evidence",
+    "code-generation-authority",
+    "visual-regression-baseline",
+    "capability-inference",
+    "runtime-source-copy"
+  ],
+  "retained_intentions": [
+    "Placer les vues de travail dans le shell au-dessus du contenu actif",
+    "Réserver cette navigation aux classes Medium et Expanded",
+    "Maintenir la destination active visible dans une barre horizontale"
+  ],
+  "sources": [
+    {
+      "id": "historical-expanded-workspace-recent-views",
+      "path": "examples/presentation/workspace-shell-layout-examples/historical/recent-route-navigation/expanded-workspace-recent-views.proposed.png",
+      "media_type": "image/png",
+      "bytes": 110585,
+      "sha256": "8d66e84ecf3df1cd8af03adbd0f43633b6f9b40ca0c21d41b40d7797f7d334a3",
+      "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 },
+      "capabilities_shown": ["recent-route-navigation", "overflow-navigation"]
+    },
+    {
+      "id": "historical-medium-workspace-recent-views",
+      "path": "examples/presentation/workspace-shell-layout-examples/historical/recent-route-navigation/medium-workspace-recent-views.proposed.png",
+      "media_type": "image/png",
+      "bytes": 97933,
+      "sha256": "edb70957781e847570940ade32fff938a2fc1d60bec964e3efd7792e022ee17a",
+      "viewport": { "width": 960, "height": 900, "pixel_ratio": 1 },
+      "capabilities_shown": ["recent-route-navigation", "overflow-navigation"]
+    }
+  ]
+}

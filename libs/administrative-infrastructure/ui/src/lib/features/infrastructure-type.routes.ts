@@ -12,6 +12,10 @@ export const INFRASTRUCTURE_TYPE_ROUTES: Routes = [
     { path: '', pathMatch: 'full', redirectTo: INFRASTRUCTURE_TYPE_LIST },
     {
         path: INFRASTRUCTURE_TYPE_LIST,
+        data: {
+            workspaceTitle:
+                'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE.TABS.LIST.LABEL',
+        },
         loadComponent: () =>
             import('./infrastructure-type-list.component').then(
                 (m) => m.InfrastructureTypeListComponent
@@ -19,6 +23,10 @@ export const INFRASTRUCTURE_TYPE_ROUTES: Routes = [
     },
     {
         path: INFRASTRUCTURE_TYPE_FORM,
+        data: {
+            workspaceTitle:
+                'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE.TABS.FORM.LABEL',
+        },
         loadComponent: () =>
             import('./infrastructure-type-form.component').then(
                 (m) => m.InfrastructureTypeFormComponent
