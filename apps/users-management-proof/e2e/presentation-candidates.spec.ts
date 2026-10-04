@@ -1,10 +1,12 @@
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import {
-    expect,
-    test,
-    type Locator,
-    type Page,
-    type TestInfo,
-} from '@playwright/test';
+    expectCentered,
+    expectInsideViewport,
+    formColumnCount,
+    observeApiRequests,
+    requireBox,
+    waitForResponsiveLayout,
+} from './adaptive-layout.support';
 
 const USERS = [
     [
@@ -92,15 +94,6 @@ const COMPACT_MAX_WIDTH = 800;
 const EXPANDED_MIN_WIDTH = 1200;
 const EXPANDED_MIN_HEIGHT = 800;
 const MEDIUM_PROOF_VIEWPORT = { width: 1024, height: 768 } as const;
-const RESPONSIVE_QUIET_WINDOW_MS = 250;
-
-function requireBox(
-    box: { x: number; y: number; width: number; height: number } | null,
-    label: string
-): { x: number; y: number; width: number; height: number } {
-    if (!box) throw new Error(`Géométrie introuvable : ${label}`);
-    return box;
-}
 
 async function installHostAndBackend(page: Page): Promise<void> {
     await page.addInitScript(() => {
@@ -238,31 +231,6 @@ async function captureCandidate(
         fullPage: false,
     });
     await testInfo.attach(name, { path, contentType: 'image/png' });
-}
-
-async function waitForResponsiveLayout(page: Page): Promise<void> {
-    await page.evaluate(
-        () =>
-            new Promise<void>((resolve) => {
-                requestAnimationFrame(() =>
-                    requestAnimationFrame(() => resolve())
-                );
-            })
-    );
-    // A negative network assertion needs a bounded quiet window after layout.
-    // This also catches a delayed resize handler instead of checking too early.
-    await page.waitForTimeout(RESPONSIVE_QUIET_WINDOW_MS);
-}
-
-function observeApiRequests(page: Page): string[] {
-    const requests: string[] = [];
-    page.on('request', (request) => {
-        const url = new URL(request.url());
-        if (url.pathname.startsWith('/api/')) {
-            requests.push(`${request.method()} ${url.pathname}${url.search}`);
-        }
-    });
-    return requests;
 }
 
 async function submitEmailConflict(page: Page): Promise<void> {
@@ -404,7 +372,7 @@ test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite
     expect(apiRequests.at(-1)).not.toContain('profile=');
 });
 
-test('prouve le conflit compact dans une task sheet bornée par le contenu', async ({
+test('prouve le conflit étroit dans un dialogue plein écran', async ({
     page,
 }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -430,13 +398,12 @@ test('prouve le conflit compact dans une task sheet bornée par le contenu', asy
     ]);
     const createBox = requireBox(rawCreateBox, 'action Créer mobile');
     const cancelBox = requireBox(rawCancelBox, 'action Annuler mobile');
-    const legacy = dialogBox.height === 844 && createBox.y < cancelBox.y;
-    test.fail(
-        legacy,
-        'ADAPT-10 : la surface compacte historique occupe encore tout le viewport et empile Créer avant Annuler.'
-    );
     await expect(create).toBeEnabled();
-    expect(dialogBox.height).toBeLessThan(844);
+    expect(dialogBox.x).toBeCloseTo(0, 0);
+    expect(dialogBox.y).toBeCloseTo(0, 0);
+    expect(dialogBox.width).toBeCloseTo(390, 0);
+    expect(dialogBox.height).toBeCloseTo(844, 0);
+    expect(await formColumnCount(dialog)).toBe(1);
     expect(Math.abs(createBox.y - cancelBox.y)).toBeLessThan(2);
     expect(cancelBox.x).toBeLessThan(createBox.x);
     await captureCandidate(
@@ -570,7 +537,7 @@ test('active un FAB compact unique sans pagination et conserve updated_at', asyn
     expect(fabBox.x + fabBox.width).toBeLessThanOrEqual(390 - 16);
 });
 
-test('rend le side sheet medium strictement modal et restitue le focus', async ({
+test('rend le dialogue régulier centré, modal, à une colonne et restitue le focus', async ({
     page,
 }) => {
     await page.setViewportSize(MEDIUM_PROOF_VIEWPORT);
@@ -584,14 +551,9 @@ test('rend le side sheet medium strictement modal et restitue le focus', async (
         name: 'Créer un utilisateur',
     });
     const box = requireBox(await dialog.boundingBox(), 'dialogue Medium');
-    test.fail(
-        box.width === 480 && box.height === MEDIUM_PROOF_VIEWPORT.height,
-        'ADAPT-10 : le drawer Medium historique reste fixé à 480 px et pleine hauteur.'
-    );
-
-    expect(box.width).toBeGreaterThanOrEqual(520);
-    expect(box.width).toBeLessThanOrEqual(640);
-    expect(box.height).toBeLessThan(MEDIUM_PROOF_VIEWPORT.height);
+    expectInsideViewport(box, MEDIUM_PROOF_VIEWPORT);
+    expectCentered(box, MEDIUM_PROOF_VIEWPORT);
+    expect(await formColumnCount(dialog)).toBe(1);
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
     await expect(page.locator('.backdrop')).toBeVisible();
     await expect(page.locator('main')).toHaveAttribute('inert', '');
@@ -617,7 +579,7 @@ test('rend le side sheet medium strictement modal et restitue le focus', async (
     await expect(create).toBeFocused();
 });
 
-test('rend le dialogue expanded centré, modal et superposé à la liste', async ({
+test('rend le dialogue large centré, modal, à deux colonnes et superposé à la liste', async ({
     page,
 }) => {
     await page.setViewportSize({ width: 1440, height: 1024 });
@@ -630,22 +592,14 @@ test('rend le dialogue expanded centré, modal et superposé à la liste', async
     const pane = page.getByRole('dialog', {
         name: 'Créer un utilisateur',
     });
-    const ariaModal = await pane.getAttribute('aria-modal');
-    const backdropCount = await page.locator('.backdrop').count();
     const paneBox = requireBox(await pane.boundingBox(), 'dialogue expanded');
-    test.fail(
-        ariaModal === null && backdropCount === 0 && paneBox.width <= 440,
-        'ADAPT-10 : le pane Expanded historique reste étroit, adjacent et non modal.'
-    );
-
-    expect(ariaModal).toBe('true');
-    expect(backdropCount).toBe(1);
+    expectInsideViewport(paneBox, { width: 1440, height: 1024 });
+    expectCentered(paneBox, { width: 1440, height: 1024 });
+    expect(await formColumnCount(pane)).toBe(2);
+    await expect(pane).toHaveAttribute('aria-modal', 'true');
+    await expect(page.locator('.backdrop')).toHaveCount(1);
     await expect(page.locator('main')).toHaveAttribute('inert', '');
     await expect(create).toBeDisabled();
-
-    expect(paneBox.width).toBeGreaterThanOrEqual(640);
-    expect(paneBox.width).toBeLessThanOrEqual(760);
-    expect(Math.abs(paneBox.x + paneBox.width / 2 - 720)).toBeLessThan(2);
     await pane.getByRole('button', { name: 'Annuler' }).click();
     await expect(pane).toHaveCount(0);
     await expect(create).toBeFocused();
@@ -681,14 +635,11 @@ test('conserve permission, état, focus et silence réseau sur les trois classes
         await mediumPane.boundingBox(),
         'dialogue Medium après resize'
     );
-    test.fail(
-        mediumBox.width === 480 && mediumBox.height === 768,
-        'ADAPT-10 : la transition utilise encore le drawer Medium historique pleine hauteur.'
-    );
 
     expect(apiRequests).toEqual(requestsBeforeResize);
-    expect(mediumBox.width).toBeGreaterThanOrEqual(520);
-    expect(mediumBox.width).toBeLessThanOrEqual(640);
+    expectInsideViewport(mediumBox, MEDIUM_PROOF_VIEWPORT);
+    expectCentered(mediumBox, MEDIUM_PROOF_VIEWPORT);
+    expect(await formColumnCount(mediumPane)).toBe(1);
     await expect(mediumPane).toHaveAttribute('aria-modal', 'true');
     await expect(email).toBeFocused();
 
@@ -696,6 +647,13 @@ test('conserve permission, état, focus et silence réseau sur les trois classes
     await waitForResponsiveLayout(page);
     const expandedPane = page.getByRole('dialog');
     expect(apiRequests).toEqual(requestsBeforeResize);
+    const expandedBox = requireBox(
+        await expandedPane.boundingBox(),
+        'dialogue large après resize'
+    );
+    expectInsideViewport(expandedBox, { width: 1440, height: 1024 });
+    expectCentered(expandedBox, { width: 1440, height: 1024 });
+    expect(await formColumnCount(expandedPane)).toBe(2);
     await expect(expandedPane).toHaveAttribute('aria-modal', 'true');
     await expect(page.locator('.backdrop')).toHaveCount(1);
     await expect(search).toHaveValue('Alpha');
@@ -710,14 +668,21 @@ test('conserve permission, état, focus et silence réseau sur les trois classes
     await page.setViewportSize({ width: 390, height: 844 });
     await waitForResponsiveLayout(page);
     expect(apiRequests).toEqual(requestsBeforeResize);
-    await expect(page.getByRole('dialog')).toHaveAttribute(
-        'aria-modal',
-        'true'
+    const narrowPane = page.getByRole('dialog');
+    const narrowBox = requireBox(
+        await narrowPane.boundingBox(),
+        'dialogue étroit après resize'
     );
+    expect(narrowBox.x).toBeCloseTo(0, 0);
+    expect(narrowBox.y).toBeCloseTo(0, 0);
+    expect(narrowBox.width).toBeCloseTo(390, 0);
+    expect(narrowBox.height).toBeCloseTo(844, 0);
+    expect(await formColumnCount(narrowPane)).toBe(1);
+    await expect(narrowPane).toHaveAttribute('aria-modal', 'true');
     await expect(email).toBeFocused();
 });
 
-test('verrouille les frontières expanded de largeur et de hauteur sans réseau', async ({
+test('verrouille le reflow du formulaire aux frontières sans réseau', async ({
     page,
 }) => {
     const apiRequests = observeApiRequests(page);
@@ -732,13 +697,15 @@ test('verrouille les frontières expanded de largeur et de hauteur sans réseau'
         await pane.boundingBox(),
         'dialogue à la frontière Medium'
     );
-    test.fail(
-        mediumBox.width === 480 && mediumBox.height === EXPANDED_MIN_HEIGHT,
-        'ADAPT-10 : les frontières utilisent encore le drawer historique 480 px pleine hauteur.'
-    );
-
-    expect(mediumBox.width).toBeGreaterThanOrEqual(520);
-    expect(mediumBox.width).toBeLessThanOrEqual(640);
+    expectInsideViewport(mediumBox, {
+        width: EXPANDED_MIN_WIDTH - 1,
+        height: EXPANDED_MIN_HEIGHT,
+    });
+    expectCentered(mediumBox, {
+        width: EXPANDED_MIN_WIDTH - 1,
+        height: EXPANDED_MIN_HEIGHT,
+    });
+    expect(await formColumnCount(pane)).toBe(1);
     await expect(pane).toHaveAttribute('aria-modal', 'true');
     const requestsBeforeResize = [...apiRequests];
 
@@ -750,8 +717,15 @@ test('verrouille les frontières expanded de largeur et de hauteur sans réseau'
     expect(apiRequests).toEqual(requestsBeforeResize);
     await expect(pane).toHaveAttribute('aria-modal', 'true');
     let box = requireBox(await pane.boundingBox(), 'dialogue Expanded');
-    expect(box.width).toBeGreaterThanOrEqual(640);
-    expect(box.width).toBeLessThanOrEqual(760);
+    expectInsideViewport(box, {
+        width: EXPANDED_MIN_WIDTH,
+        height: EXPANDED_MIN_HEIGHT,
+    });
+    expectCentered(box, {
+        width: EXPANDED_MIN_WIDTH,
+        height: EXPANDED_MIN_HEIGHT,
+    });
+    expect(await formColumnCount(pane)).toBe(2);
 
     await page.setViewportSize({
         width: 1440,
@@ -761,8 +735,15 @@ test('verrouille les frontières expanded de largeur et de hauteur sans réseau'
     expect(apiRequests).toEqual(requestsBeforeResize);
     await expect(pane).toHaveAttribute('aria-modal', 'true');
     box = requireBox(await pane.boundingBox(), 'dialogue Medium bas');
-    expect(box.width).toBeGreaterThanOrEqual(520);
-    expect(box.width).toBeLessThanOrEqual(640);
+    expectInsideViewport(box, {
+        width: 1440,
+        height: EXPANDED_MIN_HEIGHT - 1,
+    });
+    expectCentered(box, {
+        width: 1440,
+        height: EXPANDED_MIN_HEIGHT - 1,
+    });
+    expect(await formColumnCount(pane)).toBe(1);
 
     await page.setViewportSize({
         width: 1440,
@@ -772,8 +753,15 @@ test('verrouille les frontières expanded de largeur et de hauteur sans réseau'
     expect(apiRequests).toEqual(requestsBeforeResize);
     await expect(pane).toHaveAttribute('aria-modal', 'true');
     box = requireBox(await pane.boundingBox(), 'dialogue Expanded rétabli');
-    expect(box.width).toBeGreaterThanOrEqual(640);
-    expect(box.width).toBeLessThanOrEqual(760);
+    expectInsideViewport(box, {
+        width: 1440,
+        height: EXPANDED_MIN_HEIGHT,
+    });
+    expectCentered(box, {
+        width: 1440,
+        height: EXPANDED_MIN_HEIGHT,
+    });
+    expect(await formColumnCount(pane)).toBe(2);
 });
 
 test('refuse la création sans permission dans chaque classe', async ({

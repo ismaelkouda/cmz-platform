@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/presentation-layout-example-set.schema.json",
+  "title": "CMZ Presentation Layout Example Set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "set_id",
+    "status",
+    "authority",
+    "subject",
+    "authority_scope",
+    "forbidden_inferences",
+    "usage_protocol",
+    "render_sources",
+    "sources"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "presentation-layout-example-set" },
+    "set_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "status": { "enum": ["candidate", "approved-example"] },
+    "authority": { "const": "layout-guidance-only" },
+    "subject": {
+      "enum": ["generic-data-view", "generic-workspace-shell"]
+    },
+    "authority_scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "region-order",
+          "visual-hierarchy",
+          "responsive-priority",
+          "workspace-navigation-placement",
+          "overlay-bounds",
+          "scroll-bounds",
+          "optional-capability-placement"
+        ]
+      }
+    },
+    "forbidden_inferences": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "backend-contract",
+          "business-domain",
+          "column-contract",
+          "permission-contract",
+          "capability-presence",
+          "component-choice",
+          "dependency-choice",
+          "runtime-accessibility-proof",
+          "pixel-perfect-copy"
+        ]
+      }
+    },
+    "usage_protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requires_page_contract",
+        "requires_capability_match",
+        "requires_runtime_proof"
+      ],
+      "properties": {
+        "requires_page_contract": { "const": true },
+        "requires_capability_match": { "const": true },
+        "requires_runtime_proof": { "const": true }
+      }
+    },
+    "render_sources": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/renderSource" }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "pixel_ratio"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1, "maximum": 8192 },
+        "height": { "type": "integer", "minimum": 1, "maximum": 16384 },
+        "pixel_ratio": { "type": "number", "minimum": 1, "maximum": 4 }
+      }
+    },
+    "renderSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "media_type", "bytes", "sha256", "authority"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^examples/presentation/[a-z0-9-]+-layout-examples/(?:mockup\\.(?:html|css)|render\\.mjs)$"
+        },
+        "media_type": {
+          "enum": ["text/html", "text/css", "text/javascript"]
+        },
+        "bytes": { "type": "integer", "minimum": 1, "maximum": 5242880 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "authority": { "const": "reproduction-only" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "media_type",
+        "bytes",
+        "sha256",
+        "layout_class",
+        "space",
+        "state",
+        "capabilities_shown",
+        "authoritative_regions",
+        "illustrative_regions",
+        "viewport"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "path": {
+          "type": "string",
+          "pattern": "^examples/presentation/[a-z0-9-]+-layout-examples/[A-Za-z0-9._-]+\\.png$"
+        },
+        "media_type": { "const": "image/png" },
+        "bytes": { "type": "integer", "minimum": 1, "maximum": 5242880 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "layout_class": { "enum": ["compact", "medium", "expanded"] },
+        "space": { "enum": ["comfortable", "constrained"] },
+        "state": {
+          "enum": [
+            "filters-open",
+            "filters-closed",
+            "search-active",
+            "filter-summary",
+            "filter-detail",
+            "current-route-visible",
+            "active-workspace-tab-visible"
+          ]
+        },
+        "capabilities_shown": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "search",
+              "create",
+              "refresh",
+              "export",
+              "column-filters",
+              "filter-trigger",
+              "filter-panel",
+              "row-actions",
+              "row-rank",
+              "card-actions",
+              "progressive-loading",
+              "create-fab",
+              "workspace-tabs",
+              "individual-tab-close",
+              "close-all-except-pinned",
+              "horizontal-tab-overflow"
+            ]
+          }
+        },
+        "authoritative_regions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "table-toolbar",
+              "data-grid",
+              "filter-panel",
+              "row-actions-rail",
+              "horizontal-scroll-rail",
+              "collection-header",
+              "search-controls",
+              "card-list",
+              "bottom-sheet",
+              "modal-backdrop",
+              "floating-action",
+              "workspace-navigation-strip"
+            ]
+          }
+        },
+        "illustrative_regions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["brand-shell", "sample-content", "visual-tokens"]
+          }
+        },
+        "viewport": { "$ref": "#/$defs/viewport" }
+      }
+    }
+  }
+}

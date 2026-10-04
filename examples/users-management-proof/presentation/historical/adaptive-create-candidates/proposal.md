@@ -1,13 +1,21 @@
 # C5 ADAPT-10b — références de création adaptative
 
-- **Statut :** Approved — validation produit explicite de l'intégralité du
-  dossier le 2026-09-30 ; revue technique requise
-- **Autorité :** `candidate-only`, absente du manifeste actif avant ADAPT-10c
+- **Statut :** historique — validation produit du 2026-09-30 retirée comme
+  autorité géométrique active le 2026-10-03
+- **Autorité :** aucune pour une nouvelle réalisation ou évaluation ; fichiers
+  conservés comme trace de décision
 - **Page :** `page_6666666666666666`
 - **Route :** `/settings-security/users`
 - **Date :** 2026-09-30
-- **Décision source :**
-  [ADR-0076](../../../../docs/adr/0076-surface-creation-adaptative-bornee-par-contenu.md)
+- **Décision retirée :**
+  [ADR-0076](../../../../../docs/adr/0076-surface-creation-adaptative-bornee-par-contenu.md)
+- **Remplacement accepté :**
+  [ADR-0081](../../../../../docs/adr/0081-surface-creation-selon-tache-et-espace-utile.md)
+
+> [!WARNING] Ne pas utiliser ces captures comme baseline active. Le bottom sheet
+> compact, l'ancrage droit Medium, les largeurs fixes et le nombre de colonnes
+> par classe ont été retirés des invariants. Les images ne sont pas supprimées
+> afin de préserver la traçabilité et les validations historiques.
 
 ## 1. Résultat matérialisé
 
@@ -26,21 +34,21 @@ quatre références principales présentées en premier, les trois états
 complémentaires présentés le 2026-09-30, leur source HTML et le présent dossier
 de preuve. Elle ne réactive aucune image rejetée par PRES-AUTH-1.
 
-## 2. Ressources approuvées
+## 2. Ressources historiquement approuvées
 
-| Classe     | État                 | PNG                                    | Viewport    | Octets | SHA-256                                                            |
-| ---------- | -------------------- | -------------------------------------- | ----------- | -----: | ------------------------------------------------------------------ |
-| `compact`  | vierge               | `compact-pristine.proposed.png`        | 390 × 844   | 46 593 | `3ec2e75492be08658577740c9a6e6adf74dd5475f66f4e948652a0704c81941a` |
-| `compact`  | clavier virtuel      | `compact-keyboard.proposed.png`        | 390 × 844   | 34 599 | `8d7da6b46927bf533a6e3ada10b3762e29e9015d4cc242ccb6bb078e58905890` |
-| `medium`   | vierge               | `medium-pristine.proposed.png`         | 1024 × 768  | 75 546 | `2618b28e2452e61777d14239fd7a1ac565d271eef3ed00b3b097d6490c271b1f` |
-| `medium`   | soumission invalide  | `medium-invalid.proposed.png`          | 1024 × 768  | 82 420 | `4121e8974e8466f407f2073bd877f0532c92d7f7fa642a87bf111b532b794faf` |
-| `expanded` | vierge               | `expanded-pristine.proposed.png`       | 1440 × 1024 | 88 604 | `6d8e64a2150a809a73b386317f60d9ccace0ac3ec00641df76b8e46a92c34f73` |
-| `expanded` | conflit email        | `expanded-email-conflict.proposed.png` | 1440 × 1024 | 96 344 | `eb2b85e4f5ee17415a9ef60ff7faef2bc4edd9eba39c5d7c61baf888b52daa98` |
-| `expanded` | soumission en cours  | `expanded-submitting.proposed.png`     | 1440 × 1024 | 89 468 | `e696f76a47a41bb3564029bdf7deb766f22095a3c4c46c087d2a968aba6b6b08` |
+| Classe     | État                | PNG                                    | Viewport    | Octets | SHA-256                                                            |
+| ---------- | ------------------- | -------------------------------------- | ----------- | -----: | ------------------------------------------------------------------ |
+| `compact`  | vierge              | `compact-pristine.proposed.png`        | 390 × 844   | 46 593 | `3ec2e75492be08658577740c9a6e6adf74dd5475f66f4e948652a0704c81941a` |
+| `compact`  | clavier virtuel     | `compact-keyboard.proposed.png`        | 390 × 844   | 34 599 | `8d7da6b46927bf533a6e3ada10b3762e29e9015d4cc242ccb6bb078e58905890` |
+| `medium`   | vierge              | `medium-pristine.proposed.png`         | 1024 × 768  | 75 546 | `2618b28e2452e61777d14239fd7a1ac565d271eef3ed00b3b097d6490c271b1f` |
+| `medium`   | soumission invalide | `medium-invalid.proposed.png`          | 1024 × 768  | 82 420 | `4121e8974e8466f407f2073bd877f0532c92d7f7fa642a87bf111b532b794faf` |
+| `expanded` | vierge              | `expanded-pristine.proposed.png`       | 1440 × 1024 | 88 604 | `6d8e64a2150a809a73b386317f60d9ccace0ac3ec00641df76b8e46a92c34f73` |
+| `expanded` | conflit email       | `expanded-email-conflict.proposed.png` | 1440 × 1024 | 96 344 | `eb2b85e4f5ee17415a9ef60ff7faef2bc4edd9eba39c5d7c61baf888b52daa98` |
+| `expanded` | soumission en cours | `expanded-submitting.proposed.png`     | 1440 × 1024 | 89 468 | `e696f76a47a41bb3564029bdf7deb766f22095a3c4c46c087d2a968aba6b6b08` |
 
-| Source déterministe      | Octets | SHA-256                                                            |
-| ------------------------ | -----: | ------------------------------------------------------------------ |
-| `mockup.proposed.html`   | 23 065 | `aef0dd3f61499c1e549aa03f785ac289006b256debd050dc0647cde19d44183d` |
+| Source déterministe    | Octets | SHA-256                                                            |
+| ---------------------- | -----: | ------------------------------------------------------------------ |
+| `mockup.proposed.html` | 23 065 | `aef0dd3f61499c1e549aa03f785ac289006b256debd050dc0647cde19d44183d` |
 
 Les identités et adresses sont synthétiques ; `example.invalid` est réservé aux
 exemples. Les sept PNG ont été rendus avec Playwright `1.62.1`, le Chromium
@@ -64,7 +72,7 @@ Le HTML utilise uniquement les paramètres `layout` et `state` :
 Cette source sert à reproduire l'intention visuelle. Elle n'est ni un composant
 Angular, ni une primitive de plateforme, ni une nouvelle dépendance UI.
 
-## 4. Ce que chaque état fixe
+## 4. Ce que chaque état fixait
 
 ### Vierge
 
@@ -115,7 +123,7 @@ capture ne prouve pas :
 Ces comportements appartiennent aux oracles ADAPT-10d puis aux preuves
 navigateur ADAPT-10f.
 
-## 6. Frontières et refus de la revue
+## 6. Frontières historiques de la revue
 
 Soumaila doit refuser ce lot si :
 
@@ -128,7 +136,10 @@ Soumaila doit refuser ce lot si :
 6. le HTML candidat est présenté comme une preuve d'accessibilité ou réseau ;
 7. la géométrie C5 devient une règle universelle du générateur.
 
-## 7. Suite autorisée
+## 7. Suite historique — ne pas exécuter
+
+Cette séquence est conservée pour expliquer les incréments déjà réalisés. Elle
+est entièrement supersédée par ADR-0081 et par l'archive `authority: none`.
 
 Après revue et fusion de ce lot :
 
@@ -143,8 +154,9 @@ Après revue et fusion de ce lot :
 
 ## 8. Références
 
-- [Décision ADAPT-10](../../../../docs/architecture/c5-adapt10-surface-creation-adaptative-2026-09-29.md)
-- [ADR-0076](../../../../docs/adr/0076-surface-creation-adaptative-bornee-par-contenu.md)
+- [Décision ADAPT-10](../../../../../docs/architecture/c5-adapt10-surface-creation-adaptative-2026-09-29.md)
+- [ADR-0076 retiré](../../../../../docs/adr/0076-surface-creation-adaptative-bornee-par-contenu.md)
+- [ADR-0081 accepté](../../../../../docs/adr/0081-surface-creation-selon-tache-et-espace-utile.md)
 - [Material 3 — dialogs](https://m3.material.io/components/dialogs/guidelines)
 - [Angular Material — dialog](https://material.angular.dev/components/dialog/overview)
 - [Angular CDK — accessibility](https://material.angular.dev/cdk/a11y/overview)

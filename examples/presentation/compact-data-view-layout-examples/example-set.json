@@ -1,0 +1,195 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "presentation-layout-example-set",
+  "set_id": "generic-compact-data-view-layout-2026-10-03",
+  "status": "approved-example",
+  "authority": "layout-guidance-only",
+  "subject": "generic-data-view",
+  "authority_scope": [
+    "region-order",
+    "visual-hierarchy",
+    "responsive-priority",
+    "overlay-bounds",
+    "optional-capability-placement"
+  ],
+  "forbidden_inferences": [
+    "backend-contract",
+    "business-domain",
+    "column-contract",
+    "permission-contract",
+    "capability-presence",
+    "component-choice",
+    "dependency-choice",
+    "runtime-accessibility-proof",
+    "pixel-perfect-copy"
+  ],
+  "usage_protocol": {
+    "requires_page_contract": true,
+    "requires_capability_match": true,
+    "requires_runtime_proof": true
+  },
+  "render_sources": [
+    {
+      "path": "examples/presentation/compact-data-view-layout-examples/mockup.html",
+      "media_type": "text/html",
+      "bytes": 16681,
+      "sha256": "f06d3d38797a1b23b077ecd0d706805a8298d592ee9de3a5b77081522456e82f",
+      "authority": "reproduction-only"
+    },
+    {
+      "path": "examples/presentation/compact-data-view-layout-examples/mockup.css",
+      "media_type": "text/css",
+      "bytes": 10222,
+      "sha256": "e2f17ff3817a6f827a78a2b8db92761101f6fd07b2e74200efe5c034b5aaa9a0",
+      "authority": "reproduction-only"
+    },
+    {
+      "path": "examples/presentation/compact-data-view-layout-examples/render.mjs",
+      "media_type": "text/javascript",
+      "bytes": 2033,
+      "sha256": "3e75f3cb49452eb6449c60def695bd8a57af970d39538d6eee8ca38ea8f7ec24",
+      "authority": "reproduction-only"
+    }
+  ],
+  "sources": [
+    {
+      "id": "compact-list",
+      "path": "examples/presentation/compact-data-view-layout-examples/compact-list.proposed.png",
+      "media_type": "image/png",
+      "bytes": 57182,
+      "sha256": "474b08fc200811c2fc1f60ce3ba78c1f8492daa0c9f0dc67c8befb3bd0f88b1a",
+      "layout_class": "compact",
+      "space": "constrained",
+      "state": "filters-closed",
+      "capabilities_shown": [
+        "search",
+        "create",
+        "refresh",
+        "filter-trigger",
+        "progressive-loading",
+        "create-fab"
+      ],
+      "authoritative_regions": [
+        "collection-header",
+        "search-controls",
+        "card-list",
+        "floating-action"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 390, "height": 844, "pixel_ratio": 1 }
+    },
+    {
+      "id": "compact-search-active",
+      "path": "examples/presentation/compact-data-view-layout-examples/compact-search-active.proposed.png",
+      "media_type": "image/png",
+      "bytes": 55692,
+      "sha256": "4fa379fb757a727bb193a19e4f750197f96884a04abae503e090003848eacb66",
+      "layout_class": "compact",
+      "space": "constrained",
+      "state": "search-active",
+      "capabilities_shown": [
+        "search",
+        "create",
+        "refresh",
+        "filter-trigger",
+        "progressive-loading",
+        "create-fab"
+      ],
+      "authoritative_regions": [
+        "collection-header",
+        "search-controls",
+        "card-list",
+        "floating-action"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 390, "height": 844, "pixel_ratio": 1 }
+    },
+    {
+      "id": "compact-list-with-card-actions",
+      "path": "examples/presentation/compact-data-view-layout-examples/compact-list-with-card-actions.proposed.png",
+      "media_type": "image/png",
+      "bytes": 45318,
+      "sha256": "07411e8555d776d27c8188b293389703a72dc5e7d3af1001ebd7503a2ef8e1bb",
+      "layout_class": "compact",
+      "space": "constrained",
+      "state": "filters-closed",
+      "capabilities_shown": [
+        "search",
+        "create",
+        "refresh",
+        "filter-trigger",
+        "card-actions",
+        "progressive-loading",
+        "create-fab"
+      ],
+      "authoritative_regions": [
+        "collection-header",
+        "search-controls",
+        "card-list",
+        "floating-action"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 390, "height": 844, "pixel_ratio": 1 }
+    },
+    {
+      "id": "compact-filter-summary",
+      "path": "examples/presentation/compact-data-view-layout-examples/compact-filter-summary.proposed.png",
+      "media_type": "image/png",
+      "bytes": 48740,
+      "sha256": "f00375242244db0bc46d7aa224aac1fe04c6d0ee103dd417977604d3f676c996",
+      "layout_class": "compact",
+      "space": "constrained",
+      "state": "filter-summary",
+      "capabilities_shown": [
+        "search",
+        "refresh",
+        "filter-trigger",
+        "filter-panel",
+        "progressive-loading"
+      ],
+      "authoritative_regions": ["bottom-sheet", "modal-backdrop"],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 390, "height": 844, "pixel_ratio": 1 }
+    },
+    {
+      "id": "compact-filter-detail",
+      "path": "examples/presentation/compact-data-view-layout-examples/compact-filter-detail.proposed.png",
+      "media_type": "image/png",
+      "bytes": 47320,
+      "sha256": "9a8992568d2bb084c234903f085bf924577036fb3d536633c7a2abd03c8a5053",
+      "layout_class": "compact",
+      "space": "constrained",
+      "state": "filter-detail",
+      "capabilities_shown": [
+        "search",
+        "refresh",
+        "filter-trigger",
+        "filter-panel",
+        "progressive-loading"
+      ],
+      "authoritative_regions": ["bottom-sheet", "modal-backdrop"],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 390, "height": 844, "pixel_ratio": 1 }
+    }
+  ]
+}

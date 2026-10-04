@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "historical-presentation-reference-set",
+  "set_id": "historical_users_create_surface_2026_10_03",
+  "page_id": "page_6666666666666666",
+  "status": "historical",
+  "authority": "none",
+  "retired_on": "2026-10-03",
+  "reason": "La famille de surfaces imposait une géométrie à partir du seul breakpoint : bottom sheet Compact, dialogue droit Medium et dialogue centré Expanded. Les sources officielles ne prescrivent pas cette matrice ; la tâche et l'espace utile doivent décider la surface.",
+  "superseded_by": [
+    "docs/adr/0081-surface-creation-selon-tache-et-espace-utile.md",
+    "docs/architecture/c5-adapt10-surface-creation-adaptative-2026-09-29.md"
+  ],
+  "forbidden_uses": [
+    "active-presentation-evidence",
+    "code-generation-authority",
+    "visual-regression-baseline",
+    "capability-inference",
+    "runtime-source-copy"
+  ],
+  "retained_intentions": [
+    "Conserver une tâche de création modale lorsque le contexte arrière est utile",
+    "Garder header, corps scrollable et actions atteignables",
+    "Préserver le brouillon, les erreurs et le focus pendant un resize",
+    "Prouver validation locale, conflit distant, mono-vol et succès séparément"
+  ],
+  "sources": [
+    {
+      "id": "historical-compact-create-keyboard",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/compact-keyboard.proposed.png",
+      "media_type": "image/png",
+      "bytes": 34599,
+      "sha256": "8d7da6b46927bf533a6e3ada10b3762e29e9015d4cc242ccb6bb078e58905890",
+      "viewport": { "width": 390, "height": 844, "pixel_ratio": 1 },
+      "capabilities_shown": ["create-surface", "virtual-keyboard"]
+    },
+    {
+      "id": "historical-compact-create-pristine",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/compact-pristine.proposed.png",
+      "media_type": "image/png",
+      "bytes": 46593,
+      "sha256": "3ec2e75492be08658577740c9a6e6adf74dd5475f66f4e948652a0704c81941a",
+      "viewport": { "width": 390, "height": 844, "pixel_ratio": 1 },
+      "capabilities_shown": ["create-surface"]
+    },
+    {
+      "id": "historical-expanded-create-email-conflict",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/expanded-email-conflict.proposed.png",
+      "media_type": "image/png",
+      "bytes": 96344,
+      "sha256": "eb2b85e4f5ee17415a9ef60ff7faef2bc4edd9eba39c5d7c61baf888b52daa98",
+      "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 },
+      "capabilities_shown": ["create-surface", "remote-error"]
+    },
+    {
+      "id": "historical-expanded-create-pristine",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/expanded-pristine.proposed.png",
+      "media_type": "image/png",
+      "bytes": 88604,
+      "sha256": "6d8e64a2150a809a73b386317f60d9ccace0ac3ec00641df76b8e46a92c34f73",
+      "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 },
+      "capabilities_shown": ["create-surface"]
+    },
+    {
+      "id": "historical-expanded-create-submitting",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/expanded-submitting.proposed.png",
+      "media_type": "image/png",
+      "bytes": 89468,
+      "sha256": "e696f76a47a41bb3564029bdf7deb766f22095a3c4c46c087d2a968aba6b6b08",
+      "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 },
+      "capabilities_shown": ["create-surface", "submitting"]
+    },
+    {
+      "id": "historical-medium-create-invalid",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/medium-invalid.proposed.png",
+      "media_type": "image/png",
+      "bytes": 82420,
+      "sha256": "4121e8974e8466f407f2073bd877f0532c92d7f7fa642a87bf111b532b794faf",
+      "viewport": { "width": 1024, "height": 768, "pixel_ratio": 1 },
+      "capabilities_shown": ["create-surface", "validation-errors"]
+    },
+    {
+      "id": "historical-medium-create-pristine",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/medium-pristine.proposed.png",
+      "media_type": "image/png",
+      "bytes": 75546,
+      "sha256": "2618b28e2452e61777d14239fd7a1ac565d271eef3ed00b3b097d6490c271b1f",
+      "viewport": { "width": 1024, "height": 768, "pixel_ratio": 1 },
+      "capabilities_shown": ["create-surface"]
+    },
+    {
+      "id": "historical-create-mockup",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/mockup.proposed.html",
+      "media_type": "text/html",
+      "bytes": 23065,
+      "sha256": "aef0dd3f61499c1e549aa03f785ac289006b256debd050dc0647cde19d44183d",
+      "viewport": null,
+      "capabilities_shown": ["create-surface"]
+    },
+    {
+      "id": "historical-create-proposal",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/proposal.md",
+      "media_type": "text/markdown",
+      "bytes": 8669,
+      "sha256": "18155a4c179de53bffcbd28e95880c67b5077a69f6f528a1db3afaa5f15b995d",
+      "viewport": null,
+      "capabilities_shown": ["create-surface"]
+    },
+    {
+      "id": "historical-create-visual-evaluation",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/visual-evaluation.json",
+      "media_type": "application/json",
+      "bytes": 1262,
+      "sha256": "1de3851e4b33f94eee3b927916e8434c0ffb6f10c62ad9f23b71c0c17632ad90",
+      "viewport": null,
+      "capabilities_shown": ["visual-evaluation-plan"]
+    },
+    {
+      "id": "historical-create-visual-review",
+      "path": "examples/users-management-proof/presentation/historical/adaptive-create-candidates/visual-review.json",
+      "media_type": "application/json",
+      "bytes": 4503,
+      "sha256": "dc316475992b9107743221a95875daa981de648a013482b50a47003d2716d711",
+      "viewport": null,
+      "capabilities_shown": ["visual-review-protocol"]
+    }
+  ]
+}

@@ -605,8 +605,20 @@ jobs:
         env:
           CI: 'true'
 
+      - name: Detect active C5 visual evaluation
+        id: c5-visual-evaluation
+        run: |
+          if [ -f designs/users-management-proof.visual-evaluation.json ] \
+            && [ -f designs/users-management-proof.visual-review.json ]; then
+            echo "active=true" >> $GITHUB_OUTPUT
+          else
+            echo "active=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Assemble C5 visual evaluation bundle
-        if: steps.c5-browser-proof.outputs.run == 'true'
+        if: >-
+          steps.c5-browser-proof.outputs.run == 'true' &&
+          steps.c5-visual-evaluation.outputs.active == 'true'
         run: node tools/generator-platform/collect-visual-evaluation.mjs
 
       - name: Upload C5 rendered candidates

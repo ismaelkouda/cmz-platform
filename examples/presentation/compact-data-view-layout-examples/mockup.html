@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Exemple générique Compact d'une vue de données</title>
+        <link rel="stylesheet" href="./mockup.css" />
+    </head>
+    <body data-actions="false" data-search="empty" data-sheet="closed">
+        <header class="app-bar" aria-label="Région illustrative hors autorité">
+            <div class="brand"><span class="brand-mark"></span>CMZ Platform</div>
+            <span class="workspace">Espace</span>
+        </header>
+
+        <main>
+            <p class="example-note">Exemple Compact — contenu fictif</p>
+            <section aria-labelledby="collection-title">
+                <header class="collection-header">
+                    <div class="collection-heading">
+                        <div class="title-wrap">
+                            <h1 id="collection-title">Éléments</h1>
+                            <span class="count" aria-label="42 éléments">42</span>
+                        </div>
+                        <div class="collection-actions" aria-label="Actions de la vue">
+                            <button class="icon-button" aria-label="Rafraîchir les éléments" title="Rafraîchir">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M20 11a8 8 0 1 0 2 5"></path>
+                                    <path d="M20 4v7h-7"></path>
+                                </svg>
+                            </button>
+                            <button
+                                class="icon-button filter-trigger"
+                                aria-label="Filtres, 3 actifs"
+                                title="Filtres, 3 actifs"
+                                aria-expanded="false"
+                            >
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M4 6h16M7 12h10M10 18h4"></path>
+                                </svg>
+                                <span class="filter-count">3</span>
+                            </button>
+                        </div>
+                    </div>
+                    <form class="search-wrap" role="search" aria-label="Recherche dans les éléments">
+                        <label class="sr-only" for="collection-search">Rechercher dans les éléments</label>
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <path d="m20 20-4-4"></path>
+                        </svg>
+                        <input
+                            id="collection-search"
+                            class="search"
+                            type="search"
+                            enterkeyhint="search"
+                            placeholder="Rechercher dans les éléments"
+                        />
+                        <button class="search-clear" type="button" aria-label="Effacer la recherche" title="Effacer">
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="m7 7 10 10M17 7 7 17"></path>
+                            </svg>
+                        </button>
+                    </form>
+                </header>
+
+                <ul class="card-list" aria-label="Éléments fictifs">
+                    <li class="data-card">
+                        <div class="card-heading">
+                            <span class="reference">REF-001</span><span class="status">Actif</span>
+                        </div>
+                        <p class="card-label">Élément Alpha</p>
+                        <div class="card-meta"><span>Catégorie B · Équipe Nord</span><time>03/10/2026</time></div>
+                        <div class="card-actions" aria-label="Actions optionnelles de REF-001">
+                            <button class="card-action" aria-label="Modifier REF-001" title="Modifier">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                                </svg>
+                            </button>
+                            <span class="switch" aria-label="Activation illustrative"></span>
+                            <button class="card-action danger" aria-label="Supprimer REF-001" title="Supprimer">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M3 6h18"></path>
+                                    <path d="M8 6V4h8v2"></path>
+                                    <path d="m19 6-1 14H6L5 6"></path>
+                                    <path d="M10 11v5M14 11v5"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </li>
+                    <li class="data-card">
+                        <div class="card-heading">
+                            <span class="reference">REF-002</span><span class="status">Actif</span>
+                        </div>
+                        <p class="card-label">Élément Bravo</p>
+                        <div class="card-meta"><span>Catégorie B · Équipe Sud</span><time>02/10/2026</time></div>
+                        <div class="card-actions" aria-label="Actions optionnelles de REF-002">
+                            <button class="card-action" aria-label="Modifier REF-002" title="Modifier">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                                </svg>
+                            </button>
+                            <span class="switch" aria-label="Activation illustrative"></span>
+                            <button class="card-action danger" aria-label="Supprimer REF-002" title="Supprimer">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M3 6h18"></path>
+                                    <path d="M8 6V4h8v2"></path>
+                                    <path d="m19 6-1 14H6L5 6"></path>
+                                    <path d="M10 11v5M14 11v5"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </li>
+                    <li class="data-card">
+                        <div class="card-heading">
+                            <span class="reference">REF-003</span><span class="status">Actif</span>
+                        </div>
+                        <p class="card-label">Élément Charlie</p>
+                        <div class="card-meta"><span>Catégorie A · Équipe Nord</span><time>30/09/2026</time></div>
+                        <div class="card-actions" aria-label="Actions optionnelles de REF-003">
+                            <button class="card-action" aria-label="Modifier REF-003" title="Modifier">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                                </svg>
+                            </button>
+                            <span class="switch" aria-label="Activation illustrative"></span>
+                            <button class="card-action danger" aria-label="Supprimer REF-003" title="Supprimer">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M3 6h18"></path>
+                                    <path d="M8 6V4h8v2"></path>
+                                    <path d="m19 6-1 14H6L5 6"></path>
+                                    <path d="M10 11v5M14 11v5"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </li>
+                    <li class="data-card">
+                        <div class="card-heading">
+                            <span class="reference">REF-004</span><span class="status">Actif</span>
+                        </div>
+                        <p class="card-label">Élément Delta</p>
+                        <div class="card-meta"><span>Catégorie C · Équipe Est</span><time>28/09/2026</time></div>
+                    </li>
+                </ul>
+                <div class="sentinel-space" aria-hidden="true"></div>
+            </section>
+        </main>
+
+        <button class="fab" aria-label="Créer un élément" title="Créer un élément">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"></path>
+            </svg>
+        </button>
+
+        <div class="modal-layer">
+            <div class="backdrop"></div>
+            <section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+                <span class="sheet-handle" aria-hidden="true"></span>
+                <header class="sheet-header">
+                    <div class="sheet-title-wrap">
+                        <button class="sheet-icon-button back-button" aria-label="Retour aux filtres" title="Retour">
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="m15 18-6-6 6-6"></path>
+                            </svg>
+                        </button>
+                        <h2 id="sheet-title" class="sheet-title summary-title">Filtres</h2>
+                        <h2 class="sheet-title detail-title">Statut</h2>
+                    </div>
+                    <button class="sheet-icon-button" aria-label="Fermer les filtres" title="Fermer">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m6 6 12 12M18 6 6 18"></path>
+                        </svg>
+                    </button>
+                </header>
+
+                <div class="sheet-body summary-view">
+                    <button class="criterion-row">
+                        <span class="criterion-label">Référence</span>
+                        <span class="criterion-value"
+                            >REF-0
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="m9 18 6-6-6-6"></path></svg
+                        ></span>
+                    </button>
+                    <button class="criterion-row">
+                        <span class="criterion-label">Catégorie</span>
+                        <span class="criterion-value"
+                            >Catégorie B
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="m9 18 6-6-6-6"></path></svg
+                        ></span>
+                    </button>
+                    <button class="criterion-row">
+                        <span class="criterion-label">Statut</span>
+                        <span class="criterion-value"
+                            >Actif
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="m9 18 6-6-6-6"></path></svg
+                        ></span>
+                    </button>
+                </div>
+
+                <div class="sheet-body detail-view">
+                    <p class="detail-copy">Choisir une valeur pour ce critère.</p>
+                    <div class="radio-list" role="radiogroup" aria-label="Statut">
+                        <div class="radio-row"><span class="radio-mark"></span>Tous</div>
+                        <div class="radio-row selected"><span class="radio-mark"></span>Actif</div>
+                        <div class="radio-row"><span class="radio-mark"></span>Inactif</div>
+                    </div>
+                </div>
+
+                <footer class="sheet-footer">
+                    <button>Réinitialiser</button>
+                    <button class="apply">Filtrer</button>
+                </footer>
+            </section>
+        </div>
+
+        <script>
+            const mode = new URLSearchParams(location.search).get('mode') ?? 'list';
+            document.body.dataset.actions = String(mode === 'actions');
+            document.body.dataset.search = mode === 'search-active' ? 'active' : 'empty';
+            document.body.dataset.sheet =
+                mode === 'filter-summary' ? 'summary' : mode === 'filter-detail' ? 'detail' : 'closed';
+            if (mode === 'search-active') {
+                document.querySelector('.search').value = 'Élément';
+            }
+            document
+                .querySelector('.filter-trigger')
+                .setAttribute('aria-expanded', String(mode === 'filter-summary' || mode === 'filter-detail'));
+            document.documentElement.dataset.ready = 'true';
+        </script>
+    </body>
+</html>

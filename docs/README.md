@@ -121,6 +121,9 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0078](./adr/0078-vues-de-donnees-par-capacites-optionnelles.md) | Vues de données par capacités optionnelles               |
 | [0079](./adr/0079-jev-evaluateur-probabiliste-replay-shadow.md) | JEV comme évaluateur probabiliste en replay/shadow       |
 | [0080](./adr/0080-prouver-la-valeur-avant-nouvelle-automatisation.md) | Prouver la valeur avant toute nouvelle automatisation    |
+| [0081](./adr/0081-surface-creation-selon-tache-et-espace-utile.md) | Choisir une surface de création selon la tâche et l'espace utile |
+| [0082](./adr/0082-cycle-de-vie-des-references-de-presentation.md) | Séparer références actives et archives de présentation   |
+| [0083](./adr/0083-preuve-page-exemple-mise-en-page-et-archive.md) | Distinguer preuve de page, exemple de mise en page et archive |
 | [0085](./adr/0085-angular-i18n-native-localize.md)          | Internationalisation Angular native avec `@angular/localize` |
 <!-- END:GENERATED:adr-index -->
 

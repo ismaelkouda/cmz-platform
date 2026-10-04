@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "historical-presentation-reference-set",
+  "set_id": "historical_users_data_view_2026_10_03",
+  "page_id": "page_6666666666666666",
+  "status": "historical",
+  "authority": "none",
+  "retired_on": "2026-10-03",
+  "reason": "Ces maquettes mélangent un noyau de vue de données avec des capacités non déclarées, emploient des dimensions impropres à prouver la classe medium et contiennent un HTML de démonstration qui ne satisfait pas les exigences sémantiques, clavier et contraste du runtime.",
+  "superseded_by": [
+    "docs/adr/0078-vues-de-donnees-par-capacites-optionnelles.md",
+    "docs/adr/0083-preuve-page-exemple-mise-en-page-et-archive.md",
+    "examples/presentation/README.md",
+    "docs/architecture/c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md"
+  ],
+  "forbidden_uses": [
+    "active-presentation-evidence",
+    "code-generation-authority",
+    "visual-regression-baseline",
+    "capability-inference",
+    "runtime-source-copy"
+  ],
+  "retained_intentions": [
+    "Filtres de colonne synchronisés avec un panneau de filtres",
+    "État actif d'un filtre visible sans dépendre de la couleur seule",
+    "Panneau de filtres borné à la zone de données et au rail horizontal",
+    "Zone d'actions de ligne optionnelle distincte du contenu défilant",
+    "Première colonne de rang lorsque le produit la demande",
+    "Total des résultats associé au titre de la vue"
+  ],
+  "sources": [
+    {
+      "id": "historical-expanded-filter-workspace",
+      "path": "examples/users-management-proof/presentation/historical/data-view-reference-candidates/expanded-filter-workspace.proposed.png",
+      "media_type": "image/png",
+      "bytes": 193173,
+      "sha256": "575ff6852a78f87fdd71fc410d431bce21fcd93862350c8c8d78b5bca48d956b",
+      "viewport": { "width": 1484, "height": 1060, "pixel_ratio": 1 },
+      "capabilities_shown": ["filter-panel", "column-filters", "export"]
+    },
+    {
+      "id": "historical-expanded-row-actions",
+      "path": "examples/users-management-proof/presentation/historical/data-view-reference-candidates/expanded-row-actions.proposed.png",
+      "media_type": "image/png",
+      "bytes": 202433,
+      "sha256": "74ad0b3cf192e83b8449d02833e3daab1494a24255c6cda6a027046a3282366f",
+      "viewport": { "width": 1484, "height": 1060, "pixel_ratio": 1 },
+      "capabilities_shown": ["column-filters", "row-actions", "export"]
+    },
+    {
+      "id": "historical-expanded-row-actions-with-filters",
+      "path": "examples/users-management-proof/presentation/historical/data-view-reference-candidates/expanded-row-actions-with-filters.proposed.png",
+      "media_type": "image/png",
+      "bytes": 200739,
+      "sha256": "2d7469accf8168355e0211ea297dc7dd5bed2cdd35162089a95572fab26800a9",
+      "viewport": { "width": 1484, "height": 1060, "pixel_ratio": 1 },
+      "capabilities_shown": [
+        "filter-panel",
+        "column-filters",
+        "row-actions",
+        "export"
+      ]
+    },
+    {
+      "id": "historical-medium-filter-workspace",
+      "path": "examples/users-management-proof/presentation/historical/data-view-reference-candidates/medium-filter-workspace.proposed.png",
+      "media_type": "image/png",
+      "bytes": 177681,
+      "sha256": "5bef46e5dbd63f9ba53a616dd36dd9d7bcd7fa19419fa60870dbc4d8bf40ef82",
+      "viewport": { "width": 1448, "height": 1086, "pixel_ratio": 1 },
+      "capabilities_shown": ["filter-panel", "column-filters", "export"]
+    },
+    {
+      "id": "historical-medium-row-actions",
+      "path": "examples/users-management-proof/presentation/historical/data-view-reference-candidates/medium-row-actions.proposed.png",
+      "media_type": "image/png",
+      "bytes": 203125,
+      "sha256": "1765b15cabc9dc4faefe6949820a7c16035bf7b6ebe68741c4f2fe9d134e1675",
+      "viewport": { "width": 1448, "height": 1086, "pixel_ratio": 1 },
+      "capabilities_shown": ["column-filters", "row-actions", "export"]
+    },
+    {
+      "id": "historical-medium-row-actions-with-filters",
+      "path": "examples/users-management-proof/presentation/historical/data-view-reference-candidates/medium-row-actions-with-filters.proposed.png",
+      "media_type": "image/png",
+      "bytes": 192198,
+      "sha256": "eed7ca5124e0e9900796aa219e9f0aa6861ffb0ac745f56663744095fc22a8ec",
+      "viewport": { "width": 1448, "height": 1086, "pixel_ratio": 1 },
+      "capabilities_shown": [
+        "filter-panel",
+        "column-filters",
+        "row-actions",
+        "export"
+      ]
+    },
+    {
+      "id": "historical-data-view-mockup",
+      "path": "examples/users-management-proof/presentation/historical/data-view-reference-candidates/mockup.proposed.html",
+      "media_type": "text/html",
+      "bytes": 28493,
+      "sha256": "2b35e6a51d0892a7b5129749d1706ffe4d24648eb309833b1b13e930412bdf6d",
+      "viewport": null,
+      "capabilities_shown": [
+        "filter-panel",
+        "column-filters",
+        "row-actions",
+        "export"
+      ]
+    },
+    {
+      "id": "historical-data-view-renderer",
+      "path": "examples/users-management-proof/presentation/historical/data-view-reference-candidates/render.mjs",
+      "media_type": "text/javascript",
+      "bytes": 2691,
+      "sha256": "a57e2213393943611ef5e1885609c377ad65af6aac821c34f0e02e6f73e75330",
+      "viewport": null,
+      "capabilities_shown": []
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz.local/schemas/generator-platform/historical-presentation-reference-set.schema.json",
+  "title": "CMZ Historical Presentation Reference Set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "set_id",
+    "status",
+    "authority",
+    "retired_on",
+    "reason",
+    "superseded_by",
+    "forbidden_uses",
+    "retained_intentions",
+    "sources"
+  ],
+  "oneOf": [{ "required": ["page_id"] }, { "required": ["subject"] }],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "historical-presentation-reference-set" },
+    "set_id": {
+      "type": "string",
+      "pattern": "^historical_[a-z0-9]+(?:_[a-z0-9]+)*$"
+    },
+    "page_id": { "type": "string", "pattern": "^page_[a-f0-9]{16}$" },
+    "subject": {
+      "type": "string",
+      "enum": ["generic-workspace-shell"]
+    },
+    "status": { "const": "historical" },
+    "authority": { "const": "none" },
+    "retired_on": { "type": "string", "format": "date" },
+    "reason": { "type": "string", "minLength": 20, "maxLength": 2000 },
+    "superseded_by": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/workspacePath" }
+    },
+    "forbidden_uses": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "active-presentation-evidence",
+          "code-generation-authority",
+          "visual-regression-baseline",
+          "capability-inference",
+          "runtime-source-copy"
+        ]
+      }
+    },
+    "retained_intentions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 3, "maxLength": 200 }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/source" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "workspacePath": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._/-]+$"
+    },
+    "viewport": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height", "pixel_ratio"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1, "maximum": 8192 },
+            "height": { "type": "integer", "minimum": 1, "maximum": 16384 },
+            "pixel_ratio": { "type": "number", "minimum": 1, "maximum": 4 }
+          }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "media_type",
+        "bytes",
+        "sha256",
+        "viewport",
+        "capabilities_shown"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "path": { "$ref": "#/$defs/workspacePath" },
+        "media_type": {
+          "enum": [
+            "application/json",
+            "image/png",
+            "text/html",
+            "text/javascript",
+            "text/markdown"
+          ]
+        },
+        "bytes": { "type": "integer", "minimum": 1, "maximum": 5242880 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "viewport": { "$ref": "#/$defs/viewport" },
+        "capabilities_shown": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    }
+  }
+}

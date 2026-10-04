@@ -32,10 +32,11 @@ export interface MediumCreateInvalidMeasurements {
     focusedControl: string | null;
     backgroundLayoutStable: boolean;
     dialogWidth: number;
-    meetsMinimumWidth: boolean;
-    meetsMaximumWidth: boolean;
-    insideViewport: boolean;
-    heightBelowViewport: boolean;
+    dialogHeight: number;
+    leftInsideViewport: boolean;
+    topInsideViewport: boolean;
+    rightInsideViewport: boolean;
+    bottomInsideViewport: boolean;
     documentOverflows: boolean;
     alertText: string;
 }
@@ -103,7 +104,7 @@ export function mediumCreateInvalidEvidence(
                 ],
             },
             {
-                criterion_id: 'layout.medium-create-geometry',
+                criterion_id: 'layout.create-surface-bounds',
                 outcome: 'pass',
                 facts: [
                     {
@@ -112,24 +113,25 @@ export function mediumCreateInvalidEvidence(
                         expected: true,
                     },
                     { id: 'dialog-width', actual: measured.dialogWidth },
+                    { id: 'dialog-height', actual: measured.dialogHeight },
                     {
-                        id: 'meets-minimum-width',
-                        actual: measured.meetsMinimumWidth,
+                        id: 'left-inside-viewport',
+                        actual: measured.leftInsideViewport,
                         expected: true,
                     },
                     {
-                        id: 'meets-maximum-width',
-                        actual: measured.meetsMaximumWidth,
+                        id: 'top-inside-viewport',
+                        actual: measured.topInsideViewport,
                         expected: true,
                     },
                     {
-                        id: 'inside-viewport',
-                        actual: measured.insideViewport,
+                        id: 'right-inside-viewport',
+                        actual: measured.rightInsideViewport,
                         expected: true,
                     },
                     {
-                        id: 'height-below-viewport',
-                        actual: measured.heightBelowViewport,
+                        id: 'bottom-inside-viewport',
+                        actual: measured.bottomInsideViewport,
                         expected: true,
                     },
                 ],

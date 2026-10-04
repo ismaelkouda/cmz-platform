@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Exemple générique de disposition d'une vue de données</title>
+        <link rel="stylesheet" href="./mockup.css" />
+    </head>
+    <body data-layout="expanded" data-panel="open" data-actions="false">
+        <header class="app-bar" aria-label="Région illustrative hors autorité">
+            <div class="brand"><span class="brand-mark"></span>CMZ Platform</div>
+            <div class="operator">Espace de travail</div>
+        </header>
+        <main>
+            <p class="example-note">Exemple de disposition — contenu fictif</p>
+            <section class="data-shell" aria-labelledby="data-title">
+                <div class="toolbar">
+                    <div class="toolbar-title">
+                        <h1 id="data-title">Éléments</h1>
+                        <span class="count" aria-label="42 éléments">42</span>
+                    </div>
+                    <div class="toolbar-right">
+                        <label class="search-wrap">
+                            <span class="search-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="7"></circle>
+                                    <path d="m20 20-4-4"></path>
+                                </svg>
+                            </span>
+                            <span hidden>Rechercher dans les éléments</span>
+                            <input class="search" placeholder="Rechercher dans les éléments" />
+                        </label>
+                        <div class="toolbar-actions" aria-label="Actions de la vue">
+                            <button class="tool-button create" aria-label="Créer" title="Créer">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M12 5v14M5 12h14"></path>
+                                </svg>
+                                <span class="button-label">Créer</span>
+                            </button>
+                            <button class="tool-button" aria-label="Rafraîchir" title="Rafraîchir">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M20 11a8 8 0 1 0 2 5"></path>
+                                    <path d="M20 4v7h-7"></path>
+                                </svg>
+                                <span class="button-label">Rafraîchir</span>
+                            </button>
+                            <button class="tool-button export" aria-label="Exporter" title="Exporter">
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M12 3v13"></path>
+                                    <path d="m7 11 5 5 5-5"></path>
+                                    <path d="M5 21h14"></path>
+                                </svg>
+                                <span class="button-label">Exporter</span>
+                            </button>
+                            <button
+                                class="tool-button filters"
+                                aria-label="Filtres, 3 actifs"
+                                title="Filtres, 3 actifs"
+                                aria-pressed="true"
+                            >
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M4 6h16M7 12h10M10 18h4"></path>
+                                </svg>
+                                <span class="button-label">Filtres (3)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-stage">
+                    <div class="table-window">
+                        <table aria-label="Éléments fictifs">
+                            <thead>
+                                <tr>
+                                    <th class="rank" scope="col">#</th>
+                                    <th class="name" scope="col">
+                                        <span class="header-label">Référence <span class="sort active">▲</span></span>
+                                    </th>
+                                    <th class="label" scope="col">
+                                        <span class="header-label"
+                                            >Libellé <span class="sort">▲<br />▼</span></span
+                                        >
+                                    </th>
+                                    <th class="category" scope="col">
+                                        <span class="header-label"
+                                            >Catégorie <span class="sort">▲<br />▼</span></span
+                                        >
+                                    </th>
+                                    <th class="owner" scope="col">
+                                        <span class="header-label"
+                                            >Responsable <span class="sort">▲<br />▼</span></span
+                                        >
+                                    </th>
+                                    <th class="status-column" scope="col">
+                                        <span class="header-label"
+                                            >Statut <span class="sort">▲<br />▼</span></span
+                                        >
+                                    </th>
+                                    <th class="updated" scope="col">
+                                        <span class="header-label"
+                                            >Mise à jour <span class="sort">▲<br />▼</span></span
+                                        >
+                                    </th>
+                                </tr>
+                                <tr class="filter-row">
+                                    <th class="rank"></th>
+                                    <th>
+                                        <input
+                                            class="filter-control active"
+                                            aria-label="Filtrer par référence"
+                                            value="REF-0"
+                                        />
+                                    </th>
+                                    <th>
+                                        <input
+                                            class="filter-control"
+                                            aria-label="Filtrer par libellé"
+                                            placeholder="Libellé"
+                                        />
+                                    </th>
+                                    <th>
+                                        <select class="filter-control active" aria-label="Filtrer par catégorie">
+                                            <option>Catégorie B</option>
+                                        </select>
+                                    </th>
+                                    <th>
+                                        <select class="filter-control" aria-label="Filtrer par responsable">
+                                            <option>Tous</option>
+                                        </select>
+                                    </th>
+                                    <th>
+                                        <select class="filter-control active" aria-label="Filtrer par statut">
+                                            <option>Actif</option>
+                                        </select>
+                                    </th>
+                                    <th>
+                                        <input
+                                            class="filter-control"
+                                            aria-label="Filtrer par date"
+                                            placeholder="jj/mm/aaaa"
+                                        />
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="rows"></tbody>
+                        </table>
+                    </div>
+
+                    <aside class="actions-rail" aria-label="Actions de ligne optionnelles">
+                        <div class="actions-heading">Actions</div>
+                        <div class="actions-filter"></div>
+                        <div id="action-rows"></div>
+                    </aside>
+
+                    <aside class="filter-panel" aria-label="Filtres optionnels">
+                        <div class="panel-body">
+                            <button class="panel-add">＋ Ajouter un filtre</button>
+                            <details class="filter-block" open>
+                                <summary>Référence</summary>
+                                <input class="filter-value" aria-label="Référence" value="REF-0" />
+                            </details>
+                            <details class="filter-block" open>
+                                <summary>Catégorie</summary>
+                                <select class="filter-value" aria-label="Catégorie">
+                                    <option>Catégorie B</option>
+                                </select>
+                            </details>
+                            <details class="filter-block" open>
+                                <summary>Statut</summary>
+                                <div class="radio-list">
+                                    <span class="radio-item"><span class="radio-mark"></span>Tous</span>
+                                    <span class="radio-item selected"><span class="radio-mark"></span>Actif</span>
+                                    <span class="radio-item"><span class="radio-mark"></span>Inactif</span>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="panel-footer">
+                            <button>Réinitialiser</button>
+                            <button class="apply">Filtrer</button>
+                        </div>
+                    </aside>
+
+                    <div class="horizontal-scroll" aria-hidden="true">
+                        <div class="scroll-track"><div class="scroll-thumb"></div></div>
+                    </div>
+                </div>
+
+                <footer class="table-footer">
+                    <span>1–10 sur 42 éléments</span>
+                    <span class="pagination" aria-label="Pagination illustrative">
+                        <span>Précédent</span><span class="current">1</span><span>2</span><span>Suivant</span>
+                    </span>
+                </footer>
+            </section>
+        </main>
+        <script>
+            const params = new URLSearchParams(location.search);
+            const layout = params.get('layout') === 'medium' ? 'medium' : 'expanded';
+            const mode = params.get('mode') ?? 'filters';
+            const panel = mode === 'filters' || mode === 'actions-open';
+            const actions = mode === 'actions-closed' || mode === 'actions-open';
+            document.body.dataset.layout = layout;
+            document.body.dataset.panel = panel ? 'open' : 'closed';
+            document.body.dataset.actions = String(actions);
+            const filterButton = document.querySelector('.filters');
+            filterButton.setAttribute('aria-pressed', String(panel));
+
+            const values = [
+                ['REF-001', 'Élément Alpha', 'Catégorie B', 'Équipe Nord', 'Actif', '03/10/2026'],
+                ['REF-002', 'Élément Bravo', 'Catégorie B', 'Équipe Sud', 'Actif', '02/10/2026'],
+                ['REF-003', 'Élément Charlie', 'Catégorie A', 'Équipe Nord', 'Inactif', '30/09/2026'],
+                ['REF-004', 'Élément Delta', 'Catégorie C', 'Équipe Est', 'Actif', '28/09/2026'],
+                ['REF-005', 'Élément Echo', 'Catégorie B', 'Équipe Ouest', 'Actif', '27/09/2026'],
+                ['REF-006', 'Élément Foxtrot', 'Catégorie C', 'Équipe Nord', 'Inactif', '25/09/2026'],
+                ['REF-007', 'Élément Golf', 'Catégorie A', 'Équipe Sud', 'Actif', '23/09/2026'],
+                ['REF-008', 'Élément Hotel', 'Catégorie B', 'Équipe Est', 'Actif', '21/09/2026'],
+                ['REF-009', 'Élément India', 'Catégorie A', 'Équipe Ouest', 'Inactif', '18/09/2026'],
+                ['REF-010', 'Élément Juliett', 'Catégorie B', 'Équipe Nord', 'Actif', '15/09/2026'],
+            ];
+            document.querySelector('#rows').innerHTML = values
+                .map(
+                    (row, index) => `<tr>
+                        <td class="rank">${index + 1}</td>
+                        <td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td>
+                        <td><span class="status ${row[4] === 'Inactif' ? 'inactive' : ''}">${row[4]}</span></td>
+                        <td>${row[5]}</td>
+                    </tr>`
+                )
+                .join('');
+            document.querySelector('#action-rows').innerHTML = values
+                .map(
+                    (row) => `<div class="action-cell"><div class="row-actions">
+                        <button class="icon-action" aria-label="Modifier l'élément" title="Modifier">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg>
+                        </button>
+                        <span class="switch ${row[4] === 'Actif' ? 'on' : ''}" aria-label="Activation illustrative"></span>
+                        <button class="icon-action danger" aria-label="Supprimer l'élément" title="Supprimer">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path><path d="M10 11v5M14 11v5"></path></svg>
+                        </button>
+                    </div></div>`
+                )
+                .join('');
+            document.documentElement.dataset.ready = 'true';
+        </script>
+    </body>
+</html>

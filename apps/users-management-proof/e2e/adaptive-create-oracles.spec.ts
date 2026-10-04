@@ -5,11 +5,17 @@ import {
     type Page,
     type Route,
 } from '@playwright/test';
-
 import {
     captureEvaluationCandidate,
     mediumCreateInvalidEvidence,
 } from './visual-evaluation.support';
+import {
+    expectCentered,
+    expectInsideViewport,
+    formColumnCount,
+    requireBox,
+    waitForResponsiveLayout,
+} from './adaptive-layout.support';
 
 const COMPACT = { width: 390, height: 844 } as const;
 const MEDIUM = { width: 1024, height: 768 } as const;
@@ -41,18 +47,6 @@ interface BackendHarness {
 
 interface BackendOptions {
     createResponder?: (route: Route, ordinal: number) => Promise<void>;
-}
-
-interface Box {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
-
-function requireBox(box: Box | null, label: string): Box {
-    if (!box) throw new Error(`Géométrie introuvable : ${label}`);
-    return box;
 }
 
 async function fulfillCreateSuccess(route: Route): Promise<void> {
@@ -192,90 +186,20 @@ async function fillValidCreate(dialog: Locator): Promise<void> {
         .selectOption('profile-a');
 }
 
-async function waitForResponsiveLayout(page: Page): Promise<void> {
-    await page.evaluate(
-        () =>
-            new Promise<void>((resolve) => {
-                requestAnimationFrame(() =>
-                    requestAnimationFrame(() => resolve())
-                );
-            })
-    );
-    await page.waitForTimeout(QUIET_WINDOW_MS);
-}
-
-async function markLegacyCompactDrawerAsExpectedFailure(
-    dialog: Locator
-): Promise<void> {
-    const legacy = await dialog.evaluate((element) => {
-        const style = getComputedStyle(element);
-        const rect = element.getBoundingClientRect();
-        return (
-            element.classList.contains('drawer') &&
-            style.height === '844px' &&
-            style.overflowY === 'auto' &&
-            Math.abs(rect.y) < 1
-        );
-    });
-    test.fail(
-        legacy,
-        'ADAPT-10 : la signature historique compacte force encore le drawer à 100 % de la hauteur et fait défiler toute la surface.'
-    );
-}
-
-async function markLegacyMediumDrawerAsExpectedFailure(
-    dialog: Locator
-): Promise<void> {
-    const legacy = await dialog.evaluate((element) => {
-        const style = getComputedStyle(element);
-        const rect = element.getBoundingClientRect();
-        return (
-            element.classList.contains('drawer') &&
-            style.width === '480px' &&
-            style.height === '768px' &&
-            Math.abs(rect.x + rect.width - window.innerWidth) < 1
-        );
-    });
-    test.fail(
-        legacy,
-        'ADAPT-10 : la signature historique Medium reste un drawer 480 px pleine hauteur au lieu de la surface 520–640 px bornée par le contenu.'
-    );
-}
-
-async function markLegacyExpandedPaneAsExpectedFailure(
-    page: Page,
-    dialog: Locator
-): Promise<void> {
-    const [ariaModal, backdropCount, mainInert, width] = await Promise.all([
-        dialog.getAttribute('aria-modal'),
-        page.locator('.backdrop').count(),
-        page.locator('main').getAttribute('inert'),
-        dialog.evaluate((element) => element.getBoundingClientRect().width),
-    ]);
-    const legacy =
-        ariaModal === null &&
-        backdropCount === 0 &&
-        mainInert === null &&
-        width <= 440;
-    test.fail(
-        legacy,
-        'ADAPT-10 : la signature historique Expanded rend encore un pane étroit non modal qui redimensionne le workspace.'
-    );
-}
-
-test('compact : rend une task sheet naturelle avec trois régions stables', async ({
+test('étroit : rend un dialogue plein écran avec trois régions stables', async ({
     page,
 }) => {
     await installHostAndBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
     const dialog = await openCreate(page);
-    await markLegacyCompactDrawerAsExpectedFailure(dialog);
 
-    const box = requireBox(await dialog.boundingBox(), 'task sheet compacte');
-    expect(box.width).toBe(COMPACT.width);
-    expect(box.height).toBeLessThan(COMPACT.height);
-    expect(box.y + box.height).toBeLessThanOrEqual(COMPACT.height + 1);
+    const box = requireBox(await dialog.boundingBox(), 'surface compacte');
+    expect(box.x).toBeCloseTo(0, 0);
+    expect(box.y).toBeCloseTo(0, 0);
+    expect(box.width).toBeCloseTo(COMPACT.width, 0);
+    expect(box.height).toBeCloseTo(COMPACT.height, 0);
+    expect(await formColumnCount(dialog)).toBe(1);
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
     await expect(page.locator('main')).toHaveAttribute('inert', '');
     await expect(dialog.locator('[data-cmz-id="create-header"]')).toBeVisible();
@@ -285,7 +209,7 @@ test('compact : rend une task sheet naturelle avec trois régions stables', asyn
     ).toBeVisible();
 });
 
-test('medium : superpose à droite un dialogue naturel de 520 à 640 px', async ({
+test('régulier : centre une surface modale à une colonne sans redimensionner la liste', async ({
     page,
 }) => {
     await installHostAndBackend(page);
@@ -296,7 +220,6 @@ test('medium : superpose à droite un dialogue naturel de 520 à 640 px', async 
         'liste Medium avant ouverture'
     );
     const dialog = await openCreate(page);
-    await markLegacyMediumDrawerAsExpectedFailure(dialog);
 
     const [mainAfterRaw, dialogRaw] = await Promise.all([
         page.locator('main').boundingBox(),
@@ -305,14 +228,13 @@ test('medium : superpose à droite un dialogue naturel de 520 à 640 px', async 
     const mainAfter = requireBox(mainAfterRaw, 'liste Medium après ouverture');
     const box = requireBox(dialogRaw, 'dialogue Medium');
     expect(mainAfter).toEqual(mainBefore);
-    expect(box.width).toBeGreaterThanOrEqual(520);
-    expect(box.width).toBeLessThanOrEqual(640);
-    expect(box.x + box.width).toBeLessThanOrEqual(MEDIUM.width + 1);
-    expect(box.height).toBeLessThan(MEDIUM.height);
+    expectInsideViewport(box, MEDIUM);
+    expectCentered(box, MEDIUM);
+    expect(await formColumnCount(dialog)).toBe(1);
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
 });
 
-test('expanded : centre un dialogue modal à deux colonnes sans redimensionner la liste', async ({
+test('large : centre une surface modale à deux colonnes sans redimensionner la liste', async ({
     page,
 }) => {
     await installHostAndBackend(page);
@@ -323,7 +245,6 @@ test('expanded : centre un dialogue modal à deux colonnes sans redimensionner l
         'liste Expanded avant ouverture'
     );
     const dialog = await openCreate(page);
-    await markLegacyExpandedPaneAsExpectedFailure(page, dialog);
 
     const [mainAfterRaw, dialogRaw] = await Promise.all([
         page.locator('main').boundingBox(),
@@ -335,11 +256,9 @@ test('expanded : centre un dialogue modal à deux colonnes sans redimensionner l
     );
     const box = requireBox(dialogRaw, 'dialogue Expanded');
     expect(mainAfter).toEqual(mainBefore);
-    expect(box.width).toBeGreaterThanOrEqual(640);
-    expect(box.width).toBeLessThanOrEqual(760);
-    expect(Math.abs(box.x + box.width / 2 - EXPANDED.width / 2)).toBeLessThan(
-        2
-    );
+    expectInsideViewport(box, EXPANDED);
+    expectCentered(box, EXPANDED);
+    expect(await formColumnCount(dialog)).toBe(2);
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
     await expect(page.locator('main')).toHaveAttribute('inert', '');
     await expect(page.locator('.backdrop')).toBeVisible();
@@ -456,10 +375,12 @@ test('une soumission invalide ne POST pas, annonce les erreurs et focalise Nom',
         'liste Medium après erreur de création'
     );
     expect(mainAfter).toEqual(mainBefore);
-    expect(dialogBox.width).toBeGreaterThanOrEqual(520);
-    expect(dialogBox.width).toBeLessThanOrEqual(640);
+    expect(dialogBox.x).toBeGreaterThanOrEqual(0);
+    expect(dialogBox.y).toBeGreaterThanOrEqual(0);
     expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(MEDIUM.width + 1);
-    expect(dialogBox.height).toBeLessThan(MEDIUM.height);
+    expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
+        MEDIUM.height + 1
+    );
     expect(documentOverflows).toBe(false);
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
     await expect(page.locator('main')).toHaveAttribute('inert', '');
@@ -481,10 +402,13 @@ test('une soumission invalide ne POST pas, annonce les erreurs et focalise Nom',
             backgroundLayoutStable:
                 JSON.stringify(mainAfter) === JSON.stringify(mainBefore),
             dialogWidth: dialogBox.width,
-            meetsMinimumWidth: dialogBox.width >= 520,
-            meetsMaximumWidth: dialogBox.width <= 640,
-            insideViewport: dialogBox.x + dialogBox.width <= MEDIUM.width + 1,
-            heightBelowViewport: dialogBox.height < MEDIUM.height,
+            dialogHeight: dialogBox.height,
+            leftInsideViewport: dialogBox.x >= 0,
+            topInsideViewport: dialogBox.y >= 0,
+            rightInsideViewport:
+                dialogBox.x + dialogBox.width <= MEDIUM.width + 1,
+            bottomInsideViewport:
+                dialogBox.y + dialogBox.height <= MEDIUM.height + 1,
             documentOverflows,
             alertText,
         })
@@ -665,7 +589,6 @@ test('un resize conserve instance, valeurs, focus, liste et silence réseau', as
     await waitForResponsiveLayout(page);
     await page.setViewportSize(EXPANDED);
     await waitForResponsiveLayout(page);
-    await markLegacyExpandedPaneAsExpectedFailure(page, dialog);
 
     expect(harness.events).toEqual(eventsBeforeResize);
     await expect(email).toHaveValue('ada@example.invalid');
@@ -696,18 +619,10 @@ test('320 CSS px et texte à 200 % gardent header, corps, footer et zéro scroll
         content: ':root { font-size: 200% !important; }',
     });
     await waitForResponsiveLayout(page);
-    const legacy = await dialog.evaluate((element) => {
-        const style = getComputedStyle(element);
-        return (
-            element.classList.contains('drawer') &&
-            style.height === '640px' &&
-            style.overflowY === 'auto'
-        );
-    });
-    test.fail(
-        legacy,
-        'ADAPT-10 : à 320 CSS px et texte 200 %, toute la surface historique défile encore au lieu de borner le corps.'
+    const surfaceOverflowY = await dialog.evaluate(
+        (element) => getComputedStyle(element).overflowY
     );
+    expect(['auto', 'scroll']).not.toContain(surfaceOverflowY);
 
     expect(
         await page.evaluate(

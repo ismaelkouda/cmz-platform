@@ -1,0 +1,247 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "presentation-layout-example-set",
+  "set_id": "generic-data-view-layout-2026-10-03",
+  "status": "approved-example",
+  "authority": "layout-guidance-only",
+  "subject": "generic-data-view",
+  "authority_scope": [
+    "region-order",
+    "visual-hierarchy",
+    "responsive-priority",
+    "overlay-bounds",
+    "scroll-bounds",
+    "optional-capability-placement"
+  ],
+  "forbidden_inferences": [
+    "backend-contract",
+    "business-domain",
+    "column-contract",
+    "permission-contract",
+    "capability-presence",
+    "component-choice",
+    "dependency-choice",
+    "runtime-accessibility-proof",
+    "pixel-perfect-copy"
+  ],
+  "usage_protocol": {
+    "requires_page_contract": true,
+    "requires_capability_match": true,
+    "requires_runtime_proof": true
+  },
+  "render_sources": [
+    {
+      "path": "examples/presentation/data-view-layout-examples/mockup.html",
+      "media_type": "text/html",
+      "bytes": 15670,
+      "sha256": "757c5a1a0fe5fc5743964a2989b05e7a7b6aad4a7c5c2426e9f739db42b3f201",
+      "authority": "reproduction-only"
+    },
+    {
+      "path": "examples/presentation/data-view-layout-examples/mockup.css",
+      "media_type": "text/css",
+      "bytes": 11939,
+      "sha256": "cb76e444c1355f45fef536bbbc1c9fda1432be0885a40e7ff937a74146f41c32",
+      "authority": "reproduction-only"
+    },
+    {
+      "path": "examples/presentation/data-view-layout-examples/render.mjs",
+      "media_type": "text/javascript",
+      "bytes": 2695,
+      "sha256": "72c0038f3124666c356c88ceb0a57fa7d55e44e8c669bb4ce93238380616f04f",
+      "authority": "reproduction-only"
+    }
+  ],
+  "sources": [
+    {
+      "id": "expanded-filter-panel",
+      "path": "examples/presentation/data-view-layout-examples/expanded-filter-panel.proposed.png",
+      "media_type": "image/png",
+      "bytes": 152970,
+      "sha256": "755feab3578cb9e3b500b95b5b737d9d0afe53e4b68d2fac73664decea469cb6",
+      "layout_class": "expanded",
+      "space": "comfortable",
+      "state": "filters-open",
+      "capabilities_shown": [
+        "search",
+        "create",
+        "refresh",
+        "export",
+        "column-filters",
+        "filter-panel",
+        "row-rank"
+      ],
+      "authoritative_regions": [
+        "table-toolbar",
+        "data-grid",
+        "filter-panel",
+        "horizontal-scroll-rail"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 }
+    },
+    {
+      "id": "expanded-row-actions",
+      "path": "examples/presentation/data-view-layout-examples/expanded-row-actions.proposed.png",
+      "media_type": "image/png",
+      "bytes": 159904,
+      "sha256": "667fa55d7f68a2f71aa74a576df98b773ac9ffda7bf2a2a7d4f156bdb113be82",
+      "layout_class": "expanded",
+      "space": "comfortable",
+      "state": "filters-closed",
+      "capabilities_shown": [
+        "search",
+        "create",
+        "refresh",
+        "export",
+        "column-filters",
+        "row-actions",
+        "row-rank"
+      ],
+      "authoritative_regions": [
+        "table-toolbar",
+        "data-grid",
+        "row-actions-rail",
+        "horizontal-scroll-rail"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 }
+    },
+    {
+      "id": "expanded-row-actions-with-filters",
+      "path": "examples/presentation/data-view-layout-examples/expanded-row-actions-with-filters.proposed.png",
+      "media_type": "image/png",
+      "bytes": 167515,
+      "sha256": "7a7cfa5fa6aea2853adb3cb630c06b2ab17e85a659b69b9dc68a05fa9f5a04c3",
+      "layout_class": "expanded",
+      "space": "comfortable",
+      "state": "filters-open",
+      "capabilities_shown": [
+        "search",
+        "create",
+        "refresh",
+        "export",
+        "column-filters",
+        "filter-panel",
+        "row-actions",
+        "row-rank"
+      ],
+      "authoritative_regions": [
+        "table-toolbar",
+        "data-grid",
+        "filter-panel",
+        "row-actions-rail",
+        "horizontal-scroll-rail"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 }
+    },
+    {
+      "id": "medium-constrained-filter-panel",
+      "path": "examples/presentation/data-view-layout-examples/medium-constrained-filter-panel.proposed.png",
+      "media_type": "image/png",
+      "bytes": 103722,
+      "sha256": "5b49a51fe979de5d59fbbf088c3481bd5dfcad0e88a1a4902b860d0aaaf1fe87",
+      "layout_class": "medium",
+      "space": "constrained",
+      "state": "filters-open",
+      "capabilities_shown": [
+        "search",
+        "create",
+        "refresh",
+        "export",
+        "column-filters",
+        "filter-panel",
+        "row-rank"
+      ],
+      "authoritative_regions": [
+        "table-toolbar",
+        "data-grid",
+        "filter-panel",
+        "horizontal-scroll-rail"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 960, "height": 900, "pixel_ratio": 1 }
+    },
+    {
+      "id": "medium-constrained-row-actions",
+      "path": "examples/presentation/data-view-layout-examples/medium-constrained-row-actions.proposed.png",
+      "media_type": "image/png",
+      "bytes": 112643,
+      "sha256": "f805d8153c1d450b9309d155433230931f09af253bcf19f541af970301c3a79d",
+      "layout_class": "medium",
+      "space": "constrained",
+      "state": "filters-closed",
+      "capabilities_shown": [
+        "search",
+        "create",
+        "refresh",
+        "export",
+        "column-filters",
+        "row-actions",
+        "row-rank"
+      ],
+      "authoritative_regions": [
+        "table-toolbar",
+        "data-grid",
+        "row-actions-rail",
+        "horizontal-scroll-rail"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 960, "height": 900, "pixel_ratio": 1 }
+    },
+    {
+      "id": "medium-constrained-row-actions-with-filters",
+      "path": "examples/presentation/data-view-layout-examples/medium-constrained-row-actions-with-filters.proposed.png",
+      "media_type": "image/png",
+      "bytes": 109010,
+      "sha256": "18023fe82ce02cfad38690541f6868ade7864cebb0cec539f17bff8099480b74",
+      "layout_class": "medium",
+      "space": "constrained",
+      "state": "filters-open",
+      "capabilities_shown": [
+        "search",
+        "create",
+        "refresh",
+        "export",
+        "column-filters",
+        "filter-panel",
+        "row-actions",
+        "row-rank"
+      ],
+      "authoritative_regions": [
+        "table-toolbar",
+        "data-grid",
+        "filter-panel",
+        "row-actions-rail",
+        "horizontal-scroll-rail"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 960, "height": 900, "pixel_ratio": 1 }
+    }
+  ]
+}

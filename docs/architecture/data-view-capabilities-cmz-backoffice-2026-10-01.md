@@ -264,7 +264,7 @@ hash documente l'identité approuvée ; il ne rend pas le stockage durable.
 - fermer administrativement ADAPT-8d2/8e après fusion de #168/#171 ;
 - ne modifier aucun runtime.
 
-### ADAPT-11a — réalisé localement, références
+### ADAPT-11a — réalisé puis retiré de l'autorité active
 
 - les six intentions approuvées sont reconstruites par un HTML paramétrable et
   un script Playwright à écriture explicitement autorisée ;
@@ -272,15 +272,21 @@ hash documente l'identité approuvée ; il ne rend pas le stockage durable.
   `1448 × 1086` en `medium` ;
 - les PNG pèsent entre 177 681 et 203 125 octets, loin du plafond de 1 Mo ;
 - un second rendu reproduit les six SHA-256 octet par octet ;
-- le manifeste publie le brief et les six PNG sans retirer les quinze autorités
-  progressives et création déjà actives ;
-- un oracle dédié relit identité des sources, IHDR, poids, taille et hash ;
+- le manifeste a initialement publié le brief et les six PNG ;
+- la revue du 2026-10-03 a démontré que leur portée était trop large et que les
+  variantes `medium` ne prouvaient pas cette classe de fenêtre ;
+- les ressources sont désormais des archives `authority: none`, avec manifeste
+  fermé, hashes et usages interdits ;
+- un oracle dédié relit identité des sources, IHDR, poids et hash, et interdit
+  toute republication sous l'autorité active ;
 - aucun runtime, contrat API, work order ou dépendance n'est modifié.
 
-Dossier :
-[`data-view-reference-candidates/`](../../examples/users-management-proof/presentation/data-view-reference-candidates/).
-La suppression des originaux locaux reste interdite avant revue, fusion et CI
-post-fusion de cette tranche.
+Dossier historique :
+[`data-view-reference-candidates/`](../../examples/users-management-proof/presentation/historical/data-view-reference-candidates/).
+Ces fichiers restent consultables pour la traçabilité, mais ne sont ni une
+baseline, ni une autorité de génération, ni une implémentation à copier. La
+politique courante est fixée par
+[ADR-0083](../adr/0083-preuve-page-exemple-mise-en-page-et-archive.md).
 
 ### ADAPT-11b — oracles engagés après fusion d'ADAPT-11a
 
