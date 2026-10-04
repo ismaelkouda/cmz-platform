@@ -269,4 +269,28 @@ describe('SessionService', () => {
         expect(navigation.reload).toHaveBeenCalled();
         expect(session.token()).toBeNull();
     });
+
+    it('clear() recharge même si l’effacement du stockage échoue', async () => {
+        const storage = makeFakeStorage();
+        const failure = new Error('storage unavailable');
+        storage.clearAll = vi.fn(() => {
+            throw failure;
+        });
+        const navigation: NavigationPort = { reload: vi.fn() };
+        const injector = createEnvironmentInjector(
+            [
+                { provide: STORAGE_PORT, useValue: storage },
+                { provide: NAVIGATION_PORT, useValue: navigation },
+                StorePathsService,
+                SessionService,
+            ],
+            null as never
+        );
+        const session = injector.get(SessionService);
+
+        await expect(session.clear()).rejects.toBe(failure);
+
+        expect(navigation.reload).toHaveBeenCalledOnce();
+        expect(session.token()).toBeNull();
+    });
 });

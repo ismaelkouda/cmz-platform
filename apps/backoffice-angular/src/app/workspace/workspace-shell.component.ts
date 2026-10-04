@@ -20,6 +20,10 @@ import {
 import { LocalizeTranslationService } from '@cmz/shared-application';
 import { filter } from 'rxjs';
 import { canonicalWorkspaceUrl } from './workspace-capacity.guard';
+import {
+    WorkspaceAccessMonitor,
+    workspaceAccessPath,
+} from './workspace-access-monitor.service';
 
 @Component({
     selector: 'app-workspace-shell',
@@ -64,6 +68,9 @@ export class WorkspaceShellComponent {
     });
 
     constructor() {
+        // Instancie la réconciliation des autorisations seulement dans le
+        // shell authentifié ; son effect reste ensuite lié à l'injecteur root.
+        inject(WorkspaceAccessMonitor);
         this.router.events
             .pipe(
                 filter(
@@ -213,6 +220,7 @@ export class WorkspaceShellComponent {
             url: this.router.url,
             title,
             pinned: id === '/dashboard',
+            accessPath: workspaceAccessPath(routeChain),
         });
         this.updateOverflowSoon();
     }

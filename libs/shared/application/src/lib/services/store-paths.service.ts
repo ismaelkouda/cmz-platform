@@ -56,7 +56,10 @@ export class StorePathsService {
     }
 
     async setPaths(paths: string[]): Promise<void> {
-        await this.storage.saveObfuscated(this.STORAGE_KEY, paths);
+        // L'autorité mémoire doit changer avant toute I/O : une révocation
+        // reçue ne peut pas rester invisible parce que la persistance locale
+        // échoue. Le rejet est conservé pour que l'appelant traite la panne.
         this._paths.set(paths);
+        await this.storage.saveObfuscated(this.STORAGE_KEY, paths);
     }
 }
