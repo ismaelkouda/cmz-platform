@@ -114,7 +114,7 @@ déclenchera la création des fichiers XLIFF et des variantes de build, pas la
 réintroduction automatique d'un runtime tiers.
 
 La première mesure de production après migration porte le bundle initial brut de
-525,77 à 749,67 kB (+223,90 kB), sous le warning de 900 kB. Cette hausse est
+522,76 à 746,63 kB (+223,87 kB), sous le warning de 900 kB. Cette hausse est
 acceptée comme dette bornée du catalogue historique, pas comme nouveau défaut :
 le JSON était auparavant téléchargé séparément au runtime. Lorsqu'une surface
 historique est remaniée, ses messages doivent rejoindre ses templates/chunks

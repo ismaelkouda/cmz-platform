@@ -3037,7 +3037,7 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   vers `@angular/localize` (ADR-0085) : zéro dictionnaire HTTP, générateur de
   shell natif, preuve de bijection des 1 869 clés historiques,
   `ngc`/tests/builds verts. Coût transitoire mesuré : le catalogue historique
-  compilé porte le bundle initial brut de 525,77 à 749,67 kB, sous le seuil de
+  compilé porte le bundle initial brut de 522,76 à 746,63 kB, sous le seuil de
   warning de 900 kB. Travail restant non bloquant : quand une surface historique
   est réellement remaniée, remplacer ses appels dynamiques par
   `i18n`/`$localize`, vérifier que ses messages retombent dans ses chunks lazy,
