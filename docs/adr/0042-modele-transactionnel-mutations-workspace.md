@@ -4,6 +4,12 @@
   remplacée par SIMPL-4
 - **Date :** 2026-09-04
 
+> **Révision i18n du 2026-10-04** : les mentions de Transloco ci-dessous
+> décrivent uniquement les qualifications historiques. La piste, ses recettes
+> et son runtime ont été supprimés ; Angular utilise désormais
+> `@angular/localize` conformément à
+> [ADR-0085](./0085-angular-i18n-native-localize.md).
+
 ## Amendement du 2026-09-17 — qualification et application séparées
 
 Les sections historiques ci-dessous restent le contrat de la **qualification

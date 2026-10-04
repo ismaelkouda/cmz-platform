@@ -23,9 +23,8 @@ LGPL/MPL) détectée :**
 
 | Paquet | Version | Licence | Obligation pratique |
 | --- | --- | --- | --- |
-| `@angular/common`, `@angular/compiler`, `@angular/core`, `@angular/forms`, `@angular/platform-browser`, `@angular/router` | 22.2.0 | MIT | Conserver la notice de copyright |
+| `@angular/common`, `@angular/compiler`, `@angular/core`, `@angular/forms`, `@angular/localize`, `@angular/platform-browser`, `@angular/router` | 22.2.0 | MIT | Conserver la notice de copyright |
 | `@angular/cdk`, `@angular/material` | 22.2.1 | MIT | Conserver la notice de copyright |
-| `@jsverse/transloco` | 8.4.0 | MIT | Conserver la notice de copyright |
 | `date-fns` | 4.4.0 | MIT | Conserver la notice de copyright |
 | `exceljs` | 4.4.0 | MIT | Conserver la notice de copyright |
 | `i18next` | 26.3.6 | MIT | Conserver la notice de copyright |

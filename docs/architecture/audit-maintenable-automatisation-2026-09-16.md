@@ -1,5 +1,9 @@
 # Audit de maintenabilité — automatisation de création et d'ajout de bibliothèques
 
+> **Mise à jour 2026-10-04** : les mentions de la piste Transloco sont
+> historiques. Cette piste a été supprimée lors de la migration native Angular
+> ([ADR-0085](../adr/0085-angular-i18n-native-localize.md)).
+
 - **Date :** 2026-09-16
 - **Statut :** audit Staff terminé ; SIMPL-1…6 implémentés ; SIMPL-7 engagé
 - **Périmètre :** `create-app`, `add-library`, `create-module` et leurs gates CI

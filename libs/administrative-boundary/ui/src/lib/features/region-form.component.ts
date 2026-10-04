@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { RegionFacade } from '@cmz/administrative-boundary-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { RegionFormStore } from '../stores/region-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'ADMINISTRATIVE_BOUNDARY.REGION';
 
@@ -110,7 +110,7 @@ const T = 'ADMINISTRATIVE_BOUNDARY.REGION';
 export class RegionFormComponent {
     protected readonly store = inject(RegionFormStore);
     private readonly facade = inject(RegionFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

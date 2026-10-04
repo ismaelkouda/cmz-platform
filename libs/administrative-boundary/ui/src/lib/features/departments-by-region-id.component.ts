@@ -13,7 +13,7 @@ import { DEPARTMENTS_BY_REGION_ID_TABLE } from '../constants/departments-by-regi
 import { DepartmentsByRegionIdVmProps } from '../adapters/departments-by-region-id-vm-props.interface';
 import { DepartmentsByRegionIdPresenter } from '../adapters/departments-by-region-id-vm.presenter';
 import { DepartmentsByRegionIdFilterStore } from '../stores/departments-by-region-id-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'ADMINISTRATIVE_BOUNDARY.DEPARTMENTS_BY_REGION_ID';
 
@@ -69,7 +69,7 @@ const T = 'ADMINISTRATIVE_BOUNDARY.DEPARTMENTS_BY_REGION_ID';
 export class DepartmentsByRegionIdComponent {
     protected readonly facade = inject(DepartmentsByRegionIdFacade);
     private readonly store = inject(DepartmentsByRegionIdFilterStore);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

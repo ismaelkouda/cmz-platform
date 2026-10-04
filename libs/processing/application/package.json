@@ -7,8 +7,7 @@
     "@cmz/processing-domain": "workspace:*",
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
-    "rxjs": "catalog:",
-    "@jsverse/transloco": "catalog:"
+    "rxjs": "catalog:"
   },
   "devDependencies": {
     "vitest": "^5.0.0"

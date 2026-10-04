@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TermsUseFacade } from '@cmz/content-management-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { TermsUseFormStore } from '../stores/terms-use-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'CONTENT_MANAGEMENT.TERMS_USE';
 
@@ -77,7 +77,7 @@ const T = 'CONTENT_MANAGEMENT.TERMS_USE';
 export class TermsUseFormComponent {
     protected readonly store = inject(TermsUseFormStore);
     private readonly facade = inject(TermsUseFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

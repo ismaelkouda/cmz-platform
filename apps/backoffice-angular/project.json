@@ -5,6 +5,9 @@
   "prefix": "app",
   "sourceRoot": "apps/backoffice-angular/src",
   "tags": ["type:app", "scope:app"],
+  "i18n": {
+    "sourceLocale": "fr"
+  },
   "cli": {
     "cache": {
       "enabled": false
@@ -18,6 +21,7 @@
       "options": {
         "outputPath": "dist/apps/backoffice-angular",
         "browser": "apps/backoffice-angular/src/main.ts",
+        "polyfills": ["@angular/localize/init"],
         "tsConfig": "apps/backoffice-angular/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [

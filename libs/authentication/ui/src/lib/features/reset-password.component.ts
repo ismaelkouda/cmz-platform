@@ -5,7 +5,7 @@ import { ResetPasswordFacade } from '@cmz/authentication-application';
 import { FieldComponent } from '@cmz/shared-ui';
 import { LOGIN_ROUTE } from '../constants/authentication-paths.constant';
 import { ResetPasswordFormStore } from '../stores/reset-password-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'AUTHENTICATION.RESET_PASSWORD';
 
@@ -74,7 +74,7 @@ const T = 'AUTHENTICATION.RESET_PASSWORD';
 export class ResetPasswordComponent {
     protected readonly store = inject(ResetPasswordFormStore);
     protected readonly facade = inject(ResetPasswordFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

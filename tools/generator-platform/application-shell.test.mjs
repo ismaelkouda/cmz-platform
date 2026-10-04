@@ -154,7 +154,6 @@ test('le renderer produit routing, i18n, PWA et un contrat borné par page', asy
         'src/app/access.guard.ts',
         'src/app/access.guard.spec.ts',
         'src/app/app.routes.ts',
-        'src/app/transloco-loader.ts',
         'public/manifest.webmanifest',
         'public/sw.js',
         '.cmz/libraries.json',
@@ -168,8 +167,18 @@ test('le renderer produit routing, i18n, PWA et un contrat borné par page', asy
         schema_version: '1.0.0',
         kind: 'app-library-manifest',
         platform: 'angular',
-        libraries: ['transloco'],
+        libraries: [],
     });
+    const project = JSON.parse(rendered.files['project.json']);
+    assert.deepEqual(project.i18n, { sourceLocale: 'fr' });
+    assert.deepEqual(project.targets.build.options.polyfills, [
+        '@angular/localize/init',
+    ]);
+    const page =
+        rendered.files['src/app/pages/page_1111111111111111/page.component.ts'];
+    assert.match(page, /i18n="Titre de page@@page_1111111111111111\.title"/);
+    assert.doesNotMatch(page, /transloco/i);
+    assert.equal(rendered.files['public/i18n/fr.json'], undefined);
     assert.match(rendered.files['src/app/app.routes.ts'], /loadComponent/);
     assert.match(
         rendered.files['src/app/app.routes.ts'],
@@ -444,8 +453,9 @@ test('une app fraîchement rendue passe la gate library-setup', async (t) => {
         schema_version: '1.0.0',
         kind: 'app-library-manifest',
         platform: 'angular',
-        // ADR-0044 : Material et Tailwind sont opt-in, jamais recopiés ici.
-        libraries: ['transloco'],
+        // ADR-0044 : Material et Tailwind sont opt-in. L'i18n Angular native
+        // appartient au shell et n'est pas une bibliothèque optionnelle.
+        libraries: [],
     });
 
     const root = await mkdtemp(join(tmpdir(), 'cmz-shell-gate-'));

@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InfrastructureTypeFacade } from '@cmz/administrative-infrastructure-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -20,7 +21,6 @@ import { INFRASTRUCTURE_TYPE_TABLE } from '../constants/infrastructure-type-tabl
 import { InfrastructureTypeVmProps } from '../adapters/infrastructure-type-vm-props.interface';
 import { InfrastructureTypePresenter } from '../adapters/infrastructure-type-vm.presenter';
 import { InfrastructureTypeFilterStore } from '../stores/infrastructure-type-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/equipments/types';
 const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
@@ -30,7 +30,7 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE_TYPE';
  * `cmz-filter` (Signal Forms) + `cmz-table` + `cmz-pagination` sur la façade
  * `rxResource` (signaux `items`/`isLoading`/`value`). Permissions via
  * `PermissionActionsService`, confirmations via `ConfirmDialogPort`, i18n via
- * Transloco — aucune dépendance ngx-translate/toastr/primeng.
+ * `$localize` natif — aucune dépendance ngx-translate/toastr/primeng.
  */
 @Component({
     selector: 'cmz-infrastructure-type-list',
@@ -94,7 +94,7 @@ export class InfrastructureTypeListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

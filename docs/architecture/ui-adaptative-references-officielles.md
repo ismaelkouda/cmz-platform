@@ -177,9 +177,10 @@ de cette version effective plutôt qu'un exemple historique trouvé sur le Web.
 
 ### 7.2 Hiérarchie officielle et dépendances opt-in
 
-ADR-0044 reste l'autorité d'installation. Une application qui ne déclare que
-Transloco ne reçoit pas Material par une modification de page cachée. Après
-adoption explicite :
+ADR-0044 reste l'autorité d'installation. Une application qui ne déclare aucune
+bibliothèque UI opt-in ne reçoit pas Material par une modification de page
+cachée ; l'i18n `@angular/localize` appartient indépendamment au baseline du
+shell. Après adoption explicite :
 
 - utiliser d'abord l'élément HTML sémantique lorsqu'il couvre le besoin ;
 - préférer Material pour un composant visuel M3 dans une app qui l'a adopté ;

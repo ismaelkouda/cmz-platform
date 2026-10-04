@@ -3033,6 +3033,18 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
 
 ### 3.4 Qualité de code — corrections ponctuelles SEOS (ex-T11, sous-ensemble)
 
+- **I18N-NATIVE-1** — partiel, M, P2 (2026-10-04). Angular a migré de Transloco
+  vers `@angular/localize` (ADR-0085) : zéro dictionnaire HTTP, générateur de
+  shell natif, preuve de bijection des 1 869 clés historiques,
+  `ngc`/tests/builds verts. Coût transitoire mesuré : le catalogue historique
+  compilé porte le bundle initial brut de 522,76 à 746,63 kB, sous le seuil de
+  warning de 900 kB. Travail restant non bloquant : quand une surface historique
+  est réellement remaniée, remplacer ses appels dynamiques par
+  `i18n`/`$localize`, vérifier que ses messages retombent dans ses chunks lazy,
+  puis retirer les clés devenues mortes. Ne pas créer un découpage de catalogue
+  spéculatif avant une mesure par route ; seuil de réévaluation : budget 900 kB
+  approché ou deuxième locale produit approuvée.
+
 - **T11-2** — fait, S, P2, alias `CI-2`. `check:i18n` local aligné sur CI
   bloquante (retrait `--warn-only`).
 - **T11-3** — **fait** (2026-08-11), M, P2. Purge clés i18n orphelines : 255

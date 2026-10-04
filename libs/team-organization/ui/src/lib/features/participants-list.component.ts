@@ -5,6 +5,7 @@ import {
     TeamsSelectFacade,
 } from '@cmz/team-organization-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -24,7 +25,6 @@ import { PARTICIPANTS_TABLE } from '../constants/participants-table.constant';
 import { ParticipantsVmProps } from '../adapters/participants-vm-props.interface';
 import { ParticipantsPresenter } from '../adapters/participants-vm.presenter';
 import { ParticipantsFilterStore } from '../stores/participants-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/team-organization/participants';
 const T = 'TEAM_ORGANIZATION.PARTICIPANTS';
@@ -97,7 +97,7 @@ export class ParticipantsListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

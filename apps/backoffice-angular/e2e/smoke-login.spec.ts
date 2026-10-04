@@ -36,8 +36,11 @@ test.describe('smoke auth — login (mock)', () => {
         await submitLogin(page);
 
         await expect(page).toHaveURL(/\/dashboard(\/)?$/, { timeout: 30_000 });
-        // Page RO-view : titre dashboard (i18n peut être clé ou traduction)
-        await expect(page.locator('h1').first()).toBeVisible();
+        // `$localize` est compilé : une clé brute n'est jamais une sortie
+        // acceptable du navigateur.
+        await expect(page.locator('h1').first()).toContainText(
+            'Tableau de bord'
+        );
     });
 
     test('login invalide → reste sur /auth/login', async ({ page }) => {

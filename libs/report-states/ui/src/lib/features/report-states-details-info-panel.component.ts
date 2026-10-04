@@ -6,7 +6,7 @@ import {
     TELECOM_OPERATOR_LABEL,
 } from '@cmz/shared-ui';
 import { REPORT_STATES_DETAILS_STATUS_LABEL } from '../constants/report-states-details-status-label.constant';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'REPORT_STATES.DETAILS';
 
@@ -72,7 +72,7 @@ export class ReportStatesDetailsInfoPanelComponent {
 
     readonly details = input.required<ReportStatesDetailsEntity>();
 
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     protected statusLabel(): string {
         const status = this.details().status;

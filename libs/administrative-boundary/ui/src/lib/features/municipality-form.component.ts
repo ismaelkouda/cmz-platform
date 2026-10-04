@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MunicipalityFacade } from '@cmz/administrative-boundary-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { MunicipalityFormStore } from '../stores/municipality-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'ADMINISTRATIVE_BOUNDARY.MUNICIPALITY';
 
@@ -156,7 +156,7 @@ const T = 'ADMINISTRATIVE_BOUNDARY.MUNICIPALITY';
 export class MunicipalityFormComponent {
     protected readonly store = inject(MunicipalityFormStore);
     private readonly facade = inject(MunicipalityFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

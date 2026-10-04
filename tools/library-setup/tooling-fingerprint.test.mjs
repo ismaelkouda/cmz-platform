@@ -81,7 +81,7 @@ test('le manifeste exposé est trié, fermé et sans tests', () => {
     );
     assert.ok(
         !paths.includes(
-            'tools/library-setup/runtime-oracles/transloco-render.mjs'
+            'tools/library-setup/runtime-oracles/tailwind-sentinel.mjs'
         )
     );
     assert.deepEqual(
@@ -95,14 +95,12 @@ test('une édition hors surface exécutable ne périme aucune piste', (t) => {
     const before = {
         material: digest(root, 'angular-material'),
         tailwind: digest(root, 'tailwind'),
-        transloco: digest(root, 'transloco'),
     };
     append(root, 'tools/library-setup/compatibility-promotion-runner.test.mjs');
     assert.deepEqual(
         {
             material: digest(root, 'angular-material'),
             tailwind: digest(root, 'tailwind'),
-            transloco: digest(root, 'transloco'),
         },
         before
     );
@@ -111,10 +109,10 @@ test('une édition hors surface exécutable ne périme aucune piste', (t) => {
 test('un oracle étranger ne périme pas une piste indépendante', (t) => {
     const root = fixture(t);
     const materialBefore = digest(root, 'angular-material');
-    const translocoBefore = digest(root, 'transloco');
-    append(root, 'tools/library-setup/runtime-oracles/transloco-render.mjs');
+    const tailwindBefore = digest(root, 'tailwind');
+    append(root, 'tools/library-setup/runtime-oracles/tailwind-sentinel.mjs');
     assert.equal(digest(root, 'angular-material'), materialBefore);
-    assert.notEqual(digest(root, 'transloco'), translocoBefore);
+    assert.notEqual(digest(root, 'tailwind'), tailwindBefore);
 });
 
 test('une source propre ne périme que les pistes qui la consomment', (t) => {
@@ -130,23 +128,23 @@ test('une source commune sémantique périme toutes les pistes', (t) => {
     const root = fixture(t);
     const before = {
         material: digest(root, 'angular-material'),
-        transloco: digest(root, 'transloco'),
+        tailwind: digest(root, 'tailwind'),
     };
     append(root, 'tools/library-setup/sandbox.mjs');
     assert.notEqual(digest(root, 'angular-material'), before.material);
-    assert.notEqual(digest(root, 'transloco'), before.transloco);
+    assert.notEqual(digest(root, 'tailwind'), before.tailwind);
 });
 
 test('une acceptance sans surface déclarée échoue en fermeture', (t) => {
     const root = fixture(t);
-    const { recipe, recipes } = configuration(root, 'transloco');
+    const { recipe, recipes } = configuration(root, 'tailwind');
     recipe.runtime_acceptance.push({
         id: 'preuve-sans-sources',
         description: 'preuve de test sans manifeste',
         proof: 'compile-component',
         status: 'enforced',
     });
-    recipes.set('angular/transloco', recipe);
+    recipes.set('angular/tailwind', recipe);
     assert.throws(
         () => libraryRunnerSourcePaths(recipe, recipes),
         /sources d'oracle non déclarées/

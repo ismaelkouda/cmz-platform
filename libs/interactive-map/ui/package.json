@@ -11,9 +11,9 @@
     "@angular/router": "catalog:",
     "@cmz/interactive-map-application": "workspace:*",
     "@cmz/interactive-map-domain": "workspace:*",
+    "@cmz/shared-application": "workspace:*",
     "@cmz/shared-ui": "workspace:*",
-    "ol": "catalog:",
-    "@jsverse/transloco": "catalog:"
+    "ol": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:tooling"

@@ -1,6 +1,6 @@
 import { Component, input, inject } from '@angular/core';
 import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'REPORT_STATES.DETAILS';
 
@@ -42,7 +42,7 @@ export class ReportStatesDetailsLocationPanelComponent {
 
     readonly details = input.required<ReportStatesDetailsEntity>();
 
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     protected mapUrl(): string | null {
         const { latitude, longitude } = this.details().location.coordinates;

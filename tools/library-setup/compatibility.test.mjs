@@ -18,7 +18,6 @@ test('chaque recette réelle possède une matrice fermée cohérente', () => {
     assert.deepEqual([...result.matrices.keys()].sort(), [
         'angular/angular-material',
         'angular/tailwind',
-        'angular/transloco',
     ]);
 });
 

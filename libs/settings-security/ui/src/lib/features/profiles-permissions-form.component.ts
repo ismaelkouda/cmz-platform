@@ -9,7 +9,7 @@ import {
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { ProfilesPermissionsFormStore } from '../stores/profiles-permissions-form.store';
 import { PermissionTreeNodeComponent } from './permission-tree-node.component';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'SETTINGS_SECURITY.PROFILES_PERMISSIONS';
 
@@ -101,7 +101,7 @@ export class ProfilesPermissionsFormComponent {
     private readonly permissionsFacade = inject(
         ProfilesPermissionsPermissionsFacade
     );
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

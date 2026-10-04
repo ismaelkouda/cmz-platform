@@ -121,6 +121,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0078](./adr/0078-vues-de-donnees-par-capacites-optionnelles.md) | Vues de données par capacités optionnelles               |
 | [0079](./adr/0079-jev-evaluateur-probabiliste-replay-shadow.md) | JEV comme évaluateur probabiliste en replay/shadow       |
 | [0080](./adr/0080-prouver-la-valeur-avant-nouvelle-automatisation.md) | Prouver la valeur avant toute nouvelle automatisation    |
+| [0085](./adr/0085-angular-i18n-native-localize.md)          | Internationalisation Angular native avec `@angular/localize` |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
@@ -131,6 +132,9 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
   — direction future, valeur utilisateur, frontières d'autorité et séquencement
   sans confusion avec les capacités déjà prouvées
 - [État du socle](./architecture/etat-du-socle.md) — ce qui existe aujourd'hui
+- [Workspace à vues vivantes](./architecture/workspace-vues-vivantes-accessibilite-2026-10-04.md)
+  — contrat de shell Medium/Expanded, conservation réelle des instances,
+  fermeture, suspension, budget mémoire et accessibilité Tabs
 - [Matrice de capacités de la plateforme](./architecture/generation-platform-capability-matrix.md)
   — sources, cibles et niveaux de preuve réellement atteints
 - [Conception des compositions évolutives et patterns mémorisés](./architecture/conception-compositions-evolutives-patterns-memorises.md)

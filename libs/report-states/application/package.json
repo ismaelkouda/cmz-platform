@@ -11,8 +11,7 @@
     "@cmz/report-states-domain": "workspace:*",
     "@cmz/shared-application": "workspace:*",
     "@cmz/shared-domain": "workspace:*",
-    "rxjs": "catalog:",
-    "@jsverse/transloco": "catalog:"
+    "rxjs": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:tooling",

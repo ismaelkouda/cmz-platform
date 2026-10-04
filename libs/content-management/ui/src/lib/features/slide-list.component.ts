@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SlideFacade } from '@cmz/content-management-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -20,7 +21,6 @@ import { SLIDE_STATUS_LABEL } from '../constants/slide-status-label.constant';
 import { SlideVmProps } from '../adapters/slide-vm-props.interface';
 import { SlidePresenter } from '../adapters/slide-vm.presenter';
 import { SlideFilterStore } from '../stores/slide-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/content-management/slide';
 const T = 'CONTENT_MANAGEMENT.SLIDE';
@@ -87,7 +87,7 @@ export class SlideListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

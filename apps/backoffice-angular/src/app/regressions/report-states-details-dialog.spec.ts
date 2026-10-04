@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { NOTIFICATION_PORT } from '@cmz/shared-application';
-import { TranslocoService } from '@jsverse/transloco';
+import {
+    LocalizeTranslationService,
+    NOTIFICATION_PORT,
+} from '@cmz/shared-application';
 import { CONFIRM_DIALOG_PORT } from '@cmz/shared-ui';
 import {
     ReportStatesDetailsEntity,
@@ -93,7 +95,7 @@ describe('ReportStatesDetailsDialogComponent.onQualificationSubmit — catch-blo
                 { provide: ReportStatesDetailsFacade, useValue: fakeFacade },
                 { provide: CONFIRM_DIALOG_PORT, useValue: fakeConfirm },
                 { provide: NOTIFICATION_PORT, useValue: fakeNotification },
-                { provide: TranslocoService, useValue: fakeI18n },
+                { provide: LocalizeTranslationService, useValue: fakeI18n },
             ],
         });
 

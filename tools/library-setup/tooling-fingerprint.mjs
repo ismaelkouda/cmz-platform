@@ -57,17 +57,6 @@ export const QUALIFICATION_ORACLE_SOURCE_PATHS = new Map([
         ['tools/library-setup/runtime-oracles/production-build.mjs'],
     ],
     [
-        'angular/transloco#key-renders-translation',
-        [
-            'tools/library-setup/runtime-oracles/transloco-render.mjs',
-            'tools/library-setup/runtime-fixtures/transloco-runtime-probe.mjs',
-        ],
-    ],
-    [
-        'angular/transloco#offline-production-build',
-        ['tools/library-setup/runtime-oracles/production-build.mjs'],
-    ],
-    [
         'angular/angular-material#material-tailwind-cascade-order',
         ['tools/library-setup/runtime-oracles/material-tailwind-cascade.mjs'],
     ],

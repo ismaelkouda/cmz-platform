@@ -244,33 +244,18 @@ function pageContract(design, experience, page, designPath, designSha256) {
 
 function placeholderPage(page) {
     return `import { Component } from '@angular/core';
-import { TranslocoPipe } from '@jsverse/transloco';
 
 @Component({
-    imports: [TranslocoPipe],
     selector: 'app-page-${page.id.slice(-8)}',
     template: \`
         <main tabindex="-1">
-            <h1>{{ '${page.id}.title' | transloco }}</h1>
-            <p>{{ '${page.id}.pending' | transloco }}</p>
+            <h1 i18n="Titre de page@@${page.id}.title">${escapedMarkup(page.title)}</h1>
+            <p i18n="État de réalisation@@${page.id}.pending">Cette page doit être réalisée depuis son contrat validé.</p>
         </main>
     \`,
 })
 export class PageComponent {}
 `;
-}
-
-function translations(pages) {
-    return Object.fromEntries(
-        pages.map((page) => [
-            page.id,
-            {
-                title: page.title,
-                pending:
-                    'Cette page doit être réalisée depuis son contrat validé.',
-            },
-        ])
-    );
 }
 
 export async function renderAngularPwaShell({
@@ -309,7 +294,7 @@ export async function renderAngularPwaShell({
             schema_version: '1.0.0',
             kind: 'app-library-manifest',
             platform: 'angular',
-            libraries: ['transloco'],
+            libraries: [],
         }),
         'project.json': json({
             name: appName,
@@ -318,6 +303,7 @@ export async function renderAngularPwaShell({
             prefix: 'app',
             sourceRoot: `${root}/src`,
             tags: ['type:app', `experience:${experience.id}`],
+            i18n: { sourceLocale: 'fr' },
             targets: {
                 build: {
                     executor: '@angular/build:application',
@@ -326,6 +312,7 @@ export async function renderAngularPwaShell({
                     options: {
                         outputPath: `dist/${root}`,
                         browser: `${root}/src/main.ts`,
+                        polyfills: ['@angular/localize/init'],
                         tsConfig: `${root}/tsconfig.app.json`,
                         inlineStyleLanguage: 'scss',
                         assets: [{ glob: '**/*', input: `${root}/public` }],
@@ -412,7 +399,10 @@ export async function renderAngularPwaShell({
         }),
         'tsconfig.app.json': json({
             extends: './tsconfig.json',
-            compilerOptions: { outDir: '../../dist/out-tsc', types: [] },
+            compilerOptions: {
+                outDir: '../../dist/out-tsc',
+                types: ['@angular/localize'],
+            },
             include: ['src/**/*.ts'],
             exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
         }),
@@ -420,7 +410,7 @@ export async function renderAngularPwaShell({
             extends: './tsconfig.json',
             compilerOptions: {
                 outDir: '../../dist/out-tsc',
-                types: ['vitest/globals'],
+                types: ['vitest/globals', '@angular/localize'],
             },
             include: ['src/**/*.spec.ts', 'src/**/*.d.ts'],
         }),
@@ -488,48 +478,23 @@ export class App {}
         'src/app/app.config.ts': `import { provideHttpClient } from '@angular/common/http';
 import {
     ApplicationConfig,
-    isDevMode,
     provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideTransloco } from '@jsverse/transloco';
 
 import { appRoutes } from './app.routes';
-import { TranslocoHttpLoader } from './transloco-loader';
 
 export const appConfig: ApplicationConfig = {
     providers: [
         provideBrowserGlobalErrorListeners(),
         provideHttpClient(),
         provideRouter(appRoutes),
-        provideTransloco({
-            config: {
-                availableLangs: ['fr'],
-                defaultLang: 'fr',
-                reRenderOnLangChange: true,
-                prodMode: !isDevMode(),
-            },
-            loader: TranslocoHttpLoader,
-        }),
     ],
 };
 `,
         'src/app/access.guard.ts': accessGuard(),
         'src/app/access.guard.spec.ts': accessGuardSpec(),
         'src/app/app.routes.ts': renderRoutes(pages),
-        'src/app/transloco-loader.ts': `import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
-import { Translation, TranslocoLoader } from '@jsverse/transloco';
-
-@Injectable({ providedIn: 'root' })
-export class TranslocoHttpLoader implements TranslocoLoader {
-    private readonly http = inject(HttpClient);
-
-    getTranslation(language: string) {
-        return this.http.get<Translation>(\`i18n/\${language}.json\`);
-    }
-}
-`,
         'src/styles.scss': `:root {
     color-scheme: light;
     font-family: system-ui, sans-serif;
@@ -544,7 +509,6 @@ body {
     outline-offset: 3px;
 }
 `,
-        'public/i18n/fr.json': json(translations(pages)),
         'public/manifest.webmanifest': json({
             name: design.design.title,
             short_name: design.design.title.slice(0, 24),
@@ -609,14 +573,13 @@ self.addEventListener('fetch', (event) => {
     }
     // Toute app gérée doit déclarer ses bibliothèques (ADR-0041) : sans ce
     // manifeste, `check:library-setup` refuse une app fraîchement créée. Le
-    // shell livre Transloco et rien d'autre — Material et Tailwind sont opt-in
-    // via `add-library` (ADR-0044). Ce fichier est donc le point de départ que
-    // `add-library` fera ensuite évoluer, jamais une copie de leur config.
+    // `$localize` appartient au socle Angular généré, pas aux bibliothèques
+    // optionnelles. Material et Tailwind restent opt-in via `add-library`.
     files['.cmz/libraries.json'] = json({
         schema_version: '1.0.0',
         kind: 'app-library-manifest',
         platform: 'angular',
-        libraries: ['transloco'],
+        libraries: [],
     });
     const canonicalFiles = await canonicalizeGeneratedFiles(
         Object.fromEntries(

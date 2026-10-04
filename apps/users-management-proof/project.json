@@ -5,6 +5,9 @@
   "prefix": "app",
   "sourceRoot": "apps/users-management-proof/src",
   "tags": ["type:app", "experience:operator-web"],
+  "i18n": {
+    "sourceLocale": "fr"
+  },
   "targets": {
     "build": {
       "executor": "@angular/build:application",
@@ -13,6 +16,7 @@
       "options": {
         "outputPath": "dist/apps/users-management-proof",
         "browser": "apps/users-management-proof/src/main.ts",
+        "polyfills": ["@angular/localize/init"],
         "tsConfig": "apps/users-management-proof/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [

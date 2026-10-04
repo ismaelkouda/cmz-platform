@@ -23,8 +23,8 @@ d'affichage (`messageKey`) et un `statusCode` HTTP. Dérive de la base abstraite
 - Un fichier = une classe.
 - **Interpolation** : pour un message à variable (« {field} requis »), passer
   `super(message, { field })` — la base porte un `params?` que le handler par
-  défaut transmet à Transloco. Ne pas inventer de clé générique : garder la clé
-  i18n du source.
+  défaut transmet au catalogue `$localize` compilé. Ne pas inventer de clé
+  générique : garder la clé i18n du source.
 
 ## Exemplaire
 

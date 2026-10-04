@@ -41,7 +41,7 @@ const PROFILE_SCHEMA_PATH = 'conventions/profile.schema.json';
 const PACKAGE_JSON_FILE = join(ROOT, 'package.json');
 const TSCONFIG_BASE_FILE = join(ROOT, 'tsconfig.base.json');
 
-// Un `packages[]` de profil nomme une dépendance native concrète (transloco,
+// Un `packages[]` de profil nomme une dépendance native concrète (@angular/localize,
 // react-i18next, moko-resources…) — jamais un wrapper conçu pour masquer une
 // différence entre plateformes. Cf. ADR-0036 et conventions/README.md.
 const ABSTRACTION_PACKAGE_MARKERS =

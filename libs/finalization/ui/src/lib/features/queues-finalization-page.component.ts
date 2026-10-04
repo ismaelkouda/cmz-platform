@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { QueuesFinalizationFacade } from '@cmz/finalization-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -26,7 +27,6 @@ import {
     finalizationListExportTooltip,
 } from '../utils/finalization-list-export.util';
 import { FinalizationDetailsDialogComponent } from './finalization-details-dialog.component';
-import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'FINALIZATION.QUEUES';
 
@@ -104,7 +104,7 @@ export class QueuesFinalizationPageComponent {
     private readonly store = inject(QueuesFinalizationFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;

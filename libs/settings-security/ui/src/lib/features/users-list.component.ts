@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UsersFacade } from '@cmz/settings-security-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -21,7 +22,6 @@ import { USERS_TABLE } from '../constants/users-table.constant';
 import { UsersVmProps } from '../adapters/users-vm-props.interface';
 import { UsersPresenter } from '../adapters/users-vm.presenter';
 import { UsersFilterStore } from '../stores/users-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/settings-security/users';
 const T = 'SETTINGS_SECURITY.USERS';
@@ -95,7 +95,7 @@ export class UsersListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

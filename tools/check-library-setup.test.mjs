@@ -31,7 +31,6 @@ test('les recettes réelles du dépôt sont toutes valides', () => {
     assert.deepEqual([...result.recipes.keys()].sort(), [
         'angular/angular-material',
         'angular/tailwind',
-        'angular/transloco',
     ]);
 });
 

@@ -21,10 +21,10 @@
       "reason": "Piste Tailwind 4 ; vérification complète requise pour chaque nouvelle version effective du framework.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "94f409e2641bd9170b379e21b4b81b40f30cf2ec",
-        "source_context_sha256": "b21259a0d78260e90ad73a448a48757fc6c9936e90d316da3700087cdb3e798a",
+        "commit": "5cfcdc1aa311b264640b1360c0558c31aad53b19",
+        "source_context_sha256": "d632a6d731ae990e436c5e1be95ff958285dc7dcf3bc0bf8649be49eb7bc851d",
         "app": "library-qualification-angular",
-        "plan_id": "library-plan:875359645178788704e6a43706256b29fcc3d9e88ff213162b5651ad5c6fd862",
+        "plan_id": "library-plan:1b4e0b0f2383d2f8d5a487e5cb96200af106cf9cb7693d1b1717161c14b450f5",
         "change_set_id": "changes:92cc7e17c2deda40e0fac8c3f22877c17c5c37fd5beda1400e57411936bd6616",
         "app_tree_sha256": "e258093c3fe1c4ded44ed01700b0f91e91622d23046bc0bf1b1219c9dab2afb3",
         "track_sha256": "c0f7997ce7f4bd97f9b872e7c7eb55ed2fc073f16531690f53b30784a68b2e78",
@@ -54,9 +54,9 @@
           "inputs_sha256": {
             "apps/backoffice-angular/.postcssrc.json": "6c96a7becce80948b52897a8968a815644d70dbe647227ae627a9cca0edcbabb",
             "apps/backoffice-angular/src/tailwind.css": "776d8b2b465fe737d4845cdcf03301ccefabe8ec0361305b3915ed07d5273f00",
-            "tools/library-setup/qualified-adapters.mjs": "0dc457986116ae91a66dcb6085c576d48f83bcc0453aad8f0e623cd9e85738db"
+            "tools/library-setup/qualified-adapters.mjs": "775bb5ef9196a2f236e6526ec7bc235e00451210281d1bb0875ce347c7a7728e"
           },
-          "digest_sha256": "eacd515c544e31f907c3acf0bb6a476fe70b208d337af00d987b1c9763c7836d",
+          "digest_sha256": "90e77adca23e4c385200a56710596df6863d439d6a8b48791b3efbdb77b096eb",
           "change_set_id": "changes:8cdd7ea961f5da98105dbf7c388a8d2df6aa4390ce192675ae3897f7b84d6572"
         },
         "inputs_sha256": {
@@ -69,7 +69,7 @@
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
           "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
           "proof_contracts": "e5c4d6939a4c98f31513581d29ea91c1d9a99049330ab4b72f8e86b63c7fb97a",
-          "runner": "5f97e2d3a72f27afa25bcdc0400aa0ad70c96bde857c52e820535739cd453dd7",
+          "runner": "e825a91fc51e3e58dde236f3e2f76e73d455b592b694b6297fd8199c04db4fa3",
           "runner_sources": {
             "tools/check-library-setup-deps.mjs": "3fd82a88564c9e29174f3d6310eabafe3d327fded02d323a8f2e1a9567514b05",
             "tools/check-library-setup.mjs": "f9dc1940aa2ee098c03b374f7523569e8b9bb021366469e4ffb53a9441e23245",
@@ -87,7 +87,7 @@
             "tools/library-setup/library-plan.mjs": "1505b63ac1e2524ef492b74e510e9e3011f179c888a8a9f354467c8414052990",
             "tools/library-setup/publication-transaction.mjs": "c321fabf31846425530ef845527c0fa5a58610c49a12cc32326f58f81b140790",
             "tools/library-setup/qualification-contracts.mjs": "02819658acf19c890e8fda535100aa63ca57ac6ef6a03c094933dfee79756955",
-            "tools/library-setup/qualified-adapters.mjs": "0dc457986116ae91a66dcb6085c576d48f83bcc0453aad8f0e623cd9e85738db",
+            "tools/library-setup/qualified-adapters.mjs": "775bb5ef9196a2f236e6526ec7bc235e00451210281d1bb0875ce347c7a7728e",
             "tools/library-setup/recipe-execution.mjs": "02428e8149e3fee79eb9a2a982b99962af2e6ab31004f7907823febdc39f22d6",
             "tools/library-setup/resolution-policy.mjs": "b78cccdb1db18b9c3de3af958c5ca0844245525a9a6cd9d995b2d24f06db1da4",
             "tools/library-setup/runtime-oracles/material-tailwind-browser.mjs": "b1058606dea239e0e8b09d0c4dfe46a747b2e3daeebc61b277d1918d26fe07e2",
@@ -95,13 +95,13 @@
             "tools/library-setup/runtime-oracles/production-build.mjs": "a4e323a13b60236100ebc40605e937083e29784d38d4055f0109db17caafd3ea",
             "tools/library-setup/runtime-oracles/support.mjs": "5388a7d2d487dd66bbb6c49631cef6f6b6bdef4c72282979074b8f2757ec0651",
             "tools/library-setup/runtime-oracles/tailwind-sentinel.mjs": "eab5d08b739442aef13cf9aa58b519a578da1f50328e518802a1ff304f8cb36d",
-            "tools/library-setup/runtime-proofs.mjs": "dc7a53a387168a3fe7609b789178219c8968a3b468c6555f7c84a865aada9078",
+            "tools/library-setup/runtime-proofs.mjs": "8596ce53d3d25f7519bcc83a279c2ad3621fc1a800c5ec3c3c121c64e09c6b17",
             "tools/library-setup/sandbox.mjs": "6f6622c4362046c31fa1e7e770d9ac6f92c8984998e588a07a5675b6c2c198af",
-            "tools/library-setup/tooling-fingerprint.mjs": "c53807d81dad3d7e5c25f714ffcac9f572ee21e6c1b3233c53f202fae77fb462",
+            "tools/library-setup/tooling-fingerprint.mjs": "14902ce3c17527c3df78c7e8b644174e83f09c88457ed9a01b4ee64c6098cf47",
             "tools/scaffold-tailwind.mjs": "54db36505b58d33a6330d7f8ada9dc149076f1305d2aa54d71bd1ad03ead96fb"
           }
         },
-        "evidence_sha256": "f6fe48bba8cbfe54dcad6b6ba697811fc49868121be70ecf7518a70c2d5948f6"
+        "evidence_sha256": "08f87ecf148d8a3c4faf3b0c4c7b94c107816b1e6fd453729a29ad0aa5b1b01e"
       }
     }
   ]

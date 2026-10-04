@@ -4,8 +4,11 @@ import {
     UnauthorizedError,
     ValidationError,
 } from '@cmz/shared-domain';
-import { ErrorHandlerRegistry, SessionService } from '@cmz/shared-application';
-import { TranslocoService } from '@jsverse/transloco';
+import {
+    LocalizeTranslationService,
+    ErrorHandlerRegistry,
+    SessionService,
+} from '@cmz/shared-application';
 import { describe, expect, it, vi } from 'vitest';
 import { CmzNotificationService } from './cmz-notification.service';
 import { UiFeedbackService } from './ui-feedback.service';
@@ -15,9 +18,9 @@ import { UiFeedbackService } from './ui-feedback.service';
  * feedback d'erreur applicatif : enregistre 3 handlers dans
  * `ErrorHandlerRegistry` à la construction (`registerDefault` + 2
  * `register` typés). Doublures pour `CmzNotificationService`/
- * `TranslocoService`/`SessionService` : ce test vérifie le
+ * `LocalizeTranslationService`/`SessionService` : ce test vérifie le
  * branchement (quel handler fait quoi), pas l'implémentation de ces
- * dépendances déjà couvertes ailleurs (ou hors périmètre — Transloco
+ * dépendances déjà couvertes ailleurs (ou hors périmètre — catalogue `$localize`
  * global n'est pas isolable proprement en test unitaire).
  */
 class FakeError extends DomainError {
@@ -36,8 +39,6 @@ function setup() {
     };
     const translation = {
         translate: vi.fn((key: string) => `translated:${key}`),
-        setActiveLang: vi.fn(),
-        getActiveLang: vi.fn(() => 'fr'),
     };
     const session = { clear: vi.fn() };
 
@@ -45,7 +46,7 @@ function setup() {
         [
             ErrorHandlerRegistry,
             { provide: CmzNotificationService, useValue: notification },
-            { provide: TranslocoService, useValue: translation },
+            { provide: LocalizeTranslationService, useValue: translation },
             { provide: SessionService, useValue: session },
             UiFeedbackService,
         ],

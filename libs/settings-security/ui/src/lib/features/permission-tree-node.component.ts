@@ -4,7 +4,7 @@ import {
     PermissionTreeNode,
 } from '@cmz/settings-security-domain';
 import { permissionActionLabel } from '../constants/permission-action-label.constant';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 /**
  * Nœud récursif de l'arbre de permissions — se référence lui-même pour
@@ -72,7 +72,7 @@ import { TranslocoService } from '@jsverse/transloco';
     `,
 })
 export class PermissionTreeNodeComponent {
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     readonly node = input.required<PermissionTreeNode>();
     readonly disabled = input(false);

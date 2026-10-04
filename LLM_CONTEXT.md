@@ -419,15 +419,16 @@ directives suivantes :
    avant de toucher à l'i18n dans ce repo. Point clé : `tools/generator-
    platform/` n'émet jamais de wording utilisateur (titres, labels,
    messages) — inutile de modifier les renderers pour « les rendre
-   i18n-ready ». Le pattern de référence validé (deux POC, retirés du repo le
-   2026-08-29 — voir `i18n-generator-scope.md` pour le détail) est
-   **Transloco** côté Angular (schematic officiel `nx g
-   @jsverse/transloco:ng-add`) et **react-i18next** côté React. Angular a
-   depuis convergé entièrement sur Transloco (ADR-0036, 2026-08-27) :
-   `TranslationPort`/`I18nextTranslationService` ont été supprimés du repo, il
-   n'y a plus qu'un seul mécanisme i18n Angular actif (`backoffice-angular`
-   inclus) — la coexistence évoquée par ADR-0024 est close, pas une
-   incohérence à corriger.
+   i18n-ready ». Le mécanisme Angular courant est exclusivement **natif** :
+   `@angular/localize`, attributs `i18n` / `i18n-*` et `$localize`
+   ([ADR-0085](./docs/adr/0085-angular-i18n-native-localize.md)). Le renderer
+   configure cette capacité dans le shell ; ne créez ni recette opt-in, ni
+   loader HTTP, ni dictionnaire sous `public/i18n`. Le backoffice conserve
+   seulement un pont local et borné pour ses 1 869 clés historiques : sa source
+   JSON privée est compilée déterministement en messages `$localize` et ne doit
+   pas servir de modèle aux nouvelles pages. L'ADR-0036 Transloco est
+   supersédée. React reste une décision stack-native séparée : ne copiez ni le
+   runtime Angular ni une abstraction i18n cross-platform.
 
 ---
 
@@ -439,10 +440,10 @@ directives suivantes :
 | Dernière génération       | **2026-10-03** (`bun run generate:status`)                                                                      |
 | Modules livrés            | **19** (voir [`STATUS.md`](./STATUS.md))                                                         |
 | Packages Nx               | **75** (72 libs + 3 app)                                              |
-| Fichiers TypeScript       | **2 730** hors tests / **2 981** total (251 specs)                 |
+| Fichiers TypeScript       | **2 732** hors tests / **2 984** total (252 specs)                 |
 | Corpus SEOS               | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                       |
 | Corpus SEOS — nature (N-6)| **583 correspondances** + **924 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |
-| Corpus SEOS — couverture (N-4) | **918 / 2 730 fichiers libs/ hors tests → 33.6 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
+| Corpus SEOS — couverture (N-4) | **918 / 2 732 fichiers libs/ hors tests → 33.6 %** — 1 modules sans aucune paire (1 `kernel`), absent sans ce chiffre (P0-12) |
 | Périmètre applicatif (M-7)| **55 / 55 entités** construites (`docs/architecture/scope.json`, 0 manquantes — voir [ADR-0018](./docs/adr/0018-perimetre-team-organization.md)) |
 | Bundle initial (prod, raw)| **522.76 kB** ([`bundle-metrics.json`](./apps/backoffice-angular/bundle-metrics.json), 2026-10-01) |
 | Famille `workflow-action` | **4/4 IR clôturés** — corpus + Meta 12/12 par module                                         |

@@ -239,6 +239,12 @@
         }
       },
       "TABS": {
+        "LIST": {
+          "LABEL": "Types d'infrastructure"
+        },
+        "FORM": {
+          "LABEL": "Formulaire de type d'infrastructure"
+        },
         "HISTORY": {
           "LABEL": "Historique"
         },
@@ -2971,6 +2977,29 @@
         }
       }
     }
+  },
+  "WORKSPACE": {
+    "LABEL": "Espace de travail",
+    "OPEN_VIEWS": "Vues ouvertes",
+    "TAB_LABEL": "{{title}}",
+    "CLOSABLE_TAB_LABEL": "{{title}}, touche Suppr pour fermer",
+    "DIRTY": "Modifications non enregistrées",
+    "CLOSE_VIEW": "Fermer {{title}}",
+    "SCROLL_LABEL": "Défilement des vues",
+    "SCROLL_PREVIOUS": "Voir les vues précédentes",
+    "SCROLL_NEXT": "Voir les vues suivantes",
+    "ACTIONS": "Actions des vues ouvertes",
+    "CLOSE_CURRENT": "Fermer la vue courante",
+    "CLOSE_OTHERS": "Fermer les autres vues",
+    "CLOSE_ALL_EXCEPT_DASHBOARD": "Tout fermer sauf Tableau de bord",
+    "DASHBOARD": "Tableau de bord",
+    "CAPACITY_REACHED": "La limite de vues ouvertes est atteinte. Fermez une vue avant de continuer.",
+    "DISCARD": {
+      "TITLE": "Modifications non enregistrées",
+      "MESSAGE": "Les modifications de « {{title}} » seront perdues. Fermer cette vue ?",
+      "CONFIRM": "Fermer"
+    },
+    "VIEW_FALLBACK": "Vue"
   },
   "AUTHENTICATION": {
     "LOGIN": {

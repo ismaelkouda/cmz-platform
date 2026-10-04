@@ -21,12 +21,12 @@
       "reason": "Piste Angular Material 22 ; vérification complète requise pour chaque nouvelle combinaison framework/Material.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "1081859814c8f930798cf3546927ac414e2c6628",
-        "source_context_sha256": "de5319018b04ee27eeaf8ef8361195d8f82134c8452266869f562440a6ebd31a",
+        "commit": "38e0afa9322910904ffc69b06fbed7c419aa62c2",
+        "source_context_sha256": "efedb5d0d40e2c236313643c1aaee614ab58c6df50cb7478766a6b2fdcfd0609",
         "app": "backoffice-angular",
-        "plan_id": "library-plan:474a26fceb4355bd7667b5e4e95d14e01f84df056cfa48ca56ff24c77146cbd6",
-        "change_set_id": "changes:7f8b14f6ef447133ff6c3cd69a1b20a5ee05dafdf11dbd743c757625deb5e87c",
-        "app_tree_sha256": "1add610c35b6e3551fc5c0c9105be27bf23ce32fc1c3567f7022507cf2a21b66",
+        "plan_id": "library-plan:ca2618849a6b3012749132020bbd2139f192a060893509bfe0a29e96cdc25423",
+        "change_set_id": "changes:fbbc53726391309fb2f91e4899a0cda3dfe01dea63bcb2649441a71ee748aaf0",
+        "app_tree_sha256": "4d3dc970d6e07c8da377e09ec884e1d9b32720f1af978825240285c0ade19755",
         "track_sha256": "c779404f4154e4550031c9e7e34af139617fbf5563f244caa86f51b0e9312999",
         "tested_versions": {
           "node": "22.22.3",
@@ -52,10 +52,10 @@
           "schema_version": "1.0.0",
           "id": "angular/angular-material@1",
           "inputs_sha256": {
-            "tools/library-setup/qualified-adapters.mjs": "0dc457986116ae91a66dcb6085c576d48f83bcc0453aad8f0e623cd9e85738db"
+            "tools/library-setup/qualified-adapters.mjs": "775bb5ef9196a2f236e6526ec7bc235e00451210281d1bb0875ce347c7a7728e"
           },
-          "digest_sha256": "cf24cfcbcc99de205d83055aab8876d18a675b1ee00a8807dbb38c972cb0074f",
-          "change_set_id": "changes:f99ab9ff596a26323804813bdc749925ce9cfa25258986bf05b0414e6b53e971"
+          "digest_sha256": "a436dfd7628ae76f776977b35b0b52e12308d8b6aef0cc4d1c649ae6c576ddc2",
+          "change_set_id": "changes:1e1046bee9fe6e8a36d9aa87d9acfac71abed6b1e4b24d29f8b277d74506a37b"
         },
         "inputs_sha256": {
           "recipe": "2811bc4f0e3dc24018a30d6e6756bef27295d2182667979bb4b2c6ff3f8c41af",
@@ -67,7 +67,7 @@
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
           "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
           "proof_contracts": "9b72d4629573fa351cc5ab209df549d7cef942f3a9061ca04a2e3a4ac15dc496",
-          "runner": "b90e8b9c0c2d1c8f25c6260a372cf32ec25fcf317ae2b2cdfdd32daa68a9f8c5",
+          "runner": "0b8512995c0286d4839309b37d48410f37362a4559a2b65744b1995648b611d0",
           "runner_sources": {
             "tools/check-library-setup-deps.mjs": "3fd82a88564c9e29174f3d6310eabafe3d327fded02d323a8f2e1a9567514b05",
             "tools/check-library-setup.mjs": "f9dc1940aa2ee098c03b374f7523569e8b9bb021366469e4ffb53a9441e23245",
@@ -85,7 +85,7 @@
             "tools/library-setup/library-plan.mjs": "1505b63ac1e2524ef492b74e510e9e3011f179c888a8a9f354467c8414052990",
             "tools/library-setup/publication-transaction.mjs": "c321fabf31846425530ef845527c0fa5a58610c49a12cc32326f58f81b140790",
             "tools/library-setup/qualification-contracts.mjs": "02819658acf19c890e8fda535100aa63ca57ac6ef6a03c094933dfee79756955",
-            "tools/library-setup/qualified-adapters.mjs": "0dc457986116ae91a66dcb6085c576d48f83bcc0453aad8f0e623cd9e85738db",
+            "tools/library-setup/qualified-adapters.mjs": "775bb5ef9196a2f236e6526ec7bc235e00451210281d1bb0875ce347c7a7728e",
             "tools/library-setup/recipe-execution.mjs": "02428e8149e3fee79eb9a2a982b99962af2e6ab31004f7907823febdc39f22d6",
             "tools/library-setup/resolution-policy.mjs": "b78cccdb1db18b9c3de3af958c5ca0844245525a9a6cd9d995b2d24f06db1da4",
             "tools/library-setup/runtime-fixtures/material-probe.ts": "57e9a08bc1c53a8191030d4d0cb1b48acca989b0c555dd6acbf6196472e15266",
@@ -95,12 +95,12 @@
             "tools/library-setup/runtime-oracles/material-tailwind-cascade.mjs": "53f3953e421762417a32019d130ea85ec8f4a20a90617c6b7ab5ad59a43362a0",
             "tools/library-setup/runtime-oracles/production-build.mjs": "a4e323a13b60236100ebc40605e937083e29784d38d4055f0109db17caafd3ea",
             "tools/library-setup/runtime-oracles/support.mjs": "5388a7d2d487dd66bbb6c49631cef6f6b6bdef4c72282979074b8f2757ec0651",
-            "tools/library-setup/runtime-proofs.mjs": "dc7a53a387168a3fe7609b789178219c8968a3b468c6555f7c84a865aada9078",
+            "tools/library-setup/runtime-proofs.mjs": "8596ce53d3d25f7519bcc83a279c2ad3621fc1a800c5ec3c3c121c64e09c6b17",
             "tools/library-setup/sandbox.mjs": "6f6622c4362046c31fa1e7e770d9ac6f92c8984998e588a07a5675b6c2c198af",
-            "tools/library-setup/tooling-fingerprint.mjs": "c53807d81dad3d7e5c25f714ffcac9f572ee21e6c1b3233c53f202fae77fb462"
+            "tools/library-setup/tooling-fingerprint.mjs": "14902ce3c17527c3df78c7e8b644174e83f09c88457ed9a01b4ee64c6098cf47"
           }
         },
-        "evidence_sha256": "8aa12e03c2620a1afa730493e08d2a20024c485b13855c2f6977b4cc53ebd73e"
+        "evidence_sha256": "a5298660b6f68e4f25ef740450e0a1e01cd56047436604d37a4c307d998e64d2"
       }
     }
   ]

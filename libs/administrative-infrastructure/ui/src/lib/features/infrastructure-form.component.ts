@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { InfrastructureFacade } from '@cmz/administrative-infrastructure-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { InfrastructureFormStore } from '../stores/infrastructure-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE';
 
@@ -127,7 +127,7 @@ const T = 'ADMINISTRATIVE_INFRASTRUCTURE.INFRASTRUCTURE';
 export class InfrastructureFormComponent {
     protected readonly store = inject(InfrastructureFormStore);
     private readonly facade = inject(InfrastructureFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

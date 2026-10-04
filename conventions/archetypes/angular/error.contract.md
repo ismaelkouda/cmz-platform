@@ -49,15 +49,17 @@ de classes (générées depuis les données → coût quasi nul, type-safe), mai
 
 - **Handler par défaut** : `ErrorHandlerRegistry.handle()` applique, pour
   **tout** `DomainError` sans handler spécifique,
-  `toast.error(transloco.translate( error.messageKey, error.params))`. On
+  `toast.error(localize.translate(error.messageKey, error.params))`. On
   n'enregistre plus que les **exceptions** : `UnauthorizedError` (`warning` +
   `session.clear()`) et `ValidationError` (message serveur, sans traduction). 33
   → 2, et le bug d'oubli disparaît.
 - **`messageKey`, pas `message`** : la traduction porte sur la clé i18n, d'où sa
   préservation stricte. `error.params` alimente l'interpolation.
-- **i18n = Transloco** (`translate(key, params)`), **pas** `@ngx-translate`. Un
-  `DomainError` porte donc un `params?` optionnel pour l'interpolation (« passer
-  des arguments ») sans casser le modèle une-clé-par-erreur.
+- **i18n Angular native** : le handler historique résout la clé dans le
+  catalogue `$localize` généré et compilé, sans dictionnaire HTTP. Un
+  `DomainError` porte un `params?` optionnel pour l'interpolation sans casser le
+  modèle une-clé-par-erreur. Une nouvelle erreur préfère un message `$localize`
+  explicite quand elle n'est pas contrainte par le catalogue historique.
 - **Pas de couplage shared→module** : le service de feedback partagé n'importe
   aucune erreur de module (le source le faisait — anti-pattern non reproduit).
 

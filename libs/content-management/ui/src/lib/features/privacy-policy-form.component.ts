@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PrivacyPolicyFacade } from '@cmz/content-management-application';
 import { FieldComponent, FormMode } from '@cmz/shared-ui';
 import { PrivacyPolicyFormStore } from '../stores/privacy-policy-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'CONTENT_MANAGEMENT.PRIVACY_POLICY';
 
@@ -77,7 +77,7 @@ const T = 'CONTENT_MANAGEMENT.PRIVACY_POLICY';
 export class PrivacyPolicyFormComponent {
     protected readonly store = inject(PrivacyPolicyFormStore);
     private readonly facade = inject(PrivacyPolicyFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

@@ -12,7 +12,6 @@ import { proveMaterialComponent } from './runtime-oracles/material-component.mjs
 import { proveProductionBuild } from './runtime-oracles/production-build.mjs';
 import { buildAndClean } from './runtime-oracles/support.mjs';
 import { proveTailwindSentinel } from './runtime-oracles/tailwind-sentinel.mjs';
-import { proveTranslocoRender } from './runtime-oracles/transloco-render.mjs';
 import { runConfined } from './sandbox.mjs';
 
 export {
@@ -28,7 +27,8 @@ function fail(message) {
 /**
  * Un oracle par acceptance déclarée, adressé par
  * (plateforme, bibliothèque, id). Les implémentations sont isolées par fichier
- * afin qu'une évolution Transloco ne périme pas une qualification Material.
+ * afin qu'une évolution d'une bibliothèque ne périme pas une qualification
+ * sans rapport.
  */
 const RUNTIME_ORACLES = new Map([
     [
@@ -38,8 +38,6 @@ const RUNTIME_ORACLES = new Map([
     ['angular/angular-material#offline-production-build', proveProductionBuild],
     ['angular/tailwind#sentinel-class-emits-rule', proveTailwindSentinel],
     ['angular/tailwind#offline-production-build', proveProductionBuild],
-    ['angular/transloco#key-renders-translation', proveTranslocoRender],
-    ['angular/transloco#offline-production-build', proveProductionBuild],
     [
         'angular/angular-material#material-tailwind-cascade-order',
         proveMaterialTailwindCascade,

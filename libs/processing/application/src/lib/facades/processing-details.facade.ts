@@ -2,6 +2,7 @@ import { inject, Service, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     ResourceFacade,
     NOTIFICATION_PORT,
@@ -22,7 +23,6 @@ import {
 import { AllProcessingFacade } from './all-processing.facade';
 import { QueuesProcessingFacade } from './queues-processing.facade';
 import { TasksProcessingFacade } from './tasks-processing.facade';
-import { TranslocoService } from '@jsverse/transloco';
 
 export interface ProcessingDetailsLoadParams {
     filter: ProcessingDetailsFilterContract;
@@ -39,7 +39,7 @@ export class ProcessingDetailsFacade extends ResourceFacade<
     private readonly useCase = inject(ProcessingDetailsUseCase);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly queuesFacade = inject(QueuesProcessingFacade);
     private readonly tasksFacade = inject(TasksProcessingFacade);
     private readonly allFacade = inject(AllProcessingFacade);

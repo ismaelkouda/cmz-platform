@@ -1,6 +1,6 @@
 import { Component, inject, input } from '@angular/core';
 import { Field } from '@angular/forms/signals';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 /**
  * Champ de formulaire — **design-system, Signal Forms (Angular 22)**. Enveloppe
@@ -33,7 +33,7 @@ import { TranslocoService } from '@jsverse/transloco';
     `,
 })
 export class FieldComponent {
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     readonly for = input('');
     readonly label = input.required<string>();

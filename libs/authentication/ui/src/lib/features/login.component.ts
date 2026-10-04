@@ -5,7 +5,7 @@ import { LoginFacade } from '@cmz/authentication-application';
 import { FieldComponent } from '@cmz/shared-ui';
 import { FORGOT_PASSWORD_ROUTE } from '../constants/authentication-paths.constant';
 import { LoginFormStore } from '../stores/login-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'AUTHENTICATION.LOGIN';
 
@@ -75,7 +75,7 @@ const T = 'AUTHENTICATION.LOGIN';
 export class LoginComponent {
     protected readonly store = inject(LoginFormStore);
     protected readonly facade = inject(LoginFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
 
     protected readonly ns = T;

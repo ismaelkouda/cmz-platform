@@ -1,6 +1,9 @@
 import { Component, Signal, computed, inject } from '@angular/core';
 import { NotificationsFacade } from '@cmz/communication-application';
-import { PermissionActionsService } from '@cmz/shared-application';
+import {
+    LocalizeTranslationService,
+    PermissionActionsService,
+} from '@cmz/shared-application';
 import {
     FilterComponent,
     FilterField,
@@ -15,7 +18,6 @@ import { NOTIFICATIONS_FILTER_KEYS } from '../constants/notifications-filter-key
 import { NotificationsVmProps } from '../adapters/notifications-vm-props.interface';
 import { NotificationsPresenter } from '../adapters/notifications-vm.presenter';
 import { NotificationsFilterStore } from '../stores/notifications-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/communication/notifications';
 const T = 'COMMUNICATION.NOTIFICATIONS';
@@ -91,7 +93,7 @@ export class NotificationsListComponent {
     private readonly store = inject(NotificationsFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     protected readonly ns = T;
     protected readonly filterModel = this.store.model;

@@ -3,7 +3,7 @@ import { ReportStatesDetailsEntity } from '@cmz/report-states-domain';
 import { REPORT_SOURCE_LABEL } from '@cmz/shared-ui';
 import { REPORT_STATES_DETAILS_STATUS_BADGE_CLASS } from '../constants/report-states-details-status-badge.constant';
 import { REPORT_STATES_DETAILS_STATUS_LABEL } from '../constants/report-states-details-status-label.constant';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 @Component({
     selector: 'cmz-report-states-details-header',
@@ -62,7 +62,7 @@ export class ReportStatesDetailsHeaderComponent {
 
     readonly copyRequested = output<string>();
 
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     protected sourceLabel(item: ReportStatesDetailsEntity): string {
         return this.t(REPORT_SOURCE_LABEL[item.source]);

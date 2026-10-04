@@ -12,7 +12,7 @@ import { REQUESTS_DETAILS_APPROVAL_TYPES } from '../constants/requests-details-a
 import { REQUESTS_DETAILS_CALLBACK_TYPES } from '../constants/requests-details-callback-type.constant';
 import { REQUESTS_DETAILS_REJECT_MOTIFS } from '../constants/requests-details-reject-motif.constant';
 import { RequestsDetailsQualificationFormStore } from '../stores/requests-details-qualification-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const Q = 'REQUESTS.DETAILS.QUALIFICATION';
 const E = 'REQUESTS.DETAILS.EDIT';
@@ -352,7 +352,7 @@ export class RequestsDetailsQualificationFormComponent {
     readonly submitted = output<RequestsDetailsQualificationContract>();
     readonly cancelled = output<void>();
 
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
 
     constructor() {
         effect(() => {

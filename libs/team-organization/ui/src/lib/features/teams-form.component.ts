@@ -14,7 +14,7 @@ import {
     TELECOM_OPERATOR_OPTIONS,
 } from '@cmz/shared-ui';
 import { TeamsFormStore } from '../stores/teams-form.store';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 const T = 'TEAM_ORGANIZATION.TEAMS';
 
@@ -151,7 +151,7 @@ export class TeamsFormComponent {
     protected readonly store = inject(TeamsFormStore);
     private readonly facade = inject(TeamsFacade);
     private readonly permissionsFacade = inject(TeamsPermissionsFacade);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

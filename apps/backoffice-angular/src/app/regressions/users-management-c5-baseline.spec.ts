@@ -9,11 +9,11 @@ import { UsersFacade } from '@cmz/settings-security-application';
 import type { UsersResponseApiDto } from '@cmz/settings-security-data';
 import { UsersStatus } from '@cmz/settings-security-domain';
 import {
+    LocalizeTranslationService,
     ErrorHandlerRegistry,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
 import { Role } from '@cmz/shared-domain';
-import { TranslocoService } from '@jsverse/transloco';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { provideSettingsSecurity } from '../providers/settings-security.providers';
 import { A11Y_TEST_APP_CONFIG } from '../testing/a11y-testbed.harness';
@@ -56,7 +56,7 @@ describe('C5 baseline — users list + create', () => {
                     useValue: { ...A11Y_TEST_APP_CONFIG },
                 },
                 { provide: NOTIFICATION_PORT, useValue: notification },
-                { provide: TranslocoService, useValue: translation },
+                { provide: LocalizeTranslationService, useValue: translation },
             ],
         });
         facade = TestBed.inject(UsersFacade);

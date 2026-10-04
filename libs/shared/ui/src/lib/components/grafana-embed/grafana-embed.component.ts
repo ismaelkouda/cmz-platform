@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { SafeUrlPipe } from '../../pipes/safe-url.pipe';
 import { TRUSTED_ORIGIN_PORT } from '../../tokens/trusted-origin-port.token';
-import { TranslocoService } from '@jsverse/transloco';
+import { LocalizeTranslationService } from '@cmz/shared-application';
 
 /**
  * Visionneuse Grafana générique — reconstruction de `shared/components/
@@ -269,7 +269,7 @@ export class GrafanaEmbedComponent {
     readonly error = input.required<boolean>();
     readonly refresh = output<void>();
 
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly trustedOrigin = inject(TRUSTED_ORIGIN_PORT);
 
     protected readonly isFullscreen = signal(false);

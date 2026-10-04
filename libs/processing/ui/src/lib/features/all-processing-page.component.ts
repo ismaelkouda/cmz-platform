@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AllProcessingFacade } from '@cmz/processing-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -27,7 +28,6 @@ import {
     processingListExportTooltip,
 } from '../utils/processing-list-export.util';
 import { ProcessingDetailsDialogComponent } from './processing-details-dialog.component';
-import { TranslocoService } from '@jsverse/transloco';
 
 const T = 'PROCESSING.ALL';
 
@@ -104,7 +104,7 @@ export class AllProcessingPageComponent {
     private readonly store = inject(AllProcessingFilterStore);
     private readonly permissions = inject(PermissionActionsService);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly excelExport = inject(EXCEL_EXPORT_PORT);
 
     protected readonly ns = T;

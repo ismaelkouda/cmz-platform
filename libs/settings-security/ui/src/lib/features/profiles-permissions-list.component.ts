@@ -2,6 +2,7 @@ import { Component, Signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProfilesPermissionsFacade } from '@cmz/settings-security-application';
 import {
+    LocalizeTranslationService,
     PermissionActionsService,
     NOTIFICATION_PORT,
 } from '@cmz/shared-application';
@@ -20,7 +21,6 @@ import { PROFILES_PERMISSIONS_TABLE } from '../constants/profiles-permissions-ta
 import { ProfilesPermissionsVmProps } from '../adapters/profiles-permissions-vm-props.interface';
 import { ProfilesPermissionsPresenter } from '../adapters/profiles-permissions-vm.presenter';
 import { ProfilesPermissionsFilterStore } from '../stores/profiles-permissions-filter.store';
-import { TranslocoService } from '@jsverse/transloco';
 
 const ROUTE = '/settings-security/profiles-permissions';
 const T = 'SETTINGS_SECURITY.PROFILES_PERMISSIONS';
@@ -87,7 +87,7 @@ export class ProfilesPermissionsListComponent {
     private readonly permissions = inject(PermissionActionsService);
     private readonly confirm = inject(CONFIRM_DIALOG_PORT);
     private readonly notification = inject(NOTIFICATION_PORT);
-    private readonly i18n = inject(TranslocoService);
+    private readonly i18n = inject(LocalizeTranslationService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 

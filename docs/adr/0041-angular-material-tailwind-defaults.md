@@ -6,6 +6,11 @@
   [ADR-0077](./0077-ui-angular-officielle-avant-custom.md)
 - **Date :** 2026-09-03
 
+> **Révision i18n (2026-10-04)** : tous les passages Transloco de cette ADR sont
+> historiques et supersédés par
+> [ADR-0085](./0085-angular-i18n-native-localize.md). La décision UI
+> Material/Tailwind reste indépendante et applicable.
+
 ## Contexte
 
 ADR-0036 a fait converger tout l'Angular du dépôt sur **Transloco** pour l'i18n,
