@@ -33,6 +33,10 @@ const staticCommand =
 
 export default defineConfig({
     testDir: resolve(rootDir, 'apps/backoffice-angular/e2e'),
+    // Le profil mémoire pilote 100 cycles Chromium et possède son propre
+    // target/nightly. Le smoke PR reste rapide et ne transforme pas une mesure
+    // de ressources plus bruitée en faux rouge à chaque changement applicatif.
+    testIgnore: ['**/workspace-memory-profile.spec.ts'],
     fullyParallel: false,
     forbidOnly: isCI,
     retries: isCI ? 1 : 0,

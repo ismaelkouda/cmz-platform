@@ -99,6 +99,14 @@
         "cwd": "{workspaceRoot}"
       }
     },
+    "e2e-workspace-memory": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "bunx playwright test -c apps/backoffice-angular/playwright.memory.config.mjs",
+        "cwd": "{workspaceRoot}"
+      }
+    },
     "serve-static": {
       "continuous": true,
       "executor": "@nx/web:file-server",

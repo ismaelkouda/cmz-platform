@@ -114,9 +114,12 @@ conformité navigateur le sont.
 ### Budget de ressources
 
 - Le nombre de vues vivantes est borné par une politique mesurée et testée. Le
-  plafond conservateur `8` de la première tranche est un garde-fou provisoire,
-  pas une calibration mémoire ; il ne peut être augmenté ni déclaré définitif
-  sans le profil multi-pages prévu par le contrat.
+  plafond `8` est calibré depuis WORKSPACE-TABS-4 sur huit pages représentatives
+  du build de production : le delta de heap JS observé reste sous le budget
+  bloquant de `8 MiB`, la neuvième vue est refusée, puis quatre passes
+  ouverture/fermeture atteignent un plateau de nœuds et d'écouteurs. Ce chiffre
+  n'est pas universel : toute augmentation ou page beaucoup plus lourde exige de
+  rejouer le profil et de revoir explicitement le budget.
 - Aucune éviction silencieuse n'est permise.
 - Une vue `dirty` n'est jamais détruite pour libérer de la mémoire.
 - Lorsque la limite est atteinte, l'ouverture est refusée avec une explication
@@ -168,6 +171,9 @@ conformité navigateur le sont.
 - [Angular — Customizing route behavior](https://angular.dev/guide/routing/customizing-route-behavior)
 - [Angular — destroyDetachedRouteHandle](https://angular.dev/api/router/destroyDetachedRouteHandle)
 - [Angular — withAutoCleanupInjectors](https://angular.dev/api/router/withAutoCleanupInjectors)
+- [Playwright — CDPSession](https://playwright.dev/docs/api/class-cdpsession)
+- [Chrome DevTools Protocol — HeapProfiler](https://chromedevtools.github.io/devtools-protocol/tot/HeapProfiler/)
+- [Chrome DevTools Protocol — Memory](https://chromedevtools.github.io/devtools-protocol/tot/Memory/)
 - [React — Preserving and Resetting State](https://react.dev/learn/preserving-and-resetting-state)
 - [React — Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects)
 - [WAI-ARIA APG — Tabs Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)

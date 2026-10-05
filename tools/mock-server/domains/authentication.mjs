@@ -40,7 +40,10 @@ export const mockUser = {
         '/equipments/types',
         '/territorial-structures/regions',
     ],
-    actions: { INFRASTRUCTURE: ['create', 'edit', 'delete'] },
+    // PermissionActionsService indexe les actions par route absolue, pas par
+    // code de menu. Le provider permissif DEV masquait auparavant cette clé
+    // incorrecte dans les E2E construits en développement.
+    actions: { '/equipments/types': ['create', 'edit', 'delete'] },
 };
 
 export const mockToken = () => ({

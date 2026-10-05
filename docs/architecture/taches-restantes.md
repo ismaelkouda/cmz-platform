@@ -2655,39 +2655,50 @@ Figma, désormais source partielle différée :
   panneau Router unique et les actions de fermeture sœurs. Tailwind porte les
   utilitaires stables du template ; le SCSS scopé conserve nesting,
   pseudo-éléments, focus partagé, scrollbar multi-moteur et mouvement réduit,
-  sans double autorité de style. Le plafond `8` reste un garde-fou provisoire,
-  pas une calibration. Deux parcours Chromium authentifiés contre le mock local
-  prouvent désormais le vrai shell : instance et état Dashboard conservés sans
-  GET au switch ou au resize, clavier/overflow/fermeture ; puis formulaire
-  pilote dirty conservé, confirmation annulable, URL paramétrée exacte,
-  destruction sans POST et focus restitué. La directive générique
+  sans double autorité de style. Deux parcours Chromium authentifiés contre le
+  mock local prouvent désormais le vrai shell : instance et état Dashboard
+  conservés sans GET au switch ou au resize, clavier/overflow/fermeture ; puis
+  formulaire pilote dirty conservé, confirmation annulable, URL paramétrée
+  exacte, destruction sans POST et focus restitué. La directive générique
   `[cmzWorkspaceDirty]` fournit le raccordement réutilisable. Avant promotion
   complète, restent le parcours humain VoiceOver/NVDA et le zoom navigateur
-  multi-OS, le profil de heap sur 100 cycles, le raccordement futur des pages
-  polling au lifecycle, le déploiement dirty sur les autres formulaires et le
-  transport backend d'un nouveau snapshot de droits. **WORKSPACE-TABS-2 —
-  révocation locale engagée le 2026-10-04 :** chaque vue mémorise désormais le
-  chemin réellement contrôlé par `pathsGuard`, sans table de mapping parallèle.
-  Un monitor réactif compare les vues vivantes au snapshot
-  `StorePathsService.paths` : une vue suspendue perdue est détruite, une vue
-  active — même `dirty` — rejoint une survivante puis est détruite, et tout
-  échec de sortie purge le workspace et ferme la session. Les tests couvrent le
-  vrai `DetachedRouteHandle`, l'enregistrement tardif, le snapshot absent
-  fail-closed, l'exception observable et le reload malgré une panne de stockage.
-  Cette tranche n'invente aucun polling, WebSocket ou endpoint : la livraison
-  d'un nouveau snapshot distant reste à brancher seulement lorsqu'un contrat
-  backend réel le fournit. **WORKSPACE-TABS-3 — accessibilité et RTL réalisés
-  localement le 2026-10-04 :** deux oracles Chromium authentifiés vérifient la
-  structure Tabs et ses relations ARIA avec `axe-core`, le texte agrandi à
-  `200 %`, le focus clavier visible, la navigation cyclique selon le sens
-  visuel, le rail RTL suivant/précédent et le confinement du menu dans le
+  multi-OS, le raccordement futur des pages polling au lifecycle, le déploiement
+  dirty sur les autres formulaires et le transport backend d'un nouveau snapshot
+  de droits. **WORKSPACE-TABS-2 — révocation locale engagée le 2026-10-04 :**
+  chaque vue mémorise désormais le chemin réellement contrôlé par `pathsGuard`,
+  sans table de mapping parallèle. Un monitor réactif compare les vues vivantes
+  au snapshot `StorePathsService.paths` : une vue suspendue perdue est détruite,
+  une vue active — même `dirty` — rejoint une survivante puis est détruite, et
+  tout échec de sortie purge le workspace et ferme la session. Les tests
+  couvrent le vrai `DetachedRouteHandle`, l'enregistrement tardif, le snapshot
+  absent fail-closed, l'exception observable et le reload malgré une panne de
+  stockage. Cette tranche n'invente aucun polling, WebSocket ou endpoint : la
+  livraison d'un nouveau snapshot distant reste à brancher seulement lorsqu'un
+  contrat backend réel le fournit. **WORKSPACE-TABS-3 — accessibilité et RTL
+  réalisés localement le 2026-10-04 :** deux oracles Chromium authentifiés
+  vérifient la structure Tabs et ses relations ARIA avec `axe-core`, le texte
+  agrandi à `200 %`, le focus clavier visible, la navigation cyclique selon le
+  sens visuel, le rail RTL suivant/précédent et le confinement du menu dans le
   viewport. Tailwind porte désormais les espacements, séparateurs et alignements
   logiques ; l'ancrage physique du menu reste une exception prouvée par sa
   géométrie RTL. Cette tranche ne revendique pas une validation lecteur d'écran
   : VoiceOver/NVDA et le zoom navigateur multi-OS restent des parcours humains
-  séparés. **Parité ReactJS explicitement non acquise :** le contrat est formulé
-  au niveau produit et ses scénarios navigateur seront partagés, mais ReactJS
-  exige encore un adaptateur natif distinct prouvant conservation de l'instance,
+  séparés. **WORKSPACE-TABS-4 — profil mémoire production réalisé localement le
+  2026-10-05 :** un target Playwright isolé du smoke PR exécute 50 cycles
+  d'échauffement, 100 cycles Router mesurés puis quatre passes `1 → 8 → 1` sur
+  huit pages représentatives. CDP force le GC et mesure heap, documents, nœuds
+  et écouteurs ; les artefacts JSON sont publiés par le nightly. Les 100 cycles
+  conservent exactement `395` nœuds et `59` écouteurs, avec `594 052` octets de
+  croissance heap sous le budget `1 MiB`. Les huit vues ajoutent `4 183 476`
+  octets sous le budget `8 MiB`, refusent la neuvième sans éviction et
+  atteignent après échauffement un plateau de `244` nœuds/`39` écouteurs à la
+  fermeture. La limite `8` est donc calibrée pour les pages actuelles, sans
+  devenir une constante universelle. L'investigation a aussi corrigé le recalcul
+  overflow post-rendu, la destruction/race async OpenLayers (`dispose()`
+  enregistré avant le premier `await`) et la clé d'actions du mock production.
+  **Parité ReactJS explicitement non acquise :** le contrat est formulé au
+  niveau produit et ses scénarios navigateur seront partagés, mais ReactJS exige
+  encore un adaptateur natif distinct prouvant conservation de l'instance,
   suspension des effets, destruction, réseau, sécurité, dirty et accessibilité.
   Il est interdit de traduire mécaniquement `RouteReuseStrategy` ou de déclarer
   la parité sur la seule présence du renderer React existant. **ADAPT-11b —
