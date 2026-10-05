@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignore": [
     "**/*.spec.ts",
-    "**/*.spec.tsx",
     "!apps/backoffice-angular/e2e/*.spec.ts",
     "!apps/users-management-proof/e2e/*.spec.ts"
   ],
@@ -14,7 +13,7 @@
         "apps/users-management-proof/src/main.ts",
         "apps/backoffice-angular/public/env.js",
         "apps/backoffice-angular/src/tailwind.css",
-        "tools/**/*.{mjs,ts}",
+        "tools/**/*.{mjs,ts,tsx}",
         "apps/backoffice-angular/src/app/providers/permission.guard.ts",
         "apps/backoffice-angular/src/app/testing/axe-a11y.util.ts",
         "apps/backoffice-angular/src/app/testing/a11y-testbed.harness.ts",
@@ -25,7 +24,7 @@
         "apps/backoffice-angular/**/*.{ts,tsx,css,mjs}",
         "apps/users-management-proof/**/*.{ts,tsx,css,mjs}",
         "apps/backoffice-angular/public/**/*.js",
-        "tools/**/*.{mjs,ts}"
+        "tools/**/*.{mjs,ts,tsx}"
       ]
     },
     "libs/*": {

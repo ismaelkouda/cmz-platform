@@ -3,11 +3,13 @@
   "compilerOptions": {
     "allowJs": true,
     "checkJs": false,
+    "jsx": "react-jsx",
     "noEmit": true,
     "types": ["vitest/globals", "react", "react-dom"]
   },
   "include": [
     ".stack-test-runtime/reactjs/**/*.ts",
-    "stack-tests/reactjs/**/*.spec.ts"
+    "stack-tests/reactjs/**/*.spec.ts",
+    "stack-tests/reactjs/**/*.spec.tsx"
   ]
 }
