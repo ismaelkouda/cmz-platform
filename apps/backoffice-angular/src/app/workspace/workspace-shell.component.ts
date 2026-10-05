@@ -140,9 +140,15 @@ export class WorkspaceShellComponent {
         const tabs = this.views();
         const index = tabs.findIndex(({ id }) => id === view.id);
         let targetIndex: number | null = null;
-        if (event.key === 'ArrowLeft') targetIndex = Math.max(0, index - 1);
-        if (event.key === 'ArrowRight')
-            targetIndex = Math.min(tabs.length - 1, index + 1);
+        const rtl =
+            this.document.defaultView?.getComputedStyle(
+                event.currentTarget as HTMLElement
+            ).direction === 'rtl';
+        const previousKey = rtl ? 'ArrowRight' : 'ArrowLeft';
+        const nextKey = rtl ? 'ArrowLeft' : 'ArrowRight';
+        if (event.key === previousKey)
+            targetIndex = (index - 1 + tabs.length) % tabs.length;
+        if (event.key === nextKey) targetIndex = (index + 1) % tabs.length;
         if (event.key === 'Home') targetIndex = 0;
         if (event.key === 'End') targetIndex = tabs.length - 1;
         if (targetIndex !== null) {
@@ -161,8 +167,13 @@ export class WorkspaceShellComponent {
     }
 
     protected scrollTabs(direction: -1 | 1): void {
-        this.strip()?.nativeElement.scrollBy({
-            left: direction * 240,
+        const element = this.strip()?.nativeElement;
+        if (!element) return;
+        const rtl =
+            this.document.defaultView?.getComputedStyle(element).direction ===
+            'rtl';
+        element.scrollBy({
+            left: direction * (rtl ? -240 : 240),
             behavior: 'auto',
         });
     }
@@ -180,8 +191,12 @@ export class WorkspaceShellComponent {
             element.scrollWidth - element.clientWidth
         );
         this.overflowing.set(maxScrollLeft > 1);
-        this.canScrollPrevious.set(element.scrollLeft > 1);
-        this.canScrollNext.set(element.scrollLeft < maxScrollLeft - 1);
+        const logicalScrollLeft = Math.min(
+            maxScrollLeft,
+            Math.abs(element.scrollLeft)
+        );
+        this.canScrollPrevious.set(logicalScrollLeft > 1);
+        this.canScrollNext.set(logicalScrollLeft < maxScrollLeft - 1);
     }
 
     protected tabDomId(id: string): string {
