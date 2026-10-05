@@ -5,6 +5,7 @@ import { relative, resolve, sep } from 'node:path';
 const CREDENTIAL_PATTERN =
     /(TOKEN|SECRET|PASSWORD|PASSWD|AUTH|COOKIE|SSH|GIT_|NPM_)/i;
 const EXTRA_ENV_ALLOWLIST = new Set(['CI', 'NX_NO_CLOUD']);
+const DOCKER_PROBE_TIMEOUTS_MS = Object.freeze([5_000, 10_000, 20_000]);
 
 /**
  * Nx écrit dans trois emplacements distincts, tous dérivés de `os.tmpdir()`
@@ -371,22 +372,89 @@ function checkedSpawn(executable, argv, options, spawn = spawnSync) {
     };
 }
 
-export function sandboxBackendAvailable(backend, { spawn = spawnSync } = {}) {
+function probeFailure(error, status, attempts) {
+    const code = error?.code;
+    if (code === 'ENOENT') return { kind: 'missing', status, attempts };
+    if (code === 'EACCES' || code === 'EPERM') {
+        return { kind: 'access-denied', status, attempts };
+    }
+    if (code === 'ETIMEDOUT') return { kind: 'timeout', status, attempts };
+    if (error) return { kind: 'probe-error', status, attempts };
+    return { kind: 'unavailable', status, attempts };
+}
+
+/**
+ * Sonde bornée et sans sortie sensible. Docker est la seule sonde qui tolère
+ * un retry : un timeout ne prouve ni l'absence du binaire ni l'arrêt du daemon.
+ * Les budgets croissants remplacent le verdict faux négatif d'un unique délai
+ * de 10 s, sans jamais sélectionner un backend non vérifié.
+ */
+export function probeSandboxBackend(
+    backend,
+    { spawn = spawnSync, dockerTimeoutsMs = DOCKER_PROBE_TIMEOUTS_MS } = {}
+) {
+    if (backend !== 'macos' && backend !== 'docker') {
+        fail(`backend de sonde inconnu : ${backend}`);
+    }
     const command = backend === 'macos' ? '/usr/bin/sandbox-exec' : 'docker';
     const argv =
         backend === 'macos'
             ? ['-p', '(version 1) (allow default)', '/usr/bin/true']
             : ['info'];
-    try {
-        return (
-            spawn(command, argv, {
+    const timeouts = backend === 'docker' ? dockerTimeoutsMs : [10_000];
+    if (
+        !Array.isArray(timeouts) ||
+        timeouts.length === 0 ||
+        timeouts.some(
+            (timeout) => !Number.isSafeInteger(timeout) || timeout <= 0
+        )
+    ) {
+        fail('budgets de sonde invalides');
+    }
+
+    let lastFailure;
+    for (const [index, timeout] of timeouts.entries()) {
+        let result;
+        try {
+            result = spawn(command, argv, {
                 shell: false,
                 stdio: 'ignore',
-                timeout: 10_000,
-            }).status === 0
+                timeout,
+            });
+        } catch (error) {
+            result = { error, status: null };
+        }
+        if (result?.status === 0) {
+            return { kind: 'ready', status: 0, attempts: index + 1 };
+        }
+        lastFailure = probeFailure(
+            result?.error,
+            result?.status ?? null,
+            index + 1
         );
-    } catch {
-        return false;
+        if (lastFailure.kind !== 'timeout' || index === timeouts.length - 1) {
+            return lastFailure;
+        }
+    }
+    return lastFailure;
+}
+
+export function sandboxBackendAvailable(backend, options = {}) {
+    return probeSandboxBackend(backend, options).kind === 'ready';
+}
+
+function unavailableBackendMessage(label, probe) {
+    switch (probe.kind) {
+        case 'missing':
+            return `${label} absent (exécutable introuvable)`;
+        case 'access-denied':
+            return `${label} présent mais accès/socket refusé`;
+        case 'unavailable':
+            return `${label} installé mais daemon indisponible (code ${probe.status ?? 'inconnu'})`;
+        case 'timeout':
+            return `${label} détecté mais sans réponse après ${probe.attempts} tentatives bornées`;
+        default:
+            return `${label} non sondable`;
     }
 }
 
@@ -416,11 +484,17 @@ export function selectSandboxBackend({
     platform = process.platform,
     spawn = spawnSync,
 } = {}) {
-    if (platform === 'darwin' && sandboxBackendAvailable('macos', { spawn }))
-        return 'macos';
-    if (platform === 'linux' && sandboxBackendAvailable('docker', { spawn }))
-        return 'docker';
-    fail(`aucun backend de confinement opérationnel pour ${platform}`);
+    if (platform === 'darwin') {
+        const probe = probeSandboxBackend('macos', { spawn });
+        if (probe.kind === 'ready') return 'macos';
+        fail(unavailableBackendMessage('sandbox-exec', probe));
+    }
+    if (platform === 'linux') {
+        const probe = probeSandboxBackend('docker', { spawn });
+        if (probe.kind === 'ready') return 'docker';
+        fail(unavailableBackendMessage('Docker', probe));
+    }
+    fail(`plateforme sans backend de confinement approuvé : ${platform}`);
 }
 
 export function runConfined({

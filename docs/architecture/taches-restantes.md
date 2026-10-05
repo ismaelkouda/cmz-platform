@@ -1499,22 +1499,30 @@ Figma, désormais source partielle différée :
   privilégiée aux PR non fiables. Un test d'intégration doit reproduire le cycle
   complet ; la politique squash-only, l'historique linéaire et les protections
   de `main` restent inchangés.
-- **OPS-34** — ouvert, S, P1 Ops. Rendre la détection du backend Docker du
-  sandbox diagnostiquable et résiliente aux indisponibilités transitoires, sans
-  jamais relâcher le confinement. La PR Dependabot #153 (`knip` 6.38.0) a échoué
-  dans le run `36770686632`, avant l'exécution de Knip : `docker info` n'a pas
-  répondu dans le délai fixe de 10 s et `sandboxBackendAvailable()` a réduit
-  toute erreur au même booléen, exposé ensuite comme « aucun backend de
-  confinement opérationnel pour linux ». Le même changement avait déjà passé la
-  CI, le run contemporain de `main` était vert et le job d'isolation Linux de la
-  PR était vert : le signal observé est donc un problème de disponibilité du
-  runner, pas une incompatibilité Knip. Sortie attendue : distinguer au minimum
-  binaire absent, accès/socket refusé, daemon indisponible et timeout ;
-  journaliser le diagnostic utile sans secret ; appliquer un retry court et
-  borné uniquement aux états transitoires ; échouer fermé après épuisement, sans
-  backend non confiné de secours. Des tests purs doivent couvrir chaque classe
-  d'échec et le retry, puis une CI réelle doit prouver que l'isolation Linux et
-  `check:application-pipeline` restent bloquants.
+- **OPS-34** — **engagé localement le 2026-10-05**, S, P1 Ops. Rendre la
+  détection du backend Docker du sandbox diagnostiquable et résiliente aux
+  indisponibilités transitoires, sans jamais relâcher le confinement. La PR
+  Dependabot #153 (`knip` 6.38.0) a échoué dans le run `36770686632`, avant
+  l'exécution de Knip : `docker info` n'a pas répondu dans le délai fixe de 10 s
+  et `sandboxBackendAvailable()` a réduit toute erreur au même booléen, exposé
+  ensuite comme « aucun backend de confinement opérationnel pour linux ». Le
+  même changement avait déjà passé la CI, le run contemporain de `main` était
+  vert et le job d'isolation Linux de la PR était vert : le signal observé est
+  donc un problème de disponibilité du runner, pas une incompatibilité Knip.
+  Sortie attendue : distinguer au minimum binaire absent, accès/socket refusé,
+  daemon indisponible et timeout ; journaliser le diagnostic utile sans secret ;
+  appliquer un retry court et borné uniquement aux états transitoires ; échouer
+  fermé après épuisement, sans backend non confiné de secours. Des tests purs
+  doivent couvrir chaque classe d'échec et le retry, puis une CI réelle doit
+  prouver que l'isolation Linux et `check:application-pipeline` restent
+  bloquants. **Implémentation locale :** la sonde distingue désormais binaire
+  absent, accès/socket refusé, daemon indisponible, erreur de sonde et timeout
+  sans journaliser `stderr`. Seul le timeout, état transitoire démontré par les
+  runs #153 et #195, est retenté avec trois budgets strictement bornés (`5 s`,
+  `10 s`, `20 s`) ; les autres classes échouent immédiatement et aucune voie non
+  confinée n'existe. Cinq scénarios purs couvrent les quatre diagnostics, la
+  récupération au troisième essai et l'épuisement fail-closed. Reste la preuve
+  CI réelle avant de passer l'item à **fait**.
 - **OPS-35** — engagé localement le 2026-10-01, S, P0 Ops. Le Nightly
   `36844755579` a signalé un faux recul du bundle initial de `521,22 kB` à
   `321,85 kB`. La reproduction sans cache montre que le builder Angular produit

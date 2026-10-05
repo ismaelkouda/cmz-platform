@@ -167,7 +167,43 @@ test('les réglages Nx de confinement sont identiques sur les deux backends', as
     }
 });
 
-test('backend absent échoue avant toute commande métier', () => {
+test('Docker absent est distingué sans retry', () => {
+    let calls = 0;
+    const spawn = () => {
+        calls += 1;
+        return {
+            error: Object.assign(new Error('spawnSync docker ENOENT'), {
+                code: 'ENOENT',
+            }),
+            status: null,
+        };
+    };
+    assert.throws(
+        () => selectSandboxBackend({ platform: 'linux', spawn }),
+        /Docker absent \(exécutable introuvable\)/
+    );
+    assert.equal(calls, 1);
+});
+
+test('accès au socket Docker refusé est distingué sans retry', () => {
+    let calls = 0;
+    const spawn = () => {
+        calls += 1;
+        return {
+            error: Object.assign(new Error('spawnSync docker EACCES'), {
+                code: 'EACCES',
+            }),
+            status: null,
+        };
+    };
+    assert.throws(
+        () => selectSandboxBackend({ platform: 'linux', spawn }),
+        /Docker présent mais accès\/socket refusé/
+    );
+    assert.equal(calls, 1);
+});
+
+test('daemon Docker indisponible est distingué sans retry', () => {
     let calls = 0;
     const spawn = () => {
         calls += 1;
@@ -175,9 +211,45 @@ test('backend absent échoue avant toute commande métier', () => {
     };
     assert.throws(
         () => selectSandboxBackend({ platform: 'linux', spawn }),
-        /aucun backend/
+        /Docker installé mais daemon indisponible \(code 1\)/
     );
     assert.equal(calls, 1);
+});
+
+test('timeout Docker transitoire est retenté avec des budgets croissants', () => {
+    const timeouts = [];
+    let calls = 0;
+    const spawn = (_executable, _argv, options) => {
+        calls += 1;
+        timeouts.push(options.timeout);
+        if (calls === 3) return { status: 0 };
+        return {
+            error: Object.assign(new Error('spawnSync docker ETIMEDOUT'), {
+                code: 'ETIMEDOUT',
+            }),
+            status: null,
+        };
+    };
+    assert.equal(selectSandboxBackend({ platform: 'linux', spawn }), 'docker');
+    assert.deepEqual(timeouts, [5_000, 10_000, 20_000]);
+});
+
+test('timeouts Docker épuisés échouent fermés avec un diagnostic exact', () => {
+    let calls = 0;
+    const spawn = () => {
+        calls += 1;
+        return {
+            error: Object.assign(new Error('spawnSync docker ETIMEDOUT'), {
+                code: 'ETIMEDOUT',
+            }),
+            status: null,
+        };
+    };
+    assert.throws(
+        () => selectSandboxBackend({ platform: 'linux', spawn }),
+        /Docker détecté mais sans réponse après 3 tentatives bornées/
+    );
+    assert.equal(calls, 3);
 });
 
 test('Docker est sans shell, sans réseau en exécution et utilise une image digérée', async (t) => {
