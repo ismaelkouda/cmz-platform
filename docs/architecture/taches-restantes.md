@@ -2709,16 +2709,26 @@ Figma, désormais source partielle différée :
   encore un adaptateur natif distinct prouvant conservation de l'instance,
   suspension des effets, destruction, réseau, sécurité, dirty et accessibilité.
   Il est interdit de traduire mécaniquement `RouteReuseStrategy` ou de déclarer
-  la parité sur la seule présence du renderer React existant. **ADAPT-11b —
-  engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
-  bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
-  capacités non déclarées, la non-activation des lignes et la géométrie
-  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
-  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
-  fournit aucun `action-request` correspondant : les rendre opérables maintenant
-  inventerait transport, permissions et effets. Les oracles exigent donc
-  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
-  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
+  la parité sur la seule présence du renderer React existant. **WORKSPACE-TABS-5
+  — qualification de primitive React engagée le 2026-10-05 :** quatre scénarios
+  natifs React 19.3 vérifient dans le runner `jsdom` la conservation du DOM et
+  du state, l'indépendance de deux vues, le nettoyage puis redémarrage des
+  Effects et la destruction à la fermeture. Le redémarrage démontre qu'un GET
+  dans un Effect de montage violerait le contrat « aucun GET au switch » : le
+  futur hôte devra prouver sa politique de données sur une application et un
+  navigateur réels. La gate complète reste verte (`442` tests cœur, `69`
+  Angular, `57` ReactJS). Le
+  [contrat de l'adaptateur React](./workspace-react-adapter-scope-2026-10-05.md)
+  fixe les oracles de sortie sans revendiquer la parité. **ADAPT-11b — engagé
+  localement après fusion d'ADAPT-11a :** cinq scénarios navigateur bornent la
+  toolbar C5, le GET unique de rafraîchissement, l'absence des capacités non
+  déclarées, la non-activation des lignes et la géométrie panneau/rail Medium +
+  Expanded. La référence visuelle conserve `Exporter` et les actions de ligne
+  comme capacités optionnelles, mais le contrat C5 ne fournit aucun
+  `action-request` correspondant : les rendre opérables maintenant inventerait
+  transport, permissions et effets. Les oracles exigent donc `Créer`,
+  `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu, dialogue
+  ou activation implicite. Quatre échecs attendus sont bornés par deux
   signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
   contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
   attendus et un succès réel ; la régression C5 complète donne `55/55`, avec

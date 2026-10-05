@@ -39,6 +39,11 @@ les comportements de ce document, complétée par des tests unitaires propres à
 chaque adaptateur. La présence du renderer ReactJS dans le dépôt ne constitue
 pas encore cette preuve runtime.
 
+La [qualification React Activity](./workspace-react-adapter-scope-2026-10-05.md)
+établit en `jsdom` la conservation d'état et le redémarrage des Effects. Elle
+borne le candidat natif de l'hôte React ; la parité reste à prouver sur une
+application et un navigateur réels.
+
 ## 2. Emplacement et adaptation
 
 ```text

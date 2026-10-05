@@ -11,7 +11,7 @@ export default defineConfig({
         include: [
             resolve(
                 workspaceRoot,
-                'tools/generator-platform/stack-tests/reactjs/**/*.spec.ts'
+                'tools/generator-platform/stack-tests/reactjs/**/*.spec.{ts,tsx}'
             ),
         ],
         reporters: ['verbose'],
