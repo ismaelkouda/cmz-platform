@@ -351,6 +351,31 @@ Prouvé localement dans la tranche accessibilité/RTL du 2026-10-04 :
   montre qu'un remplacement mécanique par `end-0` le fait sortir du viewport en
   RTL.
 
+Prouvé localement dans la tranche mémoire WORKSPACE-TABS-4 du 2026-10-05 :
+
+- le build de production exécute 50 cycles d'échauffement puis 100 cycles réels
+  d'ouverture/fermeture du formulaire pilote via le Router ; après GC explicite,
+  documents, nœuds DOM et écouteurs restent strictement constants ;
+- le heap JS croît de `594 052` octets sur les 100 cycles, sous le budget
+  bloquant de `1 MiB`, et de `172 388` octets sur le dernier quart, sous le
+  budget de pente de `384 KiB` ;
+- huit pages représentatives atteignent `9 738 772` octets depuis une base à
+  `5 555 296` octets, soit `4 183 476` octets supplémentaires sous le budget
+  bloquant de `8 MiB`; la neuvième vue est refusée avec notification, sans
+  éviction ;
+- quatre passes complètes `1 → 8 → 1` séparent les coûts uniques de
+  lazy-load/JIT d'une fuite répétable : après échauffement, les fermetures
+  plafonnent à `244` nœuds et `39` écouteurs ;
+- cette investigation a trouvé puis corrigé deux défauts réels : recalcul de
+  l'overflow avant rendu, et carte OpenLayers qui n'appelait pas `dispose()` et
+  enregistrait son nettoyage après un `await` ;
+- le mock de production indexe désormais les actions par route absolue
+  `/equipments/types`, comme `PermissionActionsService`, au lieu de dépendre du
+  provider permissif réservé au développement ;
+- `backoffice-angular:e2e-workspace-memory` conserve les deux profils JSON et le
+  nightly les exécute sur le dist production. Le protocole CDP est propre à
+  Chromium : il ne revendique pas une mesure heap Firefox/WebKit.
+
 Restent bloquants avant de qualifier l'ensemble « terminé de bout en bout » :
 
 - parcours manuel VoiceOver et NVDA sur les annonces d'onglet, d'état dirty, de
@@ -358,8 +383,6 @@ Restent bloquants avant de qualifier l'ensemble « terminé de bout en bout » :
 - passage manuel du zoom navigateur à `200 %` sur les navigateurs supportés ; le
   redimensionnement automatisé du texte à `200 %` est désormais prouvé mais ne
   simule pas toutes les combinaisons navigateur/OS ;
-- mesure de heap navigateur représentative sur ces 100 cycles et calibration du
-  plafond provisoire `8` ;
 - raccordement explicite des futures pages qui introduisent polling, timer,
   média ou calcul continu au signal `active/suspended` ;
 - déploiement progressif de `[cmzWorkspaceDirty]` sur les autres formulaires
@@ -390,6 +413,10 @@ oracles.
 - [Angular — RouterOutlet](https://angular.dev/api/router/RouterOutlet)
 - [Angular — destroyDetachedRouteHandle](https://angular.dev/api/router/destroyDetachedRouteHandle)
 - [Angular — withAutoCleanupInjectors](https://angular.dev/api/router/withAutoCleanupInjectors)
+- [Playwright — CDPSession](https://playwright.dev/docs/api/class-cdpsession)
+- [Chrome DevTools Protocol — HeapProfiler](https://chromedevtools.github.io/devtools-protocol/tot/HeapProfiler/)
+- [Chrome DevTools Protocol — Runtime](https://chromedevtools.github.io/devtools-protocol/tot/Runtime/)
+- [Chrome DevTools Protocol — Memory](https://chromedevtools.github.io/devtools-protocol/tot/Memory/)
 - [Angular Aria — Tabs](https://angular.dev/guide/aria/tabs)
 - [Angular Aria — Toolbar](https://angular.dev/guide/aria/toolbar)
 - [Tailwind CSS — detecting classes in source files](https://tailwindcss.com/docs/detecting-classes-in-source-files)

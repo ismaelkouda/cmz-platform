@@ -46,6 +46,18 @@ export class InteractiveMapOlViewComponent implements AfterViewInit {
     private mapReady = false;
 
     constructor() {
+        // Enregistrer le nettoyage avant le premier `await` : une vue peut être
+        // fermée pendant le chargement lazy d'OpenLayers. `dispose()` est la
+        // frontière officielle qui libère contrôles, interactions, renderer et
+        // ResizeObserver ; `setTarget(undefined)` seul ne suffit pas.
+        this.destroyRef.onDestroy(() => {
+            this.vectorSource?.clear(true);
+            this.mapInstance?.dispose();
+            this.mapInstance = null;
+            this.vectorSource = null;
+            this.mapReady = false;
+        });
+
         effect(() => {
             if (this.mapReady && this.vectorSource) {
                 this.syncReports(this.reports());
@@ -76,6 +88,10 @@ export class InteractiveMapOlViewComponent implements AfterViewInit {
             import('ol/proj'),
         ]);
 
+        if (this.destroyRef.destroyed) {
+            return;
+        }
+
         this.vectorSource = new VectorSource();
         this.mapInstance = new Map({
             target: this.mapHost().nativeElement,
@@ -91,12 +107,6 @@ export class InteractiveMapOlViewComponent implements AfterViewInit {
 
         this.mapReady = true;
         this.syncReports(this.reports(), Feature, Point, fromLonLat);
-
-        this.destroyRef.onDestroy(() => {
-            this.mapInstance?.setTarget(undefined);
-            this.mapInstance = null;
-            this.vectorSource = null;
-        });
     }
 
     private syncReports(

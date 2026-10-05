@@ -65,8 +65,10 @@ export const appConfig: ApplicationConfig = {
             provide: RouteReuseStrategy,
             useExisting: WorkspaceRouteReuseStrategy,
         },
-        // Plafond de sûreté v1. La calibration mémoire multi-pages reste un
-        // oracle de promotion avant d'augmenter cette valeur.
+        // Plafond calibré sur le profil Chromium production WORKSPACE-TABS-4 :
+        // huit pages représentatives restent sous +8 MiB de heap JS et la
+        // fermeture atteint un plateau structurel. Toute hausse exige de
+        // rejouer l'oracle nightly, jamais une augmentation par intuition.
         { provide: WORKSPACE_CONFIG, useValue: { maxOpenViews: 8 } },
         // Catalogue natif `$localize`, remplacé à la compilation. Aucun
         // dictionnaire HTTP ni changement de langue implicite au runtime.

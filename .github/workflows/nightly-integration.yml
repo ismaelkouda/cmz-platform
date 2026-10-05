@@ -63,6 +63,26 @@ jobs:
       - name: Build production
         run: bunx nx run backoffice-angular:build:production
 
+      # WORKSPACE-TABS-4 — profil Chromium long, volontairement absent des PR :
+      # 50 cycles d'échauffement + 100 cycles mesurés, puis quatre passes à
+      # huit vues. Le dist production ci-dessus est réutilisé sans rebuild.
+      - name: Install Playwright Chromium
+        run: bunx playwright install chromium --with-deps
+
+      - name: Profil mémoire du workspace (production)
+        run: bunx nx run backoffice-angular:e2e-workspace-memory
+        env:
+          E2E_SKIP_BUILD: '1'
+
+      - name: Publier les profils mémoire du workspace
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: workspace-memory-profiles
+          path: test-results/**/workspace-*-profile*.json
+          retention-days: 30
+          if-no-files-found: error
+
       # Audit E-8 — métrique commitée = vérité ; dérive = CI rouge. Doit
       # tourner ICI, juste après le build production propre ci-dessus —
       # JAMAIS après le rebuild --source-map=true plus bas, qui injecte un

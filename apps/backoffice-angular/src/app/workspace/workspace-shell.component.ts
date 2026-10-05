@@ -39,6 +39,7 @@ export class WorkspaceShellComponent {
     private readonly destroyRef = inject(DestroyRef);
     private readonly strip = viewChild<ElementRef<HTMLElement>>('strip');
     private resizeObserver: ResizeObserver | null = null;
+    private overflowFrame: number | null = null;
 
     protected readonly workspace = inject(WorkspaceService);
     protected readonly views = this.workspace.views;
@@ -87,7 +88,13 @@ export class WorkspaceShellComponent {
             );
             const strip = this.strip()?.nativeElement;
             if (strip) this.resizeObserver.observe(strip);
-            this.destroyRef.onDestroy(() => this.resizeObserver?.disconnect());
+            this.destroyRef.onDestroy(() => {
+                this.resizeObserver?.disconnect();
+                const view = this.document.defaultView;
+                if (view && this.overflowFrame !== null) {
+                    view.cancelAnimationFrame(this.overflowFrame);
+                }
+            });
             this.updateOverflow();
         });
     }
@@ -296,6 +303,17 @@ export class WorkspaceShellComponent {
     }
 
     private updateOverflowSoon(): void {
-        queueMicrotask(() => this.updateOverflow());
+        const view = this.document.defaultView;
+        if (!view) {
+            queueMicrotask(() => this.updateOverflow());
+            return;
+        }
+        if (this.overflowFrame !== null) {
+            view.cancelAnimationFrame(this.overflowFrame);
+        }
+        this.overflowFrame = view.requestAnimationFrame(() => {
+            this.overflowFrame = null;
+            this.updateOverflow();
+        });
     }
 }
