@@ -1,6 +1,6 @@
 # Workspace à vues vivantes — contrat runtime et accessibilité
 
-- **Date de vérification :** 2026-10-04
+- **Date de vérification :** 2026-10-06
 - **Statut :** décision, exemples et preuve navigateur authentifiée approuvés ;
   promotion complète conditionnée par les oracles spécialisés restants
 - **Espaces :** Medium et Expanded uniquement
@@ -41,8 +41,11 @@ revendication.
 La [qualification React Activity](./workspace-react-adapter-scope-2026-10-05.md)
 établit en `jsdom` la conservation d'état et le redémarrage des Effects, puis
 qualifie sur une SPA et Chromium réels identité, URL, réseau, fermeture,
-sécurité, session, dirty, capacité et mémoire. Les ressources longues et
-l'accessibilité complète restent à prouver avant la parité produit.
+sécurité, session, dirty, capacité, mémoire et propriétés d'accessibilité
+automatisables. La validation humaine VoiceOver/NVDA et zoom multi-navigateur
+reste nécessaire. Les ressources longues seront qualifiées sur leur première
+page réelle ; le dépôt interdit d'en inventer une uniquement pour fermer une
+case de conformité.
 
 ## 2. Emplacement et adaptation
 
@@ -400,6 +403,24 @@ Prouvé localement dans la tranche React WORKSPACE-TABS-11 du 2026-10-06 :
 - ce plafond ne dimensionne aucune future application : tout catalogue plus
   riche ou page plus lourde exige une nouvelle campagne représentative.
 
+Prouvé localement dans la tranche React WORKSPACE-TABS-12 du 2026-10-06 :
+
+- le shell expose un `tablist` sémantique qui possède explicitement ses tabs,
+  chaque tab contrôle un panneau nommé et seul le panneau visible est dans le
+  parcours clavier ;
+- activation manuelle, `Home`, `End`, flèches avec boucle LTR/RTL, `Delete`,
+  fermeture et restitution du focus sont vérifiés sur le build navigateur ;
+- axe-core couvre les tags WCAG automatisables et a détecté une première
+  structure `tablist` invalide avant sa correction ;
+- le reflow à `320` CSS px, le texte à `200 %`, l'absence de troncature des
+  contrôles, le focus visible et la géométrie RTL sont vérifiés ;
+- le proof React ne contient actuellement aucune ressource longue réelle. Aucun
+  timer ou endpoint fictif n'est ajouté : le premier polling, média, worker,
+  abonnement ou calcul continu devra prouver arrêt, reprise unique et
+  destruction sur son vrai contrat de page ;
+- `Activity` reste le signal natif : sa preuve verrouillée établit déjà le
+  cleanup des Effects en `hidden` et leur recréation en `visible`.
+
 Restent bloquants avant de qualifier l'ensemble « terminé de bout en bout » :
 
 - parcours manuel VoiceOver et NVDA sur les annonces d'onglet, d'état dirty, de
@@ -414,9 +435,10 @@ Restent bloquants avant de qualifier l'ensemble « terminé de bout en bout » :
 - transport applicatif du nouveau snapshot de droits depuis le backend : le
   monitor et ses oracles sont présents, mais aucun endpoint de refresh, polling
   ou push n'existe dans le contrat actuel et ne doit être inventé ;
-- qualification ReactJS des ressources longues réelles (polling, timer, média,
-  calcul continu) et de l'accessibilité complète ; identité, URL, réseau,
-  fermeture, sécurité, session, dirty, capacité et mémoire sont déjà prouvés.
+- qualification ReactJS du premier cas réel de polling, timer, média, worker,
+  abonnement ou calcul continu lorsqu'il sera introduit ; les propriétés
+  automatisables d'accessibilité sont prouvées, mais les validations humaines
+  VoiceOver/NVDA et zoom multi-navigateur restent distinctes.
 
 ## 10. Hors périmètre
 
