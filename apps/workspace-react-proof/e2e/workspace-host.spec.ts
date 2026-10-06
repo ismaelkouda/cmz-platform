@@ -168,3 +168,54 @@ test('restaure query et fragment exacts sans dupliquer ni recharger la vue', asy
     ).toBe(instance);
     expect(profileReads).toBe(1);
 });
+
+test('détruit une vue active révoquée et interdit sa résurrection par l’historique', async ({
+    page,
+}) => {
+    let profileReads = 0;
+    await page.route(`**${PROFILE_ENDPOINT}`, async (route) => {
+        profileReads += 1;
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                name: 'Soumaila Kouda',
+                role: 'Administrateur',
+            }),
+        });
+    });
+
+    await page.goto('/workspace/profile?section=security#roles');
+    await expect(page.getByText('Soumaila Kouda')).toBeVisible();
+    await page
+        .getByRole('textbox', { name: 'Note locale non enregistrée' })
+        .fill('Brouillon à détruire');
+
+    await page
+        .getByRole('button', { name: 'Révoquer l’accès au profil' })
+        .click();
+
+    await expect(page).toHaveURL(/\/workspace\/dashboard$/);
+    await expect(page.getByRole('tab', { name: 'Profil' })).toHaveCount(0);
+    await expect(page.locator('[data-instance-id]')).toHaveCount(0);
+    await expect(
+        page.getByRole('textbox', {
+            name: 'Note locale non enregistrée',
+        })
+    ).toHaveCount(0);
+    await expect(page.getByText('Accès au profil révoqué.')).toBeVisible();
+
+    await page.evaluate(() => {
+        window.history.pushState(
+            null,
+            '',
+            '/workspace/profile?section=security#roles'
+        );
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    await expect(page).toHaveURL(/\/workspace\/dashboard$/);
+    await expect(page.getByRole('tab', { name: 'Profil' })).toHaveCount(0);
+    await expect(page.locator('[data-instance-id]')).toHaveCount(0);
+    expect(profileReads).toBe(1);
+});

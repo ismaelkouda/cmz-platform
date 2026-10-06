@@ -78,7 +78,7 @@ rechargements implicites. La version `8.4.0`, encore supportée, remplace la
 version `react-router-dom` 6.30.3 produite par le générateur Nx ; React Router 8
 publie désormais l'API navigateur depuis `react-router`.
 
-Quatre tests Vitest et trois parcours Chromium vérifient maintenant :
+Neuf tests Vitest et quatre parcours Chromium vérifient maintenant :
 
 1. ouverture d'une URL canonique et création d'une seule frontière par vue ;
 2. conservation du même nœud, d'un champ non contrôlé et du state local ;
@@ -89,7 +89,12 @@ Quatre tests Vitest et trois parcours Chromium vérifient maintenant :
    réouverture ;
 6. normalisation d'une URL inconnue vers la vue épinglée ;
 7. restauration de la dernière query et du dernier fragment sans changer
-   l'identité canonique de la vue.
+   l'identité canonique de la vue ;
+8. refus d'une route protégée avant montage et avant GET ;
+9. destruction d'une vue active ou suspendue dès le remplacement du snapshot
+   d'accès, sans résurrection par l'historique ;
+10. annulation du GET en vol et purge du cache lors de la révocation, puis
+    nouvelle instance et nouveau GET après restitution explicite du droit.
 
 ### Deuxième tranche : contexte d'activation exact
 
@@ -115,6 +120,30 @@ Cette tranche ne généralise pas plusieurs instances d'une route dynamique et n
 persiste aucune URL après reload. Elle stabilise seulement la clé nécessaire aux
 futures politiques de permissions, dirty et capacité.
 
+### Troisième tranche : permission et révocation
+
+Chaque entrée du catalogue porte désormais son `accessPath`. La vue épinglée,
+protégée par la session seulement, conserve `null` ; le profil référence
+exactement son chemin contrôlé. `WorkspaceAccessStore` reçoit un snapshot déjà
+établi par le host et le publie avec `useSyncExternalStore`. Un snapshot absent
+est vide et donc fail-closed pour toute vue protégée. Le proof n'invente ni
+endpoint, ni polling, ni WebSocket de découverte des droits.
+
+Le snapshot d'accès filtre les tabs et panneaux pendant le rendu, avant l'Effect
+de réconciliation. Une URL directe interdite ne monte donc jamais la vue et ne
+déclenche aucun GET. La réconciliation retire ensuite l'identité et son URL du
+registre ; si la vue était active, `BrowserRouter` remplace l'entrée interdite
+par le tableau de bord. Une navigation d'historique ultérieure est soumise au
+même contrôle et ne peut pas recréer la frontière.
+
+La révocation du profil annule également sa requête en vol avec
+`AbortController`, oublie sa promesse et purge la donnée dédupliquée, même si la
+vue avait déjà été fermée avant le nouveau snapshot. Une restitution explicite
+du droit puis une nouvelle ouverture doit produire une nouvelle instance, un
+état local vierge et un nouveau GET. Le champ non enregistré détruit par
+l'oracle prouve la perte de l'état local ; il ne prétend pas encore implémenter
+le futur modèle `dirty` ou sa confirmation de fermeture.
+
 La preuve navigateur est câblée conditionnellement dans le job `e2e-smoke`
 existant afin de ne créer ni contexte de protection supplémentaire ni coût sur
 les changements sans rapport. Le serveur SPA commun utilise une allowlist fermée
@@ -130,12 +159,14 @@ plateforme.
 
 La qualification `jsdom` de la primitive et cette première application
 navigateur prouvent désormais le routeur, la conservation/destruction et
-l'absence de trafic GET/POST provoqué par un switch. Elles ne prouvent toujours
-pas permissions/révocation, garde dirty, plafond et profil mémoire,
-accessibilité APG complète/RTL/zoom/lecteur d'écran, suspension des ressources
-longues ni parité fonctionnelle avec le back-office Angular. La présence des
-renderers React métier ne tient pas lieu de shell et aucune de ces limites ne
-doit être reformulée comme acquise.
+l'absence de trafic GET/POST provoqué par un switch, ainsi que le refus et la
+révocation d'une permission de page déjà publiée par le host. Elles ne prouvent
+toujours pas fin/changement de session, découverte distante d'un nouveau
+snapshot, garde dirty, plafond et profil mémoire, accessibilité APG
+complète/RTL/zoom/lecteur d'écran, suspension des ressources longues ni parité
+fonctionnelle avec le back-office Angular. La présence des renderers React
+métier ne tient pas lieu de shell et aucune de ces limites ne doit être
+reformulée comme acquise.
 
 Preuves locales du 2026-10-05 : `check:generator-platform:reactjs` compile les
 sorties générées puis passe `57/57` scénarios React ; la gate complète passe
@@ -144,7 +175,7 @@ explicitement les fichiers TSX sous `tools/`, afin que cette preuve ne soit pas
 exécutée tout en restant invisible au contrôle de dead-code.
 
 Preuves locales du 2026-10-06 : lint React Hooks, typecheck strict, build Vite,
-`4/4` tests Vitest et `3/3` parcours Chromium passent. L'oracle navigateur sera
+`9/9` tests Vitest et `4/4` parcours Chromium passent. L'oracle navigateur sera
 la preuve autoritative après son passage dans la CI GitHub.
 
 ## Sources
