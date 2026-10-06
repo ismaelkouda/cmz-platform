@@ -8,6 +8,7 @@
  *
  *   bunx nx run backoffice-angular:build:development
  *   E2E_APP_NAME=users-management-proof node tools/e2e-static-server.mjs
+ *   E2E_APP_NAME=workspace-react-proof node tools/e2e-static-server.mjs
  *
  * Usage :
  *   MOCK_PORT=3333 E2E_APP_PORT=4200 node tools/e2e-static-server.mjs
@@ -22,6 +23,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const APP_OUTPUTS = new Map([
     ['backoffice-angular', 'dist/apps/backoffice-angular/browser'],
     ['users-management-proof', 'dist/apps/users-management-proof/browser'],
+    ['workspace-react-proof', 'dist/apps/workspace-react-proof'],
 ]);
 const APP_NAME = process.env.E2E_APP_NAME ?? 'backoffice-angular';
 const output = APP_OUTPUTS.get(APP_NAME);

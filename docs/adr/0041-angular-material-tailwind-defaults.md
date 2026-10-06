@@ -228,9 +228,12 @@ un fichier qui existe sans être vérifié n'est qu'une intention.
 - Si la frontière de coexistence Tailwind ↔ Material génère des régressions
   récurrentes, envisager de désactiver le preflight Tailwind et de n'utiliser
   que ses utilitaires.
-- Étendre le périmètre à React (recettes `react/*`) quand une app React réelle
-  existe ; Kotlin/Swift exigeraient un modèle de dépendances non-npm — hors
-  périmètre tant qu'aucune app native n'est au dépôt.
+- L'application React réelle `workspace-react-proof` est maintenant reconnue
+  par le contrôle de manifeste à partir d'un import AST du plugin Vite React
+  officiel. Ce support ne crée aucune recette `react/*` par anticipation : une
+  recette ne sera ajoutée que lorsqu'une bibliothèque gouvernée devra réellement
+  être installée dans une app React. Kotlin/Swift exigeraient un modèle de
+  dépendances non-npm — hors périmètre tant qu'aucune app native n'est au dépôt.
 
 ## Références
 

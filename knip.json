@@ -3,7 +3,8 @@
   "ignore": [
     "**/*.spec.ts",
     "!apps/backoffice-angular/e2e/*.spec.ts",
-    "!apps/users-management-proof/e2e/*.spec.ts"
+    "!apps/users-management-proof/e2e/*.spec.ts",
+    "!apps/workspace-react-proof/e2e/*.spec.ts"
   ],
   "ignoreExportsUsedInFile": true,
   "workspaces": {
@@ -11,6 +12,9 @@
       "entry": [
         "apps/backoffice-angular/src/main.ts",
         "apps/users-management-proof/src/main.ts",
+        "apps/workspace-react-proof/src/main.tsx",
+        "apps/workspace-react-proof/src/**/*.spec.tsx",
+        "apps/workspace-react-proof/vite.config.mts",
         "apps/backoffice-angular/public/env.js",
         "apps/backoffice-angular/src/tailwind.css",
         "tools/**/*.{mjs,ts,tsx}",
@@ -18,11 +22,13 @@
         "apps/backoffice-angular/src/app/testing/axe-a11y.util.ts",
         "apps/backoffice-angular/src/app/testing/a11y-testbed.harness.ts",
         "apps/backoffice-angular/e2e/*.spec.ts",
-        "apps/users-management-proof/e2e/*.spec.ts"
+        "apps/users-management-proof/e2e/*.spec.ts",
+        "apps/workspace-react-proof/e2e/*.spec.ts"
       ],
       "project": [
         "apps/backoffice-angular/**/*.{ts,tsx,css,mjs}",
         "apps/users-management-proof/**/*.{ts,tsx,css,mjs}",
+        "apps/workspace-react-proof/**/*.{ts,tsx,css,scss,mjs}",
         "apps/backoffice-angular/public/**/*.js",
         "tools/**/*.{mjs,ts,tsx}"
       ]
@@ -54,8 +60,7 @@
     "ol",
     "eslint-plugin-import",
     "eslint-plugin-jsx-a11y",
-    "eslint-plugin-react",
-    "eslint-plugin-react-hooks"
+    "eslint-plugin-react"
   ],
   "ignoreBinaries": ["semgrep"],
   "rules": {

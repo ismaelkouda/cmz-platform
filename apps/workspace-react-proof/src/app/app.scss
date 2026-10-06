@@ -1,0 +1,201 @@
+:root {
+    color: #18211a;
+    background: #f3f7f3;
+    font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    min-width: 20rem;
+    min-height: 100vh;
+    margin: 0;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.proof-shell {
+    width: min(70rem, calc(100% - 2rem));
+    margin-inline: auto;
+    padding-block: clamp(2rem, 6vw, 5rem);
+}
+
+.proof-header {
+    max-width: 48rem;
+    margin-block-end: 2rem;
+
+    h1 {
+        margin: 0.25rem 0 0.5rem;
+        font-size: clamp(2rem, 6vw, 3.75rem);
+        line-height: 1;
+    }
+
+    p:last-child {
+        color: #526257;
+    }
+}
+
+.proof-eyebrow {
+    margin: 0;
+    color: #28633c;
+    font-size: 0.78rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.workspace-tabs {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    border-bottom: 1px solid #cbd7ce;
+}
+
+.workspace-tab-item {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    border-radius: 0.55rem 0.55rem 0 0;
+
+    &:has(.workspace-tab[aria-selected='true']) {
+        background: #fff;
+        box-shadow: inset 0 -3px #24783f;
+    }
+}
+
+.workspace-tab,
+.workspace-close {
+    min-height: 2.75rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+
+    &:focus-visible {
+        z-index: 1;
+        outline: 3px solid #185abc;
+        outline-offset: -3px;
+    }
+}
+
+.workspace-tab {
+    padding-inline: 1rem 0.5rem;
+    font-weight: 650;
+}
+
+.workspace-close {
+    min-width: 2.75rem;
+    padding: 0;
+    font-size: 1.35rem;
+}
+
+.workspace-panel {
+    padding-block: 1.5rem;
+}
+
+.proof-card {
+    min-height: 20rem;
+    padding: clamp(1.25rem, 4vw, 2.5rem);
+    border: 1px solid #dbe4dd;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 1rem 3rem rgb(31 54 38 / 8%);
+
+    h2 {
+        margin: 0.35rem 0 0.75rem;
+        font-size: clamp(1.5rem, 4vw, 2.25rem);
+    }
+}
+
+.proof-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-block-start: 2rem;
+
+    button {
+        min-height: 2.75rem;
+        padding-inline: 1rem;
+        border: 1px solid #24783f;
+        border-radius: 0.65rem;
+        background: #f4fbf5;
+        color: #164b29;
+        font-weight: 700;
+    }
+}
+
+.profile-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 1rem;
+    margin-block: 2rem;
+
+    div {
+        padding: 1rem;
+        border-radius: 0.75rem;
+        background: #f3f7f3;
+    }
+
+    dt {
+        color: #526257;
+        font-size: 0.85rem;
+    }
+
+    dd {
+        margin: 0.25rem 0 0;
+        font-weight: 700;
+    }
+}
+
+.proof-field {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 32rem;
+    font-weight: 650;
+
+    input {
+        min-height: 2.75rem;
+        padding-inline: 0.75rem;
+        border: 1px solid #758279;
+        border-radius: 0.55rem;
+
+        &:focus-visible {
+            outline: 3px solid #185abc;
+            outline-offset: 2px;
+        }
+    }
+}
+
+@media (max-width: 40rem) {
+    .proof-shell {
+        width: min(100% - 1rem, 70rem);
+        padding-block: 1.25rem;
+    }
+
+    .proof-card {
+        min-height: 16rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+    }
+}

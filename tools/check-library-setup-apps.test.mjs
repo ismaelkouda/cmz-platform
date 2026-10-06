@@ -659,6 +659,20 @@ test('detectAppPlatform : un seul résultat, sinon unknown (jamais "premier gagn
     await write(join(root, 'vite-only/project.json'), {
         targets: { build: { executor: '@nx/vite:build' } },
     });
+    await write(join(root, 'vite-react/project.json'), {
+        targets: {},
+    });
+    await write(
+        join(root, 'vite-react/vite.config.mts'),
+        "import react from '@vitejs/plugin-react';\nexport default { plugins: [react()] };\n"
+    );
+    await write(join(root, 'vite-comment/project.json'), {
+        targets: {},
+    });
+    await write(
+        join(root, 'vite-comment/vite.config.mts'),
+        "// import react from '@vitejs/plugin-react';\nexport default {};\n"
+    );
     // Angular ET React → ambigu
     await write(join(root, 'both/project.json'), {
         targets: {
@@ -672,6 +686,8 @@ test('detectAppPlatform : un seul résultat, sinon unknown (jamais "premier gagn
     assert.equal(detectAppPlatform(join(root, 'ng')), 'angular');
     assert.equal(detectAppPlatform(join(root, 'rx')), 'react');
     assert.equal(detectAppPlatform(join(root, 'vite-only')), 'unknown');
+    assert.equal(detectAppPlatform(join(root, 'vite-react')), 'react');
+    assert.equal(detectAppPlatform(join(root, 'vite-comment')), 'unknown');
     assert.equal(detectAppPlatform(join(root, 'both')), 'unknown');
     assert.equal(detectAppPlatform(join(root, 'weird')), 'unknown');
     assert.equal(detectAppPlatform(join(root, 'absent')), null);
