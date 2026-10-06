@@ -2879,25 +2879,40 @@ Figma, désormais source partielle différée :
   révocation de permission, POST et mapping exacts, invalidation ciblée, absence
   d'invalidation sur erreur métier, succès distant préservé si le refresh échoue
   et annulation des GET au démontage. La régression Angular reste verte à 69/69.
-  Limites explicites : aucune présentation React, aucun CLI de publication
-  transactionnelle React et aucun appel SEOS live ne sont encore revendiqués.
-  Prochaine tranche : publier durablement cette sortie dans une application
-  React hermétique, puis réaliser sa présentation accessible et adaptative sans
-  copier le HTML Angular. **ADAPT-11b — engagé localement après fusion
-  d'ADAPT-11a :** cinq scénarios navigateur bornent la toolbar C5, le GET unique
-  de rafraîchissement, l'absence des capacités non déclarées, la non-activation
-  des lignes et la géométrie panneau/rail Medium + Expanded. La référence
-  visuelle conserve `Exporter` et les actions de ligne comme capacités
-  optionnelles, mais le contrat C5 ne fournit aucun `action-request`
-  correspondant : les rendre opérables maintenant inventerait transport,
-  permissions et effets. Les oracles exigent donc `Créer`, `Rafraîchir`,
-  `Filtres` et refusent export, colonne d'actions, menu, dialogue ou activation
-  implicite. Quatre échecs attendus sont bornés par deux signatures historiques
-  exactes, sans `skip`, `todo`, runtime, work order, contrat API ou dépendance.
-  La passe Chromium ciblée donne `5/5` : quatre attendus et un succès réel ; la
-  régression C5 complète donne `55/55`, avec lint, tests Angular et build
-  production verts. **ADAPT-11c — autorité de réalisation formalisée le
-  2026-10-02 :** le guide exhaustif
+  Limites explicites au terme de ce lot : aucune présentation React, aucun CLI
+  de publication transactionnelle React et aucun appel SEOS live ne sont alors
+  revendiqués. **REACT-PLATFORM-3 — publication transactionnelle de la
+  composition React engagée localement le 2026-10-06 :** le CLI de composition
+  accepte désormais les cibles explicites `angular`, `reactjs` et `all` tout en
+  conservant Angular par défaut pour ne pas élargir silencieusement les appels
+  existants. Les host bindings Angular restent obligatoires pour `angular` et
+  `all`, mais sont refusés pour React seul afin de ne pas faire passer une
+  configuration Angular pour un contrat multiplateforme. Les deux renderers
+  relisent les artefacts adressés par contenu ; en mode `all`, leur digest
+  d'entrée et leur Artifact Plan partagé doivent être strictement identiques
+  avant publication. Le publisher commun conserve Change Set, dry-run, apply lié
+  à l'identifiant revu, verrou, rollback et contrôles de dérive. Les oracles
+  couvrent la création React seule sans fichier Angular parasite, la
+  stabilisation idempotente, le refus des configurations ambiguës et l'évolution
+  atomique d'une sortie Angular existante vers `all` sans modifier les octets
+  Angular. Limite explicite : ces sources React publiées ne sont pas encore
+  reliées à une application C5 ni à une présentation. Prochaine tranche : créer
+  un shell React C5 dédié et hermétique, y lier cette sortie par un contrat host
+  explicite, puis réaliser la présentation accessible et adaptative sans copier
+  le HTML Angular. **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :**
+  cinq scénarios navigateur bornent la toolbar C5, le GET unique de
+  rafraîchissement, l'absence des capacités non déclarées, la non-activation des
+  lignes et la géométrie panneau/rail Medium + Expanded. La référence visuelle
+  conserve `Exporter` et les actions de ligne comme capacités optionnelles, mais
+  le contrat C5 ne fournit aucun `action-request` correspondant : les rendre
+  opérables maintenant inventerait transport, permissions et effets. Les oracles
+  exigent donc `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne
+  d'actions, menu, dialogue ou activation implicite. Quatre échecs attendus sont
+  bornés par deux signatures historiques exactes, sans `skip`, `todo`, runtime,
+  work order, contrat API ou dépendance. La passe Chromium ciblée donne `5/5` :
+  quatre attendus et un succès réel ; la régression C5 complète donne `55/55`,
+  avec lint, tests Angular et build production verts. **ADAPT-11c — autorité de
+  réalisation formalisée le 2026-10-02 :** le guide exhaustif
   [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
   donne à un humain ou à un LLM la hiérarchie des sources, les règles
   numérotées, la matrice Compact/Medium/Expanded, le choix des primitives

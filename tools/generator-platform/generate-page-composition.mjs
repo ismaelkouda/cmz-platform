@@ -8,11 +8,19 @@ import {
     createGenerationOutput,
     inspectGenerationChangeSet,
 } from './core/generation-publication.mjs';
-import { computeAngularPageCompositionTarget } from './page-composition-targets.mjs';
+import { stableStringify } from './core/generation-manifest.mjs';
+import {
+    computeAngularPageCompositionTarget,
+    computeReactPageCompositionTarget,
+} from './page-composition-targets.mjs';
 import { repositoryRoot } from './validate-ir.mjs';
 
+const targetValues = ['all', 'angular', 'reactjs'];
+
 function parseArguments(arguments_) {
-    const options = {};
+    // Angular remains the default for backward compatibility. Adding React to
+    // an existing invocation must be an explicit, reviewed scope change.
+    const options = { target: 'angular' };
     for (let index = 0; index < arguments_.length; index += 1) {
         const argument = arguments_[index];
         if (argument === '--help') return { help: true };
@@ -29,7 +37,11 @@ function parseArguments(arguments_) {
             index += 1;
             continue;
         }
-        if (!['--plan', '--host-bindings', '--out'].includes(argument)) {
+        if (
+            !['--plan', '--host-bindings', '--out', '--target'].includes(
+                argument
+            )
+        ) {
             throw new Error(`unknown argument ${argument}`);
         }
         const value = arguments_[index + 1];
@@ -42,10 +54,22 @@ function parseArguments(arguments_) {
         index += 1;
     }
     if (!options.plan) throw new Error('--plan is required');
-    if (!options.hostBindings) throw new Error('--host-bindings is required');
     if (!options.out) throw new Error('--out is required');
     if (options.dryRun && options.applyChangeSetId) {
         throw new Error('--dry-run and --apply are mutually exclusive');
+    }
+    if (!targetValues.includes(options.target)) {
+        throw new Error(`--target must be one of: ${targetValues.join(', ')}`);
+    }
+    if (options.target !== 'reactjs' && !options.hostBindings) {
+        throw new Error(
+            '--host-bindings is required when target includes angular'
+        );
+    }
+    if (options.target === 'reactjs' && options.hostBindings) {
+        throw new Error(
+            '--host-bindings is not valid for the reactjs-only target'
+        );
     }
     return options;
 }
@@ -70,48 +94,107 @@ function jsonDocument(value) {
     return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-export async function generateAngularPageComposition({
+function normalizeTarget(target) {
+    const normalized = target === 'react' ? 'reactjs' : target;
+    if (!targetValues.includes(normalized)) {
+        throw new Error(`target must be one of: ${targetValues.join(', ')}`);
+    }
+    return normalized;
+}
+
+function assertSharedPlan(angular, react) {
+    if (
+        angular.angular.manifest.input.sha256 !==
+            react.react.manifest.input.sha256 ||
+        stableStringify(angular.artifactPlan) !==
+            stableStringify(react.artifactPlan)
+    ) {
+        throw new Error(
+            'Angular and React composition targets diverge from their shared page plan'
+        );
+    }
+}
+
+export async function generatePageComposition({
     planPath,
     hostBindingsPath,
     outputRoot,
     artifactRoot = repositoryRoot,
+    target = 'angular',
     dryRun = false,
     applyChangeSetId,
 }) {
     if (dryRun && applyChangeSetId) {
         throw new Error('dryRun and applyChangeSetId are mutually exclusive');
     }
+    const normalizedTarget = normalizeTarget(target);
+    const includesAngular = ['all', 'angular'].includes(normalizedTarget);
+    const includesReact = ['all', 'reactjs'].includes(normalizedTarget);
+    if (includesAngular && !hostBindingsPath) {
+        throw new Error(
+            'hostBindingsPath is required when target includes angular'
+        );
+    }
+    if (!includesAngular && hostBindingsPath) {
+        throw new Error(
+            'hostBindingsPath is not valid for the reactjs-only target'
+        );
+    }
     const [planInput, hostBindingsInput] = await Promise.all([
         readJsonInput(planPath, 'page execution plan'),
-        readJsonInput(hostBindingsPath, 'Angular host bindings'),
+        includesAngular
+            ? readJsonInput(hostBindingsPath, 'Angular host bindings')
+            : undefined,
     ]);
-    const targets = await computeAngularPageCompositionTarget({
-        plan: planInput.value,
-        artifactRoot: resolve(artifactRoot),
-        hostBindings: hostBindingsInput.value,
-    });
-    const selected = { angular: targets.angular };
+    const absoluteArtifactRoot = resolve(artifactRoot);
+    const [angularTarget, reactTarget] = await Promise.all([
+        includesAngular
+            ? computeAngularPageCompositionTarget({
+                  plan: planInput.value,
+                  artifactRoot: absoluteArtifactRoot,
+                  hostBindings: hostBindingsInput.value,
+              })
+            : undefined,
+        includesReact
+            ? computeReactPageCompositionTarget({
+                  plan: planInput.value,
+                  artifactRoot: absoluteArtifactRoot,
+              })
+            : undefined,
+    ]);
+    if (angularTarget && reactTarget) {
+        assertSharedPlan(angularTarget, reactTarget);
+    }
+    const source = angularTarget ?? reactTarget;
+    const selected = {
+        ...(angularTarget ? { angular: angularTarget.angular } : {}),
+        ...(reactTarget ? { reactjs: reactTarget.react } : {}),
+    };
     const controlFiles = await canonicalizeControlFiles({
-        'angular-page-host-bindings.json': {
-            artifact_id: 'angular-page-host-bindings',
-            content: jsonDocument(hostBindingsInput.value),
-        },
+        ...(hostBindingsInput
+            ? {
+                  'angular-page-host-bindings.json': {
+                      artifact_id: 'angular-page-host-bindings',
+                      content: jsonDocument(hostBindingsInput.value),
+                  },
+              }
+            : {}),
         'artifact-plan.json': {
             artifact_id: 'artifact-plan',
-            content: jsonDocument(targets.artifactPlan),
+            content: jsonDocument(source.artifactPlan),
         },
         'page-execution-plan.json': {
             artifact_id: 'page-execution-plan',
-            content: jsonDocument(targets.plan),
+            content: jsonDocument(source.plan),
         },
     });
     const absoluteOutput = resolve(outputRoot);
     const common = {
-        planId: targets.plan.plan_id,
+        planId: source.plan.plan_id,
         outputRoot: absoluteOutput,
-        targets: ['angular'],
+        targets: Object.keys(selected),
         modelKind: 'page-execution-plan',
-        modelSha256: targets.angular.manifest.input.sha256,
+        modelSha256: Object.values(selected)[0].manifest.input.sha256,
     };
     if (dryRun) {
         return {
@@ -138,8 +221,17 @@ export async function generateAngularPageComposition({
     return { ...common, publication };
 }
 
+export async function generateAngularPageComposition(options) {
+    if (options.target && normalizeTarget(options.target) !== 'angular') {
+        throw new Error(
+            'generateAngularPageComposition only accepts the angular target'
+        );
+    }
+    return generatePageComposition({ ...options, target: 'angular' });
+}
+
 function usage() {
-    return 'Usage:\n  bun run generate:page-composition --plan <page-execution-plan.json> --host-bindings <angular-host-bindings.json> --out <directory> [--dry-run | --apply <change_set_id>]\n';
+    return `Usage:\n  bun run generate:page-composition --plan <page-execution-plan.json> --out <directory> [--target ${targetValues.join('|')}] [--host-bindings <angular-host-bindings.json>] [--dry-run | --apply <change_set_id>]\n`;
 }
 
 async function main() {
@@ -148,10 +240,11 @@ async function main() {
         process.stdout.write(usage());
         return;
     }
-    const result = await generateAngularPageComposition({
+    const result = await generatePageComposition({
         planPath: options.plan,
         hostBindingsPath: options.hostBindings,
         outputRoot: options.out,
+        target: options.target,
         dryRun: options.dryRun,
         applyChangeSetId: options.applyChangeSetId,
     });
