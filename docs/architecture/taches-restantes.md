@@ -2761,80 +2761,103 @@ Figma, désormais source partielle différée :
   fragment octet-stables — y compris paramètres répétés, `%2F` et `+` —, même
   instance, même état local, une seule tab et un seul GET. Cette tranche ne
   persiste rien après reload et n'autorise pas plusieurs instances d'une route
-  dynamique. Restent permissions/révocation, dirty, capacité/mémoire, ressources
-  longues et accessibilité complète avant toute déclaration de parité React.
-  **WORKSPACE-TABS-8 — permission/révocation React engagée localement le
-  2026-10-06 :** le catalogue porte l'`accessPath` exact et un snapshot fourni
-  par le host filtre toute vue protégée avant montage. Route directe interdite,
-  révocation active ou suspendue et tentative par l'historique détruisent la
-  frontière sans nouveau GET. La révocation annule aussi le fetch en vol et
-  purge le cache, même si la vue était déjà fermée ; réautoriser puis rouvrir
-  exige une nouvelle instance, un état local vierge et un nouveau GET. Neuf
-  tests Vitest et quatre parcours Chromium passent. À cette tranche, le proof ne
-  découvrait pas les droits distants et ne couvrait pas encore fin/changement de
-  session, garde dirty, capacité/mémoire, ressources longues ni accessibilité
-  complète ; `WORKSPACE-TABS-9` complète ensuite le cycle de session.
-  **WORKSPACE-TABS-9 — cycle de session React engagé localement le 2026-10-06
-  :** session et accès sont deux snapshots externes immuables mais liés par
-  `sessionKey` et `subjectKey`; les droits d'une ancienne incarnation échouent
-  fermés, même pour le même sujet. Le couple devient la `key` native du
-  `WorkspaceRuntime` : fin ou remplacement démontent donc registre, Dashboard
-  épinglé, vues `Activity`, cache et état local sans synchronisation dérivée
-  dans un Effect. Le cleanup annule le GET en vol. La déconnexion remplace l'URL
-  par `/signed-out` et l'historique ne ressuscite rien ; un remplacement
-  réévalue l'URL courante avec les seuls droits de la nouvelle session, sans
-  politique Dashboard inventée. Seize tests Vitest, six parcours Chromium et
-  trois mutants passent. Restent le transport distant du snapshot, dirty,
-  capacité/mémoire, ressources longues et accessibilité complète.
-  **WORKSPACE-TABS-10 — garde `dirty` React engagée localement le 2026-10-06 :**
-  chaque page déclare explicitement son état modifié ; le shell n'inspecte ni
-  DOM ni formulaire et ne fabrique aucun détecteur universel. Le registre
-  externe publie chemins, vues `dirty` et fermeture en attente dans un snapshot
-  immuable. Changer de tab reste silencieux ; fermer une vue propre la détruit,
-  tandis qu'une vue modifiée exige une décision dans un `dialog` HTML natif
-  correctement nommé et décrit. Annuler conserve instance, valeur et URL ;
-  confirmer démonte la vue, oublie son contexte d'activation et restitue le
-  focus à une tab survivante. Un listener `beforeunload` existe seulement
-  pendant le brouillon, comme filet `best-effort` et jamais comme sauvegarde.
-  Révocation et changement de session restent prioritaires et détruisent même
-  une vue `dirty`; seule la fermeture utilisateur normale conserve le cache de
-  données partagé. Vingt-trois tests Vitest, six parcours Chromium et quatre
-  mutants `dirty` passent. Restent le transport distant du snapshot, l'adoption
-  page par page avec un calcul métier de référence, la capacité et le profil
-  mémoire React, les ressources longues et l'accessibilité complète ; aucune
-  action « enregistrer avant fermeture » n'est inventée. **WORKSPACE-TABS-11 —
-  capacité et profil mémoire React engagés localement le 2026-10-06 :** le
-  catalogue fermé actuel comporte exactement Dashboard et Profil ; sa capacité
-  explicite vaut donc `2`, sans copier le plafond Angular `8` ni créer de pages
-  fictives. Le registre valide un entier positif sûr et refuse une nouvelle vue
-  avant toute mutation : aucune éviction, URL refusée, frontière ou requête. Une
-  route directe hors capacité rejoint le Dashboard et annonce le refus. Les 33
-  tests Vitest couvrent configuration, registre et host. Un target Playwright
-  production isolé exécute 50 cycles d'échauffement, 100 cycles mesurés et
-  quatre passes `1 → 2 → 1`; cinq campagnes observent `331 760–349 400` octets
-  de croissance sous `768 KiB`, `101 592–104 188` sur le dernier quart sous
-  `256 KiB`, et le plateau constant `1 document / 121 nœuds / 174 écouteurs`. Le
-  pic à deux vues, environ `1,35 MiB`, reste sous `2 MiB`. Les profils JSON
-  rejoignent le nightly. Ce nombre `2` qualifie uniquement ce catalogue minimal
-  : toute application plus riche doit recalibrer son propre plafond. Un mutant
+  dynamique. À ce jalon restaient permissions/révocation, dirty,
+  capacité/mémoire, ressources longues et accessibilité complète avant toute
+  déclaration de parité React. **WORKSPACE-TABS-8 — permission/révocation React
+  engagée localement le 2026-10-06 :** le catalogue porte l'`accessPath` exact
+  et un snapshot fourni par le host filtre toute vue protégée avant montage.
+  Route directe interdite, révocation active ou suspendue et tentative par
+  l'historique détruisent la frontière sans nouveau GET. La révocation annule
+  aussi le fetch en vol et purge le cache, même si la vue était déjà fermée ;
+  réautoriser puis rouvrir exige une nouvelle instance, un état local vierge et
+  un nouveau GET. Neuf tests Vitest et quatre parcours Chromium passent. À cette
+  tranche, le proof ne découvrait pas les droits distants et ne couvrait pas
+  encore fin/changement de session, garde dirty, capacité/mémoire, ressources
+  longues ni accessibilité complète ; `WORKSPACE-TABS-9` complète ensuite le
+  cycle de session. **WORKSPACE-TABS-9 — cycle de session React engagé
+  localement le 2026-10-06 :** session et accès sont deux snapshots externes
+  immuables mais liés par `sessionKey` et `subjectKey`; les droits d'une
+  ancienne incarnation échouent fermés, même pour le même sujet. Le couple
+  devient la `key` native du `WorkspaceRuntime` : fin ou remplacement démontent
+  donc registre, Dashboard épinglé, vues `Activity`, cache et état local sans
+  synchronisation dérivée dans un Effect. Le cleanup annule le GET en vol. La
+  déconnexion remplace l'URL par `/signed-out` et l'historique ne ressuscite
+  rien ; un remplacement réévalue l'URL courante avec les seuls droits de la
+  nouvelle session, sans politique Dashboard inventée. Seize tests Vitest, six
+  parcours Chromium et trois mutants passent. À ce jalon restaient le transport
+  distant du snapshot, dirty, capacité/mémoire, ressources longues et
+  accessibilité complète. **WORKSPACE-TABS-10 — garde `dirty` React engagée
+  localement le 2026-10-06 :** chaque page déclare explicitement son état
+  modifié ; le shell n'inspecte ni DOM ni formulaire et ne fabrique aucun
+  détecteur universel. Le registre externe publie chemins, vues `dirty` et
+  fermeture en attente dans un snapshot immuable. Changer de tab reste
+  silencieux ; fermer une vue propre la détruit, tandis qu'une vue modifiée
+  exige une décision dans un `dialog` HTML natif correctement nommé et décrit.
+  Annuler conserve instance, valeur et URL ; confirmer démonte la vue, oublie
+  son contexte d'activation et restitue le focus à une tab survivante. Un
+  listener `beforeunload` existe seulement pendant le brouillon, comme filet
+  `best-effort` et jamais comme sauvegarde. Révocation et changement de session
+  restent prioritaires et détruisent même une vue `dirty`; seule la fermeture
+  utilisateur normale conserve le cache de données partagé. Vingt-trois tests
+  Vitest, six parcours Chromium et quatre mutants `dirty` passent. À ce jalon
+  restaient le transport distant du snapshot, l'adoption page par page avec un
+  calcul métier de référence, la capacité et le profil mémoire React, les
+  ressources longues et l'accessibilité complète ; aucune action « enregistrer
+  avant fermeture » n'est inventée. **WORKSPACE-TABS-11 — capacité et profil
+  mémoire React engagés localement le 2026-10-06 :** le catalogue fermé actuel
+  comporte exactement Dashboard et Profil ; sa capacité explicite vaut donc `2`,
+  sans copier le plafond Angular `8` ni créer de pages fictives. Le registre
+  valide un entier positif sûr et refuse une nouvelle vue avant toute mutation :
+  aucune éviction, URL refusée, frontière ou requête. Une route directe hors
+  capacité rejoint le Dashboard et annonce le refus. Les 33 tests Vitest
+  couvrent configuration, registre et host. Un target Playwright production
+  isolé exécute 50 cycles d'échauffement, 100 cycles mesurés et quatre passes
+  `1 → 2 → 1`; cinq campagnes observent `331 760–349 400` octets de croissance
+  sous `768 KiB`, `101 592–104 188` sur le dernier quart sous `256 KiB`, et le
+  plateau constant `1 document / 121 nœuds / 174 écouteurs`. Le pic à deux vues,
+  environ `1,35 MiB`, reste sous `2 MiB`. Les profils JSON rejoignent le
+  nightly. Ce nombre `2` qualifie uniquement ce catalogue minimal : toute
+  application plus riche doit recalibrer son propre plafond. Un mutant
   supprimant la garde de capacité rend rouges trois oracles indépendants :
-  registre, ouverture et route directe. Restent ressources longues,
+  registre, ouverture et route directe. À ce jalon restaient ressources longues,
   accessibilité React complète et transport distant réel des droits ; aucune
-  parité totale n'est déclarée. **ADAPT-11b — engagé localement après fusion
-  d'ADAPT-11a :** cinq scénarios navigateur bornent la toolbar C5, le GET unique
-  de rafraîchissement, l'absence des capacités non déclarées, la non-activation
-  des lignes et la géométrie panneau/rail Medium + Expanded. La référence
-  visuelle conserve `Exporter` et les actions de ligne comme capacités
-  optionnelles, mais le contrat C5 ne fournit aucun `action-request`
-  correspondant : les rendre opérables maintenant inventerait transport,
-  permissions et effets. Les oracles exigent donc `Créer`, `Rafraîchir`,
-  `Filtres` et refusent export, colonne d'actions, menu, dialogue ou activation
-  implicite. Quatre échecs attendus sont bornés par deux signatures historiques
-  exactes, sans `skip`, `todo`, runtime, work order, contrat API ou dépendance.
-  La passe Chromium ciblée donne `5/5` : quatre attendus et un succès réel ; la
-  régression C5 complète donne `55/55`, avec lint, tests Angular et build
-  production verts. **ADAPT-11c — autorité de réalisation formalisée le
-  2026-10-02 :** le guide exhaustif
+  parité totale n'était déclarée. **WORKSPACE-TABS-12 — accessibilité React
+  automatisable et règle d'applicabilité des ressources engagées localement le
+  2026-10-06 :** le rail visuel conserve les boutons de fermeture frères tandis
+  qu'un `tablist` sémantique distinct possède explicitement les tabs par
+  `aria-owns`. Chaque tab contrôle un panneau nommé ; seul le panneau visible
+  rejoint le parcours clavier. Deux parcours Chromium vérifient activation
+  manuelle, `Home`, `End`, flèches cycliques dans le sens visuel LTR/RTL,
+  `Delete`, restitution du focus, reflow à `320` CSS px, texte à `200 %`,
+  absence de troncature et géométrie RTL. axe-core ne trouve aucune violation
+  sur les tags WCAG automatisables et a d'abord détecté, puis fait corriger, une
+  relation `aria-required-children` critique. La politique clavier extraite est
+  prouvée sur trois positions sans inventer de troisième page ; un mutant
+  forçant LTR sous RTL rend l'oracle rouge. La suite atteint `36/36` tests
+  Vitest et `8/8` parcours Chromium ordinaires. L'audit du catalogue réel trouve
+  un GET dédupliqué et un listener `beforeunload` borné, mais aucun polling,
+  timer, média, iframe, worker, abonnement distant ou calcul continu. Aucun faux
+  cas runtime n'est ajouté : `Activity` fournit déjà le cleanup/restart des
+  Effects, et la première vraie ressource longue devra prouver arrêt, reprise
+  unique et destruction sur son contrat de page. Restent seulement, pour
+  l'accessibilité complète, les parcours humains VoiceOver/NVDA et le zoom
+  navigateur réel multi-OS ; transport distant des droits et ressources longues
+  demeurent déclenchés par un contrat backend ou une page réels, jamais inventés
+  pour fermer le backlog. Aucune parité produit totale n'est encore déclarée.
+  **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
+  navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
+  des capacités non déclarées, la non-activation des lignes et la géométrie
+  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
+  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
+  fournit aucun `action-request` correspondant : les rendre opérables maintenant
+  inventerait transport, permissions et effets. Les oracles exigent donc
+  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
+  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
+  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
+  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
+  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
+  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
+  réalisation formalisée le 2026-10-02 :** le guide exhaustif
   [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
   donne à un humain ou à un LLM la hiérarchie des sources, les règles
   numérotées, la matrice Compact/Medium/Expanded, le choix des primitives
