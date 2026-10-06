@@ -126,6 +126,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0083](./adr/0083-preuve-page-exemple-mise-en-page-et-archive.md) | Distinguer preuve de page, exemple de mise en page et archive |
 | [0084](./adr/0084-workspace-a-vues-vivantes-et-fermables.md) | Workspace à vues vivantes et fermables                   |
 | [0085](./adr/0085-angular-i18n-native-localize.md)          | Internationalisation Angular native avec `@angular/localize` |
+| [0086](./adr/0086-profil-react-natif-minimal.md)            | Profil React natif, minimal et qualifié par capacité     |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
@@ -136,6 +137,11 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
   — direction future, valeur utilisateur, frontières d'autorité et séquencement
   sans confusion avec les capacités déjà prouvées
 - [État du socle](./architecture/etat-du-socle.md) — ce qui existe aujourd'hui
+- [Profil React de la plateforme](./architecture/react-platform-profile.md) —
+  baseline native, capacités conditionnelles, matrice de preuve et règles pour
+  une réalisation React idiomatique
+- [Politique de tests live React contre SEOS](./architecture/react-live-integration-policy.md)
+  — séparation entre PR hermétique, observation live et mutations isolées
 - [Workspace à vues vivantes](./architecture/workspace-vues-vivantes-accessibilite-2026-10-04.md)
   — contrat de shell Medium/Expanded, conservation réelle des instances,
   fermeture, suspension, budget mémoire et accessibilité Tabs
@@ -174,7 +180,8 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 - [Licences tierces](./architecture/licences-tierces.md) — inventaire factuel
   des licences des dépendances (pas un avis juridique)
 - [Stratégie cross-stack — revue critique](./architecture/strategie-cross-stack-revue.md)
-  — instruit la dette d'ADR-0012, chantiers Q/R/S/T pour un cœur agnostique
+  — historique de la dette d'ADR-0012 ; le profil React courant est régi par
+  ADR-0086 et les renderers séparés par ADR-0034
 - [Échantillonnage — règles métier non déductibles](./architecture/echantillonnage-regles-non-deductibles.md)
   — taux mesuré (37 % mécanique / 37 % déductible avec contexte / 25 % non
   déductible) sur le corpus SEOS

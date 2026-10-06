@@ -33,7 +33,7 @@ Présentation partagée (pipes, services UI, adaptateurs). Dépend de
 | Élément                                                                 | Raison                                                                                                                                                         |
 | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `layout`                                                                | **mort** (commenté).                                                                                                                                           |
-| `permission-tree-node`, `FormValidationService`                         | dépendent de **primeng** (`TreeNode`, `MessageService`) — **exclu du partagé** (ADR-0012). À refaire sans primeng (interface `TreeNode` maison) ou dans l'app. |
+| `permission-tree-node`, `FormValidationService`                         | dépendent de **primeng** (`TreeNode`, `MessageService`) — **exclu du partagé** (ADR-0034/ADR-0086). À refaire sans primeng (interface `TreeNode` maison) ou dans l'app. |
 | `mapping`, `excel-export`, `sweet-alert` (service), `app-customization` | dépendances externes / HTTP restantes — au fil des besoins.                                                                                                    |
 
 Le vieux couple `TabService`/`CustomRouteReuseStrategy` a été retiré : il

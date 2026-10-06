@@ -1,5 +1,12 @@
 # Stratégie cross-stack — revue critique et procédé Big Tech
 
+> **Archive d'analyse datée du 2026-08-02.** Les mesures et décisions proposées
+> ci-dessous expliquent l'évolution du dépôt ; elles ne constituent plus une
+> recette courante. Les sorties mono-stack et renderers séparés sont régis par
+> [ADR-0034](../adr/0034-plateforme-multi-stack-renderers-separes-sorties-mono-stack.md),
+> et le profil React courant par
+> [ADR-0086](../adr/0086-profil-react-natif-minimal.md).
+
 - **Objet :** instruire la dette actée par
   [ADR-0012](../adr/0012-strategie-cross-framework.md) (« extraire un cœur
   agnostique… **Non résolu ici** ») avant l'arrivée du deuxième client.

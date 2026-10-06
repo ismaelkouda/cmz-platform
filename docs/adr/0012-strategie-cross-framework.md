@@ -1,12 +1,13 @@
 # ADR-0012 — Stratégie cross-framework (Angular + React)
 
-- **Statut :** Accepted
+- **Statut :** Superseded by ADR-0086
 - **Date :** 2026-07-22
 
-> **Révision i18n (2026-10-04)** : la ligne i18n et le `TranslationPort`
-> ci-dessous sont historiques. Angular utilise désormais `@angular/localize`
-> sans port cross-platform ([ADR-0085](./0085-angular-i18n-native-localize.md)).
-> Les autres décisions cross-framework restent applicables.
+> **Supersédé par
+> [ADR-0086](./0086-profil-react-natif-minimal.md).** Les tableaux ci-dessous
+> sont historiques et ne doivent plus servir de recette. Angular utilise
+> `@angular/localize` selon l'ADR-0085 ; React suit un profil stack-native. Les
+> responsabilités réellement partagées restent définies par l'ADR-0034.
 
 ## Contexte
 

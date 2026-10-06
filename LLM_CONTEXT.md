@@ -430,6 +430,21 @@ directives suivantes :
    supersédée. React reste une décision stack-native séparée : ne copiez ni le
    runtime Angular ni une abstraction i18n cross-platform.
 
+8. **Toute nouvelle cible ou page React** : lisez d'abord
+   [`docs/architecture/react-platform-profile.md`](./docs/architecture/react-platform-profile.md)
+   et [ADR-0086](./docs/adr/0086-profil-react-natif-minimal.md). Le baseline est
+   React/TypeScript sous Nx + Vite, React Router déclaratif, état React natif,
+   clients générés derrière le `FetchPort`, Tailwind + SCSS Modules et la suite
+   de tests du dépôt. N'héritez jamais d'une dépendance parce qu'elle existe à
+   la racine, dans SEOS ou côté Angular. Redux/Zustand, TanStack Query, une
+   bibliothèque de formulaires, un runtime i18n, MUI ou React Aria exigent
+   chacun un besoin réel et une qualification ; React Aria reste seulement le
+   premier candidat pour un widget accessible complexe. Les tests ordinaires
+   sont hermétiques. Avant tout accès aux services SEOS, appliquez
+   [`react-live-integration-policy.md`](./docs/architecture/react-live-integration-policy.md) :
+   configuration runtime, aucun secret versionné, lecture seule opt-in avant
+   toute mutation isolée.
+
 ---
 
 ## 5. État courant du monorepo
