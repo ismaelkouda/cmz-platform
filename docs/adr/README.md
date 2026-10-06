@@ -45,7 +45,7 @@ envisagées, le choix retenu et ses conséquences.
 | [0009](./0009-reconstruction-pilotee-par-patterns.md)     | Reconstruction pilotée par les patterns SEOS             | Accepted |
 | [0010](./0010-flux-de-generation-assistee-par-ia.md)      | Flux de génération assistée par IA : cadrage, conventions externalisées, garde-fous | Accepted |
 | [0011](./0011-adaptation-monorepo-par-post-traitement.md) | Adaptation au monorepo par post-traitement, pas par fork des générateurs | Accepted |
-| [0012](./0012-strategie-cross-framework.md)               | Stratégie cross-framework (Angular + React)              | Accepted |
+| [0012](./0012-strategie-cross-framework.md)               | Stratégie cross-framework (Angular + React)              | Superseded |
 | [0013](./0013-phases-08-generation-et-09-verification.md) | Phase 08 = génération depuis patterns ; Phase 09 = vérification fonctionnelle | Accepted |
 | [0014](./0014-figer-le-legacy-via-lock-json.md)           | Figer le legacy via `legacy.lock.json` (pas de sous-module Git) | Accepted |
 | [0015](./0015-mode-structural-only-pas-de-correspondance-legacy.md) | Mode `--structural-only` : vérification structurelle du corpus (pas de correspondance legacy) | Accepted |
@@ -119,4 +119,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0083](./0083-preuve-page-exemple-mise-en-page-et-archive.md) | Distinguer preuve de page, exemple de mise en page et archive | Accepted |
 | [0084](./0084-workspace-a-vues-vivantes-et-fermables.md)  | Workspace à vues vivantes et fermables                   | Accepted |
 | [0085](./0085-angular-i18n-native-localize.md)            | Internationalisation Angular native avec `@angular/localize` | Accepted |
+| [0086](./0086-profil-react-natif-minimal.md)              | Profil React natif, minimal et qualifié par capacité     | Accepted |
 <!-- END:GENERATED:adr-index -->

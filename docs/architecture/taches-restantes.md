@@ -2844,6 +2844,24 @@ Figma, désormais source partielle différée :
   navigateur réel multi-OS ; transport distant des droits et ressources longues
   demeurent déclenchés par un contrat backend ou une page réels, jamais inventés
   pour fermer le backlog. Aucune parité produit totale n'est encore déclarée.
+  **REACT-PLATFORM-1 — profil cible et frontière live formalisés localement le
+  2026-10-06 :** ADR-0086 remplace l'ancienne stratégie de symétrie de
+  bibliothèques d'ADR-0012 par un profil React natif et minimal : Nx/Vite,
+  React Router déclaratif, état React local, clients générés derrière le
+  `FetchPort`, Tailwind + SCSS Modules et tests Vitest/Testing
+  Library/Playwright/axe. Les dépendances de query, store, formulaire, i18n ou
+  widgets restent conditionnelles à un cas réel et à la qualification
+  `add-library`; React Aria est un candidat, pas une installation décidée. Le
+  document vivant `react-platform-profile.md` fournit à l'humain ou au LLM la
+  hiérarchie d'autorité, les règles par capacité, la matrice Angular/React et
+  les gates du prochain vertical slice. La politique
+  `react-live-integration-policy.md` conserve les URL SEOS dans la seule
+  configuration runtime existante, sépare PR hermétique, lecture live opt-in et
+  mutations isolées, et interdit secrets, PII et retries dangereux. Ce lot
+  n'installe rien, n'appelle aucun service externe et ne revendique aucune
+  parité nouvelle. Prochaine tranche : produire la gestion des utilisateurs
+  React de bout en bout sur serveur local déterministe, puis seulement mesurer
+  la valeur marginale d'un test live lecture seule.
   **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
   navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
   des capacités non déclarées, la non-activation des lignes et la géométrie

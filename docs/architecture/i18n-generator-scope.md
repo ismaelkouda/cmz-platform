@@ -94,11 +94,14 @@ elle ne réactive pas automatiquement Transloco.
 
 ## ReactJS
 
-React n'hérite ni de `$localize` ni du service Angular. Le moment venu, son
-choix doit être évalué sur le besoin réel (compilation ou runtime, SSR,
-Suspense, découpage des catalogues, fallback, extraction) et sur la version
-installée. La présence historique d'i18next dans le dépôt ne vaut pas décision
-automatique pour le futur renderer.
+React n'hérite ni de `$localize` ni du service Angular. ADR-0086 retient, pour
+le besoin actuel francophone sans changement de langue runtime, des messages
+statiques appartenant à la présentation React et les API `Intl` du navigateur
+pour les formats. Un besoin réel de compilation ou runtime, SSR, découpage des
+catalogues, fallback ou extraction déclenchera une nouvelle comparaison
+mesurée. La présence historique d'i18next dans le dépôt ne vaut pas décision
+automatique pour le renderer. Voir le
+[profil React](./react-platform-profile.md).
 
 ## Gates et commandes
 
