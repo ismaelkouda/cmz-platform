@@ -21,10 +21,10 @@
       "reason": "Piste Tailwind 4 ; vérification complète requise pour chaque nouvelle version effective du framework.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "66499b35824ed045f69e6643f4b9176f60ff0bed",
-        "source_context_sha256": "510dae8e7054b1acd3cdc7f3c6af1ef85c83a2d4b5d75c111ad0e5a3f3c0ba0c",
+        "commit": "ef19de864dd8b189a681a486012398ce6bf7fe55",
+        "source_context_sha256": "5ca7e85d5ce9d2d6885379e540ff88c69a490d78b7709d22a246abed7fbed769",
         "app": "library-qualification-angular",
-        "plan_id": "library-plan:6970f9ed2aaf8647841d617e6a010de2380f6be4c2aef0aa7f9889e5125407f4",
+        "plan_id": "library-plan:5e648d7afb2744b39adddd37c2c974006a62f166fdbf01f4f131effb2755f97f",
         "change_set_id": "changes:92cc7e17c2deda40e0fac8c3f22877c17c5c37fd5beda1400e57411936bd6616",
         "app_tree_sha256": "e258093c3fe1c4ded44ed01700b0f91e91622d23046bc0bf1b1219c9dab2afb3",
         "track_sha256": "c0f7997ce7f4bd97f9b872e7c7eb55ed2fc073f16531690f53b30784a68b2e78",
@@ -69,10 +69,10 @@
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
           "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
           "proof_contracts": "e5c4d6939a4c98f31513581d29ea91c1d9a99049330ab4b72f8e86b63c7fb97a",
-          "runner": "beb01abefcba84081e920d0fbd4ae66d5b285d5a8a0233d5770c865bb2dc3bcc",
+          "runner": "94a5fb4ee517d9a8ec5b3d14d368f94b1c7a4bc49d9c5e44cb1ecf5dffb06f09",
           "runner_sources": {
             "tools/check-library-setup-deps.mjs": "3fd82a88564c9e29174f3d6310eabafe3d327fded02d323a8f2e1a9567514b05",
-            "tools/check-library-setup.mjs": "f9dc1940aa2ee098c03b374f7523569e8b9bb021366469e4ffb53a9441e23245",
+            "tools/check-library-setup.mjs": "006ab2ce99ab32a0ad278685e8b3bfb53b82c71c7adae8cebc738a6ff2bdae7d",
             "tools/generator-platform/validate-ir.mjs": "afa3e1e6037f48d8647d0b29b0da48eed605a429499d879afa9a04ab3a7ca682",
             "tools/library-setup/add-library-core.mjs": "225e3a64db4b31de1a3bb8113b3d3a528bd7945b7f0a92f6f7c2db5f171c8db3",
             "tools/library-setup/browser-provisioning.mjs": "2c503123129bcf45cf5c6b8cda9eadd6c3028c426abdef333e21d8ec6481e18a",
@@ -101,7 +101,7 @@
             "tools/scaffold-tailwind.mjs": "54db36505b58d33a6330d7f8ada9dc149076f1305d2aa54d71bd1ad03ead96fb"
           }
         },
-        "evidence_sha256": "9430e10f9f582564995cb35f26cfd2cae33d9ffc3bcd681261f00ac9c4855584"
+        "evidence_sha256": "f0b39a31304006fa9635ad754010930790a4909987083b32cf4c85786b02bae9"
       }
     }
   ]

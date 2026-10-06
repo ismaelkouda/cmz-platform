@@ -2719,16 +2719,31 @@ Figma, désormais source partielle différée :
   navigateur réels. La gate complète reste verte (`442` tests cœur, `69`
   Angular, `57` ReactJS). Le
   [contrat de l'adaptateur React](./workspace-react-adapter-scope-2026-10-05.md)
-  fixe les oracles de sortie sans revendiquer la parité. **ADAPT-11b — engagé
-  localement après fusion d'ADAPT-11a :** cinq scénarios navigateur bornent la
-  toolbar C5, le GET unique de rafraîchissement, l'absence des capacités non
-  déclarées, la non-activation des lignes et la géométrie panneau/rail Medium +
-  Expanded. La référence visuelle conserve `Exporter` et les actions de ligne
-  comme capacités optionnelles, mais le contrat C5 ne fournit aucun
-  `action-request` correspondant : les rendre opérables maintenant inventerait
-  transport, permissions et effets. Les oracles exigent donc `Créer`,
-  `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu, dialogue
-  ou activation implicite. Quatre échecs attendus sont bornés par deux
+  fixe les oracles de sortie sans revendiquer la parité. **WORKSPACE-TABS-6 —
+  première tranche d'hôte React exécutable engagée localement le 2026-10-06 :**
+  une SPA Nx/Vite distincte utilise React Router `8.4.0` en mode déclaratif et
+  maintient une frontière `Activity` stable par route ouverte. Le registre
+  externe consommé via `useSyncExternalStore` sépare l'identité des vues du
+  cycle de rendu ; le cache/déduplication de données vit au-dessus des vues
+  suspendues. Trois scénarios Vitest et deux parcours Chromium prouvent même
+  instance, champ non contrôlé conservé, historique précédent/suivant, zéro
+  GET/POST au switch, GET initial unique, démontage au close et état local
+  vierge à la réouverture. Le parcours est conditionnellement câblé dans le job
+  `e2e-smoke` existant. Cette tranche ne prouve pas encore paramètres/fragments,
+  permissions/révocation, dirty, capacité/mémoire, ressources longues ni
+  accessibilité complète ; la parité React reste donc explicitement non acquise.
+  Le manifeste de bibliothèques de l'app est gouverné avec un catalogue vide ;
+  sa plateforme est recoupée avec un import AST réel du plugin Vite React
+  officiel, sans faux target Nx ni reconnaissance d'un commentaire.
+  **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
+  navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
+  des capacités non déclarées, la non-activation des lignes et la géométrie
+  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
+  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
+  fournit aucun `action-request` correspondant : les rendre opérables maintenant
+  inventerait transport, permissions et effets. Les oracles exigent donc
+  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
+  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
   signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
   contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
   attendus et un succès réel ; la régression C5 complète donne `55/55`, avec

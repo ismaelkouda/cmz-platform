@@ -144,6 +144,7 @@
     "exceljs": "^4.4.0",
     "i18next": "catalog:",
     "ol": "catalog:",
+    "react-router": "8.4.0",
     "rxjs": "catalog:",
     "tslib": "catalog:"
   },
@@ -177,6 +178,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@typescript-eslint/utils": "^8.70.0",
+    "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "5.0.0",
     "@vitest/ui": "~5.0.0",
     "angular-eslint": "^22.5.0",

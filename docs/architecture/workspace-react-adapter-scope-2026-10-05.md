@@ -1,19 +1,21 @@
 # Workspace ReactJS — qualification de la primitive et contrat de l'hôte
 
-- **Date :** 2026-10-05
-- **Statut :** qualification `jsdom` de React Activity ; choix d'hôte
-  conditionnel et parité navigateur non réalisés
+- **Date initiale :** 2026-10-05
+- **Mise à jour :** 2026-10-06
+- **Statut :** primitive `Activity` et première tranche d'hôte navigateur
+  qualifiées ; parité produit complète non acquise
 - **Référence produit :**
   [workspace à vues vivantes](./workspace-vues-vivantes-accessibilite-2026-10-04.md)
-- **Version vérifiée :** React `19.3.0`, ReactDOM `19.3.0`
+- **Versions vérifiées :** React/ReactDOM `19.3.0`, React Router `8.4.0`
 
 ## Candidat de construction
 
-`<Activity>` est le candidat natif pour conserver chaque vue ouverte. Si la
-preuve sur un hôte réel le confirme, chaque frontière sera stable et identifiée
-par le chemin canonique. La vue active utilisera `visible` et les autres
-`hidden`. Fermer une vue retirera sa frontière de l'arbre React : la fermeture
-doit provoquer un vrai démontage, pas seulement masquer le DOM.
+`<Activity>` est retenu pour la première tranche exécutable : chaque frontière
+est stable et identifiée par le chemin canonique. La vue active utilise
+`visible` et les autres `hidden`. Fermer une vue retire sa frontière de l'arbre
+React et provoque un vrai démontage, pas seulement un masquage du DOM. Cette
+décision reste réversible si les tranches sécurité, dirty, capacité ou mémoire
+invalident plus tard ce choix.
 
 Cette primitive est native dans React 19.3. La preuve exécutée dans
 `stack-tests/reactjs/workspace-activity.spec.tsx` établit quatre faits sur la
@@ -42,15 +44,15 @@ simple masquage du DOM.
 Le contrat produit reste celui de l'ADR-0084. L'hôte React sera responsable des
 éléments suivants, avec des tests sur une application exécutable :
 
-| Sujet         | Comportement à prouver                                                                                                                         |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Identité      | Une frontière par chemin canonique ; dernière URL exacte conservée, y compris paramètres et fragment.                                          |
-| Navigation    | L'activation et l'historique navigateur passent par le routeur réel de l'hôte ; aucun routeur React n'est actuellement qualifié dans ce dépôt. |
-| Lifecycle     | Une seule vue `visible` ; les autres `hidden`, avec état local conservé et activités de fond suspendues.                                       |
-| Fermeture     | Retrait de la frontière, démontage observé, confirmation préalable des vues `dirty`, repli vers une vue autorisée.                             |
-| Sécurité      | Autorisation vérifiée avant de rendre une vue visible ; révocation et fin de session détruisent les frontières concernées, même `dirty`.       |
-| Capacité      | Refus explicite à la limite ; budget React mesuré séparément du plafond Angular de huit vues.                                                  |
-| Accessibilité | Même résultat observable pour Tabs, clavier LTR/RTL, focus, fermeture et reflow ; implémentation React propre.                                 |
+| Sujet         | Comportement à prouver                                                                                                                                   |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identité      | Une frontière par chemin canonique ; dernière URL exacte conservée, y compris paramètres et fragment.                                                    |
+| Navigation    | L'activation et l'historique navigateur passent par `BrowserRouter` réel ; le mode déclaratif suffit à cette preuve et évite loaders/actions non requis. |
+| Lifecycle     | Une seule vue `visible` ; les autres `hidden`, avec état local conservé et activités de fond suspendues.                                                 |
+| Fermeture     | Retrait de la frontière, démontage observé, confirmation préalable des vues `dirty`, repli vers une vue autorisée.                                       |
+| Sécurité      | Autorisation vérifiée avant de rendre une vue visible ; révocation et fin de session détruisent les frontières concernées, même `dirty`.                 |
+| Capacité      | Refus explicite à la limite ; budget React mesuré séparément du plafond Angular de huit vues.                                                            |
+| Accessibilité | Même résultat observable pour Tabs, clavier LTR/RTL, focus, fermeture et reflow ; implémentation React propre.                                           |
 
 Le modèle de vue, les événements attendus et les scénarios de conformité sont
 partageables entre cibles. Aucun handle Angular, cache de composants ou service
@@ -59,16 +61,55 @@ présentation des tabs et la politique de données seront choisis à partir d'un
 application cible réelle, puis vérifiés avec le même protocole navigateur que le
 shell Angular.
 
-## Niveau de preuve atteint
+## Première tranche d'hôte exécutable
 
-Cette tranche vérifie des propriétés de React sur quatre scénarios `jsdom` et
-fixe les critères de l'hôte. Elle ne prouve ni routeur, ni permissions, ni
-absence de requête réseau, ni budget mémoire, ni accessibilité navigateur, ni
-parité fonctionnelle avec le back-office Angular. Elle ne suffit donc pas à
-figer `Activity` comme implémentation. La prochaine tranche doit fournir un hôte
-React exécutable et ses oracles navigateur, y compris une preuve qu'un simple
-switch n'émet aucun GET/POST. La présence actuelle des renderers React métier ne
-tient pas lieu de shell.
+`apps/workspace-react-proof` est une SPA Nx/Vite isolée. Ce n'est ni un nouveau
+back-office, ni une bibliothèque générique, ni une promesse de parité. Son
+registre de vues est un store externe minimal consommé avec
+`useSyncExternalStore`. Il garantit une identité stable sans synchroniser un
+état dérivé dans un Effect. La politique de données vit au-dessus des frontières
+`Activity` : requête en vol et résultat sont dédupliqués, tandis que l'état
+local de la page reste possédé par la vue.
+
+React Router est utilisé en mode déclaratif uniquement pour l'URL et
+l'historique. Le dépôt n'active ni mode Data, ni loaders, ni actions, ni SSR :
+ces capacités n'apportent rien à l'oracle actuel et pourraient introduire des
+rechargements implicites. La version `8.4.0`, encore supportée, remplace la
+version `react-router-dom` 6.30.3 produite par le générateur Nx ; React Router 8
+publie désormais l'API navigateur depuis `react-router`.
+
+Trois tests Vitest et deux parcours Chromium vérifient maintenant :
+
+1. ouverture d'une URL canonique et création d'une seule frontière par vue ;
+2. conservation du même nœud, d'un champ non contrôlé et du state local ;
+3. zéro GET et zéro POST pendant les switches et les traversées
+   précédent/suivant de l'historique ;
+4. un seul GET initial malgré le redémarrage des Effects de `Activity` ;
+5. retrait DOM, nouvelle identité et état local vierge après fermeture puis
+   réouverture ;
+6. normalisation d'une URL inconnue vers la vue épinglée.
+
+La preuve navigateur est câblée conditionnellement dans le job `e2e-smoke`
+existant afin de ne créer ni contexte de protection supplémentaire ni coût sur
+les changements sans rapport. Le serveur SPA commun utilise une allowlist fermée
+des applications servables. Comme Vite transpile sans vérifier les types, le
+target `typecheck` inféré est aussi exécuté par `nx affected` dans l'oracle CI.
+Le manifeste `.cmz/libraries.json` déclare explicitement la plateforme React et
+un catalogue vide. Le contrôleur du dépôt recoupe cette déclaration avec un
+véritable import AST du plugin Vite React officiel : un commentaire, un target
+Vite générique ou une simple chaîne de caractères ne peut donc pas usurper la
+plateforme.
+
+## Niveau de preuve atteint et limites
+
+La qualification `jsdom` de la primitive et cette première application
+navigateur prouvent désormais le routeur, la conservation/destruction et
+l'absence de trafic GET/POST provoqué par un switch. Elles ne prouvent toujours
+pas permissions/révocation, garde dirty, plafond et profil mémoire,
+accessibilité APG complète/RTL/zoom/lecteur d'écran, suspension des ressources
+longues, identité exacte avec paramètres/fragments ni parité fonctionnelle avec
+le back-office Angular. La présence des renderers React métier ne tient pas lieu
+de shell et aucune de ces limites ne doit être reformulée comme acquise.
 
 Preuves locales du 2026-10-05 : `check:generator-platform:reactjs` compile les
 sorties générées puis passe `57/57` scénarios React ; la gate complète passe
@@ -76,8 +117,15 @@ sorties générées puis passe `57/57` scénarios React ; la gate complète pass
 explicitement les fichiers TSX sous `tools/`, afin que cette preuve ne soit pas
 exécutée tout en restant invisible au contrôle de dead-code.
 
+Preuves locales du 2026-10-06 : lint React Hooks, typecheck strict, build Vite,
+`3/3` tests Vitest et `2/2` parcours Chromium passent. L'oracle navigateur sera
+la preuve autoritative après son passage dans la CI GitHub.
+
 ## Sources
 
 - [React — Activity](https://react.dev/reference/react/Activity)
 - [React 19.2 — introduction d'Activity](https://react.dev/blog/2025/10/01/react-19-2)
 - [React — préserver et réinitialiser le state](https://react.dev/learn/preserving-and-resetting-state)
+- [React — useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore)
+- [React Router — modes](https://reactrouter.com/start/modes)
+- [React Router — BrowserRouter](https://reactrouter.com/api/declarative-routers/BrowserRouter)

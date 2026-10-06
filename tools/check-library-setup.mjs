@@ -36,6 +36,7 @@ import {
     sep,
 } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 import {
     declaringFields,
@@ -55,9 +56,10 @@ const APP_MANIFEST_SCHEMA_PATH =
     'conventions/libraries/app-library-manifest.schema.json';
 const APPS_GLOB = 'apps/*';
 // Exécuteurs SPÉCIFIQUES à une plateforme. Les bundlers génériques (@nx/vite,
-// @nx/rspack, @nx/webpack) ne prouvent aucune plateforme et sont volontairement
-// absents : une app Angular peut utiliser @nx/vite pour ses tests. Une app qui
-// n'expose que des exécuteurs génériques → plateforme indéterminée → échec.
+// @nx/rspack, @nx/webpack) ne prouvent aucune plateforme : une app Angular peut
+// utiliser @nx/vite pour ses tests. Les apps React/Vite modernes générées par Nx
+// ont cependant uniquement des targets inférés. Leur preuve complémentaire est
+// l'import AST réel du plugin Vite React officiel dans la config de l'app.
 const PLATFORM_EXECUTOR_PREFIXES = {
     angular: [
         '@angular/build:',
@@ -66,6 +68,16 @@ const PLATFORM_EXECUTOR_PREFIXES = {
     ],
     react: ['@nx/react:', '@nx/next:', '@nx/remix:'],
 };
+const REACT_VITE_PLUGINS = new Set([
+    '@vitejs/plugin-react',
+    '@vitejs/plugin-react-swc',
+]);
+const VITE_CONFIG_NAMES = [
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+];
 
 // ─── chemins sûrs ────────────────────────────────────────────────────────
 
@@ -394,7 +406,40 @@ export function detectAppPlatform(appAbsRoot) {
             matched.add(platform);
         }
     }
+    if (hasReactVitePlugin(appAbsRoot)) matched.add('react');
     return matched.size === 1 ? [...matched][0] : 'unknown';
+}
+
+function hasReactVitePlugin(appAbsRoot) {
+    for (const configName of VITE_CONFIG_NAMES) {
+        const configPath = join(appAbsRoot, configName);
+        let stats;
+        try {
+            stats = lstatSync(configPath);
+        } catch (error) {
+            if (error.code === 'ENOENT') continue;
+            return false;
+        }
+        if (!stats.isFile() || stats.isSymbolicLink()) return false;
+
+        const source = ts.createSourceFile(
+            configName,
+            readFileSync(configPath, 'utf8'),
+            ts.ScriptTarget.Latest,
+            false,
+            configName.endsWith('.ts') || configName.endsWith('.mts')
+                ? ts.ScriptKind.TS
+                : ts.ScriptKind.JS
+        );
+        const importsReactPlugin = source.statements.some(
+            (statement) =>
+                ts.isImportDeclaration(statement) &&
+                ts.isStringLiteral(statement.moduleSpecifier) &&
+                REACT_VITE_PLUGINS.has(statement.moduleSpecifier.text)
+        );
+        if (importsReactPlugin) return true;
+    }
+    return false;
 }
 
 /**
