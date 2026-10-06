@@ -181,19 +181,19 @@ lifecycle React ; la vue ne recode pas leur protocole.
 
 ## 6. Matrice de capacités Angular ↔ React
 
-| Capacité                    | Angular                                       | React                                                  | État React honnête                 |
-| --------------------------- | --------------------------------------------- | ------------------------------------------------------ | ---------------------------------- |
-| shell/build                 | Angular CLI/Nx                                | Nx/Vite                                                | prouvé sur app de workspace        |
-| routing                     | Angular Router                                | React Router déclaratif                                | prouvé                             |
-| état de vue                 | Signals/primitives Angular                    | Hooks React                                            | prouvé par primitives et workspace |
-| store externe               | service/signal adapté                         | `useSyncExternalStore`                                 | prouvé sur workspace               |
-| requêtes/actions            | clients générés + host                        | clients générés + `FetchPort`                          | prouvé hors page métier complète   |
-| composition N×N             | preuve C5 Angular                             | runtime C5 généré et testé ; application UI à produire | partiel                            |
-| UI officielle complexe      | Angular Material/CDK/Aria selon qualification | HTML natif ; React Aria candidat non encore qualifié   | non qualifié                       |
-| i18n                        | `@angular/localize`                           | messages locaux + `Intl` pour le besoin actuel         | décision, preuve d'app à produire  |
-| tests unitaires             | Vitest                                        | Vitest + React Testing Library                         | prouvé                             |
-| navigateur/accessibilité    | Playwright + axe + humain                     | Playwright + axe + humain                              | automatisable partiellement prouvé |
-| app métier composite réelle | C5 utilisateurs                               | à produire sur les mêmes contrats                      | non atteint                        |
+| Capacité                    | Angular                                       | React                                                                                  | État React honnête                 |
+| --------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------- |
+| shell/build                 | Angular CLI/Nx                                | Nx/Vite                                                                                | prouvé sur app de workspace        |
+| routing                     | Angular Router                                | React Router déclaratif                                                                | prouvé                             |
+| état de vue                 | Signals/primitives Angular                    | Hooks React                                                                            | prouvé par primitives et workspace |
+| store externe               | service/signal adapté                         | `useSyncExternalStore`                                                                 | prouvé sur workspace               |
+| requêtes/actions            | clients générés + host                        | clients générés + `FetchPort`                                                          | prouvé hors page métier complète   |
+| composition N×N             | preuve C5 Angular                             | runtime C5 généré, testé et publiable transactionnellement ; application UI à produire | partiel                            |
+| UI officielle complexe      | Angular Material/CDK/Aria selon qualification | HTML natif ; React Aria candidat non encore qualifié                                   | non qualifié                       |
+| i18n                        | `@angular/localize`                           | messages locaux + `Intl` pour le besoin actuel                                         | décision, preuve d'app à produire  |
+| tests unitaires             | Vitest                                        | Vitest + React Testing Library                                                         | prouvé                             |
+| navigateur/accessibilité    | Playwright + axe + humain                     | Playwright + axe + humain                                                              | automatisable partiellement prouvé |
+| app métier composite réelle | C5 utilisateurs                               | à produire sur les mêmes contrats                                                      | non atteint                        |
 
 Cette table interdit de déclarer une parité à partir de la seule présence d'un
 renderer ou d'une documentation.

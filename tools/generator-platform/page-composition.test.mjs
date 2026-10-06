@@ -1,15 +1,34 @@
 import assert from 'node:assert/strict';
-import { readFile, rm } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { execFile } from 'node:child_process';
+import { access, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import test from 'node:test';
+import { promisify } from 'node:util';
 
-import { generateAngularPageComposition } from './generate-page-composition.mjs';
+import {
+    generateAngularPageComposition,
+    generatePageComposition,
+} from './generate-page-composition.mjs';
 import {
     angularPageHostBindings,
     createPageCompositionFixture,
     createUsersPageCompositionFixture,
 } from './page-composition.fixture.mjs';
 import { computeAngularPageCompositionTarget } from './page-composition-targets.mjs';
+import { repositoryRoot } from './validate-ir.mjs';
+
+const execFileAsync = promisify(execFile);
+
+async function exists(path) {
+    try {
+        await access(path);
+        return true;
+    } catch (error) {
+        if (error.code === 'ENOENT') return false;
+        throw error;
+    }
+}
 
 test('materializes an Angular composition root from two queries and one command', async (context) => {
     const input = await createPageCompositionFixture();
@@ -240,4 +259,182 @@ test('publishes the composition transactionally and keeps the reviewed tree stab
     assert.equal(replay.changeSet.summary.create, 0);
     assert.equal(replay.changeSet.summary.replace, 0);
     assert.equal(replay.changeSet.summary.delete, 0);
+});
+
+test('publishes a React-only composition without pretending Angular host bindings apply', async (context) => {
+    const input = await createPageCompositionFixture();
+    context.after(() => rm(input.root, { recursive: true, force: true }));
+    const outputRoot = resolve(input.root, 'react-output');
+    const created = await generatePageComposition({
+        planPath: input.planPath,
+        outputRoot,
+        artifactRoot: input.root,
+        target: 'reactjs',
+    });
+
+    assert.equal(created.publication.status, 'created');
+    assert.deepEqual(created.targets, ['reactjs']);
+    assert.equal(
+        await exists(resolve(outputRoot, 'angular-page-host-bindings.json')),
+        false
+    );
+    assert.equal(await exists(resolve(outputRoot, 'angular')), false);
+    await readFile(
+        resolve(outputRoot, 'reactjs/src/page-composition.runtime.ts'),
+        'utf8'
+    );
+
+    const replay = await generatePageComposition({
+        planPath: input.planPath,
+        outputRoot,
+        artifactRoot: input.root,
+        target: 'react',
+        dryRun: true,
+    });
+    assert.equal(replay.changeSet.summary.create, 0);
+    assert.equal(replay.changeSet.summary.replace, 0);
+    assert.equal(replay.changeSet.summary.preserve, 0);
+    assert.equal(replay.changeSet.summary.delete, 0);
+    assert.ok(replay.changeSet.summary.unchanged > 0);
+});
+
+test('publishes the real React C5 composition through the public CLI', async (context) => {
+    const temporaryRoot = await mkdtemp(
+        join(tmpdir(), 'cmz-page-composition-cli-')
+    );
+    context.after(() => rm(temporaryRoot, { recursive: true, force: true }));
+    const outputRoot = resolve(temporaryRoot, 'output');
+    const script = resolve(
+        repositoryRoot,
+        'tools/generator-platform/generate-page-composition.mjs'
+    );
+    const plan = resolve(
+        repositoryRoot,
+        'examples/users-management-proof/execution/page-execution-plan.json'
+    );
+    const { stdout } = await execFileAsync(process.execPath, [
+        script,
+        '--plan',
+        plan,
+        '--out',
+        outputRoot,
+        '--target',
+        'reactjs',
+    ]);
+    const publication = JSON.parse(stdout);
+
+    assert.equal(publication.status, 'created');
+    assert.deepEqual(publication.targets, ['reactjs']);
+    await readFile(
+        resolve(outputRoot, 'reactjs/src/page-composition.runtime.ts'),
+        'utf8'
+    );
+    assert.equal(await exists(resolve(outputRoot, 'angular')), false);
+    assert.equal(
+        await exists(resolve(outputRoot, 'angular-page-host-bindings.json')),
+        false
+    );
+
+    await assert.rejects(
+        execFileAsync(process.execPath, [
+            script,
+            '--plan',
+            plan,
+            '--out',
+            resolve(temporaryRoot, 'invalid-output'),
+            '--target',
+            'all',
+        ]),
+        (error) => {
+            assert.match(
+                error.stderr,
+                /--host-bindings is required when target includes angular/
+            );
+            return true;
+        }
+    );
+    assert.equal(await exists(resolve(temporaryRoot, 'invalid-output')), false);
+});
+
+test('adds React atomically to an existing Angular publication through a reviewed change set', async (context) => {
+    const input = await createPageCompositionFixture();
+    context.after(() => rm(input.root, { recursive: true, force: true }));
+    const outputRoot = resolve(input.root, 'evolved-output');
+    await generateAngularPageComposition({
+        planPath: input.planPath,
+        hostBindingsPath: input.hostBindingsPath,
+        outputRoot,
+        artifactRoot: input.root,
+    });
+    const angularBefore = await readFile(
+        resolve(outputRoot, 'angular/src/page-composition.ts')
+    );
+
+    const reviewed = await generatePageComposition({
+        planPath: input.planPath,
+        hostBindingsPath: input.hostBindingsPath,
+        outputRoot,
+        artifactRoot: input.root,
+        target: 'all',
+        dryRun: true,
+    });
+    assert.ok(reviewed.changeSet.summary.create > 0);
+    assert.equal(reviewed.changeSet.summary.replace, 0);
+    assert.equal(reviewed.changeSet.summary.delete, 0);
+
+    const applied = await generatePageComposition({
+        planPath: input.planPath,
+        hostBindingsPath: input.hostBindingsPath,
+        outputRoot,
+        artifactRoot: input.root,
+        target: 'all',
+        applyChangeSetId: reviewed.changeSet.change_set_id,
+    });
+    assert.equal(applied.publication.status, 'applied');
+    assert.deepEqual(applied.targets, ['angular', 'reactjs']);
+    assert.deepEqual(
+        await readFile(resolve(outputRoot, 'angular/src/page-composition.ts')),
+        angularBefore
+    );
+    await readFile(
+        resolve(outputRoot, 'reactjs/src/page-composition.runtime.ts'),
+        'utf8'
+    );
+});
+
+test('fails closed when target-specific host bindings are missing or misleading', async (context) => {
+    const input = await createPageCompositionFixture();
+    context.after(() => rm(input.root, { recursive: true, force: true }));
+
+    await assert.rejects(
+        generatePageComposition({
+            planPath: input.planPath,
+            outputRoot: resolve(input.root, 'missing-angular-bindings'),
+            artifactRoot: input.root,
+            target: 'all',
+            dryRun: true,
+        }),
+        /hostBindingsPath is required when target includes angular/
+    );
+    await assert.rejects(
+        generatePageComposition({
+            planPath: input.planPath,
+            hostBindingsPath: input.hostBindingsPath,
+            outputRoot: resolve(input.root, 'misleading-react-bindings'),
+            artifactRoot: input.root,
+            target: 'reactjs',
+            dryRun: true,
+        }),
+        /hostBindingsPath is not valid for the reactjs-only target/
+    );
+    await assert.rejects(
+        generatePageComposition({
+            planPath: input.planPath,
+            outputRoot: resolve(input.root, 'unknown-target'),
+            artifactRoot: input.root,
+            target: 'magic',
+            dryRun: true,
+        }),
+        /target must be one of: all, angular, reactjs/
+    );
 });

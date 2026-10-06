@@ -436,18 +436,28 @@ and host `FetchPort` remain explicit dependencies. Both targets negotiate the
 same bounded capability set and recheck every referenced file and SHA-256
 before rendering.
 
-The command below remains the transactional Angular publication path:
+The same command publishes one explicitly selected composition target or both
+targets in one transaction:
 
 ```bash
 bun run generate:page-composition --plan <plan.json> \
-  --host-bindings tools/generator-platform/fixtures/angular-page-host-bindings.json \
-  --out <directory> [--dry-run | --apply <change_set_id>]
+  --out <directory> [--target angular|reactjs|all] \
+  [--host-bindings tools/generator-platform/fixtures/angular-page-host-bindings.json] \
+  [--dry-run | --apply <change_set_id>]
 ```
 
+`angular` remains the default so existing automation cannot acquire a second
+target silently. Angular host bindings are required for `angular` and `all`,
+and rejected for `reactjs`: they describe an Angular host contract and must not
+be presented as React configuration. With `all`, the command verifies that both
+renderers use the exact same input digest and artifact plan, then publishes the
+two targets atomically through the shared Change Set, lock and rollback path.
+
 The output deliberately contains no component or template. React composition
-is currently materialized and executed by the native stack gate, but has no
-publication CLI yet; that absence must not be hidden by manually copying its
-generated files into an application.
+is now materialized, executed by the native stack gate and transactionally
+publishable, but it is not yet bound to a React application shell. That absence
+must not be hidden by manually copying generated files into an unrelated proof
+application.
 
 C4 prepares both generated outputs for their native stack suites and tests them
 from external consumers. The hermetic hosts observe the two GET requests and
