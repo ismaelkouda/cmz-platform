@@ -113,3 +113,58 @@ test('fermer détruit l’instance et rouvrir restitue un état local vierge', a
     expect(profileReads).toBe(1);
     expect(reads).toBe(readsBeforeClose);
 });
+
+test('restaure query et fragment exacts sans dupliquer ni recharger la vue', async ({
+    page,
+}) => {
+    let profileReads = 0;
+    await page.route(`**${PROFILE_ENDPOINT}`, async (route) => {
+        profileReads += 1;
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                name: 'Soumaila Kouda',
+                role: 'Administrateur',
+            }),
+        });
+    });
+
+    await page.goto('/workspace/profile?section=summary#overview');
+    await expect(page.getByText('Soumaila Kouda')).toBeVisible();
+    const profilePanel = page.getByRole('tabpanel', { name: 'Profil' });
+    const note = page.getByRole('textbox', {
+        name: 'Note locale non enregistrée',
+    });
+    const instance = await profilePanel
+        .locator('[data-instance-id]')
+        .getAttribute('data-instance-id');
+    await note.fill('URL exacte conservée');
+
+    const updatedUrl =
+        '/workspace/profile?section=permissions&filter=active%2Fpending&filter=locked+out#security%2Froles';
+    await page.evaluate((url) => {
+        window.history.pushState(null, '', url);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    }, updatedUrl);
+    await expect(page).toHaveURL(
+        /\/workspace\/profile\?section=permissions&filter=active%2Fpending&filter=locked\+out#security%2Froles$/
+    );
+    await expect(profilePanel).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Tableau de bord' }).click();
+    await expect(page).toHaveURL(/\/workspace\/dashboard$/);
+    await page.getByRole('tab', { name: 'Profil' }).click();
+
+    await expect(page).toHaveURL(
+        /\/workspace\/profile\?section=permissions&filter=active%2Fpending&filter=locked\+out#security%2Froles$/
+    );
+    await expect(note).toHaveValue('URL exacte conservée');
+    await expect(page.getByRole('tab', { name: 'Profil' })).toHaveCount(1);
+    expect(
+        await profilePanel
+            .locator('[data-instance-id]')
+            .getAttribute('data-instance-id')
+    ).toBe(instance);
+    expect(profileReads).toBe(1);
+});

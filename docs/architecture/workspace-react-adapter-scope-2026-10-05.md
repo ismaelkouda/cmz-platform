@@ -78,7 +78,7 @@ rechargements implicites. La version `8.4.0`, encore supportée, remplace la
 version `react-router-dom` 6.30.3 produite par le générateur Nx ; React Router 8
 publie désormais l'API navigateur depuis `react-router`.
 
-Trois tests Vitest et deux parcours Chromium vérifient maintenant :
+Quatre tests Vitest et trois parcours Chromium vérifient maintenant :
 
 1. ouverture d'une URL canonique et création d'une seule frontière par vue ;
 2. conservation du même nœud, d'un champ non contrôlé et du state local ;
@@ -87,7 +87,33 @@ Trois tests Vitest et deux parcours Chromium vérifient maintenant :
 4. un seul GET initial malgré le redémarrage des Effects de `Activity` ;
 5. retrait DOM, nouvelle identité et état local vierge après fermeture puis
    réouverture ;
-6. normalisation d'une URL inconnue vers la vue épinglée.
+6. normalisation d'une URL inconnue vers la vue épinglée ;
+7. restauration de la dernière query et du dernier fragment sans changer
+   l'identité canonique de la vue.
+
+### Deuxième tranche : contexte d'activation exact
+
+L'identité reste le chemin canonique, conformément à `MODEL-04` : query params
+et fragment ne créent jamais une deuxième frontière `Activity`. Le registre
+mémorise séparément la dernière URL d'activation observée pour chaque chemin
+ouvert. Un clic sur l'onglet restitue cette URL exacte ; fermer la vue détruit
+aussi ce contexte, de sorte qu'une réouverture repart du chemin canonique.
+
+Un scénario Vitest et un parcours Chromium démarrent sur un premier contexte, le
+remplacent pendant la vie de la même vue par
+`/workspace/profile?section=permissions&filter=active%2Fpending&filter=locked+out#security%2Froles`,
+modifient l'état local, changent d'onglet puis reviennent. Les paramètres
+répétés, l'ordre, `%2F` et `+` empêchent une preuve triviale fondée sur une URL
+déjà normalisée. Les oracles exigent simultanément :
+
+- query params et fragment restitués octet pour octet et dans leur ordre ;
+- une seule frontière et une seule tab pour le chemin canonique ;
+- même instance React et même valeur locale ;
+- un seul GET de profil.
+
+Cette tranche ne généralise pas plusieurs instances d'une route dynamique et ne
+persiste aucune URL après reload. Elle stabilise seulement la clé nécessaire aux
+futures politiques de permissions, dirty et capacité.
 
 La preuve navigateur est câblée conditionnellement dans le job `e2e-smoke`
 existant afin de ne créer ni contexte de protection supplémentaire ni coût sur
@@ -107,9 +133,9 @@ navigateur prouvent désormais le routeur, la conservation/destruction et
 l'absence de trafic GET/POST provoqué par un switch. Elles ne prouvent toujours
 pas permissions/révocation, garde dirty, plafond et profil mémoire,
 accessibilité APG complète/RTL/zoom/lecteur d'écran, suspension des ressources
-longues, identité exacte avec paramètres/fragments ni parité fonctionnelle avec
-le back-office Angular. La présence des renderers React métier ne tient pas lieu
-de shell et aucune de ces limites ne doit être reformulée comme acquise.
+longues ni parité fonctionnelle avec le back-office Angular. La présence des
+renderers React métier ne tient pas lieu de shell et aucune de ces limites ne
+doit être reformulée comme acquise.
 
 Preuves locales du 2026-10-05 : `check:generator-platform:reactjs` compile les
 sorties générées puis passe `57/57` scénarios React ; la gate complète passe
@@ -118,7 +144,7 @@ explicitement les fichiers TSX sous `tools/`, afin que cette preuve ne soit pas
 exécutée tout en restant invisible au contrôle de dead-code.
 
 Preuves locales du 2026-10-06 : lint React Hooks, typecheck strict, build Vite,
-`3/3` tests Vitest et `2/2` parcours Chromium passent. L'oracle navigateur sera
+`4/4` tests Vitest et `3/3` parcours Chromium passent. L'oracle navigateur sera
 la preuve autoritative après son passage dans la CI GitHub.
 
 ## Sources
