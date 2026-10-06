@@ -1,8 +1,14 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+} from '@testing-library/react';
 import { BrowserRouter, useNavigate } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App from './app';
+import App, { WorkspaceAccessStore } from './app';
 
 const profile = { name: 'Soumaila Kouda', role: 'Administrateur' };
 
@@ -21,11 +27,15 @@ function NavigationProbe() {
     );
 }
 
-function renderApp(path = '/workspace/dashboard', withProbe = false) {
+function renderApp(
+    path = '/workspace/dashboard',
+    withProbe = false,
+    accessStore?: WorkspaceAccessStore
+) {
     window.history.replaceState(null, '', path);
     return render(
         <BrowserRouter>
-            <App />
+            <App accessStore={accessStore} />
             {withProbe ? <NavigationProbe /> : null}
         </BrowserRouter>
     );
@@ -35,11 +45,13 @@ describe('React workspace host', () => {
     beforeEach(() => {
         vi.stubGlobal(
             'fetch',
-            vi.fn().mockResolvedValue(
-                new Response(JSON.stringify(profile), {
-                    status: 200,
-                    headers: { 'Content-Type': 'application/json' },
-                })
+            vi.fn().mockImplementation(() =>
+                Promise.resolve(
+                    new Response(JSON.stringify(profile), {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' },
+                    })
+                )
             )
         );
     });
@@ -141,5 +153,135 @@ describe('React workspace host', () => {
             expect(window.location.pathname).toBe('/workspace/dashboard')
         );
         expect(screen.getAllByRole('tab')).toHaveLength(1);
+    });
+
+    it('refuses a protected direct route before mounting or fetching it', async () => {
+        const access = new WorkspaceAccessStore(null);
+        renderApp('/workspace/profile', false, access);
+
+        await waitFor(() =>
+            expect(window.location.pathname).toBe('/workspace/dashboard')
+        );
+        expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
+        expect(screen.queryByText('Profil utilisateur')).toBeNull();
+        expect(screen.getByText('Accès au profil révoqué.')).toBeTruthy();
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('destroys an active protected view and cannot restore it from history', async () => {
+        const access = new WorkspaceAccessStore(['/workspace/profile']);
+        const { container } = renderApp('/workspace/profile', true, access);
+        await screen.findByText('Soumaila Kouda');
+        const firstInstance = container
+            .querySelector<HTMLElement>('[data-instance-id]')
+            ?.getAttribute('data-instance-id');
+        fireEvent.change(
+            screen.getByRole('textbox', {
+                name: 'Note locale non enregistrée',
+            }),
+            { target: { value: 'Brouillon confidentiel' } }
+        );
+
+        act(() => access.replace([]));
+
+        await waitFor(() =>
+            expect(window.location.pathname).toBe('/workspace/dashboard')
+        );
+        expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
+        expect(container.querySelector('[data-instance-id]')).toBeNull();
+        expect(
+            screen.queryByRole('textbox', {
+                name: 'Note locale non enregistrée',
+            })
+        ).toBeNull();
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'Modifier le contexte profil',
+            })
+        );
+        await waitFor(() =>
+            expect(window.location.pathname).toBe('/workspace/dashboard')
+        );
+        expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
+        expect(fetch).toHaveBeenCalledTimes(1);
+
+        act(() => access.replace(['/workspace/profile']));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Ouvrir le profil' })
+        );
+        await screen.findByText('Soumaila Kouda');
+        expect(
+            container
+                .querySelector<HTMLElement>('[data-instance-id]')
+                ?.getAttribute('data-instance-id')
+        ).not.toBe(firstInstance);
+        expect(
+            (
+                screen.getByRole('textbox', {
+                    name: 'Note locale non enregistrée',
+                }) as HTMLInputElement
+            ).value
+        ).toBe('');
+        expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('destroys a suspended protected view as soon as access is revoked', async () => {
+        const access = new WorkspaceAccessStore(['/workspace/profile']);
+        const { container } = renderApp('/workspace/dashboard', false, access);
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Ouvrir le profil' })
+        );
+        await screen.findByText('Soumaila Kouda');
+        fireEvent.click(screen.getByRole('tab', { name: 'Tableau de bord' }));
+
+        act(() => access.replace([]));
+
+        await waitFor(() =>
+            expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull()
+        );
+        expect(container.querySelector('[data-instance-id]')).toBeNull();
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('purges protected cached data even when its view was already closed', async () => {
+        const access = new WorkspaceAccessStore(['/workspace/profile']);
+        renderApp('/workspace/profile', false, access);
+        await screen.findByText('Soumaila Kouda');
+        fireEvent.click(screen.getByRole('button', { name: 'Fermer Profil' }));
+        expect(fetch).toHaveBeenCalledTimes(1);
+
+        act(() => access.replace([]));
+        act(() => access.replace(['/workspace/profile']));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Ouvrir le profil' })
+        );
+
+        await screen.findByText('Soumaila Kouda');
+        expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('aborts an in-flight protected request when access is revoked', async () => {
+        let signal: AbortSignal | undefined;
+        vi.mocked(fetch).mockImplementation(
+            (_input, init) =>
+                new Promise<Response>((_resolve, reject) => {
+                    signal = init?.signal ?? undefined;
+                    signal?.addEventListener('abort', () => {
+                        reject(new DOMException('Aborted', 'AbortError'));
+                    });
+                })
+        );
+        const access = new WorkspaceAccessStore(['/workspace/profile']);
+        const { container } = renderApp('/workspace/profile', false, access);
+        await waitFor(() => expect(signal).toBeDefined());
+
+        act(() => access.replace(null));
+
+        await waitFor(() => expect(signal?.aborted).toBe(true));
+        await waitFor(() =>
+            expect(window.location.pathname).toBe('/workspace/dashboard')
+        );
+        expect(container.querySelector('[data-instance-id]')).toBeNull();
     });
 });

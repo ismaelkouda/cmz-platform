@@ -2763,6 +2763,16 @@ Figma, désormais source partielle différée :
   persiste rien après reload et n'autorise pas plusieurs instances d'une route
   dynamique. Restent permissions/révocation, dirty, capacité/mémoire, ressources
   longues et accessibilité complète avant toute déclaration de parité React.
+  **WORKSPACE-TABS-8 — permission/révocation React engagée localement le
+  2026-10-06 :** le catalogue porte l'`accessPath` exact et un snapshot fourni
+  par le host filtre toute vue protégée avant montage. Route directe interdite,
+  révocation active ou suspendue et tentative par l'historique détruisent la
+  frontière sans nouveau GET. La révocation annule aussi le fetch en vol et
+  purge le cache, même si la vue était déjà fermée ; réautoriser puis rouvrir
+  exige une nouvelle instance, un état local vierge et un nouveau GET. Neuf
+  tests Vitest et quatre parcours Chromium passent. Le proof ne découvre pas les
+  droits distants et ne couvre pas encore fin/changement de session, garde
+  dirty, capacité/mémoire, ressources longues ni accessibilité complète.
   **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
   navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
   des capacités non déclarées, la non-activation des lignes et la géométrie

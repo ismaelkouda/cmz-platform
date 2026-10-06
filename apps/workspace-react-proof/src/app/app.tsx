@@ -1,5 +1,6 @@
 import {
     Activity,
+    useCallback,
     useEffect,
     useMemo,
     useRef,
@@ -20,6 +21,7 @@ interface WorkspaceView {
     path: WorkspacePath;
     title: string;
     pinned: boolean;
+    accessPath: string | null;
 }
 
 interface ProfileSummary {
@@ -32,13 +34,48 @@ const VIEW_CATALOG: Readonly<Record<WorkspacePath, WorkspaceView>> = {
         path: DASHBOARD_PATH,
         title: 'Tableau de bord',
         pinned: true,
+        accessPath: null,
     },
     [PROFILE_PATH]: {
         path: PROFILE_PATH,
         title: 'Profil',
         pinned: false,
+        accessPath: PROFILE_PATH,
     },
 };
+
+export class WorkspaceAccessStore {
+    readonly #listeners = new Set<() => void>();
+    #paths: readonly string[];
+
+    constructor(paths: readonly string[] | null) {
+        this.#paths = WorkspaceAccessStore.#normalize(paths);
+    }
+
+    readonly getSnapshot = () => this.#paths;
+
+    readonly subscribe = (listener: () => void) => {
+        this.#listeners.add(listener);
+        return () => this.#listeners.delete(listener);
+    };
+
+    replace(paths: readonly string[] | null): void {
+        const next = WorkspaceAccessStore.#normalize(paths);
+        if (
+            next.length === this.#paths.length &&
+            next.every((path, index) => path === this.#paths[index])
+        ) {
+            return;
+        }
+
+        this.#paths = next;
+        for (const listener of this.#listeners) listener();
+    }
+
+    static #normalize(paths: readonly string[] | null): readonly string[] {
+        return Object.freeze([...new Set(paths ?? [])].sort());
+    }
+}
 
 class WorkspaceRegistry {
     readonly #listeners = new Set<() => void>();
@@ -80,6 +117,17 @@ class WorkspaceRegistry {
         this.#emit();
     }
 
+    revoke(paths: readonly WorkspacePath[]): readonly WorkspacePath[] {
+        const targets = new Set(paths);
+        const revoked = this.#paths.filter((path) => targets.has(path));
+        if (revoked.length === 0) return revoked;
+
+        this.#paths = this.#paths.filter((path) => !targets.has(path));
+        for (const path of revoked) this.#activationUrls.delete(path);
+        this.#emit();
+        return revoked;
+    }
+
     #emit(): void {
         for (const listener of this.#listeners) listener();
     }
@@ -101,6 +149,14 @@ function workspaceActivationUrl(
     return `${pathname}${search}${hash}`;
 }
 
+function canAccess(
+    path: WorkspacePath,
+    allowedAccessPaths: readonly string[]
+): boolean {
+    const { accessPath } = VIEW_CATALOG[path];
+    return accessPath === null || allowedAccessPaths.includes(accessPath);
+}
+
 function tabId(path: WorkspacePath): string {
     return `workspace-tab-${path.slice(1).replaceAll('/', '-')}`;
 }
@@ -109,7 +165,13 @@ function panelId(path: WorkspacePath): string {
     return `workspace-panel-${path.slice(1).replaceAll('/', '-')}`;
 }
 
-function DashboardView({ onOpenProfile }: { onOpenProfile: () => void }) {
+function DashboardView({
+    canOpenProfile,
+    onOpenProfile,
+}: {
+    canOpenProfile: boolean;
+    onOpenProfile: () => void;
+}) {
     const [count, setCount] = useState(0);
 
     return (
@@ -127,9 +189,11 @@ function DashboardView({ onOpenProfile }: { onOpenProfile: () => void }) {
                 >
                     Compteur local : {count}
                 </button>
-                <button type="button" onClick={onOpenProfile}>
-                    Ouvrir le profil
-                </button>
+                {canOpenProfile ? (
+                    <button type="button" onClick={onOpenProfile}>
+                        Ouvrir le profil
+                    </button>
+                ) : null}
             </div>
         </article>
     );
@@ -214,15 +278,34 @@ function WorkspacePanel({
     );
 }
 
-function App() {
+interface AppProps {
+    accessStore?: WorkspaceAccessStore;
+}
+
+interface ProfileRequest {
+    controller: AbortController;
+    promise: Promise<ProfileSummary>;
+}
+
+function App({ accessStore }: AppProps = {}) {
     const location = useLocation();
     const navigate = useNavigate();
     const requestedPath = normalizePath(location.pathname);
+    const [access] = useState(
+        () => accessStore ?? new WorkspaceAccessStore([PROFILE_PATH])
+    );
+    const allowedAccessPaths = useSyncExternalStore(
+        access.subscribe,
+        access.getSnapshot,
+        access.getSnapshot
+    );
+    const requestedPathAllowed = canAccess(requestedPath, allowedAccessPaths);
+    const activePath = requestedPathAllowed ? requestedPath : DASHBOARD_PATH;
     const [registry] = useState(
         () =>
             new WorkspaceRegistry(
-                requestedPath,
-                isWorkspacePath(location.pathname)
+                activePath,
+                isWorkspacePath(location.pathname) && requestedPathAllowed
                     ? workspaceActivationUrl(
                           location.pathname,
                           location.search,
@@ -237,7 +320,13 @@ function App() {
         registry.getSnapshot
     );
     const profileCache = useRef<ProfileSummary | null>(null);
-    const profileRequest = useRef<Promise<ProfileSummary> | null>(null);
+    const profileRequest = useRef<ProfileRequest | null>(null);
+
+    const clearProfileRuntime = useCallback(() => {
+        profileRequest.current?.controller.abort();
+        profileRequest.current = null;
+        profileCache.current = null;
+    }, []);
 
     useEffect(() => {
         const currentPath = location.pathname;
@@ -246,41 +335,88 @@ function App() {
             return;
         }
 
+        if (!canAccess(currentPath, allowedAccessPaths)) {
+            registry.revoke([currentPath]);
+            void navigate(DASHBOARD_PATH, { replace: true });
+            return;
+        }
+
         registry.recordVisit(
             currentPath,
             workspaceActivationUrl(currentPath, location.search, location.hash)
         );
-    }, [location.hash, location.pathname, location.search, navigate, registry]);
+    }, [
+        allowedAccessPaths,
+        location.hash,
+        location.pathname,
+        location.search,
+        navigate,
+        registry,
+    ]);
+
+    useEffect(() => {
+        if (!canAccess(PROFILE_PATH, allowedAccessPaths)) {
+            clearProfileRuntime();
+        }
+        registry.revoke(
+            registry
+                .getSnapshot()
+                .filter((path) => !canAccess(path, allowedAccessPaths))
+        );
+    }, [allowedAccessPaths, clearProfileRuntime, registry]);
 
     const loadProfile = useMemo(
         () => async (): Promise<ProfileSummary> => {
             if (profileCache.current) return profileCache.current;
-            if (profileRequest.current) return profileRequest.current;
+            if (profileRequest.current) return profileRequest.current.promise;
 
-            profileRequest.current = fetch('/api/workspace/profile')
+            const controller = new AbortController();
+            const request = fetch('/api/workspace/profile', {
+                signal: controller.signal,
+            })
                 .then(async (response) => {
                     if (!response.ok)
                         throw new Error(`HTTP ${response.status}`);
                     return (await response.json()) as ProfileSummary;
                 })
                 .then((profile) => {
-                    profileCache.current = profile;
+                    if (profileRequest.current?.promise === request) {
+                        profileCache.current = profile;
+                    }
                     return profile;
                 })
                 .finally(() => {
-                    profileRequest.current = null;
+                    if (profileRequest.current?.promise === request) {
+                        profileRequest.current = null;
+                    }
                 });
 
-            return profileRequest.current;
+            profileRequest.current = { controller, promise: request };
+
+            return request;
         },
         []
     );
 
     const activate = (path: WorkspacePath) => {
+        if (!canAccess(path, allowedAccessPaths)) {
+            const revoked = registry.revoke([path]);
+            if (revoked.includes(PROFILE_PATH)) clearProfileRuntime();
+            if (requestedPath === path) {
+                void navigate(DASHBOARD_PATH, { replace: true });
+            }
+            return;
+        }
+
         const targetUrl = registry.activationUrl(path);
         registry.recordVisit(path, targetUrl);
         void navigate(targetUrl);
     };
+
+    const renderedPaths = openPaths.filter((path) =>
+        canAccess(path, allowedAccessPaths)
+    );
+    const profileAllowed = canAccess(PROFILE_PATH, allowedAccessPaths);
 
     const close = (path: WorkspacePath) => {
         if (VIEW_CATALOG[path].pinned) return;
@@ -297,21 +433,25 @@ function App() {
     ) => {
         let nextIndex: number | null = null;
         if (event.key === 'ArrowRight')
-            nextIndex = (index + 1) % openPaths.length;
+            nextIndex = (index + 1) % renderedPaths.length;
         if (event.key === 'ArrowLeft') {
-            nextIndex = (index - 1 + openPaths.length) % openPaths.length;
+            nextIndex =
+                (index - 1 + renderedPaths.length) % renderedPaths.length;
         }
         if (event.key === 'Home') nextIndex = 0;
-        if (event.key === 'End') nextIndex = openPaths.length - 1;
-        if (event.key === 'Delete' && !VIEW_CATALOG[openPaths[index]].pinned) {
+        if (event.key === 'End') nextIndex = renderedPaths.length - 1;
+        if (
+            event.key === 'Delete' &&
+            !VIEW_CATALOG[renderedPaths[index]].pinned
+        ) {
             event.preventDefault();
-            close(openPaths[index]);
+            close(renderedPaths[index]);
             return;
         }
         if (nextIndex === null) return;
 
         event.preventDefault();
-        document.getElementById(tabId(openPaths[nextIndex]))?.focus();
+        document.getElementById(tabId(renderedPaths[nextIndex]))?.focus();
     };
 
     return (
@@ -323,6 +463,13 @@ function App() {
                     Routeur réel, frontières Activity stables et politique de
                     données explicite.
                 </p>
+                {profileAllowed ? (
+                    <button type="button" onClick={() => access.replace([])}>
+                        Révoquer l’accès au profil
+                    </button>
+                ) : (
+                    <p role="status">Accès au profil révoqué.</p>
+                )}
             </header>
 
             <div
@@ -330,9 +477,9 @@ function App() {
                 role="tablist"
                 aria-label="Vues ouvertes"
             >
-                {openPaths.map((path, index) => {
+                {renderedPaths.map((path, index) => {
                     const view = VIEW_CATALOG[path];
-                    const selected = requestedPath === path;
+                    const selected = activePath === path;
                     return (
                         <div className="workspace-tab-item" key={path}>
                             <button
@@ -363,16 +510,17 @@ function App() {
                 })}
             </div>
 
-            {openPaths.map((path) => {
+            {renderedPaths.map((path) => {
                 const view = VIEW_CATALOG[path];
                 return (
                     <WorkspacePanel
                         key={path}
                         view={view}
-                        activePath={requestedPath}
+                        activePath={activePath}
                     >
                         {path === DASHBOARD_PATH ? (
                             <DashboardView
+                                canOpenProfile={profileAllowed}
                                 onOpenProfile={() => activate(PROFILE_PATH)}
                             />
                         ) : (
