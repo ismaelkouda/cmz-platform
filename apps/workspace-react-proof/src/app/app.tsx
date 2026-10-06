@@ -17,12 +17,14 @@ import {
     WorkspaceSessionStore,
 } from './workspace-security-store';
 import type { WorkspaceSession } from './workspace-security-store';
+import {
+    DASHBOARD_PATH,
+    PROFILE_PATH,
+    WorkspaceRegistry,
+} from './workspace-registry';
+import type { WorkspacePath } from './workspace-registry';
 
-const DASHBOARD_PATH = '/workspace/dashboard';
-const PROFILE_PATH = '/workspace/profile';
 const SIGNED_OUT_PATH = '/signed-out';
-
-type WorkspacePath = typeof DASHBOARD_PATH | typeof PROFILE_PATH;
 
 interface WorkspaceView {
     path: WorkspacePath;
@@ -57,62 +59,6 @@ const DEFAULT_SESSION: WorkspaceSession = Object.freeze({
 });
 const EMPTY_ACCESS_PATHS: readonly string[] = Object.freeze([]);
 
-class WorkspaceRegistry {
-    readonly #listeners = new Set<() => void>();
-    readonly #activationUrls = new Map<WorkspacePath, string>();
-    #paths: readonly WorkspacePath[];
-
-    constructor(initialPath: WorkspacePath, initialUrl: string) {
-        this.#paths =
-            initialPath === DASHBOARD_PATH
-                ? [DASHBOARD_PATH]
-                : [DASHBOARD_PATH, initialPath];
-        this.#activationUrls.set(DASHBOARD_PATH, DASHBOARD_PATH);
-        this.#activationUrls.set(initialPath, initialUrl);
-    }
-
-    readonly getSnapshot = () => this.#paths;
-
-    readonly subscribe = (listener: () => void) => {
-        this.#listeners.add(listener);
-        return () => this.#listeners.delete(listener);
-    };
-
-    recordVisit(path: WorkspacePath, activationUrl: string): void {
-        this.#activationUrls.set(path, activationUrl);
-        if (!this.#paths.includes(path)) {
-            this.#paths = [...this.#paths, path];
-            this.#emit();
-        }
-    }
-
-    activationUrl(path: WorkspacePath): string {
-        return this.#activationUrls.get(path) ?? path;
-    }
-
-    close(path: WorkspacePath): void {
-        if (VIEW_CATALOG[path].pinned || !this.#paths.includes(path)) return;
-        this.#paths = this.#paths.filter((candidate) => candidate !== path);
-        this.#activationUrls.delete(path);
-        this.#emit();
-    }
-
-    revoke(paths: readonly WorkspacePath[]): readonly WorkspacePath[] {
-        const targets = new Set(paths);
-        const revoked = this.#paths.filter((path) => targets.has(path));
-        if (revoked.length === 0) return revoked;
-
-        this.#paths = this.#paths.filter((path) => !targets.has(path));
-        for (const path of revoked) this.#activationUrls.delete(path);
-        this.#emit();
-        return revoked;
-    }
-
-    #emit(): void {
-        for (const listener of this.#listeners) listener();
-    }
-}
-
 function isWorkspacePath(pathname: string): pathname is WorkspacePath {
     return pathname === DASHBOARD_PATH || pathname === PROFILE_PATH;
 }
@@ -143,6 +89,10 @@ function tabId(path: WorkspacePath): string {
 
 function panelId(path: WorkspacePath): string {
     return `workspace-panel-${path.slice(1).replaceAll('/', '-')}`;
+}
+
+function dirtyDescriptionId(path: WorkspacePath): string {
+    return `workspace-dirty-${path.slice(1).replaceAll('/', '-')}`;
 }
 
 function DashboardView({
@@ -182,8 +132,10 @@ function DashboardView({
 
 function ProfileView({
     loadProfile,
+    onDirtyChange,
 }: {
     loadProfile: () => Promise<ProfileSummary>;
+    onDirtyChange: (dirty: boolean) => void;
 }) {
     const [instanceId] = useState(() => crypto.randomUUID());
     const [profile, setProfile] = useState<ProfileSummary | null>(null);
@@ -227,7 +179,13 @@ function ProfileView({
             ) : null}
             <label className="proof-field">
                 Note locale non enregistrée
-                <input name="profile-note" placeholder="Saisir une note" />
+                <input
+                    name="profile-note"
+                    placeholder="Saisir une note"
+                    onChange={(event) =>
+                        onDirtyChange(event.currentTarget.value.length > 0)
+                    }
+                />
             </label>
         </article>
     );
@@ -308,11 +266,14 @@ function WorkspaceRuntime({
                     : DASHBOARD_PATH
             )
     );
-    const openPaths = useSyncExternalStore(
+    const workspace = useSyncExternalStore(
         registry.subscribe,
         registry.getSnapshot,
         registry.getSnapshot
     );
+    const openPaths = workspace.paths;
+    const hasDirtyView = workspace.dirtyPaths.length > 0;
+    const closeDialog = useRef<HTMLDialogElement | null>(null);
     const profileCache = useRef<ProfileSummary | null>(null);
     const profileRequest = useRef<ProfileRequest | null>(null);
 
@@ -323,6 +284,28 @@ function WorkspaceRuntime({
     }, []);
 
     useEffect(() => clearProfileRuntime, [clearProfileRuntime]);
+
+    useEffect(() => {
+        const dialog = closeDialog.current;
+        if (!dialog) return;
+
+        if (workspace.pendingClosePath && !dialog.open) {
+            dialog.showModal();
+        } else if (!workspace.pendingClosePath && dialog.open) {
+            dialog.close();
+        }
+    }, [workspace.pendingClosePath]);
+
+    useEffect(() => {
+        if (!hasDirtyView) return;
+
+        const preventUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = true;
+        };
+        window.addEventListener('beforeunload', preventUnload);
+        return () => window.removeEventListener('beforeunload', preventUnload);
+    }, [hasDirtyView]);
 
     useEffect(() => {
         const currentPath = location.pathname;
@@ -357,7 +340,7 @@ function WorkspaceRuntime({
         registry.revoke(
             registry
                 .getSnapshot()
-                .filter((path) => !canAccess(path, allowedAccessPaths))
+                .paths.filter((path) => !canAccess(path, allowedAccessPaths))
         );
     }, [allowedAccessPaths, clearProfileRuntime, registry]);
 
@@ -414,13 +397,40 @@ function WorkspaceRuntime({
     );
     const profileAllowed = canAccess(PROFILE_PATH, allowedAccessPaths);
 
-    const close = (path: WorkspacePath) => {
+    const finishClose = (path: WorkspacePath, previousIndex: number) => {
+        const remainingPaths = registry.getSnapshot().paths;
+        const focusPath =
+            remainingPaths[Math.min(previousIndex, remainingPaths.length - 1)];
         if (VIEW_CATALOG[path].pinned) return;
-
-        registry.close(path);
         if (requestedPath === path) {
             void navigate(DASHBOARD_PATH, { replace: true });
         }
+        if (focusPath) {
+            setTimeout(() =>
+                document.getElementById(tabId(focusPath))?.focus()
+            );
+        }
+    };
+
+    const requestClose = (path: WorkspacePath) => {
+        const previousIndex = renderedPaths.indexOf(path);
+        if (registry.requestClose(path) === 'closed') {
+            finishClose(path, previousIndex);
+        }
+    };
+
+    const cancelClose = () => {
+        closeDialog.current?.close();
+        registry.cancelClose();
+    };
+
+    const confirmClose = () => {
+        const path = workspace.pendingClosePath;
+        if (!path) return;
+        const previousIndex = renderedPaths.indexOf(path);
+        closeDialog.current?.close();
+        const closedPath = registry.confirmClose();
+        if (closedPath) finishClose(closedPath, previousIndex);
     };
 
     const moveFocus = (
@@ -441,7 +451,7 @@ function WorkspaceRuntime({
             !VIEW_CATALOG[renderedPaths[index]].pinned
         ) {
             event.preventDefault();
-            close(renderedPaths[index]);
+            requestClose(renderedPaths[index]);
             return;
         }
         if (nextIndex === null) return;
@@ -496,21 +506,42 @@ function WorkspaceRuntime({
                                 role="tab"
                                 aria-controls={panelId(path)}
                                 aria-selected={selected}
+                                aria-describedby={
+                                    workspace.dirtyPaths.includes(path)
+                                        ? dirtyDescriptionId(path)
+                                        : undefined
+                                }
                                 tabIndex={selected ? 0 : -1}
                                 onClick={() => activate(path)}
                                 onKeyDown={(event) => moveFocus(event, index)}
                             >
                                 {view.title}
+                                {workspace.dirtyPaths.includes(path) ? (
+                                    <span
+                                        className="workspace-dirty"
+                                        aria-hidden="true"
+                                    >
+                                        • Modifié
+                                    </span>
+                                ) : null}
                             </button>
                             {!view.pinned ? (
                                 <button
                                     className="workspace-close"
                                     type="button"
                                     aria-label={`Fermer ${view.title}`}
-                                    onClick={() => close(path)}
+                                    onClick={() => requestClose(path)}
                                 >
                                     ×
                                 </button>
+                            ) : null}
+                            {workspace.dirtyPaths.includes(path) ? (
+                                <span
+                                    id={dirtyDescriptionId(path)}
+                                    className="proof-visually-hidden"
+                                >
+                                    Modifications non enregistrées
+                                </span>
                             ) : null}
                         </div>
                     );
@@ -531,11 +562,42 @@ function WorkspaceRuntime({
                                 onOpenProfile={() => activate(PROFILE_PATH)}
                             />
                         ) : (
-                            <ProfileView loadProfile={loadProfile} />
+                            <ProfileView
+                                loadProfile={loadProfile}
+                                onDirtyChange={(dirty) =>
+                                    registry.setDirty(PROFILE_PATH, dirty)
+                                }
+                            />
                         )}
                     </WorkspacePanel>
                 );
             })}
+
+            <dialog
+                ref={closeDialog}
+                className="workspace-dialog"
+                aria-labelledby="workspace-discard-title"
+                aria-describedby="workspace-discard-message"
+                onCancel={(event) => {
+                    event.preventDefault();
+                    cancelClose();
+                }}
+            >
+                <h2 id="workspace-discard-title">
+                    Modifications non enregistrées
+                </h2>
+                <p id="workspace-discard-message">
+                    Fermer cette vue supprimera les modifications du profil.
+                </p>
+                <div className="proof-actions workspace-dialog-actions">
+                    <button type="button" autoFocus onClick={cancelClose}>
+                        Annuler
+                    </button>
+                    <button type="button" onClick={confirmClose}>
+                        Fermer sans enregistrer
+                    </button>
+                </div>
+            </dialog>
         </main>
     );
 }

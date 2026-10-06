@@ -97,9 +97,29 @@ test('fermer détruit l’instance et rouvrir restitue un état local vierge', a
         .getAttribute('data-instance-id');
     await note.fill('Cette note doit disparaître');
 
-    await page.getByRole('button', { name: 'Fermer Profil' }).click();
+    const closeButton = page.getByRole('button', { name: 'Fermer Profil' });
+    await closeButton.click();
+    const dialog = page.getByRole('dialog', {
+        name: 'Modifications non enregistrées',
+    });
+    await expect(dialog).toBeVisible();
+    await expect(page).toHaveURL(/\/workspace\/profile$/);
+    await expect(page.getByRole('tab', { name: 'Profil' })).toHaveCount(1);
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(closeButton).toBeFocused();
+    await expect(note).toHaveValue('Cette note doit disparaître');
+
+    await closeButton.click();
+    await dialog
+        .getByRole('button', { name: 'Fermer sans enregistrer' })
+        .click();
     await expect(page).toHaveURL(/\/workspace\/dashboard$/);
     await expect(page.getByRole('tab', { name: 'Profil' })).toHaveCount(0);
+    await expect(
+        page.getByRole('tab', { name: 'Tableau de bord' })
+    ).toBeFocused();
     await expect(page.locator('[data-instance-id]')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Ouvrir le profil' }).click();

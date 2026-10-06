@@ -2,7 +2,7 @@
 
 - **Date initiale :** 2026-10-05
 - **Mise à jour :** 2026-10-06
-- **Statut :** primitive `Activity` et première tranche d'hôte navigateur
+- **Statut :** primitive `Activity` et cinq tranches d'hôte navigateur
   qualifiées ; parité produit complète non acquise
 - **Référence produit :**
   [workspace à vues vivantes](./workspace-vues-vivantes-accessibilite-2026-10-04.md)
@@ -78,7 +78,7 @@ rechargements implicites. La version `8.4.0`, encore supportée, remplace la
 version `react-router-dom` 6.30.3 produite par le générateur Nx ; React Router 8
 publie désormais l'API navigateur depuis `react-router`.
 
-Seize tests Vitest et six parcours Chromium vérifient maintenant :
+Vingt-trois tests Vitest et six parcours Chromium vérifient maintenant :
 
 1. ouverture d'une URL canonique et création d'une seule frontière par vue ;
 2. conservation du même nœud, d'un champ non contrôlé et du state local ;
@@ -103,6 +103,16 @@ Seize tests Vitest et six parcours Chromium vérifient maintenant :
     incarnation de session ;
 14. refus fail-closed d'un snapshot de droits encore lié à la session
     précédente, même lorsque le sujet métier est identique.
+15. déclaration explicite du statut `dirty` par la page, sans inspection du DOM
+    ou détection universelle des formulaires ;
+16. changement d'onglet sans confirmation et fermeture `dirty` impossible sans
+    décision explicite ;
+17. annulation non destructive, puis confirmation qui démonte réellement la vue
+    et restitue le focus à une tab survivante ;
+18. protection `beforeunload` installée uniquement tant qu'une vue ouverte est
+    `dirty` ;
+19. révocation de droit et fin de session prioritaires sur le brouillon, avec
+    destruction immédiate et purge de sécurité.
 
 ### Deuxième tranche : contexte d'activation exact
 
@@ -148,9 +158,9 @@ La révocation du profil annule également sa requête en vol avec
 `AbortController`, oublie sa promesse et purge la donnée dédupliquée, même si la
 vue avait déjà été fermée avant le nouveau snapshot. Une restitution explicite
 du droit puis une nouvelle ouverture doit produire une nouvelle instance, un
-état local vierge et un nouveau GET. Le champ non enregistré détruit par
-l'oracle prouve la perte de l'état local ; il ne prétend pas encore implémenter
-le futur modèle `dirty` ou sa confirmation de fermeture.
+état local vierge et un nouveau GET. À cette troisième tranche, le champ non
+enregistré détruit par l'oracle prouvait la perte de l'état local ; il ne
+constituait pas encore le modèle `dirty`, ajouté par la cinquième tranche.
 
 ### Quatrième tranche : fin et remplacement de session
 
@@ -194,18 +204,59 @@ véritable import AST du plugin Vite React officiel : un commentaire, un target
 Vite générique ou une simple chaîne de caractères ne peut donc pas usurper la
 plateforme.
 
+### Cinquième tranche : brouillon et fermeture sûre
+
+Le statut `dirty` appartient à la page, seule autorité capable de comparer son
+état courant à son état métier de référence. Le champ pilote le déclare
+directement depuis son gestionnaire `onChange`. Le shell ne parcourt pas le DOM,
+ne devine pas les formulaires et n'introduit ni registre global magique, ni
+protocole de sauvegarde fictif. `WorkspaceRegistry` publie `dirtyPaths` et la
+fermeture en attente dans le même snapshot immuable que les chemins ouverts ;
+`useSyncExternalStore` fournit donc un état cohérent au rendu sans Effect de
+copie ou de synchronisation dérivée.
+
+Un simple changement de tab ne demande jamais confirmation : la vue reste
+vivante. La fermeture d'une vue propre la démonte immédiatement. Celle d'une vue
+`dirty` ouvre un élément HTML `dialog` modal avec titre et description reliés,
+place le focus initial sur l'action la moins destructive et exige soit une
+annulation, soit « Fermer sans enregistrer ». Annuler conserve la frontière, sa
+valeur et son URL ; confirmer détruit l'instance et son contexte d'activation,
+puis focalise une tab survivante. `Escape` suit l'événement natif `cancel` du
+dialogue et emprunte le même chemin d'annulation. Aucun overlay, focus trap ou
+gestionnaire clavier parallèle n'est réimplémenté.
+
+Tant qu'au moins une vue ouverte est `dirty`, un listener `beforeunload` demande
+au navigateur de protéger une sortie externe. Il est retiré dès que la dernière
+vue redevient propre. Cette protection reste volontairement `best-effort` : les
+navigateurs contrôlent le texte et peuvent ne pas afficher le dialogue,
+notamment sur certains parcours mobiles. Elle ne remplace jamais une sauvegarde
+métier, un brouillon serveur ou une persistance locale.
+
+La sécurité est prioritaire sur la conservation : révocation, fin de session ou
+remplacement d'identité détruisent une vue même `dirty` et ferment une
+confirmation devenue obsolète. Inversement, une fermeture utilisateur normale ne
+purge pas le cache de données partagé placé au-dessus du lifecycle de vue : la
+réouverture crée un état local neuf sans GET artificiel. La révocation de
+sécurité continue, elle, d'annuler la requête et de purger ce cache.
+
+Cette tranche ne généralise pas encore le contrat à tous les formulaires, ne
+définit pas « enregistrer avant fermeture », ne couvre pas les fermetures en
+masse et ne prétend pas rendre `beforeunload` fiable. Toute page future devra
+fournir son propre calcul métier de `dirty` et ses propres actions de
+sauvegarde, puis réutiliser seulement le protocole explicite du shell.
+
 ## Niveau de preuve atteint et limites
 
 La qualification `jsdom` de la primitive et cette première application
 navigateur prouvent désormais le routeur, la conservation/destruction et
 l'absence de trafic GET/POST provoqué par un switch, ainsi que le refus et la
-révocation d'une permission de page déjà publiée par le host, ainsi que la fin
-et le remplacement local d'un snapshot de session. Elles ne prouvent toujours
-pas le transport distant de ce snapshot, garde dirty, plafond et profil mémoire,
-accessibilité APG complète/RTL/zoom/lecteur d'écran, suspension des ressources
-longues ni parité fonctionnelle avec le back-office Angular. La présence des
-renderers React métier ne tient pas lieu de shell et aucune de ces limites ne
-doit être reformulée comme acquise.
+révocation d'une permission de page déjà publiée par le host, la fin et le
+remplacement local d'un snapshot de session, ainsi que la garde `dirty` de
+fermeture. Elles ne prouvent toujours pas le transport distant du snapshot, le
+plafond et profil mémoire, l'accessibilité APG complète/RTL/zoom/lecteur
+d'écran, la suspension des ressources longues ni la parité fonctionnelle avec le
+back-office Angular. La présence des renderers React métier ne tient pas lieu de
+shell et aucune de ces limites ne doit être reformulée comme acquise.
 
 Preuves locales du 2026-10-05 : `check:generator-platform:reactjs` compile les
 sorties générées puis passe `57/57` scénarios React ; la gate complète passe
@@ -214,10 +265,11 @@ explicitement les fichiers TSX sous `tools/`, afin que cette preuve ne soit pas
 exécutée tout en restant invisible au contrôle de dead-code.
 
 Preuves locales du 2026-10-06 : lint React Hooks, typecheck strict, build Vite,
-`16/16` tests Vitest et `6/6` parcours Chromium passent. Trois mutants retirant
-respectivement la `key` de session, la liaison droits/session et le cleanup
-réseau sont tués. L'oracle navigateur sera la preuve autoritative après son
-passage dans la CI GitHub.
+`23/23` tests Vitest et `6/6` parcours Chromium passent. Aux trois mutants de
+session déjà tués s'ajoutent quatre mutations `dirty` : contournement de la
+confirmation, annulation destructive, révocation bloquée par le brouillon et
+retrait de `preventDefault()` sur `beforeunload`. Chacune rend au moins un
+oracle rouge. La CI GitHub restera la preuve autoritative après publication.
 
 ## Sources
 
@@ -229,3 +281,6 @@ passage dans la CI GitHub.
 - [React — éviter les Effects inutiles](https://react.dev/learn/you-might-not-need-an-effect)
 - [React Router — modes](https://reactrouter.com/start/modes)
 - [React Router — BrowserRouter](https://reactrouter.com/api/declarative-routers/BrowserRouter)
+- [MDN — `HTMLDialogElement.showModal()`](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/showModal)
+- [MDN — événement `beforeunload`](https://developer.mozilla.org/docs/Web/API/Window/beforeunload_event)
+- [WAI-ARIA APG — Modal Dialog Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)
