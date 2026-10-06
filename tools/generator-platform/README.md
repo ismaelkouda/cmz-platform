@@ -428,15 +428,15 @@ its targets. A standalone replay validator checks the closed schema and the
 exact canonical capability union. No composition root or joint HTTP execution
 is claimed yet; those are the next C3/C4 proofs.
 
-C3 now materializes one Angular composition target from that plan. Each node is
-rendered through the already-proven v2 primitive renderer into its own
-`src/nodes/<node-id>` boundary, then a minimal `PageComposition` service and an
-explicit provider list wire the instances together. Host URL tokens come from
-a closed, versioned binding document; the renderer negotiates against an
-independent Angular capability allowlist and rechecks every referenced file and
-SHA-256 before rendering.
+C3 materializes Angular and React composition targets from that plan. Each node
+is rendered through the already-proven v2 primitive renderer into its own
+`src/nodes/<node-id>` boundary. Angular emits a minimal `PageComposition`
+service and an explicit provider list. React emits a hook factory whose clients
+and host `FetchPort` remain explicit dependencies. Both targets negotiate the
+same bounded capability set and recheck every referenced file and SHA-256
+before rendering.
 
-The command reuses the existing transactional publisher:
+The command below remains the transactional Angular publication path:
 
 ```bash
 bun run generate:page-composition --plan <plan.json> \
@@ -444,18 +444,20 @@ bun run generate:page-composition --plan <plan.json> \
   --out <directory> [--dry-run | --apply <change_set_id>]
 ```
 
-The output deliberately contains no component or template. C3 proves a strict,
-published composition root.
+The output deliberately contains no component or template. React composition
+is currently materialized and executed by the native stack gate, but has no
+publication CLI yet; that absence must not be hidden by manually copying its
+generated files into an application.
 
-C4 now prepares that exact output for the native Angular stack suite and tests
-it from an external consumer. The hermetic host observes two GET requests and
-one POST together, including URL, payload, auth, cache bypass, isolated partial
-failure, targeted retry, latest-wins and destroy cancellation, and double-submit
-rejection. The oracle imports no generator internals and adds no production
-runtime. Policies currently declared as `none` (automatic retry, invalidation,
-idempotency key and post-success effect) are verified as absent rather than
-invented. Angular remains the only composition target proven at runtime; C5 is
-the representative vertical slice.
+C4 prepares both generated outputs for their native stack suites and tests them
+from external consumers. The hermetic hosts observe the two GET requests and
+the POST together, including payload, host authentication, cache bypass,
+targeted invalidation, cancellation and double-submit rejection. The React C5
+oracle also proves permission revocation after rerender and preserves the
+remote mutation success when the subsequent local refresh fails. These oracles
+import no generator internals and add no production runtime. C5 remains the
+representative Angular UI vertical slice; the React visual application is the
+next increment, not a claim made by this runtime proof.
 
 PLAT-2 adds two independent, fail-closed ingestion paths:
 

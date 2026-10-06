@@ -2846,36 +2846,58 @@ Figma, désormais source partielle différée :
   pour fermer le backlog. Aucune parité produit totale n'est encore déclarée.
   **REACT-PLATFORM-1 — profil cible et frontière live formalisés localement le
   2026-10-06 :** ADR-0086 remplace l'ancienne stratégie de symétrie de
-  bibliothèques d'ADR-0012 par un profil React natif et minimal : Nx/Vite,
-  React Router déclaratif, état React local, clients générés derrière le
-  `FetchPort`, Tailwind + SCSS Modules et tests Vitest/Testing
-  Library/Playwright/axe. Les dépendances de query, store, formulaire, i18n ou
-  widgets restent conditionnelles à un cas réel et à la qualification
-  `add-library`; React Aria est un candidat, pas une installation décidée. Le
-  document vivant `react-platform-profile.md` fournit à l'humain ou au LLM la
-  hiérarchie d'autorité, les règles par capacité, la matrice Angular/React et
-  les gates du prochain vertical slice. La politique
-  `react-live-integration-policy.md` conserve les URL SEOS dans la seule
-  configuration runtime existante, sépare PR hermétique, lecture live opt-in et
-  mutations isolées, et interdit secrets, PII et retries dangereux. Ce lot
-  n'installe rien, n'appelle aucun service externe et ne revendique aucune
-  parité nouvelle. Prochaine tranche : produire la gestion des utilisateurs
-  React de bout en bout sur serveur local déterministe, puis seulement mesurer
-  la valeur marginale d'un test live lecture seule.
-  **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
-  navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
-  des capacités non déclarées, la non-activation des lignes et la géométrie
-  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
-  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
-  fournit aucun `action-request` correspondant : les rendre opérables maintenant
-  inventerait transport, permissions et effets. Les oracles exigent donc
-  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
-  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
-  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
-  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
-  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
-  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
-  réalisation formalisée le 2026-10-02 :** le guide exhaustif
+  bibliothèques d'ADR-0012 par un profil React natif et minimal : Nx/Vite, React
+  Router déclaratif, état React local, clients générés derrière le `FetchPort`,
+  Tailwind + SCSS Modules et tests Vitest/Testing Library/Playwright/axe. Les
+  dépendances de query, store, formulaire, i18n ou widgets restent
+  conditionnelles à un cas réel et à la qualification `add-library`; React Aria
+  est un candidat, pas une installation décidée. Le document vivant
+  `react-platform-profile.md` fournit à l'humain ou au LLM la hiérarchie
+  d'autorité, les règles par capacité, la matrice Angular/React et les gates du
+  prochain vertical slice. La politique `react-live-integration-policy.md`
+  conserve les URL SEOS dans la seule configuration runtime existante, sépare PR
+  hermétique, lecture live opt-in et mutations isolées, et interdit secrets, PII
+  et retries dangereux. Ce lot n'installe rien, n'appelle aucun service externe
+  et ne revendique aucune parité nouvelle. Prochaine tranche : produire la
+  gestion des utilisateurs React de bout en bout sur serveur local déterministe,
+  puis seulement mesurer la valeur marginale d'un test live lecture seule.
+  **REACT-PLATFORM-2 — composition C5 React native engagée localement le
+  2026-10-06 :** le manque préalable à l'application a été fermé dans le
+  générateur plutôt que contourné par une page écrite à la main. Un renderer de
+  composition React consomme désormais le même `page-execution-plan` adressé par
+  contenu que la cible Angular, matérialise les deux `list-query` et
+  l'`action-request` sous des frontières de nœuds séparées, puis expose une
+  factory de hooks avec clients host explicites. Le renderer `action-request-v2`
+  reste fermé par défaut sur l'auth publique ; seule la composition éprouvée
+  active explicitement le mode authentifié bearer et conserve les schemes dans
+  la politique transmise au `FetchPort`. La garde de permission est recalculée à
+  chaque rendu et revérifiée avant POST. Après un succès distant, seule
+  `users-list` est rechargée ; une panne de cette invalidation devient l'état
+  d'erreur de la query sans transformer la mutation déjà commise en échec ni
+  produire une promesse rejetée non observée. La suite React native atteint
+  64/64 tests, dont 7 oracles C5 : GET indépendants, refus avant réseau,
+  révocation de permission, POST et mapping exacts, invalidation ciblée, absence
+  d'invalidation sur erreur métier, succès distant préservé si le refresh échoue
+  et annulation des GET au démontage. La régression Angular reste verte à 69/69.
+  Limites explicites : aucune présentation React, aucun CLI de publication
+  transactionnelle React et aucun appel SEOS live ne sont encore revendiqués.
+  Prochaine tranche : publier durablement cette sortie dans une application
+  React hermétique, puis réaliser sa présentation accessible et adaptative sans
+  copier le HTML Angular. **ADAPT-11b — engagé localement après fusion
+  d'ADAPT-11a :** cinq scénarios navigateur bornent la toolbar C5, le GET unique
+  de rafraîchissement, l'absence des capacités non déclarées, la non-activation
+  des lignes et la géométrie panneau/rail Medium + Expanded. La référence
+  visuelle conserve `Exporter` et les actions de ligne comme capacités
+  optionnelles, mais le contrat C5 ne fournit aucun `action-request`
+  correspondant : les rendre opérables maintenant inventerait transport,
+  permissions et effets. Les oracles exigent donc `Créer`, `Rafraîchir`,
+  `Filtres` et refusent export, colonne d'actions, menu, dialogue ou activation
+  implicite. Quatre échecs attendus sont bornés par deux signatures historiques
+  exactes, sans `skip`, `todo`, runtime, work order, contrat API ou dépendance.
+  La passe Chromium ciblée donne `5/5` : quatre attendus et un succès réel ; la
+  régression C5 complète donne `55/55`, avec lint, tests Angular et build
+  production verts. **ADAPT-11c — autorité de réalisation formalisée le
+  2026-10-02 :** le guide exhaustif
   [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
   donne à un humain ou à un LLM la hiérarchie des sources, les règles
   numérotées, la matrice Compact/Medium/Expanded, le choix des primitives

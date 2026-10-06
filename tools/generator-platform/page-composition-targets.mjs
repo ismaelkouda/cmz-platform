@@ -21,13 +21,26 @@ import {
     ANGULAR_PAGE_COMPOSITION_CAPABILITIES,
     renderAngularPageComposition,
 } from './renderers/angular-page-composition-renderer.mjs';
+import { renderReactActionRequestV2 } from './renderers/react-action-request-v2-renderer.mjs';
+import { renderReactListQueryV2 } from './renderers/react-list-query-v2-renderer.mjs';
+import {
+    REACT_PAGE_COMPOSITION_CAPABILITIES,
+    renderReactPageComposition,
+} from './renderers/react-page-composition-renderer.mjs';
 import {
     loadJson,
     repositoryRoot,
     validateJsonSchema,
 } from './validate-ir.mjs';
 
-const PROFILE = new URL('./profiles/angular-nx.profile.json', import.meta.url);
+const ANGULAR_PROFILE = new URL(
+    './profiles/angular-nx.profile.json',
+    import.meta.url
+);
+const REACT_PROFILE = new URL(
+    './profiles/react-typescript.profile.json',
+    import.meta.url
+);
 const PLAN_SCHEMA = new URL(
     './schemas/page-execution-plan.schema.json',
     import.meta.url
@@ -38,7 +51,7 @@ const HOST_BINDINGS_SCHEMA = new URL(
 );
 
 function fail(message) {
-    throw new Error(`angular page composition target: ${message}`);
+    throw new Error(`page composition target: ${message}`);
 }
 
 function digest(document) {
@@ -118,7 +131,7 @@ function serviceBinding(hostBindings, serviceId) {
     return { services: { [serviceId]: binding } };
 }
 
-async function renderPrimitive(node, model, operation, hostBindings) {
+async function renderAngularPrimitive(node, model, operation, hostBindings) {
     const kind =
         model.kind === 'list-query-execution-model' ? 'query' : 'command';
     const artifactPlan = buildArtifactPlan(model, model.kind);
@@ -162,30 +175,54 @@ async function renderPrimitive(node, model, operation, hostBindings) {
     };
 }
 
-export async function computeAngularPageCompositionTarget({
-    plan,
-    artifactRoot = repositoryRoot,
-    hostBindings,
-} = {}) {
-    const [planSchema, hostBindingsSchema, profile] = await Promise.all([
-        loadJson(PLAN_SCHEMA),
-        loadJson(HOST_BINDINGS_SCHEMA),
-        loadJson(PROFILE),
-    ]);
+async function renderReactPrimitive(node, model) {
+    const kind =
+        model.kind === 'list-query-execution-model' ? 'query' : 'command';
+    const artifactPlan = buildArtifactPlan(model, model.kind);
+    const rendered =
+        kind === 'query'
+            ? renderReactListQueryV2(model)
+            : renderReactActionRequestV2(model, {
+                  allowAuthenticated: true,
+                  allowCallerDeclaredInvalidation: true,
+                  allowRequiredStringFields: true,
+                  allowStatusEnvelope: true,
+              });
+    const files = await canonicalizeGeneratedFiles(rendered.files);
+    const bindings = Object.fromEntries(
+        Object.keys(files).map((path) => {
+            if (path === 'src/index.ts') return [path, 'public-api'];
+            if (path === 'src/models.ts') return [path, 'domain-model'];
+            if (path === 'src/errors.ts') return [path, 'response-decoder'];
+            if (path === 'src/validation.ts') return [path, 'input-validator'];
+            if (path.endsWith('.decoder.ts')) return [path, 'response-decoder'];
+            if (path.endsWith('.client.ts'))
+                return [path, 'integration-client'];
+            if (path.includes('/use-') || path.startsWith('src/use-')) {
+                return [path, 'execution-controller'];
+            }
+            fail(`${node.id} produced an unclassified file ${path}`);
+        })
+    );
+    return {
+        kind,
+        nodeId: node.id,
+        target: {
+            ...rendered,
+            ...bindRenderedArtifacts(artifactPlan, files, bindings),
+        },
+    };
+}
+
+async function resolveCompositionNodes(plan, artifactRoot, capabilities) {
+    const planSchema = await loadJson(PLAN_SCHEMA);
     assertErrors(
         'invalid page execution plan',
         validatePageExecutionPlan(plan, planSchema)
     );
     assertErrors(
-        'unsupported Angular page capabilities',
-        validatePageExecutionCapabilities(
-            plan,
-            ANGULAR_PAGE_COMPOSITION_CAPABILITIES
-        )
-    );
-    assertErrors(
-        'invalid Angular host bindings',
-        validateJsonSchema(hostBindings, hostBindingsSchema)
+        'unsupported page capabilities',
+        validatePageExecutionCapabilities(plan, capabilities)
     );
     const pageContractDocument = await readRegularArtifact(
         artifactRoot,
@@ -196,7 +233,7 @@ export async function computeAngularPageCompositionTarget({
     }
     const nodes = [...plan.query_nodes, ...plan.command_nodes];
     const documents = new Map();
-    const renderedNodes = [];
+    const resolved = [];
     for (const node of nodes) {
         const reference = node.primitive_ref;
         const key = `${reference.uri}:${reference.sha256}`;
@@ -223,9 +260,37 @@ export async function computeAngularPageCompositionTarget({
             assertErrors(`${node.id} primitive document is invalid`, errors);
             documents.set(key, model);
         }
-        const operation = assertPrimitiveReference(node, model);
+        resolved.push({
+            node,
+            model,
+            operation: assertPrimitiveReference(node, model),
+        });
+    }
+    return resolved;
+}
+
+export async function computeAngularPageCompositionTarget({
+    plan,
+    artifactRoot = repositoryRoot,
+    hostBindings,
+} = {}) {
+    const [hostBindingsSchema, profile, resolvedNodes] = await Promise.all([
+        loadJson(HOST_BINDINGS_SCHEMA),
+        loadJson(ANGULAR_PROFILE),
+        resolveCompositionNodes(
+            plan,
+            artifactRoot,
+            ANGULAR_PAGE_COMPOSITION_CAPABILITIES
+        ),
+    ]);
+    assertErrors(
+        'invalid Angular host bindings',
+        validateJsonSchema(hostBindings, hostBindingsSchema)
+    );
+    const renderedNodes = [];
+    for (const { node, model, operation } of resolvedNodes) {
         renderedNodes.push(
-            await renderPrimitive(node, model, operation, hostBindings)
+            await renderAngularPrimitive(node, model, operation, hostBindings)
         );
     }
     const rendered = renderAngularPageComposition(plan, renderedNodes);
@@ -237,6 +302,42 @@ export async function computeAngularPageCompositionTarget({
         plan,
         artifactPlan,
         angular: {
+            ...bound,
+            manifest: buildGenerationManifest(
+                plan,
+                artifactPlan,
+                profile,
+                bound
+            ),
+        },
+    };
+}
+
+export async function computeReactPageCompositionTarget({
+    plan,
+    artifactRoot = repositoryRoot,
+} = {}) {
+    const [profile, resolvedNodes] = await Promise.all([
+        loadJson(REACT_PROFILE),
+        resolveCompositionNodes(
+            plan,
+            artifactRoot,
+            REACT_PAGE_COMPOSITION_CAPABILITIES
+        ),
+    ]);
+    const renderedNodes = [];
+    for (const { node, model } of resolvedNodes) {
+        renderedNodes.push(await renderReactPrimitive(node, model));
+    }
+    const rendered = renderReactPageComposition(plan, renderedNodes);
+    const files = await canonicalizeGeneratedFiles(rendered.files);
+    const artifactPlan = buildArtifactPlan(plan, 'page-execution-plan');
+    const bound = bindRenderedArtifacts(artifactPlan, files, rendered.bindings);
+    typecheckGenerated(bound.files, 'react-page-composition', repositoryRoot);
+    return {
+        plan,
+        artifactPlan,
+        react: {
             ...bound,
             manifest: buildGenerationManifest(
                 plan,

@@ -40,21 +40,21 @@ une nouvelle cible.
 
 ## 3. Baseline et dépendances conditionnelles
 
-| Besoin              | Baseline React                                                | Admission conditionnelle                                |
-| ------------------- | ------------------------------------------------------------- | -------------------------------------------------------- |
-| runtime             | React + React DOM + TypeScript                                | aucune alternative sans ADR                              |
-| workspace/build     | Nx + Vite + plugin React                                      | changer seulement sur mesure incompatible                |
-| navigation          | React Router déclaratif                                       | Data/Framework après besoin de navigation mesuré         |
-| état local          | props, `useState`, `useReducer`, contexte borné               | store externe après graphe réellement partagé            |
-| store externe       | `useSyncExternalStore`                                        | Redux/Zustand après qualification                         |
-| données métier      | clients générés + `FetchPort` hôte                            | bibliothèque de query après gap mesuré                    |
-| formulaires         | HTML natif + état React + validation contractuelle            | bibliothèque form/schema après cas complexe réel          |
-| styles              | Tailwind + SCSS Modules + tokens                              | aucune CSS-in-JS par défaut                               |
-| i18n                | wording React local + `Intl`                                  | runtime i18n après besoin multilingue réel                |
-| widgets simples     | HTML sémantique                                                | aucune dépendance                                         |
-| widgets complexes   | évaluation React Aria Components                              | installation après qualification complète                |
-| unit/intégration    | Vitest + React Testing Library                                | outil supplémentaire seulement pour une lacune prouvée    |
-| navigateur/a11y     | Playwright + axe-core + revue humaine AT                      | service externe après valeur marginale démontrée          |
+| Besoin            | Baseline React                                     | Admission conditionnelle                               |
+| ----------------- | -------------------------------------------------- | ------------------------------------------------------ |
+| runtime           | React + React DOM + TypeScript                     | aucune alternative sans ADR                            |
+| workspace/build   | Nx + Vite + plugin React                           | changer seulement sur mesure incompatible              |
+| navigation        | React Router déclaratif                            | Data/Framework après besoin de navigation mesuré       |
+| état local        | props, `useState`, `useReducer`, contexte borné    | store externe après graphe réellement partagé          |
+| store externe     | `useSyncExternalStore`                             | Redux/Zustand après qualification                      |
+| données métier    | clients générés + `FetchPort` hôte                 | bibliothèque de query après gap mesuré                 |
+| formulaires       | HTML natif + état React + validation contractuelle | bibliothèque form/schema après cas complexe réel       |
+| styles            | Tailwind + SCSS Modules + tokens                   | aucune CSS-in-JS par défaut                            |
+| i18n              | wording React local + `Intl`                       | runtime i18n après besoin multilingue réel             |
+| widgets simples   | HTML sémantique                                    | aucune dépendance                                      |
+| widgets complexes | évaluation React Aria Components                   | installation après qualification complète              |
+| unit/intégration  | Vitest + React Testing Library                     | outil supplémentaire seulement pour une lacune prouvée |
+| navigateur/a11y   | Playwright + axe-core + revue humaine AT           | service externe après valeur marginale démontrée       |
 
 `package.json` et le catalogue Bun restent l'autorité de version. Ce tableau
 décrit des rôles, pas une liste de versions copiée dans la documentation.
@@ -89,8 +89,8 @@ lifecycle React ; la vue ne recode pas leur protocole.
 
 ### 5.1 Routing
 
-- Employer `BrowserRouter`, `Routes`, `Route`, `Link`, `NavLink`,
-  `useNavigate` et `useLocation` selon le besoin.
+- Employer `BrowserRouter`, `Routes`, `Route`, `Link`, `NavLink`, `useNavigate`
+  et `useLocation` selon le besoin.
 - Le routeur porte l'URL, l'historique, les paramètres et la navigation ; il ne
   devient pas une seconde couche métier.
 - Ne pas placer un loader ou une action React Router en concurrence avec un
@@ -106,8 +106,8 @@ lifecycle React ; la vue ne recode pas leur protocole.
 - Utiliser un événement utilisateur pour un effet provoqué par cet événement.
 - Réserver `useEffect` à la synchronisation avec un système externe et fournir
   un cleanup symétrique.
-- Garder l'état aussi local que possible ; ne pas promouvoir un état pour
-  éviter quelques props sans analyser sa durée de vie.
+- Garder l'état aussi local que possible ; ne pas promouvoir un état pour éviter
+  quelques props sans analyser sa durée de vie.
 - `useSyncExternalStore` exige un snapshot immuable et stable, un abonnement
   stable et un désabonnement réel.
 - Les modes React de développement ne doivent provoquer ni double mutation
@@ -127,8 +127,8 @@ lifecycle React ; la vue ne recode pas leur protocole.
 
 ### 5.4 Formulaires
 
-- Chaque champ possède un label programmatique, une description si utile et
-  une erreur associée.
+- Chaque champ possède un label programmatique, une description si utile et une
+  erreur associée.
 - Les attributs HTML (`required`, type, autocomplete) sont utilisés lorsqu'ils
   expriment correctement la règle.
 - La validation client améliore l'expérience ; elle ne remplace pas la réponse
@@ -141,9 +141,9 @@ lifecycle React ; la vue ne recode pas leur protocole.
 
 - Tailwind exprime les utilitaires répétables ; SCSS Modules porte la structure
   locale, les états complexes et les sélecteurs difficiles à lire en classes.
-- Le script de scaffolding ne possède actuellement aucune référence React
-  active et doit donc échouer plutôt que deviner. Le premier vertical slice
-  devra qualifier son câblage Tailwind, le prouver visuellement, puis devenir la
+- Le script de scaffolding ne possède actuellement aucune référence React active
+  et doit donc échouer plutôt que deviner. Le premier vertical slice devra
+  qualifier son câblage Tailwind, le prouver visuellement, puis devenir la
   référence React du script dans un lot dédié. Ne pas contourner cet arrêt par
   une configuration mémorisée ou copiée d'Angular.
 - Les tokens, reset et thèmes peuvent être globaux ; les styles métier ne le
@@ -152,8 +152,8 @@ lifecycle React ; la vue ne recode pas leur protocole.
   la voir.
 - Le layout répond à l'espace utile et au contenu, pas à une matrice de pixels
   présentée comme une norme universelle.
-- Compact, Medium et Expanded sont des contextes d'usage. Ils ne prescrivent
-  pas automatiquement bottom sheet, side sheet ou dialogue centré.
+- Compact, Medium et Expanded sont des contextes d'usage. Ils ne prescrivent pas
+  automatiquement bottom sheet, side sheet ou dialogue centré.
 
 ### 5.6 Internationalisation
 
@@ -181,19 +181,19 @@ lifecycle React ; la vue ne recode pas leur protocole.
 
 ## 6. Matrice de capacités Angular ↔ React
 
-| Capacité                   | Angular                                      | React                                                   | État React honnête                      |
-| -------------------------- | -------------------------------------------- | ------------------------------------------------------- | --------------------------------------- |
-| shell/build                | Angular CLI/Nx                               | Nx/Vite                                                 | prouvé sur app de workspace             |
-| routing                    | Angular Router                               | React Router déclaratif                                 | prouvé                                  |
-| état de vue                | Signals/primitives Angular                   | Hooks React                                             | prouvé par primitives et workspace      |
-| store externe              | service/signal adapté                        | `useSyncExternalStore`                                  | prouvé sur workspace                    |
-| requêtes/actions           | clients générés + host                       | clients générés + `FetchPort`                           | prouvé hors page métier complète        |
-| composition N×N            | preuve C5 Angular                            | composition générée sans référence UI complète          | partiel                                 |
-| UI officielle complexe     | Angular Material/CDK/Aria selon qualification | HTML natif ; React Aria candidat non encore qualifié  | non qualifié                            |
-| i18n                       | `@angular/localize`                          | messages locaux + `Intl` pour le besoin actuel          | décision, preuve d'app à produire       |
-| tests unitaires            | Vitest                                       | Vitest + React Testing Library                          | prouvé                                  |
-| navigateur/accessibilité   | Playwright + axe + humain                    | Playwright + axe + humain                               | automatisable partiellement prouvé      |
-| app métier composite réelle | C5 utilisateurs                             | à produire sur les mêmes contrats                       | non atteint                             |
+| Capacité                    | Angular                                       | React                                                  | État React honnête                 |
+| --------------------------- | --------------------------------------------- | ------------------------------------------------------ | ---------------------------------- |
+| shell/build                 | Angular CLI/Nx                                | Nx/Vite                                                | prouvé sur app de workspace        |
+| routing                     | Angular Router                                | React Router déclaratif                                | prouvé                             |
+| état de vue                 | Signals/primitives Angular                    | Hooks React                                            | prouvé par primitives et workspace |
+| store externe               | service/signal adapté                         | `useSyncExternalStore`                                 | prouvé sur workspace               |
+| requêtes/actions            | clients générés + host                        | clients générés + `FetchPort`                          | prouvé hors page métier complète   |
+| composition N×N             | preuve C5 Angular                             | runtime C5 généré et testé ; application UI à produire | partiel                            |
+| UI officielle complexe      | Angular Material/CDK/Aria selon qualification | HTML natif ; React Aria candidat non encore qualifié   | non qualifié                       |
+| i18n                        | `@angular/localize`                           | messages locaux + `Intl` pour le besoin actuel         | décision, preuve d'app à produire  |
+| tests unitaires             | Vitest                                        | Vitest + React Testing Library                         | prouvé                             |
+| navigateur/accessibilité    | Playwright + axe + humain                     | Playwright + axe + humain                              | automatisable partiellement prouvé |
+| app métier composite réelle | C5 utilisateurs                               | à produire sur les mêmes contrats                      | non atteint                        |
 
 Cette table interdit de déclarer une parité à partir de la seule présence d'un
 renderer ou d'une documentation.
@@ -226,8 +226,7 @@ invalidation, erreurs, permissions et UI adaptative. Il doit :
 - compiler, lint, tester et construire en production ;
 - passer les scénarios Playwright, axe et la revue humaine ciblée ;
 - mesurer bundle, réseau, focus, reflow, lifecycle et absence de fuite ;
-- rester hermétique en PR ; le backend SEOS live relève de la politique
-  séparée.
+- rester hermétique en PR ; le backend SEOS live relève de la politique séparée.
 
 Tant que cette preuve n'existe pas, le profil React est une décision M1 appuyée
 par plusieurs preuves techniques partielles, pas une parité produit M4.
