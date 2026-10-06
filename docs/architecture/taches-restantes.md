@@ -2770,12 +2770,25 @@ Figma, désormais source partielle différée :
   frontière sans nouveau GET. La révocation annule aussi le fetch en vol et
   purge le cache, même si la vue était déjà fermée ; réautoriser puis rouvrir
   exige une nouvelle instance, un état local vierge et un nouveau GET. Neuf
-  tests Vitest et quatre parcours Chromium passent. Le proof ne découvre pas les
-  droits distants et ne couvre pas encore fin/changement de session, garde
-  dirty, capacité/mémoire, ressources longues ni accessibilité complète.
-  **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
-  navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
-  des capacités non déclarées, la non-activation des lignes et la géométrie
+  tests Vitest et quatre parcours Chromium passent. À cette tranche, le proof ne
+  découvrait pas les droits distants et ne couvrait pas encore fin/changement de
+  session, garde dirty, capacité/mémoire, ressources longues ni accessibilité
+  complète ; `WORKSPACE-TABS-9` complète ensuite le cycle de session.
+  **WORKSPACE-TABS-9 — cycle de session React engagé localement le 2026-10-06
+  :** session et accès sont deux snapshots externes immuables mais liés par
+  `sessionKey` et `subjectKey`; les droits d'une ancienne incarnation échouent
+  fermés, même pour le même sujet. Le couple devient la `key` native du
+  `WorkspaceRuntime` : fin ou remplacement démontent donc registre, Dashboard
+  épinglé, vues `Activity`, cache et état local sans synchronisation dérivée
+  dans un Effect. Le cleanup annule le GET en vol. La déconnexion remplace l'URL
+  par `/signed-out` et l'historique ne ressuscite rien ; un remplacement
+  réévalue l'URL courante avec les seuls droits de la nouvelle session, sans
+  politique Dashboard inventée. Seize tests Vitest, six parcours Chromium et
+  trois mutants passent. Restent le transport distant du snapshot, dirty,
+  capacité/mémoire, ressources longues et accessibilité complète. **ADAPT-11b —
+  engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
+  bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
+  capacités non déclarées, la non-activation des lignes et la géométrie
   panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
   les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
   fournit aucun `action-request` correspondant : les rendre opérables maintenant

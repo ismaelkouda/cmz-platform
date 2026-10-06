@@ -11,9 +11,16 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 import './app.scss';
+import {
+    sameWorkspaceSession,
+    WorkspaceAccessStore,
+    WorkspaceSessionStore,
+} from './workspace-security-store';
+import type { WorkspaceSession } from './workspace-security-store';
 
 const DASHBOARD_PATH = '/workspace/dashboard';
 const PROFILE_PATH = '/workspace/profile';
+const SIGNED_OUT_PATH = '/signed-out';
 
 type WorkspacePath = typeof DASHBOARD_PATH | typeof PROFILE_PATH;
 
@@ -44,38 +51,11 @@ const VIEW_CATALOG: Readonly<Record<WorkspacePath, WorkspaceView>> = {
     },
 };
 
-export class WorkspaceAccessStore {
-    readonly #listeners = new Set<() => void>();
-    #paths: readonly string[];
-
-    constructor(paths: readonly string[] | null) {
-        this.#paths = WorkspaceAccessStore.#normalize(paths);
-    }
-
-    readonly getSnapshot = () => this.#paths;
-
-    readonly subscribe = (listener: () => void) => {
-        this.#listeners.add(listener);
-        return () => this.#listeners.delete(listener);
-    };
-
-    replace(paths: readonly string[] | null): void {
-        const next = WorkspaceAccessStore.#normalize(paths);
-        if (
-            next.length === this.#paths.length &&
-            next.every((path, index) => path === this.#paths[index])
-        ) {
-            return;
-        }
-
-        this.#paths = next;
-        for (const listener of this.#listeners) listener();
-    }
-
-    static #normalize(paths: readonly string[] | null): readonly string[] {
-        return Object.freeze([...new Set(paths ?? [])].sort());
-    }
-}
+const DEFAULT_SESSION: WorkspaceSession = Object.freeze({
+    sessionKey: 'proof-session-a',
+    subjectKey: 'proof-user-a',
+});
+const EMPTY_ACCESS_PATHS: readonly string[] = Object.freeze([]);
 
 class WorkspaceRegistry {
     readonly #listeners = new Set<() => void>();
@@ -173,9 +153,10 @@ function DashboardView({
     onOpenProfile: () => void;
 }) {
     const [count, setCount] = useState(0);
+    const [instanceId] = useState(() => crypto.randomUUID());
 
     return (
-        <article className="proof-card">
+        <article className="proof-card" data-dashboard-instance-id={instanceId}>
             <p className="proof-eyebrow">Vue épinglée</p>
             <h2>Tableau de bord</h2>
             <p>
@@ -280,6 +261,7 @@ function WorkspacePanel({
 
 interface AppProps {
     accessStore?: WorkspaceAccessStore;
+    sessionStore?: WorkspaceSessionStore;
 }
 
 interface ProfileRequest {
@@ -287,18 +269,30 @@ interface ProfileRequest {
     promise: Promise<ProfileSummary>;
 }
 
-function App({ accessStore }: AppProps = {}) {
+interface WorkspaceRuntimeProps {
+    accessStore: WorkspaceAccessStore;
+    session: WorkspaceSession;
+    onEndSession: () => void;
+    onReplaceSession: () => void;
+}
+
+function WorkspaceRuntime({
+    accessStore,
+    session,
+    onEndSession,
+    onReplaceSession,
+}: WorkspaceRuntimeProps) {
     const location = useLocation();
     const navigate = useNavigate();
     const requestedPath = normalizePath(location.pathname);
-    const [access] = useState(
-        () => accessStore ?? new WorkspaceAccessStore([PROFILE_PATH])
+    const accessSnapshot = useSyncExternalStore(
+        accessStore.subscribe,
+        accessStore.getSnapshot,
+        accessStore.getSnapshot
     );
-    const allowedAccessPaths = useSyncExternalStore(
-        access.subscribe,
-        access.getSnapshot,
-        access.getSnapshot
-    );
+    const allowedAccessPaths = sameWorkspaceSession(accessSnapshot, session)
+        ? (accessSnapshot?.paths ?? EMPTY_ACCESS_PATHS)
+        : EMPTY_ACCESS_PATHS;
     const requestedPathAllowed = canAccess(requestedPath, allowedAccessPaths);
     const activePath = requestedPathAllowed ? requestedPath : DASHBOARD_PATH;
     const [registry] = useState(
@@ -327,6 +321,8 @@ function App({ accessStore }: AppProps = {}) {
         profileRequest.current = null;
         profileCache.current = null;
     }, []);
+
+    useEffect(() => clearProfileRuntime, [clearProfileRuntime]);
 
     useEffect(() => {
         const currentPath = location.pathname;
@@ -464,12 +460,23 @@ function App({ accessStore }: AppProps = {}) {
                     données explicite.
                 </p>
                 {profileAllowed ? (
-                    <button type="button" onClick={() => access.replace([])}>
+                    <button
+                        type="button"
+                        onClick={() => accessStore.replace(session, [])}
+                    >
                         Révoquer l’accès au profil
                     </button>
                 ) : (
                     <p role="status">Accès au profil révoqué.</p>
                 )}
+                <div className="proof-actions">
+                    <button type="button" onClick={onReplaceSession}>
+                        Remplacer la session
+                    </button>
+                    <button type="button" onClick={onEndSession}>
+                        Terminer la session
+                    </button>
+                </div>
             </header>
 
             <div
@@ -530,6 +537,72 @@ function App({ accessStore }: AppProps = {}) {
                 );
             })}
         </main>
+    );
+}
+
+function App({ accessStore, sessionStore }: AppProps = {}) {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [stores] = useState(() => {
+        const session =
+            sessionStore ?? new WorkspaceSessionStore(DEFAULT_SESSION);
+        return {
+            session,
+            access:
+                accessStore ??
+                new WorkspaceAccessStore(session.getSnapshot(), [PROFILE_PATH]),
+        };
+    });
+    const session = useSyncExternalStore(
+        stores.session.subscribe,
+        stores.session.getSnapshot,
+        stores.session.getSnapshot
+    );
+
+    useEffect(() => {
+        if (!session && location.pathname !== SIGNED_OUT_PATH) {
+            void navigate(SIGNED_OUT_PATH, { replace: true });
+        }
+    }, [location.pathname, navigate, session]);
+
+    if (!session) {
+        return (
+            <main className="proof-shell">
+                <section
+                    className="proof-card"
+                    aria-labelledby="signed-out-title"
+                >
+                    <p className="proof-eyebrow">Session terminée</p>
+                    <h1 id="signed-out-title">Vous êtes déconnecté</h1>
+                    <p role="status">
+                        Toutes les vues et données du workspace ont été
+                        détruites.
+                    </p>
+                </section>
+            </main>
+        );
+    }
+
+    const replaceSession = () => {
+        const nextSession: WorkspaceSession = {
+            sessionKey: crypto.randomUUID(),
+            subjectKey:
+                session.subjectKey === 'proof-user-a'
+                    ? 'proof-user-b'
+                    : 'proof-user-a',
+        };
+        stores.access.replace(nextSession, [PROFILE_PATH]);
+        stores.session.replace(nextSession);
+    };
+
+    return (
+        <WorkspaceRuntime
+            key={`${session.sessionKey}:${session.subjectKey}`}
+            accessStore={stores.access}
+            session={session}
+            onEndSession={() => stores.session.replace(null)}
+            onReplaceSession={replaceSession}
+        />
     );
 }
 

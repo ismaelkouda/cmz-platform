@@ -8,12 +8,29 @@ import {
 import { BrowserRouter, useNavigate } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App, { WorkspaceAccessStore } from './app';
+import App from './app';
+import {
+    WorkspaceAccessStore,
+    WorkspaceSessionStore,
+} from './workspace-security-store';
+import type { WorkspaceSession } from './workspace-security-store';
 
 const profile = { name: 'Soumaila Kouda', role: 'Administrateur' };
 
 const UPDATED_PROFILE_URL =
     '/workspace/profile?section=permissions&filter=active%2Fpending&filter=locked+out#security%2Froles';
+const SESSION_A: WorkspaceSession = {
+    sessionKey: 'proof-session-a',
+    subjectKey: 'proof-user-a',
+};
+const SESSION_B: WorkspaceSession = {
+    sessionKey: 'proof-session-b',
+    subjectKey: 'proof-user-b',
+};
+const SESSION_A_REFRESHED: WorkspaceSession = {
+    sessionKey: 'proof-session-a-refreshed',
+    subjectKey: 'proof-user-a',
+};
 
 function NavigationProbe() {
     const navigate = useNavigate();
@@ -30,12 +47,13 @@ function NavigationProbe() {
 function renderApp(
     path = '/workspace/dashboard',
     withProbe = false,
-    accessStore?: WorkspaceAccessStore
+    accessStore?: WorkspaceAccessStore,
+    sessionStore?: WorkspaceSessionStore
 ) {
     window.history.replaceState(null, '', path);
     return render(
         <BrowserRouter>
-            <App accessStore={accessStore} />
+            <App accessStore={accessStore} sessionStore={sessionStore} />
             {withProbe ? <NavigationProbe /> : null}
         </BrowserRouter>
     );
@@ -156,7 +174,7 @@ describe('React workspace host', () => {
     });
 
     it('refuses a protected direct route before mounting or fetching it', async () => {
-        const access = new WorkspaceAccessStore(null);
+        const access = new WorkspaceAccessStore(SESSION_A, null);
         renderApp('/workspace/profile', false, access);
 
         await waitFor(() =>
@@ -169,7 +187,9 @@ describe('React workspace host', () => {
     });
 
     it('destroys an active protected view and cannot restore it from history', async () => {
-        const access = new WorkspaceAccessStore(['/workspace/profile']);
+        const access = new WorkspaceAccessStore(SESSION_A, [
+            '/workspace/profile',
+        ]);
         const { container } = renderApp('/workspace/profile', true, access);
         await screen.findByText('Soumaila Kouda');
         const firstInstance = container
@@ -182,7 +202,7 @@ describe('React workspace host', () => {
             { target: { value: 'Brouillon confidentiel' } }
         );
 
-        act(() => access.replace([]));
+        act(() => access.replace(SESSION_A, []));
 
         await waitFor(() =>
             expect(window.location.pathname).toBe('/workspace/dashboard')
@@ -206,7 +226,7 @@ describe('React workspace host', () => {
         expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
         expect(fetch).toHaveBeenCalledTimes(1);
 
-        act(() => access.replace(['/workspace/profile']));
+        act(() => access.replace(SESSION_A, ['/workspace/profile']));
         fireEvent.click(
             screen.getByRole('button', { name: 'Ouvrir le profil' })
         );
@@ -227,7 +247,9 @@ describe('React workspace host', () => {
     });
 
     it('destroys a suspended protected view as soon as access is revoked', async () => {
-        const access = new WorkspaceAccessStore(['/workspace/profile']);
+        const access = new WorkspaceAccessStore(SESSION_A, [
+            '/workspace/profile',
+        ]);
         const { container } = renderApp('/workspace/dashboard', false, access);
         fireEvent.click(
             screen.getByRole('button', { name: 'Ouvrir le profil' })
@@ -235,7 +257,7 @@ describe('React workspace host', () => {
         await screen.findByText('Soumaila Kouda');
         fireEvent.click(screen.getByRole('tab', { name: 'Tableau de bord' }));
 
-        act(() => access.replace([]));
+        act(() => access.replace(SESSION_A, []));
 
         await waitFor(() =>
             expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull()
@@ -245,14 +267,16 @@ describe('React workspace host', () => {
     });
 
     it('purges protected cached data even when its view was already closed', async () => {
-        const access = new WorkspaceAccessStore(['/workspace/profile']);
+        const access = new WorkspaceAccessStore(SESSION_A, [
+            '/workspace/profile',
+        ]);
         renderApp('/workspace/profile', false, access);
         await screen.findByText('Soumaila Kouda');
         fireEvent.click(screen.getByRole('button', { name: 'Fermer Profil' }));
         expect(fetch).toHaveBeenCalledTimes(1);
 
-        act(() => access.replace([]));
-        act(() => access.replace(['/workspace/profile']));
+        act(() => access.replace(SESSION_A, []));
+        act(() => access.replace(SESSION_A, ['/workspace/profile']));
         fireEvent.click(
             screen.getByRole('button', { name: 'Ouvrir le profil' })
         );
@@ -272,16 +296,160 @@ describe('React workspace host', () => {
                     });
                 })
         );
-        const access = new WorkspaceAccessStore(['/workspace/profile']);
+        const access = new WorkspaceAccessStore(SESSION_A, [
+            '/workspace/profile',
+        ]);
         const { container } = renderApp('/workspace/profile', false, access);
         await waitFor(() => expect(signal).toBeDefined());
 
-        act(() => access.replace(null));
+        act(() => access.replace(SESSION_A, null));
 
         await waitFor(() => expect(signal?.aborted).toBe(true));
         await waitFor(() =>
             expect(window.location.pathname).toBe('/workspace/dashboard')
         );
         expect(container.querySelector('[data-instance-id]')).toBeNull();
+    });
+
+    it('refuses a protected direct route when no session exists', async () => {
+        const session = new WorkspaceSessionStore(null);
+        const access = new WorkspaceAccessStore(SESSION_A, [
+            '/workspace/profile',
+        ]);
+        renderApp('/workspace/profile', false, access, session);
+
+        expect(screen.queryByText('Profil utilisateur')).toBeNull();
+        expect(screen.queryByRole('tab')).toBeNull();
+        expect(fetch).not.toHaveBeenCalled();
+        await waitFor(() =>
+            expect(window.location.pathname).toBe('/signed-out')
+        );
+        expect(screen.getByText('Vous êtes déconnecté')).toBeTruthy();
+    });
+
+    it('destroys every view and cache when the identity is replaced', async () => {
+        const session = new WorkspaceSessionStore(SESSION_A);
+        const access = new WorkspaceAccessStore(SESSION_A, [
+            '/workspace/profile',
+        ]);
+        const { container } = renderApp(
+            '/workspace/dashboard',
+            false,
+            access,
+            session
+        );
+        const firstDashboard = container
+            .querySelector<HTMLElement>('[data-dashboard-instance-id]')
+            ?.getAttribute('data-dashboard-instance-id');
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Compteur local : 0' })
+        );
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Ouvrir le profil' })
+        );
+        await screen.findByText('Soumaila Kouda');
+        const firstProfile = container
+            .querySelector<HTMLElement>('[data-instance-id]')
+            ?.getAttribute('data-instance-id');
+        fireEvent.change(
+            screen.getByRole('textbox', {
+                name: 'Note locale non enregistrée',
+            }),
+            { target: { value: 'Ne doit pas franchir la session' } }
+        );
+
+        act(() => {
+            access.replace(SESSION_B, ['/workspace/profile']);
+            session.replace(SESSION_B);
+        });
+
+        await waitFor(() =>
+            expect(
+                container
+                    .querySelector<HTMLElement>('[data-instance-id]')
+                    ?.getAttribute('data-instance-id')
+            ).not.toBe(firstProfile)
+        );
+        expect(window.location.pathname).toBe('/workspace/profile');
+        expect(screen.getByRole('tab', { name: 'Profil' })).toBeTruthy();
+        expect(
+            container
+                .querySelector<HTMLElement>('[data-dashboard-instance-id]')
+                ?.getAttribute('data-dashboard-instance-id')
+        ).not.toBe(firstDashboard);
+        await screen.findByText('Soumaila Kouda');
+        expect(
+            (
+                screen.getByRole('textbox', {
+                    name: 'Note locale non enregistrée',
+                }) as HTMLInputElement
+            ).value
+        ).toBe('');
+        expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('rejects stale permissions when the same identity starts a new session', async () => {
+        const session = new WorkspaceSessionStore(SESSION_A);
+        const access = new WorkspaceAccessStore(SESSION_A, [
+            '/workspace/profile',
+        ]);
+        renderApp('/workspace/profile', false, access, session);
+        await screen.findByText('Soumaila Kouda');
+
+        act(() => session.replace(SESSION_A_REFRESHED));
+
+        await waitFor(() =>
+            expect(window.location.pathname).toBe('/workspace/dashboard')
+        );
+        await waitFor(() =>
+            expect(screen.getByText('Accès au profil révoqué.')).toBeTruthy()
+        );
+        expect(
+            screen.queryByRole('button', { name: 'Ouvrir le profil' })
+        ).toBeNull();
+        expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('aborts an in-flight request and blocks history after session end', async () => {
+        let signal: AbortSignal | undefined;
+        vi.mocked(fetch).mockImplementation(
+            (_input, init) =>
+                new Promise<Response>((_resolve, reject) => {
+                    signal = init?.signal ?? undefined;
+                    signal?.addEventListener('abort', () => {
+                        reject(new DOMException('Aborted', 'AbortError'));
+                    });
+                })
+        );
+        const session = new WorkspaceSessionStore(SESSION_A);
+        const access = new WorkspaceAccessStore(SESSION_A, [
+            '/workspace/profile',
+        ]);
+        const { container } = renderApp(
+            '/workspace/profile',
+            false,
+            access,
+            session
+        );
+        await waitFor(() => expect(signal).toBeDefined());
+
+        act(() => session.replace(null));
+
+        await waitFor(() => expect(signal?.aborted).toBe(true));
+        await waitFor(() =>
+            expect(window.location.pathname).toBe('/signed-out')
+        );
+        expect(container.querySelector('[data-instance-id]')).toBeNull();
+        expect(screen.queryByRole('tab')).toBeNull();
+
+        act(() => {
+            window.history.pushState(null, '', '/workspace/profile');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+        });
+        await waitFor(() =>
+            expect(window.location.pathname).toBe('/signed-out')
+        );
+        expect(fetch).toHaveBeenCalledTimes(1);
     });
 });

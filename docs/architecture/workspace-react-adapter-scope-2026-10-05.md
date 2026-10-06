@@ -78,7 +78,7 @@ rechargements implicites. La version `8.4.0`, encore supportée, remplace la
 version `react-router-dom` 6.30.3 produite par le générateur Nx ; React Router 8
 publie désormais l'API navigateur depuis `react-router`.
 
-Neuf tests Vitest et quatre parcours Chromium vérifient maintenant :
+Seize tests Vitest et six parcours Chromium vérifient maintenant :
 
 1. ouverture d'une URL canonique et création d'une seule frontière par vue ;
 2. conservation du même nœud, d'un champ non contrôlé et du state local ;
@@ -94,7 +94,15 @@ Neuf tests Vitest et quatre parcours Chromium vérifient maintenant :
 9. destruction d'une vue active ou suspendue dès le remplacement du snapshot
    d'accès, sans résurrection par l'historique ;
 10. annulation du GET en vol et purge du cache lors de la révocation, puis
-    nouvelle instance et nouveau GET après restitution explicite du droit.
+    nouvelle instance et nouveau GET après restitution explicite du droit ;
+11. refus de toute route du workspace avant montage lorsque la session est
+    absente ;
+12. destruction de toutes les vues, y compris la vue épinglée, lors d'une fin ou
+    d'un remplacement de session ;
+13. annulation du GET en vol, cache et état local vierges dans la nouvelle
+    incarnation de session ;
+14. refus fail-closed d'un snapshot de droits encore lié à la session
+    précédente, même lorsque le sujet métier est identique.
 
 ### Deuxième tranche : contexte d'activation exact
 
@@ -144,6 +152,37 @@ du droit puis une nouvelle ouverture doit produire une nouvelle instance, un
 l'oracle prouve la perte de l'état local ; il ne prétend pas encore implémenter
 le futur modèle `dirty` ou sa confirmation de fermeture.
 
+### Quatrième tranche : fin et remplacement de session
+
+`WorkspaceSessionStore` publie un snapshot externe minimal : `sessionKey`
+identifie une incarnation de session et `subjectKey` son sujet opaque. Ces clés
+ne sont ni un token, ni un cookie, ni une identité affichable. Un snapshot
+absent ou composé d'une clé vide est interprété fail-closed. Le proof consomme
+ce snapshot déjà établi par le host ; il n'invente aucun login, endpoint de
+refresh, stockage ou protocole de déconnexion.
+
+Le snapshot d'accès porte les deux mêmes clés. Des droits appartenant à une
+ancienne incarnation sont donc refusés, y compris lorsqu'un même utilisateur
+ouvre une nouvelle session. Cette liaison ferme le risque de réutiliser les
+permissions A dans la session B parce que deux stores auraient été mis à jour à
+des instants différents.
+
+Le sous-arbre `WorkspaceRuntime` reçoit comme `key` le couple exact
+`sessionKey:subjectKey`. C'est le mécanisme natif documenté par React pour
+réinitialiser tout le state d'un sous-arbre : registre, frontières `Activity`,
+Dashboard épinglé, page active, cache et état local sont démontés ensemble. Le
+cleanup de l'Effect annule aussi le GET en vol. Aucun Effect ne recopie la
+session dans un second state React ; `eslint-plugin-react-hooks` reste actif
+sans exemption, sous `StrictMode`.
+
+Lors d'un remplacement d'identité, l'URL courante n'est pas arbitrairement
+remplacée par le Dashboard : le contrat produit n'impose pas cette politique. La
+même URL est réévaluée depuis un runtime neuf et ne remonte que si le snapshot
+d'accès de la nouvelle session l'autorise. Lors d'une fin de session, le runtime
+entier disparaît immédiatement, puis React Router remplace l'URL par
+`/signed-out`; une entrée d'historique vers le workspace ne peut pas remonter de
+vue tant que le snapshot de session reste absent.
+
 La preuve navigateur est câblée conditionnellement dans le job `e2e-smoke`
 existant afin de ne créer ni contexte de protection supplémentaire ni coût sur
 les changements sans rapport. Le serveur SPA commun utilise une allowlist fermée
@@ -160,13 +199,13 @@ plateforme.
 La qualification `jsdom` de la primitive et cette première application
 navigateur prouvent désormais le routeur, la conservation/destruction et
 l'absence de trafic GET/POST provoqué par un switch, ainsi que le refus et la
-révocation d'une permission de page déjà publiée par le host. Elles ne prouvent
-toujours pas fin/changement de session, découverte distante d'un nouveau
-snapshot, garde dirty, plafond et profil mémoire, accessibilité APG
-complète/RTL/zoom/lecteur d'écran, suspension des ressources longues ni parité
-fonctionnelle avec le back-office Angular. La présence des renderers React
-métier ne tient pas lieu de shell et aucune de ces limites ne doit être
-reformulée comme acquise.
+révocation d'une permission de page déjà publiée par le host, ainsi que la fin
+et le remplacement local d'un snapshot de session. Elles ne prouvent toujours
+pas le transport distant de ce snapshot, garde dirty, plafond et profil mémoire,
+accessibilité APG complète/RTL/zoom/lecteur d'écran, suspension des ressources
+longues ni parité fonctionnelle avec le back-office Angular. La présence des
+renderers React métier ne tient pas lieu de shell et aucune de ces limites ne
+doit être reformulée comme acquise.
 
 Preuves locales du 2026-10-05 : `check:generator-platform:reactjs` compile les
 sorties générées puis passe `57/57` scénarios React ; la gate complète passe
@@ -175,8 +214,10 @@ explicitement les fichiers TSX sous `tools/`, afin que cette preuve ne soit pas
 exécutée tout en restant invisible au contrôle de dead-code.
 
 Preuves locales du 2026-10-06 : lint React Hooks, typecheck strict, build Vite,
-`9/9` tests Vitest et `4/4` parcours Chromium passent. L'oracle navigateur sera
-la preuve autoritative après son passage dans la CI GitHub.
+`16/16` tests Vitest et `6/6` parcours Chromium passent. Trois mutants retirant
+respectivement la `key` de session, la liaison droits/session et le cleanup
+réseau sont tués. L'oracle navigateur sera la preuve autoritative après son
+passage dans la CI GitHub.
 
 ## Sources
 
@@ -184,5 +225,7 @@ la preuve autoritative après son passage dans la CI GitHub.
 - [React 19.2 — introduction d'Activity](https://react.dev/blog/2025/10/01/react-19-2)
 - [React — préserver et réinitialiser le state](https://react.dev/learn/preserving-and-resetting-state)
 - [React — useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore)
+- [React — useEffect et cleanup](https://react.dev/reference/react/useEffect)
+- [React — éviter les Effects inutiles](https://react.dev/learn/you-might-not-need-an-effect)
 - [React Router — modes](https://reactrouter.com/start/modes)
 - [React Router — BrowserRouter](https://reactrouter.com/api/declarative-routers/BrowserRouter)
