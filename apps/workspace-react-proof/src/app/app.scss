@@ -104,6 +104,23 @@ button {
     font-size: 1.35rem;
 }
 
+.workspace-dirty {
+    margin-inline-start: 0.4rem;
+    color: #8a4b08;
+    font-size: 0.78rem;
+}
+
+.proof-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .workspace-panel {
     padding-block: 1.5rem;
 }
@@ -179,6 +196,32 @@ button {
             outline-offset: 2px;
         }
     }
+}
+
+.workspace-dialog {
+    width: min(28rem, calc(100% - 2rem));
+    padding: 1.5rem;
+    border: 0;
+    border-radius: 1rem;
+    background: #fff;
+    color: #18211a;
+    box-shadow: 0 1rem 3rem rgb(31 54 38 / 22%);
+
+    &::backdrop {
+        background: rgb(15 23 42 / 55%);
+    }
+
+    h2 {
+        margin-block: 0 0.75rem;
+    }
+
+    p {
+        color: #526257;
+    }
+}
+
+.workspace-dialog-actions {
+    justify-content: flex-end;
 }
 
 @media (max-width: 40rem) {

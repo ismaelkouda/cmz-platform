@@ -32,6 +32,17 @@ const SESSION_A_REFRESHED: WorkspaceSession = {
     subjectKey: 'proof-user-a',
 };
 
+if (!HTMLDialogElement.prototype.showModal) {
+    HTMLDialogElement.prototype.showModal = function (): void {
+        this.setAttribute('open', '');
+    };
+}
+if (!HTMLDialogElement.prototype.close) {
+    HTMLDialogElement.prototype.close = function (): void {
+        this.removeAttribute('open');
+    };
+}
+
 function NavigationProbe() {
     const navigate = useNavigate();
     return (
@@ -91,7 +102,9 @@ describe('React workspace host', () => {
             name: 'Note locale non enregistrée',
         });
         fireEvent.change(note, { target: { value: 'État conservé' } });
+        expect(screen.getByText('• Modifié')).toBeTruthy();
         fireEvent.click(screen.getByRole('tab', { name: 'Tableau de bord' }));
+        expect(screen.queryByRole('dialog')).toBeNull();
         fireEvent.click(screen.getByRole('tab', { name: 'Profil' }));
 
         expect((note as HTMLInputElement).value).toBe('État conservé');
@@ -112,6 +125,15 @@ describe('React workspace host', () => {
             { target: { value: 'À supprimer' } }
         );
         fireEvent.click(screen.getByRole('button', { name: 'Fermer Profil' }));
+        expect(
+            screen.getByRole('dialog', {
+                name: 'Modifications non enregistrées',
+            })
+        ).toBeTruthy();
+        expect(window.location.pathname).toBe('/workspace/profile');
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Fermer sans enregistrer' })
+        );
         expect(window.location.pathname).toBe('/workspace/dashboard');
         expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
 
@@ -133,6 +155,63 @@ describe('React workspace host', () => {
             ).value
         ).toBe('');
         expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancels dirty close without losing the view or value', async () => {
+        renderApp('/workspace/profile');
+        await screen.findByText('Soumaila Kouda');
+        const note = screen.getByRole('textbox', {
+            name: 'Note locale non enregistrée',
+        });
+        const closeButton = screen.getByRole('button', {
+            name: 'Fermer Profil',
+        });
+        fireEvent.change(note, { target: { value: 'À conserver' } });
+        fireEvent.click(closeButton);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(screen.getByRole('tab', { name: 'Profil' })).toBeTruthy();
+        expect((note as HTMLInputElement).value).toBe('À conserver');
+        expect(window.location.pathname).toBe('/workspace/profile');
+    });
+
+    it('removes the dirty guard when the pilot field returns to its initial value', async () => {
+        renderApp('/workspace/profile');
+        await screen.findByText('Soumaila Kouda');
+        const note = screen.getByRole('textbox', {
+            name: 'Note locale non enregistrée',
+        });
+        fireEvent.change(note, { target: { value: 'Temporaire' } });
+        fireEvent.change(note, { target: { value: '' } });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Fermer Profil' }));
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
+        expect(window.location.pathname).toBe('/workspace/dashboard');
+    });
+
+    it('protects browser unload only while a view is dirty', async () => {
+        renderApp('/workspace/profile');
+        await screen.findByText('Soumaila Kouda');
+        const note = screen.getByRole('textbox', {
+            name: 'Note locale non enregistrée',
+        });
+        const cleanEvent = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(cleanEvent);
+        expect(cleanEvent.defaultPrevented).toBe(false);
+
+        fireEvent.change(note, { target: { value: 'Brouillon' } });
+        const dirtyEvent = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(dirtyEvent);
+        expect(dirtyEvent.defaultPrevented).toBe(true);
+
+        fireEvent.change(note, { target: { value: '' } });
+        const clearedEvent = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(clearedEvent);
+        expect(clearedEvent.defaultPrevented).toBe(false);
     });
 
     it('restores the exact last query and fragment without duplicating the view', async () => {
@@ -201,6 +280,8 @@ describe('React workspace host', () => {
             }),
             { target: { value: 'Brouillon confidentiel' } }
         );
+        fireEvent.click(screen.getByRole('button', { name: 'Fermer Profil' }));
+        expect(screen.getByRole('dialog')).toBeTruthy();
 
         act(() => access.replace(SESSION_A, []));
 
@@ -209,6 +290,7 @@ describe('React workspace host', () => {
         );
         expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
         expect(container.querySelector('[data-instance-id]')).toBeNull();
+        expect(screen.queryByRole('dialog')).toBeNull();
         expect(
             screen.queryByRole('textbox', {
                 name: 'Note locale non enregistrée',

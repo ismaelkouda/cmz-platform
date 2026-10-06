@@ -2785,16 +2785,33 @@ Figma, désormais source partielle différée :
   réévalue l'URL courante avec les seuls droits de la nouvelle session, sans
   politique Dashboard inventée. Seize tests Vitest, six parcours Chromium et
   trois mutants passent. Restent le transport distant du snapshot, dirty,
-  capacité/mémoire, ressources longues et accessibilité complète. **ADAPT-11b —
-  engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
-  bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
-  capacités non déclarées, la non-activation des lignes et la géométrie
-  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
-  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
-  fournit aucun `action-request` correspondant : les rendre opérables maintenant
-  inventerait transport, permissions et effets. Les oracles exigent donc
-  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
-  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
+  capacité/mémoire, ressources longues et accessibilité complète.
+  **WORKSPACE-TABS-10 — garde `dirty` React engagée localement le 2026-10-06 :**
+  chaque page déclare explicitement son état modifié ; le shell n'inspecte ni
+  DOM ni formulaire et ne fabrique aucun détecteur universel. Le registre
+  externe publie chemins, vues `dirty` et fermeture en attente dans un snapshot
+  immuable. Changer de tab reste silencieux ; fermer une vue propre la détruit,
+  tandis qu'une vue modifiée exige une décision dans un `dialog` HTML natif
+  correctement nommé et décrit. Annuler conserve instance, valeur et URL ;
+  confirmer démonte la vue, oublie son contexte d'activation et restitue le
+  focus à une tab survivante. Un listener `beforeunload` existe seulement
+  pendant le brouillon, comme filet `best-effort` et jamais comme sauvegarde.
+  Révocation et changement de session restent prioritaires et détruisent même
+  une vue `dirty`; seule la fermeture utilisateur normale conserve le cache de
+  données partagé. Vingt-trois tests Vitest, six parcours Chromium et quatre
+  mutants `dirty` passent. Restent le transport distant du snapshot, l'adoption
+  page par page avec un calcul métier de référence, la capacité et le profil
+  mémoire React, les ressources longues et l'accessibilité complète ; aucune
+  action « enregistrer avant fermeture » n'est inventée. **ADAPT-11b — engagé
+  localement après fusion d'ADAPT-11a :** cinq scénarios navigateur bornent la
+  toolbar C5, le GET unique de rafraîchissement, l'absence des capacités non
+  déclarées, la non-activation des lignes et la géométrie panneau/rail Medium +
+  Expanded. La référence visuelle conserve `Exporter` et les actions de ligne
+  comme capacités optionnelles, mais le contrat C5 ne fournit aucun
+  `action-request` correspondant : les rendre opérables maintenant inventerait
+  transport, permissions et effets. Les oracles exigent donc `Créer`,
+  `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu, dialogue
+  ou activation implicite. Quatre échecs attendus sont bornés par deux
   signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
   contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
   attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
