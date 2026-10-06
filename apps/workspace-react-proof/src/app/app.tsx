@@ -20,6 +20,7 @@ import type { WorkspaceSession } from './workspace-security-store';
 import {
     DASHBOARD_PATH,
     PROFILE_PATH,
+    PROFILED_WORKSPACE_CAPACITY,
     WorkspaceRegistry,
 } from './workspace-registry';
 import type { WorkspacePath } from './workspace-registry';
@@ -220,6 +221,7 @@ function WorkspacePanel({
 interface AppProps {
     accessStore?: WorkspaceAccessStore;
     sessionStore?: WorkspaceSessionStore;
+    maxOpenViews?: number;
 }
 
 interface ProfileRequest {
@@ -227,9 +229,23 @@ interface ProfileRequest {
     promise: Promise<ProfileSummary>;
 }
 
+interface WorkspaceNavigationState {
+    workspaceCapacityReached: true;
+}
+
+function hasCapacityNotice(state: unknown): state is WorkspaceNavigationState {
+    return (
+        typeof state === 'object' &&
+        state !== null &&
+        'workspaceCapacityReached' in state &&
+        state.workspaceCapacityReached === true
+    );
+}
+
 interface WorkspaceRuntimeProps {
     accessStore: WorkspaceAccessStore;
     session: WorkspaceSession;
+    maxOpenViews: number;
     onEndSession: () => void;
     onReplaceSession: () => void;
 }
@@ -237,6 +253,7 @@ interface WorkspaceRuntimeProps {
 function WorkspaceRuntime({
     accessStore,
     session,
+    maxOpenViews,
     onEndSession,
     onReplaceSession,
 }: WorkspaceRuntimeProps) {
@@ -252,18 +269,19 @@ function WorkspaceRuntime({
         ? (accessSnapshot?.paths ?? EMPTY_ACCESS_PATHS)
         : EMPTY_ACCESS_PATHS;
     const requestedPathAllowed = canAccess(requestedPath, allowedAccessPaths);
-    const activePath = requestedPathAllowed ? requestedPath : DASHBOARD_PATH;
+    const initialPath = requestedPathAllowed ? requestedPath : DASHBOARD_PATH;
     const [registry] = useState(
         () =>
             new WorkspaceRegistry(
-                activePath,
+                initialPath,
                 isWorkspacePath(location.pathname) && requestedPathAllowed
                     ? workspaceActivationUrl(
                           location.pathname,
                           location.search,
                           location.hash
                       )
-                    : DASHBOARD_PATH
+                    : DASHBOARD_PATH,
+                maxOpenViews
             )
     );
     const workspace = useSyncExternalStore(
@@ -272,7 +290,12 @@ function WorkspaceRuntime({
         registry.getSnapshot
     );
     const openPaths = workspace.paths;
+    const activePath =
+        requestedPathAllowed && openPaths.includes(requestedPath)
+            ? requestedPath
+            : DASHBOARD_PATH;
     const hasDirtyView = workspace.dirtyPaths.length > 0;
+    const capacityReached = hasCapacityNotice(location.state);
     const closeDialog = useRef<HTMLDialogElement | null>(null);
     const profileCache = useRef<ProfileSummary | null>(null);
     const profileRequest = useRef<ProfileRequest | null>(null);
@@ -320,10 +343,16 @@ function WorkspaceRuntime({
             return;
         }
 
-        registry.recordVisit(
+        const visit = registry.recordVisit(
             currentPath,
             workspaceActivationUrl(currentPath, location.search, location.hash)
         );
+        if (visit === 'capacity-reached') {
+            void navigate(DASHBOARD_PATH, {
+                replace: true,
+                state: { workspaceCapacityReached: true },
+            });
+        }
     }, [
         allowedAccessPaths,
         location.hash,
@@ -388,8 +417,32 @@ function WorkspaceRuntime({
         }
 
         const targetUrl = registry.activationUrl(path);
-        registry.recordVisit(path, targetUrl);
+        if (registry.recordVisit(path, targetUrl) === 'capacity-reached') {
+            void navigate(
+                {
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                },
+                {
+                    replace: true,
+                    state: { workspaceCapacityReached: true },
+                }
+            );
+            return;
+        }
         void navigate(targetUrl);
+    };
+
+    const dismissCapacityNotice = () => {
+        void navigate(
+            {
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+            },
+            { replace: true, state: null }
+        );
     };
 
     const renderedPaths = openPaths.filter((path) =>
@@ -487,6 +540,21 @@ function WorkspaceRuntime({
                         Terminer la session
                     </button>
                 </div>
+                {capacityReached ? (
+                    <div
+                        className="workspace-capacity-notice"
+                        role="status"
+                        aria-label="Capacité du workspace"
+                    >
+                        <span>
+                            Limite de vues ouvertes atteinte. Fermez une vue
+                            avant d’en ouvrir une nouvelle.
+                        </span>
+                        <button type="button" onClick={dismissCapacityNotice}>
+                            Fermer le message
+                        </button>
+                    </div>
+                ) : null}
             </header>
 
             <div
@@ -602,7 +670,11 @@ function WorkspaceRuntime({
     );
 }
 
-function App({ accessStore, sessionStore }: AppProps = {}) {
+function App({
+    accessStore,
+    sessionStore,
+    maxOpenViews = PROFILED_WORKSPACE_CAPACITY,
+}: AppProps = {}) {
     const location = useLocation();
     const navigate = useNavigate();
     const [stores] = useState(() => {
@@ -659,9 +731,10 @@ function App({ accessStore, sessionStore }: AppProps = {}) {
 
     return (
         <WorkspaceRuntime
-            key={`${session.sessionKey}:${session.subjectKey}`}
+            key={`${session.sessionKey}:${session.subjectKey}:${maxOpenViews}`}
             accessStore={stores.access}
             session={session}
+            maxOpenViews={maxOpenViews}
             onEndSession={() => stores.session.replace(null)}
             onReplaceSession={replaceSession}
         />

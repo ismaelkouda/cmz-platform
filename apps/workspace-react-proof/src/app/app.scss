@@ -156,6 +156,35 @@ button {
     }
 }
 
+.workspace-capacity-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-block-start: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #b66a16;
+    border-radius: 0.65rem;
+    background: #fff8e8;
+    color: #633b0d;
+
+    button {
+        min-height: 2.75rem;
+        padding-inline: 0.75rem;
+        border: 1px solid currentcolor;
+        border-radius: 0.5rem;
+        background: transparent;
+        color: inherit;
+        font-weight: 700;
+
+        &:focus-visible {
+            outline: 3px solid #185abc;
+            outline-offset: 2px;
+        }
+    }
+}
+
 .profile-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));

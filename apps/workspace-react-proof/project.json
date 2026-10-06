@@ -13,6 +13,14 @@
         "command": "bunx playwright test -c apps/workspace-react-proof/playwright.config.mjs",
         "cwd": "{workspaceRoot}"
       }
+    },
+    "e2e-workspace-memory": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "bunx playwright test -c apps/workspace-react-proof/playwright.memory.config.mjs",
+        "cwd": "{workspaceRoot}"
+      }
     }
   }
 }
