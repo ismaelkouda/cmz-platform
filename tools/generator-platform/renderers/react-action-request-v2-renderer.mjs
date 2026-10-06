@@ -56,21 +56,36 @@ function renderClient(action) {
                 `            ${property(field.name)}: validated[${property(field.source_field)}],`
         )
         .join('\n');
+    const authentication = action.request_policy.authentication;
     const policy = JSON.stringify(
         {
-            authentication: {
-                mode: action.request_policy.authentication.mode,
-            },
+            authentication:
+                authentication.mode === 'host'
+                    ? {
+                          mode: authentication.mode,
+                          schemes: authentication.schemes,
+                      }
+                    : { mode: authentication.mode },
         },
         null,
         4
     );
+    const policyType =
+        authentication.mode === 'host'
+            ? `    readonly authentication: {
+        readonly mode: 'host';
+        readonly schemes: readonly {
+            readonly id: string;
+            readonly kind: 'bearer';
+        }[];
+    };`
+            : `    readonly authentication: { readonly mode: 'omit' };`;
     return `import { ${decoderName} } from './${action.id}.decoder';
 import type { ${inputName}, ${requestName}, ${resultName} } from './models';
 import { InvalidPayloadError, ${validatorName} } from './validation';
 
 export interface ActionRequestPolicy {
-    readonly authentication: { readonly mode: 'omit' };
+${policyType}
 }
 
 export interface ActionRequestFetchResponse {
@@ -254,8 +269,8 @@ export function ${factoryName}(
 `;
 }
 
-export function renderReactActionRequestV2(model) {
-    const action = assertActionRequestV2RendererModel(model, 'React');
+export function renderReactActionRequestV2(model, options = {}) {
+    const action = assertActionRequestV2RendererModel(model, 'React', options);
     const files = {
         'src/models.ts': renderActionRequestV2Models(action, 'React'),
         'src/validation.ts': renderValidation(action),
