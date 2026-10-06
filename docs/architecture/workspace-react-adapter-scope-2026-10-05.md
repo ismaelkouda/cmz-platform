@@ -2,8 +2,8 @@
 
 - **Date initiale :** 2026-10-05
 - **Mise à jour :** 2026-10-06
-- **Statut :** primitive `Activity` et six tranches d'hôte navigateur qualifiées
-  ; parité produit complète non acquise
+- **Statut :** primitive `Activity` et sept tranches d'hôte navigateur
+  qualifiées ; parité produit complète non acquise
 - **Référence produit :**
   [workspace à vues vivantes](./workspace-vues-vivantes-accessibilite-2026-10-04.md)
 - **Versions vérifiées :** React/ReactDOM `19.3.0`, React Router `8.4.0`
@@ -14,8 +14,8 @@
 est stable et identifiée par le chemin canonique. La vue active utilise
 `visible` et les autres `hidden`. Fermer une vue retire sa frontière de l'arbre
 React et provoque un vrai démontage, pas seulement un masquage du DOM. Cette
-décision reste réversible si les tranches restantes sur les ressources longues
-ou l'accessibilité invalident plus tard ce choix.
+décision reste réversible si une future page possédant une ressource longue
+réelle invalide plus tard ce choix.
 
 Cette primitive est native dans React 19.3. La preuve exécutée dans
 `stack-tests/reactjs/workspace-activity.spec.tsx` établit quatre faits sur la
@@ -78,8 +78,7 @@ rechargements implicites. La version `8.4.0`, encore supportée, remplace la
 version `react-router-dom` 6.30.3 produite par le générateur Nx ; React Router 8
 publie désormais l'API navigateur depuis `react-router`.
 
-Trente-trois tests Vitest et six parcours Chromium ordinaires vérifient
-maintenant :
+Les tests Vitest et parcours Chromium ordinaires vérifient maintenant :
 
 1. ouverture d'une URL canonique et création d'une seule frontière par vue ;
 2. conservation du même nœud, d'un champ non contrôlé et du state local ;
@@ -285,6 +284,66 @@ de Firefox ou WebKit. Les seuils servent à détecter une régression mesurable 
 ils ne transforment pas ce proof minimal en dimensionnement d'une application
 future.
 
+### Septième tranche : accessibilité et ressources applicables
+
+L'audit du catalogue fermé et du code exécuté trouve deux pages réelles, un GET
+initial dédupliqué et un listener `beforeunload` strictement borné au brouillon.
+Il ne trouve aucun polling, intervalle, média, iframe, worker, abonnement
+distant ou calcul continu. Ajouter un intervalle ou un endpoint fictif pour
+satisfaire formellement `SUSPEND-02` créerait un coût runtime sans besoin
+produit et ne qualifierait aucune intégration réelle. Cette tranche interdit
+donc cette fausse preuve ; elle ne reformule pas l'absence de cas applicable en
+succès universel.
+
+Le contrat d'entrée d'une future ressource est le suivant :
+
+1. la page possède l'initialisation et le cleanup symétrique de la ressource ;
+2. `Activity` est l'unique signal de présence React : `hidden` nettoie les
+   Effects et `visible` les recrée ; un second store `active/suspended` est
+   interdit tant qu'un besoin distinct ne le justifie pas ;
+3. polling, timer, abonnement et worker sont arrêtés par le cleanup de leur
+   Effect ; une donnée purement dérivée ne doit pas être déplacée dans un Effect
+   ;
+4. média, audio ou iframe encore présent dans le DOM exige un cleanup
+   `useLayoutEffect`, conformément à la documentation React `Activity` ;
+5. le premier cas réel ajoute un oracle navigateur comptant démarrage, arrêt,
+   reprise unique et destruction sur `visible → hidden → visible → close` ;
+6. une requête ponctuelle conserve sa propre politique : abort sûr ou résultat
+   vers un cache partagé, sans GET implicite au simple changement de tab.
+
+La primitive `Activity` est déjà couverte par un test de setup, cleanup et
+redémarrage d'Effect. Ce test prouve le mécanisme natif verrouillé dans le
+dépôt, pas le comportement d'une future bibliothèque de polling, média ou
+worker. La qualification de chacune reste déclenchée par son introduction
+réelle.
+
+Sur l'accessibilité, la structure visuelle garde le bouton de fermeture comme
+contrôle frère du tab. Un `tablist` sémantique distinct possède explicitement
+les tabs avec `aria-owns` ; cela évite à la fois un contrôle interactif imbriqué
+et des enfants ARIA interdits. Chaque tab nomme et contrôle son panneau
+persistant. Le panneau visible reçoit `tabIndex="0"`, car son premier contenu
+utile n'est pas focalisable.
+
+Deux parcours sur le build navigateur et trois tests de la politique clavier
+ajoutent les oracles suivants :
+
+- axe-core `4.13.0` ne trouve aucune violation sur les tags WCAG 2 A/AA, 2.1
+  A/AA et 2.2 AA du shell réel ; ce résultat a détecté puis fait corriger la
+  relation critique `aria-required-children` du premier candidat ;
+- activation manuelle : les flèches, `Home` et `End` déplacent seulement le
+  focus ; `Entrée` et `Espace` activent, `Delete` ferme et restitue le focus ;
+- la politique suit l'ordre visuel en LTR et RTL et boucle aux extrémités ; le
+  calcul est testé sur trois positions, sans inventer une troisième page ;
+- à `320` CSS px, le document ne crée pas de scroll bidimensionnel ; à `640` px
+  avec le texte forcé à `200 %`, commandes et champs ne sont ni tronqués ni
+  perdus ; le rail de tabs conserve son scroll horizontal local autorisé ;
+- le focus clavier reste matérialisé par un outline d'au moins `2` px et la
+  géométrie RTL reste dans le viewport.
+
+Ces automates ne remplacent ni VoiceOver/NVDA, ni un vrai zoom navigateur à
+`200 %` sur chaque combinaison navigateur/OS. Ces deux validations humaines
+restent bloquantes avant une qualification d'accessibilité complète.
+
 ## Niveau de preuve atteint et limites
 
 La qualification `jsdom` de la primitive et cette première application
@@ -292,11 +351,13 @@ navigateur prouvent désormais le routeur, la conservation/destruction et
 l'absence de trafic GET/POST provoqué par un switch, ainsi que le refus et la
 révocation d'une permission de page déjà publiée par le host, la fin et le
 remplacement local d'un snapshot de session, la garde `dirty` de fermeture, le
-refus à capacité et le profil mémoire Chromium. Elles ne prouvent toujours pas
-le transport distant du snapshot, l'accessibilité APG complète/RTL/zoom/lecteur
-d'écran, la suspension des ressources longues ni la parité fonctionnelle avec le
-back-office Angular. La présence des renderers React métier ne tient pas lieu de
-shell et aucune de ces limites ne doit être reformulée comme acquise.
+refus à capacité, le profil mémoire Chromium et les propriétés automatisables du
+pattern Tabs APG, du clavier LTR/RTL et du reflow. Elles ne prouvent toujours
+pas le transport distant du snapshot, les parcours VoiceOver/NVDA, le zoom
+manuel multi-navigateur, une ressource longue qui n'existe pas encore, ni la
+parité fonctionnelle avec le back-office Angular. La présence des renderers
+React métier ne tient pas lieu de shell et aucune de ces limites ne doit être
+reformulée comme acquise.
 
 Preuves locales du 2026-10-05 : `check:generator-platform:reactjs` compile les
 sorties générées puis passe `57/57` scénarios React ; la gate complète passe
@@ -305,14 +366,15 @@ explicitement les fichiers TSX sous `tools/`, afin que cette preuve ne soit pas
 exécutée tout en restant invisible au contrôle de dead-code.
 
 Preuves locales du 2026-10-06 : lint React Hooks, typecheck strict, build Vite,
-`33/33` tests Vitest, `6/6` parcours Chromium ordinaires et `2/2` profils
+`36/36` tests Vitest, `8/8` parcours Chromium ordinaires et `2/2` profils
 Chromium longs passent. Aux trois mutants de session déjà tués s'ajoutent quatre
 mutations `dirty` : contournement de la confirmation, annulation destructive,
 révocation bloquée par le brouillon et retrait de `preventDefault()` sur
 `beforeunload`. Chacune rend au moins un oracle rouge. La CI GitHub restera la
 preuve autoritative après publication. Un mutant supprimant le contrôle de
 capacité rend simultanément rouges le registre, l'ouverture utilisateur et la
-route directe.
+route directe. Un mutant forçant le pas clavier LTR sous RTL rend rouge l'oracle
+à trois positions ; sa restauration repasse les trois scénarios.
 
 ## Sources
 
@@ -327,3 +389,8 @@ route directe.
 - [MDN — `HTMLDialogElement.showModal()`](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/showModal)
 - [MDN — événement `beforeunload`](https://developer.mozilla.org/docs/Web/API/Window/beforeunload_event)
 - [WAI-ARIA APG — Modal Dialog Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)
+- [WAI-ARIA APG — Tabs Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
+- [WAI-ARIA APG — Tabs avec activation manuelle](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/examples/tabs-manual/)
+- [WCAG 2.2 — Resize Text](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)
+- [WCAG 2.2 — Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html)
+- [WCAG 2.2 — Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html)

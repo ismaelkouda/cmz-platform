@@ -24,6 +24,7 @@ import {
     WorkspaceRegistry,
 } from './workspace-registry';
 import type { WorkspacePath } from './workspace-registry';
+import { workspaceTabFocusTarget } from './workspace-keyboard';
 
 const SIGNED_OUT_PATH = '/signed-out';
 
@@ -211,6 +212,7 @@ function WorkspacePanel({
                 role="tabpanel"
                 aria-labelledby={tabId(view.path)}
                 aria-hidden={!isActive}
+                tabIndex={isActive ? 0 : -1}
             >
                 {children}
             </section>
@@ -490,15 +492,6 @@ function WorkspaceRuntime({
         event: KeyboardEvent<HTMLButtonElement>,
         index: number
     ) => {
-        let nextIndex: number | null = null;
-        if (event.key === 'ArrowRight')
-            nextIndex = (index + 1) % renderedPaths.length;
-        if (event.key === 'ArrowLeft') {
-            nextIndex =
-                (index - 1 + renderedPaths.length) % renderedPaths.length;
-        }
-        if (event.key === 'Home') nextIndex = 0;
-        if (event.key === 'End') nextIndex = renderedPaths.length - 1;
         if (
             event.key === 'Delete' &&
             !VIEW_CATALOG[renderedPaths[index]].pinned
@@ -507,6 +500,16 @@ function WorkspaceRuntime({
             requestClose(renderedPaths[index]);
             return;
         }
+        const direction =
+            getComputedStyle(event.currentTarget).direction === 'rtl'
+                ? 'rtl'
+                : 'ltr';
+        const nextIndex = workspaceTabFocusTarget(
+            event.key,
+            index,
+            renderedPaths.length,
+            direction
+        );
         if (nextIndex === null) return;
 
         event.preventDefault();
@@ -557,11 +560,13 @@ function WorkspaceRuntime({
                 ) : null}
             </header>
 
-            <div
-                className="workspace-tabs"
-                role="tablist"
-                aria-label="Vues ouvertes"
-            >
+            <div className="workspace-tabs">
+                <div
+                    className="proof-visually-hidden"
+                    role="tablist"
+                    aria-label="Vues ouvertes"
+                    aria-owns={renderedPaths.map(tabId).join(' ')}
+                />
                 {renderedPaths.map((path, index) => {
                     const view = VIEW_CATALOG[path];
                     const selected = activePath === path;
