@@ -59,12 +59,17 @@ function renderApp(
     path = '/workspace/dashboard',
     withProbe = false,
     accessStore?: WorkspaceAccessStore,
-    sessionStore?: WorkspaceSessionStore
+    sessionStore?: WorkspaceSessionStore,
+    maxOpenViews?: number
 ) {
     window.history.replaceState(null, '', path);
     return render(
         <BrowserRouter>
-            <App accessStore={accessStore} sessionStore={sessionStore} />
+            <App
+                accessStore={accessStore}
+                sessionStore={sessionStore}
+                maxOpenViews={maxOpenViews}
+            />
             {withProbe ? <NavigationProbe /> : null}
         </BrowserRouter>
     );
@@ -87,6 +92,53 @@ describe('React workspace host', () => {
 
     afterEach(() => {
         vi.unstubAllGlobals();
+    });
+
+    it('refuses a new view at capacity without eviction or network request', async () => {
+        renderApp('/workspace/dashboard', false, undefined, undefined, 1);
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Ouvrir le profil' })
+        );
+
+        expect(window.location.pathname).toBe('/workspace/dashboard');
+        expect(screen.getAllByRole('tab')).toHaveLength(1);
+        expect(
+            screen
+                .getByRole('tab', { name: 'Tableau de bord' })
+                .getAttribute('aria-selected')
+        ).toBe('true');
+        expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
+        expect(screen.queryByText('Profil utilisateur')).toBeNull();
+        expect(fetch).not.toHaveBeenCalled();
+
+        const notice = screen.getByRole('status', {
+            name: 'Capacité du workspace',
+        });
+        expect(notice.textContent).toContain(
+            'Limite de vues ouvertes atteinte.'
+        );
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Fermer le message' })
+        );
+        expect(
+            screen.queryByRole('status', { name: 'Capacité du workspace' })
+        ).toBeNull();
+    });
+
+    it('normalizes a direct route that exceeds capacity before mounting it', async () => {
+        renderApp('/workspace/profile', false, undefined, undefined, 1);
+
+        await waitFor(() =>
+            expect(window.location.pathname).toBe('/workspace/dashboard')
+        );
+        expect(screen.getAllByRole('tab')).toHaveLength(1);
+        expect(screen.queryByRole('tab', { name: 'Profil' })).toBeNull();
+        expect(screen.queryByText('Profil utilisateur')).toBeNull();
+        expect(fetch).not.toHaveBeenCalled();
+        expect(
+            screen.getByRole('status', { name: 'Capacité du workspace' })
+        ).toBeTruthy();
     });
 
     it('opens the canonical route and preserves local state without another GET', async () => {

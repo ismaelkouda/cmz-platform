@@ -20,6 +20,7 @@ const staticCommand =
 
 export default defineConfig({
     testDir: resolve(rootDir, 'apps/workspace-react-proof/e2e'),
+    testIgnore: ['**/workspace-memory-profile.spec.ts'],
     fullyParallel: false,
     forbidOnly: isCI,
     retries: 0,

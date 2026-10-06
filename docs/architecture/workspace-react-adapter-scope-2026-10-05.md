@@ -2,8 +2,8 @@
 
 - **Date initiale :** 2026-10-05
 - **Mise à jour :** 2026-10-06
-- **Statut :** primitive `Activity` et cinq tranches d'hôte navigateur
-  qualifiées ; parité produit complète non acquise
+- **Statut :** primitive `Activity` et six tranches d'hôte navigateur qualifiées
+  ; parité produit complète non acquise
 - **Référence produit :**
   [workspace à vues vivantes](./workspace-vues-vivantes-accessibilite-2026-10-04.md)
 - **Versions vérifiées :** React/ReactDOM `19.3.0`, React Router `8.4.0`
@@ -14,8 +14,8 @@
 est stable et identifiée par le chemin canonique. La vue active utilise
 `visible` et les autres `hidden`. Fermer une vue retire sa frontière de l'arbre
 React et provoque un vrai démontage, pas seulement un masquage du DOM. Cette
-décision reste réversible si les tranches sécurité, dirty, capacité ou mémoire
-invalident plus tard ce choix.
+décision reste réversible si les tranches restantes sur les ressources longues
+ou l'accessibilité invalident plus tard ce choix.
 
 Cette primitive est native dans React 19.3. La preuve exécutée dans
 `stack-tests/reactjs/workspace-activity.spec.tsx` établit quatre faits sur la
@@ -78,7 +78,8 @@ rechargements implicites. La version `8.4.0`, encore supportée, remplace la
 version `react-router-dom` 6.30.3 produite par le générateur Nx ; React Router 8
 publie désormais l'API navigateur depuis `react-router`.
 
-Vingt-trois tests Vitest et six parcours Chromium vérifient maintenant :
+Trente-trois tests Vitest et six parcours Chromium ordinaires vérifient
+maintenant :
 
 1. ouverture d'une URL canonique et création d'une seule frontière par vue ;
 2. conservation du même nœud, d'un champ non contrôlé et du state local ;
@@ -113,6 +114,10 @@ Vingt-trois tests Vitest et six parcours Chromium vérifient maintenant :
     `dirty` ;
 19. révocation de droit et fin de session prioritaires sur le brouillon, avec
     destruction immédiate et purge de sécurité.
+20. capacité invalide refusée avant runtime et capacité atteinte sans mutation,
+    éviction ni mémorisation de l'URL refusée ;
+21. route directe hors capacité normalisée avant montage et avant GET, avec
+    notification d'état accessible.
 
 ### Deuxième tranche : contexte d'activation exact
 
@@ -245,15 +250,50 @@ masse et ne prétend pas rendre `beforeunload` fiable. Toute page future devra
 fournir son propre calcul métier de `dirty` et ses propres actions de
 sauvegarde, puis réutiliser seulement le protocole explicite du shell.
 
+### Sixième tranche : capacité explicite et profil mémoire
+
+Le catalogue exécutable actuel est fermé et contient exactement deux vraies vues
+: Dashboard et Profil. La capacité React de production vaut donc `2` ; ce nombre
+n'est ni la limite Angular `8`, ni une constante plateforme universelle. Une
+future application avec un catalogue ou des pages plus lourdes DOIT refaire le
+profil représentatif avant de choisir son propre plafond.
+
+`WorkspaceRegistry` reçoit la capacité en configuration et la valide comme un
+entier positif sûr. À la limite, une nouvelle vue est refusée avant toute
+mutation : aucune vue ouverte n'est évincée, aucun contexte d'activation n'est
+mémorisé et aucune requête de page n'est lancée. Une URL directe qui excède la
+capacité rejoint le Dashboard par remplacement d'historique et annonce le refus
+avec un statut refermable. Une vue déjà ouverte peut toujours actualiser son URL
+exacte, y compris lorsque le registre est plein.
+
+Le target isolé `workspace-react-proof:e2e-workspace-memory` mesure le build de
+production avec Chromium CDP. Il exécute 50 cycles d'échauffement puis 100
+cycles réels d'ouverture/fermeture, ainsi que quatre passes `1 → 2 → 1`. Cinq
+campagnes locales indépendantes ont observé :
+
+- `331 760` à `349 400` octets de croissance après 100 cycles, sous le budget
+  bloquant de `768 KiB` ;
+- `101 592` à `104 188` octets sur le dernier quart, sous `256 KiB` ;
+- exactement `121` nœuds et `174` écouteurs à chaque checkpoint fermé ;
+- environ `1,35 MiB` au pic maximal de deux vues, sous le budget `2 MiB` ;
+- après échauffement, le même plateau de `121` nœuds et `174` écouteurs à la
+  fermeture, avec une pente de heap finale sous `256 KiB`.
+
+Les deux profils JSON sont attachés au nightly avec les profils Angular. Le
+protocole est explicitement propre à Chromium et ne prétend pas mesurer le heap
+de Firefox ou WebKit. Les seuils servent à détecter une régression mesurable ;
+ils ne transforment pas ce proof minimal en dimensionnement d'une application
+future.
+
 ## Niveau de preuve atteint et limites
 
 La qualification `jsdom` de la primitive et cette première application
 navigateur prouvent désormais le routeur, la conservation/destruction et
 l'absence de trafic GET/POST provoqué par un switch, ainsi que le refus et la
 révocation d'une permission de page déjà publiée par le host, la fin et le
-remplacement local d'un snapshot de session, ainsi que la garde `dirty` de
-fermeture. Elles ne prouvent toujours pas le transport distant du snapshot, le
-plafond et profil mémoire, l'accessibilité APG complète/RTL/zoom/lecteur
+remplacement local d'un snapshot de session, la garde `dirty` de fermeture, le
+refus à capacité et le profil mémoire Chromium. Elles ne prouvent toujours pas
+le transport distant du snapshot, l'accessibilité APG complète/RTL/zoom/lecteur
 d'écran, la suspension des ressources longues ni la parité fonctionnelle avec le
 back-office Angular. La présence des renderers React métier ne tient pas lieu de
 shell et aucune de ces limites ne doit être reformulée comme acquise.
@@ -265,11 +305,14 @@ explicitement les fichiers TSX sous `tools/`, afin que cette preuve ne soit pas
 exécutée tout en restant invisible au contrôle de dead-code.
 
 Preuves locales du 2026-10-06 : lint React Hooks, typecheck strict, build Vite,
-`23/23` tests Vitest et `6/6` parcours Chromium passent. Aux trois mutants de
-session déjà tués s'ajoutent quatre mutations `dirty` : contournement de la
-confirmation, annulation destructive, révocation bloquée par le brouillon et
-retrait de `preventDefault()` sur `beforeunload`. Chacune rend au moins un
-oracle rouge. La CI GitHub restera la preuve autoritative après publication.
+`33/33` tests Vitest, `6/6` parcours Chromium ordinaires et `2/2` profils
+Chromium longs passent. Aux trois mutants de session déjà tués s'ajoutent quatre
+mutations `dirty` : contournement de la confirmation, annulation destructive,
+révocation bloquée par le brouillon et retrait de `preventDefault()` sur
+`beforeunload`. Chacune rend au moins un oracle rouge. La CI GitHub restera la
+preuve autoritative après publication. Un mutant supprimant le contrôle de
+capacité rend simultanément rouges le registre, l'ouverture utilisateur et la
+route directe.
 
 ## Sources
 

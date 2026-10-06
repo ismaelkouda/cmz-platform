@@ -6,8 +6,8 @@
 - **Espaces :** Medium et Expanded uniquement
 - **Implémentation de référence actuelle :** Angular `22.2.0`, Angular
   Material/CDK/Aria `22.2.1`
-- **Cible suivante explicite :** ReactJS `19.3.0`, sans dépendance runtime au
-  mécanisme Angular
+- **Seconde implémentation en qualification :** ReactJS `19.3.0`, sans
+  dépendance runtime au mécanisme Angular
 - **Décision :**
   [ADR-0084](../adr/0084-workspace-a-vues-vivantes-et-fermables.md)
 
@@ -27,22 +27,22 @@ exacte, vue active/suspendue, travail dirty, fermeture/destruction, capacité,
 sécurité, réseau, focus et clavier doivent avoir les mêmes résultats observables
 en Angular et en ReactJS.
 
-L'implémentation ne l'est pas. Angular s'appuie actuellement sur
-`RouteReuseStrategy` et les handles du Router. Le futur hôte ReactJS devra
-choisir et documenter son mécanisme natif de conservation/montage, de suspension
-des effets et de démontage. Il NE DOIT PAS émuler les APIs Angular, partager un
-cache de composants entre frameworks, ni adopter une bibliothèque de keep-alive
-avant une qualification dédiée.
+L'implémentation ne l'est pas. Angular s'appuie sur `RouteReuseStrategy` et les
+handles du Router. L'hôte ReactJS qualifié par tranches utilise sa primitive
+native `Activity`, un registre externe et React Router. Il NE DOIT PAS émuler
+les APIs Angular ni partager un cache de composants entre frameworks.
 
 La parité sera jugée par une suite de conformité navigateur commune portant sur
 les comportements de ce document, complétée par des tests unitaires propres à
-chaque adaptateur. La présence du renderer ReactJS dans le dépôt ne constitue
-pas encore cette preuve runtime.
+chaque adaptateur. La présence d'un renderer ReactJS ne suffit jamais à elle
+seule ; seules les preuves runtime listées dans ce document autorisent une
+revendication.
 
 La [qualification React Activity](./workspace-react-adapter-scope-2026-10-05.md)
-établit en `jsdom` la conservation d'état et le redémarrage des Effects. Elle
-borne le candidat natif de l'hôte React ; la parité reste à prouver sur une
-application et un navigateur réels.
+établit en `jsdom` la conservation d'état et le redémarrage des Effects, puis
+qualifie sur une SPA et Chromium réels identité, URL, réseau, fermeture,
+sécurité, session, dirty, capacité et mémoire. Les ressources longues et
+l'accessibilité complète restent à prouver avant la parité produit.
 
 ## 2. Emplacement et adaptation
 
@@ -381,6 +381,25 @@ Prouvé localement dans la tranche mémoire WORKSPACE-TABS-4 du 2026-10-05 :
   nightly les exécute sur le dist production. Le protocole CDP est propre à
   Chromium : il ne revendique pas une mesure heap Firefox/WebKit.
 
+Prouvé localement dans la tranche React WORKSPACE-TABS-11 du 2026-10-06 :
+
+- le catalogue React fermé contient deux vues réelles ; sa capacité vaut donc
+  `2`, sans recopier le plafond Angular `8` ni inventer de fausses pages ;
+- une capacité invalide échoue avant runtime et la limite refuse toute nouvelle
+  vue sans éviction, mutation, URL mémorisée, montage ou GET ;
+- une route directe hors capacité rejoint le Dashboard par remplacement et
+  annonce explicitement le refus ;
+- cinq campagnes du build production, chacune précédée de 50 cycles
+  d'échauffement, ont mesuré 100 cycles à `331 760–349 400` octets de croissance
+  heap, sous le budget bloquant `768 KiB`, et `101 592–104 188` octets sur le
+  dernier quart, sous `256 KiB` ;
+- documents, nœuds et écouteurs restent constants à chaque checkpoint fermé
+  (`1`, `121`, `174`) ; quatre passes `1 → 2 → 1` confirment ce plateau ;
+- le pic observé à deux vues est d'environ `1,35 MiB`, sous le budget `2 MiB` ;
+  `workspace-react-proof:e2e-workspace-memory` publie ses JSON dans le nightly ;
+- ce plafond ne dimensionne aucune future application : tout catalogue plus
+  riche ou page plus lourde exige une nouvelle campagne représentative.
+
 Restent bloquants avant de qualifier l'ensemble « terminé de bout en bout » :
 
 - parcours manuel VoiceOver et NVDA sur les annonces d'onglet, d'état dirty, de
@@ -395,10 +414,9 @@ Restent bloquants avant de qualifier l'ensemble « terminé de bout en bout » :
 - transport applicatif du nouveau snapshot de droits depuis le backend : le
   monitor et ses oracles sont présents, mais aucun endpoint de refresh, polling
   ou push n'existe dans le contrat actuel et ne doit être inventé ;
-- conception puis qualification de l'adaptateur ReactJS : même contrat
-  observable, conservation réelle de l'instance, suspension des effets,
-  démontage prouvé, aucune dépendance au Router ou aux handles Angular, et
-  exécution de la suite de conformité navigateur partagée.
+- qualification ReactJS des ressources longues réelles (polling, timer, média,
+  calcul continu) et de l'accessibilité complète ; identité, URL, réseau,
+  fermeture, sécurité, session, dirty, capacité et mémoire sont déjà prouvés.
 
 ## 10. Hors périmètre
 
@@ -429,6 +447,7 @@ oracles.
 - [Sass — parent selector and structured nesting](https://sass-lang.com/documentation/style-rules/parent-selector/)
 - [React — Preserving and Resetting State](https://react.dev/learn/preserving-and-resetting-state)
 - [React — Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects)
+- [React — Activity](https://react.dev/reference/react/Activity)
 - [WAI-ARIA APG — Tabs Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
 - [WCAG 2.2 — Resize Text](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)
 - [WCAG 2.2 — Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html)

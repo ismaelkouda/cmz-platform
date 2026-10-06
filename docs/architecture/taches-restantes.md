@@ -2802,21 +2802,39 @@ Figma, désormais source partielle différée :
   mutants `dirty` passent. Restent le transport distant du snapshot, l'adoption
   page par page avec un calcul métier de référence, la capacité et le profil
   mémoire React, les ressources longues et l'accessibilité complète ; aucune
-  action « enregistrer avant fermeture » n'est inventée. **ADAPT-11b — engagé
-  localement après fusion d'ADAPT-11a :** cinq scénarios navigateur bornent la
-  toolbar C5, le GET unique de rafraîchissement, l'absence des capacités non
-  déclarées, la non-activation des lignes et la géométrie panneau/rail Medium +
-  Expanded. La référence visuelle conserve `Exporter` et les actions de ligne
-  comme capacités optionnelles, mais le contrat C5 ne fournit aucun
-  `action-request` correspondant : les rendre opérables maintenant inventerait
-  transport, permissions et effets. Les oracles exigent donc `Créer`,
-  `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu, dialogue
-  ou activation implicite. Quatre échecs attendus sont bornés par deux
-  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
-  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
-  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
-  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
-  réalisation formalisée le 2026-10-02 :** le guide exhaustif
+  action « enregistrer avant fermeture » n'est inventée. **WORKSPACE-TABS-11 —
+  capacité et profil mémoire React engagés localement le 2026-10-06 :** le
+  catalogue fermé actuel comporte exactement Dashboard et Profil ; sa capacité
+  explicite vaut donc `2`, sans copier le plafond Angular `8` ni créer de pages
+  fictives. Le registre valide un entier positif sûr et refuse une nouvelle vue
+  avant toute mutation : aucune éviction, URL refusée, frontière ou requête. Une
+  route directe hors capacité rejoint le Dashboard et annonce le refus. Les 33
+  tests Vitest couvrent configuration, registre et host. Un target Playwright
+  production isolé exécute 50 cycles d'échauffement, 100 cycles mesurés et
+  quatre passes `1 → 2 → 1`; cinq campagnes observent `331 760–349 400` octets
+  de croissance sous `768 KiB`, `101 592–104 188` sur le dernier quart sous
+  `256 KiB`, et le plateau constant `1 document / 121 nœuds / 174 écouteurs`. Le
+  pic à deux vues, environ `1,35 MiB`, reste sous `2 MiB`. Les profils JSON
+  rejoignent le nightly. Ce nombre `2` qualifie uniquement ce catalogue minimal
+  : toute application plus riche doit recalibrer son propre plafond. Un mutant
+  supprimant la garde de capacité rend rouges trois oracles indépendants :
+  registre, ouverture et route directe. Restent ressources longues,
+  accessibilité React complète et transport distant réel des droits ; aucune
+  parité totale n'est déclarée. **ADAPT-11b — engagé localement après fusion
+  d'ADAPT-11a :** cinq scénarios navigateur bornent la toolbar C5, le GET unique
+  de rafraîchissement, l'absence des capacités non déclarées, la non-activation
+  des lignes et la géométrie panneau/rail Medium + Expanded. La référence
+  visuelle conserve `Exporter` et les actions de ligne comme capacités
+  optionnelles, mais le contrat C5 ne fournit aucun `action-request`
+  correspondant : les rendre opérables maintenant inventerait transport,
+  permissions et effets. Les oracles exigent donc `Créer`, `Rafraîchir`,
+  `Filtres` et refusent export, colonne d'actions, menu, dialogue ou activation
+  implicite. Quatre échecs attendus sont bornés par deux signatures historiques
+  exactes, sans `skip`, `todo`, runtime, work order, contrat API ou dépendance.
+  La passe Chromium ciblée donne `5/5` : quatre attendus et un succès réel ; la
+  régression C5 complète donne `55/55`, avec lint, tests Angular et build
+  production verts. **ADAPT-11c — autorité de réalisation formalisée le
+  2026-10-02 :** le guide exhaustif
   [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
   donne à un humain ou à un LLM la hiérarchie des sources, les règles
   numérotées, la matrice Compact/Medium/Expanded, le choix des primitives

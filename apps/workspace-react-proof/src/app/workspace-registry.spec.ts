@@ -7,6 +7,70 @@ import {
 } from './workspace-registry';
 
 describe('WorkspaceRegistry dirty lifecycle', () => {
+    it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+        'refuses an invalid capacity (%s)',
+        (capacity) => {
+            expect(
+                () =>
+                    new WorkspaceRegistry(
+                        DASHBOARD_PATH,
+                        DASHBOARD_PATH,
+                        capacity
+                    )
+            ).toThrow(RangeError);
+        }
+    );
+
+    it('refuses a new view at capacity without eviction or URL mutation', () => {
+        const registry = new WorkspaceRegistry(
+            DASHBOARD_PATH,
+            DASHBOARD_PATH,
+            1
+        );
+        const listener = vi.fn();
+        registry.subscribe(listener);
+
+        expect(
+            registry.recordVisit(
+                PROFILE_PATH,
+                `${PROFILE_PATH}?section=security#roles`
+            )
+        ).toBe('capacity-reached');
+        expect(registry.getSnapshot()).toEqual({
+            paths: [DASHBOARD_PATH],
+            dirtyPaths: [],
+            pendingClosePath: null,
+        });
+        expect(registry.activationUrl(PROFILE_PATH)).toBe(PROFILE_PATH);
+        expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('still refreshes the activation URL of an existing view at capacity', () => {
+        const registry = new WorkspaceRegistry(
+            DASHBOARD_PATH,
+            DASHBOARD_PATH,
+            1
+        );
+        const activationUrl = `${DASHBOARD_PATH}?period=today#summary`;
+
+        expect(registry.recordVisit(DASHBOARD_PATH, activationUrl)).toBe(
+            'already-open'
+        );
+        expect(registry.activationUrl(DASHBOARD_PATH)).toBe(activationUrl);
+        expect(registry.getSnapshot().paths).toEqual([DASHBOARD_PATH]);
+    });
+
+    it('does not admit an initial route beyond the configured capacity', () => {
+        const registry = new WorkspaceRegistry(
+            PROFILE_PATH,
+            `${PROFILE_PATH}?section=summary`,
+            1
+        );
+
+        expect(registry.getSnapshot().paths).toEqual([DASHBOARD_PATH]);
+        expect(registry.activationUrl(PROFILE_PATH)).toBe(PROFILE_PATH);
+    });
+
     it('publishes immutable dirty state only when its value changes', () => {
         const registry = new WorkspaceRegistry(PROFILE_PATH, PROFILE_PATH);
         const listener = vi.fn();

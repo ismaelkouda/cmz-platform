@@ -1,5 +1,6 @@
 export const DASHBOARD_PATH = '/workspace/dashboard';
 export const PROFILE_PATH = '/workspace/profile';
+export const PROFILED_WORKSPACE_CAPACITY = 2;
 
 export type WorkspacePath = typeof DASHBOARD_PATH | typeof PROFILE_PATH;
 
@@ -9,23 +10,36 @@ export interface WorkspaceRegistrySnapshot {
     readonly pendingClosePath: WorkspacePath | null;
 }
 
+export type VisitResult = 'opened' | 'already-open' | 'capacity-reached';
+
 type CloseRequestResult = 'closed' | 'confirmation-required' | 'ignored';
 
 export class WorkspaceRegistry {
     readonly #listeners = new Set<() => void>();
     readonly #activationUrls = new Map<WorkspacePath, string>();
+    readonly #maxOpenViews: number;
     #snapshot: WorkspaceRegistrySnapshot;
 
-    constructor(initialPath: WorkspacePath, initialUrl: string) {
-        this.#snapshot = WorkspaceRegistry.#makeSnapshot(
-            initialPath === DASHBOARD_PATH
-                ? [DASHBOARD_PATH]
-                : [DASHBOARD_PATH, initialPath],
-            [],
-            null
-        );
+    constructor(
+        initialPath: WorkspacePath,
+        initialUrl: string,
+        maxOpenViews = PROFILED_WORKSPACE_CAPACITY
+    ) {
+        if (!Number.isSafeInteger(maxOpenViews) || maxOpenViews < 1) {
+            throw new RangeError(
+                'Workspace capacity must be a positive safe integer.'
+            );
+        }
+        this.#maxOpenViews = maxOpenViews;
+        const paths: WorkspacePath[] = [DASHBOARD_PATH];
+        if (initialPath !== DASHBOARD_PATH && paths.length < maxOpenViews) {
+            paths.push(initialPath);
+        }
+        this.#snapshot = WorkspaceRegistry.#makeSnapshot(paths, [], null);
         this.#activationUrls.set(DASHBOARD_PATH, DASHBOARD_PATH);
-        this.#activationUrls.set(initialPath, initialUrl);
+        if (paths.includes(initialPath)) {
+            this.#activationUrls.set(initialPath, initialUrl);
+        }
     }
 
     readonly getSnapshot = () => this.#snapshot;
@@ -35,11 +49,18 @@ export class WorkspaceRegistry {
         return () => this.#listeners.delete(listener);
     };
 
-    recordVisit(path: WorkspacePath, activationUrl: string): void {
-        this.#activationUrls.set(path, activationUrl);
-        if (!this.#snapshot.paths.includes(path)) {
-            this.#replace({ paths: [...this.#snapshot.paths, path] });
+    recordVisit(path: WorkspacePath, activationUrl: string): VisitResult {
+        if (this.#snapshot.paths.includes(path)) {
+            this.#activationUrls.set(path, activationUrl);
+            return 'already-open';
         }
+        if (this.#snapshot.paths.length >= this.#maxOpenViews) {
+            return 'capacity-reached';
+        }
+
+        this.#activationUrls.set(path, activationUrl);
+        this.#replace({ paths: [...this.#snapshot.paths, path] });
+        return 'opened';
     }
 
     activationUrl(path: WorkspacePath): string {
