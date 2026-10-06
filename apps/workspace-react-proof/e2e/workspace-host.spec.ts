@@ -219,3 +219,93 @@ test('détruit une vue active révoquée et interdit sa résurrection par l’hi
     await expect(page.locator('[data-instance-id]')).toHaveCount(0);
     expect(profileReads).toBe(1);
 });
+
+test('termine la session, détruit toutes les vues et bloque l’historique', async ({
+    page,
+}) => {
+    let profileReads = 0;
+    await page.route(`**${PROFILE_ENDPOINT}`, async (route) => {
+        profileReads += 1;
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                name: 'Soumaila Kouda',
+                role: 'Administrateur',
+            }),
+        });
+    });
+
+    await page.goto('/workspace/profile?section=security#sessions');
+    await expect(page.getByText('Soumaila Kouda')).toBeVisible();
+    await page
+        .getByRole('textbox', { name: 'Note locale non enregistrée' })
+        .fill('Secret de la session terminée');
+
+    await page.getByRole('button', { name: 'Terminer la session' }).click();
+
+    await expect(page).toHaveURL(/\/signed-out$/);
+    await expect(page.getByText('Vous êtes déconnecté')).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveCount(0);
+    await expect(page.locator('[data-instance-id]')).toHaveCount(0);
+    await expect(page.locator('[data-dashboard-instance-id]')).toHaveCount(0);
+
+    await page.evaluate(() => {
+        window.history.pushState(null, '', '/workspace/profile');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    await expect(page).toHaveURL(/\/signed-out$/);
+    await expect(page.locator('[data-instance-id]')).toHaveCount(0);
+    expect(profileReads).toBe(1);
+});
+
+test('remplace l’identité par un runtime neuf sans donnée inter-session', async ({
+    page,
+}) => {
+    let profileReads = 0;
+    await page.route(`**${PROFILE_ENDPOINT}`, async (route) => {
+        profileReads += 1;
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                name: 'Soumaila Kouda',
+                role: 'Administrateur',
+            }),
+        });
+    });
+
+    await page.goto('/workspace/dashboard');
+    const firstDashboard = await page
+        .locator('[data-dashboard-instance-id]')
+        .getAttribute('data-dashboard-instance-id');
+    await page.getByRole('button', { name: 'Ouvrir le profil' }).click();
+    await expect(page.getByText('Soumaila Kouda')).toBeVisible();
+    const firstProfile = await page
+        .locator('[data-instance-id]')
+        .getAttribute('data-instance-id');
+    await page
+        .getByRole('textbox', { name: 'Note locale non enregistrée' })
+        .fill('Ne doit pas changer de session');
+
+    await page.getByRole('button', { name: 'Remplacer la session' }).click();
+
+    await expect(page).toHaveURL(/\/workspace\/profile$/);
+    await expect(page.getByRole('tab', { name: 'Profil' })).toHaveCount(1);
+    expect(
+        await page
+            .locator('[data-dashboard-instance-id]')
+            .getAttribute('data-dashboard-instance-id')
+    ).not.toBe(firstDashboard);
+    await expect(page.getByText('Soumaila Kouda')).toBeVisible();
+    await expect(
+        page.getByRole('textbox', { name: 'Note locale non enregistrée' })
+    ).toHaveValue('');
+    expect(
+        await page
+            .locator('[data-instance-id]')
+            .getAttribute('data-instance-id')
+    ).not.toBe(firstProfile);
+    expect(profileReads).toBe(2);
+});
