@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
     dependabotPolicyErrors,
+    SECURITY_OVERRIDE_MINIMUMS,
     securityResolutionPolicyErrors,
 } from './check-dependabot-policy.mjs';
 
@@ -137,15 +138,28 @@ function securityFixture({
     nxRange = '1.18.1',
     direct = false,
 } = {}) {
+    const overrides = Object.fromEntries(
+        Object.entries(SECURITY_OVERRIDE_MINIMUMS).map(([name, minimum]) => [
+            name,
+            `^${minimum}`,
+        ])
+    );
+    overrides.axios = override;
+    const packages = Object.fromEntries(
+        Object.entries(SECURITY_OVERRIDE_MINIMUMS).map(([name, minimum]) => [
+            name,
+            [`${name}@${name === 'axios' ? locked : minimum}`],
+        ])
+    );
     return {
         pkg: {
             devDependencies: direct ? { axios: locked } : {},
-            overrides: { axios: override },
+            overrides,
         },
         lock: {
-            overrides: { axios: override },
+            overrides: { ...overrides },
             packages: {
-                axios: [`axios@${locked}`],
+                ...packages,
                 nx: ['nx@23.2.1', '', { dependencies: { axios: nxRange } }],
             },
         },
@@ -184,11 +198,39 @@ test('refuse une résolution Axios sous le plancher corrigé', () => {
     );
 });
 
+test('refuse une résolution transitive sous son plancher de sécurité', () => {
+    const { pkg, lock } = securityFixture();
+    lock.packages['source-map-js'] = ['source-map-js@1.2.1'];
+    assert.match(
+        securityResolutionPolicyErrors(pkg, lock).join('\n'),
+        /source-map-js@1\.2\.1 est sous le plancher sûr 1\.2\.2/
+    );
+});
+
+test('refuse de retirer un override de sécurité requis', () => {
+    const { pkg, lock } = securityFixture();
+    delete pkg.overrides['proxy-addr'];
+    delete lock.overrides['proxy-addr'];
+    assert.match(
+        securityResolutionPolicyErrors(pkg, lock).join('\n'),
+        /overrides\.proxy-addr doit valoir '\^2\.0\.8'/
+    );
+});
+
 test('refuse une dépendance Axios directe artificielle', () => {
     const { pkg, lock } = securityFixture({ direct: true });
     assert.match(
         securityResolutionPolicyErrors(pkg, lock).join('\n'),
         /dépendance directe artificielle/
+    );
+});
+
+test('refuse toute dépendance transitive gouvernée ajoutée directement', () => {
+    const { pkg, lock } = securityFixture();
+    pkg.devDependencies['proxy-addr'] = '2.0.8';
+    assert.match(
+        securityResolutionPolicyErrors(pkg, lock).join('\n'),
+        /proxy-addr est gouverné comme dépendance transitive/
     );
 });
 

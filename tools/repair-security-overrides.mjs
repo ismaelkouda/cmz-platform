@@ -28,10 +28,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ACTIONABLE_SEVERITIES = new Set(['high', 'critical']);
 const PACKAGE_NAME_PATTERN =
     /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
-export const AUDIT_IGNORES = Object.freeze([
-    'GHSA-w3rx-r6r6-pgpr',
-    'GHSA-5p2g-fcmc-qvqq',
-]);
+// Aucun avis high/critical n'est masqué. L'option reste injectable uniquement
+// dans les tests afin de prouver que toute éventuelle exception future serait
+// explicite, ciblée par GHSA et revue comme du code.
+export const AUDIT_IGNORES = Object.freeze([]);
 
 function advisoryId(advisory) {
     const match = String(advisory?.url ?? '').match(/(GHSA-[\w-]+)$/i);
