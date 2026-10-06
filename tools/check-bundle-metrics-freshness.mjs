@@ -24,9 +24,10 @@
  *   node tools/check-bundle-metrics-freshness.mjs
  *   bun run check:bundle-metrics-freshness
  *
- * CI : job `integration` (nightly-integration.yml), après un build
- * production propre — jamais après le build --source-map=true, qui produit
- * un dist non représentatif (sourceMappingURL injecté = octets différents).
+ * CI : job `oracle` (ci.yml) avant fusion, puis job `integration`
+ * (nightly-integration.yml) en défense en profondeur. Toujours après un build
+ * production propre — jamais après le build --source-map=true, qui produit un
+ * dist non représentatif (sourceMappingURL injecté = octets différents).
  */
 
 import { execFileSync } from 'node:child_process';

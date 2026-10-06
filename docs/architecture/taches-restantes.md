@@ -1534,6 +1534,23 @@ Figma, désormais source partielle différée :
   et ajouter des tests de non-régression. La baseline finale ne sera commitée
   qu'à partir d'un build Linux CI réel, puis le Nightly devra être rejoué vert
   avant ADAPT-8e.
+- **OPS-36** — **fait localement** (2026-10-06), S, P0 Ops. Le Nightly
+  `37451442684`, déclenché sur le `main` fusionné exact
+  `a844189659acf70781bb9d9a164a1a7e572726a2`, a isolé un seul échec : la
+  baseline bundle commitée (`522 755` octets) ne reflétait pas le coût réel de
+  la migration `@angular/localize`. L'artefact Ubuntu
+  `bundle-metrics-measured` mesure `754 696` octets (`754,70 kB`), ExcelJS et
+  les budgets restant inchangés. Cause racine : les quatre packs statiques du
+  pont historique entrent désormais dans le JavaScript initial, conformément
+  au contrat sans dictionnaire HTTP d'ADR-0085 ; ce n'est ni un faux positif,
+  ni Docker, ni Nx Cloud. La baseline Linux exacte est acceptée sans relever
+  les plafonds et sa provenance est consignée dans ADR-0016. Le défaut de
+  processus est fermé à la racine : `ci.yml` construit désormais explicitement
+  `backoffice-angular:build:production` sur Ubuntu et exécute
+  `check:bundle-metrics-freshness` **avant fusion**. Un test de câblage exige le
+  build frais et la comparaison dans la même step, dans cet ordre ; le Nightly
+  reste une seconde ligne de défense. Reste à obtenir la CI de PR verte, puis à
+  rejouer le Nightly après fusion avant de clore la preuve distante.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les
@@ -3136,8 +3153,10 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
 
 ### 3.3 Performance, observabilité, résilience — spécifiques à l'app Angular
 
-- **T8-1** — partiel, S, P1, alias `P-7`. CI fail sur delta
-  `bundle-metrics.json`.
+- **T8-1** — **fait localement** (2026-10-06), S, P1, alias `P-7`. La baseline
+  Linux est vérifiée en PR après un build production frais ; tout delta réel
+  bloque désormais la fusion au lieu d'attendre le Nightly. Preuve distante
+  finale suivie par OPS-36.
 - **T8-2** — partiel, M, P1, alias `P-5`. Composition bundle publiée +
   réutilisable (source-map-explorer artefact CI).
 - **T8-3** — ouvert, L, P1, alias `P-6`. Découper chunk commun (CDK, OL,
@@ -3179,7 +3198,7 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   vers `@angular/localize` (ADR-0085) : zéro dictionnaire HTTP, générateur de
   shell natif, preuve de bijection des 1 869 clés historiques,
   `ngc`/tests/builds verts. Coût transitoire mesuré : le catalogue historique
-  compilé porte le bundle initial brut de 522,76 à 746,63 kB, sous le seuil de
+  compilé porte le bundle initial brut Linux de 522,76 à 754,70 kB, sous le seuil de
   warning de 900 kB. Travail restant non bloquant : quand une surface historique
   est réellement remaniée, remplacer ses appels dynamiques par
   `i18n`/`$localize`, vérifier que ses messages retombent dans ses chunks lazy,

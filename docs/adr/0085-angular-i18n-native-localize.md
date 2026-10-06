@@ -113,13 +113,15 @@ local pour ses clés historiques. Une future exigence de langue supplémentaire
 déclenchera la création des fichiers XLIFF et des variantes de build, pas la
 réintroduction automatique d'un runtime tiers.
 
-La première mesure de production après migration porte le bundle initial brut de
-522,76 à 746,63 kB (+223,87 kB), sous le warning de 900 kB. Cette hausse est
+La mesure Linux autoritative après migration porte le bundle initial brut de
+522,76 à 754,70 kB (+231,94 kB), sous le warning de 900 kB. Cette hausse est
 acceptée comme dette bornée du catalogue historique, pas comme nouveau défaut :
-le JSON était auparavant téléchargé séparément au runtime. Lorsqu'une surface
-historique est remaniée, ses messages doivent rejoindre ses templates/chunks
-natifs et les clés mortes être retirées. Aucun système de catalogues lazy maison
-n'est introduit avant qu'une mesure par route ou le budget ne le justifie.
+le JSON était auparavant téléchargé séparément au runtime. La provenance et
+l'arbitrage de budget sont consignés dans la revue du 2026-10-06 d'ADR-0016.
+Lorsqu'une surface historique est remaniée, ses messages doivent rejoindre ses
+templates/chunks natifs et les clés mortes être retirées. Aucun système de
+catalogues lazy maison n'est introduit avant qu'une mesure par route ou le
+budget ne le justifie.
 
 ## Références
 

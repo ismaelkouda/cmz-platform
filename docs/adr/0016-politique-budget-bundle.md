@@ -94,8 +94,31 @@ décoration.
 ### Négatives / dette acceptée
 
 - Friction pour une hausse légitime (volontaire).
-- Les plafonds actuels (1 mb error) laissent ~140 kB de marge au-dessus de
-  861 kB mesurés — marge à surveiller, pas à consommer par défaut.
+- La baseline Linux acceptée le 2026-10-06 mesure **754,70 kB raw**. Elle laisse
+  145,30 kB avant le warning `900kb` et 245,30 kB avant l'erreur `1mb` — marge
+  à surveiller, pas à consommer par défaut.
+
+### Revue de baseline — 2026-10-06
+
+La migration native `@angular/localize` décidée par
+[ADR-0085](./0085-angular-i18n-native-localize.md) a fait passer la mesure
+Ubuntu autoritative de **522,76 kB** (`522 755` octets) à **754,70 kB**
+(`754 696` octets), soit **+231,94 kB**. L'analyse sourcemap attribue l'ordre de
+grandeur aux quatre packs générés du pont historique (environ 236,39 kB de
+sources avant optimisation). ExcelJS reste lazy et inchangé à 943,66 kB ; les
+plafonds `900kb` / `1mb` ne sont pas relevés.
+
+Cette hausse est acceptée parce qu'elle matérialise dans le build le catalogue
+français auparavant chargé par HTTP, conformément au contrat « zéro
+dictionnaire runtime » d'ADR-0085. Elle ne vaut pas autorisation générale de
+consommer la marge. Toute optimisation lazy future doit conserver les
+garanties Angular natives et être décidée sur mesure par route ; aucun retour
+silencieux à un chargeur HTTP maison.
+
+La mesure provient de l'artefact `bundle-metrics-measured` du Nightly GitHub
+Actions `37451442684`, exécuté sur le SHA `a844189659acf70781bb9d9a164a1a7e572726a2`.
+Le contrôle est désormais aussi bloquant dans `ci.yml`, avant fusion ; le
+Nightly reste une défense en profondeur.
 
 ### Points à réévaluer
 
