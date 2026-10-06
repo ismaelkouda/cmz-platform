@@ -528,6 +528,18 @@ jobs:
       - name: Build (nx affected)
         run: bunx nx affected -t build --base=${{ env.NX_BASE }}
 
+      # OPS-36 — le Nightly reste une défense en profondeur, pas le premier
+      # endroit où une dérive de bundle est découverte après fusion. Ce build
+      # Ubuntu explicite est intentionnellement inconditionnel : une baseline
+      # générée sur macOS n'est pas bit-à-bit portable et une heuristique
+      # `affected` pourrait rater un changement d'outillage ou de dépendance.
+      # Les budgets Angular restent bloquants pendant le build ; la seconde
+      # commande vérifie ensuite l'inventaire exact des chunks initiaux.
+      - name: Bundle production — budgets + baseline Linux
+        run: |
+          bunx nx run backoffice-angular:build:production
+          bun run check:bundle-metrics-freshness
+
       # Vite transpile TypeScript sans le vérifier. Les projets Vite exposent
       # donc un target `typecheck` distinct ; Nx ignore les projets qui n'en ont
       # pas au lieu de dupliquer ngc pour Angular.

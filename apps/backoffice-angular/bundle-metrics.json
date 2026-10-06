@@ -1,26 +1,34 @@
 {
   "schema": 1,
   "configuration": "production",
-  "measured_at": "2026-10-01",
+  "measured_at": "2026-10-06",
   "output_path": "dist/apps/backoffice-angular/browser",
-  "initial_raw_bytes": 522755,
-  "initial_raw_kb": 522.76,
+  "initial_raw_bytes": 754696,
+  "initial_raw_kb": 754.7,
   "initial_files": [
     {
-      "file": "main-JBC7Q6P2.js",
-      "bytes": 305926
+      "file": "polyfills-XPHHBOBR.js",
+      "bytes": 2828
+    },
+    {
+      "file": "main-BZF4AAHH.js",
+      "bytes": 524351
     },
     {
       "file": "chunk-O5Csq16y.js",
       "bytes": 1701
     },
     {
-      "file": "chunk-DBrxmonp.js",
-      "bytes": 199898
+      "file": "chunk-QQ9UZhih.js",
+      "bytes": 185323
     },
     {
-      "file": "styles-TRK3CLVU.css",
-      "bytes": 15230
+      "file": "chunk-BbKjxIhC.js",
+      "bytes": 21515
+    },
+    {
+      "file": "styles-4IXSHH42.css",
+      "bytes": 18978
     }
   ],
   "exceljs_lazy_raw_bytes": 943657,

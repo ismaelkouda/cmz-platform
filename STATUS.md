@@ -1,6 +1,6 @@
 # STATUS — cmz-platform
 
-> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-10-04.
+> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-10-06.
 > Ne pas éditer manuellement — lancer `node tools/generate-status.mjs` pour régénérer.
 
 > Ces métriques décrivent le golden reference Angular/SEOS. Périmètre courant

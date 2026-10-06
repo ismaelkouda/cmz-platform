@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -74,5 +75,31 @@ test('extrait toutes les commandes Node feuilles d’un script package', () => {
             'node --test tools/check-a.test.mjs && node tools/check-a.mjs'
         ),
         ['node --test tools/check-a.test.mjs', 'node tools/check-a.mjs']
+    );
+});
+
+test('bloque la dérive bundle dans la CI de PR après un build production frais', () => {
+    const ci = readFileSync(
+        new URL('../.github/workflows/ci.yml', import.meta.url),
+        'utf8'
+    );
+    const commands = workflowRunCommands(ci, '.github/workflows/ci.yml');
+    const gate = commands.find((command) =>
+        commandInvokes(command, 'bun run check:bundle-metrics-freshness')
+    );
+
+    assert.ok(
+        gate,
+        'ci.yml doit exécuter check:bundle-metrics-freshness avant fusion'
+    );
+    const build = 'bunx nx run backoffice-angular:build:production';
+    const check = 'bun run check:bundle-metrics-freshness';
+    assert.ok(
+        commandInvokes(gate, build),
+        'la gate doit mesurer un build production Ubuntu frais dans la même step'
+    );
+    assert.ok(
+        gate.indexOf(build) < gate.indexOf(check),
+        'le build production doit précéder la comparaison de baseline'
     );
 });
