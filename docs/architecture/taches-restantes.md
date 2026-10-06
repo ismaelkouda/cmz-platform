@@ -1538,14 +1538,14 @@ Figma, désormais source partielle différée :
   `37451442684`, déclenché sur le `main` fusionné exact
   `a844189659acf70781bb9d9a164a1a7e572726a2`, a isolé un seul échec : la
   baseline bundle commitée (`522 755` octets) ne reflétait pas le coût réel de
-  la migration `@angular/localize`. L'artefact Ubuntu
-  `bundle-metrics-measured` mesure `754 696` octets (`754,70 kB`), ExcelJS et
-  les budgets restant inchangés. Cause racine : les quatre packs statiques du
-  pont historique entrent désormais dans le JavaScript initial, conformément
-  au contrat sans dictionnaire HTTP d'ADR-0085 ; ce n'est ni un faux positif,
-  ni Docker, ni Nx Cloud. La baseline Linux exacte est acceptée sans relever
-  les plafonds et sa provenance est consignée dans ADR-0016. Le défaut de
-  processus est fermé à la racine : `ci.yml` construit désormais explicitement
+  la migration `@angular/localize`. L'artefact Ubuntu `bundle-metrics-measured`
+  mesure `754 696` octets (`754,70 kB`), ExcelJS et les budgets restant
+  inchangés. Cause racine : les quatre packs statiques du pont historique
+  entrent désormais dans le JavaScript initial, conformément au contrat sans
+  dictionnaire HTTP d'ADR-0085 ; ce n'est ni un faux positif, ni Docker, ni Nx
+  Cloud. La baseline Linux exacte est acceptée sans relever les plafonds et sa
+  provenance est consignée dans ADR-0016. Le défaut de processus est fermé à la
+  racine : `ci.yml` construit désormais explicitement
   `backoffice-angular:build:production` sur Ubuntu et exécute
   `check:bundle-metrics-freshness` **avant fusion**. Un test de câblage exige le
   build frais et la comparaison dans la même step, dans cet ordre ; le Nightly
@@ -2752,6 +2752,17 @@ Figma, désormais source partielle différée :
   Le manifeste de bibliothèques de l'app est gouverné avec un catalogue vide ;
   sa plateforme est recoupée avec un import AST réel du plugin Vite React
   officiel, sans faux target Nx ni reconnaissance d'un commentaire.
+  **WORKSPACE-TABS-7 — contexte d'activation React exact engagé localement le
+  2026-10-06 :** le chemin canonique reste l'unique identité de vue ; query
+  params et fragment ne créent ni deuxième tab ni deuxième frontière `Activity`.
+  Le registre conserve séparément la dernière URL exacte de chaque chemin ouvert
+  et la restitue au switch. Fermer une vue détruit aussi ce contexte. Un
+  quatrième scénario Vitest et un troisième parcours Chromium exigent query +
+  fragment octet-stables — y compris paramètres répétés, `%2F` et `+` —, même
+  instance, même état local, une seule tab et un seul GET. Cette tranche ne
+  persiste rien après reload et n'autorise pas plusieurs instances d'une route
+  dynamique. Restent permissions/révocation, dirty, capacité/mémoire, ressources
+  longues et accessibilité complète avant toute déclaration de parité React.
   **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
   navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
   des capacités non déclarées, la non-activation des lignes et la géométrie
@@ -3198,9 +3209,9 @@ pas être sacrifié à des POC non reproductibles ; voir ADR-0029.
   vers `@angular/localize` (ADR-0085) : zéro dictionnaire HTTP, générateur de
   shell natif, preuve de bijection des 1 869 clés historiques,
   `ngc`/tests/builds verts. Coût transitoire mesuré : le catalogue historique
-  compilé porte le bundle initial brut Linux de 522,76 à 754,70 kB, sous le seuil de
-  warning de 900 kB. Travail restant non bloquant : quand une surface historique
-  est réellement remaniée, remplacer ses appels dynamiques par
+  compilé porte le bundle initial brut Linux de 522,76 à 754,70 kB, sous le
+  seuil de warning de 900 kB. Travail restant non bloquant : quand une surface
+  historique est réellement remaniée, remplacer ses appels dynamiques par
   `i18n`/`$localize`, vérifier que ses messages retombent dans ses chunks lazy,
   puis retirer les clés devenues mortes. Ne pas créer un découpage de catalogue
   spéculatif avant une mesure par route ; seuil de réévaluation : budget 900 kB

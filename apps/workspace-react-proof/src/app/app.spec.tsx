@@ -1,16 +1,32 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router';
+import { BrowserRouter, useNavigate } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from './app';
 
 const profile = { name: 'Soumaila Kouda', role: 'Administrateur' };
 
-function renderApp(path = '/workspace/dashboard') {
+const UPDATED_PROFILE_URL =
+    '/workspace/profile?section=permissions&filter=active%2Fpending&filter=locked+out#security%2Froles';
+
+function NavigationProbe() {
+    const navigate = useNavigate();
+    return (
+        <button
+            type="button"
+            onClick={() => void navigate(UPDATED_PROFILE_URL)}
+        >
+            Modifier le contexte profil
+        </button>
+    );
+}
+
+function renderApp(path = '/workspace/dashboard', withProbe = false) {
     window.history.replaceState(null, '', path);
     return render(
         <BrowserRouter>
             <App />
+            {withProbe ? <NavigationProbe /> : null}
         </BrowserRouter>
     );
 }
@@ -86,6 +102,35 @@ describe('React workspace host', () => {
                 }) as HTMLInputElement
             ).value
         ).toBe('');
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('restores the exact last query and fragment without duplicating the view', async () => {
+        renderApp('/workspace/profile?section=summary#overview', true);
+        await screen.findByText('Soumaila Kouda');
+
+        const note = screen.getByRole('textbox', {
+            name: 'Note locale non enregistrée',
+        });
+        fireEvent.change(note, { target: { value: 'Contexte conservé' } });
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'Modifier le contexte profil',
+            })
+        );
+        await waitFor(() =>
+            expect(
+                `${window.location.pathname}${window.location.search}${window.location.hash}`
+            ).toBe(UPDATED_PROFILE_URL)
+        );
+        fireEvent.click(screen.getByRole('tab', { name: 'Tableau de bord' }));
+        fireEvent.click(screen.getByRole('tab', { name: 'Profil' }));
+
+        expect(
+            `${window.location.pathname}${window.location.search}${window.location.hash}`
+        ).toBe(UPDATED_PROFILE_URL);
+        expect((note as HTMLInputElement).value).toBe('Contexte conservé');
+        expect(screen.getAllByRole('tab', { name: 'Profil' })).toHaveLength(1);
         expect(fetch).toHaveBeenCalledTimes(1);
     });
 

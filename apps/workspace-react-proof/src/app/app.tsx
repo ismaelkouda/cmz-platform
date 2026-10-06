@@ -42,13 +42,16 @@ const VIEW_CATALOG: Readonly<Record<WorkspacePath, WorkspaceView>> = {
 
 class WorkspaceRegistry {
     readonly #listeners = new Set<() => void>();
+    readonly #activationUrls = new Map<WorkspacePath, string>();
     #paths: readonly WorkspacePath[];
 
-    constructor(initialPath: WorkspacePath) {
+    constructor(initialPath: WorkspacePath, initialUrl: string) {
         this.#paths =
             initialPath === DASHBOARD_PATH
                 ? [DASHBOARD_PATH]
                 : [DASHBOARD_PATH, initialPath];
+        this.#activationUrls.set(DASHBOARD_PATH, DASHBOARD_PATH);
+        this.#activationUrls.set(initialPath, initialUrl);
     }
 
     readonly getSnapshot = () => this.#paths;
@@ -58,15 +61,22 @@ class WorkspaceRegistry {
         return () => this.#listeners.delete(listener);
     };
 
-    ensureOpen(path: WorkspacePath): void {
-        if (this.#paths.includes(path)) return;
-        this.#paths = [...this.#paths, path];
-        this.#emit();
+    recordVisit(path: WorkspacePath, activationUrl: string): void {
+        this.#activationUrls.set(path, activationUrl);
+        if (!this.#paths.includes(path)) {
+            this.#paths = [...this.#paths, path];
+            this.#emit();
+        }
+    }
+
+    activationUrl(path: WorkspacePath): string {
+        return this.#activationUrls.get(path) ?? path;
     }
 
     close(path: WorkspacePath): void {
         if (VIEW_CATALOG[path].pinned || !this.#paths.includes(path)) return;
         this.#paths = this.#paths.filter((candidate) => candidate !== path);
+        this.#activationUrls.delete(path);
         this.#emit();
     }
 
@@ -81,6 +91,14 @@ function isWorkspacePath(pathname: string): pathname is WorkspacePath {
 
 function normalizePath(pathname: string): WorkspacePath {
     return isWorkspacePath(pathname) ? pathname : DASHBOARD_PATH;
+}
+
+function workspaceActivationUrl(
+    pathname: WorkspacePath,
+    search: string,
+    hash: string
+): string {
+    return `${pathname}${search}${hash}`;
 }
 
 function tabId(path: WorkspacePath): string {
@@ -200,7 +218,19 @@ function App() {
     const location = useLocation();
     const navigate = useNavigate();
     const requestedPath = normalizePath(location.pathname);
-    const [registry] = useState(() => new WorkspaceRegistry(requestedPath));
+    const [registry] = useState(
+        () =>
+            new WorkspaceRegistry(
+                requestedPath,
+                isWorkspacePath(location.pathname)
+                    ? workspaceActivationUrl(
+                          location.pathname,
+                          location.search,
+                          location.hash
+                      )
+                    : DASHBOARD_PATH
+            )
+    );
     const openPaths = useSyncExternalStore(
         registry.subscribe,
         registry.getSnapshot,
@@ -216,8 +246,11 @@ function App() {
             return;
         }
 
-        registry.ensureOpen(currentPath);
-    }, [location.pathname, navigate, registry]);
+        registry.recordVisit(
+            currentPath,
+            workspaceActivationUrl(currentPath, location.search, location.hash)
+        );
+    }, [location.hash, location.pathname, location.search, navigate, registry]);
 
     const loadProfile = useMemo(
         () => async (): Promise<ProfileSummary> => {
@@ -244,8 +277,9 @@ function App() {
     );
 
     const activate = (path: WorkspacePath) => {
-        registry.ensureOpen(path);
-        void navigate(path);
+        const targetUrl = registry.activationUrl(path);
+        registry.recordVisit(path, targetUrl);
+        void navigate(targetUrl);
     };
 
     const close = (path: WorkspacePath) => {
