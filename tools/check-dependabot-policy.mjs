@@ -55,7 +55,19 @@ export const ANGULAR_TOOLING_PACKAGES = [
     '@schematics/angular',
 ];
 export const AXIOS_SECURITY_RANGE = '^1.20.0';
-export const AXIOS_MINIMUM_FIXED = '1.20.0';
+export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
+    axios: '1.20.0',
+    'brace-expansion': '5.0.12',
+    'fast-uri': '4.1.5',
+    nanoid: '3.3.18',
+    'smol-toml': '1.8.1',
+    'js-yaml': '4.3.2',
+    undici: '7.29.1',
+    browserslist: '4.28.8',
+    'proxy-addr': '2.0.8',
+    qs: '6.16.0',
+    'source-map-js': '1.2.2',
+});
 
 function dependencyVersion(pkg, name) {
     return pkg.dependencies?.[name] ?? pkg.devDependencies?.[name];
@@ -176,6 +188,26 @@ export function securityResolutionPolicyErrors(pkg, lock) {
     const errors = [];
     const overrides = pkg?.overrides ?? {};
 
+    for (const [name, minimum] of Object.entries(SECURITY_OVERRIDE_MINIMUMS)) {
+        const expectedRange = `^${minimum}`;
+        if (overrides[name] !== expectedRange) {
+            errors.push(
+                `overrides.${name} doit valoir '${expectedRange}' (plancher corrigé auto-actualisable), trouvé ${String(overrides[name])}`
+            );
+        }
+
+        const directFields = [
+            'dependencies',
+            'devDependencies',
+            'optionalDependencies',
+        ].filter((field) => Object.hasOwn(pkg?.[field] ?? {}, name));
+        if (directFields.length > 0) {
+            errors.push(
+                `${name} est gouverné comme dépendance transitive et ne doit pas devenir une dépendance directe artificielle (${directFields.join(', ')})`
+            );
+        }
+    }
+
     for (const [name, range] of Object.entries(overrides)) {
         if (
             typeof range !== 'string' ||
@@ -207,25 +239,17 @@ export function securityResolutionPolicyErrors(pkg, lock) {
         } else if (!semver.satisfies(lockedVersion, range)) {
             errors.push(`${name}@${lockedVersion} ne respecte pas ${range}`);
         }
-    }
 
-    const directAxios = [
-        'dependencies',
-        'devDependencies',
-        'optionalDependencies',
-    ].filter((field) => Object.hasOwn(pkg?.[field] ?? {}, 'axios'));
-
-    if (directAxios.length > 0) {
-        errors.push(
-            `axios est transitif via Nx et ne doit pas devenir une dépendance directe artificielle (${directAxios.join(', ')})`
-        );
-    }
-
-    const override = pkg?.overrides?.axios;
-    if (override !== AXIOS_SECURITY_RANGE) {
-        errors.push(
-            `overrides.axios doit valoir '${AXIOS_SECURITY_RANGE}' (plancher corrigé auto-actualisable), trouvé ${String(override)}`
-        );
+        const minimum = SECURITY_OVERRIDE_MINIMUMS[name];
+        if (
+            minimum &&
+            semver.valid(lockedVersion) &&
+            semver.lt(lockedVersion, minimum)
+        ) {
+            errors.push(
+                `${name}@${lockedVersion} est sous le plancher sûr ${minimum}`
+            );
+        }
     }
 
     const lockedIdentity = lock?.packages?.axios?.[0];
@@ -238,10 +262,7 @@ export function securityResolutionPolicyErrors(pkg, lock) {
         errors.push(
             `résolution axios absente ou invalide dans bun.lock (${String(lockedIdentity)})`
         );
-    } else if (
-        semver.lt(lockedVersion, AXIOS_MINIMUM_FIXED) ||
-        !semver.satisfies(lockedVersion, AXIOS_SECURITY_RANGE)
-    ) {
+    } else if (!semver.satisfies(lockedVersion, AXIOS_SECURITY_RANGE)) {
         errors.push(
             `axios@${lockedVersion} ne respecte pas le plancher sûr ${AXIOS_SECURITY_RANGE}`
         );

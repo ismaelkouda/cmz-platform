@@ -4141,7 +4141,35 @@ gouvernance, sécurité, licences.
   ensuite la PR parente sur son nouveau HEAD et après la CI. Sinon, un troisième
   reviewer indépendant est requis. Aucun contournement administrateur de la
   protection de `main` n'est autorisé. Voir OPS-26 (Dependabot Bun natif +
-  lockfile régénéré).
+  lockfile régénéré). **2026-10-06 — récidive couverte sans masquer l'audit :**
+  le run post-fusion de `main` a reçu deux avis absents du run PR précédent :
+  `proxy-addr@2.0.7` (critical, GHSA-jqcg-44mw-7w3h, corrigé en 2.0.8) via
+  `@nx/react → express`, et `source-map-js@1.2.1` (high, GHSA-68fv-2mgg-jv7q,
+  corrigé en 1.2.2) via les chaînes CSS/build/test. Les overrides `^2.0.8` et
+  `^1.2.2` ont été ajoutés comme gouvernance explicite : la réparation
+  quotidienne saura désormais régénérer `bun.lock` si ces transitives
+  redeviennent vulnérables. `check:dependabot-policy` impose maintenant les
+  planchers de sécurité des onze overrides, leur matérialisation exacte dans le
+  lockfile, une résolution au-dessus du minimum et l'absence de dépendance
+  directe artificielle. Une régression ne peut donc plus se cacher derrière une
+  plage caret syntaxiquement valide mais trop basse. Les deux anciennes
+  exceptions `image-size`, déjà déclarées retirées le 2026-10-04, ont aussi été
+  supprimées du réparateur où elles subsistaient par erreur : la liste de
+  production est vide et un test le verrouille.
+
+    La passe complète, au-delà du seuil bloquant, a également corrigé sans saut
+    de majeure les avis modérés `fast-uri` (`^4.1.5`, résolu 4.2.1), `smol-toml`
+    (`^1.8.1`, résolu 1.9.0) et `qs` (`^6.16.0`). Il reste un seul avis modéré
+    visible, jamais ignoré : `uuid@8.3.2`, imposé par `exceljs@4.4.0`, qui est
+    encore la dernière version publiée et déclare `uuid@^8.3.0`. Le code ExcelJS
+    réellement embarqué appelle uniquement `uuid.v4()` sans argument buffer,
+    alors que GHSA-w5hq-g745-h8pq concerne les variantes v3/v5/v6 avec buffer.
+    Forcer `uuid@11` contre la contrainte de l'amont serait une fausse
+    correction susceptible de casser ExcelJS. **Reste à surveiller :** adopter
+    la première version ExcelJS compatible avec `uuid>=11.1.1`, ou qualifier un
+    remplaçant, puis retirer ce risque ; aucun override incompatible et aucun
+    ignore ne sont autorisés entre-temps.
+
 - **T4-4** — différé, M, P2, alias `Big Tech gap`. DAST minimal staging (OWASP
   ZAP baseline ou équivalent) post-I-8.
 - **T4-5** — fait, S, P1, alias `Big Tech gap`. Secret scanning pre-push + CI

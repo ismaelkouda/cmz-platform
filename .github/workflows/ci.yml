@@ -768,6 +768,14 @@ jobs:
   # lui-même la résolution sûre. Le même garde impose des planchers caret à
   # tous les overrides de sécurité afin d'éviter la répétition de cette classe
   # d'incident dans une autre dépendance. Aucun de ces cinq GHSA n'est ignoré.
+  # Le 2026-10-06, le flux d'avis a signalé après fusion deux nouvelles
+  # transitives : proxy-addr<2.0.8 (critical) via @nx/react/express et
+  # source-map-js<1.2.2 (high) via les outils CSS/build/test. Elles sont
+  # désormais gouvernées par des planchers caret explicites et testés. La même
+  # passe a corrigé les avis modérés compatibles de fast-uri, smol-toml et qs.
+  # L'audit complet conserve visible l'avis modéré uuid@8 imposé par la dernière
+  # version d'ExcelJS : l'usage réel est uuid.v4() sans buffer, hors primitive
+  # vulnérable ; aucune majeure incompatible ni aucun ignore n'est forcé.
   security-audit:
     name: Dependency audit (bun audit)
     runs-on: ubuntu-latest

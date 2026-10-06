@@ -6,6 +6,7 @@ import test from 'node:test';
 import { parse as parseYaml } from 'yaml';
 
 import {
+    AUDIT_IGNORES,
     parseAuditReport,
     repairSecurityOverrides,
     securityRepairPlan,
@@ -14,6 +15,10 @@ import {
 const high = (id = 'GHSA-aaaa-bbbb-cccc') => ({
     severity: 'high',
     url: `https://github.com/advisories/${id}`,
+});
+
+test('ne masque aucun avis dans la politique de production', () => {
+    assert.deepEqual(AUDIT_IGNORES, []);
 });
 
 test('sélectionne uniquement les high/critical gouvernés par overrides', () => {
@@ -25,6 +30,21 @@ test('sélectionne uniquement les high/critical gouvernés par overrides', () =>
         { axios: '^1.20.0', hono: '^4.12.34' }
     );
     assert.deepEqual(plan.repairable, ['axios']);
+    assert.deepEqual(plan.unsupported, []);
+});
+
+test('reconnaît les nouvelles transitives critiques une fois gouvernées', () => {
+    const plan = securityRepairPlan(
+        {
+            'proxy-addr': [{ ...high(), severity: 'critical' }],
+            'source-map-js': [high()],
+        },
+        {
+            'proxy-addr': '^2.0.8',
+            'source-map-js': '^1.2.2',
+        }
+    );
+    assert.deepEqual(plan.repairable, ['proxy-addr', 'source-map-js']);
     assert.deepEqual(plan.unsupported, []);
 });
 
