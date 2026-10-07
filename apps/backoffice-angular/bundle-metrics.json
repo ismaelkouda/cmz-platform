@@ -3,8 +3,8 @@
   "configuration": "production",
   "measured_at": "2026-10-06",
   "output_path": "dist/apps/backoffice-angular/browser",
-  "initial_raw_bytes": 754696,
-  "initial_raw_kb": 754.7,
+  "initial_raw_bytes": 754765,
+  "initial_raw_kb": 754.77,
   "initial_files": [
     {
       "file": "polyfills-XPHHBOBR.js",
@@ -27,8 +27,8 @@
       "bytes": 21515
     },
     {
-      "file": "styles-4IXSHH42.css",
-      "bytes": 18978
+      "file": "styles-JQHBHVQ5.css",
+      "bytes": 19047
     }
   ],
   "exceljs_lazy_raw_bytes": 943657,
