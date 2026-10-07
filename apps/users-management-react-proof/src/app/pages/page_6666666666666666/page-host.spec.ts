@@ -2,6 +2,7 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+    createBrowserUsersManagementPageRuntime,
     createUsersManagementPageRuntime,
     PageHostConfigurationError,
     type UsersManagementPageHostRequest,
@@ -15,7 +16,10 @@ function response(payload: unknown, status = 200) {
     };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+    cleanup();
+    delete window.__cmzUsersManagementPageHost;
+});
 
 describe('users management React page host', () => {
     it('binds the generated queries to the declared service without changing host policies', async () => {
@@ -176,5 +180,68 @@ describe('users management React page host', () => {
                 typeof createUsersManagementPageRuntime
             >[0])
         ).toThrow(PageHostConfigurationError);
+    });
+
+    it('creates the runtime from the single public browser host seam', async () => {
+        const requests: UsersManagementPageHostRequest[] = [];
+        window.__cmzUsersManagementPageHost = {
+            serviceBaseUrls: {
+                'settings-api': 'https://settings.example.test/backoffice/',
+            },
+            request: async (request: UsersManagementPageHostRequest) => {
+                requests.push(request);
+                return response({
+                    error: false,
+                    message: 'SUCCESS',
+                    data: {
+                        current_page: 1,
+                        data: [],
+                        last_page: 1,
+                        per_page: 10,
+                        total: 0,
+                    },
+                });
+            },
+        };
+
+        const runtime = createBrowserUsersManagementPageRuntime();
+        const rendered = renderHook(() =>
+            runtime.usePageComposition(new Set())
+        );
+
+        await act(async () => {
+            await rendered.result.current.usersList.load({ page: 1 });
+        });
+
+        expect(requests).toHaveLength(1);
+        expect(requests[0]).toMatchObject({
+            method: 'GET',
+            serviceId: 'settings-api',
+            url: 'https://settings.example.test/backoffice/settings-and-security/users?page=1',
+        });
+    });
+
+    it.each([
+        undefined,
+        null,
+        true,
+        [],
+        {},
+        {
+            serviceBaseUrls: {
+                'settings-api': 'https://settings.example.test/backoffice/',
+            },
+        },
+        {
+            request: async () => response({}),
+            serviceBaseUrls: {
+                'settings-api': 'https://settings.example.test/backoffice/',
+            },
+            token: 'must-not-be-accepted',
+        },
+    ])('fails closed for an invalid browser host seam', (raw) => {
+        expect(() => createBrowserUsersManagementPageRuntime(raw)).toThrow(
+            PageHostConfigurationError
+        );
     });
 });

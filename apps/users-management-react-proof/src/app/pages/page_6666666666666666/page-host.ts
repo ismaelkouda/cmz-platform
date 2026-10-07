@@ -19,6 +19,13 @@ import {
 
 const settingsServiceId = 'settings-api';
 
+declare global {
+    interface Window {
+        /** Port public installé par le host avant le bootstrap React. */
+        __cmzUsersManagementPageHost?: unknown;
+    }
+}
+
 export type UsersManagementPageHostRequest =
     ActionRequestFetchRequest | ProfilesFetchRequest | UsersFetchRequest;
 
@@ -141,5 +148,31 @@ export function createUsersManagementPageRuntime(
             ),
             usersListClient: new ListUsersClient(settingsBaseUrl, usersFetch),
         }
+    );
+}
+
+export function createBrowserUsersManagementPageRuntime(
+    raw: unknown = window.__cmzUsersManagementPageHost
+) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        throw new PageHostConfigurationError(
+            'browser page host is absent or invalid'
+        );
+    }
+
+    const candidate = raw as Record<string, unknown>;
+    const keys = Object.keys(candidate).sort();
+    if (
+        keys.length !== 2 ||
+        keys[0] !== 'request' ||
+        keys[1] !== 'serviceBaseUrls'
+    ) {
+        throw new PageHostConfigurationError(
+            'browser page host must contain exactly request and serviceBaseUrls'
+        );
+    }
+
+    return createUsersManagementPageRuntime(
+        candidate as unknown as UsersManagementPageHost
     );
 }

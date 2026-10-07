@@ -122,4 +122,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0086](./0086-profil-react-natif-minimal.md)              | Profil React natif, minimal et qualifié par capacité     | Accepted |
 | [0087](./0087-contrat-host-react-pour-composition-de-page.md) | Contrat host React pour une composition de page          | Accepted |
 | [0088](./0088-realisation-page-ciblee-par-profil.md)      | Réalisation de page ciblée par le profil publié          | Accepted |
+| [0089](./0089-montage-navigateur-react-par-host-public-ferme.md) | Montage navigateur React par host public fermé           | Accepted |
 <!-- END:GENERATED:adr-index -->
