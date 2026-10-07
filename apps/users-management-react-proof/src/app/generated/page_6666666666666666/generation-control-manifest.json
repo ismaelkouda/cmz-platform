@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "files": [
+    {
+      "path": "artifact-plan.json",
+      "artifact_id": "artifact-plan",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 2057,
+      "sha256": "37fa0c258b80e41e552fdda4be91238ae97c1f54a6455432e5c8bd36952ee7b1"
+    },
+    {
+      "path": "page-execution-plan.json",
+      "artifact_id": "page-execution-plan",
+      "owner": "generator-owned",
+      "write_policy": "replace",
+      "bytes": 8299,
+      "sha256": "644fb65ad42659e21e343a1ab4563abacd8ad081a356442c481fd85dc1f6d840"
+    }
+  ],
+  "tree_sha256": "5f9a125f3f931e4f5d02870fc6db2c55d75c47055618dc536dc291d240b07ed5"
+}

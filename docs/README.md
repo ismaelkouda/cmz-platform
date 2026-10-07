@@ -127,6 +127,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0084](./adr/0084-workspace-a-vues-vivantes-et-fermables.md) | Workspace à vues vivantes et fermables                   |
 | [0085](./adr/0085-angular-i18n-native-localize.md)          | Internationalisation Angular native avec `@angular/localize` |
 | [0086](./adr/0086-profil-react-natif-minimal.md)            | Profil React natif, minimal et qualifié par capacité     |
+| [0087](./adr/0087-contrat-host-react-pour-composition-de-page.md) | Contrat host React pour une composition de page          |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

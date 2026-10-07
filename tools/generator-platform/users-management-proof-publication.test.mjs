@@ -16,7 +16,10 @@ import {
     planPageRealization,
     publicPageRealizationPlan,
 } from './core/page-realization.mjs';
-import { generateAngularPageComposition } from './generate-page-composition.mjs';
+import {
+    generateAngularPageComposition,
+    generatePageComposition,
+} from './generate-page-composition.mjs';
 import {
     compileUsersManagementProofExecution,
     usersManagementProof,
@@ -159,6 +162,38 @@ test('publie le shell React C5 canonique depuis la même conception approuvée',
             `${path} must equal the deterministic React shell publication`
         );
     }
+});
+
+test('publie la composition React C5 dans le shell et borne son adaptateur host', async () => {
+    const generated = await generatePageComposition({
+        planPath: resolve(repositoryRoot, usersManagementProof.planUri),
+        outputRoot: resolve(
+            repositoryRoot,
+            usersManagementProof.reactCompositionRoot
+        ),
+        target: 'reactjs',
+        dryRun: true,
+    });
+    assert.deepEqual(generated.changeSet.summary, {
+        create: 0,
+        replace: 0,
+        preserve: 0,
+        delete: 0,
+        unchanged: 23,
+    });
+
+    const host = await readFile(
+        resolve(
+            repositoryRoot,
+            'apps/users-management-react-proof/src/app/pages/page_6666666666666666/page-host.ts'
+        ),
+        'utf8'
+    );
+    assert.match(host, /createPageCompositionHooks/);
+    assert.match(host, /settings-api/);
+    assert.match(host, /UsersManagementPageHostRequest/);
+    assert.doesNotMatch(host, /api-services\.mazone|Authorization|Bearer /);
+    assert.doesNotMatch(host, /@angular\//);
 });
 
 test('publie les trois primitives C5 et leur plan depuis le vrai contrat de page', async () => {

@@ -18,6 +18,8 @@ export const usersManagementProof = Object.freeze({
         'designs/users-management-proof.presentation-evidence.json',
     compositionRoot:
         'apps/users-management-proof/src/app/generated/page_6666666666666666',
+    reactCompositionRoot:
+        'apps/users-management-react-proof/src/app/generated/page_6666666666666666',
     hostBindingsUri:
         'tools/generator-platform/fixtures/angular-page-host-bindings.json',
 });

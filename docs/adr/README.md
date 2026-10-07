@@ -120,4 +120,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0084](./0084-workspace-a-vues-vivantes-et-fermables.md)  | Workspace à vues vivantes et fermables                   | Accepted |
 | [0085](./0085-angular-i18n-native-localize.md)            | Internationalisation Angular native avec `@angular/localize` | Accepted |
 | [0086](./0086-profil-react-natif-minimal.md)              | Profil React natif, minimal et qualifié par capacité     | Accepted |
+| [0087](./0087-contrat-host-react-pour-composition-de-page.md) | Contrat host React pour une composition de page          | Accepted |
 <!-- END:GENERATED:adr-index -->
