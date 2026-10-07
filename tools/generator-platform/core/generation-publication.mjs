@@ -471,7 +471,11 @@ export async function createGenerationOutput({
     outputRoot,
     targets,
     controlFiles,
+    expectedChangeSetId,
 }) {
+    const outputParent = dirname(outputRoot);
+    await mkdir(outputParent, { recursive: true });
+    await assertPlainDirectory(outputParent, 'generation output parent');
     await assertSupportedPublicationFilesystem({ root: dirname(outputRoot) });
     return withGenerationLock(outputRoot, async () => {
         if (await exists(outputRoot)) fail('output already exists');
@@ -480,6 +484,14 @@ export async function createGenerationOutput({
             targets,
             controlFiles,
         });
+        if (
+            expectedChangeSetId &&
+            changeSet.change_set_id !== expectedChangeSetId
+        ) {
+            fail(
+                `reviewed Change Set is stale (expected ${expectedChangeSetId}, actual ${changeSet.change_set_id})`
+            );
+        }
         const { transactionRoot, journal } = await prepareTransaction({
             outputRoot,
             changeSet,
@@ -538,6 +550,14 @@ export async function applyGenerationChangeSet({
 }) {
     if (!/^changes:[a-f0-9]{64}$/.test(expectedChangeSetId ?? '')) {
         fail('apply requires the reviewed change_set_id');
+    }
+    if (!(await exists(outputRoot))) {
+        return createGenerationOutput({
+            outputRoot,
+            targets,
+            controlFiles,
+            expectedChangeSetId,
+        });
     }
     await assertSupportedPublicationFilesystem({ root: dirname(outputRoot) });
     return withGenerationLock(outputRoot, async () => {

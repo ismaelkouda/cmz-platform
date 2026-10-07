@@ -2912,8 +2912,25 @@ Figma, désormais source partielle différée :
   Cette tranche ferme uniquement le shell : la composition C5 publiée n'est pas
   encore reliée au host de l'application et aucune parité visuelle n'est
   revendiquée. Prochaine tranche : définir puis tester le contrat host qui relie
-  le plan C5 au shell, sans importer les composants Angular. **ADAPT-11b —
-  engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
+  le plan C5 au shell, sans importer les composants Angular. **REACT-PLATFORM-5
+  — contrat host C5 React engagé localement le 2026-10-07 :** la composition
+  React est désormais publiée transactionnellement dans
+  `apps/users-management-react-proof` depuis le plan C5 adressé par contenu. Un
+  adaptateur applicatif minimal instancie ses trois clients et ses hooks React à
+  partir d'une URL `settings-api` et d'un unique port de requête appartenant au
+  host. Il conserve les politiques d'authentification/cache générées, refuse les
+  URL non HTTPS hors loopback, les credentials/query/fragments, les services non
+  déclarés et toute sortie du chemin de base ; aucun endpoint SEOS, token,
+  `Authorization`, client Angular ou bibliothèque de données n'est introduit.
+  Les tests exécutent réellement les deux GET et le POST via ce port, tandis que
+  la publication C5 vérifie une régénération entièrement inchangée. Un défaut de
+  première publication découvert par ce cas est fermé : un Change Set relu peut
+  maintenant créer une sortie dont les parents n'existent pas, avec test de
+  régression et revalidation sous verrou. Limite explicite : le binding n'est
+  pas encore monté dans la page visible ; aucune parité UI n'est revendiquée.
+  Prochaine tranche : réaliser la présentation React accessible et adaptative en
+  consommant ce contrat, sans copier le HTML Angular. Voir ADR-0087. **ADAPT-11b
+  — engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
   bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
   capacités non déclarées, la non-activation des lignes et la géométrie
   panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et

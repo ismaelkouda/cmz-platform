@@ -64,6 +64,82 @@ test('dry-run plans a new dual-target generation without writing', async () => {
     }
 });
 
+test('apply creates a reviewed first publication when parent directories are absent', async () => {
+    const temporaryRoot = await mkdtemp(
+        resolve(tmpdir(), 'cmz-apply-new-nested-')
+    );
+    const outputRoot = resolve(
+        temporaryRoot,
+        'apps/example/src/generated/support'
+    );
+    try {
+        const reviewed = await generateActionRequest({
+            definitionPath: fileURLToPath(definitionUrl),
+            outputRoot,
+            target: 'all',
+            dryRun: true,
+        });
+
+        const result = await generateActionRequest({
+            definitionPath: fileURLToPath(definitionUrl),
+            outputRoot,
+            target: 'all',
+            applyChangeSetId: reviewed.changeSet.change_set_id,
+        });
+
+        assert.equal(result.publication.status, 'created');
+        assert.equal(
+            result.publication.change_set_id,
+            reviewed.changeSet.change_set_id
+        );
+        assert.equal(
+            await pathExists(resolve(outputRoot, 'semantic-model.json')),
+            true
+        );
+    } finally {
+        await rm(temporaryRoot, { recursive: true, force: true });
+    }
+});
+
+test('apply rejects a stale reviewed first publication before creating output', async () => {
+    const temporaryRoot = await mkdtemp(
+        resolve(tmpdir(), 'cmz-apply-new-stale-')
+    );
+    const outputRoot = resolve(
+        temporaryRoot,
+        'apps/example/src/generated/support'
+    );
+    const evolvedPath = resolve(temporaryRoot, 'support-v2.definition.json');
+    try {
+        const reviewed = await generateActionRequest({
+            definitionPath: fileURLToPath(definitionUrl),
+            outputRoot,
+            target: 'all',
+            dryRun: true,
+        });
+        const evolved = await loadJson(definitionUrl);
+        evolved.operations[0].input.fields.push({
+            name: 'priority',
+            type: { kind: 'primitive', name: 'string', nullable: false },
+            required: true,
+        });
+        await writeFile(evolvedPath, `${JSON.stringify(evolved, null, 2)}\n`);
+
+        await assert.rejects(
+            generateActionRequest({
+                definitionPath: evolvedPath,
+                outputRoot,
+                target: 'all',
+                applyChangeSetId: reviewed.changeSet.change_set_id,
+            }),
+            /reviewed Change Set is stale/
+        );
+        assert.equal(await pathExists(outputRoot), false);
+    } finally {
+        await rm(temporaryRoot, { recursive: true, force: true });
+    }
+});
+
 test('dry-run reports an unchanged generated tree and performs no write', async () => {
     const temporaryRoot = await mkdtemp(
         resolve(tmpdir(), 'cmz-dry-run-unchanged-')

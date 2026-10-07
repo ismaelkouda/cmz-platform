@@ -258,7 +258,7 @@ async function main() {
         }
 
         console.log(
-            '✅  Preuve versionnée complète : Postman reference → planned target → application design → Angular/PWA bounded page + React C5 shell → compile/build/lint/test.'
+            '✅  Preuve versionnée complète : Postman reference → planned target → application design → Angular/PWA bounded page + React C5 shell/composition host → compile/build/lint/test.'
         );
     } finally {
         await rm(appRoot, { recursive: true, force: true });
