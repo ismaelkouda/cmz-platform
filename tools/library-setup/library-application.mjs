@@ -503,6 +503,7 @@ function runTargetedChecks(workspace, app) {
 }
 
 function changeSet(root, candidate, baseCommit, app) {
+    git(candidate, ['add', '--intent-to-add', '--', `apps/${app}`]);
     const output = git(candidate, [
         'diff',
         '--name-status',
@@ -717,6 +718,7 @@ export async function applyQualifiedLibrary({
 
 export const libraryApplicationInternals = {
     applicationPlan,
+    changeSet,
     detectPlatform,
     loadQualifiedConfiguration,
     stableJson,

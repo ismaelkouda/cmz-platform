@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import {
     mkdirSync,
     mkdtempSync,
@@ -170,4 +171,52 @@ test('les checks courants utilisent aussi les targets inférées par Nx', () => 
             ),
         /target build obligatoire/
     );
+});
+
+test('le change set atteste les fichiers créés autant que les fichiers modifiés', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cmz-library-change-set-'));
+    try {
+        mkdirSync(join(root, 'apps', 'demo'), { recursive: true });
+        writeFileSync(join(root, 'apps', 'demo', 'existing.txt'), 'before\n');
+        execFileSync('git', ['-C', root, 'init', '--quiet']);
+        execFileSync('git', ['-C', root, 'add', '.']);
+        execFileSync(
+            'git',
+            [
+                '-C',
+                root,
+                '-c',
+                'user.name=CMZ Test',
+                '-c',
+                'user.email=cmz-test@example.invalid',
+                'commit',
+                '--quiet',
+                '-m',
+                'base',
+            ],
+            { env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1' } }
+        );
+        const base = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], {
+            encoding: 'utf8',
+        }).trim();
+        writeFileSync(join(root, 'apps', 'demo', 'existing.txt'), 'after\n');
+        writeFileSync(join(root, 'apps', 'demo', 'created.txt'), 'created\n');
+
+        const result = libraryApplicationInternals.changeSet(
+            root,
+            root,
+            base,
+            'demo'
+        );
+        assert.deepEqual(
+            result.changes.map(({ op, path }) => ({ op, path })),
+            [
+                { op: 'create', path: 'apps/demo/created.txt' },
+                { op: 'modify', path: 'apps/demo/existing.txt' },
+            ]
+        );
+        assert.match(result.change_set_id, /^changes:[a-f0-9]{64}$/);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
 });
