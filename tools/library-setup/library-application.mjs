@@ -164,6 +164,12 @@ function workspaceVersions(root, platform) {
             manifest.workspaces?.catalog?.['@angular/core'],
             'Angular'
         );
+    } else if (platform === 'react') {
+        versions.framework = exactVersion(
+            manifest.workspaces?.catalog?.react ??
+                manifest.devDependencies?.react,
+            'React'
+        );
     } else {
         fail(`plateforme non prise en charge : ${platform}`);
     }
@@ -173,11 +179,25 @@ function workspaceVersions(root, platform) {
 function detectPlatform(root, app) {
     const project = readJson(root, `apps/${app}/project.json`);
     if (
-        project.name === app &&
-        project.projectType === 'application' &&
-        project.targets?.build?.executor === '@angular/build:application'
+        project.name !== app ||
+        project.projectType !== 'application' ||
+        typeof project.sourceRoot !== 'string' ||
+        !project.sourceRoot.startsWith(`apps/${app}/`)
     ) {
+        fail(`plateforme qualifiée indéterminée pour apps/${app}`);
+    }
+    if (project.targets?.build?.executor === '@angular/build:application') {
         return { platform: 'angular', project };
+    }
+    const vitePath = `apps/${app}/vite.config.mts`;
+    if (existsSync(safePath(root, vitePath))) {
+        const vite = regularBytes(root, vitePath).toString('utf8');
+        if (
+            vite.includes("from '@vitejs/plugin-react'") ||
+            vite.includes('from "@vitejs/plugin-react"')
+        ) {
+            return { platform: 'react', project };
+        }
     }
     fail(`plateforme qualifiée indéterminée pour apps/${app}`);
 }
@@ -661,6 +681,8 @@ export async function applyQualifiedLibrary({
 
 export const libraryApplicationInternals = {
     applicationPlan,
+    detectPlatform,
     loadQualifiedConfiguration,
     stableJson,
+    workspaceVersions,
 };

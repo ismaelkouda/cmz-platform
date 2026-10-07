@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import {
+    mkdirSync,
+    mkdtempSync,
+    readFileSync,
+    rmSync,
+    writeFileSync,
+} from 'node:fs';
 import { basename, dirname, join, normalize } from 'node:path';
+import { tmpdir } from 'node:os';
 import { test } from 'node:test';
 
 import { libraryApplicationInternals } from './library-application.mjs';
@@ -73,4 +80,69 @@ test('le plan courant est stable, explicite et ne contient aucun état de sandbo
     assert.equal(first.kind, 'qualified-library-application');
     assert.equal(JSON.stringify(first).includes('sandbox'), false);
     assert.equal(JSON.stringify(first).includes('browser'), false);
+});
+
+test('la voie courante reconnaît une app React/Vite Nx sans target build explicite', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cmz-library-react-platform-'));
+    try {
+        mkdirSync(join(root, 'apps', 'demo', 'src'), { recursive: true });
+        writeFileSync(
+            join(root, 'package.json'),
+            `${JSON.stringify({
+                packageManager: 'bun@1.3.14',
+                devDependencies: { nx: '23.2.1', react: '19.3.0' },
+            })}\n`
+        );
+        writeFileSync(
+            join(root, 'apps', 'demo', 'project.json'),
+            `${JSON.stringify({
+                name: 'demo',
+                projectType: 'application',
+                sourceRoot: 'apps/demo/src',
+            })}\n`
+        );
+        writeFileSync(
+            join(root, 'apps', 'demo', 'vite.config.mts'),
+            "import react from '@vitejs/plugin-react';\nexport default { plugins: [react()] };\n"
+        );
+
+        const detected = libraryApplicationInternals.detectPlatform(
+            root,
+            'demo'
+        );
+        assert.equal(detected.platform, 'react');
+        assert.equal(
+            libraryApplicationInternals.workspaceVersions(root, 'react')
+                .versions.framework,
+            '19.3.0'
+        );
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('une app Nx avec un vite.config non React reste refusée', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cmz-library-unknown-platform-'));
+    try {
+        mkdirSync(join(root, 'apps', 'demo', 'src'), { recursive: true });
+        writeFileSync(
+            join(root, 'apps', 'demo', 'project.json'),
+            `${JSON.stringify({
+                name: 'demo',
+                projectType: 'application',
+                sourceRoot: 'apps/demo/src',
+            })}\n`
+        );
+        writeFileSync(
+            join(root, 'apps', 'demo', 'vite.config.mts'),
+            "import { defineConfig } from 'vite';\nexport default defineConfig({});\n"
+        );
+
+        assert.throws(
+            () => libraryApplicationInternals.detectPlatform(root, 'demo'),
+            /plateforme qualifiée indéterminée/
+        );
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
 });
