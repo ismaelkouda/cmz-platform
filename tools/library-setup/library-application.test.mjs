@@ -146,3 +146,28 @@ test('une app Nx avec un vite.config non React reste refusée', () => {
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+test('les checks courants utilisent aussi les targets inférées par Nx', () => {
+    assert.deepEqual(
+        libraryApplicationInternals.targetedChecks(
+            {
+                targets: {
+                    serve: {},
+                    test: {},
+                    build: {},
+                    lint: {},
+                },
+            },
+            'demo'
+        ),
+        ['build', 'lint', 'test']
+    );
+    assert.throws(
+        () =>
+            libraryApplicationInternals.targetedChecks(
+                { targets: { lint: {}, test: {} } },
+                'demo'
+            ),
+        /target build obligatoire/
+    );
+});
