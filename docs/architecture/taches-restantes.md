@@ -1486,7 +1486,23 @@ Figma, désormais source partielle différée :
   le worker attribué exposait `darwin:26` et a donc sélectionné `macos-apfs`.
   Cette preuve ferme la non-régression du correctif, sans être présentée comme
   une preuve runtime de `macos-apfs-28` ; le statut **fait localement** reste
-  volontairement inchangé.
+  volontairement inchangé. **Correction de cause racine engagée le 2026-10-07
+  :** le run post-fusion `37634891383` de la PR #215 a ensuite échoué sur
+  `darwin:24`, tandis que des jobs macOS contemporains sélectionnaient encore
+  des valeurs déjà recensées. La série observée `24/25/26/27/28` prouve que
+  l'allowlist numérique modélisait une énumération Darwin instable, pas
+  l'identité durable d'APFS. Le contrat passe en `2.0.0` et remplace les quatre
+  variantes macOS par un profil sémantique unique `macos-apfs` : `/bin/df -P`
+  identifie exactement la source et le point de montage, `/sbin/mount` doit les
+  confirmer avec le type `apfs` et l'option `local`, puis la sonde réelle
+  `rename`/`fsync` et les injections `SIGKILL` restent obligatoires. Les deux
+  commandes sont invoquées sans shell, sous locale figée, timeout et buffer
+  bornés. NFS, une option `local` absente, une sortie manquante, ambiguë ou
+  malformée restent refusés fail-closed. `statfs.type` est conservé comme
+  diagnostic sur macOS, jamais comme autorité. La preuve locale macOS exécute le
+  profil réel APFS et les 20 scénarios de durabilité avec succès ; la clôture
+  exige encore un run GitHub vert sur un worker dont l'énumération numérique
+  n'est plus connue du contrat.
 - **OPS-33** — ouvert, M, P0 Ops,
   [issue #63](https://github.com/ismaelkouda/cmz-platform/issues/63). Rendre les
   attestations de compatibilité durables après une fusion squash. La PR #62 a
@@ -2656,16 +2672,15 @@ Figma, désormais source partielle différée :
   strictement `layout-guidance-only` : ils ne deviennent ni preuve C5, ni
   contrat de capacités, et toute réalisation doit encore retirer les commandes
   absentes de son contrat puis fournir ses propres preuves runtime.
-  **WORKSPACE-TABS-1 — décision Staff et première
-  tranche runtime engagées localement le 2026-10-04 :** la barre représente de
-  vraies vues de travail ouvertes, pas un historique de routes. ADR-0084 exige
-  qu'un changement d'onglet rattache la même instance Angular et conserve
-  formulaires, erreurs, filtres, sélection et état local. `Tableau de bord` est
-  épinglé ; chaque autre vue est fermable individuellement, tandis qu'un menu
-  secondaire regroupe les fermetures globales. Une `RouteReuseStrategy`
-  sélective, la destruction officielle des handles, un lifecycle
-  `active/suspended` et une capacité mémoire mesurée rendent cette promesse
-  explicite et testable. Le contrat
+  **WORKSPACE-TABS-1 — décision Staff et première tranche runtime engagées
+  localement le 2026-10-04 :** la barre représente de vraies vues de travail
+  ouvertes, pas un historique de routes. ADR-0084 exige qu'un changement
+  d'onglet rattache la même instance Angular et conserve formulaires, erreurs,
+  filtres, sélection et état local. `Tableau de bord` est épinglé ; chaque autre
+  vue est fermable individuellement, tandis qu'un menu secondaire regroupe les
+  fermetures globales. Une `RouteReuseStrategy` sélective, la destruction
+  officielle des handles, un lifecycle `active/suspended` et une capacité
+  mémoire mesurée rendent cette promesse explicite et testable. Le contrat
   [`workspace-vues-vivantes-accessibilite-2026-10-04.md`](./workspace-vues-vivantes-accessibilite-2026-10-04.md)
   fixe identité, permissions, garde dirty, réseau, nettoyage, clavier Tabs,
   overflow horizontal sans `Plus (n)` permanent et quinze familles d'oracles.
