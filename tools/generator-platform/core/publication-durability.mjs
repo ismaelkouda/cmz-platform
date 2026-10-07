@@ -1,7 +1,9 @@
+import { execFile } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, rm, statfs } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 
 import {
     commitDirectoryTransaction,
@@ -13,6 +15,26 @@ const contractUrl = new URL(
     '../contracts/publication-durability.contract.json',
     import.meta.url
 );
+const execFileAsync = promisify(execFile);
+
+const ACCEPTED_FILESYSTEM_PROFILES = Object.freeze([
+    {
+        id: 'linux-ext4',
+        platform: 'linux',
+        detector: { kind: 'statfs-type', value: 0xef53 },
+        ci_runner: 'ubuntu-24.04',
+    },
+    {
+        id: 'macos-apfs',
+        platform: 'darwin',
+        detector: {
+            kind: 'darwin-mount',
+            filesystem: 'apfs',
+            required_options: ['local'],
+        },
+        ci_runner: 'macos-14',
+    },
+]);
 
 function fail(message) {
     throw new Error(`publication durability: ${message}`);
@@ -65,7 +87,7 @@ export function validatePublicationDurabilityContract(contract) {
             'filesystem_profiles',
             'required_evidence',
         ]) ||
-        contract.schema_version !== '1.0.0' ||
+        contract.schema_version !== '2.0.0' ||
         contract.capability_id !== 'generation.publication-durability'
     ) {
         fail('invalid root contract');
@@ -151,39 +173,54 @@ export function validatePublicationDurabilityContract(contract) {
     ) {
         fail('filesystem_profiles must not be empty');
     }
-    const ids = new Set();
-    const signatures = new Set();
     for (const profile of contract.filesystem_profiles) {
         if (
             !hasExactKeys(profile, [
                 'id',
                 'platform',
-                'statfs_type',
+                'detector',
                 'ci_runner',
             ]) ||
             typeof profile.id !== 'string' ||
             !['linux', 'darwin'].includes(profile.platform) ||
-            !Number.isInteger(profile.statfs_type) ||
-            profile.statfs_type < 0 ||
             typeof profile.ci_runner !== 'string' ||
-            profile.ci_runner.length === 0 ||
-            ids.has(profile.id) ||
-            signatures.has(`${profile.platform}:${profile.statfs_type}`)
+            profile.ci_runner.length === 0
         ) {
-            fail('invalid or duplicate filesystem profile');
+            fail('invalid filesystem profile');
         }
-        ids.add(profile.id);
-        signatures.add(`${profile.platform}:${profile.statfs_type}`);
+        if (profile.detector?.kind === 'statfs-type') {
+            if (
+                !hasExactKeys(profile.detector, ['kind', 'value']) ||
+                !Number.isInteger(profile.detector.value) ||
+                profile.detector.value < 0
+            ) {
+                fail('invalid statfs filesystem detector');
+            }
+            continue;
+        }
+        if (profile.detector?.kind === 'darwin-mount') {
+            if (
+                !hasExactKeys(profile.detector, [
+                    'kind',
+                    'filesystem',
+                    'required_options',
+                ]) ||
+                typeof profile.detector.filesystem !== 'string' ||
+                profile.detector.filesystem.length === 0
+            ) {
+                fail('invalid Darwin mount detector');
+            }
+            assertStringList(
+                profile.detector.required_options,
+                'Darwin mount required_options'
+            );
+            continue;
+        }
+        fail('unknown filesystem detector');
     }
     if (
-        [...ids].join('\0') !==
-        [
-            'linux-ext4',
-            'macos-apfs',
-            'macos-apfs-25',
-            'macos-apfs-27',
-            'macos-apfs-28',
-        ].join('\0')
+        JSON.stringify(contract.filesystem_profiles) !==
+        JSON.stringify(ACCEPTED_FILESYSTEM_PROFILES)
     ) {
         fail('filesystem profiles do not match the accepted contract');
     }
@@ -197,25 +234,115 @@ export async function loadPublicationDurabilityContract() {
     return validatePublicationDurabilityContract(contract);
 }
 
-export async function detectPublicationFilesystem(root = tmpdir()) {
-    const statistics = await statfs(root);
+function assertCommandOutput(stdout, label) {
+    if (typeof stdout !== 'string' || stdout.includes('\0')) {
+        fail(`${label} returned invalid output`);
+    }
+    return stdout;
+}
+
+export function parseDarwinDf(stdout) {
+    const lines = assertCommandOutput(stdout, 'df')
+        .split(/\r?\n/u)
+        .filter((line) => line.trim().length > 0);
+    if (lines.length !== 2 || !lines[0].startsWith('Filesystem ')) {
+        fail('df returned an unexpected mount table');
+    }
+    const match = lines[1].match(/^(\S+)\s+\d+\s+\d+\s+\d+\s+\d+%\s+(\/.*)$/u);
+    if (!match) fail('df returned an invalid filesystem record');
+    return { source: match[1], mount_point: match[2] };
+}
+
+export function parseDarwinMount(stdout, expected) {
+    if (
+        !isPlainRecord(expected) ||
+        typeof expected.source !== 'string' ||
+        typeof expected.mount_point !== 'string'
+    ) {
+        fail('invalid expected Darwin mount');
+    }
+    const prefix = `${expected.source} on ${expected.mount_point} (`;
+    const matches = assertCommandOutput(stdout, 'mount')
+        .split(/\r?\n/u)
+        .filter((line) => line.startsWith(prefix) && line.endsWith(')'));
+    if (matches.length !== 1) {
+        fail(
+            `mount record is ${matches.length === 0 ? 'missing' : 'ambiguous'} for ${expected.mount_point}`
+        );
+    }
+    const fields = matches[0]
+        .slice(prefix.length, -1)
+        .split(',')
+        .map((field) => field.trim());
+    if (
+        fields.length === 0 ||
+        fields.some((field) => !/^[a-z0-9][a-z0-9 _-]*$/u.test(field))
+    ) {
+        fail('mount returned invalid filesystem metadata');
+    }
     return {
-        platform: process.platform,
+        filesystem: fields[0],
+        mount_options: fields.slice(1),
+    };
+}
+
+async function runFilesystemCommand(command, args) {
+    try {
+        const result = await execFileAsync(command, args, {
+            encoding: 'utf8',
+            env: { ...process.env, LANG: 'C', LC_ALL: 'C' },
+            maxBuffer: 1024 * 1024,
+            timeout: 10_000,
+        });
+        return result.stdout;
+    } catch (error) {
+        fail(`${command} failed (${error.message})`);
+    }
+}
+
+export async function detectPublicationFilesystem(
+    root = tmpdir(),
+    {
+        platform = process.platform,
+        statfsProvider = statfs,
+        commandRunner = runFilesystemCommand,
+    } = {}
+) {
+    const statistics = await statfsProvider(root);
+    const detected = {
+        platform,
         statfs_type: Number(statistics.type),
         block_size: Number(statistics.bsize),
+    };
+    if (platform !== 'darwin') return detected;
+
+    const df = parseDarwinDf(await commandRunner('/bin/df', ['-P', root]));
+    const mount = parseDarwinMount(await commandRunner('/sbin/mount', []), df);
+    return {
+        ...detected,
+        ...df,
+        ...mount,
     };
 }
 
 export function selectPublicationFilesystemProfile(contract, detected) {
-    const profile = contract.filesystem_profiles.find(
-        (candidate) =>
-            candidate.platform === detected.platform &&
-            candidate.statfs_type === detected.statfs_type
-    );
-    if (!profile) {
-        fail(
-            `unsupported filesystem ${detected.platform}:${detected.statfs_type}`
+    const profile = contract.filesystem_profiles.find((candidate) => {
+        if (candidate.platform !== detected.platform) return false;
+        if (candidate.detector.kind === 'statfs-type') {
+            return candidate.detector.value === detected.statfs_type;
+        }
+        return (
+            candidate.detector.filesystem === detected.filesystem &&
+            candidate.detector.required_options.every((option) =>
+                detected.mount_options?.includes(option)
+            )
         );
+    });
+    if (!profile) {
+        const signature = detected.filesystem
+            ? `${detected.filesystem}[${detected.mount_options?.join(',') ?? ''}]`
+            : String(detected.statfs_type);
+        fail(`unsupported filesystem ${detected.platform}:${signature}`);
     }
     return profile;
 }
