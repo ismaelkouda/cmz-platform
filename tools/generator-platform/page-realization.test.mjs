@@ -1,9 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import {
-    copyFile,
-    mkdir,
     mkdtemp,
     readFile,
     rename,
@@ -21,193 +17,14 @@ import {
     publishPageRealizationWorkOrder,
     verifyPageRealization,
 } from './core/page-realization.mjs';
-import { publishApplicationShell } from './core/application-shell-publication.mjs';
-import { writeApplicationDesignFixture } from './test-support/application-design-fixture.mjs';
-
-const applicationDesignSchema = JSON.parse(
-    await readFile(
-        new URL('./schemas/application-design.schema.json', import.meta.url),
-        'utf8'
-    )
-);
-const backendContractSchema = JSON.parse(
-    await readFile(
-        new URL('./schemas/backend-contract.schema.json', import.meta.url),
-        'utf8'
-    )
-);
-const evidenceSchema = JSON.parse(
-    await readFile(
-        new URL(
-            './schemas/page-realization-evidence.schema.json',
-            import.meta.url
-        ),
-        'utf8'
-    )
-);
-const presentationEvidenceSchema = JSON.parse(
-    await readFile(
-        new URL('./schemas/presentation-evidence.schema.json', import.meta.url),
-        'utf8'
-    )
-);
-function sha256(content) {
-    return createHash('sha256').update(content).digest('hex');
-}
-
-async function fixture() {
-    const root = await mkdtemp(join(tmpdir(), 'page-realization-'));
-    await mkdir(join(root, 'apps'));
-    await mkdir(join(root, 'designs'));
-    await mkdir(join(root, 'tools/generator-platform/schemas'), {
-        recursive: true,
-    });
-    await mkdir(join(root, 'conventions/archetypes/angular'), {
-        recursive: true,
-    });
-    for (const path of [
-        'tools/generator-platform/role-registry.json',
-        'tools/generator-platform/schemas/role-registry.schema.json',
-        'tools/generator-platform/schemas/role-node.schema.json',
-        'tools/generator-platform/schemas/archetype-roles.schema.json',
-        'tools/generator-platform/schemas/archetype-contract.schema.json',
-        'conventions/archetypes/angular/roles.json',
-        'conventions/archetypes/angular/component.contract.md',
-    ]) {
-        await copyFile(
-            new URL(`../../${path}`, import.meta.url),
-            join(root, path)
-        );
-    }
-    await writeFile(
-        join(root, '.gitignore'),
-        '.cmz/page-realization-work-orders/\n'
-    );
-    const data = await writeApplicationDesignFixture(
-        root,
-        backendContractSchema
-    );
-    await writeFile(
-        join(root, 'designs/clean-street.application-design.json'),
-        `${JSON.stringify(data.design, null, 2)}\n`
-    );
-    const shellOptions = {
-        workspaceRoot: root,
-        designPath: 'designs/clean-street.application-design.json',
-        experienceId: 'citizen-web',
-        appName: 'clean-street',
-        profile: 'angular-pwa',
-        applicationDesignSchema,
-        backendContractSchema,
-    };
-    await publishApplicationShell(shellOptions, { run: () => '' });
-    execFileSync('git', ['init', '-q'], { cwd: root });
-    execFileSync('git', ['add', '.'], { cwd: root });
-    return {
-        root,
-        pageId: 'page_2222222222222222',
-        pageRoot: join(
-            root,
-            'apps/clean-street/src/app/pages/page_2222222222222222'
-        ),
-    };
-}
-
-function mappings(ids) {
-    return ids.map((id) => ({
-        id,
-        selector: `[data-cmz-id="${id}"]`,
-    }));
-}
-
-async function realize(data, contractHash) {
-    const ids = [
-        'ready',
-        'submitted',
-        'failed',
-        'offline',
-        'description',
-        'submit-report',
-        'main',
-        'report-heading',
-        'report-form',
-    ];
-    const markup = ids
-        .map((id) => `<div data-cmz-id="${id}">${id}</div>`)
-        .join('\n');
-    await rm(data.pageRoot, { recursive: true, force: true });
-    await mkdir(data.pageRoot, { recursive: true });
-    await writeFile(
-        join(data.pageRoot, 'page.component.ts'),
-        `import { Component } from '@angular/core';\n@Component({selector: 'app-page-proof', templateUrl: './page.component.html', styleUrl: './page.component.scss'})\nexport class PageComponent {}\n`
-    );
-    await writeFile(join(data.pageRoot, 'page.component.html'), `${markup}\n`);
-    await writeFile(
-        join(data.pageRoot, 'page.component.scss'),
-        ':host { display: block; }\n'
-    );
-    await writeFile(
-        join(data.pageRoot, 'page.component.spec.ts'),
-        `import { describe, expect, it } from 'vitest';\nimport { PageComponent } from './page.component';\ndescribe('PageComponent', () => { it('exists', () => expect(PageComponent).toBeDefined()); });\n`
-    );
-    await writeFile(
-        join(data.pageRoot, 'realization-evidence.json'),
-        `${JSON.stringify(
-            {
-                schema_version: '1.0.0',
-                kind: 'page-realization-evidence',
-                page_id: data.pageId,
-                page_contract_sha256: contractHash,
-                states: mappings(['ready', 'submitted', 'failed', 'offline']),
-                controls: mappings(['description']),
-                actions: mappings(['submit-report']),
-                data_bindings: [],
-                regions: mappings(['main']),
-                elements: mappings(['report-heading', 'report-form']),
-            },
-            null,
-            2
-        )}\n`
-    );
-}
-
-async function writePresentationEvidence(data, overrides = {}) {
-    const sourcePath = join(data.root, 'designs/users-layout.json');
-    const sourceContent = Buffer.from(
-        `${JSON.stringify({ layout: 'users', regions: ['filters', 'list'] })}\n`
-    );
-    await writeFile(sourcePath, sourceContent);
-    const manifest = {
-        schema_version: '1.0.0',
-        kind: 'presentation-evidence',
-        presentation_id: 'presentation_aaaaaaaaaaaaaaaa',
-        page_id: data.pageId,
-        status: 'approved',
-        authority: 'presentation-only',
-        sources: [
-            {
-                id: 'users-layout',
-                source_kind: 'structured-design',
-                purpose: 'primary-layout',
-                snapshot_uri: 'designs/users-layout.json',
-                media_type: 'application/json',
-                bytes: sourceContent.byteLength,
-                sha256: sha256(sourceContent),
-                trust: 'untrusted-content',
-                state_ids: ['ready'],
-                viewport: null,
-            },
-        ],
-        ...overrides,
-    };
-    const manifestPath = join(data.root, 'designs/users.presentation.json');
-    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-    return {
-        manifest,
-        manifestPath: 'designs/users.presentation.json',
-        sourcePath,
-    };
-}
+import {
+    evidenceSchema,
+    pageRealizationFixture as fixture,
+    presentationEvidenceSchema,
+    realizeAngularPage as realize,
+    sha256,
+    writePresentationEvidence,
+} from './page-realization.fixture.mjs';
 
 test('prépare un work order immuable et borné aux fichiers déclarés', async () => {
     const data = await fixture();
@@ -218,7 +35,7 @@ test('prépare un work order immuable et borné aux fichiers déclarés', async 
     };
     const plan = planPageRealization(common);
     assert.match(plan.work_order_id, /^[a-f0-9]{64}$/);
-    assert.equal(plan.workOrder.schema_version, '3.0.0');
+    assert.equal(plan.workOrder.schema_version, '4.0.0');
     assert.deepEqual(plan.workOrder.allowed_files, [
         'page.component.html',
         'page.component.scss',
@@ -226,6 +43,10 @@ test('prépare un work order immuable et borné aux fichiers déclarés', async 
         'page.component.ts',
         'realization-evidence.json',
     ]);
+    assert.deepEqual(plan.workOrder.target, {
+        profile: 'angular-pwa',
+        archetype_stack: 'angular',
+    });
     assert.deepEqual(plan.workOrder.oracle_policy, {
         executor: 'external-confined',
         environment: 'allowlist',
@@ -296,7 +117,7 @@ test('borne les sous-composants colocalisés par une allowlist content-adressée
                 ...common,
                 additionalFiles: ['../outside.ts'],
             }),
-        /additional page files must be unique/
+        /do not follow the angular-pwa page naming convention/
     );
     assert.throws(
         () =>
@@ -307,7 +128,7 @@ test('borne les sous-composants colocalisés par une allowlist content-adressée
                     'page.filters.component.ts',
                 ],
             }),
-        /additional page files must be unique/
+        /do not follow the angular-pwa page naming convention/
     );
 });
 
@@ -508,6 +329,7 @@ test('le chemin nominal délègue les quatre contrôles à un oracle externe pui
                 assert.deepEqual(options, {
                     workspaceRoot: data.root,
                     appName: 'clean-street',
+                    profile: 'angular-pwa',
                 });
                 return {
                     run: (name) => calls.push(name),
@@ -564,7 +386,9 @@ test('bloque écriture extérieure, réseau direct et preuve incomplète avant l
     assert.equal(report.ok, false);
     assert.equal(called, false);
     assert.ok(
-        report.violations.some((entry) => entry.includes('outside the allowed'))
+        report.violations.some((entry) =>
+            entry.includes('outside the explicitly allowed files')
+        )
     );
     assert.ok(
         report.violations.some((entry) => entry.includes('network access'))
@@ -645,7 +469,9 @@ test('inventorie un lien Git sans le suivre et détecte tout changement de cible
     assert.equal(report.ok, false);
     assert.equal(called, false);
     assert.ok(
-        report.violations.some((entry) => entry.includes('outside the allowed'))
+        report.violations.some((entry) =>
+            entry.includes('outside the explicitly allowed files')
+        )
     );
 });
 

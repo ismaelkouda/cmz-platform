@@ -147,11 +147,14 @@ function linkDependencies(source, destination, targetRoot) {
 }
 
 export function createPageRealizationOracle(
-    { workspaceRoot, appName },
+    { workspaceRoot, appName, profile },
     dependencies = {}
 ) {
     if (!/^[a-z][a-z0-9-]*$/.test(appName ?? '')) {
         fail("nom d'application invalide");
+    }
+    if (!['angular-pwa', 'react-spa'].includes(profile)) {
+        fail("profil d'application invalide");
     }
     const repository = realpathSync(resolve(workspaceRoot));
     const nodeModules = join(repository, 'node_modules');
@@ -213,6 +216,8 @@ export function createPageRealizationOracle(
                         oracle,
                         '--app',
                         appName,
+                        '--profile',
+                        profile,
                     ],
                     policy: loaded.policy,
                     repositoryReadOnlyPaths: [nodeModules],

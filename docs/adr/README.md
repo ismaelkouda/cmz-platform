@@ -121,4 +121,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0085](./0085-angular-i18n-native-localize.md)            | Internationalisation Angular native avec `@angular/localize` | Accepted |
 | [0086](./0086-profil-react-natif-minimal.md)              | Profil React natif, minimal et qualifié par capacité     | Accepted |
 | [0087](./0087-contrat-host-react-pour-composition-de-page.md) | Contrat host React pour une composition de page          | Accepted |
+| [0088](./0088-realisation-page-ciblee-par-profil.md)      | Réalisation de page ciblée par le profil publié          | Accepted |
 <!-- END:GENERATED:adr-index -->

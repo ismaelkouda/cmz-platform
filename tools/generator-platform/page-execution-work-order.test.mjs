@@ -69,6 +69,7 @@ async function fixture() {
             {
                 kind: 'application-shell-manifest',
                 app_name: appName,
+                profile: 'angular-pwa',
                 design_ref: {
                     path: designPath,
                     sha256: sha256(designDocument),

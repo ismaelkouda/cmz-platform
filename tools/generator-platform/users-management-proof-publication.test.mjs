@@ -194,6 +194,43 @@ test('publie la composition React C5 dans le shell et borne son adaptateur host'
     assert.match(host, /UsersManagementPageHostRequest/);
     assert.doesNotMatch(host, /api-services\.mazone|Authorization|Bearer /);
     assert.doesNotMatch(host, /@angular\//);
+
+    const realization = publicPageRealizationPlan(
+        planPageRealization({
+            workspaceRoot: repositoryRoot,
+            appName: 'users-management-react-proof',
+            pageId: usersManagementProof.pageId,
+            pageExecutionPlanPath: `${usersManagementProof.reactCompositionRoot}/page-execution-plan.json`,
+            pageExecutionPlanSchema,
+            applicationDesignSchema,
+            presentationEvidencePath:
+                usersManagementProof.presentationEvidenceUri,
+            presentationEvidenceSchema,
+        })
+    );
+    assert.deepEqual(realization.page_execution.contract_binding, {
+        mode: 'published-replica',
+        source_path: usersManagementProof.pageContractUri,
+        target_path:
+            'apps/users-management-react-proof/.cmz/pages/page_6666666666666666.json',
+        source_app: usersManagementProof.appName,
+        target_app: 'users-management-react-proof',
+        design_ref: {
+            path: 'designs/users-management-proof.application-design.json',
+            sha256: 'bcbd75141911d69fb31403a57b22e068cc461862c1b74a7dde117062982cc8af',
+        },
+        experience_id: 'operator-web',
+    });
+    assert.deepEqual(realization.target, {
+        profile: 'react-spa',
+        archetype_stack: 'reactjs',
+    });
+    assert.deepEqual(realization.allowed_files, [
+        'page.module.scss',
+        'page.spec.tsx',
+        'page.tsx',
+        'realization-evidence.json',
+    ]);
 });
 
 test('publie les trois primitives C5 et leur plan depuis le vrai contrat de page', async () => {

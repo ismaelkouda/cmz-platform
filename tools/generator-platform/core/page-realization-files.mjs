@@ -1,54 +1,76 @@
-export const REQUIRED_PAGE_REALIZATION_FILES = [
-    'page.component.html',
-    'page.component.scss',
-    'page.component.spec.ts',
-    'page.component.ts',
-    'realization-evidence.json',
-];
-
-const PAGE_PART_FILE =
-    /^page\.[a-z][a-z0-9-]*\.component\.(?:html|scss|spec\.ts|ts)$/;
+const TARGETS = Object.freeze({
+    'angular-pwa': Object.freeze({
+        profile: 'angular-pwa',
+        archetypeStack: 'angular',
+        requiredFiles: Object.freeze([
+            'page.component.html',
+            'page.component.scss',
+            'page.component.spec.ts',
+            'page.component.ts',
+            'realization-evidence.json',
+        ]),
+        additionalFile:
+            /^page\.[a-z][a-z0-9-]*\.component\.(?:html|scss|spec\.ts|ts)$/,
+    }),
+    'react-spa': Object.freeze({
+        profile: 'react-spa',
+        archetypeStack: 'reactjs',
+        requiredFiles: Object.freeze([
+            'page.module.scss',
+            'page.spec.tsx',
+            'page.tsx',
+            'realization-evidence.json',
+        ]),
+        additionalFile:
+            /^page-[a-z][a-z0-9-]*\.(?:module\.scss|spec\.(?:ts|tsx)|ts|tsx)$/,
+        protectedAdditionalFile: /^page-host(?:\.|-)/,
+    }),
+});
 
 function fail(message) {
     throw new Error(`page realization: ${message}`);
 }
 
-export function pageRealizationAllowedFiles(additionalFiles = []) {
+export function resolvePageRealizationTarget(profile) {
+    const target = TARGETS[profile];
+    if (!target) fail(`unsupported application profile ${profile}`);
+    return target;
+}
+
+export function pageRealizationAllowedFiles(target, additionalFiles = []) {
     const normalized = [...new Set(additionalFiles)].sort();
     if (
         normalized.length !== additionalFiles.length ||
         normalized.some(
             (file) =>
                 typeof file !== 'string' ||
-                !PAGE_PART_FILE.test(file) ||
-                REQUIRED_PAGE_REALIZATION_FILES.includes(file)
+                !target.additionalFile.test(file) ||
+                target.protectedAdditionalFile?.test(file) ||
+                target.requiredFiles.includes(file)
         )
     ) {
         fail(
-            'additional page files must be unique page.<part>.component.{ts,html,scss,spec.ts} basenames'
+            `additional page files do not follow the ${target.profile} page naming convention or are duplicated`
         );
     }
-    return [...REQUIRED_PAGE_REALIZATION_FILES, ...normalized];
+    return [...target.requiredFiles, ...normalized];
 }
 
-export function additionalPageRealizationFiles(workOrder) {
+export function additionalPageRealizationFiles(workOrder, target) {
     if (!Array.isArray(workOrder.allowed_files))
         fail('work order allowed_files must be an array');
     const required = workOrder.allowed_files.slice(
         0,
-        REQUIRED_PAGE_REALIZATION_FILES.length
+        target.requiredFiles.length
     );
-    if (
-        JSON.stringify(required) !==
-        JSON.stringify(REQUIRED_PAGE_REALIZATION_FILES)
-    ) {
+    if (JSON.stringify(required) !== JSON.stringify(target.requiredFiles)) {
         fail('work order required page files drifted');
     }
     const additional = workOrder.allowed_files.slice(
-        REQUIRED_PAGE_REALIZATION_FILES.length
+        target.requiredFiles.length
     );
     if (
-        JSON.stringify(pageRealizationAllowedFiles(additional)) !==
+        JSON.stringify(pageRealizationAllowedFiles(target, additional)) !==
         JSON.stringify(workOrder.allowed_files)
     ) {
         fail('work order additional page files are not canonical');

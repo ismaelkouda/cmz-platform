@@ -56,6 +56,123 @@ function assertSame(actual, expected, message) {
     if (actual !== expected) fail(message);
 }
 
+function applicationContractLocation(path) {
+    const match =
+        /^apps\/([a-z][a-z0-9-]*)\/\.cmz\/pages\/(page_[a-f0-9]{16})\.json$/.exec(
+            path
+        );
+    return match ? { appName: match[1], pageId: match[2] } : null;
+}
+
+function readPublishedManifest(root, location, label) {
+    const path = `apps/${location.appName}/.cmz/app-manifest.json`;
+    const manifest = parseJson(
+        readFileSync(workspaceFile(root, path, `${label} manifest`)),
+        `${label} manifest`
+    );
+    if (
+        manifest.kind !== 'application-shell-manifest' ||
+        manifest.app_name !== location.appName ||
+        !manifest.design_ref ||
+        typeof manifest.design_ref.path !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(manifest.design_ref.sha256 ?? '') ||
+        typeof manifest.experience_id !== 'string'
+    ) {
+        fail(`${label} manifest identity is invalid`);
+    }
+    const design = readFileSync(
+        workspaceFile(root, manifest.design_ref.path, `${label} design`)
+    );
+    assertSame(
+        sha256(design),
+        manifest.design_ref.sha256,
+        `${label} design sha256 drifted`
+    );
+    return manifest;
+}
+
+function resolveContractBinding({
+    root,
+    sourcePath,
+    targetPath,
+    sourceReference,
+    targetContent,
+}) {
+    if (sourcePath === targetPath) {
+        const publishedTargetContent = readFileSync(
+            workspaceFile(root, targetPath, 'target page contract')
+        );
+        assertSame(
+            sha256(targetContent),
+            sha256(publishedTargetContent),
+            'page contract content differs from the published target'
+        );
+        return {
+            mode: 'exact',
+            source_path: sourcePath,
+            target_path: targetPath,
+        };
+    }
+    const source = applicationContractLocation(sourcePath);
+    const target = applicationContractLocation(targetPath);
+    if (
+        !source ||
+        !target ||
+        source.pageId !== target.pageId ||
+        source.pageId !== sourceReference.page_id
+    ) {
+        fail('execution plan references a different page contract path');
+    }
+    const publishedTargetContent = readFileSync(
+        workspaceFile(root, targetPath, 'target page contract')
+    );
+    assertSame(
+        sha256(targetContent),
+        sha256(publishedTargetContent),
+        'page contract content differs from the published target'
+    );
+    const sourceContent = readFileSync(
+        workspaceFile(root, sourcePath, 'execution plan source page contract')
+    );
+    assertSame(
+        sha256(sourceContent),
+        sourceReference.sha256,
+        'execution plan source page contract drifted'
+    );
+    assertSame(
+        sha256(targetContent),
+        sourceReference.sha256,
+        'published page-contract replica differs from the execution plan source'
+    );
+    const sourceManifest = readPublishedManifest(root, source, 'source app');
+    const targetManifest = readPublishedManifest(root, target, 'target app');
+    const sourceContract = parseJson(sourceContent, 'source page contract');
+    if (
+        JSON.stringify(sourceContract.design_ref) !==
+        JSON.stringify(sourceManifest.design_ref)
+    ) {
+        fail('source page contract and app manifest design authority differ');
+    }
+    if (
+        JSON.stringify(sourceManifest.design_ref) !==
+            JSON.stringify(targetManifest.design_ref) ||
+        sourceManifest.experience_id !== targetManifest.experience_id
+    ) {
+        fail(
+            'published page-contract replicas do not share one design authority'
+        );
+    }
+    return {
+        mode: 'published-replica',
+        source_path: sourcePath,
+        target_path: targetPath,
+        source_app: source.appName,
+        target_app: target.appName,
+        design_ref: sourceManifest.design_ref,
+        experience_id: sourceManifest.experience_id,
+    };
+}
+
 function loadPrimitiveArtifacts(root, plan) {
     const references = [
         ...plan.query_nodes.map((node) => node.primitive_ref),
@@ -167,11 +284,13 @@ export function resolvePageExecutionBinding({
     )
         .split(sep)
         .join('/');
-    assertSame(
-        plan.source.page_contract.uri,
-        normalizedPageContractPath,
-        'execution plan references a different page contract path'
-    );
+    const contractBinding = resolveContractBinding({
+        root,
+        sourcePath: plan.source.page_contract.uri,
+        targetPath: normalizedPageContractPath,
+        sourceReference: plan.source.page_contract,
+        targetContent: pageContractContent,
+    });
     assertSame(
         plan.source.page_contract.sha256,
         sha256(pageContractContent),
@@ -196,7 +315,7 @@ export function resolvePageExecutionBinding({
     const { queryModels, actionModels } = loadPrimitiveArtifacts(root, plan);
     const expectedPlan = compilePageExecutionPlan({
         pageContract: {
-            uri: normalizedPageContractPath,
+            uri: plan.source.page_contract.uri,
             sha256: sha256(pageContractContent),
             document: pageContractContent,
         },
@@ -211,6 +330,7 @@ export function resolvePageExecutionBinding({
     return {
         path: relative(root, planAbsolute).split(sep).join('/'),
         sha256: sha256(planContent),
+        contract_binding: contractBinding,
         plan,
     };
 }
