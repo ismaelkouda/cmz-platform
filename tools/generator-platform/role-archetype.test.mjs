@@ -13,6 +13,7 @@ import { producePageRoleNode } from './core/role-production.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const system = loadArchetypeSystem(root, 'angular');
+const reactSystem = loadArchetypeSystem(root, 'reactjs');
 const roleNodeSchema = JSON.parse(
     await readFile(
         new URL('./schemas/role-node.schema.json', import.meta.url),
@@ -67,6 +68,17 @@ test('un contrat de page produit un nœud fermé réellement sélectionné', () 
     assert.equal(selected.selector, 'always');
     assert.match(selected.contract.sha256, /^[a-f0-9]{64}$/);
     assert.ok(selected.contract.forbid.length > 0);
+});
+
+test('la même intention sélectionne un archétype React distinct et adressé', () => {
+    const selected = selectArchetype(reactSystem, node());
+
+    assert.equal(selected.stack, 'reactjs');
+    assert.equal(selected.archetype, 'component');
+    assert.equal(selected.selector, 'always');
+    assert.match(selected.contract.path, /archetypes\/reactjs\/component/);
+    assert.match(selected.contract.sha256, /^[a-f0-9]{64}$/);
+    assert.ok(selected.contract.forbid.includes('appel conditionnel de Hook'));
 });
 
 test('la cible doit couvrir exactement tous les rôles produits et consommés', () => {

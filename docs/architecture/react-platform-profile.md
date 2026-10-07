@@ -188,12 +188,12 @@ lifecycle React ; la vue ne recode pas leur protocole.
 | état de vue                 | Signals/primitives Angular                    | Hooks React                                                                            | prouvé par primitives et workspace |
 | store externe               | service/signal adapté                         | `useSyncExternalStore`                                                                 | prouvé sur workspace               |
 | requêtes/actions            | clients générés + host                        | clients générés + `FetchPort`                                                          | prouvé hors page métier complète   |
-| composition N×N             | preuve C5 Angular                             | runtime C5 généré, testé et publiable transactionnellement ; application UI à produire | partiel                            |
+| composition N×N             | preuve C5 Angular                             | runtime C5 généré, publié et relié par host ; work order de page `react-spa` + oracles natifs disponibles ; UI à produire | partiel                            |
 | UI officielle complexe      | Angular Material/CDK/Aria selon qualification | HTML natif ; React Aria candidat non encore qualifié                                   | non qualifié                       |
 | i18n                        | `@angular/localize`                           | messages locaux + `Intl` pour le besoin actuel                                         | décision, preuve d'app à produire  |
 | tests unitaires             | Vitest                                        | Vitest + React Testing Library                                                         | prouvé                             |
 | navigateur/accessibilité    | Playwright + axe + humain                     | Playwright + axe + humain                                                              | automatisable partiellement prouvé |
-| app métier composite réelle | C5 utilisateurs                               | shell C5 publié ; composition et présentation restent à relier                         | partiel                            |
+| app métier composite réelle | C5 utilisateurs                               | shell et composition C5 reliés par host ; présentation reste à réaliser par work order | partiel                            |
 
 Cette table interdit de déclarer une parité à partir de la seule présence d'un
 renderer ou d'une documentation.

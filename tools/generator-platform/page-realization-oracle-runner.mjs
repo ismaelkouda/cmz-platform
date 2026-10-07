@@ -8,13 +8,23 @@ function fail(message) {
 }
 
 function parseArgs(argv) {
-    if (argv.length !== 4 || argv[0] !== '--oracle' || argv[2] !== '--app') {
-        fail('arguments attendus : --oracle <id> --app <nom>');
+    if (
+        argv.length !== 6 ||
+        argv[0] !== '--oracle' ||
+        argv[2] !== '--app' ||
+        argv[4] !== '--profile'
+    ) {
+        fail(
+            'arguments attendus : --oracle <id> --app <nom> --profile <profil>'
+        );
     }
     const oracle = argv[1];
     const app = argv[3];
+    const profile = argv[5];
     if (!/^[a-z][a-z0-9-]*$/.test(app)) fail("nom d'application invalide");
-    return { oracle, app };
+    if (!['angular-pwa', 'react-spa'].includes(profile))
+        fail("profil d'application invalide");
+    return { oracle, app, profile };
 }
 
 function regularFile(path, label) {
@@ -26,13 +36,22 @@ function regularFile(path, label) {
     return path;
 }
 
-export function invocation(oracle, app) {
+export function invocation(oracle, app, profile) {
+    if (!['angular-pwa', 'react-spa'].includes(profile))
+        fail("profil d'application invalide");
     if (oracle === 'compile') {
+        const compiler =
+            profile === 'angular-pwa'
+                ? {
+                      path: 'node_modules/@angular/compiler-cli/bundles/src/bin/ngc.js',
+                      label: 'binaire ngc',
+                  }
+                : {
+                      path: 'node_modules/typescript/bin/tsc',
+                      label: 'binaire tsc',
+                  };
         return {
-            script: regularFile(
-                'node_modules/@angular/compiler-cli/bundles/src/bin/ngc.js',
-                'binaire ngc'
-            ),
+            script: regularFile(compiler.path, compiler.label),
             argv: ['-p', `apps/${app}/tsconfig.app.json`, '--noEmit'],
         };
     }
@@ -61,8 +80,8 @@ export function invocation(oracle, app) {
 }
 
 export function main(argv = process.argv.slice(2)) {
-    const { oracle, app } = parseArgs(argv);
-    const command = invocation(oracle, app);
+    const { oracle, app, profile } = parseArgs(argv);
+    const command = invocation(oracle, app, profile);
     const result = spawnSync(
         process.execPath,
         [command.script, ...command.argv],

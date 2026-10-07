@@ -2929,7 +2929,27 @@ Figma, désormais source partielle différée :
   régression et revalidation sous verrou. Limite explicite : le binding n'est
   pas encore monté dans la page visible ; aucune parité UI n'est revendiquée.
   Prochaine tranche : réaliser la présentation React accessible et adaptative en
-  consommant ce contrat, sans copier le HTML Angular. Voir ADR-0087. **ADAPT-11b
+  consommant ce contrat, sans copier le HTML Angular. Voir ADR-0087.
+  **REACT-PLATFORM-6 — réalisation de page React gouvernée engagée localement le
+  2026-10-07 :** avant de modifier la page visible, le pipeline de réalisation a
+  été rendu explicitement dépendant du profil publié. Le work order v4 lie
+  `react-spa`, l'archétype `reactjs`, les fichiers `page.tsx` / SCSS Module /
+  spec / preuve et les oracles `tsc`, build, lint, test ; Angular conserve son
+  chemin `angular-pwa` / `ngc`. Le baseline exclut désormais seulement les
+  fichiers autorisés, pas tout le dossier : l'adaptateur `page-host*` reste
+  protégé par hash et ne peut pas être ajouté à `--allow-file`. Un test de bout
+  en bout prépare, publie et vérifie une réalisation React, puis tue le mutant
+  qui modifie le host avant oracle. Le dry-run sur le vrai C5 a aussi
+  exposé puis fermé la divergence de chemin entre le contrat source du plan et
+  sa réplique dans le shell React : l'alias `published-replica` exige même page,
+  mêmes bytes/SHA-256, même design et expérience publiés, puis recompile le plan
+  à l'identique. Un chemin arbitraire, une réplique modifiée ou une autorité de
+  design divergente reste refusé. Le vrai work order React avec plan et preuve
+  de présentation est désormais calculable sans dupliquer le plan par stack.
+  Limite explicite : aucune surface React
+  visible n'est encore réalisée par ce lot. Prochaine tranche : préparer le
+  work order C5 réel avec plan d'exécution et preuve de présentation, puis
+  réaliser l'UI exclusivement par ce chemin. Voir ADR-0088. **ADAPT-11b
   — engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
   bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
   capacités non déclarées, la non-activation des lignes et la géométrie

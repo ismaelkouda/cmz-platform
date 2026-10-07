@@ -1,10 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { lstatSync, readFileSync, readlinkSync, readdirSync } from 'node:fs';
+import { lstatSync, readFileSync, readlinkSync } from 'node:fs';
 import { lstat, mkdir, open, rename } from 'node:fs/promises';
 import { dirname, relative, resolve, sep } from 'node:path';
 
-import { validateJsonSchema } from '../validate-ir.mjs';
 import {
     loadArchetypeSystem,
     selectArchetype,
@@ -13,10 +12,14 @@ import { producePageRoleNode } from './role-production.mjs';
 import { createPageRealizationOracle } from './page-realization-sandbox.mjs';
 import { resolvePageExecutionBinding } from './page-execution-binding.mjs';
 import {
-    REQUIRED_PAGE_REALIZATION_FILES,
     additionalPageRealizationFiles,
     pageRealizationAllowedFiles,
+    resolvePageRealizationTarget,
 } from './page-realization-files.mjs';
+import {
+    pageRealizationDirectoryFiles,
+    validatePageRealizationEvidence,
+} from './page-realization-verification.mjs';
 import { resolvePresentationEvidence } from './presentation-evidence.mjs';
 
 const STATE_ROOT = '.cmz/page-realization-work-orders';
@@ -60,6 +63,7 @@ function deriveWorkOrderId({
     presentationEvidence,
     pageExecution,
     allowedFiles,
+    target,
 }) {
     return sha256(
         JSON.stringify({
@@ -68,6 +72,7 @@ function deriveWorkOrderId({
             page_contract_sha256: pageContractHash,
             protected_workspace_sha256: protectedWorkspaceHash,
             allowed_files: allowedFiles,
+            target,
             oracle_policy: ORACLE_POLICY,
             realization_contract: realizationContract,
             presentation_evidence: presentationEvidence,
@@ -139,7 +144,8 @@ function readJsonFile(path, label) {
     }
 }
 
-function gitInventory(root, excludedPrefix) {
+function gitInventory(root, excludedPaths) {
+    const excluded = new Set(excludedPaths);
     let output;
     let deleted;
     try {
@@ -164,13 +170,7 @@ function gitInventory(root, excludedPrefix) {
     }
     return output
         .split('\0')
-        .filter(
-            (path) =>
-                path &&
-                !deleted.has(path) &&
-                path !== excludedPrefix &&
-                !path.startsWith(`${excludedPrefix}/`)
-        )
+        .filter((path) => path && !deleted.has(path) && !excluded.has(path))
         .sort()
         .map((path) => {
             const absolute = resolve(root, path);
@@ -209,19 +209,6 @@ function baselineHash(entries) {
     );
 }
 
-function expectedMappings(page) {
-    return {
-        states: page.states.map((entry) => entry.id).sort(),
-        controls: page.controls.map((entry) => entry.id).sort(),
-        actions: page.actions.map((entry) => entry.id).sort(),
-        data_bindings: page.data_bindings.map((entry) => entry.id).sort(),
-        regions: page.regions.map((entry) => entry.id).sort(),
-        elements: page.regions
-            .flatMap((region) => region.elements.map((entry) => entry.id))
-            .sort(),
-    };
-}
-
 function publicWorkOrder({
     workOrderId,
     appName,
@@ -234,9 +221,10 @@ function publicWorkOrder({
     presentationEvidence,
     pageExecution,
     allowedFiles,
+    target,
 }) {
     return {
-        schema_version: '3.0.0',
+        schema_version: '4.0.0',
         kind: 'page-realization-work-order',
         work_order_id: workOrderId,
         app_name: appName,
@@ -247,6 +235,10 @@ function publicWorkOrder({
         },
         allowed_write_root: writeRoot,
         allowed_files: allowedFiles,
+        target: {
+            profile: target.profile,
+            archetype_stack: target.archetypeStack,
+        },
         protected_workspace_sha256: baselineSha256,
         oracle_policy: ORACLE_POLICY,
         realization_contract: realizationContract,
@@ -274,19 +266,25 @@ function publicWorkOrder({
             'Do not call HTTP, fetch, Axios or XMLHttpRequest from presentation code.',
             'Map every contract id to one exact data-cmz-id selector.',
             'Keep keyboard, screen-reader, loading, error and offline behavior explicit.',
+            'Modify only allowed_files; every other workspace file, including co-located host adapters, is protected.',
             'Do not write outside allowed_write_root.',
             'Oracle tests execute in a disposable sandbox without credentials or external network access.',
         ],
         oracle_commands: [
             ...['compile', 'build', 'lint', 'test'].map(
                 (oracle) =>
-                    `node tools/generator-platform/page-realization-oracle-runner.mjs --oracle ${oracle} --app ${appName}`
+                    `node tools/generator-platform/page-realization-oracle-runner.mjs --oracle ${oracle} --app ${appName} --profile ${target.profile}`
             ),
         ],
     };
 }
 
-function resolveRealizationContract(root, pageContract, pageContractHash) {
+function resolveRealizationContract(
+    root,
+    pageContract,
+    pageContractHash,
+    target
+) {
     const roleNodeSchema = readJsonFile(
         resolve(root, 'tools/generator-platform/schemas/role-node.schema.json'),
         'role node schema'
@@ -297,7 +295,7 @@ function resolveRealizationContract(root, pageContract, pageContractHash) {
         roleNodeSchema
     );
     const selection = selectArchetype(
-        loadArchetypeSystem(root, 'angular'),
+        loadArchetypeSystem(root, target.archetypeStack),
         roleNode
     );
     return { role_node: roleNode, selection };
@@ -351,6 +349,7 @@ export function planPageRealization({
     ) {
         fail('app/page ownership identity mismatch');
     }
+    const target = resolvePageRealizationTarget(manifest.profile);
     const designAbsolute = resolveWorkspaceFile(
         root,
         manifest.design_ref.path,
@@ -367,7 +366,8 @@ export function planPageRealization({
     const realizationContract = resolveRealizationContract(
         root,
         pageContract,
-        pageContractHash
+        pageContractHash,
+        target
     );
     const presentationEvidence = resolvePresentationEvidence({
         workspaceRoot: root,
@@ -387,9 +387,10 @@ export function planPageRealization({
     const relativeWriteRoot = relative(root, paths.writeRoot)
         .split(sep)
         .join('/');
-    const baseline = gitInventory(root, relativeWriteRoot);
+    const files = pageRealizationAllowedFiles(target, additionalFiles);
+    const writablePaths = files.map((file) => `${relativeWriteRoot}/${file}`);
+    const baseline = gitInventory(root, writablePaths);
     const protectedHash = baselineHash(baseline);
-    const files = pageRealizationAllowedFiles(additionalFiles);
     const workOrderId = deriveWorkOrderId({
         appName,
         pageId,
@@ -399,6 +400,10 @@ export function planPageRealization({
         presentationEvidence,
         pageExecution,
         allowedFiles: files,
+        target: {
+            profile: target.profile,
+            archetype_stack: target.archetypeStack,
+        },
     });
     const state = statePaths(root, appName, pageId, workOrderId);
     const workOrder = publicWorkOrder({
@@ -413,6 +418,7 @@ export function planPageRealization({
         presentationEvidence,
         pageExecution,
         allowedFiles: files,
+        target,
     });
     return {
         work_order_id: workOrderId,
@@ -475,60 +481,6 @@ export async function publishPageRealizationWorkOrder(options) {
     return { plan, already_published: false };
 }
 
-function directoryFiles(root) {
-    const rootMetadata = lstatSync(root);
-    if (!rootMetadata.isDirectory() || rootMetadata.isSymbolicLink())
-        fail('page output root must be a real directory');
-    const files = [];
-    for (const entry of readdirSync(root, { withFileTypes: true })) {
-        if (entry.isSymbolicLink() || !entry.isFile())
-            fail(`page output contains a non-regular entry: ${entry.name}`);
-        files.push(entry.name);
-    }
-    return files.sort();
-}
-
-function validateEvidence(
-    evidence,
-    schema,
-    pageContract,
-    contractHash,
-    markup
-) {
-    const violations = [...validateJsonSchema(evidence, schema)];
-    if (evidence.page_id !== pageContract.page.id)
-        violations.push('$.page_id: does not match page contract');
-    if (evidence.page_contract_sha256 !== contractHash)
-        violations.push('$.page_contract_sha256: stale page contract');
-    const expected = expectedMappings(pageContract.page);
-    for (const [category, ids] of Object.entries(expected)) {
-        const mappings = evidence[category] ?? [];
-        const actual = mappings.map((entry) => entry.id).sort();
-        if (JSON.stringify(actual) !== JSON.stringify(ids))
-            violations.push(
-                `$.${category}: ids must match the page contract exactly`
-            );
-        const selectors = new Set();
-        for (const mapping of mappings) {
-            const expectedSelector = `[data-cmz-id="${mapping.id}"]`;
-            if (mapping.selector !== expectedSelector)
-                violations.push(
-                    `$.${category}.${mapping.id}: selector must be ${expectedSelector}`
-                );
-            if (selectors.has(mapping.selector))
-                violations.push(
-                    `$.${category}: duplicate selector ${mapping.selector}`
-                );
-            selectors.add(mapping.selector);
-            if (!markup.includes(`data-cmz-id="${mapping.id}"`))
-                violations.push(
-                    `$.${category}.${mapping.id}: selector absent from page markup`
-                );
-        }
-    }
-    return violations;
-}
-
 export function verifyPageRealization(
     {
         workspaceRoot,
@@ -559,15 +511,25 @@ export function verifyPageRealization(
         fail('work order state integrity failure');
     }
     const paths = appPaths(root, appName, pageId);
+    assertWorkspaceEntry(root, paths.manifest, 'app manifest', 'file');
     assertWorkspaceEntry(root, paths.pageContract, 'page contract', 'file');
+    const manifest = readJsonFile(paths.manifest, 'app manifest');
+    if (
+        manifest.kind !== 'application-shell-manifest' ||
+        manifest.app_name !== appName
+    ) {
+        fail('app ownership identity mismatch');
+    }
+    const target = resolvePageRealizationTarget(manifest.profile);
     const pageContractContent = readFileSync(paths.pageContract);
     const pageContractHash = sha256(pageContractContent);
     const pageContract = JSON.parse(pageContractContent.toString('utf8'));
     const violations = [];
-    let files = [...REQUIRED_PAGE_REALIZATION_FILES];
+    let files = [...target.requiredFiles];
     try {
         files = pageRealizationAllowedFiles(
-            additionalPageRealizationFiles(workOrder)
+            target,
+            additionalPageRealizationFiles(workOrder, target)
         );
     } catch (error) {
         violations.push(error.message);
@@ -575,7 +537,8 @@ export function verifyPageRealization(
     const expectedRealizationContract = resolveRealizationContract(
         root,
         pageContract,
-        pageContractHash
+        pageContractHash,
+        target
     );
     const expectedPresentationEvidence = resolvePresentationEvidence({
         workspaceRoot: root,
@@ -608,6 +571,10 @@ export function verifyPageRealization(
         presentationEvidence: expectedPresentationEvidence,
         pageExecution: expectedPageExecution,
         allowedFiles: files,
+        target: {
+            profile: target.profile,
+            archetype_stack: target.archetypeStack,
+        },
     });
     const expectedWorkOrder = publicWorkOrder({
         workOrderId: expectedWorkOrderId,
@@ -621,6 +588,7 @@ export function verifyPageRealization(
         presentationEvidence: expectedPresentationEvidence,
         pageExecution: expectedPageExecution,
         allowedFiles: files,
+        target,
     });
     if (
         expectedWorkOrderId !== workOrderId ||
@@ -630,9 +598,10 @@ export function verifyPageRealization(
             'work order content does not match its content-addressed id'
         );
     }
+    const writablePaths = files.map((file) => `${relativeWriteRoot}/${file}`);
     const currentBaseline = (dependencies.inventory ?? gitInventory)(
         root,
-        relativeWriteRoot
+        writablePaths
     );
     if (
         JSON.stringify(workOrder.realization_contract) !==
@@ -641,7 +610,9 @@ export function verifyPageRealization(
         violations.push('role node or archetype selection drifted');
     }
     if (baselineHash(currentBaseline) !== workOrder.protected_workspace_sha256)
-        violations.push('workspace changed outside the allowed page root');
+        violations.push(
+            'workspace changed outside the explicitly allowed files'
+        );
     let actualFiles = [];
     try {
         assertWorkspaceEntry(
@@ -650,15 +621,16 @@ export function verifyPageRealization(
             'page output root',
             'directory'
         );
-        actualFiles = directoryFiles(paths.writeRoot);
+        actualFiles = pageRealizationDirectoryFiles(paths.writeRoot);
     } catch (error) {
         violations.push(error.message);
     }
-    if (JSON.stringify(actualFiles) !== JSON.stringify([...files].sort()))
-        violations.push(`page files must be exactly: ${files.join(', ')}`);
+    const missingFiles = files.filter((file) => !actualFiles.includes(file));
+    if (missingFiles.length > 0)
+        violations.push(`page files are missing: ${missingFiles.join(', ')}`);
     let source = '';
     for (const path of actualFiles.filter((entry) =>
-        /\.(?:ts|html)$/.test(entry)
+        /\.(?:ts|tsx|html)$/.test(entry)
     ))
         source += readFileSync(resolve(paths.writeRoot, path), 'utf8');
     for (const pattern of FORBIDDEN_NETWORK) {
@@ -682,16 +654,16 @@ export function verifyPageRealization(
     if (actualFiles.includes('realization-evidence.json')) {
         try {
             violations.push(
-                ...validateEvidence(
-                    readJsonFile(
+                ...validatePageRealizationEvidence({
+                    evidence: readJsonFile(
                         resolve(paths.writeRoot, 'realization-evidence.json'),
                         'realization evidence'
                     ),
-                    evidenceSchema,
+                    schema: evidenceSchema,
                     pageContract,
-                    pageContractHash,
-                    source
-                )
+                    contractHash: pageContractHash,
+                    markup: source,
+                })
             );
         } catch (error) {
             violations.push(error.message);
@@ -705,19 +677,25 @@ export function verifyPageRealization(
             : (dependencies.createOracle ?? createPageRealizationOracle)({
                   workspaceRoot: root,
                   appName,
+                  profile: target.profile,
               });
         try {
+            const compile =
+                target.profile === 'angular-pwa'
+                    ? [
+                          'ngc',
+                          '-p',
+                          `apps/${appName}/tsconfig.app.json`,
+                          '--noEmit',
+                      ]
+                    : [
+                          'tsc',
+                          '-p',
+                          `apps/${appName}/tsconfig.app.json`,
+                          '--noEmit',
+                      ];
             for (const [name, command, args] of [
-                [
-                    'compile',
-                    'bunx',
-                    [
-                        'ngc',
-                        '-p',
-                        `apps/${appName}/tsconfig.app.json`,
-                        '--noEmit',
-                    ],
-                ],
+                ['compile', 'bunx', compile],
                 [
                     'build',
                     'bunx',
@@ -771,6 +749,7 @@ export function publicPageRealizationPlan(plan) {
         page_execution: plan.workOrder.page_execution,
         presentation_evidence: plan.workOrder.presentation_evidence,
         realization_contract: plan.workOrder.realization_contract,
+        target: plan.workOrder.target,
         allowed_write_root: plan.workOrder.allowed_write_root,
         allowed_files: plan.workOrder.allowed_files,
         oracle_policy: plan.workOrder.oracle_policy,

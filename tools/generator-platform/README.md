@@ -162,13 +162,15 @@ bun run create-app -- --design designs/my-app.application-design.json \
 Page realization is delegated without giving the LLM repository-wide write
 authority. `prepare:page-realization` binds one page contract and the protected
 workspace inventory to a work order. The LLM may write exactly the listed page
-files. The work order also carries the closed `screen` role node and the
-selected Angular archetype contract (`shape`, `forbid`, path and SHA-256); the
-LLM cannot choose or rewrite that form. `verify:page-realization` rejects
-external drift, extra files, direct network calls, backend endpoint literals,
-incomplete evidence, or missing exact `data-cmz-id` mappings before running
-compilation, production build, lint, and tests. These four commands no longer
-inherit the caller environment or execute in the real workspace: a
+files. The work order also carries the closed `screen` role node, the
+application profile, and the selected stack-native archetype contract (`shape`,
+`forbid`, path and SHA-256); the LLM cannot choose or rewrite that form.
+Angular uses `page.component.*` + `ngc`; React uses `page.tsx`, SCSS Modules, a
+colocated test, and `tsc`. `verify:page-realization` rejects protected-workspace
+drift, unauthorized or missing files, direct network calls, backend endpoint
+literals, incomplete evidence, or missing exact `data-cmz-id` mappings before
+running compilation, production build, lint, and tests. These four commands no
+longer inherit the caller environment or execute in the real workspace: a
 platform-owned runner uses a disposable Git-visible candidate, a strict
 environment allowlist, read-only dependencies, no external network, and the
 available macOS or Docker sandbox. Angular/Vitest receives loopback only and
@@ -185,6 +187,15 @@ work order records `presentation_evidence: null` when no reference is supplied,
 so visual fidelity is never claimed implicitly. See
 [`ADR-0066`](../../docs/adr/0066-preuve-presentation-bornee-pour-realisation-llm.md).
 
+A target-neutral execution plan may reference the byte-identical page contract
+published in another stack-specific shell. This is accepted only as an
+explicit `published-replica` binding: both app manifests must name the same
+content-addressed design and experience, both contracts must have the plan's
+page id and SHA-256, and deterministic plan replay must remain exact. The full
+source/target binding is included in the work order. Arbitrary aliases remain
+forbidden; see
+[`ADR-0088`](../../docs/adr/0088-realisation-page-ciblee-par-profil.md).
+
 ```bash
 bun run prepare:page-realization -- --app my-app --page <page_id> --dry-run
 bun run prepare:page-realization -- --app my-app --page <page_id> --apply <work_order_id>
@@ -198,12 +209,14 @@ bun run prepare:page-realization -- --app my-app --page <page_id> \
 bun run verify:page-realization -- --app my-app --page <page_id> --work-order <work_order_id>
 ```
 
-`--allow-file` déclare explicitement un sous-composant colocalisé nommé
-`page.<part>.component.{ts,html,scss,spec.ts}`. Chaque nom rejoint l'allowlist
-content-adressée du work order : le vérificateur exige ensuite exactement ces
-fichiers, toujours sous la racine de la page. Cette extension bornée permet de
-respecter le plafond de 800 lignes sans élargir le confinement à un glob ou à
-un répertoire arbitraire.
+`--allow-file` déclare explicitement un sous-composant colocalisé selon la
+convention fermée du profil : `page.<part>.component.*` pour Angular ou
+`page-<part>.*` pour React. Chaque nom rejoint l'allowlist content-adressée du
+work order. Tous les autres fichiers, y compris un adaptateur React
+`page-host*`, restent dans le baseline protégé par hash. Cette extension bornée
+permet de respecter le plafond de 800 lignes sans élargir le confinement à un
+glob ou à un répertoire arbitraire. Voir
+[`ADR-0088`](../../docs/adr/0088-realisation-page-ciblee-par-profil.md).
 
 Applications have the same plan/apply and recovery discipline on removal:
 

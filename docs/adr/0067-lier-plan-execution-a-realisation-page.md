@@ -3,6 +3,7 @@
 - **Statut :** Accepted
 - **Date :** 2026-09-25
 - **Décideurs :** équipe plateforme CMZ
+- **Partiellement supersédé par :** [ADR-0088](./0088-realisation-page-ciblee-par-profil.md), uniquement pour l'équivalence prouvée de contrats de page répliqués entre shells publiés.
 
 ## Contexte
 

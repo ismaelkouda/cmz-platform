@@ -56,7 +56,11 @@ test('le candidat ne contient que les fichiers gouvernés et protège ses dépen
     const repository = await fixture(t);
     let invocation;
     const oracle = createPageRealizationOracle(
-        { workspaceRoot: repository, appName: 'demo-app' },
+        {
+            workspaceRoot: repository,
+            appName: 'demo-app',
+            profile: 'angular-pwa',
+        },
         {
             backend: 'macos',
             loadPolicy: () => ({ policy, errors: [] }),
@@ -100,6 +104,8 @@ test('le candidat ne contient que les fichiers gouvernés et protège ses dépen
         'test',
         '--app',
         'demo-app',
+        '--profile',
+        'angular-pwa',
     ]);
     assert.throws(() => oracle.run('arbitrary-command'), /non autorisé/);
 });
@@ -108,7 +114,11 @@ test('les liens de dépendances ciblent le montage Docker non superposé', async
     const repository = await fixture(t);
     let invocation;
     const oracle = createPageRealizationOracle(
-        { workspaceRoot: repository, appName: 'demo-app' },
+        {
+            workspaceRoot: repository,
+            appName: 'demo-app',
+            profile: 'react-spa',
+        },
         {
             backend: 'docker',
             loadPolicy: () => ({ policy, errors: [] }),
@@ -126,6 +136,7 @@ test('les liens de dépendances ciblent le montage Docker non superposé', async
     );
     assert.equal(oracle.run('build'), 'ok');
     assert.equal(invocation.backend, 'docker');
+    assert.deepEqual(invocation.argv.slice(-2), ['--profile', 'react-spa']);
     assert.deepEqual(invocation.repositoryReadOnlyPaths, [
         realpathSync(join(repository, 'node_modules')),
     ]);
@@ -136,7 +147,11 @@ test('refuse de démarrer si la politique de confinement est invalide', async (t
     assert.throws(
         () =>
             createPageRealizationOracle(
-                { workspaceRoot: repository, appName: 'demo-app' },
+                {
+                    workspaceRoot: repository,
+                    appName: 'demo-app',
+                    profile: 'angular-pwa',
+                },
                 {
                     backend: 'macos',
                     loadPolicy: () => ({ policy, errors: ['image absente'] }),
