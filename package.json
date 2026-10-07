@@ -156,7 +156,7 @@
     "@angular/compiler-cli": "catalog:tooling",
     "@angular/language-service": "catalog:tooling",
     "@commitlint/cli": "^21.2.2",
-    "@commitlint/config-conventional": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.3",
     "@eslint-community/regexpp": "4.12.2",
     "@eslint/js": "^10.0.1",
     "@nx/angular": "23.2.1",
