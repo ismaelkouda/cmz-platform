@@ -1,4 +1,5 @@
 /// <reference types="vitest" />
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
@@ -13,7 +14,7 @@ export default defineConfig(() => ({
         port: 4300,
         host: 'localhost',
     },
-    plugins: [react()],
+    plugins: [tailwindcss(), react()],
     build: {
         outDir: '../../dist/apps/users-management-react-proof',
         emptyOutDir: true,

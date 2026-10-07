@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 
 import { App } from './app/app';
+import './tailwind.css';
 import './styles.scss';
 
 const container = document.getElementById('root');

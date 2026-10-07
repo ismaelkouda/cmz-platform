@@ -1,0 +1,6 @@
+/* Adaptateur qualifié CMZ, tailwindcss@4.3.3. */
+@import 'tailwindcss' source(none);
+@import '../../../conventions/presentation/tailwind-theme.css';
+
+/* Le scan reste borné aux sources de l'application React cible. */
+@source './';
