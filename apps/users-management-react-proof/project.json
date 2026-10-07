@@ -1,0 +1,7 @@
+{
+  "name": "users-management-react-proof",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/users-management-react-proof/src",
+  "projectType": "application",
+  "tags": ["type:app", "experience:operator-web"]
+}

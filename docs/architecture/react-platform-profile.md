@@ -141,11 +141,11 @@ lifecycle React ; la vue ne recode pas leur protocole.
 
 - Tailwind exprime les utilitaires répétables ; SCSS Modules porte la structure
   locale, les états complexes et les sélecteurs difficiles à lire en classes.
-- Le script de scaffolding ne possède actuellement aucune référence React active
-  et doit donc échouer plutôt que deviner. Le premier vertical slice devra
-  qualifier son câblage Tailwind, le prouver visuellement, puis devenir la
-  référence React du script dans un lot dédié. Ne pas contourner cet arrêt par
-  une configuration mémorisée ou copiée d'Angular.
+- `create-app --profile react-spa` produit désormais le shell React natif, sans
+  Tailwind ni prétention visuelle. Le premier vertical slice doit encore
+  qualifier le câblage Tailwind React, le prouver visuellement, puis devenir la
+  référence de présentation du script dans un lot dédié. Ne pas contourner cet
+  arrêt par une configuration mémorisée ou copiée d'Angular.
 - Les tokens, reset et thèmes peuvent être globaux ; les styles métier ne le
   sont pas.
 - Ne pas construire de classe Tailwind dynamiquement si le scanner ne peut pas
@@ -183,7 +183,7 @@ lifecycle React ; la vue ne recode pas leur protocole.
 
 | Capacité                    | Angular                                       | React                                                                                  | État React honnête                 |
 | --------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------- |
-| shell/build                 | Angular CLI/Nx                                | Nx/Vite                                                                                | prouvé sur app de workspace        |
+| shell/build                 | Angular CLI/Nx                                | `create-app --profile react-spa` + Nx/Vite                                             | prouvé sur shell C5 versionné      |
 | routing                     | Angular Router                                | React Router déclaratif                                                                | prouvé                             |
 | état de vue                 | Signals/primitives Angular                    | Hooks React                                                                            | prouvé par primitives et workspace |
 | store externe               | service/signal adapté                         | `useSyncExternalStore`                                                                 | prouvé sur workspace               |
@@ -193,7 +193,7 @@ lifecycle React ; la vue ne recode pas leur protocole.
 | i18n                        | `@angular/localize`                           | messages locaux + `Intl` pour le besoin actuel                                         | décision, preuve d'app à produire  |
 | tests unitaires             | Vitest                                        | Vitest + React Testing Library                                                         | prouvé                             |
 | navigateur/accessibilité    | Playwright + axe + humain                     | Playwright + axe + humain                                                              | automatisable partiellement prouvé |
-| app métier composite réelle | C5 utilisateurs                               | à produire sur les mêmes contrats                                                      | non atteint                        |
+| app métier composite réelle | C5 utilisateurs                               | shell C5 publié ; composition et présentation restent à relier                         | partiel                            |
 
 Cette table interdit de déclarer une parité à partir de la seule présence d'un
 renderer ou d'une documentation.

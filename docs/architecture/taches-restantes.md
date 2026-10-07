@@ -2899,19 +2899,33 @@ Figma, désormais source partielle différée :
   reliées à une application C5 ni à une présentation. Prochaine tranche : créer
   un shell React C5 dédié et hermétique, y lier cette sortie par un contrat host
   explicite, puis réaliser la présentation accessible et adaptative sans copier
-  le HTML Angular. **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :**
-  cinq scénarios navigateur bornent la toolbar C5, le GET unique de
-  rafraîchissement, l'absence des capacités non déclarées, la non-activation des
-  lignes et la géométrie panneau/rail Medium + Expanded. La référence visuelle
-  conserve `Exporter` et les actions de ligne comme capacités optionnelles, mais
-  le contrat C5 ne fournit aucun `action-request` correspondant : les rendre
-  opérables maintenant inventerait transport, permissions et effets. Les oracles
-  exigent donc `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne
-  d'actions, menu, dialogue ou activation implicite. Quatre échecs attendus sont
-  bornés par deux signatures historiques exactes, sans `skip`, `todo`, runtime,
-  work order, contrat API ou dépendance. La passe Chromium ciblée donne `5/5` :
-  quatre attendus et un succès réel ; la régression C5 complète donne `55/55`,
-  avec lint, tests Angular et build production verts. **ADAPT-11c — autorité de
+  le HTML Angular. **REACT-PLATFORM-4 — shell React C5 engagé localement le
+  2026-10-07 :** `create-app` accepte désormais le profil fermé `react-spa` sans
+  modifier son défaut `angular-pwa`. Le renderer dédié produit une SPA
+  mono-stack React 19/Nx/Vite avec React Router déclaratif, contrats de pages
+  target-neutral, garde d'accès fail-closed, manifeste content-addressed et
+  manifeste de bibliothèques React vide. Il refuse toute politique offline autre
+  que `none` au lieu d'inventer un PWA, et n'ajoute ni bibliothèque de
+  query/form/store, ni UI, ni Tailwind non qualifié. Le vrai design C5 publie
+  `apps/users-management-react-proof` par le plan revu ; la CI vérifie sa
+  fidélité octet par octet puis exécute `tsc`, build, lint et ses tests d'accès.
+  Cette tranche ferme uniquement le shell : la composition C5 publiée n'est pas
+  encore reliée au host de l'application et aucune parité visuelle n'est
+  revendiquée. Prochaine tranche : définir puis tester le contrat host qui relie
+  le plan C5 au shell, sans importer les composants Angular. **ADAPT-11b —
+  engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
+  bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
+  capacités non déclarées, la non-activation des lignes et la géométrie
+  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
+  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
+  fournit aucun `action-request` correspondant : les rendre opérables maintenant
+  inventerait transport, permissions et effets. Les oracles exigent donc
+  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
+  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
+  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
+  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
+  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
+  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
   réalisation formalisée le 2026-10-02 :** le guide exhaustif
   [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
   donne à un humain ou à un LLM la hiérarchie des sources, les règles

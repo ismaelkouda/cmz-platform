@@ -61,6 +61,7 @@ export const INTEGRATION_EXACT_INPUTS = Object.freeze([
     'tools/generator-platform/core/generation-manifest.mjs',
     'tools/generator-platform/core/generation-transaction.mjs',
     'tools/generator-platform/renderers/angular-pwa-shell-renderer.mjs',
+    'tools/generator-platform/renderers/react-spa-shell-renderer.mjs',
     'tools/generator-platform/schemas/application-design.schema.json',
     'tools/generator-platform/schemas/backend-contract.schema.json',
     'tools/generator-platform/validate-ir.mjs',

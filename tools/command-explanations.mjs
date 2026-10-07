@@ -5,12 +5,13 @@ const explanations = {
         schema_version: '1.0.0',
         command: 'create-app',
         summary:
-            "Crée un shell Angular/PWA à partir d'un application design validé.",
+            "Crée un shell Angular/PWA ou React SPA à partir d'un application design validé.",
         runbook: RUNBOOK,
         invocations: [
             'bun run create-app --design <design.json> --experience <id> --app <nom>',
             'bun run create-app --design <design.json> --experience <id> --app <nom> --dry-run',
             'bun run create-app --design <design.json> --experience <id> --app <nom> --expect-plan <plan_id>',
+            'bun run create-app --design <design.json> --experience <id> --app <nom> --profile react-spa',
         ],
         ownership: {
             creates: ['apps/<app>/**'],
@@ -38,7 +39,7 @@ const explanations = {
             {
                 id: 'candidate-checks',
                 description:
-                    'Écrire le candidat exact, compiler avec Angular ngc et refuser toute dérive.',
+                    'Écrire le candidat exact, compiler avec le compilateur natif du profil et refuser toute dérive.',
             },
             {
                 id: 'publication',
@@ -49,7 +50,7 @@ const explanations = {
         checks: [
             'application-design schema + backend contracts',
             'inventaire et SHA-256 de chaque fichier',
-            'Angular ngc --noEmit',
+            'Angular ngc --noEmit ou TypeScript tsc --noEmit selon le profil',
             'Nx build:production',
             'Nx lint',
         ],

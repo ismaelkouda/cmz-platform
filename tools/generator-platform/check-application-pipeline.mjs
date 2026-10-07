@@ -12,7 +12,10 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { planApplicationDesignPublication } from './core/application-design-publication.mjs';
-import { publishApplicationShell } from './core/application-shell-publication.mjs';
+import {
+    publishApplicationShell,
+    runApplicationShellCommand,
+} from './core/application-shell-publication.mjs';
 import {
     planPageRealization,
     publishPageRealizationWorkOrder,
@@ -228,8 +231,34 @@ async function main() {
             throw new Error('page realization did not run every real oracle');
         }
 
+        runApplicationShellCommand(
+            'bunx',
+            [
+                'tsc',
+                '-p',
+                'apps/users-management-react-proof/tsconfig.app.json',
+                '--noEmit',
+            ],
+            workspaceRoot
+        );
+        for (const target of ['build:production', 'lint', 'test']) {
+            runApplicationShellCommand(
+                'bunx',
+                [
+                    'nx',
+                    'run',
+                    `users-management-react-proof:${target}`,
+                    '--verbose',
+                    '--outputStyle=stream',
+                    '--skipNxCache',
+                    ...(target === 'test' ? ['--run'] : []),
+                ],
+                workspaceRoot
+            );
+        }
+
         console.log(
-            '✅  Preuve versionnée complète : Postman reference → planned target → application design → Angular/PWA shell → bounded page → ngc/build/lint/test.'
+            '✅  Preuve versionnée complète : Postman reference → planned target → application design → Angular/PWA bounded page + React C5 shell → compile/build/lint/test.'
         );
     } finally {
         await rm(appRoot, { recursive: true, force: true });

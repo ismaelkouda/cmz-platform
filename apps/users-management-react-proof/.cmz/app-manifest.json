@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "application-shell-manifest",
+  "app_name": "users-management-react-proof",
+  "profile": "react-spa",
+  "design_ref": {
+    "path": "designs/users-management-proof.application-design.json",
+    "sha256": "bcbd75141911d69fb31403a57b22e068cc461862c1b74a7dde117062982cc8af"
+  },
+  "experience_id": "operator-web",
+  "generated_files": [
+    {
+      "path": ".cmz/libraries.json",
+      "bytes": 108,
+      "sha256": "c3f2551e21438af48d354958e174da65f3188402e8f42d2d5fccf3031c4b7b9b"
+    },
+    {
+      "path": ".cmz/pages/page_6666666666666666.json",
+      "bytes": 8155,
+      "sha256": "8012bb78d940b90151bed99273882a23ac80695619094fbe25304281cfeaad3d"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "bytes": 315,
+      "sha256": "8fa49bb8b6a1f6e63b0f05949d6d2ad3ed6ce03e49fab593793086237f8a8a15"
+    },
+    {
+      "path": "index.html",
+      "bytes": 643,
+      "sha256": "89473d07a009c3baff9f28648068eb246b321ce03045edeaa409336dd93cf797"
+    },
+    {
+      "path": "project.json",
+      "bytes": 251,
+      "sha256": "457756ea4d7f3e3c61388899aca429e04dcd9b7f0b7d2fbeb2dfe8752fceb532"
+    },
+    {
+      "path": "public/icon.svg",
+      "bytes": 414,
+      "sha256": "871bf60fc40d327f604f6f440dad284758451aad8a89653ef3b72c42a78dfdba"
+    },
+    {
+      "path": "src/app/access-policy.spec.ts",
+      "bytes": 3089,
+      "sha256": "10fd140a4480263b6b3a95b53ef462675010aece9f03ed3e36f9b1ffb3264010"
+    },
+    {
+      "path": "src/app/access-policy.tsx",
+      "bytes": 2699,
+      "sha256": "284308d25546cd321c166ef4819cce2fe9c355bc480746544d7092a718871f96"
+    },
+    {
+      "path": "src/app/app.routes.tsx",
+      "bytes": 758,
+      "sha256": "40ebb20c5b475dabf46fafe07d6fe2a5551ee7b691d5f34da29bad56628e6a32"
+    },
+    {
+      "path": "src/app/app.tsx",
+      "bytes": 95,
+      "sha256": "36b09813dd6cf32dc7599d94736216dd7095031ce748ab80bdc218a080494ad8"
+    },
+    {
+      "path": "src/app/pages/page_6666666666666666/page.tsx",
+      "bytes": 330,
+      "sha256": "b8369a370f537fb97be0eda5cdc3d1ea935025f5939eb1a42bda4a3f419b3776"
+    },
+    {
+      "path": "src/main.tsx",
+      "bytes": 450,
+      "sha256": "f19a27d13b1d12e08028990148ecf6813930106c27a2c3916dfbb27a2f1045cb"
+    },
+    {
+      "path": "src/styles.scss",
+      "bytes": 177,
+      "sha256": "c767a4c3638dccd4e7fe96a871c36a278201246aeff87c52c6a9c3e45a4ec6d4"
+    },
+    {
+      "path": "tsconfig.app.json",
+      "bytes": 420,
+      "sha256": "8e065da45a1be8b72cf1a30687b93348e846894b79c7e3a9582ae67d6b332f60"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 372,
+      "sha256": "cba4f1de914a31500f736057dcece770356d94641c434b0814ce3e1455723ba1"
+    },
+    {
+      "path": "tsconfig.spec.json",
+      "bytes": 462,
+      "sha256": "a692c650f5b6d3533107ab4ee57d672c057fc38fa7e500e4c1c450d8e4a74fb8"
+    },
+    {
+      "path": "vite.config.mts",
+      "bytes": 1074,
+      "sha256": "3f05143dd193ff72ea13d7b0c917e8966a31811745051b5733d69226a013abd1"
+    }
+  ],
+  "tree_sha256": "36ddf1211efc1128ee651d77d6f72c64e4633ba8ee091aa4e0e9bdf3aa332d5b"
+}
