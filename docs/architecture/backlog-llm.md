@@ -551,9 +551,11 @@ donc pas fusionner si elle altère silencieusement ces invariants.
 
 Options conservées comme trace et fallback :
 
-- **Option 1 historique — étape CI d'auto-réparation.** Fallback uniquement
-  si le canary natif échoue ; utiliser alors un token court de GitHub App
-  mono-dépôt plutôt qu'un PAT personnel permanent.
+- **Option 1 historique — étape CI d'auto-réparation.** Non retenue après la
+  preuve OPS-37 : le cas `proxy-addr` était une erreur de l'oracle local et Bun
+  ne produisait aucun octet à réparer. Toute réouverture de cette option exige
+  d'abord une reproduction réelle d'un lockfile incohérent avec les commandes
+  officielles ; elle ne constitue pas une recommandation active.
 - **Option 2 — traitement manuel groupé.** Appliquée pour le backlog
   existant au 2026-09-10/11 (voir OPS-26). Reste la procédure d'urgence.
 - **Option 3 — réduire le périmètre Dependabot npm.** Écartée (perte de
@@ -992,7 +994,12 @@ runbook-csp-grafana.md`.
   Détail dans `taches-restantes.md` sous OPS-27.
 - **Canary Dependabot Bun natif** (P1-6 / OPS-26) : **fait** le 2026-09-12,
   validé par les PR réelles #48 à #57, sans secret. Le fallback GitHub App est
-  conservé uniquement comme plan archivé et reste inactif.
+  resté un plan archivé et n'a pas été activé. Le 2026-10-07, OPS-37 a montré
+  sur dix PR que le rouge `proxy-addr` venait de l'oracle local, pas d'un
+  lockfile réparable : `@dependabot recreate`, `bun install --lockfile-only` et
+  `bun audit` l'ont prouvé sur #193. La politique accepte maintenant un override
+  préventif sans résolution uniquement quand aucun consommateur obligatoire
+  n'existe. Aucun automate d'écriture custom n'est nécessaire.
 - **Items produit hors socle technique** (parité fonctionnelle
   multi-onglets, export Excel, carte interactive avancée, etc., section
   "P2 métier" de `taches-restantes.md`) : hors du périmètre de rigueur

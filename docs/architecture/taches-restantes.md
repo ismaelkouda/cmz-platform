@@ -1278,39 +1278,19 @@ Figma, désormais source partielle différée :
       échecs observés ailleurs sont désormais des signaux applicatifs utiles :
       #52 expose l'incompatibilité réelle de Vitest 5 et #50 a révélé une
       nouvelle signature Darwin de runner, suivie sous OPS-32.
-    - **Fallback archivé — CI auto-réparatrice**, à reprendre uniquement si
-      l'écosystème Bun régresse. Le plan de sécurité reste utile, avec une
-      correction : préférer un token d'installation court de GitHub App
-      mono-dépôt à un PAT personnel permanent.
-        - Contrainte bloquante identifiée : GitHub n'expose **aucun secret** aux
-          workflows déclenchés par une PR de `dependabot[bot]`
-          (anti-exfiltration, cf. OPS-22/23) → un déclencheur `pull_request`
-          classique ne peut jamais avoir les droits d'écriture requis.
-        - Deuxième contrainte : une PR mise à jour avec le `GITHUB_TOKEN` peut
-          redéclencher la CI, mais les runs sont placés en attente d'approbation
-          ; l'autonomie exige donc une identité GitHub App dédiée.
-        - Conception retenue : workflow **`schedule` (cron, lundi ~06h UTC,
-          quelques heures après le passage hebdomadaire de Dependabot) +
-          `workflow_dispatch`**, jamais `pull_request`/`pull_request_target`.
-          Liste les PR ouvertes de `dependabot[bot]` sur `main` dont la branche
-          commence par `dependabot/npm_and_yarn/`, pour chacune : checkout →
-          `bun install --lockfile-only --ignore-scripts` → validation que seul
-          `bun.lock` a changé → commit + push avec un **token d'installation
-          GitHub App** limité à ce dépôt et `Contents: write`. Le checkout et la
-          résolution restent sans identifiant d'écriture ; le token court n'est
-          exposé qu'à l'étape finale.
-        - Fichiers prévus : `.github/workflows/dependabot-lockfile-fix.yml`,
-          `tools/fix-dependabot-lockfile.mjs` + `.test.mjs` (logique de
-          filtrage/détection de diff testable en pur), mise à jour du
-          commentaire de `.github/dependabot.yml`.
-        - **Action humaine seulement si fallback activé** : créer la GitHub App,
-          l'installer sur ce seul dépôt et enregistrer sa clé privée comme
-          secret.
-        - Check-list sécurité du fallback : permissions minimales,
-          `--lockfile-only --ignore-scripts`, `persist-credentials: false`,
-          jamais de `pull_request`/`pull_request_target`, SHA de tête immuable
-          revalidé, job qui ne touche que `bun.lock`, filtre strict sur auteur
-          et branche.
+    - **Fallback auto-réparateur réévalué et non retenu (2026-10-07).** Une
+      GitHub App mono-dépôt à jeton court aurait été préférable à un PAT si une
+      écriture automatisée s'était révélée indispensable, mais OPS-37 a invalidé
+      ce besoin avant implémentation. Sur la vraie PR #193, la commande GitHub
+      officielle `@dependabot recreate` a reproduit le lockfile, puis Bun 1.3.14
+      a confirmé qu'il était déjà cohérent et l'audit high est resté vert. Le
+      rouge provenait du contrôle local qui confondait override préventif et
+      résolution requise. La correction porte donc sur l'oracle : aucune GitHub
+      App, aucun secret, aucun workflow d'écriture et aucun code de réparation
+      spécifique ne sont ajoutés. Si un futur incident démontre réellement un
+      lockfile incohérent après `recreate` et régénération Bun native, une
+      nouvelle décision documentée sera nécessaire ; ce plan historique ne
+      constitue plus une conception retenue prête à implémenter.
 - **OPS-27** — **fait** (2026-09-11), M, P1, alias `G-2 · P1-13`. Durcissement
   de la protection de `main`, appliqué et vérifié en conditions réelles (mis en
   pause le 2026-09-10, repris et terminé le 2026-09-11 sur décision explicite).
@@ -1571,6 +1551,28 @@ Figma, désormais source partielle différée :
   build frais et la comparaison dans la même step, dans cet ordre ; le Nightly
   reste une seconde ligne de défense. Reste à obtenir la CI de PR verte, puis à
   rejouer le Nightly après fusion avant de clore la preuve distante.
+- **OPS-37** — **fait localement** (2026-10-07), S, P0 Ops, alias
+  `OPS-26 suite`. Dix PR Dependabot Bun (#78, #85, #86, #102, #163, #189–#193)
+  échouaient toutes sur `résolution proxy-addr absente` après la sécurisation
+  `proxy-addr@^2.0.8`. L'hypothèse initiale d'un lockfile à auto-réparer était
+  fausse : la commande officielle `@dependabot recreate`, appliquée à la PR
+  témoin #193, a produit le nouveau SHA `d3254b6` avec le même résultat ; puis
+  `bun install --lockfile-only --ignore-scripts` sous Bun 1.3.14 n'a modifié
+  aucun octet et `bun audit --audit-level=high` est resté vert. Le lockfile
+  recréé conserve bien l'override, mais élague `express` et `proxy-addr` :
+  Express n'est qu'un peer optionnel de `@nx/react`, donc aucune dépendance
+  requise n'utilise réellement `proxy-addr`. Le défaut était dans notre oracle,
+  qui exigeait une résolution pour tout override, y compris préventif et absent
+  du graphe. `check:dependabot-policy` accepte désormais l'absence uniquement si
+  aucun `packages[*].dependencies` ni workspace (`dependencies` ou
+  `devDependencies`) ne référence le paquet ; une entrée mal formée ou une
+  absence avec consommateur obligatoire reste bloquante et nomme ses
+  consommateurs. Les peer/optional dependencies ne créent pas de faux nœud.
+  Quatre tests couvrent le cas réel, les consommateurs transitifs et workspace,
+  puis l'entrée corrompue. Aucun workflow d'écriture, PAT, GitHub App ou
+  `pull_request_target` n'est introduit : la voie native GitHub/Bun et la CI
+  existante restent l'autorité. Reste la CI réelle de cette correction, puis la
+  recréation officielle des neuf autres PR seulement après fusion.
 - **PLAT-5G** — **fait localement** (2026-08-16), M, P0. La lacune
   `permissions.runtime-enforcement` est fermée dans le contrat directeur. Une
   opération `authorized` doit déclarer une liste non vide et sans doublon ; les

@@ -69,6 +69,35 @@ export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
     'source-map-js': '1.2.2',
 });
 
+/**
+ * Retourne uniquement les consommateurs qui exigent réellement le paquet.
+ * Les peerDependencies (dont les optionalPeers Bun) décrivent une capacité
+ * offerte par l'hôte, pas un nœud nécessairement installé. Un override peut
+ * donc légitimement rester préventif sans résolution tant que ce tableau est
+ * vide. Les dépendances optionnelles sont elles aussi autorisées à manquer.
+ */
+export function requiredLockConsumers(lock, dependencyName) {
+    const consumers = [];
+    for (const [workspaceName, workspace] of Object.entries(
+        lock?.workspaces ?? {}
+    )) {
+        for (const field of ['dependencies', 'devDependencies']) {
+            if (Object.hasOwn(workspace?.[field] ?? {}, dependencyName)) {
+                consumers.push(`workspace:${workspaceName || '/'}`);
+            }
+        }
+    }
+    for (const [packageName, entry] of Object.entries(lock?.packages ?? {})) {
+        const dependencies = Array.isArray(entry)
+            ? entry[2]?.dependencies
+            : undefined;
+        if (dependencies && Object.hasOwn(dependencies, dependencyName)) {
+            consumers.push(packageName);
+        }
+    }
+    return [...new Set(consumers)].sort();
+}
+
 function dependencyVersion(pkg, name) {
     return pkg.dependencies?.[name] ?? pkg.devDependencies?.[name];
 }
@@ -232,9 +261,17 @@ export function securityResolutionPolicyErrors(pkg, lock) {
             lockedIdentity.startsWith(prefix)
                 ? lockedIdentity.slice(prefix.length)
                 : undefined;
+        const requiredConsumers = requiredLockConsumers(lock, name);
+        if (lockedIdentity === undefined && requiredConsumers.length === 0) {
+            // L'override reste un plancher préventif. Dependabot/Bun peut
+            // légitimement élaguer un pair optionnel absent (cas réel :
+            // @nx/react → express → proxy-addr). Forcer une résolution ici
+            // réintroduirait artificiellement un sous-graphe non utilisé.
+            continue;
+        }
         if (!semver.valid(lockedVersion)) {
             errors.push(
-                `résolution ${name} absente ou invalide dans bun.lock (${String(lockedIdentity)})`
+                `résolution ${name} absente ou invalide dans bun.lock (${String(lockedIdentity)}), requise par: ${requiredConsumers.join(', ') || 'entrée présente mal formée'}`
             );
         } else if (!semver.satisfies(lockedVersion, range)) {
             errors.push(`${name}@${lockedVersion} ne respecte pas ${range}`);
