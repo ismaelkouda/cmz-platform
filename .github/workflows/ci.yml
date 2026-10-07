@@ -581,6 +581,18 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # actions/runner-images#14594 : le miroir Azure des runners Ubuntu peut
+      # rester muet plus de 20 minutes avant le fallback archive.ubuntu.com.
+      # On borne le comportement natif d'APT ; aucune erreur n'est ignorée et
+      # l'installation officielle Playwright reste l'unique source des paquets.
+      - name: Bound APT mirror retries
+        run: |
+          sudo tee /etc/apt/apt.conf.d/80-cmz-ci-network >/dev/null <<'APT_CONFIG'
+          Acquire::Retries "1";
+          Acquire::http::Timeout "10";
+          Acquire::https::Timeout "10";
+          APT_CONFIG
+
       - name: Install Playwright Chromium
         run: bunx playwright install chromium --with-deps
 
