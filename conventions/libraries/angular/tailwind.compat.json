@@ -5,7 +5,7 @@
   "tracks": [
     {
       "id": "angular-22-tailwind-4",
-      "status": "candidate",
+      "status": "verified",
       "requirements": {
         "node": ">=22.22.3 <23",
         "bun": ">=1.3.14 <2",
@@ -19,7 +19,91 @@
       "dependency_section": "devDependencies",
       "catalog": "default",
       "reason": "Piste Tailwind 4 ; vérification complète requise pour chaque nouvelle version effective du framework.",
-      "verification": null
+      "verification": {
+        "schema_version": "1.3.0",
+        "commit": "309bdd560860c8c56a8192ddb4a14f0761439be9",
+        "source_context_sha256": "5e1256e2d06eca44c4cdeed63fddcdb625d2df154d420ee18dfcb4fd30f5807a",
+        "app": "library-qualification-angular",
+        "plan_id": "library-plan:571dfe6f561039e4a1fdcb489a800460606fe115db1a9f9e9425771098ad3cca",
+        "change_set_id": "changes:f3a36edc540d8b59ce763efe5b88f55fffb7c9d78ce29d9563d4e85601cfacaf",
+        "app_tree_sha256": "e258093c3fe1c4ded44ed01700b0f91e91622d23046bc0bf1b1219c9dab2afb3",
+        "track_sha256": "88251cd1a305f46e7bedb25105ca7f0bc6d3dfaeb5446ade6b74f0663d2cab5d",
+        "tested_versions": {
+          "node": "22.22.3",
+          "bun": "1.3.14",
+          "nx": "23.2.1",
+          "framework": "22.2.0",
+          "packages": {
+            "@tailwindcss/postcss": "4.3.3",
+            "tailwindcss": "4.3.3"
+          }
+        },
+        "dependency_state_sha256": {
+          "initial": "a1084caf245895185529fdb2e6f769e58b4b67aeb1e85c3f70f9a9f273fdb556",
+          "final": "7da5d5995b182b232c098ecd9619fad0781a43a41f9ed0071790b21bc99b0dc1"
+        },
+        "proofs": [
+          "material-tailwind-cascade-order",
+          "material-tailwind-render-together",
+          "offline-production-build",
+          "sentinel-class-emits-rule"
+        ],
+        "qualified_adapter": {
+          "schema_version": "1.0.0",
+          "id": "angular/tailwind@1",
+          "inputs_sha256": {
+            "apps/backoffice-angular/.postcssrc.json": "6c96a7becce80948b52897a8968a815644d70dbe647227ae627a9cca0edcbabb",
+            "apps/backoffice-angular/src/tailwind.css": "b90a5e38e01193244bb361322c24b728b94942288c5560abc18438dac71bae30",
+            "conventions/presentation/tailwind-theme.css": "956d9573a41853800e631134b883233ec411a66be7fbd26c7f00855fb50ec14d",
+            "tools/library-setup/qualified-adapters.mjs": "3163c9269a6bbaa84b2523e173c9254561f2c8e12142c4d7cf859d90405f06be"
+          },
+          "digest_sha256": "6bf145abe0f1e6db363a60c824b9c77a777ca9085d1591caf71bab3c9804ae9d",
+          "change_set_id": "changes:f3a36edc540d8b59ce763efe5b88f55fffb7c9d78ce29d9563d4e85601cfacaf"
+        },
+        "inputs_sha256": {
+          "recipe": "af05a220bfd375db287ba837ae6bd1f1260fa0006c3b487225beeb68930cac58",
+          "recipe_schema": "b741a753ddb9d3df1266a9bd615bca6f00fb5b5b6e4576c45b7b285056987b11",
+          "compat_schema": "086134ad4b213328416aacaa2e96d845b8ba74773052238d3bee877e9bb22245",
+          "policy": "ca3429863614bb7592a153300a44e7b7006428cc1fd826823062c8759fde77c7",
+          "policy_schema": "a71cc60b0692e3704ac8f09847b202af9da92453c7de486f09d0106ff3db0c96",
+          "nx_json": "3403357296b1a3ccbab58dbe602d10d50849775a60ba548526f64bebe83dd4bc",
+          "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
+          "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
+          "proof_contracts": "e5c4d6939a4c98f31513581d29ea91c1d9a99049330ab4b72f8e86b63c7fb97a",
+          "runner": "526a298bf16d10f84d6bb4c0b633ff20ea90faba435fca19bba542347543adcf",
+          "runner_sources": {
+            "tools/check-library-setup-deps.mjs": "3fd82a88564c9e29174f3d6310eabafe3d327fded02d323a8f2e1a9567514b05",
+            "tools/check-library-setup.mjs": "006ab2ce99ab32a0ad278685e8b3bfb53b82c71c7adae8cebc738a6ff2bdae7d",
+            "tools/generator-platform/validate-ir.mjs": "afa3e1e6037f48d8647d0b29b0da48eed605a429499d879afa9a04ab3a7ca682",
+            "tools/library-setup/add-library-core.mjs": "225e3a64db4b31de1a3bb8113b3d3a528bd7945b7f0a92f6f7c2db5f171c8db3",
+            "tools/library-setup/browser-provisioning.mjs": "2c503123129bcf45cf5c6b8cda9eadd6c3028c426abdef333e21d8ec6481e18a",
+            "tools/library-setup/candidate-lease.mjs": "309d571289839a3d50683ba91221d03af959f1d1af1238a2fb87e64d2cadefa4",
+            "tools/library-setup/compatibility-promotion-runner.mjs": "826b0b8e5358651b3ae68b8fbbd8361ab5452e3a123efa978889f0a980c1f7c6",
+            "tools/library-setup/compatibility-promotion.mjs": "a16e528e6fd2ca22257cd5c45c7186264416489f6b20ffc6d895825cf3dad16f",
+            "tools/library-setup/compatibility.mjs": "4da95d700d280f36b5f3243dcdaa49bc6eb626704d7a7ff4140c2e5b07a25a2c",
+            "tools/library-setup/dependency-resolution.mjs": "079dd875146201ebfff2a76b17cfb35da64298ea8cf593ab39f181ea4e7d67e8",
+            "tools/library-setup/filesystem-snapshot.mjs": "5811c240d74f7b9f3cb355f3cba1b4a8de966f575fbb9ef632ff89149401fd2b",
+            "tools/library-setup/git-tree.mjs": "85f94f5f09adc9eee6798af4859766f9192443cf05ea7e0811b07dc2005f74c8",
+            "tools/library-setup/install-protocol.mjs": "a9bba03808b743b7df6c7c646ced2b138e03828e142fdae35dacbc8db69aa0ce",
+            "tools/library-setup/library-plan.mjs": "1505b63ac1e2524ef492b74e510e9e3011f179c888a8a9f354467c8414052990",
+            "tools/library-setup/publication-transaction.mjs": "c321fabf31846425530ef845527c0fa5a58610c49a12cc32326f58f81b140790",
+            "tools/library-setup/qualification-contracts.mjs": "02819658acf19c890e8fda535100aa63ca57ac6ef6a03c094933dfee79756955",
+            "tools/library-setup/qualified-adapters.mjs": "3163c9269a6bbaa84b2523e173c9254561f2c8e12142c4d7cf859d90405f06be",
+            "tools/library-setup/recipe-execution.mjs": "02428e8149e3fee79eb9a2a982b99962af2e6ab31004f7907823febdc39f22d6",
+            "tools/library-setup/resolution-policy.mjs": "b78cccdb1db18b9c3de3af958c5ca0844245525a9a6cd9d995b2d24f06db1da4",
+            "tools/library-setup/runtime-oracles/material-tailwind-browser.mjs": "b1058606dea239e0e8b09d0c4dfe46a747b2e3daeebc61b277d1918d26fe07e2",
+            "tools/library-setup/runtime-oracles/material-tailwind-cascade.mjs": "53f3953e421762417a32019d130ea85ec8f4a20a90617c6b7ab5ad59a43362a0",
+            "tools/library-setup/runtime-oracles/production-build.mjs": "a4e323a13b60236100ebc40605e937083e29784d38d4055f0109db17caafd3ea",
+            "tools/library-setup/runtime-oracles/support.mjs": "05123e716c838738f409d7c5de78d9121be01aa6567c0a75f4211e8ce3298639",
+            "tools/library-setup/runtime-oracles/tailwind-sentinel.mjs": "eab5d08b739442aef13cf9aa58b519a578da1f50328e518802a1ff304f8cb36d",
+            "tools/library-setup/runtime-proofs.mjs": "584ff76b718cd564c2f0d97d1422662531af73755bd1356a5704d4899cd5b1c4",
+            "tools/library-setup/sandbox.mjs": "68ea096d8bd3626e6c4a51aed196fe3e925fbe730ec089ce5426628f0f88dc62",
+            "tools/library-setup/tooling-fingerprint.mjs": "c68fd9fc434429c8ba4a90712ded40a23c61f252a87f693df58dbd03fea86d14",
+            "tools/scaffold-tailwind.mjs": "e12cd0be13839fc2177930d56fdfe1032ec5acdddfe8b0c34e9f134bc071200d"
+          }
+        },
+        "evidence_sha256": "dc2e5cd88e14e4e9ea7eab4161d6782efc9724e4ef180eb819cb85c619e914f1"
+      }
     }
   ]
 }
