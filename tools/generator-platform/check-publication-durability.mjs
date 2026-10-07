@@ -31,7 +31,9 @@ const result = await assertSupportedPublicationEnvironment({
 console.log('Generator publication durability environment: OK');
 console.log(`  profile: ${result.profile.id}`);
 console.log(`  runner: ${result.profile.ci_runner}`);
-console.log(
-    `  statfs: ${result.detected.platform}:${result.detected.statfs_type}, block=${result.detected.block_size}`
-);
+const identity = result.detected.filesystem
+    ? `${result.detected.filesystem}@${result.detected.mount_point}`
+    : `statfs:${result.detected.statfs_type}`;
+console.log(`  filesystem: ${result.detected.platform}:${identity}`);
+console.log(`  block: ${result.detected.block_size}`);
 console.log('  reader model: offline activation after publication success');

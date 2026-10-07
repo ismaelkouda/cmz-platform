@@ -39,12 +39,23 @@ de lecture explicite.
 La publication est supportée uniquement lorsque la sortie, le candidat, le
 journal et la sauvegarde résident sur le même système de fichiers local :
 
-- APFS sur macOS (`statfs.type = 26`) ;
+- APFS local sur macOS, identifié par le montage réel et non par l'énumération
+  numérique Darwin ;
 - ext4 sur Linux (`statfs.type = 61267`, soit `0xEF53`).
 
 NFS, SMB, les publications cross-filesystem, les sorties symboliques et les
 fichiers spéciaux sont refusés. Le runtime détecte le profil avant toute
 écriture et échoue fermé s'il n'appartient pas à cette liste.
+
+`fs.statfs().type` reste une signature suffisante pour ext4 sous Linux, où
+`0xEF53` est le magic number du filesystem. Sur Darwin, cette valeur est une
+énumération spécifique au système et n'est pas une identité APFS durable : les
+runners GitHub `macos-14` ont réellement exposé `24`, `25`, `26`, `27` et `28`
+pour des montages APFS. Le runtime macOS exécute donc `/bin/df -P` puis
+`/sbin/mount` sans shell, lie exactement la source et le point de montage, exige
+le type `apfs` ainsi que l'option `local`, puis lance la sonde réelle de
+publication. Une commande absente, une sortie ambiguë ou malformée, un montage
+non local ou un autre type de filesystem est refusé avant toute écriture.
 
 ### Modèle de panne
 
@@ -71,7 +82,8 @@ déclare les profils et les preuves requises. Le gate
 `check:publication-durability` :
 
 1. vérifie strictement le contrat et refuse tout champ ou profil ambigu ;
-2. compare le système réel au profil attendu par la CI ;
+2. compare le système réel au profil attendu par la CI, avec identité de montage
+   sémantique sur Darwin ;
 3. exerce une publication complète sur le vrai système de fichiers ;
 4. tue réellement les éditeurs après les deux renommages ;
 5. vérifie reprise, manifests, hashes, rollback et états contradictoires.

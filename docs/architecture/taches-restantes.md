@@ -1437,36 +1437,56 @@ Figma, désormais source partielle différée :
       correcte (URLs, `enableDebug: false`, `trustedFrameOrigins` converti en
       tableau JSON) — pas une supposition, le pipeline `docker-entrypoint.sh`
       complet a tourné.
-- **OPS-32** — **fait localement** (2026-09-12), S, P0, alias `OPS-21 suite`. La
-  PR Dependabot #50 a échoué sur `Publication durability (macos-apfs)` avec
-  `unsupported filesystem darwin:27`. Ce n'est ni Vitest ni l'updater Bun : le
-  job s'arrête avant les tests. Preuve croisée : le job vert post-fusion de
-  `main` et le job rouge #50 utilisent exactement le runner `macos-14-arm64`,
-  macOS 14.8.9, image `20260831.0302.1`, mais exposent respectivement
-  `statfs_type` 26 et 27. Le contrat recense donc explicitement le nouveau
-  profil `macos-apfs-27` sans plage ni wildcard ; une fonction pure sélectionne
-  le profil, les tests prouvent 25/26/27 acceptés et 28 toujours rejeté. La
-  sonde réelle de renommage atomique + fsync reste obligatoire après la
-  reconnaissance du profil. Reste à obtenir la preuve CI sur un runner exposant
-  effectivement la signature 27 avant de passer l'item à **fait**.
-  **Continuation 2026-09-30 :** la PR #159 a fourni la première observation
-  réelle de `darwin:28` (run `36786745456`, job `110129859456`). La comparaison
-  avec la PR #165 est déterminante : à six minutes d'intervalle, deux workers
-  différents mais portant exactement `macos-14-arm64`, macOS 14.8.9 et l'image
-  `20260831.0302.1` ont exposé respectivement `darwin:28` et `darwin:26`. La
-  signature n'est donc pas une propriété stable de la version d'image. Le
-  contrat ajoute le profil exact `macos-apfs-28`, sans plage ni wildcard ; les
-  tests acceptent explicitement 25/26/27/28 et conservent 29 comme frontière
-  refusée. La sonde réelle de renommage atomique et `fsync` demeure obligatoire
-  après sélection. OPS-32 ne passe à **fait** qu'après une CI verte ayant
-  réellement sélectionné `macos-apfs-28`, et non après un rerun tombé sur 26.
-  **Qualification post-rebase 2026-09-30 :** les 17 contrôles de la PR #159 sont
-  verts sur le commit `bb0d5ec` (run `36791246695`). Le job macOS `110144400292`
-  a exécuté avec succès la sonde réelle et les scénarios de récupération, mais
-  le worker attribué exposait `darwin:26` et a donc sélectionné `macos-apfs`.
-  Cette preuve ferme la non-régression du correctif, sans être présentée comme
-  une preuve runtime de `macos-apfs-28` ; le statut **fait localement** reste
-  volontairement inchangé.
+- **OPS-32** — **fait** (2026-10-07 ; première tranche locale 2026-09-12), S,
+  P0, alias `OPS-21 suite`. La PR Dependabot #50 a échoué sur
+  `Publication durability (macos-apfs)` avec `unsupported filesystem darwin:27`.
+  Ce n'est ni Vitest ni l'updater Bun : le job s'arrête avant les tests. Preuve
+  croisée : le job vert post-fusion de `main` et le job rouge #50 utilisent
+  exactement le runner `macos-14-arm64`, macOS 14.8.9, image `20260831.0302.1`,
+  mais exposent respectivement `statfs_type` 26 et 27. Le contrat recense donc
+  explicitement le nouveau profil `macos-apfs-27` sans plage ni wildcard ; une
+  fonction pure sélectionne le profil, les tests prouvent 25/26/27 acceptés et
+  28 toujours rejeté. La sonde réelle de renommage atomique + fsync reste
+  obligatoire après la reconnaissance du profil. Reste à obtenir la preuve CI
+  sur un runner exposant effectivement la signature 27 avant de passer l'item à
+  **fait**. **Continuation 2026-09-30 :** la PR #159 a fourni la première
+  observation réelle de `darwin:28` (run `36786745456`, job `110129859456`). La
+  comparaison avec la PR #165 est déterminante : à six minutes d'intervalle,
+  deux workers différents mais portant exactement `macos-14-arm64`, macOS 14.8.9
+  et l'image `20260831.0302.1` ont exposé respectivement `darwin:28` et
+  `darwin:26`. La signature n'est donc pas une propriété stable de la version
+  d'image. Le contrat ajoute le profil exact `macos-apfs-28`, sans plage ni
+  wildcard ; les tests acceptent explicitement 25/26/27/28 et conservent 29
+  comme frontière refusée. La sonde réelle de renommage atomique et `fsync`
+  demeure obligatoire après sélection. OPS-32 ne passe à **fait** qu'après une
+  CI verte ayant réellement sélectionné `macos-apfs-28`, et non après un rerun
+  tombé sur 26. **Qualification post-rebase 2026-09-30 :** les 17 contrôles de
+  la PR #159 sont verts sur le commit `bb0d5ec` (run `36791246695`). Le job
+  macOS `110144400292` a exécuté avec succès la sonde réelle et les scénarios de
+  récupération, mais le worker attribué exposait `darwin:26` et a donc
+  sélectionné `macos-apfs`. Cette preuve ferme la non-régression du correctif,
+  sans être présentée comme une preuve runtime de `macos-apfs-28` ; le statut
+  **fait localement** reste volontairement inchangé. **Correction de cause
+  racine engagée le 2026-10-07 :** le run post-fusion `37634891383` de la PR
+  #215 a ensuite échoué sur `darwin:24`, tandis que des jobs macOS contemporains
+  sélectionnaient encore des valeurs déjà recensées. La série observée
+  `24/25/26/27/28` prouve que l'allowlist numérique modélisait une énumération
+  Darwin instable, pas l'identité durable d'APFS. Le contrat passe en `2.0.0` et
+  remplace les quatre variantes macOS par un profil sémantique unique
+  `macos-apfs` : `/bin/df -P` identifie exactement la source et le point de
+  montage, `/sbin/mount` doit les confirmer avec le type `apfs` et l'option
+  `local`, puis la sonde réelle `rename`/`fsync` et les injections `SIGKILL`
+  restent obligatoires. Les deux commandes sont invoquées sans shell, sous
+  locale figée, timeout et buffer bornés. NFS, une option `local` absente, une
+  sortie manquante, ambiguë ou malformée restent refusés fail-closed.
+  `statfs.type` est conservé comme diagnostic sur macOS, jamais comme autorité.
+  La preuve locale macOS exécute le profil réel APFS et les 20 scénarios de
+  durabilité avec succès. **Preuve de clôture :** la tentative 2 du run GitHub
+  `37641846846`, sur le commit `ce6f23a`, a terminé ses 17 jobs en succès. Le
+  job macOS `112865029583` a sélectionné `macos-apfs` par l'identité réelle du
+  montage, exécuté la sonde et validé les 20 scénarios sur `macos-14-arm64`,
+  sans aucune valeur numérique Darwin déclarée dans le contrat. OPS-32 est clos
+  sur preuve runtime, pas sur la seule revue du code.
 - **OPS-33** — ouvert, M, P0 Ops,
   [issue #63](https://github.com/ismaelkouda/cmz-platform/issues/63). Rendre les
   attestations de compatibilité durables après une fusion squash. La PR #62 a
@@ -2658,16 +2678,15 @@ Figma, désormais source partielle différée :
   strictement `layout-guidance-only` : ils ne deviennent ni preuve C5, ni
   contrat de capacités, et toute réalisation doit encore retirer les commandes
   absentes de son contrat puis fournir ses propres preuves runtime.
-  **WORKSPACE-TABS-1 — décision Staff et première
-  tranche runtime engagées localement le 2026-10-04 :** la barre représente de
-  vraies vues de travail ouvertes, pas un historique de routes. ADR-0084 exige
-  qu'un changement d'onglet rattache la même instance Angular et conserve
-  formulaires, erreurs, filtres, sélection et état local. `Tableau de bord` est
-  épinglé ; chaque autre vue est fermable individuellement, tandis qu'un menu
-  secondaire regroupe les fermetures globales. Une `RouteReuseStrategy`
-  sélective, la destruction officielle des handles, un lifecycle
-  `active/suspended` et une capacité mémoire mesurée rendent cette promesse
-  explicite et testable. Le contrat
+  **WORKSPACE-TABS-1 — décision Staff et première tranche runtime engagées
+  localement le 2026-10-04 :** la barre représente de vraies vues de travail
+  ouvertes, pas un historique de routes. ADR-0084 exige qu'un changement
+  d'onglet rattache la même instance Angular et conserve formulaires, erreurs,
+  filtres, sélection et état local. `Tableau de bord` est épinglé ; chaque autre
+  vue est fermable individuellement, tandis qu'un menu secondaire regroupe les
+  fermetures globales. Une `RouteReuseStrategy` sélective, la destruction
+  officielle des handles, un lifecycle `active/suspended` et une capacité
+  mémoire mesurée rendent cette promesse explicite et testable. Le contrat
   [`workspace-vues-vivantes-accessibilite-2026-10-04.md`](./workspace-vues-vivantes-accessibilite-2026-10-04.md)
   fixe identité, permissions, garde dirty, réseau, nettoyage, clavier Tabs,
   overflow horizontal sans `Plus (n)` permanent et quinze familles d'oracles.
