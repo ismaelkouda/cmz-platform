@@ -56,10 +56,23 @@ export function projectOutputPath(workspace, app) {
         readFileSync(safePath(workspace, `apps/${app}/project.json`), 'utf8')
     );
     const output = project.targets?.build?.options?.outputPath;
-    if (typeof output !== 'string' || !output.startsWith('dist/apps/')) {
-        fail(`outputPath Nx non reconnu pour ${app}`);
+    if (typeof output === 'string' && output.startsWith('dist/apps/')) {
+        return safePath(workspace, output);
     }
-    return safePath(workspace, output);
+    const inferredOutput = `dist/apps/${app}`;
+    const vitePath = safePath(workspace, `apps/${app}/vite.config.mts`);
+    if (!existsSync(vitePath)) fail(`outputPath Nx non reconnu pour ${app}`);
+    const viteStats = lstatSync(vitePath);
+    const vite = readFileSync(vitePath, 'utf8');
+    const expected = `outDir: '../../${inferredOutput}'`;
+    if (
+        viteStats.isSymbolicLink() ||
+        !viteStats.isFile() ||
+        vite.split(expected).length !== 2
+    ) {
+        fail(`sortie Vite inférée non reconnue pour ${app}`);
+    }
+    return safePath(workspace, inferredOutput);
 }
 
 export function cssFiles(root) {
@@ -90,7 +103,7 @@ export function nxBuild(context, app, configuration = 'development') {
             `${app}:build:${configuration}`,
             '--skip-nx-cache',
         ],
-        `build Angular ${app}`
+        `build ${app}`
     );
 }
 

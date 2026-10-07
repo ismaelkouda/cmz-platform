@@ -1,169 +1,165 @@
-# Câbler Tailwind dans une nouvelle app Angular ou React
+# Câblage Tailwind qualifié pour Angular et React
 
-> **Pour tout Agent IA / LLM lisant ce document sans contexte préalable de la
-> session qui l'a produit** : ce document explique un outil précis
-> (`tools/scaffold-tailwind.mjs`), le problème qu'il résout, pourquoi il est
-> conçu comme il l'est, et surtout **comment interpréter chacune de ses
-> sorties possibles**. Lis-le en entier avant d'utiliser le script ou de le
-> modifier.
+> Référence vivante pour un humain ou un LLM. Ne recopier aucune configuration
+> depuis la mémoire, une ancienne application ou un article. La recette, la
+> matrice de compatibilité et l'adaptateur qualifié du dépôt sont normatifs.
 
-## Le problème que ce document résout
+## 1. Résultat recherché
 
-Ce repo utilise Tailwind CSS 4 (`tailwindcss` + `@tailwindcss/postcss`,
-version verrouillée dans `bun.lock`). Ni le générateur `@nx/angular:application`
-ni `@nx/react:application` (Nx 23.1.0, vérifié le 2026-08-27) n'ont de flag
-natif pour activer Tailwind. Configurer Tailwind dans une nouvelle app exige
-donc 3 gestes manuels après la génération Nx :
+Tailwind est une capacité **opt-in**. `create-app` crée un shell natif sans lui
+donner une prétention visuelle. Une application ne peut déclarer Tailwind dans
+son manifeste `.cmz/libraries.json` qu'après :
 
-1. Créer un fichier `.postcssrc.json` qui active le plugin `@tailwindcss/postcss`.
-2. Créer un fichier `src/tailwind.css` qui importe Tailwind et déclare le
-   périmètre de scan des classes utilitaires (`@source`).
-3. Câbler ce fichier CSS dans le pipeline de build de l'app — différemment
-   selon le framework : pour Angular, l'ajouter au tableau `styles` de
-   `project.json` ; pour React/Vite, l'importer explicitement dans le point
-   d'entrée (`main.tsx`), car Vite n'assemble le CSS que via les imports JS/TS,
-   pas via une liste déclarative comme Angular.
+1. qualification de la combinaison exacte framework/build/Tailwind ;
+2. preuves runtime dans un candidat isolé ;
+3. application de l'adaptateur qualifié ;
+4. build, lint et tests de l'application cible ;
+5. publication atomique d'un Change Set revu.
 
-Fait une fois à la main sur `backoffice-angular` (Angular) et, historiquement,
-sur deux apps de démonstration Angular/React retirées du repo depuis (voir
-Historique), c'est une tâche répétitive, mécanique, et donc un candidat
-naturel à l'outillage — mais avec un piège : coder en dur le contenu de ces 3
-fichiers dans un générateur créerait une dette qui se révèle silencieusement
-le jour où Tailwind ou Nx change de mécanisme.
+La présence des paquets à la racine ne constitue jamais une autorisation
+d'utilisation dans une application.
 
-## Pourquoi ce script lit des apps de référence plutôt que d'utiliser des templates figés
+## 2. Deux pipelines officiels, pas un faux dénominateur commun
 
-Tailwind a déjà changé de mécanisme de configuration une fois : la version 3
-utilisait un fichier `tailwind.config.js` en JavaScript et des directives
-`@tailwind base/components/utilities` dans le CSS ; la version 4 (celle de ce
-repo) a remplacé tout ça par `@import 'tailwindcss'` et un bloc `@theme` en
-CSS pur, sans fichier de config JS. Un template figé écrit aujourd'hui pour
-Tailwind 4 casserait silencieusement — ou pire, produirait un fichier qui
-compile mais n'a plus le comportement attendu — si une future version change
-encore la syntaxe.
+### Angular
 
-Ce script prend donc le parti de **dériver le contenu depuis une app de
-référence réelle et fonctionnelle du repo**, à chaque exécution, plutôt que de
-porter lui-même la vérité sur "à quoi ressemble une config Tailwind valide".
-Ça déplace la responsabilité de rester à jour vers les apps de référence
-elles-mêmes, qui de toute façon doivent rester fonctionnelles pour d'autres
-raisons. Le script reste alors correct tant qu'au moins une app de référence
-par framework existe et fonctionne — sans qu'on ait besoin de le réécrire à
-chaque évolution de l'écosystème.
+- plugin officiel `@tailwindcss/postcss` dans `.postcssrc.json` ;
+- feuille globale `src/tailwind.css` déclarée dans `project.json` ;
+- sources bornées à l'application cible ;
+- coexistence avec Angular Material prouvée sur le CSS compilé et dans un vrai
+  navigateur.
 
-**État actuel (2026-08-29)** : `ANGULAR_REFERENCES` ne contient que
-`backoffice-angular`. `REACT_REFERENCES` est vide — les deux apps de
-démonstration qui servaient de référence (Angular et React, voir Historique)
-ont été retirées du repo, et aucune app React n'a été câblée avec Tailwind
-depuis. `--reference react` échoue donc explicitement tant qu'aucune app
-React de référence n'a été repeuplée dans le script ; le mécanisme
-(résolution multi-référence, détection de divergence anti-drift décrite
-ci-dessous) reste inchangé et s'appliquera dès qu'une première app React sera
-ajoutée à `REACT_REFERENCES`.
+L'adaptateur Angular dérive la forme PostCSS et la feuille de référence depuis
+`apps/backoffice-angular`, puis remplace uniquement la source applicative.
 
-**Contrepartie explicite** : si Nx intègre un jour Tailwind nativement dans
-`@nx/angular:application`/`@nx/react:application`, ou si Tailwind abandonne le
-mécanisme PostCSS, ce script devient obsolète — pas cassé, obsolète. Voir la
-section suivante sur comment il est censé le détecter lui-même.
+### React + Vite
 
-## Comment lire les sorties du script
+- plugin officiel `@tailwindcss/vite` dans `vite.config.mts` ;
+- feuille globale `src/tailwind.css` importée avant `styles.scss` dans
+  `main.tsx` ;
+- template versionné `conventions/libraries/react/tailwind.template.css` ;
+- sources bornées au dossier `src` de l'application.
 
-Le script imprime une ligne par action, préfixée `CREATE` ou `UPDATE`, et
-termine soit par un résumé `✔`, soit par un échec `✖` avec un message
-explicatif. **Chaque échec est volontaire** : le script préfère s'arrêter et
-demander une décision humaine plutôt que deviner et produire un fichier
-probablement incorrect. Ne contourne jamais un échec de ce script en modifiant
-son code pour qu'il "passe quand même" sans comprendre la cause — c'est
-exactement le antipattern que ce repo interdit ailleurs (pas de `--no-verify`,
-pas de bypass caché de vérification).
+Le pipeline React n'ajoute ni `.postcssrc.json`, ni configuration copiée
+d'Angular. Tailwind recommande son plugin Vite pour ce contexte. Tailwind 4
+n'est pas utilisé comme préprocesseur Sass : les imports/directives Tailwind
+restent dans un fichier CSS distinct.
 
-Cas de sortie à connaître :
+## 3. Répartition Tailwind / SCSS
 
-- **`.postcssrc.json existe déjà`** — le script ne réécrit jamais une config
-  existante. Si tu veux régénérer, supprime le fichier manuellement d'abord,
-  après avoir vérifié pourquoi tu veux le faire.
-- **`build <app> déjà vert avant toute modification`** puis poursuite normale
-  — ce n'est PAS un signal d'alarme. C'est juste que le build passait déjà
-  (l'app n'a simplement pas encore de classe Tailwind à tester). Le script
-  continue normalement.
-- **Le script devrait un jour détecter que Tailwind fonctionne déjà sans sa
-  config** (mécanisme actuellement best-effort, voir le commentaire de
-  `warnIfTailwindAlreadyActive` dans le script) — si tu observes un
-  comportement qui suggère que Tailwind s'active nativement dans une app
-  fraîchement générée (classes qui rendent visuellement sans qu'aucun
-  `.postcssrc.json` n'existe), **ne lance pas ce script dessus**. C'est le
-  signal que l'écosystème Nx/Tailwind a changé et que ce script — ainsi que ce
-  document — doivent être révisés, pas contournés.
-- **`Les apps de référence <framework> divergent sur .postcssrc.json`** — deux
-  apps de référence candidates pour un même framework (ex. deux entrées dans
-  `ANGULAR_REFERENCES`) ont des configs différentes. Le script refuse de
-  choisir arbitrairement. Il faut d'abord comprendre pourquoi elles divergent
-  (une des deux a-t-elle été mise à jour sans répercuter l'autre ? est-ce
-  intentionnel ?) avant de relancer. Ce cas ne peut pas se produire tant qu'une
-  seule référence est déclarée par framework (état actuel, voir plus haut).
-- **`Impossible de résoudre la version réelle de tailwindcss depuis bun.lock`**
-  — ce repo utilise les "catalogs" Bun workspaces (`package.json` déclare
-  `tailwindcss: "catalog:"`, pas un numéro de version direct). Le script
-  résout la vraie version depuis `bun.lock` par un motif regex fragile face à
-  un changement de format. Si ce message apparaît, le format de `bun.lock` a
-  probablement changé — inspecte-le manuellement et corrige
-  `readInstalledTailwindVersion()` dans le script.
-- **`targets.build.options.styles n'est pas un tableau`** (Angular) — la forme
-  de `project.json` a changé. Attention : ce n'est pas hypothétique, ça
-  arrive réellement dans ce repo : les apps React générées par
-  `@nx/react:application` avec Nx 23 ont un `project.json` avec `targets: {}`
-  vide (les cibles sont *inférées* depuis `vite.config.mts` par un plugin Nx,
-  pas déclarées explicitement). Si Angular adopte un jour ce même modèle de
-  "targets inférés", ce script cessera de fonctionner pour Angular aussi et
-  devra être adapté.
-- **`motif "import App from ..." introuvable`** (React) — la forme du point
-  d'entrée généré a changé. Concrètement vécu dans ce repo : le flag
-  `--useReactRouter` du générateur `@nx/react:application` produit un
-  `main.tsx` de forme complètement différente (mode "framework" SSR avec son
-  propre `package.json`/`node_modules` local, incompatible avec ce script tel
-  que conçu). Ce script suppose une app React **SPA classique** (générée sans
-  `--useReactRouter`, avec `react-router-dom` en dépendance simple).
+- Tailwind : espacements usuels, flex/grid, tailles, couleurs et états simples
+  lisibles directement dans le JSX ou le template.
+- SCSS Modules : structure locale complexe, sélecteurs relationnels, animations
+  ou états dont une longue chaîne de classes réduirait la compréhension.
+- CSS global : imports du moteur, tokens et thème uniquement ; aucun style
+  métier spécifique à une page.
 
-## Ce que ce script ne fait délibérément pas
+Le choix est local à la responsabilité du style. Il ne faut ni réécrire en SCSS
+ce qu'un utilitaire exprime clairement, ni transformer le JSX en mur de classes
+pour éviter un module SCSS justifié.
 
-- Il ne détecte pas automatiquement le framework de l'app cible — `--reference`
-  est un argument obligatoire et explicite, pour éviter toute ambiguïté
-  silencieuse.
-- Il ne gère pas les apps React générées avec `--useReactRouter` (mode
-  "framework" SSR de React Router). Ce mode change trop de choses (présence
-  d'un `package.json`/`node_modules` local, forme différente du point
-  d'entrée) pour être couvert par la même logique que le mode SPA classique.
-- Il ne tente jamais de deviner une correction quand une hypothèse structurelle
-  échoue — il s'arrête et explique pourquoi, systématiquement.
+## 4. Thème partagé et portée du scan
 
-## Usage
+`conventions/presentation/tailwind-theme.css` porte les tokens Tailwind communs
+et leur projection en variables CSS `--cmz-*`. Angular et React importent cette
+même source : les valeurs ne sont pas dupliquées dans les applications.
+
+Chaque feuille utilise `source(none)` puis déclare ses sources explicitement.
+Cette borne évite qu'une classe présente dans le corpus, les tests, les
+documents ou une autre application gonfle silencieusement le CSS produit.
+
+Une bibliothèque Nx externe à l'application n'est ajoutée au scan que si :
+
+1. l'application l'importe réellement ;
+2. elle contient des classes Tailwind qui doivent être produites ;
+3. l'adaptateur et ses preuves sont mis à jour puis requalifiés.
+
+Ne jamais remplacer cette décision par un glob couvrant tout le monorepo.
+
+## 5. Voie normale d'installation
+
+Après qualification d'une piste candidate :
 
 ```bash
-node tools/scaffold-tailwind.mjs --app <nom-app> --reference angular|react
+bun run add-library --app <app> --library tailwind --dry-run
+bun run add-library --app <app> --library tailwind \
+  --expect-plan <library-plan:sha256>
 ```
 
-L'app cible doit déjà exister (générée via `nx g @nx/angular:application` ou
-`nx g @nx/react:application`, cette dernière **sans** `--useReactRouter`).
-Après exécution, vérifie toujours visuellement : lance le serveur de dev de
-l'app, ajoute une classe Tailwind arbitraire à un composant, confirme qu'elle
-rend bien avant de committer. Un build vert ou une taille de bundle CSS
-plausible ne suffisent pas à eux seuls — voir la découverte faite le
-2026-08-27 sur ce même chantier, où une classe échouait silencieusement à
-s'appliquer malgré un pipeline apparemment fonctionnel côté outillage.
+Le dry-run construit un candidat jetable, applique l'adaptateur, installe le
+lockfile sans scripts, demande à Nx ses targets résolues — y compris les targets
+Vite inférées — puis exécute build, lint et tests. Le plan atteste les fichiers
+créés **et** modifiés. L'application finale recalcule exactement ce plan avant
+publication fast-forward.
 
-## Historique
+Une erreur de piste, de version, d'empreinte, de target ou de Change Set est un
+arrêt de sécurité. Elle ne doit pas être contournée par une édition manuelle.
 
-Écrit le 2026-08-27, après avoir câblé Tailwind manuellement sur deux apps de
-test créées dans ce repo (`newsletter-test`, Angular ; `newsletter`, React) —
-les deux premières apps non-legacy jamais matérialisées dans `apps/` de ce
-repo, créées pour éprouver `tools/generator-platform/` sur un cas réel
-(`newsletter-subscribe.definition.json`, vocabulaire `action-request`). Voir
-[`generation-from-patterns.md`](./generation-from-patterns.md) pour le contexte
-plus large du moteur de génération que ces apps de test visent à challenger.
+## 6. Qualification d'une nouvelle combinaison
 
-**Retrait du 2026-08-29** : `newsletter-test` et `newsletter` — module de
-démonstration/POC écrit à la main — ont été intégralement retirés du repo.
-`ANGULAR_REFERENCES` ne porte donc plus que `backoffice-angular`, et
-`REACT_REFERENCES` est désormais vide (voir « État actuel » plus haut). La
-fixture `newsletter-subscribe.definition.json` reste dans le repo comme cas
-de test du générateur, indépendamment des apps supprimées.
+Les autorités sont :
+
+- recette : `conventions/libraries/<plateforme>/tailwind.setup.json` ;
+- compatibilité : `conventions/libraries/<plateforme>/tailwind.compat.json` ;
+- adaptateur : `tools/library-setup/qualified-adapters.mjs` ;
+- transformation pure : `tools/scaffold-tailwind-core.mjs` ;
+- oracles : `tools/library-setup/runtime-proofs.mjs` et ses modules.
+
+Une nouvelle version commence avec une piste `candidate`. La promotion doit être
+exécutée dans un clone propre avec un vrai répertoire `.git` :
+
+```bash
+bun run promote-library-compatibility -- \
+  --app <application-temoin> --library tailwind
+```
+
+Les preuves minimales sont :
+
+- une classe sentinelle produit une règle CSS réelle ;
+- le build production réussit hors réseau ;
+- pour Angular avec Material, ordre de cascade et rendu combiné sont observés
+  dans un vrai moteur navigateur.
+
+Une promotion ne modifie que la matrice de compatibilité. L'application à une
+cible réelle reste une opération séparée.
+
+## 7. Outil de référence bas niveau
+
+`tools/scaffold-tailwind.mjs` expose la transformation pure pour la maintenance
+et les tests de l'adaptateur :
+
+```bash
+node tools/scaffold-tailwind.mjs \
+  --app <app> \
+  --reference angular|react \
+  --tailwind-version <version-exacte>
+```
+
+Ce script n'est pas la voie produit : il n'effectue ni qualification, ni
+attestation du plan, ni publication transactionnelle. Pour une application du
+dépôt, utiliser `add-library`.
+
+## 8. Échecs à interpréter, jamais à masquer
+
+- fichier cible déjà présent : état hors manifeste ou application déjà
+  configurée ; comprendre avant toute suppression ;
+- motif `main.tsx` ou `vite.config.mts` absent : le scaffold React a changé ;
+  réévaluer l'adaptateur avec la documentation officielle ;
+- `build.options.styles` absent côté Angular : la structure Nx/Angular a changé
+  ; ne pas deviner une cible ;
+- piste `candidate` ou attestation périmée : rejouer la qualification profonde ;
+- target Nx absente : corriger le contrat du projet, pas réduire les checks ;
+- plan différent au second passage : le HEAD ou la transformation a dérivé ;
+  revoir le nouveau plan.
+
+## 9. État qualifié au 2026-10-07
+
+- Angular 22 + Tailwind 4.3.3 via `@tailwindcss/postcss` : vérifié ;
+- Angular Material 22.2.1 + Tailwind 4.3.3 : coexistence vérifiée ;
+- React 19.3.0 + Vite 8 + Tailwind 4.3.3 via `@tailwindcss/vite` : vérifié ;
+- `apps/users-management-react-proof` : Tailwind appliqué par plan gouverné,
+  avec build, lint et tests verts.
+
+Les versions effectives restent celles de `package.json` et `bun.lock`. Cette
+section décrit l'attestation courante ; elle n'autorise jamais une future mise à
+jour sans nouvelle qualification.

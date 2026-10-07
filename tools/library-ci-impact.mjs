@@ -66,6 +66,7 @@ export const INTEGRATION_EXACT_INPUTS = Object.freeze([
     'tools/generator-platform/schemas/backend-contract.schema.json',
     'tools/generator-platform/validate-ir.mjs',
     'tools/scaffold-tailwind.mjs',
+    'tools/scaffold-tailwind-core.mjs',
     'tsconfig.base.json',
 ]);
 

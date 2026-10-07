@@ -38,6 +38,8 @@ const RUNTIME_ORACLES = new Map([
     ['angular/angular-material#offline-production-build', proveProductionBuild],
     ['angular/tailwind#sentinel-class-emits-rule', proveTailwindSentinel],
     ['angular/tailwind#offline-production-build', proveProductionBuild],
+    ['react/tailwind#sentinel-class-emits-rule', proveTailwindSentinel],
+    ['react/tailwind#offline-production-build', proveProductionBuild],
     [
         'angular/angular-material#material-tailwind-cascade-order',
         proveMaterialTailwindCascade,

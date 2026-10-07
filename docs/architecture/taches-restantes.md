@@ -2966,21 +2966,40 @@ Figma, désormais source partielle différée :
   endpoint d'environnement, token, `Authorization`, `fetch` de présentation ou
   abstraction cross-page n'est ajouté. La page visible et Tailwind restent hors
   de ce lot ; après revue et fusion, le work order React sera recalculé depuis
-  ce host protégé. Voir ADR-0089. **ADAPT-11b — engagé localement après fusion
-  d'ADAPT-11a :** cinq scénarios navigateur bornent la toolbar C5, le GET unique
-  de rafraîchissement, l'absence des capacités non déclarées, la non-activation
-  des lignes et la géométrie panneau/rail Medium + Expanded. La référence
-  visuelle conserve `Exporter` et les actions de ligne comme capacités
-  optionnelles, mais le contrat C5 ne fournit aucun `action-request`
-  correspondant : les rendre opérables maintenant inventerait transport,
-  permissions et effets. Les oracles exigent donc `Créer`, `Rafraîchir`,
-  `Filtres` et refusent export, colonne d'actions, menu, dialogue ou activation
-  implicite. Quatre échecs attendus sont bornés par deux signatures historiques
-  exactes, sans `skip`, `todo`, runtime, work order, contrat API ou dépendance.
-  La passe Chromium ciblée donne `5/5` : quatre attendus et un succès réel ; la
-  régression C5 complète donne `55/55`, avec lint, tests Angular et build
-  production verts. **ADAPT-11c — autorité de réalisation formalisée le
-  2026-10-02 :** le guide exhaustif
+  ce host protégé. Voir ADR-0089. **REACT-PLATFORM-8 — Tailwind React qualifié
+  et appliqué localement le 2026-10-07 :** la plateforme dispose désormais d'une
+  recette React distincte qui utilise le plugin officiel `@tailwindcss/vite`,
+  une feuille CSS à sources bornées et le thème partagé, tout en maintenant SCSS
+  Modules dans un pipeline séparé. La tentative de forcer
+  `@tailwindcss/vite@4.1.13` avec Vite 8 a été refusée sur son peer range ; les
+  paquets Tailwind ont été alignés sur 4.3.3, compatible Vite 8. Les pistes
+  Angular Material, Angular Tailwind et React Tailwind ont toutes été
+  requalifiées : build production hors réseau, classe sentinelle et, côté
+  Angular, cascade/rendu Material + Tailwind. Le chemin courant `add-library`
+  reconnaît maintenant les apps React/Vite, consomme les targets inférées par Nx
+  et inclut les fichiers créés dans le Change Set attesté. Trois défauts
+  découverts par le vrai cas React sont couverts par tests de régression ; aucun
+  ajout manuel n'a contourné l'oracle. Tailwind est appliqué à
+  `users-management-react-proof` par handshake dry-run / plan exact /
+  publication atomique, avec build, lint et tests. Cette tranche qualifie
+  l'outillage et le style, pas la surface métier. Prochaine tranche : recalculer
+  le work order C5 sur ce host protégé, réaliser la page React
+  accessible/adaptative en ne consommant que les capacités contractuelles, puis
+  produire les preuves navigateur et visuelles séparées. **ADAPT-11b — engagé
+  localement après fusion d'ADAPT-11a :** cinq scénarios navigateur bornent la
+  toolbar C5, le GET unique de rafraîchissement, l'absence des capacités non
+  déclarées, la non-activation des lignes et la géométrie panneau/rail Medium +
+  Expanded. La référence visuelle conserve `Exporter` et les actions de ligne
+  comme capacités optionnelles, mais le contrat C5 ne fournit aucun
+  `action-request` correspondant : les rendre opérables maintenant inventerait
+  transport, permissions et effets. Les oracles exigent donc `Créer`,
+  `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu, dialogue
+  ou activation implicite. Quatre échecs attendus sont bornés par deux
+  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
+  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
+  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
+  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
+  réalisation formalisée le 2026-10-02 :** le guide exhaustif
   [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
   donne à un humain ou à un LLM la hiérarchie des sources, les règles
   numérotées, la matrice Compact/Medium/Expanded, le choix des primitives

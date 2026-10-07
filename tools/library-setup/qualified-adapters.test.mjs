@@ -86,9 +86,67 @@ function fixture(t, { libraries = [] } = {}) {
     );
     copy(
         root,
+        'conventions/presentation/tailwind-theme.css',
+        'conventions/presentation/tailwind-theme.css'
+    );
+    copy(
+        root,
         'tools/library-setup/qualified-adapters.mjs',
         'tools/library-setup/qualified-adapters.mjs'
     );
+    return root;
+}
+
+function reactFixture(t, { libraries = [] } = {}) {
+    const root = mkdtempSync(join(tmpdir(), 'cmz-react-tailwind-adapter-'));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    put(
+        root,
+        'apps/demo/project.json',
+        `${JSON.stringify(
+            {
+                name: 'demo',
+                projectType: 'application',
+                sourceRoot: 'apps/demo/src',
+                targets: {},
+            },
+            null,
+            2
+        )}\n`
+    );
+    put(
+        root,
+        'apps/demo/.cmz/libraries.json',
+        `${JSON.stringify(
+            {
+                schema_version: '1.0.0',
+                kind: 'app-library-manifest',
+                platform: 'react',
+                libraries,
+            },
+            null,
+            2
+        )}\n`
+    );
+    put(
+        root,
+        'apps/demo/src/main.tsx',
+        "import { App } from './app/app';\nimport './styles.scss';\n\nvoid App;\n"
+    );
+    put(root, 'apps/demo/src/styles.scss', ':root { color: navy; }\n');
+    put(
+        root,
+        'apps/demo/vite.config.mts',
+        "import react from '@vitejs/plugin-react';\nimport { defineConfig } from 'vite';\n\nexport default defineConfig({\n    plugins: [react()],\n});\n"
+    );
+    for (const path of [
+        'conventions/libraries/react/tailwind.template.css',
+        'conventions/presentation/tailwind-theme.css',
+        'tools/library-setup/qualified-adapters.mjs',
+        'tools/scaffold-tailwind-core.mjs',
+    ]) {
+        copy(root, path, path);
+    }
     return root;
 }
 
@@ -126,13 +184,13 @@ test('Tailwind dérive les fichiers relus et câble exactement l’app cible', (
         library: 'tailwind',
         track: {
             packages: {
-                tailwindcss: '4.1.13',
-                '@tailwindcss/postcss': '4.1.13',
+                tailwindcss: '4.3.3',
+                '@tailwindcss/postcss': '4.3.3',
             },
         },
     });
     const css = readFileSync(join(root, 'apps/demo/src/tailwind.css'), 'utf8');
-    assert.match(css, /Adaptateur qualifié CMZ, tailwindcss@4\.1\.13/);
+    assert.match(css, /Adaptateur qualifié CMZ, tailwindcss@4\.3\.3/);
     assert.match(css, /@import 'tailwindcss' source\(none\)/);
     assert.match(css, /@source '\.\.\/\.\.\/\.\.\/apps\/demo\/src'/);
     assert.doesNotMatch(css, /apps\/backoffice-angular\/src/);
@@ -146,6 +204,36 @@ test('Tailwind dérive les fichiers relus et câble exactement l’app cible', (
     assert.deepEqual(manifest(root).libraries, ['tailwind']);
 });
 
+test('Tailwind React emploie le plugin Vite officiel et garde SCSS séparé', (t) => {
+    const root = reactFixture(t);
+    applyQualifiedAdapter({
+        workspace: root,
+        app: 'demo',
+        platform: 'react',
+        library: 'tailwind',
+        track: {
+            packages: {
+                tailwindcss: '4.3.3',
+                '@tailwindcss/vite': '4.3.3',
+            },
+        },
+    });
+
+    const css = readFileSync(join(root, 'apps/demo/src/tailwind.css'), 'utf8');
+    const main = readFileSync(join(root, 'apps/demo/src/main.tsx'), 'utf8');
+    const vite = readFileSync(join(root, 'apps/demo/vite.config.mts'), 'utf8');
+    assert.match(css, /tailwindcss@4\.3\.3/);
+    assert.match(css, /@import 'tailwindcss' source\(none\)/);
+    assert.match(css, /@source '\.\/'/);
+    assert.match(main, /tailwind\.css';\nimport '\.\/styles\.scss'/);
+    assert.match(vite, /from '@tailwindcss\/vite'/);
+    assert.match(vite, /plugins: \[tailwindcss\(\), react\(\)\]/);
+    assert.deepEqual(manifest(root).libraries, ['tailwind']);
+
+    const descriptor = qualifiedAdapterDescriptor(root, 'react', 'tailwind');
+    assert.equal(descriptor.id, 'react/tailwind@1');
+});
+
 test('les conflits et la dérive d’une entrée qualifiée échouent fermés', (t) => {
     const root = fixture(t, { libraries: ['tailwind'] });
     assert.throws(
@@ -155,7 +243,7 @@ test('les conflits et la dérive d’une entrée qualifiée échouent fermés', 
                 app: 'demo',
                 platform: 'angular',
                 library: 'tailwind',
-                track: { packages: { tailwindcss: '4.1.13' } },
+                track: { packages: { tailwindcss: '4.3.3' } },
             }),
         /existe déjà|déjà déclarée/
     );

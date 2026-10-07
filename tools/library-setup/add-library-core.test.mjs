@@ -37,7 +37,7 @@ test('sélectionne la recette par plateforme Nx et ne mute jamais le registre pa
         { requiredTrackStatus: status }
     );
     assert.equal(second.recipe.library, 'tailwind');
-    assert.equal(second.track.packages.tailwindcss, '4.1.13');
+    assert.equal(second.track.packages.tailwindcss, '4.3.3');
 });
 
 test('échoue pour une app dont la plateforme est indéterminable', () => {

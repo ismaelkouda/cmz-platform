@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 
+import { applyQualifiedAdapter } from '../library-setup/qualified-adapters.mjs';
 import { resolvePageExecutionBinding } from './core/page-execution-binding.mjs';
 import {
     loadApplicationDesignDependencies,
@@ -11,6 +13,7 @@ import {
 } from './core/application-design.mjs';
 import { planApplicationDesignPublication } from './core/application-design-publication.mjs';
 import { planApplicationShell } from './core/application-shell-publication.mjs';
+import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
 import { compilePageExecutionPlan } from './core/page-execution-plan.mjs';
 import {
     planPageRealization,
@@ -66,6 +69,92 @@ const historicalPresentationRoot =
     'examples/users-management-proof/presentation/historical/';
 const retiredAdaptiveCreateRoot =
     'examples/users-management-proof/presentation/adaptive-create-candidates/';
+
+async function qualifiedReactShellFiles(shellPlan) {
+    const workspace = await mkdtemp(join(tmpdir(), 'cmz-react-shell-'));
+    try {
+        await mkdir(join(workspace, 'tools/library-setup'), {
+            recursive: true,
+        });
+        await Promise.all([
+            cp(
+                resolve(repositoryRoot, 'conventions'),
+                join(workspace, 'conventions'),
+                { recursive: true }
+            ),
+            cp(
+                resolve(
+                    repositoryRoot,
+                    'tools/library-setup/qualified-adapters.mjs'
+                ),
+                join(workspace, 'tools/library-setup/qualified-adapters.mjs')
+            ),
+            cp(
+                resolve(repositoryRoot, 'tools/scaffold-tailwind-core.mjs'),
+                join(workspace, 'tools/scaffold-tailwind-core.mjs')
+            ),
+        ]);
+        for (const [path, content] of Object.entries(shellPlan.files)) {
+            const target = join(
+                workspace,
+                'apps',
+                'users-management-react-proof',
+                path
+            );
+            await mkdir(dirname(target), { recursive: true });
+            await writeFile(target, content);
+        }
+        const matrix = JSON.parse(
+            await readFile(
+                resolve(
+                    repositoryRoot,
+                    'conventions/libraries/react/tailwind.compat.json'
+                ),
+                'utf8'
+            )
+        );
+        const tracks = matrix.tracks.filter(
+            ({ status }) => status === 'verified'
+        );
+        assert.equal(tracks.length, 1, 'one verified React Tailwind track');
+        applyQualifiedAdapter({
+            workspace,
+            app: 'users-management-react-proof',
+            platform: 'react',
+            library: 'tailwind',
+            track: tracks[0],
+        });
+
+        const paths = [...Object.keys(shellPlan.files), 'src/tailwind.css'];
+        const candidateFiles = Object.fromEntries(
+            await Promise.all(
+                paths.map(async (path) => [
+                    `apps/users-management-react-proof/${path}`,
+                    await readFile(
+                        join(
+                            workspace,
+                            'apps',
+                            'users-management-react-proof',
+                            path
+                        ),
+                        'utf8'
+                    ),
+                ])
+            )
+        );
+        const canonicalFiles = await canonicalizeGeneratedFiles(candidateFiles);
+        return Object.fromEntries(
+            paths.map((path) => [
+                path,
+                Buffer.from(
+                    canonicalFiles[`apps/users-management-react-proof/${path}`]
+                ),
+            ])
+        );
+    } finally {
+        await rm(workspace, { recursive: true, force: true });
+    }
+}
 
 test('publie le shell C5 canonique sans confondre placeholder et réalisation bornée', async () => {
     const designPlan = await planApplicationDesignPublication({
@@ -155,11 +244,12 @@ test('publie le shell React C5 canonique depuis la même conception approuvée',
 
     assert.equal(shellPlan.profile, 'react-spa');
     assert.equal(shellPlan.compiler_validation, 'typescript-tsc');
-    for (const [path, content] of Object.entries(shellPlan.files)) {
+    const expected = await qualifiedReactShellFiles(shellPlan);
+    for (const [path, content] of Object.entries(expected)) {
         assert.deepEqual(
             await readFile(resolve(shellPlan.outputAbsolute, path)),
-            Buffer.from(content),
-            `${path} must equal the deterministic React shell publication`
+            content,
+            `${path} must equal the deterministic React shell plus its qualified Tailwind overlay`
         );
     }
 });

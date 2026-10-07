@@ -164,6 +164,12 @@ function workspaceVersions(root, platform) {
             manifest.workspaces?.catalog?.['@angular/core'],
             'Angular'
         );
+    } else if (platform === 'react') {
+        versions.framework = exactVersion(
+            manifest.workspaces?.catalog?.react ??
+                manifest.devDependencies?.react,
+            'React'
+        );
     } else {
         fail(`plateforme non prise en charge : ${platform}`);
     }
@@ -173,11 +179,25 @@ function workspaceVersions(root, platform) {
 function detectPlatform(root, app) {
     const project = readJson(root, `apps/${app}/project.json`);
     if (
-        project.name === app &&
-        project.projectType === 'application' &&
-        project.targets?.build?.executor === '@angular/build:application'
+        project.name !== app ||
+        project.projectType !== 'application' ||
+        typeof project.sourceRoot !== 'string' ||
+        !project.sourceRoot.startsWith(`apps/${app}/`)
     ) {
+        fail(`plateforme qualifiée indéterminée pour apps/${app}`);
+    }
+    if (project.targets?.build?.executor === '@angular/build:application') {
         return { platform: 'angular', project };
+    }
+    const vitePath = `apps/${app}/vite.config.mts`;
+    if (existsSync(safePath(root, vitePath))) {
+        const vite = regularBytes(root, vitePath).toString('utf8');
+        if (
+            vite.includes("from '@vitejs/plugin-react'") ||
+            vite.includes('from "@vitejs/plugin-react"')
+        ) {
+            return { platform: 'react', project };
+        }
     }
     fail(`plateforme qualifiée indéterminée pour apps/${app}`);
 }
@@ -418,7 +438,45 @@ function installWithoutScripts(workspace) {
     }
 }
 
-function runTargetedChecks(workspace, app, project) {
+function resolvedNxProject(workspace, app) {
+    const nx = safePath(workspace, 'node_modules/nx/dist/bin/nx.js');
+    const output = command(
+        process.execPath,
+        [nx, 'show', 'project', app, '--json'],
+        {
+            cwd: workspace,
+            label: `nx show project ${app}`,
+            env: { ...process.env, NX_DAEMON: 'false' },
+            stdio: ['ignore', 'pipe', 'pipe'],
+        }
+    );
+    let project;
+    try {
+        project = JSON.parse(output);
+    } catch (error) {
+        fail(`projet Nx résolu illisible pour ${app} (${error.message})`);
+    }
+    if (
+        project?.name !== app ||
+        project.projectType !== 'application' ||
+        !project.targets ||
+        typeof project.targets !== 'object' ||
+        Array.isArray(project.targets)
+    ) {
+        fail(`projet Nx résolu invalide pour ${app}`);
+    }
+    return project;
+}
+
+function targetedChecks(project, app) {
+    const checks = ['build', 'lint', 'test'].filter(
+        (target) => project.targets?.[target]
+    );
+    if (!checks.includes('build')) fail(`${app}: target build obligatoire`);
+    return checks;
+}
+
+function runTargetedChecks(workspace, app) {
     const prettier = safePath(
         workspace,
         'node_modules/prettier/bin/prettier.cjs'
@@ -428,21 +486,24 @@ function runTargetedChecks(workspace, app, project) {
         cwd: workspace,
         label: `format ${app}`,
     });
-    const checks = ['build', 'lint', 'test'].filter(
-        (target) => project.targets?.[target]
-    );
-    if (!checks.includes('build')) fail(`${app}: target build obligatoire`);
+    const checks = targetedChecks(resolvedNxProject(workspace, app), app);
     for (const target of checks) {
-        command(process.execPath, [nx, 'run', `${app}:${target}`], {
-            cwd: workspace,
-            label: `${app}:${target}`,
-            stdio: ['ignore', 'pipe', 'pipe'],
-        });
+        command(
+            process.execPath,
+            [nx, 'run', `${app}:${target}`, '--skip-nx-cache'],
+            {
+                cwd: workspace,
+                label: `${app}:${target}`,
+                env: { ...process.env, NX_DAEMON: 'false' },
+                stdio: ['ignore', 'pipe', 'pipe'],
+            }
+        );
     }
     return checks;
 }
 
 function changeSet(root, candidate, baseCommit, app) {
+    git(candidate, ['add', '--intent-to-add', '--', `apps/${app}`]);
     const output = git(candidate, [
         'diff',
         '--name-status',
@@ -598,11 +659,7 @@ export async function applyQualifiedLibrary({
         onProgress({ step: 5, total, id: 'install-without-scripts' });
         installWithoutScripts(candidate.workspace);
         onProgress({ step: 6, total, id: 'targeted-checks' });
-        const checks = runTargetedChecks(
-            candidate.workspace,
-            app,
-            configuration.project
-        );
+        const checks = runTargetedChecks(candidate.workspace, app);
         const changes = changeSet(root, candidate.workspace, head, app);
         onProgress({ step: 7, total, id: 'plan' });
         const plan = applicationPlan({
@@ -661,6 +718,10 @@ export async function applyQualifiedLibrary({
 
 export const libraryApplicationInternals = {
     applicationPlan,
+    changeSet,
+    detectPlatform,
     loadQualifiedConfiguration,
     stableJson,
+    targetedChecks,
+    workspaceVersions,
 };

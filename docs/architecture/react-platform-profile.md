@@ -141,11 +141,18 @@ lifecycle React ; la vue ne recode pas leur protocole.
 
 - Tailwind exprime les utilitaires répétables ; SCSS Modules porte la structure
   locale, les états complexes et les sélecteurs difficiles à lire en classes.
-- `create-app --profile react-spa` produit désormais le shell React natif, sans
-  Tailwind ni prétention visuelle. Le premier vertical slice doit encore
-  qualifier le câblage Tailwind React, le prouver visuellement, puis devenir la
-  référence de présentation du script dans un lot dédié. Ne pas contourner cet
-  arrêt par une configuration mémorisée ou copiée d'Angular.
+- `create-app --profile react-spa` produit le shell React natif sans imposer de
+  bibliothèque visuelle. Tailwind est désormais une capacité opt-in qualifiée :
+  `add-library` applique la piste vérifiée React 19 + Vite 8 via le plugin
+  officiel `@tailwindcss/vite`, puis exécute build, lint et tests avant une
+  publication atomique.
+- Le fichier global `tailwind.css` porte uniquement l'import Tailwind, le thème
+  partagé et les sources bornées. Les directives Tailwind ne sont pas placées
+  dans un fichier SCSS : SCSS Modules reste un pipeline séparé pour les styles
+  locaux complexes.
+- Une bibliothèque de workspace externe n'est ajoutée aux sources Tailwind que
+  lorsqu'elle est réellement consommée par l'app et après requalification de
+  l'adaptateur. Le scan global du monorepo est interdit.
 - Les tokens, reset et thèmes peuvent être globaux ; les styles métier ne le
   sont pas.
 - Ne pas construire de classe Tailwind dynamiquement si le scanner ne peut pas
@@ -181,19 +188,20 @@ lifecycle React ; la vue ne recode pas leur protocole.
 
 ## 6. Matrice de capacités Angular ↔ React
 
-| Capacité                    | Angular                                       | React                                                                                  | État React honnête                 |
-| --------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------- |
-| shell/build                 | Angular CLI/Nx                                | `create-app --profile react-spa` + Nx/Vite                                             | prouvé sur shell C5 versionné      |
-| routing                     | Angular Router                                | React Router déclaratif                                                                | prouvé                             |
-| état de vue                 | Signals/primitives Angular                    | Hooks React                                                                            | prouvé par primitives et workspace |
-| store externe               | service/signal adapté                         | `useSyncExternalStore`                                                                 | prouvé sur workspace               |
-| requêtes/actions            | clients générés + host                        | clients générés + `FetchPort`                                                          | prouvé hors page métier complète   |
+| Capacité                    | Angular                                       | React                                                                                                                     | État React honnête                 |
+| --------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| shell/build                 | Angular CLI/Nx                                | `create-app --profile react-spa` + Nx/Vite                                                                                | prouvé sur shell C5 versionné      |
+| routing                     | Angular Router                                | React Router déclaratif                                                                                                   | prouvé                             |
+| état de vue                 | Signals/primitives Angular                    | Hooks React                                                                                                               | prouvé par primitives et workspace |
+| store externe               | service/signal adapté                         | `useSyncExternalStore`                                                                                                    | prouvé sur workspace               |
+| requêtes/actions            | clients générés + host                        | clients générés + `FetchPort`                                                                                             | prouvé hors page métier complète   |
 | composition N×N             | preuve C5 Angular                             | runtime C5 généré, publié et relié par host ; work order de page `react-spa` + oracles natifs disponibles ; UI à produire | partiel                            |
-| UI officielle complexe      | Angular Material/CDK/Aria selon qualification | HTML natif ; React Aria candidat non encore qualifié                                   | non qualifié                       |
-| i18n                        | `@angular/localize`                           | messages locaux + `Intl` pour le besoin actuel                                         | décision, preuve d'app à produire  |
-| tests unitaires             | Vitest                                        | Vitest + React Testing Library                                                         | prouvé                             |
-| navigateur/accessibilité    | Playwright + axe + humain                     | Playwright + axe + humain                                                              | automatisable partiellement prouvé |
-| app métier composite réelle | C5 utilisateurs                               | shell et composition C5 reliés par host ; présentation reste à réaliser par work order | partiel                            |
+| styles utilitaires          | Tailwind via PostCSS qualifié                 | Tailwind via plugin Vite officiel qualifié ; SCSS Modules séparé                                                          | prouvé techniquement               |
+| UI officielle complexe      | Angular Material/CDK/Aria selon qualification | HTML natif ; React Aria candidat non encore qualifié                                                                      | non qualifié                       |
+| i18n                        | `@angular/localize`                           | messages locaux + `Intl` pour le besoin actuel                                                                            | décision, preuve d'app à produire  |
+| tests unitaires             | Vitest                                        | Vitest + React Testing Library                                                                                            | prouvé                             |
+| navigateur/accessibilité    | Playwright + axe + humain                     | Playwright + axe + humain                                                                                                 | automatisable partiellement prouvé |
+| app métier composite réelle | C5 utilisateurs                               | shell et composition C5 reliés par host ; présentation reste à réaliser par work order                                    | partiel                            |
 
 Cette table interdit de déclarer une parité à partir de la seule présence d'un
 renderer ou d'une documentation.
