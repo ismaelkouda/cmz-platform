@@ -18,6 +18,7 @@ une validation humaine de la page réalisée restent obligatoires.
 | Vue de données Medium/Expanded | `medium`, `expanded` | `approved-example` | [guide](./data-view-layout-examples/README.md) · [manifeste](./data-view-layout-examples/example-set.json) |
 | Vue de données Compact | `compact` | `approved-example` | [guide](./compact-data-view-layout-examples/README.md) · [manifeste](./compact-data-view-layout-examples/example-set.json) |
 | Shell à vues vivantes | `medium`, `expanded` | `approved-example` | [guide](./workspace-shell-layout-examples/README.md) · [manifeste](./workspace-shell-layout-examples/example-set.json) |
+| Composition workspace + vue de données | `compact`, `medium`, `expanded` | `approved-example` | [guide](./composed-workspace-data-view-layout-examples/README.md) · [manifeste](./composed-workspace-data-view-layout-examples/example-set.json) |
 
 ## Limites communes
 
