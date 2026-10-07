@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
     dependabotPolicyErrors,
+    requiredLockConsumers,
     SECURITY_OVERRIDE_MINIMUMS,
     securityResolutionPolicyErrors,
 } from './check-dependabot-policy.mjs';
@@ -204,6 +205,62 @@ test('refuse une résolution transitive sous son plancher de sécurité', () => 
     assert.match(
         securityResolutionPolicyErrors(pkg, lock).join('\n'),
         /source-map-js@1\.2\.1 est sous le plancher sûr 1\.2\.2/
+    );
+});
+
+test('accepte un override préventif lorsque le paquet est absent du graphe', () => {
+    const { pkg, lock } = securityFixture();
+    delete lock.packages['proxy-addr'];
+    lock.packages['@nx/react'] = [
+        '@nx/react@23.2.1',
+        '',
+        {
+            peerDependencies: { express: '^4.21.2' },
+            optionalPeers: ['express'],
+        },
+    ];
+    assert.deepEqual(requiredLockConsumers(lock, 'proxy-addr'), []);
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), []);
+});
+
+test('refuse une résolution absente dès qu’un consommateur requis existe', () => {
+    const { pkg, lock } = securityFixture();
+    delete lock.packages['proxy-addr'];
+    lock.packages.express = [
+        'express@5.2.1',
+        '',
+        { dependencies: { 'proxy-addr': '^2.0.7' } },
+    ];
+    assert.deepEqual(requiredLockConsumers(lock, 'proxy-addr'), ['express']);
+    assert.match(
+        securityResolutionPolicyErrors(pkg, lock).join('\n'),
+        /résolution proxy-addr absente.*requise par: express/
+    );
+});
+
+test('inclut les dépendances directes des workspaces dans les consommateurs', () => {
+    const { pkg, lock } = securityFixture();
+    delete lock.packages['proxy-addr'];
+    lock.workspaces = {
+        'apps/proof': {
+            devDependencies: { 'proxy-addr': '^2.0.8' },
+        },
+    };
+    assert.deepEqual(requiredLockConsumers(lock, 'proxy-addr'), [
+        'workspace:apps/proof',
+    ]);
+    assert.match(
+        securityResolutionPolicyErrors(pkg, lock).join('\n'),
+        /requise par: workspace:apps\/proof/
+    );
+});
+
+test('refuse une entrée de résolution présente mais mal formée', () => {
+    const { pkg, lock } = securityFixture();
+    lock.packages['proxy-addr'] = [42];
+    assert.match(
+        securityResolutionPolicyErrors(pkg, lock).join('\n'),
+        /entrée présente mal formée/
     );
 });
 
