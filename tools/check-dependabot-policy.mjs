@@ -34,6 +34,22 @@ export const ANGULAR_GROUP_PATTERNS = [
     '@angular-devkit/*',
     '@schematics/angular',
 ];
+export const COHERENT_UPDATE_GROUPS = {
+    'code-quality': [
+        'eslint*',
+        '@eslint/*',
+        '@eslint-community/*',
+        '@typescript-eslint/*',
+        'typescript-eslint',
+        'angular-eslint',
+        'prettier*',
+        '@commitlint/*',
+        'knip',
+    ],
+    'unit-testing': ['vitest', '@vitest/*', '@testing-library/*'],
+    'browser-e2e': ['@playwright/*'],
+};
+export const SAFE_GROUPED_UPDATE_TYPES = ['minor', 'patch'];
 export const ANGULAR_FRAMEWORK_PACKAGES = [
     '@angular/animations',
     '@angular/common',
@@ -153,6 +169,60 @@ export function dependabotPolicyErrors(config, pkg) {
             if (!angularPatterns.includes(pattern)) {
                 errors.push(
                     `groupe '${ANGULAR_GROUP}' incomplet : '${pattern}' manque`
+                );
+            }
+        }
+    }
+
+    for (const [groupName, expectedPatterns] of Object.entries(
+        COHERENT_UPDATE_GROUPS
+    )) {
+        const group = groups[groupName];
+        const groupPatterns = group?.patterns;
+        if (!Array.isArray(groupPatterns)) {
+            errors.push(
+                `groupe Dependabot '${groupName}' absent ou sans patterns`
+            );
+            continue;
+        }
+
+        for (const pattern of expectedPatterns) {
+            if (!groupPatterns.includes(pattern)) {
+                errors.push(
+                    `groupe '${groupName}' incomplet : '${pattern}' manque`
+                );
+            }
+        }
+        for (const pattern of groupPatterns) {
+            if (!expectedPatterns.includes(pattern)) {
+                errors.push(
+                    `groupe '${groupName}' élargi sans politique : '${pattern}' est inattendu`
+                );
+            }
+        }
+
+        const updateTypes = group?.['update-types'];
+        if (
+            !Array.isArray(updateTypes) ||
+            updateTypes.length !== SAFE_GROUPED_UPDATE_TYPES.length ||
+            SAFE_GROUPED_UPDATE_TYPES.some(
+                (updateType) => !updateTypes.includes(updateType)
+            )
+        ) {
+            errors.push(
+                `groupe '${groupName}' doit limiter update-types à minor et patch`
+            );
+        }
+
+        for (const pattern of expectedPatterns) {
+            const owners = Object.entries(groups)
+                .filter(([, candidate]) =>
+                    candidate?.patterns?.includes(pattern)
+                )
+                .map(([name]) => name);
+            if (owners.length !== 1 || owners[0] !== groupName) {
+                errors.push(
+                    `'${pattern}' doit appartenir uniquement au groupe '${groupName}' (trouvé : ${owners.join(', ') || 'aucun'})`
                 );
             }
         }
@@ -355,7 +425,7 @@ function main() {
     }
 
     console.log(
-        `✔ Dependabot : groupes '${REACT_GROUP}' et '${ANGULAR_GROUP}' atomiques ; ${Object.keys(pkg.overrides ?? {}).length} override(s) de sécurité auto-actualisable(s), Axios ${AXIOS_SECURITY_RANGE} sûr et transitif.`
+        `✔ Dependabot : groupes '${REACT_GROUP}' et '${ANGULAR_GROUP}' atomiques ; mises à jour patch/minor regroupées par surface cohérente ; ${Object.keys(pkg.overrides ?? {}).length} override(s) de sécurité auto-actualisable(s), Axios ${AXIOS_SECURITY_RANGE} sûr et transitif.`
     );
 }
 

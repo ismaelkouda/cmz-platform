@@ -103,3 +103,38 @@ test('bloque la dérive bundle dans la CI de PR après un build production frais
         'le build production doit précéder la comparaison de baseline'
     );
 });
+
+test('borne le miroir APT avant l’installation officielle Playwright', () => {
+    const ci = readFileSync(
+        new URL('../.github/workflows/ci.yml', import.meta.url),
+        'utf8'
+    );
+    const commands = workflowRunCommands(ci, '.github/workflows/ci.yml');
+    const aptPolicyIndex = commands.findIndex((command) =>
+        command.includes('/etc/apt/apt.conf.d/80-cmz-ci-network')
+    );
+    const playwrightIndex = commands.findIndex((command) =>
+        commandInvokes(command, 'bunx playwright install chromium --with-deps')
+    );
+
+    assert.notEqual(aptPolicyIndex, -1, 'la politique réseau APT doit exister');
+    assert.notEqual(
+        playwrightIndex,
+        -1,
+        'l’installation officielle Playwright doit rester présente'
+    );
+    assert.ok(
+        aptPolicyIndex < playwrightIndex,
+        'la politique APT doit être appliquée avant Playwright'
+    );
+
+    const aptPolicy = commands[aptPolicyIndex];
+    assert.match(aptPolicy, /Acquire::Retries "1";/);
+    assert.match(aptPolicy, /Acquire::http::Timeout "10";/);
+    assert.match(aptPolicy, /Acquire::https::Timeout "10";/);
+    assert.doesNotMatch(
+        aptPolicy,
+        /\|\|\s*(?:true|echo)/,
+        'une panne APT ne doit jamais être masquée'
+    );
+});

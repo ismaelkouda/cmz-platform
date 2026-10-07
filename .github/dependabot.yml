@@ -35,12 +35,37 @@ updates:
         patterns:
           - 'nx'
           - '@nx/*'
-      lint-format:
+      # Les mises à jour patch/minor qui partagent la même surface de
+      # validation sont regroupées. Les majors restent isolées : réduire le
+      # nombre de PR ne doit pas élargir silencieusement leur blast radius.
+      code-quality:
         patterns:
           - 'eslint*'
+          - '@eslint/*'
+          - '@eslint-community/*'
           - '@typescript-eslint/*'
+          - 'typescript-eslint'
           - 'angular-eslint'
           - 'prettier*'
+          - '@commitlint/*'
+          - 'knip'
+        update-types:
+          - 'minor'
+          - 'patch'
+      unit-testing:
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+          - '@testing-library/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      browser-e2e:
+        patterns:
+          - '@playwright/*'
+        update-types:
+          - 'minor'
+          - 'patch'
     commit-message:
       prefix: 'build(deps)'
 
