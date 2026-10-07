@@ -4,7 +4,6 @@ import { lstatSync, readFileSync, readlinkSync } from 'node:fs';
 import { lstat, mkdir, open, rename } from 'node:fs/promises';
 import { dirname, relative, resolve, sep } from 'node:path';
 
-import { validateJsonSchema } from '../validate-ir.mjs';
 import {
     loadArchetypeSystem,
     selectArchetype,
