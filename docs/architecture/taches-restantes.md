@@ -2939,31 +2939,41 @@ Figma, désormais source partielle différée :
   fichiers autorisés, pas tout le dossier : l'adaptateur `page-host*` reste
   protégé par hash et ne peut pas être ajouté à `--allow-file`. Un test de bout
   en bout prépare, publie et vérifie une réalisation React, puis tue le mutant
-  qui modifie le host avant oracle. Le dry-run sur le vrai C5 a aussi
-  exposé puis fermé la divergence de chemin entre le contrat source du plan et
-  sa réplique dans le shell React : l'alias `published-replica` exige même page,
+  qui modifie le host avant oracle. Le dry-run sur le vrai C5 a aussi exposé
+  puis fermé la divergence de chemin entre le contrat source du plan et sa
+  réplique dans le shell React : l'alias `published-replica` exige même page,
   mêmes bytes/SHA-256, même design et expérience publiés, puis recompile le plan
   à l'identique. Un chemin arbitraire, une réplique modifiée ou une autorité de
   design divergente reste refusé. Le vrai work order React avec plan et preuve
   de présentation est désormais calculable sans dupliquer le plan par stack.
-  Limite explicite : aucune surface React
-  visible n'est encore réalisée par ce lot. Prochaine tranche : préparer le
-  work order C5 réel avec plan d'exécution et preuve de présentation, puis
-  réaliser l'UI exclusivement par ce chemin. Voir ADR-0088. **ADAPT-11b
-  — engagé localement après fusion d'ADAPT-11a :** cinq scénarios navigateur
-  bornent la toolbar C5, le GET unique de rafraîchissement, l'absence des
-  capacités non déclarées, la non-activation des lignes et la géométrie
-  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
-  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
-  fournit aucun `action-request` correspondant : les rendre opérables maintenant
-  inventerait transport, permissions et effets. Les oracles exigent donc
-  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
-  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
-  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
-  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
-  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
-  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
-  réalisation formalisée le 2026-10-02 :** le guide exhaustif
+  Limite explicite : aucune surface React visible n'est encore réalisée par ce
+  lot. Prochaine tranche : préparer le work order C5 réel avec plan d'exécution
+  et preuve de présentation, puis réaliser l'UI exclusivement par ce chemin.
+  Voir ADR-0088. **REACT-PLATFORM-7 — couture navigateur du host engagée
+  localement le 2026-10-07 :** avant la surface visuelle, le point
+  d'installation manquant est rendu explicite sous
+  `window.__cmzUsersManagementPageHost`. Sa forme fermée accepte uniquement la
+  table `serviceBaseUrls` et le port `request`, puis réutilise sans l'affaiblir
+  toute la validation URL/service d'ADR-0087. Les formes absentes, primitives,
+  tableaux, incomplètes ou enrichies échouent avant le premier GET. Aucun
+  endpoint d'environnement, token, `Authorization`, `fetch` de présentation ou
+  abstraction cross-page n'est ajouté. La page visible et Tailwind restent hors
+  de ce lot ; après revue et fusion, le work order React sera recalculé depuis
+  ce host protégé. Voir ADR-0089. **ADAPT-11b — engagé localement après fusion
+  d'ADAPT-11a :** cinq scénarios navigateur bornent la toolbar C5, le GET unique
+  de rafraîchissement, l'absence des capacités non déclarées, la non-activation
+  des lignes et la géométrie panneau/rail Medium + Expanded. La référence
+  visuelle conserve `Exporter` et les actions de ligne comme capacités
+  optionnelles, mais le contrat C5 ne fournit aucun `action-request`
+  correspondant : les rendre opérables maintenant inventerait transport,
+  permissions et effets. Les oracles exigent donc `Créer`, `Rafraîchir`,
+  `Filtres` et refusent export, colonne d'actions, menu, dialogue ou activation
+  implicite. Quatre échecs attendus sont bornés par deux signatures historiques
+  exactes, sans `skip`, `todo`, runtime, work order, contrat API ou dépendance.
+  La passe Chromium ciblée donne `5/5` : quatre attendus et un succès réel ; la
+  régression C5 complète donne `55/55`, avec lint, tests Angular et build
+  production verts. **ADAPT-11c — autorité de réalisation formalisée le
+  2026-10-02 :** le guide exhaustif
   [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
   donne à un humain ou à un LLM la hiérarchie des sources, les règles
   numérotées, la matrice Compact/Medium/Expanded, le choix des primitives
