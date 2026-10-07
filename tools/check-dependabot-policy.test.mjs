@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    COHERENT_UPDATE_GROUPS,
     dependabotPolicyErrors,
     requiredLockConsumers,
     SECURITY_OVERRIDE_MINIMUMS,
@@ -33,6 +34,17 @@ function fixture({ patterns, react = '19.3.0', reactDom = react } = {}) {
                                 '@schematics/angular',
                             ],
                         },
+                        ...Object.fromEntries(
+                            Object.entries(COHERENT_UPDATE_GROUPS).map(
+                                ([name, groupPatterns]) => [
+                                    name,
+                                    {
+                                        patterns: [...groupPatterns],
+                                        'update-types': ['minor', 'patch'],
+                                    },
+                                ]
+                            )
+                        ),
                     },
                 },
             ],
@@ -112,6 +124,42 @@ test('refuse un groupe Angular qui oublie les schematics hors namespace', () => 
     assert.match(
         dependabotPolicyErrors(config, pkg).join('\n'),
         /'@schematics\/angular' manque/
+    );
+});
+
+test('refuse un bloc de mises à jour cohérent incomplet', () => {
+    const { config, pkg } = fixture();
+    config.updates[0].groups['unit-testing'].patterns.pop();
+    assert.match(
+        dependabotPolicyErrors(config, pkg).join('\n'),
+        /groupe 'unit-testing' incomplet : '@testing-library\/\*' manque/
+    );
+});
+
+test('refuse de mélanger les mises à jour majeures aux blocs courants', () => {
+    const { config, pkg } = fixture();
+    config.updates[0].groups['code-quality']['update-types'].push('major');
+    assert.match(
+        dependabotPolicyErrors(config, pkg).join('\n'),
+        /doit limiter update-types à minor et patch/
+    );
+});
+
+test('refuse un pattern revendiqué par plusieurs blocs', () => {
+    const { config, pkg } = fixture();
+    config.updates[0].groups['browser-e2e'].patterns.push('vitest');
+    assert.match(
+        dependabotPolicyErrors(config, pkg).join('\n'),
+        /'vitest' doit appartenir uniquement au groupe 'unit-testing'/
+    );
+});
+
+test('refuse un élargissement de bloc non formalisé', () => {
+    const { config, pkg } = fixture();
+    config.updates[0].groups['unit-testing'].patterns.push('jsdom');
+    assert.match(
+        dependabotPolicyErrors(config, pkg).join('\n'),
+        /'jsdom' est inattendu/
     );
 });
 
