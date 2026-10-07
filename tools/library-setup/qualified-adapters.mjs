@@ -8,6 +8,8 @@ import {
 } from 'node:fs';
 import { dirname, relative, resolve, sep } from 'node:path';
 
+import { scaffoldTailwind } from '../scaffold-tailwind-core.mjs';
+
 const ADAPTER_VERSION = '1.0.0';
 const MATERIAL_THEME = `// Include theming for Angular Material with \`mat.theme()\`.
 // This Sass mixin defines the Material 3 design tokens used by components.
@@ -123,10 +125,16 @@ function appContext(workspace, app, platform) {
     ) {
         fail(`${appRoot}/project.json ne décrit pas l’application attendue`);
     }
-    if (
-        platform !== 'angular' ||
-        project.targets?.build?.executor !== '@angular/build:application'
-    ) {
+    if (platform === 'angular') {
+        if (project.targets?.build?.executor !== '@angular/build:application') {
+            fail(`application Angular non reconnue : ${app}`);
+        }
+    } else if (platform === 'react') {
+        const vite = readRegular(workspace, `${appRoot}/vite.config.mts`);
+        if (!vite.includes("from '@vitejs/plugin-react'")) {
+            fail(`application React/Vite non reconnue : ${app}`);
+        }
+    } else {
         fail(`adaptateur ${platform} non pris en charge pour ${app}`);
     }
     return { appRoot, project, sourceRoot: project.sourceRoot };
@@ -176,7 +184,7 @@ function applyMaterial(workspace, context) {
     writeOwned(workspace, candidates[0], `${MATERIAL_THEME}${current}`);
 }
 
-function applyTailwind(workspace, context, track) {
+function applyAngularTailwind(workspace, context, track) {
     const version = track.packages?.tailwindcss;
     if (
         !/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)/.test(version ?? '')
@@ -220,12 +228,53 @@ function applyTailwind(workspace, context, track) {
     );
 }
 
+function applyReactTailwind(workspace, context, track) {
+    const version = track.packages?.tailwindcss;
+    const viteVersion = track.packages?.['@tailwindcss/vite'];
+    if (
+        !/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)/.test(
+            version ?? ''
+        ) ||
+        viteVersion !== version
+    ) {
+        fail(
+            'versions Tailwind/Vite exactes, identiques et qualifiées requises'
+        );
+    }
+    scaffoldTailwind({
+        repository: workspace,
+        app: context.project.name,
+        platform: 'react',
+        tailwindVersion: version,
+    });
+}
+
+function applyTailwind(workspace, context, track, platform) {
+    if (platform === 'angular') {
+        applyAngularTailwind(workspace, context, track);
+        return;
+    }
+    if (platform === 'react') {
+        applyReactTailwind(workspace, context, track);
+        return;
+    }
+    fail(`adaptateur Tailwind absent pour ${platform}`);
+}
+
 function descriptorInputs(repository, platform, library) {
     const paths = ['tools/library-setup/qualified-adapters.mjs'];
     if (platform === 'angular' && library === 'tailwind') {
         paths.push(
             'apps/backoffice-angular/.postcssrc.json',
-            'apps/backoffice-angular/src/tailwind.css'
+            'apps/backoffice-angular/src/tailwind.css',
+            'conventions/presentation/tailwind-theme.css'
+        );
+    }
+    if (platform === 'react' && library === 'tailwind') {
+        paths.push(
+            'conventions/libraries/react/tailwind.template.css',
+            'conventions/presentation/tailwind-theme.css',
+            'tools/scaffold-tailwind-core.mjs'
         );
     }
     return Object.fromEntries(
@@ -236,7 +285,11 @@ function descriptorInputs(repository, platform, library) {
 }
 
 export function qualifiedAdapterDescriptor(repository, platform, library) {
-    const supported = new Set(['angular/angular-material', 'angular/tailwind']);
+    const supported = new Set([
+        'angular/angular-material',
+        'angular/tailwind',
+        'react/tailwind',
+    ]);
     const key = `${platform}/${library}`;
     if (!supported.has(key)) fail(`adaptateur absent : ${key}`);
     const payload = {
@@ -264,8 +317,9 @@ export function applyQualifiedAdapter({
 }) {
     const context = appContext(workspace, app, platform);
     if (library === 'angular-material') applyMaterial(workspace, context);
-    else if (library === 'tailwind') applyTailwind(workspace, context, track);
-    else fail(`adaptateur absent : ${platform}/${library}`);
+    else if (library === 'tailwind') {
+        applyTailwind(workspace, context, track, platform);
+    } else fail(`adaptateur absent : ${platform}/${library}`);
     updateManifest(workspace, context.appRoot, platform, library);
     return qualifiedAdapterDescriptor(workspace, platform, library);
 }

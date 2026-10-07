@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0.0",
+  "library": "tailwind",
+  "platform": "react",
+  "packages": ["tailwindcss", "@tailwindcss/vite"],
+  "install": {
+    "method": "reference-derived",
+    "reference_tool": "tools/scaffold-tailwind.mjs",
+    "notes": "Tailwind 4 est câblé par son plugin Vite officiel. Le script copie une entrée CSS bornée et versionnée, ajoute le plugin au vite.config.mts et importe la feuille avant le SCSS global. Les directives Tailwind restent dans le CSS dédié ; les SCSS Modules restent un pipeline séparé."
+  },
+  "static_invariants": [
+    {
+      "id": "vite-plugin",
+      "description": "vite.config.mts charge le plugin officiel @tailwindcss/vite",
+      "footprint": true,
+      "assert": {
+        "file": "vite.config.mts",
+        "kind": "file-contains",
+        "value": "@tailwindcss/vite"
+      }
+    },
+    {
+      "id": "css-entrypoint",
+      "description": "src/tailwind.css importe Tailwind sans autodétection globale",
+      "assert": {
+        "file": "src/tailwind.css",
+        "kind": "file-matches",
+        "value": "@import\\s+['\"]tailwindcss['\"]\\s+source\\(none\\)"
+      }
+    },
+    {
+      "id": "bounded-source",
+      "description": "la détection de classes reste bornée aux sources de l'app React",
+      "assert": {
+        "file": "src/tailwind.css",
+        "kind": "file-contains",
+        "value": "@source './'"
+      }
+    },
+    {
+      "id": "wired-in-entrypoint",
+      "description": "le point d'entrée importe Tailwind avant les styles SCSS globaux",
+      "assert": {
+        "file": "src/main.tsx",
+        "kind": "file-matches",
+        "value": "import\\s+['\"]\\./tailwind\\.css['\"];\\s*import\\s+['\"]\\./styles\\.scss['\"]"
+      }
+    }
+  ],
+  "runtime_acceptance": [
+    {
+      "id": "sentinel-class-emits-rule",
+      "description": "une classe utilitaire sentinelle placée dans les sources React produit sa règle CSS dans le bundle",
+      "proof": "compiled-css-rule",
+      "status": "enforced"
+    },
+    {
+      "id": "offline-production-build",
+      "description": "la build Vite de production complète réussit sans accès réseau",
+      "proof": "production-build",
+      "status": "enforced"
+    }
+  ],
+  "guidance": "https://tailwindcss.com/docs/installation/using-vite"
+}

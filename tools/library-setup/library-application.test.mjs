@@ -26,11 +26,16 @@ function productionGraph(entry) {
     return [...visited].sort();
 }
 
-test('la voie courante traverse trois modules et aucune brique de qualification', () => {
+test('la voie courante traverse l’adaptateur pur sans brique de qualification', () => {
     const graph = productionGraph(join(ROOT, 'tools/add-library.mjs'));
     assert.deepEqual(
         graph.map((path) => basename(path)),
-        ['add-library.mjs', 'library-application.mjs', 'qualified-adapters.mjs']
+        [
+            'add-library.mjs',
+            'library-application.mjs',
+            'qualified-adapters.mjs',
+            'scaffold-tailwind-core.mjs',
+        ]
     );
     const imports = graph.map((path) => readFileSync(path, 'utf8')).join('\n');
     for (const forbidden of [

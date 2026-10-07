@@ -57,6 +57,14 @@ export const QUALIFICATION_ORACLE_SOURCE_PATHS = new Map([
         ['tools/library-setup/runtime-oracles/production-build.mjs'],
     ],
     [
+        'react/tailwind#sentinel-class-emits-rule',
+        ['tools/library-setup/runtime-oracles/tailwind-sentinel.mjs'],
+    ],
+    [
+        'react/tailwind#offline-production-build',
+        ['tools/library-setup/runtime-oracles/production-build.mjs'],
+    ],
+    [
         'angular/angular-material#material-tailwind-cascade-order',
         ['tools/library-setup/runtime-oracles/material-tailwind-cascade.mjs'],
     ],
