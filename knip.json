@@ -4,6 +4,7 @@
     "**/*.spec.ts",
     "!apps/backoffice-angular/e2e/*.spec.ts",
     "!apps/users-management-proof/e2e/*.spec.ts",
+    "!apps/users-management-react-proof/src/**/*.spec.ts",
     "!apps/workspace-react-proof/e2e/*.spec.ts"
   ],
   "ignoreExportsUsedInFile": true,
@@ -15,6 +16,10 @@
         "apps/workspace-react-proof/src/main.tsx",
         "apps/workspace-react-proof/src/**/*.spec.tsx",
         "apps/workspace-react-proof/vite.config.mts",
+        "apps/users-management-react-proof/src/main.tsx",
+        "apps/users-management-react-proof/src/**/*.spec.{ts,tsx}",
+        "apps/users-management-react-proof/src/app/generated/page_6666666666666666/reactjs/src/index.ts",
+        "apps/users-management-react-proof/vite.config.mts",
         "apps/backoffice-angular/public/env.js",
         "apps/backoffice-angular/src/tailwind.css",
         "tools/**/*.{mjs,ts,tsx}",
@@ -29,6 +34,7 @@
         "apps/backoffice-angular/**/*.{ts,tsx,css,mjs}",
         "apps/users-management-proof/**/*.{ts,tsx,css,mjs}",
         "apps/workspace-react-proof/**/*.{ts,tsx,css,scss,mjs}",
+        "apps/users-management-react-proof/**/*.{ts,tsx,css,scss,mjs}",
         "apps/backoffice-angular/public/**/*.js",
         "tools/**/*.{mjs,ts,tsx}"
       ]
