@@ -24,7 +24,8 @@ Ne jamais supprimer un journal à la main avant d'avoir compris son état.
 
 ## 1. `create-app`
 
-But : produire un shell Angular/PWA autonome depuis un application design.
+But : produire depuis un application design un shell autonome Angular/PWA par
+défaut, ou React SPA lorsque le profil est demandé explicitement.
 
 ```bash
 bun run create-app --design <design.json> --experience <id> --app <nom>
@@ -32,6 +33,8 @@ bun run create-app --design <design.json> --experience <id> \
   --app <nom> --dry-run
 bun run create-app --design <design.json> --experience <id> \
   --app <nom> --expect-plan <plan_id>
+bun run create-app --design <design.json> --experience <id> \
+  --app <nom> --profile react-spa
 ```
 
 La première commande est la voie nominale : elle calcule, vérifie et publie
@@ -42,8 +45,13 @@ une revue préalable facultative et refuse la publication si le plan a changé.
 Ce qui peut changer : uniquement `apps/<nom>/**`. La commande n'ajoute aucune
 bibliothèque UI optionnelle et ne modifie aucune configuration racine.
 
+Profils fermés : `angular-pwa` et `react-spa`. Le premier exige une expérience
+web et matérialise le shell offline déclaré ; le second exige actuellement
+`offline_policy: none` et n'invente ni PWA ni présentation métier.
+
 Ce qui est vérifié : schémas du design et des contrats backend, tombstone,
-inventaire et empreintes des fichiers, `ngc`, build de production et lint.
+inventaire et empreintes des fichiers, compilateur natif du profil (`ngc` ou
+`tsc`), build de production et lint.
 
 En cas d'échec :
 

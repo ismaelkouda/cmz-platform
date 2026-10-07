@@ -128,12 +128,18 @@ bun run compile:application-design -- \
 bun run check:application-designs
 ```
 
-`create-app` renders an approved web experience as an Angular 22/PWA shell. Its
+`create-app` renders an approved web experience as an Angular 22/PWA shell by
+default, or as a React SPA with the explicit `--profile react-spa` option. Its
 nominal command computes and publishes the immutable plan directly, compiles
-the candidate with `ngc`, then executes a no-cache production build and lint in
-the real Nx graph. `--dry-run` remains available for inspection and
-`--expect-plan` makes prior plan review enforceable when needed. Failure rolls
-the output back to a hash-verified candidate.
+the candidate with the profile-native compiler (`ngc` or `tsc`), then executes
+a no-cache production build and lint in the real Nx graph. `--dry-run` remains
+available for inspection and `--expect-plan` makes prior plan review enforceable
+when needed. Failure rolls the output back to a hash-verified candidate.
+
+Both profiles carry the same target-neutral page contracts and fail-closed
+access boundary. They do not share presentation runtime. The React shell uses
+React 19, Vite and declarative React Router; it deliberately contains no
+business UI, PWA claim, query/form store or optional UI library.
 
 Every shell contains a generated access-decision port and a pure access policy.
 Public routes stay public; `authenticated` and `authorized` routes receive a
@@ -149,6 +155,8 @@ bun run create-app -- --design designs/my-app.application-design.json \
   --experience citizen-web --app my-app --dry-run
 bun run create-app -- --design designs/my-app.application-design.json \
   --experience citizen-web --app my-app --expect-plan <plan_id>
+bun run create-app -- --design designs/my-app.application-design.json \
+  --experience operator-web --app my-react-app --profile react-spa
 ```
 
 Page realization is delegated without giving the LLM repository-wide write

@@ -139,6 +139,28 @@ test('publie le shell C5 canonique sans confondre placeholder et réalisation bo
     }
 });
 
+test('publie le shell React C5 canonique depuis la même conception approuvée', async () => {
+    const shellPlan = await planApplicationShell({
+        workspaceRoot: repositoryRoot,
+        designPath: 'designs/users-management-proof.application-design.json',
+        experienceId: 'operator-web',
+        appName: 'users-management-react-proof',
+        profile: 'react-spa',
+        applicationDesignSchema,
+        backendContractSchema,
+    });
+
+    assert.equal(shellPlan.profile, 'react-spa');
+    assert.equal(shellPlan.compiler_validation, 'typescript-tsc');
+    for (const [path, content] of Object.entries(shellPlan.files)) {
+        assert.deepEqual(
+            await readFile(resolve(shellPlan.outputAbsolute, path)),
+            Buffer.from(content),
+            `${path} must equal the deterministic React shell publication`
+        );
+    }
+});
+
 test('publie les trois primitives C5 et leur plan depuis le vrai contrat de page', async () => {
     const compiled = await compileUsersManagementProofExecution();
     for (const artifact of [...compiled.primitives, compiled.planArtifact]) {

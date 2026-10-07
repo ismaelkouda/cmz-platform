@@ -14,6 +14,7 @@ import {
 import { dirname, relative, resolve, sep } from 'node:path';
 
 import { renderAngularPwaShell } from '../renderers/angular-pwa-shell-renderer.mjs';
+import { renderReactSpaShell } from '../renderers/react-spa-shell-renderer.mjs';
 import { validateApplicationDesignWithDependencies } from './application-design.mjs';
 import {
     syncTreeDirectories,
@@ -27,6 +28,25 @@ function fail(message) {
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
 }
+
+const PROFILE_CONFIG = new Map([
+    [
+        'angular-pwa',
+        Object.freeze({
+            render: renderAngularPwaShell,
+            compiler: 'ngc',
+            compilerValidation: 'angular-ngc',
+        }),
+    ],
+    [
+        'react-spa',
+        Object.freeze({
+            render: renderReactSpaShell,
+            compiler: 'tsc',
+            compilerValidation: 'typescript-tsc',
+        }),
+    ],
+]);
 
 async function exists(path) {
     try {
@@ -243,7 +263,8 @@ export async function planApplicationShell({
     applicationDesignSchema,
     backendContractSchema,
 }) {
-    if (profile !== 'angular-pwa') fail(`unsupported profile ${profile}`);
+    const profileConfig = PROFILE_CONFIG.get(profile);
+    if (!profileConfig) fail(`unsupported profile ${profile}`);
     if (!/^[a-z][a-z0-9-]*$/.test(appName ?? ''))
         fail('app name must be kebab-case');
     const root = await realpath(resolve(workspaceRoot));
@@ -264,7 +285,7 @@ export async function planApplicationShell({
     });
     if (errors.length > 0) fail(`design rejected:\n${errors.join('\n')}`);
     const designSha256 = sha256(source.content);
-    const rendered = await renderAngularPwaShell({
+    const rendered = await profileConfig.render({
         design: source.design,
         experienceId,
         appName,
@@ -295,6 +316,8 @@ export async function planApplicationShell({
         design_sha256: designSha256,
         experience_id: experienceId,
         profile,
+        compiler: profileConfig.compiler,
+        compiler_validation: profileConfig.compilerValidation,
         tree_sha256: treeSha256,
         files: rendered.files,
         outputAbsolute: resolve(root, `apps/${appName}`),
@@ -332,7 +355,12 @@ export async function publishApplicationShell(options, dependencies = {}) {
         await stageCandidate(plan.candidate, plan.files);
         run(
             'bunx',
-            ['ngc', '-p', `${plan.candidate}/tsconfig.app.json`, '--noEmit'],
+            [
+                plan.compiler,
+                '-p',
+                `${plan.candidate}/tsconfig.app.json`,
+                '--noEmit',
+            ],
             plan.root
         );
         await verifyTree(plan.candidate, plan.files);
@@ -377,7 +405,7 @@ export function publicApplicationShellResult(result) {
         validations: [
             'application-design',
             'candidate-tree-sha256',
-            'angular-ngc',
+            plan.compiler_validation,
             'nx-build-production',
             'nx-lint',
             'published-tree-sha256',
