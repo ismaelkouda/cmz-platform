@@ -27,7 +27,11 @@
     "status": { "enum": ["candidate", "approved-example"] },
     "authority": { "const": "layout-guidance-only" },
     "subject": {
-      "enum": ["generic-data-view", "generic-workspace-shell"]
+      "enum": [
+        "generic-data-view",
+        "generic-workspace-shell",
+        "generic-composed-workspace-data-view"
+      ]
     },
     "authority_scope": {
       "type": "array",

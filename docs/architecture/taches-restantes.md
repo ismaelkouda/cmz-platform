@@ -2649,7 +2649,14 @@ Figma, désormais source partielle différée :
   rend découvrables ; un oracle refuse les manifestes orphelins, valide le
   schéma et exige la couverture `compact`/`medium`/`expanded`. Cette autorité
   générique ne remplace ni la preuve runtime C5 ni les nouveaux candidats de
-  création exigés par ADAPT-12. **WORKSPACE-TABS-1 — décision Staff et première
+  création exigés par ADAPT-12. **COMPOSED-LAYOUT-1 — validation humaine du
+  2026-10-07 :** trois exemples composés Compact, Medium et Expanded assemblent
+  le shell et la vue de données déjà approuvés. Leurs octets et SHA-256 sont
+  verrouillés ; leur statut devient `approved-example`. Leur autorité reste
+  strictement `layout-guidance-only` : ils ne deviennent ni preuve C5, ni
+  contrat de capacités, et toute réalisation doit encore retirer les commandes
+  absentes de son contrat puis fournir ses propres preuves runtime.
+  **WORKSPACE-TABS-1 — décision Staff et première
   tranche runtime engagées localement le 2026-10-04 :** la barre représente de
   vraies vues de travail ouvertes, pas un historique de routes. ADR-0084 exige
   qu'un changement d'onglet rattache la même instance Angular et conserve

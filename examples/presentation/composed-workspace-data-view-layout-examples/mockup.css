@@ -1,0 +1,196 @@
+:root {
+    color-scheme: light;
+    background: #f4f8fc;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+body {
+    position: relative;
+    background: #f4f8fc;
+}
+
+figure {
+    margin: 0;
+}
+
+.crop {
+    position: absolute;
+    overflow: hidden;
+}
+
+.crop img {
+    position: absolute;
+    display: block;
+    max-width: none;
+}
+
+.active-tab-label {
+    position: absolute;
+    z-index: 1;
+    display: grid;
+    height: 54px;
+    place-items: center;
+    color: #0b5ed7;
+    background: #eaf3ff;
+    font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        sans-serif;
+    font-size: 16px;
+    font-weight: 850;
+}
+
+.desktop-composition,
+.compact-composition {
+    display: none;
+}
+
+body[data-layout='expanded'] .desktop-composition,
+body[data-layout='medium'] .desktop-composition,
+body[data-layout='compact'] .compact-composition {
+    display: block;
+}
+
+body[data-layout='expanded'] .app-bar-crop {
+    inset: 0 0 auto;
+    height: 64px;
+}
+
+body[data-layout='expanded'] .app-bar-crop img {
+    top: 0;
+    left: 0;
+    width: 1440px;
+    height: 1024px;
+}
+
+body[data-layout='expanded'] .workspace-tabs-crop {
+    top: 92px;
+    left: 30px;
+    width: 1380px;
+    height: 60px;
+}
+
+body[data-layout='expanded'] .workspace-tabs-crop img {
+    top: -92px;
+    left: -30px;
+    width: 1440px;
+    height: 1024px;
+}
+
+body[data-layout='expanded'] .active-tab-label {
+    top: 94px;
+    left: 580px;
+    width: 154px;
+}
+
+body[data-layout='expanded'] .data-view-crop {
+    top: 172px;
+    left: 30px;
+    width: 1380px;
+    height: 808px;
+}
+
+body[data-layout='expanded'] .data-view-crop img {
+    top: -136px;
+    left: -30px;
+    width: 1440px;
+    height: 1024px;
+}
+
+body[data-layout='medium'] .app-bar-crop {
+    inset: 0 0 auto;
+    height: 64px;
+}
+
+body[data-layout='medium'] .app-bar-crop img {
+    top: 0;
+    left: 0;
+    width: 960px;
+    height: 900px;
+}
+
+body[data-layout='medium'] .workspace-tabs-crop {
+    top: 88px;
+    left: 24px;
+    width: 912px;
+    height: 60px;
+}
+
+body[data-layout='medium'] .workspace-tabs-crop img {
+    top: -88px;
+    left: -24px;
+    width: 960px;
+    height: 900px;
+}
+
+body[data-layout='medium'] .active-tab-label {
+    top: 90px;
+    left: 338px;
+    width: 150px;
+}
+
+body[data-layout='medium'] .data-view-crop {
+    top: 168px;
+    left: 24px;
+    width: 912px;
+    height: 760px;
+}
+
+body[data-layout='medium'] .data-view-crop img {
+    top: -122px;
+    left: -24px;
+    width: 960px;
+    height: 900px;
+}
+
+.compact-composition,
+.compact-base {
+    position: absolute;
+    inset: 0;
+    width: 390px;
+    height: 844px;
+}
+
+.compact-base {
+    display: block;
+}
+
+.compact-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(18 33 58 / 42%);
+}
+
+.compact-sheet-crop {
+    bottom: 0;
+    left: 0;
+    width: 390px;
+    height: 393px;
+}
+
+.compact-sheet-crop img {
+    top: -451px;
+    left: 0;
+    width: 390px;
+    height: 844px;
+}
+
+body[data-compact-state='filters-closed'] .compact-backdrop,
+body[data-compact-state='filters-closed'] .compact-sheet-crop {
+    display: none;
+}

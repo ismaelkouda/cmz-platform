@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "presentation-layout-example-set",
+  "set_id": "generic-composed-workspace-data-view-2026-10-07",
+  "status": "approved-example",
+  "authority": "layout-guidance-only",
+  "subject": "generic-composed-workspace-data-view",
+  "authority_scope": [
+    "region-order",
+    "visual-hierarchy",
+    "responsive-priority",
+    "workspace-navigation-placement",
+    "overlay-bounds",
+    "scroll-bounds",
+    "optional-capability-placement"
+  ],
+  "forbidden_inferences": [
+    "backend-contract",
+    "business-domain",
+    "column-contract",
+    "permission-contract",
+    "capability-presence",
+    "component-choice",
+    "dependency-choice",
+    "runtime-accessibility-proof",
+    "pixel-perfect-copy"
+  ],
+  "usage_protocol": {
+    "requires_page_contract": true,
+    "requires_capability_match": true,
+    "requires_runtime_proof": true
+  },
+  "render_sources": [
+    {
+      "path": "examples/presentation/composed-workspace-data-view-layout-examples/mockup.html",
+      "media_type": "text/html",
+      "bytes": 3713,
+      "sha256": "6d1063246cd38d3dece932c96500014d3681323efe73e7f68b7be8bfa1f3283d",
+      "authority": "reproduction-only"
+    },
+    {
+      "path": "examples/presentation/composed-workspace-data-view-layout-examples/mockup.css",
+      "media_type": "text/css",
+      "bytes": 3201,
+      "sha256": "106edf0521e42d13ae768d170d80fc907818b4e743794e803fc4a559d8f08f8b",
+      "authority": "reproduction-only"
+    },
+    {
+      "path": "examples/presentation/composed-workspace-data-view-layout-examples/render.mjs",
+      "media_type": "text/javascript",
+      "bytes": 2178,
+      "sha256": "517badd1933a0bd57512a9e399f6ec19c294af0d8bb399a5c017af3bb681fee9",
+      "authority": "reproduction-only"
+    }
+  ],
+  "sources": [
+    {
+      "id": "expanded-workspace-data-view-filters-open",
+      "path": "examples/presentation/composed-workspace-data-view-layout-examples/expanded-workspace-data-view-filters-open.proposed.png",
+      "media_type": "image/png",
+      "bytes": 169584,
+      "sha256": "6271b545e8bde7a39243ae9a4a8a6e3b309d65be7fddabb4d598a3d0ce487df4",
+      "layout_class": "expanded",
+      "space": "comfortable",
+      "state": "filters-open",
+      "capabilities_shown": [
+        "workspace-tabs",
+        "individual-tab-close",
+        "close-all-except-pinned",
+        "horizontal-tab-overflow",
+        "search",
+        "create",
+        "refresh",
+        "export",
+        "column-filters",
+        "filter-panel",
+        "row-actions",
+        "row-rank"
+      ],
+      "authoritative_regions": [
+        "workspace-navigation-strip",
+        "table-toolbar",
+        "data-grid",
+        "filter-panel",
+        "row-actions-rail",
+        "horizontal-scroll-rail"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 1440, "height": 1024, "pixel_ratio": 1 }
+    },
+    {
+      "id": "medium-workspace-data-view-filters-open",
+      "path": "examples/presentation/composed-workspace-data-view-layout-examples/medium-workspace-data-view-filters-open.proposed.png",
+      "media_type": "image/png",
+      "bytes": 110100,
+      "sha256": "c1c77050500725ff2417a21fe05e26b8ed1cf38eb77a101fd2a0b8a0e6a8bcd0",
+      "layout_class": "medium",
+      "space": "constrained",
+      "state": "filters-open",
+      "capabilities_shown": [
+        "workspace-tabs",
+        "individual-tab-close",
+        "close-all-except-pinned",
+        "horizontal-tab-overflow",
+        "search",
+        "create",
+        "refresh",
+        "export",
+        "column-filters",
+        "filter-panel",
+        "row-actions",
+        "row-rank"
+      ],
+      "authoritative_regions": [
+        "workspace-navigation-strip",
+        "table-toolbar",
+        "data-grid",
+        "filter-panel",
+        "row-actions-rail",
+        "horizontal-scroll-rail"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 960, "height": 1024, "pixel_ratio": 1 }
+    },
+    {
+      "id": "compact-data-view-filter-summary",
+      "path": "examples/presentation/composed-workspace-data-view-layout-examples/compact-data-view-filter-summary.proposed.png",
+      "media_type": "image/png",
+      "bytes": 42728,
+      "sha256": "10fd0c089a91c485332e3991f8e0fced797d0d71a086155a45f387d66800d822",
+      "layout_class": "compact",
+      "space": "constrained",
+      "state": "filter-summary",
+      "capabilities_shown": [
+        "search",
+        "refresh",
+        "filter-trigger",
+        "filter-panel",
+        "card-actions",
+        "progressive-loading"
+      ],
+      "authoritative_regions": [
+        "collection-header",
+        "search-controls",
+        "card-list",
+        "bottom-sheet",
+        "modal-backdrop"
+      ],
+      "illustrative_regions": [
+        "brand-shell",
+        "sample-content",
+        "visual-tokens"
+      ],
+      "viewport": { "width": 390, "height": 844, "pixel_ratio": 1 }
+    }
+  ]
+}

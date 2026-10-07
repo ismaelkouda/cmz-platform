@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Composition générique du workspace et d'une vue de données</title>
+        <link rel="stylesheet" href="./mockup.css" />
+    </head>
+    <body data-layout="expanded" data-compact-state="filters-open">
+        <figure
+            class="desktop-composition"
+            aria-label="Exemple composé du shell, des onglets et d'une vue de données avec filtres"
+        >
+            <div class="crop app-bar-crop" aria-hidden="true">
+                <img class="workspace-source" alt="" />
+            </div>
+            <div class="crop workspace-tabs-crop" aria-hidden="true">
+                <img class="workspace-source" alt="" />
+            </div>
+            <span class="active-tab-label" aria-hidden="true">Éléments</span>
+            <div class="crop data-view-crop" aria-hidden="true">
+                <img class="data-view-source" alt="" />
+            </div>
+        </figure>
+
+        <figure
+            class="compact-composition"
+            aria-label="Exemple Compact composé d'une liste en cartes et de son filtre modal"
+        >
+            <img class="compact-base" alt="" aria-hidden="true" />
+            <div class="compact-backdrop" aria-hidden="true"></div>
+            <div class="crop compact-sheet-crop" aria-hidden="true">
+                <img class="compact-sheet-source" alt="" />
+            </div>
+        </figure>
+
+        <script>
+            const requestedLayout = new URLSearchParams(location.search).get('layout');
+            const requestedState = new URLSearchParams(location.search).get('state');
+            const layout = ['compact', 'medium', 'expanded'].includes(requestedLayout) ? requestedLayout : 'expanded';
+            document.body.dataset.layout = layout;
+            document.body.dataset.compactState =
+                requestedState === 'filters-closed' ? 'filters-closed' : 'filters-open';
+
+            const workspaceSource =
+                layout === 'medium'
+                    ? '../workspace-shell-layout-examples/medium-live-workspace-tabs-overflow.proposed.png'
+                    : '../workspace-shell-layout-examples/expanded-live-workspace-tabs.proposed.png';
+            const dataViewSource =
+                layout === 'medium'
+                    ? '../data-view-layout-examples/medium-constrained-row-actions-with-filters.proposed.png'
+                    : '../data-view-layout-examples/expanded-row-actions-with-filters.proposed.png';
+
+            for (const image of document.querySelectorAll('.workspace-source')) {
+                image.src = workspaceSource;
+            }
+            document.querySelector('.data-view-source').src = dataViewSource;
+            document.querySelector('.compact-base').src =
+                '../compact-data-view-layout-examples/compact-list-with-card-actions.proposed.png';
+            document.querySelector('.compact-sheet-source').src =
+                '../compact-data-view-layout-examples/compact-filter-summary.proposed.png';
+
+            Promise.all(
+                [...document.images].map((image) =>
+                    image.complete
+                        ? Promise.resolve()
+                        : new Promise((resolve, reject) => {
+                              image.addEventListener('load', resolve, { once: true });
+                              image.addEventListener('error', reject, { once: true });
+                          })
+                )
+            ).then(() => {
+                document.documentElement.dataset.ready = 'true';
+            });
+        </script>
+    </body>
+</html>
