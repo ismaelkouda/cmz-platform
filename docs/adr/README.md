@@ -126,4 +126,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0090](./0090-realiser-surface-c5-react-par-work-order.md) | Réaliser la surface C5 React par work order gouverné     | Accepted |
 | [0091](./0091-qualifier-c5-react-dans-chromium-sans-declarer-la-parite.md) | Qualifier C5 React dans Chromium sans déclarer la parité | Accepted |
 | [0092](./0092-chargement-progressif-compact-react-c5.md)  | Réaliser le chargement progressif Compact de C5 en React | Accepted |
+| [0093](./0093-filtre-compact-deux-niveaux-react-c5.md)    | Réaliser le filtre Compact à deux niveaux de C5 en React | Accepted |
 <!-- END:GENERATED:adr-index -->
