@@ -80,6 +80,7 @@ export function Pagepage6666666666666666() {
     const [createOpen, setCreateOpen] = useState(false);
     const [successNotice, setSuccessNotice] = useState('');
     const createTriggerRef = useRef<HTMLButtonElement>(null);
+    const filterTriggerRef = useRef<HTMLButtonElement>(null);
     const compactSentinelRef = useRef<HTMLSpanElement>(null);
     const compactGenerationRef = useRef(1);
     const compactInFlightRef = useRef<string | null>(null);
@@ -334,11 +335,18 @@ export function Pagepage6666666666666666() {
     function applyFilters() {
         setAppliedFilters(draftFilters);
         setFiltersOpen(false);
+        window.setTimeout(() => filterTriggerRef.current?.focus(), 0);
         void requestUsers(1, {
             filters: draftFilters,
             reset: true,
             search,
         });
+    }
+
+    function closeFilters() {
+        setDraftFilters(appliedFilters);
+        setFiltersOpen(false);
+        window.setTimeout(() => filterTriggerRef.current?.focus(), 0);
     }
 
     function retryCompactPage() {
@@ -458,6 +466,7 @@ export function Pagepage6666666666666666() {
                                 </span>
                             </button>
                             <button
+                                ref={filterTriggerRef}
                                 type="button"
                                 className={`${styles.secondaryAction} ${
                                     filtersOpen ? styles.toggleActive : ''
@@ -470,8 +479,12 @@ export function Pagepage6666666666666666() {
                                 aria-expanded={filtersOpen}
                                 aria-controls="users-filter-panel"
                                 onClick={() => {
+                                    if (filtersOpen) {
+                                        closeFilters();
+                                        return;
+                                    }
                                     setDraftFilters(appliedFilters);
-                                    setFiltersOpen((open) => !open);
+                                    setFiltersOpen(true);
                                 }}
                             >
                                 <FilterIcon />
@@ -714,9 +727,12 @@ export function Pagepage6666666666666666() {
 
                         {filtersOpen && (
                             <UsersFilterPanel
+                                compact={isCompact}
                                 filters={draftFilters}
                                 profiles={composition.profilesSelect.items}
+                                returnFocusRef={filterTriggerRef}
                                 onChange={setDraftFilters}
+                                onClose={closeFilters}
                                 onReset={() =>
                                     setDraftFilters(EMPTY_USERS_FILTERS)
                                 }

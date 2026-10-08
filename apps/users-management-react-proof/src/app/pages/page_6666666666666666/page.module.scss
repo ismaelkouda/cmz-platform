@@ -412,10 +412,25 @@
 
 .filterActions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
     border-top: 1px solid var(--cmz-color-border);
+
+    button {
+        flex: 1 1 9rem;
+    }
+
+    button.primaryAction {
+        border-color: transparent;
+        color: var(--cmz-color-on-primary);
+        background: var(--cmz-color-primary);
+
+        &:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+    }
 }
 
 .createDialog {
@@ -614,16 +629,6 @@
     .secondaryAction {
         min-width: 2.75rem;
         padding-inline: 0.65rem;
-    }
-
-    .filterPanel {
-        position: fixed;
-        inset: auto 0 0;
-        width: 100%;
-        max-height: 80dvh;
-        border: 0;
-        border-radius: 1rem 1rem 0 0;
-        box-shadow: 0 -12px 30px rgb(15 23 42 / 25%);
     }
 
     .createDialog {

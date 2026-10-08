@@ -8,6 +8,7 @@ import {
 import { writeFile } from 'node:fs/promises';
 
 import {
+    fulfillUsersPage,
     installBrowserHost,
     openReadyPage,
     serveDeterministicApi,
@@ -16,9 +17,10 @@ import {
 const WARMUP_CYCLES = 30;
 const MEASURED_CYCLES = 100;
 const CHECKPOINT_INTERVAL = 25;
-// Trois campagnes locales indépendantes donnent 225–227 Kio sur 100 cycles et
-// 35–36 Kio sur le dernier quart, avec DOM/listeners strictement constants.
-// Les marges restent >2x et >3x sans rendre invisible une vraie rétention.
+// Trois campagnes locales indépendantes création + filtres Compact donnent
+// 366–367 Kio sur 100 cycles et 64–75 Kio sur le dernier quart, avec
+// 1 document / 227 nœuds / 168 listeners strictement constants. Les seuils
+// conservent une marge utile sans rendre invisible une vraie rétention.
 const MAX_TOTAL_HEAP_GROWTH_BYTES = 512 * 1024;
 const MAX_LAST_CHECKPOINT_GROWTH_BYTES = 128 * 1024;
 
@@ -31,7 +33,7 @@ interface MemorySample {
     readonly jsEventListeners: number;
 }
 
-async function runCreateDialogCycle(page: Page): Promise<void> {
+async function runDialogCycle(page: Page): Promise<void> {
     await page.getByRole('button', { name: 'Créer un utilisateur' }).click();
     const dialog = page.getByRole('dialog', {
         name: 'Créer un utilisateur',
@@ -43,6 +45,16 @@ async function runCreateDialogCycle(page: Page): Promise<void> {
         })
         .click();
     await expect(dialog).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Filtres', exact: true }).click();
+    const filters = page.locator('#users-filter-panel');
+    await expect(filters).toBeVisible();
+    await expect(filters).toHaveAccessibleName('Filtres');
+    await filters.getByRole('button', { name: /^Statut\b/ }).click();
+    await expect(filters).toHaveAccessibleName('Statut');
+    await filters.getByRole('button', { name: 'Retour' }).click();
+    await filters.getByRole('button', { name: 'Fermer les filtres' }).click();
+    await expect(filters).toHaveCount(0);
 }
 
 async function sampleMemory(
@@ -106,23 +118,38 @@ async function attachProfile(
     });
 }
 
-test('borne la création et destruction répétée du dialogue React', async ({
+test('borne les dialogues de création et de filtres Compact répétés', async ({
     page,
 }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await installBrowserHost(page);
-    const api = await serveDeterministicApi(page);
+    const api = await serveDeterministicApi(page, {
+        usersResponder: ({ route, pageNumber }) =>
+            fulfillUsersPage(route, {
+                users: [
+                    {
+                        id: 'user-1',
+                        firstName: 'Mariam',
+                        lastName: 'Koné',
+                    },
+                ],
+                currentPage: pageNumber,
+                lastPage: 1,
+                total: 1,
+            }),
+    });
     await openReadyPage(page);
 
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('HeapProfiler.enable');
     try {
         for (let cycle = 0; cycle < WARMUP_CYCLES; cycle += 1) {
-            await runCreateDialogCycle(page);
+            await runDialogCycle(page);
         }
 
         const samples: MemorySample[] = [await sampleMemory(page, cdp, 0)];
         for (let cycle = 1; cycle <= MEASURED_CYCLES; cycle += 1) {
-            await runCreateDialogCycle(page);
+            await runDialogCycle(page);
             if (cycle % CHECKPOINT_INTERVAL === 0) {
                 samples.push(await sampleMemory(page, cdp, cycle));
             }

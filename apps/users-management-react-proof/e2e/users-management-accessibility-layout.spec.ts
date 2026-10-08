@@ -79,11 +79,17 @@ test('rend les trois classes adaptatives sans débordement et produit leurs preu
             caret: 'hide',
         });
 
-        const filterToggle = page.getByRole('button', { name: 'Filtres' });
-        await filterToggle.click();
-        const panel = page.getByRole('complementary', {
-            name: 'Filtres des utilisateurs',
+        const filterToggle = page.getByRole('button', {
+            name: 'Filtres',
+            exact: true,
         });
+        await filterToggle.click();
+        const panel =
+            viewport.name === 'compact'
+                ? page.getByRole('dialog', { name: 'Filtres' })
+                : page.getByRole('complementary', {
+                      name: 'Filtres des utilisateurs',
+                  });
         const panelBox = await panel.boundingBox();
         const regionBox = await page
             .locator('[class*="dataRegion"]')
@@ -93,8 +99,12 @@ test('rend les trois classes adaptatives sans débordement et produit leurs preu
         if (!panelBox || !regionBox) throw new Error('géométrie indisponible');
 
         if (viewport.name === 'compact') {
+            await expect(panel).toHaveAttribute('aria-modal', 'true');
             expect(panelBox.x).toBeLessThanOrEqual(1);
             expect(panelBox.width).toBeGreaterThanOrEqual(viewport.width - 1);
+            expect(panelBox.height).toBeLessThanOrEqual(
+                viewport.height * 0.8 + 1
+            );
             expect(panelBox.y + panelBox.height).toBeGreaterThanOrEqual(
                 viewport.height - 1
             );
@@ -125,7 +135,13 @@ test('rend les trois classes adaptatives sans débordement et produit leurs preu
             animations: 'disabled',
             caret: 'hide',
         });
-        await filterToggle.click();
+        if (viewport.name === 'compact') {
+            await panel
+                .getByRole('button', { name: 'Fermer les filtres' })
+                .click();
+        } else {
+            await filterToggle.click();
+        }
 
         await page
             .getByRole('button', { name: 'Créer un utilisateur' })

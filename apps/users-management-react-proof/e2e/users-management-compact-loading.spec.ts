@@ -220,9 +220,8 @@ test('compact rejette une page tardive et repart de page 1 après recherche et f
     await search.fill('');
     await search.press('Enter');
     await page.getByRole('button', { name: 'Filtres' }).click();
-    const filters = page.getByRole('complementary', {
-        name: 'Filtres des utilisateurs',
-    });
+    const filters = page.locator('#users-filter-panel');
+    await filters.getByRole('button', { name: /^Statut\b/ }).click();
     await filters.getByRole('radio', { name: 'Inactifs' }).check();
     await filters.getByRole('button', { name: 'Appliquer' }).click();
     await expect(
