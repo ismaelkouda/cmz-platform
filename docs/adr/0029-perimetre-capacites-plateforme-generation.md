@@ -1,9 +1,15 @@
 # ADR-0029 — Périmètre de capacités de la plateforme de génération
 
-- **Statut :** Accepted
+- **Statut :** Superseded pour le cap produit par
+  [ADR-0094](./0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
 - **Date :** 2026-08-14
 - **Supersède :**
   [ADR-0026](./0026-reorientation-objectif-generation-generique.md)
+
+> Cette décision reste utile pour la discipline de preuve et le périmètre
+> data-centric. Ses affirmations sur la finalité du produit, le rôle de SEOS et
+> l'ordre initial des cibles sont historiques. L'ADR-0094 est l'autorité
+> courante sur ces sujets.
 
 ## Contexte
 
@@ -73,8 +79,10 @@ Ordre initial :
 4. **Source partielle suivante :** Figma, limitée à l'intention de présentation.
 5. **Cibles suivantes :** Kotlin/Swift après réussite de la matrice web 2×2.
 
-SEOS/Angular reste le **golden reference**, le terrain de mesure et un livrable
-produit. Il n'est ni abandonné ni relégué derrière des POC spéculatifs.
+À la date de cette décision, SEOS/Angular était qualifié de **golden reference**,
+de terrain de mesure et de livrable produit. Cette qualification est supersédée
+par l'ADR-0094 : il sert désormais de référence temporaire de migration, puis
+doit être retiré après transfert de ses preuves utiles.
 
 La source de vérité vivante sur la maturité est
 [`generation-platform-capability-matrix.md`](../architecture/generation-platform-capability-matrix.md).

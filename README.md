@@ -1,26 +1,26 @@
 # cmz-platform
 
-Monorepo Nx de la plateforme CMZ (_Connect My Zone_). Il accueille la
-reconstruction industrielle de `cmz-backoffice-frontend` en **Angular 22** avec
-**Bun 1.3** et **Nx 23.1**, puis progressivement les autres composants de la
-plateforme.
+Monorepo Nx de la plateforme CMZ (_Connect My Zone_). Il construit un atelier
+interne assisté par IA pour produire des applications métier Angular ou React,
+standard, lisibles, vérifiables et publiables. La reconstruction Angular du
+backoffice sert au remplacement progressif du legacy ; elle n'est pas
+l'autorité universelle de la plateforme.
 
-> **Objectif consolidé le 2026-08-14** : ce dépôt construit une plateforme
-> extensible de compilation de spécifications pour applications métier
-> data-centric. Les sources et cibles ne sont déclarées supportées qu'après une
-> preuve reproductible dans la matrice de capacités. Angular/SEOS est le golden
-> reference déjà bâti. Voir
-> [ADR-0029](./docs/adr/0029-perimetre-capacites-plateforme-generation.md) et la
-> [matrice de capacités](./docs/architecture/generation-platform-capability-matrix.md).
+> **Cap produit courant :** construire d'abord nos propres applications,
+> remplacer le legacy fonctionnalité par fonctionnalité, puis permettre une
+> publication en ligne contrôlée. Commencer par
+> [`PROJECT_AUTHORITY.md`](./PROJECT_AUTHORITY.md) et
+> [ADR-0094](./docs/adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md).
+> Une capacité n'est déclarée supportée qu'après une preuve reproductible dans
+> la [matrice de capacités](./docs/architecture/generation-platform-capability-matrix.md).
 
 <!-- BEGIN:GENERATED:monorepo-status -->
-**État au 2026-10-06 :** Phase **08** (génération depuis patterns) — **19** modules, **72** libs + **5** app, **2 734** fichiers `.ts` hors tests. Bundle initial prod **754.77 kB**. Voir [`STATUS.md`](./STATUS.md).
+**État au 2026-10-08 :** Phase **08** (génération depuis patterns) — **19** modules, **72** libs + **5** app, **2 734** fichiers `.ts` hors tests. Bundle initial prod **754.77 kB**. Voir [`STATUS.md`](./STATUS.md).
 <!-- END:GENERATED:monorepo-status -->
 
-> 🤖 **Note pour les LLM / Agents IA** : Consulter le document maître
-> d'architecture [`LLM_CONTEXT.md`](./LLM_CONTEXT.md) pour comprendre le cadrage
-> SEOS, la vision Big Tech, la structure des archétypes et les garde-fous du
-> workspace.
+> 🤖 **Agents IA :** lire d'abord [`PROJECT_AUTHORITY.md`](./PROJECT_AUTHORITY.md),
+> puis [`LLM_APP_BUILDER.md`](./LLM_APP_BUILDER.md) pour construire une
+> application. `LLM_CONTEXT.md` est conservé comme contexte technique historique.
 
 ---
 
@@ -33,8 +33,8 @@ plateforme.
 | Structure & Scope          | `apps/` + `libs/`, scope `@cmz/*`     | [ADR-0003](./docs/adr/0003-nommage-et-structure.md)                |
 | Dépendances entre packages | Déclarées en `workspace:*`            | [ADR-0004](./docs/adr/0004-graphe-de-dependances-declarees.md)     |
 | Framework & Versions       | Angular 22.2.0, catalog bun           | [ADR-0005](./docs/adr/0005-versions-du-socle.md)                   |
-| Architecture & Patterns    | SEOS (Software Architecture Compiler) | [ADR-0009](./docs/adr/0009-reconstruction-pilotee-par-patterns.md) |
-| Méthode d'exécution IA     | Closed MDE + LLM Oracle Loop          | [LLM_CONTEXT.md](./LLM_CONTEXT.md)                                 |
+| Cap produit                | Atelier interne → applications publiables | [ADR-0094](./docs/adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md) |
+| Méthode d'exécution IA     | Contrats bornés + oracles déterministes   | [ADR-0039](./docs/adr/0039-frontiere-contractuelle-conception-realisation-llm.md)          |
 
 ---
 
@@ -61,7 +61,8 @@ libs/
   └── <module>/             Modules métier découplés (@cmz/<module>-{domain,data,application,ui})
 tools/                      Scripts de vérification du socle & adaptateur SEOS
 docs/                       Décisions (ADR), architecture, guides et suivi des modules
-LLM_CONTEXT.md              Guide d'architecture et de cadrage pour les agents IA
+PROJECT_AUTHORITY.md        Cap courant et guide obligatoire des agents
+LLM_CONTEXT.md              Contexte technique historique et métriques générées
 ```
 
 ---
@@ -70,8 +71,10 @@ LLM_CONTEXT.md              Guide d'architecture et de cadrage pour les agents I
 
 Tout l'écosystème documentaire est disponible sous [`docs/`](./docs/README.md) :
 
-- [Guide d'Architecture LLM](./LLM_CONTEXT.md) — cadrage et directives de
-  travail
+- [Autorité produit](./PROJECT_AUTHORITY.md) — cap, ordre des preuves et
+  directives de travail
+- [Guide de construction](./LLM_APP_BUILDER.md) — entretien, contrats, pages et
+  vérification
 - [État du socle](./docs/architecture/etat-du-socle.md) — état réel du monorepo
 - [Feuille de route](./docs/architecture/feuille-de-route.md) — phases et
   séquencement

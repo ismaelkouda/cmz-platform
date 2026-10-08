@@ -1,8 +1,11 @@
 # Matrice de capacités — plateforme de génération
 
-- **Date de référence :** 2026-08-14
-- **Décision normative :**
-  [ADR-0029](../adr/0029-perimetre-capacites-plateforme-generation.md)
+- **Date de référence initiale :** 2026-08-14
+- **Cap produit courant :**
+  [ADR-0094](../adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
+- **Discipline de preuve initiale :**
+  [ADR-0029](../adr/0029-perimetre-capacites-plateforme-generation.md),
+  supersédé pour la finalité produit
 - **Objet :** séparer explicitement la vision, les prototypes et les capacités
   reproductibles. Ce document est vivant ; les ADR fixent les décisions.
 
@@ -24,6 +27,14 @@ Les niveaux de maturité sont :
 
 Le niveau de la plateforme est le minimum de ses maillons, pas le maximum de
 l'un d'eux.
+
+Un niveau est toujours attaché à la **capacité et à la cible nommées**. Par
+exemple, un renderer `action-request` M4 ne rend ni toute l'application, ni toute
+la cible, ni la plateforme entière M4. Le
+[`composition-registry.json`](../../tools/generator-platform/composition-registry.json)
+reste l'autorité machine-readable sur les compositions publiées ; ses entrées
+v1 sont encore `experimental`. Une promotion v2 doit créer des entrées
+distinctes et ne jamais réécrire ce fait historique.
 
 ## 2. Enveloppe initiale
 
@@ -47,12 +58,13 @@ l'un d'eux.
 
 | Source                 | Faits utiles                                         | État réel                                   | Niveau |
 | ---------------------- | ---------------------------------------------------- | ------------------------------------------- | :----: |
-| Legacy TypeScript SEOS | structure, code, conventions, comportements partiels | auth AST + workflow `requests` borné        |   M2   |
-| Spécification JSON     | types, règles, opérations, contrats                  | auth + support + workflow déclaratif        |   M2   |
-| OpenAPI                | contrats wire, erreurs, endpoints                    | DTO inférés du TS ; pas de pipeline OpenAPI |   M1   |
-| Figma                  | structure UI, tokens, composants, contenu            | conception uniquement                       |   M1   |
-| Description textuelle  | intentions et règles déclarées                       | consommation manuelle par agent             |   M0   |
-| Tests/traces runtime   | comportements observables et cas limites             | Oracle local des sorties ; pas d'adaptateur |   M0   |
+| Legacy TypeScript SEOS | structure, code, conventions, comportements partiels | adaptateurs bornés ; source temporaire de migration              |   M2   |
+| Spécification structurée JSON/YAML | types, règles, opérations, contrats       | backend, conception et compositions compilés et testés            |   M3   |
+| OpenAPI                | contrats wire, erreurs, endpoints                    | adaptateur fermé 3.0/3.1/3.2, provenance et tests en CI           |   M3   |
+| Postman 2.1            | observations de requêtes et exemples                 | adaptateur `reference`, sans inférence de modèle depuis les exemples | M3 |
+| Figma / capture        | structure UI, tokens, composants, contenu            | autorité de présentation partielle, interprétation humaine/LLM    |   M1   |
+| Description textuelle  | intentions et règles déclarées                       | transformée manuellement en artefacts candidats                   |   M1   |
+| Tests/traces runtime   | comportements observables et cas limites             | oracles de sortie ; pas d'adaptateur général d'ingestion          |   M1   |
 
 Une source produit des faits partiels avec provenance et confiance. Elle ne
 produit jamais directement des chemins ou classes d'une cible.
@@ -259,8 +271,8 @@ doit appliquer les mêmes règles indépendamment.
 
 | Cible                | État réel                                                             | Niveau |
 | -------------------- | --------------------------------------------------------------------- | :----: |
-| Angular              | action-request + workflow-action, mutants locaux, CI verte 2026-08-17 |   M4   |
-| ReactJS              | action-request + workflow-action, mutants locaux, CI verte 2026-08-17 |   M4   |
+| Angular              | `action-request` + `workflow-action` M4 sur leurs scénarios ; shell/page/composition C5 instrumentés séparément | capacité par capacité |
+| ReactJS              | `action-request` + `workflow-action` M4 sur leurs scénarios ; shell/page C5 en qualification séparée | capacité par capacité |
 | React Native         | intention                                                             |   M0   |
 | Kotlin/Compose       | POC interrompu par environnement                                      |   M1   |
 | Swift/SwiftUI        | POC interrompu par environnement                                      |   M1   |

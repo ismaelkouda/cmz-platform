@@ -1,5 +1,9 @@
 # Guide LLM — concevoir une application page par page
 
+> Lire d'abord [`PROJECT_AUTHORITY.md`](./PROJECT_AUTHORITY.md). Ce guide décrit
+> le parcours de construction ; il ne redéfinit ni le cap produit, ni la
+> maturité des capacités.
+
 ## Mission
 
 Tu es la LLM chargée d’aider l’utilisateur à concevoir puis construire une
@@ -46,11 +50,12 @@ Ne commence jamais à construire toutes les pages en une seule fois.
 
 ## Chaîne exécutable obligatoire
 
-L’utilisateur valide les décisions et exécute les commandes. Il ne rédige ni
-JSON, ni YAML, ni TypeScript, ni HTML, ni configuration. La LLM de conception
-écrit les artefacts source ; la LLM de réalisation écrit l’interface dans le
-périmètre borné de chaque page ; les scripts calculent les plans, publient et
-vérifient.
+L’utilisateur valide les décisions et fournit les faits métier. Il ne rédige ni
+JSON, ni YAML, ni TypeScript, ni HTML, ni configuration. L'agent peut exécuter
+les commandes locales réversibles dans l'autorité accordée ; la LLM de
+conception écrit les artefacts source, la LLM de réalisation écrit l’interface
+dans le périmètre borné de chaque page, et les scripts calculent les plans,
+publient et vérifient.
 
 ```text
 entretien produit
@@ -58,16 +63,19 @@ entretien produit
 → contrat backend canonique
 → source de conception applicative
 → conception canonique validée
-→ shell Angular/PWA
+→ shell Angular ou React
 → work order d’une page
 → réalisation UI par la LLM
 → oracles
 → page suivante
 ```
 
-Chaque publication est en deux temps : `--dry-run` produit un identifiant de
-plan sans écrire, puis `--apply <identifiant>` recalcule tout et refuse une
-source modifiée depuis la revue.
+Le protocole dépend de la commande. Les compilateurs de contrats et la
+préparation d'un work order utilisent `--dry-run`, puis `--apply <identifiant>`.
+`create-app` publie directement dans son chemin nominal ; `--dry-run` permet
+d'inspecter le plan et `--expect-plan <identifiant>` exige ensuite le plan revu.
+Ne jamais transposer les options d'une CLI à une autre : vérifier son parseur ou
+son aide dans la version présente du dépôt.
 
 ### 1. Compiler le contrat backend
 
@@ -104,11 +112,13 @@ une source `reference` pilote l’implémentation.
 
 ```bash
 bun run create-app -- --design designs/<app>.application-design.json --experience <experience-id> --app <app> --dry-run
-bun run create-app -- --design designs/<app>.application-design.json --experience <experience-id> --app <app> --apply <plan_id>
+bun run create-app -- --design designs/<app>.application-design.json --experience <experience-id> --app <app> --expect-plan <plan_id>
+bun run create-app -- --design designs/<app>.application-design.json --experience <experience-id> --app <app> --profile react-spa
 ```
 
-Le publisher vérifie réellement `ngc`, le build Angular de production et le
-lint, puis restaure un candidat reprenable en cas d’échec.
+Le profil par défaut est `angular-pwa`; React exige `--profile react-spa`. Le
+publisher vérifie le compilateur propre au profil (`ngc` ou `tsc`), le build de
+production et le lint, puis restaure un candidat reprenable en cas d’échec.
 
 ### 4. Réaliser une page par LLM
 
@@ -117,10 +127,10 @@ bun run prepare:page-realization -- --app <app> --page <page_id> --dry-run
 bun run prepare:page-realization -- --app <app> --page <page_id> --apply <work_order_id>
 ```
 
-La LLM lit le work order publié, y compris le nœud de rôle `screen` et le
-contrat d'archétype Angular hashé (`shape` + `forbid`), puis écrit uniquement
-les cinq fichiers autorisés sous la racine indiquée. Elle ne fait aucun appel
-HTTP direct et mappe chaque identifiant du contrat vers un sélecteur
+La LLM lit le work order publié, y compris le nœud de rôle `screen`, le profil
+de l'application et le contrat d'archétype hashé (`shape` + `forbid`), puis
+écrit uniquement les fichiers autorisés sous la racine indiquée. Elle ne fait
+aucun appel HTTP direct et mappe chaque identifiant du contrat vers un sélecteur
 `data-cmz-id` exact. Ensuite :
 
 ```bash
@@ -131,14 +141,15 @@ En cas d’échec, la LLM corrige seulement cette page et relance le même oracl
 Le rapport exécute compilation, build de production, lint et tests. Le passage à
 la page suivante exige un nouveau work order.
 
-Cette chaîne automatise aujourd’hui le shell Angular/PWA et les compositions
-`action-request` et `list-query`. Une page peut porter **plusieurs `list-query`
+Cette chaîne automatise aujourd’hui les shells Angular et React ainsi que les
+compositions `action-request` et `list-query`. Une page peut porter **plusieurs `list-query`
 et plusieurs `action-request` indépendants** (chargements sur entrée + actions,
 sans dépendance ni ordre entre eux — ADR-0045). Une dépendance ordonnée entre
 nœuds ou une livraison asynchrone relève du graphe d’exécution typé (ADR-0031),
 non implémenté. Une autre composition n’est jamais simulée : elle doit d’abord
 entrer dans le registre avec des cas métier probants et un générateur testé.
-Kotlin, iOS et le backend cible sont des profils futurs, pas des capacités
+`workflow-action` reste un moteur d'orchestration séparé ; il n'est pas un
+troisième nœud de page par défaut. Kotlin, iOS et le backend cible sont des profils futurs, pas des capacités
 prétendument livrées.
 
 Le fonctionnement du moteur est prouvé par une fixture technique versionnée,
@@ -150,15 +161,16 @@ bun run check:application-pipeline
 
 Cette gate reconstruit la chaîne Postman `reference` → cible `planned` →
 conception → shell → page, interdit de lier l’analogue à une action, puis lance
-les vrais oracles Angular. Elle ne constitue jamais une validation implicite des
-champs ou endpoints de ton projet.
+les oracles déclarés par le pipeline. Elle ne constitue jamais une validation
+implicite des champs ou endpoints de ton projet.
 
 ## 1. Prendre connaissance du workspace
 
 Avant le premier entretien, lis au minimum :
 
+- `PROJECT_AUTHORITY.md` ;
 - `README.md` ;
-- `LLM_CONTEXT.md` ;
+- `LLM_CONTEXT.md` seulement pour une question historique ciblée ;
 - `STATUS.md` ;
 - `package.json` ;
 - `docs/architecture/retirer-un-module.md` ;
@@ -403,8 +415,9 @@ et sa propre provenance. Présente explicitement l’une de ces options :
 - définir un contrat à faire valider par l’équipe backend ;
 - utiliser temporairement un mock clairement isolé.
 
-La conception produit reste agnostique de la cible. Angular/PWA, Kotlin et iOS
-sont des profils de réalisation distincts. Les variantes citoyenne et traitante
+La conception produit reste agnostique de la cible. Angular, React, Kotlin et
+iOS sont des profils de réalisation distincts ; seuls Angular et React sont des
+cibles web produit actuellement instrumentées. Les variantes citoyenne et traitante
 partagent le domaine, mais déclarent séparément audiences, capacités, routes et
 permissions ; une page validée pour une variante ne l’est pas implicitement pour
 une autre.
@@ -413,13 +426,14 @@ une autre.
 
 Classe chaque besoin dans la composition ou le pattern approprié.
 
-Automatisation de création actuellement disponible :
+Primitives d'exécution de page actuellement disponibles :
 
 - `action-request` : formulaire ou action ponctuelle avec validation, mutation
   serveur et résultat ;
 - `list-query` : consultation simple ou liste en lecture.
 
-Patterns architecturaux également présents dans le workspace :
+Références architecturales également présentes dans le workspace, sans claim
+qu'elles soient des nœuds de page génériques :
 
 - `crud-entity` ;
 - `workflow-action` ;

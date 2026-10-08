@@ -1,7 +1,13 @@
 # ADR-0038 — Nature de produit : exposition publique et multi-location
 
-- **Statut :** Proposed — décision de nature, délibérément non tranchée
+- **Statut :** Superseded pour la phase courante par
+  [ADR-0094](./0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
 - **Date :** 2026-08-29
+
+> La phase courante est tranchée : atelier interne d'abord, publication
+> contrôlée de nos applications ensuite. Un éventuel SaaS public
+> multi-locataire reste une décision future distincte ; il ne bloque pas le
+> produit interne et n'est pas implicitement autorisé.
 
 ## Contexte
 
