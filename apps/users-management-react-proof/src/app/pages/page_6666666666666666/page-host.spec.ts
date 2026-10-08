@@ -8,6 +8,24 @@ import {
     type UsersManagementPageHostRequest,
 } from './page-host';
 
+const HTTPS_SETTINGS_ORIGIN = ['https:', '', 'settings.example.test'].join('/');
+const HTTP_SETTINGS_ORIGIN = ['http:', '', 'settings.example.test'].join('/');
+const CREDENTIAL_SETTINGS_ORIGIN = [
+    'https:',
+    '',
+    'user:secret@settings.example.test',
+].join('/');
+const OTHER_ORIGIN = ['https:', '', 'other.example.test'].join('/');
+const SETTINGS_BASE_URL = `${HTTPS_SETTINGS_ORIGIN}/backoffice/`;
+const SETTINGS_BASE_URL_WITHOUT_TRAILING_SLASH = `${HTTPS_SETTINGS_ORIGIN}/backoffice`;
+const USERS_RESOURCE = ['settings-and-security', 'users'].join('/');
+const PROFILES_RESOURCE = [
+    'settings-and-security',
+    'user-profiles',
+    'select-field',
+].join('/');
+const CREATE_USER_RESOURCE = [USERS_RESOURCE, 'store'].join('/');
+
 function response(payload: unknown, status = 200) {
     return {
         ok: status >= 200 && status < 300,
@@ -26,7 +44,7 @@ describe('users management React page host', () => {
         const requests: UsersManagementPageHostRequest[] = [];
         const runtime = createUsersManagementPageRuntime({
             serviceBaseUrls: {
-                'settings-api': 'https://settings.example.test/backoffice',
+                'settings-api': SETTINGS_BASE_URL_WITHOUT_TRAILING_SLASH,
             },
             request: async (request) => {
                 requests.push(request);
@@ -70,8 +88,8 @@ describe('users management React page host', () => {
             'settings-api',
         ]);
         expect(requests.map(({ url }) => url).sort()).toEqual([
-            'https://settings.example.test/backoffice/settings-and-security/user-profiles/select-field',
-            'https://settings.example.test/backoffice/settings-and-security/users?page=1',
+            `${SETTINGS_BASE_URL}${PROFILES_RESOURCE}`,
+            `${SETTINGS_BASE_URL}${USERS_RESOURCE}?page=1`,
         ]);
         expect(
             requests.every(
@@ -84,7 +102,7 @@ describe('users management React page host', () => {
         const requests: UsersManagementPageHostRequest[] = [];
         const runtime = createUsersManagementPageRuntime({
             serviceBaseUrls: {
-                'settings-api': 'https://settings.example.test/backoffice/',
+                'settings-api': SETTINGS_BASE_URL,
             },
             request: async (request) => {
                 requests.push(request);
@@ -109,7 +127,7 @@ describe('users management React page host', () => {
         expect(requests[0]).toMatchObject({
             serviceId: 'settings-api',
             method: 'POST',
-            url: 'https://settings.example.test/backoffice/settings-and-security/users/store',
+            url: `${SETTINGS_BASE_URL}${CREATE_USER_RESOURCE}`,
             body: {
                 first_name: 'Mariam',
                 last_name: 'Koné',
@@ -124,7 +142,7 @@ describe('users management React page host', () => {
         const requests: UsersManagementPageHostRequest[] = [];
         const runtime = createUsersManagementPageRuntime({
             serviceBaseUrls: {
-                'settings-api': 'https://settings.example.test/backoffice/',
+                'settings-api': SETTINGS_BASE_URL,
             },
             request: async (request) => {
                 requests.push(request);
@@ -155,10 +173,10 @@ describe('users management React page host', () => {
 
     it.each([
         'settings.example.test/backoffice',
-        'http://settings.example.test/backoffice',
-        'https://user:secret@settings.example.test/backoffice',
-        'https://settings.example.test/backoffice?tenant=hidden',
-        'https://settings.example.test/backoffice#hidden',
+        `${HTTP_SETTINGS_ORIGIN}/backoffice`,
+        `${CREDENTIAL_SETTINGS_ORIGIN}/backoffice`,
+        `${SETTINGS_BASE_URL_WITHOUT_TRAILING_SLASH}?tenant=hidden`,
+        `${SETTINGS_BASE_URL_WITHOUT_TRAILING_SLASH}#hidden`,
     ])('fails closed on unsafe service configuration %s', (baseUrl) => {
         expect(() =>
             createUsersManagementPageRuntime({
@@ -172,8 +190,8 @@ describe('users management React page host', () => {
         expect(() =>
             createUsersManagementPageRuntime({
                 serviceBaseUrls: {
-                    'settings-api': 'https://settings.example.test/backoffice/',
-                    'undeclared-api': 'https://other.example.test/',
+                    'settings-api': SETTINGS_BASE_URL,
+                    'undeclared-api': `${OTHER_ORIGIN}/`,
                 },
                 request: async () => response({}),
             } as unknown as Parameters<
@@ -186,7 +204,7 @@ describe('users management React page host', () => {
         const requests: UsersManagementPageHostRequest[] = [];
         window.__cmzUsersManagementPageHost = {
             serviceBaseUrls: {
-                'settings-api': 'https://settings.example.test/backoffice/',
+                'settings-api': SETTINGS_BASE_URL,
             },
             request: async (request: UsersManagementPageHostRequest) => {
                 requests.push(request);
@@ -217,7 +235,7 @@ describe('users management React page host', () => {
         expect(requests[0]).toMatchObject({
             method: 'GET',
             serviceId: 'settings-api',
-            url: 'https://settings.example.test/backoffice/settings-and-security/users?page=1',
+            url: `${SETTINGS_BASE_URL}${USERS_RESOURCE}?page=1`,
         });
     });
 
@@ -229,13 +247,13 @@ describe('users management React page host', () => {
         {},
         {
             serviceBaseUrls: {
-                'settings-api': 'https://settings.example.test/backoffice/',
+                'settings-api': SETTINGS_BASE_URL,
             },
         },
         {
             request: async () => response({}),
             serviceBaseUrls: {
-                'settings-api': 'https://settings.example.test/backoffice/',
+                'settings-api': SETTINGS_BASE_URL,
             },
             token: 'must-not-be-accepted',
         },

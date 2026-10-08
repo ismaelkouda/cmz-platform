@@ -70,6 +70,38 @@ const historicalPresentationRoot =
 const retiredAdaptiveCreateRoot =
     'examples/users-management-proof/presentation/adaptive-create-candidates/';
 
+async function readRealizationEvidence(shellPlan, profile) {
+    const evidencePath = resolve(
+        shellPlan.outputAbsolute,
+        'src/app/pages',
+        usersManagementProof.pageId,
+        'realization-evidence.json'
+    );
+    let evidence = null;
+    try {
+        evidence = JSON.parse(await readFile(evidencePath, 'utf8'));
+    } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+    }
+    if (!evidence) return null;
+
+    assert.deepEqual(
+        validateJsonSchema(evidence, pageRealizationEvidenceSchema),
+        [],
+        `the realized ${profile} page must carry schema-valid evidence`
+    );
+    assert.equal(evidence.page_id, usersManagementProof.pageId);
+    const contract = await readFile(
+        resolve(repositoryRoot, usersManagementProof.pageContractUri)
+    );
+    assert.equal(
+        evidence.page_contract_sha256,
+        createHash('sha256').update(contract).digest('hex'),
+        `the ${profile} realization evidence must bind the current page contract`
+    );
+    return evidence;
+}
+
 async function qualifiedReactShellFiles(shellPlan) {
     const workspace = await mkdtemp(join(tmpdir(), 'cmz-react-shell-'));
     try {
@@ -180,38 +212,10 @@ test('publie le shell C5 canonique sans confondre placeholder et réalisation bo
         backendContractSchema,
     });
     const realizedComponent = `src/app/pages/${usersManagementProof.pageId}/page.component.ts`;
-    const evidencePath = resolve(
-        shellPlan.outputAbsolute,
-        'src/app/pages',
-        usersManagementProof.pageId,
-        'realization-evidence.json'
+    const realizationEvidence = await readRealizationEvidence(
+        shellPlan,
+        'Angular'
     );
-    let realizationEvidence = null;
-    try {
-        realizationEvidence = JSON.parse(await readFile(evidencePath, 'utf8'));
-    } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
-    }
-
-    if (realizationEvidence) {
-        assert.deepEqual(
-            validateJsonSchema(
-                realizationEvidence,
-                pageRealizationEvidenceSchema
-            ),
-            [],
-            'the realized page must carry schema-valid evidence'
-        );
-        assert.equal(realizationEvidence.page_id, usersManagementProof.pageId);
-        const contract = await readFile(
-            resolve(repositoryRoot, usersManagementProof.pageContractUri)
-        );
-        assert.equal(
-            realizationEvidence.page_contract_sha256,
-            createHash('sha256').update(contract).digest('hex'),
-            'the realization evidence must bind the current page contract'
-        );
-    }
 
     for (const [path, content] of Object.entries(shellPlan.files)) {
         const actual = await readFile(resolve(shellPlan.outputAbsolute, path));
@@ -245,9 +249,31 @@ test('publie le shell React C5 canonique depuis la même conception approuvée',
     assert.equal(shellPlan.profile, 'react-spa');
     assert.equal(shellPlan.compiler_validation, 'typescript-tsc');
     const expected = await qualifiedReactShellFiles(shellPlan);
+    const realizedPage = `src/app/pages/${usersManagementProof.pageId}/page.tsx`;
+    const realizationEvidence = await readRealizationEvidence(
+        shellPlan,
+        'React'
+    );
+
     for (const [path, content] of Object.entries(expected)) {
+        const actual = await readFile(resolve(shellPlan.outputAbsolute, path));
+        if (path === realizedPage && realizationEvidence) {
+            assert.notDeepEqual(
+                actual,
+                content,
+                `${path} must no longer equal the pre-realization placeholder`
+            );
+            continue;
+        }
+        if (path === '.cmz/app-manifest.json') {
+            assert.deepEqual(
+                JSON.parse(actual.toString('utf8')),
+                JSON.parse(content.toString('utf8')),
+                `${path} metadata must equal the deterministic React shell manifest`
+            );
+        }
         assert.deepEqual(
-            await readFile(resolve(shellPlan.outputAbsolute, path)),
+            actual,
             content,
             `${path} must equal the deterministic React shell plus its qualified Tailwind overlay`
         );
