@@ -68,12 +68,7 @@ export function invocation(oracle, app, profile) {
     if (oracle === 'test') {
         return {
             script,
-            argv: [
-                'run',
-                `${app}:test`,
-                '--skipNxCache',
-                '--runnerConfig=tools/generator-platform/page-realization-vitest.config.mjs',
-            ],
+            argv: ['run', `${app}:test`, '--skipNxCache'],
         };
     }
     fail(`oracle non autorisé : ${oracle}`);

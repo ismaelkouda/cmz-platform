@@ -3,17 +3,18 @@ import { test } from 'node:test';
 
 import { invocation } from './page-realization-oracle-runner.mjs';
 
-test('le test passe uniquement la configuration Vitest gouvernée', () => {
-    const command = invocation('test', 'demo-app', 'angular-pwa');
+for (const profile of ['angular-pwa', 'react-spa']) {
+    test(`le test ${profile} délègue à la configuration native gouvernée`, () => {
+        const command = invocation('test', 'demo-app', profile);
 
-    assert.equal(command.script, 'node_modules/nx/dist/bin/nx.js');
-    assert.deepEqual(command.argv, [
-        'run',
-        'demo-app:test',
-        '--skipNxCache',
-        '--runnerConfig=tools/generator-platform/page-realization-vitest.config.mjs',
-    ]);
-});
+        assert.equal(command.script, 'node_modules/nx/dist/bin/nx.js');
+        assert.deepEqual(command.argv, [
+            'run',
+            'demo-app:test',
+            '--skipNxCache',
+        ]);
+    });
+}
 
 test('le runner refuse tout oracle hors de la liste fermée', () => {
     assert.throws(

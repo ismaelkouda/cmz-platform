@@ -196,6 +196,10 @@ test('le renderer produit routing, i18n, PWA et un contrat borné par page', asy
     assert.deepEqual(project.targets.build.options.polyfills, [
         '@angular/localize/init',
     ]);
+    assert.equal(
+        project.targets.test.options.runnerConfig,
+        'tools/generator-platform/page-realization-vitest.config.mjs'
+    );
     const page =
         rendered.files['src/app/pages/page_1111111111111111/page.component.ts'];
     assert.match(page, /i18n="Titre de page@@page_1111111111111111\.title"/);
@@ -300,6 +304,8 @@ test('le renderer React produit un shell SPA mono-stack borné par les mêmes co
         'react-spa'
     );
     assert.match(rendered.files['vite.config.mts'], /@vitejs\/plugin-react/);
+    assert.doesNotMatch(rendered.files['vite.config.mts'], /localhost/);
+    assert.match(rendered.files['vite.config.mts'], /127\.0\.0\.1/);
     assert.match(rendered.files['src/main.tsx'], /<BrowserRouter>/);
     assert.match(rendered.files['src/app/app.routes.tsx'], /<Routes>/);
     assert.match(rendered.files['src/app/app.routes.tsx'], /<AppAccessGate/);

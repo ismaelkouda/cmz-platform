@@ -74,7 +74,8 @@
     "test": {
       "executor": "@angular/build:unit-test",
       "options": {
-        "watch": false
+        "watch": false,
+        "runnerConfig": "tools/generator-platform/page-realization-vitest.config.mjs"
       }
     },
     "serve-static": {
