@@ -18,9 +18,12 @@ l'autorité universelle de la plateforme.
 **État au 2026-10-08 :** Phase **08** (génération depuis patterns) — **19** modules, **72** libs + **5** app, **2 734** fichiers `.ts` hors tests. Bundle initial prod **754.77 kB**. Voir [`STATUS.md`](./STATUS.md).
 <!-- END:GENERATED:monorepo-status -->
 
-> 🤖 **Agents IA :** lire d'abord [`PROJECT_AUTHORITY.md`](./PROJECT_AUTHORITY.md),
-> puis [`LLM_APP_BUILDER.md`](./LLM_APP_BUILDER.md) pour construire une
-> application. `LLM_CONTEXT.md` est conservé comme contexte technique historique.
+> 🤖 **Agents IA :** [`AGENTS.md`](./AGENTS.md) est chargé automatiquement et
+> impose la lecture de [`PROJECT_AUTHORITY.md`](./PROJECT_AUTHORITY.md). Choisir
+> ensuite un rôle dans le
+> [modèle opératoire](./docs/agents/operating-model.md). Le propriétaire dispose
+> d'un [guide simple d'orchestration](./docs/agents/guide-utilisateur.md).
+> `LLM_CONTEXT.md` reste un contexte technique historique.
 
 ---
 
@@ -42,7 +45,7 @@ l'autorité universelle de la plateforme.
 
 ```bash
 nvm use                     # Node ^22.22.3 (cf. .nvmrc)
-bun install                 # installe et active les hooks Git
+bun install --frozen-lockfile # installe sans réécrire le lockfile
 bunx nx show projects       # liste les packages du monorepo
 bunx nx graph               # graphe de dépendances interactif
 bun run check:all           # moteurs, versions du socle, poids des fichiers
@@ -62,6 +65,9 @@ libs/
 tools/                      Scripts de vérification du socle & adaptateur SEOS
 docs/                       Décisions (ADR), architecture, guides et suivi des modules
 PROJECT_AUTHORITY.md        Cap courant et guide obligatoire des agents
+AGENTS.md                   Instructions automatiques et routage des rôles
+.agents/skills/             Skills de rôle et techniques découvertes par l'agent
+conventions/agents/         Contrat machine des rôles et permissions d'agents
 LLM_CONTEXT.md              Contexte technique historique et métriques générées
 ```
 
@@ -75,6 +81,10 @@ Tout l'écosystème documentaire est disponible sous [`docs/`](./docs/README.md)
   directives de travail
 - [Guide de construction](./LLM_APP_BUILDER.md) — entretien, contrats, pages et
   vérification
+- [Modèle opératoire des agents](./docs/agents/operating-model.md) — rôles,
+  permissions, gates, preuves et handoffs
+- [Guide simple d'orchestration](./docs/agents/guide-utilisateur.md) — commandes
+  et prompts prêts à copier pour le propriétaire
 - [État du socle](./docs/architecture/etat-du-socle.md) — état réel du monorepo
 - [Feuille de route](./docs/architecture/feuille-de-route.md) — phases et
   séquencement

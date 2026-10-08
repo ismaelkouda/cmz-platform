@@ -1,0 +1,80 @@
+{
+  "$schema": "./operating-model.schema.json",
+  "version": 1,
+  "authority": {
+    "automatic_instructions": "AGENTS.md",
+    "product": "PROJECT_AUTHORITY.md",
+    "operating_model": "docs/agents/operating-model.md",
+    "owner_guide": "docs/agents/guide-utilisateur.md"
+  },
+  "rules": {
+    "one_active_role": true,
+    "self_promotion_allowed": false,
+    "technical_skill_expands_authority": false,
+    "independent_review_required": true,
+    "max_identical_failures_without_new_hypothesis": 2
+  },
+  "roles": {
+    "steward": {
+      "skill": "cmz-steward",
+      "default_access": "read-only-until-live-baseline",
+      "mutation_boundary": "validated-milestone",
+      "may_decide_product_direction": false,
+      "may_implement_by_default": false,
+      "requires_work_order": false
+    },
+    "step-executor": {
+      "skill": "cmz-step-executor",
+      "default_access": "declared-allowlist",
+      "mutation_boundary": "approved-work-order",
+      "may_decide_product_direction": false,
+      "may_implement_by_default": true,
+      "requires_work_order": true
+    },
+    "task-specialist": {
+      "skill": "cmz-task-specialist",
+      "default_access": "read-only",
+      "mutation_boundary": "explicit-fix-scope",
+      "may_decide_product_direction": false,
+      "may_implement_by_default": false,
+      "requires_work_order": false,
+      "modes": {
+        "diagnose": false,
+        "review": false,
+        "research": false,
+        "fix": true
+      }
+    },
+    "orchestrator": {
+      "skill": "cmz-orchestrator",
+      "default_access": "read-only",
+      "mutation_boundary": "none",
+      "may_decide_product_direction": false,
+      "may_implement_by_default": false,
+      "requires_work_order": false
+    }
+  },
+  "slash_commands": [
+    "status",
+    "plan",
+    "goal",
+    "review",
+    "side",
+    "compact",
+    "fork"
+  ],
+  "handoff_required_fields": [
+    "role",
+    "objective_source",
+    "branch_base_head",
+    "authorized_scope",
+    "changes",
+    "unchanged",
+    "decisions_assumptions",
+    "executed_evidence",
+    "unexecuted_evidence",
+    "risks_limits",
+    "git_review_merge_ci_state",
+    "next_action_owner"
+  ]
+}

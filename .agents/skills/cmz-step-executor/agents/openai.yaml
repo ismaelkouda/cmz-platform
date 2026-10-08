@@ -1,0 +1,6 @@
+interface:
+  display_name: 'CMZ Step Executor'
+  short_description: 'Réaliser une étape validée et bornée'
+  default_prompt: 'Use $cmz-step-executor to implement the named approved step inside its file boundary, with explicit invariants, stop conditions, and evidence.'
+policy:
+  allow_implicit_invocation: true

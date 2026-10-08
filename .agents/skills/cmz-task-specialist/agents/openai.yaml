@@ -1,0 +1,6 @@
+interface:
+  display_name: 'CMZ Task Specialist'
+  short_description: 'Diagnostiquer ou corriger une tâche précise'
+  default_prompt: 'Use $cmz-task-specialist in the explicitly named diagnose, review, research, or fix mode, and keep the task read-only unless a bounded correction is authorized.'
+policy:
+  allow_implicit_invocation: true

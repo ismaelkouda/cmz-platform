@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmz-platform.local/schemas/agent-operating-model.schema.json",
+  "title": "CMZ agent operating model",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "authority",
+    "rules",
+    "roles",
+    "slash_commands",
+    "handoff_required_fields"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "automatic_instructions",
+        "product",
+        "operating_model",
+        "owner_guide"
+      ],
+      "properties": {
+        "automatic_instructions": { "const": "AGENTS.md" },
+        "product": { "const": "PROJECT_AUTHORITY.md" },
+        "operating_model": {
+          "const": "docs/agents/operating-model.md"
+        },
+        "owner_guide": {
+          "const": "docs/agents/guide-utilisateur.md"
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "one_active_role",
+        "self_promotion_allowed",
+        "technical_skill_expands_authority",
+        "independent_review_required",
+        "max_identical_failures_without_new_hypothesis"
+      ],
+      "properties": {
+        "one_active_role": { "const": true },
+        "self_promotion_allowed": { "const": false },
+        "technical_skill_expands_authority": { "const": false },
+        "independent_review_required": { "const": true },
+        "max_identical_failures_without_new_hypothesis": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "steward",
+        "step-executor",
+        "task-specialist",
+        "orchestrator"
+      ],
+      "properties": {
+        "steward": { "$ref": "#/$defs/role" },
+        "step-executor": { "$ref": "#/$defs/role" },
+        "task-specialist": {
+          "allOf": [
+            { "$ref": "#/$defs/role" },
+            {
+              "type": "object",
+              "required": ["modes"],
+              "properties": {
+                "modes": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["diagnose", "review", "research", "fix"],
+                  "properties": {
+                    "diagnose": { "const": false },
+                    "review": { "const": false },
+                    "research": { "const": false },
+                    "fix": { "const": true }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "orchestrator": { "$ref": "#/$defs/role" }
+      }
+    },
+    "slash_commands": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["status", "plan", "goal", "review", "side", "compact", "fork"]
+      }
+    },
+    "handoff_required_fields": {
+      "type": "array",
+      "minItems": 12,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "skill",
+        "default_access",
+        "mutation_boundary",
+        "may_decide_product_direction",
+        "may_implement_by_default",
+        "requires_work_order"
+      ],
+      "properties": {
+        "skill": { "type": "string", "pattern": "^cmz-[a-z-]+$" },
+        "default_access": { "type": "string", "minLength": 1 },
+        "mutation_boundary": { "type": "string", "minLength": 1 },
+        "may_decide_product_direction": { "const": false },
+        "may_implement_by_default": { "type": "boolean" },
+        "requires_work_order": { "type": "boolean" },
+        "modes": { "type": "object" }
+      }
+    }
+  }
+}

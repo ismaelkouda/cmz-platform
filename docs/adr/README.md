@@ -128,4 +128,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0092](./0092-chargement-progressif-compact-react-c5.md)  | Réaliser le chargement progressif Compact de C5 en React | Accepted |
 | [0093](./0093-filtre-compact-deux-niveaux-react-c5.md)    | Réaliser le filtre Compact à deux niveaux de C5 en React | Accepted |
 | [0094](./0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md) | Cap produit interne, remplacement progressif et cibles web | Accepted |
+| [0095](./0095-modele-operatoire-agents-bornes.md)         | Modèle opératoire à rôles bornés pour les agents         | Accepted |
 <!-- END:GENERATED:adr-index -->
