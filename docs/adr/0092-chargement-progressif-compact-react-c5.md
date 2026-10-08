@@ -72,6 +72,12 @@ inchangé. Le profil CDP sur 130 cycles conserve
 `1 document / 360 nœuds / 170 listeners` et reste sous les budgets mémoire
 512/128 KiB.
 
+La première CI Linux a aussi révélé un défaut de reflow masqué par les
+scrollbars superposées de macOS : le `min-width: 20rem` de la page grandissait
+avec le texte à 200 % et provoquait un débordement horizontal. Ce minimum
+historique est retiré ; les composants restent responsables de leur propre
+réduction ou de leur défilement local.
+
 ## Conséquences
 
 - Le premier des trois écarts Compact d'ADR-0091 est fermé.

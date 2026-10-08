@@ -3054,23 +3054,25 @@ Figma, désormais source partielle différée :
   062 octets sous le budget inchangé de 512 KiB. Le harnais fixe désormais
   explicitement `NODE_ENV=production` dans `webServer.env` : il ne peut plus
   mesurer par erreur le runtime React de développement hérité du processus de
-  test. Le profil CDP reste vert avec DOM/listeners constants. Le composant
-  principal reste sous 800 lignes et aucun fichier généré n'est touché. Restent
-  deux écarts Compact : filtre modal à deux niveaux et FAB C5, puis les
-  validations humaines déjà consignées ; M4 reste donc refusé. Voir ADR-0092.
-  **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
-  navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
-  des capacités non déclarées, la non-activation des lignes et la géométrie
-  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
-  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
-  fournit aucun `action-request` correspondant : les rendre opérables maintenant
-  inventerait transport, permissions et effets. Les oracles exigent donc
-  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
-  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
-  signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
-  contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
-  attendus et un succès réel ; la régression C5 complète donne `55/55`, avec
-  lint, tests Angular et build production verts. **ADAPT-11c — autorité de
+  test. La première CI Linux a ensuite détecté un minimum de page en `rem` qui
+  débordait sous texte à 200 % ; la contrainte historique est retirée au lieu de
+  relâcher l'oracle. Le profil CDP reste vert avec DOM/listeners constants. Le
+  composant principal reste sous 800 lignes et aucun fichier généré n'est
+  touché. Restent deux écarts Compact : filtre modal à deux niveaux et FAB C5,
+  puis les validations humaines déjà consignées ; M4 reste donc refusé. Voir
+  ADR-0092. **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq
+  scénarios navigateur bornent la toolbar C5, le GET unique de rafraîchissement,
+  l'absence des capacités non déclarées, la non-activation des lignes et la
+  géométrie panneau/rail Medium + Expanded. La référence visuelle conserve
+  `Exporter` et les actions de ligne comme capacités optionnelles, mais le
+  contrat C5 ne fournit aucun `action-request` correspondant : les rendre
+  opérables maintenant inventerait transport, permissions et effets. Les oracles
+  exigent donc `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne
+  d'actions, menu, dialogue ou activation implicite. Quatre échecs attendus sont
+  bornés par deux signatures historiques exactes, sans `skip`, `todo`, runtime,
+  work order, contrat API ou dépendance. La passe Chromium ciblée donne `5/5` :
+  quatre attendus et un succès réel ; la régression C5 complète donne `55/55`,
+  avec lint, tests Angular et build production verts. **ADAPT-11c — autorité de
   réalisation formalisée le 2026-10-02 :** le guide exhaustif
   [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
   donne à un humain ou à un LLM la hiérarchie des sources, les règles
