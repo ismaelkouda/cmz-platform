@@ -13,6 +13,7 @@ const VIEWPORTS = [
     { name: 'medium', width: 900, height: 900 },
     { name: 'expanded', width: 1440, height: 900 },
 ] as const;
+const MAX_ENCODED_RESOURCE_BYTES = 512 * 1024;
 
 async function axeViolations(root: Locator) {
     await root.page().addScriptTag({ content: axe.source });
@@ -199,7 +200,7 @@ test('rend les trois classes adaptatives sans débordement et produit leurs preu
         0
     );
     expect(encodedBytes).toBeGreaterThan(0);
-    expect(encodedBytes).toBeLessThanOrEqual(512 * 1024);
+    expect(encodedBytes).toBeLessThanOrEqual(MAX_ENCODED_RESOURCE_BYTES);
     expect(browserErrors).toEqual([]);
 
     const evidencePath = test.info().outputPath('browser-layout-evidence.json');

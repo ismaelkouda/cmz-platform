@@ -110,7 +110,7 @@ describe('users management React page', () => {
         expect(
             await screen.findByRole('cell', { name: /Koné Mariam/ })
         ).toBeTruthy();
-        expect(screen.getAllByText('mariam.kone@example.test')).toHaveLength(2);
+        expect(screen.getAllByText('mariam.kone@example.test')).toHaveLength(1);
         expect(screen.getByLabelText('24 utilisateurs au total')).toBeTruthy();
         expect(requests).toHaveLength(2);
         expect(requests.map(({ method }) => method).sort()).toEqual([
