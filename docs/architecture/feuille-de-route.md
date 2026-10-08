@@ -1,26 +1,62 @@
-# Feuille de route
+# Feuille de route courante
 
-- **Dernière mise à jour :** 2026-08-02
+- **Dernière mise à jour :** 2026-10-08
+- **Autorité produit :**
+  [ADR-0094](../adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
 
-> **Portée de ce document (précision 2026-08-13)** : le séquencement
-> « Angular d'abord, les autres stacks ensuite » ci-dessous reste correct
-> pour retracer le chantier Angular/SEOS, mais l'objectif global du dépôt a
-> été réorienté depuis
-> ([ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md)) —
-> le POC React et le POC mobile (Kotlin/Swift, en pause) ont déjà été menés
-> en parallèle du chantier Angular, pas après. Ce document décrit le cas
-> d'usage SEOS spécifiquement, pas la trajectoire multi-stack réelle. Voir
-> `taches-restantes.md` (section ROAD-3) pour l'état à jour des chantiers
-> multi-stack.
+## Chemin critique courant
 
-Le monorepo se construit **stack par stack**, chaque stack étant découpée en
-phases validées une à une. Angular d'abord ; les autres ne démarreront qu'une
-fois celle-ci stabilisée.
+1. **Terminer la dernière parité Compact C5.** Le filtre à deux niveaux est
+   fusionné par la PR #228 ; le bouton d'action de création (FAB) reste l'écart
+   explicitement ouvert par l'ADR-0093. Le fermer sans étendre le contrat
+   métier.
+2. **Clore #64 par une promotion gouvernée.** Relier chaque critère à ses
+   artefacts/tests, faire relire l'équivalence C5, enregistrer séparément les
+   compositions v2 et mettre à jour issue/matrice dans une même PR.
+3. **Archiver progressivement SEOS.** Dans un changement séparé, inventorier les
+   derniers consommateurs et retirer du chemin critique CI les preuves déjà
+   transférées. Ne pas supprimer une preuve encore unique.
+4. **Démarrer la première application réelle.** Écrire avec le propriétaire le
+   brief du produit « signalement de zone non couverte », puis son contrat
+   backend cible. Ne rien déduire du legacy à la place des données disponibles.
+5. **Livrer une première tranche verticale.** Une expérience et une page
+   utilisables, sur une cible explicitement choisie, avec navigateur, backend
+   contracté, observabilité et stratégie de retour arrière.
+6. **Remplacer le legacy par étapes.** Transférer comportements et données
+   utiles, déployer progressivement, puis retirer l'ancien périmètre.
+7. **Construire le workbench par valeur.** Cockpit de lecture, diff,
+   approbation, aperçu isolé puis publication contrôlée. Aucune automatisation
+   supplémentaire sans baseline et condition d'abandon (ADR-0080).
+
+### Conditions de passage
+
+- aucune capacité n'est promue sans preuve reproductible et revue humaine ;
+- Angular et React sont évalués séparément ; un claim commun exige les deux ;
+- la première application réelle prime sur une nouvelle abstraction de
+  plateforme non déclenchée par son besoin ;
+- un SaaS public multi-locataire reste hors de cette feuille de route tant que
+  son exploitation n'est pas décidée et financée.
+
+## Historique Angular/SEOS — non normatif pour les priorités courantes
+
+> **Portée de la section historique ci-dessous :** le séquencement « Angular
+> d'abord, les autres stacks ensuite » ci-dessous reste correct pour retracer le
+> chantier Angular/SEOS, mais l'objectif global du dépôt a été réorienté depuis
+> ([ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md)) — le
+> POC React et le POC mobile (Kotlin/Swift, en pause) ont déjà été menés en
+> parallèle du chantier Angular, pas après. Ce document décrit le cas d'usage
+> SEOS spécifiquement, pas la trajectoire multi-stack réelle. Voir Il ne doit
+> plus être utilisé pour prioriser. Le chemin critique est celui de la section
+> précédente.
+
+Le plan historique construisait le monorepo **stack par stack** et plaçait
+Angular avant les autres. Cette séquence est supersédée : React est désormais
+une cible produit instrumentée, avec ses propres oracles.
 
 Découpage Phase 08 / 09 :
 [ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md).
 
-## Angular — en cours
+## Phases Angular historiques
 
 | Phase | Objet                                                                                   | Statut                                                                                                                                 |
 | ----- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,10 +90,11 @@ test se fait **sur une seule entité** : générer, compiler, passer
 `check-pattern.js`. Il vaut mieux découvrir un écart sur une entité que sur
 cinquante.
 
-## Stacks ultérieures
+## Ancienne projection des stacks
 
-React, React Native, Kotlin, Swift, PHP, Spring Boot, Rust, Grafana. Aucune
-n'est démarrée, et aucune ne le sera avant qu'Angular ne soit stabilisé.
+Cette projection n'est plus un état courant. React est démarré et constitue une
+cible produit. React Native, Kotlin, Swift, PHP, Spring Boot, Rust et Grafana ne
+sont pas déclarés supportés sans preuve dédiée.
 
 La structure `apps/` + `libs/` et le mode package-based ont été choisis pour les
 accueillir sans réorganisation : un package non-JS s'intègre au graphe Nx par un

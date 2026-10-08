@@ -427,8 +427,9 @@ const statusMd = `# STATUS — cmz-platform
 > **Généré automatiquement** par \`tools/generate-status.mjs\` le ${now}.
 > Ne pas éditer manuellement — lancer \`node tools/generate-status.mjs\` pour régénérer.
 
-> Ces métriques décrivent le golden reference Angular/SEOS. Périmètre courant
-> de la plateforme (consolidé 2026-08-14) : [ADR-0029](./docs/adr/0029-perimetre-capacites-plateforme-generation.md).
+> Ces métriques décrivent le volume de la reconstruction Angular/SEOS. Elles ne
+> mesurent ni la maturité globale ni la valeur produit. Cap courant :
+> [PROJECT_AUTHORITY.md](./PROJECT_AUTHORITY.md) et [ADR-0094](./docs/adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md).
 
 ## Résumé
 
@@ -477,7 +478,7 @@ ${
 }
 
 ---
-*[LLM_CONTEXT.md](./LLM_CONTEXT.md) — point d'entrée architecture et directives agents IA*
+*[PROJECT_AUTHORITY.md](./PROJECT_AUTHORITY.md) — cap courant et directives agents*
 `;
 
 writeFileSync(STATUS_OUT, statusMd, 'utf8');

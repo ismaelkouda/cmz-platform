@@ -1,14 +1,22 @@
-# LLM Master Context & System Architecture Guide — cmz-platform
+# Contexte technique historique — cmz-platform
 
-> **Note pour tout Agent IA / LLM (Claude, Gemini, GPT, Cursor, etc.)** : Ce
-> document est le point d'entrée vers l'architecture, la philosophie de
-> recherche, la structure et l'état courant de `cmz-platform`. En cas de
-> conflit, les ADR non supersédés, les schémas exécutables et les résultats CI
-> priment sur la prose. Lisez ce document au démarrage de chaque session.
+> **Attention — ce document n'est plus le point d'entrée ni l'autorité sur le
+> cap produit.** Il conserve le contexte technique détaillé et le bloc de
+> métriques généré pour la traçabilité. Commencer obligatoirement par
+> [`PROJECT_AUTHORITY.md`](./PROJECT_AUTHORITY.md), puis revenir ici uniquement
+> pour une investigation historique ciblée. En cas de conflit,
+> `PROJECT_AUTHORITY.md`, l'ADR-0094, les contrats exécutables et les résultats
+> CI courants priment.
 
 ---
 
-## 0. Objectif du projet — PÉRIMÈTRE CONSOLIDÉ le 2026-08-14
+## 0. Ancien périmètre technique consolidé le 2026-08-14
+
+> **Historique, non normatif pour la finalité produit.** Les paragraphes
+> PLAT-1…PLAT-5K ci-dessous expliquent la genèse des mécanismes. Ils ne sont pas
+> une feuille de route courante et leurs mentions « localement », « attendu » ou
+> « reste requis » doivent être revérifiées dans le code, GitHub et la matrice
+> actuelle.
 
 **Décision structurante courante :
 [ADR-0029](./docs/adr/0029-perimetre-capacites-plateforme-generation.md).**
@@ -207,11 +215,12 @@ sont définis dans
 Cette direction n'est pas encore une capacité livrée : les vertical slices
 actuelles restent bornées et spécialisées.
 
-**SEOS/Angular est le golden reference et le cas d'usage industriel déjà bâti.**
-Il reste un livrable produit et le terrain de la Phase 09 d'équivalence
-fonctionnelle. Les sections suivantes décrivent ce cas concret ; elles ne sont
-pas, par défaut, des invariants de la plateforme. Figma est une future source
-partielle d'intention de présentation, non le premier chemin de preuve du core.
+**Contexte historique :** SEOS/Angular a servi de référence de migration et de
+terrain de mesure. Depuis l'ADR-0094, il n'est plus l'autorité produit ni un
+« golden reference » universel. Les sections suivantes décrivent ce cas concret
+et ses enseignements ; elles ne sont pas, par défaut, des invariants de la
+plateforme. Le nouveau code remplace progressivement le legacy en production,
+et les preuves SEOS sont retirées après transfert explicite de leur valeur.
 
 ---
 
@@ -452,7 +461,7 @@ directives suivantes :
 <!-- BEGIN:GENERATED:monorepo-status -->
 | Indicateur                | Valeur                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Dernière génération       | **2026-10-06** (`bun run generate:status`)                                                                      |
+| Dernière génération       | **2026-10-08** (`bun run generate:status`)                                                                      |
 | Modules livrés            | **19** (voir [`STATUS.md`](./STATUS.md))                                                         |
 | Packages Nx               | **77** (72 libs + 5 app)                                              |
 | Fichiers TypeScript       | **2 734** hors tests / **2 986** total (252 specs)                 |

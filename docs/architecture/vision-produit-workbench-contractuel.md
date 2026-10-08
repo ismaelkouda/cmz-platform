@@ -246,5 +246,7 @@ rester utilisable sans IA quand le modèle est indisponible.
   gouvernent la propriété et la publication des artefacts.
 - [Audit de maintenabilité](./audit-maintenable-automatisation-2026-09-16.md)
   impose que l'automatisation reste compréhensible, standard et réparable.
-- [Tâches restantes](./taches-restantes.md) demeure l'autorité sur l'ordre de
-  réalisation et le niveau de preuve effectivement atteint.
+- [ADR-0094](../adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
+  fixe le cap produit courant ; la [feuille de route](./feuille-de-route.md)
+  gouverne l'ordre de réalisation. `taches-restantes.md` reste un registre
+  historique de traçabilité, pas une autorité de priorité.

@@ -1,5 +1,13 @@
 # Tâches restantes — cmz-platform
 
+> **Registre historique, pas feuille de route courante.** Ce fichier conserve
+> les identifiants, audits et décisions accumulés ; ses mentions « localement »,
+> « restant » ou « prochaine priorité » sont datées et peuvent être
+> supersédées. Pour commencer un travail, lire d'abord
+> [`PROJECT_AUTHORITY.md`](../../PROJECT_AUTHORITY.md) et la
+> [feuille de route courante](./feuille-de-route.md), puis utiliser ce registre
+> uniquement pour retrouver le contexte et les preuves d'un identifiant.
+
 - **Créé :** 2026-08-05
 - **Consolidation stratégique 2026-08-14** :
   [ADR-0029](../adr/0029-perimetre-capacites-plateforme-generation.md) supersède
@@ -16,7 +24,8 @@
   `ROAD-y`, `P2-*`) restent valides et cherchables — voir l'Annexe « Index de
   correspondance » en fin de fichier pour retrouver un id par sa nouvelle
   section.
-- **Statut :** source de vérité des travaux **encore ouverts / partiels**.
+- **Statut :** registre de traçabilité des travaux historiques, ouverts,
+  partiels et clos. GitHub et la feuille de route courante portent l'état vivant.
 - **Référentiel d'évaluation :** 13 audits Big Tech (Meta / Google / Amazon /
   Microsoft) — Architecte Senior / Principal Engineer. Principes : machine avant
   opinion (Shift-Left CI/CD) ; revues de jalon (Design/Architectural Review

@@ -1,21 +1,22 @@
 # Documentation — cmz-platform
 
+Commencer par [`PROJECT_AUTHORITY.md`](../PROJECT_AUTHORITY.md). Il fixe le cap
+courant et l'ordre des autorités ; ce répertoire contient les décisions,
+preuves, guides et archives spécialisées.
+
 ## Organisation
 
 | Dossier         | Contenu                                              | Cycle de vie                 |
 | --------------- | ---------------------------------------------------- | ---------------------------- |
-| `adr/`          | Décisions structurantes — une par fichier, numérotée | Remplacée, jamais amendée    |
-| `architecture/` | État courant du socle, analyses, stratégies          | Vivante — corrigée sur place |
+| `adr/`          | Décisions structurantes — une par fichier, numérotée | Statut mis à jour, décision supersédée explicitement |
+| `architecture/` | État courant, analyses datées, stratégies et registres | Cycle de vie déclaré dans chaque document |
 | `guides/`       | Procédures opérationnelles                           | Vivante                      |
 
-**Aucun journal historique.** Un document décrit ce qui est vrai aujourd'hui ;
-quand une information devient fausse, elle est corrigée ou le fichier est
-supprimé. L'historique est dans Git, qui le fait mieux.
-
-C'est une leçon tirée à nos dépens : un journal de phases append-only avait
-produit cinq documents de corrections successives, dans lesquels il fallait
-reconstituer l'état réel en lisant les cinq. Un document qui oblige à faire de
-l'archéologie a cessé d'être de la documentation.
+Un document vivant décrit ce qui est vrai aujourd'hui. Un audit daté ou un
+registre historique peut être conservé pour la traçabilité, mais doit l'annoncer
+et ne jamais se présenter comme l'autorité courante. Git reste l'historique
+exhaustif ; la prose historique ne doit pas être nécessaire pour reconstruire
+le cap actuel.
 
 ## Règle — chiffres exécutables (audit E-12 / P1-9)
 
@@ -134,6 +135,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0091](./adr/0091-qualifier-c5-react-dans-chromium-sans-declarer-la-parite.md) | Qualifier C5 React dans Chromium sans déclarer la parité |
 | [0092](./adr/0092-chargement-progressif-compact-react-c5.md) | Réaliser le chargement progressif Compact de C5 en React |
 | [0093](./adr/0093-filtre-compact-deux-niveaux-react-c5.md)  | Réaliser le filtre Compact à deux niveaux de C5 en React |
+| [0094](./adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md) | Cap produit interne, remplacement progressif et cibles web |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
@@ -224,11 +226,11 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 
 | Question                            | Document                                                                                                                                                                        |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Quel est l'objectif du projet ?** | **[ADR-0029 — périmètre de capacités](./adr/0029-perimetre-capacites-plateforme-generation.md)** + [matrice de preuve](./architecture/generation-platform-capability-matrix.md) |
+| **Quel est l'objectif du projet ?** | **[Autorité produit](../PROJECT_AUTHORITY.md)** + [ADR-0094](./adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md) |
 | Comment je démarre ?                | [Contribuer](./guides/contribuer.md)                                                                                                                                            |
 | Qu'est-ce qui existe déjà ?         | [État du socle](./architecture/etat-du-socle.md)                                                                                                                                |
 | Pourquoi ce choix ?                 | L'ADR correspondant                                                                                                                                                             |
-| Qu'est-ce qui vient ensuite ?       | [Feuille de route](./architecture/feuille-de-route.md)                                                                                                                          |
-| Comment démarrer une vraie app ?    | [Passage immédiat à une application métier](./architecture/taches-restantes.md#passage-immédiat-à-une-application-métier-réelle)                                               |
+| Qu'est-ce qui vient ensuite ?       | [Feuille de route courante](./architecture/feuille-de-route.md)                                                                                                                 |
+| Comment démarrer une vraie app ?    | [Guide LLM app-builder](../LLM_APP_BUILDER.md)                                                                                                                                 |
 | Comment on s'y prend concrètement ? | [Plan d'exécution](./architecture/plan-d-execution.md)                                                                                                                          |
 | Que contient l'application source ? | [Analyse du projet source](./architecture/analyse-du-projet-source.md)                                                                                                          |

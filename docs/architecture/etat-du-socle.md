@@ -4,14 +4,14 @@ Ce document décrit **ce qui existe aujourd'hui** dans le monorepo. Il est mis �
 jour à chaque évolution du socle — il n'y a pas de journal historique à
 consulter, l'historique Git fait foi.
 
-> Ce socle (Angular/SEOS) reste temporairement l'oracle industriel de migration
-> de l'objectif global du dépôt : il doit maintenant être reproduit par les
-> compositions génériques avant tout archivage séparé — voir
-> [ADR-0026](../adr/0026-reorientation-objectif-generation-generique.md) et
-> [PLAT-9 / issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64).
+> Ce socle Angular/SEOS est une référence temporaire de migration, pas le cap
+> produit. Les compositions génériques doivent transférer ses preuves encore
+> utiles avant son archivage séparé — voir
+> [ADR-0094](../adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
+> et [PLAT-9 / issue #64](https://github.com/ismaelkouda/cmz-platform/issues/64).
 
 <!-- BEGIN:GENERATED:monorepo-status -->
-- **Dernière mise à jour :** 2026-10-06 (généré par `tools/generate-status.mjs`)
+- **Dernière mise à jour :** 2026-10-08 (généré par `tools/generate-status.mjs`)
 - **État :** **Phase 08** — génération depuis patterns ([ADR-0013](../adr/0013-phases-08-generation-et-09-verification.md)). Socle outillé + Kernel `shared/` / `@cmz/core` + **19** modules livrés/compilants (**72** libs + **5** app ; **2 734** `.ts` hors tests). Voir [`STATUS.md`](../../STATUS.md).
 - **Familles IR :** `workflow-action` **4/4**, `read-only-view` **4/4**. Corpus **1 507** paires. CI `corpus:ci` (structural-only) + `corpus-full` (main) + Tier 2 nightly.
 <!-- END:GENERATED:monorepo-status -->
@@ -27,7 +27,8 @@ conventions/              profils de convention par version de framework
 tools/seos-adapter/       adaptateur monorepo (sortie générateur → libs de couche)
 tools/                    scripts de vérification du socle & mock-server
 docs/                     décisions, architecture, guides, plans de modules
-LLM_CONTEXT.md            guide maître d'architecture et de cadrage IA
+PROJECT_AUTHORITY.md      cap courant et guide obligatoire des agents
+LLM_CONTEXT.md            contexte technique historique et métriques générées
 nx.json                   configuration Nx
 package.json              catalog de versions + scripts (workspaces libs/*/*)
 ```

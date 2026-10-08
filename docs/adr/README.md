@@ -62,7 +62,7 @@ envisagées, le choix retenu et ses conséquences.
 | [0026](./0026-reorientation-objectif-generation-generique.md) | Réorientation de l'objectif : système de génération générique multi-source/multi-stack | Superseded |
 | [0027](./0027-noyau-verbes-structurels-catalogue-ouvert-patterns.md) | Noyau de verbes structurels + catalogue ouvert de patterns (remplace la liste fermée d'archétypes) | Superseded |
 | [0028](./0028-execution-topology-compositions-memorisees.md) | `execution_topology` comme axe ouvert + compositions mémorisées plutôt que primitives | Superseded |
-| [0029](./0029-perimetre-capacites-plateforme-generation.md) | Périmètre de capacités de la plateforme de génération    | Accepted |
+| [0029](./0029-perimetre-capacites-plateforme-generation.md) | Périmètre de capacités de la plateforme de génération    | Superseded |
 | [0030](./0030-ir-canonique-et-profils-cibles.md)          | IR canonique indépendante et profils de rendu cibles     | Accepted |
 | [0031](./0031-graphe-execution-et-manifests-composition.md) | Graphe d'exécution typé et manifests de composition persistés | Accepted |
 | [0032](./0032-cycle-vie-compositions-et-promotion-patterns.md) | Cycle de vie des compositions et promotion des patterns  | Accepted |
@@ -71,7 +71,7 @@ envisagées, le choix retenu et ses conséquences.
 | [0035](./0035-contrat-durabilite-publication-generation.md) | Contrat de durabilité de la publication générée          | Accepted |
 | [0036](./0036-convergence-transloco-angular.md)           | Convergence de tout l'Angular du repo sur Transloco      | Superseded |
 | [0037](./0037-plateforme-intention-utilisateur-vers-application.md) | Génération assistée par langage naturel pour un utilisateur du dépôt | Proposed |
-| [0038](./0038-nature-produit-public-multi-locataire.md)   | Nature de produit : exposition publique et multi-location | Proposed |
+| [0038](./0038-nature-produit-public-multi-locataire.md)   | Nature de produit : exposition publique et multi-location | Superseded |
 | [0039](./0039-frontiere-contractuelle-conception-realisation-llm.md) | Frontière contractuelle entre conception et réalisation par LLM | Accepted |
 | [0040](./0040-production-des-roles-de-code-depuis-artifact-plan.md) | Produire les rôles de code depuis `artifact-plan`        | Accepted |
 | [0041](./0041-angular-material-tailwind-defaults.md)      | Angular Material + Tailwind comme défauts d'app Angular  | Accepted |
@@ -127,4 +127,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0091](./0091-qualifier-c5-react-dans-chromium-sans-declarer-la-parite.md) | Qualifier C5 React dans Chromium sans déclarer la parité | Accepted |
 | [0092](./0092-chargement-progressif-compact-react-c5.md)  | Réaliser le chargement progressif Compact de C5 en React | Accepted |
 | [0093](./0093-filtre-compact-deux-niveaux-react-c5.md)    | Réaliser le filtre Compact à deux niveaux de C5 en React | Accepted |
+| [0094](./0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md) | Cap produit interne, remplacement progressif et cibles web | Accepted |
 <!-- END:GENERATED:adr-index -->
