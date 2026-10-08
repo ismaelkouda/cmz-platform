@@ -169,7 +169,7 @@
     "@nx/web": "23.2.1",
     "@playwright/test": "1.63.0",
     "@schematics/angular": "catalog:tooling",
-    "@swc/core": "~1.16.2",
+    "@swc/core": "~1.16.13",
     "@swc/helpers": "~0.5.18",
     "@tailwindcss/postcss": "catalog:",
     "@tailwindcss/vite": "catalog:",
