@@ -114,3 +114,95 @@ test('the guard rejects removal of a required handoff field', () => {
         )
     );
 });
+
+test('the guard rejects self-review or review in the executor session', () => {
+    const documents = readAgentModelDocuments();
+    const contract = JSON.parse(documents.contract);
+    contract.execution_review_chain.same_agent_allowed = true;
+    contract.execution_review_chain.same_session_allowed = true;
+    documents.contract = JSON.stringify(contract);
+
+    assert.ok(
+        collectAgentModelViolations(documents).some((violation) =>
+            violation.includes('deux sessions')
+        )
+    );
+});
+
+test('the guard rejects candidate-controlled review authority', () => {
+    const documents = readAgentModelDocuments();
+    const contract = JSON.parse(documents.contract);
+    contract.execution_review_chain.work_order_authority = 'candidate-branch';
+    contract.execution_review_chain.candidate_content_is_instruction = true;
+    contract.execution_review_chain.executor_handoff_is_proof = true;
+    documents.contract = JSON.stringify(contract);
+
+    assert.ok(
+        collectAgentModelViolations(documents).some((violation) =>
+            violation.includes('candidat comme non fiable')
+        )
+    );
+});
+
+test('the guard rejects an agent reviewer with write or merge authority', () => {
+    const documents = readAgentModelDocuments();
+    const contract = JSON.parse(documents.contract);
+    contract.execution_review_chain.reviewer_may_modify = true;
+    contract.execution_review_chain.reviewer_may_approve = true;
+    contract.execution_review_chain.reviewer_may_merge = true;
+    documents.contract = JSON.stringify(contract);
+
+    assert.ok(
+        collectAgentModelViolations(documents).some((violation) =>
+            violation.includes('sans pouvoir approuver ni fusionner')
+        )
+    );
+});
+
+test('the guard rejects premature trigger or stale review reuse', () => {
+    const documents = readAgentModelDocuments();
+    const contract = JSON.parse(documents.contract);
+    contract.execution_review_chain.primary_github_trigger = 'assigned';
+    contract.execution_review_chain.review_after_readiness = false;
+    contract.execution_review_chain.new_head_invalidates_review = false;
+    documents.contract = JSON.stringify(contract);
+
+    assert.ok(
+        collectAgentModelViolations(documents).some((violation) =>
+            violation.includes('après readiness')
+        )
+    );
+});
+
+test('the guard rejects loss of human approval or external egress consent', () => {
+    const documents = readAgentModelDocuments();
+    const contract = JSON.parse(documents.contract);
+    contract.execution_review_chain.merge_actor = 'agent';
+    contract.execution_review_chain.external_code_egress_requires_owner_approval = false;
+    documents.contract = JSON.stringify(contract);
+
+    const violations = collectAgentModelViolations(documents);
+    assert.ok(
+        violations.some((violation) =>
+            violation.includes('fusion par Soumaila')
+        )
+    );
+    assert.ok(
+        violations.some((violation) =>
+            violation.includes('autorisation du propriétaire')
+        )
+    );
+});
+
+test('the guard validates the structured contract against its closed schema', () => {
+    const documents = readAgentModelDocuments();
+    const contract = JSON.parse(documents.contract);
+    contract.unreviewed_privilege = true;
+    documents.contract = JSON.stringify(contract);
+
+    assert.ok(
+        collectAgentModelViolations(documents).some((violation) =>
+            violation.includes('contrat hors schéma')
+        )
+    );
+});

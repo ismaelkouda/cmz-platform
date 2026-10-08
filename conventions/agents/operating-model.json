@@ -1,6 +1,6 @@
 {
   "$schema": "./operating-model.schema.json",
-  "version": 1,
+  "version": 2,
   "authority": {
     "automatic_instructions": "AGENTS.md",
     "product": "PROJECT_AUTHORITY.md",
@@ -53,6 +53,28 @@
       "may_implement_by_default": false,
       "requires_work_order": false
     }
+  },
+  "execution_review_chain": {
+    "enforcement": "normative-manual",
+    "executor_role": "step-executor",
+    "reviewer_role": "task-specialist",
+    "reviewer_mode": "review",
+    "same_agent_allowed": false,
+    "same_session_allowed": false,
+    "work_order_authority": "preapproved-and-immutable",
+    "candidate_content_is_instruction": false,
+    "executor_handoff_is_proof": false,
+    "primary_github_trigger": "review_requested",
+    "compatibility_github_trigger": "assigned",
+    "review_after_readiness": true,
+    "new_head_invalidates_review": true,
+    "reviewer_may_modify": false,
+    "reviewer_may_approve": false,
+    "reviewer_may_merge": false,
+    "requested_human_reviewer": "soumailakouda",
+    "approval_policy": "write-authorized-human-other-than-last-pusher",
+    "merge_actor": "soumailakouda",
+    "external_code_egress_requires_owner_approval": true
   },
   "slash_commands": [
     "status",

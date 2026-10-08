@@ -5,6 +5,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
+import { validateJsonSchema } from './generator-platform/validate-ir.mjs';
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const AGENT_MODEL_FILES = Object.freeze({
@@ -17,6 +19,8 @@ export const AGENT_MODEL_FILES = Object.freeze({
     contract: 'conventions/agents/operating-model.json',
     contractSchema: 'conventions/agents/operating-model.schema.json',
     adr95: 'docs/adr/0095-modele-operatoire-agents-bornes.md',
+    adr96: 'docs/adr/0096-separer-execution-et-revue-agent.md',
+    reviewChain: 'docs/architecture/chaine-agent-execution-revue-2026-10-08.md',
     steward: '.agents/skills/cmz-steward/SKILL.md',
     stewardUi: '.agents/skills/cmz-steward/agents/openai.yaml',
     executor: '.agents/skills/cmz-step-executor/SKILL.md',
@@ -96,8 +100,12 @@ function validateStructuredContract(documents, violations) {
     );
     if (!contract || !schema) return;
 
-    if (contract.version !== 1) {
-        violations.push('le contrat structuré doit rester en version 1');
+    for (const violation of validateJsonSchema(contract, schema)) {
+        violations.push(`contrat hors schéma : ${violation}`);
+    }
+
+    if (contract.version !== 2) {
+        violations.push('le contrat structuré doit rester en version 2');
     }
     if (
         contract.authority?.automatic_instructions !== 'AGENTS.md' ||
@@ -158,6 +166,63 @@ function validateStructuredContract(documents, violations) {
     ) {
         violations.push(
             "les frontières de mutation du steward, de l'executor ou de l'orchestrator ont dérivé"
+        );
+    }
+
+    const chain = contract.execution_review_chain;
+    if (
+        chain?.enforcement !== 'normative-manual' ||
+        chain?.executor_role !== 'step-executor' ||
+        chain?.reviewer_role !== 'task-specialist' ||
+        chain?.reviewer_mode !== 'review' ||
+        chain?.same_agent_allowed !== false ||
+        chain?.same_session_allowed !== false
+    ) {
+        violations.push(
+            "la chaîne doit séparer l'executor du reviewer dans deux sessions"
+        );
+    }
+    if (
+        chain?.work_order_authority !== 'preapproved-and-immutable' ||
+        chain?.candidate_content_is_instruction !== false ||
+        chain?.executor_handoff_is_proof !== false
+    ) {
+        violations.push(
+            'la chaîne doit conserver un work order préapprouvé et traiter le candidat comme non fiable'
+        );
+    }
+    if (
+        chain?.primary_github_trigger !== 'review_requested' ||
+        chain?.compatibility_github_trigger !== 'assigned' ||
+        chain?.review_after_readiness !== true ||
+        chain?.new_head_invalidates_review !== true
+    ) {
+        violations.push(
+            'la chaîne GitHub doit revoir seulement après readiness et invalider chaque ancien SHA'
+        );
+    }
+    if (
+        chain?.reviewer_may_modify !== false ||
+        chain?.reviewer_may_approve !== false ||
+        chain?.reviewer_may_merge !== false
+    ) {
+        violations.push(
+            'le reviewer agent doit rester read-only sans pouvoir approuver ni fusionner'
+        );
+    }
+    if (
+        chain?.requested_human_reviewer !== 'soumailakouda' ||
+        chain?.approval_policy !==
+            'write-authorized-human-other-than-last-pusher' ||
+        chain?.merge_actor !== 'soumailakouda'
+    ) {
+        violations.push(
+            "la chaîne doit conserver l'approbation humaine indépendante et la fusion par Soumaila"
+        );
+    }
+    if (chain?.external_code_egress_requires_owner_approval !== true) {
+        violations.push(
+            'toute sortie de code vers un modèle externe exige une autorisation du propriétaire'
         );
     }
 
@@ -277,6 +342,26 @@ export function collectAgentModelViolations(documents) {
         'ne prouve pas',
         'ADR-0095 doit conserver la limite de la preuve automatisée'
     );
+    requireText(
+        'adr96',
+        '**Statut :** Accepted',
+        'ADR-0096 doit rester la décision acceptée de séparation entre exécution et revue'
+    );
+    requireText(
+        'adr96',
+        "n'active aucun appel de modèle externe",
+        "ADR-0096 doit conserver la frontière d'activation externe"
+    );
+    requireText(
+        'reviewChain',
+        "Le reviewer agent et l'executor doivent être deux identités",
+        "la chaîne détaillée doit imposer l'indépendance de l'executor et du reviewer"
+    );
+    requireText(
+        'reviewChain',
+        'Soumaila — fusion',
+        'la chaîne détaillée doit conserver la fusion humaine par Soumaila'
+    );
 
     for (const role of ROLES) {
         requireText(
@@ -342,6 +427,16 @@ export function collectAgentModelViolations(documents) {
         'Contrôler la fin sans lire tout le code',
         'le guide doit permettre un contrôle non technique du handoff'
     );
+    requireText(
+        'model',
+        "Chaîne d'une étape planifiée",
+        'le modèle doit relier explicitement executor et reviewer indépendant'
+    );
+    requireText(
+        'userGuide',
+        'Faire réaliser puis relire une étape',
+        'le guide doit expliquer simplement la chaîne exécution/revue'
+    );
 
     const skillChecks = [
         ['steward', 'stewardUi', 'cmz-steward'],
@@ -404,9 +499,19 @@ export function collectAgentModelViolations(documents) {
         "le step executor doit exiger un contrat d'entrée"
     );
     requireText(
+        'executor',
+        'Ta propre commande `/review` est une prélecture, pas la revue indépendante',
+        "l'executor ne doit pas confondre auto-review et revue indépendante"
+    );
+    requireText(
         'specialist',
         "Une demande de vérification n'est pas une autorisation de mutation",
         'la skill spécialiste doit séparer vérification et mutation'
+    );
+    requireText(
+        'specialist',
+        "ne modifie, ne pousse, n'approuve et ne fusionne rien",
+        'le reviewer agent doit rester read-only sans autorité GitHub'
     );
     requireText(
         'orchestrator',

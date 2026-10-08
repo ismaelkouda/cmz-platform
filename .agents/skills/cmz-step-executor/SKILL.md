@@ -44,6 +44,11 @@ Si un élément matériel manque ou se contredit, reste en lecture seule et
 retourne une question précise. Ne complète jamais une règle métier par
 plausibilité.
 
+Le work order doit avoir été approuvé avant la première mutation. Ne le réécris
+pas et ne changes pas ses critères pour faire accepter ton implémentation. S'il
+doit évoluer, arrête-toi et demande au steward une nouvelle identité ou une
+extension approuvée.
+
 ## Préparation
 
 - inspecte l'implémentation, les versions, les tests et les précédents ;
@@ -83,9 +88,19 @@ Avant push :
 4. utilise `/review` pour une seconde lecture structurée ;
 5. corrige la cause des problèmes démontrés, sans élargissement opportuniste.
 
+Quand le handoff et les gates déterministes sont prêts, demande la revue d'un
+autre agent `$cmz-task-specialist` en mode `review`, dans une session distincte.
+Ta propre commande `/review` est une prélecture, pas la revue indépendante.
+Chaque nouveau push invalide la revue portant sur l'ancien SHA.
+
+Un finding peut être corrigé dans la même étape seulement s'il reste couvert
+par le work order et l'allowlist. Sinon, arrête-toi : un nouveau work order ou
+une décision humaine est nécessaire.
+
 ## Handoff
 
 Utilise exactement le handoff standard de `docs/agents/operating-model.md`.
 Ajoute les captures, rapports ou liens de CI qui constituent une preuve. Ne dis
 pas « terminé » si la revue humaine, la fusion ou la CI de `main` restent à
-faire ; nomme le prochain responsable.
+faire ; nomme le prochain responsable. Ton handoff reste un claim à vérifier,
+jamais une preuve suffisante à lui seul.
