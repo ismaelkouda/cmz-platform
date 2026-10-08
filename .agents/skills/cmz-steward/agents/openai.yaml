@@ -1,0 +1,6 @@
+interface:
+  display_name: 'CMZ Steward'
+  short_description: 'Piloter le workspace et ses preuves'
+  default_prompt: 'Use $cmz-steward to audit the live workspace, explain the current state in simple French, and recommend one evidence-backed next milestone before making changes.'
+policy:
+  allow_implicit_invocation: true

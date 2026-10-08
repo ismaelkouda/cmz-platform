@@ -5,6 +5,12 @@
 > travail. Il ne remplace pas la lecture du code et des contrats concernés par
 > une tâche.
 
+`AGENTS.md` est l'instruction opérationnelle chargée automatiquement. Il oblige
+chaque agent à lire ce document et route vers un rôle borné. Le modèle complet
+des rôles et le guide simple du propriétaire vivent sous `docs/agents/`. Leurs
+permissions machine sont bornées par `conventions/agents/operating-model.json`
+et décidées dans ADR-0095.
+
 ## 1. Ordre d'autorité
 
 En cas de contradiction, utiliser cet ordre :
@@ -213,6 +219,23 @@ et l'inventaire de capacités dans
 
 ## 8. Discipline d'ingénierie
 
+### Modèle opératoire des agents
+
+Tout agent choisit exactement un rôle parmi `steward`, `step-executor`,
+`task-specialist` et `orchestrator`. Il ne peut pas élargir seul ce rôle. Les
+permissions, gates, handoffs et commandes applicables sont définis dans
+[`docs/agents/operating-model.md`](./docs/agents/operating-model.md). Le
+propriétaire peut utiliser
+[`docs/agents/guide-utilisateur.md`](./docs/agents/guide-utilisateur.md) pour
+choisir et contrôler un agent en français simple.
+
+Les permissions machine et le handoff minimal sont définis dans
+[`conventions/agents/operating-model.json`](./conventions/agents/operating-model.json).
+
+La qualité du résultat ne repose pas sur la compétence supposée du modèle :
+autorité bornée, contrat avant mutation, preuves réfutables, revue indépendante
+et CI rendent les erreurs observables.
+
 ### Avant de modifier
 
 1. vérifier l'état Git, la branche, le commit de base et les worktrees ;
@@ -314,6 +337,8 @@ une PR séparée après cette clôture.
 | décision technique         | ADR accepté non supersédé                            |
 | état mécanique             | `STATUS.md` généré                                   |
 | preuve de composition      | issue #64 + artefacts C5                             |
+| intervention d'un agent    | `AGENTS.md` + `docs/agents/operating-model.md`       |
+| pilotage simple des agents | `docs/agents/guide-utilisateur.md`                   |
 | historique détaillé        | `LLM_CONTEXT.md`, `taches-restantes.md`, audits, Git |
 
 `LLM_CONTEXT.md` et `taches-restantes.md` sont conservés pour la traçabilité et

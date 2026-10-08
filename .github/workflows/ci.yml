@@ -69,6 +69,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Le modèle opératoire parse des manifests YAML de skills avec la
+      # dépendance versionnée `yaml`. Il appartient donc au job installé, pas
+      # au job Docs freshness volontairement autonome et sans node_modules.
+      - name: check:agent-operating-model (rôles bornés + manifests)
+        run: bun run check:agent-operating-model
+
       # Rejoue les contrôles des hooks locaux (ADR-0006)
       - name: check:engines
         run: node tools/check-engines.mjs

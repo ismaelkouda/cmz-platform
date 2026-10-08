@@ -1,0 +1,6 @@
+interface:
+  display_name: 'CMZ Orchestrator'
+  short_description: 'Choisir et contrôler le bon agent simplement'
+  default_prompt: 'Use $cmz-orchestrator to turn my request into the safest agent role, exact slash commands, a copy-ready prompt, expected evidence, and simple approval checks.'
+policy:
+  allow_implicit_invocation: true

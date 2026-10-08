@@ -6,11 +6,16 @@ preuves, guides et archives spécialisées.
 
 ## Organisation
 
-| Dossier         | Contenu                                              | Cycle de vie                 |
-| --------------- | ---------------------------------------------------- | ---------------------------- |
-| `adr/`          | Décisions structurantes — une par fichier, numérotée | Statut mis à jour, décision supersédée explicitement |
-| `architecture/` | État courant, analyses datées, stratégies et registres | Cycle de vie déclaré dans chaque document |
-| `guides/`       | Procédures opérationnelles                           | Vivante                      |
+| Dossier         | Contenu                                                | Cycle de vie                                      |
+| --------------- | ------------------------------------------------------ | ------------------------------------------------- |
+| `adr/`          | Décisions structurantes — une par fichier, numérotée   | Statut mis à jour, décision supersédée explicitement |
+| `agents/`       | Rôles, permissions et orchestration des agents         | Vivante, protégée par CI                          |
+| `architecture/` | État courant, analyses datées, stratégies et registres | Cycle de vie déclaré dans chaque document         |
+| `guides/`       | Procédures opérationnelles                             | Vivante                                           |
+
+Les permissions machine des rôles d'agents sont définies dans
+[`conventions/agents/operating-model.json`](../conventions/agents/operating-model.json)
+et décidées par [ADR-0095](./adr/0095-modele-operatoire-agents-bornes.md).
 
 Un document vivant décrit ce qui est vrai aujourd'hui. Un audit daté ou un
 registre historique peut être conservé pour la traçabilité, mais doit l'annoncer
@@ -136,6 +141,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0092](./adr/0092-chargement-progressif-compact-react-c5.md) | Réaliser le chargement progressif Compact de C5 en React |
 | [0093](./adr/0093-filtre-compact-deux-niveaux-react-c5.md)  | Réaliser le filtre Compact à deux niveaux de C5 en React |
 | [0094](./adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md) | Cap produit interne, remplacement progressif et cibles web |
+| [0095](./adr/0095-modele-operatoire-agents-bornes.md)       | Modèle opératoire à rôles bornés pour les agents         |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
