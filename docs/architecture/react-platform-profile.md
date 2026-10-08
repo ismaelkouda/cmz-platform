@@ -230,16 +230,22 @@ structure adaptative. Il utilise le même modèle canonique qu'Angular, une
 implémentation React propre et un serveur déterministe local ; compilation,
 lint, tests et build production sont verts.
 
-Le prochain seuil crédible doit :
+La preuve automatisable du navigateur est maintenant fournie par ADR-0091 :
+transport exact, axe, focus, reflow, trois géométries, neuf candidats, budget de
+ressources et profil CDP nightly. Elle a corrigé l'accès clavier de la région
+tabulaire et la géométrie du dialogue neutralisée par le reset Tailwind.
 
-- passer les scénarios Playwright, axe et la revue humaine ciblée ;
-- mesurer bundle, réseau, focus, reflow, lifecycle et absence de fuite ;
-- produire une preuve visuelle Compact, Medium et Expanded sans transformer les
-  exemples génériques en autorité métier ;
+Le prochain seuil crédible doit désormais :
+
+- fermer les trois écarts Compact consignés par ADR-0091 : chargement
+  progressif, filtre modal à deux niveaux et FAB C5 ;
+- faire relire les neuf candidats par un humain sans les transformer
+  implicitement en baseline ;
+- exécuter la revue ciblée VoiceOver/NVDA et le zoom réel multi-OS ;
 - rester hermétique en PR ; le backend SEOS live relève de la politique séparée.
 
-Tant que cette preuve navigateur et humaine n'existe pas, la surface React est
-une preuve technique gouvernée, pas une parité produit M4.
+Tant que les trois écarts Compact et la preuve humaine ne sont pas fermés, la
+surface React reste une preuve technique gouvernée, pas une parité produit M4.
 
 ## 9. Non-objectifs
 

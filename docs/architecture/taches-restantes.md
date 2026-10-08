@@ -3024,6 +3024,20 @@ Figma, désormais source partielle différée :
   explicite : les preuves Playwright/axe, screenshots Compact/Medium/Expanded,
   focus navigateur, zoom/reflow et revue humaine AT restent la prochaine tranche
   ; aucune parité produit M4 ou lecture live SEOS n'est déclarée. Voir ADR-0090.
+  **REACT-PLATFORM-10 — preuve navigateur C5 React engagée localement le
+  2026-10-08 :** un harnais Playwright hermétique monte le vrai build et le vrai
+  port host contre une API locale déterministe. Six scénarios de PR couvrent
+  réseau exact, permissions, recherche, filtres, rafraîchissement, création,
+  erreur métier, focus, axe, 320 CSS px, texte 200 % et trois géométries. Neuf
+  captures sont publiées comme candidats, jamais comme baseline automatique ;
+  script + style mesurent 307 145 octets sous un budget de 512 KiB. Le premier
+  run a trouvé puis fait corriger une région scrollable inaccessible au clavier
+  et le centrage du dialogue annulé par le reset Tailwind. Trois campagnes CDP
+  de 100 cycles gardent `1 document / 372 nœuds / 169 listeners` constants et
+  225–227 KiB de croissance heap ; le profil rejoint le nightly avec budgets
+  512/128 KiB. Verdict honnête : M4 reste refusé. L'inspection conserve trois
+  écarts Compact — chargement progressif, filtre modal à deux niveaux et FAB —
+  ainsi que revue humaine, VoiceOver/NVDA et zoom multi-OS. Voir ADR-0091.
   **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
   navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
   des capacités non déclarées, la non-activation des lignes et la géométrie

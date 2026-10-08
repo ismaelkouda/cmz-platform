@@ -66,6 +66,9 @@ jobs:
       - name: Build React workspace proof (production)
         run: bunx nx run workspace-react-proof:build
 
+      - name: Build React C5 proof (production)
+        run: bunx nx run users-management-react-proof:build
+
       # WORKSPACE-TABS-4 — profil Chromium long, volontairement absent des PR :
       # 50 cycles d'échauffement + 100 cycles mesurés, puis quatre passes à
       # huit vues. Le dist production ci-dessus est réutilisé sans rebuild.
@@ -86,12 +89,30 @@ jobs:
         env:
           E2E_SKIP_BUILD: '1'
 
+      # REACT-PLATFORM-10 — le dialogue C5 est monté/détruit 100 fois après
+      # échauffement. Le profil CDP refuse toute croissance DOM/listeners et
+      # borne le heap ; il reste isolé du smoke PR pour ne pas rallonger chaque
+      # changement sans rapport avec cette surface.
+      - name: Profil mémoire de la surface C5 React (production)
+        run: bunx playwright test -c apps/users-management-react-proof/playwright.memory.config.mjs
+        env:
+          E2E_SKIP_BUILD: '1'
+
       - name: Publier les profils mémoire du workspace
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: workspace-memory-profiles
           path: test-results/**/workspace-*-profile*.json
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publier le profil mémoire C5 React
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: users-management-react-memory-profile
+          path: test-results/**/users-management-react-memory-profile.json
           retention-days: 30
           if-no-files-found: error
 

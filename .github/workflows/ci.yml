@@ -652,6 +652,23 @@ jobs:
         env:
           CI: 'true'
 
+      - name: Detect React C5 browser-proof impact
+        id: react-c5-browser-proof
+        run: |
+          if bunx nx show projects --affected --base=${{ env.NX_BASE }} | grep -qx users-management-react-proof \
+            || ! git diff --quiet ${{ env.NX_BASE }}...HEAD -- \
+              tools/e2e-static-server.mjs; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: React C5 deterministic browser proof
+        if: steps.react-c5-browser-proof.outputs.run == 'true'
+        run: bunx playwright test -c apps/users-management-react-proof/playwright.config.mjs
+        env:
+          CI: 'true'
+
       - name: Detect active C5 visual evaluation
         id: c5-visual-evaluation
         run: |
@@ -677,6 +694,17 @@ jobs:
             test-results/users-management-proof/**/*.actual.png
             test-results/users-management-proof/**/*.evidence.json
             test-results/users-management-proof/visual-evaluation.bundle.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload React C5 rendered candidates
+        if: always() && steps.react-c5-browser-proof.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: react-c5-rendered-candidates
+          path: |
+            test-results/users-management-react-proof/**/*.actual.png
+            test-results/users-management-react-proof/**/browser-layout-evidence.json
           if-no-files-found: error
           retention-days: 7
 

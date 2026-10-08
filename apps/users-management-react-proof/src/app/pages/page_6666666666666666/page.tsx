@@ -350,7 +350,12 @@ export function Pagepage6666666666666666() {
                             data-cmz-id="ready"
                             hidden={loading || queryFailed || empty}
                         >
-                            <div className={styles.tableScroller}>
+                            <div
+                                className={styles.tableScroller}
+                                role="region"
+                                aria-labelledby="users-title"
+                                tabIndex={0}
+                            >
                                 <table className={styles.table}>
                                     <thead>
                                         <tr>
