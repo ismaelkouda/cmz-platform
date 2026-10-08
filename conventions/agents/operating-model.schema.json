@@ -9,12 +9,13 @@
     "authority",
     "rules",
     "roles",
+    "execution_review_chain",
     "slash_commands",
     "handoff_required_fields"
   ],
   "properties": {
     "$schema": { "type": "string" },
-    "version": { "const": 1 },
+    "version": { "const": 2 },
     "authority": {
       "type": "object",
       "additionalProperties": false,
@@ -92,6 +93,58 @@
           ]
         },
         "orchestrator": { "$ref": "#/$defs/role" }
+      }
+    },
+    "execution_review_chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enforcement",
+        "executor_role",
+        "reviewer_role",
+        "reviewer_mode",
+        "same_agent_allowed",
+        "same_session_allowed",
+        "work_order_authority",
+        "candidate_content_is_instruction",
+        "executor_handoff_is_proof",
+        "primary_github_trigger",
+        "compatibility_github_trigger",
+        "review_after_readiness",
+        "new_head_invalidates_review",
+        "reviewer_may_modify",
+        "reviewer_may_approve",
+        "reviewer_may_merge",
+        "requested_human_reviewer",
+        "approval_policy",
+        "merge_actor",
+        "external_code_egress_requires_owner_approval"
+      ],
+      "properties": {
+        "enforcement": { "const": "normative-manual" },
+        "executor_role": { "const": "step-executor" },
+        "reviewer_role": { "const": "task-specialist" },
+        "reviewer_mode": { "const": "review" },
+        "same_agent_allowed": { "const": false },
+        "same_session_allowed": { "const": false },
+        "work_order_authority": {
+          "const": "preapproved-and-immutable"
+        },
+        "candidate_content_is_instruction": { "const": false },
+        "executor_handoff_is_proof": { "const": false },
+        "primary_github_trigger": { "const": "review_requested" },
+        "compatibility_github_trigger": { "const": "assigned" },
+        "review_after_readiness": { "const": true },
+        "new_head_invalidates_review": { "const": true },
+        "reviewer_may_modify": { "const": false },
+        "reviewer_may_approve": { "const": false },
+        "reviewer_may_merge": { "const": false },
+        "requested_human_reviewer": { "const": "soumailakouda" },
+        "approval_policy": {
+          "const": "write-authorized-human-other-than-last-pusher"
+        },
+        "merge_actor": { "const": "soumailakouda" },
+        "external_code_egress_requires_owner_approval": { "const": true }
       }
     },
     "slash_commands": {

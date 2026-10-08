@@ -142,6 +142,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0093](./adr/0093-filtre-compact-deux-niveaux-react-c5.md)  | Réaliser le filtre Compact à deux niveaux de C5 en React |
 | [0094](./adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md) | Cap produit interne, remplacement progressif et cibles web |
 | [0095](./adr/0095-modele-operatoire-agents-bornes.md)       | Modèle opératoire à rôles bornés pour les agents         |
+| [0096](./adr/0096-separer-execution-et-revue-agent.md)      | Séparer l'exécution et la revue agent d'une étape planifiée |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

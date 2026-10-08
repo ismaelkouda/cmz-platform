@@ -21,6 +21,9 @@ Le contrat machine
 borne les permissions et le handoff.
 [ADR-0095](../adr/0095-modele-operatoire-agents-bornes.md) explique la décision
 et les limites de la preuve automatisée.
+[ADR-0096](../adr/0096-separer-execution-et-revue-agent.md) et la
+[`chaîne agent d'exécution et de revue`](../architecture/chaine-agent-execution-revue-2026-10-08.md)
+séparent le code, les preuves, la revue agent, l'approbation et la fusion.
 
 ## Principe
 

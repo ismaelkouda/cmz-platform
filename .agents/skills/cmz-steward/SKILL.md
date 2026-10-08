@@ -75,8 +75,18 @@ Avant d'autoriser l'exécution, exige :
 - rollback ou arrêt sûr ;
 - owner de l'implémentation et owner de la revue.
 
+Fige le work order avant la première mutation et garantis que l'executor ne peut
+pas redéfinir ses propres critères. Pour une page, conserve le mécanisme
+content-addressed existant ; n'invente pas un format concurrent. Pour une autre
+famille, utilise un contrat versionné explicite jusqu'à ce qu'un second cas réel
+justifie une abstraction commune.
+
 Après exécution, compare le handoff standard au contrat initial. Toute case
 manquante reste ouverte ; ne la déduis pas du ton confiant de l'executor.
+Route une revue vers un `$cmz-task-specialist` distinct et read-only. Un défaut
+hors allowlist reçoit un nouveau work order ; une décision produit revient au
+propriétaire. Soumaila reste l'acteur de fusion après approbation indépendante
+et gates complètes.
 
 ## Communication avec le propriétaire
 

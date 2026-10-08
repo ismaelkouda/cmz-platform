@@ -9,7 +9,9 @@
 chaque agent à lire ce document et route vers un rôle borné. Le modèle complet
 des rôles et le guide simple du propriétaire vivent sous `docs/agents/`. Leurs
 permissions machine sont bornées par `conventions/agents/operating-model.json`
-et décidées dans ADR-0095.
+et décidées dans ADR-0095. Une étape planifiée sépare obligatoirement
+l'executor du reviewer selon ADR-0096 ; aucun agent reviewer n'approuve ou ne
+fusionne.
 
 ## 1. Ordre d'autorité
 
@@ -235,6 +237,13 @@ Les permissions machine et le handoff minimal sont définis dans
 La qualité du résultat ne repose pas sur la compétence supposée du modèle :
 autorité bornée, contrat avant mutation, preuves réfutables, revue indépendante
 et CI rendent les erreurs observables.
+
+Pour une étape planifiée, le work order est approuvé avant le code et reste
+immuable pendant la réalisation. Un `step-executor` écrit ; un
+`task-specialist` distinct en mode `review` lit le diff exact sans le modifier ;
+un humain autorisé approuve ; Soumaila fusionne ; la CI de `main` clôt la
+chaîne. Le protocole complet est documenté dans
+[`chaine-agent-execution-revue-2026-10-08.md`](./docs/architecture/chaine-agent-execution-revue-2026-10-08.md).
 
 ### Avant de modifier
 

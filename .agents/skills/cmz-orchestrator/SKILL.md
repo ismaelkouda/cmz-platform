@@ -43,6 +43,11 @@ vérifiée, pas rappelée de mémoire.
 9. donne les signaux d'arrêt ;
 10. explique ce que le propriétaire doit vérifier à la fin.
 
+Pour une étape planifiée, fournis toujours deux lancements séparés : un
+`$cmz-step-executor` qui écrit, puis un `$cmz-task-specialist` en mode `review`
+et dans un autre chat qui reste en lecture seule. Précise que `/review` dans le
+chat de l'executor ne crée pas une revue indépendante.
+
 Pose au maximum trois questions courtes seulement si leurs réponses changent
 matériellement le rôle, le périmètre ou le risque. Sinon, fais une
 recommandation et rends les hypothèses visibles.
@@ -97,5 +102,9 @@ Ne recommande pas `/fork` pour onboarder un nouveau steward. Ne recommande pas
 - Ne lance pas plusieurs écrivains sur les mêmes fichiers.
 - Ne remplace pas une décision du propriétaire par ta préférence.
 - Ne valide pas un handoff incomplet : demande l'artefact manquant.
+- Ne propose jamais au reviewer agent de corriger, pousser, approuver ou
+  fusionner ; les findings reviennent à l'executor ou au steward.
+- Ne propose aucun appel externe de modèle sans décision explicite sur le
+  fournisseur, les données, la rétention, les secrets et le coût.
 - Si le propriétaire veut exécuter le travail dans le même chat, annonce le
   changement de rôle et demande l'invocation de la skill correspondante.
