@@ -364,7 +364,11 @@ export async function renderAngularPwaShell({
                 },
                 test: {
                     executor: '@angular/build:unit-test',
-                    options: { watch: false },
+                    options: {
+                        watch: false,
+                        runnerConfig:
+                            'tools/generator-platform/page-realization-vitest.config.mjs',
+                    },
                 },
                 'serve-static': {
                     continuous: true,

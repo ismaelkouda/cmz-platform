@@ -26,8 +26,8 @@
     },
     {
       "path": "project.json",
-      "bytes": 2496,
-      "sha256": "28165c75a406de733f00c11bc1d94d7f97efb5c74fdb97799acc0ab8071a5983"
+      "bytes": 2583,
+      "sha256": "e61791ffd3376f0fd67d49c2a858f9a1f0981f87bf9103cda4824b5711514025"
     },
     {
       "path": "public/icon.svg",
@@ -105,5 +105,5 @@
       "sha256": "199c00abd5c5721eed4cb46fca6ba37f8883bf891e7242273d9c46e92d751b34"
     }
   ],
-  "tree_sha256": "0ca99ea6f5cab052fde067757707d1d35f76835552b3566ae39970db504078d5"
+  "tree_sha256": "38dff58557a928db2b100b759b3485792ab024b1da625ed4d7fadc4242074216"
 }

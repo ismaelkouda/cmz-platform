@@ -3006,16 +3006,33 @@ Figma, désormais source partielle différée :
   l'outillage et le style, pas la surface métier. Prochaine tranche : recalculer
   le work order C5 sur ce host protégé, réaliser la page React
   accessible/adaptative en ne consommant que les capacités contractuelles, puis
-  produire les preuves navigateur et visuelles séparées. **ADAPT-11b — engagé
-  localement après fusion d'ADAPT-11a :** cinq scénarios navigateur bornent la
-  toolbar C5, le GET unique de rafraîchissement, l'absence des capacités non
-  déclarées, la non-activation des lignes et la géométrie panneau/rail Medium +
-  Expanded. La référence visuelle conserve `Exporter` et les actions de ligne
-  comme capacités optionnelles, mais le contrat C5 ne fournit aucun
-  `action-request` correspondant : les rendre opérables maintenant inventerait
-  transport, permissions et effets. Les oracles exigent donc `Créer`,
-  `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu, dialogue
-  ou activation implicite. Quatre échecs attendus sont bornés par deux
+  produire les preuves navigateur et visuelles séparées. **REACT-PLATFORM-9 —
+  surface C5 React réalisée localement le 2026-10-08 :** le work order réel lie
+  désormais le contrat C5, son plan d'exécution et la preuve de présentation à
+  une page React idiomatique. La surface consomme uniquement la composition et
+  le host générés ; elle couvre liste, recherche, filtres brouillon/appliqués,
+  rafraîchissement, pagination, permission de création, validation/focus, erreur
+  serveur conservée, succès et invalidation nommée. Aucun export, tri, action de
+  ligne, endpoint ou package non déclaré n'est inventé. La preuve statique
+  conserve des sélecteurs JSX littéraux et l'oracle confiné est vert sur
+  compilation, build, lint et tests ; 36 tests React couvrent accès, host et
+  scénarios de page. Le passage à Vitest 5 a révélé une option `--runnerConfig`
+  indûment injectée à React : la correction durable rend au builder Angular sa
+  configuration native dans `project.json`, borne Vite React à `127.0.0.1` et
+  garde le runner commun indépendant des frameworks. Les deux renderers et les
+  applications existantes sont alignés avec tests de régression. Limite
+  explicite : les preuves Playwright/axe, screenshots Compact/Medium/Expanded,
+  focus navigateur, zoom/reflow et revue humaine AT restent la prochaine tranche
+  ; aucune parité produit M4 ou lecture live SEOS n'est déclarée. Voir ADR-0090.
+  **ADAPT-11b — engagé localement après fusion d'ADAPT-11a :** cinq scénarios
+  navigateur bornent la toolbar C5, le GET unique de rafraîchissement, l'absence
+  des capacités non déclarées, la non-activation des lignes et la géométrie
+  panneau/rail Medium + Expanded. La référence visuelle conserve `Exporter` et
+  les actions de ligne comme capacités optionnelles, mais le contrat C5 ne
+  fournit aucun `action-request` correspondant : les rendre opérables maintenant
+  inventerait transport, permissions et effets. Les oracles exigent donc
+  `Créer`, `Rafraîchir`, `Filtres` et refusent export, colonne d'actions, menu,
+  dialogue ou activation implicite. Quatre échecs attendus sont bornés par deux
   signatures historiques exactes, sans `skip`, `todo`, runtime, work order,
   contrat API ou dépendance. La passe Chromium ciblée donne `5/5` : quatre
   attendus et un succès réel ; la régression C5 complète donne `55/55`, avec

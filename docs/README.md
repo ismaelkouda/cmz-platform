@@ -130,6 +130,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0087](./adr/0087-contrat-host-react-pour-composition-de-page.md) | Contrat host React pour une composition de page          |
 | [0088](./adr/0088-realisation-page-ciblee-par-profil.md)    | Réalisation de page ciblée par le profil publié          |
 | [0089](./adr/0089-montage-navigateur-react-par-host-public-ferme.md) | Montage navigateur React par host public fermé           |
+| [0090](./adr/0090-realiser-surface-c5-react-par-work-order.md) | Réaliser la surface C5 React par work order gouverné     |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
