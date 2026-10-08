@@ -31,7 +31,56 @@ export interface DeterministicApi {
     readonly writes: () => number;
 }
 
+export interface UserFixture {
+    readonly id: string;
+    readonly firstName: string;
+    readonly lastName: string;
+    readonly email?: string;
+    readonly profile?: string;
+    readonly role?: string | null;
+    readonly status?: string;
+}
+
+export interface UsersRouteContext {
+    readonly route: Route;
+    readonly url: URL;
+    readonly pageNumber: number;
+    readonly attempt: number;
+}
+
+function userPayload(user: UserFixture, index: number) {
+    return {
+        id: user.id,
+        first_name: user.firstName,
+        last_name: user.lastName,
+        email:
+            user.email ??
+            `${user.firstName}.${user.lastName}`
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[’']/g, '')
+                .toLowerCase()
+                .concat('@example.test'),
+        phone: `+22501020304${String(index).padStart(2, '0')}`,
+        profile: user.profile ?? 'Opérateur',
+        role: user.role ?? 'agent',
+        status: user.status ?? 'active',
+        created_at: '2026-09-01T08:00:00.000Z',
+        updated_at: `2026-10-${String(index + 1).padStart(2, '0')}T10:30:00.000Z`,
+    };
+}
+
 function usersPayload() {
+    const users: readonly UserFixture[] = USERS.map(
+        ([firstName, lastName, profile, role, status], index) => ({
+            id: `user-${index + 1}`,
+            firstName,
+            lastName,
+            profile,
+            role,
+            status,
+        })
+    );
     return {
         error: false,
         message: 'SUCCESS',
@@ -40,25 +89,7 @@ function usersPayload() {
             last_page: 2,
             per_page: 10,
             total: 24,
-            data: USERS.map(
-                ([firstName, lastName, profile, role, status], index) => ({
-                    id: `user-${index + 1}`,
-                    first_name: firstName,
-                    last_name: lastName,
-                    email: `${firstName}.${lastName}`
-                        .normalize('NFD')
-                        .replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[’']/g, '')
-                        .toLowerCase()
-                        .concat('@example.test'),
-                    phone: `+22501020304${String(index).padStart(2, '0')}`,
-                    profile,
-                    role,
-                    status,
-                    created_at: '2026-09-01T08:00:00.000Z',
-                    updated_at: `2026-10-0${index + 1}T10:30:00.000Z`,
-                })
-            ),
+            data: users.map(userPayload),
         },
     };
 }
@@ -88,6 +119,33 @@ async function fulfillJson(route: Route, body: unknown, status = 200) {
         contentType: 'application/json',
         body: JSON.stringify(body),
     });
+}
+
+export async function fulfillUsersPage(
+    route: Route,
+    options: {
+        readonly users: readonly UserFixture[];
+        readonly currentPage: number;
+        readonly lastPage: number;
+        readonly total?: number;
+        readonly status?: number;
+    }
+): Promise<void> {
+    await fulfillJson(
+        route,
+        {
+            error: false,
+            message: 'SUCCESS',
+            data: {
+                current_page: options.currentPage,
+                last_page: options.lastPage,
+                per_page: options.users.length,
+                total: options.total ?? options.users.length,
+                data: options.users.map(userPayload),
+            },
+        },
+        options.status
+    );
 }
 
 export async function installBrowserHost(
@@ -133,12 +191,14 @@ export async function serveDeterministicApi(
     options: {
         readonly createError?: string;
         readonly delayUsersMs?: number;
+        readonly usersResponder?: (context: UsersRouteContext) => Promise<void>;
     } = {}
 ): Promise<DeterministicApi> {
     const requests: ObservedApiRequest[] = [];
     let userReads = 0;
     let profileReads = 0;
     let writes = 0;
+    const attempts = new Map<number, number>();
 
     await page.route('**/api/settings/**', async (route) => {
         const request = route.request();
@@ -167,6 +227,18 @@ export async function serveDeterministicApi(
         }
         if (url.pathname.endsWith(USERS_PATH)) {
             userReads += 1;
+            const pageNumber = Number(url.searchParams.get('page') ?? '1');
+            const attempt = (attempts.get(pageNumber) ?? 0) + 1;
+            attempts.set(pageNumber, attempt);
+            if (options.usersResponder) {
+                await options.usersResponder({
+                    route,
+                    url,
+                    pageNumber,
+                    attempt,
+                });
+                return;
+            }
             if (options.delayUsersMs) {
                 await new Promise((resolve) =>
                     setTimeout(resolve, options.delayUsersMs)
@@ -188,5 +260,5 @@ export async function serveDeterministicApi(
 
 export async function openReadyPage(page: Page): Promise<void> {
     await page.goto('/settings-security/users');
-    await expect(page.getByRole('cell', { name: /Koné Mariam/ })).toBeVisible();
+    await expect(page.locator('[data-cmz-user-id="user-1"]')).toBeVisible();
 }

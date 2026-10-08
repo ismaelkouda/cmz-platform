@@ -8,6 +8,8 @@ import {
     USERS_PATH,
 } from './users-management.support';
 
+test.use({ viewport: { width: 900, height: 900 } });
+
 test('exécute recherche, filtres et rafraîchissement sur le contrat exact', async ({
     page,
 }) => {

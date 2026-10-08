@@ -132,6 +132,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0089](./adr/0089-montage-navigateur-react-par-host-public-ferme.md) | Montage navigateur React par host public fermé           |
 | [0090](./adr/0090-realiser-surface-c5-react-par-work-order.md) | Réaliser la surface C5 React par work order gouverné     |
 | [0091](./adr/0091-qualifier-c5-react-dans-chromium-sans-declarer-la-parite.md) | Qualifier C5 React dans Chromium sans déclarer la parité |
+| [0092](./adr/0092-chargement-progressif-compact-react-c5.md) | Réaliser le chargement progressif Compact de C5 en React |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

@@ -1,6 +1,26 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    type FormEvent,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 
 import { createBrowserAccessDecision } from '../../access-policy';
+import {
+    compactRequestKey,
+    CompactUsersResults,
+    emptyCompactProjection,
+    flattenCompactPages,
+    formatDate,
+    reduceCompactProjection,
+    roleLabel,
+    statusLabel,
+    type CompactPageRequest,
+    type CompactProjection,
+    useCompactLayout,
+} from './page-compact-users';
 import { CreateUserDialog, type CreateUserValues } from './page-create-form';
 import {
     EMPTY_USERS_FILTERS,
@@ -10,30 +30,6 @@ import {
 } from './page-filters';
 import { createBrowserUsersManagementPageRuntime } from './page-host';
 import styles from './page.module.scss';
-
-function roleLabel(role: string | null): string {
-    if (role === 'supervisor') return 'Superviseur';
-    if (role === 'team-leader') return "Chef d'équipe";
-    if (role === 'agent') return 'Agent';
-    return '—';
-}
-
-function statusLabel(status: string): string {
-    if (status === 'active') return 'Actif';
-    if (status === 'inactive') return 'Inactif';
-    if (status === 'blocked') return 'Bloqué';
-    if (status === 'pending') return 'En attente';
-    return status;
-}
-
-function formatDate(value: string): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.valueOf())) return value;
-    return new Intl.DateTimeFormat('fr-FR', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(date);
-}
 
 function SearchIcon() {
     return (
@@ -72,6 +68,8 @@ export function Pagepage6666666666666666() {
         [canCreate]
     );
     const composition = runtime.usePageComposition(permissions);
+    const isCompact = useCompactLayout();
+    type UserItem = (typeof composition.usersList.items)[number];
     const [currentPage, setCurrentPage] = useState(1);
     const [search, setSearch] = useState('');
     const [appliedFilters, setAppliedFilters] =
@@ -82,41 +80,234 @@ export function Pagepage6666666666666666() {
     const [createOpen, setCreateOpen] = useState(false);
     const [successNotice, setSuccessNotice] = useState('');
     const createTriggerRef = useRef<HTMLButtonElement>(null);
+    const compactSentinelRef = useRef<HTMLSpanElement>(null);
+    const compactGenerationRef = useRef(1);
+    const compactInFlightRef = useRef<string | null>(null);
+    const previousCompactRef = useRef(isCompact);
+    const [compactAutoLoadArmed, setCompactAutoLoadArmed] = useState(isCompact);
+    const [compactRequest, setCompactRequest] = useState<CompactPageRequest>({
+        attempt: 0,
+        generation: 1,
+        pageNumber: 1,
+    });
+    const [compactProjection, setCompactProjection] = useState<
+        CompactProjection<UserItem>
+    >(() => emptyCompactProjection(1));
     const loadInitialUsers = composition.usersList.load;
     const loadProfiles = composition.profilesSelect.load;
 
     useEffect(() => {
-        void Promise.all([loadInitialUsers({ page: 1 }), loadProfiles()]).catch(
-            () => undefined
-        );
+        const scheduledLoad = window.setTimeout(() => {
+            void Promise.all([
+                loadInitialUsers({ page: 1 }),
+                loadProfiles(),
+            ]).catch(() => undefined);
+        }, 0);
+        return () => window.clearTimeout(scheduledLoad);
     }, [loadInitialUsers, loadProfiles]);
 
-    const totalUsers = composition.usersList.page?.totalItems ?? 0;
+    const projectionPage = composition.usersList.page;
+    const projectionState = composition.usersList.state;
+    const [previousProjectionSource, setPreviousProjectionSource] = useState(
+        () => ({
+            page: projectionPage,
+            request: compactRequest,
+            state: projectionState,
+        })
+    );
+    if (
+        previousProjectionSource.page !== projectionPage ||
+        previousProjectionSource.request !== compactRequest ||
+        previousProjectionSource.state !== projectionState
+    ) {
+        setPreviousProjectionSource({
+            page: projectionPage,
+            request: compactRequest,
+            state: projectionState,
+        });
+        setCompactProjection((previous) =>
+            reduceCompactProjection(
+                previous,
+                compactRequest,
+                projectionState,
+                projectionPage
+            )
+        );
+    }
+
+    useEffect(() => {
+        const key = compactRequestKey(compactRequest);
+        if (
+            compactProjection.settledRequestKey === key ||
+            compactProjection.failedRequestKey === key
+        ) {
+            compactInFlightRef.current = null;
+        }
+    }, [compactProjection, compactRequest]);
+
+    useEffect(() => {
+        if (previousCompactRef.current !== isCompact) {
+            previousCompactRef.current = isCompact;
+            setCompactAutoLoadArmed(false);
+        }
+    }, [isCompact]);
+
+    useEffect(() => {
+        if (!isCompact || compactAutoLoadArmed) return;
+        const arm = () => setCompactAutoLoadArmed(true);
+        window.addEventListener('scroll', arm, { passive: true, once: true });
+        window.addEventListener('wheel', arm, { passive: true, once: true });
+        window.addEventListener('touchmove', arm, {
+            passive: true,
+            once: true,
+        });
+        return () => {
+            window.removeEventListener('scroll', arm);
+            window.removeEventListener('wheel', arm);
+            window.removeEventListener('touchmove', arm);
+        };
+    }, [compactAutoLoadArmed, isCompact]);
+
+    const compactUsers = useMemo(
+        () => flattenCompactPages(compactProjection.pages),
+        [compactProjection.pages]
+    );
+    const compactLastLoadedPage = useMemo(() => {
+        let pageNumber = 0;
+        while (compactProjection.pages.has(pageNumber + 1)) pageNumber += 1;
+        return pageNumber;
+    }, [compactProjection.pages]);
+    const compactHasNext =
+        compactLastLoadedPage > 0 &&
+        compactLastLoadedPage < compactProjection.lastPage;
+    const compactRequestKeyValue = compactRequestKey(compactRequest);
+    const compactLoadingNext =
+        compactRequest.pageNumber > 1 &&
+        compactProjection.settledRequestKey !== compactRequestKeyValue &&
+        compactProjection.failedRequestKey !== compactRequestKeyValue;
+    const compactFailedPage =
+        compactRequest.pageNumber > 1 &&
+        compactProjection.failedRequestKey === compactRequestKeyValue
+            ? compactRequest.pageNumber
+            : null;
+    const totalUsers = isCompact
+        ? compactProjection.totalItems
+        : (composition.usersList.page?.totalItems ?? 0);
     const activeFilterCount =
         Object.values(appliedFilters).filter(Boolean).length;
-    const loading = composition.usersList.state === 'loading';
-    const queryFailed = composition.usersList.state === 'error';
-    const empty = composition.usersList.state === 'empty';
+    const loading =
+        composition.usersList.state === 'loading' &&
+        (!isCompact ||
+            compactUsers.length === 0 ||
+            compactRequest.pageNumber === 1);
+    const queryFailed =
+        composition.usersList.state === 'error' &&
+        (!isCompact || compactFailedPage === null);
+    const empty =
+        composition.usersList.state === 'empty' &&
+        (!isCompact || compactUsers.length === 0);
     const reloading = composition.usersList.state === 'reloading';
     const submitting = composition.createUser.state === 'submitting';
 
-    async function loadUsers(
-        page: number,
-        nextSearch = search,
-        filters = appliedFilters
-    ) {
-        const input = {
-            page,
-            ...(nextSearch.trim() ? { search: nextSearch.trim() } : {}),
-            ...(filters.profile ? { profile: filters.profile } : {}),
-            ...(filters.role ? { role: filters.role } : {}),
-            ...(filters.status
-                ? { isActive: filters.status === 'active' }
-                : {}),
+    const requestUsers = useCallback(
+        (
+            page: number,
+            options: {
+                readonly attempt?: number;
+                readonly filters?: UsersFilterForm;
+                readonly reset?: boolean;
+                readonly search?: string;
+            } = {}
+        ) => {
+            const nextSearch = options.search ?? search;
+            const filters = options.filters ?? appliedFilters;
+            const generation = options.reset
+                ? compactGenerationRef.current + 1
+                : compactGenerationRef.current;
+            if (options.reset) {
+                compactGenerationRef.current = generation;
+                compactInFlightRef.current = null;
+                setCompactProjection(emptyCompactProjection(generation));
+            }
+            const request = {
+                attempt: options.attempt ?? 0,
+                generation,
+                pageNumber: page,
+            };
+            setCompactRequest(request);
+            setCurrentPage(page);
+            return loadInitialUsers({
+                page,
+                ...(nextSearch.trim() ? { search: nextSearch.trim() } : {}),
+                ...(filters.profile ? { profile: filters.profile } : {}),
+                ...(filters.role ? { role: filters.role } : {}),
+                ...(filters.status
+                    ? { isActive: filters.status === 'active' }
+                    : {}),
+            }).catch(() => undefined);
+        },
+        [appliedFilters, loadInitialUsers, search]
+    );
+
+    const loadNextCompactPage = useCallback(() => {
+        if (
+            !isCompact ||
+            !compactAutoLoadArmed ||
+            !compactHasNext ||
+            compactLoadingNext ||
+            compactFailedPage !== null ||
+            compactInFlightRef.current
+        ) {
+            return;
+        }
+        const page = compactLastLoadedPage + 1;
+        const request = {
+            attempt: 0,
+            generation: compactGenerationRef.current,
+            pageNumber: page,
         };
-        setCurrentPage(page);
-        await composition.usersList.load(input).catch(() => undefined);
-    }
+        compactInFlightRef.current = compactRequestKey(request);
+        void requestUsers(page);
+    }, [
+        compactAutoLoadArmed,
+        compactFailedPage,
+        compactHasNext,
+        compactLastLoadedPage,
+        compactLoadingNext,
+        isCompact,
+        requestUsers,
+    ]);
+
+    useEffect(() => {
+        const sentinel = compactSentinelRef.current;
+        if (
+            !isCompact ||
+            !compactAutoLoadArmed ||
+            !sentinel ||
+            !compactHasNext ||
+            compactLoadingNext ||
+            compactFailedPage !== null
+        ) {
+            return;
+        }
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    loadNextCompactPage();
+                }
+            },
+            { rootMargin: '0px 0px 150% 0px', threshold: 0 }
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [
+        compactAutoLoadArmed,
+        compactFailedPage,
+        compactHasNext,
+        compactLoadingNext,
+        isCompact,
+        loadNextCompactPage,
+    ]);
 
     function openCreate() {
         setSuccessNotice('');
@@ -131,18 +322,35 @@ export function Pagepage6666666666666666() {
     async function submitCreate(values: CreateUserValues) {
         setSuccessNotice('');
         const result = await composition.createUser.submit(values);
+        if (isCompact) void requestUsers(1, { reset: true });
         return result.message || 'Utilisateur créé.';
     }
 
     function applySearch(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        void loadUsers(1);
+        void requestUsers(1, { reset: true });
     }
 
     function applyFilters() {
         setAppliedFilters(draftFilters);
         setFiltersOpen(false);
-        void loadUsers(1, search, draftFilters);
+        void requestUsers(1, {
+            filters: draftFilters,
+            reset: true,
+            search,
+        });
+    }
+
+    function retryCompactPage() {
+        if (compactFailedPage === null || compactInFlightRef.current) return;
+        const attempt = compactRequest.attempt + 1;
+        const request = {
+            attempt,
+            generation: compactRequest.generation,
+            pageNumber: compactFailedPage,
+        };
+        compactInFlightRef.current = compactRequestKey(request);
+        void requestUsers(compactFailedPage, { attempt });
     }
 
     return (
@@ -234,11 +442,15 @@ export function Pagepage6666666666666666() {
                                 className={styles.secondaryAction}
                                 aria-label="Rafraîchir la liste des utilisateurs"
                                 disabled={loading || reloading}
-                                onClick={() =>
+                                onClick={() => {
+                                    if (isCompact) {
+                                        void requestUsers(1, { reset: true });
+                                        return;
+                                    }
                                     void composition.usersList
                                         .reload()
-                                        .catch(() => undefined)
-                                }
+                                        .catch(() => undefined);
+                                }}
                             >
                                 <RefreshIcon />
                                 <span className={styles.actionLabel}>
@@ -333,7 +545,7 @@ export function Pagepage6666666666666666() {
                             <button
                                 type="button"
                                 className={styles.secondaryAction}
-                                onClick={() => void loadUsers(currentPage)}
+                                onClick={() => void requestUsers(currentPage)}
                             >
                                 Réessayer
                             </button>
@@ -350,110 +562,153 @@ export function Pagepage6666666666666666() {
                             data-cmz-id="ready"
                             hidden={loading || queryFailed || empty}
                         >
-                            <div
-                                className={styles.tableScroller}
-                                role="region"
-                                aria-labelledby="users-title"
-                                tabIndex={0}
-                            >
-                                <table className={styles.table}>
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">#</th>
-                                            <th scope="col">Nom et prénom</th>
-                                            <th scope="col">Adresse e-mail</th>
-                                            <th scope="col">Profil</th>
-                                            <th scope="col">Rôle</th>
-                                            <th scope="col">Statut</th>
-                                            <th scope="col">Mise à jour</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody data-cmz-id="users">
-                                        {composition.usersList.items.map(
-                                            (user, index) => (
-                                                <tr key={user.uniqId}>
-                                                    <td>
-                                                        {(currentPage - 1) *
-                                                            (composition
-                                                                .usersList.page
-                                                                ?.pageSize ??
-                                                                0) +
-                                                            index +
-                                                            1}
-                                                    </td>
-                                                    <td>
-                                                        <strong>
-                                                            {user.lastName}{' '}
-                                                            {user.firstName}
-                                                        </strong>
-                                                        <span
-                                                            className={
-                                                                styles.mobileDetail
+                            {isCompact ? (
+                                <CompactUsersResults
+                                    announcement={
+                                        compactProjection.announcement
+                                    }
+                                    failedPage={compactFailedPage}
+                                    hasNext={compactHasNext}
+                                    loadingNext={compactLoadingNext}
+                                    onRetry={retryCompactPage}
+                                    sentinelRef={compactSentinelRef}
+                                    totalItems={compactProjection.totalItems}
+                                    users={compactUsers}
+                                />
+                            ) : (
+                                <>
+                                    <div
+                                        className={styles.tableScroller}
+                                        role="region"
+                                        aria-labelledby="users-title"
+                                        tabIndex={0}
+                                    >
+                                        <table className={styles.table}>
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">#</th>
+                                                    <th scope="col">
+                                                        Nom et prénom
+                                                    </th>
+                                                    <th scope="col">
+                                                        Adresse e-mail
+                                                    </th>
+                                                    <th scope="col">Profil</th>
+                                                    <th scope="col">Rôle</th>
+                                                    <th scope="col">Statut</th>
+                                                    <th scope="col">
+                                                        Mise à jour
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody data-cmz-id="users">
+                                                {composition.usersList.items.map(
+                                                    (user, index) => (
+                                                        <tr
+                                                            key={user.uniqId}
+                                                            data-cmz-user-id={
+                                                                user.uniqId
                                                             }
                                                         >
-                                                            {user.email}
-                                                        </span>
-                                                    </td>
-                                                    <td>{user.email}</td>
-                                                    <td>{user.profile}</td>
-                                                    <td>
-                                                        {roleLabel(user.role)}
-                                                    </td>
-                                                    <td>
-                                                        <span
-                                                            className={`${styles.status} ${styles[`status-${user.status}`] ?? ''}`}
-                                                        >
-                                                            {statusLabel(
-                                                                user.status
-                                                            )}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        {formatDate(
-                                                            user.updatedAt
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            )
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                            <td>
+                                                                {(currentPage -
+                                                                    1) *
+                                                                    (composition
+                                                                        .usersList
+                                                                        .page
+                                                                        ?.pageSize ??
+                                                                        0) +
+                                                                    index +
+                                                                    1}
+                                                            </td>
+                                                            <td>
+                                                                <strong>
+                                                                    {
+                                                                        user.lastName
+                                                                    }{' '}
+                                                                    {
+                                                                        user.firstName
+                                                                    }
+                                                                </strong>
+                                                            </td>
+                                                            <td>
+                                                                {user.email}
+                                                            </td>
+                                                            <td>
+                                                                {user.profile}
+                                                            </td>
+                                                            <td>
+                                                                {roleLabel(
+                                                                    user.role
+                                                                )}
+                                                            </td>
+                                                            <td>
+                                                                <span
+                                                                    className={`${styles.status} ${styles[`status-${user.status}`] ?? ''}`}
+                                                                >
+                                                                    {statusLabel(
+                                                                        user.status
+                                                                    )}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                {formatDate(
+                                                                    user.updatedAt
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
 
-                            {(composition.usersList.page?.lastPage ?? 1) >
-                                1 && (
-                                <nav
-                                    className={styles.pagination}
-                                    aria-label="Pagination des utilisateurs"
-                                >
-                                    <button
-                                        type="button"
-                                        disabled={currentPage <= 1 || reloading}
-                                        onClick={() =>
-                                            void loadUsers(currentPage - 1)
-                                        }
-                                    >
-                                        Précédent
-                                    </button>
-                                    <span aria-live="polite">
-                                        Page {currentPage} sur{' '}
-                                        {composition.usersList.page?.lastPage}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        disabled={
-                                            currentPage >=
-                                                (composition.usersList.page
-                                                    ?.lastPage ?? 1) ||
-                                            reloading
-                                        }
-                                        onClick={() =>
-                                            void loadUsers(currentPage + 1)
-                                        }
-                                    >
-                                        Suivant
-                                    </button>
-                                </nav>
+                                    {(composition.usersList.page?.lastPage ??
+                                        1) > 1 && (
+                                        <nav
+                                            className={styles.pagination}
+                                            aria-label="Pagination des utilisateurs"
+                                        >
+                                            <button
+                                                type="button"
+                                                disabled={
+                                                    currentPage <= 1 ||
+                                                    reloading
+                                                }
+                                                onClick={() =>
+                                                    void requestUsers(
+                                                        currentPage - 1
+                                                    )
+                                                }
+                                            >
+                                                Précédent
+                                            </button>
+                                            <span aria-live="polite">
+                                                Page {currentPage} sur{' '}
+                                                {
+                                                    composition.usersList.page
+                                                        ?.lastPage
+                                                }
+                                            </span>
+                                            <button
+                                                type="button"
+                                                disabled={
+                                                    currentPage >=
+                                                        (composition.usersList
+                                                            .page?.lastPage ??
+                                                            1) || reloading
+                                                }
+                                                onClick={() =>
+                                                    void requestUsers(
+                                                        currentPage + 1
+                                                    )
+                                                }
+                                            >
+                                                Suivant
+                                            </button>
+                                        </nav>
+                                    )}
+                                </>
                             )}
                         </div>
 

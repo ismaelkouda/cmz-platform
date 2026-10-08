@@ -64,6 +64,7 @@ export default defineConfig({
             ...process.env,
             E2E_APP_NAME: 'users-management-react-proof',
             E2E_APP_PORT: String(appPort),
+            NODE_ENV: 'production',
         },
     },
 });

@@ -1,6 +1,5 @@
 .page {
     --page-gap: clamp(1rem, 2vw, 2rem);
-    min-width: 20rem;
 }
 
 .appBar {
@@ -250,8 +249,78 @@
     }
 }
 
-.mobileDetail {
-    display: none;
+.mobileResults {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.75rem;
+}
+
+.mobileSummary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--cmz-color-muted);
+    font-size: 0.82rem;
+
+    strong {
+        color: var(--cmz-color-text);
+        font-size: 0.95rem;
+    }
+}
+
+.mobileUserList {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.userCard {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.9rem;
+    border: 1px solid var(--cmz-color-border);
+    border-radius: var(--cmz-radius);
+    background: var(--cmz-color-surface);
+
+    > div {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    p {
+        margin: 0;
+        color: #334155;
+        overflow-wrap: anywhere;
+    }
+}
+
+.userUpdated {
+    color: var(--cmz-color-muted) !important;
+    font-size: 0.8rem;
+}
+
+.mobileLoadError {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid #fecaca;
+    border-radius: var(--cmz-radius);
+    color: #991b1b;
+    background: #fef2f2;
+}
+
+.mobileLoadSentinel {
+    display: block;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
 }
 
 .status {
@@ -545,53 +614,6 @@
     .secondaryAction {
         min-width: 2.75rem;
         padding-inline: 0.65rem;
-    }
-
-    .table {
-        min-width: 0;
-
-        thead {
-            display: none;
-        }
-
-        tbody,
-        tr,
-        td {
-            display: block;
-        }
-
-        tr {
-            padding: 0.9rem 1rem;
-            border-bottom: 1px solid var(--cmz-color-border);
-        }
-
-        td {
-            padding: 0.2rem 0;
-            border: 0;
-
-            &:first-child,
-            &:nth-child(3),
-            &:nth-child(5),
-            &:nth-child(7) {
-                display: none;
-            }
-
-            &:nth-child(4)::before {
-                content: 'Profil : ';
-                color: var(--cmz-color-muted);
-            }
-        }
-    }
-
-    .mobileDetail {
-        display: block;
-        margin-top: 0.15rem;
-        color: var(--cmz-color-muted);
-        font-weight: 400;
-    }
-
-    .pagination {
-        justify-content: space-between;
     }
 
     .filterPanel {
