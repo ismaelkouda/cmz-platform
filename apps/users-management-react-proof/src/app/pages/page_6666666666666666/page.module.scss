@@ -28,6 +28,7 @@
 
 .content {
     display: grid;
+    box-sizing: border-box;
     gap: 1rem;
     width: min(100%, 100rem);
     margin-inline: auto;
