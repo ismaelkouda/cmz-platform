@@ -98,6 +98,12 @@ oracles distincts.
 
 ## 6. Équivalence observable C5 à relire humainement
 
+La relecture suit le
+[`protocole de recette humaine C6`](./c6-protocole-recette-humaine-2026-10-09.md).
+Elle combine l'examen des applications Angular et React dans Playwright, les
+oracles instrumentés et la lecture du core : un simple accord fondé sur ce
+dossier ou sur la CI ne suffit pas.
+
 L'approbation humaine de cette PR doit confirmer seulement les faits suivants :
 
 1. les quatre lignes de comparaison SEOS ci-dessus sont exactes et leurs écarts
@@ -134,8 +140,8 @@ HTTP ne prouve pas le backend vivant.
    `check:c6-seos-baseline` et les autres gates du dépôt ;
 2. faire relire ce dossier et le diff exact par un agent distinct en lecture
    seule ;
-3. demander à Soumaila de confirmer les huit points d'équivalence puis
-   d'approuver ;
+3. faire exécuter à Soumaila le protocole de recette humaine, lui demander de
+   confirmer explicitement les huit points d'équivalence, puis d'approuver ;
 4. fusionner seulement avec toute la CI verte ;
 5. vérifier la CI post-fusion de `main` ;
 6. reporter dans #64 le SHA, la PR, le run `main` et les limites, puis fermer
