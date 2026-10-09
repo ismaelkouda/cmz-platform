@@ -429,6 +429,7 @@ export function Pagepage6666666666666666() {
                                 type="button"
                                 className={styles.primaryAction}
                                 aria-label="Créer un utilisateur"
+                                title="Créer un utilisateur"
                                 disabled={
                                     !composition.createUser.authorized ||
                                     createOpen
@@ -441,9 +442,11 @@ export function Pagepage6666666666666666() {
                                 onClick={openCreate}
                             >
                                 <PlusIcon />
-                                <span className={styles.actionLabel}>
-                                    Créer
-                                </span>
+                                {!isCompact && (
+                                    <span className={styles.actionLabel}>
+                                        Créer
+                                    </span>
+                                )}
                             </button>
                             <button
                                 type="button"

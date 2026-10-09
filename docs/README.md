@@ -143,6 +143,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0094](./adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md) | Cap produit interne, remplacement progressif et cibles web |
 | [0095](./adr/0095-modele-operatoire-agents-bornes.md)       | Modèle opératoire à rôles bornés pour les agents         |
 | [0096](./adr/0096-separer-execution-et-revue-agent.md)      | Séparer l'exécution et la revue agent d'une étape planifiée |
+| [0097](./adr/0097-fab-compact-creation-react-c5.md)         | Fermer la parité du FAB Compact de création C5 en React  |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

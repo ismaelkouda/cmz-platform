@@ -1,30 +1,26 @@
 # Feuille de route courante
 
-- **Dernière mise à jour :** 2026-10-08
+- **Dernière mise à jour :** 2026-10-09
 - **Autorité produit :**
   [ADR-0094](../adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
 
 ## Chemin critique courant
 
-1. **Terminer la dernière parité Compact C5.** Le filtre à deux niveaux est
-   fusionné par la PR #228 ; le bouton d'action de création (FAB) reste l'écart
-   explicitement ouvert par l'ADR-0093. Le fermer sans étendre le contrat
-   métier.
-2. **Clore #64 par une promotion gouvernée.** Relier chaque critère à ses
+1. **Clore #64 par une promotion gouvernée.** Relier chaque critère à ses
    artefacts/tests, faire relire l'équivalence C5, enregistrer séparément les
    compositions v2 et mettre à jour issue/matrice dans une même PR.
-3. **Archiver progressivement SEOS.** Dans un changement séparé, inventorier les
+2. **Archiver progressivement SEOS.** Dans un changement séparé, inventorier les
    derniers consommateurs et retirer du chemin critique CI les preuves déjà
    transférées. Ne pas supprimer une preuve encore unique.
-4. **Démarrer la première application réelle.** Écrire avec le propriétaire le
+3. **Démarrer la première application réelle.** Écrire avec le propriétaire le
    brief du produit « signalement de zone non couverte », puis son contrat
    backend cible. Ne rien déduire du legacy à la place des données disponibles.
-5. **Livrer une première tranche verticale.** Une expérience et une page
+4. **Livrer une première tranche verticale.** Une expérience et une page
    utilisables, sur une cible explicitement choisie, avec navigateur, backend
    contracté, observabilité et stratégie de retour arrière.
-6. **Remplacer le legacy par étapes.** Transférer comportements et données
+5. **Remplacer le legacy par étapes.** Transférer comportements et données
    utiles, déployer progressivement, puis retirer l'ancien périmètre.
-7. **Construire le workbench par valeur.** Cockpit de lecture, diff,
+6. **Construire le workbench par valeur.** Cockpit de lecture, diff,
    approbation, aperçu isolé puis publication contrôlée. Aucune automatisation
    supplémentaire sans baseline et condition d'abandon (ADR-0080).
 

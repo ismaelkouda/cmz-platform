@@ -130,4 +130,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0094](./0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md) | Cap produit interne, remplacement progressif et cibles web | Accepted |
 | [0095](./0095-modele-operatoire-agents-bornes.md)         | Modèle opératoire à rôles bornés pour les agents         | Accepted |
 | [0096](./0096-separer-execution-et-revue-agent.md)        | Séparer l'exécution et la revue agent d'une étape planifiée | Accepted |
+| [0097](./0097-fab-compact-creation-react-c5.md)           | Fermer la parité du FAB Compact de création C5 en React  | Accepted |
 <!-- END:GENERATED:adr-index -->

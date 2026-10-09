@@ -9,9 +9,8 @@
 chaque agent à lire ce document et route vers un rôle borné. Le modèle complet
 des rôles et le guide simple du propriétaire vivent sous `docs/agents/`. Leurs
 permissions machine sont bornées par `conventions/agents/operating-model.json`
-et décidées dans ADR-0095. Une étape planifiée sépare obligatoirement
-l'executor du reviewer selon ADR-0096 ; aucun agent reviewer n'approuve ou ne
-fusionne.
+et décidées dans ADR-0095. Une étape planifiée sépare obligatoirement l'executor
+du reviewer selon ADR-0096 ; aucun agent reviewer n'approuve ou ne fusionne.
 
 ## 1. Ordre d'autorité
 
@@ -106,10 +105,10 @@ L'issue #64 gouverne la dernière promotion humaine de la preuve de composition.
 L'archivage du corpus et la réduction de ses jobs CI constituent un changement
 séparé après cette clôture.
 
-À la date de l'ADR-0094, C5 React possède le chargement progressif et le filtre
-Compact à deux niveaux. Le FAB de création est la dernière parité Compact
-explicitement ouverte par l'ADR-0093. Cette finition UI ne doit pas être
-confondue avec la promotion des primitives de composition.
+C5 React possède le chargement progressif, le filtre Compact à deux niveaux et
+le FAB de création borné par ADR-0097. Les trois écarts Compact automatisables
+identifiés par ADR-0091 sont fermés. La revue visuelle humaine et les essais
+VoiceOver/NVDA restent distincts de la promotion des primitives de composition.
 
 ## 5. Architecture actuelle
 
@@ -239,10 +238,10 @@ autorité bornée, contrat avant mutation, preuves réfutables, revue indépenda
 et CI rendent les erreurs observables.
 
 Pour une étape planifiée, le work order est approuvé avant le code et reste
-immuable pendant la réalisation. Un `step-executor` écrit ; un
-`task-specialist` distinct en mode `review` lit le diff exact sans le modifier ;
-un humain autorisé approuve ; Soumaila fusionne ; la CI de `main` clôt la
-chaîne. Le protocole complet est documenté dans
+immuable pendant la réalisation. Un `step-executor` écrit ; un `task-specialist`
+distinct en mode `review` lit le diff exact sans le modifier ; un humain
+autorisé approuve ; Soumaila fusionne ; la CI de `main` clôt la chaîne. Le
+protocole complet est documenté dans
 [`chaine-agent-execution-revue-2026-10-08.md`](./docs/architecture/chaine-agent-execution-revue-2026-10-08.md).
 
 ### Avant de modifier

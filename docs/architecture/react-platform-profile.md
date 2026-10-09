@@ -237,6 +237,11 @@ exclues, reprise manuelle sur erreur et reset page 1 après les mutations de
 critères ou une création. Medium et Expanded conservent leur pagination
 explicite.
 
+ADR-0093 ferme le filtre modal à deux niveaux et ADR-0097 le dernier écart
+Compact : l'action de création devient le FAB C5 `+`, unique, accessible et sans
+recouvrement, sans modifier le bouton texte Medium/Expanded ni le contrat
+métier.
+
 La qualification couvre désormais transport exact, axe, focus, reflow, trois
 géométries, neuf candidats, budget de ressources et profil CDP nightly. Elle a
 corrigé l'accès clavier de la région tabulaire et la géométrie du dialogue
@@ -244,15 +249,13 @@ neutralisée par le reset Tailwind.
 
 Le prochain seuil crédible doit désormais :
 
-- fermer les deux écarts Compact encore ouverts : filtre modal à deux niveaux et
-  FAB C5 ;
 - faire relire les neuf candidats par un humain sans les transformer
   implicitement en baseline ;
 - exécuter la revue ciblée VoiceOver/NVDA et le zoom réel multi-OS ;
 - rester hermétique en PR ; le backend SEOS live relève de la politique séparée.
 
-Tant que les deux écarts Compact et la preuve humaine ne sont pas fermés, la
-surface React reste une preuve technique gouvernée, pas une parité produit M4.
+Tant que la preuve humaine n'est pas fermée, la surface React reste une preuve
+technique gouvernée, pas une parité produit M4.
 
 ## 9. Non-objectifs
 
