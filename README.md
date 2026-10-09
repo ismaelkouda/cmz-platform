@@ -15,7 +15,7 @@ l'autorité universelle de la plateforme.
 > la [matrice de capacités](./docs/architecture/generation-platform-capability-matrix.md).
 
 <!-- BEGIN:GENERATED:monorepo-status -->
-**État au 2026-10-08 :** Phase **08** (génération depuis patterns) — **19** modules, **72** libs + **5** app, **2 734** fichiers `.ts` hors tests. Bundle initial prod **754.77 kB**. Voir [`STATUS.md`](./STATUS.md).
+**État au 2026-10-09 :** Phase **08** (génération depuis patterns) — **19** modules, **72** libs + **5** app, **2 734** fichiers `.ts` hors tests. Bundle initial prod **754.77 kB**. Voir [`STATUS.md`](./STATUS.md).
 <!-- END:GENERATED:monorepo-status -->
 
 > 🤖 **Agents IA :** [`AGENTS.md`](./AGENTS.md) est chargé automatiquement et
