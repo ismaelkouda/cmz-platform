@@ -53,7 +53,10 @@ const CONFIG_FILES = [
     'bun.lock',
 ];
 
-const COMPOSITION_KINDS = loadCompositionRegistry(ROOT).byKind;
+const COMPOSITION_REGISTRY = loadCompositionRegistry(ROOT);
+const COMPOSITION_KINDS = COMPOSITION_REGISTRY.byKind;
+const COMPOSITION_RESUME_SHA256 =
+    COMPOSITION_REGISTRY.resumeCompatibleSha256ByKind;
 
 function expectedLayeredProjects(moduleName, composition) {
     return composition.layers
@@ -293,7 +296,10 @@ function validateState(
         compositionSha256(state.composition) !== state.compositionSha256 ||
         (!allowCompositionDrift &&
             state.compositionSha256 !==
-                compositionSha256(COMPOSITION_KINDS[state.kind])) ||
+                compositionSha256(COMPOSITION_KINDS[state.kind]) &&
+            !COMPOSITION_RESUME_SHA256[state.kind]?.includes(
+                state.compositionSha256
+            )) ||
         !['planned', 'generated', 'configured'].includes(state.status) ||
         typeof state.startedAt !== 'string' ||
         Number.isNaN(Date.parse(state.startedAt)) ||

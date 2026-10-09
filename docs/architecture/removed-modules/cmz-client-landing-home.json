@@ -9,13 +9,13 @@
       "pattern": "separator",
       "match": "cmz-client-landing-home",
       "logicalLineSha256": "c01d94331be547fa552ab9c4f314047a76e1c019fba80a9f4127c282c5131efe",
-      "contextSha256": "00a21e148fc00b857a85ac5baad767336b99f899bd9b82518950b13649607b96",
+      "contextSha256": "9783a45ae89dc55333739d170756fd8c7f2de09797f6ad47c41055aa57b20565",
       "occurrence": 0,
-      "lineHint": 25,
+      "lineHint": 96,
       "columnHint": 43,
       "contextOccurrence": 0,
       "category": "active",
-      "reason": "registre actif fondant list-query sur la définition source conservée"
+      "reason": "registre actif fondant list-query v1 sur la définition source conservée"
     },
     {
       "file": "tools/generator-platform/list-query-authoring.test.mjs",
@@ -81,7 +81,7 @@
       "logicalLineSha256": "d61e7a1805a26f9649cd616941abf9536ed8cbe8d460250c41149d03c4ef2113",
       "contextSha256": "8ab020444c6e6f19a206f1b7cbf2342303c121b24e21e3eff6d12fe0f074d28f",
       "occurrence": 0,
-      "lineHint": 532,
+      "lineHint": 608,
       "columnHint": 47,
       "contextOccurrence": 0,
       "category": "active",
@@ -95,11 +95,25 @@
       "logicalLineSha256": "d61e7a1805a26f9649cd616941abf9536ed8cbe8d460250c41149d03c4ef2113",
       "contextSha256": "8ab020444c6e6f19a206f1b7cbf2342303c121b24e21e3eff6d12fe0f074d28f",
       "occurrence": 0,
-      "lineHint": 611,
+      "lineHint": 687,
       "columnHint": 47,
       "contextOccurrence": 1,
       "category": "active",
       "reason": "test actif consommant directement la définition source conservée"
+    },
+    {
+      "file": "tools/module-lifecycle.test.mjs",
+      "location": "content",
+      "pattern": "separator",
+      "match": "cmz-client-landing-home",
+      "logicalLineSha256": "d61e7a1805a26f9649cd616941abf9536ed8cbe8d460250c41149d03c4ef2113",
+      "contextSha256": "f29bda360a99bd511eda4fcb2262ddd08ec291a70ac617a0b58c6139336b644b",
+      "occurrence": 0,
+      "lineHint": 314,
+      "columnHint": 51,
+      "contextOccurrence": 0,
+      "category": "active",
+      "reason": "fixture historique list-query v1 prouvant la reprise d un journal antérieur à C6"
     }
   ]
 }

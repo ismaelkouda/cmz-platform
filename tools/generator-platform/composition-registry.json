@@ -1,28 +1,178 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
   "compositions": [
     {
+      "id": "action-request-v1-angular-layered",
       "kind": "action-request",
+      "contract_version": "1.0.0",
       "maturity": "experimental",
-      "maturity_note": "Experimental only: this registry entry still describes the frozen v1 angular-layered path. Action-request v2 has active Angular/React runtime oracles and durable flat-target publication, but promotion still requires one real N list-query + N action-request page composition and its audited composition root.",
+      "maturity_note": "Frozen v1 angular-layered path kept for legacy create-module consumers. Its maturity is unchanged by the v2 target-native promotion.",
+      "resume_compatible_sha256": [
+        "3db661e50623d2bc0ee2b28d9ecc08ae7b1d74a0303f0214879cfb6e42630dbf"
+      ],
       "target": "angular-layered",
+      "output_model": "layered",
       "generator_script": "tools/generator-platform/generate-action-request.mjs",
       "layers": ["domain", "data", "application"],
       "evidence": [
         "tools/generator-platform/sources/inventory-adjustment.definition.json",
         "tools/generator-platform/sources/sign-in.definition.json",
         "tools/generator-platform/sources/support-request.definition.json"
+      ],
+      "oracles": [
+        {
+          "path": "tools/generator-platform/action-request-runtime.test.mjs",
+          "scope": "isolated",
+          "sha256": "5b03d02c0a159145bae94bb7da29d2231d4b03164b68abbced371e7d99735ece"
+        }
       ]
     },
     {
+      "id": "action-request-v2-angular-nx",
+      "kind": "action-request",
+      "contract_version": "2.0.0",
+      "maturity": "proven",
+      "target": "angular-nx",
+      "output_model": "target-native",
+      "generator_script": "tools/generator-platform/generate-action-request.mjs",
+      "layers": [],
+      "evidence": [
+        "tools/generator-platform/fixtures/create-user.v2.definition.json",
+        "tools/generator-platform/fixtures/forgot-password.v2.definition.json"
+      ],
+      "oracles": [
+        {
+          "path": "tools/generator-platform/action-request-v2-angular.test.mjs",
+          "scope": "isolated",
+          "sha256": "3a7ca837ab060d2302df7756c3e52f09af2ac8581d4a27c7d43583cefb2607a2"
+        },
+        {
+          "path": "tools/generator-platform/stack-tests/angular/action-request-v2.spec.ts",
+          "scope": "isolated",
+          "sha256": "ab959e0820326e4b4ab09a1c0c8238c8eb02c7050a46a7a11c64acd7694b8235"
+        },
+        {
+          "path": "tools/generator-platform/stack-tests/angular/page-composition-users-v2.spec.ts",
+          "scope": "composed-page",
+          "sha256": "14f4418b40f14841c1181e6d9ab746a2a55ac81ef725be10a46de405edef944d"
+        }
+      ]
+    },
+    {
+      "id": "action-request-v2-react-typescript",
+      "kind": "action-request",
+      "contract_version": "2.0.0",
+      "maturity": "proven",
+      "target": "react-typescript",
+      "output_model": "target-native",
+      "generator_script": "tools/generator-platform/generate-action-request.mjs",
+      "layers": [],
+      "evidence": [
+        "tools/generator-platform/fixtures/create-user.v2.definition.json",
+        "tools/generator-platform/fixtures/forgot-password.v2.definition.json"
+      ],
+      "oracles": [
+        {
+          "path": "tools/generator-platform/action-request-v2-react.test.mjs",
+          "scope": "isolated",
+          "sha256": "6c474ce14e03a5eb8b838c4443717f8fc97c2316ffaa721966f175e9badfa97e"
+        },
+        {
+          "path": "tools/generator-platform/stack-tests/reactjs/action-request-v2.spec.ts",
+          "scope": "isolated",
+          "sha256": "49ae449fab3c54f7019047fcc1670984563d8ce67e188f5f6187f0ab456a7cd8"
+        },
+        {
+          "path": "tools/generator-platform/stack-tests/reactjs/page-composition-users-v2.spec.ts",
+          "scope": "composed-page",
+          "sha256": "513d3380a91c9fe7f7e7580a4463e104fc4963e5e180868b80bce0173866e42b"
+        }
+      ]
+    },
+    {
+      "id": "list-query-v1-angular-layered",
       "kind": "list-query",
+      "contract_version": "1.0.0",
       "maturity": "experimental",
-      "maturity_note": "Experimental only: this registry entry still describes the frozen v1 angular-layered path. List-query v2 has active Angular/React runtime oracles and durable flat-target publication, but promotion still requires one real N list-query + N action-request page composition and its audited composition root.",
+      "maturity_note": "Frozen v1 angular-layered path kept for legacy create-module consumers. Its maturity is unchanged by the v2 target-native promotion.",
+      "resume_compatible_sha256": [
+        "a8a1cca2ce7e39a52db2315e7c7735fc9b84a2ded1d8538054503c18f89b434d"
+      ],
       "target": "angular-layered",
+      "output_model": "layered",
       "generator_script": "tools/generator-platform/generate-list-query.mjs",
       "layers": ["domain", "data"],
       "evidence": [
         "tools/generator-platform/sources/cmz-client-landing-home.definition.json"
+      ],
+      "oracles": [
+        {
+          "path": "tools/generator-platform/list-query-authoring.test.mjs",
+          "scope": "isolated",
+          "sha256": "437f5f143a15bae2d48ce10c94cfbc1968444daa2bf4ea46699ccd065e417d72"
+        }
+      ]
+    },
+    {
+      "id": "list-query-v2-angular-nx",
+      "kind": "list-query",
+      "contract_version": "2.0.0",
+      "maturity": "proven",
+      "target": "angular-nx",
+      "output_model": "target-native",
+      "generator_script": "tools/generator-platform/generate-list-query.mjs",
+      "layers": [],
+      "evidence": [
+        "tools/generator-platform/fixtures/profiles-select.v2.definition.json",
+        "tools/generator-platform/fixtures/users-list.v2.definition.json"
+      ],
+      "oracles": [
+        {
+          "path": "tools/generator-platform/list-query-v2-angular.test.mjs",
+          "scope": "isolated",
+          "sha256": "b1b668830a9555fc086e0f36320d01409929c32211537c58ec455c1c40ee03b1"
+        },
+        {
+          "path": "tools/generator-platform/stack-tests/angular/list-query-v2-page.spec.ts",
+          "scope": "isolated",
+          "sha256": "bdf3ca6b373af6d238563c61991155ffa1aa42716a4b4e45033151ad7cf95407"
+        },
+        {
+          "path": "tools/generator-platform/stack-tests/angular/page-composition-users-v2.spec.ts",
+          "scope": "composed-page",
+          "sha256": "14f4418b40f14841c1181e6d9ab746a2a55ac81ef725be10a46de405edef944d"
+        }
+      ]
+    },
+    {
+      "id": "list-query-v2-react-typescript",
+      "kind": "list-query",
+      "contract_version": "2.0.0",
+      "maturity": "proven",
+      "target": "react-typescript",
+      "output_model": "target-native",
+      "generator_script": "tools/generator-platform/generate-list-query.mjs",
+      "layers": [],
+      "evidence": [
+        "tools/generator-platform/fixtures/profiles-select.v2.definition.json",
+        "tools/generator-platform/fixtures/users-list.v2.definition.json"
+      ],
+      "oracles": [
+        {
+          "path": "tools/generator-platform/list-query-v2-react.test.mjs",
+          "scope": "isolated",
+          "sha256": "ac02f055657e137af0dd1ef12a60acc00ba2028ab77250294bffa9602a1358dc"
+        },
+        {
+          "path": "tools/generator-platform/stack-tests/reactjs/list-query-v2-page.spec.ts",
+          "scope": "isolated",
+          "sha256": "a505514ba0ae3583ef46721570ed9c99b43387242741060578af1ddbc9e9d69e"
+        },
+        {
+          "path": "tools/generator-platform/stack-tests/reactjs/page-composition-users-v2.spec.ts",
+          "scope": "composed-page",
+          "sha256": "513d3380a91c9fe7f7e7580a4463e104fc4963e5e180868b80bce0173866e42b"
+        }
       ]
     }
   ]

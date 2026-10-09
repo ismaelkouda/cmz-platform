@@ -17,6 +17,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
+import { compositionSha256 } from './generator-platform/core/composition-registry.mjs';
+
 const REPOSITORY = fileURLToPath(new URL('..', import.meta.url));
 const MODULE = 'lifecycle-proof';
 const QUERY_MODULE = 'lifecycle-proof-query';
@@ -292,6 +294,80 @@ test('un SIGKILL pendant Bun laisse une transaction reprenable sans bypass', asy
         await exists(join(root, 'libs', MODULE, 'angular-domain/project.json')),
         true
     );
+});
+
+test('un journal v1 antérieur à la promotion reste reprenable par hash borné', async (t) => {
+    const cases = [
+        {
+            moduleName: MODULE,
+            definitionRelativePath:
+                'tools/generator-platform/sources/newsletter-subscribe.definition.json',
+            layers: ['application', 'data', 'domain'],
+            historicalNote:
+                'Experimental only: this registry entry still describes the frozen v1 angular-layered path. Action-request v2 has active Angular/React runtime oracles and durable flat-target publication, but promotion still requires one real N list-query + N action-request page composition and its audited composition root.',
+            historicalSha256:
+                '3db661e50623d2bc0ee2b28d9ecc08ae7b1d74a0303f0214879cfb6e42630dbf',
+        },
+        {
+            moduleName: QUERY_MODULE,
+            definitionRelativePath:
+                'tools/generator-platform/sources/cmz-client-landing-home.definition.json',
+            layers: ['data', 'domain'],
+            historicalNote:
+                'Experimental only: this registry entry still describes the frozen v1 angular-layered path. List-query v2 has active Angular/React runtime oracles and durable flat-target publication, but promotion still requires one real N list-query + N action-request page composition and its audited composition root.',
+            historicalSha256:
+                'a8a1cca2ce7e39a52db2315e7c7735fc9b84a2ded1d8538054503c18f89b434d',
+        },
+    ];
+
+    for (const current of cases) {
+        const { root, definitionPath, bin } = await createWorkspace(t, current);
+        const executionOptions = {
+            moduleName: current.moduleName,
+            layers: current.layers,
+        };
+        const interrupted = execute(
+            root,
+            bin,
+            'create-module.mjs',
+            ['--definition', definitionPath, '--allow-experimental'],
+            { CMZ_FAKE_BUN_MODE: 'kill' },
+            executionOptions
+        );
+        assert.equal(interrupted.signal, 'SIGKILL');
+
+        const statePath = join(
+            root,
+            '.cmz/create-module-transactions',
+            current.moduleName,
+            'state.json'
+        );
+        const state = JSON.parse(await readFile(statePath, 'utf8'));
+        state.composition.maturityNote = current.historicalNote;
+        state.compositionSha256 = compositionSha256(state.composition);
+        assert.equal(state.compositionSha256, current.historicalSha256);
+        await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+
+        const resumed = execute(
+            root,
+            bin,
+            'create-module.mjs',
+            ['--resume', '--module', current.moduleName],
+            {},
+            executionOptions
+        );
+        assert.equal(resumed.status, 0, resumed.stderr || resumed.stdout);
+        assert.equal(
+            await exists(
+                join(
+                    root,
+                    '.cmz/create-module-transactions',
+                    current.moduleName
+                )
+            ),
+            false
+        );
+    }
 });
 
 test('une dérive du registre bloque la reprise mais jamais l’abandon sûr', async (t) => {

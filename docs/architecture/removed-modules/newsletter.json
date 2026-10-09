@@ -1201,11 +1201,25 @@
       "logicalLineSha256": "6d7fa71fa04166b656dd2ffee8248b9cdf5ea13737f9e7e912e5c7d4e8cee36c",
       "contextSha256": "aae4ed491156ddb781c183fdf0545e40f6553a75783b1fe23bc17e36cd308e96",
       "occurrence": 0,
-      "lineHint": 51,
+      "lineHint": 53,
       "columnHint": 68,
       "contextOccurrence": 0,
       "category": "active",
       "reason": "fixture externe du cycle de vie générateur"
+    },
+    {
+      "file": "tools/module-lifecycle.test.mjs",
+      "location": "content",
+      "pattern": "separator",
+      "match": "newsletter",
+      "logicalLineSha256": "796d70108a9d8ad03fd0e65d59a5543da39fe499daef1092b34158bb6ee39970",
+      "contextSha256": "5353801ef76493365b3b6922771d09a212ddc1d8dd3a487c199f5c199461b4a1",
+      "occurrence": 0,
+      "lineHint": 304,
+      "columnHint": 51,
+      "contextOccurrence": 0,
+      "category": "active",
+      "reason": "fixture historique action-request v1 prouvant la reprise d un journal antérieur à C6"
     },
     {
       "file": "tools/scaffold-lib-wiring.mjs",
