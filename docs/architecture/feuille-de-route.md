@@ -8,10 +8,11 @@
 
 1. **Finaliser la clôture gouvernée de #64.** Le dossier C6 relie désormais les
    critères aux artefacts/tests et le registre porte séparément les primitives
-   v1 et v2 par cible. Il reste à faire confirmer l'équivalence C5 par la revue
-   humaine de la PR, obtenir la CI complète et post-fusion, reporter ces preuves
-   dans l'issue puis la fermer. Aucun nouveau code de composition n'est attendu
-   pour cette clôture.
+   v1 et v2 par cible. La PR #233 est fusionnée, ses 17 jobs sont verts et la CI
+   post-fusion de `main` est réussie. Les SHA, runs et limites sont reportés
+   dans l'issue ; Soumaila est assigné. Il reste uniquement sa confirmation
+   explicite des huit points d'équivalence, puis la fermeture de l'issue. Aucun
+   nouveau code de composition n'est attendu pour cette clôture.
 2. **Archiver progressivement SEOS.** Dans un changement séparé, inventorier les
    derniers consommateurs et retirer du chemin critique CI les preuves déjà
    transférées. Ne pas supprimer une preuve encore unique.

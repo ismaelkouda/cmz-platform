@@ -11,6 +11,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const AGENT_MODEL_FILES = Object.freeze({
     agents: 'AGENTS.md',
+    claude: 'CLAUDE.md',
     authority: 'PROJECT_AUTHORITY.md',
     readme: 'README.md',
     model: 'docs/agents/operating-model.md',
@@ -29,6 +30,10 @@ export const AGENT_MODEL_FILES = Object.freeze({
     specialistUi: '.agents/skills/cmz-task-specialist/agents/openai.yaml',
     orchestrator: '.agents/skills/cmz-orchestrator/SKILL.md',
     orchestratorUi: '.agents/skills/cmz-orchestrator/agents/openai.yaml',
+    claudeSteward: '.claude/skills/cmz-steward/SKILL.md',
+    claudeExecutor: '.claude/skills/cmz-step-executor/SKILL.md',
+    claudeSpecialist: '.claude/skills/cmz-task-specialist/SKILL.md',
+    claudeOrchestrator: '.claude/skills/cmz-orchestrator/SKILL.md',
 });
 
 const ROLES = Object.freeze([
@@ -43,6 +48,17 @@ const CONTRACT_ROLES = Object.freeze({
     'step-executor': 'cmz-step-executor',
     'task-specialist': 'cmz-task-specialist',
     orchestrator: 'cmz-orchestrator',
+});
+
+const CLAUDE_ADAPTER_DESCRIPTIONS = Object.freeze({
+    'cmz-steward':
+        'Piloter cmz-platform dans la durée depuis ses autorités courantes, son état GitHub vivant et ses preuves, sans décider seul du cap produit.',
+    'cmz-step-executor':
+        'Réaliser une étape cmz-platform déjà validée dans un work order immuable, avec un périmètre fermé et des preuves réfutables.',
+    'cmz-task-specialist':
+        'Diagnostiquer, rechercher, relire ou corriger une tâche cmz-platform précise en restant en lecture seule sauf mode fix explicitement autorisé.',
+    'cmz-orchestrator':
+        "Aider le propriétaire à choisir et contrôler le bon rôle cmz-platform en français simple, sans implémenter ni élargir l'autorité par défaut.",
 });
 
 const SLASH_COMMANDS = Object.freeze([
@@ -104,8 +120,8 @@ function validateStructuredContract(documents, violations) {
         violations.push(`contrat hors schéma : ${violation}`);
     }
 
-    if (contract.version !== 2) {
-        violations.push('le contrat structuré doit rester en version 2');
+    if (contract.version !== 3) {
+        violations.push('le contrat structuré doit rester en version 3');
     }
     if (
         contract.authority?.automatic_instructions !== 'AGENTS.md' ||
@@ -152,6 +168,21 @@ function validateStructuredContract(documents, violations) {
     if (contract.rules?.max_identical_failures_without_new_hypothesis !== 2) {
         violations.push(
             'le contrat doit interdire une troisième tentative identique sans nouvelle hypothèse'
+        );
+    }
+
+    const discovery = contract.skill_discovery;
+    if (
+        discovery?.canonical_root !== '.agents/skills' ||
+        discovery?.clients?.codex?.root !== '.agents/skills' ||
+        discovery?.clients?.codex?.invocation !== 'dollar-mention' ||
+        discovery?.clients?.codex?.adapter !== 'canonical' ||
+        discovery?.clients?.['claude-code']?.root !== '.claude/skills' ||
+        discovery?.clients?.['claude-code']?.invocation !== 'slash-skill' ||
+        discovery?.clients?.['claude-code']?.adapter !== 'import-wrapper'
+    ) {
+        violations.push(
+            'la découverte des skills doit conserver une autorité canonique et les adaptateurs Codex/Claude Code bornés'
         );
     }
     if (
@@ -276,6 +307,11 @@ function parseSkillFrontmatter(content, name, violations) {
     }
 }
 
+function getSkillBody(content) {
+    const match = content.match(/^---\n[\s\S]*?\n---(?:\n|$)/);
+    return match ? content.slice(match[0].length).trim() : null;
+}
+
 function parseSkillUi(content, name, violations) {
     try {
         return parse(content);
@@ -307,6 +343,28 @@ export function collectAgentModelViolations(documents) {
         'PROJECT_AUTHORITY.md',
         'AGENTS.md doit imposer la lecture de PROJECT_AUTHORITY.md'
     );
+    requireText(
+        'claude',
+        '@AGENTS.md',
+        'CLAUDE.md doit importer les instructions automatiques canoniques'
+    );
+    requireText(
+        'claude',
+        '@PROJECT_AUTHORITY.md',
+        'CLAUDE.md doit importer le cap produit courant'
+    );
+    requireText(
+        'claude',
+        '.claude/skills/',
+        'CLAUDE.md doit router vers les adaptateurs de skills Claude Code'
+    );
+    if (
+        /golden reference|ADR-0029|\[?LLM_CONTEXT\.md/i.test(documents.claude)
+    ) {
+        violations.push(
+            'CLAUDE.md ne doit pas réintroduire une autorité historique comme cap courant'
+        );
+    }
     requireText(
         'agents',
         'Un agent ne',
@@ -439,12 +497,22 @@ export function collectAgentModelViolations(documents) {
     );
 
     const skillChecks = [
-        ['steward', 'stewardUi', 'cmz-steward'],
-        ['executor', 'executorUi', 'cmz-step-executor'],
-        ['specialist', 'specialistUi', 'cmz-task-specialist'],
-        ['orchestrator', 'orchestratorUi', 'cmz-orchestrator'],
+        ['steward', 'stewardUi', 'claudeSteward', 'cmz-steward'],
+        ['executor', 'executorUi', 'claudeExecutor', 'cmz-step-executor'],
+        [
+            'specialist',
+            'specialistUi',
+            'claudeSpecialist',
+            'cmz-task-specialist',
+        ],
+        [
+            'orchestrator',
+            'orchestratorUi',
+            'claudeOrchestrator',
+            'cmz-orchestrator',
+        ],
     ];
-    for (const [skillKey, uiKey, name] of skillChecks) {
+    for (const [skillKey, uiKey, claudeKey, name] of skillChecks) {
         const frontmatter = parseSkillFrontmatter(
             documents[skillKey],
             name,
@@ -486,6 +554,55 @@ export function collectAgentModelViolations(documents) {
                 `la politique de découverte de ${name} doit rester explicite`
             );
         }
+
+        const claudeFrontmatter = parseSkillFrontmatter(
+            documents[claudeKey],
+            `${name} (Claude Code)`,
+            violations
+        );
+        if (claudeFrontmatter?.name !== name) {
+            violations.push(
+                `l'adaptateur Claude Code de ${name} doit conserver le nom canonique`
+            );
+        }
+        if (
+            typeof claudeFrontmatter?.description !== 'string' ||
+            claudeFrontmatter.description.trim().length < 40
+        ) {
+            violations.push(
+                `l'adaptateur Claude Code de ${name} doit rester découvrable`
+            );
+        }
+        if (
+            claudeFrontmatter &&
+            !hasExactItems(Object.keys(claudeFrontmatter), [
+                'name',
+                'description',
+            ])
+        ) {
+            violations.push(
+                `l'adaptateur Claude Code de ${name} doit fermer son frontmatter à name et description`
+            );
+        }
+        if (
+            normalize(claudeFrontmatter?.description ?? '') !==
+            normalize(CLAUDE_ADAPTER_DESCRIPTIONS[name])
+        ) {
+            violations.push(
+                `l'adaptateur Claude Code de ${name} doit conserver sa description approuvée`
+            );
+        }
+        const canonicalImport = `@../../../.agents/skills/${name}/SKILL.md`;
+        requireText(
+            claudeKey,
+            canonicalImport,
+            `l'adaptateur Claude Code de ${name} doit importer la skill canonique`
+        );
+        if (getSkillBody(documents[claudeKey]) !== canonicalImport) {
+            violations.push(
+                `l'adaptateur Claude Code de ${name} doit contenir uniquement l'import canonique après son frontmatter`
+            );
+        }
     }
 
     requireText(
@@ -519,16 +636,29 @@ export function collectAgentModelViolations(documents) {
         "l'orchestrator doit rester non mutateur par défaut"
     );
 
-    const allDocs = Object.values(documents).join('\n');
+    const canonicalSkillDocs = [
+        documents.agents,
+        documents.model,
+        documents.steward,
+        documents.executor,
+        documents.specialist,
+        documents.orchestrator,
+    ].join('\n');
     if (
         /\/(?:cmz-steward|cmz-step-executor|cmz-task-specialist|cmz-orchestrator)\b/.test(
-            allDocs
+            canonicalSkillDocs
         )
     ) {
         violations.push(
-            'les skills CMZ utilisent le préfixe $, jamais une fausse commande slash'
+            'les autorités canoniques utilisent les noms de rôle, pas la syntaxe propre à un client'
         );
     }
+
+    requireText(
+        'userGuide',
+        'Dans Claude Code',
+        'le guide utilisateur doit distinguer la découverte des rôles dans Claude Code'
+    );
 
     return violations;
 }

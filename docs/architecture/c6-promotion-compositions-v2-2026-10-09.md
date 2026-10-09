@@ -3,8 +3,8 @@
 - **Date :** 2026-10-09
 - **Issue :**
   [#64 — PLAT-9](https://github.com/ismaelkouda/cmz-platform/issues/64)
-- **Statut :** candidat à la promotion ; effectif seulement après revue humaine,
-  approbation, fusion et CI verte sur `main`
+- **Statut :** preuve technique fusionnée et CI `main` verte ; clôture de #64
+  encore suspendue à la confirmation humaine explicite des huit points du §6
 - **Autorités :** `PROJECT_AUTHORITY.md`, ADR-0094, issue #64 et matrice de
   capacités
 
@@ -144,3 +144,17 @@ HTTP ne prouve pas le backend vivant.
 
 Une CI verte sans la confirmation humaine ne ferme pas #64. Une approbation sans
 CI post-fusion ne clôt pas non plus la chaîne.
+
+## 9. État vivant après la PR #233
+
+- head relu et approuvé : `52659fa5254d96878f5df4da061d52f99302de0a` ;
+- commit fusionné sur `main` : `d961708c8ff3684a088a36ef3763064f8720bf4d` ;
+- CI de PR : run `37913594103`, 17/17 jobs réussis ;
+- CI post-fusion de `main` : run `37916219456`, réussie ;
+- preuves et limites reportées dans #64 le 2026-10-09 ;
+- Soumaila assigné et notifié pour confirmer explicitement les huit points.
+
+Son approbation GitHub de #233 a autorisé la fusion mais ne contient aucun
+corps. Elle ne remplace donc pas l'attestation demandée au §8. L'issue reste
+ouverte jusqu'à cette réponse. Cette limite n'annule aucune preuve technique et
+ne doit pas être compensée par une nouvelle implémentation.

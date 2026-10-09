@@ -45,6 +45,8 @@ technique ajoute une expertise, jamais une autorité.
 `conventions/agents/operating-model.json` fixe sous forme machine :
 
 - les quatre rôles et leurs skills ;
+- la racine canonique `.agents/skills/` et les adaptateurs de découverte bornés
+  par client ;
 - l'accès par défaut et la frontière de mutation ;
 - l'absence de pouvoir de décision produit ;
 - les modes du spécialiste ;
@@ -55,6 +57,25 @@ technique ajoute une expertise, jamais une autorité.
 Son schéma documente les formes admises. Une gate et des mutations négatives
 vérifient les invariants critiques et la concordance minimale avec les skills et
 guides.
+
+### Adaptateurs de découverte par client
+
+Amendement du 2026-10-09 : l'observation d'une session Claude Code a montré que
+`CLAUDE.md` était chargé sans `AGENTS.md` et que `.agents/skills/` n'était pas
+exposé dans son catalogue de skills projet. La solution ne duplique pas les
+instructions :
+
+- `.agents/skills/` reste l'unique contenu canonique des rôles ;
+- `CLAUDE.md` importe `AGENTS.md` et `PROJECT_AUTHORITY.md` avec le mécanisme
+  natif Claude Code ;
+- `.claude/skills/<rôle>/SKILL.md` porte seulement les métadonnées de découverte
+  et importe la skill canonique correspondante ;
+- la CI refuse une disparition d'import, un nom divergent ou le retour d'une
+  autorité historique dans `CLAUDE.md`.
+
+La syntaxe d'invocation peut différer selon le client (`$` dans Codex, skill
+slash dans Claude Code) sans modifier le rôle, ses permissions ou sa source
+d'autorité.
 
 ### Séparation entre conversation et Goal
 
@@ -111,6 +132,8 @@ d'entrée, les diffs, les tests, le handoff, la review indépendante et la CI.
 - un agent faible produit des omissions visibles plutôt que des permissions
   implicites ;
 - quatre petites skills et deux guides doivent être maintenus ;
+- quatre wrappers Claude Code minimaux doivent rester reliés aux skills
+  canoniques, sans copie de leur corps ;
 - toute évolution d'un rôle modifie d'abord le contrat structuré, puis les
   instructions et les tests correspondants ;
 - une future skill React reste séparée du rôle `step-executor` et ne sera créée

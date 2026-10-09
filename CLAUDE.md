@@ -33,34 +33,19 @@
 
 ---
 
-# AI & LLM Execution Guidelines — Big Tech Standards
+# cmz-platform — entrée Claude Code
 
-> 🤖 **IMPORTANT FOR ALL LLM AGENTS**: Always read
-> [`LLM_CONTEXT.md`](./LLM_CONTEXT.md) at the beginning of your session.
+@AGENTS.md @PROJECT_AUTHORITY.md
 
-> ⚠️ **OBJECTIF DU PROJET — CONSOLIDÉ 2026-08-14** : voir
-> [`ADR-0029`](./docs/adr/0029-perimetre-capacites-plateforme-generation.md)
-> avant toute action de fond. Le dépôt vise une plateforme extensible dans une
-> enveloppe déclarée d'applications métier ; il ne revendique pas « toute
-> source/toute stack ». SEOS/Angular reste le golden reference industriel.
+`AGENTS.md` fixe les règles opérationnelles et impose les autres lectures du
+modèle d'agents. `PROJECT_AUTHORITY.md` fixe le cap produit courant. Ces deux
+fichiers priment sur les journaux, audits et mémoires historiques.
 
-### Core Mindset & Execution Principles:
+Avant toute action, choisir exactement un rôle parmi les quatre skills projet
+exposées sous `.claude/skills/`. Ces entrées Claude importent les skills
+canoniques de `.agents/skills/` ; elles ne créent ni permissions ni règles
+concurrentes.
 
-1. **Architect Posture**: Do not act as a naive ticket-doer. Understand the
-   system end-to-end (SEOS paradigm, MDE + LLM Generate-Verify-Repair loop, Nx
-   package-based invariants) **as the current Angular/Nx target profile of the
-   bounded platform described by ADR-0029/0030**.
-2. **Deterministic Contract Compliance**: The source of truth for business logic
-   is `$SEOS_LEGACY_ROOT` (required env var; no machine-path fallback). Never
-   guess DTO shapes, endpoints, or field names.
-3. **Multi-Level Verification Oracle**: Every module implementation must
-   strictly pass the verification oracle:
-    - `bunx nx run-many -t build` (or `tsc --noEmit`)
-    - `bunx eslint --max-warnings=0`
-    - `ngc --strictTemplates` (Zero template errors)
-4. **Nx Layer Isolation Invariants**:
-    - `@cmz/<module>-domain`: 0 framework/data/ui imports.
-    - `@cmz/<module>-data`: depends only on domain, core, shared-data.
-    - `@cmz/<module>-application`: depends only on domain, shared-application.
-    - `@cmz/<module>-ui`: depends only on application, domain, shared-ui.
-    - 0 cross-domain imports between functional modules.
+Ne pas utiliser un journal, un audit, une décision supersédée ou un corpus
+historique comme point de départ du cap courant. Ne jamais inventer un
+comportement métier, un endpoint, une permission ou une preuve absente.
