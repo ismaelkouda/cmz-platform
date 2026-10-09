@@ -330,7 +330,14 @@ versionné. Il ne doit pas inspecter la source d'origine.
 - aucune dépendance Angular, React, Figma ou SEOS dans le core ;
 - budget d'extensions hors modèle mesuré et non masqué par `Custom`.
 
-## 7. Matrice de preuve initiale
+## 7. Matrice historique de la tranche initiale — non normative
+
+Cette section conserve la preuve datée du 2026-08-17. Les libellés sans version
+ci-dessous désignent la tranche historique évaluée à cette date ; ils ne
+déclarent pas la maturité courante des coordonnées du registre de compositions.
+L'état actuel faisant autorité est celui des entrées versionnées du §4 : les
+chemins v1 `angular-layered` sont `experimental`, tandis que les quatre
+coordonnées v2 Angular/React promues par C6 sont `proven` sur leur périmètre.
 
 > **Mise à jour 2026-08-17 (OPS-19/PLAT-6)** : première exécution verte de
 > `ci.yml` confirmée sur `main`
@@ -344,13 +351,13 @@ versionné. Il ne doit pas inspecter la source d'origine.
 > sémantique globale (§9) restent des conditions distinctes, non remplies par
 > cette seule CI verte.
 
-| Source / cible                            |       Angular        |       ReactJS        |
-| ----------------------------------------- | :------------------: | :------------------: |
-| Définition déclarative `support`          | `action-request` M4  | `action-request` M4  |
-| Spécification structurée `authentication` | `action-request` M4  | `action-request` M4  |
-| Legacy TypeScript `authentication`        | `action-request` M4  | `action-request` M4  |
-| Définition structurée `requests-workflow` | `workflow-action` M4 | `workflow-action` M4 |
-| Legacy TypeScript `requests` borné        | `workflow-action` M4 | `workflow-action` M4 |
+| Source / cible                            |           Angular           |           ReactJS           |
+| ----------------------------------------- | :-------------------------: | :-------------------------: |
+| Définition déclarative `support`          | M4 historique de la tranche | M4 historique de la tranche |
+| Spécification structurée `authentication` | M4 historique de la tranche | M4 historique de la tranche |
+| Legacy TypeScript `authentication`        | M4 historique de la tranche | M4 historique de la tranche |
+| Définition structurée `requests-workflow` | M4 historique de la tranche | M4 historique de la tranche |
+| Legacy TypeScript `requests` borné        | M4 historique de la tranche | M4 historique de la tranche |
 
 Les profils techniques sous-jacents sont `angular-nx` et `react-typescript`. Le
 runtime généré des deux colonnes passe le même Oracle local de validation,
@@ -395,10 +402,25 @@ de revue dépasse durablement celui d'un générateur spécialisé.
 
 ## 9. État synthétique actuel
 
-> **Maturité globale : M0–M1 (minimum de tous les maillons, §1).** **Mise à jour
-> 2026-08-17 (OPS-19/PLAT-6)** : la matrice `action-request` + `workflow-action`
-> sur Angular/ReactJS (§7, `tools/generator-platform`) franchit désormais M3/M4
-> — première exécution `ci.yml` verte confirmée
+Il n'existe plus de score global unique défendable pour la plateforme. La
+maturité courante se lit capacité par capacité :
+
+- `list-query@1` et `action-request@1` vers `angular-layered` restent
+  `experimental` ;
+- `list-query@2.0.0` et `action-request@2.0.0` sont `proven` séparément vers
+  `angular-nx` et `react-typescript`, uniquement sur les cas et oracles du §4 ;
+- la réalisation d'écran multi-nœuds reste M3 tant que la revue humaine de
+  l'interface React et les essais d'assistance humaine ne sont pas fermés ;
+- les sources, cibles et capacités non prouvées conservent leur propre niveau
+  M0–M3 ; aucune promotion locale ne rend toute la plateforme M4.
+
+### Journal historique — non normatif pour l'état courant
+
+> **État daté du 2026-08-17 : maturité globale M0–M1 (minimum des maillons de
+> l'époque, §1).** **Mise à jour 2026-08-17 (OPS-19/PLAT-6)** : la matrice
+> `action-request` + `workflow-action` sur Angular/ReactJS (§7,
+> `tools/generator-platform`) franchit désormais M3/M4 — première exécution
+> `ci.yml` verte confirmée
 > (`https://github.com/ismaelkouda/cmz-platform/actions/runs/32046594949`,
 > commit `24729f3`), condition normative posée depuis PLAT-1/PLAT-3/PLAT-5F.
 > Cette tranche precise n'est plus « refusée avant CI verte ». **Mise à jour

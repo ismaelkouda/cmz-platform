@@ -13,8 +13,10 @@ connaissance préalable du dépôt.
 
 Les règles universelles sont dans [`AGENTS.md`](../../AGENTS.md). Le cap produit
 reste défini par [`PROJECT_AUTHORITY.md`](../../PROJECT_AUTHORITY.md). Les skills
-de `.agents/skills/` appliquent ces règles à chaque rôle ; elles ne les
-remplacent pas.
+canoniques de `.agents/skills/` appliquent ces règles à chaque rôle ; elles ne
+les remplacent pas. Claude Code les découvre par des wrappers d'import minimaux
+sous `.claude/skills/`. Ces wrappers ne dupliquent pas leur contenu et ne
+constituent pas une seconde autorité.
 
 Le contrat machine
 [`conventions/agents/operating-model.json`](../../conventions/agents/operating-model.json)

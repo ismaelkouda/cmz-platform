@@ -1,6 +1,6 @@
 {
   "$schema": "./operating-model.schema.json",
-  "version": 2,
+  "version": 3,
   "authority": {
     "automatic_instructions": "AGENTS.md",
     "product": "PROJECT_AUTHORITY.md",
@@ -13,6 +13,21 @@
     "technical_skill_expands_authority": false,
     "independent_review_required": true,
     "max_identical_failures_without_new_hypothesis": 2
+  },
+  "skill_discovery": {
+    "canonical_root": ".agents/skills",
+    "clients": {
+      "codex": {
+        "root": ".agents/skills",
+        "invocation": "dollar-mention",
+        "adapter": "canonical"
+      },
+      "claude-code": {
+        "root": ".claude/skills",
+        "invocation": "slash-skill",
+        "adapter": "import-wrapper"
+      }
+    }
   },
   "roles": {
     "steward": {

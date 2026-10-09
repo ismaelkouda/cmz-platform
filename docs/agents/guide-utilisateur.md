@@ -6,6 +6,11 @@ ou de connaître toutes les commandes Git.
 
 ## 1. La commande la plus simple
 
+Les exemples de ce guide utilisent la notation Codex `$cmz-*`. Dans Claude Code,
+les mêmes rôles sont exposés comme skills projet sous `/cmz-*` par les wrappers
+`.claude/skills/`. Le nom du rôle et ses permissions restent identiques ; seule
+la syntaxe d'invocation du client change.
+
 Si vous ne savez pas quel agent utiliser, écrivez :
 
 ```text
@@ -351,3 +356,8 @@ attendues sans interpréter toute la prose.
 De même, si une commande slash n'apparaît pas dans votre version de Codex,
 n'inventez pas une commande de remplacement : envoyez le prompt correspondant
 comme message normal et demandez à l'agent de conserver le même contrat.
+
+Dans Claude Code, vérifiez d'abord `/skills` et la présence du rôle attendu sous
+`.claude/skills/`. Si le wrapper manque ou n'importe plus la skill canonique de
+`.agents/skills/`, restez en lecture seule et signalez la dérive au lieu de
+recréer localement des instructions concurrentes.
