@@ -33,8 +33,9 @@ exemple, un renderer `action-request` M4 ne rend ni toute l'application, ni
 toute la cible, ni la plateforme entière M4. Le
 [`composition-registry.json`](../../tools/generator-platform/composition-registry.json)
 reste l'autorité machine-readable sur les compositions publiées ; ses entrées v1
-sont encore `experimental`. Une promotion v2 doit créer des entrées distinctes
-et ne jamais réécrire ce fait historique.
+sont encore `experimental`. Les entrées v2 sont distinctes par version et par
+cible : leur promotion ne réécrit jamais ce fait historique. Voir le dossier
+[C6](./c6-promotion-compositions-v2-2026-10-09.md).
 
 ## 2. Enveloppe initiale
 
@@ -86,6 +87,27 @@ produit jamais directement des chemins ou classes d'une cible.
 | Garde runtime de permissions           | Angular + ReactJS, refus avant effet externe, CI verte                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |   M4   |
 | Réalisation d'écran multi-nœuds indép. | plan content-addressed ; compositions Angular et React matérialisées et publiables transactionnellement, séparément ou atomiquement ; shell React C5 versionné depuis le même design ; host React explicite et borné par service/URL ; réalisation de page ciblée par `angular-pwa`/`react-spa`, allowlist content-addressed et oracles confinés natifs ; réplique de contrat inter-shell admise seulement par identité, hash, design/expérience publiés et replay exact ; host colocalisé protégé par hash ; UI React C5 reliée et vérifiée par compilation/build/lint/tests puis Chromium/axe/réseau/focus/reflow ; chargement progressif, filtre à deux niveaux et FAB Compact prouvés séparément ; neuf candidats visuels et profil de fuite produits, mais revue visuelle humaine et AT encore dues |   M3   |
 | Repair sous contraintes                | méthode documentée, partiellement exercée                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |   M2   |
+
+### Promotion C6 des primitives v2
+
+La promotion C6 est volontairement plus étroite que la ligne « réalisation
+d'écran » ci-dessus. Elle qualifie les primitives et leur raccord N×N ; elle ne
+qualifie ni toute l'interface ni une famille générique de pages après un seul
+cas produit.
+
+| Capacité et cible                           | Preuve sémantique                                            | Niveau |
+| ------------------------------------------- | ------------------------------------------------------------ | :----: |
+| `list-query@2.0.0` → `angular-nx`           | deux formes de liste, oracle Angular isolé et composition C5 |   M4   |
+| `list-query@2.0.0` → `react-typescript`     | mêmes contrats, oracle React isolé et composition C5         |   M4   |
+| `action-request@2.0.0` → `angular-nx`       | deux domaines, oracle Angular isolé et composition C5        |   M4   |
+| `action-request@2.0.0` → `react-typescript` | mêmes contrats, oracle React isolé et composition C5         |   M4   |
+
+Le registre exige mécaniquement deux cas distincts et les portées d'oracle
+`isolated` + `composed-page` pour chaque entrée `proven`. Le plan C5 à deux GET
+et un POST reste une preuve d'intégration. La baseline SEOS C5 est exécutée
+explicitement par `check:c6-seos-baseline` et sa comparaison aux deux oracles
+cible est détaillée dans le dossier C6. Aucune entrée de page composite n'est
+promue : un second cas produit réel et son lifecycle restent nécessaires.
 
 `docs/architecture/patterns/pattern-core.schema.json` est un profil structurel
 Angular/Nx transitoire, pas le semantic model de cette table.
@@ -269,14 +291,14 @@ doit appliquer les mêmes règles indépendamment.
 
 ## 5. Cibles
 
-| Cible                | État réel                                                                                                       |        Niveau         |
-| -------------------- | --------------------------------------------------------------------------------------------------------------- | :-------------------: |
-| Angular              | `action-request` + `workflow-action` M4 sur leurs scénarios ; shell/page/composition C5 instrumentés séparément | capacité par capacité |
-| ReactJS              | `action-request` + `workflow-action` M4 sur leurs scénarios ; shell/page C5 en qualification séparée            | capacité par capacité |
-| React Native         | intention                                                                                                       |          M0           |
-| Kotlin/Compose       | POC interrompu par environnement                                                                                |          M1           |
-| Swift/SwiftUI        | POC interrompu par environnement                                                                                |          M1           |
-| Autres stacks citées | aucun renderer ni oracle                                                                                        |          M0           |
+| Cible                | État réel                                                                                            |        Niveau         |
+| -------------------- | ---------------------------------------------------------------------------------------------------- | :-------------------: |
+| Angular              | `action-request` v2 + `list-query` v2 + `workflow-action` M4 sur leurs scénarios ; page C5 distincte | capacité par capacité |
+| ReactJS              | `action-request` v2 + `list-query` v2 + `workflow-action` M4 sur leurs scénarios ; page C5 distincte | capacité par capacité |
+| React Native         | intention                                                                                            |          M0           |
+| Kotlin/Compose       | POC interrompu par environnement                                                                     |          M1           |
+| Swift/SwiftUI        | POC interrompu par environnement                                                                     |          M1           |
+| Autres stacks citées | aucun renderer ni oracle                                                                             |          M0           |
 
 Un renderer supporté doit consommer uniquement l'IR canonique et un profil cible
 versionné. Il ne doit pas inspecter la source d'origine.

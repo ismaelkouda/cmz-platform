@@ -6,9 +6,12 @@
 
 ## Chemin critique courant
 
-1. **Clore #64 par une promotion gouvernée.** Relier chaque critère à ses
-   artefacts/tests, faire relire l'équivalence C5, enregistrer séparément les
-   compositions v2 et mettre à jour issue/matrice dans une même PR.
+1. **Finaliser la clôture gouvernée de #64.** Le dossier C6 relie désormais les
+   critères aux artefacts/tests et le registre porte séparément les primitives
+   v1 et v2 par cible. Il reste à faire confirmer l'équivalence C5 par la revue
+   humaine de la PR, obtenir la CI complète et post-fusion, reporter ces preuves
+   dans l'issue puis la fermer. Aucun nouveau code de composition n'est attendu
+   pour cette clôture.
 2. **Archiver progressivement SEOS.** Dans un changement séparé, inventorier les
    derniers consommateurs et retirer du chemin critique CI les preuves déjà
    transférées. Ne pas supprimer une preuve encore unique.

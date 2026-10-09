@@ -159,6 +159,13 @@ jobs:
       - name: check:generator-platform (Evidence + Semantic IR + renderers)
         run: bun run check:generator-platform
 
+      # C6 / issue #64 — la promotion des primitives doit rester comparée au
+      # comportement SEOS observé, même si un diff tools/docs ne rend pas
+      # backoffice-angular affected. Ce gate ciblé est retiré seulement avec
+      # l'archivage SEOS gouverné qui suivra la clôture de #64.
+      - name: check:c6-seos-baseline (référentiel observable SEOS)
+        run: bun run check:c6-seos-baseline
+
       # Conception sans code manuel — chaque artefact versionné doit rester
       # complet, target-neutral et traçable vers un contrat backend exact.
       - name: check:application-designs (contrats de conception)
