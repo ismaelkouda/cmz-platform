@@ -338,7 +338,9 @@ test('compact : précharge avant la frontière visible, ajoute et déduplique sa
     await expectProgressiveSentinel(page);
 
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
-    expect(sentinelStrictlyVisible).toBe(false);
+    // Le harnais enregistre la requête avant que le répondeur ait mesuré la
+    // sentinelle : attendre la mesure, pas seulement la requête.
+    await expect.poll(() => sentinelStrictlyVisible).toBe(false);
     const mobile = page.locator('[data-cmz-id="mobile-results"]');
     await expect(mobile.getByRole('listitem')).toHaveCount(15);
     await expect(mobile.getByText('page-1-user-8@example.invalid')).toHaveCount(
