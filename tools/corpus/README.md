@@ -38,7 +38,11 @@ bun run corpus:sync-pattern
 | `SEOS_LEGACY_ROOT`        | —      | **Obligatoire** hors `--structural-only` / sync pattern (audit B-1)  |
 | `CORPUS_STRUCTURAL_ONLY`  | —      | Si `1`, équivalent `--structural-only` (ADR-0015 — pas de legacy)    |
 | `CORPUS_ORACLE_ONLY`      | —      | Alias déprécié de `CORPUS_STRUCTURAL_ONLY`                           |
-| `LEGACY_CHECKOUT_TOKEN`   | —      | Token lecture origin/miroir pour `legacy:checkout` (CI B-5)          |
+| `LEGACY_CHECKOUT_TOKEN`   | —      | Token lecture origin/miroir privés pour `legacy:checkout`, en local. |
+
+`LEGACY_CHECKOUT_TOKEN` n'est plus remis par la CI depuis L1 (2026-10-10) : le
+miroir de `legacy.lock.json` est public. Le remettre exige une entrée relue dans
+`ALLOWED_SECRET_HANDOVERS` (`tools/check-workflow-privileges.mjs`).
 
 Pin SHA : [`legacy.lock.json`](../../legacy.lock.json) — `bun run check:legacy-lock` /
 `bun run legacy:pin` / `bun run legacy:checkout`

@@ -86,7 +86,9 @@ jobs:
   publish:
     name: PR de réparation reviewable
     needs: repair
-    if: needs.repair.outputs.repaired == 'true'
+    # Seul le code de `main` écrit. Lancé à la main depuis une autre branche,
+    # ce workflow audite en lecture seule et ne publie rien.
+    if: github.ref == 'refs/heads/main' && needs.repair.outputs.repaired == 'true'
     runs-on: ubuntu-latest
     permissions:
       actions: write
