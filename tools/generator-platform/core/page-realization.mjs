@@ -13,7 +13,7 @@ import { resolvePageExecutionBinding } from './page-execution-binding.mjs';
 import {
     baselineHash,
     gitInventory,
-    v5Baseline,
+    v5BaselineVerifiedOnDisk,
 } from './page-realization-baseline.mjs';
 import {
     deriveV5WorkOrderId,
@@ -276,7 +276,7 @@ export function planPageRealization({
             pageContractContent: committedPageContract,
             readSource,
         });
-        baseline = v5Baseline(root, baseCommitSha, writablePaths);
+        baseline = v5BaselineVerifiedOnDisk(root, baseCommitSha, writablePaths);
     } else {
         baseline = gitInventory(root, writablePaths);
     }
@@ -568,7 +568,7 @@ export function verifyPageRealization(
             workOrder.base_commit_sha,
             writablePaths
         );
-        currentBaseline = v5Baseline(
+        currentBaseline = v5BaselineVerifiedOnDisk(
             root,
             workOrder.base_commit_sha,
             writablePaths

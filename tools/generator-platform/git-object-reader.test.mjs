@@ -19,6 +19,7 @@ import {
     assertGitAncestor,
     assertGitCommit,
     assertOnlyAllowedGitChanges,
+    assertProtectedWorktreeMatchesGitCommit,
     assertRawCommitAncestor,
     createGitCommitReader,
     gitCommitInventory,
@@ -386,4 +387,110 @@ test('désactive explicitement replace refs et lazy-fetch sur chaque lecture Git
         assert.match(invocation, /--no-replace-objects/);
         assert.match(invocation, /--no-lazy-fetch/);
     }
+});
+
+// Chaque écart laisse `source.json` ou `link.json` différent de la base sur
+// le disque. Les deux assertions lisent le disque, jamais l'index.
+const DISK_DIFFERENCES = {
+    content: {
+        path: 'authority/source.json',
+        apply: (root) =>
+            writeFile(join(root, 'authority/source.json'), '{"safe":false}\n'),
+        allowed:
+            /allowed file authority\/source\.json content differs from the base commit/,
+    },
+    mode: {
+        path: 'authority/source.json',
+        apply: (root) => chmod(join(root, 'authority/source.json'), 0o755),
+        allowed:
+            /allowed file authority\/source\.json mode differs from the base commit/,
+    },
+    type: {
+        path: 'authority/source.json',
+        apply: async (root) => {
+            await writeFile(join(root, 'same-bytes.json'), '{"safe":true}\n');
+            await rm(join(root, 'authority/source.json'));
+            await symlink(
+                '../same-bytes.json',
+                join(root, 'authority/source.json')
+            );
+        },
+        allowed:
+            /allowed file authority\/source\.json differs from the base commit/,
+    },
+    missing: {
+        path: 'authority/source.json',
+        apply: (root) => rm(join(root, 'authority/source.json')),
+        allowed:
+            /allowed file authority\/source\.json differs from the base commit/,
+    },
+    link: {
+        path: 'authority/link.json',
+        apply: async (root) => {
+            await rm(join(root, 'authority/link.json'));
+            await symlink('other.json', join(root, 'authority/link.json'));
+        },
+    },
+};
+
+for (const [difference, { path, apply, allowed }] of Object.entries(
+    DISK_DIFFERENCES
+)) {
+    test(
+        `compare le disque au blob de la base : ${difference}`,
+        { skip: difference === 'mode' && process.platform === 'win32' },
+        async (t) => {
+            const { root, head } = await fixture(t);
+            const inventory = gitCommitInventory(root, head, []);
+            assert.doesNotThrow(() =>
+                assertProtectedWorktreeMatchesGitCommit(root, inventory)
+            );
+            if (allowed)
+                assert.doesNotThrow(() =>
+                    assertAllowedPathsMatchGitCommit(root, head, [path])
+                );
+            await apply(root);
+            assert.throws(
+                () => assertProtectedWorktreeMatchesGitCommit(root, inventory),
+                new RegExp(
+                    `protected worktree differs from base_commit_sha: ${path.replace('.', '\\.')} \\(${difference}\\)$`
+                )
+            );
+            if (allowed)
+                assert.throws(
+                    () => assertAllowedPathsMatchGitCommit(root, head, [path]),
+                    allowed
+                );
+        }
+    );
+}
+
+test('un lien protégé remplacé par un fichier portant le même texte est refusé', async (t) => {
+    const { root, head } = await fixture(t);
+    const inventory = gitCommitInventory(root, head, []);
+    await rm(join(root, 'authority/link.json'));
+    await writeFile(join(root, 'authority/link.json'), 'source.json');
+    assert.throws(
+        () => assertProtectedWorktreeMatchesGitCommit(root, inventory),
+        /authority\/link\.json \(link\)$/
+    );
+});
+
+test('borne la liste des écarts protégés rapportés', async (t) => {
+    const { root } = await fixture(t);
+    const absent = Array.from({ length: 22 }, (_, index) => ({
+        path: `absent-${String(index).padStart(2, '0')}.txt`,
+        kind: 'file',
+        mode: '100644',
+        content: Buffer.alloc(0),
+    }));
+    assert.throws(
+        () => assertProtectedWorktreeMatchesGitCommit(root, absent),
+        /absent-19\.txt \(missing\) and 2 more$/
+    );
+    assert.throws(
+        () =>
+            assertProtectedWorktreeMatchesGitCommit(root, absent.slice(0, 20)),
+        /absent-19\.txt \(missing\)$/
+    );
 });

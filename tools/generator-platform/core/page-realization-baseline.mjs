@@ -3,7 +3,10 @@ import { execFileSync } from 'node:child_process';
 import { lstatSync, readFileSync, readlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { gitCommitInventory } from './git-object-reader.mjs';
+import {
+    assertProtectedWorktreeMatchesGitCommit,
+    gitCommitInventory,
+} from './git-object-reader.mjs';
 
 function fail(message) {
     throw new Error(`page realization: ${message}`);
@@ -78,12 +81,14 @@ export function baselineHash(entries) {
     );
 }
 
-export function v5Baseline(root, baseCommitSha, excludedPaths) {
-    return gitCommitInventory(root, baseCommitSha, excludedPaths).map(
-        ({ content, ...entry }) => ({
-            ...entry,
-            bytes: content.byteLength,
-            sha256: sha256(content),
-        })
-    );
+// Le baseline v5 décrit la base Git ; il ne vaut preuve que si le disque lui
+// est identique. Une seule lecture de l'inventaire sert aux deux.
+export function v5BaselineVerifiedOnDisk(root, baseCommitSha, excludedPaths) {
+    const inventory = gitCommitInventory(root, baseCommitSha, excludedPaths);
+    assertProtectedWorktreeMatchesGitCommit(root, inventory);
+    return inventory.map(({ content, ...entry }) => ({
+        ...entry,
+        bytes: content.byteLength,
+        sha256: sha256(content),
+    }));
 }

@@ -203,8 +203,12 @@ sources, and selected images are read from Git blobs rather than the mutable
 worktree. Their normalized `layout_guidance`, the authority/base SHA, the
 existing contracts, allowlist, and protected baseline all participate in the
 work-order identity. Git replace refs, implicit lazy-fetch, local excludes and
-index masking flags are rejected or neutralized. A SHA establishes content
-identity, not human approval:
+index masking flags are rejected or neutralized. Every protected entry of the
+base tree is then compared with what is actually on disk: final type and bytes
+on every supported platform, and the executable bit where the file system makes
+it meaningful (currently non-Windows platforms). Git remains a complementary
+inventory of paths; it is no longer the proof that protected bytes are
+unchanged. A SHA establishes content identity, not human approval:
 the authority must first be reviewed and merged separately on the protected
 branch. See [`ADR-0098`](../../docs/adr/0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md).
 

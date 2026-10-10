@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { lstatSync, readFileSync } from 'node:fs';
+import { lstatSync, readFileSync, readlinkSync } from 'node:fs';
 import { devNull } from 'node:os';
 import { relative, resolve, sep } from 'node:path';
 
@@ -219,6 +219,30 @@ function optionalTreeEntry(root, commitSha, path, label) {
     return parseTreeEntry(output, path, label);
 }
 
+// Compare une entrée de l'arbre Git au disque réel : type final, bit
+// exécutable et octets. Ne consulte ni l'index, ni la configuration, ni les
+// filtres : `git diff` dit si Git considère un fichier comme modifié, pas si
+// ses octets sont ceux du commit.
+function worktreeDifference(root, { path, kind, mode, content }) {
+    const absolute = resolve(root, path);
+    const stat = lstatSync(absolute, { throwIfNoEntry: false });
+    if (!stat) return 'missing';
+    if (kind === 'symlink') {
+        return stat.isSymbolicLink() &&
+            readlinkSync(absolute, { encoding: 'buffer' }).equals(content)
+            ? null
+            : 'link';
+    }
+    if (!stat.isFile()) return 'type';
+    if (
+        process.platform !== 'win32' &&
+        ((stat.mode & 0o111) !== 0) !== (mode === '100755')
+    ) {
+        return 'mode';
+    }
+    return readFileSync(absolute).equals(content) ? null : 'content';
+}
+
 export function createGitCommitReader(root, commitSha) {
     assertGitCommit(root, commitSha, 'authority commit');
     return (declaredPath, label = declaredPath) => {
@@ -251,25 +275,42 @@ export function assertAllowedPathsMatchGitCommit(
             path,
             `allowed file ${path}`
         );
-        const absolute = resolve(root, path);
-        const stat = lstatSync(absolute, { throwIfNoEntry: false });
         if (!expected) {
-            if (stat)
+            if (lstatSync(resolve(root, path), { throwIfNoEntry: false }))
                 fail(`allowed file ${path} existed before the work order`);
             continue;
         }
-        if (!stat?.isFile() || stat.isSymbolicLink())
+        const difference = worktreeDifference(root, {
+            path,
+            kind: 'file',
+            mode: expected.mode,
+            content: reader(path, path).content,
+        });
+        if (difference === 'mode' || difference === 'content')
+            fail(
+                `allowed file ${path} ${difference} differs from the base commit`
+            );
+        if (difference)
             fail(`allowed file ${path} differs from the base commit`);
-        const actualExecutable = (stat.mode & 0o111) !== 0;
-        const expectedExecutable = expected.mode === '100755';
-        if (
-            process.platform !== 'win32' &&
-            actualExecutable !== expectedExecutable
-        ) {
-            fail(`allowed file ${path} mode differs from the base commit`);
-        }
-        if (!readFileSync(absolute).equals(reader(path, path).content))
-            fail(`allowed file ${path} content differs from the base commit`);
+    }
+}
+
+// `inventory` vient de `gitCommitInventory` : toutes les entrées de la base
+// hors allowlist, avec leur contenu. Tout écart du disque échoue avant les
+// oracles, quel que soit l'état que Git en rapporte.
+export function assertProtectedWorktreeMatchesGitCommit(root, inventory) {
+    const differences = inventory.flatMap((entry) => {
+        const difference = worktreeDifference(root, entry);
+        return difference ? [`${entry.path} (${difference})`] : [];
+    });
+    if (differences.length > 0) {
+        const shown = differences.slice(0, 20).join(', ');
+        const hidden = differences.length - 20;
+        fail(
+            `protected worktree differs from base_commit_sha: ${shown}${
+                hidden > 0 ? ` and ${hidden} more` : ''
+            }`
+        );
     }
 }
 

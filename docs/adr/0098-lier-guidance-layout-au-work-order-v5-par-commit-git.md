@@ -72,6 +72,18 @@ modifié depuis la base doit appartenir à l'allowlist unique du work order. Le
 binding et ses dépendances sont relus depuis le commit enregistré, résolus à
 nouveau et comparés au `layout_guidance` complet.
 
+Le workspace protégé est observé sur le disque, pas déduit de l'état que Git en
+rapporte. À la préparation comme à la vérification, chaque entrée de l'arbre de
+base hors allowlist est comparée au disque réel : type final et octets égaux au
+blob sur toutes les plateformes prises en charge, ou texte de la cible pour un
+lien symbolique, sans la suivre. Le bit exécutable est comparé lorsque le
+système de fichiers le rend probant, soit actuellement hors Windows. Git reste
+un contrôle complémentaire d'inventaire des chemins, mais ne constitue plus la
+preuve de l'identité des octets protégés. Un index réécrit, une configuration
+locale (`core.worktree`, filtre `clean`), un `.git/info/attributes` ou une
+conversion de fins de ligne ne peuvent donc pas faire passer pour identique un
+fichier protégé dont les octets diffèrent. Tout écart échoue avant les oracles.
+
 L'antériorité est établie en parcourant les parents des objets commit bruts lus
 par `git cat-file commit`, sans revision walker. Les replace refs et les grafts
 locaux ne peuvent donc pas inventer une parenté. Le parcours détecte les cycles
@@ -141,6 +153,14 @@ une seconde décision, postérieure à la réalisation, et n'entre pas dans le h
 - le vocabulaire de capacités de layout reste volontairement fermé et ne sera
   élargi qu'avec un cas réel ;
 - l'approbation humaine demeure une propriété de GitHub, pas d'un champ JSON.
+- la comparaison du workspace protégé porte sur les octets, sans conversion : un
+  fichier dont la forme extraite diffère de son blob (attribut `eol=crlf`,
+  filtre de conversion) est refusé. Aucun fichier suivi n'est dans ce cas
+  aujourd'hui ;
+- un fichier ajouté hors allowlist n'est repéré que par l'inventaire Git. Un
+  `.gitignore` non suivi qui s'ignore lui-même peut le masquer, comme en v4. Ce
+  fichier n'entre pas dans le bac à sable des oracles, qui ne copie que les
+  fichiers visibles par Git ; il n'est pas pour autant signalé.
 
 ### Points à réévaluer
 
