@@ -188,9 +188,11 @@ test('le workflow sépare strictement calcul en lecture et publication en écrit
         'pull-requests': 'write',
     });
     assert.equal(workflow.jobs.publish.needs, 'repair');
+    // Le job qui écrit est lié à `main` : lancé à la main depuis une autre
+    // branche, le workflow audite sans publier.
     assert.equal(
         workflow.jobs.publish.if,
-        "needs.repair.outputs.repaired == 'true'"
+        "github.ref == 'refs/heads/main' && needs.repair.outputs.repaired == 'true'"
     );
 
     const source = readFileSync(

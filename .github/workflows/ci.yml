@@ -42,11 +42,23 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# Moindre privilège : le jeton du workflow ne peut que lire le dépôt. Un job
+# qui doit écrire le déclare lui-même, et `check:workflow-privileges` le refuse
+# s'il n'est pas dans sa liste fermée ou s'il n'est pas lié à `main`.
+permissions:
+  contents: read
+
 env:
   NODE_VERSION: '22.22.3'
   BUN_VERSION: '1.3.14'
-  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-  NX_NO_CLOUD: ${{ secrets.NX_CLOUD_ACCESS_TOKEN == '' && 'true' || 'false' }}
+  # Par défaut, rien n'utilise Nx Cloud : le cache local suffit et aucun
+  # secret n'est distribué au workflow. Le jeton n'est remis, pour le seul
+  # code de `main`, qu'aux étapes listées dans `ALLOWED_SECRET_HANDOVERS`
+  # (tools/check-workflow-privileges.mjs) : dans `oracle`, lint, build,
+  # bundle production, typecheck et test.
+  # Toute autre commande Nx de ce fichier tourne en cache local, par choix.
+  # Une PR ou un lancement manuel depuis une autre branche n'a jamais le jeton.
+  NX_NO_CLOUD: 'true'
 
 jobs:
   # ─── Job 1 : Garde-fous socle (rapide, bloquant) ─────────────────────────
@@ -226,6 +238,15 @@ jobs:
       # → GitHub attend un check qui n'arrive jamais, toute PR bloquée).
       - name: check:branch-protection-contexts (JSON de protection ↔ jobs ci.yml)
         run: bun run check:branch-protection-contexts
+
+      # Moindre privilège — constat du 2026-10-09 : trois workflows héritaient
+      # du jeton en écriture du dépôt et remettaient le secret Nx Cloud au code
+      # des PR. Ce garde refuse un événement non relu, un workflow sans bloc
+      # `permissions`, une écriture de job non liée à `main` et tout secret
+      # remis ailleurs que dans l'`env` d'une étape `run` gardée par `main`
+      # et inscrite, par son `id`, dans la liste fermée du garde.
+      - name: check:workflow-privileges (événements, jetons, écritures, secrets)
+        run: bun run check:workflow-privileges
 
       # Audit Big Tech 2026-08-14 — root cause du bug "script dans check:all
       # jamais réellement câblé en CI" (rencontré 3 fois : check:pair-schema/
@@ -535,10 +556,18 @@ jobs:
       # ESLint — boundaries Nx + règles Angular (ADR-0010 portail niveau Lint)
       # --max-warnings=0 est porté par targetDefaults.lint (nx.json), pas par nx CLI
       - name: Lint (nx affected)
+        id: nx-lint
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ github.ref == 'refs/heads/main' && secrets.NX_CLOUD_ACCESS_TOKEN || '' }}
+          NX_NO_CLOUD: ${{ (github.ref != 'refs/heads/main' || secrets.NX_CLOUD_ACCESS_TOKEN == '') && 'true' || 'false' }}
         run: bunx nx affected -t lint --base=${{ env.NX_BASE }}
 
       # Build package-based — tsc --noEmit par lib (audit A-4)
       - name: Build (nx affected)
+        id: nx-build
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ github.ref == 'refs/heads/main' && secrets.NX_CLOUD_ACCESS_TOKEN || '' }}
+          NX_NO_CLOUD: ${{ (github.ref != 'refs/heads/main' || secrets.NX_CLOUD_ACCESS_TOKEN == '') && 'true' || 'false' }}
         run: bunx nx affected -t build --base=${{ env.NX_BASE }}
 
       # OPS-36 — le Nightly reste une défense en profondeur, pas le premier
@@ -549,6 +578,10 @@ jobs:
       # Les budgets Angular restent bloquants pendant le build ; la seconde
       # commande vérifie ensuite l'inventaire exact des chunks initiaux.
       - name: Bundle production — budgets + baseline Linux
+        id: nx-bundle-production
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ github.ref == 'refs/heads/main' && secrets.NX_CLOUD_ACCESS_TOKEN || '' }}
+          NX_NO_CLOUD: ${{ (github.ref != 'refs/heads/main' || secrets.NX_CLOUD_ACCESS_TOKEN == '') && 'true' || 'false' }}
         run: |
           bunx nx run backoffice-angular:build:production
           bun run check:bundle-metrics-freshness
@@ -557,6 +590,10 @@ jobs:
       # donc un target `typecheck` distinct ; Nx ignore les projets qui n'en ont
       # pas au lieu de dupliquer ngc pour Angular.
       - name: Typecheck Vite projects (nx affected)
+        id: nx-typecheck
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ github.ref == 'refs/heads/main' && secrets.NX_CLOUD_ACCESS_TOKEN || '' }}
+          NX_NO_CLOUD: ${{ (github.ref != 'refs/heads/main' || secrets.NX_CLOUD_ACCESS_TOKEN == '') && 'true' || 'false' }}
         run: bunx nx affected -t typecheck --base=${{ env.NX_BASE }}
 
       # Audit A-10 / P1-8 — strictTemplates bloquant en PR (shift-left)
@@ -568,6 +605,10 @@ jobs:
       # schéma strict et échoue. Les libs ont `passWithNoTests: true` dans
       # tools/vitest-lib.config.ts (SSoT).
       - name: Test (nx affected)
+        id: nx-test
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ github.ref == 'refs/heads/main' && secrets.NX_CLOUD_ACCESS_TOKEN || '' }}
+          NX_NO_CLOUD: ${{ (github.ref != 'refs/heads/main' || secrets.NX_CLOUD_ACCESS_TOKEN == '') && 'true' || 'false' }}
         run: bunx nx affected -t test --base=${{ env.NX_BASE }}
 
   # ─── Job T12-6 : e2e Playwright + candidats visuels C5 ────────────────────

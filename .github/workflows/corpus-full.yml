@@ -9,10 +9,15 @@
 # ordinaire ne modifie pas l'index de correspondances et ne justifie pas ~20 min
 # de validation legacy (ADR-0046).
 #
-# Secrets requis :
-#   LEGACY_CHECKOUT_TOKEN — PAT / deploy token lecture sur lock.repo (GitLab),
-#     si le miroir GitHub ne porte pas le SHA piné.
-#   NX_CLOUD_ACCESS_TOKEN — même secret que ci.yml (nxCloudId dans nx.json).
+# Secrets :
+#   Aucun secret legacy. L1 (2026-10-10) : `LEGACY_CHECKOUT_TOKEN` n'est plus
+#     remis par ce workflow. Le secret n'existe pas dans le dépôt, le miroir
+#     de `legacy.lock.json` est public et les runs passent sans lui.
+#     `tools/corpus/checkout-legacy.mjs` sait toujours le lire en local ; le
+#     remettre en CI (dépôt legacy devenu privé) est une décision à relire,
+#     avec une entrée dans `ALLOWED_SECRET_HANDOVERS`.
+#   NX_CLOUD_ACCESS_TOKEN — optionnel, même secret que ci.yml (nxCloudId dans
+#     nx.json), remis à la seule étape `corpus-full` sur `main`.
 #     OPS-14 (2026-08-17) : ce workflow appelle `bun run corpus:full`, qui
 #     invoque `nx run-many` par module via tools/corpus/module-gate.mjs.
 #     Sans ce token, Nx Cloud refuse l'auth et NX **arrête tout le run**
@@ -51,11 +56,23 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Moindre privilège : le jeton du workflow ne peut que lire le dépôt. Un job
+# qui doit écrire le déclare lui-même, et `check:workflow-privileges` le refuse
+# s'il n'est pas dans sa liste fermée ou s'il n'est pas lié à `main`.
+permissions:
+  contents: read
+
 env:
   NODE_VERSION: '22.22.3'
   BUN_VERSION: '1.3.14'
-  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-  NX_NO_CLOUD: ${{ secrets.NX_CLOUD_ACCESS_TOKEN == '' && 'true' || 'false' }}
+  # Par défaut, rien n'utilise Nx Cloud : le cache local suffit et aucun
+  # secret n'est distribué au workflow. Le jeton n'est remis, pour le seul
+  # code de `main`, qu'aux étapes listées dans `ALLOWED_SECRET_HANDOVERS`
+  # (tools/check-workflow-privileges.mjs) : `corpus:full`, qui lance
+  # Nx indirectement par module.
+  # Toute autre commande Nx de ce fichier tourne en cache local, par choix.
+  # Une PR ou un lancement manuel depuis une autre branche n'a jamais le jeton.
+  NX_NO_CLOUD: 'true'
 
 jobs:
   corpus-full:
@@ -78,8 +95,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Checkout legacy (legacy.lock.json#commit)
-        env:
-          LEGACY_CHECKOUT_TOKEN: ${{ secrets.LEGACY_CHECKOUT_TOKEN }}
+        # Sans secret : `legacy.lock.json` pointe vers un miroir GitHub public.
         run: bun run legacy:checkout
         # checkout-legacy.mjs écrit SEOS_LEGACY_ROOT dans $GITHUB_ENV
 
@@ -87,6 +103,10 @@ jobs:
         run: bun run check:legacy-lock
 
       - name: Corpus full (--verify, sans --structural-only)
+        id: corpus-full
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ github.ref == 'refs/heads/main' && secrets.NX_CLOUD_ACCESS_TOKEN || '' }}
+          NX_NO_CLOUD: ${{ (github.ref != 'refs/heads/main' || secrets.NX_CLOUD_ACCESS_TOKEN == '') && 'true' || 'false' }}
         run: bun run corpus:full
 
       # OPS-20 (2026-08-17) : `corpus:full`/`emit-pairs.mjs` réécrit
