@@ -277,13 +277,6 @@ test('conserve l’ordre Nom, Prénom, Email, Téléphone, Profil et focalise No
     const ids = await fields.evaluateAll((elements) =>
         elements.map((element) => element.getAttribute('data-cmz-id'))
     );
-    const legacy =
-        ids.join('|') === 'first-name|last-name|email|phone|profile-id';
-    test.fail(
-        legacy,
-        'ADAPT-10 : le DOM historique place encore Prénom avant Nom.'
-    );
-
     expect(ids).toEqual([
         'last-name',
         'first-name',
@@ -309,12 +302,6 @@ test('une soumission invalide ne POST pas, annonce les erreurs et focalise Nom',
     );
     const dialog = await openCreate(page);
     const create = dialog.getByRole('button', { name: 'Créer', exact: true });
-    const legacy = await create.isDisabled();
-    test.fail(
-        legacy,
-        'ADAPT-10 : le bouton historique désactivé empêche la tentative invalide de révéler et focaliser les erreurs.'
-    );
-
     await expect(create).toBeEnabled({ timeout: 2_000 });
     await create.click();
     expect(harness.createPosts).toBe(0);
@@ -431,13 +418,6 @@ test('un brouillon modifié demande confirmation pour Échap puis restitue le fo
     const confirmation = page.getByRole('dialog', {
         name: /abandonner la création/i,
     });
-    const legacy =
-        (await dialog.count()) === 0 && (await confirmation.count()) === 0;
-    test.fail(
-        legacy,
-        'ADAPT-10 : Échap ferme encore immédiatement un brouillon modifié sans confirmation.'
-    );
-
     await expect(dialog).toBeVisible({ timeout: 2_000 });
     await expect(confirmation).toBeVisible({ timeout: 2_000 });
     await confirmation
@@ -483,14 +463,6 @@ test('un conflit email conserve le brouillon, annonce l’erreur et focalise Ema
     await expect(page.locator('[data-cmz-id="create-failed"]')).toBeVisible();
 
     const email = dialog.locator('[data-cmz-id="email"]');
-    const legacy = !(await email.evaluate(
-        (element) => element === document.activeElement
-    ));
-    test.fail(
-        legacy,
-        'ADAPT-10 : le conflit email historique conserve le brouillon mais ne transfère pas le focus sur Email.'
-    );
-
     expect(harness.createPosts).toBe(1);
     await expect(email).toBeFocused({ timeout: 2_000 });
     await expect(dialog.locator('#email-error')).toContainText(/existe déjà/i);

@@ -7,6 +7,7 @@ import {
     requireBox,
     waitForResponsiveLayout,
 } from './adaptive-layout.support';
+import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
 
 const USERS = [
     [
@@ -183,41 +184,6 @@ async function openReadyPage(
     }
 }
 
-async function expectAdaptiveFiltersOrFailOnExactLegacy(
-    page: Page
-): Promise<void> {
-    const legacyInlineFilters = await page
-        .locator('#secondary-user-filters')
-        .evaluate(
-            (element) =>
-                element.parentElement?.matches('form.filters') === true &&
-                !element.hasAttribute('role') &&
-                !element.hasAttribute('aria-modal')
-        );
-    test.fail(
-        legacyInlineFilters,
-        'ADAPT-6 : le scénario de présentation attend désormais Réinitialiser sans réseau puis Appliquer dans le panneau adaptatif.'
-    );
-    if (legacyInlineFilters) expect(legacyInlineFilters).toBe(false);
-}
-
-async function expectDynamicCompactFilterNameOrFailOnExactLegacy(
-    panel: Locator,
-    expectedName: string
-): Promise<void> {
-    const legacyConstantName = await panel.evaluate(
-        (element) =>
-            element.getAttribute('aria-label') === 'Filtres' &&
-            !element.hasAttribute('aria-labelledby')
-    );
-
-    test.fail(
-        legacyConstantName,
-        'ADAPT-7 : le scénario de présentation attend le nom accessible du critère compact et non le nom constant « Filtres ».'
-    );
-    await expect(panel).toHaveAccessibleName(expectedName);
-}
-
 async function captureCandidate(
     page: Page,
     testInfo: TestInfo,
@@ -267,6 +233,9 @@ test.beforeEach(async ({ page }) => {
 test('produit le candidat desktop ready depuis le vrai rendu Angular', async ({
     page,
 }, testInfo) => {
+    expectFailureWhileLegacy(
+        'C5 : les boutons de pagination n’atteignent pas encore 48 px de largeur.'
+    );
     await page.setViewportSize({ width: 1440, height: 1024 });
     await openReadyPage(page);
 
@@ -283,8 +252,8 @@ test('produit le candidat desktop ready depuis le vrai rendu Angular', async ({
     const pageOne = page.getByRole('button', { name: 'Page 1' });
     const pageTwo = page.getByRole('button', { name: 'Page 2' });
     await expect(pageOne).toHaveAttribute('aria-current', 'page');
-    await expect(pageOne).toHaveCSS('width', '40px');
-    await expect(pageTwo).toHaveCSS('width', '40px');
+    await expect(pageOne).toHaveCSS('width', '48px');
+    await expect(pageTwo).toHaveCSS('width', '48px');
     await pageTwo.click();
     await expect(pageTwo).toHaveAttribute('aria-current', 'page');
     await captureCandidate(page, testInfo, 'desktop-ready.actual.png');
@@ -293,15 +262,21 @@ test('produit le candidat desktop ready depuis le vrai rendu Angular', async ({
 test('produit le candidat mobile ready avec la projection en cartes', async ({
     page,
 }, testInfo) => {
+    expectFailureWhileLegacy(
+        'C5 : le champ de recherche compact n’atteint pas encore 48 px de hauteur.'
+    );
     await page.setViewportSize({ width: 390, height: 844 });
     await openReadyPage(page);
 
     await expect(page.locator('.desktop-table')).toBeHidden();
     await expect(page.locator('.mobile-results')).toBeVisible();
     await expect(page.locator('.user-card')).toHaveCount(5);
+    // ADR-0098 : l'exemple Compact validé exige pour le champ de recherche une
+    // cible tactile d'au moins 48 px ; l'ancienne attente (44 px) accompagnait
+    // l'étiquette flottante retirée.
     await expect(page.locator('.filters input').first()).toHaveCSS(
         'height',
-        '44px'
+        '48px'
     );
     const firstCard = requireBox(
         await page.locator('.user-card').first().boundingBox(),
@@ -314,10 +289,12 @@ test('produit le candidat mobile ready avec la projection en cartes', async ({
 test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite', async ({
     page,
 }) => {
+    expectFailureWhileLegacy(
+        'C5 : le bouton Appliquer du panneau n’atteint pas encore 48 px.'
+    );
     const apiRequests = observeApiRequests(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await openReadyPage(page);
-    await expectAdaptiveFiltersOrFailOnExactLegacy(page);
 
     const toggle = page.getByRole('button', {
         name: /^Filtres(?:\s|$)/,
@@ -343,11 +320,11 @@ test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite
     });
     await expect(apply).toBeVisible();
     await expect(reset).toBeVisible();
-    await expect(apply).toHaveCSS('min-height', '44px');
-    await expect(reset).toHaveCSS('min-height', '44px');
+    await expect(apply).toHaveCSS('min-height', '48px');
+    await expect(reset).toHaveCSS('min-height', '48px');
 
     await dialog.getByRole('button', { name: /^Profil\b/ }).click();
-    await expectDynamicCompactFilterNameOrFailOnExactLegacy(dialog, 'Profil');
+    await expect(dialog).toHaveAccessibleName('Profil');
     await dialog.getByLabel('Profil').selectOption('profile-a');
     expect(apiRequests).toEqual(requestsBeforeOpen);
     const requestsBeforeApply = apiRequests.length;
@@ -516,11 +493,6 @@ test('active un FAB compact unique sans pagination et conserve updated_at', asyn
     const position = await create.evaluate(
         (element) => getComputedStyle(element).position
     );
-    test.fail(
-        position === 'static',
-        'ADAPT-5 : le bouton compact historique doit céder la place au FAB approuvé.'
-    );
-
     expect(position).toBe('fixed');
     await expect(create).toBeEnabled();
     await expect(page.locator('.user-card').first()).toContainText(
