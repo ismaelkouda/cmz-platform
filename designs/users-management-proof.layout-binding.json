@@ -1,0 +1,192 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "presentation-layout-binding",
+  "binding_id": "users-management-layout-2026-10-09",
+  "page_id": "page_6666666666666666",
+  "page_contract_sha256": "8012bb78d940b90151bed99273882a23ac80695619094fbe25304281cfeaad3d",
+  "authority": "layout-guidance-only",
+  "example_sets": [
+    {
+      "set_id": "generic-compact-data-view-layout-2026-10-03",
+      "path": "examples/presentation/compact-data-view-layout-examples/example-set.json",
+      "sha256": "e4afedbae728dc774111bca3eeb416d3fc20aa2e24981c76e3aea0fe147f2f3c"
+    },
+    {
+      "set_id": "generic-data-view-layout-2026-10-03",
+      "path": "examples/presentation/data-view-layout-examples/example-set.json",
+      "sha256": "320354ae80e7e22a63f0d9019c9ae6263d7287bd9f403321fc9bf0976f1e01db"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "column-filters",
+      "status": "declared",
+      "authorized_by": {
+        "kind": "backend-parameter",
+        "contract_id": "cmz-users-list",
+        "operation_id": "settings-security.list-users",
+        "parameters": ["is_active", "profile", "role"]
+      }
+    },
+    {
+      "id": "create",
+      "status": "declared",
+      "authorized_by": {
+        "kind": "page-action",
+        "action_id": "create-user"
+      }
+    },
+    {
+      "id": "create-fab",
+      "status": "declared",
+      "authorized_by": {
+        "kind": "page-action",
+        "action_id": "create-user"
+      }
+    },
+    {
+      "id": "export",
+      "status": "absent",
+      "reason": "no-contract-capability"
+    },
+    {
+      "id": "filter-panel",
+      "status": "declared",
+      "authorized_by": {
+        "kind": "backend-parameter",
+        "contract_id": "cmz-users-list",
+        "operation_id": "settings-security.list-users",
+        "parameters": ["is_active", "profile", "role"]
+      }
+    },
+    {
+      "id": "filter-trigger",
+      "status": "declared",
+      "authorized_by": {
+        "kind": "backend-parameter",
+        "contract_id": "cmz-users-list",
+        "operation_id": "settings-security.list-users",
+        "parameters": ["is_active", "profile", "role"]
+      }
+    },
+    {
+      "id": "progressive-loading",
+      "status": "declared",
+      "authorized_by": {
+        "kind": "backend-parameter",
+        "contract_id": "cmz-users-list",
+        "operation_id": "settings-security.list-users",
+        "parameters": ["page"]
+      }
+    },
+    {
+      "id": "refresh",
+      "status": "declared",
+      "authorized_by": {
+        "kind": "page-load",
+        "load_id": "users-list"
+      }
+    },
+    {
+      "id": "row-actions",
+      "status": "absent",
+      "reason": "no-contract-capability"
+    },
+    {
+      "id": "row-rank",
+      "status": "declared",
+      "authorized_by": {
+        "kind": "page-load",
+        "load_id": "users-list"
+      }
+    },
+    {
+      "id": "search",
+      "status": "declared",
+      "authorized_by": {
+        "kind": "backend-parameter",
+        "contract_id": "cmz-users-list",
+        "operation_id": "settings-security.list-users",
+        "parameters": ["search"]
+      }
+    }
+  ],
+  "selections": [
+    {
+      "set_id": "generic-compact-data-view-layout-2026-10-03",
+      "source_id": "compact-filter-detail",
+      "page_state_ids": ["ready"],
+      "regions": ["bottom-sheet", "modal-backdrop"],
+      "omitted_capabilities": []
+    },
+    {
+      "set_id": "generic-compact-data-view-layout-2026-10-03",
+      "source_id": "compact-filter-summary",
+      "page_state_ids": ["ready"],
+      "regions": ["bottom-sheet", "modal-backdrop"],
+      "omitted_capabilities": []
+    },
+    {
+      "set_id": "generic-compact-data-view-layout-2026-10-03",
+      "source_id": "compact-list",
+      "page_state_ids": ["ready"],
+      "regions": [
+        "collection-header",
+        "search-controls",
+        "card-list",
+        "floating-action"
+      ],
+      "omitted_capabilities": []
+    },
+    {
+      "set_id": "generic-compact-data-view-layout-2026-10-03",
+      "source_id": "compact-search-active",
+      "page_state_ids": ["ready"],
+      "regions": [
+        "collection-header",
+        "search-controls",
+        "card-list",
+        "floating-action"
+      ],
+      "omitted_capabilities": []
+    },
+    {
+      "set_id": "generic-data-view-layout-2026-10-03",
+      "source_id": "expanded-filter-panel",
+      "page_state_ids": ["ready"],
+      "regions": [
+        "table-toolbar",
+        "data-grid",
+        "filter-panel",
+        "horizontal-scroll-rail"
+      ],
+      "omitted_capabilities": ["export"]
+    },
+    {
+      "set_id": "generic-data-view-layout-2026-10-03",
+      "source_id": "expanded-row-actions",
+      "page_state_ids": ["ready"],
+      "regions": ["table-toolbar", "data-grid", "horizontal-scroll-rail"],
+      "omitted_capabilities": ["export", "row-actions"]
+    },
+    {
+      "set_id": "generic-data-view-layout-2026-10-03",
+      "source_id": "medium-constrained-filter-panel",
+      "page_state_ids": ["ready"],
+      "regions": [
+        "table-toolbar",
+        "data-grid",
+        "filter-panel",
+        "horizontal-scroll-rail"
+      ],
+      "omitted_capabilities": ["export"]
+    },
+    {
+      "set_id": "generic-data-view-layout-2026-10-03",
+      "source_id": "medium-constrained-row-actions",
+      "page_state_ids": ["ready"],
+      "regions": ["table-toolbar", "data-grid", "horizontal-scroll-rail"],
+      "omitted_capabilities": ["export", "row-actions"]
+    }
+  ]
+}
