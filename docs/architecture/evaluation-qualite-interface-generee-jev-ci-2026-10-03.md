@@ -617,7 +617,8 @@ juge — humain, multimodal, reviewer de code ou JEV — ne peut être correctem
 
 Le premier cas comparable était décrit par
 `designs/users-management-proof.visual-evaluation.json`. Ce plan n'est plus
-actif : il est archivé, sans autorité, sous
+actif : d'abord archivé sans autorité, il a été supprimé du dépôt le 2026-10-10
+(ADR-0099) et reste consultable dans Git au commit `ea31ecf7`, sous
 `examples/users-management-proof/presentation/historical/adaptive-create-candidates/visual-evaluation.json`.
 L'état `medium-create-invalid` reliait une source alors approuvée du
 `presentation-evidence` au scénario Playwright exact qui produisait le même état
@@ -656,7 +657,8 @@ observateur multimodal ou expérimentation JEV.
 
 Le second incrément couplait le cas `medium-create-invalid` à un protocole de
 revue explicite sans demander à un modèle de réinterpréter les faits mesurables.
-Le protocole, désormais archivé sous
+Le protocole, supprimé du dépôt le 2026-10-10 (ADR-0099) et consultable dans Git
+au commit `ea31ecf7` sous
 `examples/users-management-proof/presentation/historical/adaptive-create-candidates/visual-review.json`,
 séparait trois modes de preuve :
 

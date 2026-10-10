@@ -6,13 +6,15 @@
 
 ## Contexte
 
-ADR-0083 distingue la preuve d'une page, un exemple générique de mise en page et
-une archive. Le pipeline de réalisation v4 sait déjà lier le contrat de page,
-une preuve de présentation et un plan d'exécution, mais il ne consomme pas les
-exemples génériques retenus pour une page. Une autorisation JSON locale avait
-été envisagée pour C5 ; elle pouvait être écrite et rehachée par l'agent qu'elle
-prétendait autoriser. Elle prouvait l'intégrité de ses propres octets, ni une
-approbation humaine ni leur antériorité à la réalisation.
+ADR-0083 distinguait la preuve d'une page, un exemple générique de mise en page
+et une archive ; ADR-0099 l'a supersédée le 2026-10-10 en supprimant la
+catégorie archive, les deux autres restant inchangées. Le pipeline de
+réalisation v4 sait déjà lier le contrat de page, une preuve de présentation et
+un plan d'exécution, mais il ne consomme pas les exemples génériques retenus
+pour une page. Une autorisation JSON locale avait été envisagée pour C5 ; elle
+pouvait être écrite et rehachée par l'agent qu'elle prétendait autoriser. Elle
+prouvait l'intégrité de ses propres octets, ni une approbation humaine ni leur
+antériorité à la réalisation.
 
 Le mécanisme doit rester utilisable par Angular et React, conserver les work
 orders v4 existants, ne pas introduire une seconde allowlist ou un second moteur
@@ -175,6 +177,9 @@ cœur.
 - [ADR-0039 — Frontière conception / réalisation LLM](./0039-frontiere-contractuelle-conception-realisation-llm.md)
 - [ADR-0066 — Preuve de présentation bornée](./0066-preuve-presentation-bornee-pour-realisation-llm.md)
 - [ADR-0083 — Page, exemple de layout et archive](./0083-preuve-page-exemple-mise-en-page-et-archive.md)
+  (origine historique, supersédée)
+- [ADR-0099 — Références de présentation retirées conservées par Git](./0099-references-de-presentation-retirees-conservees-par-git.md)
+  (politique courante)
 - [ADR-0088 — Réalisation ciblée par profil](./0088-realisation-page-ciblee-par-profil.md)
 - [Git `cat-file`](https://git-scm.com/docs/git-cat-file)
 - [Git `ls-tree`](https://git-scm.com/docs/git-ls-tree)

@@ -76,20 +76,4 @@ test('compose les trois autorités atomiques sans inventer de preuve de page', a
     assert.match(guide, /absents, conformément aux décisions/);
     assert.match(guide, /n'a pas valu\s+auto-approbation/);
     assert.match(guide, /2026-10-07/);
-
-    const activePresentation = JSON.parse(
-        await readFile(
-            resolve(
-                repositoryRoot,
-                'designs/users-management-proof.presentation-evidence.json'
-            ),
-            'utf8'
-        )
-    );
-    assert.equal(
-        activePresentation.sources.some(({ snapshot_uri }) =>
-            snapshot_uri.startsWith(root)
-        ),
-        false
-    );
 });

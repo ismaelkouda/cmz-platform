@@ -147,22 +147,3 @@ test('garde le rendu reproductible mais hors autorité d’implémentation', asy
         );
     }
 });
-
-test('interdit de publier les exemples génériques comme preuve de la page utilisateurs', async () => {
-    const activeManifest = JSON.parse(
-        await readFile(
-            resolve(
-                repositoryRoot,
-                'designs/users-management-proof.presentation-evidence.json'
-            ),
-            'utf8'
-        )
-    );
-    assert.equal(
-        activeManifest.sources.some(({ snapshot_uri }) =>
-            snapshot_uri.startsWith(root)
-        ),
-        false,
-        'a layout example must not become page evidence'
-    );
-});

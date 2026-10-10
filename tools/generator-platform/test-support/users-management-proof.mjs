@@ -14,8 +14,6 @@ export const usersManagementProof = Object.freeze({
         'apps/users-management-proof/.cmz/pages/page_6666666666666666.json',
     planUri:
         'examples/users-management-proof/execution/page-execution-plan.json',
-    presentationEvidenceUri:
-        'designs/users-management-proof.presentation-evidence.json',
     compositionRoot:
         'apps/users-management-proof/src/app/generated/page_6666666666666666',
     reactCompositionRoot:

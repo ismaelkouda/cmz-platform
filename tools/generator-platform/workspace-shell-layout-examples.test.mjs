@@ -17,16 +17,6 @@ const schema = JSON.parse(
         'utf8'
     )
 );
-const historicalSchema = JSON.parse(
-    await readFile(
-        new URL(
-            './schemas/historical-presentation-reference-set.schema.json',
-            import.meta.url
-        ),
-        'utf8'
-    )
-);
-const historicalManifestPath = `${root}historical/recent-route-navigation/archive.json`;
 
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
@@ -131,34 +121,4 @@ test('verrouille la sémantique Tabs et la promesse de même instance', async ()
     assert.match(contract, /destroyDetachedRouteHandle/);
     assert.match(contract, /100 cycles ouverture\/switch\/fermeture/);
     assert.match(contract, /absente en Compact/);
-});
-
-test('conserve les anciens candidats hors autorité active', async () => {
-    const archive = JSON.parse(
-        await readFile(resolve(repositoryRoot, historicalManifestPath), 'utf8')
-    );
-
-    assert.deepEqual(validateJsonSchema(archive, historicalSchema), []);
-    assert.equal(archive.subject, 'generic-workspace-shell');
-    assert.equal(archive.status, 'historical');
-    assert.equal(archive.authority, 'none');
-    assert.equal('page_id' in archive, false);
-
-    for (const source of archive.sources) {
-        const content = await readFile(resolve(repositoryRoot, source.path));
-        assert.equal(content.byteLength, source.bytes, `${source.path} size`);
-        assert.equal(sha256(content), source.sha256, `${source.path} hash`);
-        assert.equal(content.readUInt32BE(16), source.viewport.width);
-        assert.equal(content.readUInt32BE(20), source.viewport.height);
-    }
-
-    const activeManifest = JSON.parse(
-        await readFile(resolve(repositoryRoot, manifestPath), 'utf8')
-    );
-    assert.equal(
-        activeManifest.sources.some(({ path }) =>
-            path.includes('/historical/')
-        ),
-        false
-    );
 });

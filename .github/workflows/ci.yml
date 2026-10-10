@@ -675,7 +675,6 @@ jobs:
               tools/generator-platform/schemas/visual-evaluation-bundle.schema.json \
               tools/generator-platform/schemas/visual-review-protocol.schema.json \
               tools/generator-platform/schemas/visual-runtime-evidence.schema.json \
-              designs/users-management-proof.presentation-evidence.json \
               designs/users-management-proof.visual-review.json \
               designs/users-management-proof.visual-evaluation.json; then
             echo "run=true" >> $GITHUB_OUTPUT

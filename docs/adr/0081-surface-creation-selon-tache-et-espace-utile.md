@@ -147,8 +147,8 @@ Le formulaire C5 comporte cinq champs et un POST. Le runtime applique désormais
 la proposition suivante, avec des preuves navigateur comportementales. Elle ne
 constitue pas encore une nouvelle baseline visuelle de page :
 
-| Espace utile                   | Proposition par défaut                                                  | Statut    |
-| ------------------------------ | ----------------------------------------------------------------------- | --------- |
+| Espace utile                   | Proposition par défaut                                                  | Statut            |
+| ------------------------------ | ----------------------------------------------------------------------- | ----------------- |
 | étroit ou clavier contraignant | dialogue plein écran, une colonne                                       | prouvé au runtime |
 | régulier                       | dialogue modal centré, une colonne                                      | prouvé au runtime |
 | large                          | dialogue modal centré, une ou deux colonnes selon la largeur intérieure | prouvé au runtime |
@@ -224,10 +224,13 @@ d'accessibilité.
 1. les assertions géométriques issues d'ADR-0076 ont été retirées sans affaiblir
    les oracles de modalité, focus, validation et réseau ;
 2. le runtime et les scénarios C5 emploient `étroit`, `régulier` et `large` ;
-3. le cas étroit plein écran est vérifié avec erreurs, zoom 200 % et 320 CSS px ;
+3. le cas étroit plein écran est vérifié avec erreurs, zoom 200 % et 320 CSS px
+   ;
 4. le passage une/deux colonnes est prouvé à partir de la largeur intérieure ;
-5. les références et protocoles incompatibles sont archivés avec
-   `authority: none` ;
+5. les références et protocoles incompatibles ont d'abord été archivés avec
+   `authority: none`, puis supprimés du dépôt le 2026-10-10
+   ([ADR-0099](./0099-references-de-presentation-retirees-conservees-par-git.md))
+   ;
 6. une future baseline visuelle devra faire l'objet d'une validation humaine
    explicite avant publication. L'absence de baseline n'affaiblit pas les
    oracles comportementaux actuels.

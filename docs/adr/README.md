@@ -116,7 +116,7 @@ envisagées, le choix retenu et ses conséquences.
 | [0080](./0080-prouver-la-valeur-avant-nouvelle-automatisation.md) | Prouver la valeur avant toute nouvelle automatisation    | Accepted |
 | [0081](./0081-surface-creation-selon-tache-et-espace-utile.md) | Choisir une surface de création selon la tâche et l'espace utile | Accepted |
 | [0082](./0082-cycle-de-vie-des-references-de-presentation.md) | Séparer références actives et archives de présentation   | Superseded |
-| [0083](./0083-preuve-page-exemple-mise-en-page-et-archive.md) | Distinguer preuve de page, exemple de mise en page et archive | Accepted |
+| [0083](./0083-preuve-page-exemple-mise-en-page-et-archive.md) | Distinguer preuve de page, exemple de mise en page et archive | Superseded |
 | [0084](./0084-workspace-a-vues-vivantes-et-fermables.md)  | Workspace à vues vivantes et fermables                   | Accepted |
 | [0085](./0085-angular-i18n-native-localize.md)            | Internationalisation Angular native avec `@angular/localize` | Accepted |
 | [0086](./0086-profil-react-natif-minimal.md)              | Profil React natif, minimal et qualifié par capacité     | Accepted |
@@ -132,4 +132,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0096](./0096-separer-execution-et-revue-agent.md)        | Séparer l'exécution et la revue agent d'une étape planifiée | Accepted |
 | [0097](./0097-fab-compact-creation-react-c5.md)           | Fermer la parité du FAB Compact de création C5 en React  | Accepted |
 | [0098](./0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md) | Lier la guidance de layout au work order v5 par commit Git | Accepted |
+| [0099](./0099-references-de-presentation-retirees-conservees-par-git.md) | Supprimer les références de présentation retirées : Git en est la mémoire | Accepted |
 <!-- END:GENERATED:adr-index -->

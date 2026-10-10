@@ -254,12 +254,14 @@ La décision ADAPT-6a a ensuite été approuvée sur
 `36465758895`.
 
 ADAPT-6b fournit quatre références déterministes : deux états du même bottom
-sheet compact, un side sheet `medium` et un pane `expanded`. Elles vivent dans
-[`filter-candidates/proposal.md`](../../examples/users-management-proof/presentation/filter-candidates/proposal.md).
-Soumaila a approuvé leur commit exact
-`81dd77e3633eada14fc1940f4a0c1cb4338aec87`, puis la PR #130 a été fusionnée dans
-`9b1792c9afbb31c906c69af9068a6d2e498ca043`. Ses 16 contrôles et la CI
-post-fusion `36471376072` sont verts.
+sheet compact, un side sheet `medium` et un pane `expanded`. Elles vivaient dans
+`examples/users-management-proof/presentation/filter-candidates/`, rejeté comme
+référence courante le 2026-09-30 puis supprimé du dépôt le 2026-10-10
+([ADR-0099](../adr/0099-references-de-presentation-retirees-conservees-par-git.md))
+; le contenu reste consultable dans Git au commit `ea31ecf7`. Soumaila a
+approuvé leur commit exact `81dd77e3633eada14fc1940f4a0c1cb4338aec87`, puis la
+PR #130 a été fusionnée dans `9b1792c9afbb31c906c69af9068a6d2e498ca043`. Ses 16
+contrôles et la CI post-fusion `36471376072` sont verts.
 
 ADAPT-6c publie ces quatre PNG et leur brief visuel stable dans le manifeste
 `presentation-evidence`. Il retire de l'autorité active les anciennes images qui
@@ -341,9 +343,9 @@ Les preuves finales portent sur les octets poussés : 26 tests Angular, 23
 scénarios Playwright, vérification du work order, compilation stricte, build
 production, lint ciblé, Prettier et `git diff --check`. Le style du composant
 atteint `7,74 kB`, sous le plafond bloquant de `8 kB` sans relèvement de budget.
-Le correctif de disposition découvert par le passage E2E masque explicitement
-la région des filtres quand le panneau de création `expanded` est ouvert ; il
-évite qu'une colonne vide décale le panneau et restaure la marge sous le budget.
+Le correctif de disposition découvert par le passage E2E masque explicitement la
+région des filtres quand le panneau de création `expanded` est ouvert ; il évite
+qu'une colonne vide décale le panneau et restaure la marge sous le budget.
 
 Soumaila a approuvé la PR #134 sur le commit exact
 `d836886009e14b368ed48b94941c0462818b42a1`, puis l'a fusionnée dans
@@ -388,16 +390,15 @@ contrat minimal attendu est le suivant :
 - un redimensionnement conserve le brouillon, le sous-écran et son nom sans GET.
 
 ADAPT-7a modifie seulement le harnais Playwright. Deux scénarios reconnaissent
-l’ancienne signature exacte — `aria-label="Filtres"` sans
-`aria-labelledby` — comme échec attendu. Les huit autres scénarios restent des
-succès réels ; le passage ciblé termine à `10 passed`, dont deux échecs attendus,
-sans `skip` ni `todo`. Le passage Playwright complet termine à `23 passed`,
-avec ces deux seuls échecs attendus et vingt-et-un succès réels. Après revue et
-fusion de ce harnais, ADAPT-7b devra
-recalculer un work order depuis `main`, modifier seulement les fichiers de page
-autorisés et faire passer les dix scénarios réellement. La refonte
-Desktop/Medium ADAPT-8, décidée ensuite, précède désormais la reprise de la
-baseline Chromium.
+l’ancienne signature exacte — `aria-label="Filtres"` sans `aria-labelledby` —
+comme échec attendu. Les huit autres scénarios restent des succès réels ; le
+passage ciblé termine à `10 passed`, dont deux échecs attendus, sans `skip` ni
+`todo`. Le passage Playwright complet termine à `23 passed`, avec ces deux seuls
+échecs attendus et vingt-et-un succès réels. Après revue et fusion de ce
+harnais, ADAPT-7b devra recalculer un work order depuis `main`, modifier
+seulement les fichiers de page autorisés et faire passer les dix scénarios
+réellement. La refonte Desktop/Medium ADAPT-8, décidée ensuite, précède
+désormais la reprise de la baseline Chromium.
 
 Une première réalisation jetable d'ADAPT-7b fait passer les dix oracles
 adaptatifs, mais révèle un locator contradictoire dans le harnais de
@@ -415,8 +416,8 @@ devra être recalculé une nouvelle fois avant de reprendre les deux fichiers de
 page déjà validés par la réalisation jetable.
 
 Soumaila a approuvé ADAPT-7a2 sur le commit
-`cedb60d4a2f640674419a51740796d4c7a572986`, puis la PR #139 a été fusionnée
-dans `bdb69077664eb589815b29f20144e8eef6ae22eb`. Ses 17 contrôles et la CI
+`cedb60d4a2f640674419a51740796d4c7a572986`, puis la PR #139 a été fusionnée dans
+`bdb69077664eb589815b29f20144e8eef6ae22eb`. Ses 17 contrôles et la CI
 post-fusion `36584337755` sont verts.
 
 ### ADAPT-7b — réalisation confinée et fusionnée
@@ -424,17 +425,17 @@ post-fusion `36584337755` sont verts.
 Le work order
 `a9abe5a184697de6a54b71943d7f140dcbe441c367a279e2d8b20082f249278d`, recalculé
 depuis ce `main`, autorise uniquement les cinq fichiers de la page. La
-réalisation n'en modifie que deux : le template et le contrôleur.
-Elle remplace le nom constant du panneau par `aria-labelledby`, transfère le
-focus vers le premier contrôle du critère ouvert et le restitue au bouton du
-critère quitté après `Retour`. Les marqueurs ajoutés sont locaux au parcours de
-focus ; ils ne changent ni le contrat métier, ni l'API, ni la disposition.
+réalisation n'en modifie que deux : le template et le contrôleur. Elle remplace
+le nom constant du panneau par `aria-labelledby`, transfère le focus vers le
+premier contrôle du critère ouvert et le restitue au bouton du critère quitté
+après `Retour`. Les marqueurs ajoutés sont locaux au parcours de focus ; ils ne
+changent ni le contrat métier, ni l'API, ni la disposition.
 
 Les dix oracles adaptatifs et les vingt-trois scénarios Playwright complets
 passent réellement, sans échec attendu résiduel. Les 26 tests Angular, le lint,
-le build production et l'Oracle du work order passent également, sans
-violation de confinement. Le bundle initial reste à `262,69 kB` et le style à
-`7,74 kB`, sous le plafond bloquant de `8 kB`. Soumaila a approuvé le commit
-exact `56a71baf4db9adbcd8ce6d0920ec1eec64f1ed30`, fusionné par la PR #140 dans
+le build production et l'Oracle du work order passent également, sans violation
+de confinement. Le bundle initial reste à `262,69 kB` et le style à `7,74 kB`,
+sous le plafond bloquant de `8 kB`. Soumaila a approuvé le commit exact
+`56a71baf4db9adbcd8ce6d0920ec1eec64f1ed30`, fusionné par la PR #140 dans
 `eb8be265e5843d196cff7bf10c6372e5f212f7de`. Les 17 contrôles de PR et la CI
 post-fusion `36591923635` sont verts. ADAPT-7 est clos.

@@ -2,7 +2,9 @@
 
 - **Statut :** Superseded
 - **Superseded by :**
-  [ADR-0083 — Distinguer preuve de page, exemple de mise en page et archive](./0083-preuve-page-exemple-mise-en-page-et-archive.md)
+  [ADR-0083 — Distinguer preuve de page, exemple de mise en page et archive](./0083-preuve-page-exemple-mise-en-page-et-archive.md),
+  elle-même supersédée par
+  [ADR-0099](./0099-references-de-presentation-retirees-conservees-par-git.md)
 - **Date :** 2026-10-03
 - **Complète :**
   [ADR-0066 — preuve de présentation bornée](./0066-preuve-presentation-bornee-pour-realisation-llm.md)
