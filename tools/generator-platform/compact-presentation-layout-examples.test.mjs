@@ -138,21 +138,3 @@ test('matérialise une pile de cartes et un seul sheet sans reproduire un tablea
         );
     }
 });
-
-test('ne publie ni le corpus Compact ni le corpus générique comme preuve utilisateurs', async () => {
-    const activeManifest = JSON.parse(
-        await readFile(
-            resolve(
-                repositoryRoot,
-                'designs/users-management-proof.presentation-evidence.json'
-            ),
-            'utf8'
-        )
-    );
-    assert.equal(
-        activeManifest.sources.some(({ snapshot_uri }) =>
-            snapshot_uri.startsWith('examples/presentation/')
-        ),
-        false
-    );
-});

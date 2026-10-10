@@ -44,9 +44,11 @@ recrée pas et n'émet aucun GET. Revenir en Compact restaure également la vue
 interne du critère lorsqu'elle est encore pertinente.
 
 Les images du corpus générique Compact restent des exemples de disposition sans
-autorité métier. Elles ne sont pas promues dans le manifeste de présentation de
-la page utilisateurs. La conformité de cette réalisation est établie par le
-contrat de page et les preuves de son runtime réel.
+autorité métier. Elles ne sont pas promues en preuve de présentation de la page
+utilisateurs, qui n'en publie d'ailleurs aucune depuis le 2026-10-10
+([ADR-0099](./0099-references-de-presentation-retirees-conservees-par-git.md)).
+La conformité de cette réalisation est établie par le contrat de page et les
+preuves de son runtime réel.
 
 ## Invariants vérifiés
 

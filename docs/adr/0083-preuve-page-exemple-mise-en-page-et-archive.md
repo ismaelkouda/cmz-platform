@@ -1,6 +1,8 @@
 # ADR-0083 — Distinguer preuve de page, exemple de mise en page et archive
 
-- **Statut :** Accepted
+- **Statut :** Superseded
+- **Superseded by :**
+  [ADR-0099 — Supprimer les références de présentation retirées : Git en est la mémoire](./0099-references-de-presentation-retirees-conservees-par-git.md)
 - **Date :** 2026-10-03
 - **Supersède :**
   [ADR-0082 — Séparer références actives et archives de présentation](./0082-cycle-de-vie-des-references-de-presentation.md)

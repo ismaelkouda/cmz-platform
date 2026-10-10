@@ -3,8 +3,21 @@
 - **Date de réception :** 2026-09-25
 - **Origine :** description libre fournie par un utilisateur ne manipulant ni
   schéma ni code du générateur
-- **Statut :** page C5 et filtres adaptatifs réalisés, approuvés et prouvés dans
-  le vrai navigateur ; seule la décision séparée de baseline pixel reste ouverte
+- **Statut :** journal historique. La page C5 et ses filtres adaptatifs ont été
+  réalisés, approuvés et prouvés dans le vrai navigateur à l'issue des étapes
+  décrites ici, jusqu'à ADAPT-9 ; la décision séparée de baseline pixel est
+  restée ouverte. Le runtime issu de ces étapes et des lots suivants n'est pas
+  prouvé conforme à la liaison de mise en page
+  `users-management-layout-2026-10-09`, plus récente
+- **Reste à faire :** réalisation conforme à cette liaison par le prochain work
+  order v5, puis validation humaine. Le runtime actuel n'est pas déclaré
+  invalide fonctionnellement
+- **Références de présentation :** ce journal décrit, étape par étape, des
+  maquettes et un manifeste de présentation qui ont tous été supprimés du dépôt
+  le 2026-10-10
+  ([ADR-0099](../adr/0099-references-de-presentation-retirees-conservees-par-git.md))
+  ; aucune preuve de page C5 n'est publiée aujourd'hui, la disposition est
+  guidée par `designs/users-management-proof.layout-binding.json`
 - **But :** éprouver le parcours `list-query` + `action-request` + composition
   de page sur un cas produit réel
 - **Décision utilisateur du 2026-09-25 :** option A, reproduction du contrat
@@ -490,11 +503,14 @@ images expriment seulement la présentation ; permissions, payloads,
 invalidations, fermeture et annonces accessibles restent gouvernés et prouvés
 par les contrats et oracles.
 
-La proposition est documentée dans
-[`reference-proposal.md`](../../examples/users-management-proof/presentation/reference-proposal.md).
-Elle n'est volontairement pas publiée comme `presentation-evidence` : seule une
-revue humaine peut la faire passer de `proposed` à `approved`. Un brouillon
-Figma mutable ayant servi à l'exploration est exclu de la preuve.
+La proposition était documentée dans
+`examples/users-management-proof/presentation/reference-proposal.md`, rejetée
+comme référence courante le 2026-09-30 puis supprimée du dépôt le 2026-10-10
+([ADR-0099](../adr/0099-references-de-presentation-retirees-conservees-par-git.md))
+; elle reste consultable dans Git au commit `ea31ecf7`. Elle n'est
+volontairement pas publiée comme `presentation-evidence` : seule une revue
+humaine peut la faire passer de `proposed` à `approved`. Un brouillon Figma
+mutable ayant servi à l'exploration est exclu de la preuve.
 
 ### Suite de C5 après C5g-5
 
@@ -512,15 +528,18 @@ La PR #114 a été approuvée par Soumaila sur son commit de tête exact, puis
 fusionnée avec une CI post-fusion verte. Les tailles et SHA-256 des quatre PNG
 ont été relus directement depuis le commit de fusion, pas depuis une copie de
 travail. Le manifeste fermé
-`designs/users-management-proof.presentation-evidence.json` les publie donc avec
-l'autorité `presentation-only`, les états et viewports approuvés, et la marque
-obligatoire `untrusted-content`.
+`designs/users-management-proof.presentation-evidence.json` les publiait alors
+avec l'autorité `presentation-only`, les états et viewports approuvés, et la
+marque obligatoire `untrusted-content`. Ce manifeste a été supprimé le
+2026-10-10 : aucune preuve de page n'est publiée pour C5
+([ADR-0099](../adr/0099-references-de-presentation-retirees-conservees-par-git.md)).
 
-La preuve de publication C5 prépare désormais le work order avec ses deux
+À cette étape, la preuve de publication C5 préparait le work order avec deux
 entrées adressées par contenu : le `page-execution-plan` C5 et ce manifeste de
-présentation. Elle vérifie aussi les quatre mappings état/viewport attendus.
-Toute dérive d'octets, de page, d'état, de média ou de chemin échoue dans le
-résolveur existant avant la réalisation.
+présentation. Elle vérifiait aussi les quatre mappings état/viewport attendus,
+et toute dérive d'octets, de page, d'état, de média ou de chemin échouait dans
+le résolveur avant la réalisation. Depuis le 2026-10-10 (ADR-0099), elle prépare
+le work order sans preuve de page et affirme `presentation_evidence: null`.
 
 Ce lot n'écrit aucun fichier de page Angular. Cette séparation empêche de noyer
 la revue de la nouvelle autorité visuelle dans une implémentation UI et conserve
@@ -752,8 +771,10 @@ runtime. Un vote favorable sur les images n'introduit ni règle universelle
 `create -> FAB`, ni breakpoint universel, ni Angular Material. Après approbation
 et fusion seulement, les PNG pourront entrer dans le manifeste de présentation,
 un nouveau work order pourra être calculé, puis les oracles devront échouer sur
-`main` avant toute réalisation Angular. Voir
-[`proposal.md`](../../examples/users-management-proof/presentation/adaptive-candidates/proposal.md).
+`main` avant toute réalisation Angular. La proposition
+`examples/users-management-proof/presentation/adaptive-candidates/proposal.md` a
+été supprimée du dépôt le 2026-10-10 (ADR-0099) ; elle reste consultable dans
+Git au commit `ea31ecf7`.
 
 ## ADAPT-4b — références adaptatives actives et non contradictoires
 
@@ -765,9 +786,10 @@ de merge exact.
 Le manifeste de présentation remplace donc les deux références devenues
 contradictoires : `mobile-ready`, qui imposait encore un bouton pleine largeur,
 et `desktop-create-error`, qui imposait encore une modalité au viewport
-`expanded`. Leurs fichiers historiques restent versionnés, mais ils ne guident
-plus le réalisateur. Les références `desktop-ready`, `mobile-create-error` et
-l'audit ADAPT-2 restent compatibles et actives.
+`expanded`. À cette étape, leurs fichiers restaient versionnés sans guider le
+réalisateur, et les références `desktop-ready`, `mobile-create-error` et l'audit
+ADAPT-2 restaient actives. Toutes ont été supprimées du dépôt le 2026-10-10
+(ADR-0099).
 
 Les trois PNG approuvés sont ajoutés avec taille, SHA-256, état et viewport
 exacts. La preuve de publication vérifie leur résolution dans le work order et
@@ -874,8 +896,10 @@ sommaire compact, le détail compact dans le même bottom sheet, le side sheet
 
 Les références n'inventent pas douze critères pour simuler quinze champs. Elles
 montrent les trois filtres C5 réels et l'emplacement de groupes supplémentaires
-uniquement si un futur contrat les fournit. Voir
-[`filter-candidates/proposal.md`](../../examples/users-management-proof/presentation/filter-candidates/proposal.md).
+uniquement si un futur contrat les fournit. La proposition
+`examples/users-management-proof/presentation/filter-candidates/proposal.md` a
+été supprimée du dépôt le 2026-10-10 (ADR-0099) ; elle reste consultable dans
+Git au commit `ea31ecf7`.
 
 Soumaila a approuvé le commit exact `81dd77e3633eada14fc1940f4a0c1cb4338aec87`,
 puis la PR #130 a été fusionnée dans `9b1792c9afbb31c906c69af9068a6d2e498ca043`.

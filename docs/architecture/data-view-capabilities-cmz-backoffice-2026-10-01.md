@@ -275,18 +275,18 @@ hash documente l'identité approuvée ; il ne rend pas le stockage durable.
 - le manifeste a initialement publié le brief et les six PNG ;
 - la revue du 2026-10-03 a démontré que leur portée était trop large et que les
   variantes `medium` ne prouvaient pas cette classe de fenêtre ;
-- les ressources sont désormais des archives `authority: none`, avec manifeste
-  fermé, hashes et usages interdits ;
-- un oracle dédié relit identité des sources, IHDR, poids et hash, et interdit
-  toute republication sous l'autorité active ;
+- les ressources ont d'abord été archivées avec `authority: none`, puis
+  supprimées du dépôt le 2026-10-10 ;
+- un oracle interdit toute republication de leurs identifiants sous une autorité
+  active ;
 - aucun runtime, contrat API, work order ou dépendance n'est modifié.
 
-Dossier historique :
-[`data-view-reference-candidates/`](../../examples/users-management-proof/presentation/historical/data-view-reference-candidates/).
-Ces fichiers restent consultables pour la traçabilité, mais ne sont ni une
+Ancien dossier :
+`examples/users-management-proof/presentation/historical/data-view-reference-candidates/`,
+consultable dans Git au commit `ea31ecf7`. Ces fichiers n'étaient ni une
 baseline, ni une autorité de génération, ni une implémentation à copier. La
 politique courante est fixée par
-[ADR-0083](../adr/0083-preuve-page-exemple-mise-en-page-et-archive.md).
+[ADR-0099](../adr/0099-references-de-presentation-retirees-conservees-par-git.md).
 
 ### ADAPT-11b — oracles engagés après fusion d'ADAPT-11a
 
@@ -325,7 +325,8 @@ de développement et de production sont verts ; aucun octet runtime ne change.
 ### ADAPT-11c — réalisation C5
 
 - appliquer l'autorité exhaustive
-  [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md) ;
+  [`c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md`](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
+  ;
 - remplacer localement l'ancienne disposition « recherche à gauche » par le
   titre de table à gauche, puis recherche et commandes à droite ;
 - conserver l'ordre logique C5 `Recherche`, `Créer`, `Rafraîchir`, `Filtres`,
@@ -340,22 +341,23 @@ de développement et de production sont verts ; aucun octet runtime ne change.
 Avant tout nouveau work order et sans modifier le runtime, la suite navigateur
 doit désormais exiger :
 
-- un titre `h2` local « Utilisateurs » et le total backend autoritatif à gauche ;
+- un titre `h2` local « Utilisateurs » et le total backend autoritatif à gauche
+  ;
 - une région de recherche locale, puis le groupe natif `Créer`, `Rafraîchir`,
   `Filtres` à droite, dans le même ordre DOM et visuel ;
-- aucun rôle `toolbar` tant que la navigation composite aux flèches n'existe
-  pas ;
+- aucun rôle `toolbar` tant que la navigation composite aux flèches n'existe pas
+  ;
 - la table nommée par son titre, le libellé `Créer` visible et les noms
   accessibles contextualisés ;
 - à `820 × 900`, un reflow sans chevauchement, disparition, débordement de page
   ni cible d'action inférieure à `48 × 48 CSS px` ;
 - l'absence maintenue de toute capacité non déclarée.
 
-L'échec attendu est limité à la signature historique exacte :
-`table-tools` est encore le formulaire de recherche, `Créer` reste dans le
-heading, seul `Filtres` se trouve dans les outils, et titre local, région de
-recherche dédiée, groupe d'actions et rafraîchissement sont absents. Une
-implémentation partielle différente échoue réellement.
+L'échec attendu est limité à la signature historique exacte : `table-tools` est
+encore le formulaire de recherche, `Créer` reste dans le heading, seul `Filtres`
+se trouve dans les outils, et titre local, région de recherche dédiée, groupe
+d'actions et rafraîchissement sont absents. Une implémentation partielle
+différente échoue réellement.
 
 La passe ciblée donne `6/6` : cinq échecs attendus bornés et un succès réel. La
 régression Playwright C5 complète donne `56/56`, sans `skip` ni `todo`. ESLint,
@@ -366,16 +368,16 @@ dépendance ou image n'est modifié.
 
 Le work order recalculé depuis la base fusionnée borne neuf fichiers avec
 l'identifiant
-`3b889daa5819ee1ce1af85d4e0120b5fee47dff84bf3a60e7065d092d3d5ac52`.
-La réalisation modifie six fichiers autorisés de la page et de son composant de
+`3b889daa5819ee1ce1af85d4e0120b5fee47dff84bf3a60e7065d092d3d5ac52`. La
+réalisation modifie six fichiers autorisés de la page et de son composant de
 filtres, sans changer contrat, modèle d'exécution, dépendance ni image.
 
-Le runtime matérialise le titre et le total autoritatif, la recherche locale,
-le groupe natif `Créer`, `Rafraîchir`, `Filtres`, son reflow Medium et la
-géométrie bornée du panneau et du rail. Le rafraîchissement conserve la requête
-et émet un seul GET. `Exporter`, actions de ligne, activation de ligne et
-dialogue restent absents faute de capacités déclarées. Le groupe conserve la
-navigation Tab native et n'usurpe pas le rôle ARIA `toolbar`.
+Le runtime matérialise le titre et le total autoritatif, la recherche locale, le
+groupe natif `Créer`, `Rafraîchir`, `Filtres`, son reflow Medium et la géométrie
+bornée du panneau et du rail. Le rafraîchissement conserve la requête et émet un
+seul GET. `Exporter`, actions de ligne, activation de ligne et dialogue restent
+absents faute de capacités déclarées. Le groupe conserve la navigation Tab
+native et n'usurpe pas le rôle ARIA `toolbar`.
 
 Le commit `6fdbd64ac8423a0bf938c492ec7b3af08cce617b` passe `56/56` scénarios
 Playwright, `31/31` tests Angular, lint, build production, Knip, Prettier,

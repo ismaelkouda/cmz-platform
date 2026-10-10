@@ -48,7 +48,7 @@ et produire ses propres preuves.
 [`mockup.html`](./mockup.html) et [`render.mjs`](./render.mjs) reproduisent les
 PNG. Ils ne constituent pas du code Angular à copier.
 
-Les deux candidats antérieurs restent conservés dans
-[`historical/recent-route-navigation`](./historical/recent-route-navigation/README.md)
-avec `authority: none` : leur présence assure la traçabilité, jamais une
-autorité concurrente.
+Les deux candidats antérieurs, à navigation par routes récentes, ont été
+supprimés du dépôt le 2026-10-10
+([ADR-0099](../../../docs/adr/0099-references-de-presentation-retirees-conservees-par-git.md)) ;
+ils restent consultables dans Git au commit `ea31ecf7`.

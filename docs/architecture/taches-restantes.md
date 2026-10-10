@@ -2,8 +2,8 @@
 
 > **Registre historique, pas feuille de route courante.** Ce fichier conserve
 > les identifiants, audits et décisions accumulés ; ses mentions « localement »,
-> « restant » ou « prochaine priorité » sont datées et peuvent être
-> supersédées. Pour commencer un travail, lire d'abord
+> « restant » ou « prochaine priorité » sont datées et peuvent être supersédées.
+> Pour commencer un travail, lire d'abord
 > [`PROJECT_AUTHORITY.md`](../../PROJECT_AUTHORITY.md) et la
 > [feuille de route courante](./feuille-de-route.md), puis utiliser ce registre
 > uniquement pour retrouver le contexte et les preuves d'un identifiant.
@@ -25,7 +25,8 @@
   correspondance » en fin de fichier pour retrouver un id par sa nouvelle
   section.
 - **Statut :** registre de traçabilité des travaux historiques, ouverts,
-  partiels et clos. GitHub et la feuille de route courante portent l'état vivant.
+  partiels et clos. GitHub et la feuille de route courante portent l'état
+  vivant.
 - **Référentiel d'évaluation :** 13 audits Big Tech (Meta / Google / Amazon /
   Microsoft) — Architecte Senior / Principal Engineer. Principes : machine avant
   opinion (Shift-Left CI/CD) ; revues de jalon (Design/Architectural Review
@@ -2566,7 +2567,8 @@ Figma, désormais source partielle différée :
   `b70037c51387b309752965e9a2ebf9e3c317919b` ; ses 17 contrôles et la CI
   post-fusion `36904438086` sont verts. Décision détaillée :
   [`c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md`](./c5-adapt8-filtres-progressifs-desktop-medium-2026-09-29.md),
-  ADR-0074 accepté. Dossier approuvé :
+  ADR-0074 accepté. Dossier alors approuvé, supprimé du dépôt le 2026-10-10
+  (ADR-0099) et consultable dans Git au commit `ea31ecf7` :
   `examples/users-management-proof/presentation/progressive-filter-candidates/`.
   Le porteur produit a reconfirmé explicitement l'intégralité de ce dossier le
   2026-09-30, sans changement d'octet ni d'autorité publiée. **ADAPT-10 —
@@ -2593,7 +2595,8 @@ Figma, désormais source partielle différée :
   octet par octet. Elles restent `candidate-only`, hors du manifeste actif,
   jusqu'à leur revue technique et leur publication séparée par ADAPT-10c ; aucun
   runtime, contrat API, work order ou dépendance n'est modifié. Dossier candidat
-  historique, désormais sans autorité :
+  historique, supprimé du dépôt le 2026-10-10 (ADR-0099) et consultable dans Git
+  au commit `ea31ecf7` :
   `examples/users-management-proof/presentation/historical/adaptive-create-candidates/`.
   **ADAPT-10c est fusionné :** le manifeste actif publie exactement les sept PNG
   approuvés avec leurs tailles, SHA-256, viewports, usages et états de page
@@ -2638,9 +2641,10 @@ Figma, désormais source partielle différée :
   intérieure. Les 24 scénarios ciblés sont de vrais succès et conservent les
   invariants de modalité, focus, validation, réseau, brouillon, resize, zoom 200
   % et absence de scroll horizontal. L'ancienne paire visuelle et son protocole
-  sont archivés avec `authority: none`; aucune nouvelle baseline visuelle C5
-  n'est publiée par ce lot. **DATA-VIEW-0 — décision et corpus de capacités :**
-  le composant `table` de `cmz-backoffice` à
+  ont alors été archivés avec `authority: none`, puis supprimés du dépôt le
+  2026-10-10 (ADR-0099) ; aucune nouvelle baseline visuelle C5 n'est publiée par
+  ce lot. **DATA-VIEW-0 — décision et corpus de capacités :** le composant
+  `table` de `cmz-backoffice` à
   `feat/config@f064d1d8e50190cd33e9ace096d51710d2474f2f` est retenu comme corpus
   empirique de besoins et contre-exemple architectural, jamais comme dépendance,
   autorité visuelle ou code à copier. ADR-0078 impose des capacités optionnelles
@@ -2667,8 +2671,10 @@ Figma, désormais source partielle différée :
   reproduction n'est pas une implémentation accessible. Elles sont déplacées
   sous `presentation/historical/`, retirées du manifeste actif et conservées par
   un manifeste `authority: none` validé par schéma, dimensions et hashes.
-  L'oracle interdit leur republication. ADR-0083 définit désormais les trois
+  L'oracle interdit leur republication. ADR-0083 définissait alors trois
   autorités : preuve de page, exemple générique de mise en page et archive.
+  ADR-0099 la supersède le 2026-10-10 : les archives sont supprimées, Git en est
+  la mémoire, et deux catégories seulement restent dans l'arbre.
   **DATA-VIEW-LAYOUT-1 — exemples génériques approuvés :** six PNG
   Medium/Expanded et cinq PNG Compact sont reconstruits de façon déterministe,
   liés par SHA-256 et publiés comme `presentation-layout-example-set` avec
@@ -3138,26 +3144,27 @@ Figma, désormais source partielle différée :
   `compact-filter-summary` et `compact-filter-detail`. Un oracle refuse aussi
   tout retour de ces chemins sous un nouvel identifiant. Cette correction
   n'approuve aucun nouvel octet, ne touche pas au runtime et ne retire pas
-  `progressive-filter-candidates/`. Pour conserver l'invariant du manifeste
-  exigeant exactement une source principale, la référence déjà approuvée
-  `expanded-progressive-filter-empty` devient `primary-layout` ; aucune image
-  rejetée ou nouvelle proposition non approuvée n'est utilisée comme solution de
-  repli. Les anciennes propositions de création sont désormais archivées sous
-  `presentation/historical/adaptive-create-candidates/` avec `authority: none`;
-  leur validation passée ne leur confère plus aucune autorité active. **ADAPT-9
-  — chargement progressif mobile silencieux :** la décision produit du
-  2026-09-29 retire la pagination visible uniquement en fenêtre `compact` et
-  accumule les pages normalisées à l'approche de la fin de la pile. Le cas
-  nominal ne montre ni spinner, ni skeleton, ni texte de chargement ; l'état
-  interne reste explicite et accessible. Une seule page suivante peut être en
-  vol, les cartes sont ordonnées et dédupliquées par `uniqId`, les réponses
-  obsolètes sont rejetées et `lastPage` arrête définitivement la sentinelle. Une
-  erreur conserve les cartes, suspend l'automatisme et expose `Réessayer`.
-  Recherche, filtre et création réussie repartent de la page `1` ; un resize
-  seul n'émet aucun GET. `medium` et `expanded` gardent la pagination explicite.
-  Ce lot de décision ne modifie ni runtime, ni `list-query`, ni backend.
-  Soumaila a approuvé le commit exact
-  `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusionné par la PR #141 dans
+  `progressive-filter-candidates/` (retiré depuis, le 2026-10-10, par ADR-0099).
+  Pour conserver l'invariant du manifeste exigeant exactement une source
+  principale, la référence déjà approuvée `expanded-progressive-filter-empty`
+  devient `primary-layout` ; aucune image rejetée ou nouvelle proposition non
+  approuvée n'est utilisée comme solution de repli. Les anciennes propositions
+  de création avaient alors été archivées sous
+  `presentation/historical/adaptive-create-candidates/` avec `authority: none` ;
+  ce dossier a été supprimé du dépôt le 2026-10-10 (ADR-0099) et leur validation
+  passée ne leur confère aucune autorité active. **ADAPT-9 — chargement
+  progressif mobile silencieux :** la décision produit du 2026-09-29 retire la
+  pagination visible uniquement en fenêtre `compact` et accumule les pages
+  normalisées à l'approche de la fin de la pile. Le cas nominal ne montre ni
+  spinner, ni skeleton, ni texte de chargement ; l'état interne reste explicite
+  et accessible. Une seule page suivante peut être en vol, les cartes sont
+  ordonnées et dédupliquées par `uniqId`, les réponses obsolètes sont rejetées
+  et `lastPage` arrête définitivement la sentinelle. Une erreur conserve les
+  cartes, suspend l'automatisme et expose `Réessayer`. Recherche, filtre et
+  création réussie repartent de la page `1` ; un resize seul n'émet aucun GET.
+  `medium` et `expanded` gardent la pagination explicite. Ce lot de décision ne
+  modifie ni runtime, ni `list-query`, ni backend. Soumaila a approuvé le commit
+  exact `0db8669ef76ee9986911b2c333405667bc2ac8cc`, fusionné par la PR #141 dans
   `2805763217653e85d8f125568fb1b5ccd903bcfb` ; les 17 contrôles et la CI
   post-fusion `36596093253` sont verts. **ADAPT-9a — oracles fusionnés :**
   Soumaila a approuvé le commit exact

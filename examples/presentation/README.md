@@ -31,4 +31,4 @@ une validation humaine de la page réalisée restent obligatoires.
   une exigence pixel-perfect.
 
 La classification et les niveaux d'autorité sont définis par
-[ADR-0083](../../docs/adr/0083-preuve-page-exemple-mise-en-page-et-archive.md).
+[ADR-0099](../../docs/adr/0099-references-de-presentation-retirees-conservees-par-git.md).

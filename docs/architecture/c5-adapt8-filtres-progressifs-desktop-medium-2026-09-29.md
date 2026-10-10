@@ -260,7 +260,12 @@ maintenance.
 ## Références
 
 - [ADR-0074 accepté](../adr/0074-filtres-progressifs-par-blocs-actifs.md)
-- [Références ADAPT-8b approuvées](../../examples/users-management-proof/presentation/progressive-filter-candidates/proposal.md)
+- Références ADAPT-8b, approuvées le 2026-09-29 puis remplacées par la liaison
+  de mise en page et supprimées du dépôt le 2026-10-10
+  ([ADR-0099](../adr/0099-references-de-presentation-retirees-conservees-par-git.md))
+  :
+  `examples/users-management-proof/presentation/progressive-filter-candidates/`,
+  consultable dans Git au commit `ea31ecf7`
 - [ADAPT-6](./c5-adapt6-filtres-multi-fenetres-2026-09-28.md)
 - [AG Grid — Tool Panels](https://www.ag-grid.com/angular-data-grid/tool-panel/)
 - [AG Grid — New Filters Tool Panel](https://www.ag-grid.com/javascript-data-grid/tool-panel-filters-new/)

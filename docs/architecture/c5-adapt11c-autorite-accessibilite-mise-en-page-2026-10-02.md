@@ -1,15 +1,26 @@
 # C5 ADAPT-11c — autorité d'accessibilité et de mise en page
 
-- **Date de vérification :** 2026-10-03
-- **Statut :** autorité appliquée ; runtime ADAPT-11c2 fusionné et vérifié
+- **Date de vérification :** 2026-10-03 ; ordre de lecture révisé le 2026-10-10
+- **Statut :** règles d'accessibilité et de mise en page en vigueur. Le runtime
+  ADAPT-11c2 a été fusionné et vérifié contre ces règles le 2026-10-03 ; il
+  n'est pas prouvé conforme à la liaison de mise en page
+  `users-management-layout-2026-10-09`, plus récente
+- **Reste à faire :** réalisation conforme à cette liaison par le prochain work
+  order v5, puis validation humaine. Le runtime actuel n'est pas déclaré
+  invalide fonctionnellement
+- **Preuve de page :** aucune `presentation-evidence` C5 n'est actuellement
+  publiée ; la disposition est guidée par la liaison de mise en page
 - **Fonctionnalité :** Gestion des utilisateurs
 - **Fenêtres :** `compact`, `medium`, `expanded`
 - **Socle vérifié :** Angular `22.2.0`, Angular Material/CDK/Aria `22.2.1`
 - **Décisions parentes :**
   [ADR-0066](../adr/0066-preuve-presentation-bornee-pour-realisation-llm.md),
   [ADR-0072](../adr/0072-ui-adaptative-guidee-par-m3-et-apis-officielles.md),
-  [ADR-0077](../adr/0077-ui-angular-officielle-avant-custom.md) et
-  [ADR-0078](../adr/0078-vues-de-donnees-par-capacites-optionnelles.md)
+  [ADR-0077](../adr/0077-ui-angular-officielle-avant-custom.md),
+  [ADR-0078](../adr/0078-vues-de-donnees-par-capacites-optionnelles.md),
+  [ADR-0098](../adr/0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md)
+  et
+  [ADR-0099](../adr/0099-references-de-presentation-retirees-conservees-par-git.md)
 
 ## 1. Finalité et mode d'emploi
 
@@ -27,9 +38,16 @@ Un agent de réalisation DOIT lire, dans cet ordre :
 
 1. le contrat C5 et son work order recalculé depuis `main` ;
 2. les règles numérotées de ce document ;
-3. le manifeste de présentation et ses images approuvées ;
-4. les ADR parentes uniquement pour résoudre une frontière ;
+3. la liaison `designs/users-management-proof.layout-binding.json` et les
+   exemples génériques qu'elle sélectionne, tels que le work order les résout
+   depuis son commit d'autorité ;
+4. ADR-0098 et ADR-0099 pour le statut de ces références, les autres ADR
+   parentes uniquement pour résoudre une frontière ;
 5. le code existant, sans considérer son état historique comme autorité.
+
+Aucune preuve de page n'est publiée pour C5 depuis le 2026-10-10 : il n'y a pas
+de manifeste de présentation à lire tant qu'une nouvelle preuve n'est pas
+explicitement approuvée.
 
 Ce document évite une nouvelle recherche tant que ses conditions de validité
 restent vraies. Une nouvelle recherche officielle devient obligatoire si :

@@ -5,7 +5,7 @@
 - **Sujet :** vue de données générique en espace Compact
 - **Manifeste :** [`example-set.json`](./example-set.json)
 - **Décision :**
-  [ADR-0083](../../../docs/adr/0083-preuve-page-exemple-mise-en-page-et-archive.md)
+  [ADR-0099](../../../docs/adr/0099-references-de-presentation-retirees-conservees-par-git.md)
 
 ## Objectif
 
