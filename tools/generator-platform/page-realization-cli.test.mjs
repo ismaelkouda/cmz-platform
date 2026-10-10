@@ -63,3 +63,78 @@ test('refuse un argument de chemin sans valeur', () => {
         /--execution-plan exige une valeur/
     );
 });
+
+test('active v5 seulement avec les trois autorités Git explicites', () => {
+    const sha = 'a'.repeat(40);
+    assert.deepEqual(
+        parseArgs([
+            '--app',
+            'proof-app',
+            '--page',
+            'page_aaaaaaaaaaaaaaaa',
+            '--layout-binding',
+            'designs/proof.layout-binding.json',
+            '--authority-commit',
+            sha,
+            '--base-commit',
+            sha,
+            '--dry-run',
+        ]),
+        {
+            appName: 'proof-app',
+            pageId: 'page_aaaaaaaaaaaaaaaa',
+            layoutBindingPath: 'designs/proof.layout-binding.json',
+            authorityCommitSha: sha,
+            baseCommitSha: sha,
+            dryRun: true,
+            additionalFiles: [],
+        }
+    );
+    assert.throws(
+        () =>
+            parseArgs([
+                '--app',
+                'proof-app',
+                '--page',
+                'page_aaaaaaaaaaaaaaaa',
+                '--layout-binding',
+                'designs/proof.layout-binding.json',
+                '--dry-run',
+            ]),
+        /sont requis ensemble/
+    );
+});
+
+test('refuse les autorités v5 ambiguës ou non canoniques', () => {
+    const base = [
+        '--app',
+        'proof-app',
+        '--page',
+        'page_aaaaaaaaaaaaaaaa',
+        '--layout-binding',
+        'designs/proof.layout-binding.json',
+        '--authority-commit',
+        'a'.repeat(40),
+        '--base-commit',
+        'a'.repeat(40),
+        '--dry-run',
+    ];
+    assert.throws(
+        () =>
+            parseArgs([
+                ...base,
+                '--layout-binding',
+                'designs/other.layout-binding.json',
+            ]),
+        /ne peut apparaître qu'une fois/
+    );
+    assert.throws(
+        () =>
+            parseArgs(
+                base.map((value) =>
+                    value === 'a'.repeat(40) ? 'A'.repeat(40) : value
+                )
+            ),
+        /SHA Git complet en minuscules/
+    );
+});

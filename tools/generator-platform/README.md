@@ -196,6 +196,18 @@ source/target binding is included in the work order. Arbitrary aliases remain
 forbidden; see
 [`ADR-0088`](../../docs/adr/0088-realisation-page-ciblee-par-profil.md).
 
+An optional layout binding selects generic, capability-matched layout examples.
+It activates work order v5 and must be prepared from a clean Git commit used as
+both authority and base. The binding, page/backend contracts, manifests, render
+sources, and selected images are read from Git blobs rather than the mutable
+worktree. Their normalized `layout_guidance`, the authority/base SHA, the
+existing contracts, allowlist, and protected baseline all participate in the
+work-order identity. Git replace refs, implicit lazy-fetch, local excludes and
+index masking flags are rejected or neutralized. A SHA establishes content
+identity, not human approval:
+the authority must first be reviewed and merged separately on the protected
+branch. See [`ADR-0098`](../../docs/adr/0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md).
+
 ```bash
 bun run prepare:page-realization -- --app my-app --page <page_id> --dry-run
 bun run prepare:page-realization -- --app my-app --page <page_id> --apply <work_order_id>
@@ -206,6 +218,13 @@ bun run prepare:page-realization -- --app my-app --page <page_id> \
 bun run prepare:page-realization -- --app my-app --page <page_id> \
   --allow-file page.filters.component.ts \
   --allow-file page.filters.component.html --dry-run
+bun run prepare:page-realization -- --app my-app --page <page_id> \
+  --layout-binding designs/my-page.layout-binding.json \
+  --authority-commit <full_commit_sha> --base-commit <full_commit_sha> --dry-run
+bun run prepare:page-realization -- --app my-app --page <page_id> \
+  --layout-binding designs/my-page.layout-binding.json \
+  --authority-commit <full_commit_sha> --base-commit <full_commit_sha> \
+  --apply <work_order_id>
 bun run verify:page-realization -- --app my-app --page <page_id> --work-order <work_order_id>
 ```
 

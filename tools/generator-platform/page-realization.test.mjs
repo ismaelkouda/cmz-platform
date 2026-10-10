@@ -34,7 +34,16 @@ test('prépare un work order immuable et borné aux fichiers déclarés', async 
         pageId: data.pageId,
     };
     const plan = planPageRealization(common);
-    assert.match(plan.work_order_id, /^[a-f0-9]{64}$/);
+    assert.equal(
+        plan.work_order_id,
+        '6b5a3134f46e12adad154bf0c004ff59b3ffc4c32169d81430e475266df4c809',
+        'the v4 identity from b1613aaa must remain byte-for-byte stable'
+    );
+    assert.equal(
+        sha256(JSON.stringify(plan.workOrder)),
+        '5ed57f1461301b5b3135c929793ed1a5399cbf775c399435010204db9b3dd044',
+        'the complete public v4 document from b1613aaa must remain stable'
+    );
     assert.equal(plan.workOrder.schema_version, '4.0.0');
     assert.deepEqual(plan.workOrder.allowed_files, [
         'page.component.html',
