@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import {
+    COMPACT,
     EXPANDED,
     MEDIUM,
     RESPONSIVE_QUIET_WINDOW_MS,
@@ -11,6 +12,7 @@ import {
     requireBox,
     waitForResponsiveLayout,
 } from './filter-oracle.support';
+import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
 
 function filterTrigger(page: Page): Locator {
     return page.getByRole('button', { name: /^Filtres(?: \(\d+\))?$/ });
@@ -35,88 +37,6 @@ async function pageQuietWindow(): Promise<void> {
     await new Promise((resolve) =>
         setTimeout(resolve, RESPONSIVE_QUIET_WINDOW_MS)
     );
-}
-
-async function markLegacyDetachedToolbar(page: Page): Promise<void> {
-    const legacy = await page.evaluate(() => {
-        const form = document.querySelector('main > form.filters');
-        const table = document.querySelector('[data-cmz-id="users-table"]');
-        return (
-            form instanceof HTMLFormElement &&
-            table instanceof HTMLElement &&
-            !document.querySelector('[data-cmz-id="users-table-workspace"]') &&
-            form.querySelectorAll('input[type="search"]').length === 1 &&
-            form.querySelectorAll('button.filter-toggle').length === 1 &&
-            !document.querySelector('[data-cmz-filter-shortcut]')
-        );
-    });
-    const reason =
-        'ADAPT-8d : la signature historique place encore recherche et déclencheur au-dessus de la surface tabulaire et ne rend aucun raccourci de colonne.';
-    test.fail(legacy, reason);
-    if (legacy) expect(legacy, reason).toBe(false);
-}
-
-async function markLegacyGroupedPanel(panel: Locator): Promise<void> {
-    const legacy = await panel.evaluate((element) => {
-        const groups = element.querySelector('[data-cmz-id="filter-groups"]');
-        const fieldset = groups?.firstElementChild;
-        const labels = [...(fieldset?.querySelectorAll('label > span') ?? [])]
-            .map((label) => label.textContent?.trim())
-            .filter(Boolean);
-        const actions = [
-            ...element.querySelectorAll(
-                '[data-cmz-id="filter-actions"] > button'
-            ),
-        ].map((button) => button.textContent?.trim());
-        return (
-            groups?.children.length === 1 &&
-            fieldset?.tagName === 'FIELDSET' &&
-            fieldset.querySelectorAll('select').length === 3 &&
-            labels.join('|') === 'Profil|Rôle|Statut' &&
-            actions.join('|') === 'Réinitialiser|Appliquer' &&
-            ![...element.querySelectorAll('button')].some(
-                (button) => button.textContent?.trim() === 'Ajouter un filtre'
-            ) &&
-            !element.querySelector('[data-cmz-filter-block]')
-        );
-    });
-    const reason =
-        'ADAPT-8d : la signature historique expose encore les trois critères simultanément dans un fieldset, sans blocs progressifs.';
-    test.fail(legacy, reason);
-    if (legacy) expect(legacy, reason).toBe(false);
-}
-
-async function markLegacyMediumModal(panel: Locator): Promise<void> {
-    const legacy = await panel.evaluate((element) => {
-        const main = document.querySelector('main');
-        return (
-            element.getAttribute('role') === 'dialog' &&
-            element.getAttribute('aria-modal') === 'true' &&
-            main?.hasAttribute('inert') === true &&
-            !!document.querySelector('[data-cmz-id="filter-backdrop"]')
-        );
-    });
-    const reason =
-        'ADAPT-8d : la signature historique Medium reste un side sheet modal avec backdrop et inert sur la liste.';
-    test.fail(legacy, reason);
-    if (legacy) expect(legacy, reason).toBe(false);
-}
-
-async function markLegacyExpandedAdjacent(panel: Locator): Promise<void> {
-    const legacy = await panel.evaluate((element) => {
-        const main = document.querySelector('main');
-        if (!(main instanceof HTMLElement)) return false;
-        const mainBox = main.getBoundingClientRect();
-        const panelBox = element.getBoundingClientRect();
-        return (
-            element.getAttribute('role') === 'complementary' &&
-            mainBox.right <= panelBox.left + 1
-        );
-    });
-    const reason =
-        'ADAPT-8d : la signature historique Expanded réduit la liste pour placer un pane adjacent au lieu de superposer le panneau dans le tableau.';
-    test.fail(legacy, reason);
-    if (legacy) expect(legacy, reason).toBe(false);
 }
 
 function tableWorkspace(page: Page): Locator {
@@ -156,7 +76,6 @@ test('Medium/Expanded : intègre recherche, Filtres et les trois seuls raccourci
 }) => {
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
-    await markLegacyDetachedToolbar(page);
 
     const workspace = tableWorkspace(page);
     const tools = workspace.locator('[data-cmz-id="table-tools"]');
@@ -192,7 +111,6 @@ test('raccourci de colonne : applique côté serveur, revient en page 1 et émet
     const requests = observeUsersRequests(page);
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
-    await markLegacyDetachedToolbar(page);
 
     const countBefore = requests.length;
     await shortcut(page, 'role').selectOption('agent');
@@ -209,32 +127,33 @@ test('Medium : superpose un panneau non modal sans redimensionner les colonnes n
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
     const table = page.locator('[data-cmz-id="users-table"]');
-    const before = await table.evaluate((element) => {
+    // ADR-0098 / F-003 : l'ancienne attente « scrollWidth inchangé » protégeait
+    // le défaut (dernière colonne masquée par le panneau). L'invariant utile
+    // est la stabilité des colonnes et de la position courante ; la portée de
+    // défilement, elle, doit s'allonger de la largeur du panneau.
+    const measure = (element: Element) => ({
+        clientWidth: element.clientWidth,
+        scrollLeft: element.scrollLeft,
+        columnWidths: [
+            ...element.querySelectorAll('thead tr:first-child th'),
+        ].map((cell) => cell.getBoundingClientRect().width),
+    });
+    await table.evaluate((element) => {
         element.scrollLeft = Math.min(
             80,
             element.scrollWidth - element.clientWidth
         );
-        return {
-            clientWidth: element.clientWidth,
-            scrollLeft: element.scrollLeft,
-            scrollWidth: element.scrollWidth,
-        };
     });
+    const before = await table.evaluate(measure);
 
     const panel = await openFilters(page);
-    await markLegacyMediumModal(panel);
     await expect(panel).not.toHaveAttribute('aria-modal', 'true');
     await expect(page.locator('main')).not.toHaveAttribute('inert', '');
     await expect(page.locator('[data-cmz-id="filter-backdrop"]')).toHaveCount(
         0
     );
 
-    const after = await table.evaluate((element) => ({
-        clientWidth: element.clientWidth,
-        scrollLeft: element.scrollLeft,
-        scrollWidth: element.scrollWidth,
-    }));
-    expect(after).toEqual(before);
+    expect(await table.evaluate(measure)).toEqual(before);
 
     const [workspaceBox, panelBox, toolsBox] = await Promise.all([
         tableWorkspace(page).boundingBox(),
@@ -261,7 +180,6 @@ test('Expanded : superpose le panneau dans la surface sans déplacer la table et
     const table = page.locator('[data-cmz-id="users-table"]');
     const tableBefore = requireBox(await table.boundingBox(), 'table Expanded');
     const panel = await openFilters(page);
-    await markLegacyExpandedAdjacent(panel);
 
     const [tableAfterBox, panelBox] = await Promise.all([
         table.boundingBox(),
@@ -311,6 +229,134 @@ test('Expanded : superpose le panneau dans la surface sans déplacer la table et
     ).toBe(true);
 });
 
+for (const [label, viewport] of [
+    ['Medium', MEDIUM],
+    ['Expanded', EXPANDED],
+] as const) {
+    test(`${label} : au défilement maximal, la dernière colonne s’arrête au bord gauche du panneau`, async ({
+        page,
+    }) => {
+        expectFailureWhileLegacy(
+            'C5 : au défilement maximal, la dernière colonne ne s’arrête pas encore au bord gauche du panneau.'
+        );
+        // F-003 / P-003 — clause d'autorité : « la limite droite du contenu
+        // défilant devient le bord gauche du panneau ».
+        const requests = observeUsersRequests(page);
+        await page.setViewportSize(viewport);
+        await openReadyPage(page);
+        const table = page.locator('[data-cmz-id="users-table"]');
+        const lastCell = table.locator('tbody tr').first().locator('td').last();
+        const scrollRange = () =>
+            table.evaluate(
+                (element) => element.scrollWidth - element.clientWidth
+            );
+        const closedRange = await scrollRange();
+
+        const panel = await openFilters(page);
+        const countAfterOpen = requests.length;
+        await table.evaluate((element) => {
+            element.scrollLeft = element.scrollWidth - element.clientWidth;
+        });
+        const [cellBox, panelBox] = await Promise.all([
+            lastCell.boundingBox(),
+            panel.boundingBox(),
+        ]);
+        const cell = requireBox(cellBox, `dernière cellule ${label}`);
+        const filters = requireBox(panelBox, `panneau ${label}`);
+        expect(Math.abs(cell.x + cell.width - filters.x)).toBeLessThanOrEqual(
+            2
+        );
+
+        // Panneau fermé : aucune réserve de défilement ne subsiste.
+        await page.keyboard.press('Escape');
+        await expect(panel).toHaveCount(0);
+        expect(await scrollRange()).toBe(closedRange);
+        await expectUsersGetCountStable(requests, countAfterOpen);
+    });
+}
+
+test('menu Ajouter : s’ouvre, se parcourt et se ferme entièrement au clavier', async ({
+    page,
+}) => {
+    expectFailureWhileLegacy(
+        'C5 : l’ouverture du menu Ajouter ne place pas encore le focus sur son premier élément.'
+    );
+    // F-005 / P-004 : le changement d'Échap touche ce menu ; son clavier doit
+    // être prouvé, pas supposé.
+    const requests = observeUsersRequests(page);
+    await page.setViewportSize(MEDIUM);
+    await openReadyPage(page);
+    const panel = await openFilters(page);
+    const countAfterOpen = requests.length;
+    const addTrigger = panel.getByRole('button', { name: 'Ajouter un filtre' });
+    const menu = page.locator('[data-cmz-id="available-filters"]');
+    const item = (name: string) =>
+        menu.getByRole('menuitem', { name, exact: true });
+
+    await addTrigger.focus();
+    await expect(addTrigger).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('Enter');
+    await expect(menu).toBeVisible();
+    await expect(addTrigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(item('Profil')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(item('Rôle')).toBeFocused();
+    await page.keyboard.press('s');
+    await expect(item('Statut')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(panel).toBeVisible();
+    await expect(addTrigger).toBeFocused();
+    await expect(addTrigger).toHaveAttribute('aria-expanded', 'false');
+
+    await page.keyboard.press('ArrowDown');
+    await expect(item('Profil')).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(item('Statut')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(menu).toBeHidden();
+    await expect(
+        filterBlock(panel, 'status').getByRole('radio', { name: 'Tous' })
+    ).toBeFocused();
+    await expectUsersGetCountStable(requests, countAfterOpen);
+});
+
+test('passage en Compact : le menu Ajouter ne survit pas et un seul Échap ferme la sheet', async ({
+    page,
+}) => {
+    expectFailureWhileLegacy(
+        'C5 : au passage en Compact, le focus ne reste pas encore dans la sheet modale.'
+    );
+    // F-006 : un état de menu resté ouvert sans menu dans le DOM absorbait le
+    // premier Échap.
+    const requests = observeUsersRequests(page);
+    await page.setViewportSize(MEDIUM);
+    await openReadyPage(page);
+    const panel = await openFilters(page);
+    await panel.getByRole('button', { name: 'Ajouter un filtre' }).click();
+    const menu = page.locator('[data-cmz-id="available-filters"]');
+    await expect(menu).toBeVisible();
+    const countBeforeResize = requests.length;
+
+    await page.setViewportSize(COMPACT);
+    await waitForResponsiveLayout(page);
+    await expect(menu).toHaveCount(0);
+    const sheet = page.locator('#user-filter-panel');
+    await expect(sheet).toHaveRole('dialog');
+    await expect(sheet).toHaveAttribute('aria-modal', 'true');
+    // Une surface modale garde le focus : il ne reste pas sur un nœud retiré.
+    expect(
+        await sheet.evaluate((element) =>
+            element.contains(document.activeElement)
+        )
+    ).toBe(true);
+
+    await page.keyboard.press('Escape');
+    await expect(sheet).toHaveCount(0);
+    await expect(filterTrigger(page)).toBeFocused();
+    await expectUsersGetCountStable(requests, countBeforeResize);
+});
+
 test('blocs progressifs : ajoute seulement un critère disponible, l’ouvre, le focalise et reste silencieux', async ({
     page,
 }) => {
@@ -318,7 +364,6 @@ test('blocs progressifs : ajoute seulement un critère disponible, l’ouvre, le
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
     const panel = await openFilters(page);
-    await markLegacyGroupedPanel(panel);
     const countBefore = requests.length;
 
     await expect(panel.locator('[data-cmz-filter-block]')).toHaveCount(0);
@@ -344,11 +389,13 @@ test('blocs progressifs : ajoute seulement un critère disponible, l’ouvre, le
 test('brouillon : replie, supprime avec un focus déterministe et publie au plus un GET seulement sur Filtrer', async ({
     page,
 }) => {
+    expectFailureWhileLegacy(
+        'C5 : les filtres appliqués sont encore rendus dans une région distincte « Filtres appliqués ».'
+    );
     const requests = observeUsersRequests(page);
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
     const panel = await openFilters(page);
-    await markLegacyGroupedPanel(panel);
     const countAfterOpen = requests.length;
 
     await addFilter(panel, 'Rôle');
@@ -381,21 +428,27 @@ test('brouillon : replie, supprime avec un focus déterministe et publie au plus
     const request = new URL(requests.at(-1) ?? '', 'https://example.invalid');
     expect(request.searchParams.get('role')).toBe('supervisor');
     expect(request.searchParams.has('is_active')).toBe(false);
+    // ADR-0098 : l'état appliqué se lit sur le déclencheur et le raccourci de
+    // colonne ; aucune ligne de chips ne s'intercale sous la barre.
     await expect(
-        page.getByRole('button', {
-            name: 'Retirer le filtre Rôle : Superviseur',
-        })
-    ).toBeVisible();
+        page.getByRole('region', { name: 'Filtres appliqués' })
+    ).toHaveCount(0);
+    await expect(shortcut(page, 'role')).toHaveValue('supervisor');
+    await expect(
+        page.getByRole('button', { name: /^Filtres(?: \(\d+\))?$/ })
+    ).toHaveAccessibleName('Filtres (1)');
 });
 
 test('fermeture : abandonne le brouillon en Medium et Expanded sans requête', async ({
     page,
 }) => {
+    expectFailureWhileLegacy(
+        'C5 : le panneau porte encore un bouton « Fermer les filtres ».'
+    );
     for (const viewport of [MEDIUM, EXPANDED]) {
         const requests = observeUsersRequests(page);
         await page.setViewportSize(viewport);
         await openReadyPage(page);
-        await markLegacyDetachedToolbar(page);
 
         await shortcut(page, 'role').selectOption('agent');
         await expectOnlyOneUsersGet(requests, 1);
@@ -408,7 +461,13 @@ test('fermeture : abandonne le brouillon en Medium et Expanded sans requête', a
         });
         await expect(roleControl).toHaveValue('agent');
         await roleControl.selectOption('supervisor');
-        await panel.getByRole('button', { name: 'Fermer les filtres' }).click();
+        // ADR-0098 : le panneau Medium/Expanded n'a ni titre ni croix ; ses
+        // sorties sont Échap et la bascule du déclencheur.
+        await expect(
+            panel.getByRole('button', { name: 'Fermer les filtres' })
+        ).toHaveCount(0);
+        await page.keyboard.press('Escape');
+        await expect(panel).toHaveCount(0);
         await expectUsersGetCountStable(requests, countAfterOpen);
 
         panel = await openFilters(page);
@@ -418,8 +477,39 @@ test('fermeture : abandonne le brouillon en Medium et Expanded sans requête', a
                 exact: true,
             })
         ).toHaveValue('agent');
-        await panel.getByRole('button', { name: 'Fermer les filtres' }).click();
+        await page
+            .getByRole('button', { name: /^Filtres(?: \(\d+\))?$/ })
+            .click();
+        await expect(panel).toHaveCount(0);
+        await expectUsersGetCountStable(requests, countAfterOpen);
     }
+});
+
+test('Échap ferme le menu Ajouter avant le panneau et restitue chaque focus', async ({
+    page,
+}) => {
+    expectFailureWhileLegacy(
+        'C5 : un second Échap ne ferme pas encore le panneau de filtres.'
+    );
+    await page.setViewportSize(MEDIUM);
+    await openReadyPage(page);
+    const trigger = filterTrigger(page);
+    const panel = await openFilters(page);
+    const addTrigger = panel.getByRole('button', {
+        name: 'Ajouter un filtre',
+    });
+    await addTrigger.click();
+    const menu = page.locator('[data-cmz-id="available-filters"]');
+    await expect(menu).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(panel).toBeVisible();
+    await expect(addTrigger).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+    await expect(trigger).toBeFocused();
 });
 
 test('resize Medium ↔ Expanded : conserve le même contrôle, le brouillon, le focus, le scroll et le silence réseau', async ({
@@ -429,7 +519,6 @@ test('resize Medium ↔ Expanded : conserve le même contrôle, le brouillon, le
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
     const panel = await openFilters(page);
-    await markLegacyGroupedPanel(panel);
     await addFilter(panel, 'Profil');
     const profile = filterBlock(panel, 'profile').getByRole('combobox', {
         name: 'Profil',
@@ -485,14 +574,16 @@ test('resize Medium ↔ Expanded : conserve le même contrôle, le brouillon, le
     expect(requests).toEqual(requestsBeforeResize);
 });
 
-test('hauteur courte et densité : seule la pile défile, header/footer restent visibles sans débordement horizontal', async ({
+test('hauteur courte et densité : seule la pile défile, le pied reste visible sans débordement horizontal', async ({
     page,
 }) => {
+    expectFailureWhileLegacy(
+        'C5 : le panneau conserve encore un en-tête dédié.'
+    );
     const requests = observeUsersRequests(page);
     await page.setViewportSize({ width: MEDIUM.width, height: 520 });
     await openReadyPage(page);
     const panel = await openFilters(page);
-    await markLegacyGroupedPanel(panel);
     const countAfterOpen = requests.length;
     for (const label of ['Profil', 'Rôle', 'Statut'] as const) {
         await addFilter(panel, label);
@@ -527,8 +618,9 @@ test('hauteur courte et densité : seule la pile défile, header/footer restent 
     });
 
     const body = panel.locator('[data-cmz-id="filter-body"]');
-    const header = panel.locator('.filter-panel-header');
     const footer = panel.locator('[data-cmz-id="filter-actions"]');
+    // ADR-0098 : aucun en-tête visible en Medium/Expanded.
+    await expect(panel.locator('.filter-panel-header')).toHaveCount(0);
     const metrics = await body.evaluate((element) => ({
         clientHeight: element.clientHeight,
         clientWidth: element.clientWidth,
@@ -542,29 +634,27 @@ test('hauteur courte et densité : seule la pile défile, header/footer restent 
             const bodyElement = element.querySelector(
                 '[data-cmz-id="filter-body"]'
             );
-            const headerElement = element.querySelector('.filter-panel-header');
             const footerElement = element.querySelector(
                 '[data-cmz-id="filter-actions"]'
             );
             return (
                 !!bodyElement &&
-                !!headerElement &&
                 !!footerElement &&
-                !bodyElement.contains(headerElement) &&
                 !bodyElement.contains(footerElement)
             );
         })
     ).toBe(true);
 
-    const [panelBox, headerBox, footerBox] = await Promise.all([
+    const [panelBox, bodyBox, footerBox] = await Promise.all([
         panel.boundingBox(),
-        header.boundingBox(),
+        body.boundingBox(),
         footer.boundingBox(),
     ]);
     const outer = requireBox(panelBox, 'panneau dense');
-    const heading = requireBox(headerBox, 'header dense');
+    const stack = requireBox(bodyBox, 'pile dense');
     const actions = requireBox(footerBox, 'footer dense');
-    expect(heading.y).toBeGreaterThanOrEqual(outer.y - 1);
+    expect(stack.y).toBeGreaterThanOrEqual(outer.y - 1);
+    expect(stack.y + stack.height).toBeLessThanOrEqual(actions.y + 1);
     expect(actions.y + actions.height).toBeLessThanOrEqual(
         outer.y + outer.height + 1
     );

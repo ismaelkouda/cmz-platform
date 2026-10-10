@@ -24,48 +24,6 @@ function toolbarAction(
     return page.locator(`[data-cmz-toolbar-action="${id}"]`);
 }
 
-async function markExactLegacyToolbar(page: Page): Promise<void> {
-    const legacy = await page.evaluate(() => {
-        const tools = document.querySelector('[data-cmz-id="table-tools"]');
-        const create = document.querySelector('[data-cmz-id="create-user"]');
-        const filter = tools?.querySelector('button.filter-toggle');
-        const tableTitle = tools?.querySelector('[data-cmz-id="table-title"]');
-        const tableSearch = tools?.querySelector(
-            '[data-cmz-id="table-search"]'
-        );
-        const commandCluster = tools?.querySelector(
-            '[data-cmz-id="table-command-cluster"]'
-        );
-        const actionGroup = tools?.querySelector('[data-cmz-toolbar-actions]');
-        const buttonNames = [...document.querySelectorAll('button')].map(
-            (button) =>
-                button.getAttribute('aria-label') ??
-                button.textContent?.trim() ??
-                ''
-        );
-
-        return (
-            tools instanceof HTMLFormElement &&
-            create instanceof HTMLButtonElement &&
-            create.closest('.page-heading-row') !== null &&
-            create.closest('[data-cmz-id="table-tools"]') === null &&
-            filter instanceof HTMLButtonElement &&
-            tableTitle === null &&
-            tableSearch === null &&
-            commandCluster === null &&
-            actionGroup === null &&
-            tools.querySelectorAll('button').length === 1 &&
-            !buttonNames.some((name) => /^Rafraîchir$/.test(name)) &&
-            !buttonNames.some((name) => /^Exporter$/.test(name)) &&
-            !document.querySelector('[data-cmz-toolbar-actions]')
-        );
-    });
-    const reason =
-        'ADAPT-11c1 : la signature historique conserve Créer dans le heading, le formulaire de recherche comme conteneur, seulement Filtres dans les outils et aucun titre local ni Rafraîchir.';
-    test.fail(legacy, reason);
-    if (legacy) expect(legacy, reason).toBe(false);
-}
-
 async function expectDocumentOrder(locators: Locator[]): Promise<void> {
     const handles = await Promise.all(
         locators.map((locator) => locator.elementHandle())
@@ -107,39 +65,6 @@ async function openFilters(page: Page): Promise<Locator> {
     return panel;
 }
 
-async function markExactLegacyUnboundedPanel(
-    page: Page,
-    panel: Locator
-): Promise<void> {
-    const legacy = await panel.evaluate((element) => {
-        const workspace = document.querySelector(
-            '[data-cmz-id="users-table-workspace"]'
-        );
-        const tableViewport = document.querySelector('.desktop-table');
-        if (
-            !(workspace instanceof HTMLElement) ||
-            !(tableViewport instanceof HTMLElement)
-        ) {
-            return false;
-        }
-
-        const panelBox = element.getBoundingClientRect();
-        const workspaceBox = workspace.getBoundingClientRect();
-        const tableBox = tableViewport.getBoundingClientRect();
-        return (
-            !document.querySelector(
-                '[data-cmz-id="table-horizontal-scroll"]'
-            ) &&
-            Math.abs(panelBox.bottom - workspaceBox.bottom) <= 1 &&
-            panelBox.bottom > tableBox.bottom + 1
-        );
-    });
-    const reason =
-        'ADAPT-11b : la signature historique étend le panneau jusqu’au bas du workspace, sans rail horizontal borné avant le panneau.';
-    test.fail(legacy, reason);
-    if (legacy) expect(legacy, reason).toBe(false);
-}
-
 test.beforeEach(async ({ page }) => {
     await installFilterOracleBackend(page);
 });
@@ -149,7 +74,6 @@ test('Expanded : nomme la table à gauche puis regroupe recherche et capacités 
 }) => {
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
-    await markExactLegacyToolbar(page);
 
     const tools = tableTools(page);
     const title = tools.locator('[data-cmz-id="table-title"]');
@@ -233,7 +157,6 @@ test('Medium contraint : reflow sans chevauchement ni disparition des commandes 
 }) => {
     await page.setViewportSize(MEDIUM_CONSTRAINED);
     await openReadyPage(page);
-    await markExactLegacyToolbar(page);
 
     const tools = tableTools(page);
     const title = tools.locator('[data-cmz-id="table-title"]');
@@ -306,7 +229,6 @@ test('Rafraîchir : conserve la requête appliquée et émet exactement un GET u
     const requests = observeUsersRequests(page);
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
-    await markExactLegacyToolbar(page);
 
     const roleShortcut = page.locator('[data-cmz-filter-shortcut="role"]');
     await roleShortcut.selectOption('agent');
@@ -341,6 +263,16 @@ test('capacités absentes : aucune exportation, action de ligne, activation ou d
     await expect(page.locator('[data-cmz-row-actions]')).toHaveCount(0);
     await expect(
         page.getByRole('columnheader', { name: 'Actions' })
+    ).toHaveCount(0);
+    // ADR-0098 / F-004 : les exemples validés montrent des flèches de tri, mais
+    // le contrat backend C5 ne déclare aucun paramètre de tri. Aucun contrôle
+    // de tri ne doit donc apparaître dans les en-têtes.
+    const headerRow = page
+        .locator('[data-cmz-id="users-table"] thead tr')
+        .first();
+    await expect(headerRow.locator('[aria-sort]')).toHaveCount(0);
+    await expect(
+        headerRow.locator('button, a, [role="button"], [tabindex]')
     ).toHaveCount(0);
 
     const rows = page.locator('[data-cmz-id="users-table"] tbody tr');
@@ -379,7 +311,6 @@ for (const [layout, viewport] of [
         await page.setViewportSize(viewport);
         await openReadyPage(page);
         const panel = await openFilters(page);
-        await markExactLegacyUnboundedPanel(page, panel);
 
         const tableViewport = page.locator('.desktop-table');
         const rail = page.locator('[data-cmz-id="table-horizontal-scroll"]');

@@ -13,24 +13,7 @@ import {
     requireBox,
     waitForResponsiveLayout,
 } from './filter-oracle.support';
-
-async function markLegacyInlineFiltersAsExpectedFailure(
-    page: Page
-): Promise<void> {
-    const legacyInlineFilters = await page
-        .locator('#secondary-user-filters')
-        .evaluate(
-            (element) =>
-                element.parentElement?.matches('form.filters') === true &&
-                !element.hasAttribute('role') &&
-                !element.hasAttribute('aria-modal')
-        );
-
-    test.fail(
-        legacyInlineFilters,
-        'ADAPT-6 : la signature historique exacte rend encore les filtres secondaires dans le formulaire de liste, sans panneau adaptatif.'
-    );
-}
+import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
 
 function filterTrigger(page: Page): Locator {
     return page.getByRole('button', { name: /^Filtres(?: \(\d+\))?$/ });
@@ -75,21 +58,6 @@ async function addDesktopFilterIfNeeded(
     ).toBeVisible();
 }
 
-async function markLegacyCompactFilterA11yAsExpectedFailure(
-    panel: Locator
-): Promise<void> {
-    const legacyConstantName = await panel.evaluate(
-        (element) =>
-            element.getAttribute('aria-label') === 'Filtres' &&
-            !element.hasAttribute('aria-labelledby')
-    );
-
-    test.fail(
-        legacyConstantName,
-        'ADAPT-7 : le détail compact conserve encore le nom accessible constant « Filtres » et ne garantit pas le transfert de focus.'
-    );
-}
-
 async function expectUniqueIds(page: Page): Promise<void> {
     const duplicateIds = await page.locator('[id]').evaluateAll((elements) => {
         const counts = new Map<string, number>();
@@ -110,9 +78,11 @@ test.beforeEach(async ({ page }) => {
 test('compact : rend un unique bottom sheet, son sommaire puis le détail dans le même dialogue', async ({
     page,
 }) => {
+    expectFailureWhileLegacy(
+        'C5 : le bouton Réinitialiser du bottom sheet compact mesure encore moins de 48 px de hauteur.'
+    );
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
 
     const search = page.getByLabel('Rechercher un utilisateur');
     const dialog = await openTemporaryFilters(page);
@@ -138,7 +108,6 @@ test('compact : rend un unique bottom sheet, son sommaire puis le détail dans l
     const statusSummary = dialog.getByRole('button', { name: /^Statut\b/ });
     await statusSummary.focus();
     await statusSummary.click();
-    await markLegacyCompactFilterA11yAsExpectedFailure(dialog);
     await expect(dialog).toHaveAccessibleName('Statut');
     await expect(dialog.getByRole('heading', { name: 'Statut' })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Retour' })).toBeVisible();
@@ -157,7 +126,7 @@ test('compact : rend un unique bottom sheet, son sommaire puis le détail dans l
         const button = dialog.getByRole('button', { name: action });
         await expect(button).toBeVisible();
         const box = requireBox(await button.boundingBox(), action);
-        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(box.height).toBeGreaterThanOrEqual(48);
         expect(box.y + box.height).toBeLessThanOrEqual(COMPACT.height);
     }
 });
@@ -168,7 +137,6 @@ test('compact : isole draft/applied et ne produit qu’un GET lors de Appliquer'
     const requests = observeUsersRequests(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
 
     let dialog = await openTemporaryFilters(page);
     const requestsAfterOpen = requests.length;
@@ -197,13 +165,15 @@ test('compact : isole draft/applied et ne produit qu’un GET lors de Appliquer'
     await expect(filterTrigger(page)).toHaveAccessibleName('Filtres (1)');
 });
 
-test('résume seulement les filtres appliqués, limite les chips medium et retire avec un seul GET', async ({
+test('expose les filtres appliqués par le compteur et les raccourcis, sans chips, et retire avec un seul GET', async ({
     page,
 }) => {
+    expectFailureWhileLegacy(
+        'C5 : les filtres appliqués sont encore rendus dans une région distincte « Filtres appliqués ».'
+    );
     const requests = observeUsersRequests(page);
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
 
     const dialog = await openDesktopFilters(page);
     for (const label of ['Profil', 'Rôle', 'Statut'] as const) {
@@ -223,21 +193,31 @@ test('résume seulement les filtres appliqués, limite les chips medium et retir
     const countBeforeApply = requests.length;
     await dialog.getByRole('button', { name: /^(Appliquer|Filtrer)$/ }).click();
     await expectOnlyOneUsersGet(requests, countBeforeApply);
-    const applied = page.getByRole('region', { name: 'Filtres appliqués' });
-    const removable = applied.getByRole('button', {
-        name: /^Retirer le filtre /,
-    });
-    await expect(removable).toHaveCount(2);
+    // ADR-0098 : les dispositions validées n'intercalent aucune ligne de
+    // chips entre la barre et la grille. L'état appliqué reste lisible par le
+    // compteur du déclencheur et par les raccourcis de colonne actifs.
     await expect(
-        applied.getByRole('button', {
-            name: 'Afficher 1 filtre supplémentaire',
-        })
-    ).toHaveText('+1');
+        page.getByRole('region', { name: 'Filtres appliqués' })
+    ).toHaveCount(0);
+    await expect(
+        page.getByRole('button', { name: /^Retirer le filtre .+ : / })
+    ).toHaveCount(0);
     await expect(filterTrigger(page)).toHaveAccessibleName('Filtres (3)');
+    const shortcuts = {
+        profile: 'profile-a',
+        role: 'agent',
+        status: 'inactive',
+    } as const;
+    for (const [key, value] of Object.entries(shortcuts)) {
+        const control = page.locator(`[data-cmz-filter-shortcut="${key}"]`);
+        await expect(control).toHaveValue(value);
+        await expect(control).toHaveAttribute('data-cmz-filter-active', 'true');
+    }
 
     const countBeforeRemove = requests.length;
-    await removable.first().click();
+    await page.locator('[data-cmz-filter-shortcut="profile"]').selectOption('');
     await expectOnlyOneUsersGet(requests, countBeforeRemove);
+    expect(requests.at(-1)).not.toContain('profile=');
     await expect(filterTrigger(page)).toHaveAccessibleName('Filtres (2)');
 });
 
@@ -247,7 +227,6 @@ test('resize compact → medium → expanded → compact : conserve le draft san
     const requests = observeUsersRequests(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
 
     let container = await openTemporaryFilters(page);
     await container.getByRole('button', { name: /^Statut\b/ }).click();
@@ -274,7 +253,6 @@ test('resize compact → medium → expanded → compact : conserve le draft san
     await waitForResponsiveLayout(page);
     container = page.locator('#user-filter-panel');
     await expect(container).toHaveAttribute('role', 'dialog');
-    await markLegacyCompactFilterA11yAsExpectedFailure(container);
     await expect(container).toHaveAccessibleName('Statut');
     await expect(
         container.getByRole('radio', { name: 'Inactif' })
@@ -291,7 +269,6 @@ test('frontières : respecte largeur/hauteur, 320 CSS px et texte agrandi sans m
         height: EXPANDED_MIN_HEIGHT,
     });
     await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
 
     await openDesktopFilters(page);
     const requestsBeforeResize = [...requests];
@@ -340,7 +317,6 @@ test('ne rend jamais deux exemplaires interactifs du même filtre', async ({
 }) => {
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
 
     let container = await openTemporaryFilters(page);
     await expect(
@@ -378,7 +354,6 @@ test('n’invente ni tri, ni option, ni paramètre réseau hors contrat', async 
     const requests = observeUsersRequests(page);
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
-    await markLegacyInlineFiltersAsExpectedFailure(page);
 
     const dialog = await openDesktopFilters(page);
     for (const label of ['Profil', 'Rôle', 'Statut'] as const) {

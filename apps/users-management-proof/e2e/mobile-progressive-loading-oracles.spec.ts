@@ -6,6 +6,8 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
+import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
+
 const COMPACT = { width: 390, height: 844 } as const;
 const MEDIUM = { width: 1024, height: 768 } as const;
 const EXPANDED = { width: 1440, height: 1024 } as const;
@@ -201,28 +203,6 @@ async function openReadyPage(page: Page): Promise<void> {
     await expect(page.locator('[data-cmz-id="ready"]')).toBeVisible();
 }
 
-async function markExactLegacyPaginationAsExpectedFailure(
-    page: Page
-): Promise<void> {
-    const pagination = page.getByRole('navigation', {
-        name: 'Pagination des utilisateurs',
-    });
-    const sentinel = page.locator('[data-cmz-id="mobile-load-sentinel"]');
-    const legacy =
-        (await page.locator('.mobile-results').isVisible()) &&
-        (await pagination.isVisible()) &&
-        (await sentinel.count()) === 0;
-
-    if (legacy) {
-        await expect(pagination).toBeVisible();
-        await expect(sentinel).toHaveCount(0);
-    }
-    test.fail(
-        legacy,
-        'ADAPT-9 : la signature historique exacte expose encore la pagination compacte et ne rend aucune sentinelle progressive.'
-    );
-}
-
 function pageRequests(harness: BackendHarness, pageNumber: number): URL[] {
     return harness.userRequests.filter(
         (url) => Number(url.searchParams.get('page') ?? '1') === pageNumber
@@ -273,10 +253,12 @@ async function captureProof(
 test('compact : remplace la pagination par une région et une liste sémantiques', async ({
     page,
 }) => {
+    expectFailureWhileLegacy(
+        'C5 : le bouton Créer compact n’expose pas encore son libellé.'
+    );
     await installHostAndBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markExactLegacyPaginationAsExpectedFailure(page);
 
     expect(
         await page
@@ -302,7 +284,9 @@ test('compact : remplace la pagination par une région et une liste sémantiques
         'aria-hidden',
         'true'
     );
-    await expect(create.locator('.create-button-label')).toHaveCount(0);
+    const createLabel = create.locator('[data-cmz-command-label]');
+    await expect(createLabel).toHaveText('Créer');
+    await expect(createLabel).toBeHidden();
     await expect(create).toHaveAttribute('title', 'Créer un utilisateur');
     const search = page.getByRole('searchbox', {
         name: 'Rechercher un utilisateur',
@@ -311,6 +295,9 @@ test('compact : remplace la pagination par une région et une liste sémantiques
         'placeholder',
         'Nom, prénom ou adresse e-mail'
     );
+    // ADR-0098 : l'exemple Compact validé place les commandes dans l'en-tête
+    // de collection, au-dessus de la recherche pleine largeur. L'ancienne
+    // attente (recherche au-dessus du déclencheur) est supersédée.
     expect(
         await search.evaluate((input) => {
             const toggle = input
@@ -318,8 +305,8 @@ test('compact : remplace la pagination par une région et une liste sémantiques
                 ?.querySelector('.filter-toggle');
             return (
                 !!toggle &&
-                input.getBoundingClientRect().bottom <=
-                    toggle.getBoundingClientRect().top
+                toggle.getBoundingClientRect().bottom <=
+                    input.getBoundingClientRect().top
             );
         })
     ).toBe(true);
@@ -348,7 +335,6 @@ test('compact : précharge avant la frontière visible, ajoute et déduplique sa
     });
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markExactLegacyPaginationAsExpectedFailure(page);
     await expectProgressiveSentinel(page);
 
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
@@ -385,7 +371,6 @@ test('compact : garde une seule page suivante en vol quand la sentinelle reste i
     });
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markExactLegacyPaginationAsExpectedFailure(page);
     await expectProgressiveSentinel(page);
 
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
@@ -409,7 +394,6 @@ test('compact : s’arrête exactement à lastPage sans requête ni attente term
     const harness = await installHostAndBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markExactLegacyPaginationAsExpectedFailure(page);
     await expectProgressiveSentinel(page);
 
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
@@ -459,7 +443,6 @@ test('compact : conserve les cartes, suspend l’automatisme et reprend exacteme
     });
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markExactLegacyPaginationAsExpectedFailure(page);
     await expectProgressiveSentinel(page);
 
     const retry = page.locator('[data-cmz-id="mobile-load-retry"]');
@@ -503,7 +486,6 @@ test('compact : une recherche repart de page 1 et rejette une ancienne page 2 ta
     });
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markExactLegacyPaginationAsExpectedFailure(page);
     await expectProgressiveSentinel(page);
 
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
@@ -548,7 +530,6 @@ test('compact : appliquer puis retirer un filtre invalide les lots et redemande 
     });
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markExactLegacyPaginationAsExpectedFailure(page);
     await expectProgressiveSentinel(page);
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
 
@@ -573,9 +554,12 @@ test('compact : appliquer puis retirer un filtre invalide les lots et redemande 
         0
     );
 
-    await page
-        .getByRole('button', { name: /^Retirer le filtre Statut/ })
-        .click();
+    // ADR-0098 : sans ligne de chips, le retrait passe par le même bottom
+    // sheet que l'application.
+    await page.getByRole('button', { name: 'Filtres (1)' }).click();
+    await dialog.getByRole('button', { name: /^Statut\b/ }).click();
+    await dialog.getByRole('radio', { name: 'Tous' }).check();
+    await dialog.getByRole('button', { name: 'Appliquer' }).click();
     await expect
         .poll(
             () =>
@@ -594,7 +578,6 @@ test('compact : une création réussie ferme le formulaire et réinitialise expl
     const harness = await installHostAndBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markExactLegacyPaginationAsExpectedFailure(page);
     await expectProgressiveSentinel(page);
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
 
@@ -679,7 +662,6 @@ test('compact : resize et ajout silencieux conservent le focus et exposent seule
     });
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await markExactLegacyPaginationAsExpectedFailure(page);
     await expectProgressiveSentinel(page);
 
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
