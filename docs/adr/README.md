@@ -131,4 +131,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0095](./0095-modele-operatoire-agents-bornes.md)         | Modèle opératoire à rôles bornés pour les agents         | Accepted |
 | [0096](./0096-separer-execution-et-revue-agent.md)        | Séparer l'exécution et la revue agent d'une étape planifiée | Accepted |
 | [0097](./0097-fab-compact-creation-react-c5.md)           | Fermer la parité du FAB Compact de création C5 en React  | Accepted |
+| [0098](./0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md) | Lier la guidance de layout au work order v5 par commit Git | Accepted |
 <!-- END:GENERATED:adr-index -->

@@ -144,6 +144,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0095](./adr/0095-modele-operatoire-agents-bornes.md)       | Modèle opératoire à rôles bornés pour les agents         |
 | [0096](./adr/0096-separer-execution-et-revue-agent.md)      | Séparer l'exécution et la revue agent d'une étape planifiée |
 | [0097](./adr/0097-fab-compact-creation-react-c5.md)         | Fermer la parité du FAB Compact de création C5 en React  |
+| [0098](./adr/0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md) | Lier la guidance de layout au work order v5 par commit Git |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

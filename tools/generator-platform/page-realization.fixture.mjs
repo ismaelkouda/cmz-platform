@@ -41,6 +41,24 @@ export const presentationEvidenceSchema = JSON.parse(
         'utf8'
     )
 );
+export const layoutBindingSchema = JSON.parse(
+    await readFile(
+        new URL(
+            './schemas/presentation-layout-binding.schema.json',
+            import.meta.url
+        ),
+        'utf8'
+    )
+);
+export const layoutExampleSetSchema = JSON.parse(
+    await readFile(
+        new URL(
+            './schemas/presentation-layout-example-set.schema.json',
+            import.meta.url
+        ),
+        'utf8'
+    )
+);
 
 export function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
@@ -103,7 +121,12 @@ export async function pageRealizationFixture(profile = 'angular-pwa') {
         { run: () => '' }
     );
     execFileSync('git', ['init', '-q'], { cwd: root });
+    execFileSync('git', ['config', 'user.name', 'CMZ test'], { cwd: root });
+    execFileSync('git', ['config', 'user.email', 'cmz-test@example.invalid'], {
+        cwd: root,
+    });
     execFileSync('git', ['add', '.'], { cwd: root });
+    execFileSync('git', ['commit', '-qm', 'fixture'], { cwd: root });
     return {
         root,
         pageId: 'page_2222222222222222',
@@ -111,6 +134,124 @@ export async function pageRealizationFixture(profile = 'angular-pwa') {
             root,
             'apps/clean-street/src/app/pages/page_2222222222222222'
         ),
+    };
+}
+
+export async function writeLayoutBindingAndCommit(data) {
+    const exampleRoot = 'examples/presentation/proof-layout-examples';
+    await mkdir(join(data.root, exampleRoot), { recursive: true });
+    await mkdir(join(data.root, 'designs'), { recursive: true });
+    const renderSources = [
+        ['mockup.html', 'text/html', Buffer.from('<main></main>\n')],
+        ['mockup.css', 'text/css', Buffer.from('main { display: block; }\n')],
+        ['render.mjs', 'text/javascript', Buffer.from('export default {};\n')],
+    ];
+    for (const [name, , content] of renderSources)
+        await writeFile(join(data.root, exampleRoot, name), content);
+    const image = Buffer.concat([
+        Buffer.from('89504e470d0a1a0a', 'hex'),
+        Buffer.from('layout-example'),
+    ]);
+    const imagePath = `${exampleRoot}/expanded.proposed.png`;
+    await writeFile(join(data.root, imagePath), image);
+    const exampleSet = {
+        schema_version: '1.0.0',
+        kind: 'presentation-layout-example-set',
+        set_id: 'proof-layout',
+        status: 'approved-example',
+        authority: 'layout-guidance-only',
+        subject: 'generic-data-view',
+        authority_scope: ['region-order'],
+        forbidden_inferences: ['capability-presence'],
+        usage_protocol: {
+            requires_page_contract: true,
+            requires_capability_match: true,
+            requires_runtime_proof: true,
+        },
+        render_sources: renderSources.map(([name, mediaType, content]) => ({
+            path: `${exampleRoot}/${name}`,
+            media_type: mediaType,
+            bytes: content.byteLength,
+            sha256: sha256(content),
+            authority: 'reproduction-only',
+        })),
+        sources: [
+            {
+                id: 'expanded-create',
+                path: imagePath,
+                media_type: 'image/png',
+                bytes: image.byteLength,
+                sha256: sha256(image),
+                layout_class: 'expanded',
+                space: 'comfortable',
+                state: 'filters-closed',
+                capabilities_shown: ['create'],
+                authoritative_regions: ['table-toolbar'],
+                illustrative_regions: ['sample-content'],
+                viewport: { width: 1440, height: 1024, pixel_ratio: 1 },
+            },
+        ],
+    };
+    const exampleSetPath = `${exampleRoot}/example-set.json`;
+    const exampleSetContent = Buffer.from(
+        `${JSON.stringify(exampleSet, null, 2)}\n`
+    );
+    await writeFile(join(data.root, exampleSetPath), exampleSetContent);
+    const pageContractPath = `apps/clean-street/.cmz/pages/${data.pageId}.json`;
+    const pageContractContent = await readFile(
+        join(data.root, pageContractPath)
+    );
+    const binding = {
+        schema_version: '1.0.0',
+        kind: 'presentation-layout-binding',
+        binding_id: 'proof-layout-binding',
+        page_id: data.pageId,
+        page_contract_sha256: sha256(pageContractContent),
+        authority: 'layout-guidance-only',
+        example_sets: [
+            {
+                set_id: 'proof-layout',
+                path: exampleSetPath,
+                sha256: sha256(exampleSetContent),
+            },
+        ],
+        capabilities: [
+            {
+                id: 'create',
+                status: 'declared',
+                authorized_by: {
+                    kind: 'page-action',
+                    action_id: 'submit-report',
+                },
+            },
+        ],
+        selections: [
+            {
+                set_id: 'proof-layout',
+                source_id: 'expanded-create',
+                page_state_ids: ['ready'],
+                regions: ['table-toolbar'],
+                omitted_capabilities: [],
+            },
+        ],
+    };
+    const bindingPath = 'designs/proof.layout-binding.json';
+    await writeFile(
+        join(data.root, bindingPath),
+        `${JSON.stringify(binding, null, 2)}\n`
+    );
+    execFileSync('git', ['add', '.'], { cwd: data.root });
+    execFileSync('git', ['commit', '-qm', 'add layout authority'], {
+        cwd: data.root,
+    });
+    return {
+        bindingPath,
+        imagePath,
+        exampleSetPath,
+        baseCommitSha: execFileSync('git', ['rev-parse', 'HEAD'], {
+            cwd: data.root,
+            encoding: 'utf8',
+        }).trim(),
     };
 }
 

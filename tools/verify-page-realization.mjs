@@ -32,6 +32,8 @@ export async function main(argv = process.argv.slice(2)) {
         presentationEvidenceSchema,
         pageExecutionPlanSchema,
         applicationDesignSchema,
+        layoutBindingSchema,
+        layoutExampleSetSchema,
     ] = await Promise.all([
         loadJson(
             new URL(
@@ -57,6 +59,18 @@ export async function main(argv = process.argv.slice(2)) {
                 import.meta.url
             )
         ),
+        loadJson(
+            new URL(
+                './generator-platform/schemas/presentation-layout-binding.schema.json',
+                import.meta.url
+            )
+        ),
+        loadJson(
+            new URL(
+                './generator-platform/schemas/presentation-layout-example-set.schema.json',
+                import.meta.url
+            )
+        ),
     ]);
     const report = verifyPageRealization({
         workspaceRoot: repositoryRoot,
@@ -65,6 +79,8 @@ export async function main(argv = process.argv.slice(2)) {
         presentationEvidenceSchema,
         pageExecutionPlanSchema,
         applicationDesignSchema,
+        layoutBindingSchema,
+        layoutExampleSetSchema,
     });
     console.log(JSON.stringify(report, null, 2));
     if (!report.ok) process.exitCode = 1;
