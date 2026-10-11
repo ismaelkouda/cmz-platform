@@ -10,9 +10,11 @@
   post-fusion `38145599932` est verte, oracles navigateur C5 compris
 - **Reste à faire :** l'acceptation visuelle finale de la réalisation fusionnée
   par le propriétaire n'est pas encore obtenue. Ses remarques du 2026-10-11 —
-  tri serveur, états du tableau, commande de réinitialisation, erreurs du
-  formulaire, légende des champs obligatoires — restent à réaliser dans des lots
-  séparés et modifieront plusieurs règles de ce document avant leur réalisation
+  tri client de la page courante en Medium/Expanded, états du tableau, commande
+  de réinitialisation, erreurs du formulaire, légende des champs obligatoires —
+  restent à réaliser dans des lots séparés. Le tri serveur est différé jusqu'à
+  un contrat backend réel. Ces lots modifieront plusieurs règles de ce document
+  avant leur réalisation
 - **Preuve de page :** aucune `presentation-evidence` C5 n'est actuellement
   publiée ; la disposition est guidée par la liaison de mise en page
 - **Fonctionnalité :** Gestion des utilisateurs
@@ -23,9 +25,11 @@
   [ADR-0072](../adr/0072-ui-adaptative-guidee-par-m3-et-apis-officielles.md),
   [ADR-0077](../adr/0077-ui-angular-officielle-avant-custom.md),
   [ADR-0078](../adr/0078-vues-de-donnees-par-capacites-optionnelles.md),
-  [ADR-0098](../adr/0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md)
-  et
+  [ADR-0098](../adr/0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md),
   [ADR-0099](../adr/0099-references-de-presentation-retirees-conservees-par-git.md)
+  et [ADR-0100](../adr/0100-tri-vues-donnees-modes-none-client-server.md)
+- **Guide du tri :**
+  [tri multi-backend et multi-cible](./tri-vues-donnees-multi-backend-2026-10-11.md)
 
 ## 1. Finalité et mode d'emploi
 

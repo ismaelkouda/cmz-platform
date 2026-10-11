@@ -146,6 +146,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0097](./adr/0097-fab-compact-creation-react-c5.md)         | Fermer la parité du FAB Compact de création C5 en React  |
 | [0098](./adr/0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md) | Lier la guidance de layout au work order v5 par commit Git |
 | [0099](./adr/0099-references-de-presentation-retirees-conservees-par-git.md) | Supprimer les références de présentation retirées : Git en est la mémoire |
+| [0100](./adr/0100-tri-vues-donnees-modes-none-client-server.md) | Tri des vues de données par modes explicites             |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).
@@ -159,6 +160,9 @@ Règles de rédaction : [`adr/README.md`](./adr/README.md).
 - [Profil React de la plateforme](./architecture/react-platform-profile.md) —
   baseline native, capacités conditionnelles, matrice de preuve et règles pour
   une réalisation React idiomatique
+- [Tri des vues de données](./architecture/tri-vues-donnees-multi-backend-2026-10-11.md)
+  — modes `none`/`client`/`server`, portée locale explicite, comparateurs et
+  dialectes backend sans défaut universel
 - [Politique de tests live React contre SEOS](./architecture/react-live-integration-policy.md)
   — séparation entre PR hermétique, observation live et mutations isolées
 - [Workspace à vues vivantes](./architecture/workspace-vues-vivantes-accessibilite-2026-10-04.md)

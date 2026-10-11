@@ -133,4 +133,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0097](./0097-fab-compact-creation-react-c5.md)           | Fermer la parité du FAB Compact de création C5 en React  | Accepted |
 | [0098](./0098-lier-guidance-layout-au-work-order-v5-par-commit-git.md) | Lier la guidance de layout au work order v5 par commit Git | Accepted |
 | [0099](./0099-references-de-presentation-retirees-conservees-par-git.md) | Supprimer les références de présentation retirées : Git en est la mémoire | Accepted |
+| [0100](./0100-tri-vues-donnees-modes-none-client-server.md) | Tri des vues de données par modes explicites             | Accepted |
 <!-- END:GENERATED:adr-index -->

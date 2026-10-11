@@ -2,6 +2,11 @@
 
 - **Statut :** accepté
 - **Date :** 2026-09-29
+- **Partiellement supersédé par :**
+  [ADR-0100](./0100-tri-vues-donnees-modes-none-client-server.md), uniquement
+  pour la condition qui exigeait une capacité backend afin d'autoriser un tri
+  local. Les filtres, le regroupement et le choix de colonnes restent régis par
+  le présent ADR.
 
 ## Contexte
 
