@@ -65,6 +65,7 @@ jobs:
   guardrails:
     name: Garde-fous socle
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -247,6 +248,13 @@ jobs:
       # et inscrite, par son `id`, dans la liste fermée du garde.
       - name: check:workflow-privileges (événements, jetons, écritures, secrets)
         run: bun run check:workflow-privileges
+
+      # Playwright transmet déjà l'environnement au webserver à l'exécution.
+      # Le recopier dans `webServer.env` ne fait que l'exposer au reporter JSON.
+      # Ce gate découvre tous les profils suivis et vérifie cette frontière avec
+      # une sentinelle synthétique, sans serveur, navigateur ni secret CI.
+      - name: check:playwright-secret-safety (reporter sans environnement)
+        run: bun run check:playwright-secret-safety
 
       # Audit Big Tech 2026-08-14 — root cause du bug "script dans check:all
       # jamais réellement câblé en CI" (rencontré 3 fois : check:pair-schema/
