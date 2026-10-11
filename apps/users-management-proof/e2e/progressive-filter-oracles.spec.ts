@@ -12,7 +12,6 @@ import {
     requireBox,
     waitForResponsiveLayout,
 } from './filter-oracle.support';
-import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
 
 function filterTrigger(page: Page): Locator {
     return page.getByRole('button', { name: /^Filtres(?: \(\d+\))?$/ });
@@ -236,9 +235,6 @@ for (const [label, viewport] of [
     test(`${label} : au défilement maximal, la dernière colonne s’arrête au bord gauche du panneau`, async ({
         page,
     }) => {
-        expectFailureWhileLegacy(
-            'C5 : au défilement maximal, la dernière colonne ne s’arrête pas encore au bord gauche du panneau.'
-        );
         // F-003 / P-003 — clause d'autorité : « la limite droite du contenu
         // défilant devient le bord gauche du panneau ».
         const requests = observeUsersRequests(page);
@@ -278,9 +274,6 @@ for (const [label, viewport] of [
 test('menu Ajouter : s’ouvre, se parcourt et se ferme entièrement au clavier', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : l’ouverture du menu Ajouter ne place pas encore le focus sur son premier élément.'
-    );
     // F-005 / P-004 : le changement d'Échap touche ce menu ; son clavier doit
     // être prouvé, pas supposé.
     const requests = observeUsersRequests(page);
@@ -324,9 +317,6 @@ test('menu Ajouter : s’ouvre, se parcourt et se ferme entièrement au clavier'
 test('passage en Compact : le menu Ajouter ne survit pas et un seul Échap ferme la sheet', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : au passage en Compact, le focus ne reste pas encore dans la sheet modale.'
-    );
     // F-006 : un état de menu resté ouvert sans menu dans le DOM absorbait le
     // premier Échap.
     const requests = observeUsersRequests(page);
@@ -389,9 +379,6 @@ test('blocs progressifs : ajoute seulement un critère disponible, l’ouvre, le
 test('brouillon : replie, supprime avec un focus déterministe et publie au plus un GET seulement sur Filtrer', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : les filtres appliqués sont encore rendus dans une région distincte « Filtres appliqués ».'
-    );
     const requests = observeUsersRequests(page);
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
@@ -442,9 +429,6 @@ test('brouillon : replie, supprime avec un focus déterministe et publie au plus
 test('fermeture : abandonne le brouillon en Medium et Expanded sans requête', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : le panneau porte encore un bouton « Fermer les filtres ».'
-    );
     for (const viewport of [MEDIUM, EXPANDED]) {
         const requests = observeUsersRequests(page);
         await page.setViewportSize(viewport);
@@ -488,9 +472,6 @@ test('fermeture : abandonne le brouillon en Medium et Expanded sans requête', a
 test('Échap ferme le menu Ajouter avant le panneau et restitue chaque focus', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : un second Échap ne ferme pas encore le panneau de filtres.'
-    );
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
     const trigger = filterTrigger(page);
@@ -577,9 +558,6 @@ test('resize Medium ↔ Expanded : conserve le même contrôle, le brouillon, le
 test('hauteur courte et densité : seule la pile défile, le pied reste visible sans débordement horizontal', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : le panneau conserve encore un en-tête dédié.'
-    );
     const requests = observeUsersRequests(page);
     await page.setViewportSize({ width: MEDIUM.width, height: 520 });
     await openReadyPage(page);

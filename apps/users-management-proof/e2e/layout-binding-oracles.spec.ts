@@ -24,7 +24,6 @@ import {
     type BoundExample,
     type LayoutClass,
 } from './layout-binding.support';
-import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
 
 // ADR-0098 (Accepted) : ces oracles lisent la liaison expérimentale de la page
 // C5. Une capacité ajoutée à la liaison sans sonde ci-dessous fait échouer la
@@ -193,10 +192,6 @@ for (const layout of ['compact', 'medium', 'expanded'] as const) {
     test(`${layout} : rend les capacités déclarées et aucune capacité absente`, async ({
         page,
     }) => {
-        if (layout !== 'compact')
-            expectFailureWhileLegacy(
-                'C5 : en Medium et Expanded, Échap ne ferme pas encore le panneau de filtres.'
-            );
         await installLayoutBackend(page);
         await page.setViewportSize(VIEWPORTS[layout]);
         await openReadyPage(page);
@@ -217,9 +212,6 @@ for (const [label, viewport] of [
     test(`${label} : une seule surface ordonne barre, tableau, rail et pagination`, async ({
         page,
     }) => {
-        expectFailureWhileLegacy(
-            'C5 : la vue de données n’a pas encore de bordure supérieure commune.'
-        );
         await installLayoutBackend(page);
         await page.setViewportSize(viewport);
         await openReadyPage(page);
@@ -299,9 +291,6 @@ for (const [label, viewport] of [
 test('commandes : icône et libellé en espace confortable, icônes nommées en espace contraint', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : la commande Créer n’expose pas encore son libellé visible.'
-    );
     await installLayoutBackend(page);
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
@@ -357,9 +346,6 @@ test('commandes : icône et libellé en espace confortable, icônes nommées en 
 test('rang : numérote depuis la pagination et ne rend aucune ligne interactive', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : l’en-tête de rang n’expose pas encore le nom accessible « Numéro de ligne ».'
-    );
     await installLayoutBackend(page);
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
@@ -391,9 +377,6 @@ test('rang : numérote depuis la pagination et ne rend aucune ligne interactive'
 test('filtres appliqués : compteur et raccourcis actifs, sans ligne de chips intercalée', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : le compteur de filtres appliqués n’existe pas encore.'
-    );
     const requests = await installLayoutBackend(page);
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
@@ -444,9 +427,6 @@ for (const [label, viewport] of [
     test(`${label} : panneau sans titre ni croix, ajout en tête, bascule et Échap`, async ({
         page,
     }) => {
-        expectFailureWhileLegacy(
-            'C5 : le panneau de filtres porte encore un titre « Filtres ».'
-        );
         const requests = await installLayoutBackend(page);
         await page.setViewportSize(viewport);
         await openReadyPage(page);
@@ -537,9 +517,6 @@ for (const [label, viewport] of [
 test('Compact : en-tête de collection, recherche pleine largeur, cartes puis bouton flottant', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : l’en-tête de collection n’est pas encore visible en Compact.'
-    );
     const requests = await installLayoutBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);

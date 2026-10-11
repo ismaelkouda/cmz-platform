@@ -10,7 +10,6 @@ import {
     searchInput,
     settle,
 } from './layout-binding.support';
-import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
 
 // ADR-0098, RESP-02, SEARCH-03 : changer de classe d'espace ne doit rien faire
 // perdre à l'utilisateur ni rien demander au backend. Rafraîchir et Filtres
@@ -77,9 +76,6 @@ async function searchFollowsCommands(page: Page): Promise<boolean> {
 test('changement de classe : la recherche garde valeur, focus et sélection sans relancer la requête', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : la recherche n’occupe pas encore la position attendue par rapport aux commandes selon la classe.'
-    );
     const requests = await installLayoutBackend(page);
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
@@ -111,9 +107,6 @@ test('changement de classe : la recherche garde valeur, focus et sélection sans
 test('Compact atteint par redimensionnement : aucun GET avant un défilement réel', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : atteindre Compact par redimensionnement déclenche encore une requête.'
-    );
     const requests = await installLayoutBackend(page);
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
@@ -147,9 +140,6 @@ test('Compact dès l’ouverture : la page suivante reste préchargée sans déf
 test('recherche non soumise : ni la pagination, ni le rafraîchissement, ni un filtre ne l’envoient', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : le raccourci de filtre Rôle n’existe pas encore.'
-    );
     const requests = await installLayoutBackend(page);
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
@@ -174,9 +164,6 @@ test('recherche non soumise : ni la pagination, ni le rafraîchissement, ni un f
 test('recherche non soumise : le chargement progressif Compact ne l’envoie pas', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : le chargement progressif Compact envoie encore une recherche non soumise.'
-    );
     const requests = await installLayoutBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
@@ -192,9 +179,6 @@ test('recherche non soumise : le chargement progressif Compact ne l’envoie pas
 test('changement de classe : Rafraîchir et Filtres gardent leur nœud, Créer reste unique et suit les cartes en Compact', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : en Compact, la commande Créer ne suit pas encore les cartes.'
-    );
     await installLayoutBackend(page);
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
@@ -251,9 +235,6 @@ test('changement de classe : le bouton Créer garde le focus quand il change de 
 test('composition en cours : le déplacement de la recherche attend la fin de la saisie', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : la recherche ne rejoint pas encore les commandes après la fin d’une composition.'
-    );
     // Les touches mortes françaises (« ^ » puis « e ») passent par une
     // composition : déplacer le champ pendant celle-ci casserait la saisie.
     const requests = await installLayoutBackend(page);

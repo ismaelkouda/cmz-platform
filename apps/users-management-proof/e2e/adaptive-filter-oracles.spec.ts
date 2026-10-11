@@ -13,7 +13,6 @@ import {
     requireBox,
     waitForResponsiveLayout,
 } from './filter-oracle.support';
-import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
 
 function filterTrigger(page: Page): Locator {
     return page.getByRole('button', { name: /^Filtres(?: \(\d+\))?$/ });
@@ -78,9 +77,6 @@ test.beforeEach(async ({ page }) => {
 test('compact : rend un unique bottom sheet, son sommaire puis le détail dans le même dialogue', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : le bouton Réinitialiser du bottom sheet compact mesure encore moins de 48 px de hauteur.'
-    );
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
 
@@ -168,9 +164,6 @@ test('compact : isole draft/applied et ne produit qu’un GET lors de Appliquer'
 test('expose les filtres appliqués par le compteur et les raccourcis, sans chips, et retire avec un seul GET', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : les filtres appliqués sont encore rendus dans une région distincte « Filtres appliqués ».'
-    );
     const requests = observeUsersRequests(page);
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
