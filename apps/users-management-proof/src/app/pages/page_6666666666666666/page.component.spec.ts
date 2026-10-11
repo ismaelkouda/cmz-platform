@@ -1,7 +1,8 @@
 import { BreakpointObserver, type BreakpointState } from '@angular/cdk/layout';
 import { signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { BehaviorSubject, of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -19,6 +20,7 @@ import {
     PAGE_PERMISSION_PROVIDER,
     PageComponent,
 } from './page.component';
+import { PageCreateComponent } from './page.create.component';
 
 const USERS: readonly UserListItem[] = [
     {
@@ -66,7 +68,6 @@ const NEXT_USERS: readonly UserListItem[] = [
 interface SetupOptions {
     authorized?: boolean;
     layout?: 'compact' | 'medium' | 'expanded';
-    submitError?: Error;
     usersState?: 'success' | 'error' | 'empty' | 'loading' | 'reloading';
 }
 
@@ -109,11 +110,7 @@ async function setup(options: SetupOptions = {}) {
     ]);
     const loadUsers = vi.fn();
     const loadProfiles = vi.fn();
-    const submitUser = vi.fn(() =>
-        options.submitError
-            ? throwError(() => options.submitError)
-            : of({ message: 'SUCCESS' })
-    );
+    const submitUser = vi.fn(() => of({ message: 'SUCCESS' }));
     const composition = {
         profilesSelect: {
             items: profiles,
@@ -216,12 +213,13 @@ function setControl(control: Element, value: string): void {
     }
 }
 
-async function fillValidForm(root: HTMLElement): Promise<void> {
-    setControl(element(root, '[data-cmz-id="first-name"]'), '  Ada  ');
-    setControl(element(root, '[data-cmz-id="last-name"]'), '  Lovelace  ');
-    setControl(element(root, '[data-cmz-id="email"]'), ' ada@example.test ');
-    setControl(element(root, '[data-cmz-id="phone"]'), ' +225 01 02 03 04 ');
-    setControl(element(root, '[data-cmz-id="profile-id"]'), 'profile-a');
+// Le formulaire appartient au sous-composant, testé dans son propre spec :
+// ici, seul le contrat `created` / `closed` vu par la page est exercé.
+function createDialog(
+    fixture: ComponentFixture<PageComponent>
+): PageCreateComponent {
+    return fixture.debugElement.query(By.directive(PageCreateComponent))
+        .componentInstance as PageCreateComponent;
 }
 
 afterEach(() => {
@@ -248,14 +246,22 @@ describe('PageComponent', () => {
         expect(root.textContent).toContain('alpha@example.invalid');
         expect(root.textContent).toContain('Superviseur');
         expect(root.textContent).toContain('custom-role');
-        expect(root.querySelectorAll('th[scope="col"]')).toHaveLength(7);
+        expect(root.querySelectorAll('th[scope="col"]')).toHaveLength(8);
+        expect(
+            element(root, '[data-cmz-id="row-rank-header"]').textContent?.trim()
+        ).toBe('#');
+        expect(
+            Array.from(root.querySelectorAll('[data-cmz-row-rank]')).map(
+                (cell) => cell.textContent?.trim()
+            )
+        ).toEqual(['1', '2']);
         expect(root.querySelectorAll('.page-number')).toHaveLength(2);
         expect(
             element(root, '[aria-label="Page 1"]').getAttribute('aria-current')
         ).toBe('page');
     });
 
-    it('expose la recherche principale avant les filtres et explicite le FAB compact', async () => {
+    it('ordonne les commandes compactes avant la recherche et explicite le FAB', async () => {
         const { fixture } = await setup({ layout: 'compact' });
         const root = fixture.nativeElement as HTMLElement;
         const search = element<HTMLInputElement>(root, '[type="search"]');
@@ -275,7 +281,7 @@ describe('PageComponent', () => {
         expect(searchRegion.getAttribute('role')).toBe('search');
         expect(searchRegion.contains(label)).toBe(true);
         expect(
-            label.compareDocumentPosition(toggle) &
+            toggle.compareDocumentPosition(label) &
                 Node.DOCUMENT_POSITION_FOLLOWING
         ).not.toBe(0);
         expect(
@@ -284,7 +290,12 @@ describe('PageComponent', () => {
         expect(create.getAttribute('aria-label')).toBe('Créer un utilisateur');
         expect(create.title).toBe('Créer un utilisateur');
         expect(create.querySelector('.create-button-icon')).not.toBeNull();
-        expect(create.querySelector('.create-button-label')).toBeNull();
+        const semanticLabel = element<HTMLElement>(
+            create,
+            '[data-cmz-command-label]'
+        );
+        expect(semanticLabel.textContent?.trim()).toBe('Créer');
+        expect(semanticLabel.classList.contains('command-label')).toBe(true);
     });
 
     it('échoue fermé sans permission et ne soumet aucune commande', async () => {
@@ -307,6 +318,10 @@ describe('PageComponent', () => {
         const { fixture, loadUsers } = await setup({ layout: 'medium' });
         const root = fixture.nativeElement as HTMLElement;
         setControl(element(root, '[type="search"]'), '  Alpha  ');
+        element<HTMLFormElement>(
+            root,
+            '[data-cmz-id="table-command-cluster"]'
+        ).dispatchEvent(new Event('submit', { cancelable: true }));
         setControl(
             element(root, '[data-cmz-filter-shortcut="profile"]'),
             'profile-a'
@@ -347,6 +362,45 @@ describe('PageComponent', () => {
             profile: 'profile-a',
             role: 'agent',
             isActive: false,
+        });
+    });
+
+    it('n’applique jamais une recherche non soumise', async () => {
+        const { fixture, loadUsers } = await setup({ layout: 'medium' });
+        const root = fixture.nativeElement as HTMLElement;
+        const button = (label: string) =>
+            Array.from(root.querySelectorAll('button')).find(
+                (candidate) => candidate.textContent?.trim() === label
+            ) as HTMLButtonElement;
+        setControl(element(root, '[type="search"]'), 'Alpha');
+        await fixture.whenStable();
+
+        button('Suivant').click();
+        await fixture.whenStable();
+        expect(loadUsers).toHaveBeenLastCalledWith({ page: 2 });
+
+        element<HTMLButtonElement>(
+            root,
+            '[data-cmz-toolbar-action="refresh"]'
+        ).click();
+        await fixture.whenStable();
+        // La façade simulée reste sur la page 1 : seul compte l'absence de
+        // paramètre de recherche.
+        expect(loadUsers).toHaveBeenLastCalledWith({ page: 1 });
+
+        setControl(element(root, '[data-cmz-filter-shortcut="role"]'), 'agent');
+        await fixture.whenStable();
+        expect(loadUsers).toHaveBeenLastCalledWith({ page: 1, role: 'agent' });
+
+        element<HTMLFormElement>(
+            root,
+            '[data-cmz-id="table-command-cluster"]'
+        ).dispatchEvent(new Event('submit', { cancelable: true }));
+        await fixture.whenStable();
+        expect(loadUsers).toHaveBeenLastCalledWith({
+            page: 1,
+            search: 'Alpha',
+            role: 'agent',
         });
     });
 
@@ -448,10 +502,9 @@ describe('PageComponent', () => {
             element<HTMLSelectElement>(pane, '[aria-label="Rôle"]'),
             'supervisor'
         );
-        element<HTMLButtonElement>(
-            pane,
-            '[aria-label="Fermer les filtres"]'
-        ).click();
+        pane.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        );
         await fixture.whenStable();
         expect(root.querySelector('#user-filter-panel')).toBeNull();
         expect(loadUsers).toHaveBeenCalledTimes(2);
@@ -465,6 +518,31 @@ describe('PageComponent', () => {
         expect(loadUsers).toHaveBeenCalledTimes(2);
     });
 
+    it('garde le défilement du tableau atteignable au clavier quand le panneau désactive les raccourcis', async () => {
+        const { fixture } = await setup({ layout: 'medium' });
+        const root = fixture.nativeElement as HTMLElement;
+        element<HTMLButtonElement>(root, '.filter-toggle').click();
+        await fixture.whenStable();
+
+        // Panneau ouvert : plus aucun contrôle focalisable dans le tableau.
+        expect(
+            Array.from(
+                root.querySelectorAll<HTMLSelectElement>(
+                    '[data-cmz-filter-shortcut]'
+                )
+            ).map((shortcut) => shortcut.disabled)
+        ).toEqual([true, true, true]);
+        const scroller = element<HTMLElement>(
+            root,
+            '[data-cmz-id="users-table"]'
+        );
+        expect(scroller.tabIndex).toBe(0);
+        expect(scroller.getAttribute('role')).toBe('region');
+        expect(scroller.getAttribute('aria-labelledby')).toBe(
+            'users-table-title'
+        );
+    });
+
     it('garde les données périmées visibles quand une actualisation échoue', async () => {
         const { fixture } = await setup({ usersState: 'error' });
         const root = fixture.nativeElement as HTMLElement;
@@ -476,139 +554,33 @@ describe('PageComponent', () => {
         expect(root.textContent).toContain('alpha@example.invalid');
     });
 
-    it('active Créer, expose les erreurs sans commande et focalise Nom', async () => {
-        const { fixture, submitUser } = await setup();
+    it('ouvre le dialogue, puis sur `created` le ferme, annonce le succès et rend le focus', async () => {
+        const { fixture, loadUsers } = await setup();
         const root = fixture.nativeElement as HTMLElement;
-        element<HTMLButtonElement>(root, '[data-cmz-id="create-user"]').click();
-        await fixture.whenStable();
-        const fieldIds = [
-            'last-name',
-            'first-name',
-            'email',
-            'phone',
-            'profile-id',
-        ];
-        for (const id of fieldIds) {
-            expect(
-                element(root, `[data-cmz-id="${id}"]`).getAttribute(
-                    'aria-invalid'
-                )
-            ).toBeNull();
-        }
-        expect(
-            element<HTMLInputElement>(root, '[data-cmz-id="last-name"]')
-                .placeholder
-        ).toBe('Saisir le nom');
-        expect(
-            element<HTMLInputElement>(root, '[data-cmz-id="email"]').placeholder
-        ).toBe('nom@example.com');
         const create = element<HTMLButtonElement>(
             root,
-            '[data-cmz-id="create-user-form"] [type="submit"]'
+            '[data-cmz-id="create-user"]'
         );
-
-        setControl(element(root, '[data-cmz-id="first-name"]'), '   ');
-        setControl(element(root, '[data-cmz-id="email"]'), 'adresse-invalide');
-        expect(create.disabled).toBe(false);
         create.click();
         await fixture.whenStable();
 
-        expect(submitUser).not.toHaveBeenCalled();
-        expect(root.textContent).toContain('Le prénom est obligatoire.');
-        expect(root.textContent).toContain(
-            'Saisissez une adresse email valide.'
-        );
-        expect(
-            element(root, '[data-cmz-id="email"]').getAttribute('aria-invalid')
-        ).toBe('true');
-        for (const id of fieldIds.filter((id) => id !== 'email')) {
-            expect(
-                element(root, `[data-cmz-id="${id}"]`).getAttribute(
-                    'aria-invalid'
-                )
-            ).toBe('true');
-        }
-        expect(document.activeElement).toBe(
-            element(root, '[data-cmz-id="last-name"]')
-        );
-    });
+        expect(root.querySelectorAll('app-page-create')).toHaveLength(1);
+        expect(element(root, 'main').hasAttribute('inert')).toBe(true);
+        expect(create.disabled).toBe(true);
+        expect(root.querySelector('[data-cmz-id="created"]')).toBeNull();
 
-    it('soumet un payload normalisé, ferme le dialogue et annonce le succès', async () => {
-        const { fixture, submitUser, loadUsers } = await setup();
-        const root = fixture.nativeElement as HTMLElement;
-        element<HTMLButtonElement>(root, '[data-cmz-id="create-user"]').click();
-        await fixture.whenStable();
-        await fillValidForm(root);
+        createDialog(fixture).created.emit();
         await fixture.whenStable();
 
-        element<HTMLFormElement>(
-            root,
-            '[data-cmz-id="create-user-form"]'
-        ).dispatchEvent(
-            new Event('submit', { bubbles: true, cancelable: true })
-        );
-        await fixture.whenStable();
-
-        expect(submitUser).toHaveBeenCalledOnce();
-        expect(submitUser).toHaveBeenCalledWith({
-            firstName: 'Ada',
-            lastName: 'Lovelace',
-            email: 'ada@example.test',
-            phone: '+225 01 02 03 04',
-            profileId: 'profile-a',
-        });
+        expect(root.querySelector('app-page-create')).toBeNull();
         expect(root.querySelector('[role="dialog"]')).toBeNull();
+        expect(element(root, 'main').hasAttribute('inert')).toBe(false);
         expect(
             element(root, '[data-cmz-id="created"]').getAttribute('role')
         ).toBe('status');
         expect(loadUsers).toHaveBeenCalledTimes(2);
         expect(loadUsers).toHaveBeenLastCalledWith({ page: 1 });
-    });
-
-    it('conserve le formulaire et focalise Email après un conflit', async () => {
-        const { fixture, submitUser } = await setup({
-            submitError: new Error('email existe déjà'),
-        });
-        const root = fixture.nativeElement as HTMLElement;
-        element<HTMLButtonElement>(root, '[data-cmz-id="create-user"]').click();
-        await fixture.whenStable();
-        await fillValidForm(root);
-        await fixture.whenStable();
-
-        element<HTMLFormElement>(
-            root,
-            '[data-cmz-id="create-user-form"]'
-        ).dispatchEvent(
-            new Event('submit', { bubbles: true, cancelable: true })
-        );
-        await fixture.whenStable();
-
-        expect(submitUser).toHaveBeenCalledOnce();
-        expect(root.querySelector('[role="dialog"]')).not.toBeNull();
-        expect(
-            element<HTMLInputElement>(root, '[data-cmz-id="email"]').value
-        ).toContain('ada@example.test');
-        expect(root.textContent).toContain('Cette adresse email existe déjà.');
-        expect(
-            element(root, '[data-cmz-id="create-failed"]').getAttribute('role')
-        ).toBe('alert');
-        expect(document.activeElement).toBe(
-            element(root, '[data-cmz-id="email"]')
-        );
-
-        const create = element<HTMLButtonElement>(
-            root,
-            '[data-cmz-id="create-user-form"] [type="submit"]'
-        );
-        expect(create.disabled).toBe(false);
-        setControl(
-            element(root, '[data-cmz-id="email"]'),
-            'autre@example.test'
-        );
-        await fixture.whenStable();
-        expect(create.disabled).toBe(false);
-        expect(root.querySelector('[data-cmz-id="create-failed"]')).toBeNull();
-        expect(root.querySelector('.toast-error')).toBeNull();
+        expect(document.activeElement).toBe(create);
     });
 
     it('ferme par Échap et rend le focus au déclencheur', async () => {
@@ -737,14 +709,7 @@ describe('PageComponent', () => {
 
         element<HTMLButtonElement>(root, '[data-cmz-id="create-user"]').click();
         await fixture.whenStable();
-        await fillValidForm(root);
-        await fixture.whenStable();
-        element<HTMLFormElement>(
-            root,
-            '[data-cmz-id="create-user-form"]'
-        ).dispatchEvent(
-            new Event('submit', { bubbles: true, cancelable: true })
-        );
+        createDialog(fixture).created.emit();
         await fixture.whenStable();
 
         expect(loadUsers).toHaveBeenCalledOnce();

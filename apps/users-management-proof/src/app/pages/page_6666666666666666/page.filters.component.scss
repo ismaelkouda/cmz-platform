@@ -17,7 +17,7 @@
 }
 
 .button {
-    min-height: 44px;
+    min-height: 48px;
     padding: 9px 16px;
     border: 1px solid var(--control-border);
     border-radius: 7px;
@@ -58,7 +58,7 @@ select {
     position: absolute;
     z-index: 25;
     inset: var(--filter-panel-top, 105px) 0 var(--filter-panel-bottom, 0) auto;
-    width: clamp(380px, 42%, 440px);
+    width: var(--filter-panel-inline-size);
 }
 
 .filter-backdrop {
@@ -72,11 +72,17 @@ select {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
     width: 100%;
     height: 100%;
     overflow: hidden;
     background: #fff;
+    border-left: 1px solid var(--border);
+}
+
+.filter-panel-compact {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    border-left: 0;
 }
 
 .filter-panel-header,
@@ -85,6 +91,11 @@ select {
     gap: 12px;
     padding: 18px 20px;
     border-bottom: 1px solid var(--border);
+}
+
+// Le glyphe « × » seul donnerait une cible de 44 px de large.
+.filter-close-button {
+    min-width: 48px;
 }
 
 .compact-filter-button {
@@ -124,15 +135,42 @@ select {
     gap: 12px;
 }
 
+.progressive-filter-stack {
+    // Les rangées gardent leur hauteur naturelle : le bouton d'ajout ne s'étire
+    // pas pour remplir le panneau.
+    align-content: start;
+    min-height: 100%;
+}
+
+// Un critère = une carte : libellé à gauche, chevron puis retrait à droite.
+.progressive-filter-block {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
 .progressive-filter-block-header h3 {
     flex: 1;
     margin: 0;
 }
 
 .progressive-filter-heading {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
     width: 100%;
     border: 0;
+    font-size: 16px;
+    text-align: left;
+}
+
+.progressive-filter-remove {
+    width: 48px;
+    padding: 0;
+    border: 0;
+}
+
+.progressive-filter-content {
+    padding: 0 16px 16px;
 }
 
 .progressive-filter-content[inert] {
@@ -141,13 +179,15 @@ select {
 
 .add-filter-button {
     width: 100%;
+    border-color: var(--primary);
+    color: #174ea6;
 }
 
 .status-options label {
     display: flex;
     align-items: center;
     gap: 12px;
-    min-height: 44px;
+    min-height: 48px;
 }
 
 .status-options input {

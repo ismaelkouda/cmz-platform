@@ -1,0 +1,179 @@
+<div class="overlay">
+    <button
+        type="button"
+        class="backdrop"
+        tabindex="-1"
+        aria-label="Fermer le formulaire de création"
+        (click)="requestClose()"
+    ></button>
+    <section
+        class="drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-title"
+        [cdkTrapFocus]="true"
+        (keydown)="onDialogKeydown($event)"
+    >
+        <header data-cmz-id="create-header" class="drawer-header">
+            <div>
+                <h2 id="create-title">Créer un utilisateur</h2>
+                <p>Tous les champs sont obligatoires.</p>
+            </div>
+            <button
+                type="button"
+                class="button close-button"
+                aria-label="Fermer"
+                [disabled]="isSubmitting()"
+                (click)="requestClose()"
+            >
+                <span aria-hidden="true">×</span>
+            </button>
+        </header>
+
+        <form data-cmz-id="create-user-form" class="create-form" novalidate (submit)="createUser($event)">
+            <div data-cmz-id="create-body" class="create-body">
+                @if (invalidCreateAttempt()) {
+                    <div class="form-error" role="alert">
+                        <strong>Champs obligatoires</strong>
+                        <span>Corrigez les champs signalés puis réessayez.</span>
+                    </div>
+                }
+                @if (failureNotice()) {
+                    <div data-cmz-id="create-failed" class="form-error" role="alert">
+                        <strong>Création impossible</strong>
+                        <span>
+                            @if (emailConflict()) {
+                                Corrigez l’adresse email puis réessayez.
+                            } @else {
+                                Vérifiez les informations puis réessayez.
+                            }
+                        </span>
+                    </div>
+                }
+                <div class="create-fields">
+                    <label>
+                        <span>Nom *</span>
+                        <input
+                            #lastNameInput
+                            data-cmz-id="last-name"
+                            type="text"
+                            autocomplete="family-name"
+                            placeholder="Saisir le nom"
+                            [formField]="createForm.lastName"
+                            [attr.aria-describedby]="fieldError(createForm.lastName) ? 'last-name-error' : null"
+                            [attr.aria-invalid]="fieldError(createForm.lastName) ? 'true' : null"
+                        />
+                        @if (fieldError(createForm.lastName); as error) {
+                            <small id="last-name-error" class="field-error">{{ error }}</small>
+                        }
+                    </label>
+                    <label>
+                        <span>Prénom *</span>
+                        <input
+                            data-cmz-id="first-name"
+                            type="text"
+                            autocomplete="given-name"
+                            placeholder="Saisir le prénom"
+                            [formField]="createForm.firstName"
+                            [attr.aria-describedby]="fieldError(createForm.firstName) ? 'first-name-error' : null"
+                            [attr.aria-invalid]="fieldError(createForm.firstName) ? 'true' : null"
+                        />
+                        @if (fieldError(createForm.firstName); as error) {
+                            <small id="first-name-error" class="field-error">{{ error }}</small>
+                        }
+                    </label>
+                    <label class="create-field-email">
+                        <span>Email *</span>
+                        <input
+                            data-cmz-id="email"
+                            type="email"
+                            autocomplete="email"
+                            placeholder="nom@example.com"
+                            [formField]="createForm.email"
+                            [class.invalid]="emailConflict()"
+                            [attr.aria-describedby]="
+                                emailConflict() || fieldError(createForm.email) ? 'email-error' : null
+                            "
+                            [attr.aria-invalid]="emailConflict() || fieldError(createForm.email) ? 'true' : null"
+                            (input)="onEmailInput()"
+                        />
+                        @if (emailConflict()) {
+                            <small id="email-error" class="field-error"> Cette adresse email existe déjà. </small>
+                        } @else if (fieldError(createForm.email); as error) {
+                            <small id="email-error" class="field-error">{{ error }}</small>
+                        }
+                    </label>
+                    <label>
+                        <span>Téléphone *</span>
+                        <input
+                            data-cmz-id="phone"
+                            type="tel"
+                            autocomplete="tel"
+                            placeholder="+225 00 00 00 00"
+                            [formField]="createForm.phone"
+                            [attr.aria-describedby]="fieldError(createForm.phone) ? 'phone-error' : null"
+                            [attr.aria-invalid]="fieldError(createForm.phone) ? 'true' : null"
+                        />
+                        @if (fieldError(createForm.phone); as error) {
+                            <small id="phone-error" class="field-error">{{ error }}</small>
+                        }
+                    </label>
+                    <label>
+                        <span>Profil *</span>
+                        <select
+                            data-cmz-id="profile-id"
+                            [formField]="createForm.profileId"
+                            [attr.aria-describedby]="fieldError(createForm.profileId) ? 'profile-error' : null"
+                            [attr.aria-invalid]="fieldError(createForm.profileId) ? 'true' : null"
+                        >
+                            <option value="">Choisir un profil</option>
+                            @for (profile of profiles(); track profile.value) {
+                                <option [value]="profile.value">{{ profile.label }}</option>
+                            }
+                        </select>
+                        @if (fieldError(createForm.profileId); as error) {
+                            <small id="profile-error" class="field-error">{{ error }}</small>
+                        }
+                    </label>
+                </div>
+            </div>
+
+            <footer data-cmz-id="create-actions" class="drawer-actions">
+                <button
+                    type="button"
+                    class="button button-secondary"
+                    [disabled]="isSubmitting()"
+                    (click)="requestClose()"
+                >
+                    Annuler
+                </button>
+                <button type="submit" class="button button-primary" [disabled]="isSubmitting()">
+                    {{ isSubmitting() ? 'Création…' : 'Créer' }}
+                </button>
+            </footer>
+        </form>
+    </section>
+
+    @if (isDiscardConfirmOpen()) {
+        <div class="backdrop discard-layer">
+            <section
+                class="state discard-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="discard-title"
+                cdkTrapFocus
+                [cdkTrapFocusAutoCapture]="true"
+                (keydown)="onDiscardKeydown($event)"
+            >
+                <h3 id="discard-title">Abandonner la création ?</h3>
+                <p>Les informations saisies seront perdues.</p>
+                <div class="discard-actions">
+                    <button type="button" class="button button-secondary" (click)="continueCreating()">
+                        Continuer la saisie
+                    </button>
+                    <button type="button" class="button button-primary" (click)="abandon()">Abandonner</button>
+                </div>
+            </section>
+        </div>
+    }
+</div>

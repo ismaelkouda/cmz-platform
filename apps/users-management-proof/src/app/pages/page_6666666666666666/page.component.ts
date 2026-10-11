@@ -1,8 +1,7 @@
-import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { BreakpointObserver } from '@angular/cdk/layout';
+import { NgTemplateOutlet } from '@angular/common';
 import {
     Component,
-    DestroyRef,
     ElementRef,
     Injector,
     afterNextRender,
@@ -15,17 +14,8 @@ import {
     type Provider,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import {
-    FormField,
-    disabled,
-    emailError,
-    form,
-    pattern,
-    required,
-    submit,
-    validate,
-} from '@angular/forms/signals';
-import { firstValueFrom, map } from 'rxjs';
+import { FormField, form } from '@angular/forms/signals';
+import { map, tap } from 'rxjs';
 
 import {
     PAGE_ACTION_PERMISSION_PORT,
@@ -35,16 +25,20 @@ import {
 } from '../../generated/page_6666666666666666/angular/src';
 import type { UserListItem } from '../../generated/page_6666666666666666/angular/src/nodes/users-list/models';
 import { APP_ACCESS_DECISION } from '../../access.guard';
+import { PageCreateComponent } from './page.create.component';
 import {
     PageFiltersComponent,
     type PageLayout,
-    type SecondaryFilterKey,
     type SecondaryFiltersModel,
 } from './page.filters.component';
-interface AppliedFilterItem {
-    key: SecondaryFilterKey;
-    label: string;
-    value: string;
+import {
+    PageResultsComponent,
+    type FilterShortcut,
+} from './page.results.component';
+interface SearchSelection {
+    readonly start: number | null;
+    readonly end: number | null;
+    readonly direction: 'forward' | 'backward' | 'none';
 }
 const EMPTY_SEARCH = {
     search: '',
@@ -54,14 +48,6 @@ const EMPTY_FILTERS: SecondaryFiltersModel = {
     role: '',
     status: '',
 };
-const EMPTY_USER = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    profileId: '',
-};
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const PAGE_COMPACT_MEDIA_QUERY = '(max-width: 800px)';
 export const PAGE_EXPANDED_MEDIA_QUERY =
     '(min-width: 1200px) and (min-height: 800px)';
@@ -116,15 +102,14 @@ export const PAGE_PERMISSION_PROVIDER: Provider = {
     useFactory: permissionPortFactory,
 };
 
-function messageFrom(error: unknown): string {
-    if (error instanceof Error && error.message.trim()) return error.message;
-    const message = (error as { message?: unknown } | null)?.message;
-    if (typeof message === 'string' && message.trim()) return message;
-    return 'Une erreur inattendue est survenue.';
-}
-
 @Component({
-    imports: [CdkTrapFocus, FormField, PageFiltersComponent],
+    imports: [
+        FormField,
+        NgTemplateOutlet,
+        PageCreateComponent,
+        PageFiltersComponent,
+        PageResultsComponent,
+    ],
     providers: [...PAGE_COMPOSITION_PROVIDERS, PAGE_PERMISSION_PROVIDER],
     selector: 'app-page-66666666',
     styleUrl: './page.component.scss',
@@ -133,23 +118,26 @@ function messageFrom(error: unknown): string {
 export class PageComponent {
     protected readonly composition = inject(PageComposition);
     private readonly breakpointObserver = inject(BreakpointObserver);
-    private readonly destroyRef = inject(DestroyRef);
     private readonly injector = inject(Injector);
     private readonly createButton =
         viewChild<ElementRef<HTMLButtonElement>>('createButton');
-    private readonly lastNameInput =
-        viewChild<ElementRef<HTMLInputElement>>('lastNameInput');
     private readonly filterTrigger =
         viewChild<ElementRef<HTMLButtonElement>>('filterTrigger');
-    private readonly mobileLoadSentinel =
-        viewChild<ElementRef<HTMLElement>>('mobileLoadSentinel');
-    private readonly workspace =
-        viewChild<ElementRef<HTMLElement>>('workspace');
+    private readonly searchInput =
+        viewChild<ElementRef<HTMLInputElement>>('searchInput');
+    private pendingSearchSelection: SearchSelection | null = null;
+    private pendingCreateFocus = false;
 
     protected readonly layout = toSignal(
         this.breakpointObserver
             .observe([PAGE_COMPACT_MEDIA_QUERY, PAGE_EXPANDED_MEDIA_QUERY])
             .pipe(
+                tap(() => {
+                    this.captureSearchSelection();
+                    this.pendingCreateFocus =
+                        document.activeElement ===
+                        this.createButton()?.nativeElement;
+                }),
                 map(({ breakpoints }): PageLayout => {
                     if (breakpoints[PAGE_COMPACT_MEDIA_QUERY]) return 'compact';
                     if (breakpoints[PAGE_EXPANDED_MEDIA_QUERY])
@@ -160,8 +148,27 @@ export class PageComponent {
         { initialValue: 'medium' as PageLayout }
     );
 
+    // La recherche suit les commandes en Compact et les précède ailleurs : le
+    // DOM garde ainsi l'ordre visuel (LAY-05). Pendant une composition (touches
+    // mortes, IME), le champ ne bouge pas : le déplacer casserait la saisie.
+    private readonly searchComposing = signal(false);
+    protected readonly searchAfterCommands = linkedSignal<
+        { compact: boolean; composing: boolean },
+        boolean
+    >({
+        source: () => ({
+            compact: this.layout() === 'compact',
+            composing: this.searchComposing(),
+        }),
+        computation: (source, previous) =>
+            source.composing && previous ? previous.value : source.compact,
+    });
+
     protected readonly searchModel = signal({ ...EMPTY_SEARCH });
     protected readonly searchForm = form(this.searchModel);
+    // Seule la recherche soumise filtre la liste : pagination, rafraîchissement
+    // et chargement progressif n'appliquent jamais le brouillon du champ.
+    private readonly appliedSearch = signal('');
     protected readonly appliedFilters = signal<SecondaryFiltersModel>({
         ...EMPTY_FILTERS,
     });
@@ -178,87 +185,8 @@ export class PageComponent {
         const count = this.activeSecondaryFilterCount();
         return count ? `Filtres (${count})` : 'Filtres';
     });
-    protected readonly appliedFilterItems = computed<AppliedFilterItem[]>(
-        () => {
-            const filters = this.appliedFilters();
-            const items: AppliedFilterItem[] = [];
-            if (filters.profile) {
-                items.push({
-                    key: 'profile',
-                    label: 'Profil',
-                    value:
-                        this.profiles().find(
-                            (profile) => profile.value === filters.profile
-                        )?.label ?? filters.profile,
-                });
-            }
-            if (filters.role) {
-                items.push({
-                    key: 'role',
-                    label: 'Rôle',
-                    value: this.roleLabel(filters.role),
-                });
-            }
-            if (filters.status) {
-                items.push({
-                    key: 'status',
-                    label: 'Statut',
-                    value: this.statusLabel(filters.status),
-                });
-            }
-            return items;
-        }
-    );
-    protected readonly visibleAppliedFilters = computed(() => {
-        const limit = this.layout() === 'expanded' ? 4 : 2;
-        return this.appliedFilterItems().slice(0, limit);
-    });
-    protected readonly hiddenAppliedFilterCount = computed(
-        () =>
-            this.appliedFilterItems().length -
-            this.visibleAppliedFilters().length
-    );
-    protected readonly createModel = signal({ ...EMPTY_USER });
     protected readonly isCreateOpen = signal(false);
-    protected readonly isDiscardConfirmOpen = signal(false);
-    protected readonly invalidCreateAttempt = signal(false);
     protected readonly successNotice = signal('');
-    protected readonly failureNotice = signal('');
-    protected readonly emailConflict = signal(false);
-    private createReturnFocus: HTMLElement | null = null;
-
-    protected readonly isSubmitting = computed(
-        () => this.composition.createUser.state() === 'submitting'
-    );
-    protected readonly createForm = form(this.createModel, (schema) => {
-        required(schema.firstName, { message: 'Le prénom est obligatoire.' });
-        required(schema.lastName, { message: 'Le nom est obligatoire.' });
-        required(schema.email, { message: "L'adresse email est obligatoire." });
-        required(schema.phone, { message: 'Le téléphone est obligatoire.' });
-        required(schema.profileId, { message: 'Le profil est obligatoire.' });
-        pattern(schema.firstName, /\S/, {
-            message: 'Le prénom est obligatoire.',
-        });
-        pattern(schema.lastName, /\S/, {
-            message: 'Le nom est obligatoire.',
-        });
-        pattern(schema.phone, /\S/, {
-            message: 'Le téléphone est obligatoire.',
-        });
-        validate(schema.email, ({ value }) => {
-            const email = value().trim();
-            return !email || EMAIL_PATTERN.test(email)
-                ? undefined
-                : emailError({
-                      message: 'Saisissez une adresse email valide.',
-                  });
-        });
-        disabled(schema.firstName, { when: () => this.isSubmitting() });
-        disabled(schema.lastName, { when: () => this.isSubmitting() });
-        disabled(schema.email, { when: () => this.isSubmitting() });
-        disabled(schema.phone, { when: () => this.isSubmitting() });
-        disabled(schema.profileId, { when: () => this.isSubmitting() });
-    });
 
     protected readonly users = this.composition.usersList.items;
     protected readonly profiles = this.composition.profilesSelect.items;
@@ -274,8 +202,6 @@ export class PageComponent {
     });
     private readonly mobileGeneration = signal(0);
     private readonly mobileRequest = signal<MobilePageRequest | null>(null);
-    private mobileSentinelGraceTimer: ReturnType<typeof setTimeout> | undefined;
-    protected readonly mobileSentinelGrace = signal(false);
     protected readonly mobileProjection = linkedSignal({
         source: () => ({
             generation: this.mobileGeneration(),
@@ -383,74 +309,66 @@ export class PageComponent {
             (this.usersState() === 'error' &&
                 (this.layout() !== 'compact' || !this.mobileFailedPage()))
     );
-    protected readonly isReady = computed(() => this.users().length > 0);
     protected readonly isEmpty = computed(
         () => this.usersState() === 'empty' && this.users().length === 0
     );
-    protected readonly canGoPrevious = computed(
-        () => (this.page()?.currentPage ?? 1) > 1 && !this.isReloading()
-    );
-    protected readonly canGoNext = computed(() => {
-        const page = this.page();
-        return (
-            !!page && page.currentPage < page.lastPage && !this.isReloading()
-        );
-    });
-    protected readonly resultRange = computed(() => {
-        const page = this.page();
-        if (!page || page.totalItems === 0) return '0 utilisateur';
-        const first = (page.currentPage - 1) * page.pageSize + 1;
-        const last = Math.min(first + page.items.length - 1, page.totalItems);
-        return `${first}–${last} sur ${page.totalItems} utilisateurs`;
-    });
-    protected readonly paginationPages = computed(() => {
-        const page = this.page();
-        if (!page || page.lastPage < 1) return [];
-        if (page.lastPage === 1) return [1];
-        const first = Math.min(
-            Math.max(page.currentPage - 1, 1),
-            page.lastPage - 1
-        );
-        return [first, first + 1];
-    });
-
     constructor() {
         this.composition.profilesSelect.load();
         this.resetMobileProjection();
-        this.destroyRef.onDestroy(() => {
-            if (this.mobileSentinelGraceTimer) {
-                clearTimeout(this.mobileSentinelGraceTimer);
-            }
-        });
+        // Le champ et, en Compact, le bouton Créer changent de place : ce sont
+        // de nouvelles instances, dont le focus et la sélection sont restitués.
+        // L'historique d'annulation du champ, lui, est perdu.
         afterRenderEffect({
-            read: (onCleanup) => {
-                const sentinel = this.mobileLoadSentinel()?.nativeElement;
-                if (
-                    this.layout() !== 'compact' ||
-                    !sentinel ||
-                    !this.mobileHasNext() ||
-                    this.mobileLoadingNext() ||
-                    this.mobileFailedPage()
-                ) {
-                    return;
+            write: () => {
+                this.layout();
+                this.searchAfterCommands();
+                if (this.pendingCreateFocus) {
+                    this.pendingCreateFocus = false;
+                    this.createButton()?.nativeElement.focus({
+                        preventScroll: true,
+                    });
                 }
-                const root = this.workspace()?.nativeElement ?? null;
-                const observer = new IntersectionObserver(
-                    (entries) => {
-                        if (entries.some((entry) => entry.isIntersecting)) {
-                            this.loadNextMobilePage();
-                        }
-                    },
-                    { root, rootMargin: '0px 0px 150% 0px', threshold: 0 }
+                const selection = this.pendingSearchSelection;
+                this.pendingSearchSelection = null;
+                const input = this.searchInput()?.nativeElement;
+                if (!selection || !input || document.activeElement === input)
+                    return;
+                input.focus({ preventScroll: true });
+                input.setSelectionRange(
+                    selection.start,
+                    selection.end,
+                    selection.direction
                 );
-                observer.observe(sentinel);
-                onCleanup(() => observer.disconnect());
             },
         });
     }
 
+    protected onSearchCompositionStart(): void {
+        this.searchComposing.set(true);
+    }
+
+    protected onSearchCompositionEnd(): void {
+        if (this.searchAfterCommands() !== (this.layout() === 'compact')) {
+            this.captureSearchSelection();
+        }
+        this.searchComposing.set(false);
+    }
+
+    private captureSearchSelection(): void {
+        const input = this.searchInput()?.nativeElement;
+        this.pendingSearchSelection =
+            input && document.activeElement === input
+                ? {
+                      start: input.selectionStart,
+                      end: input.selectionEnd,
+                      direction: input.selectionDirection ?? 'none',
+                  }
+                : null;
+    }
+
     protected applySearch(event: Event): void {
         event.preventDefault();
+        this.appliedSearch.set(this.searchModel().search.trim());
         this.resetMobileProjection();
     }
 
@@ -462,8 +380,11 @@ export class PageComponent {
         this.loadUsers(this.page()?.currentPage ?? 1);
     }
 
-    protected openFilters(): void {
-        if (this.areFiltersOpen()) return;
+    protected toggleFilters(): void {
+        if (this.areFiltersOpen()) {
+            this.closeFilters();
+            return;
+        }
         this.areFiltersOpen.set(true);
     }
 
@@ -472,8 +393,7 @@ export class PageComponent {
         this.restoreFilterTriggerFocus();
     }
 
-    protected applyFilterShortcut(key: SecondaryFilterKey, event: Event): void {
-        const value = (event.target as HTMLSelectElement).value;
+    protected applyFilterShortcut({ key, value }: FilterShortcut): void {
         this.appliedFilters.update((filters) => ({
             ...filters,
             [key]: value,
@@ -488,14 +408,6 @@ export class PageComponent {
         this.restoreFilterTriggerFocus();
     }
 
-    protected removeAppliedFilter(key: SecondaryFilterKey): void {
-        this.appliedFilters.update((filters) => ({
-            ...filters,
-            [key]: '',
-        }));
-        this.resetMobileProjection();
-    }
-
     protected goToPage(page: number): void {
         if (page < 1 || page > (this.page()?.lastPage ?? 1)) return;
         this.loadUsers(page);
@@ -503,176 +415,30 @@ export class PageComponent {
 
     protected openCreateForm(): void {
         if (!this.composition.createUser.authorized()) return;
-        this.createForm().reset({ ...EMPTY_USER });
-        this.failureNotice.set('');
-        this.emailConflict.set(false);
-        this.invalidCreateAttempt.set(false);
-        this.isDiscardConfirmOpen.set(false);
         this.isCreateOpen.set(true);
-        afterNextRender(
-            { write: () => this.lastNameInput()?.nativeElement.focus() },
-            { injector: this.injector }
-        );
     }
 
-    protected requestCloseCreateForm(): void {
-        if (this.isSubmitting()) return;
-        if (Object.values(this.createModel()).some((value) => value.trim())) {
-            this.createReturnFocus =
-                document.activeElement instanceof HTMLElement
-                    ? document.activeElement
-                    : (this.lastNameInput()?.nativeElement ?? null);
-            this.isDiscardConfirmOpen.set(true);
-            return;
-        }
-        this.finishCloseCreateForm();
-    }
-
-    protected continueCreating(): void {
-        this.isDiscardConfirmOpen.set(false);
-        const target = this.createReturnFocus;
-        this.focusAfterRender(
-            () => target ?? this.lastNameInput()?.nativeElement
-        );
-    }
-
-    protected abandonCreateForm(): void {
-        this.isDiscardConfirmOpen.set(false);
-        this.finishCloseCreateForm();
-    }
-
-    private finishCloseCreateForm(): void {
+    protected onCreateClosed(): void {
         this.isCreateOpen.set(false);
-        this.failureNotice.set('');
-        this.emailConflict.set(false);
-        this.invalidCreateAttempt.set(false);
-        this.createReturnFocus = null;
         this.restoreCreateButtonFocus();
     }
 
-    protected onDialogKeydown(event: KeyboardEvent): void {
-        if (event.key !== 'Escape' || this.isDiscardConfirmOpen()) return;
-        event.preventDefault();
-        this.requestCloseCreateForm();
-    }
-
-    protected onDiscardKeydown(event: KeyboardEvent): void {
-        if (event.key !== 'Escape') return;
-        event.preventDefault();
-        event.stopPropagation();
-        this.continueCreating();
-    }
-
-    protected async createUser(event: Event): Promise<void> {
-        event.preventDefault();
-        this.failureNotice.set('');
-        this.emailConflict.set(false);
-        const invalid = this.createForm().invalid();
-        this.invalidCreateAttempt.set(invalid);
-
-        await submit(this.createForm, async () => {
-            const value = this.createModel();
-            try {
-                await firstValueFrom(
-                    this.composition.createUser.submit({
-                        firstName: value.firstName.trim(),
-                        lastName: value.lastName.trim(),
-                        email: value.email.trim(),
-                        phone: value.phone.trim(),
-                        profileId: value.profileId,
-                    })
-                );
-                this.successNotice.set("L'utilisateur a été créé.");
-                this.isCreateOpen.set(false);
-                this.invalidCreateAttempt.set(false);
-                this.createForm().reset({ ...EMPTY_USER });
-                this.resetMobileProjection();
-                this.restoreCreateButtonFocus();
-                return undefined;
-            } catch (error: unknown) {
-                const detail = messageFrom(error);
-                const isEmail = /e-?mail|adresse/i.test(detail);
-                this.emailConflict.set(isEmail);
-                this.failureNotice.set("L'utilisateur n'a pas été créé.");
-                return [
-                    {
-                        kind: 'server',
-                        message: isEmail
-                            ? 'Cette adresse email existe déjà.'
-                            : 'La création a échoué. Réessayez.',
-                        fieldTree: isEmail
-                            ? this.createForm.email
-                            : this.createForm,
-                    },
-                ];
-            }
-        });
-        if (invalid) {
-            this.focusAfterRender(() => this.lastNameInput()?.nativeElement);
-        } else if (this.emailConflict()) {
-            this.focusAfterRender(() =>
-                this.lastNameInput()?.nativeElement.form?.querySelector(
-                    '[data-cmz-id="email"]'
-                )
-            );
-        }
-    }
-
-    protected onEmailInput(): void {
-        if (!this.emailConflict()) return;
-        this.emailConflict.set(false);
-        this.failureNotice.set('');
-    }
-
-    protected fieldError(
-        field: () => {
-            touched(): boolean;
-            errors(): readonly { message?: string }[];
-        }
-    ): string {
-        if (!field().touched()) return '';
-        return field().errors()[0]?.message ?? '';
-    }
-
-    protected statusLabel(status: string): string {
-        const normalized = status.toLowerCase();
-        if (normalized === 'active' || normalized === 'actif') return 'Actif';
-        if (normalized === 'inactive' || normalized === 'inactif')
-            return 'Inactif';
-        return status;
-    }
-
-    protected isActiveStatus(status: string): boolean {
-        return ['active', 'actif'].includes(status.toLowerCase());
-    }
-
-    protected roleLabel(role: string | null | undefined): string {
-        const value = role?.trim() ?? '';
-        const labels: Readonly<Record<string, string>> = {
-            agent: 'Agent',
-            supervisor: 'Superviseur',
-            'team-leader': 'Chef d’équipe',
-        };
-        return labels[value.toLowerCase()] ?? (value || 'Sans rôle');
-    }
-
-    protected formatDate(value: string): string {
-        const date = new Date(value);
-        return Number.isNaN(date.getTime())
-            ? value
-            : new Intl.DateTimeFormat('fr-FR').format(date);
+    protected onUserCreated(): void {
+        this.successNotice.set("L'utilisateur a été créé.");
+        this.isCreateOpen.set(false);
+        this.resetMobileProjection();
+        this.restoreCreateButtonFocus();
     }
 
     protected retryMobilePage(): void {
         const request = this.mobileRequest();
         if (!request || this.mobileFailedPage() !== request.pageNumber) return;
         const retry = { ...request, attempt: request.attempt + 1 };
-        this.keepMobileSentinelForImmediateFeedback();
         this.mobileRequest.set(retry);
         this.loadUsers(retry.pageNumber);
     }
 
-    private loadNextMobilePage(): void {
+    protected loadNextMobilePage(): void {
         if (
             this.layout() !== 'compact' ||
             !this.mobileHasNext() ||
@@ -686,7 +452,6 @@ export class PageComponent {
             generation: this.mobileGeneration(),
             pageNumber: this.mobileLastLoadedPage() + 1,
         };
-        this.keepMobileSentinelForImmediateFeedback();
         this.mobileRequest.set(request);
         this.loadUsers(request.pageNumber);
     }
@@ -698,20 +463,9 @@ export class PageComponent {
         this.loadUsers(1);
     }
 
-    private keepMobileSentinelForImmediateFeedback(): void {
-        if (this.mobileSentinelGraceTimer) {
-            clearTimeout(this.mobileSentinelGraceTimer);
-        }
-        this.mobileSentinelGrace.set(true);
-        this.mobileSentinelGraceTimer = setTimeout(
-            () => this.mobileSentinelGrace.set(false),
-            200
-        );
-    }
-
     private loadUsers(page: number): void {
         const filters = this.appliedFilters();
-        const search = this.searchModel().search.trim();
+        const search = this.appliedSearch();
         this.composition.usersList.load({
             page,
             ...(search ? { search } : {}),
