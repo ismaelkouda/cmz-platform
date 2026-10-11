@@ -6,12 +6,13 @@ import {
     AccordionPanel,
     AccordionTrigger,
 } from '@angular/aria/accordion';
-import { Menu, MenuContent, MenuItem } from '@angular/aria/menu';
+import { Menu, MenuContent, MenuItem, MenuTrigger } from '@angular/aria/menu';
 import {
     Component,
     DestroyRef,
     ElementRef,
     Injector,
+    Renderer2,
     afterNextRender,
     computed,
     effect,
@@ -57,6 +58,7 @@ const EMPTY_FILTERS: SecondaryFiltersModel = {
         Menu,
         MenuContent,
         MenuItem,
+        MenuTrigger,
     ],
     selector: 'app-page-filters',
     styleUrl: './page.filters.component.scss',
@@ -74,6 +76,11 @@ export class PageFiltersComponent {
     private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
     private readonly injector = inject(Injector);
     private readonly panel = viewChild<ElementRef<HTMLElement>>('filterPanel');
+    protected readonly addFilterMenu =
+        viewChild<Menu<SecondaryFilterKey>>('addFilterMenu');
+    private readonly addFilterTrigger =
+        viewChild<MenuTrigger<SecondaryFilterKey>>('addFilterTrigger');
+    private wasCompact = false;
     private progressiveFilterFocusFrame: number | undefined;
     private wasOpen = false;
 
@@ -88,7 +95,6 @@ export class PageFiltersComponent {
     protected readonly expandedProgressiveFilters = signal<
         readonly SecondaryFilterKey[]
     >([]);
-    protected readonly addMenuOpen = signal(false);
     protected readonly modal = computed(
         () => this.open() && this.layout() === 'compact'
     );
@@ -120,8 +126,19 @@ export class PageFiltersComponent {
         );
         effect(() => {
             const open = this.open();
-            this.layout();
+            const compact = this.layout() === 'compact';
             const applied = this.applied();
+            // Passage en Compact panneau ouvert : la surface devient modale, le
+            // focus doit y entrer s'il était resté sur un contrôle retiré.
+            if (open && this.wasOpen && compact && !this.wasCompact) {
+                this.focusAfterRender(() => {
+                    const panel = this.panel()?.nativeElement;
+                    return panel?.contains(document.activeElement)
+                        ? null
+                        : panel;
+                });
+            }
+            this.wasCompact = compact;
             if (open && !this.wasOpen) {
                 const appliedKeys = FILTER_KEYS.filter((key) => !!applied[key]);
                 this.draft.set({ ...applied });
@@ -137,8 +154,15 @@ export class PageFiltersComponent {
                 { injector: this.injector }
             );
         });
+        const unlistenEscape = inject(Renderer2).listen(
+            this.host.nativeElement,
+            'keydown',
+            (event: KeyboardEvent) => this.onEscape(event),
+            { capture: true }
+        );
         this.destroyRef.onDestroy(() => {
             boundsObserver?.disconnect();
+            unlistenEscape();
             this.cancelProgressiveFilterFocus();
         });
     }
@@ -147,8 +171,18 @@ export class PageFiltersComponent {
         this.closed.emit();
     }
 
-    protected onPanelKeydown(event: KeyboardEvent): void {
-        if (event.key !== 'Escape' || !this.modal()) return;
+    // Échap : le menu « Ajouter un filtre » d'abord, sinon le panneau. Écouté en
+    // phase de capture : le déclencheur de menu d'Angular Aria arrête la
+    // propagation d'Échap même fermé, et un écouteur en remontée lirait l'état
+    // du menu après sa fermeture.
+    private onEscape(event: KeyboardEvent): void {
+        if (
+            event.key !== 'Escape' ||
+            !this.open() ||
+            this.addFilterTrigger()?.expanded()
+        ) {
+            return;
+        }
         event.preventDefault();
         this.requestClose();
     }
@@ -182,28 +216,12 @@ export class PageFiltersComponent {
 
     protected addProgressiveFilter(key: SecondaryFilterKey | undefined): void {
         if (!key || this.progressiveFilterKeys().includes(key)) return;
-        this.addMenuOpen.set(false);
+        this.addFilterTrigger()?.close();
         this.activeProgressiveFilters.update((keys) => [...keys, key]);
         this.expandedProgressiveFilters.update((keys) => [...keys, key]);
         this.focusPanelElementAfterStateChange(
             `[data-cmz-filter-block="${key}"] [data-cmz-filter-control]`
         );
-    }
-
-    protected toggleAddMenu(): void {
-        if (!this.addMenuOpen()) this.cancelProgressiveFilterFocus();
-        this.addMenuOpen.update((open) => !open);
-    }
-
-    protected closeAddMenu(): void {
-        this.addMenuOpen.set(false);
-    }
-
-    protected onAddMenuKeydown(event: KeyboardEvent): void {
-        if (event.key !== 'Escape') return;
-        event.preventDefault();
-        this.closeAddMenu();
-        this.focusPanelElement('[data-cmz-id="add-filter-trigger"]');
     }
 
     protected removeProgressiveFilter(key: SecondaryFilterKey): void {
@@ -266,7 +284,7 @@ export class PageFiltersComponent {
     private resetTransientState(): void {
         this.activeProgressiveFilters.set([]);
         this.expandedProgressiveFilters.set([]);
-        this.addMenuOpen.set(false);
+        this.addFilterTrigger()?.close();
         this.compactDetail.set(null);
         this.cancelProgressiveFilterFocus();
     }

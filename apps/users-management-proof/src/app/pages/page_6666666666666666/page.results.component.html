@@ -1,0 +1,213 @@
+@if (queryFailed()) {
+    <section data-cmz-id="query-failed" class="state state-error" role="alert">
+        <strong>Impossible d’actualiser toutes les données.</strong>
+        <span>Les informations déjà chargées restent affichées. Réessayez.</span>
+    </section>
+}
+
+@if (loading()) {
+    <section data-cmz-id="loading" class="state" aria-live="polite">Chargement des utilisateurs…</section>
+}
+
+@if (empty()) {
+    <section data-cmz-id="empty" class="state">
+        <strong>Aucun utilisateur trouvé</strong>
+        <span>Modifiez les filtres ou créez un premier utilisateur.</span>
+    </section>
+}
+
+@if (ready()) {
+    <section data-cmz-id="ready" class="results" [attr.aria-busy]="reloading()">
+        @if (reloading() && layout() !== 'compact') {
+            <p class="refreshing" role="status">Actualisation de la liste…</p>
+        }
+        <div data-cmz-id="users">
+            @if (layout() !== 'compact') {
+                <!-- Défilement horizontal atteignable au clavier, y compris quand les
+                     raccourcis de colonne sont désactivés par le panneau de filtres. -->
+                <div
+                    data-cmz-id="users-table"
+                    class="desktop-table"
+                    role="region"
+                    aria-labelledby="users-table-title"
+                    tabindex="0"
+                >
+                    <table aria-labelledby="users-table-title">
+                        <thead>
+                            <tr>
+                                <th data-cmz-id="row-rank-header" scope="col" aria-label="Numéro de ligne">#</th>
+                                <th scope="col">Nom</th>
+                                <th scope="col">Prénom</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Profil</th>
+                                <th scope="col">Rôle</th>
+                                <th scope="col">Statut</th>
+                                <th scope="col">Mise à jour</th>
+                            </tr>
+                            <tr data-cmz-id="column-filter-shortcuts" class="column-filter-shortcuts">
+                                <th></th>
+                                <th colspan="3"><span class="sr-only">Raccourcis de filtrage</span></th>
+                                <th>
+                                    <select
+                                        data-cmz-filter-shortcut="profile"
+                                        [attr.data-cmz-filter-active]="appliedFilters().profile ? 'true' : null"
+                                        aria-label="Filtrer par Profil"
+                                        [value]="appliedFilters().profile"
+                                        [disabled]="filtersOpen()"
+                                        (change)="applyShortcut('profile', $event)"
+                                    >
+                                        <option value="">Tous</option>
+                                        @for (profile of profiles(); track profile.value) {
+                                            <option [value]="profile.value">{{ profile.label }}</option>
+                                        }
+                                    </select>
+                                </th>
+                                <th>
+                                    <select
+                                        data-cmz-filter-shortcut="role"
+                                        [attr.data-cmz-filter-active]="appliedFilters().role ? 'true' : null"
+                                        aria-label="Filtrer par Rôle"
+                                        [value]="appliedFilters().role"
+                                        [disabled]="filtersOpen()"
+                                        (change)="applyShortcut('role', $event)"
+                                    >
+                                        <option value="">Tous</option>
+                                        <option value="supervisor">Superviseur</option>
+                                        <option value="team-leader">Chef d’équipe</option>
+                                        <option value="agent">Agent</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <select
+                                        data-cmz-filter-shortcut="status"
+                                        [attr.data-cmz-filter-active]="appliedFilters().status ? 'true' : null"
+                                        aria-label="Filtrer par Statut"
+                                        [value]="appliedFilters().status"
+                                        [disabled]="filtersOpen()"
+                                        (change)="applyShortcut('status', $event)"
+                                    >
+                                        <option value="">Tous</option>
+                                        <option value="active">Actif</option>
+                                        <option value="inactive">Inactif</option>
+                                    </select>
+                                </th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (user of users(); track user.uniqId; let rowIndex = $index) {
+                                <tr>
+                                    <td data-cmz-row-rank>{{ rowRank(rowIndex) }}</td>
+                                    <td>{{ user.lastName }}</td>
+                                    <td>{{ user.firstName }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.profile }}</td>
+                                    <td>{{ roleLabel(user.role) }}</td>
+                                    <td>
+                                        <span class="status" [class.status-active]="isActiveStatus(user.status)">
+                                            {{ statusLabel(user.status) }}
+                                        </span>
+                                    </td>
+                                    <td>{{ formatDate(user.updatedAt) }}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div data-cmz-id="table-horizontal-scroll" class="table-horizontal-scroll" aria-hidden="true"></div>
+            }
+
+            @if (layout() === 'compact') {
+                <section
+                    data-cmz-id="mobile-results"
+                    class="mobile-results"
+                    role="region"
+                    aria-label="Utilisateurs"
+                    [attr.aria-busy]="mobileLoadingNext() ? 'true' : null"
+                >
+                    <ul data-cmz-id="mobile-user-list" class="mobile-user-list">
+                        @for (user of mobileUsers(); track user.uniqId) {
+                            <li>
+                                <article class="user-card">
+                                    <div>
+                                        <strong>{{ user.lastName }} {{ user.firstName }}</strong>
+                                        <span class="status" [class.status-active]="isActiveStatus(user.status)">
+                                            {{ statusLabel(user.status) }}
+                                        </span>
+                                    </div>
+                                    <p>{{ user.email }}</p>
+                                    <p>{{ user.profile }} · {{ roleLabel(user.role) }}</p>
+                                    <p class="user-updated">Mis à jour le {{ formatDate(user.updatedAt) }}</p>
+                                </article>
+                            </li>
+                        }
+                    </ul>
+                    <p data-cmz-id="mobile-load-status" class="sr-only mobile-load-status" aria-live="polite">
+                        @if (mobileLoadingNext()) {
+                            Chargement d’utilisateurs supplémentaires.
+                        } @else {
+                            {{ mobileAnnouncement() }}
+                        }
+                    </p>
+                    @if (mobileFailed()) {
+                        <div class="mobile-load-error" role="alert">
+                            <span>Les utilisateurs suivants n’ont pas pu être chargés.</span>
+                            <button
+                                data-cmz-id="mobile-load-retry"
+                                type="button"
+                                class="button button-secondary"
+                                (click)="retryMobilePage()"
+                            >
+                                Réessayer
+                            </button>
+                        </div>
+                    }
+                    @if (showSentinel()) {
+                        <span
+                            #mobileLoadSentinel
+                            data-cmz-id="mobile-load-sentinel"
+                            class="mobile-load-sentinel"
+                            aria-hidden="true"
+                        ></span>
+                    }
+                </section>
+            }
+        </div>
+
+        @if (layout() !== 'compact') {
+            <nav class="pagination" aria-label="Pagination des utilisateurs">
+                <span>{{ resultRange() }}</span>
+                <div>
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        [disabled]="!canGoPrevious()"
+                        (click)="pageRequested.emit((page()?.currentPage ?? 1) - 1)"
+                    >
+                        Précédent
+                    </button>
+                    @for (pageNumber of paginationPages(); track pageNumber) {
+                        <button
+                            type="button"
+                            class="button page-number"
+                            [class.page-number-current]="pageNumber === page()?.currentPage"
+                            [attr.aria-current]="pageNumber === page()?.currentPage ? 'page' : null"
+                            [attr.aria-label]="'Page ' + pageNumber"
+                            (click)="pageRequested.emit(pageNumber)"
+                        >
+                            {{ pageNumber }}
+                        </button>
+                    }
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        [disabled]="!canGoNext()"
+                        (click)="pageRequested.emit((page()?.currentPage ?? 1) + 1)"
+                    >
+                        Suivant
+                    </button>
+                </div>
+            </nav>
+        }
+    </section>
+}

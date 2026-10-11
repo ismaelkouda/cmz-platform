@@ -1,0 +1,240 @@
+// Hôte neutre : un bloc sans marge ni bordure, qui laisse visible la frontière
+// du composant dans le DOM sans changer la mise en page de la page.
+:host {
+    display: block;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+:where(.pagination, .pagination div, .user-card div, .mobile-load-error) {
+    display: flex;
+    align-items: center;
+}
+
+:where(.state, .user-card) {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.button {
+    min-height: 48px;
+    padding: 9px 16px;
+    border: 1px solid var(--control-border);
+    border-radius: 7px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.page-number-current {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
+}
+
+.button:disabled {
+    opacity: 0.52;
+}
+
+select {
+    width: 100%;
+    min-height: 48px;
+    padding: 9px 12px;
+    border: 1px solid var(--control-border);
+    border-radius: 9px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+}
+
+.state {
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    min-height: 240px;
+    padding: 32px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.state-error {
+    min-height: auto;
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 16px;
+    border-color: #f2b7b7;
+    background: #fff3f3;
+    color: #a51717;
+    text-align: left;
+}
+
+.results {
+    position: relative;
+    min-height: 360px;
+    overflow: hidden;
+}
+
+.desktop-table {
+    display: flex;
+    align-items: flex-start;
+    min-height: 360px;
+    overflow-x: auto;
+}
+
+// `.results` rogne ce qui dépasse : le contour de focus reste à l'intérieur.
+.desktop-table:focus-visible {
+    outline: 3px solid #111827;
+    outline-offset: -3px;
+}
+
+.table-horizontal-scroll {
+    height: 1px;
+}
+
+:host(.filters-open:not(.layout-compact)) .table-horizontal-scroll {
+    width: calc(100% - var(--filter-panel-inline-size));
+}
+
+// Panneau ouvert : le contenu défilant s'arrête à son bord gauche. Les colonnes
+// gardent leur largeur ; seule la portée de défilement s'allonge.
+:host(.filters-open:not(.layout-compact)) .desktop-table::after {
+    flex: 0 0 var(--filter-panel-inline-size);
+    content: '';
+}
+
+table {
+    flex: 0 0 100%;
+    min-width: 920px;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+th,
+td {
+    padding: 18px 12px;
+    text-align: left;
+}
+
+th {
+    background: #f8fafc;
+    color: #41516a;
+    font-size: 12px;
+}
+
+:is(th, td):first-child {
+    width: 56px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.column-filter-shortcuts th {
+    padding-block: 10px;
+}
+
+// Filtre actif : valeur visible et bordure épaissie, jamais la couleur seule.
+[data-cmz-filter-active] {
+    border: 2px solid var(--primary);
+    background: #edf4ff;
+}
+
+td,
+.pagination {
+    border-top: 1px solid var(--border);
+}
+
+.status {
+    color: #c21d1d;
+}
+
+.status-active {
+    color: #087b34;
+}
+
+.pagination {
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 16px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.page-number {
+    flex: 0 0 48px;
+    padding: 0;
+}
+
+:where(button, select):focus-visible {
+    outline: 3px solid #111827;
+    outline-offset: 2px;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.mobile-load-status {
+    width: 0;
+    height: 0;
+}
+
+@media (max-width: 800px) {
+    .mobile-results,
+    .mobile-user-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .mobile-user-list {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+
+    .mobile-load-error {
+        justify-content: space-between;
+        gap: 12px;
+        color: #a51717;
+    }
+
+    .mobile-load-sentinel {
+        height: 1px;
+    }
+
+    .results {
+        margin-top: 16px;
+        overflow: visible;
+    }
+
+    .user-card div {
+        justify-content: space-between;
+    }
+
+    .user-card {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .user-card p {
+        margin: 4px 0 0;
+        overflow-wrap: anywhere;
+        line-height: 16px;
+    }
+
+    .user-updated {
+        color: var(--muted);
+        font-size: 12px;
+    }
+}

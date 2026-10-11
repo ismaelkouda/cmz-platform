@@ -15,51 +15,54 @@
                 #filterPanel
                 id="user-filter-panel"
                 class="filter-panel"
+                [class.filter-panel-compact]="layout() === 'compact'"
                 tabindex="-1"
                 [attr.role]="layout() === 'compact' ? 'dialog' : 'region'"
                 [attr.aria-modal]="modal() ? 'true' : null"
-                aria-labelledby="filter-panel-title"
+                [attr.aria-label]="layout() === 'compact' ? null : 'Filtres'"
+                [attr.aria-labelledby]="layout() === 'compact' ? 'filter-panel-title' : null"
                 [cdkTrapFocus]="modal()"
                 (submit)="submit($event)"
-                (keydown)="onPanelKeydown($event)"
             >
-                <header class="filter-panel-header">
-                    @if (layout() === 'compact' && compactDetail()) {
+                @if (layout() === 'compact') {
+                    <header class="filter-panel-header">
+                        @if (compactDetail()) {
+                            <button
+                                type="button"
+                                class="button button-secondary filter-back-button"
+                                aria-label="Retour"
+                                (click)="showCompactSummary()"
+                            >
+                                <span aria-hidden="true">‹</span>
+                                Retour
+                            </button>
+                        }
+                        <h2 id="filter-panel-title">
+                            @switch (compactDetail()) {
+                                @case ('profile') {
+                                    Profil
+                                }
+                                @case ('role') {
+                                    Rôle
+                                }
+                                @case ('status') {
+                                    Statut
+                                }
+                                @default {
+                                    Filtres
+                                }
+                            }
+                        </h2>
                         <button
                             type="button"
-                            class="button button-secondary filter-back-button"
-                            aria-label="Retour"
-                            (click)="showCompactSummary()"
+                            class="button button-secondary filter-close-button"
+                            aria-label="Fermer les filtres"
+                            (click)="requestClose()"
                         >
-                            <span aria-hidden="true">‹</span>
-                            Retour
+                            <span aria-hidden="true">×</span>
                         </button>
-                    }
-                    <h2 id="filter-panel-title">
-                        @switch (layout() === 'compact' ? compactDetail() : null) {
-                            @case ('profile') {
-                                Profil
-                            }
-                            @case ('role') {
-                                Rôle
-                            }
-                            @case ('status') {
-                                Statut
-                            }
-                            @default {
-                                Filtres
-                            }
-                        }
-                    </h2>
-                    <button
-                        type="button"
-                        class="button button-secondary filter-close-button"
-                        aria-label="Fermer les filtres"
-                        (click)="requestClose()"
-                    >
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </header>
+                    </header>
+                }
 
                 <div data-cmz-id="filter-body" class="filter-panel-body">
                     @if (layout() === 'compact') {
@@ -167,6 +170,71 @@
                         }
                     } @else {
                         <div class="progressive-filter-stack">
+                            @if (availableFilters().length) {
+                                <!-- Le déclencheur officiel Angular Aria porte l'ouverture, le focus,
+                                     la navigation et Échap ; CDK Overlay ne fait que placer le menu. -->
+                                <button
+                                    #addFilterOrigin="cdkOverlayOrigin"
+                                    #addFilterTrigger="ngMenuTrigger"
+                                    data-cmz-id="add-filter-trigger"
+                                    type="button"
+                                    class="button add-filter-button"
+                                    cdkOverlayOrigin
+                                    ngMenuTrigger
+                                    [menu]="addFilterMenu()"
+                                >
+                                    + Ajouter un filtre
+                                </button>
+                                <ng-template
+                                    [cdkConnectedOverlay]="{
+                                        origin: addFilterOrigin,
+                                        usePopover: 'inline',
+                                        matchWidth: true,
+                                        viewportMargin: 12,
+                                    }"
+                                    [cdkConnectedOverlayOpen]="addFilterTrigger.expanded()"
+                                    [cdkConnectedOverlayPositions]="[
+                                        {
+                                            originX: 'start',
+                                            originY: 'bottom',
+                                            overlayX: 'start',
+                                            overlayY: 'top',
+                                            offsetY: 6,
+                                        },
+                                        {
+                                            originX: 'start',
+                                            originY: 'top',
+                                            overlayX: 'start',
+                                            overlayY: 'bottom',
+                                            offsetY: -6,
+                                        },
+                                    ]"
+                                    (overlayOutsideClick)="addFilterTrigger.close()"
+                                >
+                                    <div
+                                        #addFilterMenu="ngMenu"
+                                        data-cmz-id="available-filters"
+                                        class="available-filters-menu"
+                                        ngMenu
+                                        (itemSelected)="addProgressiveFilter($event)"
+                                    >
+                                        <ng-template ngMenuContent>
+                                            @for (key of availableFilters(); track key) {
+                                                <button
+                                                    type="button"
+                                                    class="button available-filter-option"
+                                                    ngMenuItem
+                                                    [value]="key"
+                                                    [searchTerm]="filterLabel(key)"
+                                                >
+                                                    {{ filterLabel(key) }}
+                                                </button>
+                                            }
+                                        </ng-template>
+                                    </div>
+                                </ng-template>
+                            }
+
                             @if (!progressiveFilterKeys().length) {
                                 <div class="state progressive-filter-empty">
                                     <span aria-hidden="true">＋</span>
@@ -304,70 +372,6 @@
                                     </section>
                                 }
                             </div>
-
-                            @if (availableFilters().length) {
-                                <button
-                                    #addFilterOrigin="cdkOverlayOrigin"
-                                    data-cmz-id="add-filter-trigger"
-                                    type="button"
-                                    class="button add-filter-button"
-                                    cdkOverlayOrigin
-                                    aria-haspopup="menu"
-                                    aria-controls="available-user-filters"
-                                    [attr.aria-expanded]="addMenuOpen()"
-                                    (click)="toggleAddMenu()"
-                                >
-                                    + Ajouter un filtre
-                                </button>
-                                <ng-template
-                                    [cdkConnectedOverlay]="{
-                                        origin: addFilterOrigin,
-                                        usePopover: 'inline',
-                                        matchWidth: true,
-                                        viewportMargin: 12,
-                                    }"
-                                    [cdkConnectedOverlayOpen]="addMenuOpen()"
-                                    [cdkConnectedOverlayPositions]="[
-                                        {
-                                            originX: 'start',
-                                            originY: 'bottom',
-                                            overlayX: 'start',
-                                            overlayY: 'top',
-                                            offsetY: 6,
-                                        },
-                                        {
-                                            originX: 'start',
-                                            originY: 'top',
-                                            overlayX: 'start',
-                                            overlayY: 'bottom',
-                                            offsetY: -6,
-                                        },
-                                    ]"
-                                    (overlayOutsideClick)="closeAddMenu()"
-                                    (overlayKeydown)="onAddMenuKeydown($event)"
-                                >
-                                    <div
-                                        id="available-user-filters"
-                                        data-cmz-id="available-filters"
-                                        class="available-filters-menu"
-                                        ngMenu
-                                        (itemSelected)="addProgressiveFilter($event)"
-                                    >
-                                        <ng-template ngMenuContent>
-                                            @for (key of availableFilters(); track key) {
-                                                <button
-                                                    type="button"
-                                                    class="button available-filter-option"
-                                                    ngMenuItem
-                                                    [value]="key"
-                                                >
-                                                    {{ filterLabel(key) }}
-                                                </button>
-                                            }
-                                        </ng-template>
-                                    </div>
-                                </ng-template>
-                            }
                         </div>
                     }
                 </div>
