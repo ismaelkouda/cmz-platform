@@ -6,8 +6,6 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
-
 const COMPACT = { width: 390, height: 844 } as const;
 const MEDIUM = { width: 1024, height: 768 } as const;
 const EXPANDED = { width: 1440, height: 1024 } as const;
@@ -256,9 +254,6 @@ async function captureProof(
 test('compact : remplace la pagination par une région et une liste sémantiques', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : le bouton Créer compact n’expose pas encore son libellé.'
-    );
     await installHostAndBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);

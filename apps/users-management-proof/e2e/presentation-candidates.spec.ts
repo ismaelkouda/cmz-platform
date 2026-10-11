@@ -7,7 +7,6 @@ import {
     requireBox,
     waitForResponsiveLayout,
 } from './adaptive-layout.support';
-import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
 
 const USERS = [
     [
@@ -233,9 +232,6 @@ test.beforeEach(async ({ page }) => {
 test('produit le candidat desktop ready depuis le vrai rendu Angular', async ({
     page,
 }, testInfo) => {
-    expectFailureWhileLegacy(
-        'C5 : les boutons de pagination n’atteignent pas encore 48 px de largeur.'
-    );
     await page.setViewportSize({ width: 1440, height: 1024 });
     await openReadyPage(page);
 
@@ -262,9 +258,6 @@ test('produit le candidat desktop ready depuis le vrai rendu Angular', async ({
 test('produit le candidat mobile ready avec la projection en cartes', async ({
     page,
 }, testInfo) => {
-    expectFailureWhileLegacy(
-        'C5 : le champ de recherche compact n’atteint pas encore 48 px de hauteur.'
-    );
     await page.setViewportSize({ width: 390, height: 844 });
     await openReadyPage(page);
 
@@ -289,9 +282,6 @@ test('produit le candidat mobile ready avec la projection en cartes', async ({
 test('garde Appliquer et Réinitialiser accessibles sans effet réseau implicite', async ({
     page,
 }) => {
-    expectFailureWhileLegacy(
-        'C5 : le bouton Appliquer du panneau n’atteint pas encore 48 px.'
-    );
     const apiRequests = observeApiRequests(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await openReadyPage(page);

@@ -10,7 +10,6 @@ import {
     openReadyPage,
     settle,
 } from './layout-binding.support';
-import { expectFailureWhileLegacy } from './c5-realization-baseline.support';
 
 // ADAPT-11c, section 17 : « tests accessibilité automatisés sans violation
 // sérieuse/critique » avant fusion ; FOCUS-03 : cibles d'au moins 48 × 48 px.
@@ -120,9 +119,6 @@ for (const { name, viewport } of CLASSES) {
     test(`${name} : liste prête sans violation axe sérieuse ou critique et cibles d'au moins 48 px`, async ({
         page,
     }) => {
-        expectFailureWhileLegacy(
-            'C5 : la liste prête contient encore des cibles interactives de moins de 48 px.'
-        );
         await installLayoutBackend(page);
         await page.setViewportSize(viewport);
         await openReadyPage(page);
@@ -134,9 +130,6 @@ for (const { name, viewport } of CLASSES) {
     test(`${name} : filtres ouverts sans violation axe sérieuse ou critique et cibles d'au moins 48 px`, async ({
         page,
     }) => {
-        expectFailureWhileLegacy(
-            'C5 : les filtres ouverts contiennent encore des cibles interactives de moins de 48 px.'
-        );
         await installLayoutBackend(page);
         await page.setViewportSize(viewport);
         await openReadyPage(page);
@@ -151,9 +144,6 @@ for (const { name, viewport } of CLASSES) {
     test(`${name} : dialogue de création sans violation axe sérieuse ou critique et cibles d'au moins 48 px`, async ({
         page,
     }) => {
-        expectFailureWhileLegacy(
-            'C5 : le dialogue de création contient encore des cibles interactives de moins de 48 px.'
-        );
         await installLayoutBackend(page);
         await page.setViewportSize(viewport);
         await openReadyPage(page);
