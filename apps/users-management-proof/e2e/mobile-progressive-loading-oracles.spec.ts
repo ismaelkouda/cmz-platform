@@ -230,6 +230,9 @@ async function expectNoVisibleLoadingIndicator(page: Page): Promise<void> {
     expect(visibleIndicators).toBe(0);
 }
 
+// À n'appeler que lorsque la page suivante est retenue ou en échec. Une fois
+// `lastPage` résolue, l'absence de sentinelle est correcte : aucune durée de
+// présence dans le DOM n'est contractuelle.
 async function expectProgressiveSentinel(page: Page): Promise<void> {
     expect(
         await page.locator('[data-cmz-id="mobile-load-sentinel"]').count()
@@ -274,9 +277,6 @@ test('compact : remplace la pagination par une région et une liste sémantiques
         'list'
     );
     await expect(region.getByRole('listitem')).not.toHaveCount(0);
-    await expect(
-        region.locator('[data-cmz-id="mobile-load-sentinel"]')
-    ).toHaveCount(1);
 
     const create = page.getByRole('button', { name: 'Créer un utilisateur' });
     await expect(create.locator('.create-button-icon')).toBeVisible();
@@ -315,16 +315,23 @@ test('compact : remplace la pagination par une région et une liste sémantiques
 test('compact : précharge avant la frontière visible, ajoute et déduplique sans loader visible', async ({
     page,
 }, testInfo) => {
-    let sentinelStrictlyVisible: boolean | undefined;
+    // Sentinelle relevée par le répondeur pendant que la page 2 est en
+    // attente. Le compte est lu d'abord : `boundingBox()` attendrait un
+    // élément absent au lieu de le signaler.
+    let sentinelDuringPage2:
+        | { count: number; box: { y: number; height: number } | null }
+        | undefined;
     const harness = await installHostAndBackend(page, {
         usersResponder: async ({ pageNumber, route }) => {
             if (pageNumber === 2) {
-                const box = await page
-                    .locator('[data-cmz-id="mobile-load-sentinel"]')
-                    .boundingBox();
-                sentinelStrictlyVisible = Boolean(
-                    box && box.y < COMPACT.height && box.y + box.height > 0
+                const sentinel = page.locator(
+                    '[data-cmz-id="mobile-load-sentinel"]'
                 );
+                const count = await sentinel.count();
+                sentinelDuringPage2 = {
+                    count,
+                    box: count === 1 ? await sentinel.boundingBox() : null,
+                };
             }
             await fulfillUsers(
                 route,
@@ -335,12 +342,18 @@ test('compact : précharge avant la frontière visible, ajoute et déduplique sa
     });
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await expectProgressiveSentinel(page);
 
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
     // Le harnais enregistre la requête avant que le répondeur ait mesuré la
     // sentinelle : attendre la mesure, pas seulement la requête.
-    await expect.poll(() => sentinelStrictlyVisible).toBe(false);
+    await expect.poll(() => sentinelDuringPage2).toBeDefined();
+    // Page 2 en attente : la sentinelle existe, hors de la zone visible.
+    expect(sentinelDuringPage2?.count).toBe(1);
+    const box = sentinelDuringPage2?.box;
+    expect(box).not.toBeNull();
+    expect(!!box && box.y < COMPACT.height && box.y + box.height > 0).toBe(
+        false
+    );
     const mobile = page.locator('[data-cmz-id="mobile-results"]');
     await expect(mobile.getByRole('listitem')).toHaveCount(15);
     await expect(mobile.getByText('page-1-user-8@example.invalid')).toHaveCount(
@@ -396,7 +409,6 @@ test('compact : s’arrête exactement à lastPage sans requête ni attente term
     const harness = await installHostAndBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await expectProgressiveSentinel(page);
 
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
     await expect(page.getByText('page-2-user-7@example.invalid')).toBeVisible();
@@ -532,7 +544,6 @@ test('compact : appliquer puis retirer un filtre invalide les lots et redemande 
     });
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await expectProgressiveSentinel(page);
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
 
     await page.getByRole('button', { name: 'Filtres' }).click();
@@ -580,7 +591,6 @@ test('compact : une création réussie ferme le formulaire et réinitialise expl
     const harness = await installHostAndBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
-    await expectProgressiveSentinel(page);
     await expect.poll(() => pageRequests(harness, 2).length).toBe(1);
 
     await page.getByRole('button', { name: 'Créer un utilisateur' }).click();
