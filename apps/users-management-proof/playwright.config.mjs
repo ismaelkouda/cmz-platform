@@ -60,7 +60,6 @@ export default defineConfig({
         reuseExistingServer: !isCI,
         timeout: 300_000,
         env: {
-            ...process.env,
             E2E_APP_NAME: 'users-management-proof',
             E2E_APP_PORT: String(appPort),
         },

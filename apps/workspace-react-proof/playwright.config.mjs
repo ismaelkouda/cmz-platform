@@ -58,7 +58,6 @@ export default defineConfig({
         reuseExistingServer: !isCI,
         timeout: 300_000,
         env: {
-            ...process.env,
             E2E_APP_NAME: 'workspace-react-proof',
             E2E_APP_PORT: String(appPort),
         },

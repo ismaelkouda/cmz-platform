@@ -74,7 +74,6 @@ export default defineConfig({
             reuseExistingServer: !isCI,
             timeout: 30_000,
             env: {
-                ...process.env,
                 MOCK_PORT: String(mockPort),
             },
         },
@@ -85,7 +84,6 @@ export default defineConfig({
             reuseExistingServer: !isCI,
             timeout: 300_000,
             env: {
-                ...process.env,
                 MOCK_PORT: String(mockPort),
                 E2E_APP_PORT: String(appPort),
             },
