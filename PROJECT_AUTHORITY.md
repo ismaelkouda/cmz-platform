@@ -208,6 +208,9 @@ interactions et l'accessibilité. Aucun ne remplace les autres.
   des capacités optionnelles ;
 - une ligne n'est cliquable que si une action de ligne est déclarée ;
 - les contrôles internes d'une ligne ne déclenchent jamais son action ;
+- le tri est optionnel : `none`, `client` (`complete-collection` ou
+  `current-page`) ou `server` avec codec backend explicite. La portée locale
+  reste perceptible et aucun dialecte n'est déduit ;
 - dialogue, panneau, sheet ou page sont choisis selon la tâche, l'espace, le
   risque et le contenu, pas selon une table figée de breakpoints ;
 - une image devient une baseline seulement après validation humaine explicite et
@@ -217,6 +220,8 @@ Lire les références officielles consolidées dans
 [`ui-adaptative-references-officielles.md`](./docs/architecture/ui-adaptative-references-officielles.md)
 et l'inventaire de capacités dans
 [`data-view-capabilities-cmz-backoffice-2026-10-01.md`](./docs/architecture/data-view-capabilities-cmz-backoffice-2026-10-01.md).
+Le contrat du tri est détaillé dans
+[`tri-vues-donnees-multi-backend-2026-10-11.md`](./docs/architecture/tri-vues-donnees-multi-backend-2026-10-11.md).
 
 ## 8. Discipline d'ingénierie
 

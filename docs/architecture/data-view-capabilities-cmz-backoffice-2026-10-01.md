@@ -2,7 +2,10 @@
 
 - **Date :** 2026-10-01
 - **Décision :**
-  [ADR-0078](../adr/0078-vues-de-donnees-par-capacites-optionnelles.md)
+  [ADR-0078](../adr/0078-vues-de-donnees-par-capacites-optionnelles.md) et
+  [ADR-0100](../adr/0100-tri-vues-donnees-modes-none-client-server.md)
+- **Guide du tri :**
+  [modes client, serveur et sans tri](./tri-vues-donnees-multi-backend-2026-10-11.md)
 - **Périmètre audité :** `ismaelkouda/cmz-backoffice`, branche `feat/config`
 - **Commit distant vérifié :** `f064d1d8e50190cd33e9ace096d51710d2474f2f`
 - **Nature :** audit de conception et plan d'exploitation ; aucune copie de
@@ -66,18 +69,18 @@ en revanche de présenter le code comme une base réutilisable sûre.
 
 ### 3.1 Socle à modéliser en premier
 
-| Capacité                                 | Propriétaire                        | Activation          |
-| ---------------------------------------- | ----------------------------------- | ------------------- |
-| identité stable de ligne                 | contrat de vue lié au modèle        | explicite           |
-| colonnes et valeurs                      | présentation                        | explicite           |
-| loading, empty, error, stale             | composition de page                 | explicite           |
-| recherche et filtres serveur             | `list-query`                        | selon définition    |
-| tri serveur ou local                     | `list-query` + présentation         | par colonne         |
-| pagination ou chargement progressif      | `list-query` + stratégie de fenêtre | exclusifs par rendu |
-| barre d'actions                          | présentation + `action-request`     | action par action   |
-| actions de ligne                         | présentation + `action-request`     | action par action   |
-| permissions et raisons d'indisponibilité | port d'autorisation/presenter       | par action          |
-| invalidation après succès                | plan de page                        | noms de nœuds       |
+| Capacité                                 | Propriétaire                        | Activation                         |
+| ---------------------------------------- | ----------------------------------- | ---------------------------------- |
+| identité stable de ligne                 | contrat de vue lié au modèle        | explicite                          |
+| colonnes et valeurs                      | présentation                        | explicite                          |
+| loading, empty, error, stale             | composition de page                 | explicite                          |
+| recherche et filtres serveur             | `list-query`                        | selon définition                   |
+| tri `none`, `client` ou `server`         | `list-query` + présentation         | mode de vue et colonnes explicites |
+| pagination ou chargement progressif      | `list-query` + stratégie de fenêtre | exclusifs par rendu                |
+| barre d'actions                          | présentation + `action-request`     | action par action                  |
+| actions de ligne                         | présentation + `action-request`     | action par action                  |
+| permissions et raisons d'indisponibilité | port d'autorisation/presenter       | par action                         |
+| invalidation après succès                | plan de page                        | noms de nœuds                      |
 
 ### 3.2 Extensions prouvées, mais non nécessaires à tout écran
 
@@ -169,13 +172,23 @@ lot documentaire :
 ```json
 {
     "identity": { "path": "id" },
+    "sorting": {
+        "mode": "client",
+        "scope": "current-page",
+        "columns": [
+            {
+                "column_id": "email",
+                "value_path": "email",
+                "comparator": { "kind": "text", "locale": "fr" }
+            }
+        ]
+    },
     "columns": [
         { "id": "index", "renderer": { "kind": "index" } },
         {
             "id": "email",
             "value_path": "email",
-            "renderer": { "kind": "text" },
-            "sorting": { "mode": "server", "parameter": "email" }
+            "renderer": { "kind": "text" }
         },
         { "id": "status", "renderer": { "kind": "status" } },
         { "id": "actions", "renderer": { "kind": "actions" } }
