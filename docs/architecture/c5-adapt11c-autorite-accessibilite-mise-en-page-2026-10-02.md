@@ -1,13 +1,18 @@
 # C5 ADAPT-11c — autorité d'accessibilité et de mise en page
 
 - **Date de vérification :** 2026-10-03 ; ordre de lecture révisé le 2026-10-10
-- **Statut :** règles d'accessibilité et de mise en page en vigueur. Le runtime
-  ADAPT-11c2 a été fusionné et vérifié contre ces règles le 2026-10-03 ; il
-  n'est pas prouvé conforme à la liaison de mise en page
-  `users-management-layout-2026-10-09`, plus récente
-- **Reste à faire :** réalisation conforme à cette liaison par le prochain work
-  order v5, puis validation humaine. Le runtime actuel n'est pas déclaré
-  invalide fonctionnellement
+- **Statut de réalisation mis à jour :** 2026-10-11
+- **Statut :** règles d'accessibilité et de mise en page en vigueur. La page a
+  été réalisée contre la liaison de mise en page
+  `users-management-layout-2026-10-09` par la PR #243, fusionnée dans `main` au
+  commit `c51e16047d07b169d5a958bc9e4a2155d6891e5b`, sous le work order v5
+  `2e7e8c2aed88d8ff90c18c0428d6cf6f7b49533a8f5ce035df2e13a2e1f42020`. La CI
+  post-fusion `38145599932` est verte, oracles navigateur C5 compris
+- **Reste à faire :** l'acceptation visuelle finale de la réalisation fusionnée
+  par le propriétaire n'est pas encore obtenue. Ses remarques du 2026-10-11 —
+  tri serveur, états du tableau, commande de réinitialisation, erreurs du
+  formulaire, légende des champs obligatoires — restent à réaliser dans des lots
+  séparés et modifieront plusieurs règles de ce document avant leur réalisation
 - **Preuve de page :** aucune `presentation-evidence` C5 n'est actuellement
   publiée ; la disposition est guidée par la liaison de mise en page
 - **Fonctionnalité :** Gestion des utilisateurs
@@ -566,7 +571,10 @@ Avant de modifier du code, le LLM DOIT :
 
 1. lire le work order et les contrats C5 publiés ;
 2. inventorier les capacités présentes et absentes ;
-3. vérifier le manifeste des références approuvées/rejetées ;
+3. vérifier la liaison de mise en page et les manifestes des exemples actifs
+   qu'elle sélectionne, tels que le work order les résout ; si le work order lie
+   une preuve de page, vérifier aussi son manifeste ; pour la trace d'une
+   référence retirée, consulter ADR-0099 et l'historique Git sans la republier ;
 4. relever les primitives Angular déjà adoptées par l'application ;
 5. réaliser une revue critique proactive du visuel contre WCAG, Angular,
    Material Adaptive et les heuristiques Fiori pertinentes ;
@@ -763,7 +771,11 @@ autorité supérieure à WCAG, Angular ou aux contrats C5.
 Ces points ne sont ni oubliés ni implicitement autorisés. Ils restent hors du
 runtime C5 jusqu'à une définition, un contrat et des oracles dédiés.
 
-## 22. Réalisation et preuves ADAPT-11c2
+## 22. Preuve historique ADAPT-11c2 — 2026-10-03
+
+Cette section décrit l'état du 2026-10-03, antérieur à la liaison de mise en
+page `users-management-layout-2026-10-09`. L'état courant figure dans l'en-tête
+du document.
 
 L'autorité de ce document est réalisée par le commit
 `6fdbd64ac8423a0bf938c492ec7b3af08cce617b`, approuvé sur cet objet exact par
@@ -801,5 +813,7 @@ brut et `+0,70 kB` estimé transféré ; le bundle initial reste inchangé. Les
 run
 [#37116794308](https://github.com/ismaelkouda/cmz-platform/actions/runs/37116794308).
 
-ADAPT-11c est donc clos. Les questions de la section 21 et `DATA-VIEW-1` restent
-différées jusqu'à l'existence de contrats réels et d'un second cas indépendant.
+Cette étape historique d'ADAPT-11c a donc été close. Pour l'état courant de la
+réalisation issue de la PR #243, l'en-tête du document fait foi. Les questions
+de la section 21 et `DATA-VIEW-1` restent différées jusqu'à l'existence de
+contrats réels et d'un second cas indépendant.

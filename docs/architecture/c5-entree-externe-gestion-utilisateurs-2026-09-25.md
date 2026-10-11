@@ -6,12 +6,15 @@
 - **Statut :** journal historique. La page C5 et ses filtres adaptatifs ont été
   réalisés, approuvés et prouvés dans le vrai navigateur à l'issue des étapes
   décrites ici, jusqu'à ADAPT-9 ; la décision séparée de baseline pixel est
-  restée ouverte. Le runtime issu de ces étapes et des lots suivants n'est pas
-  prouvé conforme à la liaison de mise en page
-  `users-management-layout-2026-10-09`, plus récente
-- **Reste à faire :** réalisation conforme à cette liaison par le prochain work
-  order v5, puis validation humaine. Le runtime actuel n'est pas déclaré
-  invalide fonctionnellement
+  restée ouverte. Depuis, la page a été réalisée contre la liaison de mise en
+  page `users-management-layout-2026-10-09` par la PR #243, fusionnée dans
+  `main` au commit `c51e16047d07b169d5a958bc9e4a2155d6891e5b`. Ce journal ne
+  décrit pas cette réalisation : l'état courant fait foi dans l'en-tête de
+  l'[autorité ADAPT-11c](./c5-adapt11c-autorite-accessibilite-mise-en-page-2026-10-02.md)
+- **Reste à faire :** l'acceptation visuelle finale de la réalisation fusionnée
+  par le propriétaire n'est pas encore obtenue ; les nouvelles exigences produit
+  formulées le 2026-10-11 restent à traiter dans des lots séparés. Le détail est
+  dans l'autorité ADAPT-11c
 - **Références de présentation :** ce journal décrit, étape par étape, des
   maquettes et un manifeste de présentation qui ont tous été supprimés du dépôt
   le 2026-10-10
