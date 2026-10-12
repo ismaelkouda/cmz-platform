@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import {
+    expectControlsFitWithoutOverlap,
     installBrowserHost,
     openReadyPage,
     serveDeterministicApi,
@@ -99,6 +100,10 @@ test('resize conserve le contrôle, le silence réseau et le focus au-dessus du 
     const dialog = page.getByRole('dialog', {
         name: 'Créer un utilisateur',
     });
+    await expectControlsFitWithoutOverlap(
+        dialog.getByRole('button', { name: 'Annuler' }),
+        dialog.getByRole('button', { name: 'Créer', exact: true })
+    );
     await dialog.getByLabel(/^Nom/).fill('Lovelace');
     await dialog.getByLabel(/^Prénom/).fill('Ada');
     await dialog.getByLabel(/^Adresse e-mail/).fill('ada@example.test');

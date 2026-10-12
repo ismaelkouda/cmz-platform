@@ -2,6 +2,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import * as axe from 'axe-core';
 
 import {
+    expectControlsFitWithoutOverlap,
+    applyAndExpectTextReflow,
     fulfillUsersPage,
     installBrowserHost,
     openReadyPage,
@@ -202,15 +204,14 @@ test('compact borne le sheet, conserve le brouillon au resize et reflow à 200 %
     await page.setViewportSize({ width: 320, height: 640 });
     const compactAgain = page.getByRole('dialog', { name: 'Statut' });
     await expect(compactAgain).toBeVisible();
-    await page.addStyleTag({
-        content: 'html { font-size: 200% !important; }',
+    const resetButton = compactAgain.getByRole('button', {
+        name: 'Réinitialiser',
     });
-    await expect(
-        compactAgain.getByRole('button', { name: 'Réinitialiser' })
-    ).toBeVisible();
-    await expect(
-        compactAgain.getByRole('button', { name: 'Appliquer' })
-    ).toBeVisible();
+    const applyButton = compactAgain.getByRole('button', {
+        name: 'Appliquer',
+    });
+    await expectControlsFitWithoutOverlap(resetButton, applyButton);
+    await applyAndExpectTextReflow(page);
     const reflow = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -219,7 +220,10 @@ test('compact borne le sheet, conserve le brouillon au resize et reflow à 200 %
         )
             .filter((element) => {
                 const bounds = element.getBoundingClientRect();
-                return bounds.left < -1 || bounds.right > window.innerWidth + 1;
+                return (
+                    bounds.width > 0 &&
+                    (bounds.left < -1 || bounds.right > window.innerWidth + 1)
+                );
             })
             .slice(0, 10)
             .map((element) => ({
@@ -228,9 +232,27 @@ test('compact borne le sheet, conserve le brouillon au resize et reflow à 200 %
                 text: element.textContent?.trim().slice(0, 80),
             })),
     }));
+    const clippedControls = await compactAgain
+        .locator('button, input, select')
+        .evaluateAll((controls) =>
+            controls
+                .filter(
+                    (control) =>
+                        control.scrollWidth > control.clientWidth + 1 ||
+                        control.scrollHeight > control.clientHeight + 1
+                )
+                .map(
+                    (control) =>
+                        control.getAttribute('aria-label') ??
+                        control.textContent?.trim()
+                )
+        );
+    await expectControlsFitWithoutOverlap(resetButton, applyButton);
     expect(
         reflow.scrollWidth,
         `Éléments hors viewport : ${JSON.stringify(reflow.overflowingElements)}`
     ).toBeLessThanOrEqual(reflow.clientWidth + 1);
+    expect(reflow.overflowingElements).toEqual([]);
+    expect(clippedControls).toEqual([]);
     expect(userReads(api.requests)).toBe(readsBeforeResize);
 });
