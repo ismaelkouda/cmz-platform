@@ -1,4 +1,10 @@
-import { expect, type Page, type Request, type Route } from '@playwright/test';
+import {
+    expect,
+    type Locator,
+    type Page,
+    type Request,
+    type Route,
+} from '@playwright/test';
 
 export const APP_ORIGIN =
     process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4302';
@@ -261,4 +267,90 @@ export async function serveDeterministicApi(
 export async function openReadyPage(page: Page): Promise<void> {
     await page.goto('/settings-security/users');
     await expect(page.locator('[data-cmz-user-id="user-1"]')).toBeVisible();
+}
+
+function textReflowState(apply: boolean) {
+    if (apply) {
+        const style = document.createElement('style');
+        style.textContent = 'html { font-size: 200% !important; }';
+        document.head.appendChild(style);
+    }
+    const heading = document.querySelector<HTMLElement>(
+        '[data-cmz-id="page-heading"]'
+    );
+    return {
+        activeAnimations: document
+            .getAnimations()
+            .filter(({ playState }) =>
+                ['paused', 'pending', 'running'].includes(playState)
+            ).length,
+        headingFontSize: heading ? getComputedStyle(heading).fontSize : null,
+        rootFontSize: getComputedStyle(document.documentElement).fontSize,
+    };
+}
+
+export async function applyAndExpectTextReflow(page: Page): Promise<void> {
+    expect(await page.evaluate(textReflowState, true)).toEqual({
+        activeAnimations: 0,
+        headingFontSize: '48px',
+        rootFontSize: '32px',
+    });
+    await expect
+        .poll(() => page.evaluate(textReflowState, false))
+        .toEqual({
+            activeAnimations: 0,
+            headingFontSize: '48px',
+            rootFontSize: '32px',
+        });
+}
+
+export async function expectControlsFitWithoutOverlap(
+    first: Locator,
+    second: Locator
+): Promise<void> {
+    await expect(first).toBeVisible();
+    await expect(second).toBeVisible();
+    const [firstBox, secondBox] = await Promise.all([
+        first.boundingBox(),
+        second.boundingBox(),
+    ]);
+    expect(firstBox).not.toBeNull();
+    expect(secondBox).not.toBeNull();
+    if (!firstBox || !secondBox) {
+        throw new Error('Géométrie des actions indisponible.');
+    }
+    const clipped = await Promise.all(
+        [first, second].map((control) =>
+            control.evaluate(
+                (element) =>
+                    element.scrollWidth > element.clientWidth + 1 ||
+                    element.scrollHeight > element.clientHeight + 1
+            )
+        )
+    );
+    const contained = await Promise.all(
+        [first, second].map((control) =>
+            control.evaluate((element) => {
+                const parent = element.parentElement;
+                if (!parent) return false;
+                const box = element.getBoundingClientRect();
+                const outer = parent.getBoundingClientRect();
+                return (
+                    box.left >= outer.left - 1 &&
+                    box.right <= outer.right + 1 &&
+                    box.top >= outer.top - 1 &&
+                    box.bottom <= outer.bottom + 1
+                );
+            })
+        )
+    );
+    const overlapWidth =
+        Math.min(firstBox.x + firstBox.width, secondBox.x + secondBox.width) -
+        Math.max(firstBox.x, secondBox.x);
+    const overlapHeight =
+        Math.min(firstBox.y + firstBox.height, secondBox.y + secondBox.height) -
+        Math.max(firstBox.y, secondBox.y);
+    expect(clipped).toEqual([false, false]);
+    expect(contained).toEqual([true, true]);
+    expect(overlapWidth > 1 && overlapHeight > 1).toBe(false);
 }
