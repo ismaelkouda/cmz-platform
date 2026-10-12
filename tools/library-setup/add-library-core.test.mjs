@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { loadLibraryConfiguration } from './add-library-core.mjs';
+import {
+    loadLibraryConfiguration,
+    requiresBrowserProof,
+} from './add-library-core.mjs';
 
 const repository = new URL('../..', import.meta.url).pathname;
 
@@ -45,4 +48,16 @@ test('échoue pour une app dont la plateforme est indéterminable', () => {
         () => loadLibraryConfiguration(repository, 'app-absente', 'tailwind'),
         /plateforme Nx indéterminée/
     );
+});
+
+test('approvisionne un navigateur pour chaque preuve qui rend du CSS', () => {
+    assert.equal(
+        requiresBrowserProof([{ proof: 'browser-style-preservation' }]),
+        true
+    );
+    assert.equal(
+        requiresBrowserProof([{ proof: 'browser-coexistence' }]),
+        true
+    );
+    assert.equal(requiresBrowserProof([{ proof: 'production-build' }]), false);
 });

@@ -36,7 +36,6 @@ body {
     color-scheme: light;
     background-color: var(--mat-sys-surface);
     color: var(--mat-sys-on-surface);
-    font: var(--mat-sys-body-medium);
     margin: 0;
     height: 100%;
 }

@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtemp, realpath, rm } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 
 import { validateRecipes } from './check-library-setup.mjs';
+import { executeLibraryRecipe } from './library-setup/recipe-execution.mjs';
 import {
     link,
     REPO_ROOT,
@@ -375,11 +378,43 @@ test('un oracle enregistré interdit de rester "harness-pending"', () => {
     const recipes = validateRecipes(REPO_ROOT);
     assert.equal(recipes.ok, true, recipes.errors.join(' ; '));
     const material = recipes.recipes.get('angular/angular-material');
+    assert.deepEqual(
+        material.runtime_acceptance.map(
+            (entry) => `${entry.id}:${entry.proof}:${entry.status}`
+        ),
+        [
+            'material-component-compiles:compile-component:enforced',
+            'material-preserves-host-typography:browser-style-preservation:enforced',
+            'offline-production-build:production-build:enforced',
+        ]
+    );
     assert.equal(
         material.runtime_acceptance.find(
             (entry) => entry.id === 'material-component-compiles'
         ).status,
         'enforced'
+    );
+    assert.deepEqual(
+        material.install.normalizations.filter(
+            (entry) => entry.file === 'src/styles.scss'
+        ),
+        [
+            {
+                kind: 'exact-replacement',
+                file: 'src/styles.scss',
+                search: 'typography: Roboto,',
+                replacement:
+                    'typography: (plain-family: system-ui, brand-family: system-ui),',
+                occurrences: 1,
+            },
+            {
+                kind: 'exact-replacement',
+                file: 'src/styles.scss',
+                search: '  font: var(--mat-sys-body-medium);',
+                replacement: '',
+                occurrences: 1,
+            },
+        ]
     );
     const coexistence = material.coexistence.find(
         (block) => block.with === 'tailwind'
@@ -392,6 +427,112 @@ test('un oracle enregistré interdit de rester "harness-pending"', () => {
             'material-tailwind-cascade-order:compiled-css-rule:enforced',
             'material-tailwind-render-together:browser-coexistence:enforced',
         ]
+    );
+});
+
+test('normalise la sortie réelle du schematic Material et refuse sa dérive', async (t) => {
+    const require = createRequire(import.meta.url);
+    const materialRoot = dirname(
+        require.resolve('@angular/material/package.json')
+    );
+    const materialPackage = JSON.parse(
+        readFileSync(join(materialRoot, 'package.json'), 'utf8')
+    );
+    const { createTheme } = require(
+        join(materialRoot, 'schematics/ng-add/theming/create-theme.js')
+    );
+    const recipes = validateRecipes(REPO_ROOT);
+    assert.equal(recipes.ok, true, recipes.errors.join(' ; '));
+    const recipe = recipes.recipes.get('angular/angular-material');
+    const track = JSON.parse(
+        readFileSync(
+            join(
+                REPO_ROOT,
+                'conventions/libraries/angular/angular-material.compat.json'
+            ),
+            'utf8'
+        )
+    ).tracks[0];
+    assert.equal(
+        materialPackage.version,
+        track.packages['@angular/material'],
+        'le générateur observé doit être la version de la piste candidate'
+    );
+    const vendorTheme = createTheme('azure-blue');
+    const fontNormalization = recipe.install.normalizations.find((entry) =>
+        entry.search.includes('mat-sys-body-medium')
+    );
+    assert.equal(
+        vendorTheme.split(fontNormalization.search).length - 1,
+        1,
+        'la sortie vendeur doit contenir exactement la forme normalisée'
+    );
+
+    const runRecipe = async (theme) => {
+        const root = await realpath(
+            await mkdtemp(join(tmpdir(), 'cmz-material-vendor-'))
+        );
+        t.after(() => rm(root, { recursive: true, force: true }));
+        const workspace = join(root, 'candidate');
+        const put = (path, content) => {
+            const absolute = join(workspace, path);
+            mkdirSync(dirname(absolute), { recursive: true });
+            writeFileSync(absolute, content);
+        };
+        for (const path of ['repo', 'cache', 'home']) {
+            mkdirSync(join(root, path));
+        }
+        put('apps/demo/project.json', '{"name":"demo"}\n');
+        put(
+            'apps/demo/.cmz/libraries.json',
+            '{"schema_version":"1.0.0","kind":"app-library-manifest","platform":"angular","libraries":[]}\n'
+        );
+        const indexLinks = recipe.install.normalizations
+            .filter((entry) => entry.file === 'src/index.html')
+            .map((entry) => `  ${entry.search}`)
+            .join('\n');
+        put(
+            'apps/demo/src/index.html',
+            `<html><head>\n${indexLinks}\n</head><body></body></html>\n`
+        );
+        put('apps/demo/src/styles.scss', 'body { color: navy; }\n');
+        put('node_modules/nx/dist/bin/nx.js', '');
+        put('node_modules/prettier/bin/prettier.cjs', '');
+        const styles = join(workspace, 'apps/demo/src/styles.scss');
+        executeLibraryRecipe({
+            repository: join(root, 'repo'),
+            candidate: { workspace },
+            recipe,
+            track,
+            app: 'demo',
+            policy: {},
+            backend: 'test',
+            cache: join(root, 'cache'),
+            home: join(root, 'home'),
+            run: ({ argv }) => {
+                if (argv[0] === 'node_modules/nx/dist/bin/nx.js') {
+                    writeFileSync(
+                        styles,
+                        `${theme}${readFileSync(styles, 'utf8')}`
+                    );
+                }
+                return { status: 0, stdout: '', stderr: '' };
+            },
+        });
+        return readFileSync(styles, 'utf8');
+    };
+
+    const normalized = await runRecipe(vendorTheme);
+    assert.doesNotMatch(normalized, /font:\s*var\(--mat-sys-body-medium\)/);
+    assert.match(normalized, /body \{ color: navy; \}/);
+
+    const drifted = vendorTheme.replace(
+        fontNormalization.search,
+        '  font : var(--mat-sys-body-medium);'
+    );
+    await assert.rejects(
+        () => runRecipe(drifted),
+        /normalisation attend 1 occurrence\(s\), 0 trouvée\(s\)/
     );
 });
 

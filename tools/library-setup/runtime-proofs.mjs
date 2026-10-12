@@ -9,6 +9,12 @@ import {
     proveMaterialTailwindBrowser,
 } from './runtime-oracles/material-tailwind-browser.mjs';
 import { proveMaterialComponent } from './runtime-oracles/material-component.mjs';
+import {
+    assertHostTypography,
+    assertHostTypographyMutation,
+    hostTypographyProbeHtml,
+    proveMaterialHostTypography,
+} from './runtime-oracles/material-host-typography.mjs';
 import { proveProductionBuild } from './runtime-oracles/production-build.mjs';
 import { buildAndClean } from './runtime-oracles/support.mjs';
 import { proveTailwindSentinel } from './runtime-oracles/tailwind-sentinel.mjs';
@@ -18,6 +24,9 @@ export {
     assertBrowserCoexistence,
     assertMaterialTailwindCascade,
     browserProbeHtml,
+    assertHostTypography,
+    assertHostTypographyMutation,
+    hostTypographyProbeHtml,
 };
 
 function fail(message) {
@@ -34,6 +43,10 @@ const RUNTIME_ORACLES = new Map([
     [
         'angular/angular-material#material-component-compiles',
         proveMaterialComponent,
+    ],
+    [
+        'angular/angular-material#material-preserves-host-typography',
+        proveMaterialHostTypography,
     ],
     ['angular/angular-material#offline-production-build', proveProductionBuild],
     ['angular/tailwind#sentinel-class-emits-rule', proveTailwindSentinel],

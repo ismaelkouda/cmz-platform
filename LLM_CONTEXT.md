@@ -463,7 +463,7 @@ directives suivantes :
 | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Dernière génération       | **2026-10-09** (`bun run generate:status`)                                                                      |
 | Modules livrés            | **19** (voir [`STATUS.md`](./STATUS.md))                                                         |
-| Packages Nx               | **77** (72 libs + 5 app)                                              |
+| Packages Nx               | **78** (72 libs + 6 app)                                              |
 | Fichiers TypeScript       | **2 734** hors tests / **2 986** total (252 specs)                 |
 | Corpus SEOS               | **1 507** paires / **18** modules (`corpus/*.pairs.jsonl`)                       |
 | Corpus SEOS — nature (N-6)| **583 correspondances** + **924 décisions d'architecture** (`n/a`) — pas 1507 paires d'apprentissage (P0-12) |

@@ -1,0 +1,7 @@
+{
+  "name": "library-qualification-react",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/library-qualification-react/src",
+  "projectType": "application",
+  "tags": ["type:app", "experience:operator-web"]
+}

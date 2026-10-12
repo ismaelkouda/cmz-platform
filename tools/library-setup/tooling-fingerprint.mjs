@@ -45,6 +45,13 @@ export const QUALIFICATION_ORACLE_SOURCE_PATHS = new Map([
         ],
     ],
     [
+        'angular/angular-material#material-preserves-host-typography',
+        [
+            'tools/library-setup/browser-provisioning.mjs',
+            'tools/library-setup/runtime-oracles/material-host-typography.mjs',
+        ],
+    ],
+    [
         'angular/angular-material#offline-production-build',
         ['tools/library-setup/runtime-oracles/production-build.mjs'],
     ],

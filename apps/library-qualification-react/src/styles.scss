@@ -1,0 +1,13 @@
+:root {
+    color-scheme: light;
+    font-family: system-ui, sans-serif;
+}
+
+body {
+    margin: 0;
+}
+
+:focus-visible {
+    outline: 3px solid #005fcc;
+    outline-offset: 3px;
+}
