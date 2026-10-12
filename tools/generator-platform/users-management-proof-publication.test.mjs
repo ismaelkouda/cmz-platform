@@ -1,8 +1,16 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+    cp,
+    mkdtemp,
+    mkdir,
+    readdir,
+    readFile,
+    rm,
+    writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import test from 'node:test';
 
 import { applyQualifiedAdapter } from '../library-setup/qualified-adapters.mjs';
@@ -89,8 +97,11 @@ async function readRealizationEvidence(shellPlan, profile) {
     return evidence;
 }
 
-async function qualifiedReactShellFiles(shellPlan) {
-    const workspace = await mkdtemp(join(tmpdir(), 'cmz-react-shell-'));
+async function qualifiedShellFiles(
+    shellPlan,
+    { appName, platform, library, compatibilityPath }
+) {
+    const workspace = await mkdtemp(join(tmpdir(), `cmz-${platform}-shell-`));
     try {
         await mkdir(join(workspace, 'tools/library-setup'), {
             recursive: true,
@@ -114,48 +125,44 @@ async function qualifiedReactShellFiles(shellPlan) {
             ),
         ]);
         for (const [path, content] of Object.entries(shellPlan.files)) {
-            const target = join(
-                workspace,
-                'apps',
-                'users-management-react-proof',
-                path
-            );
+            const target = join(workspace, 'apps', appName, path);
             await mkdir(dirname(target), { recursive: true });
             await writeFile(target, content);
         }
         const matrix = JSON.parse(
-            await readFile(
-                resolve(
-                    repositoryRoot,
-                    'conventions/libraries/react/tailwind.compat.json'
-                ),
-                'utf8'
-            )
+            await readFile(resolve(repositoryRoot, compatibilityPath), 'utf8')
         );
         const tracks = matrix.tracks.filter(
             ({ status }) => status === 'verified'
         );
-        assert.equal(tracks.length, 1, 'one verified React Tailwind track');
+        assert.equal(
+            tracks.length,
+            1,
+            `one verified ${platform}/${library} track`
+        );
         applyQualifiedAdapter({
             workspace,
-            app: 'users-management-react-proof',
-            platform: 'react',
-            library: 'tailwind',
+            app: appName,
+            platform,
+            library,
             track: tracks[0],
         });
 
-        const paths = [...Object.keys(shellPlan.files), 'src/tailwind.css'];
+        const appRoot = join(workspace, 'apps', appName);
+        const paths = (
+            await readdir(appRoot, { recursive: true, withFileTypes: true })
+        )
+            .filter((entry) => entry.isFile())
+            .map((entry) =>
+                relative(appRoot, join(entry.parentPath, entry.name))
+            )
+            .sort();
         const candidateFiles = Object.fromEntries(
             await Promise.all(
                 paths.map(async (path) => [
-                    `apps/users-management-react-proof/${path}`,
+                    `apps/${appName}/${path}`,
                     await readFile(
-                        join(
-                            workspace,
-                            'apps',
-                            'users-management-react-proof',
-                            path
-                        ),
+                        join(workspace, 'apps', appName, path),
                         'utf8'
                     ),
                 ])
@@ -165,14 +172,31 @@ async function qualifiedReactShellFiles(shellPlan) {
         return Object.fromEntries(
             paths.map((path) => [
                 path,
-                Buffer.from(
-                    canonicalFiles[`apps/users-management-react-proof/${path}`]
-                ),
+                Buffer.from(canonicalFiles[`apps/${appName}/${path}`]),
             ])
         );
     } finally {
         await rm(workspace, { recursive: true, force: true });
     }
+}
+
+function qualifiedAngularShellFiles(shellPlan) {
+    return qualifiedShellFiles(shellPlan, {
+        appName: usersManagementProof.appName,
+        platform: 'angular',
+        library: 'angular-material',
+        compatibilityPath:
+            'conventions/libraries/angular/angular-material.compat.json',
+    });
+}
+
+function qualifiedReactShellFiles(shellPlan) {
+    return qualifiedShellFiles(shellPlan, {
+        appName: 'users-management-react-proof',
+        platform: 'react',
+        library: 'tailwind',
+        compatibilityPath: 'conventions/libraries/react/tailwind.compat.json',
+    });
 }
 
 test('publie le shell C5 canonique sans confondre placeholder et réalisation bornée', async () => {
@@ -203,21 +227,22 @@ test('publie le shell C5 canonique sans confondre placeholder et réalisation bo
         shellPlan,
         'Angular'
     );
+    const expected = await qualifiedAngularShellFiles(shellPlan);
 
-    for (const [path, content] of Object.entries(shellPlan.files)) {
+    for (const [path, content] of Object.entries(expected)) {
         const actual = await readFile(resolve(shellPlan.outputAbsolute, path));
         if (path === realizedComponent && realizationEvidence) {
             assert.notDeepEqual(
                 actual,
-                Buffer.from(content),
+                content,
                 `${path} must no longer equal the pre-realization placeholder`
             );
             continue;
         }
         assert.deepEqual(
             actual,
-            Buffer.from(content),
-            `${path} must equal the deterministic shell publication`
+            content,
+            `${path} must equal the deterministic Angular shell plus its qualified Material overlay`
         );
     }
 });
