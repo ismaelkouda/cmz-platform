@@ -891,12 +891,13 @@ de la réinstaller. Elle ne masque donc ni dérive ni intention ambiguë sous un
 `tools/library-setup/runtime-proofs.mjs`, appelé par `add-library`. Toute preuve
 s'exécute **dans un candidat**, jamais dans le worktree réel.
 
-| `proof`               | Exécution                                                                                                                                                                                                                                                            |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compile-component`   | candidat + composant sentinelle important la primitive ; `ngc --strictTemplates` / build Nx ; échec = type ou template invalide                                                                                                                                      |
-| `compiled-css-rule`   | candidat + classe sentinelle unique (`text-[#123456]`) ; build ; la règle `color:#123456` doit figurer dans le CSS émis                                                                                                                                              |
-| `production-build`    | build Nx de production hors réseau ; toute ressource distante ou configuration réservée au développement provoque un échec                                                                                                                                           |
-| `browser-coexistence` | candidat + page portant le CSS **réellement compilé** de l'app ; `chrome-headless-shell` épinglé par empreinte, résultat extrait par `--dump-dom` : jetons `--mat-*` résolus, règle hors couche non écrasée par le preflight, utilitaire Tailwind toujours appliquée |
+| `proof`                      | Exécution                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compile-component`          | candidat + composant sentinelle important la primitive ; `ngc --strictTemplates` / build Nx ; échec = type ou template invalide                                                                                                                                                                                                        |
+| `compiled-css-rule`          | candidat + classe sentinelle unique (`text-[#123456]`) ; build ; la règle `color:#123456` doit figurer dans le CSS émis                                                                                                                                                                                                                |
+| `production-build`           | build Nx de production hors réseau ; toute ressource distante ou configuration réservée au développement provoque un échec                                                                                                                                                                                                             |
+| `browser-coexistence`        | candidat + page portant le CSS **réellement compilé** de l'app ; `chrome-headless-shell` épinglé par empreinte, résultat extrait par `--dump-dom` : jetons `--mat-*` résolus, règle hors couche non écrasée par le preflight, utilitaire Tailwind toujours appliquée                                                                   |
+| `browser-style-preservation` | candidat + CSS **réellement compilé** de l'app dans `chrome-headless-shell` épinglé par empreinte ; sentinelle appliquée à `html` et `body` ; `font-family`, `font-size`, `line-height` et `font-weight` mesurés sur la racine, le corps et un enfant ; un rendu sain et trois rendus mutés doivent tous être correctement discriminés |
 
 `status` n'est pas une promesse : `check:library-setup` le confronte au registre
 d'oracles de `library-setup/runtime-proofs.mjs`, **dans les deux sens**.
@@ -906,28 +907,59 @@ réels jusqu'au 2026-09-06. La correspondance EST le signal de livraison.
 
 ### Jobs et déclenchement CI
 
-Deux jobs, hors du job `guardrails` :
+Trois voies de la CI couvrent aujourd'hui le mécanisme des bibliothèques :
 
-| Job                       | Contenu                                  | Statut                                      |
-| ------------------------- | ---------------------------------------- | ------------------------------------------- |
-| `library-runtime`         | `compile-component`, `compiled-css-rule` | obligatoire dès le premier proof `enforced` |
-| `library-runtime-browser` | `browser-coexistence` (D2)               | obligatoire dès ce proof `enforced`         |
+| Voie CI                       | Ce qu'elle prouve                                                                                                                                                                                               | Déclenchement                                                                                                                                    |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `guardrails`                  | `check:library-setup` vérifie les contrats, les tests du harnais et la cohérence statique des attestations ; il n'exécute ni promotion ni rendu Chromium d'une recette                                          | le job et la step tournent sur toute PR                                                                                                          |
+| `library-candidate-isolation` | la même suite hostile prouve le confinement `linux-docker` et `macos-sandbox` ; elle ne joue aucun oracle de recette                                                                                            | le job démarre sur toute PR ; installation et step lourde seulement si `library-ci-impact` produit `isolation == 'true'` ; délai de 15 minutes   |
+| `library-end-to-end`          | un shell est créé puis reçoit Material et Tailwind par la voie courante `add-library`, avec build, lint, test et publication Git ; depuis SIMPL-4, cette voie n'utilise ni sandbox, ni navigateur, ni promotion | le job démarre sur toute PR ; installation et step lourde seulement si `library-ci-impact` produit `integration == 'true'` ; délai de 45 minutes |
 
 **Aucun filtre `paths:`** : un filtre qui rate un déclencheur est un trou
 silencieux, et les entrées pertinentes débordent largement `apps/**` —
 `package.json`, `bun.lock`, catalog, versions Angular/Nx/Bun/Node, scripts du
 harnais, `nx.json`, le renderer `create-app`, et le workflow CI lui-même. Les
-jobs tournent donc sur **toute PR**, `fail-fast: false`. Budget cible :
-`library-runtime` ≤ 6 min, `library-runtime-browser` ≤ 4 min.
+jobs sont donc présents sur **toute PR** ; le calcul `library-ci-impact`
+conditionne seulement leurs étapes coûteuses. La matrice d'isolation utilise
+`fail-fast: false`. Les délais inscrits dans la CI sont de 15 minutes pour
+l'isolation et de 45 minutes pour l'intégration.
+
+### Suivis ouverts après la requalification du 2026-10-12
+
+- **`LIB-MAT-QUALIFICATION-BASELINE`** —
+  `apps/library-qualification-angular/src/styles.scss:36` contient encore le
+  raccourci global `font: var(--mat-sys-body-medium)`. Cette incohérence de
+  baseline n'invalide pas la preuve publiée : la piste Angular Tailwind atteste
+  précisément l'état courant de cette application de référence. Son retrait
+  appartient à un lot séparé. La gate ne l'exigera pas, car elle ne recompare
+  pas `app_tree_sha256` à l'arbre courant ; ce lot devra pourtant requalifier la
+  piste, faute de quoi l'attestation décrirait un arbre applicatif qui n'existe
+  plus.
+- **`LIB-REACT-QUALIFICATION-DESIGN`** — `apps/library-qualification-react` est
+  un banc généré, reproductible, destiné uniquement à qualifier React Tailwind ;
+  ce n'est ni une application produit ni une preuve de page métier. Faute de
+  design React neutre compatible au moment de sa création, il dérive du design
+  `users-management-proof` et de l'expérience `operator-web`. Un lot ultérieur
+  doit publier un design neutre, reconstruire le banc par `create-app`, puis
+  requalifier la piste. Aucun `README` ne doit être ajouté manuellement dans le
+  périmètre généré pour compenser cette dette d'autorité.
+- **`LIB-RUNTIME-PROOFS-CI`** — aucun job CI ne rejoue actuellement
+  `browser-coexistence` ou `browser-style-preservation` : ces deux oracles ne
+  tournent que pendant la promotion d'une piste. Un lot séparé doit décider et
+  borner leur exécution CI durable, avec calcul d'impact, budget de temps et
+  approvisionnement du navigateur explicites.
 
 ## Gouvernance d'upgrade
 
 - **Matrice** `<library>.compat.json` (D3). `check:library-setup` échoue si la
   version résolue sort de toute entrée vérifiée.
-- **Renovate / Dependabot** : un bump ouvre une PR ; `library-runtime` et
-  `library-runtime-browser` s'exécutent ; un `static_invariant` cassé signale un
+- **Renovate / Dependabot** : un bump ouvre une PR ; `guardrails` vérifie les
+  contrats, puis `library-ci-impact` décide si les étapes coûteuses d'isolation
+  ou d'intégration doivent s'exécuter. Un `static_invariant` cassé signale un
   changement de mécanisme → **migration de la recette dans la PR**, avec une
-  nouvelle entrée `compat` — jamais un générateur touché.
+  nouvelle entrée `compat` — jamais un générateur touché. Les oracles navigateur
+  ne sont pas encore rejoués automatiquement par cette CI, conformément au suivi
+  `LIB-RUNTIME-PROOFS-CI`.
 - **Traçabilité** : chaque migration porte sa raison (ex. « `provideAnimations`
   retiré en v23 → `animate.enter` »), son commit, ses identités de plan et de
   change-set, ses versions exactes et les empreintes de ses entrées.
