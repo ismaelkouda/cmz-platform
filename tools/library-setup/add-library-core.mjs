@@ -56,6 +56,15 @@ import {
     qualifiedAdapterDescriptor,
 } from './qualified-adapters.mjs';
 
+const BROWSER_PROOF_KINDS = new Set([
+    'browser-coexistence',
+    'browser-style-preservation',
+]);
+
+export function requiresBrowserProof(acceptances) {
+    return acceptances.some((entry) => BROWSER_PROOF_KINDS.has(entry.proof));
+}
+
 function fail(message) {
     throw new Error(`add-library: ${message}`);
 }
@@ -494,11 +503,9 @@ async function executeLibraryAddition({
         }
         // Le navigateur est approvisionné seulement dans la voie rare et les
         // preuves utilisent le candidat issu de l'adaptateur qualifié.
-        const browser = requiredAcceptances(
-            recipe,
-            libraries,
-            recipeResult.recipes
-        ).some((entry) => entry.proof === 'browser-coexistence')
+        const browser = requiresBrowserProof(
+            requiredAcceptances(recipe, libraries, recipeResult.recipes)
+        )
             ? await provisionBrowser({
                   policy,
                   backend,

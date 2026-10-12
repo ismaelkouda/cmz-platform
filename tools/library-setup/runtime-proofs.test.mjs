@@ -8,13 +8,18 @@ import { test } from 'node:test';
 import postcss from 'postcss';
 
 import {
+    assertHostTypography,
+    assertHostTypographyMutation,
     assertBrowserCoexistence,
     assertMaterialTailwindCascade,
     browserProbeHtml,
+    hostTypographyProbeHtml,
     proveLibraryRuntime,
     requiredAcceptances,
 } from './runtime-proofs.mjs';
+import { proveMaterialHostTypography } from './runtime-oracles/material-host-typography.mjs';
 import { proveMaterialTailwindBrowser } from './runtime-oracles/material-tailwind-browser.mjs';
+import { QUALIFICATION_ORACLE_SOURCE_PATHS } from './tooling-fingerprint.mjs';
 
 // Forme réellement observée sur un candidat après `ng-add` : les jetons dans
 // une règle `html` hors couche, le preflight confiné dans `@layer base`.
@@ -327,6 +332,253 @@ test('la page sonde intègre le CSS compilé et n’appelle aucun réseau', () =
         () => browserProbeHtml('a{}</style><script>x()</script>'),
         /fermeture de balise style/
     );
+});
+
+const HOST_TYPOGRAPHY = {
+    fontFamily: '"CMZ Host Sentinel", serif',
+    fontSize: '19px',
+    lineHeight: '31px',
+    fontWeight: '700',
+};
+
+test('l’oracle exige les quatre propriétés sur la racine, le body et son enfant', () => {
+    const dump = (value) =>
+        `<html><body><pre id="cmz-result">${JSON.stringify(value)}</pre></body></html>`;
+    const healthy = {
+        root: { ...HOST_TYPOGRAPHY },
+        body: { ...HOST_TYPOGRAPHY },
+        child: { ...HOST_TYPOGRAPHY },
+    };
+    assert.deepEqual(assertHostTypography(dump(healthy)), healthy);
+
+    for (const [scope, property, value] of [
+        ['body', 'fontFamily', 'system-ui'],
+        ['body', 'fontSize', '14px'],
+        ['root', 'fontSize', '14px'],
+        ['child', 'lineHeight', '20px'],
+        ['child', 'fontWeight', '400'],
+    ]) {
+        const mutated = structuredClone(healthy);
+        mutated[scope][property] = value;
+        assert.throws(
+            () => assertHostTypography(dump(mutated)),
+            new RegExp(
+                `${scope === 'child' ? 'enfant' : scope === 'root' ? 'racine' : scope}\\.${property}`
+            )
+        );
+    }
+    assert.throws(
+        () => assertHostTypography('<html><body>rien</body></html>'),
+        /aucun résultat exploitable/
+    );
+});
+
+test('les mutations typographiques doivent être observées sur le body et son enfant', () => {
+    const dump = (value) =>
+        `<pre id="cmz-result">${JSON.stringify(value)}</pre>`;
+    const healthy = {
+        root: { ...HOST_TYPOGRAPHY },
+        body: { ...HOST_TYPOGRAPHY },
+        child: { ...HOST_TYPOGRAPHY },
+    };
+    assert.throws(
+        () =>
+            assertHostTypographyMutation(dump(healthy), {
+                id: 'font-size',
+                properties: ['fontSize'],
+            }),
+        /mutation font-size non détectée sur body/
+    );
+    const bodyOnly = structuredClone(healthy);
+    bodyOnly.body.fontSize = '13px';
+    assert.throws(
+        () =>
+            assertHostTypographyMutation(dump(bodyOnly), {
+                id: 'font-size',
+                properties: ['fontSize'],
+            }),
+        /mutation font-size non détectée sur enfant/
+    );
+    const inherited = structuredClone(bodyOnly);
+    inherited.child.fontSize = '13px';
+    assert.deepEqual(
+        assertHostTypographyMutation(dump(inherited), {
+            id: 'font-size',
+            properties: ['fontSize'],
+        }),
+        inherited
+    );
+});
+
+test('la sonde place la typographie hôte avant le CSS compilé et reste hors réseau', () => {
+    const compiled = 'body{color:navy}';
+    const html = hostTypographyProbeHtml(compiled);
+    assert.ok(html.indexOf('CMZ Host Sentinel') < html.indexOf(compiled));
+    assert.match(html, /font-size: 19px/);
+    assert.match(html, /line-height: 31px/);
+    assert.match(html, /font-weight: 700/);
+    assert.match(html, /cmz-typography-child/);
+    assert.doesNotMatch(html, /https?:\/\//);
+    assert.doesNotMatch(html, /fetch\(|XMLHttpRequest|WebSocket/);
+    assert.throws(() => hostTypographyProbeHtml(''), /aucun CSS compilé/);
+    assert.throws(
+        () => hostTypographyProbeHtml('a{}</style><script>x()</script>'),
+        /fermeture de balise style/
+    );
+});
+
+test('l’empreinte de qualification couvre le navigateur et le nouvel oracle', () => {
+    assert.deepEqual(
+        QUALIFICATION_ORACLE_SOURCE_PATHS.get(
+            'angular/angular-material#material-preserves-host-typography'
+        ),
+        [
+            'tools/library-setup/browser-provisioning.mjs',
+            'tools/library-setup/runtime-oracles/material-host-typography.mjs',
+        ]
+    );
+});
+
+test('l’oracle de typographie rend le CSS compilé puis nettoie sa sortie', async (t) => {
+    const root = await realpath(
+        await mkdtemp(join(tmpdir(), 'cmz-host-typography-proof-'))
+    );
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const workspace = join(root, 'candidate');
+    for (const path of ['candidate', 'repo', 'cache', 'home'])
+        await mkdir(join(root, path));
+    await mkdir(join(workspace, 'apps/demo/src'), { recursive: true });
+    await put(
+        root,
+        'candidate/apps/demo/project.json',
+        JSON.stringify({
+            targets: { build: { options: { outputPath: 'dist/apps/demo' } } },
+        })
+    );
+    const output = join(workspace, 'dist/apps/demo');
+    let builds = 0;
+    let renders = 0;
+    const observed = proveMaterialHostTypography({
+        repository: join(root, 'repo'),
+        workspace,
+        app: 'demo',
+        policy: {},
+        backend: 'test',
+        cache: join(root, 'cache'),
+        home: join(root, 'home'),
+        browserExecutable: '/browser/chrome',
+        browserRoot: '/browser',
+        run: ({ renderer, argv }) => {
+            if (!renderer) {
+                builds += 1;
+                mkdirSync(output, { recursive: true });
+                writeFileSync(join(output, 'styles.css'), 'body{color:navy}');
+                return { status: 0, stdout: '', stderr: '' };
+            }
+            renders += 1;
+            const probeUrl = argv.at(-1);
+            const relativeProbe = probeUrl.replace('file://{{candidate}}/', '');
+            const html = readFileSync(join(workspace, relativeProbe), 'utf8');
+            const typography = {
+                root: { ...HOST_TYPOGRAPHY },
+                body: { ...HOST_TYPOGRAPHY },
+                child: { ...HOST_TYPOGRAPHY },
+            };
+            if (html.includes('font: var(--mat-sys-body-medium)')) {
+                for (const scope of ['body', 'child']) {
+                    typography[scope].fontFamily = 'Roboto, sans-serif';
+                    typography[scope].fontSize = '14px';
+                    typography[scope].lineHeight = '20px';
+                    typography[scope].fontWeight = '400';
+                }
+            } else if (html.includes('body { font-size: 13px; }')) {
+                typography.body.fontSize = '13px';
+                typography.child.fontSize = '13px';
+            } else if (html.includes('body { line-height: 17px; }')) {
+                typography.body.lineHeight = '17px';
+                typography.child.lineHeight = '17px';
+            }
+            return {
+                status: 0,
+                stdout: `<pre id="cmz-result">${JSON.stringify({
+                    root: typography.root,
+                    body: typography.body,
+                    child: typography.child,
+                })}</pre>`,
+                stderr: '',
+            };
+        },
+    });
+    assert.deepEqual(observed.body, HOST_TYPOGRAPHY);
+    assert.equal(builds, 1);
+    assert.equal(renders, 4);
+    assert.equal(existsSync(output), false);
+});
+
+test('l’oracle de typographie refuse un moteur absent, une sortie préexistante et un rendu en échec', async (t) => {
+    assert.throws(
+        () => proveMaterialHostTypography({}),
+        /aucun moteur de rendu approvisionné/
+    );
+
+    const root = await realpath(
+        await mkdtemp(join(tmpdir(), 'cmz-host-typography-guards-'))
+    );
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const workspace = join(root, 'candidate');
+    for (const path of ['candidate', 'repo', 'cache', 'home']) {
+        await mkdir(join(root, path));
+    }
+    await put(
+        root,
+        'candidate/apps/demo/project.json',
+        JSON.stringify({
+            targets: { build: { options: { outputPath: 'dist/apps/demo' } } },
+        })
+    );
+    const output = join(workspace, 'dist/apps/demo');
+    mkdirSync(output, { recursive: true });
+    const context = {
+        repository: join(root, 'repo'),
+        workspace,
+        app: 'demo',
+        policy: {},
+        backend: 'test',
+        cache: join(root, 'cache'),
+        home: join(root, 'home'),
+        browserExecutable: '/browser/chrome',
+        browserRoot: '/browser',
+    };
+    assert.throws(
+        () => proveMaterialHostTypography(context),
+        /sortie de build préexistante/
+    );
+    assert.equal(existsSync(output), true, 'une sortie humaine reste intacte');
+    await rm(output, { recursive: true, force: true });
+
+    assert.throws(
+        () =>
+            proveMaterialHostTypography({
+                ...context,
+                run: ({ renderer }) => {
+                    if (!renderer) {
+                        mkdirSync(output, { recursive: true });
+                        writeFileSync(
+                            join(output, 'styles.css'),
+                            'body{color:navy}'
+                        );
+                        return { status: 0, stdout: '', stderr: '' };
+                    }
+                    return {
+                        status: 9,
+                        stdout: '',
+                        stderr: 'rendu volontairement refusé',
+                    };
+                },
+            }),
+        /moteur de rendu en échec \(code 9\)/
+    );
+    assert.equal(existsSync(output), false, 'la sortie de preuve est nettoyée');
 });
 
 test('l’oracle navigateur place sa classe Tailwind dans la source puis la nettoie', async (t) => {

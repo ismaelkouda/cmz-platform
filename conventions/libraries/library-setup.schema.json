@@ -180,6 +180,7 @@
             "compile-component",
             "compiled-css-rule",
             "browser-coexistence",
+            "browser-style-preservation",
             "production-build"
           ]
         },

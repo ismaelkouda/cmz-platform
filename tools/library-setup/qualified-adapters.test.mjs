@@ -172,6 +172,11 @@ test('Material ajoute un thème plateforme sans perdre les styles humains', (t) 
     assert.match(styles, /@use '@angular\/material' as mat/);
     assert.match(styles, /plain-family: system-ui/);
     assert.match(styles, /body \{ color: navy; \}/);
+    assert.match(
+        styles,
+        /body \{\n {4}color-scheme: light;\n {4}background-color: var\(--mat-sys-surface\);\n {4}color: var\(--mat-sys-on-surface\);\n {4}margin: 0;\n {4}height: 100%;\n\}/
+    );
+    assert.doesNotMatch(styles, /font:\s*var\(--mat-sys-body-medium\)/);
     assert.deepEqual(manifest(root).libraries, ['angular-material']);
 });
 

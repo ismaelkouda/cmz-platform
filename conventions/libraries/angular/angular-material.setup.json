@@ -52,9 +52,16 @@
         "search": "typography: Roboto,",
         "replacement": "typography: (plain-family: system-ui, brand-family: system-ui),",
         "occurrences": 1
+      },
+      {
+        "kind": "exact-replacement",
+        "file": "src/styles.scss",
+        "search": "  font: var(--mat-sys-body-medium);",
+        "replacement": "",
+        "occurrences": 1
       }
     ],
-    "notes": "Entrée setup-only fournie par le paquet Angular Material 22.2.1 et liée à cette piste exacte. Le point d'entrée public `ng-add` est volontairement interdit ici : il planifie toujours un NodePackageInstallTask, alors que les dépendances sont déjà épinglées, installées et vérifiées par le protocole gouverné. L'exécution se fait sans PATH : une tâche implicite ne peut résoudre aucun gestionnaire de paquets par son nom. Le schematic reçoit `{{app}}` = nom du projet Nx cible. Material 22.2.1 injecte encore les polices Google Roboto et Material Symbols Outlined ainsi que `typography: Roboto`; les normalisations exactes retirent ces dépendances réseau et sélectionnent les polices système. Toute dérive de la sortie du vendeur fait échouer la recette. Le build de production hors réseau en apporte la preuve fonctionnelle."
+    "notes": "Entrée setup-only fournie par le paquet Angular Material 22.2.1 et liée à cette piste exacte. Le point d'entrée public `ng-add` est volontairement interdit ici : il planifie toujours un NodePackageInstallTask, alors que les dépendances sont déjà épinglées, installées et vérifiées par le protocole gouverné. L'exécution se fait sans PATH : une tâche implicite ne peut résoudre aucun gestionnaire de paquets par son nom. Le schematic reçoit `{{app}}` = nom du projet Nx cible. Material 22.2.1 injecte encore les polices Google Roboto et Material Symbols Outlined ainsi que `typography: Roboto`; les normalisations exactes retirent ces dépendances réseau et sélectionnent les polices système. Le raccourci global `font: var(--mat-sys-body-medium)` est aussi retiré : Material possède l'apparence de ses composants, pas la typographie hôte décidée par l'application et Tailwind (ADR-0041). Les autres déclarations globales du bloc vendeur (`color-scheme`, couleurs, marge et hauteur) restent des effets connus ; aucune régression qui justifierait leur retrait n'est établie. Toute dérive de la sortie du vendeur fait échouer la recette. Le build de production hors réseau et l'acceptance navigateur de préservation typographique en apportent les preuves fonctionnelles."
   },
   "static_invariants": [
     {
@@ -73,6 +80,12 @@
       "id": "material-component-compiles",
       "description": "dans un workspace candidat autonome : un composant standalone important un composant Material représentatif (ex. MatButton) compile sous ngc --strictTemplates en import standalone (jamais un NgModule agrégateur). Preuve de compilation uniquement — le rendu DOM et le comportement d'animation sont des critères distincts (browser-coexistence + preuve dédiée, à définir).",
       "proof": "compile-component",
+      "status": "enforced"
+    },
+    {
+      "id": "material-preserves-host-typography",
+      "description": "dans un workspace candidat autonome : le CSS réellement compilé est chargé par le moteur Chromium épinglé après une typographie hôte sentinelle ; les valeurs calculées de font-family, font-size, line-height et font-weight restent inchangées sur la racine html, le body et un enfant qui en hérite. Cette preuve interdit qu'un thème Material impose silencieusement sa typographie globale à l'application.",
+      "proof": "browser-style-preservation",
       "status": "enforced"
     },
     {
