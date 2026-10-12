@@ -3,6 +3,7 @@ import * as axe from 'axe-core';
 import { writeFile } from 'node:fs/promises';
 
 import {
+    applyAndExpectTextReflow,
     installBrowserHost,
     openReadyPage,
     serveDeterministicApi,
@@ -271,7 +272,7 @@ test('conserve focus, clavier et reflow à 320 px et texte à 200 %', async ({
     await expect(trigger).toBeFocused();
 
     await page.setViewportSize({ width: 640, height: 900 });
-    await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+    await applyAndExpectTextReflow(page);
     width = await documentWidth(page);
     expect(width.scrollWidth).toBeLessThanOrEqual(width.clientWidth + 1);
     const clippedControls = await page
