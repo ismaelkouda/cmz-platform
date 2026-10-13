@@ -8,6 +8,7 @@ import {
     openReadyPage,
     serveDeterministicApi,
 } from './users-management.support';
+import { installDeterministicReflowFonts } from './users-management-reflow-fonts.support';
 
 const VIEWPORTS = [
     { name: 'compact', width: 390, height: 844 },
@@ -272,6 +273,7 @@ test('conserve focus, clavier et reflow à 320 px et texte à 200 %', async ({
     await expect(trigger).toBeFocused();
 
     await page.setViewportSize({ width: 640, height: 900 });
+    await installDeterministicReflowFonts(page);
     await applyAndExpectTextReflow(page);
     width = await documentWidth(page);
     expect(width.scrollWidth).toBeLessThanOrEqual(width.clientWidth + 1);

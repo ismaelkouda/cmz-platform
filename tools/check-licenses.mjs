@@ -64,6 +64,10 @@ const OWN_LICENSE = 'UNLICENSED';
  * dépendance de production doit être re-décidée, pas héritée silencieusement.
  */
 const DEV_ONLY_EXCEPTIONS = new Map([
+    // OFL-1.1 — fichiers WOFF2 utilisés uniquement par les deux preuves de
+    // reflow React C5 afin de rendre leurs métriques identiques sur macOS et
+    // Linux ; jamais importés ni bundlés dans le livrable navigateur.
+    ['@fontsource/dejavu-sans', 'OFL-1.1'],
     // MPL-2.0 (copyleft faible, fichier par fichier) — devDependency de
     // test uniquement (T12-8, gate a11y), jamais importée dans
     // apps/backoffice-angular ni bundlée dans le livrable navigateur.

@@ -10,6 +10,7 @@ import {
     serveDeterministicApi,
     USERS_PATH,
 } from './users-management.support';
+import { installDeterministicReflowFonts } from './users-management-reflow-fonts.support';
 
 const COMPACT = { width: 390, height: 844 } as const;
 const MEDIUM = { width: 900, height: 900 } as const;
@@ -211,6 +212,7 @@ test('compact borne le sheet, conserve le brouillon au resize et reflow à 200 %
         name: 'Appliquer',
     });
     await expectControlsFitWithoutOverlap(resetButton, applyButton);
+    await installDeterministicReflowFonts(page, { resetButton });
     await applyAndExpectTextReflow(page);
     const reflow = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
