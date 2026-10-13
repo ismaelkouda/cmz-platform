@@ -7,7 +7,11 @@ import { createRequire } from 'node:module';
 const requireFromTest = createRequire(__filename);
 const FONT_FAMILY = 'CMZ Reflow DejaVu Sans';
 const EXPECTED_VERSION = '5.3.0';
+// « utilisateurs » en 600 à 48 px : 309,36 px quand le moteur garde des avances
+// fractionnaires (Chrome macOS), 309 px quand il les arrondit au pixel
+// (Chromium Linux de la CI). Un repli sur une autre police donne moins de 240 px.
 const EXPECTED_SAMPLE_WIDTH = 309.36;
+const SAMPLE_WIDTH_TOLERANCE = 0.5;
 const SAMPLE_TEXT = 'utilisateurs';
 
 const FONT_FILES = [
@@ -138,7 +142,9 @@ export async function installDeterministicReflowFonts(
         { weight: 650, faceCount: 1, ready: true },
         { weight: 700, faceCount: 1, ready: true },
     ]);
-    expect(fontState.sampleWidth).toBeCloseTo(EXPECTED_SAMPLE_WIDTH, 1);
+    expect(
+        Math.abs(fontState.sampleWidth - EXPECTED_SAMPLE_WIDTH)
+    ).toBeLessThan(SAMPLE_WIDTH_TOLERANCE);
 
     await expectFamilyApplied(
         page.locator('[data-cmz-id="page-heading"]'),
