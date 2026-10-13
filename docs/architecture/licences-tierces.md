@@ -78,11 +78,21 @@ un jour vers une dépendance de production.
 deux preuves Playwright de reflow React C5. Les deux WOFF2 requis sont lus par
 le processus de test, vérifiés par SHA-256 puis injectés dans la page de test ;
 ils ne sont importés par aucun fichier produit et ne figurent pas dans le
-bundle navigateur. La SIL Open Font License 1.1 autorise l'usage, la copie et
-la redistribution de la police sous ses conditions propres, notamment
-l'interdiction de vendre la police seule. Exception nominative déclarée dans
-`tools/check-licenses.mjs` (`DEV_ONLY_EXCEPTIONS`) et automatiquement refusée
-si le paquet migre vers les dépendances de production.
+bundle navigateur.
+
+Le manifeste npm déclare `OFL-1.1` ; c'est cette métadonnée que relève la gate
+automatique. Le fichier `LICENSE` réellement livré par le paquet contient
+toutefois les notices historiques Bitstream Vera et Arev, et indique que les
+modifications DejaVu sont dans le domaine public. Toute redistribution des
+fichiers de police doit donc conserver ce fichier et ses notices complètes,
+notamment les conditions relatives aux noms réservés, aux modifications et à
+la vente de la police seule. Cette distinction entre métadonnée SPDX et texte
+embarqué est volontaire : ni un humain ni un LLM ne doit déduire les
+obligations juridiques du seul identifiant retourné par l'outil.
+
+L'exception nominative reste déclarée dans `tools/check-licenses.mjs`
+(`DEV_ONLY_EXCEPTIONS`) et est automatiquement refusée si le paquet migre vers
+les dépendances de production.
 
 ## Automatisation (T6-2)
 
