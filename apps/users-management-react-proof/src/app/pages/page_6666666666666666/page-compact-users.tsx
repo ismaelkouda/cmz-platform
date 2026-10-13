@@ -42,7 +42,6 @@ interface CompactUsersResultsProps<TItem extends CompactUserItem> {
     readonly loadingNext: boolean;
     readonly onRetry: () => void;
     readonly sentinelRef: RefObject<HTMLSpanElement | null>;
-    readonly totalItems: number;
     readonly users: readonly TItem[];
 }
 
@@ -184,7 +183,6 @@ export function CompactUsersResults<TItem extends CompactUserItem>({
     loadingNext,
     onRetry,
     sentinelRef,
-    totalItems,
     users,
 }: CompactUsersResultsProps<TItem>) {
     return (
@@ -195,10 +193,6 @@ export function CompactUsersResults<TItem extends CompactUserItem>({
             aria-label="Utilisateurs"
             aria-busy={loadingNext ? true : undefined}
         >
-            <div className={styles.mobileSummary}>
-                <strong>{totalItems} utilisateurs</strong>
-                <span>{users.length} affichés</span>
-            </div>
             <ul
                 data-cmz-id="mobile-user-list"
                 className={styles.mobileUserList}

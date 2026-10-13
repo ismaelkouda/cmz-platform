@@ -365,7 +365,6 @@ export function UsersFilterPanel(props: UsersFilterPanelProps) {
                                                 element ?? undefined;
                                         }}
                                         type="button"
-                                        aria-label={`${FILTER_LABELS[filterKey]}, ${value}`}
                                         onClick={() => showDetail(filterKey)}
                                     >
                                         <span>
