@@ -58,6 +58,9 @@ async function axeViolations(root: Locator) {
                     'wcag22aa',
                 ],
             },
+            rules: {
+                'label-content-name-mismatch': { enabled: true },
+            },
         });
         return result.violations.map(({ id, impact, nodes }) => ({
             id,
@@ -92,10 +95,17 @@ test('compact conserve un dialogue unique du sommaire au détail et maîtrise le
     });
     expect(identity).toBe('compact-filter-dialog');
 
-    for (const name of ['Profil', 'Rôle', 'Statut']) {
-        await expect(
-            dialog.getByRole('button', { name: new RegExp(`^${name}\\b`) })
-        ).toBeVisible();
+    for (const name of [
+        'Profil Tous les profils',
+        'Rôle Tous les rôles',
+        'Statut Tous',
+    ]) {
+        const summaryButton = dialog.getByRole('button', {
+            name,
+            exact: true,
+        });
+        await expect(summaryButton).toBeVisible();
+        await expect(summaryButton).not.toHaveAttribute('aria-label');
     }
 
     const statusSummary = dialog.getByRole('button', { name: /^Statut\b/ });
@@ -112,9 +122,11 @@ test('compact conserve un dialogue unique du sommaire au détail et maîtrise le
 
     await dialog.getByRole('button', { name: 'Retour' }).click();
     await expect(dialog).toHaveAccessibleName('Filtres');
-    await expect(
-        dialog.getByRole('button', { name: /^Statut\b/ })
-    ).toBeFocused();
+    const initialStatusSummary = dialog.getByRole('button', {
+        name: 'Statut Tous',
+        exact: true,
+    });
+    await expect(initialStatusSummary).toBeFocused();
     expect(await axeViolations(dialog)).toEqual([]);
 
     await page.keyboard.press('Escape');
@@ -160,6 +172,13 @@ test('compact sépare brouillon et filtres appliqués puis émet un seul GET', a
     await dialog.getByRole('button', { name: /^Statut\b/ }).click();
     await expect(dialog.getByRole('radio', { name: 'Tous' })).toBeChecked();
     await dialog.getByRole('radio', { name: 'Inactifs' }).check();
+    await dialog.getByRole('button', { name: 'Retour' }).click();
+    const inactiveStatusSummary = dialog.getByRole('button', {
+        name: 'Statut Inactifs',
+        exact: true,
+    });
+    await expect(inactiveStatusSummary).toBeVisible();
+    await expect(inactiveStatusSummary).not.toHaveAttribute('aria-label');
     await dialog.getByRole('button', { name: 'Appliquer' }).click();
 
     await expect.poll(() => userReads(api.requests)).toBe(initialReads + 1);

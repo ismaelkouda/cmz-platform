@@ -36,6 +36,9 @@ async function axeViolations(root: Locator) {
                     'wcag22aa',
                 ],
             },
+            rules: {
+                'label-content-name-mismatch': { enabled: true },
+            },
         });
         return result.violations.map(({ id, impact, nodes }) => ({
             id,
@@ -50,6 +53,93 @@ async function documentWidth(page: Page) {
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
     }));
+}
+
+async function compactToolbarGeometry(page: Page) {
+    const [title, actions, search] = await Promise.all([
+        page.locator('#users-title').boundingBox(),
+        page
+            .getByRole('group', {
+                name: 'Actions de la liste des utilisateurs',
+            })
+            .boundingBox(),
+        page
+            .getByRole('search', { name: 'Recherche dans les utilisateurs' })
+            .boundingBox(),
+    ]);
+    expect(title).not.toBeNull();
+    expect(actions).not.toBeNull();
+    expect(search).not.toBeNull();
+    if (!title || !actions || !search) {
+        throw new Error('Géométrie de la toolbar Compact indisponible.');
+    }
+    const firstBandOverlap =
+        Math.min(title.y + title.height, actions.y + actions.height) -
+        Math.max(title.y, actions.y);
+    expect(firstBandOverlap).toBeGreaterThan(0);
+    expect(search.y).toBeGreaterThanOrEqual(
+        Math.max(title.y + title.height, actions.y + actions.height) - 1
+    );
+}
+
+async function elementsOutsideDataView(page: Page) {
+    return page.evaluate(() => {
+        const container = document.querySelector<HTMLElement>(
+            '[data-cmz-id="users-table"]'
+        );
+        if (!container) throw new Error('Carte des utilisateurs absente.');
+        const containerBox = container.getBoundingClientRect();
+        const candidates = [
+            document.querySelector<HTMLElement>('#users-title'),
+            document.querySelector<HTMLElement>(
+                '[role="group"][aria-label="Actions de la liste des utilisateurs"]'
+            ),
+            document.querySelector<HTMLElement>(
+                '[role="search"][aria-label="Recherche dans les utilisateurs"]'
+            ),
+            ...Array.from(
+                document.querySelectorAll<HTMLElement>(
+                    '[role="group"][aria-label="Actions de la liste des utilisateurs"] button'
+                )
+            ).filter(
+                (element) =>
+                    getComputedStyle(element).position !== 'fixed' &&
+                    element.getClientRects().length > 0
+            ),
+        ].filter((element): element is HTMLElement => element !== null);
+
+        return candidates
+            .map((element) => ({
+                element,
+                box: element.getBoundingClientRect(),
+            }))
+            .filter(
+                ({ element, box }) =>
+                    element.scrollWidth > element.clientWidth + 1 ||
+                    box.left < containerBox.left - 1 ||
+                    box.right > containerBox.right + 1 ||
+                    box.top < containerBox.top - 1 ||
+                    box.bottom > containerBox.bottom + 1
+            )
+            .map(({ element, box }) => ({
+                ariaLabel: element.getAttribute('aria-label'),
+                id: element.id,
+                tagName: element.tagName,
+                text: element.textContent?.trim().slice(0, 80),
+                box: {
+                    left: box.left,
+                    right: box.right,
+                    top: box.top,
+                    bottom: box.bottom,
+                },
+                container: {
+                    left: containerBox.left,
+                    right: containerBox.right,
+                    top: containerBox.top,
+                    bottom: containerBox.bottom,
+                },
+            }));
+    });
 }
 
 test('rend les trois classes adaptatives sans débordement et produit leurs preuves', async ({
@@ -70,6 +160,14 @@ test('rend les trois classes adaptatives sans débordement et produit leurs preu
         const width = await documentWidth(page);
         expect(width.scrollWidth).toBeLessThanOrEqual(width.clientWidth + 1);
         expect(await axeViolations(page.locator('main'))).toEqual([]);
+        if (viewport.name === 'compact') {
+            await compactToolbarGeometry(page);
+            expect(await elementsOutsideDataView(page)).toEqual([]);
+            await expect(page.getByText(/affichés/i)).toHaveCount(0);
+            await expect(
+                page.getByLabel('24 utilisateurs au total')
+            ).toBeVisible();
+        }
 
         await page.screenshot({
             path: test
@@ -249,8 +347,15 @@ test('conserve focus, clavier et reflow à 320 px et texte à 200 %', async ({
 }) => {
     await installBrowserHost(page);
     await serveDeterministicApi(page);
-    await page.setViewportSize({ width: 320, height: 900 });
+    await page.setViewportSize({ width: 390, height: 844 });
     await openReadyPage(page);
+    await compactToolbarGeometry(page);
+    expect(await elementsOutsideDataView(page)).toEqual([]);
+    await installDeterministicReflowFonts(page);
+    await compactToolbarGeometry(page);
+    expect(await elementsOutsideDataView(page)).toEqual([]);
+
+    await page.setViewportSize({ width: 320, height: 900 });
     let width = await documentWidth(page);
     expect(width.scrollWidth).toBeLessThanOrEqual(width.clientWidth + 1);
 
@@ -272,8 +377,6 @@ test('conserve focus, clavier et reflow à 320 px et texte à 200 %', async ({
     await expect(dialog).toHaveCount(0);
     await expect(trigger).toBeFocused();
 
-    await page.setViewportSize({ width: 640, height: 900 });
-    await installDeterministicReflowFonts(page);
     await applyAndExpectTextReflow(page);
     width = await documentWidth(page);
     expect(width.scrollWidth).toBeLessThanOrEqual(width.clientWidth + 1);
@@ -293,4 +396,5 @@ test('conserve focus, clavier et reflow à 320 px et texte à 200 %', async ({
                 )
         );
     expect(clippedControls).toEqual([]);
+    expect(await elementsOutsideDataView(page)).toEqual([]);
 });
