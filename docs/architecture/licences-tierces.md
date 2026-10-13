@@ -8,27 +8,29 @@
 ## Méthode
 
 ```bash
-npx license-checker-rseidelsohn --production --json --out licenses-production.json
-npx license-checker-rseidelsohn --summary
+npx --yes license-checker-rseidelsohn@4.3.0 --production --json --out licenses-production.json
+npx --yes license-checker-rseidelsohn@4.3.0 --summary
 ```
 
 `license-checker-rseidelsohn` lit le champ `license` déclaré par chaque
 paquet résolu dans `node_modules` (pas une supposition à partir du nom du
-paquet). Rejoué le 2026-09-30 après la montée Angular 22.2.
+paquet). Rejoué le 2026-10-12 après les montées Playwright 1.64.0 et Vite
+8.3.4, puis l'ajout de la police de test DejaVu Sans 5.3.0.
 
 ## Dépendances de production (ce qui est réellement livré au navigateur)
 
-**15 paquets tiers, tous à licence permissive — aucune licence copyleft (GPL/AGPL/
+**17 paquets tiers, tous à licence permissive — aucune licence copyleft (GPL/AGPL/
 LGPL/MPL) détectée :**
 
 | Paquet | Version | Licence | Obligation pratique |
 | --- | --- | --- | --- |
 | `@angular/common`, `@angular/compiler`, `@angular/core`, `@angular/forms`, `@angular/localize`, `@angular/platform-browser`, `@angular/router` | 22.2.0 | MIT | Conserver la notice de copyright |
-| `@angular/cdk`, `@angular/material` | 22.2.1 | MIT | Conserver la notice de copyright |
+| `@angular/aria`, `@angular/cdk`, `@angular/material` | 22.2.1 | MIT | Conserver la notice de copyright |
 | `date-fns` | 4.4.0 | MIT | Conserver la notice de copyright |
 | `exceljs` | 4.4.0 | MIT | Conserver la notice de copyright |
 | `i18next` | 26.3.6 | MIT | Conserver la notice de copyright |
 | `ol` (OpenLayers) | 10.10.0 | BSD-2-Clause | Conserver la notice de copyright dans la doc/l'à-propos |
+| `react-router` | 8.4.0 | MIT | Conserver la notice de copyright |
 | `rxjs` | 7.8.2 | Apache-2.0 | Conserver la notice ; licence de brevet explicite (généralement favorable en entreprise) |
 | `tslib` | 2.8.1 | 0BSD | Aucune (licence sans condition) |
 | `@cmz/source` | 0.0.0 | `UNLICENSED` | Ce dépôt lui-même — cohérent avec `"private": true` |
@@ -51,17 +53,16 @@ automatique », section précédente) — corrigée en l'outillant (`check:
 licenses`, ci-dessous), pas seulement en mettant à jour le chiffre une fois
 de plus.
 
-92 paquets résolus au total : 77 MIT, 6 Apache-2.0, 1 BSD-2-Clause, 1
-BSD-3-Clause, 3 ISC, 1 0BSD, 1 Unlicense, 1 **MPL-2.0**
-(`axe-core@4.12.1`), 1 `UNLICENSED` (ce dépôt). Aucune licence copyleft
-**côté production** ; une
-seule licence copyleft faible (MPL-2.0, fichier par fichier) côté
-outillage, jamais bundlée dans le livrable navigateur — voir §
-« Exception documentée » ci-dessous.
+80 paquets résolus au total : 66 MIT, 6 Apache-2.0, 1 BSD-2-Clause, 3 ISC,
+1 0BSD, 1 **OFL-1.1** (`@fontsource/dejavu-sans@5.3.0`), 1 **MPL-2.0**
+(`axe-core@4.13.0`) et 1 `UNLICENSED` (ce dépôt). Aucune licence non
+permissive **côté production** ; les deux exceptions concernent uniquement
+l'outillage et les tests, jamais le livrable navigateur — voir les décisions
+documentées ci-dessous.
 
 ### Exception documentée — `axe-core` (MPL-2.0)
 
-`axe-core@4.12.1` est une devDependency utilisée uniquement par la suite de
+`axe-core@4.13.0` est une devDependency utilisée uniquement par la suite de
 tests d'accessibilité (T12-8, gate CI a11y) — jamais importée par
 `apps/backoffice-angular` ni bundlée dans `dist/`. MPL-2.0 est un copyleft
 « faible » (obligations limitées aux fichiers du paquet lui-même modifiés,
@@ -70,6 +71,28 @@ redistribué, aucune obligation ne s'applique au code de ce dépôt. Exception
 déclarée nominativement dans `tools/check-licenses.mjs`
 (`DEV_ONLY_EXCEPTIONS`) — invalidée automatiquement si `axe-core` migrait
 un jour vers une dépendance de production.
+
+### Exception documentée — `@fontsource/dejavu-sans` (OFL-1.1)
+
+`@fontsource/dejavu-sans@5.3.0` est une devDependency utilisée uniquement par
+deux preuves Playwright de reflow React C5. Les deux WOFF2 requis sont lus par
+le processus de test, vérifiés par SHA-256 puis injectés dans la page de test ;
+ils ne sont importés par aucun fichier produit et ne figurent pas dans le
+bundle navigateur.
+
+Le manifeste npm déclare `OFL-1.1` ; c'est cette métadonnée que relève la gate
+automatique. Le fichier `LICENSE` réellement livré par le paquet contient
+toutefois les notices historiques Bitstream Vera et Arev, et indique que les
+modifications DejaVu sont dans le domaine public. Toute redistribution des
+fichiers de police doit donc conserver ce fichier et ses notices complètes,
+notamment les conditions relatives aux noms réservés, aux modifications et à
+la vente de la police seule. Cette distinction entre métadonnée SPDX et texte
+embarqué est volontaire : ni un humain ni un LLM ne doit déduire les
+obligations juridiques du seul identifiant retourné par l'outil.
+
+L'exception nominative reste déclarée dans `tools/check-licenses.mjs`
+(`DEV_ONLY_EXCEPTIONS`) et est automatiquement refusée si le paquet migre vers
+les dépendances de production.
 
 ## Automatisation (T6-2)
 
