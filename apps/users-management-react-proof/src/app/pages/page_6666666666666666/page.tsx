@@ -588,7 +588,6 @@ export function Pagepage6666666666666666() {
                                     loadingNext={compactLoadingNext}
                                     onRetry={retryCompactPage}
                                     sentinelRef={compactSentinelRef}
-                                    totalItems={compactProjection.totalItems}
                                     users={compactUsers}
                                 />
                             ) : (

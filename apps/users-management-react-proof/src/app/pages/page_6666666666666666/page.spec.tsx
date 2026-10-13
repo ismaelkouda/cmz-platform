@@ -1,3 +1,4 @@
+import { createRef } from 'react';
 import {
     cleanup,
     fireEvent,
@@ -7,6 +8,8 @@ import {
 } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { CompactUsersResults } from './page-compact-users';
+import { EMPTY_USERS_FILTERS, UsersFilterPanel } from './page-filters';
 import type { UsersManagementPageHostRequest } from './page-host';
 import { Pagepage6666666666666666 } from './page';
 
@@ -101,6 +104,94 @@ afterEach(() => {
 });
 
 describe('users management React page', () => {
+    it('keeps the compact list useful without duplicating its item count', () => {
+        render(
+            <CompactUsersResults
+                announcement=""
+                failedPage={null}
+                hasNext={false}
+                loadingNext={false}
+                onRetry={() => undefined}
+                sentinelRef={createRef<HTMLSpanElement>()}
+                users={[
+                    {
+                        uniqId: 'user-1',
+                        firstName: 'Mariam',
+                        lastName: 'Koné',
+                        email: 'mariam.kone@example.test',
+                        profile: 'Administrateur',
+                        role: 'supervisor',
+                        status: 'active',
+                        updatedAt: '2026-10-01T10:30:00.000Z',
+                    },
+                ]}
+            />
+        );
+
+        expect(screen.queryByText(/affichés/i)).toBeNull();
+        expect(
+            screen.getByRole('region', { name: 'Utilisateurs' })
+        ).toBeTruthy();
+        expect(screen.getByText('mariam.kone@example.test')).toBeTruthy();
+    });
+
+    it('calcule les noms accessibles depuis les libellés rendus en mode contraint', () => {
+        const returnFocusRef = createRef<HTMLButtonElement>();
+        const { rerender } = render(
+            <>
+                <button ref={returnFocusRef} type="button">
+                    Ouvrir les filtres
+                </button>
+                <UsersFilterPanel
+                    compact
+                    filters={EMPTY_USERS_FILTERS}
+                    profiles={[]}
+                    returnFocusRef={returnFocusRef}
+                    onChange={() => undefined}
+                    onClose={() => undefined}
+                    onReset={() => undefined}
+                    onApply={() => undefined}
+                />
+            </>
+        );
+
+        for (const [label, value] of [
+            ['Profil', 'Tous les profils'],
+            ['Rôle', 'Tous les rôles'],
+            ['Statut', 'Tous'],
+        ]) {
+            const button = screen
+                .getByText(label, { selector: 'strong' })
+                .closest('button');
+            expect(button?.textContent).toBe(`${label}${value}`);
+            expect(button?.hasAttribute('aria-label')).toBe(false);
+        }
+
+        rerender(
+            <>
+                <button ref={returnFocusRef} type="button">
+                    Ouvrir les filtres
+                </button>
+                <UsersFilterPanel
+                    compact
+                    filters={{ ...EMPTY_USERS_FILTERS, status: 'inactive' }}
+                    profiles={[]}
+                    returnFocusRef={returnFocusRef}
+                    onChange={() => undefined}
+                    onClose={() => undefined}
+                    onReset={() => undefined}
+                    onApply={() => undefined}
+                />
+            </>
+        );
+
+        const statusButton = screen
+            .getByText('Statut', { selector: 'strong' })
+            .closest('button');
+        expect(statusButton?.textContent).toBe('StatutInactifs');
+        expect(statusButton?.hasAttribute('aria-label')).toBe(false);
+    });
+
     it('loads the declared queries and renders the normalized user view', async () => {
         const requests: UsersManagementPageHostRequest[] = [];
         installHost(successfulRequestRecorder(requests));
