@@ -510,9 +510,18 @@
     grid-column: 1 / -1;
 }
 
+.requiredMarker,
 .fieldError,
 .formError {
     color: var(--cmz-color-danger);
+}
+
+.requiredMarker {
+    margin-inline-start: 0.25em;
+}
+
+.fieldError,
+.formError {
     font-size: 0.82rem;
 }
 

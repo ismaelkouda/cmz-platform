@@ -250,6 +250,33 @@ test('rend les trois classes adaptatives sans débordement et produit leurs preu
             name: 'Créer un utilisateur',
         });
         await expect(dialog).toBeVisible();
+        const requiredControls = [
+            dialog.getByRole('textbox', { name: 'Nom', exact: true }),
+            dialog.getByRole('textbox', { name: 'Prénom', exact: true }),
+            dialog.getByRole('textbox', {
+                name: 'Adresse e-mail',
+                exact: true,
+            }),
+            dialog.getByRole('textbox', { name: 'Téléphone', exact: true }),
+            dialog.getByRole('combobox', { name: 'Profil', exact: true }),
+        ];
+        for (const control of requiredControls) {
+            await expect(control).toHaveJSProperty('required', true);
+            await expect(control).not.toHaveAttribute('aria-required');
+        }
+        const requiredMarkers = dialog.locator('[class*="requiredMarker"]');
+        await expect(requiredMarkers).toHaveCount(5);
+        for (const marker of await requiredMarkers.all()) {
+            await expect(marker).toBeVisible();
+            await expect(marker).toHaveText('*');
+            await expect(marker).toHaveAttribute('aria-hidden', 'true');
+        }
+        await expect(
+            dialog.getByText('Tous les champs sont obligatoires.', {
+                exact: true,
+            })
+        ).toHaveCount(0);
+        await expect(dialog).not.toHaveAttribute('aria-describedby');
         expect(await axeViolations(dialog)).toEqual([]);
         const dialogBox = await dialog.boundingBox();
         expect(dialogBox).not.toBeNull();
@@ -275,6 +302,23 @@ test('rend les trois classes adaptatives sans débordement et produit leurs preu
             animations: 'disabled',
             caret: 'hide',
         });
+        await dialog
+            .getByRole('button', { name: 'Créer', exact: true })
+            .click();
+        const markerColors = await requiredMarkers.evaluateAll((markers) =>
+            markers.map((marker) => getComputedStyle(marker).color)
+        );
+        const errorColor = await dialog
+            .locator('[class*="fieldError"]')
+            .first()
+            .evaluate((error) => getComputedStyle(error).color);
+        const labelColor = await dialog
+            .locator('label')
+            .first()
+            .evaluate((label) => getComputedStyle(label).color);
+        expect(markerColors).toHaveLength(5);
+        expect(new Set(markerColors)).toEqual(new Set([errorColor]));
+        expect(errorColor).not.toBe(labelColor);
         await dialog
             .getByRole('button', {
                 name: 'Fermer le formulaire de création',
@@ -366,7 +410,9 @@ test('conserve focus, clavier et reflow à 320 px et texte à 200 %', async ({
     const dialog = page.getByRole('dialog', {
         name: 'Créer un utilisateur',
     });
-    await expect(dialog.getByLabel('Nom', { exact: true })).toBeFocused();
+    await expect(
+        dialog.getByRole('textbox', { name: 'Nom', exact: true })
+    ).toBeFocused();
     await page.keyboard.press('Shift+Tab');
     await expect(
         dialog.getByRole('button', {

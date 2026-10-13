@@ -11,9 +11,11 @@
 - **Reste à faire :** l'acceptation visuelle finale de la réalisation fusionnée
   par le propriétaire n'est pas encore obtenue. Ses remarques du 2026-10-11 —
   tri client de la page courante en Medium/Expanded, états du tableau, commande
-  de réinitialisation, erreurs du formulaire, légende des champs obligatoires —
-  restent à réaliser dans des lots séparés. Le tri serveur est différé jusqu'à
-  un contrat backend réel. Ces lots modifieront plusieurs règles de ce document
+  de réinitialisation et erreurs du formulaire — restent à réaliser dans des
+  lots séparés. Sa remarque sur les champs obligatoires est réalisée : la phrase
+  globale « Tous les champs sont obligatoires » est retirée et chacun des cinq
+  champs requis porte un astérisque. Le tri serveur est différé jusqu'à un
+  contrat backend réel. Ces lots modifieront plusieurs règles de ce document
   avant leur réalisation
 - **Preuve de page :** aucune `presentation-evidence` C5 n'est actuellement
   publiée ; la disposition est guidée par la liaison de mise en page

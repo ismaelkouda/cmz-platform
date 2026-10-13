@@ -169,7 +169,6 @@ export function CreateUserDialog({
             ref={dialogRef}
             className={styles.createDialog}
             aria-labelledby="create-title"
-            aria-describedby="create-description"
             onCancel={(event) => {
                 event.preventDefault();
                 close();
@@ -184,9 +183,6 @@ export function CreateUserDialog({
                 <header>
                     <div>
                         <h2 id="create-title">Créer un utilisateur</h2>
-                        <p id="create-description">
-                            Tous les champs sont obligatoires.
-                        </p>
                     </div>
                     <button
                         type="button"
@@ -209,7 +205,15 @@ export function CreateUserDialog({
 
                 <div className={styles.formGrid}>
                     <label>
-                        Nom
+                        <span>
+                            Nom
+                            <span
+                                className={styles.requiredMarker}
+                                aria-hidden="true"
+                            >
+                                *
+                            </span>
+                        </span>
                         <input
                             ref={(element) => {
                                 fieldRefs.current.lastName =
@@ -243,7 +247,15 @@ export function CreateUserDialog({
                         )}
                     </label>
                     <label>
-                        Prénom
+                        <span>
+                            Prénom
+                            <span
+                                className={styles.requiredMarker}
+                                aria-hidden="true"
+                            >
+                                *
+                            </span>
+                        </span>
                         <input
                             ref={(element) => {
                                 fieldRefs.current.firstName =
@@ -277,7 +289,15 @@ export function CreateUserDialog({
                         )}
                     </label>
                     <label className={styles.fullField}>
-                        Adresse e-mail
+                        <span>
+                            Adresse e-mail
+                            <span
+                                className={styles.requiredMarker}
+                                aria-hidden="true"
+                            >
+                                *
+                            </span>
+                        </span>
                         <input
                             ref={(element) => {
                                 fieldRefs.current.email = element ?? undefined;
@@ -308,7 +328,15 @@ export function CreateUserDialog({
                         )}
                     </label>
                     <label>
-                        Téléphone
+                        <span>
+                            Téléphone
+                            <span
+                                className={styles.requiredMarker}
+                                aria-hidden="true"
+                            >
+                                *
+                            </span>
+                        </span>
                         <input
                             ref={(element) => {
                                 fieldRefs.current.phone = element ?? undefined;
@@ -339,7 +367,15 @@ export function CreateUserDialog({
                         )}
                     </label>
                     <label className={styles.fullField}>
-                        Profil
+                        <span>
+                            Profil
+                            <span
+                                className={styles.requiredMarker}
+                                aria-hidden="true"
+                            >
+                                *
+                            </span>
+                        </span>
                         <select
                             ref={(element) => {
                                 fieldRefs.current.profileId =

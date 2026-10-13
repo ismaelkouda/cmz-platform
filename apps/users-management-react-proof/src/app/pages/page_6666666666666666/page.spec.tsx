@@ -291,6 +291,55 @@ describe('users management React page', () => {
         });
     });
 
+    it('signale les cinq champs requis sans polluer leur nom accessible', async () => {
+        const requests: UsersManagementPageHostRequest[] = [];
+        installHost(successfulRequestRecorder(requests));
+        render(<Pagepage6666666666666666 />);
+
+        await screen.findByRole('cell', { name: /Koné Mariam/ });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Créer un utilisateur' })
+        );
+        const dialog = await screen.findByRole('dialog', {
+            name: 'Créer un utilisateur',
+        });
+        const controls = [
+            screen.getByRole('textbox', { name: 'Nom', exact: true }),
+            screen.getByRole('textbox', { name: 'Prénom', exact: true }),
+            screen.getByRole('textbox', {
+                name: 'Adresse e-mail',
+                exact: true,
+            }),
+            screen.getByRole('textbox', { name: 'Téléphone', exact: true }),
+            screen.getByRole('combobox', { name: 'Profil', exact: true }),
+        ];
+        const markers = Array.from(dialog.querySelectorAll('label')).flatMap(
+            (label) =>
+                Array.from(
+                    label.querySelectorAll<HTMLElement>(
+                        '[class*="requiredMarker"]'
+                    )
+                )
+        );
+
+        expect(
+            screen.queryByText('Tous les champs sont obligatoires.', {
+                exact: true,
+            })
+        ).toBeNull();
+        expect(dialog.hasAttribute('aria-describedby')).toBe(false);
+        expect(markers).toHaveLength(5);
+        for (const marker of markers) {
+            expect(marker.textContent).toBe('*');
+            expect(marker.getAttribute('aria-hidden')).toBe('true');
+        }
+        for (const control of controls) {
+            expect(
+                (control as HTMLInputElement | HTMLSelectElement).required
+            ).toBe(true);
+        }
+    });
+
     it('keeps the dialog open and announces a server rejection', async () => {
         const requests: UsersManagementPageHostRequest[] = [];
         installHost(async (request) => {
@@ -312,21 +361,42 @@ describe('users management React page', () => {
         fireEvent.click(
             screen.getByRole('button', { name: 'Créer un utilisateur' })
         );
-        fireEvent.change(screen.getByLabelText('Nom'), {
-            target: { value: 'Koné' },
-        });
-        fireEvent.change(screen.getByLabelText('Prénom'), {
-            target: { value: 'Mariam' },
-        });
-        fireEvent.change(screen.getByLabelText('Adresse e-mail'), {
-            target: { value: 'mariam.kone@example.test' },
-        });
-        fireEvent.change(screen.getByLabelText('Téléphone'), {
-            target: { value: '+2250506070809' },
-        });
-        fireEvent.change(screen.getByLabelText('Profil'), {
-            target: { value: 'profile-admin' },
-        });
+        fireEvent.change(
+            screen.getByRole('textbox', { name: 'Nom', exact: true }),
+            {
+                target: { value: 'Koné' },
+            }
+        );
+        fireEvent.change(
+            screen.getByRole('textbox', { name: 'Prénom', exact: true }),
+            {
+                target: { value: 'Mariam' },
+            }
+        );
+        fireEvent.change(
+            screen.getByRole('textbox', {
+                name: 'Adresse e-mail',
+                exact: true,
+            }),
+            {
+                target: { value: 'mariam.kone@example.test' },
+            }
+        );
+        fireEvent.change(
+            screen.getByRole('textbox', {
+                name: 'Téléphone',
+                exact: true,
+            }),
+            {
+                target: { value: '+2250506070809' },
+            }
+        );
+        fireEvent.change(
+            screen.getByRole('combobox', { name: 'Profil', exact: true }),
+            {
+                target: { value: 'profile-admin' },
+            }
+        );
         fireEvent.click(screen.getByRole('button', { name: 'Créer' }));
 
         expect((await screen.findByRole('alert')).textContent).toContain(

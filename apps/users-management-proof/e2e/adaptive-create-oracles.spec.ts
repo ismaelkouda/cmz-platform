@@ -188,7 +188,7 @@ async function fillValidCreate(dialog: Locator): Promise<void> {
 
 test('étroit : rend un dialogue plein écran avec trois régions stables', async ({
     page,
-}) => {
+}, testInfo) => {
     await installHostAndBackend(page);
     await page.setViewportSize(COMPACT);
     await openReadyPage(page);
@@ -207,11 +207,18 @@ test('étroit : rend un dialogue plein écran avec trois régions stables', asyn
     await expect(
         dialog.locator('[data-cmz-id="create-actions"]')
     ).toBeVisible();
+    await page.screenshot({
+        path: testInfo.outputPath(
+            'compact-users-management-create-open.actual.png'
+        ),
+        animations: 'disabled',
+        caret: 'hide',
+    });
 });
 
 test('régulier : centre une surface modale à une colonne sans redimensionner la liste', async ({
     page,
-}) => {
+}, testInfo) => {
     await installHostAndBackend(page);
     await page.setViewportSize(MEDIUM);
     await openReadyPage(page);
@@ -232,11 +239,18 @@ test('régulier : centre une surface modale à une colonne sans redimensionner l
     expectCentered(box, MEDIUM);
     expect(await formColumnCount(dialog)).toBe(1);
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
+    await page.screenshot({
+        path: testInfo.outputPath(
+            'medium-users-management-create-open.actual.png'
+        ),
+        animations: 'disabled',
+        caret: 'hide',
+    });
 });
 
 test('large : centre une surface modale à deux colonnes sans redimensionner la liste', async ({
     page,
-}) => {
+}, testInfo) => {
     await installHostAndBackend(page);
     await page.setViewportSize(EXPANDED);
     await openReadyPage(page);
@@ -262,6 +276,13 @@ test('large : centre une surface modale à deux colonnes sans redimensionner la 
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
     await expect(page.locator('main')).toHaveAttribute('inert', '');
     await expect(page.locator('.backdrop')).toBeVisible();
+    await page.screenshot({
+        path: testInfo.outputPath(
+            'expanded-users-management-create-open.actual.png'
+        ),
+        animations: 'disabled',
+        caret: 'hide',
+    });
 });
 
 test('conserve l’ordre Nom, Prénom, Email, Téléphone, Profil et focalise Nom', async ({
@@ -288,6 +309,37 @@ test('conserve l’ordre Nom, Prénom, Email, Téléphone, Profil et focalise No
     const close = dialog.getByRole('button', { name: 'Fermer' });
     await expect(close).toBeVisible();
     expect((await close.textContent())?.trim()).toBe('×');
+});
+
+test('expose cinq champs requis, cinq marqueurs décoratifs et des noms accessibles exacts', async ({
+    page,
+}) => {
+    await installHostAndBackend(page);
+    await page.setViewportSize(MEDIUM);
+    await openReadyPage(page);
+    const dialog = await openCreate(page);
+    const controls = [
+        dialog.getByRole('textbox', { name: 'Nom', exact: true }),
+        dialog.getByRole('textbox', { name: 'Prénom', exact: true }),
+        dialog.getByRole('textbox', { name: 'Email', exact: true }),
+        dialog.getByRole('textbox', { name: 'Téléphone', exact: true }),
+        dialog.getByRole('combobox', { name: 'Profil', exact: true }),
+    ];
+
+    for (const control of controls) {
+        await expect(control).toHaveJSProperty('required', true);
+        await expect(control).not.toHaveAttribute('aria-required');
+    }
+    const markers = dialog.locator('.required-marker');
+    await expect(markers).toHaveCount(5);
+    for (const marker of await markers.all()) {
+        await expect(marker).toBeVisible();
+        await expect(marker).toHaveText('*');
+        await expect(marker).toHaveAttribute('aria-hidden', 'true');
+    }
+    await expect(
+        dialog.getByText('Tous les champs sont obligatoires.', { exact: true })
+    ).toHaveCount(0);
 });
 
 test('une soumission invalide ne POST pas, annonce les erreurs et focalise Nom', async ({
@@ -318,6 +370,21 @@ test('une soumission invalide ne POST pas, annonce les erreurs et focalise Nom',
         await expect(dialog.locator(`#${id}`)).toBeVisible();
     }
     await expect(dialog.locator('[data-cmz-id="last-name"]')).toBeFocused();
+    const markerColors = await dialog
+        .locator('.required-marker')
+        .evaluateAll((markers) =>
+            markers.map((marker) => getComputedStyle(marker).color)
+        );
+    const errorColor = await dialog
+        .locator('#last-name-error')
+        .evaluate((error) => getComputedStyle(error).color);
+    const labelColor = await dialog
+        .locator('label')
+        .first()
+        .evaluate((label) => getComputedStyle(label).color);
+    expect(markerColors).toHaveLength(5);
+    expect(new Set(markerColors)).toEqual(new Set([errorColor]));
+    expect(errorColor).not.toBe(labelColor);
     const errorSelector = [
         'last-name-error',
         'first-name-error',
@@ -584,7 +651,7 @@ test('320 CSS px et texte à 200 % gardent header, corps, footer et zéro scroll
     page,
 }) => {
     await installHostAndBackend(page);
-    await page.setViewportSize({ width: 320, height: 640 });
+    await page.setViewportSize({ width: 320, height: 568 });
     await openReadyPage(page);
     const dialog = await openCreate(page);
     await page.addStyleTag({
@@ -603,7 +670,7 @@ test('320 CSS px et texte à 200 % gardent header, corps, footer et zéro scroll
     ).toBe(true);
     const box = requireBox(await dialog.boundingBox(), 'dialogue reflow');
     expect(box.width).toBeLessThanOrEqual(320);
-    expect(box.height).toBeLessThanOrEqual(640);
+    expect(box.height).toBeLessThanOrEqual(568);
     await expect(dialog.locator('[data-cmz-id="create-header"]')).toBeVisible({
         timeout: 2_000,
     });
