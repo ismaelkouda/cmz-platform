@@ -116,6 +116,28 @@ describe('PageCreateComponent', () => {
         expect(document.activeElement).toBe(field(root, 'last-name'));
     });
 
+    it('signale les cinq champs requis sans répéter leur astérisque dans leur nom accessible', async () => {
+        const { root } = await setup();
+        const dialog = element<HTMLElement>(root, '[role="dialog"]');
+        const labels = Array.from(dialog.querySelectorAll('label'));
+        const markers = labels.flatMap((label) =>
+            Array.from(label.querySelectorAll<HTMLElement>('.required-marker'))
+        );
+
+        expect(dialog.textContent).not.toContain(
+            'Tous les champs sont obligatoires.'
+        );
+        expect(markers).toHaveLength(5);
+        for (const marker of markers) {
+            expect(marker.textContent).toBe('*');
+            expect(marker.getAttribute('aria-hidden')).toBe('true');
+        }
+        for (const id of FIELD_IDS) expect(field(root, id).required).toBe(true);
+        expect(field(root, 'last-name').labels?.[0]?.textContent).toContain(
+            'Nom'
+        );
+    });
+
     it('expose les erreurs sans commande et refocalise Nom', async () => {
         const { created, fixture, root, submitUser } = await setup();
         const submit = element<HTMLButtonElement>(

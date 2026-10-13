@@ -17,7 +17,6 @@
         <header data-cmz-id="create-header" class="drawer-header">
             <div>
                 <h2 id="create-title">Créer un utilisateur</h2>
-                <p>Tous les champs sont obligatoires.</p>
             </div>
             <button
                 type="button"
@@ -52,7 +51,7 @@
                 }
                 <div class="create-fields">
                     <label>
-                        <span>Nom *</span>
+                        <span>Nom<span class="required-marker" aria-hidden="true">*</span></span>
                         <input
                             #lastNameInput
                             data-cmz-id="last-name"
@@ -68,7 +67,7 @@
                         }
                     </label>
                     <label>
-                        <span>Prénom *</span>
+                        <span>Prénom<span class="required-marker" aria-hidden="true">*</span></span>
                         <input
                             data-cmz-id="first-name"
                             type="text"
@@ -83,7 +82,7 @@
                         }
                     </label>
                     <label class="create-field-email">
-                        <span>Email *</span>
+                        <span>Email<span class="required-marker" aria-hidden="true">*</span></span>
                         <input
                             data-cmz-id="email"
                             type="email"
@@ -104,7 +103,7 @@
                         }
                     </label>
                     <label>
-                        <span>Téléphone *</span>
+                        <span>Téléphone<span class="required-marker" aria-hidden="true">*</span></span>
                         <input
                             data-cmz-id="phone"
                             type="tel"
@@ -119,7 +118,7 @@
                         }
                     </label>
                     <label>
-                        <span>Profil *</span>
+                        <span>Profil<span class="required-marker" aria-hidden="true">*</span></span>
                         <select
                             data-cmz-id="profile-id"
                             [formField]="createForm.profileId"
