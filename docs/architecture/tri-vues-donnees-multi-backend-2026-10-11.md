@@ -1,8 +1,9 @@
 # Tri des vues de données — guide multi-backend et multi-cible
 
-- **Date de vérification :** 2026-10-11
-- **Statut :** guide d'architecture en vigueur ; aucune capacité de tri n'est
-  déclarée réalisée par ce document
+- **Date de vérification :** 2026-10-13
+- **Statut :** guide d'architecture en vigueur ; le tri client C5 est réalisé en
+  Angular depuis le 2026-10-13, sans promotion de capacité ; React et le tri
+  serveur restent à réaliser
 - **Décision :**
   [ADR-0100](../adr/0100-tri-vues-donnees-modes-none-client-server.md)
 - **Cibles :** Angular Material et React natif
@@ -35,8 +36,11 @@ ni schéma ni API publique avant un lot dédié avec fixtures et oracles.
 
 `client/current-page` n'est pas une approximation de `server`. C'est une
 fonction distincte et limitée : elle réordonne uniquement les lignes visibles de
-la réponse courante. Cette portée doit être perceptible pour les utilisateurs
-voyants et exposée aux technologies d'assistance lorsque le tri est actif.
+la réponse courante. Cette portée est exposée aux technologies d'assistance
+lorsque le tri est actif ; aucune mention visuelle dédiée n'est exigée. Dette
+acceptée par le propriétaire le 2026-10-13 après examen en Medium et Expanded :
+à l'écran, rien ne distingue nécessairement ce tri d'un tri global. Le pied de
+liste conserve la plage affichée.
 
 ## 3. Modèle conceptuel candidat
 
@@ -64,11 +68,11 @@ voyants et exposée aux technologies d'assistance lorsque le tri est actif.
 ```
 
 Le traitement des accents n'est pas déduit de la locale. La décision acceptée
-impose une comparaison insensible à la casse ; le lot Angular devra fixer le
-comportement des accents par des vecteurs de test explicites avant de figer un
-champ de configuration. En particulier, la valeur `base` de `Intl.Collator`
-ignore à la fois la casse et les accents et ne doit pas être présentée comme une
-simple option de casse.
+impose une comparaison insensible à la casse ; la réalisation Angular fixe le
+comportement avec
+`Intl.Collator('fr', { usage: 'sort', sensitivity: 'accent' })` et des vecteurs
+explicites. En particulier, la valeur `base` ignore à la fois la casse et les
+accents et ne doit pas être présentée comme une simple option de casse.
 
 ### 3.2 Intention de tri serveur
 
@@ -240,7 +244,7 @@ déclarer.
 
 ### 8.1 Primitive officielle
 
-La cible Angular utilise `MatSort` et `MatSortHeader` sur la table HTML
+La cible Angular réalisée utilise `MatSort` et `MatSortHeader` sur la table HTML
 existante. `matSortChange` met à jour l'état signal ; la projection `computed`
 applique le comparateur C5. `sortActionDescription` décrit l'action disponible
 et `LiveAnnouncer` annonce le résultat une seule fois.
@@ -278,6 +282,10 @@ La réalisation :
 - vérifie l'arbre accessible et les annonces avec NVDA et VoiceOver ;
 - s'arrête pour arbitrage si l'expérience devient ambiguë ou répétitive.
 
+État au 2026-10-13 : l'essai VoiceOver réel est concluant sur le nom, la
+description et l'annonce du tri croissant ; NVDA et Safari ne sont pas testés.
+Le détail et les limites sont dans ADR-0100, « Réalisations UI ».
+
 ## 9. Réalisation React native
 
 La cible React n'ajoute aucune bibliothèque de table :
@@ -301,22 +309,22 @@ oracles vérifient les comportements et l'accessibilité propres à la cible.
 - le contour de focus reste visible en contraste forcé ;
 - la direction active est annoncée une fois, sans relire le tableau ;
 - en `current-page`, action et annonce disent « lignes affichées » ;
-- un statut perceptible précise la portée locale lorsque le tri est actif ; sa
-  disposition sera validée par le propriétaire, un tooltip seul ne suffit pas ;
+- aucune mention visuelle dédiée de la portée locale n'est exigée ;
 - loading, vide, erreur et données périmées gardent les headers et ne falsifient
   pas la direction appliquée ;
 - le zoom et le changement de classe de fenêtre ne perdent ni état ni focus.
 
-Ce statut perceptible est une exigence d'architecture ajoutée par ADR-0100 pour
-compléter la proposition acceptée et éviter une portée trompeuse. Aucune forme
-visuelle n'est déjà approuvée : le propriétaire validera la proposition du lot
-Angular avant sa promotion.
+Cette absence de mention visible est une décision générique du propriétaire du
+2026-10-13, prise après examen de la forme proposée en Medium et Expanded. Elle
+ne transforme pas `current-page` en tri global : descriptions et annonces
+continuent à dire « lignes affichées ». L'ambiguïté visuelle restante est une
+dette acceptée.
 
 Pour C5, FOCUS-03 impose une cible visible d'au moins `48 × 48 CSS px` dans les
 trois classes de disposition. Cette règle locale n'est pas généralisée à tout
 produit.
 
-## 11. Profil cible C5, non encore réalisé
+## 11. Profil cible C5 — Angular réalisé, React restant
 
 | Colonne     | Triable | Comparateur                       |
 | ----------- | ------- | --------------------------------- |
@@ -334,8 +342,9 @@ requête au clic, état conservé sur page/recherche/filtre/rechargement. Compac
 V1 reste sans tri car ses pages sont ajoutées progressivement.
 
 Les colonnes, la locale et les comparateurs de cette table ne deviennent pas des
-constantes du générateur. L'oracle actuel qui exige zéro `aria-sort` reste
-correct jusqu'au lot Angular.
+constantes du générateur. L'ancien oracle qui exigeait zéro contrôle de tri est
+remplacé côté Angular par les oracles du lot ; React reste sans cette capacité
+jusqu'à sa réalisation dédiée.
 
 ## 12. États à concevoir
 
@@ -376,12 +385,17 @@ et ne portent aucune valeur de tri.
 - sept boutons C5 et aucun autre en Medium/Expanded ; aucun en Compact ;
 - cycle complet et zéro requête au clic ;
 - direction active, description d'action et annonce live ;
-- portée locale perceptible et accessible ;
+- portée locale exposée par la description et l'annonce aux technologies
+  d'assistance, sans bandeau visible ;
 - clavier, focus, zoom, contraste forcé et arbre accessible ;
 - cibles C5 d'au moins `48 × 48 CSS px` dans les trois dispositions, avec une
   mutation qui fait échouer FOCUS-03 quand cette dimension est réduite ;
 - NVDA et VoiceOver réels pour le comportement Material `none` ;
 - captures Medium/Expanded soumises au propriétaire.
+
+Au 2026-10-13, la réalisation Angular C5 dispose de l'essai VoiceOver réel et
+des captures validées, pas de l'essai NVDA : cette preuve reste due avant
+promotion.
 
 ### Serveur futur
 

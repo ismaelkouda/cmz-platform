@@ -2,6 +2,8 @@
 
 - **Statut :** Accepted
 - **Date :** 2026-10-11
+- **Amendement :** 2026-10-13 — la portée `current-page` reste annoncée aux
+  technologies d'assistance, sans mention visuelle obligatoire
 - **Décideur :** propriétaire du produit CMZ
 - **Supersède partiellement :**
   [ADR-0074](./0074-filtres-progressifs-par-blocs-actifs.md), uniquement la
@@ -37,10 +39,12 @@ Le 2026-10-11, le propriétaire a décidé :
 4. que C5 peut trier seulement les éléments de la page courante renvoyée par le
    backend.
 
-L'exigence de rendre cette portée perceptible complète la proposition acceptée :
-elle est ajoutée par cet ADR pour éviter de présenter le résultat comme un tri
-global. Aucune forme visuelle n'est approuvée à ce stade ; le propriétaire devra
-valider sa réalisation dans le lot Angular.
+Le 2026-10-13, après examen en Medium et Expanded de la forme proposée, le
+propriétaire a décidé qu'aucune mention visuelle de cette portée n'est exigée,
+pour tous les écrans. La portée `current-page` reste dite aux technologies
+d'assistance lorsque le tri est actif. La dette est acceptée explicitement : à
+l'écran, rien ne distingue nécessairement un tri de la page courante d'un tri de
+toute la collection ; le pied de liste conserve toutefois la plage affichée.
 
 Cette décision est acceptée comme politique d'architecture. Elle ne constitue
 pas une preuve de réalisation Angular, React ou backend.
@@ -100,8 +104,8 @@ serveur. La V1 est mono-tri et suit le cycle `asc → desc → none`.
 - `complete-collection` exige la preuve que toute la collection, bornée, est
   présente dans le navigateur ;
 - `current-page` trie uniquement la réponse courante visible. Cette limite est
-  communiquée visuellement et aux technologies d'assistance lorsque le tri est
-  actif ;
+  communiquée aux technologies d'assistance lorsque le tri est actif ; aucune
+  mention visuelle dédiée n'est exigée ;
 - trier séparément les fragments d'un chargement progressif ou d'une fenêtre
   virtualisée distante est refusé.
 
@@ -141,9 +145,20 @@ active et qualifie ce comportement avec NVDA et VoiceOver. Elle ne manipule ni
 API privée ni DOM pour fabriquer une conformité apparente. Un résultat ambigu ou
 bruyant arrête le lot Angular pour arbitrage.
 
+État au 2026-10-13 : l'essai VoiceOver réel, mené par le propriétaire sous macOS
+26.1 et Chrome 155, est concluant sur le nom, la description et l'annonce du tri
+croissant. NVDA n'est pas testé. Décision du propriétaire du 2026-10-13 : essai
+VoiceOver par lui-même avant l'enregistrement, NVDA noté non testé faute de
+poste Windows, et le tri n'est pas déclaré validé pour l'accessibilité tant que
+cet essai manque. Safari n'est pas testé. Le sens décroissant, le retour à
+l'ordre reçu et l'entrée dans un tableau déjà trié n'ont pas été réécoutés sur
+la version finale. React reste à réaliser et à qualifier séparément.
+
 ## Application à C5
 
-Cette cible est décidée mais pas encore réalisée :
+La cible Angular est réalisée par le lot de tri Angular du 2026-10-13, à
+l'exception de `Réinitialiser`, qui reste un lot séparé : `Rafraîchir` conserve
+aujourd'hui le tri. La cible React reste à réaliser :
 
 - Medium et Expanded : Nom, Prénom, Email, Profil, Rôle, Statut et Mise à jour
   sont triables ; `#` ne l'est pas ;
@@ -158,9 +173,12 @@ Cette cible est décidée mais pas encore réalisée :
   Profil, Rôle et Statut utilisent leur libellé localisé affiché ; Mise à jour
   utilise la date brute ; les valeurs absentes restent en dernier.
 
-L'oracle C5 actuel qui interdit tout `aria-sort` reste la vérité exécutable
-jusqu'au lot de réalisation Angular. Aucun claim de tri C5 n'est donc promu par
-cet ADR.
+L'ancien oracle C5 qui interdisait tout contrôle de tri est remplacé par des
+oracles qui exigent exactement sept colonnes triables hors Compact, le cycle
+complet, zéro requête au clic, les descriptions et annonces accessibles, et
+l'absence de bandeau de portée. Cette réalisation ne promeut pas la capacité
+générique : le schéma exécutable et React restent à faire, et NVDA n'est pas
+testé.
 
 ## Justification
 
@@ -187,8 +205,11 @@ global produit par un navigateur qui ne possède qu'une page.
 - `current-page` ne produit aucune cohérence entre plusieurs pages ;
 - le comportement `aria-sort="none"` de Material exige des essais lecteurs
   d'écran réels ;
-- la portée locale doit occuper une place perceptible dans l'interface ; sa
-  forme exacte sera validée visuellement dans le lot Angular.
+- aucune mention visuelle dédiée ne distingue obligatoirement un tri
+  `current-page` d'un tri global ; cette ambiguïté pour les utilisateurs voyants
+  est une dette acceptée par le propriétaire le 2026-10-13 après examen de la
+  forme proposée en Medium et Expanded. Les technologies d'assistance continuent
+  d'entendre « lignes affichées » dans la description et l'annonce.
 
 ### Points à réévaluer
 
