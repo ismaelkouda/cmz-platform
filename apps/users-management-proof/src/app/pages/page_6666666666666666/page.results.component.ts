@@ -3,11 +3,20 @@ import {
     ElementRef,
     afterRenderEffect,
     computed,
+    inject,
     input,
     linkedSignal,
     output,
+    signal,
     viewChild,
 } from '@angular/core';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
+import {
+    MatSort,
+    MatSortHeader,
+    type Sort,
+    type SortDirection,
+} from '@angular/material/sort';
 
 import type { ProfileOption } from '../../generated/page_6666666666666666/angular/src/nodes/profiles-select/models';
 import type {
@@ -25,6 +34,44 @@ export interface FilterShortcut {
     readonly value: string;
 }
 
+const SORT_COLUMNS = [
+    'lastName',
+    'firstName',
+    'email',
+    'profile',
+    'role',
+    'status',
+    'updatedAt',
+] as const;
+
+type SortColumn = (typeof SORT_COLUMNS)[number];
+type ActiveSortDirection = Exclude<SortDirection, ''>;
+
+interface ActiveSort {
+    readonly column: SortColumn;
+    readonly direction: ActiveSortDirection;
+}
+
+type DateSortKey =
+    | { readonly kind: 'valid'; readonly epoch: number }
+    | { readonly kind: 'invalid'; readonly raw: string }
+    | { readonly kind: 'absent' };
+
+const SORT_LABELS: Readonly<Record<SortColumn, string>> = {
+    lastName: 'Nom',
+    firstName: 'Prénom',
+    email: 'Email',
+    profile: 'Profil',
+    role: 'Rôle',
+    status: 'Statut',
+    updatedAt: 'Mise à jour',
+};
+
+const FRENCH_COLLATOR = new Intl.Collator('fr', {
+    sensitivity: 'accent',
+    usage: 'sort',
+});
+
 // Vue de la collection d'utilisateurs : ses quatre états (chargement, vide,
 // erreur avec données conservées, prêt), ses deux rendus (tableau, cartes), la
 // pagination, les raccourcis de colonne et le déclenchement visuel du
@@ -35,11 +82,14 @@ export interface FilterShortcut {
         '[class.filters-open]': 'filtersOpen()',
         '[class.layout-compact]': "layout() === 'compact'",
     },
+    imports: [MatSort, MatSortHeader],
     selector: 'app-page-results',
     styleUrl: './page.results.component.scss',
     templateUrl: './page.results.component.html',
 })
 export class PageResultsComponent {
+    private readonly liveAnnouncer = inject(LiveAnnouncer);
+
     readonly layout = input.required<PageLayout>();
     readonly filtersOpen = input.required<boolean>();
     readonly loading = input.required<boolean>();
@@ -99,6 +149,24 @@ export class PageResultsComponent {
     protected readonly users = computed<readonly UserListItem[]>(
         () => this.page()?.items ?? []
     );
+    protected readonly activeSort = signal<ActiveSort | null>(null);
+    protected readonly sortedUsers = computed<readonly UserListItem[]>(() => {
+        const users = this.users();
+        const sort = this.activeSort();
+        if (!sort) return users;
+
+        return users
+            .map((user, receivedIndex) => ({ receivedIndex, user }))
+            .sort((left, right) => {
+                const comparison = this.compareUsers(
+                    left.user,
+                    right.user,
+                    sort
+                );
+                return comparison || left.receivedIndex - right.receivedIndex;
+            })
+            .map(({ user }) => user);
+    });
     protected readonly ready = computed(() => this.users().length > 0);
     protected readonly showSentinel = computed(
         () =>
@@ -186,6 +254,52 @@ export class PageResultsComponent {
         });
     }
 
+    protected sortChanged(sort: Sort): void {
+        if (!this.isSortColumn(sort.active)) {
+            throw new Error(
+                `Colonne de tri non prise en charge : ${sort.active}`
+            );
+        }
+
+        if (sort.direction === '') {
+            this.activeSort.set(null);
+            void this.liveAnnouncer.announce(
+                'Ordre reçu rétabli pour les lignes affichées',
+                'polite'
+            );
+            return;
+        }
+
+        this.activeSort.set({
+            column: sort.active,
+            direction: sort.direction,
+        });
+        const direction =
+            sort.direction === 'asc' ? 'croissant' : 'décroissant';
+        void this.liveAnnouncer.announce(
+            `Lignes affichées triées par ${SORT_LABELS[sort.active]}, ordre ${direction}`,
+            'polite'
+        );
+    }
+
+    protected sortActionDescription(column: SortColumn): string {
+        const sort = this.activeSort();
+        if (!sort || sort.column !== column) {
+            return `Trier les lignes affichées par ${SORT_LABELS[column]}, ordre croissant`;
+        }
+        if (sort.direction === 'asc') {
+            return `Tri croissant actif. Trier les lignes affichées par ${SORT_LABELS[column]}, ordre décroissant`;
+        }
+        return 'Tri décroissant actif. Rétablir l’ordre reçu pour les lignes affichées';
+    }
+
+    protected revealFocusedSortHeader(event: FocusEvent): void {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const header = target.closest<HTMLElement>('th[mat-sort-header]');
+        header?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+
     protected retryMobilePage(): void {
         this.mobileRetryRequested.emit();
     }
@@ -223,6 +337,111 @@ export class PageResultsComponent {
         const currentPage = this.page()?.currentPage ?? 1;
         const pageSize = this.page()?.pageSize ?? this.users().length;
         return (currentPage - 1) * pageSize + index + 1;
+    }
+
+    private isSortColumn(value: string): value is SortColumn {
+        return SORT_COLUMNS.includes(value as SortColumn);
+    }
+
+    private compareUsers(
+        left: UserListItem,
+        right: UserListItem,
+        sort: ActiveSort
+    ): number {
+        switch (sort.column) {
+            case 'lastName':
+            case 'firstName':
+            case 'email':
+            case 'profile':
+                return this.compareText(
+                    left[sort.column],
+                    right[sort.column],
+                    sort.direction
+                );
+            case 'role':
+                return this.compareText(
+                    this.presentText(left.role)
+                        ? this.roleLabel(left.role)
+                        : null,
+                    this.presentText(right.role)
+                        ? this.roleLabel(right.role)
+                        : null,
+                    sort.direction
+                );
+            case 'status':
+                return this.compareText(
+                    this.presentText(left.status)
+                        ? this.statusLabel(left.status)
+                        : null,
+                    this.presentText(right.status)
+                        ? this.statusLabel(right.status)
+                        : null,
+                    sort.direction
+                );
+            case 'updatedAt':
+                return this.compareDates(
+                    this.dateSortKey(left.updatedAt),
+                    this.dateSortKey(right.updatedAt),
+                    sort.direction
+                );
+        }
+    }
+
+    private compareText(
+        left: string | null | undefined,
+        right: string | null | undefined,
+        direction: ActiveSortDirection
+    ): number {
+        const leftValue = this.presentText(left);
+        const rightValue = this.presentText(right);
+        if (leftValue === null) return rightValue === null ? 0 : 1;
+        if (rightValue === null) return -1;
+        return (
+            FRENCH_COLLATOR.compare(leftValue, rightValue) *
+            this.directionFactor(direction)
+        );
+    }
+
+    private compareDates(
+        left: DateSortKey,
+        right: DateSortKey,
+        direction: ActiveSortDirection
+    ): number {
+        const category = { valid: 0, invalid: 1, absent: 2 } as const;
+        if (left.kind !== right.kind) {
+            return category[left.kind] - category[right.kind];
+        }
+        if (left.kind === 'valid' && right.kind === 'valid') {
+            return (
+                Math.sign(left.epoch - right.epoch) *
+                this.directionFactor(direction)
+            );
+        }
+        if (left.kind === 'invalid' && right.kind === 'invalid') {
+            return (
+                FRENCH_COLLATOR.compare(left.raw, right.raw) *
+                this.directionFactor(direction)
+            );
+        }
+        return 0;
+    }
+
+    private presentText(value: string | null | undefined): string | null {
+        const normalized = value?.trim();
+        return normalized ? normalized : null;
+    }
+
+    private dateSortKey(value: string | null | undefined): DateSortKey {
+        const normalized = this.presentText(value);
+        if (normalized === null) return { kind: 'absent' };
+        const epoch = new Date(normalized).getTime();
+        return Number.isNaN(epoch)
+            ? { kind: 'invalid', raw: normalized }
+            : { kind: 'valid', epoch };
+    }
+
+    private directionFactor(direction: ActiveSortDirection): 1 | -1 {
+        return direction === 'asc' ? 1 : -1;
     }
 
     // Une même intersection peut être notifiée plusieurs fois avant que la page
