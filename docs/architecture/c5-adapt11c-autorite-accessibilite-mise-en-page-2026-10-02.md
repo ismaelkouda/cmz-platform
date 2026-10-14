@@ -1,22 +1,36 @@
 # C5 ADAPT-11c — autorité d'accessibilité et de mise en page
 
 - **Date de vérification :** 2026-10-03 ; ordre de lecture révisé le 2026-10-10
-- **Statut de réalisation mis à jour :** 2026-10-11
+- **Statut de réalisation mis à jour :** 2026-10-13
 - **Statut :** règles d'accessibilité et de mise en page en vigueur. La page a
   été réalisée contre la liaison de mise en page
   `users-management-layout-2026-10-09` par la PR #243, fusionnée dans `main` au
   commit `c51e16047d07b169d5a958bc9e4a2155d6891e5b`, sous le work order v5
   `2e7e8c2aed88d8ff90c18c0428d6cf6f7b49533a8f5ce035df2e13a2e1f42020`. La CI
   post-fusion `38145599932` est verte, oracles navigateur C5 compris
+- **État du tri :** le lot de tri Angular du 2026-10-13 réalise le tri client de
+  la page courante en Medium/Expanded sur sept colonnes ; Compact reste sans
+  tri. Le propriétaire a validé le rendu en Medium et Expanded et fait retirer
+  le bandeau de portée. Sur une colonne triée, la description énonce l'état puis
+  l'action suivante : arbitrage du propriétaire après l'essai VoiceOver, où un
+  en-tête trié ne redisait que l'action. VoiceOver réel est concluant pour le
+  nom, la description et l'annonce du tri croissant ; NVDA et Safari ne sont pas
+  testés, pas plus que l'entrée dans un tableau déjà trié, le sens décroissant
+  et le retour à l'ordre reçu sur la version finale. React reste à réaliser
+  séparément. Aucune promotion de capacité générique n'est revendiquée
+- **Preuves du tri Angular, au 2026-10-13 :** 64/64 tests unitaires, 114/114
+  scénarios navigateur stricts, build de production sans avertissement, mutation
+  de réintroduction du bandeau détectée et validation visuelle du propriétaire
 - **Reste à faire :** l'acceptation visuelle finale de la réalisation fusionnée
-  par le propriétaire n'est pas encore obtenue. Ses remarques du 2026-10-11 —
-  tri client de la page courante en Medium/Expanded, états du tableau, commande
-  de réinitialisation et erreurs du formulaire — restent à réaliser dans des
-  lots séparés. Sa remarque sur les champs obligatoires est réalisée : la phrase
-  globale « Tous les champs sont obligatoires » est retirée et chacun des cinq
-  champs requis porte un astérisque. Le tri serveur est différé jusqu'à un
-  contrat backend réel. Ces lots modifieront plusieurs règles de ce document
-  avant leur réalisation
+  par le propriétaire n'est pas encore obtenue. Ses remarques du 2026-10-11
+  encore ouvertes — états du tableau, commande de réinitialisation et erreurs du
+  formulaire — restent à réaliser dans des lots séparés. Sa remarque sur les
+  champs obligatoires est réalisée : la phrase globale « Tous les champs sont
+  obligatoires » est retirée et chacun des cinq champs requis porte un
+  astérisque. Le tri serveur est différé jusqu'à un contrat backend réel. Ses
+  remarques du 2026-10-13 — largeur du panneau de filtres et nom lu du tableau,
+  « Utilisateurs 42 utilisateurs au total » — relèvent de lots séparés. Ces lots
+  modifieront plusieurs règles de ce document avant leur réalisation
 - **Preuve de page :** aucune `presentation-evidence` C5 n'est actuellement
   publiée ; la disposition est guidée par la liaison de mise en page
 - **Fonctionnalité :** Gestion des utilisateurs
@@ -362,6 +376,11 @@ devient pas une seconde cible interactive.
 `aria-sort` et une description d'action. Comme certains lecteurs d'écran
 n'annoncent pas la mutation, le nouveau tri est annoncé via `LiveAnnouncer` ou
 une région live commune, sans dupliquer chaque message.
+
+**SORT-04 — Portée `current-page`.** La description du contrôle et l'annonce du
+résultat DOIVENT dire « lignes affichées ». Aucune mention visuelle dédiée n'est
+exigée. Le propriétaire accepte qu'à l'écran rien ne distingue nécessairement ce
+tri local d'un tri global ; le pied de liste conserve la plage affichée.
 
 **CELL-01 — Capacité explicite.** Lien, radio, checkbox, menu, édition et action
 de cellule sont optionnels. Leur présence exige contrat, permission et oracle.

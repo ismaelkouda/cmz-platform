@@ -32,17 +32,65 @@
                     aria-labelledby="users-table-title"
                     tabindex="0"
                 >
-                    <table aria-labelledby="users-table-title">
+                    <table
+                        matSort
+                        [matSortActive]="activeSort()?.column ?? ''"
+                        [matSortDirection]="activeSort()?.direction ?? ''"
+                        (matSortChange)="sortChanged($event)"
+                        aria-labelledby="users-table-title"
+                    >
                         <thead>
-                            <tr>
+                            <tr (focusin)="revealFocusedSortHeader($event)">
                                 <th data-cmz-id="row-rank-header" scope="col" aria-label="Numéro de ligne">#</th>
-                                <th scope="col">Nom</th>
-                                <th scope="col">Prénom</th>
-                                <th scope="col">Email</th>
-                                <th scope="col">Profil</th>
-                                <th scope="col">Rôle</th>
-                                <th scope="col">Statut</th>
-                                <th scope="col">Mise à jour</th>
+                                <th
+                                    scope="col"
+                                    mat-sort-header="lastName"
+                                    [sortActionDescription]="sortActionDescription('lastName')"
+                                >
+                                    <span class="sort-header-label">Nom</span>
+                                </th>
+                                <th
+                                    scope="col"
+                                    mat-sort-header="firstName"
+                                    [sortActionDescription]="sortActionDescription('firstName')"
+                                >
+                                    <span class="sort-header-label">Prénom</span>
+                                </th>
+                                <th
+                                    scope="col"
+                                    mat-sort-header="email"
+                                    [sortActionDescription]="sortActionDescription('email')"
+                                >
+                                    <span class="sort-header-label">Email</span>
+                                </th>
+                                <th
+                                    scope="col"
+                                    mat-sort-header="profile"
+                                    [sortActionDescription]="sortActionDescription('profile')"
+                                >
+                                    <span class="sort-header-label">Profil</span>
+                                </th>
+                                <th
+                                    scope="col"
+                                    mat-sort-header="role"
+                                    [sortActionDescription]="sortActionDescription('role')"
+                                >
+                                    <span class="sort-header-label">Rôle</span>
+                                </th>
+                                <th
+                                    scope="col"
+                                    mat-sort-header="status"
+                                    [sortActionDescription]="sortActionDescription('status')"
+                                >
+                                    <span class="sort-header-label">Statut</span>
+                                </th>
+                                <th
+                                    scope="col"
+                                    mat-sort-header="updatedAt"
+                                    [sortActionDescription]="sortActionDescription('updatedAt')"
+                                >
+                                    <span class="sort-header-label">Mise à jour</span>
+                                </th>
                             </tr>
                             <tr data-cmz-id="column-filter-shortcuts" class="column-filter-shortcuts">
                                 <th></th>
@@ -95,7 +143,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @for (user of users(); track user.uniqId; let rowIndex = $index) {
+                            @for (user of sortedUsers(); track user.uniqId; let rowIndex = $index) {
                                 <tr>
                                     <td data-cmz-row-rank>{{ rowRank(rowIndex) }}</td>
                                     <td>{{ user.lastName }}</td>

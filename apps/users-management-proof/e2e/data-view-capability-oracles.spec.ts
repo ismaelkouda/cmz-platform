@@ -264,15 +264,20 @@ test('capacités absentes : aucune exportation, action de ligne, activation ou d
     await expect(
         page.getByRole('columnheader', { name: 'Actions' })
     ).toHaveCount(0);
-    // ADR-0098 / F-004 : les exemples validés montrent des flèches de tri, mais
-    // le contrat backend C5 ne déclare aucun paramètre de tri. Aucun contrôle
-    // de tri ne doit donc apparaître dans les en-têtes.
+    // ADR-0100 : le tri C5 est désormais un tri client limité aux lignes de la
+    // page affichée. La colonne de rang reste informative et non triable ; les
+    // sept colonnes métier exposent exactement les contrôles déclarés.
     const headerRow = page
         .locator('[data-cmz-id="users-table"] thead tr')
         .first();
-    await expect(headerRow.locator('[aria-sort]')).toHaveCount(0);
+    await expect(headerRow.locator('th[mat-sort-header]')).toHaveCount(7);
     await expect(
         headerRow.locator('button, a, [role="button"], [tabindex]')
+    ).toHaveCount(7);
+    await expect(
+        headerRow.locator(
+            'th[data-cmz-id="row-rank-header"] :is(button, a, [role="button"], [tabindex])'
+        )
     ).toHaveCount(0);
 
     const rows = page.locator('[data-cmz-id="users-table"] tbody tr');

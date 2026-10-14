@@ -126,6 +126,31 @@ th {
     font-size: 12px;
 }
 
+[mat-sort-header] {
+    padding-block: 1px;
+}
+
+// Material conserve le focus sur son bouton interne. Le contour est porté par
+// la cellule pour rester entier dans la zone de défilement, sans dépendre d'un
+// sélecteur CSS interne à la bibliothèque.
+[mat-sort-header]:has(:focus-visible) {
+    outline: 3px solid #111827;
+    outline-offset: -3px;
+}
+
+.sort-header-label {
+    display: inline-flex;
+    align-items: center;
+    min-width: 48px;
+    min-height: 48px;
+}
+
+@media (forced-colors: active) {
+    [mat-sort-header]:has(:focus-visible) {
+        outline-color: Highlight;
+    }
+}
+
 :is(th, td):first-child {
     width: 56px;
     color: var(--muted);
