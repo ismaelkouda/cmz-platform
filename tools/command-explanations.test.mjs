@@ -26,6 +26,12 @@ const TOP_LEVEL_KEYS = [
     'transaction',
 ];
 const EXPECTED_PHASES = {
+    'prepare:application-workspace': [
+        'preconditions',
+        'render',
+        'publication',
+        'ownership',
+    ],
     'create-app': [
         'preconditions',
         'render',
@@ -54,11 +60,12 @@ function exactKeys(value, keys) {
     return Object.keys(value).sort().join('\0') === [...keys].sort().join('\0');
 }
 
-test('le contrat explain est fermé, versionné et complet pour les trois commandes', () => {
+test('le contrat explain est fermé, versionné et complet pour chaque commande', () => {
     assert.deepEqual(EXPLAINED_COMMANDS, [
         'create-app',
         'add-library',
         'create-module',
+        'prepare:application-workspace',
     ]);
     for (const command of EXPLAINED_COMMANDS) {
         const explanation = commandExplanation(command);
@@ -110,7 +117,11 @@ test('le contrat explain est fermé, versionné et complet pour les trois comman
 });
 
 test('seul create-module annonce un journal et des commandes de reprise manuelles', () => {
-    for (const command of ['create-app', 'add-library']) {
+    for (const command of [
+        'create-app',
+        'add-library',
+        'prepare:application-workspace',
+    ]) {
         const transaction = commandExplanation(command).transaction;
         assert.equal(transaction.journal, null);
         assert.equal(transaction.resume_command, null);
@@ -129,9 +140,13 @@ test('--explain fonctionne hors workspace et ne crée aucun fichier', (t) => {
     const directory = mkdtempSync(join(tmpdir(), 'cmz-command-explain-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));
     for (const command of EXPLAINED_COMMANDS) {
+        const script =
+            command === 'prepare:application-workspace'
+                ? 'prepare-application-workspace'
+                : command;
         const result = spawnSync(
             process.execPath,
-            [join(ROOT, 'tools', `${command}.mjs`), '--explain'],
+            [join(ROOT, 'tools', `${script}.mjs`), '--explain'],
             { cwd: directory, encoding: 'utf8' }
         );
         assert.equal(result.status, 0, result.stderr);
@@ -143,9 +158,13 @@ test('--explain fonctionne hors workspace et ne crée aucun fichier', (t) => {
 
 test('--explain refuse toute combinaison ambiguë', () => {
     for (const command of EXPLAINED_COMMANDS) {
+        const script =
+            command === 'prepare:application-workspace'
+                ? 'prepare-application-workspace'
+                : command;
         const result = spawnSync(
             process.execPath,
-            [join(ROOT, 'tools', `${command}.mjs`), '--explain', '--dry-run'],
+            [join(ROOT, 'tools', `${script}.mjs`), '--explain', '--dry-run'],
             { encoding: 'utf8' }
         );
         assert.equal(result.status, 1);

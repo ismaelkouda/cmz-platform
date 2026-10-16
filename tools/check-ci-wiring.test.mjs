@@ -192,3 +192,43 @@ test('profile la mémoire C5 React sur un build production frais au nightly', ()
         /test-results\/\*\*\/users-management-react-memory-profile\.json/
     );
 });
+
+test('T17 : preuve extérieure réelle, versions installées et rapports texte sont câblés', () => {
+    const ci = readFileSync(
+        new URL('../.github/workflows/ci.yml', import.meta.url),
+        'utf8'
+    );
+    const pkg = JSON.parse(
+        readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+    );
+    function requireExternalProof(workflow) {
+        const commands = workflowRunCommands(workflow);
+        for (const invocation of [
+            'bun run test:external-application-shells',
+            'bun run check:external-application-shells',
+        ]) {
+            assert.ok(
+                commands.some((command) => commandInvokes(command, invocation)),
+                `Invocation absente : ${invocation}`
+            );
+        }
+    }
+    requireExternalProof(ci);
+    assert.equal(
+        pkg.scripts['check:external-application-shells'],
+        'node tools/generator-platform/check-external-application-shells.mjs'
+    );
+    assert.match(
+        pkg.scripts['test:external-application-shells'],
+        /external-application-shell.test.mjs/
+    );
+    const invocation = 'bun run check:external-application-shells';
+    assert.throws(() =>
+        requireExternalProof(ci.replace(invocation, `echo '${invocation}'`))
+    );
+    assert.throws(() =>
+        requireExternalProof(ci.replace(invocation, '# ' + invocation))
+    );
+    assert.match(ci, /cmz-external-application-proof\/report\.txt/);
+    assert.doesNotMatch(ci, /cmz-external-application-proof\/\*\*/);
+});

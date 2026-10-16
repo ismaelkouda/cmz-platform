@@ -17,6 +17,10 @@ import { renderAngularPwaShell } from '../renderers/angular-pwa-shell-renderer.m
 import { renderReactSpaShell } from '../renderers/react-spa-shell-renderer.mjs';
 import { validateApplicationDesignWithDependencies } from './application-design.mjs';
 import {
+    planExternalApplicationShell,
+    publishExternalApplicationShell,
+} from './application-workspace.mjs';
+import {
     syncTreeDirectories,
     withGenerationLock,
 } from './generation-transaction.mjs';
@@ -256,6 +260,7 @@ async function verifyPublishedApp({
 
 export async function planApplicationShell({
     workspaceRoot,
+    targetRoot,
     designPath,
     experienceId,
     appName,
@@ -263,6 +268,18 @@ export async function planApplicationShell({
     applicationDesignSchema,
     backendContractSchema,
 }) {
+    if (targetRoot !== undefined) {
+        return planExternalApplicationShell({
+            workspaceRoot,
+            targetRoot,
+            designPath,
+            experienceId,
+            appName,
+            profile,
+            applicationDesignSchema,
+            backendContractSchema,
+        });
+    }
     const profileConfig = PROFILE_CONFIG.get(profile);
     if (!profileConfig) fail(`unsupported profile ${profile}`);
     if (!/^[a-z][a-z0-9-]*$/.test(appName ?? ''))
@@ -330,6 +347,8 @@ export async function planApplicationShell({
 }
 
 export async function publishApplicationShell(options, dependencies = {}) {
+    if (options.targetRoot !== undefined)
+        return publishExternalApplicationShell(options, dependencies);
     const plan = await planApplicationShell(options);
     if (
         options.expectedPlanId !== undefined &&
@@ -388,6 +407,12 @@ export function publicApplicationShellPlan(plan) {
         experience_id: plan.experience_id,
         profile: plan.profile,
         tree_sha256: plan.tree_sha256,
+        ...(plan.external_workspace
+            ? {
+                  external_workspace: plan.external_workspace,
+                  files: Object.keys(plan.files).sort(),
+              }
+            : {}),
     };
 }
 
@@ -402,6 +427,9 @@ export function publicApplicationShellResult(result) {
         files: Object.keys(plan.files)
             .sort()
             .map((path) => `${plan.output}/${path}`),
+        ...(plan.external_workspace
+            ? { external_workspace: plan.external_workspace }
+            : {}),
         validations: [
             'application-design',
             'candidate-tree-sha256',
@@ -409,6 +437,14 @@ export function publicApplicationShellResult(result) {
             'nx-build-production',
             'nx-lint',
             'published-tree-sha256',
+            ...(plan.external_workspace
+                ? [
+                      'qualified-product-lock',
+                      'product-input-closure',
+                      'native-workspace-contract',
+                      'nx-test',
+                  ]
+                : []),
         ],
         recovery: recovered
             ? 'La sortie existante exacte a été revérifiée.'

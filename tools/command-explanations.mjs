@@ -12,6 +12,8 @@ const explanations = {
             'bun run create-app --design <design.json> --experience <id> --app <nom> --dry-run',
             'bun run create-app --design <design.json> --experience <id> --app <nom> --expect-plan <plan_id>',
             'bun run create-app --design <design.json> --experience <id> --app <nom> --profile react-spa',
+            'bun run create-app --target-root <racine préparée> --design <entrée relative au produit> --experience <id> --app <nom> --profile <profil> --dry-run',
+            'bun run create-app --target-root <racine préparée> --design <entrée relative au produit> --experience <id> --app <nom> --profile <profil> --expect-plan <plan_id>',
         ],
         ownership: {
             creates: ['apps/<app>/**'],
@@ -23,6 +25,7 @@ const explanations = {
             temporary: [
                 'apps/.<app>.create-app-candidate-<plan_id>/**',
                 'apps/.<app>.generation-lock/**',
+                '<target-root>/apps/.<app>.external-candidate-<plan_id>/**',
             ],
         },
         phases: [
@@ -53,6 +56,7 @@ const explanations = {
             'Angular ngc --noEmit ou TypeScript tsc --noEmit selon le profil',
             'Nx build:production',
             'Nx lint',
+            'mode extérieur : verrou/versions du produit, build/lint/test locaux et fermeture des entrées',
         ],
         transaction: {
             journal: null,
@@ -216,6 +220,71 @@ const explanations = {
             resume_command: 'bun run create-module --resume --module <nom>',
             abort_command: 'bun run create-module --abort --module <nom>',
         },
+    },
+};
+
+explanations['prepare:application-workspace'] = {
+    schema_version: '1.0.0',
+    command: 'prepare:application-workspace',
+    summary:
+        'Prépare un workspace Nx/Bun séparé, possédé et lié à un plan explicite, sans installer ni créer une application.',
+    runbook: RUNBOOK,
+    invocations: [
+        'bun run prepare:application-workspace --target-root <absolu> --profiles angular-pwa,react-spa --github-repository <owner/repo> --review-owner <login> --dry-run',
+        'bun run prepare:application-workspace --target-root <absolu> --profiles angular-pwa,react-spa --github-repository <owner/repo> --review-owner <login> --apply <plan_id>',
+    ],
+    ownership: {
+        creates: [
+            '<target-root>/{package.json,nx.json,tsconfig.base.json,configurations,.cmz/support/**}',
+        ],
+        modifies: [],
+        protects: [
+            'atelier et autres dépôts',
+            'entrées et applications existantes du produit',
+            'tout fichier étranger',
+        ],
+        temporary: [
+            '<parent>/.<product>.workspace-candidate-<plan_id>/**',
+            '<parent>/.<product>.generation-lock/**',
+        ],
+    },
+    phases: [
+        {
+            id: 'preconditions',
+            description:
+                'Vérifier chemin physique, séparation, profils, identités et provenance des outils.',
+        },
+        {
+            id: 'render',
+            description:
+                'Rendre les seuls fichiers techniques, qualifier leurs versions et calculer le plan lié à la destination.',
+        },
+        {
+            id: 'publication',
+            description:
+                'En apply seulement, vérifier le plan, verrouiller et publier le candidat exact sans écraser un arbre étranger.',
+        },
+        {
+            id: 'ownership',
+            description:
+                'Revérifier les octets possédés ; prepared ne signifie ni installation ni compilation réussie.',
+        },
+    ],
+    checks: [
+        'chemin absolu physique',
+        'aucun dépôt imbriqué',
+        'aucun lien',
+        'provenance SHA-256',
+        'versions directes exactes',
+        'ownership et inventaire fermés',
+    ],
+    transaction: {
+        journal: null,
+        lock: '<parent>/.<product>.generation-lock/',
+        recovery:
+            'Reprendre le même plan : candidat partiel exact complété, arbre étranger préservé ; aucune suppression automatique.',
+        resume_command: null,
+        abort_command: null,
     },
 };
 

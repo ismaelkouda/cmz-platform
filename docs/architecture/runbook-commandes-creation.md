@@ -1,6 +1,6 @@
 # Runbook humain — créer une app, ajouter une bibliothèque, créer un module
 
-Ce guide sert à comprendre et dépanner les trois commandes quotidiennes. Il ne
+Ce guide sert à comprendre et dépanner les commandes de création. Il ne
 remplace pas leurs contrôles : en cas de doute, la commande échoue sans publier.
 
 ## Réflexe commun : `--explain`
@@ -11,6 +11,7 @@ Avant une première utilisation ou après une évolution du socle :
 bun run create-app --explain
 bun run add-library --explain
 bun run create-module --explain
+bun run prepare:application-workspace --explain
 ```
 
 La sortie JSON versionnée indique les fichiers possédés, les phases, les checks,
@@ -160,3 +161,34 @@ aucun contrôle et ne doit pas être ajouté à `--resume` ou `--abort`.
 
 Après succès, lire le diff comme du code Angular/Nx normal. Aucun runtime de
 générateur n'est requis par l'application ou le module produit.
+
+## 4. `prepare:application-workspace` et shells extérieurs
+
+Ce mode EXT-01 est au point de relecture T1–T18 ; la qualification production
+T19–T28 reste distincte. Ne pas créer le vrai produit avant son étape validée.
+
+```sh
+bun run prepare:application-workspace --target-root <absolu> --profiles angular-pwa,react-spa --github-repository <owner/repo> --review-owner <login> --dry-run
+bun run prepare:application-workspace --target-root <absolu> --profiles angular-pwa,react-spa --github-repository <owner/repo> --review-owner <login> --apply <plan_id>
+```
+
+La préparation n'installe rien. Elle publie les configurations techniques
+possédées et un verrou candidat complet projeté du verrou source, jamais Git.
+L'installation relue utilise --frozen-lockfile et --ignore-scripts ; un refus
+arrête la preuve, sans résolution libre. Les versions, le verrou et les entrées
+du produit sont liés au plan du shell. La provenance courante périme un plan
+ancien sans retirer la propriété du snapshot initial intact.
+
+`create-app --target-root <absolu>` exige `--dry-run` ou `--expect-plan <id>`.
+Le design et ses snapshots restent relatifs au produit, sans copie ni secours
+dans l'atelier. Compilation, build, lint zéro warning et tests sont locaux.
+Un fichier étranger bloque ; une reprise ne supprime ni ne déplace cet arbre.
+
+La preuve `check:external-application-shells` exige un `--proof-root` neuf,
+durable et extérieur. Elle installe ses outils de laboratoire, confine les
+deux apps, casse chaque contrôle puis vérifie sa restauration. Rapport texte,
+aucun environnement réel. Un échec arrête la suite et reçoit son analyse.
+Voir [le protocole détaillé](./external-application-creation.md).
+
+Dans le chantier SEOS, Ismael lance uniquement les commandes PRÊTES du registre,
+après revue de Claude ; ces exemples ne sont pas des autorisations d'exécution.

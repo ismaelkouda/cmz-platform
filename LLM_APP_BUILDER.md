@@ -655,3 +655,21 @@ Je préparerai ensuite une fiche projet courte avant de proposer les pages.
 
 Ne propose pas encore de stack, de base de données, de pages détaillées ou de
 code dans cette première réponse.
+
+## Workspace extérieur — EXT-01, point de relecture shells
+
+`prepare:application-workspace` prépare les configurations Nx/Bun et l'ownership
+d'une racine physique extérieure. Il exige des profils explicites, un dépôt
+GitHub public identifié et un relecteur ; il ne crée pas Git et n'installe rien.
+`create-app --target-root` lit exclusivement les entrées du produit et exige
+un plan revu. Angular et React compilent, lintent et se testent avec leurs
+outils locaux, sans runtime partagé ni résolution de secours dans l'atelier.
+
+Cette tranche couvre le code des contrôles T1–T18, à exécuter avant toute
+conclusion d'autonomie. T19–T28, pages extérieures, API réelle, session et
+publication restent des étapes séparées. Un shell ne certifie aucune règle
+métier. La qualification utilise uniquement des fixtures fictives.
+
+Lire [le protocole extérieur](./docs/architecture/external-application-creation.md)
+et le runbook avant de proposer une commande. Dans le chantier SEOS,
+`commandes-a-lancer.md` reste l'unique liste relue et exécutée par Ismael.

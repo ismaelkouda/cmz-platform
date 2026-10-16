@@ -10,7 +10,7 @@ import {
 import { loadJson, repositoryRoot } from './generator-platform/validate-ir.mjs';
 
 function fail(message) {
-    throw new Error(message);
+    throw Object.assign(new Error(message), { code: 'CMZ_CLI_USAGE' });
 }
 
 export function parseArgs(argv) {
@@ -20,13 +20,34 @@ export function parseArgs(argv) {
         return { explain: true };
     }
     const options = { dryRun: false, profile: 'angular-pwa' };
+    const seen = new Set();
+    const valueOptions = new Set([
+        '--design',
+        '--experience',
+        '--app',
+        '--profile',
+        '--expect-plan',
+        '--target-root',
+    ]);
     for (let index = 0; index < argv.length; index += 1) {
         const argument = argv[index];
+        if (seen.has(argument)) fail('Une option ne peut pas être répétée.');
+        seen.add(argument);
+        if (
+            valueOptions.has(argument) &&
+            (!argv[index + 1] || argv[index + 1].startsWith('--'))
+        ) {
+            if (argument === '--expect-plan')
+                fail('--expect-plan exige un plan_id SHA-256.');
+            fail('Valeur d’option requise.');
+        }
         if (argument === '--design') options.designPath = argv[++index];
         else if (argument === '--experience')
             options.experienceId = argv[++index];
         else if (argument === '--app') options.appName = argv[++index];
         else if (argument === '--profile') options.profile = argv[++index];
+        else if (argument === '--target-root')
+            options.targetRoot = argv[++index];
         else if (argument === '--dry-run') options.dryRun = true;
         else if (argument === '--expect-plan') {
             options.expectedPlanId = argv[++index];
@@ -36,7 +57,12 @@ export function parseArgs(argv) {
             fail(
                 '--apply a été retiré : la création est directe. Utiliser --expect-plan <plan_id> pour vérifier un plan revu.'
             );
-        else fail(`Argument inconnu : ${argument}`);
+        else
+            fail(
+                argv.includes('--target-root')
+                    ? 'Argument inconnu ou option interdite.'
+                    : `Argument inconnu : ${argument}`
+            );
     }
     if (!options.designPath || !options.experienceId || !options.appName)
         fail('--design, --experience et --app sont requis.');
@@ -47,6 +73,8 @@ export function parseArgs(argv) {
         !/^[a-f0-9]{64}$/.test(options.expectedPlanId)
     )
         fail('--expect-plan exige un plan_id SHA-256 valide.');
+    if (options.targetRoot && !options.dryRun && !options.expectedPlanId)
+        fail('Le mode extérieur exige --dry-run ou --expect-plan <plan_id>.');
     return options;
 }
 
@@ -78,6 +106,7 @@ export async function main(argv = process.argv.slice(2)) {
     const [applicationDesignSchema, backendContractSchema] = await schemas();
     const common = {
         workspaceRoot: repositoryRoot,
+        ...(options.targetRoot ? { targetRoot: options.targetRoot } : {}),
         designPath: options.designPath,
         experienceId: options.experienceId,
         appName: options.appName,
@@ -107,7 +136,16 @@ if (
     pathToFileURL(process.argv[1]).href === import.meta.url
 ) {
     main().catch((error) => {
-        console.error(`❌ ${error.message}`);
+        const external = process.argv.includes('--target-root');
+        const known =
+            error.code === 'CMZ_CLI_USAGE' ||
+            error.message.startsWith('external application:') ||
+            error.message.startsWith('library dependency resolution:');
+        const message =
+            external && !known
+                ? 'Création extérieure refusée ; inspecter les entrées localement.'
+                : error.message;
+        console.error(`❌ ${message}`);
         process.exitCode = 1;
     });
 }
