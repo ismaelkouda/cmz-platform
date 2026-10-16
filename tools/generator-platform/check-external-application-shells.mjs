@@ -16,6 +16,7 @@ import { pathToFileURL } from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 
 import semver from 'semver';
+import { EXTERNAL_WORKSPACE_CMZ as CMZ } from './renderers/application-workspace-renderer.mjs';
 
 import { provisionBrowser } from '../library-setup/browser-provisioning.mjs';
 import {
@@ -414,7 +415,7 @@ async function qualifyMutations(session, product, plan) {
         await displacedEntry(
             session,
             product,
-            '.cmz/support/angular-unit-test.config.mjs',
+            `${CMZ.support}/angular-unit-test.config.mjs`,
             unit,
             /angular-unit-test.config/
         );
@@ -488,7 +489,7 @@ async function installRealPackages(session, workspace) {
 }
 
 async function instrumentProduct(session, product, browserFixture) {
-    const proof = resolve(product, '.cmz/proof');
+    const proof = resolve(product, CMZ.proof);
     assert.equal(await pathExists(proof), false);
     const witness = resolve(session.root, 'outside-candidate-witness');
     await writeFile(witness, 'outside candidate\n', { flag: 'wx' });
@@ -527,19 +528,19 @@ process.stdout.write('Confinement : lectures/résolution/écriture refusées.\\n
     record(
         session,
         'T11/real-filesystem-probes',
-        confinedNode(session, product, ['.cmz/proof/confinement.mjs'])
+        confinedNode(session, product, [`${CMZ.proof}/confinement.mjs`])
     );
     assert.equal(await readFile(witness, 'utf8'), 'outside candidate\n');
     record(
         session,
         'T11/product-input-closure',
-        confinedNode(session, product, ['.cmz/support/check-workspace.mjs'])
+        confinedNode(session, product, [`${CMZ.support}/check-workspace.mjs`])
     );
     return { proof, files };
 }
 
 async function qualifyBrowser(session, product, plans, browser) {
-    const fixturePath = resolve(product, '.cmz/proof/browser.fixture.json');
+    const fixturePath = resolve(product, `${CMZ.proof}/browser.fixture.json`);
     const browserRelative = relative(browser.root, browser.executable)
         .split('\\')
         .join('/');
@@ -560,7 +561,7 @@ async function qualifyBrowser(session, product, plans, browser) {
                 session,
                 product,
                 [
-                    '.cmz/support/browser-smoke.mjs',
+                    `${CMZ.support}/browser-smoke.mjs`,
                     resolve(
                         product,
                         'dist',
@@ -742,7 +743,7 @@ export async function main(argv = process.argv.slice(2)) {
             sharedPath,
             () =>
                 confinedNode(session, product, [
-                    '.cmz/support/check-workspace.mjs',
+                    `${CMZ.support}/check-workspace.mjs`,
                 ]),
             /Échec du contrat workspace/
         );
@@ -787,10 +788,8 @@ if (
     process.argv[1] &&
     pathToFileURL(process.argv[1]).href === import.meta.url
 ) {
-    main().catch(() => {
-        process.stderr.write(
-            'Preuve interrompue. Lire le rapport texte et analyser avant toute reprise.\n'
-        );
+    main().catch((error) => {
+        process.stderr.write(`${formatProofStop(error)}\n`);
         process.exitCode = 1;
     });
 }

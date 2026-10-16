@@ -6,7 +6,12 @@ import test from 'node:test';
 
 import { parseArgs } from '../prepare-application-workspace.mjs';
 import { parseJsonc } from '../check-library-setup-deps.mjs';
-import { qualifyWeights } from './check-external-application-shells.mjs';
+import {
+    parseArgs as parseProofArgs,
+    qualifyWeights,
+} from './check-external-application-shells.mjs';
+import { verifyCmzJournalsIgnored } from '../check-cmz-journals-ignored.mjs';
+import { EXTERNAL_WORKSPACE_CMZ } from './renderers/application-workspace-renderer.mjs';
 import {
     planApplicationWorkspace,
     planExternalApplicationShell,
@@ -665,4 +670,57 @@ test('EXT01 v8 : STOP garde la première ligne sans sortie d’enfant', () => {
             'STOP Error: Command failed: git show X; aucun succès global revendiqué.'
         );
     }
+});
+
+test('v10 : chemins produit déclarés acceptés, journal inconnu refusé', async (t) => {
+    const root = await fixtureParent(t);
+    assert.equal(spawnSync('git', ['init', '-q', root]).status, 0);
+    await mkdir(join(root, 'tools'));
+    const journal = ['.cmz', 'fixture-journal'].join('/');
+    await writeFile(join(root, '.gitignore'), journal + '/\n');
+    const paths = [...Object.values(EXTERNAL_WORKSPACE_CMZ), journal];
+    const source = join(root, 'tools/fixture.mjs');
+    await writeFile(source, paths.map(JSON.stringify).join(';\n'));
+    const accepted = verifyCmzJournalsIgnored(root);
+    assert.equal(accepted.ok, true, accepted.errors.join('\n'));
+    assert.deepEqual(accepted.names, ['fixture-journal']);
+    const unknown = ['.cmz', 'undeclared-product'].join('/');
+    await writeFile(
+        source,
+        [...paths, unknown].map(JSON.stringify).join(';\n')
+    );
+    const refused = verifyCmzJournalsIgnored(root);
+    assert.equal(refused.ok, false);
+    assert.equal(refused.errors.length, 1);
+    assert.ok(refused.errors[0].includes(unknown + '/'));
+});
+
+test('v10 : refus précoce canonique explicite, sans session ni rapport', async (t) => {
+    const parent = await fixtureParent(t);
+    const args = [
+        '--proof-root',
+        parent + '/missing/../proof',
+        '--backend',
+        'docker',
+    ];
+    assert.throws(() => parseProofArgs(args), /absolu canonique requis/);
+    const before = await snapshotTree(parent);
+    const result = spawnSync(
+        process.execPath,
+        [
+            join(
+                TOOLS_ROOT,
+                'tools/generator-platform/check-external-application-shells.mjs'
+            ),
+            ...args,
+        ],
+        { encoding: 'utf8', env: { HOME: parent, PATH: '/usr/bin:/bin' } }
+    );
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.equal(
+        result.stderr.trim(),
+        formatProofStop(new Error('--proof-root absolu canonique requis.'))
+    );
+    assert.deepEqual(await snapshotTree(parent), before);
 });

@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 import { parseArgs } from '../create-app.mjs';
+import {
+    classifyLibraryCiImpact,
+    createLibraryCiClassifier,
+    LIBRARY_CI_ENTRYPOINTS,
+} from '../library-ci-impact.mjs';
 import { parseJsonc } from '../check-library-setup-deps.mjs';
 import {
     planApplicationShell,
@@ -28,6 +33,7 @@ import { renderAngularPwaShell } from './renderers/angular-pwa-shell-renderer.mj
 import { renderReactSpaShell } from './renderers/react-spa-shell-renderer.mjs';
 import {
     baselineRenderer,
+    fixtureParent,
     hash,
     shellFixture,
     snapshotTree,
@@ -619,5 +625,105 @@ test('EXT01 v4 T-5 : surcharge produit retirée ou changée dans chaque fichier 
                 await qualifyProductInstallation(fixture.plan);
             });
         }
+    }
+});
+
+test('v10 : nouveau module importé classé sans liste, y compris réexport et cycle', async (t) => {
+    const root = await fixtureParent(t);
+    for (const entry of Object.values(LIBRARY_CI_ENTRYPOINTS).flat()) {
+        await mkdir(join(root, entry, '..'), { recursive: true });
+        await writeFile(join(root, entry), 'export {};\n');
+    }
+    const isolationModule = 'tools/new-isolation-fixture.mjs';
+    const integrationModule = 'tools/new-integration-fixture.mjs';
+    const transitiveModule = 'tools/new-transitive-fixture.mjs';
+    const before = createLibraryCiClassifier(root);
+    assert.equal(before.classifyPath(isolationModule).isolation, false);
+    assert.equal(before.classifyPath(integrationModule).integration, false);
+    await writeFile(
+        join(root, LIBRARY_CI_ENTRYPOINTS.isolation[0]),
+        "import '../new-isolation-fixture.mjs';\n"
+    );
+    await writeFile(join(root, isolationModule), 'export {};\n');
+    await writeFile(
+        join(root, LIBRARY_CI_ENTRYPOINTS.integration[0]),
+        "import './new-integration-fixture.mjs';\n"
+    );
+    await writeFile(
+        join(root, integrationModule),
+        "export * from './new-transitive-fixture.mjs';\n"
+    );
+    await writeFile(
+        join(root, transitiveModule),
+        "import './new-integration-fixture.mjs';\n// import './comment-only.mjs';\nconst text = \"import './string-only.mjs'\";\n"
+    );
+    const after = createLibraryCiClassifier(root);
+    assert.deepEqual(after.classifyPath(isolationModule), {
+        isolation: true,
+        integration: true,
+    });
+    for (const path of [integrationModule, transitiveModule])
+        assert.deepEqual(after.classifyPath(path), {
+            isolation: false,
+            integration: true,
+        });
+    for (const path of ['tools/comment-only.mjs', 'tools/string-only.mjs'])
+        assert.deepEqual(after.classifyPath(path), {
+            isolation: false,
+            integration: false,
+        });
+    await rm(join(root, transitiveModule));
+    const missing = createLibraryCiClassifier(root);
+    assert.deepEqual(missing.classifyPath(transitiveModule), {
+        isolation: false,
+        integration: false,
+    });
+    const dynamicModule = 'tools/new-dynamic-fixture.mjs';
+    await writeFile(
+        join(root, integrationModule),
+        "import('./new-dynamic-fixture.mjs');\n"
+    );
+    await writeFile(join(root, dynamicModule), 'export {};\n');
+    assert.equal(
+        createLibraryCiClassifier(root).classifyPath(dynamicModule).integration,
+        true
+    );
+
+    // Cette racine de fixture est hors dépôt, sans node_modules.
+    const standalone = join(root, 'tools/library-ci-impact.mjs');
+    await writeFile(
+        standalone,
+        await readFile(new URL('../library-ci-impact.mjs', import.meta.url))
+    );
+    const bootstrap = spawnSync(
+        process.execPath,
+        [
+            '--input-type=module',
+            '-e',
+            "const m = await import(process.argv[1]); if (!m.classifyLibraryCiImpact(['tools/new-integration-fixture.mjs']).integration) process.exit(1); process.stdout.write('integration=true\\n');",
+            pathToFileURL(standalone).href,
+        ],
+        { encoding: 'utf8', env: { HOME: root, PATH: '/usr/bin:/bin' } }
+    );
+    assert.equal(bootstrap.status, 0, bootstrap.stderr);
+    assert.equal(bootstrap.stdout, 'integration=true\n');
+});
+
+test('v11 : préserve les quatre déclencheurs conservateurs hors imports', () => {
+    for (const path of [
+        'tools/check-library-compatibility.mjs',
+        'tools/check-library-resolution-policy.mjs',
+        'tools/scaffold-tailwind.mjs',
+        'tools/generator-platform/core/action-authorization.mjs',
+    ]) {
+        assert.deepEqual(
+            classifyLibraryCiImpact([path]),
+            {
+                isolation: false,
+                integration: true,
+                reasons: { isolation: [], integration: [path] },
+            },
+            path
+        );
     }
 });

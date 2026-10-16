@@ -5,7 +5,10 @@ import { resolve } from 'node:path';
 import { repositoryRoot, validateJsonSchema } from '../validate-ir.mjs';
 import { renderAngularPwaShell } from '../renderers/angular-pwa-shell-renderer.mjs';
 import { renderReactSpaShell } from '../renderers/react-spa-shell-renderer.mjs';
-import { renderApplicationWorkspace } from '../renderers/application-workspace-renderer.mjs';
+import {
+    EXTERNAL_WORKSPACE_CMZ,
+    renderApplicationWorkspace,
+} from '../renderers/application-workspace-renderer.mjs';
 import { nxConfinementEnvironment } from '../../library-setup/sandbox.mjs';
 import { validateApplicationDesignWithDependencies } from './application-design.mjs';
 import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
@@ -39,7 +42,7 @@ export {
     qualifyProductInstallation,
 } from './application-workspace-toolchain.mjs';
 
-const MANIFEST = '.cmz/application-workspace.json';
+const MANIFEST = EXTERNAL_WORKSPACE_CMZ.manifest;
 function normalizeWorkspaceOptions(options) {
     if (
         !Array.isArray(options.profiles) ||
@@ -685,7 +688,12 @@ export async function publishExternalApplicationShell(
             }
             await run(
                 process.execPath,
-                [resolve(plan.root, '.cmz/support/check-workspace.mjs')],
+                [
+                    resolve(
+                        plan.root,
+                        `${EXTERNAL_WORKSPACE_CMZ.support}/check-workspace.mjs`
+                    ),
+                ],
                 plan.root
             );
             await assertSourceWeight(plan.root);

@@ -1,5 +1,12 @@
 import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
 
+// Disposition unique du produit extérieur, consommée aussi par ses preuves et gardes.
+export const EXTERNAL_WORKSPACE_CMZ = Object.freeze({
+    manifest: '.cmz/application-workspace.json',
+    support: '.cmz/support',
+    proof: '.cmz/proof',
+});
+
 export const SHELL_PACKAGES = Object.freeze({
     common: {
         dependencies: ['tslib'],
@@ -100,7 +107,7 @@ async function verifiedSnapshot(path, expectedHash) {
 
 export async function checkWorkspace() {
     const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
-    const manifest = JSON.parse(await readFile(resolve(root, '.cmz/application-workspace.json'), 'utf8'));
+    const manifest = JSON.parse(await readFile(resolve(root, '${EXTERNAL_WORKSPACE_CMZ.manifest}'), 'utf8'));
     const declared = { ...pkg.dependencies, ...pkg.devDependencies };
     assert.equal(manifest.kind, 'application-workspace-manifest');
     assert.deepEqual(Object.keys(declared).sort(), Object.keys(manifest.packages).sort(), 'Fermeture des packages');
@@ -284,7 +291,7 @@ export async function renderApplicationWorkspace(options) {
             overrides: options.overrides,
             workspaces: ['apps/*'],
             scripts: {
-                'check:workspace': 'node .cmz/support/check-workspace.mjs',
+                'check:workspace': `node ${EXTERNAL_WORKSPACE_CMZ.support}/check-workspace.mjs`,
                 build: 'node node_modules/nx/dist/bin/nx.js run-many -t build --configuration=production --skipNxCache',
                 lint: 'node node_modules/nx/dist/bin/nx.js run-many -t lint --skipNxCache',
                 test: 'node node_modules/nx/dist/bin/nx.js run-many -t test --skipNxCache',
@@ -357,12 +364,14 @@ export default [
         'README.md': `# Workspace applicatif\n\nProfils natifs : ${profiles.join(', ')}.\n\nDépôt : ${githubRepository}. Relecture : @${reviewOwner}.\n\nInstaller les dépendances avec bun install --frozen-lockfile --ignore-scripts depuis cette racine ; le verrou candidat attend sa qualification native.\nLes entrées approuvées vivent ici. Aucun lien vers les outils de création.\nLes contrôles production T19–T28 attendent leur qualification avant publication.\n`,
         'AGENTS.md':
             '# Règles du produit\n\nEntrées et contrats approuvés uniquement. Angular et React restent natifs et séparés.\nAucun secret, HAR, environnement réel, appel serveur implicite ni publication sans accord.\nCompiler, linter sans avertissement et tester chaque cible après modification.\n',
-        '.cmz/support/check-workspace.mjs': productCheck(),
-        '.cmz/support/browser-smoke.mjs': browserSmoke(),
+        [`${EXTERNAL_WORKSPACE_CMZ.support}/check-workspace.mjs`]:
+            productCheck(),
+        [`${EXTERNAL_WORKSPACE_CMZ.support}/browser-smoke.mjs`]: browserSmoke(),
     };
     if (profiles.includes('angular-pwa')) {
-        files['.cmz/support/angular-unit-test.config.mjs'] =
-            "export default { server: { host: '127.0.0.1' } };\n";
+        files[
+            `${EXTERNAL_WORKSPACE_CMZ.support}/angular-unit-test.config.mjs`
+        ] = "export default { server: { host: '127.0.0.1' } };\n";
     }
     return canonicalizeGeneratedFiles(files);
 }
@@ -383,8 +392,7 @@ export function adaptExternalShellFiles(files, { profile, appName }) {
         },
     };
     if (angular) {
-        project.targets.test.options.runnerConfig =
-            '.cmz/support/angular-unit-test.config.mjs';
+        project.targets.test.options.runnerConfig = `${EXTERNAL_WORKSPACE_CMZ.support}/angular-unit-test.config.mjs`;
         for (const [path, content] of Object.entries(files)) {
             if (!path.endsWith('.ts') || !content.includes('@Component({'))
                 continue;
