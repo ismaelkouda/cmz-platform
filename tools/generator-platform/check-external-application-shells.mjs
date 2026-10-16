@@ -185,13 +185,18 @@ function argumentForProduct(root, value) {
         : value;
 }
 
+// mcr.microsoft.com/playwright@sha256:
+// eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+// Vérif. Claude 2026-10-16 22:29 : /usr/bin/node v24.20.0,
+// /usr/local/bin/node absent de cette image.
+const RENDER_NODE = '/usr/bin/node';
 function confinedNode(
     session,
     product,
     argv,
     { browser, timeoutMs = 300_000 } = {}
 ) {
-    return runConfined({
+    return (session.run ?? runConfined)({
         backend: session.backend,
         profile: 'execution',
         candidate: product,
@@ -199,7 +204,7 @@ function confinedNode(
         home: session.home,
         repository: TOOLS_ROOT,
         hostExecutable: session.hostNode,
-        containerExecutable: '/usr/local/bin/node',
+        containerExecutable: browser ? RENDER_NODE : '/usr/local/bin/node',
         argv: argv.map((value) => argumentForProduct(product, value)),
         policy: session.policy,
         repositoryReadOnlyPaths: [],
@@ -209,6 +214,18 @@ function confinedNode(
         allowLoopback: Boolean(browser),
         timeoutMs,
     });
+}
+
+export function qualifyNodeVersion(session, product, options = {}) {
+    const phase = options.browser ? 'renderer' : 'execution';
+    const result = record(
+        session,
+        `${phase}/Node-version`,
+        confinedNode(session, product, ['--version'], options)
+    );
+    const version = result.stdout.trim();
+    assert.ok(semver.satisfies(version, session.sourcePackage.engines.node));
+    session.lines.push(`${options.browser ? 'renderer_' : ''}node=${version}`);
 }
 
 function nativeBin(plan, name, command) {
@@ -470,21 +487,8 @@ async function installRealPackages(session, workspace) {
             })
         )
     );
-    const nodeVersion = record(
-        session,
-        'execution/Node-version',
-        confinedNode(session, product, ['--version'])
-    );
-    assert.ok(
-        semver.satisfies(
-            nodeVersion.stdout.trim(),
-            session.sourcePackage.engines.node
-        )
-    );
-    session.lines.push(
-        `node=${nodeVersion.stdout.trim()}`,
-        `bun=${version.stdout.trim()}`
-    );
+    qualifyNodeVersion(session, product);
+    session.lines.push(`bun=${version.stdout.trim()}`);
     await session.save();
 }
 
@@ -539,7 +543,8 @@ process.stdout.write('Confinement : lectures/résolution/écriture refusées.\\n
     return { proof, files };
 }
 
-async function qualifyBrowser(session, product, plans, browser) {
+export async function qualifyBrowser(session, product, plans, browser) {
+    qualifyNodeVersion(session, product, { browser });
     const fixturePath = resolve(product, `${CMZ.proof}/browser.fixture.json`);
     const browserRelative = relative(browser.root, browser.executable)
         .split('\\')

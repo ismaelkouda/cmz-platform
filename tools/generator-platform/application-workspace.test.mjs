@@ -9,6 +9,8 @@ import { parseJsonc } from '../check-library-setup-deps.mjs';
 import {
     parseArgs as parseProofArgs,
     qualifyWeights,
+    qualifyNodeVersion,
+    qualifyBrowser,
 } from './check-external-application-shells.mjs';
 import { verifyCmzJournalsIgnored } from '../check-cmz-journals-ignored.mjs';
 import { EXTERNAL_WORKSPACE_CMZ } from './renderers/application-workspace-renderer.mjs';
@@ -723,4 +725,74 @@ test('v10 : refus précoce canonique explicite, sans session ni rapport', async 
         formatProofStop(new Error('--proof-root absolu canonique requis.'))
     );
     assert.deepEqual(await snapshotTree(parent), before);
+});
+
+test('v12 : Node du rendu, hôte macOS et version qualifiée avant rapport', async () => {
+    const sourcePackage = JSON.parse(
+        await readFile(join(TOOLS_ROOT, 'package.json'), 'utf8')
+    );
+    const product = '/fixture/product';
+    const browser = {
+        root: '/fixture/browser',
+        executable: '/fixture/browser/chrome',
+    };
+    const success = {
+        status: 0,
+        signal: null,
+        stdout: 'v24.20.0\n',
+        stderr: '',
+    };
+    for (const backend of ['docker', 'macos']) {
+        const calls = [];
+        const session = {
+            backend,
+            hostNode: '/fixture/host-node',
+            cache: '/fixture/cache',
+            home: '/fixture/home',
+            policy: {},
+            sourcePackage,
+            lines: [],
+            run: (invocation) => {
+                calls.push(invocation);
+                return success;
+            },
+        };
+        qualifyNodeVersion(session, product);
+        await qualifyBrowser(session, product, [], browser);
+        assert.equal(calls[0].containerExecutable, '/usr/local/bin/node');
+        assert.equal(calls[1].containerExecutable, '/usr/bin/node');
+        assert.ok(
+            calls.every((call) => call.hostExecutable === session.hostNode)
+        );
+        assert.deepEqual(
+            calls.map((call) => call.renderer),
+            [false, true]
+        );
+        assert.deepEqual(
+            calls.map((call) => call.argv),
+            [['--version'], ['--version']]
+        );
+        assert.deepEqual(session.lines, [
+            'PASS execution/Node-version exit=0',
+            'node=v24.20.0',
+            'PASS renderer/Node-version exit=0',
+            'renderer_node=v24.20.0',
+        ]);
+        for (const result of [
+            { ...success, stdout: 'v20.0.0\n' },
+            { ...success, stdout: 'v24.20.0\nPRIVATE_FIXTURE' },
+            { ...success, status: 127 },
+        ]) {
+            const rejected = { ...session, lines: [], run: () => result };
+            await assert.rejects(
+                qualifyBrowser(rejected, product, [], browser)
+            );
+            assert.equal(
+                rejected.lines.some((line) =>
+                    line.startsWith('renderer_node=')
+                ),
+                false
+            );
+        }
+    }
 });
