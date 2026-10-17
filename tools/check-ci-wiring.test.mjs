@@ -1,5 +1,16 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import {
+    mkdirSync,
+    mkdtempSync,
+    readFileSync,
+    realpathSync,
+    rmSync,
+    symlinkSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { parse } from 'yaml';
 import test from 'node:test';
 
 import {
@@ -190,5 +201,133 @@ test('profile la mémoire C5 React sur un build production frais au nightly', ()
     assert.match(
         nightly,
         /test-results\/\*\*\/users-management-react-memory-profile\.json/
+    );
+});
+
+test('T17 : preuve extérieure réelle, versions installées et rapports texte sont câblés', () => {
+    const ci = readFileSync(
+        new URL('../.github/workflows/ci.yml', import.meta.url),
+        'utf8'
+    );
+    const pkg = JSON.parse(
+        readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+    );
+    function requireExternalProof(workflow) {
+        const commands = workflowRunCommands(workflow);
+        for (const invocation of [
+            'bun run test:external-application-shells',
+            'bun run check:external-application-shells',
+        ]) {
+            assert.ok(
+                commands.some((command) => commandInvokes(command, invocation)),
+                `Invocation absente : ${invocation}`
+            );
+        }
+    }
+    requireExternalProof(ci);
+    assert.equal(
+        pkg.scripts['check:external-application-shells'],
+        'node tools/generator-platform/check-external-application-shells.mjs'
+    );
+    assert.match(
+        pkg.scripts['test:external-application-shells'],
+        /external-application-shell.test.mjs/
+    );
+    const invocation = 'bun run check:external-application-shells';
+    assert.throws(() =>
+        requireExternalProof(ci.replace(invocation, `echo '${invocation}'`))
+    );
+    assert.throws(() =>
+        requireExternalProof(ci.replace(invocation, '# ' + invocation))
+    );
+    assert.match(ci, /CMZ_EXTERNAL_APPLICATION_PROOF_ROOT/);
+    assert.doesNotMatch(ci, /CMZ_EXTERNAL_APPLICATION_PROOF_ROOT[^\n]*\*\*/);
+});
+
+function requireCanonicalExternalProof(workflow, t) {
+    const steps = parse(workflow).jobs['external-application-shells'].steps;
+    const setup = steps.find((step) => step.id === 'external-proof-root');
+    const proof = steps.find(
+        (step) =>
+            typeof step.run === 'string' &&
+            commandInvokes(
+                step.run,
+                'bun run check:external-application-shells'
+            )
+    );
+    const upload = steps.find((step) =>
+        step.uses?.startsWith('actions/upload-artifact@')
+    );
+    const argument = proof?.run.match(/--proof-root "([^"]+)"/)?.[1];
+    const artifact = upload?.with?.path;
+    assert.equal(argument, '${{ env.CMZ_EXTERNAL_APPLICATION_PROOF_ROOT }}');
+    assert.equal(artifact, argument + '/report.txt');
+    assert.ok(setup?.run);
+    const root = realpathSync(mkdtempSync(join(tmpdir(), 'cmz-proof-path-')));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, 'physical/checkout'), { recursive: true });
+    symlinkSync(join(root, 'physical'), join(root, 'alias'));
+    const result = spawnSync(
+        '/bin/bash',
+        ['-e', '-o', 'pipefail', '-c', setup.run],
+        {
+            encoding: 'utf8',
+            cwd: root,
+            env: {
+                HOME: root,
+                PATH: '/usr/bin:/bin',
+                GITHUB_WORKSPACE: join(root, 'alias/checkout'),
+                GITHUB_ENV: join(root, 'github-env'),
+            },
+        }
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const lines = readFileSync(join(root, 'github-env'), 'utf8')
+        .trim()
+        .split('\n');
+    assert.equal(lines.length, 1);
+    assert.ok(lines[0].startsWith('CMZ_EXTERNAL_APPLICATION_PROOF_ROOT='));
+    const path = lines[0].slice('CMZ_EXTERNAL_APPLICATION_PROOF_ROOT='.length);
+    assert.ok(isAbsolute(path));
+    assert.equal(path, resolve(path), 'chemin canonique requis, sans ..');
+    assert.equal(dirname(path), realpathSync(join(root, 'physical')));
+    assert.equal(path, join(root, 'physical/cmz-external-application-proof'));
+}
+
+test('T17 v10 : preuve et artefact canoniques, hors checkout même via un lien', (t) => {
+    const workflow = readFileSync(
+        new URL('../.github/workflows/ci.yml', import.meta.url),
+        'utf8'
+    );
+    requireCanonicalExternalProof(workflow, t);
+    const root = '${{ env.CMZ_EXTERNAL_APPLICATION_PROOF_ROOT }}';
+    assert.throws(() =>
+        requireCanonicalExternalProof(
+            workflow.replace(
+                '--proof-root "' + root + '"',
+                '--proof-root "' + root + '/../proof"'
+            ),
+            t
+        )
+    );
+    assert.throws(() =>
+        requireCanonicalExternalProof(
+            workflow.replace(
+                'path: ' + root + '/report.txt',
+                'path: ' + root + '/../proof/report.txt'
+            ),
+            t
+        )
+    );
+    assert.throws(
+        () =>
+            requireCanonicalExternalProof(
+                workflow.replace(
+                    '%s/cmz-external-application-proof',
+                    '%s/../cmz-external-application-proof'
+                ),
+                t
+            ),
+        /canonique/
     );
 });

@@ -21,6 +21,8 @@ import {
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { EXTERNAL_WORKSPACE_CMZ } from './generator-platform/renderers/application-workspace-renderer.mjs';
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 /**
@@ -29,13 +31,20 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
  */
 export const APP_SCOPED = new Set(['app-manifest', 'libraries', 'pages']);
 
+const PRODUCT_SCOPED = new Set(
+    Object.values(EXTERNAL_WORKSPACE_CMZ).map(
+        (path) => path.match(/^\.cmz\/([a-z][a-z0-9-]*)/)[1]
+    )
+);
+
 export function scanCmzDirectories(root = ROOT) {
     const names = new Set();
     for (const file of globSync('tools/**/*.mjs', { cwd: root })) {
         if (file.includes('/seos/') || file.includes('/mock-server/')) continue;
         const source = readFileSync(join(root, file), 'utf8');
         for (const [, name] of source.matchAll(/\.cmz\/([a-z][a-z0-9-]*)/g)) {
-            if (!APP_SCOPED.has(name)) names.add(name);
+            if (!APP_SCOPED.has(name) && !PRODUCT_SCOPED.has(name))
+                names.add(name);
         }
     }
     return [...names].sort();

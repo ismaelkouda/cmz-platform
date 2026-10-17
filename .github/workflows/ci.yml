@@ -1047,3 +1047,41 @@ jobs:
       # des 4 scripts précédents.
       - name: check:pattern-nx-coverage (T11-7, angle mort périmètre)
         run: bun run check:pattern-nx-coverage
+
+  external-application-shells:
+    name: External application shells
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Installer le seul atelier depuis son verrou
+        run: bun install --frozen-lockfile
+      - name: Tests des chemins, plans, ownership et reprise
+        run: bun run test:external-application-shells
+      - name: Racine physique de la preuve hors atelier
+        id: external-proof-root
+        shell: bash
+        run: |
+          proof_parent="$(cd "$(dirname "$GITHUB_WORKSPACE")" && pwd -P)"
+          printf 'CMZ_EXTERNAL_APPLICATION_PROOF_ROOT=%s/cmz-external-application-proof\n' "$proof_parent" >> "$GITHUB_ENV"
+      - name: T9–T18 outils natifs confinés, deux apps et mutations
+        run: bun run check:external-application-shells --proof-root "${{ env.CMZ_EXTERNAL_APPLICATION_PROOF_ROOT }}" --backend docker
+      - name: Reçu texte sans environnement
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: external-application-shells-text
+          path: ${{ env.CMZ_EXTERNAL_APPLICATION_PROOF_ROOT }}/report.txt
+          if-no-files-found: warn
+          retention-days: 7

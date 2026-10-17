@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
+import { adaptExternalShellFiles } from './application-workspace-renderer.mjs';
 
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
@@ -264,6 +265,7 @@ export async function renderAngularPwaShell({
     appName,
     designPath,
     designSha256,
+    externalWorkspace = false,
 }) {
     if (!/^[a-z][a-z0-9-]*$/.test(appName ?? ''))
         throw new Error('application shell: app name must be kebab-case');
@@ -585,6 +587,9 @@ self.addEventListener('fetch', (event) => {
         platform: 'angular',
         libraries: [],
     });
+    if (externalWorkspace) {
+        adaptExternalShellFiles(files, { profile: 'angular-pwa', appName });
+    }
     const canonicalFiles = await canonicalizeGeneratedFiles(
         Object.fromEntries(
             Object.entries(files).map(([path, content]) => [

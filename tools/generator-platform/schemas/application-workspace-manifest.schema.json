@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cmz:application-workspace-manifest:1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "profiles",
+    "github_repository",
+    "review_owner",
+    "quality_profile",
+    "qualification",
+    "packages",
+    "files",
+    "directories",
+    "workspace_id",
+    "dependency_deviations",
+    "overrides",
+    "dependency_closure_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "kind": {
+      "const": "application-workspace-manifest"
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["angular-pwa", "react-spa"]
+      }
+    },
+    "directories": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["apps", "descriptions"]
+      }
+    },
+    "github_repository": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-]+/[a-zA-Z0-9_.-]+$"
+    },
+    "review_owner": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}$"
+    },
+    "quality_profile": {
+      "const": "production"
+    },
+    "qualification": {
+      "const": "pending"
+    },
+    "workspace_id": {
+      "$ref": "#/$defs/hash"
+    },
+    "dependency_deviations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "parent",
+          "identity",
+          "field",
+          "name",
+          "requested",
+          "resolved",
+          "parent_sha256",
+          "child_sha256",
+          "reason",
+          "effective_requested"
+        ],
+        "properties": {
+          "parent": {
+            "type": "string",
+            "minLength": 1
+          },
+          "identity": {
+            "type": "string",
+            "minLength": 1
+          },
+          "field": {
+            "enum": ["peerDependencies", "dependencies", "optionalDependencies"]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requested": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resolved": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parent_sha256": {
+            "$ref": "#/$defs/hash"
+          },
+          "child_sha256": {
+            "$ref": "#/$defs/hash"
+          },
+          "reason": {
+            "enum": ["override", "optional-peer"]
+          },
+          "effective_requested": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "packages": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "package_json_sha256",
+          "bin",
+          "group",
+          "integrity"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[a-zA-Z0-9.-]+)?$"
+          },
+          "package_json_sha256": {
+            "$ref": "#/$defs/hash"
+          },
+          "group": {
+            "enum": ["dependencies", "devDependencies"]
+          },
+          "integrity": {
+            "type": "string",
+            "pattern": "^sha512-[a-zA-Z0-9+/=]+$"
+          },
+          "bin": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": {
+                  "$ref": "#/$defs/path"
+                },
+                "sha256": {
+                  "$ref": "#/$defs/hash"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "bytes", "sha256"],
+        "properties": {
+          "path": {
+            "$ref": "#/$defs/path"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "$ref": "#/$defs/hash"
+          }
+        }
+      }
+    },
+    "dependency_closure_sha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "overrides": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))[a-zA-Z0-9._/-]+$"
+    }
+  }
+}

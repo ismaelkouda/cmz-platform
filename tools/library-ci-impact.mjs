@@ -10,7 +10,8 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -25,54 +26,81 @@ export const COMMON_EXACT_INPUTS = Object.freeze([
     'tools/library-ci-policy.test.mjs',
 ]);
 
-export const ISOLATION_EXACT_INPUTS = Object.freeze([
+// Points d'entrée exécutables des preuves ; les dépendances ne sont pas énumérées.
+export const LIBRARY_CI_ENTRYPOINTS = Object.freeze({
+    isolation: Object.freeze([
+        'tools/library-setup/sandbox.integration.test.mjs',
+    ]),
+    integration: Object.freeze([
+        'tools/create-app.mjs',
+        'tools/add-library.mjs',
+        'tools/check-library-setup.mjs',
+        'tools/library-setup/check-create-app-add-library-integration.mjs',
+    ]),
+});
+
+function localModuleClosure(entrypoints, root) {
+    const pending = [...entrypoints],
+        visited = new Set();
+    while (pending.length > 0) {
+        const path = pending.pop();
+        if (visited.has(path)) continue;
+        visited.add(path);
+        const source = readFileSync(resolve(root, path), 'utf8');
+        // Sur-approximation volontaire : les gabarits/commentaires peuvent
+        // ajouter une cible réelle. L'oracle AST obligatoire interdit les oublis.
+        const imports =
+            /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?)(['"])(\.[^'"\r\n]+)\1/g;
+        for (const [, , specifier] of source.matchAll(imports)) {
+            const absolute = resolve(root, dirname(path), specifier);
+            if (statSync(absolute, { throwIfNoEntry: false })?.isFile()) {
+                pending.push(relative(root, absolute).split(sep).join('/'));
+            }
+        }
+    }
+    return [...visited].sort();
+}
+
+// Données lues par fs dans resolution-policy.mjs, hors graphe des imports.
+const ISOLATION_DATA = [
     'conventions/libraries/resolution-policy.json',
     'conventions/libraries/resolution-policy.schema.json',
-    'tools/check-library-setup-deps.mjs',
-    'tools/generator-platform/validate-ir.mjs',
-    'tools/library-setup/resolution-policy.mjs',
-    'tools/library-setup/sandbox.integration.test.mjs',
-    'tools/library-setup/sandbox.mjs',
-]);
-
-export const INTEGRATION_EXACT_INPUTS = Object.freeze([
+];
+const INTEGRATION_DATA = [
+    // Configuration copiée/lue par les outils de publication et leur oracle natif.
     '.gitattributes',
     '.gitignore',
     '.prettierignore',
     '.prettierrc.json',
-    'designs/application-conception-proof.application-design.json',
     'eslint.config.mjs',
+    'nx.json',
+    'tsconfig.base.json',
+    // Conception et contrats lus par fs par la preuve d'intégration.
+    'designs/application-conception-proof.application-design.json',
     'examples/application-conception-proof/reference-api.backend-contract.json',
     'examples/application-conception-proof/target-api.backend-contract.json',
-    'nx.json',
-    'tools/add-library.mjs',
-    'tools/check-library-compatibility.mjs',
-    'tools/check-library-resolution-policy.mjs',
-    'tools/check-library-setup-deps.mjs',
-    'tools/check-library-setup.mjs',
-    'tools/create-app.mjs',
-    'tools/generator-platform/core/action-authorization.mjs',
-    'tools/generator-platform/core/application-design.mjs',
-    'tools/generator-platform/core/application-shell-publication.mjs',
-    'tools/generator-platform/core/backend-contract.mjs',
-    'tools/generator-platform/core/canonicalize-generated.mjs',
-    'tools/generator-platform/core/data-binding-projection.mjs',
-    'tools/generator-platform/core/generation-change-set.mjs',
-    'tools/generator-platform/core/generation-manifest.mjs',
-    'tools/generator-platform/core/generation-transaction.mjs',
-    'tools/generator-platform/renderers/angular-pwa-shell-renderer.mjs',
-    'tools/generator-platform/renderers/react-spa-shell-renderer.mjs',
+    // Schémas lus par fs par create-app et application-workspace.
     'tools/generator-platform/schemas/application-design.schema.json',
     'tools/generator-platform/schemas/backend-contract.schema.json',
-    'tools/generator-platform/validate-ir.mjs',
+    'tools/generator-platform/schemas/application-workspace-manifest.schema.json',
+];
+// Politique conservatrice de l'atelier, distincte des dépendances importées.
+// Ces déclencheurs préexistent à EXT-01 et ne sont propres à aucun produit.
+const INTEGRATION_POLICY_INPUTS = [
+    // #71, 30e9457253a08f472207f88b2fc98d93eb540359 :
+    // CLI de check:library-setup, exécutée sans import depuis la preuve.
+    'tools/check-library-compatibility.mjs',
+    // #71, 30e9457253a08f472207f88b2fc98d93eb540359 :
+    // CLI de contrôle de politique exécutée par check:library-setup.
+    'tools/check-library-resolution-policy.mjs',
+    // #71, 30e9457253a08f472207f88b2fc98d93eb540359 :
+    // Commande publique qui enveloppe scaffold-tailwind-core.mjs.
     'tools/scaffold-tailwind.mjs',
-    'tools/scaffold-tailwind-core.mjs',
-    'tsconfig.base.json',
-]);
-
-const COMMON = new Set(COMMON_EXACT_INPUTS);
-const ISOLATION = new Set(ISOLATION_EXACT_INPUTS);
-const INTEGRATION = new Set(INTEGRATION_EXACT_INPUTS);
+    // #113, ccef2855f09be50722cfde5f0b75adeb06792f71 :
+    // Frontière d'autorisation importée par page-execution-plan.mjs ;
+    // son suivi conservateur dépasse les points d'entrée des preuves.
+    'tools/generator-platform/core/action-authorization.mjs',
+];
 const INTEGRATION_PREFIXES = Object.freeze([
     'conventions/libraries/',
     'designs/',
@@ -80,20 +108,47 @@ const INTEGRATION_PREFIXES = Object.freeze([
     'tools/library-setup/',
 ]);
 
-function classifyPath(path) {
-    if (COMMON.has(path)) return { isolation: true, integration: true };
+export function createLibraryCiClassifier(root = ROOT) {
+    const isolation = new Set([
+        ...ISOLATION_DATA,
+        ...localModuleClosure(LIBRARY_CI_ENTRYPOINTS.isolation, root),
+    ]);
+    const integration = new Set([
+        ...isolation,
+        ...INTEGRATION_DATA,
+        ...INTEGRATION_POLICY_INPUTS,
+        ...localModuleClosure(LIBRARY_CI_ENTRYPOINTS.integration, root),
+    ]);
+    const common = new Set(COMMON_EXACT_INPUTS);
     return {
-        isolation: ISOLATION.has(path),
-        integration:
-            INTEGRATION.has(path) ||
-            INTEGRATION_PREFIXES.some((prefix) => path.startsWith(prefix)),
+        isolation,
+        integration,
+        classifyPath(path) {
+            if (common.has(path)) return { isolation: true, integration: true };
+            return {
+                isolation: isolation.has(path),
+                integration:
+                    integration.has(path) ||
+                    INTEGRATION_PREFIXES.some((prefix) =>
+                        path.startsWith(prefix)
+                    ),
+            };
+        },
     };
 }
+
+const classifier = createLibraryCiClassifier();
+export const ISOLATION_EXACT_INPUTS = Object.freeze(
+    [...classifier.isolation].sort()
+);
+export const INTEGRATION_EXACT_INPUTS = Object.freeze(
+    [...classifier.integration].sort()
+);
 
 export function classifyLibraryCiImpact(changedPaths) {
     const reasons = { isolation: [], integration: [] };
     for (const path of [...new Set(changedPaths)].sort()) {
-        const impact = classifyPath(path);
+        const impact = classifier.classifyPath(path);
         if (impact.isolation) reasons.isolation.push(path);
         if (impact.integration) reasons.integration.push(path);
     }

@@ -9,6 +9,7 @@
       "Library candidate isolation (linux-docker)",
       "Library candidate isolation (macos-sandbox)",
       "Library integration (create-app → Material → Tailwind)",
+      "External application shells",
       "Secret scan (gitleaks)",
       "Docs freshness",
       "Oracle — lint + build + ngc + test",
