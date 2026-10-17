@@ -71,7 +71,6 @@ export const ANGULAR_TOOLING_PACKAGES = [
     '@schematics/angular',
 ];
 export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
-    axios: '1.20.0',
     'brace-expansion': '5.0.12',
     'fast-uri': '4.1.5',
     nanoid: '3.3.18',
