@@ -876,16 +876,17 @@ jobs:
   # ^1.20.0 : plancher corrigé et mises à jour 1.x futures autorisées dans le
   # lockfile. `security-overrides-repair.yml` audite chaque jour et ouvre une
   # PR confinée à bun.lock lorsque l'un de ces overrides redevient vulnérable.
-  # `check:dependabot-policy` refuse
-  # un retour au pin exact/vulnérable et invalide l'override dès que Nx accepte
-  # lui-même la résolution sûre. Le même garde impose des planchers caret à
-  # tous les overrides de sécurité afin d'éviter la répétition de cette classe
-  # d'incident dans une autre dépendance. Aucun de ces cinq GHSA n'est ignoré.
+  # `check:dependabot-policy` impose des planchers caret matérialisés et sûrs
+  # pour les paquets installés. Il refuse et nomme tout plancher dont le paquet
+  # est absent de packages dans bun.lock : ce plancher doit être retiré.
+  # Aucun de ces cinq GHSA n'est ignoré.
   # Le 2026-10-06, le flux d'avis a signalé après fusion deux nouvelles
   # transitives : proxy-addr<2.0.8 (critical) via @nx/react/express et
   # source-map-js<1.2.2 (high) via les outils CSS/build/test. Elles sont
-  # désormais gouvernées par des planchers caret explicites et testés. La même
-  # passe a corrigé les avis modérés compatibles de fast-uri, smol-toml et qs.
+  # alors gouvernées par des planchers caret explicites et testés. Le plancher
+  # proxy-addr est retiré le 2026-10-17, car le paquet n'est plus installé ;
+  # celui de source-map-js reste requis. La même passe a corrigé les avis
+  # modérés compatibles de fast-uri, smol-toml et qs.
   # L'audit complet conserve visible l'avis modéré uuid@8 imposé par la dernière
   # version d'ExcelJS : l'usage réel est uuid.v4() sans buffer, hors primitive
   # vulnérable ; aucune majeure incompatible ni aucun ignore n'est forcé.

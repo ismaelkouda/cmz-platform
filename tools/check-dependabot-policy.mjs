@@ -70,7 +70,6 @@ export const ANGULAR_TOOLING_PACKAGES = [
     '@angular/language-service',
     '@schematics/angular',
 ];
-export const AXIOS_SECURITY_RANGE = '^1.20.0';
 export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
     axios: '1.20.0',
     'brace-expansion': '5.0.12',
@@ -80,7 +79,6 @@ export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
     'js-yaml': '4.3.2',
     undici: '7.29.1',
     browserslist: '4.28.8',
-    'proxy-addr': '2.0.8',
     qs: '6.16.0',
     'source-map-js': '1.2.2',
 });
@@ -88,9 +86,9 @@ export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
 /**
  * Retourne uniquement les consommateurs qui exigent réellement le paquet.
  * Les peerDependencies (dont les optionalPeers Bun) décrivent une capacité
- * offerte par l'hôte, pas un nœud nécessairement installé. Un override peut
- * donc légitimement rester préventif sans résolution tant que ce tableau est
- * vide. Les dépendances optionnelles sont elles aussi autorisées à manquer.
+ * offerte par l'hôte, pas un nœud nécessairement installé. Ce diagnostic ne
+ * permet pas de conserver un plancher dont le paquet n'est pas installé.
+ * Les dépendances optionnelles sont elles aussi autorisées à manquer.
  */
 export function requiredLockConsumers(lock, dependencyName) {
     const consumers = [];
@@ -278,36 +276,60 @@ export function dependabotPolicyErrors(config, pkg) {
 }
 
 /**
- * Rend l'override Axios compatible avec les mises à jour de sécurité
- * transitives : le plancher reste explicite, mais le lockfile peut avancer
- * dans la même majeure. La preuve devient volontairement périmée dès que Nx
- * accepte lui-même la résolution sûre, afin de faire retirer l'override.
+ * Vérifie les planchers des paquets installés et leur résolution sûre.
+ * Un paquet absent sans consommateur requis impose de retirer les entrées
+ * encore présentes ; avec un consommateur requis, le verrou est incohérent.
  */
 export function securityResolutionPolicyErrors(pkg, lock) {
     const errors = [];
     const overrides = pkg?.overrides ?? {};
 
-    for (const [name, minimum] of Object.entries(SECURITY_OVERRIDE_MINIMUMS)) {
-        const expectedRange = `^${minimum}`;
-        if (overrides[name] !== expectedRange) {
-            errors.push(
-                `overrides.${name} doit valoir '${expectedRange}' (plancher corrigé auto-actualisable), trouvé ${String(overrides[name])}`
-            );
+    const names = new Set([
+        ...Object.keys(SECURITY_OVERRIDE_MINIMUMS),
+        ...Object.keys(overrides),
+    ]);
+    for (const name of names) {
+        const minimum = Object.hasOwn(SECURITY_OVERRIDE_MINIMUMS, name)
+            ? SECURITY_OVERRIDE_MINIMUMS[name]
+            : undefined;
+        const hasOverride = Object.hasOwn(overrides, name);
+        const requiredConsumers = requiredLockConsumers(lock, name);
+        if (!Object.hasOwn(lock?.packages ?? {}, name)) {
+            if (requiredConsumers.length > 0) {
+                errors.push(
+                    `bun.lock incohérent : ${name} absent de packages, requis par: ${requiredConsumers.join(', ')}`
+                );
+            } else {
+                const obsolete = [
+                    ...(hasOverride ? [`overrides.${name}`] : []),
+                    ...(minimum ? [`SECURITY_OVERRIDE_MINIMUMS.${name}`] : []),
+                ];
+                errors.push(
+                    `${obsolete.join(' et ')} ${obsolete.length > 1 ? 'doivent être retirés' : 'doit être retiré'} : paquet absent de packages dans bun.lock`
+                );
+            }
+            continue;
         }
-
-        const directFields = [
-            'dependencies',
-            'devDependencies',
-            'optionalDependencies',
-        ].filter((field) => Object.hasOwn(pkg?.[field] ?? {}, name));
-        if (directFields.length > 0) {
-            errors.push(
-                `${name} est gouverné comme dépendance transitive et ne doit pas devenir une dépendance directe artificielle (${directFields.join(', ')})`
-            );
+        if (minimum) {
+            const expectedRange = `^${minimum}`;
+            if (overrides[name] !== expectedRange) {
+                errors.push(
+                    `overrides.${name} doit valoir '${expectedRange}' (plancher corrigé auto-actualisable), trouvé ${String(overrides[name])}`
+                );
+            }
+            const directFields = [
+                'dependencies',
+                'devDependencies',
+                'optionalDependencies',
+            ].filter((field) => Object.hasOwn(pkg?.[field] ?? {}, name));
+            if (directFields.length > 0) {
+                errors.push(
+                    `${name} est gouverné comme dépendance transitive et ne doit pas devenir une dépendance directe artificielle (${directFields.join(', ')})`
+                );
+            }
         }
-    }
-
-    for (const [name, range] of Object.entries(overrides)) {
+        if (!hasOverride) continue;
+        const range = overrides[name];
         if (
             typeof range !== 'string' ||
             !range.startsWith('^') ||
@@ -331,14 +353,6 @@ export function securityResolutionPolicyErrors(pkg, lock) {
             lockedIdentity.startsWith(prefix)
                 ? lockedIdentity.slice(prefix.length)
                 : undefined;
-        const requiredConsumers = requiredLockConsumers(lock, name);
-        if (lockedIdentity === undefined && requiredConsumers.length === 0) {
-            // L'override reste un plancher préventif. Dependabot/Bun peut
-            // légitimement élaguer un pair optionnel absent (cas réel :
-            // @nx/react → express → proxy-addr). Forcer une résolution ici
-            // réintroduirait artificiellement un sous-graphe non utilisé.
-            continue;
-        }
         if (!semver.valid(lockedVersion)) {
             errors.push(
                 `résolution ${name} absente ou invalide dans bun.lock (${String(lockedIdentity)}), requise par: ${requiredConsumers.join(', ') || 'entrée présente mal formée'}`
@@ -347,7 +361,6 @@ export function securityResolutionPolicyErrors(pkg, lock) {
             errors.push(`${name}@${lockedVersion} ne respecte pas ${range}`);
         }
 
-        const minimum = SECURITY_OVERRIDE_MINIMUMS[name];
         if (
             minimum &&
             semver.valid(lockedVersion) &&
@@ -357,36 +370,6 @@ export function securityResolutionPolicyErrors(pkg, lock) {
                 `${name}@${lockedVersion} est sous le plancher sûr ${minimum}`
             );
         }
-    }
-
-    const lockedIdentity = lock?.packages?.axios?.[0];
-    const lockedVersion =
-        typeof lockedIdentity === 'string' &&
-        lockedIdentity.startsWith('axios@')
-            ? lockedIdentity.slice('axios@'.length)
-            : undefined;
-    if (!semver.valid(lockedVersion)) {
-        errors.push(
-            `résolution axios absente ou invalide dans bun.lock (${String(lockedIdentity)})`
-        );
-    } else if (!semver.satisfies(lockedVersion, AXIOS_SECURITY_RANGE)) {
-        errors.push(
-            `axios@${lockedVersion} ne respecte pas le plancher sûr ${AXIOS_SECURITY_RANGE}`
-        );
-    }
-
-    const nxAxiosRange = lock?.packages?.nx?.[2]?.dependencies?.axios;
-    if (!semver.validRange(nxAxiosRange)) {
-        errors.push(
-            `la dépendance Axios déclarée par Nx est absente ou invalide (${String(nxAxiosRange)})`
-        );
-    } else if (
-        semver.valid(lockedVersion) &&
-        semver.satisfies(lockedVersion, nxAxiosRange)
-    ) {
-        errors.push(
-            `Nx accepte désormais axios@${lockedVersion} (${nxAxiosRange}) : l'override est devenu inutile et doit être retiré`
-        );
     }
 
     return errors;
@@ -425,7 +408,7 @@ function main() {
     }
 
     console.log(
-        `✔ Dependabot : groupes '${REACT_GROUP}' et '${ANGULAR_GROUP}' atomiques ; mises à jour patch/minor regroupées par surface cohérente ; ${Object.keys(pkg.overrides ?? {}).length} override(s) de sécurité auto-actualisable(s), Axios ${AXIOS_SECURITY_RANGE} sûr et transitif.`
+        `✔ Dependabot : groupes '${REACT_GROUP}' et '${ANGULAR_GROUP}' atomiques ; mises à jour patch/minor regroupées par surface cohérente ; ${Object.keys(pkg.overrides ?? {}).length} override(s) de sécurité auto-actualisable(s) vérifié(s).`
     );
 }
 

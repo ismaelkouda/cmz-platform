@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { parseArgs } from '../prepare-application-workspace.mjs';
-import { parseJsonc } from '../check-library-setup-deps.mjs';
 import {
     parseArgs as parseProofArgs,
     qualifyWeights,
@@ -32,6 +31,10 @@ import {
     TOOLS_ROOT,
     workspaceOptions,
 } from './test-support/external-application-fixture.mjs';
+import {
+    sourceDependencyExpectations,
+    verifyWorkspaceDependencyProfiles,
+} from './test-support/workspace-dependency-assertions.mjs';
 
 test('T1 : preview pur sur source, destination et voisins', async (t) => {
     const parent = await fixtureParent(t);
@@ -257,166 +260,72 @@ test('M2 : identité portable, plans liés au lieu physique, reprise après dép
     assert.deepEqual(await snapshotTree(destination, []), before);
 });
 
-test('B1/B2 : surcharges natives, pair résiduel explicite, records source intacts pour les trois profils', async (t) => {
-    const parent = await fixtureParent(t);
-    const source = parseJsonc(
-        await readFile(join(TOOLS_ROOT, 'bun.lock'), 'utf8')
-    );
+test(
+    'B1/B2 : surcharges natives et écarts calculés indépendamment pour les trois profils',
+    verifyWorkspaceDependencyProfiles
+);
+
+test('oracle de source : deux overrides, un pair et une résolution imbriquée connus', () => {
+    const record = (name, version, metadata = {}) => [
+        name + '@' + version,
+        '',
+        metadata,
+        'sha512-' + Buffer.alloc(64, 7).toString('base64'),
+    ];
+    const source = {
+        packages: {
+            root: record('root', '1.0.0', {
+                dependencies: { leaf: '^1.0.0' },
+                peerDependencies: { peer: '^1.0.0' },
+                optionalPeers: ['peer'],
+            }),
+            other: record('other', '1.0.0', {
+                dependencies: { leaf: '^1.0.0' },
+            }),
+            'root/leaf': record('leaf', '2.1.0'),
+            leaf: record('leaf', '2.0.0'),
+            peer: record('peer', '2.0.0'),
+            unreachable: record('unreachable', '1.0.0', {
+                dependencies: { leaf: '^1.0.0' },
+            }),
+        },
+    };
     const before = structuredClone(source);
-    for (const profiles of [
-        ['angular-pwa'],
-        ['react-spa'],
-        ['angular-pwa', 'react-spa'],
-    ]) {
-        const plan = await planApplicationWorkspace(
-            workspaceOptions(join(parent, profiles.join('-')), profiles)
-        );
-        const pkg = JSON.parse(plan.files['package.json']);
-        const seed = parseJsonc(plan.files['bun.lock']);
-        const policy = {
-            overrides: pkg.overrides,
-            peerDeviations: plan.manifest.dependency_deviations.filter(
-                (edge) => edge.reason === 'optional-peer'
-            ),
-        };
-        const closure = productDependencyClosure(
-            seed,
-            plan.manifest.packages,
-            source,
-            policy
-        );
-        assert.deepEqual(source, before);
-        assert.deepEqual(
-            closure.known_source_edges,
-            plan.manifest.dependency_deviations
-        );
-        assert.equal(
-            closure.known_source_edges.filter(
-                (edge) => edge.reason === 'override'
-            ).length,
-            6
-        );
-        assert.equal(policy.peerDeviations.length, 1);
-        assert.equal(policy.peerDeviations[0].name, 'vitest');
-        const sourceOverrides = JSON.parse(
-            await readFile(join(TOOLS_ROOT, 'package.json'), 'utf8')
-        ).overrides;
-        const reached = new Set(
-            Object.values(closure.records).map((record) =>
-                record[0].slice(0, record[0].lastIndexOf('@'))
-            )
-        );
-        assert.deepEqual(
-            pkg.overrides,
-            Object.fromEntries(
-                Object.entries(sourceOverrides).filter(([name]) =>
-                    reached.has(name)
-                )
-            )
-        );
-        assert.deepEqual(seed.overrides, pkg.overrides);
-        assert.deepEqual(Object.keys(seed.workspaces), ['']);
-        assert.equal(seed.catalog, undefined);
-        for (const [key, record] of Object.entries(closure.records))
-            assert.deepEqual(
-                record,
-                source.packages[key],
-                'Record source réécrit'
-            );
-        for (const name of new Set(
-            closure.known_source_edges
-                .filter((edge) => edge.reason === 'override')
-                .map((edge) => edge.name)
-        )) {
-            const withoutOverride = structuredClone(policy);
-            delete withoutOverride.overrides[name];
-            assert.throws(
-                () =>
-                    productDependencyClosure(
-                        seed,
-                        plan.manifest.packages,
-                        source,
-                        withoutOverride
-                    ),
-                /ne satisfait pas/
-            );
-        }
-        assert.throws(
-            () =>
-                productDependencyClosure(seed, plan.manifest.packages, source, {
-                    ...policy,
-                    peerDeviations: [],
-                }),
-            /ne satisfait pas/
-        );
-        const widened = structuredClone(policy);
-        widened.peerDeviations[0].effective_requested = '*';
-        assert.throws(
-            () =>
-                productDependencyClosure(
-                    seed,
-                    plan.manifest.packages,
-                    source,
-                    widened
-                ),
-            /unqualified source dependency deviation/
-        );
-        const changed = structuredClone(seed);
-        changed.packages.vitest[0] = 'vitest@0.0.0';
-        assert.throws(
-            () =>
-                productDependencyClosure(
-                    changed,
-                    plan.manifest.packages,
-                    source,
-                    policy
-                ),
-            /unqualified source dependency deviation/
-        );
-        const unknown = structuredClone(seed);
-        unknown.packages.typescript[2].dependencies = { tslib: '0.0.0' };
-        assert.throws(
-            () =>
-                productDependencyClosure(
-                    unknown,
-                    plan.manifest.packages,
-                    source,
-                    policy
-                ),
-            /ne satisfait pas/
-        );
-        const unknownPeer = structuredClone(seed);
-        unknownPeer.packages.typescript[2].peerDependencies = {
-            tslib: '0.0.0',
-        };
-        unknownPeer.packages.typescript[2].optionalPeers = ['tslib'];
-        assert.throws(
-            () =>
-                productDependencyClosure(
-                    unknownPeer,
-                    plan.manifest.packages,
-                    unknownPeer,
-                    policy
-                ),
-            /ne satisfait pas/
-        );
-        const altered = structuredClone(seed);
-        altered.packages.typescript[2].fixture = 'foreign record';
-        assert.throws(
-            () =>
-                productDependencyClosure(
-                    altered,
-                    plan.manifest.packages,
-                    source,
-                    policy
-                ),
-            /not qualified by source lock/
-        );
-        assert.throws(
-            () => productDependencyClosure(seed, plan.manifest.packages),
-            /approved source lock required/
-        );
-    }
+    const expected = sourceDependencyExpectations(
+        source,
+        { root: { version: '1.0.0' }, other: { version: '1.0.0' } },
+        { leaf: '^2.0.0' }
+    );
+    const tuples = expected.edges
+        .map((edge) => [
+            edge.parent,
+            edge.field,
+            edge.name,
+            edge.reason,
+            edge.resolved,
+        ])
+        .sort((a, b) => a.join('|').localeCompare(b.join('|')));
+    assert.deepEqual(tuples, [
+        ['other', 'dependencies', 'leaf', 'override', 'leaf@2.0.0'],
+        ['root', 'dependencies', 'leaf', 'override', 'leaf@2.1.0'],
+        ['root', 'peerDependencies', 'peer', 'optional-peer', 'peer@2.0.0'],
+    ]);
+    assert.equal(
+        expected.edges.filter((edge) => edge.reason === 'override').length,
+        2
+    );
+    assert.equal(
+        expected.edges.filter((edge) => edge.reason === 'optional-peer').length,
+        1
+    );
+    assert.deepEqual(Object.keys(expected.records), [
+        'leaf',
+        'other',
+        'peer',
+        'root',
+        'root/leaf',
+    ]);
+    assert.deepEqual(source, before);
 });
 
 test('M3 : changement de l’outil et du verrou source périme le plan, sans retirer la propriété du produit', async (t) => {
