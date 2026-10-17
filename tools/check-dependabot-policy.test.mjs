@@ -181,73 +181,56 @@ test('refuse Material et CDK désalignés', () => {
     );
 });
 
-function securityFixture({
-    override = '^1.20.0',
-    locked = '1.20.0',
-    nxRange = '1.18.1',
-    direct = false,
-} = {}) {
+function securityFixture() {
     const overrides = Object.fromEntries(
         Object.entries(SECURITY_OVERRIDE_MINIMUMS).map(([name, minimum]) => [
             name,
             `^${minimum}`,
         ])
     );
-    overrides.axios = override;
-    const packages = Object.fromEntries(
-        Object.entries(SECURITY_OVERRIDE_MINIMUMS).map(([name, minimum]) => [
-            name,
-            [`${name}@${name === 'axios' ? locked : minimum}`],
-        ])
-    );
     return {
-        pkg: {
-            devDependencies: direct ? { axios: locked } : {},
-            overrides,
-        },
+        pkg: { devDependencies: {}, overrides },
         lock: {
             overrides: { ...overrides },
-            packages: {
-                ...packages,
-                nx: ['nx@23.2.1', '', { dependencies: { axios: nxRange } }],
-            },
+            packages: Object.fromEntries(
+                Object.entries(SECURITY_OVERRIDE_MINIMUMS).map(
+                    ([name, version]) => [name, [`${name}@${version}`]]
+                )
+            ),
         },
     };
 }
 
-test('accepte un plancher Axios auto-actualisable et encore nécessaire à Nx', () => {
+test('accepte les planchers installés et conformes sans dépendre d’un consommateur nommé', () => {
     const { pkg, lock } = securityFixture();
     assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), []);
 });
 
-test('refuse de réintroduire un pin Axios exact', () => {
-    const { pkg, lock } = securityFixture({ override: '1.20.0' });
-    assert.match(
-        securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /doit valoir '\^1\.20\.0'/
-    );
+test('refuse un pin exact pour chacun des minimums gouvernés', () => {
+    for (const [name, minimum] of Object.entries(SECURITY_OVERRIDE_MINIMUMS)) {
+        const { pkg, lock } = securityFixture();
+        pkg.overrides[name] = minimum;
+        lock.overrides[name] = minimum;
+        assert.ok(
+            securityResolutionPolicyErrors(pkg, lock).some((error) =>
+                error.includes(`overrides.${name} doit valoir '^${minimum}'`)
+            ),
+            name
+        );
+    }
 });
 
-test('refuse tout autre override de sécurité exact', () => {
+test('refuse aussi un plancher exact ajouté hors de la table des minimums', () => {
     const { pkg, lock } = securityFixture();
-    pkg.overrides['brace-expansion'] = '5.0.12';
-    lock.overrides['brace-expansion'] = '5.0.12';
-    lock.packages['brace-expansion'] = ['brace-expansion@5.0.12'];
-    assert.match(
-        securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /overrides\.brace-expansion doit être un plancher caret/
-    );
+    pkg.overrides['fixture-floor'] = '2.0.0';
+    lock.overrides['fixture-floor'] = '2.0.0';
+    lock.packages['fixture-floor'] = ['fixture-floor@2.0.0'];
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+        'overrides.fixture-floor doit être un plancher caret auto-actualisable, trouvé 2.0.0',
+    ]);
 });
 
-test('refuse une résolution Axios sous le plancher corrigé', () => {
-    const { pkg, lock } = securityFixture({ locked: '1.19.0' });
-    assert.match(
-        securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /ne respecte pas le plancher sûr/
-    );
-});
-
-test('refuse une résolution transitive sous son plancher de sécurité', () => {
+test('refuse une résolution transitive sous son minimum de sécurité', () => {
     const { pkg, lock } = securityFixture();
     lock.packages['source-map-js'] = ['source-map-js@1.2.1'];
     assert.match(
@@ -256,102 +239,128 @@ test('refuse une résolution transitive sous son plancher de sécurité', () => 
     );
 });
 
-test('accepte un override préventif lorsque le paquet est absent du graphe', () => {
+test('refuse une résolution qui ne satisfait pas la plage déclarée', () => {
     const { pkg, lock } = securityFixture();
-    delete lock.packages['proxy-addr'];
-    lock.packages['@nx/react'] = [
-        '@nx/react@23.2.1',
-        '',
-        {
-            peerDependencies: { express: '^4.21.2' },
-            optionalPeers: ['express'],
-        },
-    ];
-    assert.deepEqual(requiredLockConsumers(lock, 'proxy-addr'), []);
+    pkg.overrides['fixture-floor'] = '^2.0.0';
+    lock.overrides['fixture-floor'] = '^2.0.0';
+    lock.packages['fixture-floor'] = ['fixture-floor@1.0.0'];
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+        'fixture-floor@1.0.0 ne respecte pas ^2.0.0',
+    ]);
+});
+
+test('refuse et nomme un plancher dormant sans consommateur requis', () => {
+    const { pkg, lock } = securityFixture();
+    pkg.overrides['fixture-floor'] = '^2.0.0';
+    lock.overrides['fixture-floor'] = '^2.0.0';
+    assert.deepEqual(requiredLockConsumers(lock, 'fixture-floor'), []);
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+        'overrides.fixture-floor doit être retiré : paquet absent de packages dans bun.lock',
+    ]);
+});
+
+test('F-2 : absent, override et minimum présents, une seule consigne nomme les deux retraits', () => {
+    for (const name of Object.keys(SECURITY_OVERRIDE_MINIMUMS)) {
+        const { pkg, lock } = securityFixture();
+        delete lock.packages[name];
+        assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+            `overrides.${name} et SECURITY_OVERRIDE_MINIMUMS.${name} doivent être retirés : paquet absent de packages dans bun.lock`,
+        ]);
+    }
+});
+
+test('F-2 : absent, override retiré, seul le minimum est nommé sans exiger le plancher', () => {
+    for (const name of Object.keys(SECURITY_OVERRIDE_MINIMUMS)) {
+        const { pkg, lock } = securityFixture();
+        delete lock.packages[name];
+        delete pkg.overrides[name];
+        delete lock.overrides[name];
+        assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+            `SECURITY_OVERRIDE_MINIMUMS.${name} doit être retiré : paquet absent de packages dans bun.lock`,
+        ]);
+    }
+});
+
+test('F-2 : absent, override et minimum retirés, aucune erreur pour ce nom', () => {
+    const { pkg, lock } = securityFixture();
+    const name = 'proxy-addr';
+    assert.equal(Object.hasOwn(SECURITY_OVERRIDE_MINIMUMS, name), false);
+    assert.equal(Object.hasOwn(pkg.overrides, name), false);
+    assert.equal(Object.hasOwn(lock.packages, name), false);
     assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), []);
 });
 
-test('refuse une résolution absente dès qu’un consommateur requis existe', () => {
+test('R-3 : un paquet scopé de même suffixe ne prouve pas la présence du paquet à plancher', () => {
     const { pkg, lock } = securityFixture();
-    delete lock.packages['proxy-addr'];
-    lock.packages.express = [
-        'express@5.2.1',
-        '',
-        { dependencies: { 'proxy-addr': '^2.0.7' } },
+    delete lock.packages['js-yaml'];
+    lock.packages['@zkochan/js-yaml'] = [
+        `@zkochan/js-yaml@${SECURITY_OVERRIDE_MINIMUMS['js-yaml']}`,
     ];
-    assert.deepEqual(requiredLockConsumers(lock, 'proxy-addr'), ['express']);
-    assert.match(
-        securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /résolution proxy-addr absente.*requise par: express/
-    );
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+        'overrides.js-yaml et SECURITY_OVERRIDE_MINIMUMS.js-yaml doivent être retirés : paquet absent de packages dans bun.lock',
+    ]);
 });
 
-test('inclut les dépendances directes des workspaces dans les consommateurs', () => {
+test('F-3 : refuse un verrou incohérent avec un consommateur requis sans conseiller le retrait', () => {
     const { pkg, lock } = securityFixture();
-    delete lock.packages['proxy-addr'];
+    delete lock.packages['js-yaml'];
+    lock.packages.consumer = [
+        'consumer@1.0.0',
+        '',
+        { dependencies: { 'js-yaml': '^4.3.2' } },
+    ];
+    assert.deepEqual(requiredLockConsumers(lock, 'js-yaml'), ['consumer']);
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+        'bun.lock incohérent : js-yaml absent de packages, requis par: consumer',
+    ]);
+});
+
+test('F-3 : nomme le workspace requis dans le verrou incohérent sans conseiller le retrait', () => {
+    const { pkg, lock } = securityFixture();
+    delete lock.packages['js-yaml'];
     lock.workspaces = {
-        'apps/proof': {
-            devDependencies: { 'proxy-addr': '^2.0.8' },
-        },
+        'apps/proof': { devDependencies: { 'js-yaml': '^4.3.2' } },
     };
-    assert.deepEqual(requiredLockConsumers(lock, 'proxy-addr'), [
+    assert.deepEqual(requiredLockConsumers(lock, 'js-yaml'), [
         'workspace:apps/proof',
     ]);
-    assert.match(
-        securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /requise par: workspace:apps\/proof/
-    );
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+        'bun.lock incohérent : js-yaml absent de packages, requis par: workspace:apps/proof',
+    ]);
 });
 
-test('refuse une entrée de résolution présente mais mal formée', () => {
+test('distingue une entrée présente mal formée d’un paquet absent', () => {
     const { pkg, lock } = securityFixture();
-    lock.packages['proxy-addr'] = [42];
-    assert.match(
-        securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /entrée présente mal formée/
-    );
+    lock.packages['js-yaml'] = [42];
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+        'résolution js-yaml absente ou invalide dans bun.lock (42), requise par: entrée présente mal formée',
+    ]);
 });
 
-test('refuse de retirer un override de sécurité requis', () => {
+test('F-2 : installé, override retiré, exige toujours le plancher de sécurité', () => {
     const { pkg, lock } = securityFixture();
-    delete pkg.overrides['proxy-addr'];
-    delete lock.overrides['proxy-addr'];
+    delete pkg.overrides['js-yaml'];
+    delete lock.overrides['js-yaml'];
     assert.match(
         securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /overrides\.proxy-addr doit valoir '\^2\.0\.8'/
+        /overrides\.js-yaml doit valoir '\^4\.3\.2'/
     );
 });
 
-test('refuse une dépendance Axios directe artificielle', () => {
-    const { pkg, lock } = securityFixture({ direct: true });
-    assert.match(
-        securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /dépendance directe artificielle/
-    );
-});
-
-test('refuse toute dépendance transitive gouvernée ajoutée directement', () => {
+test('refuse une dépendance transitive gouvernée ajoutée directement', () => {
     const { pkg, lock } = securityFixture();
-    pkg.devDependencies['proxy-addr'] = '2.0.8';
+    pkg.devDependencies['js-yaml'] = SECURITY_OVERRIDE_MINIMUMS['js-yaml'];
     assert.match(
         securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /proxy-addr est gouverné comme dépendance transitive/
+        /js-yaml est gouverné comme dépendance transitive/
     );
 });
 
-test("refuse un lockfile qui ne matérialise pas l'override", () => {
+test("refuse un lockfile qui ne matérialise pas exactement l'override", () => {
     const { pkg, lock } = securityFixture();
-    lock.overrides.axios = '1.20.0';
+    lock.overrides['js-yaml'] = '4.3.2';
     assert.match(
         securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /ne matérialise pas exactement/
-    );
-});
-
-test("s'auto-invalide quand Nx accepte nativement la résolution sûre", () => {
-    const { pkg, lock } = securityFixture({ nxRange: '^1.20.0' });
-    assert.match(
-        securityResolutionPolicyErrors(pkg, lock).join('\n'),
-        /override est devenu inutile/
+        /ne matérialise pas exactement overrides\.js-yaml/
     );
 });

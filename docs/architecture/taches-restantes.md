@@ -4773,3 +4773,24 @@ dans ce document.
 
 _Clôture d'un item = commande/PR, jamais déclaration seule. Si un « fait »
 regresse à la mesure, le reclasser ici avec date._
+
+## 2026-10-17 — CI-UPDATES-01 : planchers limités aux paquets installés
+
+Décision du propriétaire du 2026-10-17 :
+un override de sécurité dont le paquet est absent de `packages` dans
+`bun.lock` doit être refusé et nommé par `check:dependabot-policy`.
+Cette décision remplace la tolérance des planchers préventifs décrite
+dans OPS-37 ci-dessus ; l'entrée historique est conservée.
+Le calcul repose sur les clés exactes du verrou, sans exception Axios.
+Le plancher `proxy-addr` est retiré ; celui d'Axios reste à l'étape 1,
+car Nx 23.2.1 le requiert encore. Preuves : `bun run check:dependabot-policy`
+exerce les règles de présence, de minimum et les diagnostics de verrou
+incohérent ; `node --test tools/generator-platform/application-workspace.test.mjs`
+exerce B1/B2 et son oracle indépendant des écarts du graphe source.
+
+Conséquence d'exploitation : une PR Dependabot qui rend un plancher dormant
+reste rouge, avec un message qui nomme le plancher à retirer. Aucun commit
+n'est poussé sur sa branche. Le retrait se fait dans une PR de remplacement
+qui porte la mise à jour, comme l'étape 2 prévue pour Nx 23.3.0 après fusion
+de l'étape 1. La généralisation du retrait des planchers redondants reste
+hors périmètre.
