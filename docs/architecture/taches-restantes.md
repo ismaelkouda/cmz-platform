@@ -4794,3 +4794,38 @@ n'est poussé sur sa branche. Le retrait se fait dans une PR de remplacement
 qui porte la mise à jour, comme l'étape 2 prévue pour Nx 23.3.0 après fusion
 de l'étape 1. La généralisation du retrait des planchers redondants reste
 hors périmètre.
+
+## 2026-10-18 — CI-UPDATES-01 : Nx 23.3.0 et trois pistes requalifiées
+
+L'étape 2 suit la fusion de la PR #260, sur la base `5fd2613a`.
+La migration native porte `nx` et les huit paquets `@nx/*` installés de
+23.2.1 à 23.3.0. Elle ajoute `.vitest` à `.gitignore`.
+Nx ne consomme plus Axios : son override et son plancher sont retirés
+ensemble après contrôle de son absence du graphe verrouillé.
+La règle de refus des planchers dormants de l'étape 1 reste appliquée.
+
+Le propriétaire a exécuté les trois qualifications natives avec
+`bun run promote-library-compatibility --app <application> --library <bibliothèque>` :
+`backoffice-angular` / `angular-material`, `library-qualification-angular` /
+`tailwind`, puis `library-qualification-react` / `tailwind`.
+Les trois fiches sont `verified`, avec des attestations calculées par le
+promoteur et `tested_versions.nx` à 23.3.0. Les versions restent Node 22.22.3,
+Bun 1.3.14, Angular 22.2.0, Material/CDK 22.2.1, React 19.3.0 et Tailwind 4.3.3.
+Les attestations Angular sont liées aux commits `71409c46` et `5bd2bdb7` ;
+celle de React est liée à `9027dfe4`. Les recettes, preuves requises et
+contrôles de compatibilité sont inchangés.
+
+La première qualification React a refusé un défaut déjà présent avant la
+migration : `vite/postcss@8.5.29` exige `nanoid@^3.3.19`, alors que le verrou
+résolvait 3.3.18. Après décision du propriétaire, seuls l'override et le
+plancher nanoid passent à 3.3.19 ; Bun régénère le record verrouillé à 3.3.20.
+L'installation figée native avec `--ignore-scripts --force` réconcilie les
+liens existants ; la qualification React suivante aboutit. Aucun test ni
+contrôle n'est assoupli pour franchir ce refus. `bun audit --audit-level=high`
+sur ce verrou termine avec le code 0, sans avis high/critical.
+
+La validation finale exige le parcours Q4 global strict et une contre-preuve
+qui périme volontairement la version Nx attestée sur copie, puis restaure
+les octets et retrouve le vert.
+La généralisation des écarts du graphe source est un lot distinct autorisé
+après fusion de cette étape ; aucune exception générale n'est ajoutée ici.

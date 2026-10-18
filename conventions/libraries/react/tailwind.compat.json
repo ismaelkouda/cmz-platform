@@ -21,17 +21,17 @@
       "reason": "Piste officielle Tailwind 4 via le plugin Vite, qualifiée pour React 19 et Vite 8.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "42c3fdaeb9b0aaf3e64e63462e8363a9189cbb2e",
+        "commit": "9027dfe4e439d9e9550b06238f206282fd3c5754",
         "source_context_sha256": "4e1d6920ed3f3b5d1785d8b501135d3b4a788fc8ed07634f8c5b245f2ca4d62d",
         "app": "library-qualification-react",
-        "plan_id": "library-plan:73be456747b12f5fed44de8518cfc5ffead081f39496a7da7c78afbd476ed43f",
+        "plan_id": "library-plan:ddccae2d39deb822667d4e145da88c43b90fd8cd6f04aea4f2d3f5e9d1af048f",
         "change_set_id": "changes:d65ac6cfca8a49f9198e432064349b0a0b1f19558613af4fbe60462992628cf7",
         "app_tree_sha256": "ba766b6de7355fc3b7f3393bad72ddfcb3674c4273100363976d953ebbc458b1",
         "track_sha256": "c8e508313cd848597e0b6fce2714ccd6a7f00bc0f0a23194560ae5e13c5b8537",
         "tested_versions": {
           "node": "22.22.3",
           "bun": "1.3.14",
-          "nx": "23.2.1",
+          "nx": "23.3.0",
           "framework": "19.3.0",
           "packages": {
             "@tailwindcss/vite": "4.3.3",
@@ -40,7 +40,7 @@
         },
         "dependency_state_sha256": {
           "initial": "78d9d928d454d673bd21ad497639fb402035de66e8849c7150af76c28a9bdec7",
-          "final": "fa5cce4fa33a3306cffd7a582638b5c0001f403ddd0529ee3259d36c38cf0bc5"
+          "final": "995b3903933aacc4ae2f89b3ac4ccfab29d288e0df216556256302005692fc0d"
         },
         "proofs": [
           "offline-production-build",
@@ -97,7 +97,7 @@
             "tools/scaffold-tailwind.mjs": "e12cd0be13839fc2177930d56fdfe1032ec5acdddfe8b0c34e9f134bc071200d"
           }
         },
-        "evidence_sha256": "44e1ec116b78eb8570c2dfc034e8099c71722cd0b50e725f0210cebe35eebe5f"
+        "evidence_sha256": "7cc1737bb81cd2806ea4805cc6839e27f3fdcf9691a3335dfdef9317faff8393"
       }
     }
   ]
