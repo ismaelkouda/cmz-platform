@@ -4873,3 +4873,47 @@ d'identité strict dans la remontée d'un contexte workspace.
 Chacune fait échouer les tests attendus. Après chaque restauration exacte,
 les 43 tests du nouvel ensemble repassent, sans échec ni test ignoré.
 Le formateur de diagnostic STOP de la fixture reste inchangé.
+
+## 2026-10-18 — PROOF-SPLIT-01 : contrôleur de preuve réparti par responsabilité
+
+Le point d'entrée `tools/generator-platform/check-external-application-shells.mjs`
+passe de 800 à 220 lignes. Il garde `parseArgs`, `main`, la garde CLI et
+ses cinq exports publics. Les neuf fonctions de session/exécution résident
+dans `proof-support/external-application-runtime.mjs` (264 lignes) ; les
+six fonctions de vérification dans `external-application-checks.mjs`
+(363 lignes). Aucun support n'importe le point d'entrée.
+
+Comparaison ponctuelle contre la base `75a2aea9` : les 17 corps de fonction,
+gabarits et indentation compris, sont identiques octet pour octet.
+Paramètres et caractère async sont inchangés ; les déclarations ont les
+mêmes jetons, hors modificateurs d'export internes et présentation.
+Seule la signature de `record` est repliée par Prettier après ajout
+d'`export`. `RENDER_NODE`, son commentaire et la garde CLI restent identiques.
+Les 71 liaisons d'import sont vérifiées vers les mêmes modules ou les
+fonctions déplacées attendues ; les 38 anciennes liaisons sont conservées.
+ESLint natif vérifie aussi, module par module, que les identifiants libres
+sont liés, avec la configuration du dépôt et `no-undef` forcé : aucun
+message sur les trois modules. Aucun nom global n'est autorisé à la main.
+
+Les tests dédiés protègent les cinq exports appelables et l'import seul
+depuis un dossier hors checkout, sans session ni fichier créé.
+Un troisième test dédié impose ce contrôle natif des trois modules,
+sans correctif automatique, cache ni directive de désactivation locale.
+Les tests existants gardent leurs imports publics. Les 36 tests ciblés
+passent sans échec ni test ignoré. Aucun test existant n'est modifié.
+
+Quatre défauts volontaires sur copie sont détectés : export auxiliaire,
+bootstrap à l'import, chemin Node du rendu remplacé par celui d'exécution
+et retrait de l'import `CMZ` encore utilisé par `main`.
+Chaque restauration exacte retrouve le vert. Le mutant d'import vérifie
+l'absence de fichier avant son refus de code de sortie. La comparaison AST
+est aussi réfutée par une altération du chemin Node dans `confinedNode`.
+Sa vérification native des liaisons échoue au retrait de `CMZ`, puis
+repasse après restauration exacte. Le nouveau test avait d'abord échoué
+sur cet import manquant, avant sa réparation.
+
+CLI, ordre des preuves, confinement, installations figées, mutations,
+restaurations, rapports texte/STOP et mention T19–T28 non qualifiés sont
+conservés. La CI réelle garde le même point d'entrée et la preuve native
+sur les trois profils. Générateurs/rendus, fixture, versions, verrou,
+politiques, attestations et workflows restent inchangés.
