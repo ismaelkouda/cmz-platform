@@ -442,7 +442,7 @@ test('CLI : valeurs présentes, uniques, mode exclusif, plan SHA-256', () => {
         assert.throws(() => parseArgs(bad));
 });
 
-test('EXT01 v4 T-2 : exception de pair limitée à son identité, champ et caractère optionnel', async (t) => {
+test('EXT01 v4 T-2 : pair optionnel qualifié par sa source, son champ et ses empreintes', async (t) => {
     const valid = peerDeviationFixture();
     const before = structuredClone(valid);
     const closure = productDependencyClosure(
@@ -456,6 +456,24 @@ test('EXT01 v4 T-2 : exception de pair limitée à son identité, champ et carac
     for (const [label, change] of [
         ['parent', { parent: '@fixture/other-parent' }],
         ['nom', { name: 'fixture-other-peer' }],
+    ]) {
+        await t.test(label + ' approuvé', () => {
+            const fixture = peerDeviationFixture(change);
+            const original = structuredClone(fixture);
+            const result = productDependencyClosure(
+                fixture.lock,
+                fixture.packages,
+                fixture.lock,
+                fixture.policy
+            );
+            assert.deepEqual(
+                result.known_source_edges,
+                fixture.policy.peerDeviations
+            );
+            assert.deepEqual(fixture, original);
+        });
+    }
+    for (const [label, change] of [
         ['champ', { field: 'dependencies' }],
         ['pair requis', { optional: false }],
     ]) {
@@ -477,6 +495,38 @@ test('EXT01 v4 T-2 : exception de pair limitée à son identité, champ et carac
                 /unqualified source dependency deviation/
             );
             assert.deepEqual(fixture, original);
+        });
+    }
+    for (const [label, mutate] of [
+        [
+            'identité parent altérée',
+            (lock) => {
+                lock.packages['@nx/vitest'][0] = '@nx/vitest@1.0.1';
+            },
+        ],
+        [
+            'identité enfant altérée',
+            (lock) => {
+                lock.packages.vitest[0] = 'vitest@2.0.1';
+            },
+        ],
+    ]) {
+        await t.test(label, () => {
+            const candidate = structuredClone(valid.lock);
+            mutate(candidate);
+            const changed = structuredClone(candidate);
+            assert.throws(
+                () =>
+                    productDependencyClosure(
+                        candidate,
+                        valid.packages,
+                        valid.lock,
+                        valid.policy
+                    ),
+                /unqualified source dependency deviation/
+            );
+            assert.deepEqual(candidate, changed);
+            assert.deepEqual(valid, before);
         });
     }
 });
