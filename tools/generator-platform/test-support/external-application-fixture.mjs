@@ -48,8 +48,8 @@ export function formatProofStop(error) {
     return detail.slice(0, 400 - suffix.length) + suffix;
 }
 
-// Synthetic records for testing the identity of the one allowed optional peer.
-// Hashes and the exact resolved range stay valid even for the forbidden cases.
+// Synthetic approved source edge; identities can vary without special treatment.
+// Mutations are tested against the unchanged source and qualified edge policy.
 export function peerDeviationFixture({
     parent = '@nx/vitest',
     name = 'vitest',

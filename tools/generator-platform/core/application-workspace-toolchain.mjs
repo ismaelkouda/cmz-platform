@@ -47,15 +47,20 @@ export function lockDocument(content) {
     return value;
 }
 
-function packageIdentity(record) {
+function packageIdentityFields(record) {
     if (!Array.isArray(record)) externalFailure('invalid locked package');
     const identity = record[0]?.match(/^(@[^/]+\/[^@]+|[^@]+)@(.+)$/);
+    if (!identity) externalFailure('package integrity or identity missing');
+    return { name: identity[1], version: identity[2] };
+}
+
+function packageIdentity(record) {
+    const identity = packageIdentityFields(record);
     const integrity = record.find(
         (part) => typeof part === 'string' && part.startsWith('sha512-')
     );
-    if (!identity || !integrity)
-        externalFailure('package integrity or identity missing');
-    return { name: identity[1], version: identity[2], integrity };
+    if (!integrity) externalFailure('package integrity or identity missing');
+    return { ...identity, integrity };
 }
 
 // Mirror only the context lookup needed to describe an edge. Range checking
@@ -68,7 +73,7 @@ function childKey(packages, parent, name) {
         const key = context ? `${context}/${name}` : name;
         if (Object.hasOwn(packages, key)) return key;
         if (!context) return undefined;
-        const owner = packageIdentity(packages[context]).name;
+        const owner = packageIdentityFields(packages[context]).name;
         if (context === owner) context = '';
         else {
             if (!context.endsWith('/' + owner))
@@ -119,32 +124,53 @@ function edgeDescription(
     };
 }
 
-function sourcePeerDeviations(lock, overrides) {
+function isOptionalPeer(record, field, name) {
+    return (
+        field === 'peerDependencies' &&
+        Array.isArray(record[2]?.optionalPeers) &&
+        record[2].optionalPeers.includes(name)
+    );
+}
+
+function sameDependencyEdge(left, right) {
+    return stableStringify(left) === stableStringify(right);
+}
+
+export function sourcePeerDeviations(lock, overrides) {
     const deviations = [];
     for (const [parent, record] of Object.entries(lock.packages)) {
-        if (!record[0]?.startsWith('@nx/vitest@')) continue;
-        const requested = record[2]?.peerDependencies?.vitest;
-        if (
-            !requested ||
-            overrides.vitest ||
-            !record[2]?.optionalPeers?.includes('vitest')
-        )
-            continue;
-        const key = childKey(lock.packages, parent, 'vitest');
-        if (!key) continue;
-        const version = packageIdentity(lock.packages[key]).version;
-        if (!semver.satisfies(version, requested, { includePrerelease: true }))
+        for (const [name, requested] of Object.entries(
+            record[2]?.peerDependencies ?? {}
+        )) {
+            if (
+                Object.hasOwn(overrides, name) ||
+                !isOptionalPeer(record, 'peerDependencies', name) ||
+                typeof requested !== 'string' ||
+                !semver.validRange(requested)
+            )
+                continue;
+            const key = childKey(lock.packages, parent, name);
+            if (!key) continue;
+            const version = packageIdentityFields(lock.packages[key]).version;
+            if (
+                !semver.valid(version) ||
+                semver.satisfies(version, requested, {
+                    includePrerelease: true,
+                })
+            )
+                continue;
             deviations.push(
                 edgeDescription(
                     lock,
                     parent,
                     'peerDependencies',
-                    'vitest',
+                    name,
                     requested,
                     'optional-peer',
                     version
                 )
             );
+        }
     }
     return deviations;
 }
@@ -157,6 +183,17 @@ export function productDependencyClosure(
 ) {
     if (!sourceLock?.packages) externalFailure('approved source lock required');
     flatOverrides(overrides);
+    const approvedPeerDeviations = sourcePeerDeviations(sourceLock, overrides);
+    if (
+        !Array.isArray(peerDeviations) ||
+        peerDeviations.some(
+            (edge) =>
+                !approvedPeerDeviations.some((approved) =>
+                    sameDependencyEdge(approved, edge)
+                )
+        )
+    )
+        externalFailure('unqualified source dependency deviation');
     const versions = Object.fromEntries(
         Object.entries(packages).map(([name, entry]) => [name, entry.version])
     );
@@ -192,12 +229,8 @@ export function productDependencyClosure(
                         edge.effective_requested
                     );
                     if (
-                        packageIdentity(record).name !== '@nx/vitest' ||
-                        name !== 'vitest' ||
-                        field !== 'peerDependencies' ||
-                        !record[2].optionalPeers?.includes(name) ||
-                        stableStringify(description) !==
-                            stableStringify(edge) ||
+                        !isOptionalPeer(record, field, name) ||
+                        !sameDependencyEdge(description, edge) ||
                         stableStringify(lock.packages[parent]) !==
                             stableStringify(sourceLock.packages[parent]) ||
                         stableStringify(lock.packages[child]) !==
@@ -266,7 +299,8 @@ export function productDependencyClosure(
                 const reason = Object.hasOwn(overrides, name)
                     ? 'override'
                     : 'optional-peer';
-                const effective = overrides[name] ?? version;
+                const effective =
+                    reason === 'override' ? overrides[name] : version;
                 deviations.push(
                     edgeDescription(
                         lock,

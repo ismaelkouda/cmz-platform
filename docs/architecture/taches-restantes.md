@@ -4829,3 +4829,47 @@ qui périme volontairement la version Nx attestée sur copie, puis restaure
 les octets et retrouve le vert.
 La généralisation des écarts du graphe source est un lot distinct autorisé
 après fusion de cette étape ; aucune exception générale n'est ajoutée ici.
+
+## 2026-10-18 — SOURCE-PEERS-01 : écarts optionnels du graphe source
+
+La qualification des écarts de pairs optionnels ne dépend plus du nom
+`@nx/vitest` ou `vitest`. Elle examine les `peerDependencies` de chaque
+record du verrou source. Une exception exige un nom présent dans
+`optionalPeers`, une plage semver valide, un enfant installé et une version
+semver hors de cette plage, avec `includePrerelease: true`.
+Un override propre reste prioritaire et conserve la raison `override` ;
+une propriété héritée ne devient pas un override.
+
+La fermeture refuse toute autorisation qui ne correspond pas à une arête
+admissible de la source. Parent, champ, nom, demande, résolution, raison,
+version effective et empreintes des deux records doivent correspondre.
+Les records candidats restent liés aux octets de la source approuvée.
+Un pair requis, une dépendance ordinaire ou une dépendance optionnelle
+ne bénéficie pas de cette règle.
+
+Preuves ciblées : `node --test tools/generator-platform/application-workspace-source-peers.test.mjs tools/generator-platform/application-workspace.test.mjs`
+passe 76 tests, sans échec ni test ignoré, sur copie indépendante.
+Le nouvel ensemble utilise l'oracle B1/B2 existant sans le modifier :
+identités arbitraires et scoped, enfant imbriqué et repli racine, plusieurs
+pairs, absence, préversion, priorité des overrides et falsifications.
+Le cas T-2 conserve sa régression Vitest et exige aussi les identités génériques.
+
+La lecture des champs d'identité ne réclame pas d'intégrité pour remonter
+un contexte workspace ou ignorer une version non semver en collecte.
+Les tests couvrent un workspace sans empreinte, avec un consommateur
+imbriqué non atteint dont le pair est absent, satisfait ou hors plage.
+Un contexte incohérent reste refusé. L'intégrité de l'enfant dont l'écart
+est consommé reste exigée ; son absence fait toujours échouer la fermeture.
+
+Les trois profils `angular-pwa`, `react-spa` et leur combinaison produisent
+les mêmes fermetures et les mêmes octets de `bun.lock` avec le code de base
+et le code proposé. Aucun écart optionnel n'est actuellement nécessaire
+dans ces trois profils ; leurs trois écarts d'override restent identiques.
+Aucune dépendance, version, recette ou fiche de compatibilité n'est modifiée.
+
+Quatre contre-preuves sur copie réintroduisent séparément un filtre Vitest,
+l'acceptation d'un pair requis, l'ignorance des empreintes et le lecteur
+d'identité strict dans la remontée d'un contexte workspace.
+Chacune fait échouer les tests attendus. Après chaque restauration exacte,
+les 43 tests du nouvel ensemble repassent, sans échec ni test ignoré.
+Le formateur de diagnostic STOP de la fixture reste inchangé.
