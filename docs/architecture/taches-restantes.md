@@ -4917,3 +4917,36 @@ restaurations, rapports texte/STOP et mention T19–T28 non qualifiés sont
 conservés. La CI réelle garde le même point d'entrée et la preuve native
 sur les trois profils. Générateurs/rendus, fixture, versions, verrou,
 politiques, attestations et workflows restent inchangés.
+
+## 2026-10-18 — NO-UNDEF-01 : liaisons des outils contrôlées par le lint global
+
+La configuration racine active la règle native ESLint `no-undef` au niveau
+erreur, avec `typeof: true`, pour `tools/**/*.mjs`. Les préréglages,
+autres règles et exclusions restent inchangés. La commande existante
+`check:lint-tools` conserve ses trois exclusions : `tools/seos/**`,
+`tools/mock-server/**` et `tools/corpus/**`. Ce lot ne revendique donc
+pas une couverture de ces dossiers par cette commande.
+
+Un test de `tools/check-ci-wiring.test.mjs` charge la configuration racine
+réelle, sans imposer lui-même la règle. Il vérifie deux chemins d'outils
+existants, hors des trois modules de la preuve externe et hors exclusions.
+Chaque chemin doit être pris en compte. Le cas Node valide ne produit
+aucun message ; l'identifiant non lié, direct ou derrière `typeof`,
+produit exactement une erreur `no-undef` de sévérité 2. Une erreur fatale,
+un fichier ignoré ou un autre diagnostic ne peut pas satisfaire ce test.
+Les douze tests antérieurs et le contrôle local des trois modules de
+preuve externe restent inchangés.
+
+Sur copie indépendante, le nouveau test échoue d'abord sans le bloc,
+puis les treize tests passent après son ajout, sans test ignoré.
+La même fixture fictive, au même chemin et avec les mêmes octets,
+est acceptée par la commande réelle sans le bloc et refusée avec lui,
+pour une seule erreur `no-undef`. Après retrait de la fixture, le lint
+repasse. Une contre-épreuve à partir des fichiers finaux retire seulement
+le bloc et confirme aussi l'acceptation de cette même fixture.
+
+Trois mutations isolées retirent le bloc, désactivent `typeof`, puis
+restreignent la règle aux trois anciens modules de preuve. Chacune fait
+échouer le nouveau test pour le diagnostic attendu. Après chaque
+restauration exacte, les treize tests repassent, sans test ignoré.
+Aucun script package, workflow, verrou ni générateur n'est modifié.
