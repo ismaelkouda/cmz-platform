@@ -299,4 +299,10 @@ export default [
             ],
         },
     },
+    {
+        files: ['tools/**/*.mjs'],
+        rules: {
+            'no-undef': ['error', { typeof: true }],
+        },
+    },
 ];

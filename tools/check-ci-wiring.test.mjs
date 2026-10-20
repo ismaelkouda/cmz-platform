@@ -10,6 +10,8 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { ESLint } from 'eslint';
 import { parse } from 'yaml';
 import test from 'node:test';
 
@@ -19,6 +21,55 @@ import {
     packageToolInvocations,
     workflowRunCommands,
 } from './check-ci-wiring.mjs';
+
+test('la configuration de lint des outils refuse les identifiants non liés', async () => {
+    const root = fileURLToPath(new URL('..', import.meta.url));
+    const eslint = new ESLint({
+        cwd: root,
+        overrideConfigFile: join(root, 'eslint.config.mjs'),
+        allowInlineConfig: false,
+        fix: false,
+        cache: false,
+    });
+    const cases = [
+        {
+            code: "process.stdout.write('fixture');\n",
+            expected: [],
+        },
+        {
+            code: 'process.stdout.write(cmzUndefinedLintProbe);\n',
+            expected: [{ ruleId: 'no-undef', severity: 2 }],
+        },
+        {
+            code: 'process.stdout.write(typeof cmzUndefinedLintProbe);\n',
+            expected: [{ ruleId: 'no-undef', severity: 2 }],
+        },
+    ];
+    for (const file of [
+        'tools/check-engines.mjs',
+        'tools/generator-platform/validate-ir.mjs',
+    ]) {
+        const filePath = join(root, file);
+        assert.equal(await eslint.isPathIgnored(filePath), false, file);
+        for (const { code, expected } of cases) {
+            const results = await eslint.lintText(code, { filePath });
+            assert.equal(results.length, 1, file);
+            const result = results[0];
+            assert.equal(result.fatalErrorCount, 0, file);
+            assert.ok(
+                result.messages.every((message) => message.fatal !== true)
+            );
+            assert.deepEqual(
+                result.messages.map(({ ruleId, severity }) => ({
+                    ruleId,
+                    severity,
+                })),
+                expected,
+                `${file}: ${code}`
+            );
+        }
+    }
+});
 
 test('ignore une commande seulement citée dans un commentaire YAML', () => {
     const commands = workflowRunCommands(`
