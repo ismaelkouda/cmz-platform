@@ -3,28 +3,28 @@
   "configuration": "production",
   "measured_at": "2026-10-06",
   "output_path": "dist/apps/backoffice-angular/browser",
-  "initial_raw_bytes": 754765,
-  "initial_raw_kb": 754.77,
+  "initial_raw_bytes": 752768,
+  "initial_raw_kb": 752.77,
   "initial_files": [
     {
-      "file": "polyfills-XPHHBOBR.js",
+      "file": "polyfills-CDVEXLE4.js",
       "bytes": 2828
     },
     {
-      "file": "main-BZF4AAHH.js",
-      "bytes": 524351
+      "file": "main-5BSMTQ47.js",
+      "bytes": 525242
     },
     {
       "file": "chunk-O5Csq16y.js",
       "bytes": 1701
     },
     {
-      "file": "chunk-QQ9UZhih.js",
-      "bytes": 185323
+      "file": "chunk-DxdAKXrH.js",
+      "bytes": 182529
     },
     {
-      "file": "chunk-BbKjxIhC.js",
-      "bytes": 21515
+      "file": "chunk-CcKq23d8.js",
+      "bytes": 21421
     },
     {
       "file": "styles-JQHBHVQ5.css",

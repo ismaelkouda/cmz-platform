@@ -4950,3 +4950,71 @@ restreignent la règle aux trois anciens modules de preuve. Chacune fait
 échouer le nouveau test pour le diagnostic attendu. Après chaque
 restauration exacte, les treize tests repassent, sans test ignoré.
 Aucun script package, workflow, verrou ni générateur n'est modifié.
+
+## 2026-10-20 — ANGULAR-SEC-01 : correctif de sécurité et mesure Linux
+
+Le catalogue Angular passe à 22.2.3 pour corriger l'avis du routeur
+`GHSA-62vg-58rm-qff7`. Deux autres familles ont été corrigées après les
+audits bloquants : `follow-redirects` 1.16.1 couvre
+`GHSA-q3jh-wrc6-jgq8` et `GHSA-8r9p-f939-6h3c` ; Vite 8.3.4 couvre
+`GHSA-587h-7wmj-h5pm`. Il s'agit de quatre avis dans trois familles.
+Les résolutions du verrou proviennent de Bun 1.3.14 ; les installations
+figées avec `--force` ont réconcilié les liens installés. Aucun budget
+ni contrôle de sécurité n'a été abaissé.
+
+Le propriétaire a réellement exécuté les promotions Material Angular
+et Tailwind Angular. Material/CDK et framework sont qualifiés en 22.2.3,
+avec leurs cinq preuves ; Tailwind 4.3.3 l'est sur Angular 22.2.3 avec
+ses quatre preuves. Les attestations sont conservées dans leurs matrices.
+La qualification Tailwind React reste inchangée et vérifiable.
+
+L'override `follow-redirects` et son minimum sont fixés à 1.16.1.
+L'override `vite: ^8.3.4` retire la copie vulnérable 8.3.0 de
+`@angular/build`, en réutilisant la version déjà présente à la racine.
+Cet override devra être retiré dès qu'un `@angular/build` stable exige
+Vite >= 8.3.3 ; ce retrait nécessitera une résolution et ses preuves.
+Aucune version de prépublication Angular n'est adoptée.
+
+Deux parcours indépendants sur copies isolées du commit
+`272c0f0527ab90e1a09443bb2fa48c85e6f4fd6d` ont chacun passé 35 contrôles
+et deux audits. Trois commandes restent explicitement exclues de ces
+parcours : installation figée, C6 produit réel et pipeline produit réel.
+Les contre-preuves natives refusent l'ancienne matrice Material,
+`follow-redirects` 1.16.0 et Vite imbriqué 8.3.0, puis repassent après
+restauration exacte. Le rouge Material vérifie les versions fournisseur
+22.2.3 contre 22.2.1, distinctes de l'ancien framework 22.2.0.
+La contre-preuve Vite utilise l'audit, celle de `follow-redirects`
+la politique racine. Les octets suivis sont restaurés après chaque essai.
+
+La métrique provient du build production Ubuntu du
+[Nightly 39517195263](https://github.com/ismaelkouda/cmz-platform/actions/runs/39517195263),
+déclenché une seule fois par `workflow_dispatch` sur ce commit, le
+20 octobre à 23:46:39 UTC. Trois jobs sont verts. Le seul échec bloquant
+est la fraîcheur de la métrique dans l'Oracle : les six tests de
+`docs-freshness` et les budgets passent. L'artefact
+`bundle-metrics-measured`, id 12308194052, appartient à ce run et à ce
+HEAD. Son zip a pour SHA-256 et digest GitHub :
+`cecfa8b6a0ace281a5b6938322881218b19caeef57b60ba5ec53053c5a38c235`.
+Son unique fichier, copié octet pour octet, a pour SHA-256 :
+`10f606b6740543e2f97ac35a7719e51c4ddd98208f24fd5d9e1961a3849fa44b`.
+L'initial passe de 754 765 à 752 768 octets, soit 1 997 octets de moins.
+ExcelJS reste à 943 657 octets ; les budgets 900kb/1mb sont conservés.
+`measured_at` reste au 2026-10-06, date figée par le contrôle de fraîcheur,
+et ne prétend pas dater ce nouveau build. Aucun baseline macOS n'est pris.
+
+La contre-preuve Vite a confirmé une limite :
+`securityResolutionPolicyErrors` lit seulement l'enregistrement racine
+d'un override. L'intégrité catalogue et l'installation figée acceptent
+aussi ce verrou incohérent. Seul l'audit détecte cette copie imbriquée
+grâce à l'avis connu. Le verrou actuel comporte onze identités couvertes
+par des overrides, toutes conformes, d'après le relevé de Claude.
+Le propriétaire a décidé un report court nommé **NESTED-OVERRIDES-01** :
+premier lot après la fusion d'ANGULAR-SEC-01, avant la série Dependabot,
+puis les traitements séparés de #267/#268 et V5-TIMEOUT-01. Ce lot devra
+couvrir toutes les copies identifiées par `nom@version`, sans confondre
+`@nx/vite` avec `vite`, et démontrer le refus des copies contradictoires.
+Cette limite n'est pas corrigée dans ANGULAR-SEC-01.
+
+Au moment de ce commit, la CI de PR, sa fraîcheur bundle après
+remplacement, la revue humaine, la fusion et la CI de main ne sont pas
+encore obtenues.
