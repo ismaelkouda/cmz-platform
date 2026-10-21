@@ -471,7 +471,7 @@ export async function controlledProcCounterproof() {
                 'utf8'
             );
             if (name === 'fixture-git-maintenance-probe.mjs') {
-                const target = 'if (!record) continue;';
+                const target = ['if (!record)', ' continue;'].join('');
                 assert.equal(
                     content.split(target).length,
                     2,

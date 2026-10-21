@@ -1086,3 +1086,35 @@ jobs:
           path: ${{ env.CMZ_EXTERNAL_APPLICATION_PROOF_ROOT }}/report.txt
           if-no-files-found: warn
           retention-days: 7
+
+  # FLAKE-GIT-AUTOMAINT-01 D1 — collecte indépendante, branche provisoire.
+  flake-git-diagnostic:
+    name: Diagnostic Git D1 (NE PAS FUSIONNER)
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == true &&
+      github.head_ref == 'diag/flake-git-automaint-01' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Observer les fixtures Git (D1)
+        run: node --test --test-reporter=tap tools/test-support/fixture-git.test.mjs
