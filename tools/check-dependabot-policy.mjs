@@ -294,7 +294,17 @@ export function securityResolutionPolicyErrors(pkg, lock) {
             : undefined;
         const hasOverride = Object.hasOwn(overrides, name);
         const requiredConsumers = requiredLockConsumers(lock, name);
-        if (!Object.hasOwn(lock?.packages ?? {}, name)) {
+        const prefix = `${name}@`;
+        // Les identités font foi ; garder aussi la racine pour diagnostiquer
+        // son entrée malformée, même si une copie imbriquée est conforme.
+        const resolutions = Object.entries(lock?.packages ?? {}).filter(
+            ([key, entry]) =>
+                key === name ||
+                (Array.isArray(entry) &&
+                    typeof entry[0] === 'string' &&
+                    entry[0].startsWith(prefix))
+        );
+        if (resolutions.length === 0) {
             if (requiredConsumers.length > 0) {
                 errors.push(
                     `bun.lock incohérent : ${name} absent de packages, requis par: ${requiredConsumers.join(', ')}`
@@ -346,29 +356,34 @@ export function securityResolutionPolicyErrors(pkg, lock) {
             );
         }
 
-        const lockedIdentity = lock?.packages?.[name]?.[0];
-        const prefix = `${name}@`;
-        const lockedVersion =
-            typeof lockedIdentity === 'string' &&
-            lockedIdentity.startsWith(prefix)
-                ? lockedIdentity.slice(prefix.length)
-                : undefined;
-        if (!semver.valid(lockedVersion)) {
-            errors.push(
-                `résolution ${name} absente ou invalide dans bun.lock (${String(lockedIdentity)}), requise par: ${requiredConsumers.join(', ') || 'entrée présente mal formée'}`
-            );
-        } else if (!semver.satisfies(lockedVersion, range)) {
-            errors.push(`${name}@${lockedVersion} ne respecte pas ${range}`);
-        }
+        for (const [key, entry] of resolutions) {
+            const lockedIdentity = entry?.[0];
+            const lockedVersion =
+                typeof lockedIdentity === 'string' &&
+                lockedIdentity.startsWith(prefix)
+                    ? lockedIdentity.slice(prefix.length)
+                    : undefined;
+            const location =
+                key === name ? '' : ` (packages[${JSON.stringify(key)}])`;
+            if (!semver.valid(lockedVersion)) {
+                errors.push(
+                    `résolution ${name}${location} absente ou invalide dans bun.lock (${String(lockedIdentity)}), requise par: ${requiredConsumers.join(', ') || 'entrée présente mal formée'}`
+                );
+            } else if (!semver.satisfies(lockedVersion, range)) {
+                errors.push(
+                    `${name}@${lockedVersion}${location} ne respecte pas ${range}`
+                );
+            }
 
-        if (
-            minimum &&
-            semver.valid(lockedVersion) &&
-            semver.lt(lockedVersion, minimum)
-        ) {
-            errors.push(
-                `${name}@${lockedVersion} est sous le plancher sûr ${minimum}`
-            );
+            if (
+                minimum &&
+                semver.valid(lockedVersion) &&
+                semver.lt(lockedVersion, minimum)
+            ) {
+                errors.push(
+                    `${name}@${lockedVersion}${location} est sous le plancher sûr ${minimum}`
+                );
+            }
         }
     }
 
