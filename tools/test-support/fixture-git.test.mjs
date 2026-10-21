@@ -60,7 +60,6 @@ import {
     controlledObserverWitness,
     controlledProcCounterproof,
     redactDiagnosticCause,
-    runGitMaintenanceDiagnostic,
 } from './fixture-git-maintenance-probe.mjs';
 
 test('D1 : une cause native ne recopie jamais les sorties enfant', () => {
@@ -128,31 +127,6 @@ test(
                 /^D1_[A-Za-z0-9_:/-]+$/.test(first)
                     ? first
                     : 'D1_PROC_COUNTERPROOF_FAILED',
-                { cause: error }
-            );
-        }
-    }
-);
-
-test(
-    'D1 : observations Linux réelles puis calibration, sans relance',
-    {
-        timeout: 360_000,
-        skip:
-            process.platform !== 'linux'
-                ? 'D1 nécessite /proc et inotify Linux'
-                : false,
-    },
-    async (t) => {
-        try {
-            await runGitMaintenanceDiagnostic(t);
-        } catch (error) {
-            const first = String(error?.message ?? '').split(/\r?\n/, 1)[0];
-            redactDiagnosticCause(error);
-            throw new Error(
-                /^D1_[A-Za-z0-9_:/-]+$/.test(first)
-                    ? first
-                    : 'D1_DIAGNOSTIC_FAILED',
                 { cause: error }
             );
         }

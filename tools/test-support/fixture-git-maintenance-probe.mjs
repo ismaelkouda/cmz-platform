@@ -485,6 +485,8 @@ export async function controlledProcCounterproof() {
             }
             await writeFile(join(directory, name), content);
         }
+        const childEnvironment = { ...process.env };
+        delete childEnvironment.NODE_TEST_CONTEXT;
         let status = 0;
         let output = '';
         try {
@@ -496,6 +498,7 @@ export async function controlledProcCounterproof() {
                     join(directory, 'fixture-git.test.mjs'),
                 ],
                 {
+                    env: childEnvironment,
                     encoding: 'utf8',
                     timeout: 10_000,
                     stdio: ['ignore', 'pipe', 'pipe'],

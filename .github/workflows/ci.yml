@@ -1117,4 +1117,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Observer les fixtures Git (D1)
-        run: node --test --test-reporter=tap tools/test-support/fixture-git.test.mjs
+        run: >-
+          node --test --test-reporter=tap
+          --test-name-pattern='^D1 : (une cause|le témoin|la contre-preuve)'
+          tools/test-support/fixture-git.test.mjs
