@@ -364,3 +364,131 @@ test("refuse un lockfile qui ne matérialise pas exactement l'override", () => {
         /ne matérialise pas exactement overrides\.js-yaml/
     );
 });
+
+function overrideFixture(name, range, version) {
+    const { pkg, lock } = securityFixture();
+    pkg.overrides[name] = range;
+    lock.overrides[name] = range;
+    lock.packages[name] = [name + '@' + version];
+    return { pkg, lock };
+}
+
+test('NESTED A2 : contrôle la dernière copie et ne modifie pas les entrées', () => {
+    const { pkg, lock } = overrideFixture('vite', '^8.3.4', '8.3.4');
+    lock.packages['first/vite'] = ['vite@8.3.4'];
+    lock.packages['last/vite'] = ['vite@8.3.5'];
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), []);
+
+    lock.packages['last/vite'] = ['vite@8.3.0'];
+    const before = structuredClone({ pkg, lock });
+    const errors = securityResolutionPolicyErrors(pkg, lock).join('\n');
+    assert.deepEqual({ pkg, lock }, before);
+    assert.match(errors, /last\/vite/);
+    assert.match(errors, /vite@8\.3\.0/);
+    assert.ok(errors.includes('^8.3.4'));
+});
+
+test('NESTED A3 : refuse le Vite imbriqué même sans minimum ni avis réseau', () => {
+    const { pkg, lock } = overrideFixture('vite', '^8.3.4', '8.3.4');
+    assert.equal(Object.hasOwn(SECURITY_OVERRIDE_MINIMUMS, 'vite'), false);
+    lock.packages['@angular/build/vite'] = ['vite@8.3.0'];
+    const errors = securityResolutionPolicyErrors(pkg, lock).join('\n');
+    assert.ok(errors.includes('@angular/build/vite'));
+    assert.ok(errors.includes('vite@8.3.0'));
+    assert.ok(errors.includes('^8.3.4'));
+});
+
+test('NESTED A4 : applique le minimum sûr à chaque copie', () => {
+    const { pkg, lock } = securityFixture();
+    const minimum = SECURITY_OVERRIDE_MINIMUMS['js-yaml'];
+    lock.packages['first/js-yaml'] = ['js-yaml@' + minimum];
+    lock.packages['last/js-yaml'] = ['js-yaml@4.3.1'];
+    const errors = securityResolutionPolicyErrors(pkg, lock).join('\n');
+    assert.ok(errors.includes('last/js-yaml'));
+    assert.ok(errors.includes('js-yaml@4.3.1'));
+    assert.ok(errors.includes('plancher sûr ' + minimum));
+});
+
+test('NESTED A5 : une copie seulement imbriquée existe et doit satisfaire son override', () => {
+    const { pkg, lock } = overrideFixture('vite', '^8.3.4', '8.3.4');
+    delete lock.packages.vite;
+    lock.packages['@angular/build/vite'] = ['vite@8.3.4'];
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), []);
+
+    lock.packages['@angular/build/vite'] = ['vite@8.3.0'];
+    const errors = securityResolutionPolicyErrors(pkg, lock).join('\n');
+    assert.ok(errors.includes('@angular/build/vite'));
+    assert.ok(errors.includes('vite@8.3.0'));
+    assert.ok(!errors.includes('doit être retiré'));
+    assert.ok(!errors.includes('absent de packages'));
+});
+
+test('NESTED A5 : le minimum reste exigé pour une présence seulement imbriquée', () => {
+    const { pkg, lock } = securityFixture();
+    const minimum = SECURITY_OVERRIDE_MINIMUMS['js-yaml'];
+    delete lock.packages['js-yaml'];
+    lock.packages['consumer/js-yaml'] = ['js-yaml@' + minimum];
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), []);
+
+    delete pkg.overrides['js-yaml'];
+    delete lock.overrides['js-yaml'];
+    const errors = securityResolutionPolicyErrors(pkg, lock).join('\n');
+    assert.ok(
+        errors.includes("overrides.js-yaml doit valoir '^" + minimum + "'")
+    );
+    assert.ok(!errors.includes('doivent être retirés'));
+    assert.ok(!errors.includes('doit être retiré'));
+});
+
+test('NESTED A6 : les noms scopés étrangers ne sont ni des copies ni une présence', () => {
+    const { pkg, lock } = overrideFixture('vite', '^8.3.4', '8.3.4');
+    lock.packages['@nx/vite'] = ['@nx/vite@0.0.1'];
+    lock.packages['parent/@tailwindcss/vite'] = ['@tailwindcss/vite@0.0.1'];
+    lock.packages['@zkochan/js-yaml'] = ['@zkochan/js-yaml@0.0.7'];
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), []);
+
+    delete lock.packages.vite;
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), [
+        'overrides.vite doit être retiré : paquet absent de packages dans bun.lock',
+    ]);
+});
+
+test('NESTED A6 : contrôle aussi les copies d’un paquet gouverné scopé', () => {
+    const name = '@fixture/scoped';
+    const { pkg, lock } = overrideFixture(name, '^2.0.0', '2.0.0');
+    lock.packages['consumer/@fixture/scoped'] = [name + '@2.1.0'];
+    assert.deepEqual(securityResolutionPolicyErrors(pkg, lock), []);
+
+    lock.packages['consumer/@fixture/scoped'] = [name + '@1.9.0'];
+    const errors = securityResolutionPolicyErrors(pkg, lock).join('\n');
+    assert.ok(errors.includes('consumer/@fixture/scoped'));
+    assert.ok(errors.includes(name + '@1.9.0'));
+    assert.ok(errors.includes('^2.0.0'));
+});
+
+test('NESTED A7 : l’identité réelle est contrôlée même sous une autre clé', () => {
+    const { pkg, lock } = overrideFixture('vite', '^8.3.4', '8.3.4');
+    lock.packages['unrelated-context'] = ['vite@8.3.0'];
+    const errors = securityResolutionPolicyErrors(pkg, lock).join('\n');
+    assert.ok(errors.includes('unrelated-context'));
+    assert.ok(errors.includes('vite@8.3.0'));
+});
+
+test('NESTED A7 : une version imbriquée invalide ne doit pas disparaître du contrôle', () => {
+    const { pkg, lock } = overrideFixture('vite', '^8.3.4', '8.3.4');
+    lock.packages['consumer/vite'] = ['vite@not-a-version'];
+    const errors = securityResolutionPolicyErrors(pkg, lock).join('\n');
+    assert.ok(errors.includes('consumer/vite'));
+    assert.ok(errors.includes('vite@not-a-version'));
+    assert.ok(errors.includes('absente ou invalide'));
+});
+
+test('NESTED A7 : une copie valide ne masque pas une racine malformée', () => {
+    const { pkg, lock } = overrideFixture('vite', '^8.3.4', '8.3.4');
+    lock.packages.vite = [42];
+    lock.packages['consumer/vite'] = ['vite@8.3.4'];
+    assert.match(
+        securityResolutionPolicyErrors(pkg, lock).join('\n'),
+        /résolution vite absente ou invalide dans bun\.lock \(42\)/
+    );
+});

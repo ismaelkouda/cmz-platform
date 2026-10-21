@@ -5018,3 +5018,55 @@ Cette limite n'est pas corrigée dans ANGULAR-SEC-01.
 Au moment de ce commit, la CI de PR, sa fraîcheur bundle après
 remplacement, la revue humaine, la fusion et la CI de main ne sont pas
 encore obtenues.
+
+## 2026-10-21 — NESTED-OVERRIDES-01 : vérifier chaque copie sous override
+
+Après la fusion d'ANGULAR-SEC-01 sur
+`c979affd609425bc87f67048d585184981f4034f`, la politique de résolution
+ne regardait encore que la copie racine de chaque paquet.
+`securityResolutionPolicyErrors`, dans
+`tools/check-dependabot-policy.mjs`, énumère maintenant toutes les
+entrées du verrou dont l'identité `nom@version` porte exactement le nom
+du paquet gouverné, quelle que soit la version.
+Chaque copie doit respecter l'override et, s'il existe, le minimum sûr.
+Une copie uniquement imbriquée compte comme une présence ; une dernière
+copie contradictoire ne peut plus être masquée par une première valide.
+
+L'identité enregistrée fait foi, y compris sous une autre clé.
+Les paquets `@nx/vite`, `@tailwindcss/vite` et `@zkochan/js-yaml`
+ne sont pas pris pour `vite` ou `js-yaml`.
+Les diagnostics racine existants restent identiques ; un diagnostic
+imbriqué précise sa clé, par exemple :
+`vite@8.3.0 (packages["@angular/build/vite"]) ne respecte pas ^8.3.4`.
+Les refus d'absence, d'override manquant, de dépendance directe
+artificielle et de racine malformée sont conservés.
+Aucun minimum Vite, changement de version, de dépendance, de verrou,
+de matrice, de workflow ou de métrique n'est ajouté.
+
+Dix tests sont ajoutés sans modifier les anciennes assertions.
+Avant la correction, les deux suites de politique et réparation donnent
+49 tests, 41 réussites et 8 échecs d'assertion attendus.
+Avec la correction, les 49 tests passent, sans test ignoré ni annulé.
+Sur la même copie isolée, trois régressions volontaires repassent au rouge :
+politique racine seule, 8 échecs ; comparaison par suffixe, 3 échecs ;
+première copie seulement, 6 échecs.
+Les ensembles exacts correspondent au relevé indépendant de Claude.
+Après chaque restauration exacte, les 49 tests repassent au vert.
+La CLI réelle accepte le verrou actuel, refuse la copie authentique
+`vite@8.3.0` réintroduite sous `@angular/build/vite` avec l'override
+`^8.3.4` conservé, puis accepte le verrou restauré.
+Cette preuve ne dépend pas d'un avis réseau.
+Les dix contrôles et leurs restaurations sont archivés localement
+avec le manifeste SHA-256
+`33745bd328e33f237e96f00813899c25e77ba0299f6a0359f334e229067171be`.
+
+La fonction reste pure et ne remplace pas un validateur structurel complet
+du verrou Bun. Une entrée imbriquée qui n'est pas un tableau, ou dont
+l'identité n'est pas une chaîne exploitable, ne permet pas d'identifier
+son paquet et reste hors de cette correction. La racine malformée reste
+contrôlée. Aucun résolveur d'alias ou de protocole n'est revendiqué.
+
+Au moment de cet ajout, le parcours Q4 sur les trois fichiers finaux,
+sa reproduction indépendante, la CI de PR, la revue humaine, la fusion
+et la CI de main restent à obtenir. Les preuves décrites ci-dessus sont
+les tests courts sur copie ; elles ne remplacent pas ces étapes.
