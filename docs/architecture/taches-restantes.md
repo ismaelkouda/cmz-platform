@@ -5070,3 +5070,61 @@ Au moment de cet ajout, le parcours Q4 sur les trois fichiers finaux,
 sa reproduction indépendante, la CI de PR, la revue humaine, la fusion
 et la CI de main restent à obtenir. Les preuves décrites ci-dessus sont
 les tests courts sur copie ; elles ne remplacent pas ces étapes.
+
+## 2026-10-22 — FLAKE-GIT-AUTOMAINT-01 D2 : configurer Git avant le premier commit
+
+Sur la base `7740514c3f9cf6437f648213413920e488a28837`, la fabrique
+commune `tools/generator-platform/page-realization.fixture.mjs` appelle
+maintenant `initFixtureRepo(root)` avant la configuration d’identité,
+l’indexation et le premier commit. Les profils `angular-pwa` et
+`react-spa` passent par cette même fabrique.
+Le helper existant persiste `gc.autoDetach=false` et
+`maintenance.autoDetach=false` dans la seule configuration locale.
+Il ne désactive ni `gc.auto` ni `maintenance.auto`.
+Son code exécutable est inchangé ; son commentaire conserve le diagnostic
+historique de library-setup et distingue le constat plus limité de D1.
+
+D1 a observé une maintenance détachée après retour du commit sur Git
+2.55.0, avec un seuil volontairement abaissé dans une fixture possédée.
+Le helper la maintenait en avant-plan. Les petites fixtures réelles
+observées ne franchissaient pas ce seuil. La cause et le processus auteur
+des deux `ENOTEMPTY` historiques de page-realization-v5 restent inconnus.
+Cette correction adopte le mécanisme éprouvé sans prétendre reproduire
+ou éliminer définitivement ces incidents. Un nouvel échec impose une
+analyse ; aucun retry de nettoyage ou assouplissement de test n’est ajouté.
+
+Le nouveau `page-realization.fixture.test.mjs` vérifie le premier commit
+réel pour les deux profils. Chaque cas lance un enfant Node ordinaire
+dans ses propres répertoires temporaires, avec un modèle Git synthétique.
+Le vrai crochet pre-commit vérifie les deux réglages locaux et l’absence
+de désactivation de la maintenance avant d’autoriser ce commit.
+Un témoin obligatoire prouve son exécution ; un crochet non propagé ne
+peut pas donner un faux vert. Les crochets et la configuration Git de
+l’atelier et de sa copie restent identiques avant et après les essais.
+Le parent attend l’arrêt des processus possédés puis retire ses racines,
+même si la fabrique échoue avant de retourner la sienne.
+Les sorties des enfants restent en mémoire ; seuls des codes fermés et
+des comptages sont publiés, sans valeurs d’environnement réelles.
+
+La preuve courte sur copie indépendante comporte cinq états :
+deux cas verts, remplacement par init brut donnant deux rouges,
+restauration donnant deux verts, helper déplacé après le premier commit
+donnant deux rouges, puis restauration donnant deux verts.
+Les deux mutations échouent au vrai pre-commit pour
+`HOOK_REJECTED / D2_FIRST_COMMIT_MUST_BE_PROTECTED`, sans erreur d’import,
+timeout, test ignoré ou annulé. Chaque cas retire sa racine, y compris
+les échecs avant retour ; les octets source et copie sont restaurés.
+Les six admissions A et les rapports filtrés sont archivés avec le
+manifeste SHA-256
+`0b4d12dab4794a175fef919d908fd8af937d25c2b1d624fd4a39a6714c490c7d`.
+L’arrêt préalable de C-138 sur un chemin ajv racine inexistant est conservé
+séparément ; aucun test n’avait été lancé. C-139 corrige ce pilote,
+sans changer les tests ni leurs attendus, et termine ce parcours.
+
+Le câblage existant `tools/generator-platform/*.test.mjs` inclut le
+nouveau test sans modifier package.json ou les workflows.
+Les tests v5 existants, les autres initialisations Git, les dépendances,
+le verrou, les qualifications et les protections restent inchangés.
+Au moment de cet ajout, le double Q4 sur les quatre fichiers finaux,
+la CI de PR, la revue humaine, la fusion et la CI de main restent
+à obtenir. La preuve courte ne remplace pas ces étapes.
