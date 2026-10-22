@@ -11,6 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { initFixtureRepo } from '../test-support/fixture-git.mjs';
 import { publishApplicationShell } from './core/application-shell-publication.mjs';
 import { writeApplicationDesignFixture } from './test-support/application-design-fixture.mjs';
 
@@ -120,7 +121,7 @@ export async function pageRealizationFixture(profile = 'angular-pwa') {
         },
         { run: () => '' }
     );
-    execFileSync('git', ['init', '-q'], { cwd: root });
+    initFixtureRepo(root);
     execFileSync('git', ['config', 'user.name', 'CMZ test'], { cwd: root });
     execFileSync('git', ['config', 'user.email', 'cmz-test@example.invalid'], {
         cwd: root,

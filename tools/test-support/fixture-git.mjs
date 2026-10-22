@@ -26,6 +26,14 @@ export function fixtureGit(root, args) {
  * sous `.git/objects` après le retour de la commande git, entre en course avec
  * le teardown `fs.rm` et le fait échouer en `ENOTEMPTY` sur le runner Linux.
  *
+ * FLAKE-GIT-AUTOMAINT-01 (D1) a observé ce mécanisme sur Git 2.55.0 avec un
+ * seuil abaissé dans une fixture possédée : une maintenance détachée réécrivait
+ * les packs après le retour du commit, et ce helper la maintenait en
+ * avant-plan. Pour les `ENOTEMPTY` des tests `page-realization-v5` (petite
+ * fixture, seuil non franchi dans les observations réelles), la cause reste
+ * inconnue. Appeler ce helper avant le premier commit : un réglage posé après
+ * ne couvre pas la maintenance déclenchée par ce commit.
+ *
  * `gc.autoDetach=false` NE DÉSACTIVE PAS l'auto-gc : `gc.auto` n'est jamais
  * écrit, donc git garde son seuil par défaut et l'auto-gc reste couvert. Le
  * réglage force seulement le gc en avant-plan (bloquant) : la commande qui le
