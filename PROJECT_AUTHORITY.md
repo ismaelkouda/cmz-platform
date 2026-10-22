@@ -1,5 +1,7 @@
 # Autorité produit et guide de démarrage — cmz-platform
 
+- **Première application réelle — décision courante :** [ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md)
+
 > Point d'entrée obligatoire pour toute personne ou tout agent qui découvre le
 > dépôt. Ce document fixe le cap courant, l'ordre des autorités et les règles de
 > travail. Il ne remplace pas la lecture du code et des contrats concernés par
@@ -20,8 +22,10 @@ En cas de contradiction, utiliser cet ordre :
 2. contrats, schémas et garde-fous exécutables présents sur la base Git de
    travail ;
 3. ADR `Accepted` non supersédé ;
-4. [ADR-0094](./docs/adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
-   pour le cap produit ;
+4. [ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md)
+   pour la première application réelle et sa priorité ;
+   [ADR-0094](./docs/adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
+   pour les principes conservés de l'atelier ;
 5. [matrice de capacités](./docs/architecture/generation-platform-capability-matrix.md)
    pour les claims techniques ;
 6. [feuille de route courante](./docs/architecture/feuille-de-route.md) pour
@@ -60,15 +64,20 @@ artefacts versionnés, leurs preuves et les décisions validées le sont.
 - publication en ligne possible lorsque l'exploitation est prête ;
 - aucun claim actuel de SaaS public multi-locataire ;
 - remplacement progressif du legacy en production ;
-- première application réelle : **signalement de zone non couverte** ;
+- première application réelle et priorité : décision courante
+  [ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md) ;
 - le propriétaire possède les données de ce produit : demander les faits
   manquants au lieu de les inventer ;
 - Angular et React sont deux cibles produit ;
 - une sortie est mono-stack et idiomatique à sa cible.
 
-Toute formulation antérieure présentant SEOS comme finalité, le backoffice
-reconstruit comme « golden reference » universel, React comme simple POC ou la
-nature produit comme entièrement indécise est historique.
+L'atelier et sa première application réelle sont distincts. Le backoffice
+reconstruit et son corpus restent des preuves historiques ; ils ne deviennent
+ni le produit extérieur livré, ni une « golden reference » universelle.
+Les formulations présentant React comme simple POC ou le cap comme entièrement
+indécis sont historiques. Le brief du signalement de zone non couverte reste
+en découverte, sans abandon décidé ; sa désignation comme première application
+est partiellement supersédée par la décision courante.
 
 ## 3. Ce que le dépôt n'est pas
 
@@ -101,9 +110,11 @@ Avant de retirer une fonctionnalité legacy :
 4. déployer progressivement avec une stratégie de retour arrière ;
 5. retirer seulement les consommateurs devenus inutiles.
 
-L'issue #64 gouverne la dernière promotion humaine de la preuve de composition.
-L'archivage du corpus et la réduction de ses jobs CI constituent un changement
-séparé après cette clôture.
+L'issue #64 gouverne la dernière promotion humaine de la preuve de composition ;
+son état GitHub doit être relu avant toute action. L'archivage du corpus et la
+réduction de ses jobs CI constituent un changement séparé après cette clôture.
+Ce corpus historique ne se confond pas avec le parcours du produit extérieur
+désigné par la décision courante.
 
 C5 React possède le chargement progressif, le filtre Compact à deux niveaux et
 le FAB de création borné par ADR-0097. Les trois écarts Compact automatisables
@@ -316,16 +327,20 @@ Lire [LLM_APP_BUILDER.md](./LLM_APP_BUILDER.md), puis :
 8. vérifier cette page de bout en bout ;
 9. faire valider avant la page suivante.
 
-Pour « signalement de zone non couverte », ne copier ni la carte de pages ni les
-règles SEOS. Interroger le propriétaire sur le résultat principal, les acteurs,
-les données, les autorisations, le premier parcours et les critères
-d'acceptation. Il possède les données : une inconnue est une question, pas un
-prétexte pour inventer.
+Pour la première application désignée par
+[ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md),
+Ismael fournit les structures exactes des réponses de l'API et les captures.
+Interroger le propriétaire sur les faits manquants : résultat principal,
+acteurs, données, autorisations, premier parcours et critères d'acceptation.
+Ne recopier ni les bibliothèques, ni l'apparence, ni les défauts du legacy.
+Ismael lance lui-même toute commande touchant le dossier ou le dépôt produit.
+La configuration GitHub sera générée depuis la baseline codifiée de l'atelier,
+avec GitHub gratuit d'abord ; aucune copie manuelle concurrente.
 
 ## 11. Clôturer la preuve de composition (#64)
 
-La preuve technique C5 existe. La clôture demande encore une revue de promotion
-:
+La preuve technique C5 existe. Le protocole de clôture exige une revue de
+promotion ; vérifier l'état vivant de #64 avant d'en déduire le reste à faire :
 
 1. matrice critère de #64 → artefact → test → résultat CI ;
 2. revue humaine de l'équivalence observable et des limites ;
@@ -343,7 +358,8 @@ une PR séparée après cette clôture.
 
 | Besoin                     | Autorité                                             |
 | -------------------------- | ---------------------------------------------------- |
-| finalité produit           | ADR-0094 + ce document                               |
+| finalité de l'atelier      | ADR-0094 + ce document                               |
+| première application réelle | [ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md) |
 | construire une application | `LLM_APP_BUILDER.md`                                 |
 | capacité revendiquée       | matrice de capacités + tests/CI                      |
 | ordre du travail           | feuille de route courante                            |
