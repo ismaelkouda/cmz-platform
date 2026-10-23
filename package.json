@@ -259,7 +259,7 @@
         "@angular/compiler-cli": "22.2.3",
         "@angular/language-service": "22.2.3",
         "@schematics/angular": "22.2.3",
-        "typescript": "6.0.3"
+        "typescript": "7.0.2"
       }
     }
   },
