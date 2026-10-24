@@ -1,6 +1,7 @@
 # ADR-0094 — Cap produit interne, remplacement progressif et cibles web
 
 - **Statut :** Accepted
+- **Superseded pour la désignation de la première application réelle (§4) par :** [ADR-0101](./0101-premiere-application-reelle-et-priorite-produit.md)
 - **Date :** 2026-10-08
 - **Décideur produit :** auteur et mainteneur de `cmz-platform`
 - **Supersède pour le cap produit :**

@@ -1,32 +1,48 @@
 # Feuille de route courante
 
-- **Dernière mise à jour :** 2026-10-09
-- **Autorité produit :**
-  [ADR-0094](../adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
+- **Dernière mise à jour :** 2026-10-22
+- **Première application réelle — décision courante :** [ADR-0101](../adr/0101-premiere-application-reelle-et-priorite-produit.md)
+- **Principes de l'atelier :** [ADR-0094](../adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md), hors désignation partiellement supersédée de la première application.
 
 ## Chemin critique courant
 
-1. **Finaliser la clôture gouvernée de #64.** Le dossier C6 relie désormais les
-   critères aux artefacts/tests et le registre porte séparément les primitives
-   v1 et v2 par cible. La PR #233 est fusionnée, ses 17 jobs sont verts et la CI
-   post-fusion de `main` est réussie. Les SHA, runs et limites sont reportés
-   dans l'issue ; Soumaila est assigné. Il reste uniquement sa confirmation
-   explicite des huit points d'équivalence, puis la fermeture de l'issue. Aucun
-   nouveau code de composition n'est attendu pour cette clôture.
-2. **Archiver progressivement SEOS.** Dans un changement séparé, inventorier les
-   derniers consommateurs et retirer du chemin critique CI les preuves déjà
-   transférées. Ne pas supprimer une preuve encore unique.
-3. **Démarrer la première application réelle.** Écrire avec le propriétaire le
-   brief du produit « signalement de zone non couverte », puis son contrat
-   backend cible. Ne rien déduire du legacy à la place des données disponibles.
-4. **Livrer une première tranche verticale.** Une expérience et une page
+1. **Poursuivre la première application réelle désignée par la décision
+   courante.** Ismael fournit les structures exactes des réponses de l'API et
+   les captures ; la capture locale assainie précède le contrat backend.
+   Toute donnée métier manquante lui est demandée, jamais déduite d'une fixture.
+2. **Créer l'espace applicatif puis son dépôt public.** Ismael lance les
+   commandes touchant le produit. L'espace est produit par la sortie externe
+   de l'atelier ; la configuration GitHub est générée depuis GITHUB-BASELINE,
+   codifiée dans l'atelier, avec GitHub gratuit d'abord. Si cette baseline
+   manque à cette étape, coordonner sa livraison avant la configuration du
+   dépôt, sans copie manuelle concurrente.
+3. **Livrer une première tranche verticale.** Une expérience et une page
    utilisables, sur une cible explicitement choisie, avec navigateur, backend
-   contracté, observabilité et stratégie de retour arrière.
-5. **Remplacer le legacy par étapes.** Transférer comportements et données
-   utiles, déployer progressivement, puis retirer l'ancien périmètre.
-6. **Construire le workbench par valeur.** Cockpit de lecture, diff,
+   contracté, observabilité et stratégie de retour arrière. Le contrat de cette
+   tranche définit ses preuves ; aucune livraison n'est revendiquée ici.
+4. **Remplacer le legacy par étapes.** Transférer comportements et données
+   utiles, déployer progressivement, puis retirer l'ancien périmètre. La pile
+   native reste la référence de réalisation, sans recopier les bibliothèques,
+   l'apparence ou les défauts du legacy.
+5. **Construire le workbench par valeur.** Cockpit de lecture, diff,
    approbation, aperçu isolé puis publication contrôlée. Aucune automatisation
    supplémentaire sans baseline et condition d'abandon (ADR-0080).
+
+### Preuves de composition et corpus historique
+
+La clôture gouvernée de #64 conserve ses exigences de preuves, de revue humaine
+et de promotion par cible. Vérifier son état GitHub avant toute action : la
+présente feuille de route ne constate ni nouvelle fermeture ni nouveau run CI.
+Le dossier C6 porte les critères et artefacts ; il reste distinct du parcours
+produit ci-dessus.
+
+Après cette clôture, l'archivage du corpus historique Angular/SEOS et la
+réduction de ses jobs CI exigent un changement séparé : inventaire des derniers
+consommateurs et transfert des preuves encore utiles. Ne pas supprimer une
+preuve unique. Cet archivage ne signifie pas l'abandon du produit extérieur.
+
+Le brief du signalement de zone non couverte demeure en découverte ; il ne
+porte plus la désignation de première application, sans décision d'abandon.
 
 ### Conditions de passage
 
@@ -34,6 +50,7 @@
 - Angular et React sont évalués séparément ; un claim commun exige les deux ;
 - la première application réelle prime sur une nouvelle abstraction de
   plateforme non déclenchée par son besoin ;
+- aucune exception sans expiration native ou justification dérivée contrôlée ;
 - un SaaS public multi-locataire reste hors de cette feuille de route tant que
   son exploitation n'est pas décidée et financée.
 

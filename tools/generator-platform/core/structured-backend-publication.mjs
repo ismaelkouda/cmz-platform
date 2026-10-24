@@ -1,17 +1,11 @@
 import { createHash } from 'node:crypto';
-import {
-    link,
-    lstat,
-    open,
-    readFile,
-    realpath,
-    unlink,
-} from 'node:fs/promises';
+import { lstat, readFile, realpath } from 'node:fs/promises';
 import { basename, dirname, relative, resolve, sep } from 'node:path';
 
 import { compileOpenApiBackendContract } from '../adapters/openapi-adapter.mjs';
 import { compilePostmanBackendContract } from '../adapters/postman-adapter.mjs';
 import { verifyBackendContractSnapshots } from './backend-contract.mjs';
+import { publishDocument } from './document-publication.mjs';
 import { parseStructuredSource } from './source-document.mjs';
 import {
     compileStructuredBackendDefinition,
@@ -130,25 +124,6 @@ async function resolveOutput(root, path) {
     };
 }
 
-async function entryExists(path) {
-    try {
-        await lstat(path);
-        return true;
-    } catch (error) {
-        if (error.code === 'ENOENT') return false;
-        throw error;
-    }
-}
-
-async function syncDirectory(path) {
-    const handle = await open(path, 'r');
-    try {
-        await handle.sync();
-    } finally {
-        await handle.close();
-    }
-}
-
 export async function planStructuredBackendPublication({
     workspaceRoot,
     definitionPath,
@@ -198,77 +173,12 @@ export async function planStructuredBackendPublication({
     };
 }
 
-async function assertContent(path, expectedHash, label) {
-    const metadata = await lstat(path);
-    if (!metadata.isFile() || metadata.isSymbolicLink()) {
-        fail(`${label} is not a regular file`);
-    }
-    if (sha256(await readFile(path)) !== expectedHash) {
-        fail(`${label} hash does not match the reviewed plan`);
-    }
-}
-
 export async function publishStructuredBackendContract(options) {
     const plan = await planStructuredBackendPublication(options);
     if (options.planId !== plan.plan_id)
         fail('reviewed plan id is stale or invalid');
 
-    const outputExists = await entryExists(plan.outputAbsolute);
-    const candidateExists = await entryExists(plan.candidate);
-    if (outputExists) {
-        await assertContent(
-            plan.outputAbsolute,
-            plan.output_sha256,
-            'existing output'
-        );
-        if (candidateExists) {
-            await assertContent(
-                plan.candidate,
-                plan.output_sha256,
-                'recovery candidate'
-            );
-            await unlink(plan.candidate);
-            await syncDirectory(plan.outputParent);
-        }
-        return { plan, already_published: true };
-    }
-
-    if (candidateExists) {
-        await assertContent(
-            plan.candidate,
-            plan.output_sha256,
-            'recovery candidate'
-        );
-    } else {
-        const handle = await open(plan.candidate, 'wx', 0o644);
-        try {
-            await handle.writeFile(plan.content);
-            await handle.sync();
-        } finally {
-            await handle.close();
-        }
-        await syncDirectory(plan.outputParent);
-    }
-
-    try {
-        await link(plan.candidate, plan.outputAbsolute);
-    } catch (error) {
-        if (error.code !== 'EEXIST') throw error;
-        await assertContent(
-            plan.outputAbsolute,
-            plan.output_sha256,
-            'concurrent output'
-        );
-    }
-    await syncDirectory(plan.outputParent);
-    await assertContent(
-        plan.outputAbsolute,
-        plan.output_sha256,
-        'published output'
-    );
-    await unlink(plan.candidate);
-    await syncDirectory(plan.outputParent);
-    return { plan, already_published: false };
+    return publishDocument(plan, fail);
 }
 
 export function publicBackendPublicationPlan(plan) {
