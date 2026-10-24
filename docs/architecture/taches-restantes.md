@@ -5128,3 +5128,48 @@ le verrou, les qualifications et les protections restent inchangés.
 Au moment de cet ajout, le double Q4 sur les quatre fichiers finaux,
 la CI de PR, la revue humaine, la fusion et la CI de main restent
 à obtenir. La preuve courte ne remplace pas ces étapes.
+
+## 2026-10-22 — DEPENDABOT-TS7-268 : justifier les exclusions par les pairs réels
+
+La proposition TypeScript 7 de la PR #268 ne peut pas être intégrée avec les
+contrats de pairs actuels. La configuration Dependabot exclut seulement `7.x`
+pour le nom exact `typescript`. Les mises à jour 6.x restent proposées ; les
+autres majeures ne sont pas déclarées compatibles par cette seule règle.
+
+`tools/check-dependabot-policy.mjs` vérifie la justification des plages exclues
+contre les pairs réellement déclarés dans `bun.lock`, y compris les copies
+imbriquées. Une exclusion sans pair pertinent, une plage ou un pair mal formé et
+une forme de configuration non admise sont refusés. Le contrôle ne fixe ni un
+nom de bibliothèque ni une majeure dans son algorithme. Si les pairs ne
+justifient plus une exclusion, il demande sa correction. Il ne prétend pas que
+le workflow de réparation des overrides de sécurité retire automatiquement cette
+exclusion Dependabot.
+
+La preuve ciblée sur copie comporte 33 oracles natifs : syntaxe, moteur,
+frontières synthétiques SemVer, 49 tests de politique et CLI, puis dix mutations
+de données et deux mutations du garde. Les douze rouges portent sur leurs causes
+attendues ; les douze restaurations retrouvent le vert. Le garde ignorant les
+copies imbriquées provoque un test rouge, celui toujours justifié cinq tests
+précis rouges. Aucun test n’est modifié. Manifeste des rapports ciblés :
+`d71b7e0819880d78a86ae7f47a79a7597bfa79a6c8972b1410590a6cecd47cac`.
+
+Une copie neuve et physiquement indépendante a ensuite servi au format canonique
+complet, au YAML, au lint natif sans avertissement ni suppression, aux 61 tests
+de politique et réparation, et au vrai CLI. Une erreur de format volontaire et
+un symbole non défini sont détectés pour leur cause exacte ; les deux
+restaurations retrouvent le vert et les octets initiaux. Les onze oracles
+passent ; les 61 tests n’ont aucun saut, annulation ou todo. Manifeste des
+rapports de qualification :
+`5031fe2b0446d8749013e50049296b4b334da3531aa3f305babc670b0515d6b3`.
+
+Les admissions sont publiées avant acquittement, sous verrou commun. La
+qualification garde cinq critères bloquants et des groupes enfants possédés. Les
+sorties brutes et l’environnement réel ne sont pas archivés. Le contrôle
+indépendant a vérifié les 81 475 entrées de la copie et de la source, leurs
+modes, liens et empreintes, sans inode partagé. Les anciennes traces de sonde
+restent conservées ; elles ne sont pas des preuves nouvelles.
+
+Les dépendances et le verrou, les workflows, les applications et les protections
+GitHub restent inchangés. Au moment de cet ajout, le double Q4 sur les quatre
+fichiers finaux, la CI de PR, la revue humaine, la fusion et la CI de main
+restent à obtenir. Les preuves ciblées ne remplacent pas ces étapes.

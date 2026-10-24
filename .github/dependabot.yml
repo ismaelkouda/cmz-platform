@@ -15,6 +15,13 @@ updates:
       interval: 'weekly'
       day: 'monday'
     open-pull-requests-limit: 10
+    # Les pairs Angular et les autres consommateurs refusent encore TS7.
+    # Lever quand leurs versions stables acceptent une version TS7 commune ;
+    # le garde derive le signal du verrou, le futur lot B proposera la levee.
+    # Les propositions TS6 restent permises, sous controle de compatibilite.
+    ignore:
+      - dependency-name: 'typescript'
+        versions: ['7.x']
     groups:
       # React publie react/react-dom comme une unité de compatibilité : leurs
       # versions runtime doivent rester strictement identiques. Inclure aussi

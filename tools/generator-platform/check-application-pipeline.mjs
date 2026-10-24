@@ -251,7 +251,7 @@ async function main() {
                     '--verbose',
                     '--outputStyle=stream',
                     '--skipNxCache',
-                    ...(target === 'test' ? ['--run'] : []),
+                    ...(target === 'test' ? ['--run', '--no-cache'] : []),
                 ],
                 workspaceRoot
             );
