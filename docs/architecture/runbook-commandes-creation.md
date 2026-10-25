@@ -1,7 +1,7 @@
 # Runbook humain — créer une app, ajouter une bibliothèque, créer un module
 
-Ce guide sert à comprendre et dépanner les commandes de création. Il ne
-remplace pas leurs contrôles : en cas de doute, la commande échoue sans publier.
+Ce guide sert à comprendre et dépanner les commandes de création. Il ne remplace
+pas leurs contrôles : en cas de doute, la commande échoue sans publier.
 
 ## Réflexe commun : `--explain`
 
@@ -181,14 +181,61 @@ ancien sans retirer la propriété du snapshot initial intact.
 
 `create-app --target-root <absolu>` exige `--dry-run` ou `--expect-plan <id>`.
 Le design et ses snapshots restent relatifs au produit, sans copie ni secours
-dans l'atelier. Compilation, build, lint zéro warning et tests sont locaux.
-Un fichier étranger bloque ; une reprise ne supprime ni ne déplace cet arbre.
+dans l'atelier. Compilation, build, lint zéro warning et tests sont locaux. Un
+fichier étranger bloque ; une reprise ne supprime ni ne déplace cet arbre.
 
 La preuve `check:external-application-shells` exige un `--proof-root` neuf,
-durable et extérieur. Elle installe ses outils de laboratoire, confine les
-deux apps, casse chaque contrôle puis vérifie sa restauration. Rapport texte,
-aucun environnement réel. Un échec arrête la suite et reçoit son analyse.
-Voir [le protocole détaillé](./external-application-creation.md).
+durable et extérieur. Elle installe ses outils de laboratoire, confine les deux
+apps, casse chaque contrôle puis vérifie sa restauration. Rapport texte, aucun
+environnement réel. Un échec arrête la suite et reçoit son analyse. Voir
+[le protocole détaillé](./external-application-creation.md).
 
-Dans le chantier SEOS, Ismael lance uniquement les commandes PRÊTES du registre,
-après revue de Claude ; ces exemples ne sont pas des autorisations d'exécution.
+L'opérateur autorisé lance les commandes relues pour son projet ; ces exemples
+ne sont pas des autorisations d'exécution.
+
+## 5. Compiler les documents d'un espace extérieur — EXT-03a
+
+L'espace EXT-01 est déjà possédé. Les entrées sont celles du projet choisi, sans
+préalable de capture, de compte SEOS ou de qualification Redocly. Les deux
+compilateurs se lancent depuis les outils de la base qualifiée, avec son Node.
+Tous les chemins de document restent relatifs au produit.
+
+```sh
+node tools/compile-backend-contract.mjs --target-root <absolu> --definition <source-relative> --out <contrat-relatif> --adapter structured --dry-run
+node tools/compile-backend-contract.mjs --target-root <absolu> --definition <source-relative> --out <contrat-relatif> --adapter structured --apply <plan_id>
+node tools/compile-application-design.mjs --target-root <absolu> --source <design-source-relatif> --out <design-relatif> --dry-run
+node tools/compile-application-design.mjs --target-root <absolu> --source <design-source-relatif> --out <design-relatif> --apply <plan_id>
+```
+
+1. Fournir la source admissible et ses snapshots. Choisir structured, openapi ou
+   postman selon son format ; ne pas créer de fausse donnée pour passer un
+   garde.
+2. Lire le plan backend : mode, identifiant, source, destination et empreintes.
+   Appliquer exactement ce plan dans le même espace.
+3. Fournir la conception et le brief avec les références et empreintes des
+   contrats publiés. Les contrats de référence restent distincts de la cible.
+4. Relire puis appliquer le plan de conception. Une modification de source,
+   snapshot, outil, schéma, propriété ou identité de racine périme le plan.
+5. Consommer le design avec create-app extérieur et le profil explicitement
+   choisi. Son installation native doit être qualifiée ; compiler les documents
+   ne qualifie pas cette installation et ne déclenche aucun install.
+
+En cas de refus : conserver les fichiers et le diagnostic, corriger l'entrée ou
+le contexte puis produire un nouveau plan. Une sortie étrangère ou un candidat
+modifié n'est jamais écrasé. Un lien symbolique ou une option target-root
+incorrecte ne provoque aucun repli vers l'atelier. Sans cette option, le mode
+atelier historique reste disponible.
+
+Une conception shell-only n'est pas admissible pour React SPA. Choisir Angular
+si cette exigence doit être conservée, ou fournir un nouveau contrat qui déclare
+explicitement none ; le compilateur ne modifie pas cette politique. Les deux
+fixtures techniques du lot exposent cette variation dans leurs reçus de preuve.
+
+La suite `external-document-compilation.test.mjs` vérifie par défaut le raccord
+documentaire et ses refus ; elle n'installe ni n'exécute les quatre shells. Les
+cellules natives se demandent séparément avec `CMZ_EXT03A_NATIVE_CELL` égal à
+A/angular-pwa, A/react-spa, B/angular-pwa ou B/react-spa, et
+`CMZ_EXT03A_NATIVE_ROOT` désignant un espace neuf pour la fixture, déjà possédé
+et réellement installé. Chaque invocation exécute une seule cellule ; absence de
+certificat, erreur ou cellule manquante interdit le succès commun. Les commandes
+exactes et leurs admissions relèvent du plan de preuve relu.
