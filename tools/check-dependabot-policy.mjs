@@ -76,7 +76,7 @@ export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
     nanoid: '3.3.19',
     'smol-toml': '1.8.1',
     'js-yaml': '4.3.2',
-    undici: '7.29.1',
+    undici: '8.12.2',
     browserslist: '4.28.8',
     qs: '6.16.0',
     'source-map-js': '1.2.2',
@@ -276,6 +276,102 @@ export function dependabotPolicyErrors(config, pkg) {
 }
 
 /**
+ * Une exclusion de version reste justifiée tant qu'un pair du verrou
+ * refuse toute la plage exclue. Parcourir aussi les copies imbriquées :
+ * le dernier consommateur bloquant peut être absent de la racine.
+ */
+export function ignoredVersionPolicyErrors(config, lock) {
+    const errors = [];
+    const roots = (config?.updates ?? []).filter(
+        (update) =>
+            update?.['package-ecosystem'] === 'bun' && update?.directory === '/'
+    );
+    if (roots.length !== 1) return errors; // Contrôlé par dependabotPolicyErrors.
+    const ignores = Object.hasOwn(roots[0], 'ignore') ? roots[0].ignore : [];
+    if (!Array.isArray(ignores)) {
+        return ['Dependabot ignore doit être une liste explicite'];
+    }
+    if (ignores.length === 0) return errors;
+    const packages = lock?.packages;
+    if (!packages || typeof packages !== 'object' || Array.isArray(packages)) {
+        return ['bun.lock : packages doit être un objet pour justifier ignore'];
+    }
+
+    for (const ignore of ignores) {
+        const name = ignore?.['dependency-name'];
+        if (
+            !ignore ||
+            typeof ignore !== 'object' ||
+            Array.isArray(ignore) ||
+            Object.keys(ignore).some(
+                (key) => key !== 'dependency-name' && key !== 'versions'
+            ) ||
+            typeof name !== 'string' ||
+            !/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i.test(name)
+        ) {
+            errors.push(
+                'Dependabot ignore : nom exact requis, seuls dependency-name et versions sont admis'
+            );
+            continue;
+        }
+        const versions = ignore.versions;
+        if (
+            !Array.isArray(versions) ||
+            versions.length === 0 ||
+            versions.some(
+                (range) =>
+                    typeof range !== 'string' ||
+                    range.trim().length === 0 ||
+                    !semver.validRange(range)
+            )
+        ) {
+            errors.push(
+                `Dependabot ignore ${name} : versions doit être une liste non vide de plages SemVer valides`
+            );
+            continue;
+        }
+
+        for (const excludedRange of versions) {
+            let justified = false;
+            for (const [key, entry] of Object.entries(packages)) {
+                const peers = entry?.[2]?.peerDependencies;
+                if (peers === undefined) continue;
+                if (
+                    !peers ||
+                    typeof peers !== 'object' ||
+                    Array.isArray(peers)
+                ) {
+                    errors.push(`bun.lock packages[${key}] : pairs mal formés`);
+                    continue;
+                }
+                if (!Object.hasOwn(peers, name)) continue;
+                const peerRange = peers[name];
+                if (
+                    typeof peerRange !== 'string' ||
+                    peerRange.trim().length === 0 ||
+                    !semver.validRange(peerRange)
+                ) {
+                    errors.push(
+                        `bun.lock packages[${key}] : pair ${name} mal formé`
+                    );
+                    continue;
+                }
+                // Ne pas interrompre le parcours : un autre pair peut être invalide.
+                if (!semver.intersects(peerRange, excludedRange)) {
+                    justified = true;
+                }
+            }
+            if (!justified) {
+                errors.push(
+                    `exclusion de ${name} ${excludedRange} sans justification par un pair installé : la lever`
+                );
+            }
+        }
+    }
+    return errors;
+}
+
+/**
  * Vérifie les planchers des paquets installés et leur résolution sûre.
  * Un paquet absent sans consommateur requis impose de retirer les entrées
  * encore présentes ; avec un consommateur requis, le verrou est incohérent.
@@ -413,6 +509,7 @@ function main() {
     }
     const errors = [
         ...dependabotPolicyErrors(config, pkg),
+        ...ignoredVersionPolicyErrors(config, lock),
         ...securityResolutionPolicyErrors(pkg, lock),
     ];
 

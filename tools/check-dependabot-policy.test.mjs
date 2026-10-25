@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
     COHERENT_UPDATE_GROUPS,
     dependabotPolicyErrors,
+    ignoredVersionPolicyErrors,
     requiredLockConsumers,
     SECURITY_OVERRIDE_MINIMUMS,
     securityResolutionPolicyErrors,
@@ -491,4 +492,190 @@ test('NESTED A7 : une copie valide ne masque pas une racine malformée', () => {
         securityResolutionPolicyErrors(pkg, lock).join('\n'),
         /résolution vite absente ou invalide dans bun\.lock \(42\)/
     );
+});
+
+function ignoreFixture() {
+    const name = 'fixture-compiler';
+    return {
+        config: {
+            updates: [
+                {
+                    'package-ecosystem': 'bun',
+                    directory: '/',
+                    ignore: [{ 'dependency-name': name, versions: ['7.x'] }],
+                },
+            ],
+        },
+        lock: {
+            packages: {
+                [name]: [`${name}@6.0.3`],
+                consumer: [
+                    'consumer@1.0.0',
+                    '',
+                    { peerDependencies: { [name]: '>=6.0 <6.1' } },
+                ],
+                permissive: [
+                    'permissive@1.0.0',
+                    '',
+                    { peerDependencies: { [name]: '*' } },
+                ],
+            },
+        },
+    };
+}
+
+test('ignore : une exclusion justifiée fonctionne sans nom de paquet codé en dur', () => {
+    const { config, lock } = ignoreFixture();
+    const before = structuredClone({ config, lock });
+    assert.deepEqual(ignoredVersionPolicyErrors(config, lock), []);
+    assert.deepEqual({ config, lock }, before);
+});
+
+test('ignore : le dernier refus peut être une copie seulement imbriquée', () => {
+    const { config, lock } = ignoreFixture();
+    lock.packages.consumer[2].peerDependencies['fixture-compiler'] = '^7';
+    lock.packages['parent/nested'] = [
+        'nested@2.0.0',
+        '',
+        { peerDependencies: { 'fixture-compiler': '>=6 <6.1' } },
+    ];
+    assert.deepEqual(ignoredVersionPolicyErrors(config, lock), []);
+    delete lock.packages['parent/nested'];
+    assert.match(
+        ignoredVersionPolicyErrors(config, lock).join('\n'),
+        /sans justification par un pair installé : la lever/
+    );
+});
+
+test('ignore : refus quand tous les pairs acceptent la plage, et restauration verte', () => {
+    const { config, lock } = ignoreFixture();
+    const previous = structuredClone(lock);
+    lock.packages.consumer[2].peerDependencies['fixture-compiler'] = '^7';
+    assert.match(
+        ignoredVersionPolicyErrors(config, lock).join('\n'),
+        /exclusion de fixture-compiler 7\.x sans justification/
+    );
+    assert.deepEqual(ignoredVersionPolicyErrors(config, previous), []);
+});
+
+test('ignore : une plage qui intersecte tous les pairs ne justifie rien', () => {
+    const { config, lock } = ignoreFixture();
+    config.updates[0].ignore[0].versions = ['6.x'];
+    assert.match(
+        ignoredVersionPolicyErrors(config, lock).join('\n'),
+        /exclusion de fixture-compiler 6\.x sans justification/
+    );
+});
+
+test('ignore : vérifier chaque plage, même si la première est justifiée', () => {
+    const { config, lock } = ignoreFixture();
+    config.updates[0].ignore[0].versions.push('6.x');
+    const errors = ignoredVersionPolicyErrors(config, lock);
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /fixture-compiler 6\.x sans justification/);
+});
+
+test('ignore : pas de justification sans consommateur déclarant le pair exact', () => {
+    const { config, lock } = ignoreFixture();
+    config.updates[0].ignore[0]['dependency-name'] = 'another-package';
+    assert.match(
+        ignoredVersionPolicyErrors(config, lock).join('\n'),
+        /exclusion de another-package 7\.x sans justification/
+    );
+});
+
+test('ignore : refus des noms glob, formes implicites et update-types', () => {
+    const malformed = [
+        null,
+        [],
+        { 'dependency-name': '*', versions: ['7.x'] },
+        { 'dependency-name': 'fixture-*', versions: ['7.x'] },
+        {
+            'dependency-name': 'fixture-compiler',
+            'update-types': ['version-update:semver-major'],
+        },
+        {
+            'dependency-name': 'fixture-compiler',
+            versions: ['7.x'],
+            'update-types': [],
+        },
+        {
+            'dependency-name': 'fixture-compiler',
+            versions: ['7.x'],
+            extra: true,
+        },
+    ];
+    for (const entry of malformed) {
+        const { config, lock } = ignoreFixture();
+        config.updates[0].ignore = [entry];
+        assert.match(
+            ignoredVersionPolicyErrors(config, lock).join('\n'),
+            /nom exact requis/,
+            JSON.stringify(entry)
+        );
+    }
+});
+
+test('ignore : refus des listes et plages absentes ou invalides', () => {
+    for (const versions of [
+        undefined,
+        null,
+        [],
+        '7.x',
+        [''],
+        ['latest'],
+        [7],
+    ]) {
+        const { config, lock } = ignoreFixture();
+        config.updates[0].ignore[0].versions = versions;
+        assert.match(
+            ignoredVersionPolicyErrors(config, lock).join('\n'),
+            /liste non vide de plages SemVer valides/
+        );
+    }
+    const { config, lock } = ignoreFixture();
+    config.updates[0].ignore = {};
+    assert.match(
+        ignoredVersionPolicyErrors(config, lock).join('\n'),
+        /liste explicite/
+    );
+});
+
+test('ignore : un pair pertinent mal formé reste bloquant même avec un autre refus', () => {
+    for (const peer of [null, 7, '', 'latest']) {
+        const { config, lock } = ignoreFixture();
+        lock.packages.permissive[2].peerDependencies['fixture-compiler'] = peer;
+        assert.match(
+            ignoredVersionPolicyErrors(config, lock).join('\n'),
+            /packages\[permissive\] : pair fixture-compiler mal formé/
+        );
+    }
+});
+
+test('ignore : métadonnées de pairs ou packages mal formées ne sont pas sautées', () => {
+    const { config, lock } = ignoreFixture();
+    lock.packages.permissive[2].peerDependencies = null;
+    assert.match(
+        ignoredVersionPolicyErrors(config, lock).join('\n'),
+        /pairs mal formés/
+    );
+    assert.match(
+        ignoredVersionPolicyErrors(config, { packages: [] }).join('\n'),
+        /packages doit être un objet/
+    );
+});
+
+test('ignore : une dépendance présente reste contrainte par son pair optionnel', () => {
+    const { config, lock } = ignoreFixture();
+    lock.packages.consumer[2].optionalPeers = ['fixture-compiler'];
+    assert.deepEqual(ignoredVersionPolicyErrors(config, lock), []);
+});
+
+test('ignore : liste vide ou absente admise sans figer une exclusion', () => {
+    for (const ignore of [undefined, []]) {
+        const { config, lock } = ignoreFixture();
+        if (ignore === undefined) delete config.updates[0].ignore;
+        else config.updates[0].ignore = ignore;
+        assert.deepEqual(ignoredVersionPolicyErrors(config, lock), []);
+    }
 });
