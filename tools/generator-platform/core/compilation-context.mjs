@@ -1,7 +1,7 @@
 import { lstat } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 
-import { planApplicationWorkspace } from './application-workspace.mjs';
+import { planCompilationWorkspace } from './application-workspace.mjs';
 import {
     assertPhysicalPath,
     externalApplicationContext,
@@ -169,7 +169,7 @@ export async function bindCompilationContext(
     } catch (error) {
         if (error.code !== 'ENOENT') throw error;
     }
-    const workspace = await planApplicationWorkspace({
+    const workspace = await planCompilationWorkspace({
         workspaceRoot: context.toolsRoot,
         targetRoot: context.productRoot,
         profiles: context.marker.profiles,

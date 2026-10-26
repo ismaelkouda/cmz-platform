@@ -181,6 +181,14 @@ export async function runNativeDocumentCell(session, fixture, profile) {
             maxBuffer: 8 * 1024 * 1024,
         }
     );
+    if (child.status !== 0 || child.signal) {
+        // Private laboratory diagnostic; the public report keeps only its hash.
+        await writeFile(
+            `${contextPath}.failure.txt`,
+            `${child.stdout ?? ''}${child.stderr ?? ''}`,
+            { flag: 'wx', mode: 0o600 }
+        );
+    }
     record(session, `EXT03a/${cell}/native-cell`, child);
     const receiptBytes = await readFile(`${contextPath}.receipt.json`);
     const receipt = JSON.parse(receiptBytes.toString('utf8'));

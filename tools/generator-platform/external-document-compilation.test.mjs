@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict';
-import { cp, readFile, rename, symlink, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import {
+    cp,
+    mkdir,
+    readFile,
+    rename,
+    symlink,
+    writeFile,
+} from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -9,6 +17,7 @@ import {
     planApplicationDesignPublication,
     publishApplicationDesign,
 } from './core/application-design-publication.mjs';
+import { planApplicationWorkspace } from './core/application-workspace.mjs';
 import { sha256 } from './core/generation-manifest.mjs';
 import {
     planStructuredBackendPublication,
@@ -112,6 +121,95 @@ if (nativeCell !== undefined) {
                 ['--dry-run', '--apply', 'a'.repeat(64)],
             ])
                 assert.throws(() => parse([...args, ...tail]));
+        });
+    }
+
+    test('EXT03A/backend compilation preserves unrelated regular document sources', async (t) => {
+        const fixture = await documentFixture(t, 'B');
+        const neighbour = 'examples/independent-document/brief.md';
+        const bytes = 'Source of another document, not a backend dependency.\n';
+        await mkdir(join(fixture.root, 'examples/independent-document'), {
+            recursive: true,
+        });
+        await writeFile(join(fixture.root, neighbour), bytes, { flag: 'wx' });
+        const marker = join(fixture.root, '.cmz/application-workspace.json');
+        const markerBefore = await readFile(marker);
+
+        // Generation keeps its strict ownership boundary on this same tree.
+        await assert.rejects(
+            planApplicationWorkspace(fixture.options),
+            /unowned workspace directory/
+        );
+        const options = backendOptions(fixture);
+        const plan = await planStructuredBackendPublication(options);
+        assert.equal(
+            plan.compilation_context.inputs.some(
+                (entry) => entry.path === neighbour
+            ),
+            false
+        );
+        await publishStructuredBackendContract({
+            ...options,
+            planId: plan.plan_id,
+        });
+        assert.deepEqual(
+            await readFile(join(fixture.root, options.outputPath)),
+            plan.content
+        );
+        assert.equal(
+            await readFile(join(fixture.root, neighbour), 'utf8'),
+            bytes
+        );
+        assert.deepEqual(await readFile(marker), markerBefore);
+        await assert.rejects(
+            planApplicationWorkspace(fixture.options),
+            /unowned workspace directory/
+        );
+    });
+
+    for (const kind of [
+        'symbolic-file',
+        'symbolic-directory',
+        'special',
+        'reserved',
+    ]) {
+        test(`EXT03A/unrelated ${kind} source is rejected without publication`, async (t) => {
+            const fixture = await documentFixture(t, 'B');
+            const directory =
+                kind === 'reserved' ? '.cmz/proof' : 'examples/other';
+            await mkdir(join(fixture.root, directory), { recursive: true });
+            const path = join(fixture.root, directory, 'foreign');
+            if (kind === 'symbolic-file')
+                await symlink(join(fixture.root, fixture.sourcePath), path);
+            else if (kind === 'symbolic-directory')
+                await symlink(join(fixture.root, 'descriptions'), path);
+            else if (kind === 'special') execFileSync('mkfifo', [path]);
+            else
+                await writeFile(path, 'unowned reserved file\n', {
+                    flag: 'wx',
+                });
+            const options = backendOptions(fixture);
+            const before = await readFile(
+                join(fixture.root, options.definitionPath)
+            );
+            await assert.rejects(
+                planStructuredBackendPublication(options),
+                kind.startsWith('symbolic')
+                    ? /symbolic workspace entry/
+                    : kind === 'special'
+                      ? /special document source entry/
+                      : /unowned workspace directory/
+            );
+            await assert.rejects(
+                readFile(join(fixture.root, options.outputPath)),
+                {
+                    code: 'ENOENT',
+                }
+            );
+            assert.deepEqual(
+                await readFile(join(fixture.root, options.definitionPath)),
+                before
+            );
         });
     }
 
@@ -268,7 +366,7 @@ if (nativeCell !== undefined) {
             '../foreign.json',
             join(fixture.root, request.definitionPath),
             'package.json',
-            '.cmz/foreign.json',
+            '.cmz/proof/foreign.json',
         ]) {
             await assert.rejects(
                 planStructuredBackendPublication({
@@ -398,7 +496,7 @@ if (nativeCell !== undefined) {
         for (const outputPath of [
             fixture.backendRequests[0].definitionPath,
             'package.json',
-            '.cmz/new.json',
+            '.cmz/proof/new.json',
             'apps/new.json',
         ]) {
             await assert.rejects(

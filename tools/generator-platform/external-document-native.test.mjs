@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -13,6 +13,7 @@ import {
     nativeCellContext,
     nativeCellEnvironment,
     nativeDocumentFixture,
+    runNativeDocumentCell,
     SHARED_DOCUMENT_SOURCE,
 } from './proof-support/external-document-native.mjs';
 
@@ -102,4 +103,37 @@ test('EXT03a/CI A preserves the real shared source bytes; B stays independent', 
                 { code: 'ENOENT' }
             );
     }
+});
+
+test('EXT03a/CI failed child keeps a private diagnostic and stops', async (t) => {
+    const { root } = await prepareFixture(t, ['angular-pwa']);
+    const session = {
+        root,
+        backend: 'macos',
+        hostNode: process.execPath,
+        policy: {},
+        cache: join(root, 'unused-cache'),
+        home: join(root, 'unused-home'),
+        lines: [],
+    };
+    await assert.rejects(
+        runNativeDocumentCell(
+            session,
+            { root: join(root, 'unprepared-product'), kind: 'A' },
+            'angular-pwa'
+        ),
+        /Échec de la preuve EXT03a\/A\/angular-pwa\/native-cell/
+    );
+    const diagnostic = join(root, 'cell-A-angular-pwa.json.failure.txt');
+    const text = await readFile(diagnostic, 'utf8');
+    assert.match(text, /backendRequests/);
+    assert.equal((await stat(diagnostic)).mode & 0o777, 0o600);
+    assert.deepEqual(session.lines, [
+        'FAIL EXT03a/A/angular-pwa/native-cell exit=1',
+        `diagnostic_sha256=${hash(text)}`,
+    ]);
+    await assert.rejects(
+        readFile(join(root, 'cell-A-angular-pwa.json.receipt.json')),
+        { code: 'ENOENT' }
+    );
 });
