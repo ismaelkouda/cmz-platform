@@ -1,12 +1,12 @@
 # STATUS — cmz-platform
 
-> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-10-22.
+> **Généré automatiquement** par `tools/generate-status.mjs` le 2026-10-26.
 > Ne pas éditer manuellement — lancer `node tools/generate-status.mjs` pour régénérer.
 
 > Ces métriques décrivent le volume historique de la reconstruction Angular/SEOS.
 > Elles ne mesurent ni la maturité globale, ni la valeur produit, ni l'avancement
 > de l'application extérieure. Cap courant :
-> [PROJECT_AUTHORITY.md](./PROJECT_AUTHORITY.md) et [décision de première application réelle](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md).
+> [PROJECT_AUTHORITY.md](./PROJECT_AUTHORITY.md) et [cap de l’atelier réutilisable](./docs/adr/0102-atelier-reutilisable-et-preuves-independantes.md).
 
 ## Résumé
 

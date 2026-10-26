@@ -135,4 +135,5 @@ envisagées, le choix retenu et ses conséquences.
 | [0099](./0099-references-de-presentation-retirees-conservees-par-git.md) | Supprimer les références de présentation retirées : Git en est la mémoire | Accepted |
 | [0100](./0100-tri-vues-donnees-modes-none-client-server.md) | Tri des vues de données par modes explicites             | Accepted |
 | [0101](./0101-premiere-application-reelle-et-priorite-produit.md) | Première application réelle et priorité produit          | Accepted |
+| [0102](./0102-atelier-reutilisable-et-preuves-independantes.md) | Atelier réutilisable et preuves indépendantes des projets | Accepted |
 <!-- END:GENERATED:adr-index -->

@@ -142,15 +142,15 @@ Le rapport exécute compilation, build de production, lint et tests. Le passage 
 la page suivante exige un nouveau work order.
 
 Cette chaîne automatise aujourd’hui les shells Angular et React ainsi que les
-compositions `action-request` et `list-query`. Une page peut porter **plusieurs `list-query`
-et plusieurs `action-request` indépendants** (chargements sur entrée + actions,
-sans dépendance ni ordre entre eux — ADR-0045). Une dépendance ordonnée entre
-nœuds ou une livraison asynchrone relève du graphe d’exécution typé (ADR-0031),
-non implémenté. Une autre composition n’est jamais simulée : elle doit d’abord
-entrer dans le registre avec des cas métier probants et un générateur testé.
-`workflow-action` reste un moteur d'orchestration séparé ; il n'est pas un
-troisième nœud de page par défaut. Kotlin, iOS et le backend cible sont des profils futurs, pas des capacités
-prétendument livrées.
+compositions `action-request` et `list-query`. Une page peut porter **plusieurs
+`list-query` et plusieurs `action-request` indépendants** (chargements sur
+entrée + actions, sans dépendance ni ordre entre eux — ADR-0045). Une dépendance
+ordonnée entre nœuds ou une livraison asynchrone relève du graphe d’exécution
+typé (ADR-0031), non implémenté. Une autre composition n’est jamais simulée :
+elle doit d’abord entrer dans le registre avec des cas métier probants et un
+générateur testé. `workflow-action` reste un moteur d'orchestration séparé ; il
+n'est pas un troisième nœud de page par défaut. Kotlin, iOS et le backend cible
+sont des profils futurs, pas des capacités prétendument livrées.
 
 Le fonctionnement du moteur est prouvé par une fixture technique versionnée,
 distincte de tout projet métier :
@@ -417,10 +417,10 @@ et sa propre provenance. Présente explicitement l’une de ces options :
 
 La conception produit reste agnostique de la cible. Angular, React, Kotlin et
 iOS sont des profils de réalisation distincts ; seuls Angular et React sont des
-cibles web produit actuellement instrumentées. Les variantes citoyenne et traitante
-partagent le domaine, mais déclarent séparément audiences, capacités, routes et
-permissions ; une page validée pour une variante ne l’est pas implicitement pour
-une autre.
+cibles web produit actuellement instrumentées. Les variantes citoyenne et
+traitante partagent le domaine, mais déclarent séparément audiences, capacités,
+routes et permissions ; une page validée pour une variante ne l’est pas
+implicitement pour une autre.
 
 ### 6.7 Traduction vers les instruments du workspace
 
@@ -661,15 +661,28 @@ code dans cette première réponse.
 `prepare:application-workspace` prépare les configurations Nx/Bun et l'ownership
 d'une racine physique extérieure. Il exige des profils explicites, un dépôt
 GitHub public identifié et un relecteur ; il ne crée pas Git et n'installe rien.
-`create-app --target-root` lit exclusivement les entrées du produit et exige
-un plan revu. Angular et React compilent, lintent et se testent avec leurs
-outils locaux, sans runtime partagé ni résolution de secours dans l'atelier.
+`create-app --target-root` lit exclusivement les entrées du produit et exige un
+plan revu. Angular et React compilent, lintent et se testent avec leurs outils
+locaux, sans runtime partagé ni résolution de secours dans l'atelier.
 
 Cette tranche couvre le code des contrôles T1–T18, à exécuter avant toute
 conclusion d'autonomie. T19–T28, pages extérieures, API réelle, session et
 publication restent des étapes séparées. Un shell ne certifie aucune règle
 métier. La qualification utilise uniquement des fixtures fictives.
 
-Lire [le protocole extérieur](./docs/architecture/external-application-creation.md)
-et le runbook avant de proposer une commande. Dans le chantier SEOS,
-`commandes-a-lancer.md` reste l'unique liste relue et exécutée par Ismael.
+Lire
+[le protocole extérieur](./docs/architecture/external-application-creation.md)
+et le runbook avant de proposer une commande. Le registre d’exécution est celui
+du projet choisi et de son autorité. Dans le seul exemple SEOS,
+`commandes-a-lancer.md` conserve les permissions particulières déjà décidées.
+
+La qualification de l’atelier est indépendante de cette application. Les
+contrats fournis et les fixtures techniques déclarées permettent de travailler
+sans sa connexion. Les deux CLI de compilation acceptent désormais
+`--target-root` : elles lisent les contrats du produit extérieur et publient ses
+documents avec les gardes d’identité et de plan. Ce parcours est livré par la PR
+#311 et protégé dans le job requis External application shells sur deux jeux
+indépendants, chacun en Angular et React. Une capture HAR ou la qualification
+Redocly ne sont pas des prérequis pour ces contrats complets. La variante
+technique `offline: none` ne prouve ni PWA, ni page métier, ni session ou API
+vivante ; T19–T28 restent non qualifiés.
