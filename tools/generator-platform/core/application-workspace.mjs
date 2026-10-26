@@ -74,7 +74,7 @@ async function manifestSchema(toolsRoot) {
     );
 }
 
-async function verifyWorkspaceRoot(plan) {
+async function verifyWorkspaceRoot(plan, documentSources = false) {
     const { productRoot } = plan;
     if (!(await pathExists(resolve(productRoot, MANIFEST))))
         externalFailure('workspace ownership marker missing');
@@ -96,6 +96,7 @@ async function verifyWorkspaceRoot(plan) {
     }
     const expected = new Set(Object.keys(plan.files));
     const inputs = new Set(plan.inputPaths ?? []);
+    const ownedRoots = new Set([...expected].map((path) => path.split('/')[0]));
     for (const entry of await readdir(resolve(productRoot, 'apps'), {
         withFileTypes: true,
     })) {
@@ -158,12 +159,17 @@ async function verifyWorkspaceRoot(plan) {
             if (path === 'descriptions' || path === 'apps') {
                 if (!entry.isDirectory() || entry.isSymbolicLink())
                     externalFailure('invalid product namespace');
-                continue;
+                if (path === 'apps' || !documentSources) continue;
             }
             if (entry.isSymbolicLink())
                 externalFailure('symbolic workspace entry');
+            const documentSource =
+                documentSources && !ownedRoots.has(path.split('/')[0]);
+            if (documentSource && !entry.isDirectory() && !entry.isFile())
+                externalFailure('special document source entry');
             if (entry.isDirectory()) {
                 if (
+                    !documentSource &&
                     ![...expected, ...inputs].some((name) =>
                         name.startsWith(path + '/')
                     )
@@ -171,6 +177,7 @@ async function verifyWorkspaceRoot(plan) {
                     externalFailure('unowned workspace directory');
                 await reserved(resolve(directory, entry.name), path + '/');
             } else if (
+                !documentSource &&
                 !expected.has(path) &&
                 !inputs.has(path) &&
                 path !== 'bun.lock'
@@ -225,7 +232,17 @@ async function workspaceSnapshot(context, options, profiles) {
     return { files, manifest };
 }
 
+// Public workspace creation and shell generation retain strict ownership.
 export async function planApplicationWorkspace(options) {
+    return planWorkspace(options, false);
+}
+
+// Compilation only: neighbours may be sources without becoming dependencies.
+export async function planCompilationWorkspace(options) {
+    return planWorkspace(options, true);
+}
+
+async function planWorkspace(options, documentSources) {
     const profiles = normalizeWorkspaceOptions(options);
     const context = await externalApplicationContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
@@ -299,7 +316,8 @@ export async function planApplicationWorkspace(options) {
         output: context.productRoot,
         candidate: workspaceCandidate(context.productRoot, planId),
     };
-    if (await pathExists(context.productRoot)) await verifyWorkspaceRoot(plan);
+    if (await pathExists(context.productRoot))
+        await verifyWorkspaceRoot(plan, documentSources);
     return plan;
 }
 

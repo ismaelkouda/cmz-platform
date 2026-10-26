@@ -270,6 +270,38 @@ test('le renderer produit directement des octets canoniques et les atteste', asy
     );
 });
 
+for (const protectedPage of [false, true]) {
+    test(`React routes : import de garde pour conception ${protectedPage ? 'mixte' : 'publique'}`, async (t) => {
+        const options = await reactFixture();
+        t.after(() =>
+            rm(options.workspaceRoot, { recursive: true, force: true })
+        );
+        if (!protectedPage) {
+            for (const page of options.data.design.pages)
+                page.access = { mode: 'public', permissions: [] };
+        }
+        const rendered = await renderReactSpaShell({
+            design: options.data.design,
+            experienceId: options.experienceId,
+            appName: options.appName,
+            designPath: options.designPath,
+            designSha256: sha256(JSON.stringify(options.data.design)),
+        });
+        const routes = rendered.files['src/app/app.routes.tsx'];
+        if (protectedPage) {
+            assert.match(
+                routes,
+                /import \{ AppAccessGate \} from '\.\/access-policy';/
+            );
+            assert.equal([...routes.matchAll(/<AppAccessGate/g)].length, 1);
+        } else {
+            assert.doesNotMatch(routes, /AppAccessGate/);
+        }
+        assert.match(routes, /<Pagepage1111111111111111 \/>/);
+        assert.equal([...routes.matchAll(/<Route\s+path=/g)].length, 3);
+    });
+}
+
 test('le renderer React produit un shell SPA mono-stack borné par les mêmes contrats', async () => {
     const options = await reactFixture();
     const rendered = await renderReactSpaShell({

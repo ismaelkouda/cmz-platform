@@ -6,6 +6,13 @@ import { compileOpenApiBackendContract } from '../adapters/openapi-adapter.mjs';
 import { compilePostmanBackendContract } from '../adapters/postman-adapter.mjs';
 import { verifyBackendContractSnapshots } from './backend-contract.mjs';
 import { publishDocument } from './document-publication.mjs';
+import {
+    assertCompilationPaths,
+    beginCompilationContext,
+    bindCompilationContext,
+    publicCompilationContext,
+    publishCompilationWithContext,
+} from './compilation-context.mjs';
 import { parseStructuredSource } from './source-document.mjs';
 import {
     compileStructuredBackendDefinition,
@@ -126,12 +133,19 @@ async function resolveOutput(root, path) {
 
 export async function planStructuredBackendPublication({
     workspaceRoot,
+    targetRoot,
     definitionPath,
     outputPath,
     backendContractSchema,
     adapter = 'structured',
 }) {
-    const root = await realpath(resolve(workspaceRoot));
+    const context = await beginCompilationContext({
+        workspaceRoot,
+        targetRoot,
+    });
+    assertCompilationPaths(context, definitionPath, outputPath);
+    const root =
+        context?.productRoot ?? (await realpath(resolve(workspaceRoot)));
     const definition = await readDefinition(root, definitionPath);
     const output = await resolveOutput(root, outputPath);
     const sourceSha256 = structuredDefinitionSha256(definition.content);
@@ -141,6 +155,14 @@ export async function planStructuredBackendPublication({
         snapshotUri: definition.relative,
         snapshotSha256: sourceSha256,
         backendContractSchema,
+    });
+    const compilationContext = await bindCompilationContext(context, {
+        kind: 'backend',
+        sourcePath: definitionPath,
+        sourceContent: definition.content,
+        outputPath,
+        document: contract,
+        schemas: { 'backend-contract': backendContractSchema },
     });
     const snapshotErrors = await verifyBackendContractSnapshots(contract, root);
     if (snapshotErrors.length > 0) fail(snapshotErrors.join('\n'));
@@ -153,10 +175,16 @@ export async function planStructuredBackendPublication({
             source_sha256: sourceSha256,
             output: output.relative,
             output_sha256: outputSha256,
+            ...(compilationContext
+                ? { compilation_context_sha256: compilationContext.sha256 }
+                : {}),
         })
     );
     return {
         plan_id: planId,
+        ...(compilationContext
+            ? { compilation_context: compilationContext }
+            : {}),
         adapter,
         definition: definition.relative,
         source_sha256: sourceSha256,
@@ -178,11 +206,18 @@ export async function publishStructuredBackendContract(options) {
     if (options.planId !== plan.plan_id)
         fail('reviewed plan id is stale or invalid');
 
-    return publishDocument(plan, fail);
+    return publishCompilationWithContext(
+        options,
+        plan,
+        planStructuredBackendPublication,
+        publishDocument,
+        fail
+    );
 }
 
 export function publicBackendPublicationPlan(plan) {
     return {
+        ...publicCompilationContext(plan),
         plan_id: plan.plan_id,
         adapter: plan.adapter,
         definition: plan.definition,
