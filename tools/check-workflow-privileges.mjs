@@ -68,6 +68,13 @@ export const REVIEWED_EVENTS = [
 // Écritures de job acceptées. Toute autre écriture échoue : l'ajouter ici est
 // une décision relue, pas un effet de bord.
 export const ALLOWED_JOB_WRITES = {
+    'nx-migrations.yml': {
+        events: ['pull_request', 'schedule', 'workflow_dispatch'],
+        jobs: {
+            publish: ['actions', 'contents', 'pull-requests'],
+            followup: ['issues'],
+        },
+    },
     'security-overrides-repair.yml': {
         events: ['schedule', 'workflow_dispatch'],
         jobs: { publish: ['actions', 'contents', 'pull-requests'] },
@@ -466,3 +473,36 @@ function main() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+
+// Le suivi Nx est le seul nouveau job privilégié : aucune exécution candidate.
+export function nxFollowupErrors(followup, condition) {
+    const errors = [];
+    if (
+        followup?.if !== condition ||
+        followup?.needs?.join() !== 'plan,assess' ||
+        JSON.stringify(followup?.permissions) !==
+            JSON.stringify({ issues: 'write' }) ||
+        followup?.steps?.length !== 1 ||
+        followup.steps[0].uses
+    )
+        errors.push('suivi privilégié non borné à main et issues:write');
+    const run = followup?.steps?.[0]?.run ?? '';
+    if (
+        /\b(?:node|bun|bunx|nx|python[0-9.]*)\s|(?:^|\n)\s*(?:source|eval|bash|sh)\b/.test(
+            run
+        ) ||
+        !run.includes('gh issue list') ||
+        !run.includes('gh issue create') ||
+        !run.includes('gh issue edit') ||
+        /\bgh\s+(?:pr|workflow)\b|\bgit\b/.test(run)
+    )
+        errors.push('suivi : code candidat ou absence de déduplication');
+    if (
+        /secrets|GITHUB_TOKEN/.test(JSON.stringify(followup)) ||
+        followup?.steps?.[0]?.env?.GH_TOKEN !== '${{ github.token }}'
+    )
+        errors.push(
+            'suivi : seul le jeton GitHub natif de l’étape est autorisé'
+        );
+    return errors;
+}

@@ -1,0 +1,407 @@
+name: Nx — migrations natives
+
+on:
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Version stable exacte (vide : dernière, une majeure maximum)'
+        required: false
+        type: string
+  pull_request:
+    paths:
+      - '.github/workflows/nx-migrations.yml'
+      - 'tools/nx-migration*.mjs'
+      - 'tools/check-ci-wiring.test.mjs'
+
+# Le bootstrap PR reste readonly : le contrôle seul transfère son bundle.
+# Seul un run de confiance depuis main peut publier automatiquement sa PR.
+permissions:
+  contents: read
+
+concurrency:
+  group: nx-migrations-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22.22.3'
+  BUN_VERSION: '1.3.14'
+  NX_MIGRATION_SELECTORS: '["nx","@nx/*"]'
+  NX_DAEMON: 'false'
+  NX_NO_CLOUD: 'true'
+  NX_INTERACTIVE: 'false'
+
+jobs:
+  plan:
+    name: Cible stable et famille réellement migrée
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      current: ${{ steps.plan.outputs.current }}
+      target: ${{ steps.plan.outputs.target }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - id: plan
+        env:
+          REQUESTED_TARGET: ${{ inputs.target }}
+        run: node tools/nx-migration-plan.mjs plan --selectors "$NX_MIGRATION_SELECTORS"
+
+  calculate:
+    name: Migration et trois promotions (${{ matrix.os }})
+    needs: plan
+    outputs:
+      linux_bundle_sha256: ${{ steps.bundle.outputs.linux_bundle_sha256 }}
+      linux_head: ${{ steps.bundle.outputs.linux_head }}
+    if: needs.plan.outputs.target != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    # Même plafond que l'intégration native existante ; ne pas le relever
+    # si le premier coût réel impose un découpage à faire relire.
+    timeout-minutes: 45
+    env:
+      TARGET: ${{ needs.plan.outputs.target }}
+      NX_MIGRATE_CLI_VERSION: ${{ needs.plan.outputs.target }}
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      MIGRATION_SYSTEM: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Clone ordinaire et journaux hors de l'arbre candidat
+        run: |
+          mkdir -p "$RUNNER_TEMP/nx-result"
+          date +%s > "$RUNNER_TEMP/nx-result/start"
+          git clone --no-hardlinks "$GITHUB_WORKSPACE" "$RUNNER_TEMP/nx-candidate"
+          cd "$RUNNER_TEMP/nx-candidate"
+          test -d .git && test ! -L .git
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test ! -e migrations.json
+          git switch -c "automation/nx-$TARGET"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Options du workspace puis génération par le migrateur cible
+        id: generate
+        working-directory: ${{ runner.temp }}/nx-candidate
+        run: |
+          bun install --frozen-lockfile --ignore-scripts
+          bunx nx --version 2>&1 | tee "$RUNNER_TEMP/nx-result/workspace-cli-version.txt"
+          bunx nx migrate --help 2>&1 | tee "$RUNNER_TEMP/nx-result/help.txt"
+          node tools/nx-migration-plan.mjs help "$RUNNER_TEMP/nx-result/help.txt"
+          # Le lanceur Nx délègue nativement à NX_MIGRATE_CLI_VERSION :
+          # un bunx nx@cible pourrait lui aussi revenir au Nx local.
+          bunx nx migrate "nx@$TARGET" --include=required --agentic=false 2>&1 | tee "$RUNNER_TEMP/nx-result/generate.txt"
+          if ! test -f migrations.json; then
+            grep -Fq 'There are no migrations to run, so migrations.json has not been created.' "$RUNNER_TEMP/nx-result/generate.txt"
+            printf '{"migrations":[]}\n' > migrations.json
+          fi
+          cp migrations.json "$RUNNER_TEMP/nx-result/migrations.generated.json"
+      - name: Verrou natif avant frozen puis migrations sans agent
+        id: migrate
+        working-directory: ${{ runner.temp }}/nx-candidate
+        run: |
+          bun install --lockfile-only --ignore-scripts
+          bun install --frozen-lockfile --ignore-scripts
+          node tools/nx-migration-plan.mjs installed "$TARGET"
+          test -f migrations.json
+          if bunx nx migrate --runMigrations=migrations.json --skipInstall --agentic=false 2>&1 | tee "$RUNNER_TEMP/nx-result/run-migrations.txt"; then
+            migration_exit=0
+          else
+            migration_exit=$?
+          fi
+          state="$(node tools/nx-migration-plan.mjs outcome "$RUNNER_TEMP/nx-result" "$migration_exit")"
+          if test "$state" = action-required; then exit 0; fi
+          rm migrations.json
+          while IFS= read -r prompt; do
+            if ! git ls-files --error-unmatch -- "$prompt" >/dev/null 2>&1; then rm -- "$prompt"; fi
+          done < "$RUNNER_TEMP/nx-result/prompts.generated.list"
+          # Une migration peut aussi modifier les dépendances : Bun reprend
+          # explicitement la résolution, aucun install implicite Nx permis.
+          bun install --lockfile-only --ignore-scripts
+          bun install --frozen-lockfile --ignore-scripts
+          node tools/nx-migration-plan.mjs installed "$TARGET"
+          # Activer les hooks normaux des commits du calcul : poids, format, commitlint.
+          bun run prepare
+          node tools/nx-migration-plan.mjs candidates "$TARGET" \
+            conventions/libraries/angular/angular-material.compat.json \
+            conventions/libraries/angular/tailwind.compat.json \
+            conventions/libraries/react/tailwind.compat.json
+          git diff --check
+          git add --all
+          git commit -m "build(deps): appliquer les migrations Nx $TARGET"
+          test -z "$(git status --porcelain)"
+          echo "Migration et installations : $(( $(date +%s) - $(cat "$RUNNER_TEMP/nx-result/start") )) s" >> "$GITHUB_STEP_SUMMARY"
+      - name: Promouvoir réellement Angular Material
+        if: steps.migrate.outputs.state == 'ready'
+        working-directory: ${{ runner.temp }}/nx-candidate
+        run: |
+          bun run promote-library-compatibility --app backoffice-angular --library angular-material | tee "$RUNNER_TEMP/nx-result/material.txt"
+          git add conventions/libraries/angular/angular-material.compat.json
+          git commit -m 'test(deps): requalifier Angular Material après migration Nx'
+          test -z "$(git status --porcelain)"
+          echo "Promotion Material : $SECONDS s" >> "$GITHUB_STEP_SUMMARY"
+      - name: Promouvoir réellement Tailwind Angular
+        if: steps.migrate.outputs.state == 'ready'
+        working-directory: ${{ runner.temp }}/nx-candidate
+        run: |
+          bun run promote-library-compatibility --app library-qualification-angular --library tailwind | tee "$RUNNER_TEMP/nx-result/tailwind-angular.txt"
+          git add conventions/libraries/angular/tailwind.compat.json
+          git commit -m 'test(deps): requalifier Tailwind Angular après migration Nx'
+          test -z "$(git status --porcelain)"
+          echo "Promotion Tailwind Angular : $SECONDS s" >> "$GITHUB_STEP_SUMMARY"
+      - name: Promouvoir réellement Tailwind React
+        if: steps.migrate.outputs.state == 'ready'
+        working-directory: ${{ runner.temp }}/nx-candidate
+        run: |
+          bun run promote-library-compatibility --app library-qualification-react --library tailwind | tee "$RUNNER_TEMP/nx-result/tailwind-react.txt"
+          git add conventions/libraries/react/tailwind.compat.json
+          git commit -m 'test(deps): requalifier Tailwind React après migration Nx'
+          test -z "$(git status --porcelain)"
+          echo "Promotion Tailwind React : $SECONDS s" >> "$GITHUB_STEP_SUMMARY"
+      - name: Mesure production canonique Linux et contrôles natifs
+        if: steps.migrate.outputs.state == 'ready'
+        working-directory: ${{ runner.temp }}/nx-candidate
+        run: |
+          if test "$RUNNER_OS" = Linux; then
+            bun run bundle:metrics | tee "$RUNNER_TEMP/nx-result/bundle-metrics.txt"
+            git add apps/backoffice-angular/bundle-metrics.json
+            if ! git diff --cached --quiet; then
+              git commit -m 'test(deps): mesurer le bundle Linux après migration Nx'
+            fi
+            bun run check:bundle-metrics-freshness
+          fi
+          bun run check:bun-lock-catalog-integrity
+          bun run check:dependabot-policy
+          bun run check:library-setup
+          bun audit --audit-level=high
+          git diff --check
+          test -z "$(git status --porcelain)"
+      - name: Bundle natif et identité du résultat (Linux fait autorité)
+        if: steps.migrate.outputs.state == 'ready'
+        id: bundle
+        working-directory: ${{ runner.temp }}/nx-candidate
+        run: |
+          git bundle create "$RUNNER_TEMP/nx-result/candidate.bundle" "$SOURCE_SHA..automation/nx-$TARGET"
+          git bundle verify "$RUNNER_TEMP/nx-result/candidate.bundle"
+          git log --format=fuller --stat "$SOURCE_SHA..HEAD" > "$RUNNER_TEMP/nx-result/commits.txt"
+          git rev-parse HEAD > "$RUNNER_TEMP/nx-result/head-sha.txt"
+          printf '%s\n' "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$TARGET" "$RUNNER_OS" > "$RUNNER_TEMP/nx-result/identity.txt"
+          cd "$RUNNER_TEMP/nx-result"
+          shasum -a 256 candidate.bundle > candidate.bundle.sha256
+          if test "$RUNNER_OS" = Linux; then
+            echo "linux_bundle_sha256=$(shasum -a 256 candidate.bundle | cut -d ' ' -f1)" >> "$GITHUB_OUTPUT"
+            echo "linux_head=$(git -C "$RUNNER_TEMP/nx-candidate" rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Calcul complet $RUNNER_OS : $(( $(date +%s) - $(cat start) )) s" >> "$GITHUB_STEP_SUMMARY"
+      - name: Préserver les instructions natives et tous les nouveaux fichiers
+        id: collect
+        if: always()
+        working-directory: ${{ runner.temp }}/nx-candidate
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          git add --intent-to-add --all
+          git diff --binary HEAD > "$RUNNER_TEMP/nx-result/partial.diff"
+          node tools/nx-migration-plan.mjs collect "$RUNNER_TEMP/nx-result" "$JOB_STATUS"
+      - name: Journaux et bundle à confronter au run exact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nx-migration-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/nx-result
+          if-no-files-found: error
+          retention-days: 7
+
+  assess:
+    name: État réel des deux systèmes
+    needs: [plan, calculate]
+    if: always() && needs.plan.outputs.target != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      state: ${{ steps.assess.outputs.state }}
+    env:
+      TARGET: ${{ needs.plan.outputs.target }}
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      CALCULATE_RESULT: ${{ needs.calculate.result }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: nx-migration-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/nx-assess
+      - id: assess
+        run: |
+          test "$CALCULATE_RESULT" = success
+          node tools/nx-migration-plan.mjs assess "$RUNNER_TEMP/nx-assess"
+
+  followup:
+    name: Instructions à reprendre (main seulement)
+    needs: [plan, assess]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.assess.outputs.state == 'action-required'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    env:
+      TARGET: ${{ needs.plan.outputs.target }}
+    steps:
+      - name: Ouvrir ou actualiser une seule issue par cible
+        id: followup
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$TARGET" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          title="Nx $TARGET — instructions de migration à traiter"
+          issues="$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --search "in:title Nx $TARGET" --limit 100 --json number,title,state)"
+          matches="$(printf '%s' "$issues" | jq --arg title "$title" '[.[] | select(.title == $title)]')"
+          count="$(printf '%s' "$matches" | jq length)"
+          test "$count" -le 1
+          body="$RUNNER_TEMP/nx-followup.md"
+          cat > "$body" <<EOF
+          Le calcul natif vers Nx $TARGET attend des instructions de migration.
+
+          Run et deux artefacts Linux/macOS : https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          Tentative : $GITHUB_RUN_ATTEMPT. Aucun candidat qualifié ou publié.
+          Les artefacts contiennent le plan restant de phases prompt seulement,
+          les instructions originales, les journaux et le diff avec les nouveaux fichiers.
+          Reprendre depuis leur base exacte, appliquer les instructions et valider
+          le graphe, les tâches et les trois promotions avant toute publication.
+          Cette cible Nx et la délégation Dependabot ne sont pas acquises par cette attente.
+
+          Refs #310
+          EOF
+          if test "$count" -eq 0; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$body" --label couloir:entretien --assignee ismaelkouda
+          else
+            number="$(printf '%s' "$matches" | jq -r '.[0].number')"
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+            if test "$(printf '%s' "$matches" | jq -r '.[0].state')" = CLOSED; then
+              gh issue reopen "$number" --repo "$GITHUB_REPOSITORY"
+            fi
+          fi
+
+  publish:
+    name: PR automatique depuis main seulement
+    needs: [plan, calculate, assess]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.calculate.result == 'success' && needs.assess.outputs.state == 'ready' && needs.plan.outputs.target != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    env:
+      SOURCE_SHA: ${{ github.sha }}
+      TARGET: ${{ needs.plan.outputs.target }}
+      EXPECTED_BUNDLE_SHA256: ${{ needs.calculate.outputs.linux_bundle_sha256 }}
+      EXPECTED_HEAD: ${{ needs.calculate.outputs.linux_head }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/download-artifact@v7
+        with:
+          name: nx-migration-ubuntu-latest-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/nx-publish
+      - name: Confronter sans exécuter ni checkout du candidat
+        id: verify
+        shell: bash
+        run: |
+          [[ "$EXPECTED_BUNDLE_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$TARGET" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          case "$(git remote get-url origin)" in
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"|"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git") ;;
+            *) exit 1 ;;
+          esac
+          bundle="$RUNNER_TEMP/nx-publish/candidate.bundle"
+          printf '%s  %s\n' "$EXPECTED_BUNDLE_SHA256" "$bundle" | shasum -a 256 --check --strict
+          printf '%s\n' "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$TARGET" Linux > "$RUNNER_TEMP/nx-expected-identity"
+          cmp "$RUNNER_TEMP/nx-expected-identity" "$RUNNER_TEMP/nx-publish/identity.txt"
+          test "$(cat "$RUNNER_TEMP/nx-publish/head-sha.txt")" = "$EXPECTED_HEAD"
+          git bundle verify "$bundle"
+          test "$(git bundle list-heads "$bundle")" = "$EXPECTED_HEAD refs/heads/automation/nx-$TARGET"
+          git -c transfer.fsckObjects=true fetch "$bundle" "refs/heads/automation/nx-$TARGET:refs/remotes/nx-candidate"
+          test "$(git rev-parse refs/remotes/nx-candidate)" = "$EXPECTED_HEAD"
+          git merge-base --is-ancestor "$SOURCE_SHA" refs/remotes/nx-candidate
+          test -z "$(git rev-list --merges "$SOURCE_SHA..refs/remotes/nx-candidate")"
+          test "$(git log --format='%an <%ae>' "$SOURCE_SHA..refs/remotes/nx-candidate" | sort -u)" = 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          git diff --check "$SOURCE_SHA" refs/remotes/nx-candidate
+          while IFS= read -r commit; do
+            while IFS= read -r -d '' path; do
+              case "$path" in
+                package.json|bun.lock|nx.json|tsconfig*.json|eslint.config.*|.gitignore|apps/*|libs/*|conventions/libraries/angular/angular-material.compat.json|conventions/libraries/angular/tailwind.compat.json|conventions/libraries/react/tailwind.compat.json) ;;
+                *) echo "Migration hors périmètre relu : $path"; exit 1 ;;
+              esac
+            done < <(git diff-tree --no-commit-id -r --name-only -z "$commit")
+          done < <(git rev-list "$SOURCE_SHA..refs/remotes/nx-candidate")
+          git log --format=fuller --stat "$SOURCE_SHA..refs/remotes/nx-candidate"
+      - name: Push normal, PR en brouillon et dispatch de la CI requise
+        id: publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MIGRATION_BRANCH="automation/nx-$TARGET"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$SOURCE_SHA"
+          test -z "$(git ls-remote origin "refs/heads/$MIGRATION_BRANCH")"
+          test "$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$MIGRATION_BRANCH" --json number --jq 'length')" = 0
+          gh auth setup-git
+          git push origin "refs/remotes/nx-candidate:refs/heads/$MIGRATION_BRANCH"
+          cat > "$RUNNER_TEMP/nx-pr-body.md" <<EOF
+          Migration native vers Nx $TARGET, sans agent ni fusion automatique.
+
+          Base : $SOURCE_SHA. Candidat Linux : $EXPECTED_HEAD.
+          Calcul et trois promotions réelles sur Linux et macOS : $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          Bundle Linux SHA256 : $EXPECTED_BUNDLE_SHA256. Journaux et durées attachés au même run.
+          Les instructions Nx ont été confrontées avant retrait de migrations.json.
+
+          Commits séparés (migration, chaque matrice et métriques Linux si modifiées) :
+          EOF
+          git log --reverse --format='- %h %s' "$SOURCE_SHA..refs/remotes/nx-candidate" >> "$RUNNER_TEMP/nx-pr-body.md"
+          printf '\nRefs #310\n\nPublication automatique native GitHub Actions.\n' >> "$RUNNER_TEMP/nx-pr-body.md"
+          gh pr create --draft --repo "$GITHUB_REPOSITORY" --base main --head "$MIGRATION_BRANCH" \
+            --title "build(deps): appliquer les migrations Nx $TARGET" --body-file "$RUNNER_TEMP/nx-pr-body.md"
+          gh pr edit "$MIGRATION_BRANCH" --repo "$GITHUB_REPOSITORY" --add-assignee soumailakouda
+          gh workflow run ci.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$MIGRATION_BRANCH"

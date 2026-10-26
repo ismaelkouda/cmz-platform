@@ -11,7 +11,7 @@
  * jour.
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, matchesGlob } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,6 +19,7 @@ import semver from 'semver';
 import { parse as parseYaml } from 'yaml';
 
 import { parseJsonc } from './check-library-setup-deps.mjs';
+import { delegatedIgnorePolicy } from './nx-migration-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const REACT_GROUP = 'react';
@@ -568,6 +569,18 @@ export function securityResolutionPolicyErrors(pkg, lock) {
     return errors;
 }
 
+// La délégation retire seulement les sélecteurs effectivement pris en charge
+// par le workflow. Toutes les autres exclusions passent par le garde de pairs
+// existant, dont l'expiration reste inchangée.
+function ignoredDependencyPolicyErrors(config, pkg, lock, workflow) {
+    if (workflow === undefined) return ignoredVersionPolicyErrors(config, lock);
+    const delegation = delegatedIgnorePolicy(config, pkg, workflow);
+    return [
+        ...delegation.errors,
+        ...ignoredVersionPolicyErrors(delegation.config, lock),
+    ];
+}
+
 function main() {
     let config;
     try {
@@ -589,9 +602,21 @@ function main() {
         console.error(`✖ bun.lock invalide : ${error.message}`);
         process.exit(2);
     }
+    let migrationWorkflow;
+    const migrationPath = join(ROOT, '.github/workflows/nx-migrations.yml');
+    if (existsSync(migrationPath)) {
+        try {
+            migrationWorkflow = parseYaml(readFileSync(migrationPath, 'utf8'));
+        } catch (error) {
+            console.error(
+                `✖ Workflow de migration Nx invalide : ${error.message}`
+            );
+            process.exit(2);
+        }
+    }
     const errors = [
         ...dependabotPolicyErrors(config, pkg, lock),
-        ...ignoredVersionPolicyErrors(config, lock),
+        ...ignoredDependencyPolicyErrors(config, pkg, lock, migrationWorkflow),
         ...securityResolutionPolicyErrors(pkg, lock),
     ];
 
