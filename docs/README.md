@@ -148,6 +148,7 @@ affirmation falsifiable. Elle doit avoir une source machine.
 | [0099](./adr/0099-references-de-presentation-retirees-conservees-par-git.md) | Supprimer les références de présentation retirées : Git en est la mémoire |
 | [0100](./adr/0100-tri-vues-donnees-modes-none-client-server.md) | Tri des vues de données par modes explicites             |
 | [0101](./adr/0101-premiere-application-reelle-et-priorite-produit.md) | Première application réelle et priorité produit          |
+| [0102](./adr/0102-atelier-reutilisable-et-preuves-independantes.md) | Atelier réutilisable et preuves indépendantes des projets |
 <!-- END:GENERATED:adr-index -->
 
 Règles de rédaction : [`adr/README.md`](./adr/README.md).

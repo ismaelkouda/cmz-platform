@@ -15,14 +15,14 @@ export const AUTHORITY_FILES = Object.freeze({
     adr38: 'docs/adr/0038-nature-produit-public-multi-locataire.md',
     adr94: 'docs/adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md',
     productCap:
-        'docs/adr/0101-premiere-application-reelle-et-priorite-produit.md',
+        'docs/adr/0102-atelier-reutilisable-et-preuves-independantes.md',
     roadmap: 'docs/architecture/feuille-de-route.md',
     ledger: 'docs/architecture/taches-restantes.md',
     retainedDiscoveryBrief:
         'docs/projects/signalement-zone-non-couverte/project-brief.md',
 });
 
-const CURRENT_CAP_FIELD = 'Première application réelle — décision courante';
+const CURRENT_CAP_FIELD = 'Cap du dépôt — décision courante';
 
 // Métadonnées contiguës après le H1, avant tout texte/section/exemple.
 // Ni une citation, ni un bloc de code, ni un lien historique ne font autorité.
@@ -30,8 +30,12 @@ function metadata(document = '') {
     const [title, ...lines] = document.split(/\r?\n/);
     if (!/^# \S/.test(title)) return [];
     const fields = [];
-    for (const line of lines) {
+    for (let index = 0; index < lines.length; index++) {
+        let line = lines[index];
         if (!line.trim()) continue;
+        // Markdown may wrap either the field name or its value.
+        while (/^ {2,}\S/.test(lines[index + 1] ?? ''))
+            line += ` ${lines[++index].trim()}`;
         const match = line.match(/^- \*\*([^*]+?) :\*\*\s*(.*?)\s*$/);
         if (match) fields.push({ name: match[1], value: match[2] });
         else if (/^ {2,}\S/.test(line) && fields.length > 0)

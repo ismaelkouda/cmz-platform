@@ -1,32 +1,35 @@
 # Feuille de route courante
 
-- **Dernière mise à jour :** 2026-10-22
-- **Première application réelle — décision courante :** [ADR-0101](../adr/0101-premiere-application-reelle-et-priorite-produit.md)
-- **Principes de l'atelier :** [ADR-0094](../adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md), hors désignation partiellement supersédée de la première application.
+- **Dernière mise à jour :** 2026-10-26
+- **Cap du dépôt — décision courante :**
+  [ADR-0102](../adr/0102-atelier-reutilisable-et-preuves-independantes.md)
+- **Principes de l'atelier :**
+  [ADR-0094](../adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md),
+  hors désignation partiellement supersédée de la première application.
 
 ## Chemin critique courant
 
-1. **Poursuivre la première application réelle désignée par la décision
-   courante.** Ismael fournit les structures exactes des réponses de l'API et
-   les captures ; la capture locale assainie précède le contrat backend.
-   Toute donnée métier manquante lui est demandée, jamais déduite d'une fixture.
-2. **Créer l'espace applicatif puis son dépôt public.** Ismael lance les
-   commandes touchant le produit. L'espace est produit par la sortie externe
-   de l'atelier ; la configuration GitHub est générée depuis GITHUB-BASELINE,
-   codifiée dans l'atelier, avec GitHub gratuit d'abord. Si cette baseline
-   manque à cette étape, coordonner sa livraison avant la configuration du
-   dépôt, sans copie manuelle concurrente.
-3. **Livrer une première tranche verticale.** Une expérience et une page
-   utilisables, sur une cible explicitement choisie, avec navigateur, backend
-   contracté, observabilité et stratégie de retour arrière. Le contrat de cette
-   tranche définit ses preuves ; aucune livraison n'est revendiquée ici.
-4. **Remplacer le legacy par étapes.** Transférer comportements et données
-   utiles, déployer progressivement, puis retirer l'ancien périmètre. La pile
-   native reste la référence de réalisation, sans recopier les bibliothèques,
-   l'apparence ou les défauts du legacy.
+1. **Maintenir la compilation des contrats hors de l’atelier.** EXT-03a (#287)
+   est livré par la PR #311 : racines extérieures de compilation backend et de
+   conception, identité de l’espace et plan lié à ses entrées. Ce parcours ne
+   dépend ni de l’authentification SEOS, ni d’un HAR, ni de Redocly.
+2. **Conserver la preuve de réutilisabilité du même parcours.** Le job requis
+   External application shells exerce deux jeux contractuels indépendants du
+   corpus SEOS et structurellement différents, chacun en Angular et React.
+   Compilation documentaire, génération de shell, comportement de page et
+   backend réel restent des claims distincts ; chaque cible annoncée dispose de
+   sa preuve propre. La preuve actuelle ne qualifie pas T19–T28.
+3. **Raccorder les acquisitions nécessaires.** Une description fournie passe par
+   son adaptateur existant. La branche HAR/REDOCLY et les observations
+   incomplètes sont qualifiées lorsqu’elles apportent une entrée manquante ;
+   leurs limites ne bloquent pas les contrats complets déjà disponibles.
+4. **Livrer une tranche d’application à contrat confirmé.** Le projet choisi
+   apporte ses faits, autorisations et critères. SEOS peut être ce projet, sans
+   devenir un prérequis ni imposer son authentification au moteur. Les pages et
+   leur publication gardent leurs preuves propres, sans livraison présumée.
 5. **Construire le workbench par valeur.** Cockpit de lecture, diff,
    approbation, aperçu isolé puis publication contrôlée. Aucune automatisation
-   supplémentaire sans baseline et condition d'abandon (ADR-0080).
+   supplémentaire sans baseline et condition d’abandon (ADR-0080).
 
 ### Preuves de composition et corpus historique
 
@@ -41,15 +44,16 @@ réduction de ses jobs CI exigent un changement séparé : inventaire des dernie
 consommateurs et transfert des preuves encore utiles. Ne pas supprimer une
 preuve unique. Cet archivage ne signifie pas l'abandon du produit extérieur.
 
-Le brief du signalement de zone non couverte demeure en découverte ; il ne
-porte plus la désignation de première application, sans décision d'abandon.
+Le brief du signalement de zone non couverte demeure en découverte ; il ne porte
+plus la désignation de première application, sans décision d'abandon.
 
 ### Conditions de passage
 
 - aucune capacité n'est promue sans preuve reproductible et revue humaine ;
 - Angular et React sont évalués séparément ; un claim commun exige les deux ;
-- la première application réelle prime sur une nouvelle abstraction de
-  plateforme non déclenchée par son besoin ;
+- un incrément livre une capacité réutilisable observable ; une abstraction
+  supplémentaire exige un problème démontré et des critères de réfutation ;
+- les données manquantes d’un exemple ne bloquent que cet exemple ;
 - aucune exception sans expiration native ou justification dérivée contrôlée ;
 - un SaaS public multi-locataire reste hors de cette feuille de route tant que
   son exploitation n'est pas décidée et financée.

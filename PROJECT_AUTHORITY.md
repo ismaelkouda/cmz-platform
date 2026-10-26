@@ -1,6 +1,7 @@
 # Autorité produit et guide de démarrage — cmz-platform
 
-- **Première application réelle — décision courante :** [ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md)
+- **Cap du dépôt — décision courante :**
+  [ADR-0102](./docs/adr/0102-atelier-reutilisable-et-preuves-independantes.md)
 
 > Point d'entrée obligatoire pour toute personne ou tout agent qui découvre le
 > dépôt. Ce document fixe le cap courant, l'ordre des autorités et les règles de
@@ -22,8 +23,8 @@ En cas de contradiction, utiliser cet ordre :
 2. contrats, schémas et garde-fous exécutables présents sur la base Git de
    travail ;
 3. ADR `Accepted` non supersédé ;
-4. [ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md)
-   pour la première application réelle et sa priorité ;
+4. [ADR-0102](./docs/adr/0102-atelier-reutilisable-et-preuves-independantes.md)
+   pour le cap réutilisable et les preuves indépendantes des projets ;
    [ADR-0094](./docs/adr/0094-cap-produit-interne-remplacement-progressif-et-cibles-web.md)
    pour les principes conservés de l'atelier ;
 5. [matrice de capacités](./docs/architecture/generation-platform-capability-matrix.md)
@@ -64,20 +65,24 @@ artefacts versionnés, leurs preuves et les décisions validées le sont.
 - publication en ligne possible lorsque l'exploitation est prête ;
 - aucun claim actuel de SaaS public multi-locataire ;
 - remplacement progressif du legacy en production ;
-- première application réelle et priorité : décision courante
-  [ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md) ;
-- le propriétaire possède les données de ce produit : demander les faits
-  manquants au lieu de les inventer ;
+- priorité : des capacités utilisables sur les contrats de l’application
+  choisie, indépendamment du nom, de la connexion ou des données de SEOS ;
+- les faits manquants d’un projet bloquent seulement son exécution concernée,
+  jamais la qualification générique sur des entrées explicitement fictives ;
+- le propriétaire fournit les faits de chaque projet réel ; aucune règle métier
+  n’est inventée pour combler une inconnue ;
 - Angular et React sont deux cibles produit ;
 - une sortie est mono-stack et idiomatique à sa cible.
 
-L'atelier et sa première application réelle sont distincts. Le backoffice
-reconstruit et son corpus restent des preuves historiques ; ils ne deviennent
-ni le produit extérieur livré, ni une « golden reference » universelle.
-Les formulations présentant React comme simple POC ou le cap comme entièrement
-indécis sont historiques. Le brief du signalement de zone non couverte reste
-en découverte, sans abandon décidé ; sa désignation comme première application
-est partiellement supersédée par la décision courante.
+L’atelier réutilisable est le produit de ce dépôt. SEOS est un exemple
+quelconque, sans branche spécialisée dans le moteur ni rôle de référence
+universelle. Son corpus et ses preuves de migration restent historiques ; leur
+conservation ne conditionne pas le développement d’une capacité générale.
+
+L’avancement se mesure par capacité : contrat indépendant du projet, preuves sur
+des entrées structurellement distinctes, résultat réel par cible, puis
+intégration et publiabilité. Une réussite sur un cas ne prouve pas à elle seule
+la réutilisabilité. Les briefs d’application restent des projets séparés.
 
 ## 3. Ce que le dépôt n'est pas
 
@@ -113,8 +118,8 @@ Avant de retirer une fonctionnalité legacy :
 L'issue #64 gouverne la dernière promotion humaine de la preuve de composition ;
 son état GitHub doit être relu avant toute action. L'archivage du corpus et la
 réduction de ses jobs CI constituent un changement séparé après cette clôture.
-Ce corpus historique ne se confond pas avec le parcours du produit extérieur
-désigné par la décision courante.
+Ce corpus historique ne mesure ni la réutilisabilité ni la maturité globale de
+l’atelier ; son archivage reste séparé des prochaines capacités.
 
 C5 React possède le chargement progressif, le filtre Compact à deux niveaux et
 le FAB de création borné par ADR-0097. Les trois écarts Compact automatisables
@@ -327,15 +332,19 @@ Lire [LLM_APP_BUILDER.md](./LLM_APP_BUILDER.md), puis :
 8. vérifier cette page de bout en bout ;
 9. faire valider avant la page suivante.
 
-Pour la première application désignée par
-[ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md),
-Ismael fournit les structures exactes des réponses de l'API et les captures.
-Interroger le propriétaire sur les faits manquants : résultat principal,
-acteurs, données, autorisations, premier parcours et critères d'acceptation.
-Ne recopier ni les bibliothèques, ni l'apparence, ni les défauts du legacy.
-Ismael lance lui-même toute commande touchant le dossier ou le dépôt produit.
-La configuration GitHub sera générée depuis la baseline codifiée de l'atelier,
-avec GitHub gratuit d'abord ; aucune copie manuelle concurrente.
+Pour chaque application choisie, utiliser les sources contractuelles fournies :
+définition structurée, OpenAPI ou collection Postman admissible. La capture
+locale est une voie d’acquisition lorsqu’une source manque, pas un prérequis
+universel. Ne déduire ni accès public, ni permissions, ni types depuis une
+observation incomplète.
+
+Les faits ou l’authentification manquants de SEOS ne bloquent que ce cas. La
+qualification de l’atelier utilise des contrats fictifs déclarés, indépendants
+de son corpus ; elle ne prétend pas vérifier un backend vivant. Angular et React
+gardent des preuves distinctes. Les actes touchant un projet réel restent soumis
+à son autorité et à son plan, sans droit implicite issu d’une fixture. La
+configuration GitHub provient de la baseline codifiée de l’atelier, avec GitHub
+gratuit d’abord ; aucune copie manuelle concurrente.
 
 ## 11. Clôturer la preuve de composition (#64)
 
@@ -356,19 +365,19 @@ une PR séparée après cette clôture.
 
 ## 12. Carte documentaire
 
-| Besoin                     | Autorité                                             |
-| -------------------------- | ---------------------------------------------------- |
-| finalité de l'atelier      | ADR-0094 + ce document                               |
-| première application réelle | [ADR-0101](./docs/adr/0101-premiere-application-reelle-et-priorite-produit.md) |
-| construire une application | `LLM_APP_BUILDER.md`                                 |
-| capacité revendiquée       | matrice de capacités + tests/CI                      |
-| ordre du travail           | feuille de route courante                            |
-| décision technique         | ADR accepté non supersédé                            |
-| état mécanique             | `STATUS.md` généré                                   |
-| preuve de composition      | issue #64 + artefacts C5                             |
-| intervention d'un agent    | `AGENTS.md` + `docs/agents/operating-model.md`       |
-| pilotage simple des agents | `docs/agents/guide-utilisateur.md`                   |
-| historique détaillé        | `LLM_CONTEXT.md`, `taches-restantes.md`, audits, Git |
+| Besoin                        | Autorité                                                                     |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| finalité de l'atelier         | ADR-0094 + ce document                                                       |
+| cap réutilisable et priorités | [ADR-0102](./docs/adr/0102-atelier-reutilisable-et-preuves-independantes.md) |
+| construire une application    | `LLM_APP_BUILDER.md`                                                         |
+| capacité revendiquée          | matrice de capacités + tests/CI                                              |
+| ordre du travail              | feuille de route courante                                                    |
+| décision technique            | ADR accepté non supersédé                                                    |
+| état mécanique                | `STATUS.md` généré                                                           |
+| preuve de composition         | issue #64 + artefacts C5                                                     |
+| intervention d'un agent       | `AGENTS.md` + `docs/agents/operating-model.md`                               |
+| pilotage simple des agents    | `docs/agents/guide-utilisateur.md`                                           |
+| historique détaillé           | `LLM_CONTEXT.md`, `taches-restantes.md`, audits, Git                         |
 
 `LLM_CONTEXT.md` et `taches-restantes.md` sont conservés pour la traçabilité et
 les blocs générés historiques. Ils ne sont plus les sources du cap ni de la

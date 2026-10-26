@@ -11,8 +11,8 @@ import {
 } from './check-documentation-authority.mjs';
 
 const currentLine =
-    /^- \*\*Première application réelle — décision courante :\*\*[^\n]*\n/m;
-const supersessionLine = /^- \*\*Superseded pour [^\n]*\n/m;
+    /^- \*\*Cap du dépôt — décision courante :\*\*[^\n]*(?:\n {2,}\S[^\n]*)*\n/m;
+const supersessionLine = /^- \*\*Superseded pour [^\n]*(?:\n {2,}\S[^\n]*)*\n/m;
 
 function rejects(documents, diagnostic) {
     assert.ok(
@@ -20,6 +20,16 @@ function rejects(documents, diagnostic) {
             diagnostic.test(message)
         ),
         `diagnostic attendu : ${diagnostic}`
+    );
+}
+
+function predecessorPath(documents) {
+    const target = documents.productCap.match(
+        /^- \*\*Supersède pour [^*]+ :\*\*\s+\[[^\]]+\]\(([^)]+)\)$/m
+    )?.[1];
+    assert.ok(target, 'declared predecessor link');
+    return posix.normalize(
+        posix.join(posix.dirname(AUTHORITY_FILES.productCap), target)
     );
 }
 
@@ -31,6 +41,9 @@ function fixture(t) {
         mkdirSync(dirname(join(root, path)), { recursive: true });
         writeFileSync(join(root, path), documents[key]);
     }
+    const previous = predecessorPath(documents);
+    mkdirSync(dirname(join(root, previous)), { recursive: true });
+    writeFileSync(join(root, previous), documents.productPredecessor);
     return { root, documents };
 }
 
@@ -131,7 +144,7 @@ test('the predecessor declaration is required and cannot link to itself', () => 
     ]) {
         const documents = readAuthorityDocuments();
         documents.productCap = documents.productCap.replace(
-            /^- \*\*Supersède pour [^\n]*$/m,
+            /^- \*\*Supersède pour [^\n]*(?:\n {2,}\S[^\n]*)*$/m,
             value ? `- **Supersède pour la même portée :** ${value}` : ''
         );
         rejects(documents, /déclarer sa supersession partielle/);
@@ -142,7 +155,9 @@ test('partial supersession must be reciprocal, scoped and in predecessor metadat
     for (const mutate of [
         (text) => text.replace(supersessionLine, ''),
         (text) =>
-            text.replace(supersessionLine, (line) => line.replace('§4', '§3')),
+            text.replace(supersessionLine, (line) =>
+                line.replace('§Décision', '§Autre')
+            ),
         (text) =>
             text.replace(supersessionLine, (line) =>
                 line.replace(/\]\([^)]*\)/, '](./autre.md)')
@@ -164,13 +179,13 @@ test('current decision name is arbitrary; no product name is required by the gua
     const documents = readAuthorityDocuments();
     documents.productCap =
         documents.productCap.split('\n## Contexte')[0] +
-        '\n## Décision\n\nLa première application est le Catalogue des jardins.\n';
+        '\n## Décision\n\nLe produit est un atelier réutilisable sans première application imposée.\n';
     assert.deepEqual(collectAuthorityViolations(documents), []);
 });
 
 test('the predecessor is read from the declared link, including a different file', (t) => {
     const { root, documents } = fixture(t);
-    const original = posix.basename(AUTHORITY_FILES.adr94);
+    const original = posix.basename(predecessorPath(documents));
     const alternate = 'decision-precedente.md';
     writeFileSync(
         join(root, AUTHORITY_FILES.productCap),
@@ -223,4 +238,31 @@ test('the guard rejects loss of the historical-ledger warning', () => {
         'Tâches'
     );
     rejects(documents, /registre historique/);
+});
+
+test('wrapped field names and values preserve the same authority', () => {
+    const documents = readAuthorityDocuments();
+    assert.deepEqual(collectAuthorityViolations(documents), []);
+    for (const key of [
+        'authority',
+        'roadmap',
+        'productCap',
+        'productPredecessor',
+    ]) {
+        documents[key] = documents[key].replace(/\n {2,}(?=\S)/g, ' ');
+    }
+    assert.deepEqual(collectAuthorityViolations(documents), []);
+});
+
+test('unindented continuations cannot complete supersession metadata', () => {
+    for (const key of ['productCap', 'productPredecessor']) {
+        const documents = readAuthorityDocuments();
+        documents[key] = documents[key].replace(/\n {2,}(?=\S)/g, '\n');
+        rejects(
+            documents,
+            key === 'productCap'
+                ? /déclarer sa supersession partielle/
+                : /supersession partielle réciproque/
+        );
+    }
 });
