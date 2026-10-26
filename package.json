@@ -151,7 +151,7 @@
     "exceljs": "^4.4.0",
     "i18next": "catalog:",
     "ol": "catalog:",
-    "react-router": "8.4.0",
+    "react-router": "8.5.0",
     "rxjs": "catalog:",
     "tslib": "catalog:"
   },
