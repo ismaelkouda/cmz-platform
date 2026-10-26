@@ -100,14 +100,12 @@ test('refuse un nom de paquet qui pourrait devenir une option de commande', () =
     );
 });
 
-function repairFixture(t) {
+function repairFixture(t, pkg = { overrides: { axios: '^1.20.0' } }) {
     const root = mkdtempSync(join(tmpdir(), 'cmz-security-repair-'));
     t.after(() => rmSync(root, { recursive: true, force: true }));
     const packagePath = join(root, 'package.json');
     const lockPath = join(root, 'bun.lock');
-    const packageBytes = Buffer.from(
-        `${JSON.stringify({ overrides: { axios: '^1.20.0' } }, null, 2)}\n`
-    );
+    const packageBytes = Buffer.from(`${JSON.stringify(pkg, null, 2)}\n`);
     writeFileSync(packagePath, packageBytes);
     writeFileSync(lockPath, 'lock-before\n');
     return { root, packagePath, lockPath, packageBytes };
@@ -206,4 +204,63 @@ test('le workflow sépare strictement calcul en lecture et publication en écrit
     assert.match(source, /path: bun\.lock/);
     assert.match(source, /test "\$\(git diff --name-only\)" = "bun\.lock"/);
     assert.match(source, /gh workflow run ci\.yml/);
+});
+
+test('REFERENCE repair conserve la référence après les mutations de Bun', (t) => {
+    const fixture = repairFixture(t, {
+        devDependencies: { vite: '^8.3.4' },
+        overrides: { vite: '$vite' },
+    });
+    let auditCount = 0;
+    const phases = [];
+    const runCommand = (_command, args) => {
+        phases.push(args[0]);
+        if (args[0] === 'audit') {
+            auditCount += 1;
+            return auditCount === 1 ? JSON.stringify({ vite: [high()] }) : '{}';
+        }
+        assert.deepEqual(
+            readFileSync(fixture.packagePath),
+            fixture.packageBytes
+        );
+        writeFileSync(
+            fixture.packagePath,
+            JSON.stringify({
+                devDependencies: { vite: '^8.3.5' },
+                overrides: { vite: '^8.3.5' },
+            })
+        );
+        writeFileSync(fixture.lockPath, 'lock-after\n');
+        return '';
+    };
+    assert.deepEqual(repairSecurityOverrides(fixture.root, { runCommand }), {
+        repaired: true,
+        packages: ['vite'],
+    });
+    assert.deepEqual(phases, ['audit', 'update', 'install', 'audit']);
+    assert.deepEqual(readFileSync(fixture.packagePath), fixture.packageBytes);
+    assert.equal(
+        JSON.parse(readFileSync(fixture.packagePath, 'utf8')).overrides.vite,
+        '$vite'
+    );
+});
+
+test('REFERENCE repair restaure référence et verrou si la réconciliation échoue', (t) => {
+    const fixture = repairFixture(t, {
+        devDependencies: { vite: '^8.3.4' },
+        overrides: { vite: '$vite' },
+    });
+    const runCommand = (_command, args) => {
+        if (args[0] === 'audit') return JSON.stringify({ vite: [high()] });
+        writeFileSync(fixture.packagePath, '{"overrides":{"vite":"^8.3.5"}}');
+        writeFileSync(fixture.lockPath, 'partial-lock\n');
+        if (args[0] === 'install') throw new Error('reconcile-failed');
+        return '';
+    };
+    assert.throws(
+        () => repairSecurityOverrides(fixture.root, { runCommand }),
+        /reconcile-failed/
+    );
+    assert.deepEqual(readFileSync(fixture.packagePath), fixture.packageBytes);
+    assert.equal(readFileSync(fixture.lockPath, 'utf8'), 'lock-before\n');
 });

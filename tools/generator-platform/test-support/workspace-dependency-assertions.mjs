@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import semver from 'semver';
 
 import { parseJsonc } from '../../check-library-setup-deps.mjs';
+import { resolveManifestOverrides } from '../core/application-workspace-toolchain.mjs';
 import {
     planApplicationWorkspace,
     productDependencyClosure,
@@ -142,9 +143,9 @@ export async function verifyWorkspaceDependencyProfiles(t) {
     const source = parseJsonc(
         await readFile(join(TOOLS_ROOT, 'bun.lock'), 'utf8')
     );
-    const sourceOverrides = JSON.parse(
-        await readFile(join(TOOLS_ROOT, 'package.json'), 'utf8')
-    ).overrides;
+    const sourceOverrides = resolveManifestOverrides(
+        JSON.parse(await readFile(join(TOOLS_ROOT, 'package.json'), 'utf8'))
+    );
     const before = structuredClone(source);
     for (const profiles of [
         ['angular-pwa'],
@@ -156,10 +157,11 @@ export async function verifyWorkspaceDependencyProfiles(t) {
         );
         const pkg = JSON.parse(plan.files['package.json']);
         const seed = parseJsonc(plan.files['bun.lock']);
+        const productOverrides = resolveManifestOverrides(pkg);
         const expected = sourceDependencyExpectations(
             source,
             plan.manifest.packages,
-            sourceOverrides
+            productOverrides
         );
         assert.deepEqual(
             ordered(plan.manifest.dependency_deviations),
@@ -167,7 +169,7 @@ export async function verifyWorkspaceDependencyProfiles(t) {
             'Source deviations must be complete, independently of the producer'
         );
         const policy = {
-            overrides: pkg.overrides,
+            overrides: productOverrides,
             peerDeviations: plan.manifest.dependency_deviations.filter(
                 (edge) => edge.reason === 'optional-peer'
             ),
@@ -189,12 +191,40 @@ export async function verifyWorkspaceDependencyProfiles(t) {
         assert.deepEqual(
             pkg.overrides,
             Object.fromEntries(
-                Object.entries(sourceOverrides).filter(([name]) =>
-                    reachedNames.has(name)
-                )
+                Object.entries(sourceOverrides)
+                    .filter(([name]) => reachedNames.has(name))
+                    .map(([name, range]) => [
+                        name,
+                        Object.hasOwn(plan.manifest.packages, name)
+                            ? '$' + name
+                            : range,
+                    ])
             )
         );
-        assert.deepEqual(seed.overrides, pkg.overrides);
+        for (const [name, entry] of Object.entries(plan.manifest.packages)) {
+            if (!Object.hasOwn(sourceOverrides, name)) continue;
+            assert.ok(
+                semver.satisfies(entry.version, sourceOverrides[name], {
+                    includePrerelease: true,
+                }),
+                'Product pin outside approved source override: ' + name
+            );
+            assert.equal(productOverrides[name], entry.version);
+        }
+        // Regression #329: Angular has only transitive Vite; React owns a pin.
+        if (profiles.includes('react-spa')) {
+            assert.equal(pkg.overrides.vite, '$vite');
+            assert.equal(
+                productOverrides.vite,
+                plan.manifest.packages.vite.version
+            );
+        } else {
+            assert.equal(pkg.devDependencies.vite, undefined);
+            assert.equal(pkg.dependencies.vite, undefined);
+            assert.equal(pkg.overrides.vite, sourceOverrides.vite);
+        }
+        assert.deepEqual(plan.manifest.overrides, productOverrides);
+        assert.deepEqual(seed.overrides, productOverrides);
         assert.deepEqual(Object.keys(seed.workspaces), ['']);
         assert.equal(seed.catalog, undefined);
         for (const [key, record] of Object.entries(closure.records))

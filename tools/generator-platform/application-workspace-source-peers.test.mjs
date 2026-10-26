@@ -1,11 +1,20 @@
 import assert from 'node:assert/strict';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import test from 'node:test';
 
 import {
     productDependencyClosure,
+    projectProductLock,
+    projectProductOverrides,
+    qualifyProductInstallation,
+    resolveManifestOverrides,
     sourcePeerDeviations,
 } from './core/application-workspace-toolchain.mjs';
-import { peerDeviationFixture } from './test-support/external-application-fixture.mjs';
+import {
+    peerDeviationFixture,
+    shellFixture,
+} from './test-support/external-application-fixture.mjs';
 import { sourceDependencyExpectations } from './test-support/workspace-dependency-assertions.mjs';
 
 const ordered = (edges) =>
@@ -426,4 +435,211 @@ test('exige encore l’intégrité de l’enfant dont l’écart est consommé',
         policy.peerDeviations
     );
     assertRefused(source, policy, /package integrity or identity missing/);
+});
+
+test('override natif : résolution depuis le manifeste porteur sans mutation', () => {
+    for (const field of [
+        'dependencies',
+        'devDependencies',
+        'optionalDependencies',
+    ]) {
+        const pkg = {
+            [field]: { '@fixture/engine': '^8.3.4' },
+            overrides: {
+                '@fixture/engine': '$@fixture/engine',
+                leaf: '^2.1.0',
+            },
+        };
+        const before = structuredClone(pkg);
+        assert.deepEqual(resolveManifestOverrides(pkg), {
+            '@fixture/engine': '^8.3.4',
+            leaf: '^2.1.0',
+        });
+        assert.deepEqual(pkg, before);
+    }
+    assert.deepEqual(resolveManifestOverrides({}), {});
+});
+
+test('override natif : référence absente, ambiguë ou croisée refusée', () => {
+    const invalid = [
+        { overrides: { engine: '$engine' } },
+        {
+            dependencies: { engine: '^1.0.0' },
+            devDependencies: { engine: '^1.0.0' },
+            overrides: { engine: '$engine' },
+        },
+        {
+            dependencies: { other: '^1.0.0' },
+            overrides: { engine: '$other' },
+        },
+        {
+            dependencies: { engine: '^1.0.0' },
+            overrides: { engine: '$' },
+        },
+    ];
+    for (const pkg of invalid)
+        assert.throws(
+            () => resolveManifestOverrides(pkg),
+            /unresolved direct override reference/
+        );
+});
+
+test('override natif : référence indirecte et spécification non semver refusées', () => {
+    for (const spec of [
+        '$other',
+        'catalog:',
+        'workspace:*',
+        'file:../engine',
+        8,
+    ]) {
+        assert.throws(
+            () =>
+                resolveManifestOverrides({
+                    dependencies: { engine: spec },
+                    overrides: { engine: '$engine' },
+                }),
+            /unsupported override/
+        );
+    }
+    for (const overrides of [[], 'invalid'])
+        assert.throws(
+            () => resolveManifestOverrides({ overrides }),
+            /flat overrides required/
+        );
+    for (const overrides of [
+        { engine: { '.': '^1.0.0' } },
+        { 'engine@1': '^1.0.0' },
+        { engine: 'not-semver' },
+    ])
+        assert.throws(
+            () => resolveManifestOverrides({ overrides }),
+            /unsupported override/
+        );
+});
+
+test('override natif : seules les déclarations propres font autorité', () => {
+    const dependencies = Object.create({ engine: '^1.0.0' });
+    assert.throws(
+        () =>
+            resolveManifestOverrides({
+                dependencies,
+                overrides: { engine: '$engine' },
+            }),
+        /unresolved direct override reference/
+    );
+    const overrides = Object.create({ inherited: '^1.0.0' });
+    overrides.constructor = '$constructor';
+    assert.deepEqual(
+        resolveManifestOverrides({
+            dependencies: { constructor: '^3.0.0' },
+            overrides,
+        }),
+        { constructor: '^3.0.0' }
+    );
+});
+
+test('override produit : plage transitive autonome et référence directe exacte', () => {
+    const source = { engine: '^8.3.4', leaf: '^2.1.0' };
+    const direct = { engine: { version: '8.3.4' } };
+    const before = structuredClone({ source, direct });
+    assert.deepEqual(projectProductOverrides(source, {}), {
+        declarations: source,
+        ranges: source,
+    });
+    assert.deepEqual(projectProductOverrides(source, direct), {
+        declarations: { engine: '$engine', leaf: '^2.1.0' },
+        ranges: { engine: '8.3.4', leaf: '^2.1.0' },
+    });
+    assert.deepEqual({ source, direct }, before);
+});
+
+test('override produit : version directe hors plage source refusée', () => {
+    for (const version of ['8.3.3', '9.0.0', 'invalid'])
+        assert.throws(
+            () =>
+                projectProductOverrides(
+                    { '@fixture/engine': '^8.3.4' },
+                    { '@fixture/engine': { version } }
+                ),
+            /product direct version outside source override/
+        );
+    assert.throws(
+        () => projectProductOverrides({ engine: '$engine' }, {}),
+        /unresolved direct override reference/
+    );
+});
+
+test('override produit : le verrou porte la résolution locale et non le dollar', () => {
+    const packages = { engine: record('engine', '8.3.4') };
+    const pkg = {
+        name: 'fixture',
+        devDependencies: { engine: '8.3.4' },
+        overrides: { engine: '$engine' },
+    };
+    const before = structuredClone(pkg);
+    const lock = JSON.parse(
+        projectProductLock(pkg, {
+            lockfileVersion: 1,
+            configVersion: 1,
+            records: packages,
+        })
+    );
+    assert.deepEqual(lock.overrides, { engine: '8.3.4' });
+    assert.deepEqual(lock.workspaces[''].devDependencies, pkg.devDependencies);
+    assert.deepEqual(lock.packages, packages);
+    assert.deepEqual(pkg, before);
+});
+
+test('override produit : une copie transitive incompatible reste refusée', () => {
+    const source = {
+        lockfileVersion: 1,
+        configVersion: 1,
+        workspaces: { '': {} },
+        packages: {
+            consumer: record('consumer', '1.0.0', {
+                dependencies: { engine: '^8.0.0' },
+            }),
+            engine: record('engine', '8.3.4'),
+            'consumer/engine': record('engine', '8.4.0'),
+        },
+    };
+    const packages = {
+        consumer: { version: '1.0.0' },
+        engine: { version: '8.3.4' },
+    };
+    const policy = projectProductOverrides({ engine: '^8.3.4' }, packages);
+    assert.throws(
+        () =>
+            productDependencyClosure(source, packages, source, {
+                overrides: policy.ranges,
+            }),
+        /ne satisfait pas/
+    );
+});
+
+test('override produit : une déclaration équivalente altérée reste refusée', async (t) => {
+    // Metadata-only unit fixture; this does not qualify a native installation.
+    const fixture = await shellFixture(t, 'react-spa');
+    await qualifyProductInstallation(fixture.plan);
+    const path = join(fixture.root, 'package.json');
+    const original = await readFile(path);
+    const pkg = JSON.parse(original);
+    assert.equal(pkg.overrides.vite, '$vite');
+    pkg.overrides.vite = pkg.devDependencies.vite;
+    assert.deepEqual(
+        resolveManifestOverrides(pkg),
+        fixture.plan.manifest.overrides
+    );
+    const altered = JSON.stringify(pkg) + '\n';
+    await writeFile(path, altered);
+    try {
+        await assert.rejects(
+            qualifyProductInstallation(fixture.plan),
+            /product overrides differ/
+        );
+        assert.equal(await readFile(path, 'utf8'), altered);
+    } finally {
+        await writeFile(path, original);
+    }
+    await qualifyProductInstallation(fixture.plan);
 });

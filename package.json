@@ -9,7 +9,7 @@
     "check:engines": "node tools/check-engines.mjs",
     "check:versions": "node tools/check-catalog-usage.mjs",
     "check:bun-lock-catalog-integrity": "node --test tools/check-bun-lock-catalog-integrity.test.mjs && node tools/check-bun-lock-catalog-integrity.mjs",
-    "check:dependabot-policy": "node --test tools/check-dependabot-policy.test.mjs tools/repair-security-overrides.test.mjs && node tools/check-dependabot-policy.mjs",
+    "check:dependabot-policy": "node --test tools/check-dependabot-policy.test.mjs tools/check-dependabot-policy-reference.test.mjs tools/repair-security-overrides.test.mjs && node tools/check-dependabot-policy.mjs",
     "repair:security-overrides": "node tools/repair-security-overrides.mjs",
     "check:cmz-journals-ignored": "node tools/check-cmz-journals-ignored.mjs",
     "check:command-explanations": "node --test tools/command-explanations.test.mjs",
@@ -274,7 +274,7 @@
     "qs": "^6.16.0",
     "source-map-js": "^1.2.2",
     "follow-redirects": "^1.16.1",
-    "vite": "^8.3.4"
+    "vite": "$vite"
   },
   "packageManager": "bun@1.3.14",
   "engines": {

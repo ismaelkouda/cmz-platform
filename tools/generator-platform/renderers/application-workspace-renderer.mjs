@@ -288,7 +288,7 @@ export async function renderApplicationWorkspace(options) {
             private: true,
             packageManager,
             engines,
-            overrides: options.overrides,
+            overrides: options.packageOverrides,
             workspaces: ['apps/*'],
             scripts: {
                 'check:workspace': `node ${EXTERNAL_WORKSPACE_CMZ.support}/check-workspace.mjs`,

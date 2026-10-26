@@ -5,7 +5,8 @@
  * React et React DOM sont publiés comme une unité de compatibilité stricte :
  * une PR qui ne met à jour qu'un des deux rend les tests React inexécutables.
  * Le groupe inclut leurs types afin de conserver une seule revue cohérente.
- * Les overrides de sécurité sont des planchers caret : le lockfile reste
+ * Les overrides transitifs sont des planchers caret ; une référence directe
+ * reprend le plancher caret du manifeste. Le lockfile reste
  * reproductible, tandis que Dependabot peut appliquer les futurs correctifs
  * patch/minor sans qu'un pin exact vulnérable bloque silencieusement la mise à
  * jour.
@@ -518,7 +519,34 @@ export function securityResolutionPolicyErrors(pkg, lock) {
             }
         }
         if (!hasOverride) continue;
-        const range = overrides[name];
+        const direct = [
+            'dependencies',
+            'devDependencies',
+            'optionalDependencies',
+        ].filter((field) => Object.hasOwn(pkg?.[field] ?? {}, name));
+        if (direct.length > 1) {
+            errors.push(
+                `dépendance directe ${name} ambiguë : ${direct.join(', ')}`
+            );
+            continue;
+        }
+        const directRange =
+            direct.length === 1 ? pkg[direct[0]][name] : undefined;
+        let range = overrides[name];
+        if (typeof range === 'string' && range.startsWith('$')) {
+            if (direct.length !== 1 || range !== '$' + name) {
+                errors.push(
+                    `overrides.${name} : référence à la dépendance directe du même nom exigée`
+                );
+                continue;
+            }
+            range = directRange;
+        } else if (direct.length === 1 && range !== directRange) {
+            errors.push(
+                `overrides.${name} doit reprendre exactement ${direct[0]}.${name} ou sa référence native`
+            );
+            continue;
+        }
         if (
             typeof range !== 'string' ||
             !range.startsWith('^') ||
