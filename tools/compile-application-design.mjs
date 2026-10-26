@@ -14,10 +14,26 @@ function fail(message) {
 
 export function parseArgs(argv) {
     const options = { dryRun: false };
+    const seen = new Set();
+    const valueOptions = new Set([
+        '--source',
+        '--out',
+        '--apply',
+        '--target-root',
+    ]);
     for (let index = 0; index < argv.length; index += 1) {
         const argument = argv[index];
+        if (seen.has(argument)) fail('Une option ne peut pas être répétée.');
+        seen.add(argument);
+        if (
+            valueOptions.has(argument) &&
+            (!argv[index + 1] || argv[index + 1].startsWith('--'))
+        )
+            fail('Valeur d’option requise.');
         if (argument === '--source') options.sourcePath = argv[++index];
         else if (argument === '--out') options.outputPath = argv[++index];
+        else if (argument === '--target-root')
+            options.targetRoot = argv[++index];
         else if (argument === '--dry-run') options.dryRun = true;
         else if (argument === '--apply') options.planId = argv[++index];
         else fail(`Argument inconnu : ${argument}`);
@@ -51,6 +67,9 @@ export async function main(argv = process.argv.slice(2)) {
     ]);
     const common = {
         workspaceRoot: repositoryRoot,
+        ...(options.targetRoot !== undefined
+            ? { targetRoot: options.targetRoot }
+            : {}),
         sourcePath: options.sourcePath,
         outputPath: options.outputPath,
         applicationDesignSchema,
