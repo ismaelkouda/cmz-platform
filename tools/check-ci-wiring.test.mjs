@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 import { parse } from 'yaml';
 import test from 'node:test';
+import { nxWorkflowErrors } from './nx-migration-plan.mjs';
 
 import {
     commandInvokes,
@@ -21,6 +22,135 @@ import {
     packageToolInvocations,
     workflowRunCommands,
 } from './check-ci-wiring.mjs';
+
+test('Nx : mesure du bundle sur l’image de l’Oracle et artefact Linux du même run', () => {
+    const workflow = parse(
+        readFileSync(
+            new URL('../.github/workflows/nx-migrations.yml', import.meta.url),
+            'utf8'
+        )
+    );
+    const ci = parse(
+        readFileSync(
+            new URL('../.github/workflows/ci.yml', import.meta.url),
+            'utf8'
+        )
+    );
+    const oracleImage = ci.jobs.oracle['runs-on'];
+    assert.match(oracleImage, /^ubuntu-/);
+    assert.equal(workflow.jobs.calculate['runs-on'], '${{ matrix.os }}');
+    assert.deepEqual(
+        workflow.jobs.calculate.strategy.matrix.os.filter((os) =>
+            os.startsWith('ubuntu-')
+        ),
+        [oracleImage],
+        'la mesure Linux doit utiliser la même image que son contrôle requis'
+    );
+    const download = workflow.jobs.publish.steps.find((step) =>
+        step.uses?.startsWith('actions/download-artifact@')
+    );
+    assert.equal(
+        download.with.name,
+        `nx-migration-${oracleImage}` +
+            '-${{ github.run_id }}-${{ github.run_attempt }}',
+        'la publication doit reprendre le résultat Linux du même run et essai'
+    );
+});
+
+test('Nx : calcul readonly, publication depuis main seule, aucun code candidat dans le job privilégié', () => {
+    const workflow = parse(
+        readFileSync(
+            new URL('../.github/workflows/nx-migrations.yml', import.meta.url),
+            'utf8'
+        )
+    );
+    assert.deepEqual(nxWorkflowErrors(workflow), []);
+    const pkg = JSON.parse(
+        readFileSync(new URL('../package.json', import.meta.url))
+    );
+    assert.match(
+        pkg.scripts['check:ci-wiring'],
+        /node --test .*tools\/nx-migration-plan\.test\.mjs/
+    );
+    for (const mutate of [
+        (w) => {
+            w.jobs.calculate.steps.push({
+                run: "git commit -m 'Co-Authored-By: Codex <noreply@openai.com>'",
+            });
+        },
+        (w) => {
+            w.jobs.publish.steps.find((s) => s.id === 'publish').run +=
+                '\necho "Préparé par Codex"';
+        },
+        (w) => {
+            w.permissions.contents = 'write';
+        },
+        (w) => {
+            w.jobs.calculate.permissions = { contents: 'write' };
+        },
+        (w) => {
+            w.jobs.calculate.env.GH_TOKEN = '${{ github.token }}';
+        },
+        (w) => {
+            w.jobs.plan.env = { TOKEN: '${{ secrets.SOME_SECRET }}' };
+        },
+        (w) => {
+            w.jobs.calculate.steps[0].with['persist-credentials'] = true;
+        },
+        (w) => {
+            w.jobs.publish.if = "github.event_name == 'pull_request'";
+        },
+        (w) => {
+            w.jobs.publish.if = "github.ref == 'refs/heads/main'";
+        },
+        (w) => {
+            w.jobs.publish.env.EXPECTED_BUNDLE_SHA256 =
+                'empreinte de l’artefact';
+        },
+        (w) => {
+            w.jobs.publish.steps.find((s) =>
+                s.uses?.startsWith('actions/download-artifact@')
+            ).with['run-id'] = '123';
+        },
+        (w) => {
+            w.jobs.publish.steps.find((s) =>
+                s.uses?.startsWith('actions/download-artifact@')
+            ).with.name =
+                'nx-migration-ubuntu-24.04-${{ github.run_id }}-${{ github.run_attempt }}';
+        },
+        (w) => {
+            w.jobs.calculate.steps.push({ run: 'git push origin HEAD' });
+        },
+        (w) => {
+            w.jobs.publish.steps.push({ run: 'node tools/anything.mjs' });
+        },
+        (w) => {
+            w.jobs.publish.steps.push({ run: 'bun install' });
+        },
+        (w) => {
+            w.jobs.publish.steps.push({ run: 'nx migrate' });
+        },
+        (w) => {
+            w.jobs.publish.steps.find((s) => s.id === 'verify').run =
+                'git bundle verify "$bundle"';
+        },
+        (w) => {
+            w.jobs.publish.steps.find((s) => s.id === 'publish').run =
+                'gh pr merge --auto';
+        },
+        (w) => {
+            w.on.pull_request.paths = ['**'];
+        },
+    ]) {
+        const candidate = structuredClone(workflow);
+        mutate(candidate);
+        assert.notDeepEqual(
+            nxWorkflowErrors(candidate),
+            [],
+            'le contre-exemple doit être rouge'
+        );
+    }
+});
 
 test('la configuration de lint des outils refuse les identifiants non liés', async () => {
     const root = fileURLToPath(new URL('..', import.meta.url));

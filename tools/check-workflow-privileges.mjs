@@ -68,6 +68,10 @@ export const REVIEWED_EVENTS = [
 // Écritures de job acceptées. Toute autre écriture échoue : l'ajouter ici est
 // une décision relue, pas un effet de bord.
 export const ALLOWED_JOB_WRITES = {
+    'nx-migrations.yml': {
+        events: ['pull_request', 'schedule', 'workflow_dispatch'],
+        jobs: { publish: ['actions', 'contents', 'pull-requests'] },
+    },
     'security-overrides-repair.yml': {
         events: ['schedule', 'workflow_dispatch'],
         jobs: { publish: ['actions', 'contents', 'pull-requests'] },
