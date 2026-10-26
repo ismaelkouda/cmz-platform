@@ -432,7 +432,7 @@ const statusMd = `# STATUS — cmz-platform
 > Ces métriques décrivent le volume historique de la reconstruction Angular/SEOS.
 > Elles ne mesurent ni la maturité globale, ni la valeur produit, ni l'avancement
 > de l'application extérieure. Cap courant :
-> [PROJECT_AUTHORITY.md](./PROJECT_AUTHORITY.md) et [décision de première application réelle](./${AUTHORITY_FILES.productCap}).
+> [PROJECT_AUTHORITY.md](./PROJECT_AUTHORITY.md) et [cap de l’atelier réutilisable](./${AUTHORITY_FILES.productCap}).
 
 ## Résumé
 

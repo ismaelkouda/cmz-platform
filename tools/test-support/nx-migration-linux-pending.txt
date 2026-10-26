@@ -1,0 +1,160 @@
+
+[7m[1m[36m NX [39m[22m[27m  Running migrations from 'migrations.json'
+
+Running the following migrations:
+- nx: 24-0-0-move-custom-hashers-to-inputs — Finds local executors that declare a custom hasher, which is deprecated and will be removed in Nx 25. Rewriting a hasher as target inputs means reading what its code hashes, so the rewrite is driven by an AI prompt; the generator only reports each hasher.
+- nx: 24-0-0-enable-legacy-affected — Sets affected.legacy to true in nx.json so nx affected keeps selecting whole projects. Nx 24 selects individual affected tasks by default.
+- nx: 24-0-0-rename-ultracache-ignore-options — Renames the ultracache target options "ignoredReads" and "ignoredWrites" to "ignoreReads" and "ignoreWrites", and renames .nx/workflows/sandboxing-config.yaml to ultracache-config.yaml with its "exclude-reads" and "exclude-writes" keys renamed to "ignore-reads" and "ignore-writes".
+- @nx/vitest: remove-deprecated-executors — Converts targets using the removed `@nx/vitest` executors to inferred tasks; an AI prompt finishes the targets the converter cannot convert safely and validates the project graph.
+- @nx/vite: remove-deprecated-executors — Converts targets using the removed `@nx/vite` executors, and `@nx/vitest:test` targets, to inferred tasks; an AI prompt finishes the targets the converter cannot convert safely and validates the project graph.
+- @nx/vite: update-24-0-0-migrate-config-helpers — Replace `nxViteTsPaths` with Vite's native `resolve.tsconfigPaths`, then migrate the remaining deprecated vite configuration helpers while preserving custom behavior.
+- @nx/vite: update-24-0-0-register-typescript-plugin-for-typecheck — Register @nx/js/typescript with its typecheck target in workspaces that use @nx/vite/plugin without it, since @nx/vite/plugin no longer infers typecheck targets except for Vue projects.
+- @nx/eslint: remove-deprecated-executors — Converts targets using the removed `@nx/eslint` executors to inferred tasks; an AI prompt finishes the targets the converter cannot convert safely and validates the project graph.
+- @nx/react: update-24-0-0-register-typescript-plugin-for-typecheck — Register @nx/js/typescript with its typecheck target in workspaces that use @nx/react/router-plugin without it, and remove the router plugin's typecheckTargetName option, since @nx/react/router-plugin no longer infers typecheck targets.
+- @nx/web: update-24-0-0-add-ready-when-signal — Sets `readyWhen: { signal: true }` on `@nx/web:file-server` targets that get no `readyWhen` from their own configuration or `targetDefaults`, so tasks that depend on them with `waitFor: 'ready'` start once the server is listening. Those targets also get their build target as a dependency.
+- @nx/vite: update-24-0-0-add-ready-signal-plugin — Add the `nxReadySignal()` plugin to the Vite configs of application projects, so that `@nx/vite/plugin` infers `readyWhen: { signal: true }` for their dev and preview targets; an AI prompt finishes the configs the codemod cannot edit safely.
+- @nx/eslint: update-24-0-0-replace-set-parser-options-project — Replaces the removed `setParserOptionsProject` generator option with `enableTypedLinting` in the generator defaults of `nx.json` and project configuration, so generators resolve typed linting as before.
+- @nx/angular: update-24-0-0-add-ready-when-signal — Sets `readyWhen: { signal: true }` on `@angular/build:dev-server`, `@angular-devkit/build-angular:dev-server`, `@angular-devkit/build-angular:ssr-dev-server` and `@nx/angular:dev-server` targets that get no `readyWhen` from their own configuration or `targetDefaults`, so tasks that depend on them with `waitFor: 'ready'` start once the server is listening.
+- @nx/angular: update-24-0-0-remove-scam-generator-defaults — Removes generator defaults for the removed `@nx/angular:scam`, `@nx/angular:scam-directive`, `@nx/angular:scam-pipe`, and `@nx/angular:scam-to-standalone` generators from `nx.json` and project configurations.
+
+── Migration 1 of 14 · nx:24-0-0-move-custom-hashers-to-inputs ──────────
+[2m→ Running generator…[22m
+Ran 24-0-0-move-custom-hashers-to-inputs from nx
+  Finds local executors that declare a custom hasher, which is deprecated and will be removed in Nx 25. Rewriting a hasher as target inputs means reading what its code hashes, so the rewrite is driven by an AI prompt; the generator only reports each hasher.
+
+No changes were made
+
+[2m↷ Prompt phase skipped. The migration reported nothing left for the AI step to do.[22m
+
+── Migration 2 of 14 · nx:24-0-0-enable-legacy-affected ─────────────────
+[2m→ Running generator…[22m
+Ran 24-0-0-enable-legacy-affected from nx
+  Sets affected.legacy to true in nx.json so nx affected keeps selecting whole projects. Nx 24 selects individual affected tasks by default.
+
+Changes:
+  [37mUPDATE[39m nx.json
+
+
+── Migration 3 of 14 · nx:24-0-0-rename-ultracache-ignore-options ───────
+[2m→ Running generator…[22m
+Ran 24-0-0-rename-ultracache-ignore-options from nx
+  Renames the ultracache target options "ignoredReads" and "ignoredWrites" to "ignoreReads" and "ignoreWrites", and renames .nx/workflows/sandboxing-config.yaml to ultracache-config.yaml with its "exclude-reads" and "exclude-writes" keys renamed to "ignore-reads" and "ignore-writes".
+
+No changes were made
+
+
+── Migration 4 of 14 · @nx/vitest:remove-deprecated-executors ───────────
+[2m→ Running generator…[22m
+Ran remove-deprecated-executors from @nx/vitest
+  Converts targets using the removed `@nx/vitest` executors to inferred tasks; an AI prompt finishes the targets the converter cannot convert safely and validates the project graph.
+
+No changes were made
+
+[2m↷ Prompt phase skipped. The migration reported nothing left for the AI step to do.[22m
+
+── Migration 5 of 14 · @nx/vite:remove-deprecated-executors ─────────────
+[2m→ Running generator…[22m
+Ran remove-deprecated-executors from @nx/vite
+  Converts targets using the removed `@nx/vite` executors, and `@nx/vitest:test` targets, to inferred tasks; an AI prompt finishes the targets the converter cannot convert safely and validates the project graph.
+
+No changes were made
+
+[2m↷ Prompt phase skipped. The migration reported nothing left for the AI step to do.[22m
+
+── Migration 6 of 14 · @nx/vite:update-24-0-0-migrate-config-helpers ────
+[2m→ Running generator…[22m
+Ran update-24-0-0-migrate-config-helpers from @nx/vite
+  Replace `nxViteTsPaths` with Vite's native `resolve.tsconfigPaths`, then migrate the remaining deprecated vite configuration helpers while preserving custom behavior.
+
+No changes were made
+
+[2m↷ Prompt phase skipped — agentic flow disabled. Listed in next steps.[22m
+
+── Migration 7 of 14 · @nx/vite:update-24-0-0-register-typescript-plugin-for-typecheck ───
+[2m→ Running generator…[22m
+Ran update-24-0-0-register-typescript-plugin-for-typecheck from @nx/vite
+  Register @nx/js/typescript with its typecheck target in workspaces that use @nx/vite/plugin without it, since @nx/vite/plugin no longer infers typecheck targets except for Vue projects.
+
+Changes:
+  [37mUPDATE[39m nx.json
+
+
+── Migration 8 of 14 · @nx/eslint:remove-deprecated-executors ───────────
+[2m→ Running generator…[22m
+Ran remove-deprecated-executors from @nx/eslint
+  Converts targets using the removed `@nx/eslint` executors to inferred tasks; an AI prompt finishes the targets the converter cannot convert safely and validates the project graph.
+
+Changes:
+  [37mUPDATE[39m nx.json
+
+[2m↷ Prompt phase skipped — agentic flow disabled. Listed in next steps.[22m
+
+── Migration 9 of 14 · @nx/react:update-24-0-0-register-typescript-plugin-for-typecheck ───
+[2m→ Running generator…[22m
+Ran update-24-0-0-register-typescript-plugin-for-typecheck from @nx/react
+  Register @nx/js/typescript with its typecheck target in workspaces that use @nx/react/router-plugin without it, and remove the router plugin's typecheckTargetName option, since @nx/react/router-plugin no longer infers typecheck targets.
+
+No changes were made
+
+
+── Migration 10 of 14 · @nx/web:update-24-0-0-add-ready-when-signal ─────
+[2m→ Running generator…[22m
+Ran update-24-0-0-add-ready-when-signal from @nx/web
+  Sets `readyWhen: { signal: true }` on `@nx/web:file-server` targets that get no `readyWhen` from their own configuration or `targetDefaults`, so tasks that depend on them with `waitFor: 'ready'` start once the server is listening. Those targets also get their build target as a dependency.
+
+Changes:
+  [37mUPDATE[39m apps/backoffice-angular/project.json
+  [37mUPDATE[39m apps/library-qualification-angular/project.json
+  [37mUPDATE[39m apps/users-management-proof/project.json
+
+
+── Migration 11 of 14 · @nx/vite:update-24-0-0-add-ready-signal-plugin ───
+[2m→ Running generator…[22m
+Ran update-24-0-0-add-ready-signal-plugin from @nx/vite
+  Add the `nxReadySignal()` plugin to the Vite configs of application projects, so that `@nx/vite/plugin` infers `readyWhen: { signal: true }` for their dev and preview targets; an AI prompt finishes the configs the codemod cannot edit safely.
+
+Changes:
+  [37mUPDATE[39m apps/library-qualification-react/vite.config.mts
+  [37mUPDATE[39m apps/users-management-react-proof/vite.config.mts
+  [37mUPDATE[39m apps/workspace-react-proof/vite.config.mts
+
+[2m↷ Prompt phase skipped. The migration reported nothing left for the AI step to do.[22m
+
+── Migration 12 of 14 · @nx/eslint:update-24-0-0-replace-set-parser-options-project ───
+[2m→ Running generator…[22m
+Ran update-24-0-0-replace-set-parser-options-project from @nx/eslint
+  Replaces the removed `setParserOptionsProject` generator option with `enableTypedLinting` in the generator defaults of `nx.json` and project configuration, so generators resolve typed linting as before.
+
+No changes were made
+
+
+── Migration 13 of 14 · @nx/angular:update-24-0-0-add-ready-when-signal ───
+[2m→ Running generator…[22m
+Ran update-24-0-0-add-ready-when-signal from @nx/angular
+  Sets `readyWhen: { signal: true }` on `@angular/build:dev-server`, `@angular-devkit/build-angular:dev-server`, `@angular-devkit/build-angular:ssr-dev-server` and `@nx/angular:dev-server` targets that get no `readyWhen` from their own configuration or `targetDefaults`, so tasks that depend on them with `waitFor: 'ready'` start once the server is listening.
+
+Changes:
+  [37mUPDATE[39m apps/backoffice-angular/project.json
+  [37mUPDATE[39m apps/library-qualification-angular/project.json
+  [37mUPDATE[39m apps/users-management-proof/project.json
+
+
+── Migration 14 of 14 · @nx/angular:update-24-0-0-remove-scam-generator-defaults ───
+[2m→ Running generator…[22m
+Ran update-24-0-0-remove-scam-generator-defaults from @nx/angular
+  Removes generator defaults for the removed `@nx/angular:scam`, `@nx/angular:scam-directive`, `@nx/angular:scam-pipe`, and `@nx/angular:scam-to-standalone` generators from `nx.json` and project configurations.
+
+No changes were made
+
+
+
+[7m[1m[32m NX [39m[22m[27m  [32mSuccessfully finished running migrations from 'migrations.json'.[39m
+
+12 migrations applied, 0 commits created, 2 prompt migrations skipped, 4 AI steps not needed.
+
+
+[7m[1m[36m NX [39m[22m[27m  Some migrations have additional information, see below.
+
+- Some prompt migrations were skipped. Review and apply each of the following prompt files to the workspace, in the listed order:
+  - tools/ai-migrations/@nx/vite/24.0.1/migrate-config-helpers.md
+  - tools/ai-migrations/@nx/eslint/24.0.1/finish-inferred-conversion.md
