@@ -227,14 +227,14 @@
     ],
     "catalog": {
       "@angular/animations": "22.2.3",
-      "@angular/aria": "22.2.3",
-      "@angular/cdk": "22.2.3",
+      "@angular/aria": "22.2.4",
+      "@angular/cdk": "22.2.4",
       "@angular/common": "22.2.3",
       "@angular/compiler": "22.2.3",
       "@angular/core": "22.2.3",
       "@angular/forms": "22.2.3",
       "@angular/localize": "22.2.3",
-      "@angular/material": "22.2.3",
+      "@angular/material": "22.2.4",
       "@angular/platform-browser": "22.2.3",
       "@angular/router": "22.2.3",
       "@angular/service-worker": "22.2.3",
@@ -252,13 +252,13 @@
     },
     "catalogs": {
       "tooling": {
-        "@angular-devkit/core": "22.2.3",
-        "@angular-devkit/schematics": "22.2.3",
-        "@angular/build": "22.2.3",
-        "@angular/cli": "22.2.3",
+        "@angular-devkit/core": "22.2.4",
+        "@angular-devkit/schematics": "22.2.4",
+        "@angular/build": "22.2.4",
+        "@angular/cli": "22.2.4",
         "@angular/compiler-cli": "22.2.3",
         "@angular/language-service": "22.2.3",
-        "@schematics/angular": "22.2.3",
+        "@schematics/angular": "22.2.4",
         "typescript": "6.0.3"
       }
     }
