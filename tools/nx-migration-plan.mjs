@@ -257,7 +257,8 @@ export function nxWorkflowErrors(workflow) {
         errors.push('permissions du seul job de publication incorrectes');
     const publishRuns = (publisher?.steps ?? [])
         .map((s) => s.run ?? '')
-        .join('\n');
+        .join('\n')
+        .replace(/\\\r?\n\s*/g, ' ');
     if (
         /\b(?:node|bun|bunx|nx|python[0-9.]*)\s|(?:^|\n)\s*(?:source|eval|bash|sh)\b/.test(
             publishRuns
@@ -269,14 +270,20 @@ export function nxWorkflowErrors(workflow) {
         'git bundle verify "$bundle"',
         'git merge-base --is-ancestor "$SOURCE_SHA"',
         'git diff-tree --no-commit-id -r --name-only -z "$commit"',
+        'gh pr create --draft ',
         'gh workflow run ci.yml',
         '--ref "$MIGRATION_BRANCH"',
     ]) {
         if (!publishRuns.includes(required))
             errors.push(`garde de publication manquante : ${required}`);
     }
-    if (/\bgh\s+pr\s+merge\b|--(?:force|no-verify)\b/.test(publishRuns))
-        errors.push('fusion ou contournement Git interdit');
+    if (
+        [
+            /\bgh\b(?!\s+(?:pr\s+(?:list|edit)|pr\s+create\s+--draft|auth\s+setup-git|workflow\s+run)(?:\s|$))|--(?:force|no-verify)\b/,
+            /\bgh\s+pr\s+(?:create|edit)\b[^\n;&|]*\s(?:-r|--(?:add-reviewer|reviewer)(?:[=\s]|$)|(?:--draft|-d)=)/,
+        ].some((rule) => rule.test(publishRuns))
+    )
+        errors.push('commande gh ou options de publication non relues');
     const tokenFree = { ...workflow, jobs: { ...workflow.jobs } };
     delete tokenFree.jobs.publish;
     delete tokenFree.jobs.followup;

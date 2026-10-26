@@ -75,6 +75,28 @@ test('Nx : calcul readonly, publication depuis main seule, aucun code candidat d
     );
     for (const mutate of [
         (w) => {
+            const step = w.jobs.publish.steps.find((s) => s.id === 'publish');
+            step.run = step.run.replace(
+                'gh pr create --draft ',
+                'gh pr create '
+            );
+        },
+        (w) => {
+            w.jobs.publish.steps.find((s) => s.id === 'publish').run +=
+                '\ngh pr ready "$MIGRATION_BRANCH"';
+        },
+        (w) => {
+            w.jobs.publish.steps.find((s) => s.id === 'publish').run +=
+                '\ngh pr edit "$MIGRATION_BRANCH" --add-reviewer soumailakouda';
+        },
+        (w) => {
+            const step = w.jobs.publish.steps.find((s) => s.id === 'publish');
+            step.run = step.run.replace(
+                'gh pr create --draft ',
+                'gh pr create --draft -r soumailakouda '
+            );
+        },
+        (w) => {
             w.jobs.calculate.steps.push({
                 run: "git commit -m 'Co-Authored-By: Codex <noreply@openai.com>'",
             });
@@ -150,6 +172,76 @@ test('Nx : calcul readonly, publication depuis main seule, aucun code candidat d
             [],
             'le contre-exemple doit être rouge'
         );
+    }
+});
+
+test('Nx : les options de revue sont refusées sur gh pr sans confondre git diff-tree -r', () => {
+    const workflow = parse(
+        readFileSync(
+            new URL('../.github/workflows/nx-migrations.yml', import.meta.url),
+            'utf8'
+        )
+    );
+    assert.match(
+        workflow.jobs.publish.steps.find((s) => s.id === 'verify').run,
+        /git diff-tree --no-commit-id -r /
+    );
+    assert.deepEqual(nxWorkflowErrors(workflow), []);
+    for (const action of ['create', 'edit']) {
+        for (const option of ['-r', '--reviewer', '--add-reviewer']) {
+            for (const separator of option === '-r'
+                ? [' ', '=', '']
+                : [' ', '=']) {
+                for (const continuation of [' ', ' \\\n  ']) {
+                    const candidate = structuredClone(workflow);
+                    candidate.jobs.publish.steps.find(
+                        (s) => s.id === 'publish'
+                    ).run +=
+                        `\ngh pr ${action}${continuation}${option}${separator}soumailakouda`;
+                    assert.notDeepEqual(
+                        nxWorkflowErrors(candidate),
+                        [],
+                        `${action} ${option}${separator} doit être refusé`
+                    );
+                }
+            }
+        }
+    }
+});
+
+test('Nx : seules les cinq commandes gh du publisher sont admises, pas REST, GraphQL ou revue', () => {
+    const workflow = parse(
+        readFileSync(
+            new URL('../.github/workflows/nx-migrations.yml', import.meta.url),
+            'utf8'
+        )
+    );
+    const run = workflow.jobs.publish.steps.find((s) => s.id === 'publish').run;
+    assert.deepEqual(
+        [...run.matchAll(/\bgh ([a-z-]+ [a-z-]+)/g)].map((m) => m[1]),
+        ['pr list', 'auth setup-git', 'pr create', 'pr edit', 'workflow run']
+    );
+    assert.deepEqual(nxWorkflowErrors(workflow), []);
+    for (const command of [
+        'gh api -X POST repos/example/repo/pulls/1/requested_reviewers -f reviewers[]=soumailakouda',
+        'gh api graphql -f query=markPullRequestReadyForReview',
+        'gh pr ready',
+        'gh pr merge',
+        'gh pr review --approve',
+        'gh repo edit',
+        'gh auth login',
+        'gh workflow disable ci.yml',
+        'gh --repo example/repo api graphql',
+        'gh pr create --title autre',
+        'gh pr create --draft --draft=false',
+        'gh pr create --draft -d=false',
+    ]) {
+        for (const continuation of [' ', ' \\\n  ']) {
+            const candidate = structuredClone(workflow);
+            candidate.jobs.publish.steps.find((s) => s.id === 'publish').run +=
+                `\n${command.replace('gh ', `gh${continuation}`)}`;
+            assert.notDeepEqual(nxWorkflowErrors(candidate), [], command);
+        }
     }
 });
 

@@ -375,7 +375,7 @@ jobs:
             done < <(git diff-tree --no-commit-id -r --name-only -z "$commit")
           done < <(git rev-list "$SOURCE_SHA..refs/remotes/nx-candidate")
           git log --format=fuller --stat "$SOURCE_SHA..refs/remotes/nx-candidate"
-      - name: Push normal, PR en revue et dispatch de la CI requise
+      - name: Push normal, PR en brouillon et dispatch de la CI requise
         id: publish
         shell: bash
         env:
@@ -399,9 +399,9 @@ jobs:
           EOF
           git log --reverse --format='- %h %s' "$SOURCE_SHA..refs/remotes/nx-candidate" >> "$RUNNER_TEMP/nx-pr-body.md"
           printf '\nRefs #310\n\nPublication automatique native GitHub Actions.\n' >> "$RUNNER_TEMP/nx-pr-body.md"
-          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$MIGRATION_BRANCH" \
+          gh pr create --draft --repo "$GITHUB_REPOSITORY" --base main --head "$MIGRATION_BRANCH" \
             --title "build(deps): appliquer les migrations Nx $TARGET" --body-file "$RUNNER_TEMP/nx-pr-body.md"
-          gh pr edit "$MIGRATION_BRANCH" --repo "$GITHUB_REPOSITORY" --add-assignee soumailakouda --add-reviewer soumailakouda
+          gh pr edit "$MIGRATION_BRANCH" --repo "$GITHUB_REPOSITORY" --add-assignee soumailakouda
           gh workflow run ci.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref "$MIGRATION_BRANCH"
