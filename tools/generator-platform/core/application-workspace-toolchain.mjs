@@ -84,18 +84,68 @@ function childKey(packages, parent, name) {
     externalFailure('dependency context cycle');
 }
 
-function flatOverrides(overrides) {
-    if (!overrides || typeof overrides !== 'object' || Array.isArray(overrides))
+// Resolve only references owned by this manifest; transitive locks use ranges.
+export function resolveManifestOverrides(pkg) {
+    const overrides = pkg.overrides ?? {};
+    if (typeof overrides !== 'object' || Array.isArray(overrides))
         externalFailure('flat overrides required');
-    for (const [name, range] of Object.entries(overrides)) {
-        if (
-            !/^(@[^/]+\/[^@]+|[^/@]+)$/.test(name) ||
-            typeof range !== 'string' ||
-            !semver.validRange(range)
-        )
-            externalFailure('unsupported override');
-    }
-    return overrides;
+    return Object.fromEntries(
+        Object.entries(overrides).map(([name, declaration]) => {
+            if (
+                !/^(@[^/]+\/[^@]+|[^/@]+)$/.test(name) ||
+                typeof declaration !== 'string'
+            )
+                externalFailure('unsupported override');
+            let range = declaration;
+            if (declaration.startsWith('$')) {
+                const direct = [
+                    'dependencies',
+                    'devDependencies',
+                    'optionalDependencies',
+                ].flatMap((field) =>
+                    Object.hasOwn(pkg[field] ?? {}, name)
+                        ? [pkg[field][name]]
+                        : []
+                );
+                if (declaration !== '$' + name || direct.length !== 1)
+                    externalFailure('unresolved direct override reference');
+                range = direct[0];
+            }
+            if (typeof range !== 'string' || !semver.validRange(range))
+                externalFailure('unsupported override');
+            return [name, range];
+        })
+    );
+}
+
+export function projectProductOverrides(sourceOverrides, packages) {
+    const source = resolveManifestOverrides({ overrides: sourceOverrides });
+    const declarations = Object.fromEntries(
+        Object.entries(source).map(([name, range]) => {
+            if (!Object.hasOwn(packages, name)) return [name, range];
+            const { version } = packages[name];
+            if (
+                !semver.valid(version) ||
+                !semver.satisfies(version, range, { includePrerelease: true })
+            )
+                externalFailure(
+                    'product direct version outside source override'
+                );
+            // Product direct dependencies are exact pins. A source range would
+            // disagree with that spec in npm; $name binds to the product pin.
+            return [name, '$' + name];
+        })
+    );
+    const direct = Object.fromEntries(
+        Object.entries(packages).map(([name, entry]) => [name, entry.version])
+    );
+    return {
+        declarations,
+        ranges: resolveManifestOverrides({
+            dependencies: direct,
+            overrides: declarations,
+        }),
+    };
 }
 
 function edgeDescription(
@@ -182,7 +232,7 @@ export function productDependencyClosure(
     { overrides = {}, peerDeviations = [] } = {}
 ) {
     if (!sourceLock?.packages) externalFailure('approved source lock required');
-    flatOverrides(overrides);
+    resolveManifestOverrides({ overrides });
     const approvedPeerDeviations = sourcePeerDeviations(sourceLock, overrides);
     if (
         !Array.isArray(peerDeviations) ||
@@ -372,7 +422,7 @@ export async function sourceToolchain(toolsRoot, profiles) {
         (await readProductFile(toolsRoot, 'package.json')).toString('utf8')
     );
     const lock = lockDocument(await readProductFile(toolsRoot, 'bun.lock'));
-    const overrides = flatOverrides(pkg.overrides ?? {});
+    const overrides = resolveManifestOverrides(pkg);
     if (stableStringify(overrides) !== stableStringify(lock.overrides ?? {}))
         externalFailure('source manifest and lock overrides differ');
     const packages = {};
@@ -402,8 +452,9 @@ export async function sourceToolchain(toolsRoot, profiles) {
             }
         }
     }
+    const productOverrides = projectProductOverrides(overrides, packages);
     const closure = productDependencyClosure(lock, packages, lock, {
-        overrides,
+        overrides: productOverrides.ranges,
         peerDeviations: sourcePeerDeviations(lock, overrides),
     });
     const reached = new Set(
@@ -416,7 +467,14 @@ export async function sourceToolchain(toolsRoot, profiles) {
         packageManager: pkg.packageManager,
         engines: pkg.engines,
         overrides: Object.fromEntries(
-            Object.entries(overrides).filter(([name]) => reached.has(name))
+            Object.entries(productOverrides.ranges).filter(([name]) =>
+                reached.has(name)
+            )
+        ),
+        packageOverrides: Object.fromEntries(
+            Object.entries(productOverrides.declarations).filter(([name]) =>
+                reached.has(name)
+            )
         ),
         dependencyDeviations: closure.known_source_edges,
         records: closure.records,
@@ -439,7 +497,7 @@ export function projectProductLock(pkg, toolchain) {
                         devDependencies: pkg.devDependencies,
                     },
                 },
-                overrides: pkg.overrides,
+                overrides: resolveManifestOverrides(pkg),
                 packages: toolchain.records,
             },
             null,
@@ -456,8 +514,14 @@ export async function qualifyProductInstallation(workspace) {
         (await readProductFile(root, 'package.json')).toString('utf8')
     );
     const overrides = workspace.manifest.overrides;
+    const declarations = projectProductOverrides(
+        overrides,
+        workspace.manifest.packages
+    ).declarations;
     if (
-        stableStringify(pkg.overrides) !== stableStringify(overrides) ||
+        stableStringify(pkg.overrides) !== stableStringify(declarations) ||
+        stableStringify(resolveManifestOverrides(pkg)) !==
+            stableStringify(overrides) ||
         stableStringify(lock.overrides) !== stableStringify(overrides)
     )
         externalFailure('product overrides differ');
