@@ -5,6 +5,16 @@ on:
     - cron: '41 4 * * 1'
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'Migration automatique ou qualification seule d’un candidat relu'
+        required: false
+        type: choice
+        default: migration
+        options: [migration, qualification]
+      candidate_sha:
+        description: 'Qualification seulement : SHA complet d’un commit accessible depuis une branche du dépôt'
+        required: false
+        type: string
       target:
         description: 'Version stable exacte (vide : dernière, une majeure maximum)'
         required: false
@@ -34,6 +44,7 @@ env:
 
 jobs:
   plan:
+    if: inputs.mode != 'qualification'
     name: Cible stable et famille réellement migrée
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -272,7 +283,7 @@ jobs:
   followup:
     name: Instructions à reprendre (main seulement)
     needs: [plan, assess]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.assess.outputs.state == 'action-required'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.assess.outputs.state == 'action-required' && inputs.mode != 'qualification'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -319,7 +330,7 @@ jobs:
   publish:
     name: PR automatique depuis main seulement
     needs: [plan, calculate, assess]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.calculate.result == 'success' && needs.assess.outputs.state == 'ready' && needs.plan.outputs.target != ''
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.calculate.result == 'success' && needs.assess.outputs.state == 'ready' && needs.plan.outputs.target != '' && inputs.mode != 'qualification'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -405,3 +416,162 @@ jobs:
           gh workflow run ci.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref "$MIGRATION_BRANCH"
+
+  qualification:
+    name: Qualification seule et trois promotions (${{ matrix.os }})
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.mode == 'qualification'
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      SOURCE_SHA: ${{ inputs.candidate_sha }}
+      TARGET: ${{ inputs.target }}
+      NX_CACHE_PROJECT_GRAPH: 'false'
+      NX_SKIP_NX_CACHE: 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: SHA exact accessible depuis une branche du dépôt
+        id: qualification-input
+        run: |
+          node tools/nx-migration-qualification.mjs input "$SOURCE_SHA" "$TARGET"
+          case "$(git remote get-url origin)" in
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"|"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git") ;;
+            *) exit 1 ;;
+          esac
+          git cat-file -e "$SOURCE_SHA^{commit}"
+          branches="$(git for-each-ref --format='%(refname)' --contains "$SOURCE_SHA" refs/remotes/origin/)"
+          test -n "$(printf '%s\n' "$branches" | grep -v '^refs/remotes/origin/HEAD$')"
+          cp tools/nx-migration-qualification.mjs "$RUNNER_TEMP/nx-qualification-tools.mjs"
+      - name: Clone ordinaire sur le SHA candidat exact
+        id: qualification-checkout
+        run: |
+          mkdir -p "$RUNNER_TEMP/nx-qualification"
+          git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$RUNNER_TEMP/nx-qualified-candidate"
+          cd "$RUNNER_TEMP/nx-qualified-candidate"
+          test -d .git && test ! -L .git
+          git checkout --detach "$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          test ! -e migrations.json
+          git switch -c "qualification/nx-$TARGET"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Installation figée, famille entière et graphe frais
+        id: qualification-prepare
+        working-directory: ${{ runner.temp }}/nx-qualified-candidate
+        run: |
+          bun install --frozen-lockfile --ignore-scripts
+          node "$RUNNER_TEMP/nx-qualification-tools.mjs" installed "$TARGET"
+          test -z "$(git status --porcelain)"
+          bunx nx graph --file "$RUNNER_TEMP/nx-qualification/graph.json"
+          bunx nx show projects --json 2>&1 | tee "$RUNNER_TEMP/nx-qualification/projects.txt"
+          bun run prepare
+          node tools/nx-migration-plan.mjs candidates "$TARGET" \
+            conventions/libraries/angular/angular-material.compat.json \
+            conventions/libraries/angular/tailwind.compat.json \
+            conventions/libraries/react/tailwind.compat.json
+          git diff --check
+          git add conventions/libraries/angular/angular-material.compat.json conventions/libraries/angular/tailwind.compat.json conventions/libraries/react/tailwind.compat.json
+          if ! git diff --cached --quiet; then
+            git commit -m "test(deps): préparer les trois requalifications Nx $TARGET"
+          fi
+          test -z "$(git status --porcelain)"
+      - name: Promouvoir réellement Angular Material
+        id: qualification-material
+        working-directory: ${{ runner.temp }}/nx-qualified-candidate
+        run: |
+          bun run promote-library-compatibility --app backoffice-angular --library angular-material | tee "$RUNNER_TEMP/nx-qualification/material.txt"
+          git add conventions/libraries/angular/angular-material.compat.json
+          git commit -m 'test(deps): requalifier Angular Material après migration Nx'
+          test -z "$(git status --porcelain)"
+          echo "Promotion Material : $SECONDS s" >> "$GITHUB_STEP_SUMMARY"
+      - name: Promouvoir réellement Tailwind Angular
+        id: qualification-tailwind-angular
+        working-directory: ${{ runner.temp }}/nx-qualified-candidate
+        run: |
+          bun run promote-library-compatibility --app library-qualification-angular --library tailwind | tee "$RUNNER_TEMP/nx-qualification/tailwind-angular.txt"
+          git add conventions/libraries/angular/tailwind.compat.json
+          git commit -m 'test(deps): requalifier Tailwind Angular après migration Nx'
+          test -z "$(git status --porcelain)"
+          echo "Promotion Tailwind Angular : $SECONDS s" >> "$GITHUB_STEP_SUMMARY"
+      - name: Promouvoir réellement Tailwind React
+        id: qualification-tailwind-react
+        working-directory: ${{ runner.temp }}/nx-qualified-candidate
+        run: |
+          bun run promote-library-compatibility --app library-qualification-react --library tailwind | tee "$RUNNER_TEMP/nx-qualification/tailwind-react.txt"
+          git add conventions/libraries/react/tailwind.compat.json
+          git commit -m 'test(deps): requalifier Tailwind React après migration Nx'
+          test -z "$(git status --porcelain)"
+          echo "Promotion Tailwind React : $SECONDS s" >> "$GITHUB_STEP_SUMMARY"
+      - name: Mesure production canonique Linux et contrôles natifs
+        id: qualification-controls
+        working-directory: ${{ runner.temp }}/nx-qualified-candidate
+        run: |
+          if test "$RUNNER_OS" = Linux; then
+            bun run bundle:metrics | tee "$RUNNER_TEMP/nx-qualification/bundle-metrics.txt"
+            git add apps/backoffice-angular/bundle-metrics.json
+            if ! git diff --cached --quiet; then
+              git commit -m 'test(deps): mesurer le bundle Linux après migration Nx'
+            fi
+            bun run check:bundle-metrics-freshness
+          fi
+          bun run check:bun-lock-catalog-integrity
+          bun run check:dependabot-policy
+          bun run check:library-setup
+          bun audit --audit-level=high
+          git diff --check
+          test -z "$(git status --porcelain)"
+      - name: Exporter les promotions seulement, Linux canonique
+        id: qualification-bundle
+        working-directory: ${{ runner.temp }}/nx-qualified-candidate
+        run: |
+          test -z "$(git status --porcelain)"
+          git merge-base --is-ancestor "$SOURCE_SHA" HEAD
+          test -z "$(git rev-list --merges "$SOURCE_SHA..HEAD")"
+          while IFS= read -r commit; do
+            while IFS= read -r -d '' path; do
+              case "$path" in
+                conventions/libraries/angular/angular-material.compat.json|conventions/libraries/angular/tailwind.compat.json|conventions/libraries/react/tailwind.compat.json|apps/backoffice-angular/bundle-metrics.json) ;;
+                *) echo "Promotion hors périmètre : $path"; exit 1 ;;
+              esac
+            done < <(git diff-tree --no-commit-id -r --name-only -z "$commit")
+          done < <(git rev-list "$SOURCE_SHA..HEAD")
+          git diff --check "$SOURCE_SHA" HEAD
+          git bundle create "$RUNNER_TEMP/nx-qualification/candidate.bundle" "$SOURCE_SHA..qualification/nx-$TARGET"
+          git bundle verify "$RUNNER_TEMP/nx-qualification/candidate.bundle"
+          git log --format=fuller --stat "$SOURCE_SHA..HEAD" > "$RUNNER_TEMP/nx-qualification/commits.txt"
+          git rev-parse HEAD > "$RUNNER_TEMP/nx-qualification/head-sha.txt"
+          printf '%s\n' "$SOURCE_SHA" > "$RUNNER_TEMP/nx-qualification/base-sha.txt"
+          printf '%s\n' "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$TARGET" "$RUNNER_OS" > "$RUNNER_TEMP/nx-qualification/identity.txt"
+          cd "$RUNNER_TEMP/nx-qualification"
+          shasum -a 256 candidate.bundle > candidate.bundle.sha256
+          if test "$RUNNER_OS" = Linux; then
+            echo 'Bundle canonique Linux : application locale relue seulement, après succès des DEUX systèmes.' >> "$GITHUB_STEP_SUMMARY"
+            cat candidate.bundle.sha256 >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Journaux et bundle, sans publication de branche ou de PR
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nx-qualification-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/nx-qualification
+          if-no-files-found: error
+          retention-days: 7
