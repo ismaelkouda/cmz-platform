@@ -7,6 +7,7 @@ import {
     realpathSync,
     rmSync,
     symlinkSync,
+    writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
@@ -510,5 +511,112 @@ test('T17 v10 : preuve et artefact canoniques, hors checkout même via un lien',
                 t
             ),
         /canonique/
+    );
+});
+
+test('Nx : attente collectée sur les deux OS, publication et suivi inaccessibles aux PR', () => {
+    const base = parse(
+        readFileSync(
+            new URL('../.github/workflows/nx-migrations.yml', import.meta.url),
+            'utf8'
+        )
+    );
+    assert.deepEqual(nxWorkflowErrors(base), []);
+    for (const mutate of [
+        (w) => {
+            w.jobs.publish.if = w.jobs.publish.if.replace(
+                " && needs.assess.outputs.state == 'ready'",
+                ''
+            );
+        },
+        (w) => {
+            w.jobs.calculate.steps.find((s) =>
+                s.name?.includes('Promouvoir réellement Angular')
+            ).if = undefined;
+        },
+        (w) => {
+            w.jobs.calculate.steps.find((s) => s.id === 'collect').run =
+                'git diff --binary';
+        },
+        (w) => {
+            w.jobs.assess.env.CALCULATE_RESULT = 'success';
+        },
+        (w) => {
+            w.jobs.assess.steps.find((s) => s.id === 'assess').run =
+                'echo state=ready >> "$GITHUB_OUTPUT"';
+        },
+        (w) => {
+            w.jobs.assess.steps.find((s) =>
+                s.uses?.startsWith('actions/download-artifact@')
+            ).with['run-id'] = 'other';
+        },
+        (w) => {
+            w.jobs.assess.env.GH_TOKEN = '${{ github.token }}';
+        },
+        (w) => {
+            w.jobs.followup.if = "github.event_name == 'pull_request'";
+        },
+        (w) => {
+            w.jobs.followup.permissions.contents = 'write';
+        },
+        (w) => {
+            w.jobs.followup.steps.push({
+                uses: 'actions/download-artifact@v7',
+            });
+        },
+        (w) => {
+            w.jobs.followup.steps[0].run += '\nnode artifact/run.mjs';
+        },
+        (w) => {
+            w.jobs.followup.steps[0].run = 'gh issue create --title duplicate';
+        },
+    ]) {
+        const mutant = structuredClone(base);
+        mutate(mutant);
+        assert.notDeepEqual(
+            nxWorkflowErrors(mutant),
+            [],
+            'le contre-exemple doit être refusé'
+        );
+    }
+});
+
+test('Nx : une montée sans migration conserve une file vide dérivée du message natif, jamais devinée', (t) => {
+    const workflow = parse(
+        readFileSync(
+            new URL('../.github/workflows/nx-migrations.yml', import.meta.url),
+            'utf8'
+        )
+    );
+    const lines = workflow.jobs.calculate.steps
+        .find((s) => s.id === 'generate')
+        .run.split('\n');
+    const start = lines.findIndex((l) =>
+        l.startsWith('if ! test -f migrations.json;')
+    );
+    assert.ok(start >= 0);
+    const fragment = lines.slice(start).join('\n');
+    const root = realpathSync(mkdtempSync(join(tmpdir(), 'nx-empty-plan-')));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, 'nx-result'));
+    const run = () =>
+        spawnSync('/bin/bash', ['-e', '-o', 'pipefail', '-c', fragment], {
+            cwd: root,
+            encoding: 'utf8',
+            env: { ...process.env, RUNNER_TEMP: root },
+        });
+    writeFileSync(join(root, 'nx-result/generate.txt'), 'unknown output');
+    assert.notEqual(run().status, 0);
+    writeFileSync(
+        join(root, 'nx-result/generate.txt'),
+        'There are no migrations to run, so migrations.json has not been created.'
+    );
+    const result = run();
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(
+        JSON.parse(
+            readFileSync(join(root, 'nx-result/migrations.generated.json'))
+        ),
+        { migrations: [] }
     );
 });

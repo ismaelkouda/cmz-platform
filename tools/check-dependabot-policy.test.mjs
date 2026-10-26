@@ -627,6 +627,7 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
         'tools/check-dependabot-policy.mjs',
         'tools/check-library-setup-deps.mjs',
         'tools/nx-migration-plan.mjs',
+        'tools/check-workflow-privileges.mjs',
     ]) {
         cpSync(join(source, path), join(root, path));
     }

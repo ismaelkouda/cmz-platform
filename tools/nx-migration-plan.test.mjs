@@ -6,13 +6,19 @@ import {
     mkdtempSync,
     readFileSync,
     rmSync,
+    symlinkSync,
     writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { parse } from 'yaml';
 import {
+    aggregateMigrationResults,
+    collectMigrationResult,
+    migrationOutcome,
+    recordMigrationOutcome,
     assertMigrateHelp,
     nxWorkflowErrors,
     assertMigrationComplete,
@@ -389,7 +395,7 @@ test('les captures Nx conservent stderr avant tee, y compris après ajout d’un
     for (const [jobName, job] of Object.entries(original.jobs)) {
         for (const [index, step] of (job.steps ?? []).entries()) {
             for (const line of (step.run ?? '').split('\n')) {
-                if (!/^\s*bunx nx\b.*\|\s*tee\s/.test(line)) continue;
+                if (!/^\s*(?:if\s+)?bunx nx\b.*\|\s*tee\s/.test(line)) continue;
                 const mutant = structuredClone(original);
                 mutant.jobs[jobName].steps[index].run = step.run.replace(
                     line,
@@ -436,4 +442,323 @@ test('la vraie commande YAML capture l’aide du Nx installé dans le fichier an
     );
     assert.equal(result.status, 0, result.stderr);
     assertMigrateHelp(readFileSync(join(root, 'nx-result/help.txt'), 'utf8'));
+});
+
+const promptPaths = [
+    'tools/ai-migrations/@nx/vite/24.0.1/migrate-config-helpers.md',
+    'tools/ai-migrations/@nx/eslint/24.0.1/finish-inferred-conversion.md',
+];
+const originalPlan = {
+    migrations: [
+        ...Array.from({ length: 12 }, (_, i) => ({
+            name: `applied-${i}`,
+            implementation: './generator',
+            package: 'nx',
+        })),
+        ...promptPaths.map((prompt, i) => ({
+            name: `pending-${i}`,
+            version: '24.0.0-beta.3',
+            package: i ? '@nx/eslint' : '@nx/vite',
+            prompt,
+            implementation: './generator',
+            factory: './legacy',
+        })),
+    ],
+};
+const pendingLog = (os = 'linux') =>
+    readFileSync(
+        new URL(
+            `./test-support/nx-migration-${os}-pending.txt`,
+            import.meta.url
+        ),
+        'utf8'
+    );
+const completeLog =
+    "NX Successfully finished running migrations from 'migrations.json'. This workspace is up to date!";
+const resultEnv = {
+    GITHUB_REPOSITORY: 'test/repo',
+    SOURCE_SHA: 'a'.repeat(40),
+    GITHUB_RUN_ID: '123',
+    GITHUB_RUN_ATTEMPT: '1',
+    TARGET: '24.0.1',
+};
+function outcomeFixture(t) {
+    const root = mkdtempSync(join(tmpdir(), 'nx-outcome-test-'));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const candidate = join(root, 'nx-candidate');
+    const out = join(root, 'nx-result');
+    mkdirSync(candidate);
+    mkdirSync(out);
+    writeFileSync(
+        join(candidate, 'migrations.json'),
+        JSON.stringify(originalPlan)
+    );
+    writeFileSync(
+        join(out, 'migrations.generated.json'),
+        JSON.stringify(originalPlan)
+    );
+    writeFileSync(join(out, 'run-migrations.txt'), pendingLog());
+    for (const path of promptPaths) {
+        mkdirSync(join(candidate, path, '..'), { recursive: true });
+        writeFileSync(
+            join(candidate, path),
+            `# Instruction native — ${path}\n`
+        );
+    }
+    return { root, candidate, out };
+}
+
+test('les deux sorties natives donnent seulement les phases prompt restantes, dans leur ordre', () => {
+    for (const os of ['linux', 'macos']) {
+        const result = migrationOutcome(pendingLog(os), 0, originalPlan);
+        assert.equal(result.state, 'action-required');
+        assert.equal(result.pending.length, 2);
+        assert.deepEqual(
+            result.pending.map((m) => m.prompt),
+            os === 'linux' ? promptPaths : [...promptPaths].reverse()
+        );
+        assert.ok(result.pending.every((m) => !m.implementation && !m.factory));
+    }
+    assert.deepEqual(migrationOutcome(completeLog, 0, originalPlan), {
+        state: 'ready',
+        pending: [],
+    });
+    for (const [log, code, plan] of [
+        [pendingLog(), 1, originalPlan],
+        [
+            pendingLog().replace(
+                'Successfully finished running migrations',
+                'Incomplete run'
+            ),
+            0,
+            originalPlan,
+        ],
+        [
+            pendingLog().replace(
+                '2 prompt migrations skipped',
+                '3 prompt migrations skipped'
+            ),
+            0,
+            originalPlan,
+        ],
+        [
+            pendingLog() +
+                '\n- Another instruction not represented in the plan\n',
+            0,
+            originalPlan,
+        ],
+        [pendingLog(), 0, { migrations: originalPlan.migrations.slice(0, 12) }],
+        ['', 0, originalPlan],
+        ['This workspace is up to date!', 0, originalPlan],
+    ])
+        assert.throws(() => migrationOutcome(log, code, plan));
+});
+
+test('la vraie collecte YAML conserve deux restes, les octets des prompts et les fichiers nouveaux', (t) => {
+    const { root, candidate, out } = outcomeFixture(t);
+    const git = (...args) =>
+        execFileSync('git', ['-C', candidate, ...args], { stdio: 'pipe' });
+    git('init', '-b', 'main');
+    git('config', 'user.name', 'test');
+    git('config', 'user.email', 'test@example.invalid');
+    // Le helper est celui du dépôt ; les migrations/prompts restent les nouvelles pièces.
+    mkdirSync(join(candidate, 'tools'), { recursive: true });
+    for (const file of [
+        'nx-migration-plan.mjs',
+        'check-workflow-privileges.mjs',
+    ])
+        writeFileSync(
+            join(candidate, 'tools', file),
+            readFileSync(new URL(`./${file}`, import.meta.url))
+        );
+    symlinkSync(
+        fileURLToPath(new URL('../node_modules', import.meta.url)),
+        join(candidate, 'node_modules')
+    );
+    writeFileSync(join(candidate, '.gitignore'), 'node_modules\n');
+    writeFileSync(join(candidate, 'README.md'), 'base\n');
+    git('add', 'README.md', '.gitignore', 'tools');
+    git('commit', '-m', 'baseline');
+    writeFileSync(
+        join(candidate, 'new-source.ts'),
+        'export const migrated = true;\n'
+    );
+    assert.equal(recordMigrationOutcome(candidate, out, 0), 'action-required');
+    const collect = workflow().jobs.calculate.steps.find(
+        (s) =>
+            s.id === 'collect' || s.name?.startsWith('Préserver le diagnostic')
+    );
+    const run = spawnSync(
+        '/bin/bash',
+        ['-e', '-o', 'pipefail', '-c', collect.run],
+        {
+            cwd: candidate,
+            encoding: 'utf8',
+            env: {
+                ...process.env,
+                ...resultEnv,
+                RUNNER_TEMP: root,
+                JOB_STATUS: 'success',
+                MIGRATION_SYSTEM: 'ubuntu-latest',
+            },
+        }
+    );
+    assert.equal(run.status, 0, run.stderr);
+    const remaining = JSON.parse(
+        readFileSync(join(out, 'migrations.remaining.json'))
+    );
+    assert.equal(
+        remaining.migrations.length,
+        2,
+        'le plan original de14 ne doit pas remplacer les restes'
+    );
+    assert.ok(
+        remaining.migrations.every((m) => !m.implementation && !m.factory)
+    );
+    assert.match(
+        readFileSync(join(out, 'partial.diff'), 'utf8'),
+        /new-source\.ts/
+    );
+    for (const path of promptPaths)
+        assert.deepEqual(
+            readFileSync(join(out, path)),
+            readFileSync(join(candidate, path))
+        );
+    assert.equal(
+        JSON.parse(readFileSync(join(out, 'result.json'))).state,
+        'action-required'
+    );
+    assert.equal(
+        JSON.parse(readFileSync(join(candidate, 'migrations.json'))).migrations
+            .length,
+        14
+    );
+    assert.equal(
+        git('log', '--format=%s').toString().trim(),
+        'baseline',
+        'aucun commit du candidat incomplet'
+    );
+});
+
+test('agrégation : deux identités exactes, pièces intactes et aucune attente promue en ready', (t) => {
+    const { root, candidate } = outcomeFixture(t);
+    const systems = ['ubuntu-latest', 'macos-14'];
+    const artifacts = join(root, 'artifacts');
+    mkdirSync(artifacts);
+    const results = systems.map((system) => {
+        const out = join(artifacts, `nx-migration-${system}-123-1`);
+        mkdirSync(out);
+        writeFileSync(
+            join(out, 'migrations.generated.json'),
+            JSON.stringify(originalPlan)
+        );
+        writeFileSync(
+            join(out, 'run-migrations.txt'),
+            pendingLog(system.startsWith('macos') ? 'macos' : 'linux')
+        );
+        writeFileSync(join(out, 'partial.diff'), 'unit diff\n');
+        recordMigrationOutcome(candidate, out, 0);
+        collectMigrationResult(out, 'success', {
+            ...resultEnv,
+            MIGRATION_SYSTEM: system,
+        });
+        return out;
+    });
+    const aggregate = () =>
+        aggregateMigrationResults(artifacts, systems, resultEnv);
+    assert.equal(aggregate(), 'action-required');
+    // Un ready unitaire simule un calcul complet ; le vrai bundle reste couvert par le test natif précédent.
+    writeFileSync(join(results[0], 'run-migrations.txt'), completeLog);
+    recordMigrationOutcome(candidate, results[0], 0);
+    for (const path of [
+        'candidate.bundle',
+        'head-sha.txt',
+        'identity.txt',
+        'material.txt',
+        'tailwind-angular.txt',
+        'tailwind-react.txt',
+    ])
+        writeFileSync(
+            join(results[0], path),
+            'unit fixture, not runtime proof\n'
+        );
+    collectMigrationResult(results[0], 'success', {
+        ...resultEnv,
+        MIGRATION_SYSTEM: systems[0],
+    });
+    assert.equal(
+        aggregate(),
+        'action-required',
+        'un système prêt ne couvre pas l’autre'
+    );
+    const path = join(results[1], 'result.json');
+    const good = readFileSync(path);
+    for (const property of ['head', 'run', 'attempt', 'system', 'target']) {
+        const bad = JSON.parse(good);
+        bad[property] = 'other';
+        writeFileSync(path, JSON.stringify(bad));
+        assert.throws(aggregate, /identité/);
+        writeFileSync(path, good);
+    }
+    const prompt = join(results[1], promptPaths[0]);
+    const bytes = readFileSync(prompt);
+    writeFileSync(prompt, 'tampered');
+    assert.throws(aggregate, /pièce incohérente/);
+    writeFileSync(prompt, bytes);
+    const planPath = join(results[1], 'migrations.remaining.json');
+    const planBytes = readFileSync(planPath);
+    writeFileSync(planPath, JSON.stringify(originalPlan));
+    assert.throws(aggregate, /plan restant/);
+    writeFileSync(planPath, planBytes);
+    rmSync(prompt);
+    assert.throws(aggregate);
+    writeFileSync(prompt, bytes);
+    assert.throws(
+        () =>
+            aggregateMigrationResults(
+                artifacts,
+                systems.slice(0, 1),
+                resultEnv
+            ),
+        /supplémentaires/
+    );
+    collectMigrationResult(results[1], 'failure', {
+        ...resultEnv,
+        MIGRATION_SYSTEM: systems[1],
+    });
+    assert.throws(aggregate, /état/);
+    writeFileSync(join(results[1], 'run-migrations.txt'), completeLog);
+    recordMigrationOutcome(candidate, results[1], 0);
+    for (const path of [
+        'candidate.bundle',
+        'head-sha.txt',
+        'identity.txt',
+        'material.txt',
+        'tailwind-angular.txt',
+        'tailwind-react.txt',
+    ])
+        writeFileSync(
+            join(results[1], path),
+            'unit fixture, not runtime proof\n'
+        );
+    collectMigrationResult(results[1], 'success', {
+        ...resultEnv,
+        MIGRATION_SYSTEM: systems[1],
+    });
+    assert.equal(
+        aggregate(),
+        'ready',
+        'deux calculs complets restent admissibles'
+    );
+    rmSync(results[1], { recursive: true });
+    assert.throws(aggregate, /manquants/);
+});
+
+test('un prompt manquant ou lié ne devient pas action-required avec une collecte incomplète', (t) => {
+    const { candidate, out } = outcomeFixture(t);
+    const path = join(candidate, promptPaths[0]);
+    rmSync(path);
+    assert.throws(() => recordMigrationOutcome(candidate, out, 0));
+    symlinkSync(join(candidate, promptPaths[1]), path);
+    assert.throws(() => recordMigrationOutcome(candidate, out, 0), /liée/);
 });

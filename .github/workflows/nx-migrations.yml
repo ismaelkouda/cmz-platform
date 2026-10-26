@@ -76,6 +76,7 @@ jobs:
       TARGET: ${{ needs.plan.outputs.target }}
       NX_MIGRATE_CLI_VERSION: ${{ needs.plan.outputs.target }}
       SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      MIGRATION_SYSTEM: ${{ matrix.os }}
     defaults:
       run:
         shell: bash
@@ -114,7 +115,11 @@ jobs:
           # Le lanceur Nx délègue nativement à NX_MIGRATE_CLI_VERSION :
           # un bunx nx@cible pourrait lui aussi revenir au Nx local.
           bunx nx migrate "nx@$TARGET" --include=required --agentic=false 2>&1 | tee "$RUNNER_TEMP/nx-result/generate.txt"
-          if test -f migrations.json; then cp migrations.json "$RUNNER_TEMP/nx-result/migrations.generated.json"; fi
+          if ! test -f migrations.json; then
+            grep -Fq 'There are no migrations to run, so migrations.json has not been created.' "$RUNNER_TEMP/nx-result/generate.txt"
+            printf '{"migrations":[]}\n' > migrations.json
+          fi
+          cp migrations.json "$RUNNER_TEMP/nx-result/migrations.generated.json"
       - name: Verrou natif avant frozen puis migrations sans agent
         id: migrate
         working-directory: ${{ runner.temp }}/nx-candidate
@@ -122,11 +127,18 @@ jobs:
           bun install --lockfile-only --ignore-scripts
           bun install --frozen-lockfile --ignore-scripts
           node tools/nx-migration-plan.mjs installed "$TARGET"
-          if test -f migrations.json; then
-            bunx nx migrate --runMigrations=migrations.json --skipInstall --agentic=false 2>&1 | tee "$RUNNER_TEMP/nx-result/run-migrations.txt"
-            node tools/nx-migration-plan.mjs complete "$RUNNER_TEMP/nx-result/run-migrations.txt"
-            rm migrations.json
+          test -f migrations.json
+          if bunx nx migrate --runMigrations=migrations.json --skipInstall --agentic=false 2>&1 | tee "$RUNNER_TEMP/nx-result/run-migrations.txt"; then
+            migration_exit=0
+          else
+            migration_exit=$?
           fi
+          state="$(node tools/nx-migration-plan.mjs outcome "$RUNNER_TEMP/nx-result" "$migration_exit")"
+          if test "$state" = action-required; then exit 0; fi
+          rm migrations.json
+          while IFS= read -r prompt; do
+            if ! git ls-files --error-unmatch -- "$prompt" >/dev/null 2>&1; then rm -- "$prompt"; fi
+          done < "$RUNNER_TEMP/nx-result/prompts.generated.list"
           # Une migration peut aussi modifier les dépendances : Bun reprend
           # explicitement la résolution, aucun install implicite Nx permis.
           bun install --lockfile-only --ignore-scripts
@@ -144,6 +156,7 @@ jobs:
           test -z "$(git status --porcelain)"
           echo "Migration et installations : $(( $(date +%s) - $(cat "$RUNNER_TEMP/nx-result/start") )) s" >> "$GITHUB_STEP_SUMMARY"
       - name: Promouvoir réellement Angular Material
+        if: steps.migrate.outputs.state == 'ready'
         working-directory: ${{ runner.temp }}/nx-candidate
         run: |
           bun run promote-library-compatibility --app backoffice-angular --library angular-material | tee "$RUNNER_TEMP/nx-result/material.txt"
@@ -152,6 +165,7 @@ jobs:
           test -z "$(git status --porcelain)"
           echo "Promotion Material : $SECONDS s" >> "$GITHUB_STEP_SUMMARY"
       - name: Promouvoir réellement Tailwind Angular
+        if: steps.migrate.outputs.state == 'ready'
         working-directory: ${{ runner.temp }}/nx-candidate
         run: |
           bun run promote-library-compatibility --app library-qualification-angular --library tailwind | tee "$RUNNER_TEMP/nx-result/tailwind-angular.txt"
@@ -160,6 +174,7 @@ jobs:
           test -z "$(git status --porcelain)"
           echo "Promotion Tailwind Angular : $SECONDS s" >> "$GITHUB_STEP_SUMMARY"
       - name: Promouvoir réellement Tailwind React
+        if: steps.migrate.outputs.state == 'ready'
         working-directory: ${{ runner.temp }}/nx-candidate
         run: |
           bun run promote-library-compatibility --app library-qualification-react --library tailwind | tee "$RUNNER_TEMP/nx-result/tailwind-react.txt"
@@ -168,6 +183,7 @@ jobs:
           test -z "$(git status --porcelain)"
           echo "Promotion Tailwind React : $SECONDS s" >> "$GITHUB_STEP_SUMMARY"
       - name: Mesure production canonique Linux et contrôles natifs
+        if: steps.migrate.outputs.state == 'ready'
         working-directory: ${{ runner.temp }}/nx-candidate
         run: |
           if test "$RUNNER_OS" = Linux; then
@@ -185,6 +201,7 @@ jobs:
           git diff --check
           test -z "$(git status --porcelain)"
       - name: Bundle natif et identité du résultat (Linux fait autorité)
+        if: steps.migrate.outputs.state == 'ready'
         id: bundle
         working-directory: ${{ runner.temp }}/nx-candidate
         run: |
@@ -200,16 +217,16 @@ jobs:
             echo "linux_head=$(git -C "$RUNNER_TEMP/nx-candidate" rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           fi
           echo "Calcul complet $RUNNER_OS : $(( $(date +%s) - $(cat start) )) s" >> "$GITHUB_STEP_SUMMARY"
-      - name: Préserver le diagnostic natif même en cas d'arrêt
+      - name: Préserver les instructions natives et tous les nouveaux fichiers
+        id: collect
         if: always()
-        shell: bash
+        working-directory: ${{ runner.temp }}/nx-candidate
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
-          if test -f "$RUNNER_TEMP/nx-candidate/migrations.json"; then
-            cp "$RUNNER_TEMP/nx-candidate/migrations.json" "$RUNNER_TEMP/nx-result/migrations.remaining.json"
-          fi
-          if test -d "$RUNNER_TEMP/nx-candidate/.git"; then
-            git -C "$RUNNER_TEMP/nx-candidate" diff --binary > "$RUNNER_TEMP/nx-result/partial.diff"
-          fi
+          git add --intent-to-add --all
+          git diff --binary HEAD > "$RUNNER_TEMP/nx-result/partial.diff"
+          node tools/nx-migration-plan.mjs collect "$RUNNER_TEMP/nx-result" "$JOB_STATUS"
       - name: Journaux et bundle à confronter au run exact
         if: always()
         uses: actions/upload-artifact@v7
@@ -219,10 +236,90 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  assess:
+    name: État réel des deux systèmes
+    needs: [plan, calculate]
+    if: always() && needs.plan.outputs.target != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      state: ${{ steps.assess.outputs.state }}
+    env:
+      TARGET: ${{ needs.plan.outputs.target }}
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      CALCULATE_RESULT: ${{ needs.calculate.result }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: nx-migration-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/nx-assess
+      - id: assess
+        run: |
+          test "$CALCULATE_RESULT" = success
+          node tools/nx-migration-plan.mjs assess "$RUNNER_TEMP/nx-assess"
+
+  followup:
+    name: Instructions à reprendre (main seulement)
+    needs: [plan, assess]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.assess.outputs.state == 'action-required'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    env:
+      TARGET: ${{ needs.plan.outputs.target }}
+    steps:
+      - name: Ouvrir ou actualiser une seule issue par cible
+        id: followup
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$TARGET" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          title="Nx $TARGET — instructions de migration à traiter"
+          issues="$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --search "in:title Nx $TARGET" --limit 100 --json number,title,state)"
+          matches="$(printf '%s' "$issues" | jq --arg title "$title" '[.[] | select(.title == $title)]')"
+          count="$(printf '%s' "$matches" | jq length)"
+          test "$count" -le 1
+          body="$RUNNER_TEMP/nx-followup.md"
+          cat > "$body" <<EOF
+          Le calcul natif vers Nx $TARGET attend des instructions de migration.
+
+          Run et deux artefacts Linux/macOS : https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          Tentative : $GITHUB_RUN_ATTEMPT. Aucun candidat qualifié ou publié.
+          Les artefacts contiennent le plan restant de phases prompt seulement,
+          les instructions originales, les journaux et le diff avec les nouveaux fichiers.
+          Reprendre depuis leur base exacte, appliquer les instructions et valider
+          le graphe, les tâches et les trois promotions avant toute publication.
+          Cette cible Nx et la délégation Dependabot ne sont pas acquises par cette attente.
+
+          Refs #310
+          EOF
+          if test "$count" -eq 0; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$body" --label couloir:entretien --assignee ismaelkouda
+          else
+            number="$(printf '%s' "$matches" | jq -r '.[0].number')"
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+            if test "$(printf '%s' "$matches" | jq -r '.[0].state')" = CLOSED; then
+              gh issue reopen "$number" --repo "$GITHUB_REPOSITORY"
+            fi
+          fi
+
   publish:
     name: PR automatique depuis main seulement
-    needs: [plan, calculate]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.calculate.result == 'success' && needs.plan.outputs.target != ''
+    needs: [plan, calculate, assess]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.calculate.result == 'success' && needs.assess.outputs.state == 'ready' && needs.plan.outputs.target != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

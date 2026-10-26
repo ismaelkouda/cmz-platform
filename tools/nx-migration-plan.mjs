@@ -1,8 +1,18 @@
 #!/usr/bin/env node
 // Données et contrats du workflow natif Nx. Git, Nx, Bun et les promotions
 // restent des commandes visibles dans le YAML ; ce module ne les exécute pas.
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import {
+    appendFileSync,
+    lstatSync,
+    mkdirSync,
+    readFileSync,
+    readdirSync,
+    writeFileSync,
+} from 'node:fs';
+import { createHash } from 'node:crypto';
+import { parse as parseYaml } from 'yaml';
+import { nxFollowupErrors } from './check-workflow-privileges.mjs';
+import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 import semver from 'semver';
@@ -140,7 +150,10 @@ export function workflowSelectors(workflow) {
 }
 
 export const PUBLISH_CONDITION =
-    "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.calculate.result == 'success' && needs.plan.outputs.target != ''";
+    "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.calculate.result == 'success' && needs.assess.outputs.state == 'ready' && needs.plan.outputs.target != ''";
+
+export const FOLLOWUP_CONDITION =
+    "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.assess.outputs.state == 'action-required'";
 
 // Point de raccord pour le garde après revue de PEER-GRAPH. Les autres
 // exclusions restent intégralement soumises à sa justification par les pairs.
@@ -221,7 +234,7 @@ export function nxWorkflowErrors(workflow) {
     if (
         publisher?.if !== PUBLISH_CONDITION ||
         JSON.stringify(publisher?.needs) !==
-            JSON.stringify(['plan', 'calculate'])
+            JSON.stringify(['plan', 'calculate', 'assess'])
     )
         errors.push(
             'publication accessible à une PR ou sans les deux systèmes verts'
@@ -266,6 +279,7 @@ export function nxWorkflowErrors(workflow) {
         errors.push('fusion ou contournement Git interdit');
     const tokenFree = { ...workflow, jobs: { ...workflow.jobs } };
     delete tokenFree.jobs.publish;
+    delete tokenFree.jobs.followup;
     if (
         /\bsecrets\b|github\.token|"(?:GH_TOKEN|GITHUB_TOKEN)"/.test(
             JSON.stringify(tokenFree)
@@ -273,14 +287,14 @@ export function nxWorkflowErrors(workflow) {
     )
         errors.push('secret ou jeton explicite dans le calcul de PR');
     for (const [name, job] of Object.entries(workflow.jobs ?? {})) {
-        if (name === 'publish') continue;
+        if (['publish', 'followup'].includes(name)) continue;
         if (job.permissions !== undefined && !readOnly(job.permissions))
             errors.push(`${name} : jeton en écriture ou permissions élargies`);
         for (const step of job.steps ?? []) {
             // Les journaux Nx peuvent sortir sur stderr, y compris l'aide.
             for (const line of (step.run ?? '').split('\n')) {
                 if (
-                    /^\s*bunx nx\b.*\|\s*tee\s/.test(line) &&
+                    /^\s*(?:if\s+)?bunx nx\b.*\|\s*tee\s/.test(line) &&
                     !/2>&1\s*\|\s*tee\s/.test(line)
                 )
                     errors.push(
@@ -330,7 +344,295 @@ export function nxWorkflowErrors(workflow) {
     } catch (error) {
         errors.push(error.message);
     }
-    return errors;
+    return [...errors, ...outcomeWorkflowErrors(workflow)];
+}
+
+// Un diagnostic n'est jamais un candidat publiable. Les commandes Git/Nx restent
+// dans le YAML ; ce module ne lit/copie que leurs pièces et leurs états.
+export function migrationOutcome(raw, exitCode, plan) {
+    const log = stripVTControlCharacters(raw);
+    if (exitCode !== 0 || !Array.isArray(plan.migrations))
+        throw new Error('fin Nx ou plan invalide');
+    try {
+        if (
+            !log.includes(
+                "Successfully finished running migrations from 'migrations.json'."
+            ) &&
+            !log.includes(
+                "No changes were made from running 'migrations.json'."
+            )
+        )
+            throw new Error('fin native non reconnue');
+        assertMigrationComplete(log);
+        return { state: 'ready', pending: [] };
+    } catch {
+        /* Examiner séparément la seule fin différée reconnue. */
+    }
+    if (
+        !log.includes(
+            "Successfully finished running migrations from 'migrations.json'."
+        ) ||
+        /Working-tree state retained|Next steps for the AI agent|prompt migrations? deferred/.test(
+            log
+        )
+    )
+        throw new Error('fin native différée non reconnue');
+    const notes = log.split(
+        'Some migrations have additional information, see below.'
+    );
+    if (notes.length !== 2) throw new Error('notes Nx ambiguës');
+    const lines = notes[1]
+        .trim()
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+    if (
+        lines.shift() !==
+        '- Some prompt migrations were skipped. Review and apply each of the following prompt files to the workspace, in the listed order:'
+    )
+        throw new Error('instructions Nx non reconnues');
+    const paths = lines.map((l) => {
+        if (!l.startsWith('- tools/ai-migrations/'))
+            throw new Error('note Nx supplémentaire');
+        return l.slice(2);
+    });
+    const tally = [...log.matchAll(/\b(\d+) prompt migrations? skipped\b/g)];
+    const pending = paths.flatMap((path) =>
+        plan.migrations.filter((m) => m.prompt === path)
+    );
+    if (
+        !paths.length ||
+        new Set(paths).size !== paths.length ||
+        tally.length !== 1 ||
+        Number(tally[0][1]) !== pending.length ||
+        paths.some((path) => !pending.some((m) => m.prompt === path))
+    )
+        throw new Error('plan et prompts différés incohérents');
+    return {
+        state: 'action-required',
+        pending: pending.map((m) => {
+            const remaining = { ...m };
+            delete remaining.implementation;
+            delete remaining.factory;
+            return remaining;
+        }),
+    };
+}
+
+function piece(root, path) {
+    if (lstatSync(root).isSymbolicLink() || !lstatSync(root).isDirectory())
+        throw new Error('racine de pièce liée ou non répertoire');
+    if (
+        typeof path !== 'string' ||
+        !path ||
+        /[\\\r\n\0]/.test(path) ||
+        path.split('/').some((p) => !p || p === '.' || p === '..')
+    )
+        throw new Error('chemin de pièce invalide');
+    let file = root;
+    for (const part of path.split('/')) {
+        file = join(file, part);
+        if (lstatSync(file).isSymbolicLink())
+            throw new Error('pièce liée refusée');
+    }
+    if (!lstatSync(file).isFile()) throw new Error('pièce non régulière');
+    return readFileSync(file);
+}
+const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const json = (root, path) => JSON.parse(piece(root, path));
+const writeJson = (path, data) =>
+    writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
+function prompts(plan) {
+    return [
+        ...new Set(plan.migrations.map((m) => m.prompt).filter(Boolean)),
+    ].map((p) => {
+        if (!p.startsWith('tools/ai-migrations/') || !p.endsWith('.md'))
+            throw new Error('prompt hors du répertoire natif');
+        return p;
+    });
+}
+function identity(system, env = process.env) {
+    const value = {
+        repository: env.GITHUB_REPOSITORY,
+        head: env.SOURCE_SHA,
+        run: env.GITHUB_RUN_ID,
+        attempt: env.GITHUB_RUN_ATTEMPT,
+        target: env.TARGET,
+        system,
+    };
+    if (
+        !/^[\w.-]+\/[\w.-]+$/.test(value.repository ?? '') ||
+        !/^[0-9a-f]{40}$/.test(value.head ?? '') ||
+        !/^\d+$/.test(value.run ?? '') ||
+        !/^[1-9]\d*$/.test(value.attempt ?? '') ||
+        !semver.valid(value.target) ||
+        semver.prerelease(value.target) ||
+        !/^(?:ubuntu|macos)-[a-z0-9.-]+$/.test(system ?? '')
+    )
+        throw new Error('identité de calcul invalide');
+    return value;
+}
+
+export function recordMigrationOutcome(root, out, exitCode) {
+    const plan = json(root, 'migrations.json');
+    const paths = prompts(plan);
+    // Copier les octets livrés par Nx, avant toute suppression du candidat.
+    for (const path of paths) {
+        const bytes = piece(root, path);
+        mkdirSync(dirname(join(out, path)), { recursive: true });
+        writeFileSync(join(out, path), bytes);
+    }
+    writeFileSync(
+        join(out, 'prompts.generated.list'),
+        paths.join('\n') + (paths.length ? '\n' : '')
+    );
+    const outcome = migrationOutcome(
+        piece(out, 'run-migrations.txt').toString(),
+        exitCode,
+        plan
+    );
+    writeJson(join(out, 'migrations.remaining.json'), {
+        migrations: outcome.pending,
+    });
+    writeJson(join(out, 'migration-state.json'), outcome);
+    return outcome.state;
+}
+
+function resultPaths(state, plan) {
+    const paths = [
+        'migrations.generated.json',
+        'migrations.remaining.json',
+        'run-migrations.txt',
+        'partial.diff',
+        ...prompts(plan),
+    ];
+    if (state === 'ready')
+        paths.push(
+            'candidate.bundle',
+            'head-sha.txt',
+            'identity.txt',
+            'material.txt',
+            'tailwind-angular.txt',
+            'tailwind-react.txt'
+        );
+    return paths;
+}
+
+export function collectMigrationResult(out, jobStatus, env = process.env) {
+    let state = 'failed';
+    const files = {};
+    try {
+        const outcome = json(out, 'migration-state.json');
+        const plan = json(out, 'migrations.generated.json');
+        const paths = resultPaths(outcome.state, plan);
+        for (const path of paths) files[path] = digest(piece(out, path));
+        if (
+            jobStatus === 'success' &&
+            ['ready', 'action-required'].includes(outcome.state)
+        )
+            state = outcome.state;
+    } catch {
+        /* Conserver un diagnostic failed, même si la panne précède Nx. */
+    }
+    const result = { ...identity(env.MIGRATION_SYSTEM, env), state, files };
+    writeJson(join(out, 'result.json'), result);
+    return result;
+}
+
+export function aggregateMigrationResults(root, systems, env = process.env) {
+    const names = systems.map(
+        (s) =>
+            `nx-migration-${s}-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`
+    );
+    if (
+        JSON.stringify(readdirSync(root).sort()) !==
+        JSON.stringify([...names].sort())
+    )
+        throw new Error('artefacts de systèmes manquants ou supplémentaires');
+    const states = systems.map((system, i) => {
+        const dir = join(root, names[i]);
+        const result = json(dir, 'result.json');
+        const expected = identity(system, env);
+        if (
+            Object.entries(expected).some(([k, v]) => result[k] !== v) ||
+            !['ready', 'action-required'].includes(result.state)
+        )
+            throw new Error('identité ou état de résultat refusé');
+        const plan = json(dir, 'migrations.generated.json');
+        const outcome = migrationOutcome(
+            piece(dir, 'run-migrations.txt').toString(),
+            0,
+            plan
+        );
+        if (
+            outcome.state !== result.state ||
+            JSON.stringify(json(dir, 'migrations.remaining.json')) !==
+                JSON.stringify({ migrations: outcome.pending })
+        )
+            throw new Error('plan restant ou état incohérent');
+        const required = resultPaths(result.state, plan);
+        for (const path of required)
+            if (result.files?.[path] !== digest(piece(dir, path)))
+                throw new Error(`pièce incohérente : ${path}`);
+        return result.state;
+    });
+    return states.every((s) => s === 'ready') ? 'ready' : 'action-required';
+}
+
+function outcomeWorkflowErrors(workflow) {
+    const errors = [];
+    const jobs = workflow.jobs ?? {};
+    const migrate = jobs.calculate?.steps?.find((s) => s.id === 'migrate');
+    const assess = jobs.assess;
+    const followup = jobs.followup;
+    if (
+        assess?.permissions !== undefined ||
+        assess?.needs?.join() !== 'plan,calculate' ||
+        assess?.steps?.find((s) => s.id === 'assess')?.run !==
+            'test "$CALCULATE_RESULT" = success\nnode tools/nx-migration-plan.mjs assess "$RUNNER_TEMP/nx-assess"\n'
+    )
+        errors.push('agrégation readonly absente ou contournée');
+    const download = assess?.steps?.find((s) =>
+        s.uses?.startsWith('actions/download-artifact@')
+    );
+    if (
+        assess?.if !== "always() && needs.plan.outputs.target != ''" ||
+        assess?.env?.CALCULATE_RESULT !== '${{ needs.calculate.result }}' ||
+        assess?.outputs?.state !== '${{ steps.assess.outputs.state }}' ||
+        download?.with?.pattern !==
+            'nx-migration-*-${{ github.run_id }}-${{ github.run_attempt }}' ||
+        ['run-id', 'repository', 'merge-multiple', 'name'].some(
+            (k) => download?.with?.[k] !== undefined
+        )
+    )
+        errors.push('agrégation déliée des deux artefacts du run exact');
+    const steps = jobs.calculate?.steps ?? [];
+    const after = steps.slice(steps.indexOf(migrate) + 1);
+    for (const step of after.filter(
+        (s) =>
+            !s.uses?.startsWith('actions/upload-artifact@') &&
+            s.id !== 'collect'
+    ))
+        if (step.if !== "steps.migrate.outputs.state == 'ready'")
+            errors.push(
+                'suite de calcul accessible à une migration incomplète'
+            );
+    const collect = steps.find((s) => s.id === 'collect');
+    if (
+        !migrate?.run?.includes('node tools/nx-migration-plan.mjs outcome') ||
+        !migrate.run.includes(
+            'if test "$state" = action-required; then exit 0; fi'
+        ) ||
+        migrate.run.indexOf('if test "$state" = action-required;') >
+            migrate.run.indexOf('rm migrations.json') ||
+        collect?.if !== 'always()' ||
+        collect?.env?.JOB_STATUS !== '${{ job.status }}' ||
+        !collect?.run?.includes('git add --intent-to-add --all') ||
+        !collect.run.includes('git diff --binary HEAD') ||
+        !collect.run.includes('node tools/nx-migration-plan.mjs collect')
+    )
+        errors.push('état différé ou collecte des nouveaux fichiers manquant');
+    return [...errors, ...nxFollowupErrors(followup, FOLLOWUP_CONDITION)];
 }
 
 export function assertMigrationComplete(raw) {
@@ -416,6 +718,35 @@ async function main(args) {
         if (process.env.GITHUB_OUTPUT)
             appendFileSync(process.env.GITHUB_OUTPUT, output);
         console.log(JSON.stringify(plan, null, 2));
+    } else if (command === 'outcome' && rest.length === 2) {
+        const state = recordMigrationOutcome(
+            process.cwd(),
+            rest[0],
+            Number(rest[1])
+        );
+        if (process.env.GITHUB_OUTPUT)
+            appendFileSync(process.env.GITHUB_OUTPUT, `state=${state}\n`);
+        console.log(state);
+    } else if (command === 'collect' && rest.length === 2) {
+        collectMigrationResult(rest[0], rest[1]);
+    } else if (command === 'assess' && rest.length === 1) {
+        const workflow = parseYaml(
+            readFileSync('.github/workflows/nx-migrations.yml', 'utf8')
+        );
+        const state = aggregateMigrationResults(
+            rest[0],
+            workflow.jobs.calculate.strategy.matrix.os
+        );
+        if (process.env.GITHUB_OUTPUT)
+            appendFileSync(process.env.GITHUB_OUTPUT, `state=${state}\n`);
+        if (process.env.GITHUB_STEP_SUMMARY)
+            appendFileSync(
+                process.env.GITHUB_STEP_SUMMARY,
+                `Migration Nx ${process.env.TARGET} : **${state}** sur Linux et macOS.\n` +
+                    (state === 'action-required'
+                        ? 'Instructions restantes conservées dans les deux artefacts. Aucune promotion ni publication acquise.\n'
+                        : 'Deux calculs et promotions complets ; candidat Linux publiable depuis main seulement.\n')
+            );
     } else if (command === 'complete' && rest.length === 1) {
         assertMigrationComplete(readFileSync(rest[0], 'utf8'));
     } else if (command === 'help' && rest.length === 1) {

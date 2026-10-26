@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import {
+    chmodSync,
+    mkdtempSync,
+    readFileSync,
+    rmSync,
+    writeFileSync,
+} from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
 import {
+    ALLOWED_JOB_WRITES,
     ALLOWED_SECRET_HANDOVERS,
     checkWorkflows,
     classifySecretUse,
@@ -527,4 +537,93 @@ test('secretViolations parcourt aussi les matrices et les tableaux', () => {
         })[0],
         /f\.yml › jobs\.a\.strategy\.matrix\.v\.0 : usage du contexte `secrets` non reconnu/
     );
+});
+
+test('Nx : suivi natif limité aux issues et gardé par main, sans élargir les autres jobs', () => {
+    const file = 'nx-migrations.yml';
+    const workflow = parseYaml(
+        readFileSync(
+            new URL(`../.github/workflows/${file}`, import.meta.url),
+            'utf8'
+        )
+    );
+    const check = (w) =>
+        checkWorkflows([{ file, content: stringifyYaml(w) }], {
+            writes: { [file]: ALLOWED_JOB_WRITES[file] },
+            handovers: {},
+        });
+    assert.deepEqual(check(workflow), []);
+    for (const mutate of [
+        (w) => {
+            w.jobs.followup.permissions.contents = 'write';
+        },
+        (w) => {
+            w.jobs.followup.permissions['pull-requests'] = 'write';
+        },
+        (w) => {
+            w.jobs.followup.if = "github.event_name == 'pull_request'";
+        },
+        (w) => {
+            w.jobs.assess.permissions = { issues: 'write' };
+        },
+    ]) {
+        const bad = structuredClone(workflow);
+        mutate(bad);
+        assert.ok(check(bad).length > 0);
+    }
+});
+
+test('le vrai shell du suivi crée une issue, puis actualise cette même issue, et refuse un doublon', (t) => {
+    const root = mkdtempSync(join(tmpdir(), 'nx-issue-test-'));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const gh = join(root, 'gh');
+    writeFileSync(
+        gh,
+        `#!${process.execPath}\nconst fs = require('node:fs');
+const path = process.env.GH_TEST_STATE;
+const state = JSON.parse(fs.readFileSync(path));
+const command = process.argv[3];
+if (command === 'list') console.log(JSON.stringify(state.issues));
+else if (command === 'create') { state.created++; state.issues.push({number:7,title:process.argv[process.argv.indexOf('--title')+1],state:'OPEN'}); }
+else if (command === 'edit') { if(process.argv[4] !== '7') process.exit(2); state.edited++; }
+else process.exit(3);
+fs.writeFileSync(path,JSON.stringify(state));\n`
+    );
+    chmodSync(gh, 0o755);
+    const statePath = join(root, 'issues.json');
+    writeFileSync(
+        statePath,
+        JSON.stringify({ issues: [], created: 0, edited: 0 })
+    );
+    const script = parseYaml(
+        readFileSync(
+            new URL('../.github/workflows/nx-migrations.yml', import.meta.url),
+            'utf8'
+        )
+    ).jobs.followup.steps[0].run;
+    const run = () =>
+        spawnSync('/bin/bash', ['-e', '-o', 'pipefail', '-c', script], {
+            encoding: 'utf8',
+            env: {
+                ...process.env,
+                TARGET: '24.0.1',
+                GITHUB_REPOSITORY: 'test/repo',
+                GITHUB_RUN_ID: '123',
+                GITHUB_RUN_ATTEMPT: '1',
+                PATH: `${root}:${process.env.PATH}`,
+                RUNNER_TEMP: root,
+                GH_TEST_STATE: statePath,
+            },
+        });
+    let result = run();
+    assert.equal(result.status, 0, result.stderr);
+    result = run();
+    assert.equal(result.status, 0, result.stderr);
+    const state = JSON.parse(readFileSync(statePath));
+    assert.equal(state.created, 1);
+    assert.equal(state.edited, 1);
+    state.issues.push({ ...state.issues[0], number: 8 });
+    writeFileSync(statePath, JSON.stringify(state));
+    assert.notEqual(run().status, 0);
+    assert.equal(JSON.parse(readFileSync(statePath)).created, 1);
 });
