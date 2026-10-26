@@ -12,7 +12,7 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, matchesGlob } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import semver from 'semver';
@@ -50,26 +50,6 @@ export const COHERENT_UPDATE_GROUPS = {
     'browser-e2e': ['@playwright/*'],
 };
 export const SAFE_GROUPED_UPDATE_TYPES = ['minor', 'patch'];
-export const ANGULAR_FRAMEWORK_PACKAGES = [
-    '@angular/animations',
-    '@angular/common',
-    '@angular/compiler',
-    '@angular/core',
-    '@angular/forms',
-    '@angular/localize',
-    '@angular/platform-browser',
-    '@angular/router',
-    '@angular/service-worker',
-];
-export const ANGULAR_TOOLING_PACKAGES = [
-    '@angular-devkit/core',
-    '@angular-devkit/schematics',
-    '@angular/build',
-    '@angular/cli',
-    '@angular/compiler-cli',
-    '@angular/language-service',
-    '@schematics/angular',
-];
 export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
     'brace-expansion': '5.0.12',
     'fast-uri': '4.1.5',
@@ -116,7 +96,139 @@ function dependencyVersion(pkg, name) {
     return pkg.dependencies?.[name] ?? pkg.devDependencies?.[name];
 }
 
-export function dependabotPolicyErrors(config, pkg) {
+/**
+ * Vérifie les pairs du groupe Angular déclaré, sans tableau de versions.
+ * Un consommateur du groupe contraint tous ses pairs ; un consommateur
+ * extérieur reste contraint lorsqu'il déclare un pair de ce groupe.
+ */
+function angularPeerErrors(lock, patterns) {
+    if (
+        !lock?.packages ||
+        typeof lock.packages !== 'object' ||
+        Array.isArray(lock.packages)
+    ) {
+        return [
+            'bun.lock : packages doit être un objet pour vérifier les pairs',
+        ];
+    }
+    if (
+        patterns.some(
+            (pattern) => typeof pattern !== 'string' || pattern.length === 0
+        )
+    ) {
+        return [
+            'groupe Angular : patterns doit contenir des chaînes non vides',
+        ];
+    }
+    const packages = lock.packages;
+    const errors = [];
+    const belongs = (name) =>
+        patterns.some((pattern) => matchesGlob(name, pattern));
+    const identity = (key) => {
+        const entry = packages[key];
+        if (!Array.isArray(entry) || typeof entry[0] !== 'string') return null;
+        const match = entry[0].match(/^(@[^/]+\/[^@]+|[^@]+)@(.+)$/);
+        return match ? { name: match[1], version: match[2] } : null;
+    };
+
+    // Même remontée de contextes que le résolveur du dépôt : une copie
+    // présente est choisie avant de tester sa plage, jamais contournée.
+    const resolve = (consumer, name) => {
+        let context = consumer;
+        while (true) {
+            const key = context ? `${context}/${name}` : name;
+            if (Object.hasOwn(packages, key)) return { key };
+            if (!context) return { key: null };
+            const owner = identity(context);
+            if (!owner) {
+                return { error: `contexte de paquet invalide : ${context}` };
+            }
+            if (context === owner.name) {
+                context = '';
+            } else if (context.endsWith(`/${owner.name}`)) {
+                context = context.slice(0, -owner.name.length - 1);
+            } else {
+                return {
+                    error: `contexte incohérent avec son identité : ${context}`,
+                };
+            }
+        }
+    };
+
+    for (const [key, record] of Object.entries(packages)) {
+        const consumer = identity(key);
+        if (!consumer) {
+            errors.push(`bun.lock packages[${key}] : identité invalide`);
+            continue;
+        }
+        const metadata = record[2];
+        if (
+            metadata !== undefined &&
+            (!metadata ||
+                typeof metadata !== 'object' ||
+                Array.isArray(metadata))
+        ) {
+            errors.push(`bun.lock packages[${key}] : métadonnées invalides`);
+            continue;
+        }
+        const peers = metadata?.peerDependencies;
+        if (peers === undefined) continue;
+        if (!peers || typeof peers !== 'object' || Array.isArray(peers)) {
+            errors.push(`bun.lock packages[${key}] : pairs mal formés`);
+            continue;
+        }
+        const optional = Object.hasOwn(metadata, 'optionalPeers')
+            ? metadata.optionalPeers
+            : [];
+        if (
+            !Array.isArray(optional) ||
+            optional.some((name) => typeof name !== 'string')
+        ) {
+            errors.push(`bun.lock packages[${key}] : optionalPeers invalide`);
+            continue;
+        }
+        for (const [name, range] of Object.entries(peers)) {
+            if (!belongs(consumer.name) && !belongs(name)) continue;
+            const prefix = `pair de ${key} : ${name}`;
+            if (
+                typeof range !== 'string' ||
+                range.trim().length === 0 ||
+                !semver.validRange(range)
+            ) {
+                errors.push(`${prefix} a une plage invalide`);
+                continue;
+            }
+            const found = resolve(key, name);
+            if (found.error) {
+                errors.push(`${prefix} : ${found.error}`);
+                continue;
+            }
+            if (found.key === null) {
+                if (!optional.includes(name)) {
+                    errors.push(`${prefix}@${range} requis mais absent`);
+                }
+                continue;
+            }
+            const resolved = identity(found.key);
+            if (
+                !resolved ||
+                resolved.name !== name ||
+                !semver.valid(resolved.version)
+            ) {
+                errors.push(
+                    `${prefix} : résolution invalide dans packages[${found.key}]`
+                );
+            } else if (!semver.satisfies(resolved.version, range)) {
+                errors.push(
+                    `${prefix}@${resolved.version} dans packages[${found.key}] ne respecte pas ${range}`
+                );
+            }
+        }
+    }
+    return errors;
+}
+
+export function dependabotPolicyErrors(config, pkg, lock) {
     const errors = [];
     const bunRoots = (config?.updates ?? []).filter(
         (update) =>
@@ -226,38 +338,8 @@ export function dependabotPolicyErrors(config, pkg) {
         }
     }
 
-    const catalog = pkg?.workspaces?.catalog ?? {};
-    const tooling = pkg?.workspaces?.catalogs?.tooling ?? {};
-    const frameworkVersion = catalog['@angular/core'];
-    if (!semver.valid(frameworkVersion)) {
-        errors.push(
-            `version Angular core exacte absente ou invalide : ${String(frameworkVersion)}`
-        );
-    }
-    for (const dependency of ANGULAR_FRAMEWORK_PACKAGES) {
-        if (catalog[dependency] !== frameworkVersion) {
-            errors.push(
-                `famille Angular framework désalignée : ${dependency}=${String(catalog[dependency])}, core=${String(frameworkVersion)}`
-            );
-        }
-    }
-    for (const dependency of ANGULAR_TOOLING_PACKAGES) {
-        if (tooling[dependency] !== frameworkVersion) {
-            errors.push(
-                `famille Angular tooling désalignée : ${dependency}=${String(tooling[dependency])}, core=${String(frameworkVersion)}`
-            );
-        }
-    }
-    const materialVersion = catalog['@angular/material'];
-    const cdkVersion = catalog['@angular/cdk'];
-    if (
-        !semver.valid(materialVersion) ||
-        !semver.valid(cdkVersion) ||
-        materialVersion !== cdkVersion
-    ) {
-        errors.push(
-            `famille Angular Material désalignée : material=${String(materialVersion)}, cdk=${String(cdkVersion)}`
-        );
+    if (Array.isArray(angularPatterns)) {
+        errors.push(...angularPeerErrors(lock, angularPatterns));
     }
 
     const react = dependencyVersion(pkg, 'react');
@@ -508,7 +590,7 @@ function main() {
         process.exit(2);
     }
     const errors = [
-        ...dependabotPolicyErrors(config, pkg),
+        ...dependabotPolicyErrors(config, pkg, lock),
         ...ignoredVersionPolicyErrors(config, lock),
         ...securityResolutionPolicyErrors(pkg, lock),
     ];
