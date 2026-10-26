@@ -298,6 +298,14 @@ export async function qualifyBrowser(session, product, plans, browser) {
             );
         build();
         record(session, `T18/browser/${plan.profile}`, smoke());
+        const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
+        assert.ok(
+            typeof fixture.publicTitle === 'string' &&
+                fixture.publicTitle.length > 0
+        );
+        const publicTitle = new RegExp(
+            fixture.publicTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        );
         const page = Object.keys(plan.files).find(
             (path) =>
                 path.startsWith('src/app/pages/') &&
@@ -312,7 +320,7 @@ export async function qualifyBrowser(session, product, plans, browser) {
                 build();
                 return smoke();
             },
-            /Accueil fictif/
+            publicTitle
         );
         const guard = angular
             ? 'src/app/app.routes.ts'

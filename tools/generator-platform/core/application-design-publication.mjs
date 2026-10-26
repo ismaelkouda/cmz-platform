@@ -4,6 +4,13 @@ import { basename, dirname, relative, resolve, sep } from 'node:path';
 
 import { validateApplicationDesignWithDependencies } from './application-design.mjs';
 import { publishDocument } from './document-publication.mjs';
+import {
+    assertCompilationPaths,
+    beginCompilationContext,
+    bindCompilationContext,
+    publicCompilationContext,
+    publishCompilationWithContext,
+} from './compilation-context.mjs';
 import { parseStructuredSource } from './source-document.mjs';
 
 function fail(message) {
@@ -79,14 +86,32 @@ async function outputFile(root, path) {
 
 export async function planApplicationDesignPublication({
     workspaceRoot,
+    targetRoot,
     sourcePath,
     outputPath,
     applicationDesignSchema,
     backendContractSchema,
 }) {
-    const root = await realpath(resolve(workspaceRoot));
+    const context = await beginCompilationContext({
+        workspaceRoot,
+        targetRoot,
+    });
+    assertCompilationPaths(context, sourcePath, outputPath);
+    const root =
+        context?.productRoot ?? (await realpath(resolve(workspaceRoot)));
     const source = await sourceFile(root, sourcePath);
     const output = await outputFile(root, outputPath);
+    const compilationContext = await bindCompilationContext(context, {
+        kind: 'design',
+        sourcePath,
+        sourceContent: source.content,
+        outputPath,
+        document: source.design,
+        schemas: {
+            'application-design': applicationDesignSchema,
+            'backend-contract': backendContractSchema,
+        },
+    });
     const errors = await validateApplicationDesignWithDependencies({
         design: source.design,
         applicationDesignSchema,
@@ -105,10 +130,16 @@ export async function planApplicationDesignPublication({
             source_sha256: sourceHash,
             output: output.relative,
             output_sha256: outputHash,
+            ...(compilationContext
+                ? { compilation_context_sha256: compilationContext.sha256 }
+                : {}),
         })
     );
     return {
         plan_id: planId,
+        ...(compilationContext
+            ? { compilation_context: compilationContext }
+            : {}),
         source: source.relative,
         source_sha256: sourceHash,
         output: output.relative,
@@ -128,11 +159,18 @@ export async function publishApplicationDesign(options) {
     const plan = await planApplicationDesignPublication(options);
     if (options.planId !== plan.plan_id)
         fail('reviewed plan id is stale or invalid');
-    return publishDocument(plan, fail);
+    return publishCompilationWithContext(
+        options,
+        plan,
+        planApplicationDesignPublication,
+        publishDocument,
+        fail
+    );
 }
 
 export function publicApplicationDesignPlan(plan) {
     return {
+        ...publicCompilationContext(plan),
         plan_id: plan.plan_id,
         source: plan.source,
         source_sha256: plan.source_sha256,
