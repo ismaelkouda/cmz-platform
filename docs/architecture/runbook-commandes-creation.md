@@ -1,7 +1,7 @@
 # Runbook humain — créer une app, ajouter une bibliothèque, créer un module
 
-Ce guide sert à comprendre et dépanner les commandes de création. Il ne
-remplace pas leurs contrôles : en cas de doute, la commande échoue sans publier.
+Ce guide sert à comprendre et dépanner les commandes de création. Il ne remplace
+pas leurs contrôles : en cas de doute, la commande échoue sans publier.
 
 ## Réflexe commun : `--explain`
 
@@ -181,14 +181,19 @@ ancien sans retirer la propriété du snapshot initial intact.
 
 `create-app --target-root <absolu>` exige `--dry-run` ou `--expect-plan <id>`.
 Le design et ses snapshots restent relatifs au produit, sans copie ni secours
-dans l'atelier. Compilation, build, lint zéro warning et tests sont locaux.
-Un fichier étranger bloque ; une reprise ne supprime ni ne déplace cet arbre.
+dans l'atelier. Compilation, build, lint zéro warning et tests sont locaux. Un
+fichier étranger bloque ; une reprise ne supprime ni ne déplace cet arbre.
 
 La preuve `check:external-application-shells` exige un `--proof-root` neuf,
-durable et extérieur. Elle installe ses outils de laboratoire, confine les
-deux apps, casse chaque contrôle puis vérifie sa restauration. Rapport texte,
-aucun environnement réel. Un échec arrête la suite et reçoit son analyse.
-Voir [le protocole détaillé](./external-application-creation.md).
+durable et extérieur. Elle installe ses outils de laboratoire, confine les deux
+apps, casse chaque contrôle puis vérifie sa restauration. Rapport texte, aucun
+environnement réel. Un échec arrête la suite et reçoit son analyse. Voir
+[le protocole détaillé](./external-application-creation.md).
 
-Dans le chantier SEOS, Ismael lance uniquement les commandes PRÊTES du registre,
-après revue de Claude ; ces exemples ne sont pas des autorisations d'exécution.
+L'opérateur autorisé lance les commandes relues pour son projet ; ces exemples
+ne sont pas des autorisations d'exécution.
+
+## 5. Compiler les documents extérieurs — EXT-03a
+
+Voir le [protocole EXT-03a](./external-application-creation.md) pour les
+commandes, plans, refus et quatre preuves natives distinctes.

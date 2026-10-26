@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { pathToFileURL } from 'node:url';
 
 import { provisionBrowser } from '../library-setup/browser-provisioning.mjs';
@@ -11,18 +12,13 @@ import {
     publishApplicationWorkspace,
     publishExternalApplicationShell,
 } from './core/application-workspace.mjs';
-import {
-    readProductFile,
-    verifyGeneratedTree,
-} from './core/external-application-paths.mjs';
+import { verifyGeneratedTree } from './core/external-application-paths.mjs';
 import { EXTERNAL_WORKSPACE_CMZ as CMZ } from './renderers/application-workspace-renderer.mjs';
 import {
     formatProofStop,
-    hash,
     snapshotTree,
     TOOLS_ROOT,
     workspaceOptions,
-    writeExternalDesign,
 } from './test-support/external-application-fixture.mjs';
 import {
     confinedNode,
@@ -37,6 +33,12 @@ import {
     qualifyMutations,
     qualifyWeights,
 } from './proof-support/external-application-checks.mjs';
+
+import {
+    nativeDocumentFixture,
+    runNativeDocumentCell,
+    SHARED_DOCUMENT_SOURCE,
+} from './proof-support/external-document-native.mjs';
 
 export { qualifyNodeVersion } from './proof-support/external-application-runtime.mjs';
 export { qualifyBrowser, qualifyWeights };
@@ -66,111 +68,126 @@ export function parseArgs(argv) {
 
 export async function main(argv = process.argv.slice(2)) {
     const options = parseArgs(argv);
+    const proofStarted = performance.now();
     const session = await proofSession(options);
     const sourceBefore = await snapshotTree(TOOLS_ROOT);
     try {
-        const product = resolve(session.root, 'product');
-        const prepareOptions = workspaceOptions(product);
-        let workspace;
-        for (const profiles of [
-            ['angular-pwa'],
-            ['react-spa'],
-            prepareOptions.profiles,
-        ]) {
-            const targetRoot =
-                profiles.length === 2
-                    ? product
-                    : resolve(session.root, profiles[0]);
-            workspace = await planApplicationWorkspace({
-                ...prepareOptions,
-                profiles,
-                targetRoot,
-            });
+        // Keep the two single-profile installation oracles, then install A and B
+        // independently. No copied node_modules or synthetic certificate.
+        for (const profile of ['angular-pwa', 'react-spa']) {
+            const installStarted = performance.now();
+            const options = workspaceOptions(resolve(session.root, profile), [
+                profile,
+            ]);
+            const plan = await planApplicationWorkspace(options);
             assert.equal(
                 (
                     await publishApplicationWorkspace({
-                        ...prepareOptions,
-                        profiles,
-                        targetRoot,
+                        ...options,
+                        expectedPlanId: plan.plan_id,
+                    })
+                ).status,
+                'prepared'
+            );
+            await installRealPackages(session, plan);
+            session.lines.push(
+                `installation/${profile} elapsed_ms=${Math.round(performance.now() - installStarted)}`
+            );
+        }
+        const allPlans = [];
+        let product;
+        let input;
+        let plans;
+        for (const kind of ['A', 'B']) {
+            const installStarted = performance.now();
+            const root = resolve(session.root, `product-${kind.toLowerCase()}`);
+            const options = workspaceOptions(root);
+            const workspace = await planApplicationWorkspace(options);
+            assert.equal(
+                (
+                    await publishApplicationWorkspace({
+                        ...options,
                         expectedPlanId: workspace.plan_id,
                     })
                 ).status,
                 'prepared'
             );
             await installRealPackages(session, workspace);
-        }
-        const sharedPath =
-            'examples/application-conception-proof/project-brief.md';
-        const sharedContent = await readProductFile(TOOLS_ROOT, sharedPath);
-        const input = await writeExternalDesign(product, {
-            path: sharedPath,
-            content: sharedContent,
-        });
-        session.lines.push(
-            `fictitious_shared_source=${sharedPath} sha256=${hash(sharedContent)}`
-        );
-        const plans = [];
-        const shellOptions = [];
-        const run = (command, args, root) => {
-            assert.equal(command, process.execPath);
-            assert.equal(root, product);
-            const label =
-                args[1] === 'run'
-                    ? args[2]
-                    : args[0].endsWith('check-workspace.mjs')
-                      ? 'workspace-contract'
-                      : 'native-compiler';
-            record(
-                session,
-                `T9-T12/${label}`,
-                confinedNode(session, product, args)
+            session.lines.push(
+                `installation/${kind} elapsed_ms=${Math.round(performance.now() - installStarted)}`
             );
-        };
-        for (const profile of ['angular-pwa', 'react-spa']) {
-            const shell = {
-                workspaceRoot: TOOLS_ROOT,
-                targetRoot: product,
-                appName:
-                    profile === 'angular-pwa'
-                        ? 'native-angular'
-                        : 'native-react',
-                profile,
-                designPath: input.designPath,
-                experienceId: input.experienceId,
-            };
-            const plan = await planExternalApplicationShell(shell);
-            const result = await publishExternalApplicationShell(
-                { ...shell, expectedPlanId: plan.plan_id },
-                { run }
-            );
-            assert.equal(result.recovered, false);
-            plans.push(result.plan);
-            shellOptions.push({ ...shell, expectedPlanId: plan.plan_id });
-        }
-        for (const shell of shellOptions) {
-            assert.equal(
-                (await publishExternalApplicationShell(shell, { run }))
-                    .recovered,
-                true
-            );
+            const fixture = await nativeDocumentFixture(root, kind);
+            const currentPlans = [];
+            const shells = [];
+            for (const profile of ['angular-pwa', 'react-spa']) {
+                await runNativeDocumentCell(session, fixture, profile);
+                const shell = {
+                    workspaceRoot: TOOLS_ROOT,
+                    targetRoot: root,
+                    appName: `ext03a-${kind.toLowerCase()}-${profile}`,
+                    profile,
+                    designPath: fixture.designPath,
+                    experienceId: fixture.design.experiences[0].id,
+                };
+                const plan = await planExternalApplicationShell(shell);
+                await verifyGeneratedTree(plan.outputAbsolute, plan.files);
+                currentPlans.push(plan);
+                allPlans.push(plan);
+                shells.push({ ...shell, expectedPlanId: plan.plan_id });
+            }
+            if (kind === 'A') {
+                await displacedEntry(
+                    session,
+                    root,
+                    SHARED_DOCUMENT_SOURCE,
+                    () =>
+                        confinedNode(session, root, [
+                            `${CMZ.support}/check-workspace.mjs`,
+                        ]),
+                    /Échec du contrat workspace/
+                );
+            } else {
+                // Preserve recovery, mutation, confinement and browser T9–T18.
+                const run = (command, args, cwd) => {
+                    assert.equal(command, process.execPath);
+                    assert.equal(cwd, root);
+                    record(
+                        session,
+                        `T9-T12/recovery/${args[2] ?? 'compiler'}`,
+                        confinedNode(session, root, args)
+                    );
+                };
+                for (const shell of shells)
+                    assert.equal(
+                        (await publishExternalApplicationShell(shell, { run }))
+                            .recovered,
+                        true
+                    );
+                product = root;
+                plans = currentPlans;
+                const publicPage = fixture.design.pages.find(
+                    (page) => page.access.mode === 'public'
+                );
+                const protectedPage = fixture.design.pages.find(
+                    (page) => page.access.mode === 'authenticated'
+                );
+                assert.ok(publicPage && protectedPage);
+                input = {
+                    browserFixture: {
+                        title: fixture.design.design.title,
+                        publicPath: publicPage.path,
+                        publicTitle: publicPage.title,
+                        protectedPath: protectedPage.path,
+                        protectedTitle: protectedPage.title,
+                    },
+                };
+            }
         }
         await session.save();
         const instrumentation = await instrumentProduct(
             session,
             product,
             input.browserFixture
-        );
-        // Exactly the same relative source exists in the workshop. It cannot
-        // rescue a missing product input while the workshop is inaccessible.
-        await displacedEntry(
-            session,
-            product,
-            sharedPath,
-            () =>
-                confinedNode(session, product, [
-                    `${CMZ.support}/check-workspace.mjs`,
-                ]),
-            /Échec du contrat workspace/
         );
         for (const plan of plans)
             await qualifyMutations(session, product, plan);
@@ -187,7 +204,7 @@ export async function main(argv = process.argv.slice(2)) {
         await qualifyBrowser(session, product, plans, browser);
         await verifyGeneratedTree(instrumentation.proof, instrumentation.files);
         await rm(instrumentation.proof, { recursive: true });
-        for (const plan of plans)
+        for (const plan of allPlans)
             await verifyGeneratedTree(plan.outputAbsolute, plan.files);
         assert.deepEqual(
             await snapshotTree(TOOLS_ROOT),
@@ -195,7 +212,9 @@ export async function main(argv = process.argv.slice(2)) {
             'L’atelier a changé pendant la preuve'
         );
         session.lines.push(
+            `native-proof elapsed_ms=${Math.round(performance.now() - proofStarted)}`,
             'PASS real-native-shells-and-mutants',
+            'PASS EXT03a four document/native cells A+B Angular+React; no PWA or backend claim',
             'T19–T28 restent non qualifiés.'
         );
         await session.save();

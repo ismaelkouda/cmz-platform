@@ -27,6 +27,9 @@ function componentName(page) {
 }
 
 function renderRoutes(pages, entryPage) {
+    const guardImport = pages.some((page) => page.access.mode !== 'public')
+        ? "import { AppAccessGate } from './access-policy';\n"
+        : '';
     const imports = pages
         .map(
             (page) =>
@@ -46,8 +49,7 @@ function renderRoutes(pages, entryPage) {
 
     return `import { Navigate, Route, Routes } from 'react-router';
 
-import { AppAccessGate } from './access-policy';
-${imports}
+${guardImport}${imports}
 
 export function AppRoutes() {
     return (

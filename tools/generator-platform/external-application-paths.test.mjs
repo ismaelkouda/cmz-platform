@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cp, mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
+
+import { fixtureGit, initFixtureRepo } from '../test-support/fixture-git.mjs';
 
 import {
     assertSourceWeight,
@@ -175,10 +177,19 @@ test('EXT01 v4 T-1 : une cible contenant une copie de travail enregistrée est r
     const hooks = join(parent, 'empty-hooks');
     await mkdir(toolsRoot, { recursive: true });
     await mkdir(hooks);
-    // Copy metadata first: worktree add can only register in this fixture.
-    await cp(join(TOOLS_ROOT, '.git'), join(toolsRoot, '.git'), {
-        recursive: true,
-    });
+    // Never copy .git: in a worktree it is a pointer to the shared repository.
+    initFixtureRepo(toolsRoot);
+    fixtureGit(toolsRoot, [
+        '-c',
+        'core.hooksPath=' + hooks,
+        '-c',
+        'commit.gpgSign=false',
+        'commit',
+        '--quiet',
+        '--allow-empty',
+        '-m',
+        'Initialize isolated path fixture',
+    ]);
     const git = (args) =>
         execFileSync(
             'git',
