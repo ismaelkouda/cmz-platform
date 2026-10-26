@@ -13,34 +13,34 @@
         "framework": ">=22.0.0 <23"
       },
       "packages": {
-        "@angular/cdk": "22.2.3",
-        "@angular/material": "22.2.3"
+        "@angular/cdk": "22.2.4",
+        "@angular/material": "22.2.4"
       },
       "dependency_section": "dependencies",
       "catalog": "default",
       "reason": "Piste Angular Material 22 ; vérification complète requise pour chaque nouvelle combinaison framework/Material.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "dcb4be0b48d038bf8f762717f3d8035d7320a16b",
-        "source_context_sha256": "94e7bf6871181a12bd31cbd43b00d2e3c3f3a79358cfa814e7e921386e24bf91",
+        "commit": "820c3b95ad0ba635bec89b4bb6e9a05034dee578",
+        "source_context_sha256": "76d0159ce3650c76bdf628529645250d88dd9a54d409933abe0d8d21f7d257c0",
         "app": "backoffice-angular",
-        "plan_id": "library-plan:719ff96d2982e3c4fe6ed66a5b93f758d635821ecfbc07a0852021dfaddfbe75",
+        "plan_id": "library-plan:76007f7b64a30ca9a2444700ee6231900afeb3110e57c7f1ede2535f61401e85",
         "change_set_id": "changes:7d323c9a5b23172919272b0818ec0785ad84b43df59ca172a596605a2e2e6b93",
-        "app_tree_sha256": "922c43c2fb47730403ae2e7b9309edf7cd7365ee6b28d9b375656578a6ac5c94",
-        "track_sha256": "35740c744bf77870e1ddb607ba8f2b4833c05a30233e9bdf18123cfed5c4cb63",
+        "app_tree_sha256": "28a6a880c59b5dd45840c024ef38c096126e80088e67c28ff2716ba7b28fa8e4",
+        "track_sha256": "8cecc2ce9f93b3b38479d7b717393440c709dbcb571a0eaf94fd6ee3e218ba81",
         "tested_versions": {
           "node": "22.22.3",
           "bun": "1.3.14",
           "nx": "23.3.0",
           "framework": "22.2.3",
           "packages": {
-            "@angular/cdk": "22.2.3",
-            "@angular/material": "22.2.3"
+            "@angular/cdk": "22.2.4",
+            "@angular/material": "22.2.4"
           }
         },
         "dependency_state_sha256": {
-          "initial": "9f7d86ba01ee245285a7891132f952c37c6a78cac6d7ed11b6a371f4f371860d",
-          "final": "f9d2268ddcddd3fa2174ddcb131a4585c30729f4a9b4eace9929a7af06b658b6"
+          "initial": "c120e61454b71ed35b3807314a268ca7edd6ba607e03013583c8a137bd15f5e4",
+          "final": "c45a4554c05a55de0f291734f8f739e8861d196d8acb74f1a48993e93e8c666f"
         },
         "proofs": [
           "material-component-compiles",
@@ -102,7 +102,7 @@
             "tools/library-setup/tooling-fingerprint.mjs": "29110b4d51d71af0735073fcadeb30845fe4743222197fa3e15520daf2f12514"
           }
         },
-        "evidence_sha256": "b9f13e310551671a22a8e17228e87a475fd82c40e8060ee1ae8d47baccd105fa"
+        "evidence_sha256": "156857763bc56c9d0571b92fa9e5b5fc062ba90cb37623d7b44e76258a3581c6"
       }
     }
   ]
