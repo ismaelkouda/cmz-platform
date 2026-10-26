@@ -14,6 +14,7 @@ import test from 'node:test';
 import { parse } from 'yaml';
 import {
     assertMigrateHelp,
+    nxWorkflowErrors,
     assertMigrationComplete,
     candidateMatrix,
     migrationPlan,
@@ -379,4 +380,60 @@ test('la vérification native du bundle refuse corruption, autre base et chemin 
     result = verify('bad-path', git('rev-parse', 'HEAD'));
     assert.notEqual(result.status, 0);
     assert.match(result.stdout, /hors périmètre/);
+});
+
+test('les captures Nx conservent stderr avant tee, y compris après ajout d’un lecteur', () => {
+    const original = workflow();
+    assert.deepEqual(nxWorkflowErrors(original), []);
+    let count = 0;
+    for (const [jobName, job] of Object.entries(original.jobs)) {
+        for (const [index, step] of (job.steps ?? []).entries()) {
+            for (const line of (step.run ?? '').split('\n')) {
+                if (!/^\s*bunx nx\b.*\|\s*tee\s/.test(line)) continue;
+                const mutant = structuredClone(original);
+                mutant.jobs[jobName].steps[index].run = step.run.replace(
+                    line,
+                    line.replace('2>&1 ', '')
+                );
+                assert.ok(
+                    nxWorkflowErrors(mutant).some((e) =>
+                        e.includes('capture Nx incomplète')
+                    )
+                );
+                count++;
+            }
+        }
+    }
+    assert.ok(count > 0, 'le test doit exercer les vraies captures du YAML');
+    original.jobs.calculate.steps.push({
+        run: 'bunx nx report | tee "$RUNNER_TEMP/nx-result/report.txt"\nnode tools/nx-migration-plan.mjs help "$RUNNER_TEMP/nx-result/report.txt"',
+    });
+    assert.ok(
+        nxWorkflowErrors(original).some((e) =>
+            e.includes('capture Nx incomplète')
+        )
+    );
+});
+
+test('la vraie commande YAML capture l’aide du Nx installé dans le fichier analysé', (t) => {
+    const root = mkdtempSync(join(tmpdir(), 'nx-help-test-'));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, 'nx-result'));
+    const command = workflow()
+        .jobs.calculate.steps.find((s) => s.id === 'generate')
+        .run.split('\n')
+        .find((line) => /^bunx nx migrate --help\b/.test(line));
+    assert.ok(command);
+    const result = spawnSync(
+        '/bin/bash',
+        ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', command],
+        {
+            cwd: new URL('..', import.meta.url),
+            env: { ...process.env, RUNNER_TEMP: root },
+            encoding: 'utf8',
+            timeout: 15000,
+        }
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assertMigrateHelp(readFileSync(join(root, 'nx-result/help.txt'), 'utf8'));
 });

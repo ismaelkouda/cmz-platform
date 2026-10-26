@@ -108,12 +108,12 @@ jobs:
         working-directory: ${{ runner.temp }}/nx-candidate
         run: |
           bun install --frozen-lockfile --ignore-scripts
-          bunx nx --version | tee "$RUNNER_TEMP/nx-result/workspace-cli-version.txt"
-          bunx nx migrate --help | tee "$RUNNER_TEMP/nx-result/help.txt"
+          bunx nx --version 2>&1 | tee "$RUNNER_TEMP/nx-result/workspace-cli-version.txt"
+          bunx nx migrate --help 2>&1 | tee "$RUNNER_TEMP/nx-result/help.txt"
           node tools/nx-migration-plan.mjs help "$RUNNER_TEMP/nx-result/help.txt"
           # Le lanceur Nx délègue nativement à NX_MIGRATE_CLI_VERSION :
           # un bunx nx@cible pourrait lui aussi revenir au Nx local.
-          bunx nx migrate "nx@$TARGET" --include=required --agentic=false | tee "$RUNNER_TEMP/nx-result/generate.txt"
+          bunx nx migrate "nx@$TARGET" --include=required --agentic=false 2>&1 | tee "$RUNNER_TEMP/nx-result/generate.txt"
           if test -f migrations.json; then cp migrations.json "$RUNNER_TEMP/nx-result/migrations.generated.json"; fi
       - name: Verrou natif avant frozen puis migrations sans agent
         id: migrate
@@ -123,7 +123,7 @@ jobs:
           bun install --frozen-lockfile --ignore-scripts
           node tools/nx-migration-plan.mjs installed "$TARGET"
           if test -f migrations.json; then
-            bunx nx migrate --runMigrations=migrations.json --skipInstall --agentic=false | tee "$RUNNER_TEMP/nx-result/run-migrations.txt"
+            bunx nx migrate --runMigrations=migrations.json --skipInstall --agentic=false 2>&1 | tee "$RUNNER_TEMP/nx-result/run-migrations.txt"
             node tools/nx-migration-plan.mjs complete "$RUNNER_TEMP/nx-result/run-migrations.txt"
             rm migrations.json
           fi

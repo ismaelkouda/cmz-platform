@@ -120,11 +120,11 @@ export function workflowSelectors(workflow) {
             ?.split('\n')
             .some((line) =>
                 line.startsWith(
-                    'bunx nx migrate "nx@$TARGET" --include=required --agentic=false | tee '
+                    'bunx nx migrate "nx@$TARGET" --include=required --agentic=false 2>&1 | tee '
                 )
             ) ||
         !migration?.run?.includes(
-            'bunx nx migrate --runMigrations=migrations.json --skipInstall --agentic=false | tee '
+            'bunx nx migrate --runMigrations=migrations.json --skipInstall --agentic=false 2>&1 | tee '
         ) ||
         calculation.steps.some((s) =>
             ['TARGET', 'NX_MIGRATE_CLI_VERSION', 'NX_MIGRATION_SELECTORS'].some(
@@ -277,6 +277,16 @@ export function nxWorkflowErrors(workflow) {
         if (job.permissions !== undefined && !readOnly(job.permissions))
             errors.push(`${name} : jeton en écriture ou permissions élargies`);
         for (const step of job.steps ?? []) {
+            // Les journaux Nx peuvent sortir sur stderr, y compris l'aide.
+            for (const line of (step.run ?? '').split('\n')) {
+                if (
+                    /^\s*bunx nx\b.*\|\s*tee\s/.test(line) &&
+                    !/2>&1\s*\|\s*tee\s/.test(line)
+                )
+                    errors.push(
+                        `${name} : capture Nx incomplète, stderr absent avant tee`
+                    );
+            }
             if (
                 step.uses?.startsWith('actions/checkout@') &&
                 step.with?.['persist-credentials'] !== false
