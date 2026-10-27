@@ -50,6 +50,9 @@
       "continuous": true,
       "executor": "@angular/build:dev-server",
       "defaultConfiguration": "development",
+      "readyWhen": {
+        "signal": true
+      },
       "configurations": {
         "production": {
           "buildTarget": "library-qualification-angular:build:production"
@@ -66,7 +69,11 @@
         "buildTarget": "library-qualification-angular:build",
         "staticFilePath": "dist/apps/library-qualification-angular/browser",
         "spa": true
-      }
+      },
+      "readyWhen": {
+        "signal": true
+      },
+      "dependsOn": ["build"]
     }
   }
 }

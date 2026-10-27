@@ -20,19 +20,6 @@
         "max-warnings": 0
       }
     },
-    "@nx/eslint:lint": {
-      "cache": true,
-      "inputs": [
-        "default",
-        "^default",
-        "{workspaceRoot}/.eslintrc.json",
-        "{workspaceRoot}/.eslintignore",
-        "{workspaceRoot}/eslint.config.mjs"
-      ],
-      "options": {
-        "maxWarnings": 0
-      }
-    },
     "@angular/build:unit-test": {
       "cache": true,
       "inputs": ["default", "^default"]
@@ -69,6 +56,14 @@
       }
     },
     {
+      "plugin": "@nx/js/typescript",
+      "options": {
+        "typecheck": {
+          "targetName": "typecheck"
+        }
+      }
+    },
+    {
       "plugin": "@nx/vite/plugin",
       "options": {
         "buildTargetName": "build",
@@ -90,5 +85,8 @@
       }
     }
   ],
-  "nxCloudId": "69cfa6ba213c8001d0f75641"
+  "nxCloudId": "69cfa6ba213c8001d0f75641",
+  "affected": {
+    "legacy": true
+  }
 }

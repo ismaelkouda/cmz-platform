@@ -1,3 +1,4 @@
+import './test-support/external-application-nx24-tests.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -29,12 +30,8 @@ import {
     stageGeneratedTree,
     verifyGeneratedTree,
 } from './core/external-application-paths.mjs';
-import { renderAngularPwaShell } from './renderers/angular-pwa-shell-renderer.mjs';
-import { renderReactSpaShell } from './renderers/react-spa-shell-renderer.mjs';
 import {
-    baselineRenderer,
     fixtureParent,
-    hash,
     shellFixture,
     snapshotTree,
     TOOLS_ROOT,
@@ -454,56 +451,6 @@ test('T8 : le publisher conserve son verrou jusqu’à la fin des contrôles', a
     } finally {
         release();
         await assert.rejects(first, /first stopped/);
-    }
-});
-
-test('T13 : configurations strictes et compilation/test/lint natifs locaux des deux cibles', async (t) => {
-    for (const profile of ['angular-pwa', 'react-spa']) {
-        const fixture = await shellFixture(t, profile);
-        const plan = await planExternalApplicationShell(fixture.shell);
-        const project = JSON.parse(plan.files['project.json']);
-        assert.equal(project.targets.lint.executor, '@nx/eslint:lint');
-        assert.equal(project.targets.lint.options.maxWarnings, 0);
-        assert.ok(project.targets.test.executor);
-        assert.ok(
-            !JSON.stringify(project).includes('tools/generator-platform')
-        );
-        assert.doesNotMatch(
-            plan.files[
-                profile === 'angular-pwa' ? 'src/main.ts' : 'src/main.tsx'
-            ],
-            /console\./
-        );
-    }
-});
-
-test('T16 : le rendu historique reste égal aux octets du commit de base, pour chaque cible', async (t) => {
-    const fixture = await shellFixture(t);
-    for (const profile of ['angular-pwa', 'react-spa']) {
-        const reference = await baselineRenderer(profile);
-        const fn =
-            profile === 'angular-pwa'
-                ? 'renderAngularPwaShell'
-                : 'renderReactSpaShell';
-        const render =
-            profile === 'angular-pwa'
-                ? renderAngularPwaShell
-                : renderReactSpaShell;
-        const options = {
-            design: fixture.input.design,
-            experienceId: fixture.input.experienceId,
-            appName: 'historical-shell',
-            designPath: fixture.input.designPath,
-            designSha256: hash(
-                await readFile(join(fixture.root, fixture.input.designPath))
-            ),
-        };
-        const expected = await reference[fn](options);
-        assert.deepEqual((await render(options)).files, expected.files);
-        assert.deepEqual(
-            (await render({ ...options, externalWorkspace: false })).files,
-            expected.files
-        );
     }
 });
 

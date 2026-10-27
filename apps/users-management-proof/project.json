@@ -4,10 +4,10 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/users-management-proof/src",
-  "tags": ["type:app", "experience:operator-web"],
   "i18n": {
     "sourceLocale": "fr"
   },
+  "tags": ["type:app", "experience:operator-web"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
@@ -54,6 +54,9 @@
       "continuous": true,
       "executor": "@angular/build:dev-server",
       "defaultConfiguration": "development",
+      "readyWhen": {
+        "signal": true
+      },
       "configurations": {
         "production": {
           "buildTarget": "users-management-proof:build:production"
@@ -85,7 +88,11 @@
         "buildTarget": "users-management-proof:build",
         "staticFilePath": "dist/apps/users-management-proof/browser",
         "spa": true
-      }
+      },
+      "readyWhen": {
+        "signal": true
+      },
+      "dependsOn": ["build"]
     }
   }
 }
