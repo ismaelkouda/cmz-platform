@@ -35,8 +35,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NODE_VERSION: '22.22.3'
-  BUN_VERSION: '1.3.14'
   NX_MIGRATION_SELECTORS: '["nx","@nx/*"]'
   NX_DAEMON: 'false'
   NX_NO_CLOUD: 'true'
@@ -58,10 +56,22 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
+      - name: Verify node runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
+          expected="$(node -p 'require("./package.json").packageManager.slice(4)')"
+          test "$(bun --version)" = "$expected"
       - run: bun install --frozen-lockfile --ignore-scripts
       - id: plan
         env:
@@ -99,10 +109,22 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
+      - name: Verify node runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
+          expected="$(node -p 'require("./package.json").packageManager.slice(4)')"
+          test "$(bun --version)" = "$expected"
       - name: Clone ordinaire et journaux hors de l'arbre candidat
         run: |
           mkdir -p "$RUNNER_TEMP/nx-result"
@@ -266,10 +288,22 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
+      - name: Verify node runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
+          expected="$(node -p 'require("./package.json").packageManager.slice(4)')"
+          test "$(bun --version)" = "$expected"
       - run: bun install --frozen-lockfile --ignore-scripts
       - uses: actions/download-artifact@v7
         with:
@@ -444,10 +478,22 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
+      - name: Verify node runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
+          expected="$(node -p 'require("./package.json").packageManager.slice(4)')"
+          test "$(bun --version)" = "$expected"
       - name: SHA exact accessible depuis une branche du dépôt
         id: qualification-input
         run: |

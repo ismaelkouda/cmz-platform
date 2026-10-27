@@ -45,8 +45,6 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '22.22.3'
-  BUN_VERSION: '1.3.14'
   # Par défaut, rien n'utilise Nx Cloud : le cache local suffit et aucun
   # secret n'est distribué au workflow. Le jeton n'est remis, pour le seul
   # code de `main`, qu'aux étapes listées dans `ALLOWED_SECRET_HANDOVERS`
@@ -65,11 +63,23 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
+      - name: Verify node runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
+          expected="$(node -p 'require("./package.json").packageManager.slice(4)')"
+          test "$(bun --version)" = "$expected"
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -234,11 +244,23 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
+      - name: Verify node runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
+          expected="$(node -p 'require("./package.json").packageManager.slice(4)')"
+          test "$(bun --version)" = "$expected"
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -257,11 +279,23 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
+      - name: Verify node runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
+          expected="$(node -p 'require("./package.json").packageManager.slice(4)')"
+          test "$(bun --version)" = "$expected"
 
       - name: Install dependencies
         run: bun install --frozen-lockfile

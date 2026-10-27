@@ -189,7 +189,11 @@ function isWired(scriptName, pkgScripts, sources) {
     return false;
 }
 
-function main() {
+async function main() {
+    const { repositoryRuntimeErrors } =
+        await import('./runtime-version-policy.mjs');
+    const runtimeErrors = repositoryRuntimeErrors(ROOT);
+    if (runtimeErrors.length) throw new Error(runtimeErrors.join('\n'));
     const scripts = [
         ...new Set([...loadCheckAllScripts(), ...REQUIRED_STANDALONE_SCRIPTS]),
     ];

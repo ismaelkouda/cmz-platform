@@ -68,6 +68,10 @@ export const REVIEWED_EVENTS = [
 // Écritures de job acceptées. Toute autre écriture échoue : l'ajouter ici est
 // une décision relue, pas un effet de bord.
 export const ALLOWED_JOB_WRITES = {
+    'runtime-version-alignment.yml': {
+        events: ['schedule', 'workflow_dispatch'],
+        jobs: { publish: ['actions', 'contents'] },
+    },
     'nx-migrations.yml': {
         events: ['pull_request', 'schedule', 'workflow_dispatch'],
         jobs: {
@@ -459,9 +463,14 @@ function loadWorkflows() {
         }));
 }
 
-function main() {
+async function main() {
+    const { repositoryRuntimeErrors } =
+        await import('./runtime-version-policy.mjs');
     const workflows = loadWorkflows();
-    const violations = checkWorkflows(workflows);
+    const violations = [
+        ...checkWorkflows(workflows),
+        ...repositoryRuntimeErrors(ROOT),
+    ];
     if (violations.length) {
         console.error('❌ check:workflow-privileges');
         for (const violation of violations) console.error(`  - ${violation}`);
