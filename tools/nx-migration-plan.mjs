@@ -11,7 +11,10 @@ import {
 } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { parse as parseYaml } from 'yaml';
-import { nxFollowupErrors } from './check-workflow-privileges.mjs';
+import {
+    nxFollowupErrors,
+    nxQualificationErrors,
+} from './check-workflow-privileges.mjs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
@@ -103,7 +106,7 @@ export function workflowSelectors(workflow) {
     const job = workflow?.jobs?.plan;
     const step = job?.steps?.find((s) => s.id === 'plan');
     if (
-        job?.if !== undefined ||
+        job?.if !== "inputs.mode != 'qualification'" ||
         step?.if !== undefined ||
         step?.env?.NX_MIGRATION_SELECTORS !== undefined ||
         job?.env?.NX_MIGRATION_SELECTORS !== undefined ||
@@ -150,13 +153,11 @@ export function workflowSelectors(workflow) {
 }
 
 export const PUBLISH_CONDITION =
-    "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.calculate.result == 'success' && needs.assess.outputs.state == 'ready' && needs.plan.outputs.target != ''";
+    "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.calculate.result == 'success' && needs.assess.outputs.state == 'ready' && needs.plan.outputs.target != '' && inputs.mode != 'qualification'";
 
 export const FOLLOWUP_CONDITION =
-    "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.assess.outputs.state == 'action-required'";
+    "github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.assess.outputs.state == 'action-required' && inputs.mode != 'qualification'";
 
-// Point de raccord pour le garde après revue de PEER-GRAPH. Les autres
-// exclusions restent intégralement soumises à sa justification par les pairs.
 export function delegatedIgnorePolicy(config, pkg, workflow) {
     const errors = nxWorkflowErrors(workflow);
     if (errors.length) return { config, errors };
@@ -198,7 +199,7 @@ export function delegatedIgnorePolicy(config, pkg, workflow) {
 
 export function nxWorkflowErrors(workflow) {
     workflow ??= {};
-    const errors = [];
+    const errors = nxQualificationErrors(workflow);
     if (
         /Co-Authored-By:|Préparé par Codex/i.test(JSON.stringify(workflow.jobs))
     ) {

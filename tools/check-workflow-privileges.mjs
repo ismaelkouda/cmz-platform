@@ -506,3 +506,172 @@ export function nxFollowupErrors(followup, condition) {
         );
     return errors;
 }
+
+export const QUALIFICATION_CONDITION =
+    "github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.mode == 'qualification'";
+
+export function nxQualificationErrors(workflow) {
+    const errors = [];
+    const inputs = workflow.on?.workflow_dispatch?.inputs;
+    const job = workflow.jobs?.qualification;
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    if (
+        !same(Object.keys(workflow.jobs ?? {}).sort(), [
+            'assess',
+            'calculate',
+            'followup',
+            'plan',
+            'publish',
+            'qualification',
+        ])
+    )
+        errors.push('qualification : job supplémentaire sans routage relu');
+    if (
+        inputs?.mode?.default !== 'migration' ||
+        inputs.mode.type !== 'choice' ||
+        !same(inputs.mode.options, ['migration', 'qualification']) ||
+        inputs?.candidate_sha?.type !== 'string'
+    )
+        errors.push('qualification : mode fermé et SHA de dispatch manquants');
+    if (
+        !same(job?.permissions, { contents: 'read' }) ||
+        job?.if !== QUALIFICATION_CONDITION ||
+        job?.needs !== undefined ||
+        job?.['runs-on'] !== '${{ matrix.os }}' ||
+        !same(job?.strategy?.matrix, { os: ['ubuntu-latest', 'macos-14'] }) ||
+        job?.strategy?.['fail-fast'] !== false ||
+        job?.['timeout-minutes'] !== 45
+    )
+        errors.push(
+            'qualification : matrice readonly ou plafond non conformes'
+        );
+    if (
+        job?.env?.SOURCE_SHA !== '${{ inputs.candidate_sha }}' ||
+        job?.env?.TARGET !== '${{ inputs.target }}' ||
+        job?.env?.NX_CACHE_PROJECT_GRAPH !== 'false' ||
+        job?.env?.NX_SKIP_NX_CACHE !== 'true' ||
+        job?.defaults?.run?.shell !== 'bash'
+    )
+        errors.push(
+            'qualification : identité ou graphe frais déliés des entrées'
+        );
+    for (const name of ['publish', 'followup'])
+        if (
+            !workflow.jobs?.[name]?.if?.endsWith(
+                " && inputs.mode != 'qualification'"
+            )
+        )
+            errors.push(`qualification : ${name} atteignable`);
+    if (workflow.jobs?.plan?.if !== "inputs.mode != 'qualification'")
+        errors.push('qualification : migration atteignable');
+    const steps = job?.steps ?? [];
+    const checkout = steps.find((s) => s.uses?.startsWith('actions/checkout@'));
+    if (
+        checkout?.with?.ref !== '${{ github.sha }}' ||
+        checkout?.with?.['fetch-depth'] !== 0 ||
+        checkout?.with?.['persist-credentials'] !== false
+    )
+        errors.push('qualification : origine et historique non épinglés');
+    for (const step of steps) {
+        if (
+            step.if !== undefined &&
+            !step.uses?.startsWith('actions/upload-artifact@')
+        )
+            errors.push(
+                'qualification : étape conditionnelle, un OS pourrait être incomplet'
+            );
+        if (step['continue-on-error'] !== undefined || step.env !== undefined)
+            errors.push('qualification : erreur masquée ou identité remplacée');
+        if (
+            /\b(?:bunx\s+nx|nx)\s+migrate\b|nx-migration-plan\.mjs (?:plan|outcome|collect|assess)\b|\bgit\s+push\b|\bgh\b/.test(
+                step.run ?? ''
+            )
+        )
+            errors.push('qualification : migration ou publication interdite');
+    }
+    const required = {
+        'qualification-input': [
+            'node tools/nx-migration-qualification.mjs input "$SOURCE_SHA" "$TARGET"',
+            '"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"|"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git") ;;',
+            'git cat-file -e "$SOURCE_SHA^{commit}"',
+            'git for-each-ref --format=\'%(refname)\' --contains "$SOURCE_SHA" refs/remotes/origin/',
+            'test -n "$(printf \'%s\\n\' "$branches" | grep -v \'^refs/remotes/origin/HEAD$\')"',
+            'cp tools/nx-migration-qualification.mjs "$RUNNER_TEMP/nx-qualification-tools.mjs"',
+        ],
+        'qualification-checkout': [
+            'git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$RUNNER_TEMP/nx-qualified-candidate"',
+            'git checkout --detach "$SOURCE_SHA"',
+            'test "$(git rev-parse HEAD)" = "$SOURCE_SHA"',
+            'test ! -e migrations.json',
+        ],
+        'qualification-prepare': [
+            'bun install --frozen-lockfile --ignore-scripts',
+            'node "$RUNNER_TEMP/nx-qualification-tools.mjs" installed "$TARGET"',
+            'bunx nx graph --file "$RUNNER_TEMP/nx-qualification/graph.json"',
+            'node tools/nx-migration-plan.mjs candidates "$TARGET"',
+        ],
+        'qualification-material': [
+            'bun run promote-library-compatibility --app backoffice-angular --library angular-material',
+        ],
+        'qualification-tailwind-angular': [
+            'bun run promote-library-compatibility --app library-qualification-angular --library tailwind',
+        ],
+        'qualification-tailwind-react': [
+            'bun run promote-library-compatibility --app library-qualification-react --library tailwind',
+        ],
+        'qualification-controls': [
+            'if test "$RUNNER_OS" = Linux; then',
+            'bun run bundle:metrics',
+            'bun run check:bundle-metrics-freshness',
+            'bun run check:bun-lock-catalog-integrity',
+            'bun run check:dependabot-policy',
+            'bun run check:library-setup',
+            'bun audit --audit-level=high',
+        ],
+        'qualification-bundle': [
+            'git merge-base --is-ancestor "$SOURCE_SHA" HEAD',
+            'git diff-tree --no-commit-id -r --name-only -z "$commit"',
+            'conventions/libraries/angular/angular-material.compat.json|conventions/libraries/angular/tailwind.compat.json|conventions/libraries/react/tailwind.compat.json|apps/backoffice-angular/bundle-metrics.json) ;;',
+            'git bundle create "$RUNNER_TEMP/nx-qualification/candidate.bundle" "$SOURCE_SHA..qualification/nx-$TARGET"',
+            'git bundle verify "$RUNNER_TEMP/nx-qualification/candidate.bundle"',
+            'printf \'%s\\n\' "$SOURCE_SHA" > "$RUNNER_TEMP/nx-qualification/base-sha.txt"',
+            'shasum -a 256 candidate.bundle > candidate.bundle.sha256',
+        ],
+    };
+    const ordered = steps.filter((s) => s.id).map((s) => s.id);
+    if (!same(ordered, Object.keys(required)))
+        errors.push('qualification : séquence native incomplète');
+    for (const [id, commands] of Object.entries(required)) {
+        const step = steps.find((s) => s.id === id);
+        if (
+            !commands.every((c) =>
+                step?.run?.split('\n').some((l) => l.trim().includes(c))
+            )
+        )
+            errors.push(`qualification : garde native manquante (${id})`);
+        if (
+            id !== 'qualification-input' &&
+            id !== 'qualification-checkout' &&
+            step?.['working-directory'] !==
+                '${{ runner.temp }}/nx-qualified-candidate'
+        )
+            errors.push(`qualification : mauvais arbre candidat (${id})`);
+    }
+    const upload = steps.filter((s) =>
+        s.uses?.startsWith('actions/upload-artifact@')
+    );
+    if (
+        upload.length !== 1 ||
+        upload[0].if !== 'always()' ||
+        !same(upload[0].with, {
+            name: 'nx-qualification-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}',
+            path: '${{ runner.temp }}/nx-qualification',
+            'if-no-files-found': 'error',
+            'retention-days': 7,
+        })
+    )
+        errors.push(
+            'qualification : artefact non lié au système/run/tentative'
+        );
+    return errors;
+}
