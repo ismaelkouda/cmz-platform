@@ -5,7 +5,9 @@ import {
     mkdirSync,
     mkdtempSync,
     readFileSync,
+    realpathSync,
     rmSync,
+    symlinkSync,
     writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -25,6 +27,202 @@ const workflow = () =>
             'utf8'
         )
     );
+
+test('qualification : la désactivation du graphe est bornée aux deux inspections', () => {
+    const w = workflow();
+    const prepare = (m) =>
+        m.jobs.qualification.steps.find(
+            (s) => s.id === 'qualification-prepare'
+        );
+    const controls = (m) =>
+        m.jobs.qualification.steps.find(
+            (s) => s.id === 'qualification-controls'
+        );
+    const changes = [
+        (m) => {
+            m.env = { NX_CACHE_PROJECT_GRAPH: 'false' };
+        },
+        (m) => {
+            m.jobs.qualification.env.NX_CACHE_PROJECT_GRAPH = 'false';
+        },
+        (m) => {
+            controls(m).env = { NX_CACHE_PROJECT_GRAPH: 'false' };
+        },
+        (m) => {
+            prepare(m).run =
+                'export NX_CACHE_PROJECT_GRAPH=false\n' + prepare(m).run;
+        },
+        (m) => {
+            prepare(m).run = prepare(m).run.replace(
+                'NX_CACHE_PROJECT_GRAPH=false bunx nx graph',
+                'bunx nx graph'
+            );
+        },
+        (m) => {
+            prepare(m).run = prepare(m).run.replace(
+                'NX_CACHE_PROJECT_GRAPH=false bunx nx show',
+                'bunx nx show'
+            );
+        },
+        (m) => {
+            prepare(m).run = prepare(m).run.replaceAll(
+                'NX_CACHE_PROJECT_GRAPH=false',
+                '# NX_CACHE_PROJECT_GRAPH=false'
+            );
+        },
+        (m) => {
+            controls(m).run = controls(m).run.replace(
+                'bun run bundle:metrics',
+                'NX_CACHE_PROJECT_GRAPH=false bun run bundle:metrics'
+            );
+        },
+        (m) => {
+            prepare(m).run +=
+                '\necho NX_CACHE_PROJECT_GRAPH=false >> "$GITHUB_ENV"\n';
+        },
+        (m) => {
+            m.jobs.qualification.env.NX_SKIP_NX_CACHE = 'false';
+        },
+    ];
+    assert.deepEqual(nxWorkflowErrors(w), []);
+    for (const mutate of changes) {
+        const changed = structuredClone(w);
+        mutate(changed);
+        assert.ok(nxWorkflowErrors(changed).length, String(mutate));
+    }
+    // Calibrage : une explication n'est pas une variable d'environnement.
+    prepare(w).run +=
+        '\n# NX_CACHE_PROJECT_GRAPH reste limité aux inspections\n';
+    assert.deepEqual(nxWorkflowErrors(w), []);
+});
+
+// Vrai exécuteur @nx/js:tsc, pas nx:run-commands (qui contourne la lecture
+// du graphe disque). Aucun téléchargement ni installation : dépendances CI
+// déjà figées, liées dans un espace temporaire propre à ce test.
+test('qualification : exécuteur Nx réel rouge avec drapeau global, vert avec portée locale', (t) => {
+    const root = mkdtempSync(join(tmpdir(), 'nx-qualification-executor-'));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const dependencies = realpathSync(
+        new URL('../node_modules', import.meta.url)
+    );
+    symlinkSync(dependencies, join(root, 'node_modules'), 'junction');
+    const nx = JSON.parse(readFileSync(join(dependencies, 'nx/package.json')));
+    const cli = join(dependencies, 'nx', nx.bin.nx);
+    const put = (path, value) => {
+        mkdirSync(join(root, path, '..'), { recursive: true });
+        writeFileSync(join(root, path), JSON.stringify(value));
+    };
+    put('package.json', { name: 'nx-qualification-executor', private: true });
+    put('nx.json', { plugins: [] });
+    put('probe/project.json', {
+        name: 'graph-cache-probe',
+        projectType: 'library',
+        targets: {
+            build: {
+                executor: '@nx/js:tsc',
+                options: {
+                    main: 'probe/main.ts',
+                    outputPath: 'dist/probe',
+                    tsConfig: 'probe/tsconfig.json',
+                    generatePackageJson: false,
+                },
+            },
+        },
+    });
+    put('probe/tsconfig.json', {
+        compilerOptions: {
+            target: 'ES2022',
+            module: 'commonjs',
+            types: [],
+            skipLibCheck: true,
+            rootDir: '.',
+            outDir: '../dist/probe',
+        },
+        include: ['main.ts'],
+    });
+    writeFileSync(
+        join(root, 'probe/main.ts'),
+        'export const graphCacheProbe = 42;\n'
+    );
+    const job = workflow().jobs.qualification;
+    const env = {
+        ...Object.fromEntries(
+            Object.entries(process.env).filter(
+                ([key]) => !/^(?:NX_|GIT_|CLAUDE|CODEX)/.test(key)
+            )
+        ),
+        NX_DAEMON: 'false',
+        NX_ISOLATE_PLUGINS: 'false',
+        NX_NO_CLOUD: 'true',
+        NX_TUI: 'false',
+        NX_SKIP_NX_CACHE: job.env.NX_SKIP_NX_CACHE,
+        NX_CACHE_DIRECTORY: join(root, 'task-cache'),
+        RUNNER_TEMP: join(root, 'runner'),
+        CI: 'true',
+    };
+    mkdirSync(join(env.RUNNER_TEMP, 'nx-qualification'), { recursive: true });
+    const execute = (args, extra) =>
+        spawnSync(process.execPath, [cli, ...args], {
+            cwd: root,
+            env: { ...env, ...extra },
+            encoding: 'utf8',
+            timeout: 20000,
+        });
+    const command = [
+        'run',
+        'graph-cache-probe:build',
+        '--skip-nx-cache',
+        '--outputStyle=static',
+    ];
+    const bad = execute(command, {
+        NX_CACHE_PROJECT_GRAPH: 'false',
+        NX_WORKSPACE_DATA_DIRECTORY: join(root, 'red-data'),
+    });
+    assert.equal(bad.error, undefined);
+    assert.notEqual(bad.status, 0);
+    assert.match(
+        bad.stdout + bad.stderr,
+        /No cached ProjectGraph is available/
+    );
+    // Exécuter les deux lignes réelles du YAML : le préfixe shell ne doit
+    // pas contaminer l'exécuteur lancé ensuite dans le même shell.
+    const inspection = job.steps
+        .find((s) => s.id === 'qualification-prepare')
+        .run.split('\n')
+        .filter((line) => /bunx nx (?:graph|show)\b/.test(line));
+    assert.equal(inspection.length, 2);
+    const quote = (value) => "'" + value.replaceAll("'", "'\\''") + "'";
+    const nativeNx = `${quote(process.execPath)} ${quote(cli)}`;
+    const script = [
+        ...inspection.map((line) => line.replace('bunx nx', nativeNx)),
+        `${nativeNx} ${command.join(' ')}`,
+    ].join('\n');
+    const good = spawnSync(
+        '/bin/bash',
+        ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script],
+        {
+            cwd: root,
+            env: {
+                ...env,
+                NX_WORKSPACE_DATA_DIRECTORY: join(root, 'green-data'),
+                ...(job.env.NX_CACHE_PROJECT_GRAPH === undefined
+                    ? {}
+                    : {
+                          NX_CACHE_PROJECT_GRAPH:
+                              job.env.NX_CACHE_PROJECT_GRAPH,
+                      }),
+            },
+            encoding: 'utf8',
+            timeout: 30000,
+        }
+    );
+    assert.equal(good.error, undefined);
+    assert.equal(good.status, 0, good.stdout + good.stderr);
+    assert.match(
+        readFileSync(join(root, 'dist/probe/main.js'), 'utf8'),
+        /graphCacheProbe = 42/
+    );
+});
 
 // Les opérations Git et la préparation des deux modes diffèrent. Les preuves
 // Node/Bun, elles, doivent rester la même séquence, même si un nouveau contrôle
