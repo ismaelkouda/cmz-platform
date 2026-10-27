@@ -25,26 +25,32 @@
 # sans elle, l'iframe Grafana sera bloquée par la CSP générée à l'entrypoint.
 
 # ─── deps + build ────────────────────────────────────────────────────────────
-FROM oven/bun:1.4.2-debian AS build
+FROM oven/bun:1.3.14-debian AS bun_runtime
+
+FROM node:22.22.3-bookworm-slim AS build
+COPY --from=bun_runtime /usr/local/bin/bun /usr/local/bin/bun
+RUN ln -s /usr/local/bin/bun /usr/local/bin/bunx
 
 WORKDIR /app
 
 # NX_NO_CLOUD : ce build n'a pas de NX_CLOUD_ACCESS_TOKEN (aucun --build-arg
 # câblé) — sans ce fallback, Nx 23+ échoue avec « Invalid Credentials (Nx
 # Cloud ID) » (OPS-22/OPS-23, .github/workflows/ci.yml). Ce Dockerfile n'était
-# construit par aucun CI (aucun job ne l'exerce) : le bug était invisible
+# construit par aucun CI avant DOCKER-314 : le bug était invisible
 # jusqu'à un build local réel, 2026-09-11.
 ENV HUSKY=0 \
     CI=true \
     NX_NO_CLOUD=true
 
-COPY package.json bun.lock ./
+COPY package.json bun.lock .nvmrc ./
 COPY tools/ ./tools/
 
 COPY nx.json tsconfig.base.json eslint.config.mjs ./
 COPY apps/ ./apps/
 COPY libs/ ./libs/
 
+RUN test "$(node --version)" = "v$(cat .nvmrc)" \
+    && test "$(bun --version)" = "$(node -p 'require("./package.json").packageManager.slice(4)')"
 RUN bun install --frozen-lockfile
 RUN bunx nx run backoffice-angular:build:production
 
