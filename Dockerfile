@@ -48,6 +48,7 @@ COPY tools/ ./tools/
 COPY nx.json tsconfig.base.json eslint.config.mjs ./
 COPY apps/ ./apps/
 COPY libs/ ./libs/
+COPY conventions/ ./conventions/
 
 RUN test "$(node --version)" = "v$(cat .nvmrc)" \
     && test "$(bun --version)" = "$(node -p 'require("./package.json").packageManager.slice(4)')"
