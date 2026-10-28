@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { nxReadySignal } from '@nx/vite/plugins/nx-ready-signal.plugin';
 
 export default defineConfig(() => ({
     root: import.meta.dirname,
@@ -13,7 +14,7 @@ export default defineConfig(() => ({
         port: 4300,
         host: '127.0.0.1',
     },
-    plugins: [react()],
+    plugins: [react(), nxReadySignal()],
     build: {
         outDir: '../../dist/apps/library-qualification-react',
         emptyOutDir: true,

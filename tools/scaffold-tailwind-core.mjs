@@ -188,8 +188,8 @@ function scaffoldReact(repository, app, version) {
     );
     vite = replaceOnce(
         vite,
-        'plugins: [react()],',
-        'plugins: [tailwindcss(), react()],',
+        'plugins: [react()',
+        'plugins: [tailwindcss(), react()',
         `${vitePath}: liste de plugins`
     );
     replaceRegular(repository, vitePath, vite);

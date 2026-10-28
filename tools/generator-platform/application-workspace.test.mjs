@@ -18,6 +18,7 @@ import {
     planExternalApplicationShell,
     productDependencyClosure,
     publishApplicationWorkspace,
+    runExternalApplicationCommand,
 } from './core/application-workspace.mjs';
 import { pathExists } from './core/external-application-paths.mjs';
 import { qualifyFrozenInstallation } from './core/application-workspace-toolchain.mjs';
@@ -754,4 +755,41 @@ test('v12 : Node du rendu, hôte macOS et version qualifiée avant rapport', asy
             );
         }
     }
+});
+
+test('EXT01 : le vrai enfant conserve le graphe Nx et ses chemins confinés', async (t) => {
+    const root = await fixtureParent(t);
+    const args = [
+        '--input-type=module',
+        '--eval',
+        `
+import assert from 'node:assert/strict';
+import { realpathSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+const root = process.cwd();
+assert.equal(process.env.NX_CACHE_PROJECT_GRAPH, undefined, 'NX_GRAPH_DISABLED');
+assert.equal(process.env.NX_DAEMON, 'false');
+assert.equal(process.env.NX_ISOLATE_PLUGINS, 'false');
+assert.equal(process.env.NX_NO_CLOUD, 'true');
+assert.equal(process.env.CI, 'true');
+assert.equal(process.env.PATH, '');
+assert.equal(process.env.NODE_OPTIONS, undefined);
+for (const [key, suffix] of Object.entries({
+    NX_CACHE_DIRECTORY: 'node_modules/.cmz-nx-cache',
+    NX_WORKSPACE_DATA_DIRECTORY: 'node_modules/.cmz-nx-workspace-data',
+    NX_NATIVE_FILE_CACHE_DIRECTORY: 'node_modules/.cmz-nx-native-file-cache',
+    HOME: '.nx/home',
+    TMPDIR: 'tmp',
+    TMP: 'tmp',
+    TEMP: 'tmp',
+})) {
+    const expected = join(root, suffix);
+    assert.equal(process.env[key], expected, key);
+    assert.equal(realpathSync(expected), expected, key);
+    assert.ok(statSync(expected).isDirectory(), key);
+}
+process.stderr.write('EXT01_NATIVE_CHILD_ENV=PASS\\n');
+`,
+    ];
+    await runExternalApplicationCommand(process.execPath, args, root);
 });

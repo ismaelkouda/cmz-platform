@@ -239,6 +239,79 @@ test('Tailwind React emploie le plugin Vite officiel et garde SCSS séparé', (t
     assert.equal(descriptor.id, 'react/tailwind@1');
 });
 
+for (const [label, plugins, expectedPlugins] of [
+    ['historique', 'react()', 'tailwindcss(), react()'],
+    [
+        'Nx 24',
+        'react(), nxReadySignal()',
+        'tailwindcss(), react(), nxReadySignal()',
+    ],
+]) {
+    test(`Tailwind React conserve exactement les plugins ${label}`, (t) => {
+        const root = reactFixture(t);
+        const readyImport =
+            label === 'Nx 24'
+                ? "import { nxReadySignal } from '@nx/vite/plugins/nx-ready-signal.plugin';\n"
+                : '';
+        put(
+            root,
+            'apps/demo/vite.config.mts',
+            `import react from '@vitejs/plugin-react';\n${readyImport}import { defineConfig } from 'vite';\n\nexport default defineConfig({\n    plugins: [${plugins}],\n});\n`
+        );
+        applyQualifiedAdapter({
+            workspace: root,
+            app: 'demo',
+            platform: 'react',
+            library: 'tailwind',
+            track: {
+                packages: {
+                    tailwindcss: '4.3.3',
+                    '@tailwindcss/vite': '4.3.3',
+                },
+            },
+        });
+        assert.equal(
+            readFileSync(join(root, 'apps/demo/vite.config.mts'), 'utf8'),
+            `import tailwindcss from '@tailwindcss/vite';\nimport react from '@vitejs/plugin-react';\n${readyImport}import { defineConfig } from 'vite';\n\nexport default defineConfig({\n    plugins: [${expectedPlugins}],\n});\n`
+        );
+        assert.deepEqual(manifest(root).libraries, ['tailwind']);
+    });
+}
+
+for (const [occurrences, declarations] of [
+    [0, '    plugins: [nxReadySignal()],'],
+    [2, '    plugins: [react(), nxReadySignal()],\n    plugins: [react()],'],
+]) {
+    test(`Tailwind React refuse ${occurrences} préfixes de plugins`, (t) => {
+        const root = reactFixture(t);
+        const vite = `import react from '@vitejs/plugin-react';\nimport { defineConfig } from 'vite';\n\nexport default defineConfig({\n${declarations}\n});\n`;
+        put(root, 'apps/demo/vite.config.mts', vite);
+        assert.throws(
+            () =>
+                applyQualifiedAdapter({
+                    workspace: root,
+                    app: 'demo',
+                    platform: 'react',
+                    library: 'tailwind',
+                    track: {
+                        packages: {
+                            tailwindcss: '4.3.3',
+                            '@tailwindcss/vite': '4.3.3',
+                        },
+                    },
+                }),
+            {
+                message: `scaffold-tailwind: apps/demo/vite.config.mts: liste de plugins: une occurrence attendue, ${occurrences} trouvée(s)`,
+            }
+        );
+        assert.equal(
+            readFileSync(join(root, 'apps/demo/vite.config.mts'), 'utf8'),
+            vite
+        );
+        assert.deepEqual(manifest(root).libraries, []);
+    });
+}
+
 test('les conflits et la dérive d’une entrée qualifiée échouent fermés', (t) => {
     const root = fixture(t, { libraries: ['tailwind'] });
     assert.throws(
