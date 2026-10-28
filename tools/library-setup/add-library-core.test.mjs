@@ -30,8 +30,10 @@ test('sélectionne la recette par plateforme Nx et ne mute jamais le registre pa
     assert.equal(first.recipe.platform, 'angular');
     assert.equal(first.recipe.library, 'tailwind');
     assert.equal(Object.hasOwn(first.recipe, 'app'), false);
+    const initialPackages = structuredClone(first.track.packages);
     first.recipe.library = 'altérée';
     first.track.packages.tailwindcss = '0.0.0';
+    assert.notDeepEqual(first.track.packages, initialPackages);
 
     const second = loadLibraryConfiguration(
         repository,
@@ -40,7 +42,7 @@ test('sélectionne la recette par plateforme Nx et ne mute jamais le registre pa
         { requiredTrackStatus: status }
     );
     assert.equal(second.recipe.library, 'tailwind');
-    assert.equal(second.track.packages.tailwindcss, '4.3.3');
+    assert.deepEqual(second.track.packages, initialPackages);
 });
 
 test('échoue pour une app dont la plateforme est indéterminable', () => {

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import semver from 'semver';
 
 import { validateRecipes } from '../check-library-setup.mjs';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +23,7 @@ test('chaque recette réelle possède une matrice fermée cohérente', () => {
     ]);
 });
 
-test('sélectionne exactement une piste avec les quatre versions réelles', () => {
+function candidateMatrix() {
     const recipes = validateRecipes(root);
     const result = validateCompatibilityMatrices(root, recipes.recipes);
     const matrix = structuredClone(
@@ -32,22 +33,28 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
         entry.status = 'candidate';
         entry.verification = null;
     }
-    const track = selectCompatibilityTrack(
-        matrix,
-        { node: '22.22.3', bun: '1.3.14', nx: '23.1.0', framework: '22.0.7' },
-        { requiredStatus: 'candidate' }
+    const versions = Object.fromEntries(
+        Object.entries(matrix.tracks[0].requirements).map(([tool, range]) => [
+            tool,
+            semver.minVersion(range).version,
+        ])
     );
-    assert.equal(track.id, 'angular-22');
+    return { matrix, versions };
+}
+
+test('sélectionne exactement une piste avec les quatre versions dérivées de la piste réelle', () => {
+    const { matrix, versions } = candidateMatrix();
+    const track = selectCompatibilityTrack(matrix, versions, {
+        requiredStatus: 'candidate',
+    });
+    assert.equal(track.id, matrix.tracks[0].id);
+    const outsideNode = semver.inc(versions.node, 'major');
+    assert.equal(semver.satisfies(outsideNode, track.requirements.node), false);
     assert.throws(
         () =>
             selectCompatibilityTrack(
                 matrix,
-                {
-                    node: '24.0.0',
-                    bun: '1.3.14',
-                    nx: '23.1.0',
-                    framework: '22.0.7',
-                },
+                { ...versions, node: outsideNode },
                 { requiredStatus: 'candidate' }
             ),
         /0 piste candidate compatible/
@@ -56,12 +63,7 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
         () =>
             selectCompatibilityTrack(
                 matrix,
-                {
-                    node: '22.22.3-rc.1',
-                    bun: '1.3.14',
-                    nx: '23.1.0',
-                    framework: '22.0.7',
-                },
+                { ...versions, node: `${versions.node}-rc.1` },
                 { requiredStatus: 'candidate' }
             ),
         /0 piste candidate compatible/
@@ -70,35 +72,13 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
         () =>
             selectCompatibilityTrack(
                 {
-                    platform: 'angular',
-                    library: 'ambiguous',
+                    ...matrix,
                     tracks: [
-                        {
-                            status: 'candidate',
-                            requirements: {
-                                node: '>=22 <23',
-                                bun: '>=1 <2',
-                                nx: '>=23 <24',
-                                framework: '>=22 <23',
-                            },
-                        },
-                        {
-                            status: 'candidate',
-                            requirements: {
-                                node: '>=22.1 <23',
-                                bun: '>=1 <2',
-                                nx: '>=23 <24',
-                                framework: '>=22 <23',
-                            },
-                        },
+                        track,
+                        { ...structuredClone(track), id: 'ambiguous' },
                     ],
                 },
-                {
-                    node: '22.22.3',
-                    bun: '1.3.14',
-                    nx: '23.1.0',
-                    framework: '22.0.7',
-                },
+                versions,
                 { requiredStatus: 'candidate' }
             ),
         /2 piste candidate compatible/
@@ -106,23 +86,15 @@ test('sélectionne exactement une piste avec les quatre versions réelles', () =
 });
 
 test('une piste candidate ne peut jamais servir au chemin nominal', () => {
-    const recipes = validateRecipes(root);
-    const result = validateCompatibilityMatrices(root, recipes.recipes);
-    const matrix = structuredClone(
-        result.matrices.get('angular/angular-material')
+    const { matrix, versions } = candidateMatrix();
+    assert.equal(
+        selectCompatibilityTrack(matrix, versions, {
+            requiredStatus: 'candidate',
+        }).id,
+        matrix.tracks[0].id
     );
-    for (const entry of matrix.tracks) {
-        entry.status = 'candidate';
-        entry.verification = null;
-    }
     assert.throws(
-        () =>
-            selectCompatibilityTrack(matrix, {
-                node: '22.22.3',
-                bun: '1.3.14',
-                nx: '23.1.0',
-                framework: '22.0.7',
-            }),
+        () => selectCompatibilityTrack(matrix, versions),
         /0 piste verified compatible/
     );
 });

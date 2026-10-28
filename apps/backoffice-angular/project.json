@@ -4,7 +4,6 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/backoffice-angular/src",
-  "tags": ["type:app", "scope:app"],
   "i18n": {
     "sourceLocale": "fr"
   },
@@ -13,6 +12,7 @@
       "enabled": false
     }
   },
+  "tags": ["type:app", "scope:app"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
@@ -64,6 +64,9 @@
       "continuous": true,
       "executor": "@angular/build:dev-server",
       "defaultConfiguration": "development",
+      "readyWhen": {
+        "signal": true
+      },
       "configurations": {
         "production": {
           "buildTarget": "backoffice-angular:build:production"
@@ -115,7 +118,11 @@
         "buildTarget": "backoffice-angular:build",
         "staticFilePath": "dist/apps/backoffice-angular/browser",
         "spa": true
-      }
+      },
+      "readyWhen": {
+        "signal": true
+      },
+      "dependsOn": ["build"]
     }
   }
 }

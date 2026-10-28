@@ -465,7 +465,6 @@ jobs:
     env:
       SOURCE_SHA: ${{ inputs.candidate_sha }}
       TARGET: ${{ inputs.target }}
-      NX_CACHE_PROJECT_GRAPH: 'false'
       NX_SKIP_NX_CACHE: 'true'
     defaults:
       run:
@@ -527,8 +526,8 @@ jobs:
           bun install --frozen-lockfile --ignore-scripts
           node "$RUNNER_TEMP/nx-qualification-tools.mjs" installed "$TARGET"
           test -z "$(git status --porcelain)"
-          bunx nx graph --file "$RUNNER_TEMP/nx-qualification/graph.json"
-          bunx nx show projects --json 2>&1 | tee "$RUNNER_TEMP/nx-qualification/projects.txt"
+          NX_CACHE_PROJECT_GRAPH=false bunx nx graph --file "$RUNNER_TEMP/nx-qualification/graph.json"
+          NX_CACHE_PROJECT_GRAPH=false bunx nx show projects --json 2>&1 | tee "$RUNNER_TEMP/nx-qualification/projects.txt"
           bun run prepare
           node tools/nx-migration-plan.mjs candidates "$TARGET" \
             conventions/libraries/angular/angular-material.compat.json \

@@ -9,7 +9,7 @@
       "requirements": {
         "node": ">=22.22.3 <23",
         "bun": ">=1.3.14 <2",
-        "nx": ">=23.1.0 <24",
+        "nx": ">=24.0.2 <25",
         "framework": ">=22.0.0 <23"
       },
       "packages": {
@@ -21,17 +21,17 @@
       "reason": "Piste Tailwind 4 ; vérification complète requise pour chaque nouvelle version effective du framework.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "609f07c986daee4a1b2d6d4a600cd057a0eb25a2",
-        "source_context_sha256": "b8f303b0133000e704f337916778b06535a07b8f4e9abfb624e4ea40d00c73fe",
+        "commit": "f1aeb5c60f4ae3f7f8117bb1eb1f858c0f9e1c3a",
+        "source_context_sha256": "7989fac27154192f747427a3246d61c05b95d18a13034c42c1f4294ecced59d3",
         "app": "library-qualification-angular",
-        "plan_id": "library-plan:2cd4e8541dd636f2d0391c16af024c5a89e1625938577634816b031da7506b74",
-        "change_set_id": "changes:f3a36edc540d8b59ce763efe5b88f55fffb7c9d78ce29d9563d4e85601cfacaf",
-        "app_tree_sha256": "e258093c3fe1c4ded44ed01700b0f91e91622d23046bc0bf1b1219c9dab2afb3",
-        "track_sha256": "88251cd1a305f46e7bedb25105ca7f0bc6d3dfaeb5446ade6b74f0663d2cab5d",
+        "plan_id": "library-plan:4274c7b97cd426fc129e6298ee17ac2c33a342c3e27677c8ef313ff1c73007a0",
+        "change_set_id": "changes:0971340b7eb9beabbeb5837c964fa2da47af95099f2dfff704c7b18cd2c0f262",
+        "app_tree_sha256": "208320b6cd4423087de2cc35e4768811dbd8ace5ff83d8304e556b87daaec334",
+        "track_sha256": "dab3755ad72c880d872a47fb5fc20a0f3faa74e552ce26690ed3d17c27872912",
         "tested_versions": {
           "node": "22.22.3",
           "bun": "1.3.14",
-          "nx": "23.3.0",
+          "nx": "24.0.2",
           "framework": "22.2.3",
           "packages": {
             "@tailwindcss/postcss": "4.3.3",
@@ -58,7 +58,7 @@
             "tools/library-setup/qualified-adapters.mjs": "7e1783fc2765a8ca8e335799088b4bc664bd4ec128d4a9c69b5cb6301d92d2c8"
           },
           "digest_sha256": "f6d2991469086852032c83e325086b3ef217f5dd134181a0ccb3192aa3d83201",
-          "change_set_id": "changes:f3a36edc540d8b59ce763efe5b88f55fffb7c9d78ce29d9563d4e85601cfacaf"
+          "change_set_id": "changes:0971340b7eb9beabbeb5837c964fa2da47af95099f2dfff704c7b18cd2c0f262"
         },
         "inputs_sha256": {
           "recipe": "af05a220bfd375db287ba837ae6bd1f1260fa0006c3b487225beeb68930cac58",
@@ -66,7 +66,7 @@
           "compat_schema": "086134ad4b213328416aacaa2e96d845b8ba74773052238d3bee877e9bb22245",
           "policy": "ca3429863614bb7592a153300a44e7b7006428cc1fd826823062c8759fde77c7",
           "policy_schema": "a71cc60b0692e3704ac8f09847b202af9da92453c7de486f09d0106ff3db0c96",
-          "nx_json": "3403357296b1a3ccbab58dbe602d10d50849775a60ba548526f64bebe83dd4bc",
+          "nx_json": "485c3f2b0a9917bdca39f022e4bd2b75aa2e4bd16b6fbebd13bd6f6546dd40c2",
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
           "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
           "proof_contracts": "e5c4d6939a4c98f31513581d29ea91c1d9a99049330ab4b72f8e86b63c7fb97a",
@@ -102,7 +102,7 @@
             "tools/scaffold-tailwind.mjs": "e12cd0be13839fc2177930d56fdfe1032ec5acdddfe8b0c34e9f134bc071200d"
           }
         },
-        "evidence_sha256": "e265500118782d535fc07b4ef633913a1f9b0c2651ea2e49ea510d3d7e74849a"
+        "evidence_sha256": "0a01a507d943800eafcc41adad1f95efccd95d861f429017a3f38603709cd398"
       }
     }
   ]

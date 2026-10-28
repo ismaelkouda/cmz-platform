@@ -69,7 +69,7 @@ export const REVIEWED_EVENTS = [
 // une décision relue, pas un effet de bord.
 export const ALLOWED_JOB_WRITES = {
     'runtime-version-alignment.yml': {
-        events: ['schedule', 'workflow_dispatch'],
+        events: ['schedule', 'workflow_dispatch', 'workflow_run'],
         jobs: { publish: ['actions', 'contents'] },
     },
     'nx-migrations.yml': {
@@ -226,7 +226,14 @@ export function eventViolations(file, workflow) {
     if (events === null || events.length === 0)
         return [`${file} : déclencheurs \`on\` absents ou illisibles.`];
     return events
-        .filter((event) => !REVIEWED_EVENTS.includes(event))
+        .filter(
+            (event) =>
+                !REVIEWED_EVENTS.includes(event) &&
+                !(
+                    file === 'runtime-version-alignment.yml' &&
+                    event === 'workflow_run'
+                )
+        )
         .map(
             (event) =>
                 `${file} : événement \`${event}\` non relu ; ce garde ne vaut que pour ${REVIEWED_EVENTS.join(', ')}.`
@@ -557,7 +564,8 @@ export function nxQualificationErrors(workflow) {
     if (
         job?.env?.SOURCE_SHA !== '${{ inputs.candidate_sha }}' ||
         job?.env?.TARGET !== '${{ inputs.target }}' ||
-        job?.env?.NX_CACHE_PROJECT_GRAPH !== 'false' ||
+        workflow.env?.NX_CACHE_PROJECT_GRAPH !== undefined ||
+        job?.env?.NX_CACHE_PROJECT_GRAPH !== undefined ||
         job?.env?.NX_SKIP_NX_CACHE !== 'true' ||
         job?.defaults?.run?.shell !== 'bash'
     )
@@ -573,7 +581,22 @@ export function nxQualificationErrors(workflow) {
             errors.push(`qualification : ${name} atteignable`);
     if (workflow.jobs?.plan?.if !== "inputs.mode != 'qualification'")
         errors.push('qualification : migration atteignable');
+    // Le graphe disque est requis par les enfants à exécuteur. Seules les
+    // inspections calculent sans le publier ; le cache de résultats reste coupé.
+    const graphInspections = [
+        'NX_CACHE_PROJECT_GRAPH=false bunx nx graph --file "$RUNNER_TEMP/nx-qualification/graph.json"',
+        'NX_CACHE_PROJECT_GRAPH=false bunx nx show projects --json 2>&1 | tee "$RUNNER_TEMP/nx-qualification/projects.txt"',
+    ];
     const steps = job?.steps ?? [];
+    const preparation = steps.find((s) => s.id === 'qualification-prepare');
+    if (
+        !graphInspections.every((command) =>
+            preparation?.run
+                ?.split('\n')
+                .some((line) => line.trim() === command)
+        )
+    )
+        errors.push('qualification : inspection du graphe sans portée locale');
     const checkout = steps.find((s) => s.uses?.startsWith('actions/checkout@'));
     if (
         checkout?.with?.ref !== '${{ github.sha }}' ||
@@ -582,6 +605,16 @@ export function nxQualificationErrors(workflow) {
     )
         errors.push('qualification : origine et historique non épinglés');
     for (const step of steps) {
+        for (const line of (step.run ?? '').split('\n').map((l) => l.trim()))
+            if (
+                !line.startsWith('#') &&
+                line.includes('NX_CACHE_PROJECT_GRAPH') &&
+                (step.id !== 'qualification-prepare' ||
+                    !graphInspections.includes(line))
+            )
+                errors.push(
+                    'qualification : cache du graphe désactivé hors inspection'
+                );
         if (
             step.if !== undefined &&
             !step.uses?.startsWith('actions/upload-artifact@')
@@ -616,7 +649,7 @@ export function nxQualificationErrors(workflow) {
         'qualification-prepare': [
             'bun install --frozen-lockfile --ignore-scripts',
             'node "$RUNNER_TEMP/nx-qualification-tools.mjs" installed "$TARGET"',
-            'bunx nx graph --file "$RUNNER_TEMP/nx-qualification/graph.json"',
+            ...graphInspections,
             'node tools/nx-migration-plan.mjs candidates "$TARGET"',
         ],
         'qualification-material': [

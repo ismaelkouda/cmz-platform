@@ -304,8 +304,8 @@ export async function renderAngularPwaShell({
             projectType: 'application',
             prefix: 'app',
             sourceRoot: `${root}/src`,
-            tags: ['type:app', `experience:${experience.id}`],
             i18n: { sourceLocale: 'fr' },
+            tags: ['type:app', `experience:${experience.id}`],
             targets: {
                 build: {
                     executor: '@angular/build:application',
@@ -347,6 +347,7 @@ export async function renderAngularPwaShell({
                     continuous: true,
                     executor: '@angular/build:dev-server',
                     defaultConfiguration: 'development',
+                    readyWhen: { signal: true },
                     configurations: {
                         production: {
                             buildTarget: `${appName}:build:production`,
@@ -380,6 +381,8 @@ export async function renderAngularPwaShell({
                         staticFilePath: `dist/${root}/browser`,
                         spa: true,
                     },
+                    readyWhen: { signal: true },
+                    dependsOn: ['build'],
                 },
             },
         }),

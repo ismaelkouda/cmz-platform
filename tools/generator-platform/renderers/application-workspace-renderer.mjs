@@ -47,6 +47,7 @@ export const SHELL_PACKAGES = Object.freeze({
     'react-spa': {
         dependencies: ['react', 'react-dom', 'react-router'],
         devDependencies: [
+            '@nx/js',
             '@nx/react',
             '@nx/vite',
             '@nx/vitest',
@@ -61,6 +62,26 @@ export const SHELL_PACKAGES = Object.freeze({
 
 const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
 
+export function workspacePluginConsumers(plugins, declared) {
+    const consumers = new Set();
+    for (const entry of plugins ?? []) {
+        const plugin = typeof entry === 'string' ? entry : entry?.plugin;
+        if (
+            typeof plugin !== 'string' ||
+            !/^[a-zA-Z0-9@_./-]+$/.test(plugin) ||
+            plugin.split('/').some((part) => ['', '.', '..'].includes(part))
+        )
+            throw new Error('Plugin natif invalide');
+        const name = plugin.startsWith('@')
+            ? plugin.split('/').slice(0, 2).join('/')
+            : plugin.split('/')[0];
+        if (!Object.hasOwn(declared, name))
+            throw new Error('Plugin non déclaré');
+        consumers.add(name);
+    }
+    return consumers;
+}
+
 function productCheck() {
     return `import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -74,6 +95,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const packageName = (name) => name.startsWith('@') ? name.split('/').slice(0, 2).join('/') : name.split('/')[0];
 const ignored = new Set(['.git', 'node_modules', '.nx', '.angular', 'dist', 'coverage', 'tmp']);
+
+${workspacePluginConsumers.toString()}
 
 async function sources(directory, found) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -128,7 +151,8 @@ export async function checkWorkspace() {
     assert.equal(base.extends, undefined);
     const found = [];
     await sources(root, found);
-    const consumers = new Set();
+    const nx = JSON.parse(await readFile(resolve(root, 'nx.json'), 'utf8'));
+    const consumers = workspacePluginConsumers(nx.plugins, declared);
     for (const [path, content] of found) {
         if (!/\\.(?:[cm]?[jt]s|jsx|tsx)$/.test(path)) continue;
         const ast = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true);
@@ -316,9 +340,33 @@ export async function renderApplicationWorkspace(options) {
             targetDefaults: {
                 build: { cache: false },
                 test: { cache: false },
-                lint: { cache: false, options: { maxWarnings: 0 } },
+                lint: { cache: false, options: { 'max-warnings': 0 } },
+                typecheck: { cache: false },
             },
-            plugins: [],
+            plugins: [
+                {
+                    plugin: '@nx/eslint/plugin',
+                    options: { targetName: 'lint' },
+                },
+                ...(profiles.includes('react-spa')
+                    ? [
+                          {
+                              plugin: '@nx/js/typescript',
+                              options: {
+                                  typecheck: { targetName: 'typecheck' },
+                              },
+                          },
+                          { plugin: '@nx/vite/plugin' },
+                          {
+                              plugin: '@nx/vitest',
+                              options: {
+                                  testTargetName: 'test',
+                                  testMode: 'run',
+                              },
+                          },
+                      ]
+                    : []),
+            ],
         }),
         'tsconfig.base.json': json({
             compilerOptions: {
@@ -382,13 +430,9 @@ export function adaptExternalShellFiles(files, { profile, appName }) {
     const angular = profile === 'angular-pwa';
     project.targets ??= {};
     project.targets.lint = {
-        executor: '@nx/eslint:lint',
         options: {
-            lintFilePatterns: [
-                `${root}/**/*.${angular ? '{ts,mts,mjs,js,html}' : '{ts,tsx,mts,mjs,js}'}`,
-            ],
-            eslintConfig: `${root}/eslint.config.mjs`,
-            maxWarnings: 0,
+            config: 'eslint.config.mjs',
+            'max-warnings': 0,
         },
     };
     if (angular) {
@@ -438,20 +482,16 @@ export default ts.config(
         );
     } else {
         project.targets.build = {
-            executor: '@nx/vite:build',
+            // Keep the native Vite command even if its inference input is
+            // missing. An options-only target would become nx:noop.
+            command: 'vite build',
             defaultConfiguration: 'production',
-            outputs: ['{options.outputPath}'],
-            options: {
-                configFile: `${root}/vite.config.mts`,
-                outputPath: `dist/${root}`,
-                tsConfig: `${root}/tsconfig.app.json`,
-                skipTypeCheck: false,
-            },
+            dependsOn: ['^build', 'typecheck'],
+            options: { cwd: root, config: 'vite.config.mts' },
             configurations: { production: { mode: 'production' } },
         };
         project.targets.test = {
-            executor: '@nx/vitest:test',
-            options: { configFile: `${root}/vite.config.mts`, watch: false },
+            options: { config: 'vite.config.mts', watch: false },
         };
         project.targets['serve-static'] = {
             executor: '@nx/web:file-server',
@@ -461,6 +501,8 @@ export default ts.config(
                 staticFilePath: `dist/${root}`,
                 spa: true,
             },
+            readyWhen: { signal: true },
+            dependsOn: ['build'],
         };
         files['vite.config.mts'] = files['vite.config.mts'].replace(
             "import { defineConfig } from 'vite';",

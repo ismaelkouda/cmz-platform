@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "configuration": "production",
-  "measured_at": "2026-10-06",
+  "measured_at": "2026-10-27",
   "output_path": "dist/apps/backoffice-angular/browser",
   "initial_raw_bytes": 752768,
   "initial_raw_kb": 752.77,

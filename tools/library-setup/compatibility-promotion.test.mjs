@@ -5,6 +5,7 @@ import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import semver from 'semver';
 
 import { validateRecipes } from '../check-library-setup.mjs';
 import { validateCompatibilityMatrices } from './compatibility.mjs';
@@ -66,6 +67,12 @@ function execution(overrides = {}) {
     const { plan: planOverrides = {}, ...executionOverrides } = overrides;
     const sourceRecipe = recipe();
     const sourceTrack = track();
+    const versions = Object.fromEntries(
+        Object.entries(sourceTrack.requirements).map(([tool, range]) => [
+            tool,
+            semver.minVersion(range).version,
+        ])
+    );
     const inputs = verificationInputs(ROOT, sourceRecipe, recipes());
     const changePayload = {
         schema_version: '1.0.0',
@@ -126,10 +133,10 @@ function execution(overrides = {}) {
             sourceTrack
         ),
         dependency_final_sha256: '7'.repeat(64),
-        node_version: '22.22.3',
-        bun_version: '1.3.14',
-        nx_version: '23.1.0',
-        framework_version: '22.0.7',
+        node_version: versions.node,
+        bun_version: versions.bun,
+        nx_version: versions.nx,
+        framework_version: versions.framework,
         schematic_version: Object.entries(sourceTrack.packages)
             .sort(([left], [right]) => left.localeCompare(right))
             .map(([name, version]) => `${name}@${version}`)
@@ -331,6 +338,14 @@ test('aucune liste déclarative ne remplace les oracles, coexistence comprise', 
 });
 
 test('app, publication, commit, runner et vecteur de versions sont liés', () => {
+    const outsideFramework = semver.inc(
+        semver.minVersion(track().requirements.framework),
+        'major'
+    );
+    assert.equal(
+        semver.satisfies(outsideFramework, track().requirements.framework),
+        false
+    );
     assert.throws(
         () =>
             buildVerificationFromExecution({
@@ -363,9 +378,13 @@ test('app, publication, commit, runner et vecteur de versions sont liés', () =>
                 recipeRegistry: recipes(),
                 track: track(),
                 app: 'backoffice-angular',
-                execution: execution({ plan: { framework_version: '23.0.0' } }),
+                execution: execution({
+                    plan: { framework_version: outsideFramework },
+                }),
             }),
-        /framework 23.0.0 hors/
+        {
+            message: `library compatibility promotion: framework ${outsideFramework} hors de la piste ${track().id}`,
+        }
     );
 });
 
@@ -527,7 +546,8 @@ test('une bibliothèque indépendante ne périme ni la projection initiale ni la
         []
     );
 
-    finalLock.packages['@angular/cdk'][0] = '@angular/cdk@22.0.6';
+    finalLock.packages['@angular/cdk'][0] =
+        `@angular/cdk@${semver.inc(cdkVersion, 'patch')}`;
     writeFileSync(join(root, 'bun.lock'), `${JSON.stringify(finalLock)}\n`);
     assert.ok(
         verificationFailures(root, recipe(), track(), qualified, {
