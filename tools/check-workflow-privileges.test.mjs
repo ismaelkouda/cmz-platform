@@ -1,3 +1,4 @@
+import './runtime-version-policy.test.mjs';
 import assert from 'node:assert/strict';
 import {
     chmodSync,
