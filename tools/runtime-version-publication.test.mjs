@@ -176,10 +176,23 @@ function gitFixture(t, runtime = 'bun', side = 'image') {
             ' }else if(endpoint.includes("/contents/")){',
             '  const path=endpoint.split("/contents/")[1].split("?ref=")[0],sha=endpoint.split("?ref=")[1];',
             '  console.log(cp.execFileSync("git",["--git-dir",process.env.REMOTE,"show",sha+":"+path]).toString("base64"));',
-            ' }else if(endpoint.endsWith("/commits/main"))console.log(git("refs/heads/main"));',
+            ' }else if(endpoint.endsWith("/commits/main")){',
+            '  const p=JSON.parse(fs.readFileSync(process.env.META));',
+            '  console.log(process.env.FINALIZE_MODE==="main-race" && git("refs/heads/"+p.head.ref)!==process.env.ORIGINAL_HEAD?"f".repeat(40):git("refs/heads/main"));',
+            ' }',
             ' else {const p=JSON.parse(fs.readFileSync(process.env.META));p.head.sha=git("refs/heads/"+p.head.ref);',
+            '  if(process.env.FINALIZE_MODE && p.head.sha!==process.env.ORIGINAL_HEAD){',
+            '   const path=process.env.RUNNER_TEMP+"/observations",n=fs.existsSync(path)?Number(fs.readFileSync(path)):0;fs.writeFileSync(path,String(n+1));',
+            '   const mode=process.env.FINALIZE_MODE;',
+            '   if(mode==="stale" || (mode==="delayed" && n<2))p.head.sha=process.env.ORIGINAL_HEAD;',
+            '   if(mode==="foreign")p.head.sha="f".repeat(40);',
+            '   if(mode==="closed")p.state="closed";',
+            '   if(mode==="error")process.exit(72);',
+            '   if(mode==="branch-race")cp.execFileSync("/usr/bin/git",["--git-dir",process.env.REMOTE,"update-ref","refs/heads/"+p.head.ref,process.env.ORIGINAL_HEAD]);',
+            '  }',
             '  if(a.includes("--jq"))console.log(p.head.sha);else console.log(JSON.stringify(p));}',
-            '}else if(!(a[0]==="auth"||a[0]==="workflow"))process.exit(99);',
+            '}else if(a[0]==="workflow" && process.env.FINALIZE_MODE==="dispatch-error")process.exit(73);',
+            'else if(!(a[0]==="auth"||a[0]==="workflow"))process.exit(99);',
         ].join('\n')
     );
     const env = {
@@ -537,4 +550,105 @@ test('runtime: course de head et blobs falsifiés refusés avant checkout, aucun
     assert.match(result.stderr, /blobs Git différents/);
     assert.equal(forged.remoteHead(), forged.headSha);
     assert.equal(existsSync(join(forged.root, 'runtime-candidate')), false);
+});
+
+function finalizationFixture(t, mode) {
+    const f = gitFixture(t);
+    f.env.FINALIZE_MODE = mode;
+    f.env.ORIGINAL_HEAD = f.headSha;
+    f.env.NATIVE_GIT_LOG = join(f.root, 'git.log');
+    executable(
+        join(f.root, 'bin/git'),
+        [
+            'const fs=require("node:fs"),cp=require("node:child_process"),a=process.argv.slice(2);',
+            'fs.appendFileSync(process.env.NATIVE_GIT_LOG,JSON.stringify(a)+"\\n");',
+            'const r=cp.spawnSync("/usr/bin/git",a,{stdio:"inherit",env:process.env});process.exit(r.status??99);',
+        ].join('\n')
+    );
+    executable(
+        join(f.root, 'bin/sleep'),
+        'require("node:fs").appendFileSync(process.env.RUNNER_TEMP+"/sleeps",process.argv[2]+"\\n");'
+    );
+    const calls = () =>
+        readFileSync(f.env.GH_LOG, 'utf8').trim().split('\n').map(JSON.parse);
+    const counts = () => {
+        const git = readFileSync(f.env.NATIVE_GIT_LOG, 'utf8')
+            .trim()
+            .split('\n')
+            .map(JSON.parse);
+        assert.equal(git.filter((a) => a.includes('commit')).length, 1);
+        assert.equal(git.filter((a) => a.includes('push')).length, 1);
+        return calls().filter((a) => a[0] === 'workflow').length;
+    };
+    return { ...f, counts };
+}
+
+test('runtime: finalisation attend le head publié, sans répéter commit ou push', (t) => {
+    const f = finalizationFixture(t, 'delayed');
+    const result = f.run();
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.equal(f.counts(), 1);
+    assert.equal(readFileSync(join(f.root, 'observations'), 'utf8'), '3');
+    assert.equal(readFileSync(join(f.root, 'sleeps'), 'utf8'), '2\n2\n');
+    assert.match(
+        result.stdout,
+        /RUNTIME_ALIGNMENT_PR_HEAD attempt=1 observed=/
+    );
+    assert.match(result.stdout, /RUNTIME_ALIGNMENT_CI_DISPATCH_ACCEPTED/);
+});
+
+test('runtime: finalisation bornée refuse le head ancien persistant sans redispatch', (t) => {
+    const f = finalizationFixture(t, 'stale');
+    const result = f.run();
+    assert.notEqual(result.status, 0);
+    assert.equal(f.counts(), 0);
+    assert.equal(readFileSync(join(f.root, 'observations'), 'utf8'), '5');
+    assert.equal(readFileSync(join(f.root, 'sleeps'), 'utf8'), '2\n2\n2\n2\n');
+    assert.match(result.stderr, /RUNTIME_ALIGNMENT_HEAD_NOT_VISIBLE/);
+    assert.notEqual(f.remoteHead(), f.headSha);
+    assert.doesNotMatch(
+        readFileSync(join(f.root, 'summary'), 'utf8'),
+        /CI dispatched/
+    );
+});
+
+test('runtime: finalisation refuse head étranger, identité fermée et erreur de lecture', (t) => {
+    for (const mode of ['foreign', 'closed', 'error']) {
+        const f = finalizationFixture(t, mode);
+        const result = f.run();
+        assert.notEqual(result.status, 0, mode);
+        assert.equal(f.counts(), 0, mode);
+        assert.equal(readFileSync(join(f.root, 'observations'), 'utf8'), '1');
+        assert.equal(existsSync(join(f.root, 'sleeps')), false);
+    }
+});
+
+test('runtime: finalisation vérifie le ref Git après la visibilité API', (t) => {
+    const f = finalizationFixture(t, 'branch-race');
+    const result = f.run();
+    assert.notEqual(result.status, 0);
+    assert.equal(f.counts(), 0);
+    assert.match(result.stderr, /RUNTIME_ALIGNMENT_REMOTE_HEAD_CHANGED/);
+});
+
+test('runtime: finalisation refuse main avancé après le push', (t) => {
+    const f = finalizationFixture(t, 'main-race');
+    const result = f.run();
+    assert.notEqual(result.status, 0);
+    assert.equal(f.counts(), 0);
+    assert.match(result.stderr, /RUNTIME_ALIGNMENT_MAIN_CHANGED/);
+    assert.notEqual(f.remoteHead(), f.headSha);
+});
+
+test('runtime: finalisation ne répète pas un dispatch refusé et conserve le commit poussé', (t) => {
+    const f = finalizationFixture(t, 'dispatch-error');
+    const result = f.run();
+    assert.notEqual(result.status, 0);
+    assert.equal(f.counts(), 1);
+    assert.notEqual(f.remoteHead(), f.headSha);
+    assert.match(result.stderr, /RUNTIME_ALIGNMENT_CI_DISPATCH_FAILED/);
+    assert.doesNotMatch(
+        result.stdout,
+        /RUNTIME_ALIGNMENT_CI_DISPATCH_ACCEPTED/
+    );
 });
