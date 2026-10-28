@@ -482,9 +482,12 @@ export default ts.config(
         );
     } else {
         project.targets.build = {
+            // Keep the native Vite command even if its inference input is
+            // missing. An options-only target would become nx:noop.
+            command: 'vite build',
             defaultConfiguration: 'production',
             dependsOn: ['^build', 'typecheck'],
-            options: { config: 'vite.config.mts' },
+            options: { cwd: root, config: 'vite.config.mts' },
             configurations: { production: { mode: 'production' } },
         };
         project.targets.test = {

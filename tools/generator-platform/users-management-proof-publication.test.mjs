@@ -35,6 +35,8 @@ import {
     compileUsersManagementProofExecution,
     usersManagementProof,
 } from './test-support/users-management-proof.mjs';
+import { baselineRenderer } from './test-support/external-application-fixture.mjs';
+import { nx24ShellDelta } from './test-support/nx24-shell-delta.mjs';
 import { repositoryRoot, validateJsonSchema } from './validate-ir.mjs';
 
 const applicationDesignSchema = JSON.parse(
@@ -97,6 +99,37 @@ async function readRealizationEvidence(shellPlan, profile) {
     return evidence;
 }
 
+// Existing apps retain their creation manifest: Nx migrates configuration,
+// not publication provenance. Verify the complete current renderer against the
+// native-qualified migration delta before restoring that historical receipt in
+// the expected existing-app tree. Freshly generated manifests remain tested by
+// application-shell.test.mjs and T16.
+async function migratedPublishedFiles(shellPlan) {
+    const profile = shellPlan.profile;
+    const renderer = await baselineRenderer(profile);
+    const render =
+        profile === 'angular-pwa'
+            ? renderer.renderAngularPwaShell
+            : renderer.renderReactSpaShell;
+    const bytes = await readFile(resolve(repositoryRoot, shellPlan.design));
+    const historical = await render({
+        design: JSON.parse(bytes),
+        designSha256: createHash('sha256').update(bytes).digest('hex'),
+        designPath: shellPlan.design,
+        experienceId: shellPlan.experience_id,
+        appName: shellPlan.app_name,
+    });
+    assert.deepEqual(
+        shellPlan.files,
+        await nx24ShellDelta(profile, historical.files),
+        'the current shell must equal only the native-qualified Nx24 delta'
+    );
+    return {
+        ...shellPlan.files,
+        '.cmz/app-manifest.json': historical.files['.cmz/app-manifest.json'],
+    };
+}
+
 async function qualifiedShellFiles(
     shellPlan,
     { appName, platform, library, compatibilityPath }
@@ -124,7 +157,9 @@ async function qualifiedShellFiles(
                 join(workspace, 'tools/scaffold-tailwind-core.mjs')
             ),
         ]);
-        for (const [path, content] of Object.entries(shellPlan.files)) {
+        for (const [path, content] of Object.entries(
+            await migratedPublishedFiles(shellPlan)
+        )) {
             const target = join(workspace, 'apps', appName, path);
             await mkdir(dirname(target), { recursive: true });
             await writeFile(target, content);

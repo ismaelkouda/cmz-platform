@@ -1,15 +1,29 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import {
+    mkdir,
+    readFile,
+    readdir,
+    rename,
+    symlink,
+    writeFile,
+} from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { basename, dirname, join } from 'node:path';
 import test from 'node:test';
 
 import { planExternalApplicationShell } from '../core/application-workspace.mjs';
 import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
 import { renderAngularPwaShell } from '../renderers/angular-pwa-shell-renderer.mjs';
 import { renderReactSpaShell } from '../renderers/react-spa-shell-renderer.mjs';
-import { workspacePluginConsumers } from '../renderers/application-workspace-renderer.mjs';
+import {
+    renderApplicationWorkspace,
+    workspacePluginConsumers,
+} from '../renderers/application-workspace-renderer.mjs';
 import {
     baselineRenderer,
+    fixtureParent,
+    writeExternalDesign,
+    TOOLS_ROOT,
     hash,
     shellFixture,
 } from './external-application-fixture.mjs';
@@ -50,6 +64,7 @@ test('T13 : configurations strictes et compilation/test/lint natifs locaux des d
             });
             assert.ok(Object.hasOwn(plugins, '@nx/vite/plugin'));
             assert.equal(project.targets.build.executor, undefined);
+            assert.equal(project.targets.build.command, 'vite build');
             assert.deepEqual(project.targets.build.dependsOn, [
                 '^build',
                 'typecheck',
@@ -59,6 +74,7 @@ test('T13 : configurations strictes et compilation/test/lint natifs locaux des d
                 'production'
             );
             assert.deepEqual(project.targets.build.options, {
+                cwd: `apps/${plan.app_name}`,
                 config: 'vite.config.mts',
             });
             assert.deepEqual(project.targets.build.configurations, {
@@ -232,3 +248,138 @@ async function missingNx24Elements(profile, files) {
         assert.notDeepEqual(mutant, files, 'Mutant sans effet');
     return mutants;
 }
+
+// Exercise the real installed Nx/Vite commands, not an executor stub. This is a
+// disposable native test fixture, not a qualified external installation.
+test(
+    'T13 : le build React natif refuse sa configuration absente et repart après restauration',
+    { timeout: 55_000 },
+    async (t) => {
+        const root = join(await fixtureParent(t), 'native');
+        await mkdir(root);
+        const input = await writeExternalDesign(root);
+        const appName = 'native-react';
+        const source = JSON.parse(
+            await readFile(join(TOOLS_ROOT, 'package.json'))
+        );
+        const packages = Object.fromEntries(
+            ['dependencies', 'devDependencies'].flatMap((group) =>
+                Object.entries(source[group] ?? {}).map(([name, version]) => [
+                    name,
+                    { group, version },
+                ])
+            )
+        );
+        const workspace = await renderApplicationWorkspace({
+            profiles: ['react-spa'],
+            packages,
+            packageManager: source.packageManager,
+            engines: source.engines,
+            githubRepository: 'fixture-laboratory/native-shells',
+            reviewOwner: 'fixture-reviewer',
+        });
+        const shell = await renderReactSpaShell({
+            design: input.design,
+            experienceId: input.experienceId,
+            appName,
+            designPath: input.designPath,
+            designSha256: hash(await readFile(join(root, input.designPath))),
+            externalWorkspace: true,
+        });
+        const files = {
+            ...workspace,
+            'bun.lock': await readFile(join(TOOLS_ROOT, 'bun.lock')),
+            ...Object.fromEntries(
+                Object.entries(shell.files).map(([path, content]) => [
+                    `apps/${appName}/${path}`,
+                    content,
+                ])
+            ),
+        };
+        for (const [path, content] of Object.entries(files)) {
+            await mkdir(dirname(join(root, path)), { recursive: true });
+            await writeFile(join(root, path), content);
+        }
+        // Own the directory in which Vite writes .vite-temp. Package payloads are
+        // read through links; caches never alias the installed source directory.
+        await mkdir(join(root, 'node_modules'));
+        for (const entry of await readdir(join(TOOLS_ROOT, 'node_modules'))) {
+            if (['.cache', '.vite', '.vite-temp', '.nx'].includes(entry))
+                continue;
+            await symlink(
+                join(TOOLS_ROOT, 'node_modules', entry),
+                join(root, 'node_modules', entry)
+            );
+        }
+        const nxPackage = JSON.parse(
+            await readFile(join(root, 'node_modules/nx/package.json'))
+        );
+        const nx = join(root, 'node_modules/nx', nxPackage.bin.nx);
+        const env = {
+            PATH: [
+                dirname(process.execPath),
+                join(root, 'node_modules/.bin'),
+                '/usr/bin',
+                '/bin',
+            ].join(':'),
+            HOME: root,
+            TMPDIR: root,
+            CI: 'true',
+            NX_DAEMON: 'false',
+            NX_NO_CLOUD: 'true',
+            NX_ISOLATE_PLUGINS: 'false',
+            NX_WORKSPACE_DATA_DIRECTORY: join(root, '.nx/workspace-data'),
+            NX_CACHE_DIRECTORY: join(root, '.nx/cache'),
+        };
+        const build = (phase) => {
+            const result = spawnSync(
+                process.execPath,
+                [
+                    nx,
+                    'run',
+                    `${appName}:build:production`,
+                    '--skipNxCache',
+                    '--outputStyle=stream',
+                ],
+                {
+                    cwd: root,
+                    env,
+                    encoding: 'utf8',
+                    timeout: 15_000,
+                    maxBuffer: 1024 * 1024,
+                }
+            );
+            assert.equal(
+                result.error,
+                undefined,
+                `${phase}: native child must finish`
+            );
+            assert.equal(result.signal, null);
+            t.diagnostic(`${phase}: exit=${result.status}`);
+            return result;
+        };
+        const before = build('before');
+        assert.equal(before.status, 0, before.stdout + before.stderr);
+        const index = join(root, 'dist/apps', appName, 'index.html');
+        assert.match(await readFile(index, 'utf8'), /<html/);
+        const config = join(root, 'apps', appName, 'vite.config.mts');
+        const original = await readFile(config);
+        const displaced = join(root, 'displaced-vite-config');
+        await rename(config, displaced);
+        let missing;
+        try {
+            missing = build('missing-vite-config');
+        } finally {
+            await rename(displaced, config);
+        }
+        assert.deepEqual(await readFile(config), original);
+        const restored = build('restored');
+        assert.equal(restored.status, 0, restored.stdout + restored.stderr);
+        assert.notEqual(
+            missing.status,
+            0,
+            'a missing Vite config must not turn build into a successful noop'
+        );
+        assert.match(missing.stdout + missing.stderr, /vite\.config\.mts/);
+    }
+);
