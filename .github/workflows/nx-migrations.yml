@@ -483,16 +483,6 @@ jobs:
         run: |
           set -euo pipefail
           test "$(node --version)" = "v$(cat .nvmrc)"
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Verify bun runtime against source
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(node --version)" = "v$(cat .nvmrc)"
-          expected="$(node -p 'require("./package.json").packageManager.slice(4)')"
-          test "$(bun --version)" = "$expected"
       - name: SHA exact accessible depuis une branche du dépôt
         id: qualification-input
         run: |
@@ -514,11 +504,23 @@ jobs:
           test -d .git && test ! -L .git
           git checkout --detach "$SOURCE_SHA"
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(node --version)" = "v$(cat .nvmrc)"
           test -z "$(git status --porcelain)"
           test ! -e migrations.json
           git switch -c "qualification/nx-$TARGET"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: ${{ runner.temp }}/nx-qualified-candidate/package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
+          expected="$(node -p 'require("./package.json").packageManager.slice(4)')"
+          test "$(bun --version)" = "$expected"
+        working-directory: ${{ runner.temp }}/nx-qualified-candidate
       - name: Installation figée, famille entière et graphe frais
         id: qualification-prepare
         working-directory: ${{ runner.temp }}/nx-qualified-candidate
