@@ -105,6 +105,11 @@ const discover =
         'set -euo pipefail',
         'directory="$RUNNER_TEMP/runtime-alignment"',
         'mkdir -p "$directory/input/candidate"',
+        'trigger_head=""',
+        'if test "${GITHUB_EVENT_NAME:-}" = workflow_run; then',
+        '  trigger_head="$(jq -r --arg repo "$GITHUB_REPOSITORY" \'if (.workflow_run | .name == "CI" and .status == "completed" and .event == "pull_request" and .head_repository.full_name == $repo and (.head_branch | startswith("dependabot/")) and (.head_sha | test("^[a-f0-9]{40}$"))) then .workflow_run.head_sha else "" end\' "$GITHUB_EVENT_PATH")"',
+        '  if test -z "$trigger_head"; then echo "active=false" >> "$GITHUB_OUTPUT"; echo "Runtime alignment: upstream event ignored."; exit 0; fi',
+        'fi',
         'gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq \'.[] | select(.user.login == "dependabot[bot]" and .base.ref == "main" and .head.repo.full_name == .base.repo.full_name) | .number\' > "$directory/numbers"',
         'active=false',
         'while IFS= read -r number; do',
@@ -112,6 +117,7 @@ const discover =
         '  gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls/$number/files?per_page=100" | jq add > "$directory/input/files.json"',
         '  if ! jq -e \'length == 1 and (.[0] | (.filename == ".nvmrc") or (.filename == "Dockerfile" and ((.patch // "") | test("(?m)^[+-]FROM (oven/bun|node):"))) or (.filename == "package.json" and ((.patch // "") | test("(?m)^[+-].*\\u0022packageManager\\u0022"))))\' "$directory/input/files.json" > /dev/null; then continue; fi',
         '  gh api "repos/$GITHUB_REPOSITORY/pulls/$number" > "$directory/input/pr.json"',
+        '  if test -n "$trigger_head" && ! jq -e --arg head "$trigger_head" --arg repo "$GITHUB_REPOSITORY" \'.head.sha == $head and .user.login == "dependabot[bot]" and .state == "open" and .base.ref == "main" and .base.repo.full_name == $repo and .head.repo.full_name == $repo\' "$directory/input/pr.json" > /dev/null; then continue; fi',
         '  head="$(jq -r .head.sha "$directory/input/pr.json")"',
         '  if ! [[ "$head" =~ ^[a-f0-9]{40}$ ]]; then exit 1; fi',
         '  for path in Dockerfile package.json .nvmrc; do',
@@ -142,9 +148,11 @@ const publish =
         'candidate="$RUNNER_TEMP/runtime-candidate"',
         'git -C trusted-main fetch origin "refs/heads/$BRANCH"',
         'test "$(git -C trusted-main rev-parse FETCH_HEAD)" = "$EXPECTED_HEAD"',
-        'git -C trusted-main merge-base --is-ancestor "$RUNTIME_MAIN_SHA" "$EXPECTED_HEAD"',
-        'test -z "$(git -C trusted-main diff --summary "$RUNTIME_MAIN_SHA" "$EXPECTED_HEAD")"',
-        'test "$(git -C trusted-main diff --name-only "$RUNTIME_MAIN_SHA" "$EXPECTED_HEAD")" = "$CHANGED_PATH"',
+        'test "$EXPECTED_BASE" = "$(jq -r .identity.baseSha "$plan")"',
+        'git -C trusted-main merge-base --is-ancestor "$EXPECTED_BASE" "$RUNTIME_MAIN_SHA"',
+        'git -C trusted-main merge-base --is-ancestor "$EXPECTED_BASE" "$EXPECTED_HEAD"',
+        'test -z "$(git -C trusted-main diff --summary "$EXPECTED_BASE" "$EXPECTED_HEAD")"',
+        'test "$(git -C trusted-main diff --name-only "$EXPECTED_BASE" "$EXPECTED_HEAD")" = "$CHANGED_PATH"',
         'mkdir -p "$RUNNER_TEMP/runtime-alignment/snapshot"',
         'for path in Dockerfile package.json .nvmrc; do',
         '  git -C trusted-main show "$EXPECTED_HEAD:$path" > "$RUNNER_TEMP/runtime-alignment/snapshot/$path"',
@@ -191,7 +199,15 @@ function setupSteps(prefix = '', condition) {
 export function alignmentWorkflow() {
     return {
         name: 'Runtime versions — alignment',
-        on: { schedule: [{ cron: '*/15 * * * *' }], workflow_dispatch: null },
+        on: {
+            schedule: [{ cron: '*/15 * * * *' }],
+            workflow_dispatch: null,
+            workflow_run: {
+                workflows: ['CI'],
+                types: ['completed'],
+                branches: ['dependabot/**'],
+            },
+        },
         concurrency: {
             group: 'runtime-version-alignment',
             'cancel-in-progress': false,
@@ -218,6 +234,7 @@ export function alignmentWorkflow() {
                         with: {
                             ref: expr('github.sha'),
                             'persist-credentials': false,
+                            'fetch-depth': 0,
                         },
                     },
                     ...setupSteps('', ACTIVE),
@@ -295,6 +312,7 @@ export function alignmentWorkflow() {
                             RUNTIME_MAIN_SHA: expr('github.sha'),
                             BRANCH: expr('steps.verify.outputs.branch'),
                             EXPECTED_HEAD: expr('steps.verify.outputs.head'),
+                            EXPECTED_BASE: expr('steps.verify.outputs.base'),
                             PR_NUMBER: expr('steps.verify.outputs.number'),
                             CHANGED_PATH: expr(
                                 'steps.verify.outputs.changed_path'

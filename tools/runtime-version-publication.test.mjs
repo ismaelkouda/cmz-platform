@@ -33,6 +33,7 @@ function pr(base = main, candidate = head) {
     return {
         number: 1,
         state: 'open',
+        mergeable: true,
         user: { login: 'dependabot[bot]' },
         base: { sha: base, ref: 'main', repo: { full_name: repo } },
         head: {
@@ -190,6 +191,7 @@ function gitFixture(t, runtime = 'bun', side = 'image') {
         RUNTIME_MAIN_SHA: baseSha,
         BRANCH: branch,
         EXPECTED_HEAD: headSha,
+        EXPECTED_BASE: baseSha,
         PR_NUMBER: '1',
         CHANGED_PATH: plan.changedPaths[0],
         EDIT_PATH: plan.editPath,
@@ -219,6 +221,228 @@ function gitFixture(t, runtime = 'bun', side = 'image') {
         ).trim();
     return { root, trusted, plan, baseSha, headSha, git, run, remoteHead, env };
 }
+
+function event(f, mutate = (value) => value) {
+    const payload = {
+        workflow_run: {
+            name: 'CI',
+            status: 'completed',
+            event: 'pull_request',
+            conclusion: 'failure',
+            head_sha: f.headSha,
+            head_branch: f.plan.identity.branch,
+            head_repository: { full_name: repo },
+        },
+    };
+    mutate(payload.workflow_run);
+    f.env.GITHUB_EVENT_NAME = 'workflow_run';
+    f.env.GITHUB_EVENT_PATH = join(f.root, 'event.json');
+    writeFileSync(f.env.GITHUB_EVENT_PATH, JSON.stringify(payload));
+}
+
+function discover(f) {
+    const output = join(f.root, 'discover-output');
+    writeFileSync(output, '');
+    const result = spawnSync(
+        '/bin/bash',
+        [
+            '-e',
+            '-o',
+            'pipefail',
+            '-c',
+            alignmentWorkflow().jobs.prepare.steps[0].run,
+        ],
+        {
+            cwd: f.root,
+            env: { ...f.env, GITHUB_OUTPUT: output },
+            encoding: 'utf8',
+            timeout: 15000,
+        }
+    );
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    return readFileSync(output, 'utf8');
+}
+
+function propose(f) {
+    return spawnSync(
+        process.execPath,
+        [
+            'trusted-main/tools/runtime-version-policy.mjs',
+            'propose',
+            join(f.root, 'runtime-alignment/input'),
+            join(f.root, 'runtime-alignment/plan.json'),
+        ],
+        {
+            cwd: f.root,
+            env: f.env,
+            encoding: 'utf8',
+            timeout: 15000,
+        }
+    );
+}
+
+function advanceMain(f, divergent = false) {
+    const current = files();
+    const updated = divergent
+        ? bump(bump(current, 'bun', 'source', '1.4.0'), 'bun', 'image', '1.4.0')
+        : {
+              ...current,
+              'package.json':
+                  JSON.stringify({
+                      ...JSON.parse(current['package.json']),
+                      description: 'main advances without a runtime change',
+                  }) + '\n',
+          };
+    for (const [path, content] of Object.entries(updated))
+        writeFileSync(join(f.trusted, path), content);
+    f.git('add', '--', ...SOURCE_PATHS);
+    f.git('commit', '-qm', 'test: main advances');
+    f.git('push', '-q', 'origin', 'main');
+    f.env.RUNTIME_MAIN_SHA = f.git('rev-parse', 'HEAD');
+}
+
+test('runtime: événement CI rouge admissible, découverte et publication natives dans les quatre sens', (t) => {
+    assert.deepEqual(alignmentWorkflow().on.workflow_run, {
+        workflows: ['CI'],
+        types: ['completed'],
+        branches: ['dependabot/**'],
+    });
+    for (const runtime of ['node', 'bun'])
+        for (const side of ['source', 'image']) {
+            const f = gitFixture(t, runtime, side);
+            event(f);
+            assert.equal(discover(f), 'active=true\n');
+            const proposed = propose(f);
+            assert.equal(proposed.status, 0, proposed.stdout + proposed.stderr);
+            const published = f.run();
+            assert.equal(
+                published.status,
+                0,
+                published.stdout + published.stderr
+            );
+            assert.notEqual(f.remoteHead(), f.headSha);
+        }
+});
+
+test('runtime: événements non admissibles ou périmés sans checkout ni publication', (t) => {
+    for (const mutate of [
+        (w) => {
+            w.event = 'workflow_dispatch';
+        },
+        (w) => {
+            w.event = 'push';
+        },
+        (w) => {
+            w.name = 'Untrusted workflow';
+        },
+        (w) => {
+            w.status = 'in_progress';
+        },
+        (w) => {
+            w.head_repository.full_name = 'fork/repo';
+        },
+        (w) => {
+            w.head_branch = 'human/branch';
+        },
+        (w) => {
+            w.head_sha = 'f'.repeat(40);
+        },
+    ]) {
+        const f = gitFixture(t);
+        event(f, mutate);
+        assert.equal(discover(f), 'active=false\n');
+        assert.equal(
+            existsSync(
+                join(f.root, 'runtime-alignment/input/candidate/Dockerfile')
+            ),
+            false
+        );
+        assert.equal(f.remoteHead(), f.headSha);
+    }
+    for (const mutate of [
+        (p) => {
+            p.user.login = 'human';
+        },
+        (p) => {
+            p.head.repo.full_name = 'fork/repo';
+        },
+    ]) {
+        const f = gitFixture(t);
+        event(f);
+        const metadata = JSON.parse(readFileSync(f.env.META, 'utf8'));
+        mutate(metadata);
+        writeFileSync(f.env.META, JSON.stringify(metadata));
+        assert.equal(discover(f), 'active=false\n');
+        assert.equal(f.remoteHead(), f.headSha);
+    }
+});
+
+test('runtime: base en retard avec runtime inchangé, preuve Git et publication sans fusion', (t) => {
+    const f = gitFixture(t);
+    advanceMain(f);
+    event(f);
+    assert.equal(discover(f), 'active=true\n');
+    const result = propose(f);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const plan = JSON.parse(
+        readFileSync(join(f.root, 'runtime-alignment/plan.json'), 'utf8')
+    );
+    assert.equal(plan.identity.baseSha, f.baseSha);
+    assert.equal(plan.identity.mainSha, f.env.RUNTIME_MAIN_SHA);
+    const published = f.run();
+    assert.equal(published.status, 0, published.stdout + published.stderr);
+    const next = f.remoteHead();
+    assert.equal(f.git('rev-parse', next + '^'), f.headSha);
+    assert.equal(f.git('rev-parse', 'main'), f.env.RUNTIME_MAIN_SHA);
+    assert.equal(f.git('diff', '--name-only', f.headSha, next), 'package.json');
+});
+
+test('runtime: base divergente, non ancêtre, conflit et fusionnabilité inconnue refusés', (t) => {
+    for (const mode of ['runtime', 'ancestor', 'conflict', 'unknown']) {
+        const f = gitFixture(t);
+        if (mode === 'runtime' || mode === 'ancestor')
+            advanceMain(f, mode === 'runtime');
+        event(f);
+        assert.equal(discover(f), 'active=true\n');
+        const path = join(f.root, 'runtime-alignment/input/pr.json');
+        const raw = JSON.parse(readFileSync(path, 'utf8'));
+        if (mode === 'ancestor') {
+            raw.base.sha = f.git(
+                'commit-tree',
+                f.git('rev-parse', f.baseSha + '^{tree}'),
+                '-m',
+                'test: same runtime, unrelated history'
+            );
+        }
+        if (mode === 'conflict') raw.mergeable = false;
+        if (mode === 'unknown') raw.mergeable = null;
+        writeFileSync(path, JSON.stringify(raw));
+        const result = propose(f);
+        assert.notEqual(result.status, 0, mode + ': accepted');
+        assert.match(
+            result.stderr,
+            mode === 'runtime'
+                ? /runtime.*base/
+                : mode === 'ancestor'
+                  ? /ancêtre/
+                  : /fusionnable/
+        );
+        assert.equal(f.remoteHead(), f.headSha);
+        assert.equal(existsSync(join(f.root, 'runtime-candidate')), false);
+    }
+});
+
+test('runtime: conflit apparu après proposition refusé avant le worktree et le push', (t) => {
+    const f = gitFixture(t);
+    const metadata = JSON.parse(readFileSync(f.env.META, 'utf8'));
+    metadata.mergeable = false;
+    writeFileSync(f.env.META, JSON.stringify(metadata));
+    const result = f.run();
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /fusionnable/);
+    assert.equal(f.remoteHead(), f.headSha);
+    assert.equal(existsSync(join(f.root, 'runtime-candidate')), false);
+});
 
 test('runtime: publication native sur dépôt Git de fixture, deux runtimes et deux sens', (t) => {
     for (const runtime of ['node', 'bun'])

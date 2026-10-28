@@ -88,6 +88,30 @@ test('refuse un événement non relu et un `on` absent', () => {
     );
 });
 
+test('workflow_run reste local au workflow alignement relu', () => {
+    const on = {
+        schedule: [],
+        workflow_dispatch: null,
+        workflow_run: { workflows: ['CI'], types: ['completed'] },
+    };
+    assert.deepEqual(
+        eventViolations('runtime-version-alignment.yml', { on }),
+        []
+    );
+    for (const file of [
+        'f.yml',
+        'ci.yml',
+        'nx-migrations.yml',
+        'security-overrides-repair.yml',
+    ]) {
+        assert.ok(
+            eventViolations(file, { on }).some((e) =>
+                e.includes('workflow_run')
+            )
+        );
+    }
+});
+
 // ─── Jetons et écritures ────────────────────────────────────────────────────
 
 test('accepte un jeton racine en lecture et un bloc racine vide', () => {

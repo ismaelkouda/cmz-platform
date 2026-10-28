@@ -69,7 +69,7 @@ export const REVIEWED_EVENTS = [
 // une décision relue, pas un effet de bord.
 export const ALLOWED_JOB_WRITES = {
     'runtime-version-alignment.yml': {
-        events: ['schedule', 'workflow_dispatch'],
+        events: ['schedule', 'workflow_dispatch', 'workflow_run'],
         jobs: { publish: ['actions', 'contents'] },
     },
     'nx-migrations.yml': {
@@ -226,7 +226,14 @@ export function eventViolations(file, workflow) {
     if (events === null || events.length === 0)
         return [`${file} : déclencheurs \`on\` absents ou illisibles.`];
     return events
-        .filter((event) => !REVIEWED_EVENTS.includes(event))
+        .filter(
+            (event) =>
+                !REVIEWED_EVENTS.includes(event) &&
+                !(
+                    file === 'runtime-version-alignment.yml' &&
+                    event === 'workflow_run'
+                )
+        )
         .map(
             (event) =>
                 `${file} : événement \`${event}\` non relu ; ce garde ne vaut que pour ${REVIEWED_EVENTS.join(', ')}.`
