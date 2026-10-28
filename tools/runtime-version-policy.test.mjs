@@ -54,6 +54,7 @@ function pr(base = main, candidate = head) {
     return {
         number: 1,
         state: 'open',
+        mergeable: true,
         user: { login: 'dependabot[bot]' },
         base: { sha: base, ref: 'main', repo: { full_name: repo } },
         head: {
@@ -306,6 +307,23 @@ test('runtime: contrat privilégié fermé, sérialisation, chemin no-op et arte
     const good = workflows();
     for (const mutate of [
         (w) => {
+            delete w.on.workflow_run;
+        },
+        (w) => {
+            w.on.workflow_run.workflows = ['Other'];
+        },
+        (w) => {
+            w.on.workflow_run.types = ['requested'];
+        },
+        (w) => {
+            delete w.on.workflow_run.branches;
+        },
+        (w) => {
+            w.jobs.prepare.steps.find((s) =>
+                s.uses?.startsWith('actions/checkout@')
+            ).with.ref = '${{ github.event.workflow_run.head_sha }}';
+        },
+        (w) => {
             w.concurrency['cancel-in-progress'] = true;
         },
         (w) => {
@@ -425,7 +443,7 @@ test('runtime: données supplémentaires, moteurs hors plage et races refusés a
             p.head.repo.full_name = 'fork/repo';
         },
         (p) => {
-            p.base.sha = 'c'.repeat(40);
+            p.base.sha = 'invalid';
         },
         (p) => {
             p.head.ref = 'dependabot/../../escape';

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, writeFileSync, lstatSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import semver from 'semver';
 import { parse } from 'yaml';
 import { runtimeWorkflowErrors } from './runtime-version-workflow.mjs';
@@ -146,6 +147,7 @@ export function identityOf(pr, repo, mainSha) {
         mainSha,
         number: pr.number,
         state: pr.state,
+        mergeable: pr.mergeable,
         author: pr.user?.login,
         headRepo: pr.head?.repo?.full_name,
         baseRepo: pr.base?.repo?.full_name,
@@ -160,12 +162,14 @@ export function identityOf(pr, repo, mainSha) {
 
 function validateIdentity(id, repo, mainSha) {
     const sha = (v) => typeof v === 'string' && /^[a-f0-9]{40}$/.test(v);
+    if (id.mergeable !== true)
+        fail('PR non fusionnable ou fusionnabilité inconnue');
     if (
         !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) ||
         !sha(mainSha) ||
         id.repo !== repo ||
         id.mainSha !== mainSha ||
-        id.baseSha !== mainSha ||
+        !sha(id.baseSha) ||
         id.baseRef !== 'main' ||
         id.baseRepo !== repo ||
         id.headRepo !== repo ||
@@ -185,21 +189,85 @@ function validateIdentity(id, repo, mainSha) {
         fail('PR/auteur/dépôt/base/head/branche non admissibles');
 }
 
-export function alignmentPlan(base, candidate, identity, changedPaths) {
+function gitRead(repository, args) {
+    const result = spawnSync(
+        'git',
+        ['--no-optional-locks', '-C', repository, ...args],
+        {
+            encoding: 'utf8',
+            timeout: 10000,
+            env: {
+                PATH: process.env.PATH,
+                GIT_CONFIG_GLOBAL: '/dev/null',
+                GIT_CONFIG_NOSYSTEM: '1',
+                GIT_TERMINAL_PROMPT: '0',
+                GIT_NO_REPLACE_OBJECTS: '1',
+                GIT_NO_LAZY_FETCH: '1',
+            },
+        }
+    );
+    if (result.status !== 0) fail('preuve Git de la base ancêtre refusée');
+    return result.stdout;
+}
+
+function runtimeProjection(files) {
+    versions(files);
+    return {
+        nvmrc: files['.nvmrc'],
+        packageManager: JSON.parse(files['package.json']).packageManager,
+        from: files.Dockerfile.split('\n').filter((line) =>
+            /^FROM (oven\/bun|node):/.test(line)
+        ),
+    };
+}
+
+function comparisonBase(mainFiles, identity, repository) {
+    if (identity.baseSha === identity.mainSha) return mainFiles;
+    if (!repository) fail('preuve Git de la base ancêtre absente');
+    if (gitRead(repository, ['rev-parse', 'HEAD']).trim() !== identity.mainSha)
+        fail('checkout de confiance différent de main');
+    gitRead(repository, [
+        'merge-base',
+        '--is-ancestor',
+        identity.baseSha,
+        identity.mainSha,
+    ]);
+    const at = (sha) =>
+        Object.fromEntries(
+            SOURCE_PATHS.map((path) => [
+                path,
+                gitRead(repository, ['show', sha + ':' + path]),
+            ])
+        );
+    if (!equal(at(identity.mainSha), mainFiles)) fail('sources main modifiées');
+    const base = at(identity.baseSha);
+    if (!equal(runtimeProjection(base), runtimeProjection(mainFiles)))
+        fail('runtime divergent entre la base et main');
+    return base;
+}
+
+export function alignmentPlan(
+    base,
+    candidate,
+    identity,
+    changedPaths,
+    repository
+) {
     validateIdentity(identity, identity.repo, identity.mainSha);
     if (sourceErrors(base).length) fail('main doit déjà être aligné');
     if (!equal(Object.keys(candidate).sort(), [...SOURCE_PATHS].sort()))
         fail('périmètre de sources élargi');
-    const a = versions(base),
+    const reference = comparisonBase(base, identity, repository);
+    const a = versions(reference),
         b = versions(candidate);
     const changed = FIELDS.filter((field) => a[field] !== b[field]);
-    let expected = { ...base };
+    let expected = { ...reference };
     for (const field of changed)
         expected = replaceField(expected, field, b[field]);
     if (!equal(expected, candidate))
         fail('modification hors substitutions de versions');
     const actualPaths = SOURCE_PATHS.filter(
-        (path) => base[path] !== candidate[path]
+        (path) => reference[path] !== candidate[path]
     ).sort();
     if (
         !Array.isArray(changedPaths) ||
@@ -215,7 +283,7 @@ export function alignmentPlan(base, candidate, identity, changedPaths) {
     if (runtimes.length !== 1) fail('deux runtimes modifiés');
     const runtime = runtimes[0];
     const target = b[changed[0]];
-    if (runtime === 'node' && !nodeCompatible(target, a.nodeRange))
+    if (runtime === 'node' && !nodeCompatible(target, versions(base).nodeRange))
         fail('Node refusé: cible hors engines.node du main');
     if (changed.length === 2 && sourceErrors(candidate).length === 0)
         return null;
@@ -235,13 +303,14 @@ export function alignmentPlan(base, candidate, identity, changedPaths) {
     };
 }
 
-export function checkPlan(plan, base, repo, mainSha) {
+export function checkPlan(plan, base, repo, mainSha, repository) {
     validateIdentity(plan?.identity ?? {}, repo, mainSha);
     const expected = alignmentPlan(
         base,
         plan.candidateFiles,
         plan.identity,
-        plan.changedPaths
+        plan.changedPaths,
+        repository
     );
     if (!expected || !equal(expected, plan)) fail('artefact/plan altéré');
     return expected;
@@ -312,7 +381,8 @@ function main() {
             base,
             readFiles(join(first, 'candidate')),
             identityOf(raw, repo, mainSha),
-            files
+            files,
+            ROOT
         );
         if (!plan) {
             console.log('changed=false');
@@ -322,7 +392,7 @@ function main() {
         console.log('changed=true');
         return;
     }
-    const plan = checkPlan(json(first), base, repo, mainSha);
+    const plan = checkPlan(json(first), base, repo, mainSha, ROOT);
     if (command === 'verify') {
         verifyState(plan, json(second), third, repo, mainSha);
         if (fourth && !equal(readFiles(fourth), plan.candidateFiles))
@@ -331,6 +401,7 @@ function main() {
             number: plan.identity.number,
             branch: plan.identity.branch,
             head: plan.identity.headSha,
+            base: plan.identity.baseSha,
             changed_path: plan.changedPaths[0],
             edit_path: plan.editPath,
             runtime: plan.runtime,
