@@ -25,9 +25,30 @@ import {
     sha256,
     writePresentationEvidence,
 } from './page-realization.fixture.mjs';
+import { baselineRenderer } from './test-support/external-application-fixture.mjs';
+
+// ADR-0098 preserves v4 for identical inputs, not across a changed protected
+// tree. Reconstruct the original shell from the same Git-pinned renderer used
+// by T16; current-shell fixtures remain the default for every other test.
+async function historicalIdentityFixture() {
+    const data = await fixture();
+    const designPath = 'designs/clean-street.application-design.json';
+    const bytes = await readFile(join(data.root, designPath));
+    const renderer = await baselineRenderer('angular-pwa');
+    const { files } = await renderer.renderAngularPwaShell({
+        design: JSON.parse(bytes),
+        experienceId: 'citizen-web',
+        appName: 'clean-street',
+        designPath,
+        designSha256: sha256(bytes),
+    });
+    for (const [path, content] of Object.entries(files))
+        await writeFile(join(data.root, 'apps/clean-street', path), content);
+    return data;
+}
 
 test('prépare un work order immuable et borné aux fichiers déclarés', async () => {
-    const data = await fixture();
+    const data = await historicalIdentityFixture();
     const common = {
         workspaceRoot: data.root,
         appName: 'clean-street',
@@ -617,4 +638,34 @@ test('refuse un design de manifeste hors workspace avant de le lire', async () =
     } finally {
         await rm(externalRoot, { recursive: true, force: true });
     }
+});
+
+test('l’identité v4 courante change avec les octets protégés puis se restaure', async (t) => {
+    const data = await fixture();
+    t.after(() => rm(data.root, { recursive: true, force: true }));
+    const options = {
+        workspaceRoot: data.root,
+        appName: 'clean-street',
+        pageId: data.pageId,
+    };
+    const before = planPageRealization(options);
+    assert.equal(before.workOrder.schema_version, '4.0.0');
+    assert.notEqual(
+        before.work_order_id,
+        '6b5a3134f46e12adad154bf0c004ff59b3ffc4c32169d81430e475266df4c809'
+    );
+    const path = join(data.root, 'apps/clean-street/project.json');
+    const original = await readFile(path);
+    try {
+        await writeFile(path, Buffer.concat([original, Buffer.from('\n')]));
+        const changed = planPageRealization(options);
+        assert.notEqual(
+            changed.workOrder.protected_workspace_sha256,
+            before.workOrder.protected_workspace_sha256
+        );
+        assert.notEqual(changed.work_order_id, before.work_order_id);
+    } finally {
+        await writeFile(path, original);
+    }
+    assert.deepEqual(planPageRealization(options).workOrder, before.workOrder);
 });

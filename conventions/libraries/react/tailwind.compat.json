@@ -9,7 +9,7 @@
       "requirements": {
         "node": ">=22.22.3 <23",
         "bun": ">=1.3.14 <2",
-        "nx": ">=23.1.0 <24",
+        "nx": ">=24.0.2 <25",
         "framework": ">=19.3.0 <20"
       },
       "packages": {
@@ -21,18 +21,18 @@
       "reason": "Piste officielle Tailwind 4 via le plugin Vite, qualifiée pour React 19 et Vite 8.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "9027dfe4e439d9e9550b06238f206282fd3c5754",
-        "source_context_sha256": "4e1d6920ed3f3b5d1785d8b501135d3b4a788fc8ed07634f8c5b245f2ca4d62d",
+        "commit": "8a5d44a6630f9145098dc484b6cd39c8bc80bde6",
+        "source_context_sha256": "c5db74aa06e8d7df11a3970fe04d3d1b68b6ff76c42b90ff2e8bc88f4674070f",
         "app": "library-qualification-react",
-        "plan_id": "library-plan:ddccae2d39deb822667d4e145da88c43b90fd8cd6f04aea4f2d3f5e9d1af048f",
-        "change_set_id": "changes:d65ac6cfca8a49f9198e432064349b0a0b1f19558613af4fbe60462992628cf7",
-        "app_tree_sha256": "ba766b6de7355fc3b7f3393bad72ddfcb3674c4273100363976d953ebbc458b1",
-        "track_sha256": "c8e508313cd848597e0b6fce2714ccd6a7f00bc0f0a23194560ae5e13c5b8537",
+        "plan_id": "library-plan:85a9ccab2030e27e692c1e848835dc216c38daa45f1e2b8ce6cafd935b5f1191",
+        "change_set_id": "changes:e7586328c94a5cc2a1e2bbdbfa955c216628af8b5d4163425153d087f7c7495e",
+        "app_tree_sha256": "973ad4ac7f59ede9ab5b51ba876780f18f589e965995c1d21bfba7497068d962",
+        "track_sha256": "68d572cdf9a5015ce84aa967941918f07f3082e06bf2a4d59fcd2fca4a435ba1",
         "tested_versions": {
           "node": "22.22.3",
           "bun": "1.3.14",
-          "nx": "23.3.0",
-          "framework": "19.3.0",
+          "nx": "24.0.2",
+          "framework": "19.3.1",
           "packages": {
             "@tailwindcss/vite": "4.3.3",
             "tailwindcss": "4.3.3"
@@ -40,7 +40,7 @@
         },
         "dependency_state_sha256": {
           "initial": "78d9d928d454d673bd21ad497639fb402035de66e8849c7150af76c28a9bdec7",
-          "final": "995b3903933aacc4ae2f89b3ac4ccfab29d288e0df216556256302005692fc0d"
+          "final": "119d42785ea37746f7b95f8e1609dc54de6d70cc25cd607f282dd5e08c0751dc"
         },
         "proofs": [
           "offline-production-build",
@@ -53,10 +53,10 @@
             "conventions/libraries/react/tailwind.template.css": "27ce92c272f4281074b2f58b697899f7b591b5382f97281df75096044d58eb4f",
             "conventions/presentation/tailwind-theme.css": "956d9573a41853800e631134b883233ec411a66be7fbd26c7f00855fb50ec14d",
             "tools/library-setup/qualified-adapters.mjs": "7e1783fc2765a8ca8e335799088b4bc664bd4ec128d4a9c69b5cb6301d92d2c8",
-            "tools/scaffold-tailwind-core.mjs": "fa135eb2e8e989a74098a5103afe6fb65c29d50de391b34a1026651bde15a7d9"
+            "tools/scaffold-tailwind-core.mjs": "01028622a7e64b95c5f54e1e35931f9883060cfedba0c1f5b421495f5a1e869b"
           },
-          "digest_sha256": "55a5b04ae2130a70a383174e6196f9bde6df6a0ffcda8486e3aab60b837d0d1f",
-          "change_set_id": "changes:d65ac6cfca8a49f9198e432064349b0a0b1f19558613af4fbe60462992628cf7"
+          "digest_sha256": "50383b15d6ba2e8ce9f73c79fad1b48a96ba53237f0c5de650c88fea014e2964",
+          "change_set_id": "changes:e7586328c94a5cc2a1e2bbdbfa955c216628af8b5d4163425153d087f7c7495e"
         },
         "inputs_sha256": {
           "recipe": "e036262dcb245f54a296897124076e53f9b3c3a4ed3bcdcf4b87339f912dbf76",
@@ -64,7 +64,7 @@
           "compat_schema": "086134ad4b213328416aacaa2e96d845b8ba74773052238d3bee877e9bb22245",
           "policy": "ca3429863614bb7592a153300a44e7b7006428cc1fd826823062c8759fde77c7",
           "policy_schema": "a71cc60b0692e3704ac8f09847b202af9da92453c7de486f09d0106ff3db0c96",
-          "nx_json": "3403357296b1a3ccbab58dbe602d10d50849775a60ba548526f64bebe83dd4bc",
+          "nx_json": "485c3f2b0a9917bdca39f022e4bd2b75aa2e4bd16b6fbebd13bd6f6546dd40c2",
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
           "gitattributes": "e85a53f73d839eb277369785d6a2faf052a642126ad001cb3b85b8ffcfbd272d",
           "proof_contracts": "b5aeced95a3d0fb950ae5e9f2bca8aff0dbd205d9ac4254dec61c2936c310526",
@@ -97,7 +97,7 @@
             "tools/scaffold-tailwind.mjs": "e12cd0be13839fc2177930d56fdfe1032ec5acdddfe8b0c34e9f134bc071200d"
           }
         },
-        "evidence_sha256": "7cc1737bb81cd2806ea4805cc6839e27f3fdcf9691a3335dfdef9317faff8393"
+        "evidence_sha256": "40aaeeb0838a08fdb3308f347e165495a7652a580d4f5db3261b4a6f2c8e9d18"
       }
     }
   ]

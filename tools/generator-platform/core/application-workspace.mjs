@@ -616,7 +616,6 @@ export async function runExternalApplicationCommand(command, args, root) {
             TMP: temporary,
             TEMP: temporary,
             NX_NO_CLOUD: 'true',
-            NX_CACHE_PROJECT_GRAPH: 'false',
             NX_TASKS_RUNNER_DYNAMIC_OUTPUT: 'false',
             ...confinement,
         },
