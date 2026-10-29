@@ -54,6 +54,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { parse as parseYaml } from 'yaml';
+import { runtimeAssertion } from './runtime-version-workflow.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TRUSTED_REF = "github.ref == 'refs/heads/main'";
@@ -604,6 +605,38 @@ export function nxQualificationErrors(workflow) {
         checkout?.with?.['persist-credentials'] !== false
     )
         errors.push('qualification : origine et historique non épinglés');
+    const candidate = '${{ runner.temp }}/nx-qualified-candidate';
+    const bunSteps = steps.filter((s) =>
+        s.uses?.startsWith('oven-sh/setup-bun@')
+    );
+    const bunAt = steps.indexOf(bunSteps[0]);
+    const candidateAt = steps.findIndex(
+        (s) => s.id === 'qualification-checkout'
+    );
+    const prepareAt = steps.indexOf(preparation);
+    const nodeCheck = 'test "$(node --version)" = "v$(cat .nvmrc)"';
+    if (
+        bunSteps.length !== 1 ||
+        candidateAt < 0 ||
+        bunAt <= candidateAt ||
+        bunAt + 2 !== prepareAt ||
+        !same(bunSteps[0]?.with, {
+            'bun-version-file': candidate + '/package.json',
+        }) ||
+        !same(steps[bunAt + 1], {
+            ...runtimeAssertion('bun', '', undefined, true),
+            'working-directory': candidate,
+        }) ||
+        !steps[candidateAt]?.run
+            ?.split('\n')
+            .some((line) => line.trim() === nodeCheck) ||
+        steps
+            .slice(0, bunAt)
+            .some((s) => /\bbun\s+(?:install|i)\b/.test(s.run ?? ''))
+    )
+        errors.push(
+            'qualification : runtime candidat non vérifié avant installation'
+        );
     for (const step of steps) {
         for (const line of (step.run ?? '').split('\n').map((l) => l.trim()))
             if (

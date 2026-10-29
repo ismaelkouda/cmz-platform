@@ -173,8 +173,25 @@ const publish =
         'node trusted-main/tools/runtime-version-policy.mjs verify "$plan" "$RUNNER_TEMP/runtime-alignment/current.json" "$current_main" > /dev/null',
         'gh auth setup-git',
         'git -C "$candidate" push origin "HEAD:refs/heads/$BRANCH"',
-        'test "$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .head.sha)" = "$(git -C "$candidate" rev-parse HEAD)"',
-        'gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"',
+        'published_head="$(git -C "$candidate" rev-parse HEAD)"',
+        'echo "RUNTIME_ALIGNMENT_PUSHED_HEAD=$published_head"',
+        'echo "Aligned PR #$PR_NUMBER: commit $published_head pushed; CI dispatch pending." >> "$GITHUB_STEP_SUMMARY"',
+        'for attempt in 1 2 3 4 5; do',
+        '  if ! gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" > "$RUNNER_TEMP/runtime-alignment/published-pr.json"; then echo "RUNTIME_ALIGNMENT_PR_READ_FAILED head=$published_head" >&2; exit 1; fi',
+        '  observed_head="$(jq -er \'.head.sha | select(type == "string" and test("^[a-f0-9]{40}$"))\' "$RUNNER_TEMP/runtime-alignment/published-pr.json")"',
+        '  echo "RUNTIME_ALIGNMENT_PR_HEAD attempt=$attempt observed=$observed_head expected=$published_head"',
+        '  if ! jq -e --slurpfile plan "$plan" \'.number == $plan[0].identity.number and .state == "open" and .user.login == $plan[0].identity.author and .head.ref == $plan[0].identity.branch and .head.repo.full_name == $plan[0].identity.headRepo and .base.sha == $plan[0].identity.baseSha and .base.ref == "main" and .base.repo.full_name == $plan[0].identity.baseRepo\' "$RUNNER_TEMP/runtime-alignment/published-pr.json" > /dev/null; then echo "RUNTIME_ALIGNMENT_PR_IDENTITY_CHANGED head=$published_head" >&2; exit 1; fi',
+        '  if test "$observed_head" = "$published_head"; then break; fi',
+        '  if test "$observed_head" != "$EXPECTED_HEAD"; then echo "RUNTIME_ALIGNMENT_PR_HEAD_CHANGED observed=$observed_head expected=$published_head" >&2; exit 1; fi',
+        '  if test "$attempt" = 5; then echo "RUNTIME_ALIGNMENT_HEAD_NOT_VISIBLE observed=$observed_head expected=$published_head" >&2; exit 1; fi',
+        '  sleep 2',
+        'done',
+        'current_main="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"',
+        'if test "$current_main" != "$RUNTIME_MAIN_SHA"; then echo "RUNTIME_ALIGNMENT_MAIN_CHANGED observed=$current_main expected=$RUNTIME_MAIN_SHA" >&2; exit 1; fi',
+        'remote_head="$(git -C trusted-main ls-remote --exit-code origin "refs/heads/$BRANCH" | cut -f1)"',
+        'if test "$remote_head" != "$published_head"; then echo "RUNTIME_ALIGNMENT_REMOTE_HEAD_CHANGED observed=$remote_head expected=$published_head" >&2; exit 1; fi',
+        'if ! gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"; then echo "RUNTIME_ALIGNMENT_CI_DISPATCH_FAILED head=$published_head; commit remains published, do not repeat push" >&2; exit 1; fi',
+        'echo "RUNTIME_ALIGNMENT_CI_DISPATCH_ACCEPTED head=$published_head"',
         'echo "Aligned PR #$PR_NUMBER; CI dispatched. Dependabot no longer rebases this branch; use a reviewed native merge of main." >> "$GITHUB_STEP_SUMMARY"',
     ].join('\n') + '\n';
 
@@ -352,13 +369,23 @@ export function runtimeWorkflowErrors(entries) {
                 const source = type === 'node' ? '.nvmrc' : 'package.json';
                 const key =
                     type === 'node' ? 'node-version-file' : 'bun-version-file';
+                const candidateBun =
+                    file === 'nx-migrations.yml' &&
+                    jobId === 'qualification' &&
+                    type === 'bun';
+                const candidate =
+                    expr('runner.temp') + '/nx-qualified-candidate';
                 const prefix =
                     file === 'runtime-version-alignment.yml' &&
                     jobId === 'publish'
                         ? 'trusted-main/'
                         : '';
                 if (
-                    !same(step.with, { [key]: prefix + source }) ||
+                    !same(step.with, {
+                        [key]: candidateBun
+                            ? candidate + '/' + source
+                            : prefix + source,
+                    }) ||
                     step['continue-on-error'] !== undefined
                 )
                     errors.push(
@@ -373,6 +400,7 @@ export function runtimeWorkflowErrors(entries) {
                     step.if,
                     nodeSeen
                 );
+                if (candidateBun) expected['working-directory'] = candidate;
                 if (!same(job.steps[index + 1], expected))
                     errors.push(
                         file +
