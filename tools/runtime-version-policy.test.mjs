@@ -1,6 +1,7 @@
 import './runtime-version-publication.test.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import semver from 'semver';
 import {
     readFileSync,
     writeFileSync,
@@ -88,6 +89,13 @@ function bump(base, runtime, side, target) {
     return next;
 }
 const diffPaths = (a, b) => SOURCE_PATHS.filter((p) => a[p] !== b[p]).sort();
+function nextBunTarget(base) {
+    const current = versions(base).bunSource;
+    const target = semver.inc(current, 'patch');
+    assert.ok(target, 'fixture Bun: version source invalide');
+    assert.notEqual(target, current);
+    return target;
+}
 
 test('runtime: sources, toutes les assertions, Oracle et workflow réels conformes', () => {
     assert.deepEqual(repositoryRuntimeErrors(ROOT), []);
@@ -118,7 +126,7 @@ test('runtime: chaque divergence de sources est rouge, restauration verte', () =
                 original,
                 runtime,
                 side,
-                runtime === 'bun' ? '1.4.4' : '24.15.0'
+                runtime === 'bun' ? nextBunTarget(original) : '24.15.0'
             );
             assert.ok(sourceErrors(bad).length, runtime + '/' + side);
         }
@@ -151,10 +159,11 @@ test('runtime: chaque divergence de sources est rouge, restauration verte', () =
         const bad = {
             ...original,
             'package.json': original['package.json'].replace(
-                '"packageManager": "bun@1.3.14"',
+                '"packageManager": "bun@' + versions(original).bunSource + '"',
                 '"packageManager": "' + invalid + '"'
             ),
         };
+        assert.notEqual(bad['package.json'], original['package.json']);
         assert.ok(sourceErrors(bad).length, invalid);
     }
     for (const mutate of [
@@ -377,7 +386,7 @@ test('runtime: les deux sens des deux réparations, octets hors paire et idempot
     const base = files();
     for (const runtime of ['bun', 'node'])
         for (const side of ['image', 'source']) {
-            const target = runtime === 'bun' ? '1.4.4' : '24.15.0';
+            const target = runtime === 'bun' ? nextBunTarget(base) : '24.15.0';
             const candidate = bump(base, runtime, side, target);
             assert.ok(sourceErrors(candidate).length);
             const plan = alignmentPlan(
@@ -420,7 +429,7 @@ test('runtime: les deux sens des deux réparations, octets hors paire et idempot
 
 test('runtime: données supplémentaires, moteurs hors plage et races refusés avant toute écriture', () => {
     const base = files(),
-        candidate = bump(base, 'bun', 'image', '1.4.4');
+        candidate = bump(base, 'bun', 'image', nextBunTarget(base));
     const make = (c) => alignmentPlan(base, c, identity(), diffPaths(base, c));
     for (const bad of [
         {
@@ -462,7 +471,10 @@ test('runtime: données supplémentaires, moteurs hors plage et races refusés a
             p.editPath = 'bun.lock';
         },
         (p) => {
-            p.target = '1.4.5';
+            const target = semver.inc(p.target, 'patch');
+            assert.ok(target, 'fixture runtime: cible falsifiee invalide');
+            assert.notEqual(target, p.target);
+            p.target = target;
         },
         (p) => {
             p.postFiles['.nvmrc'] = '26.0.0\n';
