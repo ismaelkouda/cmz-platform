@@ -21,16 +21,16 @@
       "reason": "Piste Angular Material 22 ; vérification complète requise pour chaque nouvelle combinaison framework/Material.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "778056e82a16313041f5c578a5829dc3e269c07f",
-        "source_context_sha256": "bdecca607ee2851ee723723f8b73031ecb698d6e909a7f9af093bb428f1fc20f",
+        "commit": "941720d7fd1e923153440e35c910218af984c785",
+        "source_context_sha256": "11b9205eb9c307c97fc85ec9d54b75824eeb1ce236ca860e19a51c88d94f588d",
         "app": "backoffice-angular",
-        "plan_id": "library-plan:ab1ef311125ab727a20fca62a6d67d331e01c3ffc9d6242947cc571acfc7a2a6",
+        "plan_id": "library-plan:60e7aaf974dc174986c56521ed8f73609f2171cc16456ff0cdbae3d2afce71c3",
         "change_set_id": "changes:7d323c9a5b23172919272b0818ec0785ad84b43df59ca172a596605a2e2e6b93",
-        "app_tree_sha256": "6fc242f7d9c125e02ea41af94ca3ca93fc75b323f791180ee41e584b2d09ecf5",
+        "app_tree_sha256": "7f54489bdb70cd70ca0522c104cef4e960107af83842347f97bd736831b096bd",
         "track_sha256": "a6af8d33318367cff0af317c029902e647180fa35b974fe40c8d02997f9e8629",
         "tested_versions": {
           "node": "22.22.3",
-          "bun": "1.3.14",
+          "bun": "1.4.4",
           "nx": "24.0.2",
           "framework": "22.2.3",
           "packages": {
@@ -62,7 +62,7 @@
           "recipe": "689e67584288468fe34e1a9815a89e55a8f4660f7fa954c99f4badb7f9b8003b",
           "recipe_schema": "f619d9b9f643f4c97ac71013bec732d380fd8370b85d484f6591a351dfec7bce",
           "compat_schema": "086134ad4b213328416aacaa2e96d845b8ba74773052238d3bee877e9bb22245",
-          "policy": "ca3429863614bb7592a153300a44e7b7006428cc1fd826823062c8759fde77c7",
+          "policy": "0214979004c123e0fd06b8310df7fd1bba208ab4e3b46c8f634a0eb690a2567e",
           "policy_schema": "a71cc60b0692e3704ac8f09847b202af9da92453c7de486f09d0106ff3db0c96",
           "nx_json": "485c3f2b0a9917bdca39f022e4bd2b75aa2e4bd16b6fbebd13bd6f6546dd40c2",
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
@@ -102,7 +102,7 @@
             "tools/library-setup/tooling-fingerprint.mjs": "29110b4d51d71af0735073fcadeb30845fe4743222197fa3e15520daf2f12514"
           }
         },
-        "evidence_sha256": "2f63dfe8c5298b93694808573511d22aa5f63a0dab67dc3de1cdbe359a13df40"
+        "evidence_sha256": "956b58f1ee0e6252b27c7d8e70b9d88d565d926be36a42d57a728ad463b4a4bd"
       }
     }
   ]

@@ -52,7 +52,7 @@ export async function proofSession(options) {
         [
             '--no-optional-locks',
             'show',
-            `3f5922287a6bda7c477e9b304136f14b9ae4c177:${policyPath}`,
+            `3aabbe1b34cdcfdc9fce5da420f8558998f8d8c4:${policyPath}`,
         ],
         { cwd: TOOLS_ROOT }
     );

@@ -13,8 +13,8 @@
  * `bun.lock.catalog`/`catalogs` est un miroir exact de
  * `package.json.workspaces.catalog`/`catalogs` (même clés, mêmes versions
  * résolues) après tout `bun install` sain — ce script impose l'égalité
- * stricte entre les deux et fige les versions de format actuellement
- * produites par Bun 1.3.14. Une montée de format doit donc être revue avec
+ * stricte entre les deux et fige les versions de format historiquement
+ * observées sous Bun 1.3.14. Une montée de format doit donc être revue avec
  * la montée de Bun, jamais acceptée silencieusement depuis un bot.
  *
  * Usage : bun run check:bun-lock-catalog-integrity
@@ -34,7 +34,7 @@ const PACKAGE_JSON_PATH = join(ROOT, 'package.json');
 const BUN_LOCK_PATH = join(ROOT, 'bun.lock');
 export const EXPECTED_LOCKFILE_VERSION = 1;
 export const EXPECTED_CONFIG_VERSION = 1;
-export const EXPECTED_PACKAGE_MANAGER = 'bun@1.3.14';
+export const EXPECTED_PACKAGE_MANAGER = 'bun@1.4.4';
 
 function isPlainObject(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -151,13 +151,13 @@ export function checkCatalogIntegrity(packageJson, bunLock) {
     if (bunLock.lockfileVersion !== EXPECTED_LOCKFILE_VERSION) {
         errors.push(
             `bun.lock : \`lockfileVersion\` vaut ${JSON.stringify(bunLock.lockfileVersion)}, ` +
-                `attendu ${EXPECTED_LOCKFILE_VERSION} (Bun 1.3.14).`
+                `attendu ${EXPECTED_LOCKFILE_VERSION} (${EXPECTED_PACKAGE_MANAGER}).`
         );
     }
     if (bunLock.configVersion !== EXPECTED_CONFIG_VERSION) {
         errors.push(
             `bun.lock : \`configVersion\` vaut ${JSON.stringify(bunLock.configVersion)}, ` +
-                `attendu ${EXPECTED_CONFIG_VERSION} (Bun 1.3.14).`
+                `attendu ${EXPECTED_CONFIG_VERSION} (${EXPECTED_PACKAGE_MANAGER}).`
         );
     }
 
@@ -196,7 +196,7 @@ function main() {
             '(dependabot-core#12522 : catalog/catalogs supprimés par son updater Bun ; ' +
             '#13623/#15848 : métadonnées ou format réécrits par une version embarquée différente).\n' +
             'Ne jamais éditer bun.lock à la main — relancer `bun install` depuis un ' +
-            'environnement Bun 1.3.14 propre et committer le résultat.'
+            `environnement ${EXPECTED_PACKAGE_MANAGER} propre et committer le résultat.`
     );
     process.exit(1);
 }

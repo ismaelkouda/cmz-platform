@@ -25,7 +25,7 @@
 # sans elle, l'iframe Grafana sera bloquée par la CSP générée à l'entrypoint.
 
 # ─── deps + build ────────────────────────────────────────────────────────────
-FROM oven/bun:1.3.14-debian AS bun_runtime
+FROM oven/bun:1.4.4-debian AS bun_runtime
 
 FROM node:22.22.3-bookworm-slim AS build
 COPY --from=bun_runtime /usr/local/bin/bun /usr/local/bin/bun

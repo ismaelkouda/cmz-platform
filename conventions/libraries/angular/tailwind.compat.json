@@ -21,16 +21,16 @@
       "reason": "Piste Tailwind 4 ; vérification complète requise pour chaque nouvelle version effective du framework.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "f1aeb5c60f4ae3f7f8117bb1eb1f858c0f9e1c3a",
-        "source_context_sha256": "7989fac27154192f747427a3246d61c05b95d18a13034c42c1f4294ecced59d3",
+        "commit": "9df4d1de12239dcbd0dddc9850c29ec0c6ec1e00",
+        "source_context_sha256": "18e295d91c1cdb9f8cdcaf9b4cadd8dddea56e21c006fde5f4b650b6a7af1ecf",
         "app": "library-qualification-angular",
-        "plan_id": "library-plan:4274c7b97cd426fc129e6298ee17ac2c33a342c3e27677c8ef313ff1c73007a0",
+        "plan_id": "library-plan:61f40057b2d4ec00960b985ba9f89d0ecc13214885191773629cb792b547d5a8",
         "change_set_id": "changes:0971340b7eb9beabbeb5837c964fa2da47af95099f2dfff704c7b18cd2c0f262",
         "app_tree_sha256": "208320b6cd4423087de2cc35e4768811dbd8ace5ff83d8304e556b87daaec334",
         "track_sha256": "dab3755ad72c880d872a47fb5fc20a0f3faa74e552ce26690ed3d17c27872912",
         "tested_versions": {
           "node": "22.22.3",
-          "bun": "1.3.14",
+          "bun": "1.4.4",
           "nx": "24.0.2",
           "framework": "22.2.3",
           "packages": {
@@ -64,7 +64,7 @@
           "recipe": "af05a220bfd375db287ba837ae6bd1f1260fa0006c3b487225beeb68930cac58",
           "recipe_schema": "f619d9b9f643f4c97ac71013bec732d380fd8370b85d484f6591a351dfec7bce",
           "compat_schema": "086134ad4b213328416aacaa2e96d845b8ba74773052238d3bee877e9bb22245",
-          "policy": "ca3429863614bb7592a153300a44e7b7006428cc1fd826823062c8759fde77c7",
+          "policy": "0214979004c123e0fd06b8310df7fd1bba208ab4e3b46c8f634a0eb690a2567e",
           "policy_schema": "a71cc60b0692e3704ac8f09847b202af9da92453c7de486f09d0106ff3db0c96",
           "nx_json": "485c3f2b0a9917bdca39f022e4bd2b75aa2e4bd16b6fbebd13bd6f6546dd40c2",
           "tsconfig": "12ca2d2edd35a4080670afdfa8efb4f8a0af5f50a69d42ccb73608f6d5380a07",
@@ -102,7 +102,7 @@
             "tools/scaffold-tailwind.mjs": "e12cd0be13839fc2177930d56fdfe1032ec5acdddfe8b0c34e9f134bc071200d"
           }
         },
-        "evidence_sha256": "0a01a507d943800eafcc41adad1f95efccd95d861f429017a3f38603709cd398"
+        "evidence_sha256": "df6d91275cd71c3dbe45db31aeef2a4b74f65571b156200b7bf3223dc10e6be6"
       }
     }
   ]

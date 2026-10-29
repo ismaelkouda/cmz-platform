@@ -205,7 +205,7 @@ forEachBackend(
             policy,
         });
         assert.equal(resolution.status, 0, resolution.stderr);
-        assert.equal(resolution.stdout.trim(), '1.3.14');
+        assert.equal(resolution.stdout.trim(), '1.4.4');
     }
 );
 

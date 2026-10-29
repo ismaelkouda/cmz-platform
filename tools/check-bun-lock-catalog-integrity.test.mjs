@@ -112,7 +112,7 @@ test('échoue fermé sur les racines et sections non objet', () => {
     ]);
 });
 
-test('fige les versions de format produites par Bun 1.3.14', () => {
+test('fige les versions de format attendues pour Bun 1.4.4', () => {
     const changed = clone(validBunLock);
     changed.lockfileVersion = 2;
     delete changed.configVersion;
@@ -120,8 +120,8 @@ test('fige les versions de format produites par Bun 1.3.14', () => {
     const result = checkCatalogIntegrity(validPackageJson, changed);
     assert.equal(result.ok, false);
     assert.deepEqual(result.errors.slice(0, 2), [
-        'bun.lock : `lockfileVersion` vaut 2, attendu 1 (Bun 1.3.14).',
-        'bun.lock : `configVersion` vaut undefined, attendu 1 (Bun 1.3.14).',
+        'bun.lock : `lockfileVersion` vaut 2, attendu 1 (bun@1.4.4).',
+        'bun.lock : `configVersion` vaut undefined, attendu 1 (bun@1.4.4).',
     ]);
 });
 
