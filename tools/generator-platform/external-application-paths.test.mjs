@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
+import { execFileSync, spawnSync } from 'node:child_process';
+import {
+    mkdir,
+    mkdtemp,
+    readFile,
+    realpath,
+    rm,
+    symlink,
+    writeFile,
+} from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 
@@ -17,6 +25,7 @@ import {
 import { withGenerationLock } from './core/generation-transaction.mjs';
 import {
     fixtureParent,
+    hash,
     prepareFixture,
     snapshotTree,
     TOOLS_ROOT,
@@ -225,4 +234,124 @@ test('EXT01 v4 T-1 : une cible contenant une copie de travail enregistrée est r
         /target overlaps a repository or worktree/
     );
     assert.deepEqual(await snapshotTree(parent), before);
+});
+
+// Relocate only imports and the workshop root; exercise the real proofSession.
+// No confinement check or function body is replaced by this fixture.
+test('EXT01 policy : initialisation sans historique Git intermédiaire et refus avant écriture', async (t) => {
+    const parent = await fixtureParent(t);
+    const toolsRoot = join(parent, 'workshop');
+    const proofParent = await realpath(
+        await mkdtemp(join(dirname(TOOLS_ROOT), 'cmz-policy-session-'))
+    );
+    t.after(() => rm(proofParent, { recursive: true, force: true }));
+    const policyPath = 'conventions/libraries/resolution-policy.json';
+    await mkdir(join(toolsRoot, 'conventions/libraries'), { recursive: true });
+    initFixtureRepo(toolsRoot);
+    const absent = spawnSync(
+        'git',
+        [
+            '-C',
+            toolsRoot,
+            'cat-file',
+            '-e',
+            '3aabbe1b34cdcfdc9fce5da420f8558998f8d8c4^{commit}',
+        ],
+        { encoding: 'utf8' }
+    );
+    assert.equal(absent.error, undefined);
+    assert.equal(absent.signal, null);
+    assert.notEqual(absent.status, 0);
+    assert.match(absent.stderr, /Not a valid object name/);
+    assert.equal(fixtureGit(toolsRoot, ['rev-list', '--all']), '');
+    const policyBytes = await readProductFile(TOOLS_ROOT, policyPath);
+    await writeFile(join(toolsRoot, policyPath), policyBytes);
+    await writeFile(
+        join(toolsRoot, 'package.json'),
+        await readProductFile(TOOLS_ROOT, 'package.json')
+    );
+    const moduleUrl = new URL(
+        './proof-support/external-application-runtime.mjs',
+        import.meta.url
+    );
+    const source = await readFile(moduleUrl, 'utf8');
+    const relocated = source
+        .replace(/^ {4}TOOLS_ROOT,\n/mu, '')
+        .replace(
+            /^((?:import .+ from|\} from) )'([^']+)'/gmu,
+            (statement, prefix, specifier) =>
+                prefix +
+                JSON.stringify(
+                    specifier.startsWith('.')
+                        ? new URL(specifier, moduleUrl).href
+                        : import.meta.resolve(specifier)
+                )
+        );
+    assert.notEqual(relocated, source);
+    const fixtureModule =
+        relocated +
+        '\nconst TOOLS_ROOT = ' +
+        JSON.stringify(toolsRoot) +
+        ';\n//# sourceURL=cmz-proof-policy-session-fixture.mjs\n';
+    const { proofSession } = await import(
+        'data:text/javascript;base64,' +
+            Buffer.from(fixtureModule).toString('base64')
+    );
+    const session = await proofSession({
+        proofRoot: join(proofParent, 'approved'),
+        backend: 'docker',
+    });
+    assert.equal(session.root, join(proofParent, 'approved'));
+    assert.deepEqual(session.policy, JSON.parse(policyBytes.toString('utf8')));
+    assert.deepEqual(
+        session.sourcePackage,
+        JSON.parse(
+            (await readProductFile(TOOLS_ROOT, 'package.json')).toString('utf8')
+        )
+    );
+    assert.match(
+        await readFile(join(session.root, 'report.txt'), 'utf8'),
+        new RegExp('policy_sha256=' + hash(policyBytes))
+    );
+    const text = policyBytes.toString('utf8');
+    const policy = JSON.parse(text);
+    const mutations = [
+        ['octets supplémentaires', text + '\n'],
+        [
+            'registre non approuvé',
+            text.replace(
+                policy.allowed_registries[0],
+                'https://unreviewed.example.invalid'
+            ),
+        ],
+        [
+            'image de résolution différente',
+            text.replace(
+                policy.sandbox.container_images.resolution,
+                'oven/bun@sha256:' + '0'.repeat(64)
+            ),
+        ],
+        [
+            'image d’exécution différente',
+            text.replace(
+                policy.sandbox.container_images.execution,
+                'node:latest'
+            ),
+        ],
+    ];
+    for (const [label, changed] of mutations) {
+        await t.test(label, async () => {
+            assert.notEqual(changed, text);
+            await writeFile(join(toolsRoot, policyPath), changed);
+            const before = await snapshotTree(proofParent, []);
+            const rejectedRoot = join(proofParent, 'rejected');
+            await assert.rejects(
+                proofSession({ proofRoot: rejectedRoot, backend: 'docker' }),
+                /Politique de confinement modifiée/
+            );
+            assert.equal(await pathExists(rejectedRoot), false);
+            assert.deepEqual(await snapshotTree(proofParent, []), before);
+        });
+    }
+    await writeFile(join(toolsRoot, policyPath), policyBytes);
 });
