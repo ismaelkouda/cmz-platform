@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { lstat, mkdir, realpath, writeFile } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -47,18 +46,9 @@ export async function proofSession(options) {
     const backend = options.backend ?? selectSandboxBackend();
     const policyPath = 'conventions/libraries/resolution-policy.json';
     const policyBytes = await readProductFile(TOOLS_ROOT, policyPath);
-    const pinnedPolicy = execFileSync(
-        'git',
-        [
-            '--no-optional-locks',
-            'show',
-            `3aabbe1b34cdcfdc9fce5da420f8558998f8d8c4:${policyPath}`,
-        ],
-        { cwd: TOOLS_ROOT }
-    );
     assert.equal(
         hash(policyBytes),
-        hash(pinnedPolicy),
+        '0214979004c123e0fd06b8310df7fd1bba208ab4e3b46c8f634a0eb690a2567e',
         'Politique de confinement modifiée'
     );
     const policy = JSON.parse(policyBytes.toString('utf8'));
