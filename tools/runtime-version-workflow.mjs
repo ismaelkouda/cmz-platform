@@ -369,13 +369,23 @@ export function runtimeWorkflowErrors(entries) {
                 const source = type === 'node' ? '.nvmrc' : 'package.json';
                 const key =
                     type === 'node' ? 'node-version-file' : 'bun-version-file';
+                const candidateBun =
+                    file === 'nx-migrations.yml' &&
+                    jobId === 'qualification' &&
+                    type === 'bun';
+                const candidate =
+                    expr('runner.temp') + '/nx-qualified-candidate';
                 const prefix =
                     file === 'runtime-version-alignment.yml' &&
                     jobId === 'publish'
                         ? 'trusted-main/'
                         : '';
                 if (
-                    !same(step.with, { [key]: prefix + source }) ||
+                    !same(step.with, {
+                        [key]: candidateBun
+                            ? candidate + '/' + source
+                            : prefix + source,
+                    }) ||
                     step['continue-on-error'] !== undefined
                 )
                     errors.push(
@@ -390,6 +400,7 @@ export function runtimeWorkflowErrors(entries) {
                     step.if,
                     nodeSeen
                 );
+                if (candidateBun) expected['working-directory'] = candidate;
                 if (!same(job.steps[index + 1], expected))
                     errors.push(
                         file +

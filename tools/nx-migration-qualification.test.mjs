@@ -1,3 +1,4 @@
+import './nx-migration-qualification-runtime.test.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -430,6 +431,7 @@ function fixture(t) {
     mkdirSync(join(source, 'tools'), { recursive: true });
     mkdirSync(temporary);
     writeFileSync(join(source, 'tools/nx-migration-qualification.mjs'), helper);
+    writeFileSync(join(source, '.nvmrc'), process.versions.node + '\n');
     const git = (...args) =>
         execFileSync('git', ['-C', source, ...args], {
             encoding: 'utf8',
@@ -650,4 +652,18 @@ test('qualification : bundle réel, base exacte, digest, et refus de tout chemin
     result = f.run('qualification-bundle');
     assert.notEqual(result.status, 0);
     assert.match(result.stdout, /hors périmètre/);
+});
+
+test('qualification : runtime candidat Node divergent arrête le checkout avant setup Bun', (t) => {
+    const f = fixture(t);
+    writeFileSync(join(f.source, '.nvmrc'), '99.0.0\n');
+    f.git('add', '.nvmrc');
+    f.git('commit', '-m', 'candidate requires another Node');
+    const sha = f.git('rev-parse', 'HEAD');
+    f.git('update-ref', 'refs/remotes/origin/candidate', sha);
+    assert.equal(f.run('qualification-input', { SOURCE_SHA: sha }).status, 0);
+    assert.notEqual(
+        f.run('qualification-checkout', { SOURCE_SHA: sha }).status,
+        0
+    );
 });
