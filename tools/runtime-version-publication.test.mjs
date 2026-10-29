@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import semver from 'semver';
 import {
     readFileSync,
     writeFileSync,
@@ -122,12 +123,14 @@ function gitFixture(t, runtime = 'bun', side = 'image') {
     git('push', '-q', 'origin', 'main');
     const branch = 'dependabot/docker/runtime-next';
     git('checkout', '-b', branch);
-    const candidate = bump(
-        base,
-        runtime,
-        side,
-        runtime === 'bun' ? '1.4.4' : '24.15.0'
+    const initial = versions(base);
+    const target = semver.inc(
+        runtime === 'bun' ? initial.bunSource : initial.nodeSource,
+        'patch'
     );
+    assert.ok(target, 'fixture runtime: version source invalide');
+    const candidate = bump(base, runtime, side, target);
+    assert.equal(diffPaths(base, candidate).length, 1);
     for (const [path, content] of Object.entries(candidate))
         writeFileSync(join(trusted, path), content);
     git('add', '--', ...SOURCE_PATHS);
@@ -537,7 +540,10 @@ test('runtime: course de head et blobs falsifiés refusés avant checkout, aucun
     assert.equal(stale.remoteHead(), before);
     assert.equal(existsSync(join(stale.root, 'runtime-candidate')), false);
     const forged = gitFixture(t);
-    const falseInput = bump(files(), 'bun', 'image', '1.4.5');
+    const falseTarget = semver.inc(forged.plan.target, 'patch');
+    assert.ok(falseTarget, 'fixture runtime: cible falsifiee invalide');
+    assert.notEqual(falseTarget, forged.plan.target);
+    const falseInput = bump(files(), 'bun', 'image', falseTarget);
     const falsePlan = alignmentPlan(files(), falseInput, forged.plan.identity, [
         'Dockerfile',
     ]);
