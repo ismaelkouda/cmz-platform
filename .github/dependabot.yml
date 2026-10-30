@@ -22,6 +22,9 @@ updates:
     ignore:
       - dependency-name: 'typescript'
         versions: ['7.x']
+      # La famille est déléguée au workflow natif nx-migrations.yml.
+      - dependency-name: 'nx'
+      - dependency-name: '@nx/*'
     groups:
       # React publie react/react-dom comme une unité de compatibilité : leurs
       # versions runtime doivent rester strictement identiques. Inclure aussi
