@@ -642,16 +642,29 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
     const original = parseYaml(
         readFileSync(join(source, '.github/dependabot.yml'), 'utf8')
     );
-    const config = structuredClone(original);
-    const bun = config.updates.find(
-        (u) => u['package-ecosystem'] === 'bun' && u.directory === '/'
+    const selectors = JSON.parse(workflow.env.NX_MIGRATION_SELECTORS);
+    const rootBun = (value) =>
+        value.updates.find(
+            (u) => u['package-ecosystem'] === 'bun' && u.directory === '/'
+        );
+    const withoutDelegation = structuredClone(original);
+    rootBun(withoutDelegation).ignore = (rootBun(original).ignore ?? []).filter(
+        (entry) => !selectors.includes(entry['dependency-name'])
     );
-    bun.ignore ??= [];
-    bun.ignore.push(
-        ...JSON.parse(workflow.env.NX_MIGRATION_SELECTORS).map((name) => ({
-            'dependency-name': name,
-        }))
-    );
+    const delegate = (sourceConfig) => {
+        const next = structuredClone(sourceConfig);
+        rootBun(next).ignore = [
+            ...(rootBun(next).ignore ?? []).filter(
+                (entry) => !selectors.includes(entry['dependency-name'])
+            ),
+            ...selectors.map((name) => ({ 'dependency-name': name })),
+        ];
+        return next;
+    };
+    const config = delegate(original);
+    // Both possible real source configurations yield the same fixture.
+    assert.deepEqual(delegate(withoutDelegation), config);
+    assert.deepEqual(delegate(config), config);
     const prepare = () => {
         writeFileSync(
             join(root, '.github/dependabot.yml'),
@@ -673,6 +686,14 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
         `délégation opérationnelle refusée : ${result.stderr}`
     );
     for (const mutate of [
+        () => {
+            const duplicate = structuredClone(config);
+            rootBun(duplicate).ignore.push({ 'dependency-name': selectors[0] });
+            writeFileSync(
+                join(root, '.github/dependabot.yml'),
+                stringifyYaml(duplicate)
+            );
+        },
         () => rmSync(workflowPath),
         () => {
             const w = structuredClone(workflow);
@@ -712,7 +733,7 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
     prepare();
     writeFileSync(
         join(root, '.github/dependabot.yml'),
-        stringifyYaml(original)
+        stringifyYaml(withoutDelegation)
     );
     result = execute();
     assert.equal(result.status, 0, result.stderr);

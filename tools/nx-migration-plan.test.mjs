@@ -29,6 +29,7 @@ import {
     delegatedIgnorePolicy,
 } from './nx-migration-plan.mjs';
 import { ignoredVersionPolicyErrors } from './check-dependabot-policy.mjs';
+import { parseJsonc } from './check-library-setup-deps.mjs';
 
 const selectors = ['nx', '@nx/*'];
 const pkg = {
@@ -179,6 +180,29 @@ const workflow = () =>
             'utf8'
         )
     );
+test('la configuration réelle délègue Nx au workflow opérationnel', () => {
+    const read = (path) =>
+        readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+    const config = parse(read('.github/dependabot.yml'));
+    const realPackage = JSON.parse(read('package.json'));
+    const lock = parseJsonc(read('bun.lock'));
+    const operational = workflow();
+    const expected = workflowSelectors(operational);
+    const root = config.updates.find(
+        (update) =>
+            update['package-ecosystem'] === 'bun' && update.directory === '/'
+    );
+    assert.deepEqual(
+        root.ignore.filter((entry) =>
+            expected.includes(entry['dependency-name'])
+        ),
+        expected.map((name) => ({ 'dependency-name': name }))
+    );
+    const result = delegatedIgnorePolicy(config, realPackage, operational);
+    assert.deepEqual(result.errors, []);
+    assert.deepEqual(ignoredVersionPolicyErrors(result.config, lock), []);
+});
+
 test('la délégation est fermée et la justification TypeScript par les pairs reste intacte', () => {
     const ts = { 'dependency-name': 'typescript', versions: ['7.x'] };
     const config = {
