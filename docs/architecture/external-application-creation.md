@@ -144,6 +144,92 @@ Le lot compile des documents et les fait consommer par des shells. Il ne livre
 pas à lui seul une page métier, une session, une API vivante ou la chaîne
 d'acquisition d'observations privées d'EXT-03b.
 
+### Inspecter les projections structurelles — premier incrément EXT-03b
+
+L’inspection lit une sélection explicite et des projections locales déjà
+assainies. Elle ne contacte aucun service et ne compile aucun contrat. La
+capacité générique fonctionne avec des données fictives indépendantes ; une
+acquisition propre à un projet garde ses prérequis et son autorisation séparés.
+
+```sh
+node tools/inspect-runtime-observations.mjs --target-root /chemin/absolu/produit --selection descriptions/inspection.selection.json
+```
+
+Cet exemple exige une revue et une admission avant exécution. Le produit doit
+porter un marqueur EXT-01 cohérent et les fichiers possédés doivent encore
+correspondre à son inventaire. La racine absolue et physique reste extérieure à
+l’atelier, hors ancêtres Git ; son propre Git est admis. L’inspection n’adopte
+ni ne modifie le produit. Les chemins techniques, traversées, liens et fichiers
+spéciaux sont refusés. Aucune installation, recherche de secours, écriture ou
+option de publication n’est proposée.
+
+Le schéma `observation-evidence.schema.json` distingue trois documents fermés :
+
+- `observation-selection` : sources par id, chemin relatif et SHA-256 ; faits
+  par id, source, opération, cas, JSON Pointer et forme attendue ;
+- `observation-projection` : origine `fixture` ou `declared-observation`, date
+  UTC déclarée, alias de contexte, opérations avec méthode et chemin relatif,
+  cas avec statut HTTP, catégorie de contenu et forme structurelle ;
+- `observation-inventory` : empreinte de sélection, identité du workspace,
+  sources relues, faits résolus et inconnues explicites. La qualification vaut
+  uniquement `structural-only` et `network_verified` vaut toujours `false`.
+
+Les formes sont `absent`, `null`, `scalar` (type JSON), `object` (liste de
+champs nommés et de formes) ou `array` (longueur et formes des éléments). Ce ne
+sont pas les valeurs des réponses. URL d’origine, query, headers, cookies, corps
+brut, texte libre de réponse et statut `verified-live` ne font pas partie du
+contrat. Un nom de champ ou alias doit déjà être assaini : l’outil n’est pas un
+anonymiseur et ne garantit pas l’absence universelle de secrets dans un nom
+admis. L’origine et la date restent des déclarations, pas une authentification.
+
+Un fait est accepté seulement si le hash correspond aux octets lus, le pointeur
+résout un nœud propre, son opération et son cas correspondent et la forme est
+exactement égale à l’assertion. JSON Pointer suit RFC 6901 : `~1` puis `~0`,
+indices canoniques sans zéro initial, aucune normalisation Unicode, référence
+absente refusée. Les faits sélectionnent une forme sous
+`/operations/N/cases/N/shape`, puis éventuellement `items/N` ou
+`fields/N/shape`. Une absence déclarée est un nœud `absent` ; un pointeur
+inexistant n’en est jamais une preuve.
+
+Les cas restent séparés. `null` laisse le type non nul inconnu, un tableau vide
+laisse le type d’élément inconnu, `absent` ne prouve pas un champ optionnel.
+Permissions, champs requis, exhaustivité, authenticité réseau et fenêtre de
+validité ne sont pas établis par l’inspection. Réécrire de façon cohérente une
+fiction et sa sélection peut rester indétectable ; aucun reçu de réseau vivant
+n’est produit.
+
+Les plafonds sont fixes : 64 Kio par sélection ou projection, huit sources, 64
+faits, huit opérations par source, seize cas par opération, 32 champs ou
+éléments par forme, huit niveaux de formes. Les documents ont aussi un plafond
+lexical de 24 niveaux et 4 096 unités structurelles avant parsing, puis 4 096
+nœuds, 24 niveaux et 1 024 caractères par chaîne avant validation récursive. Ces
+limites se cumulent. Le marqueur est limité à 512 Kio, son inventaire à 128
+fichiers, chaque fichier possédé à 1 Mio et leur total à 8 Mio.
+
+Le préfiltre de ressources admet le flux à doubles guillemets d’un document JSON
+et refuse les constructions YAML par indentation, tags ou alias. Le parseur
+structuré existant conserve la responsabilité de la syntaxe et des clés uniques.
+Les plafonds de fichier sont contrôlés avant lecture ; la lecture sur
+descripteur ne dépasse jamais le plafond plus un octet de détection. Les
+identités physiques et les métadonnées du fichier sont confrontées avant et
+après. Les plafonds ne sont pas des valeurs métier.
+
+stdout reçoit uniquement l’inventaire complet et canonique après réussite. Un
+refus ne publie aucun inventaire partiel ; stderr reçoit un code fixe `OBS_*`,
+sans message, cause, stack ni chemin issu d’une erreur native. Les tests
+utilisent une sentinelle fictive dans des entrées rejetées pour vérifier cette
+frontière, notamment les erreurs détaillées du parseur.
+
+Les deux jeux structurels fictifs et la CLI sont exercés par
+`runtime-observation-evidence.test.mjs`, découvert par la suite native
+existante. Ils ne prouvent ni capture, ni backend, ni provenance réseau.
+L’inventaire reste incompatible avec les entrées des compilateurs historiques.
+Reçu indépendant, validité, liaison privée et sous-ensemble compilable restent
+des incréments ultérieurs ; ce premier mécanisme ne clôt pas EXT-03 ni sa voie
+d’acquisition.
+
+### Générer le shell depuis les documents compilés
+
 Les designs, sources et snapshots restent à leurs chemins relatifs déclarés dans
 le produit. `descriptions/` est une convention, pas un emplacement de secours.
 Traversée, lien, empreinte fausse ou collision avec un fichier technique réservé
