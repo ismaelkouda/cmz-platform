@@ -1,0 +1,460 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cmz:observation-evidence:1.0.0",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/selection"
+    },
+    {
+      "$ref": "#/$defs/projection"
+    },
+    {
+      "$ref": "#/$defs/inventory"
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "shape": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "const": "absent"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "const": "null"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "type"],
+          "properties": {
+            "kind": {
+              "const": "scalar"
+            },
+            "type": {
+              "enum": ["boolean", "string", "number", "integer"]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "fields"],
+          "properties": {
+            "kind": {
+              "const": "object"
+            },
+            "fields": {
+              "type": "array",
+              "minItems": 0,
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "shape"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 128,
+                    "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+                  },
+                  "shape": {
+                    "$ref": "#/$defs/shape"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "length", "items"],
+          "properties": {
+            "kind": {
+              "const": "array"
+            },
+            "length": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 32
+            },
+            "items": {
+              "type": "array",
+              "minItems": 0,
+              "maxItems": 32,
+              "items": {
+                "$ref": "#/$defs/shape"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "kind", "sources", "facts"],
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "kind": {
+          "const": "observation-selection"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "path", "sha256"],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))[a-zA-Z0-9._/-]+$"
+              },
+              "sha256": {
+                "$ref": "#/$defs/hash"
+              }
+            }
+          }
+        },
+        "facts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "source_id",
+              "operation_id",
+              "case_id",
+              "pointer",
+              "expected"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "source_id": {
+                "$ref": "#/$defs/id"
+              },
+              "operation_id": {
+                "$ref": "#/$defs/id"
+              },
+              "case_id": {
+                "$ref": "#/$defs/id"
+              },
+              "pointer": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "expected": {
+                "$ref": "#/$defs/shape"
+              }
+            }
+          }
+        }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "source_id",
+        "origin",
+        "captured_at",
+        "context_alias",
+        "operations"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "kind": {
+          "const": "observation-projection"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "origin": {
+          "enum": ["fixture", "declared-observation"]
+        },
+        "captured_at": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 24,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "context_alias": {
+          "$ref": "#/$defs/id"
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "method", "path", "cases"],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "method": {
+                "enum": [
+                  "GET",
+                  "HEAD",
+                  "POST",
+                  "PUT",
+                  "PATCH",
+                  "DELETE",
+                  "OPTIONS"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^/(?:(?:[A-Za-z][A-Za-z0-9_-]*|\\{[A-Za-z][A-Za-z0-9_-]*\\})(?:/(?:[A-Za-z][A-Za-z0-9_-]*|\\{[A-Za-z][A-Za-z0-9_-]*\\}))*)?$"
+              },
+              "cases": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 16,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "status", "content_type", "shape"],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "minimum": 100,
+                      "maximum": 599
+                    },
+                    "content_type": {
+                      "enum": [
+                        "application/json",
+                        "application/problem+json",
+                        "none"
+                      ]
+                    },
+                    "shape": {
+                      "$ref": "#/$defs/shape"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "qualification",
+        "network_verified",
+        "workspace_id",
+        "selection_sha256",
+        "sources",
+        "facts"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "kind": {
+          "const": "observation-inventory"
+        },
+        "qualification": {
+          "const": "structural-only"
+        },
+        "network_verified": {
+          "const": false
+        },
+        "workspace_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "selection_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "path",
+              "sha256",
+              "bytes",
+              "origin",
+              "context_alias",
+              "captured_at"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))[a-zA-Z0-9._/-]+$"
+              },
+              "sha256": {
+                "$ref": "#/$defs/hash"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65536
+              },
+              "origin": {
+                "enum": ["fixture", "declared-observation"]
+              },
+              "context_alias": {
+                "$ref": "#/$defs/id"
+              },
+              "captured_at": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 24,
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+              }
+            }
+          }
+        },
+        "facts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "source_id",
+              "operation_id",
+              "case_id",
+              "pointer",
+              "method",
+              "path",
+              "status",
+              "content_type",
+              "observation",
+              "unknowns"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "source_id": {
+                "$ref": "#/$defs/id"
+              },
+              "operation_id": {
+                "$ref": "#/$defs/id"
+              },
+              "case_id": {
+                "$ref": "#/$defs/id"
+              },
+              "pointer": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "method": {
+                "enum": [
+                  "GET",
+                  "HEAD",
+                  "POST",
+                  "PUT",
+                  "PATCH",
+                  "DELETE",
+                  "OPTIONS"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^/(?:(?:[A-Za-z][A-Za-z0-9_-]*|\\{[A-Za-z][A-Za-z0-9_-]*\\})(?:/(?:[A-Za-z][A-Za-z0-9_-]*|\\{[A-Za-z][A-Za-z0-9_-]*\\}))*)?$"
+              },
+              "status": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599
+              },
+              "content_type": {
+                "enum": ["application/json", "application/problem+json", "none"]
+              },
+              "observation": {
+                "$ref": "#/$defs/shape"
+              },
+              "unknowns": {
+                "type": "array",
+                "uniqueItems": true,
+                "minItems": 5,
+                "maxItems": 8,
+                "items": {
+                  "enum": [
+                    "network-authenticity",
+                    "permissions",
+                    "required-fields",
+                    "exhaustiveness",
+                    "validity-window",
+                    "non-null-type",
+                    "presence-guarantee",
+                    "item-type"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
