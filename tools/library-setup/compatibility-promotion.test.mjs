@@ -1,10 +1,18 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+    cpSync,
+    existsSync,
+    mkdirSync,
+    mkdtempSync,
+    readFileSync,
+    writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
+import { pathToFileURL } from 'node:url';
 import semver from 'semver';
 
 import { validateRecipes } from '../check-library-setup.mjs';
@@ -43,19 +51,19 @@ function sha256(value) {
     return createHash('sha256').update(value).digest('hex');
 }
 
-function recipe() {
-    return recipes().get('angular/angular-material');
+function recipe(root = ROOT) {
+    return recipes(root).get('angular/angular-material');
 }
 
-function recipes() {
-    return validateRecipes(ROOT).recipes;
+function recipes(root = ROOT) {
+    return validateRecipes(root).recipes;
 }
 
-function track() {
+function track(root = ROOT) {
     return JSON.parse(
         readFileSync(
             join(
-                ROOT,
+                root,
                 'conventions/libraries/angular/angular-material.compat.json'
             ),
             'utf8'
@@ -63,17 +71,17 @@ function track() {
     ).tracks[0];
 }
 
-function execution(overrides = {}) {
+function execution(overrides = {}, root = ROOT) {
     const { plan: planOverrides = {}, ...executionOverrides } = overrides;
-    const sourceRecipe = recipe();
-    const sourceTrack = track();
+    const sourceRecipe = recipe(root);
+    const sourceTrack = track(root);
     const versions = Object.fromEntries(
         Object.entries(sourceTrack.requirements).map(([tool, range]) => [
             tool,
             semver.minVersion(range).version,
         ])
     );
-    const inputs = verificationInputs(ROOT, sourceRecipe, recipes());
+    const inputs = verificationInputs(root, sourceRecipe, recipes(root));
     const changePayload = {
         schema_version: '1.0.0',
         changes: [
@@ -89,16 +97,12 @@ function execution(overrides = {}) {
         ...changePayload,
         change_set_id: `changes:${sha256(stableJson(changePayload))}`,
     };
-    const format = execFileSync(
-        'git',
-        ['-C', ROOT, 'rev-parse', '--show-object-format'],
-        { encoding: 'utf8' }
-    ).trim();
+    const format = git(root, ['rev-parse', '--show-object-format']);
     const planInputs = {
         app: 'backoffice-angular',
         library: sourceRecipe.library,
         platform: sourceRecipe.platform,
-        commit: HEAD,
+        commit: git(root, ['rev-parse', '--verify', 'HEAD']),
         recipe_sha256: inputs.recipe,
         recipe_schema_sha256: inputs.recipe_schema,
         policy_sha256: inputs.policy,
@@ -106,30 +110,30 @@ function execution(overrides = {}) {
         compat_sha256: sha256(
             readFileSync(
                 join(
-                    ROOT,
+                    root,
                     'conventions/libraries/angular/angular-material.compat.json'
                 )
             )
         ),
         compat_schema_sha256: inputs.compat_schema,
-        runner_sha256: libraryRunnerDigest(ROOT, sourceRecipe, recipes()),
+        runner_sha256: libraryRunnerDigest(root, sourceRecipe, recipes(root)),
         nx_json_sha256: inputs.nx_json,
         tsconfig_sha256: inputs.tsconfig,
         gitattributes_sha256: inputs.gitattributes,
         app_tree_sha256: '2'.repeat(64),
         package_json_initial_oid: gitBlobOid(
-            readFileSync(join(ROOT, 'package.json')),
+            readFileSync(join(root, 'package.json')),
             format
         ),
         package_json_final_oid: '4'.repeat(format === 'sha1' ? 40 : 64),
         bun_lock_initial_oid: gitBlobOid(
-            readFileSync(join(ROOT, 'bun.lock')),
+            readFileSync(join(root, 'bun.lock')),
             format
         ),
         bun_lock_final_oid: '6'.repeat(format === 'sha1' ? 40 : 64),
         dependency_initial_sha256: dependencyProjectionSha256(
-            readFileSync(join(ROOT, 'package.json')),
-            readFileSync(join(ROOT, 'bun.lock')),
+            readFileSync(join(root, 'package.json')),
+            readFileSync(join(root, 'bun.lock')),
             sourceTrack
         ),
         dependency_final_sha256: '7'.repeat(64),
@@ -147,10 +151,10 @@ function execution(overrides = {}) {
         published: false,
         changeSet,
         plan: buildLibraryPlan({ ...planInputs, ...planOverrides }),
-        runtimeProofs: requiredProofIds(sourceRecipe, recipes()),
+        runtimeProofs: requiredProofIds(sourceRecipe, recipes(root)),
         qualifiedAdapter: {
             ...qualifiedAdapterDescriptor(
-                ROOT,
+                root,
                 sourceRecipe.platform,
                 sourceRecipe.library
             ),
@@ -160,14 +164,14 @@ function execution(overrides = {}) {
     };
 }
 
-function verification() {
+function verification(root = ROOT) {
     return buildVerificationFromExecution({
-        root: ROOT,
-        recipe: recipe(),
-        recipeRegistry: recipes(),
-        track: track(),
+        root,
+        recipe: recipe(root),
+        recipeRegistry: recipes(root),
+        track: track(root),
         app: 'backoffice-angular',
-        execution: execution(),
+        execution: execution({}, root),
     });
 }
 
@@ -186,6 +190,17 @@ function fixture(t) {
         '.gitattributes',
     ]) {
         cpSync(join(ROOT, path), join(root, path));
+    }
+    for (const { platform, library } of recipes().values()) {
+        const descriptor = qualifiedAdapterDescriptor(ROOT, platform, library);
+        for (const [path, digest] of Object.entries(descriptor.inputs_sha256)) {
+            const target = join(root, path);
+            if (!existsSync(target)) {
+                mkdirSync(dirname(target), { recursive: true });
+                cpSync(join(ROOT, path), target);
+            }
+            assert.equal(sha256(readFileSync(target)), digest, path);
+        }
     }
     initFixtureRepo(root);
     git(root, ['add', '.']);
@@ -272,21 +287,107 @@ test('la preuve vient d’un résultat complet dont plan et change-set sont reca
 
 test('l’empreinte source survit au squash et aux changements sans rapport', (t) => {
     const source = fixture(t);
-    git(source, [
-        'commit',
-        '--quiet',
-        '--allow-empty',
-        '-m',
-        'qualification sur la branche',
-    ]);
-    const built = rebindCommit(source, verification());
-    const squashed = fixture(t);
+    git(source, ['branch', '-M', 'main']);
+    const base = git(source, ['rev-parse', 'HEAD']);
+    git(source, ['switch', '-c', 'qualification']);
+    const applicationNote = 'ops33-application.txt';
+    writeFileSync(
+        join(source, applicationNote),
+        'Changement applicatif neutre.\n'
+    );
+    git(source, ['add', applicationNote]);
+    git(source, ['commit', '--quiet', '-m', 'application sur la branche']);
+    const qualifiedCommit = git(source, ['rev-parse', 'HEAD']);
 
-    assert.equal(commitExists(squashed, built.commit), false);
+    // Le producteur est lié au root/HEAD de la branche, jamais au ROOT global.
+    const built = verification(source);
+    assert.equal(built.commit, qualifiedCommit);
+    assert.notEqual(built.commit, HEAD);
+    assert.equal(commitExists(source, built.commit), true);
+    const matrixPath =
+        'conventions/libraries/angular/angular-material.compat.json';
+    const matrix = JSON.parse(readFileSync(join(source, matrixPath), 'utf8'));
+    matrix.tracks[0].status = 'verified';
+    matrix.tracks[0].verification = built;
+    writeFileSync(
+        join(source, matrixPath),
+        `${JSON.stringify(matrix, null, 2)}\n`
+    );
+    const persistedMatrix = readFileSync(join(source, matrixPath));
+    git(source, ['add', matrixPath]);
+    git(source, ['commit', '--quiet', '-m', 'attestation sur la branche']);
+    const branchTip = git(source, ['rev-parse', 'HEAD']);
+    const branchTree = git(source, ['rev-parse', 'HEAD^{tree}']);
+
+    git(source, ['switch', 'main']);
+    git(source, ['merge', '--squash', 'qualification']);
+    git(source, ['commit', '--quiet', '-m', 'squash de la qualification']);
+    const squash = git(source, ['rev-parse', 'HEAD']);
+    assert.notEqual(squash, branchTip);
     assert.deepEqual(
-        verificationFailures(squashed, recipe(), track(), built, {
-            recipeRegistry: recipes(),
-        }),
+        git(source, ['rev-list', '--parents', '-n', '1', 'HEAD']).split(' '),
+        [squash, base]
+    );
+    assert.equal(git(source, ['rev-parse', 'HEAD^{tree}']), branchTree);
+    git(source, ['update-ref', '-d', 'refs/heads/qualification', branchTip]);
+
+    const squashed = mkdtempSync(join(tmpdir(), 'cmz-promotion-'));
+    t.after(() => removeTemporaryFixture(squashed, 'cmz-promotion-'));
+    git(source, [
+        'clone',
+        '--quiet',
+        '--no-local',
+        '--single-branch',
+        '--branch',
+        'main',
+        '--config',
+        'gc.autoDetach=false',
+        '--config',
+        'maintenance.autoDetach=false',
+        pathToFileURL(source).href,
+        squashed,
+    ]);
+    initFixtureRepo(squashed);
+    assert.equal(git(squashed, ['config', '--get', 'gc.autoDetach']), 'false');
+    assert.equal(
+        git(squashed, ['config', '--get', 'maintenance.autoDetach']),
+        'false'
+    );
+    assert.equal(
+        git(squashed, ['rev-parse', '--is-shallow-repository']),
+        'false'
+    );
+    assert.deepEqual(git(squashed, ['rev-list', '--all']).split('\n'), [
+        squash,
+        base,
+    ]);
+    assert.deepEqual(
+        git(squashed, ['rev-list', '--parents', '-n', '1', 'HEAD']).split(' '),
+        [squash, base]
+    );
+    assert.equal(git(squashed, ['rev-parse', 'HEAD^{tree}']), branchTree);
+    assert.equal(commitExists(squashed, built.commit), false);
+    assert.throws(() =>
+        git(squashed, ['cat-file', '-e', `${built.commit}^{commit}`])
+    );
+    assert.deepEqual(readFileSync(join(squashed, matrixPath)), persistedMatrix);
+
+    const after = JSON.parse(readFileSync(join(squashed, matrixPath), 'utf8'));
+    assert.deepEqual(after.tracks[0].verification, built);
+    const registry = validateRecipes(squashed);
+    assert.deepEqual(registry.errors, []);
+    assert.deepEqual(
+        verificationFailures(
+            squashed,
+            registry.recipes.get('angular/angular-material'),
+            after.tracks[0],
+            after.tracks[0].verification,
+            { recipeRegistry: registry.recipes }
+        ),
+        []
+    );
+    assert.deepEqual(
+        validateCompatibilityMatrices(squashed, registry.recipes).errors,
         []
     );
 
@@ -298,11 +399,10 @@ test('l’empreinte source survit au squash et aux changements sans rapport', (t
     git(squashed, ['add', unrelatedTest]);
     git(squashed, ['commit', '--quiet', '-m', 'dérive après qualification']);
     assert.deepEqual(
-        verificationFailures(squashed, recipe(), track(), built, {
-            recipeRegistry: recipes(),
-        }),
+        validateCompatibilityMatrices(squashed, registry.recipes).errors,
         []
     );
+    assert.deepEqual(readFileSync(join(squashed, matrixPath)), persistedMatrix);
 });
 
 test('aucune liste déclarative ne remplace les oracles, coexistence comprise', () => {
