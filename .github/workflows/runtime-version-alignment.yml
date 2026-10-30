@@ -218,3 +218,105 @@ jobs:
           if ! gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"; then echo "RUNTIME_ALIGNMENT_CI_DISPATCH_FAILED head=$published_head; commit remains published, do not repeat push" >&2; exit 1; fi
           echo "RUNTIME_ALIGNMENT_CI_DISPATCH_ACCEPTED head=$published_head"
           echo "Aligned PR #$PR_NUMBER; CI dispatched. Dependabot no longer rebases this branch; use a reviewed native merge of main." >> "$GITHUB_STEP_SUMMARY"
+
+  prepare-bundle:
+    if:
+      ${{ github.ref == 'refs/heads/main' && github.event_name == 'workflow_run'
+      && github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      active: ${{ steps.proposal.outputs.active }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Verify node runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat .nvmrc)"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: >
+          set -euo pipefail
+
+          test "$(node --version)" = "v$(cat .nvmrc)"
+
+          expected="$(node -p
+          'require("./package.json").packageManager.slice(4)')"
+
+          test "$(bun --version)" = "$expected"
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - id: proposal
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node tools/bundle-metrics-proposal.mjs prepare
+  publish-bundle:
+    needs: prepare-bundle
+    if:
+      ${{ github.ref == 'refs/heads/main' && github.event_name == 'workflow_run'
+      && github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/') &&
+      needs['prepare-bundle'].outputs.active == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: trusted-main
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: trusted-main/.nvmrc
+      - name: Verify node runtime against source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v$(cat trusted-main/.nvmrc)"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: trusted-main/package.json
+      - name: Verify bun runtime against source
+        shell: bash
+        run: >
+          set -euo pipefail
+
+          test "$(node --version)" = "v$(cat trusted-main/.nvmrc)"
+
+          expected="$(node -p
+          'require("./trusted-main/package.json").packageManager.slice(4)')"
+
+          test "$(bun --version)" = "$expected"
+      - working-directory: trusted-main
+        run: bun install --frozen-lockfile --ignore-scripts
+      - id: proposal
+        working-directory: trusted-main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node tools/bundle-metrics-proposal.mjs publish

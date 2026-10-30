@@ -19,7 +19,7 @@
  * `main-*.js`. Les scripts hôte non construits, comme `env.js`, sont exclus.
  *
  * ATTENTION — toujours committer une mesure produite par la CI
- * (`nightly-integration.yml`, `workflow_dispatch` si besoin hors schedule),
+ * (Oracle `ci.yml` ou `nightly-integration.yml`, même image Ubuntu),
  * jamais depuis un poste de dev : le build production n'est pas garanti
  * bit-à-bit identique cross-OS (constaté 2026-09-11, macOS vs ubuntu-latest,
  * quelques dizaines d'octets d'écart sur un bundle par ailleurs inchangé).
