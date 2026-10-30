@@ -9,17 +9,17 @@ génération. Le générateur et l'IA les **lisent** ; ils ne les contiennent ja
 `conventions/profile.schema.json` fixe **le même jeu de préoccupations** pour
 Angular, React, Kotlin ou Swift :
 
-| Préoccupation | La décision qu'elle tranche |
-| --- | --- |
-| `component_model` | l'unité d'UI et sa déclaration |
-| `local_state` | l'état d'un écran / composant |
-| `server_state` | comment la donnée distante est chargée, mise en cache, exposée |
-| `navigation` | comment les écrans / routes sont déclarés |
-| `forms` | saisie + validation |
-| `i18n` | externalisation des chaînes visibles |
-| `styling` | application du style visuel |
-| `accessibility` | le seuil a11y et sa vérification |
-| `testing` | comment l'UI générée est testée |
+| Préoccupation     | La décision qu'elle tranche                                    |
+| ----------------- | -------------------------------------------------------------- |
+| `component_model` | l'unité d'UI et sa déclaration                                 |
+| `local_state`     | l'état d'un écran / composant                                  |
+| `server_state`    | comment la donnée distante est chargée, mise en cache, exposée |
+| `navigation`      | comment les écrans / routes sont déclarés                      |
+| `forms`           | saisie + validation                                            |
+| `i18n`            | externalisation des chaînes visibles                           |
+| `styling`         | application du style visuel                                    |
+| `accessibility`   | le seuil a11y et sa vérification                               |
+| `testing`         | comment l'UI générée est testée                                |
 
 Chaque préoccupation a la **même forme neutre** —
 `{ native, packages, forbid, guidance }` — mais sa valeur est écrite **dans les
@@ -29,19 +29,19 @@ d'un autre framework, aucun terme du schéma qui présuppose une stack.
 
 Exemple `i18n` :
 
-| Plateforme | `native` | `packages` |
-| --- | --- | --- |
-| Angular | attributs `i18n` / `i18n-*` et `$localize` | `@angular/localize` |
-| React | hook `useTranslation` de react-i18next | `react-i18next` |
-| Kotlin | ressources `strings.xml` + `stringResource()` | — |
-| Swift | String Catalogs + `LocalizedStringKey` | — |
+| Plateforme | `native`                                      | `packages`          |
+| ---------- | --------------------------------------------- | ------------------- |
+| Angular    | attributs `i18n` / `i18n-*` et `$localize`    | `@angular/localize` |
+| React      | hook `useTranslation` de react-i18next        | `react-i18next`     |
+| Kotlin     | ressources `strings.xml` + `stringResource()` | —                   |
+| Swift      | String Catalogs + `LocalizedStringKey`        | —                   |
 
 ### Zéro abstraction cross-platform
 
 Un profil nomme le mécanisme natif de sa plateforme, jamais un wrapper conçu
-pour masquer une différence entre plateformes. Le pont Angular borné qui
-résout les anciennes clés dynamiques du backoffice n'est ni cross-platform ni
-le défaut des nouvelles pages ; voir
+pour masquer une différence entre plateformes. Le pont Angular borné qui résout
+les anciennes clés dynamiques du backoffice n'est ni cross-platform ni le défaut
+des nouvelles pages ; voir
 [ADR-0085](../docs/adr/0085-angular-i18n-native-localize.md).
 `tools/check-convention-profile.mjs` échoue si un `native` se revendique
 inter-plateforme ou si un `packages[]` nomme un `*-port` / `*-wrapper` /
@@ -68,14 +68,15 @@ reflète `platform` + version majeure ; `version_pin` dit où la version est
 
 ## Fichiers
 
-| Profil | Plateforme | Vérifié pour |
-| --- | --- | --- |
-| [`angular-22.profile.json`](./angular-22.profile.json) | Angular | v22.2.0 |
+| Profil                                                 | Plateforme | Vérifié pour |
+| ------------------------------------------------------ | ---------- | ------------ |
+| [`angular-22.profile.json`](./angular-22.profile.json) | Angular    | v22.2.0      |
 
 Le profil dit _comment_ écrire. Les **archétypes de types de fichier** d'une
 cible — _quoi_ produire par type de fichier — sont un jeu par stack sous
-[`archetypes/<stack>/`](./archetypes/angular/README.md) (Angular pour l'instant).
-Ils ne sont pas neutres : la neutralité vit dans l'IR / les compositions.
+[`archetypes/<stack>/`](./archetypes/angular/README.md) (Angular pour
+l'instant). Ils ne sont pas neutres : la neutralité vit dans l'IR / les
+compositions.
 
 Convention transverse (indépendante de la plateforme) :
 [`nommage.md`](./nommage.md) — nommage dossiers/fichiers intra-lib.
@@ -84,10 +85,10 @@ Convention transverse (indépendante de la plateforme) :
 
 Le profil dit _quel_ mécanisme utiliser (`styling` → hiérarchie HTML,
 Material/Aria, CDK puis Tailwind/CSS pour Angular). Il ne dit pas _comment_
-installer et configurer les bibliothèques qui possèdent un setup d'application
-— et ce « comment » change vite (Tailwind v3 `tailwind.config.js` → v4 `@theme` ;
-`provideAnimations` déprécié en Angular 20.2 ; flags de schematic d'une version à
-l'autre).
+installer et configurer les bibliothèques qui possèdent un setup d'application —
+et ce « comment » change vite (Tailwind v3 `tailwind.config.js` → v4 `@theme` ;
+`provideAnimations` déprécié en Angular 20.2 ; flags de schematic d'une version
+à l'autre).
 
 **Périmètre de cette version** : paquets npm pour **Angular / React**, résolus
 via Bun workspaces. Kotlin/Swift : hors périmètre.
@@ -96,17 +97,17 @@ Une recette vit sous `libraries/<platform>/<library>.setup.json` — le dossier 
 `platform`, le nom == `library` ; `check:library-setup` indexe par le **couple
 (platform, library)**, donc `angular/tailwind` et `react/tailwind` sont deux
 recettes distinctes. Schéma fermé :
-[`library-setup.schema.json`](./libraries/library-setup.schema.json). Elle sépare
-trois niveaux
+[`library-setup.schema.json`](./libraries/library-setup.schema.json). Elle
+sépare trois niveaux
 ([ADR-0041](../docs/adr/0041-angular-material-tailwind-defaults.md)) :
 
-| Champ | Rôle | Statut |
-| --- | --- | --- |
-| `static_invariants[]` | présence **structurelle** (`file-exists` / `file-contains` / `file-matches` sur un fichier de l'app), dont exactement une `footprint` positive. **Garde-fou de dérive, pas une preuve de fonctionnement — rien de version-spécifique ici.** | vérifié à chaque run |
-| `runtime_acceptance[]` | preuve **réelle** (`compile-component`, `compiled-css-rule`, `production-build`, `browser-coexistence`, `browser-style-preservation`) exécutée dans un candidat isolé | `enforced` exige un oracle enregistré ; la gate refuse aussi un oracle livré encore marqué `harness-pending` |
-| `packages[]` | paquets npm ; vérifiés structurellement — présents dans `package.json` racine, résolus au catalog, verrouillés dans `bun.lock` avec un spec et une version **cohérents** entre les trois | vérifié quand une app adopte la lib |
-| `coexistence[]` | invariants actifs seulement si une autre lib **de la même plateforme** est aussi déclarée | idem |
-| `install` (`oneOf` par `method`) | `official-schematic` → `command: { executable: "nx", argv }` avec un jeton `{{app}}` obligatoire ; `reference-derived` → `reference_tool` (confiné à `tools/`, fichier régulier) | VOLATILE — délégué, jamais figé comme vérité |
+| Champ                            | Rôle                                                                                                                                                                                                                                        | Statut                                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `static_invariants[]`            | présence **structurelle** (`file-exists` / `file-contains` / `file-matches` sur un fichier de l'app), dont exactement une `footprint` positive. **Garde-fou de dérive, pas une preuve de fonctionnement — rien de version-spécifique ici.** | vérifié à chaque run                                                                                         |
+| `runtime_acceptance[]`           | preuve **réelle** (`compile-component`, `compiled-css-rule`, `production-build`, `browser-coexistence`, `browser-style-preservation`) exécutée dans un candidat isolé                                                                       | `enforced` exige un oracle enregistré ; la gate refuse aussi un oracle livré encore marqué `harness-pending` |
+| `packages[]`                     | paquets npm ; vérifiés structurellement — présents dans `package.json` racine, résolus au catalog, verrouillés dans `bun.lock` avec un spec et une version **cohérents** entre les trois                                                    | vérifié quand une app adopte la lib                                                                          |
+| `coexistence[]`                  | invariants actifs seulement si une autre lib **de la même plateforme** est aussi déclarée                                                                                                                                                   | idem                                                                                                         |
+| `install` (`oneOf` par `method`) | `official-schematic` → `command: { executable: "nx", argv }` avec un jeton `{{app}}` obligatoire ; `reference-derived` → `reference_tool` (confiné à `tools/`, fichier régulier)                                                            | VOLATILE — délégué, jamais figé comme vérité                                                                 |
 
 La méthode historique `llm-then-verified` est retirée et rejetée explicitement
 par `check:library-setup`. Sa réintroduction exige un fournisseur réellement
@@ -132,17 +133,17 @@ licences, build et tests. Créer une recette avec une empreinte factice serait
 une automatisation sans contrat observable. Une recette devient candidate
 lorsque deux applications exigent le même setup réel.
 
-| Recette | `install.method` |
-| --- | --- |
+| Recette                                                                                  | `install.method`     |
+| ---------------------------------------------------------------------------------------- | -------------------- |
 | [`angular/angular-material.setup.json`](./libraries/angular/angular-material.setup.json) | `official-schematic` |
-| [`angular/tailwind.setup.json`](./libraries/angular/tailwind.setup.json) | `reference-derived` |
+| [`angular/tailwind.setup.json`](./libraries/angular/tailwind.setup.json)                 | `reference-derived`  |
 
 `add-library` applique désormais un adaptateur plateforme qualifié dans un
 worktree Git jetable. Le schematic, le sandbox, le navigateur et le harnais
 `runtime_acceptance` restent dans `promote-library-compatibility`, la voie rare
-de qualification.
-Les commandes `create-app`, `add-library` et `create-module` exposent leur
-contrat opérationnel stable avec `--explain`. Le runbook court associé est
+de qualification. Les commandes `create-app`, `add-library` et `create-module`
+exposent leur contrat opérationnel stable avec `--explain`. Le runbook court
+associé est
 [`runbook-commandes-creation.md`](../docs/architecture/runbook-commandes-creation.md).
 Intégration `create-app` et gouvernance d’upgrade :
 [`docs/architecture/library-setup-runtime-plan.md`](../docs/architecture/library-setup-runtime-plan.md).
@@ -155,8 +156,53 @@ rapport. `qualified_adapter` lie en plus l'identité, les sources et le
 change-set observé de la transformation rejouée par la voie courante. Toute
 acceptance sans surface de sources déclarée est refusée.
 
+### Attestations durables après squash (OPS-33)
+
+L’attestation `1.3.0` lie la piste à `source_context_sha256`, calculé depuis ses
+contrats et ses entrées gouvernantes, dont les sources et oracles pertinents.
+`verification.commit` conserve le commit exact qui a produit la qualification ;
+la validation depuis `main` ne dépend pas de l’accessibilité de cet objet après
+squash. La production exige toujours un plan complet portant le HEAD courant.
+Une modification pertinente périme l’attestation ; une modification sans rapport
+ne justifie pas une requalification.
+
+Le test natif de `compatibility-promotion.test.mjs` produit l’attestation sur
+une branche de fixture, réalise un vrai squash, puis la consomme dans un clone
+monobranche non shallow sans optimisation locale. Il vérifie l’absence du commit
+source, le parent unique, l’égalité de l’arbre et les octets inchangés de la
+matrice. Il utilise un résultat de qualification simulé pour éprouver le
+protocole de provenance ; il ne remplace pas les oracles runtime de la promotion
+native.
+
+#### Migration déterministe des matrices
+
+Le validateur natif parcourt `conventions/libraries/*/*.compat.json` dans un
+ordre trié. Pour chaque piste :
+
+1. Une attestation `1.3.0` déjà valide reste byte-identique : ni commit,
+   `source_context_sha256` ni `evidence_sha256` ne sont réécrits. Sur la base de
+   livraison `219d4967bfb0629ae9a19d9895c4cfe8425fb653`, les trois matrices
+   Angular Material, Tailwind Angular et Tailwind React satisfont déjà cette
+   condition : la migration attendue est l’identité, avec zéro octet modifié.
+   Répéter la vérification conserve ces mêmes octets.
+2. Une piste `candidate` avec `verification: null` reste dans cet état.
+3. Une attestation ancienne, incomplète ou périmée est refusée. Préparer et
+   faire relire sa rétrogradation ciblée en `candidate` / `null`, sans modifier
+   les contrats de la piste ; seule une qualification native complète de la
+   piste concernée peut ensuite produire un nouveau `verified` via
+   `bun run promote-library-compatibility --app <référence> --library <lib>`.
+   Conserver les autres pistes dont les intrants restent valides.
+
+Ne jamais fabriquer `verified` en remplaçant un SHA historique par celui de
+`main`, en recalculant simplement une empreinte sur un nouvel arbre ou en
+convertissant une ancienne attestation sans ses preuves. Le catalogue réel du
+validateur fait autorité ; une matrice citée par un ancien incident mais absente
+du catalogue ne doit pas être recréée par cette migration. Le format fermé, les
+refus sémantiques, les permissions CI et la politique squash-only restent
+inchangés.
+
 ## Emplacement
 
-Les profils vivent **dans ce monorepo** — ils disent « ici on cible Angular
-22 ». Les outils SEOS, eux, sont génériques et versionnés séparément
+Les profils vivent **dans ce monorepo** — ils disent « ici on cible Angular 22
+». Les outils SEOS, eux, sont génériques et versionnés séparément
 ([ADR-0009](../docs/adr/0009-reconstruction-pilotee-par-patterns.md)).
