@@ -248,7 +248,7 @@
       "tailwindcss": "4.3.3",
       "@tailwindcss/postcss": "4.3.3",
       "@tailwindcss/vite": "4.3.3",
-      "postcss": "8.5.31"
+      "postcss": "8.5.32"
     },
     "catalogs": {
       "tooling": {
