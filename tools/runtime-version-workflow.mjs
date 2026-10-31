@@ -370,10 +370,16 @@ export function runtimeWorkflowErrors(entries) {
                 const source = type === 'node' ? '.nvmrc' : 'package.json';
                 const key =
                     type === 'node' ? 'node-version-file' : 'bun-version-file';
-                const candidateBun =
-                    file === 'nx-migrations.yml' &&
-                    jobId === 'qualification' &&
-                    type === 'bun';
+                const qualification =
+                    file === 'nx-migrations.yml' && jobId === 'qualification';
+                const candidateRuntime =
+                    qualification &&
+                    (type === 'bun' ||
+                        (type === 'node' &&
+                            index >
+                                job.steps.findIndex(
+                                    (s) => s.id === 'qualification-checkout'
+                                )));
                 const candidate =
                     expr('runner.temp') + '/nx-qualified-candidate';
                 const prefix =
@@ -383,7 +389,7 @@ export function runtimeWorkflowErrors(entries) {
                         : '';
                 if (
                     !same(step.with, {
-                        [key]: candidateBun
+                        [key]: candidateRuntime
                             ? candidate + '/' + source
                             : prefix + source,
                     }) ||
@@ -401,7 +407,7 @@ export function runtimeWorkflowErrors(entries) {
                     step.if,
                     nodeSeen
                 );
-                if (candidateBun) expected['working-directory'] = candidate;
+                if (candidateRuntime) expected['working-directory'] = candidate;
                 if (!same(job.steps[index + 1], expected))
                     errors.push(
                         file +

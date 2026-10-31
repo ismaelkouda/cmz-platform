@@ -654,7 +654,7 @@ test('qualification : bundle réel, base exacte, digest, et refus de tout chemin
     assert.match(result.stdout, /hors périmètre/);
 });
 
-test('qualification : runtime candidat Node divergent arrête le checkout avant setup Bun', (t) => {
+test('qualification : checkout exact puis assertion Node erroné refuse avant installation', (t) => {
     const f = fixture(t);
     writeFileSync(join(f.source, '.nvmrc'), '99.0.0\n');
     f.git('add', '.nvmrc');
@@ -662,8 +662,42 @@ test('qualification : runtime candidat Node divergent arrête le checkout avant 
     const sha = f.git('rev-parse', 'HEAD');
     f.git('update-ref', 'refs/remotes/origin/candidate', sha);
     assert.equal(f.run('qualification-input', { SOURCE_SHA: sha }).status, 0);
-    assert.notEqual(
+    assert.equal(
         f.run('qualification-checkout', { SOURCE_SHA: sha }).status,
         0
     );
+    const candidate = join(f.temporary, 'nx-qualified-candidate');
+    assert.equal(
+        readFileSync(join(candidate, '.nvmrc'), 'utf8').trim(),
+        '99.0.0'
+    );
+    const steps = workflow().jobs.qualification.steps;
+    const at = steps.findIndex(
+        (s) =>
+            s.uses?.startsWith('actions/setup-node@') &&
+            s.with['node-version-file'] ===
+                '${{ runner.temp }}/nx-qualified-candidate/.nvmrc'
+    );
+    assert.ok(at > steps.findIndex((s) => s.id === 'qualification-checkout'));
+    const marker = join(candidate, 'installation-started');
+    const result = spawnSync(
+        '/bin/bash',
+        [
+            '--noprofile',
+            '--norc',
+            '-e',
+            '-o',
+            'pipefail',
+            '-c',
+            steps[at + 1].run + '\nprintf started > installation-started\n',
+        ],
+        { cwd: candidate, encoding: 'utf8', timeout: 5000 }
+    );
+    assert.equal(result.error, undefined);
+    assert.notEqual(result.status, 0);
+    assert.equal(
+        readFileSync(join(candidate, '.nvmrc'), 'utf8').trim(),
+        '99.0.0'
+    );
+    assert.throws(() => readFileSync(marker), { code: 'ENOENT' });
 });
