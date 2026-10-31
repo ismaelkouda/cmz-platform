@@ -88,9 +88,15 @@ déclare les profils et les preuves requises. Le gate
 4. tue réellement les éditeurs après les deux renommages ;
 5. vérifie reprise, manifests, hashes, rollback et états contradictoires.
 
-La CI exécute ce gate sur `ubuntu-24.04`/ext4 et `macos-14`/APFS. Une évolution
-de runner ou de type de stockage échoue au lieu d'élargir silencieusement la
+La CI cible ce gate sur `ubuntu-24.04`/ext4 et `macos-15`/APFS. Une évolution de
+runner ou de type de stockage échoue au lieu d'élargir silencieusement la
 garantie.
+
+Le 30 octobre 2026, le label explicite `macos-15` remplace `macos-14` à la suite
+[du retrait annoncé par GitHub](https://github.com/actions/runner-images/issues/13518).
+Les observations macOS 14 ci-dessus restent historiques. La nouvelle image doit
+passer les mêmes preuves natives APFS et d'isolation ; le changement du label ne
+transfère aucune qualification passée.
 
 ## Conséquences
 

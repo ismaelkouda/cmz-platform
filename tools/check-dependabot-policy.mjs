@@ -62,7 +62,7 @@ export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
     browserslist: '4.28.8',
     qs: '6.16.0',
     'source-map-js': '1.2.2',
-    'follow-redirects': '1.16.1',
+    'follow-redirects': '1.16.2',
 });
 
 /**

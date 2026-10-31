@@ -129,6 +129,43 @@ function assertConditionalDeepJob(job, output, command) {
 }
 
 describe('politique CI bibliothèque proportionnelle', () => {
+    it('épingle les cinq sélections macOS sur macos-15', () => {
+        const ci = workflow('ci.yml');
+        const nightly = workflow('nightly-integration.yml');
+        const nx = workflow('nx-migrations.yml');
+
+        assert.deepEqual(
+            ci.jobs['publication-durability'].strategy.matrix.include,
+            [
+                {
+                    profile: 'linux-ext4',
+                    runner: 'ubuntu-24.04',
+                    platform: 'linux',
+                },
+                {
+                    profile: 'macos-apfs',
+                    runner: 'macos-15',
+                    platform: 'darwin',
+                },
+            ]
+        );
+        for (const job of [
+            ci.jobs['library-candidate-isolation'],
+            nightly.jobs['library-candidate-isolation'],
+        ]) {
+            assert.deepEqual(job.strategy.matrix.include, [
+                { profile: 'linux-docker', runner: 'ubuntu-24.04' },
+                { profile: 'macos-sandbox', runner: 'macos-15' },
+            ]);
+        }
+        for (const job of [nx.jobs.calculate, nx.jobs.qualification]) {
+            assert.deepEqual(job.strategy.matrix.os, [
+                'ubuntu-latest',
+                'macos-15',
+            ]);
+        }
+    });
+
     it('conserve les trois contextes requis tout en bornant les preuves profondes', () => {
         const ci = workflow('ci.yml');
         const isolation = ci.jobs['library-candidate-isolation'];

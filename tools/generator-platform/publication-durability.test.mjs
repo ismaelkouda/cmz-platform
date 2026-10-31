@@ -22,10 +22,25 @@ const APFS_MOUNT = `/dev/disk3s1s1 on / (apfs, sealed, local, read-only, journal
 test('publication durability contract is closed, unique, and fail-closed', async () => {
     const contract = await loadPublicationDurabilityContract();
     assert.deepEqual(
-        contract.filesystem_profiles.map(({ id }) => id),
-        ['linux-ext4', 'macos-apfs']
+        contract.filesystem_profiles.map(({ id, ci_runner }) => ({
+            id,
+            ci_runner,
+        })),
+        [
+            { id: 'linux-ext4', ci_runner: 'ubuntu-24.04' },
+            { id: 'macos-apfs', ci_runner: 'macos-15' },
+        ]
     );
     assert.equal(contract.reader_contract.mode, 'offline-activation');
+
+    for (const runner of ['macos-14', 'macos-latest']) {
+        const obsolete = structuredClone(contract);
+        obsolete.filesystem_profiles[1].ci_runner = runner;
+        assert.throws(
+            () => validatePublicationDurabilityContract(obsolete),
+            /filesystem profiles do not match the accepted contract/
+        );
+    }
     assert.equal(
         contract.reader_contract.concurrent_non_cooperating_readers,
         'unsupported'

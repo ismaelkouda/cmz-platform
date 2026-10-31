@@ -298,7 +298,7 @@ jobs:
             runner: ubuntu-24.04
             platform: linux
           - profile: macos-apfs
-            runner: macos-14
+            runner: macos-15
             platform: darwin
     steps:
       - uses: actions/checkout@v7
@@ -345,7 +345,7 @@ jobs:
           - profile: linux-docker
             runner: ubuntu-24.04
           - profile: macos-sandbox
-            runner: macos-14
+            runner: macos-15
     steps:
       # SIMPL-1 — le contexte requis existe sur toute PR, mais la preuve OS
       # coûteuse ne tourne que si sa fermeture de dépendances a changé.
@@ -604,6 +604,8 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      actions: read
+      pull-requests: read
     needs: guardrails
     steps:
       - uses: actions/checkout@v7
@@ -664,16 +666,45 @@ jobs:
       # Ubuntu explicite est intentionnellement inconditionnel : une baseline
       # générée sur macOS n'est pas bit-à-bit portable et une heuristique
       # `affected` pourrait rater un changement d'outillage ou de dépendance.
-      # Les budgets Angular restent bloquants pendant le build ; la seconde
-      # commande vérifie ensuite l'inventaire exact des chunks initiaux.
+      # Les budgets Angular restent bloquants pendant le build ; la step suivante
+      # vérifie la fraîcheur, et une proposition bornée conserve son échec initial.
       - name: Bundle production — budgets + baseline Linux
         id: nx-bundle-production
         env:
-          NX_CLOUD_ACCESS_TOKEN: ${{ github.ref == 'refs/heads/main' && secrets.NX_CLOUD_ACCESS_TOKEN || '' }}
-          NX_NO_CLOUD: ${{ (github.ref != 'refs/heads/main' || secrets.NX_CLOUD_ACCESS_TOKEN == '') && 'true' || 'false' }}
+          NX_CLOUD_ACCESS_TOKEN: ${{ github.ref == 'refs/heads/main' &&
+            secrets.NX_CLOUD_ACCESS_TOKEN || '' }}
+          NX_NO_CLOUD: 'true'
         run: |
-          bunx nx run backoffice-angular:build:production
+          bunx nx run backoffice-angular:build:production --skip-nx-cache
+      - name: Bundle metrics — freshness
+        id: nx-bundle-freshness
+        run: |
           bun run check:bundle-metrics-freshness
+      - name: Bundle metrics — prepare data-only proposal
+        id: bundle-proposal
+        if:
+          ${{ always() && !cancelled() && github.event_name == 'pull_request' &&
+          github.event.pull_request.user.login == 'dependabot[bot]' &&
+          steps.nx-bundle-production.outcome == 'success' &&
+          steps.nx-bundle-freshness.outcome == 'failure' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node tools/bundle-metrics-proposal.mjs produce
+      - name: Bundle metrics — upload data-only proposal
+        id: bundle-proposal-upload
+        if:
+          ${{ always() && !cancelled() && github.event_name == 'pull_request' &&
+          github.event.pull_request.user.login == 'dependabot[bot]' &&
+          steps.nx-bundle-production.outcome == 'success' &&
+          steps.nx-bundle-freshness.outcome == 'failure' &&
+          steps.bundle-proposal.outputs.active == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle-metrics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/bundle-metrics-proposal/
+          if-no-files-found: error
+          retention-days: 1
 
       # Vite transpile TypeScript sans le vérifier. Les projets Vite exposent
       # donc un target `typecheck` distinct ; Nx ignore les projets qui n'en ont
