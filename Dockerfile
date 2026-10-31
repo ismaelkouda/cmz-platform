@@ -27,7 +27,7 @@
 # ─── deps + build ────────────────────────────────────────────────────────────
 FROM oven/bun:1.4.4-debian AS bun_runtime
 
-FROM node:22.22.3-bookworm-slim AS build
+FROM node:26.12.0-bookworm-slim AS build
 COPY --from=bun_runtime /usr/local/bin/bun /usr/local/bin/bun
 RUN ln -s /usr/local/bin/bun /usr/local/bin/bunx
 
