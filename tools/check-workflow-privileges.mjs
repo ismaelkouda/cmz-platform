@@ -617,11 +617,30 @@ export function nxQualificationErrors(workflow) {
         (s) => s.id === 'qualification-checkout'
     );
     const prepareAt = steps.indexOf(preparation);
+    const nodeSteps = steps.filter((s) =>
+        s.uses?.startsWith('actions/setup-node@')
+    );
+    const trustedNodeAt = steps.indexOf(nodeSteps[0]);
+    const candidateNodeAt = steps.indexOf(nodeSteps[1]);
+    const inputAt = steps.findIndex((s) => s.id === 'qualification-input');
     const nodeCheck = 'test "$(node --version)" = "v$(cat .nvmrc)"';
     if (
-        bunSteps.length !== 1 ||
+        nodeSteps.length !== 2 ||
+        trustedNodeAt <= steps.indexOf(checkout) ||
+        trustedNodeAt + 2 !== inputAt ||
+        !same(nodeSteps[0]?.with, { 'node-version-file': '.nvmrc' }) ||
+        !same(steps[trustedNodeAt + 1], runtimeAssertion('node')) ||
         candidateAt < 0 ||
-        bunAt <= candidateAt ||
+        candidateNodeAt !== candidateAt + 1 ||
+        !same(nodeSteps[1]?.with, {
+            'node-version-file': candidate + '/.nvmrc',
+        }) ||
+        !same(steps[candidateNodeAt + 1], {
+            ...runtimeAssertion('node'),
+            'working-directory': candidate,
+        }) ||
+        bunSteps.length !== 1 ||
+        bunAt !== candidateNodeAt + 2 ||
         bunAt + 2 !== prepareAt ||
         !same(bunSteps[0]?.with, {
             'bun-version-file': candidate + '/package.json',
@@ -630,7 +649,7 @@ export function nxQualificationErrors(workflow) {
             ...runtimeAssertion('bun', '', undefined, true),
             'working-directory': candidate,
         }) ||
-        !steps[candidateAt]?.run
+        steps[candidateAt]?.run
             ?.split('\n')
             .some((line) => line.trim() === nodeCheck) ||
         steps
