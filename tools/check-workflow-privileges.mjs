@@ -71,7 +71,10 @@ export const REVIEWED_EVENTS = [
 export const ALLOWED_JOB_WRITES = {
     'runtime-version-alignment.yml': {
         events: ['schedule', 'workflow_dispatch', 'workflow_run'],
-        jobs: { publish: ['actions', 'contents'] },
+        jobs: {
+            publish: ['actions', 'contents'],
+            'publish-bundle': ['actions', 'contents'],
+        },
     },
     'nx-migrations.yml': {
         events: ['pull_request', 'schedule', 'workflow_dispatch'],
@@ -555,7 +558,7 @@ export function nxQualificationErrors(workflow) {
         job?.if !== QUALIFICATION_CONDITION ||
         job?.needs !== undefined ||
         job?.['runs-on'] !== '${{ matrix.os }}' ||
-        !same(job?.strategy?.matrix, { os: ['ubuntu-latest', 'macos-14'] }) ||
+        !same(job?.strategy?.matrix, { os: ['ubuntu-latest', 'macos-15'] }) ||
         job?.strategy?.['fail-fast'] !== false ||
         job?.['timeout-minutes'] !== 45
     )

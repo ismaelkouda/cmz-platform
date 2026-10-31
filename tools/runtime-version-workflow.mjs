@@ -343,6 +343,7 @@ export function alignmentWorkflow() {
                     },
                 ],
             },
+            ...bundleJobs(),
         },
     };
 }
@@ -377,7 +378,7 @@ export function runtimeWorkflowErrors(entries) {
                     expr('runner.temp') + '/nx-qualified-candidate';
                 const prefix =
                     file === 'runtime-version-alignment.yml' &&
-                    jobId === 'publish'
+                    ['publish', 'publish-bundle'].includes(jobId)
                         ? 'trusted-main/'
                         : '';
                 if (
@@ -429,12 +430,33 @@ export function runtimeWorkflowErrors(entries) {
         oracle?.if !== undefined ||
         oracle?.['continue-on-error'] !== undefined ||
         oracle?.['timeout-minutes'] !== 45 ||
-        !same(oracle.permissions, { contents: 'read' }) ||
+        !same(oracle.permissions, {
+            contents: 'read',
+            actions: 'read',
+            'pull-requests': 'read',
+        }) ||
         oracle.steps?.find((s) => s.uses?.startsWith('actions/checkout@'))
             ?.with?.['persist-credentials'] !== false
     )
         errors.push('Oracle image: plafond/permissions/checkout non conformes');
     const steps = oracle?.steps ?? [];
+    const bundles = steps.filter((s) =>
+        [
+            'nx-bundle-production',
+            'nx-bundle-freshness',
+            'bundle-proposal',
+            'bundle-proposal-upload',
+        ].includes(s.id)
+    );
+    if (
+        !same(bundles, bundleProductionSteps()) ||
+        bundles.some(
+            (s, i) => steps.indexOf(s) !== steps.indexOf(bundles[0]) + i
+        )
+    )
+        errors.push(
+            'Oracle bundle: build/fraîcheur/projection/artefact altérés'
+        );
     const images = steps.filter((s) => s.id?.startsWith('production-image-'));
     if (
         !same(images, productionImageSteps()) ||
@@ -444,4 +466,111 @@ export function runtimeWorkflowErrors(entries) {
             'Oracle image: build/smoke/contre-preuves absents ou neutralisés'
         );
     return errors;
+}
+
+export function bundleProductionSteps() {
+    const active =
+        "always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && steps.nx-bundle-production.outcome == 'success' && steps.nx-bundle-freshness.outcome == 'failure'";
+    return [
+        {
+            name: 'Bundle production — budgets + baseline Linux',
+            id: 'nx-bundle-production',
+            env: {
+                NX_CLOUD_ACCESS_TOKEN: expr(
+                    "github.ref == 'refs/heads/main' && secrets.NX_CLOUD_ACCESS_TOKEN || ''"
+                ),
+                NX_NO_CLOUD: 'true',
+            },
+            run: 'bunx nx run backoffice-angular:build:production --skip-nx-cache\n',
+        },
+        {
+            name: 'Bundle metrics — freshness',
+            id: 'nx-bundle-freshness',
+            run: 'bun run check:bundle-metrics-freshness\n',
+        },
+        {
+            name: 'Bundle metrics — prepare data-only proposal',
+            id: 'bundle-proposal',
+            if: expr(active),
+            env: { GH_TOKEN: expr('github.token') },
+            run: 'node tools/bundle-metrics-proposal.mjs produce\n',
+        },
+        {
+            name: 'Bundle metrics — upload data-only proposal',
+            id: 'bundle-proposal-upload',
+            if: expr(
+                active + " && steps.bundle-proposal.outputs.active == 'true'"
+            ),
+            uses: 'actions/upload-artifact@v7',
+            with: {
+                name:
+                    'bundle-metrics-' +
+                    expr('github.run_id') +
+                    '-' +
+                    expr('github.run_attempt'),
+                path: expr('runner.temp') + '/bundle-metrics-proposal/',
+                'if-no-files-found': 'error',
+                'retention-days': 1,
+            },
+        },
+    ];
+}
+
+function bundleJobs() {
+    const event =
+        "github.ref == 'refs/heads/main' && github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_repository.full_name == github.repository && startsWith(github.event.workflow_run.head_branch, 'dependabot/')";
+    const job = (mode) => {
+        const publish = mode === 'publish',
+            prefix = publish ? 'trusted-main/' : '';
+        return {
+            ...(publish ? { needs: 'prepare-bundle' } : {}),
+            if: expr(
+                event +
+                    (publish
+                        ? " && needs['prepare-bundle'].outputs.active == 'true'"
+                        : '')
+            ),
+            'runs-on': 'ubuntu-latest',
+            'timeout-minutes': 5,
+            permissions: {
+                contents: publish ? 'write' : 'read',
+                actions: publish ? 'write' : 'read',
+                'pull-requests': 'read',
+            },
+            ...(publish
+                ? {}
+                : {
+                      outputs: {
+                          active: expr('steps.proposal.outputs.active'),
+                      },
+                  }),
+            steps: [
+                {
+                    uses: 'actions/checkout@v7',
+                    with: {
+                        ref: expr('github.sha'),
+                        ...(publish ? { path: 'trusted-main' } : {}),
+                        'persist-credentials': false,
+                        'fetch-depth': 0,
+                    },
+                },
+                ...setupSteps(prefix),
+                {
+                    ...(publish ? { 'working-directory': 'trusted-main' } : {}),
+                    run: 'bun install --frozen-lockfile --ignore-scripts',
+                },
+                {
+                    id: 'proposal',
+                    ...(publish ? { 'working-directory': 'trusted-main' } : {}),
+                    env: { GH_TOKEN: expr('github.token') },
+                    run:
+                        'node tools/bundle-metrics-proposal.mjs ' + mode + '\n',
+                },
+            ],
+        };
+    };
+    return {
+        'prepare-bundle': job('prepare'),
+        'publish-bundle': job('publish'),
+    };
 }

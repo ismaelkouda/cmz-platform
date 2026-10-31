@@ -238,7 +238,7 @@ jobs:
           - profile: linux-docker
             runner: ubuntu-24.04
           - profile: macos-sandbox
-            runner: macos-14
+            runner: macos-15
     steps:
       - uses: actions/checkout@v7
 

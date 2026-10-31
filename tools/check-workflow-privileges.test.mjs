@@ -11,6 +11,10 @@ import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import {
+    alignmentWorkflow,
+    runtimeWorkflowErrors,
+} from './runtime-version-workflow.mjs';
 
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
@@ -27,6 +31,68 @@ import {
 } from './check-workflow-privileges.mjs';
 
 const TRUSTED = "github.ref == 'refs/heads/main'";
+
+test('B309 : privilèges et étapes réellement fermés, aucun checkout candidat dans publish-bundle', () => {
+    const alignment = alignmentWorkflow();
+    const ci = parseYaml(
+        readFileSync(
+            new URL('../.github/workflows/ci.yml', import.meta.url),
+            'utf8'
+        )
+    );
+    const errors = (value) =>
+        runtimeWorkflowErrors([
+            { file: 'runtime-version-alignment.yml', workflow: value },
+            { file: 'ci.yml', workflow: ci },
+        ]);
+    assert.deepEqual(errors(alignment), []);
+    assert.deepEqual(alignment.jobs['prepare-bundle'].permissions, {
+        contents: 'read',
+        actions: 'read',
+        'pull-requests': 'read',
+    });
+    assert.deepEqual(alignment.jobs['publish-bundle'].permissions, {
+        contents: 'write',
+        actions: 'write',
+        'pull-requests': 'read',
+    });
+    for (const mutate of [
+        (w) => {
+            w.jobs['prepare-bundle'].permissions.contents = 'write';
+        },
+        (w) => {
+            w.jobs['publish-bundle'].permissions.issues = 'write';
+        },
+        (w) => {
+            w.jobs['publish-bundle'].if = '${{ true }}';
+        },
+        (w) => {
+            w.jobs['publish-bundle'].steps[0].with.ref =
+                '${{ github.event.workflow_run.head_sha }}';
+        },
+        (w) => {
+            w.jobs['publish-bundle'].steps.at(-1).run =
+                'node candidate/tools/bundle-metrics-proposal.mjs publish';
+        },
+        (w) => {
+            w.jobs['publish-bundle'].steps.at(-2).run = 'bun install';
+        },
+        (w) => {
+            w.jobs['prepare-bundle'].if =
+                "${{ github.ref == 'refs/heads/main' }}";
+        },
+    ]) {
+        const bad = structuredClone(alignment);
+        mutate(bad);
+        assert.ok(errors(bad).length > 0);
+    }
+    assert.deepEqual(
+        ALLOWED_JOB_WRITES['runtime-version-alignment.yml'].jobs[
+            'publish-bundle'
+        ],
+        ['actions', 'contents']
+    );
+});
 const HANDOVER = (name) => `\${{ ${TRUSTED} && secrets.${name} || '' }}`;
 const DISPATCH = '  schedule:\n    - cron: "0 0 * * *"\n  workflow_dispatch:';
 const REVIEWED = {

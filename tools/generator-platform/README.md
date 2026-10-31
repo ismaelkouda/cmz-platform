@@ -632,7 +632,7 @@ model: external readers must not consume the output until the publication
 command succeeds. The runtime accepts only local APFS/macOS and ext4/Linux
 storage, verifies the real `statfs` profile before writing, and rejects every
 other filesystem. The suite actually `SIGKILL`s a child publisher after each
-critical rename. A blocking `macos-14`/APFS and `ubuntu-24.04`/ext4 CI matrix
+critical rename. A blocking `macos-15`/APFS and `ubuntu-24.04`/ext4 CI matrix
 runs the same recovery suite and a real-filesystem publication probe.
 User-facing target names are `angular` and `reactjs`;
 `angular-nx` and `react-typescript` remain internal profile identifiers. See the

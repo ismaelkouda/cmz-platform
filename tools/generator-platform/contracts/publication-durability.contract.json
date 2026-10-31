@@ -51,7 +51,7 @@
         "filesystem": "apfs",
         "required_options": ["local"]
       },
-      "ci_runner": "macos-14"
+      "ci_runner": "macos-15"
     }
   ],
   "required_evidence": [
