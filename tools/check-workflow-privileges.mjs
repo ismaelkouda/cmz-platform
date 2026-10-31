@@ -558,7 +558,7 @@ export function nxQualificationErrors(workflow) {
         job?.if !== QUALIFICATION_CONDITION ||
         job?.needs !== undefined ||
         job?.['runs-on'] !== '${{ matrix.os }}' ||
-        !same(job?.strategy?.matrix, { os: ['ubuntu-latest', 'macos-14'] }) ||
+        !same(job?.strategy?.matrix, { os: ['ubuntu-latest', 'macos-15'] }) ||
         job?.strategy?.['fail-fast'] !== false ||
         job?.['timeout-minutes'] !== 45
     )

@@ -32,7 +32,7 @@ const ACCEPTED_FILESYSTEM_PROFILES = Object.freeze([
             filesystem: 'apfs',
             required_options: ['local'],
         },
-        ci_runner: 'macos-14',
+        ci_runner: 'macos-15',
     },
 ]);
 

@@ -298,7 +298,7 @@ jobs:
             runner: ubuntu-24.04
             platform: linux
           - profile: macos-apfs
-            runner: macos-14
+            runner: macos-15
             platform: darwin
     steps:
       - uses: actions/checkout@v7
@@ -345,7 +345,7 @@ jobs:
           - profile: linux-docker
             runner: ubuntu-24.04
           - profile: macos-sandbox
-            runner: macos-14
+            runner: macos-15
     steps:
       # SIMPL-1 — le contexte requis existe sur toute PR, mais la preuve OS
       # coûteuse ne tourne que si sa fermeture de dépendances a changé.

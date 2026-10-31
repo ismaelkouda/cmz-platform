@@ -667,7 +667,7 @@ test('la vraie collecte YAML conserve deux restes, les octets des prompts et les
 
 test('agrégation : deux identités exactes, pièces intactes et aucune attente promue en ready', (t) => {
     const { root, candidate } = outcomeFixture(t);
-    const systems = ['ubuntu-latest', 'macos-14'];
+    const systems = ['ubuntu-latest', 'macos-15'];
     const artifacts = join(root, 'artifacts');
     mkdirSync(artifacts);
     const results = systems.map((system) => {

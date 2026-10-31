@@ -323,7 +323,7 @@ test('qualification : matrice readonly, trois promotions par OS et plafond incha
     assert.ok(job, 'le mode qualification doit être dans B');
     assert.equal(w.on.workflow_dispatch.inputs.mode.default, 'migration');
     assert.deepEqual(job.permissions, { contents: 'read' });
-    assert.deepEqual(job.strategy.matrix.os, ['ubuntu-latest', 'macos-14']);
+    assert.deepEqual(job.strategy.matrix.os, ['ubuntu-latest', 'macos-15']);
     assert.equal(job['timeout-minutes'], 45);
     const pkg = JSON.parse(
         readFileSync(new URL('../package.json', import.meta.url))
