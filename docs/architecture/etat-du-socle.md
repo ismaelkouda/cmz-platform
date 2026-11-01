@@ -45,7 +45,7 @@ d'imports, `package.json`/`project.json`/paths TS. Voir son
 Vitest). Build production : `bunx nx run backoffice-angular:build:production`.
 
 <!-- BEGIN:GENERATED:bundle-metrics -->
-- **Bundle initial (production, raw)** : **752.77 kB** — source [`bundle-metrics.json`](../../apps/backoffice-angular/bundle-metrics.json) (mesuré 2026-10-29 via `bun run bundle:record` après build).
+- **Bundle initial (production, raw)** : **752.77 kB** — source [`bundle-metrics.json`](../../apps/backoffice-angular/bundle-metrics.json) (mesuré 2026-10-31 via `bun run bundle:record` après build).
 - **ExcelJS (lazy)** : **943.66 kB** raw — hors budget initial.
 - **Budgets** (`project.json`) : warning `900kb` / error `1mb` — politique [ADR-0016](../adr/0016-politique-budget-bundle.md) (hausse interdite sans ADR).
 <!-- END:GENERATED:bundle-metrics -->
@@ -103,7 +103,7 @@ unicité découle de leur emplacement.
 | bun   | `>= 1.3.0`                             | —                        |
 
 Déclarés dans `engines` et `packageManager`, et **vérifiés** au `preinstall`.
-`.nvmrc` fixe 22.22.3.
+`.nvmrc` fixe 26.12.0.
 
 ## Garde-fous automatisés
 
