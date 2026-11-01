@@ -7,7 +7,7 @@
       "id": "angular-22",
       "status": "verified",
       "requirements": {
-        "node": ">=22.22.3 <23",
+        "node": ">=26.12.0 <27",
         "bun": ">=1.3.14 <2",
         "nx": ">=24.0.2 <25",
         "framework": ">=22.0.0 <23"
@@ -21,15 +21,15 @@
       "reason": "Piste Angular Material 22 ; vérification complète requise pour chaque nouvelle combinaison framework/Material.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "941720d7fd1e923153440e35c910218af984c785",
-        "source_context_sha256": "11b9205eb9c307c97fc85ec9d54b75824eeb1ce236ca860e19a51c88d94f588d",
+        "commit": "17b4e075cca271961e71de67f38326107afcc465",
+        "source_context_sha256": "e7c3fb491aa3b761404078ad2dcf1fbb3bdddd7c7a9318337a847829daf21982",
         "app": "backoffice-angular",
-        "plan_id": "library-plan:60e7aaf974dc174986c56521ed8f73609f2171cc16456ff0cdbae3d2afce71c3",
+        "plan_id": "library-plan:b84691359e51265b85e5c9a6b1eb8c1baee63a4e98462e8d1337e9b8baedf2ce",
         "change_set_id": "changes:7d323c9a5b23172919272b0818ec0785ad84b43df59ca172a596605a2e2e6b93",
-        "app_tree_sha256": "7f54489bdb70cd70ca0522c104cef4e960107af83842347f97bd736831b096bd",
-        "track_sha256": "a6af8d33318367cff0af317c029902e647180fa35b974fe40c8d02997f9e8629",
+        "app_tree_sha256": "b433fabeeb13cb6719eba956fc91fa4b48aa21926d7b411fd5308c418a725bd9",
+        "track_sha256": "daf83662dfc74516448b8900aa52f43cad7834332ca681122365d99e2cb0e162",
         "tested_versions": {
-          "node": "22.22.3",
+          "node": "26.12.0",
           "bun": "1.4.4",
           "nx": "24.0.2",
           "framework": "22.2.3",
@@ -102,7 +102,7 @@
             "tools/library-setup/tooling-fingerprint.mjs": "29110b4d51d71af0735073fcadeb30845fe4743222197fa3e15520daf2f12514"
           }
         },
-        "evidence_sha256": "956b58f1ee0e6252b27c7d8e70b9d88d565d926be36a42d57a728ad463b4a4bd"
+        "evidence_sha256": "6024bbe91897da419703bdeabafcd849df694a72cc5c83e6967d3a07c1caf32e"
       }
     }
   ]

@@ -13,7 +13,10 @@ import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { loadResolutionPolicy } from './resolution-policy.mjs';
+import {
+    loadResolutionPolicy,
+    resolutionPolicySha256,
+} from './resolution-policy.mjs';
 import { availableSandboxBackends, runConfined } from './sandbox.mjs';
 
 const repositoryRoot = new URL('../..', import.meta.url).pathname;
@@ -390,5 +393,80 @@ fetch('https://registry.npmjs.org/bun').then((response) => { clearTimeout(timer)
         assert.notEqual(observed.outsideWrite, true, 'écriture hors candidat');
         assert.notEqual(observed.network, 200, 'réseau joignable');
         assert.equal(observed.candidateWrite, true);
+    }
+);
+
+// La version hôte attestée ne renomme pas les runtimes des images confinées.
+forEachBackend(
+    'le tuple natif distingue Node hôte, Node exécution et Bun résolution',
+    async (t, backend) => {
+        const paths = await fixture(t);
+        const expectedHost = (
+            await readFile(join(repositoryRoot, '.nvmrc'), 'utf8')
+        ).trim();
+        assert.match(expectedHost, /^\d+\.\d+\.\d+$/);
+        assert.equal(process.versions.node, expectedHost);
+        const manifest = JSON.parse(
+            await readFile(join(repositoryRoot, 'package.json'), 'utf8')
+        );
+        const expectedBun = manifest.packageManager.match(
+            /^bun@(\d+\.\d+\.\d+)$/
+        )?.[1];
+        assert.equal(expectedBun, '1.4.4');
+        const { policy, errors } = loadResolutionPolicy(repositoryRoot);
+        assert.deepEqual(errors, []);
+        const policySha256 = resolutionPolicySha256(repositoryRoot);
+        assert.equal(
+            policySha256,
+            '0214979004c123e0fd06b8310df7fd1bba208ab4e3b46c8f634a0eb690a2567e'
+        );
+        assert.deepEqual(policy.sandbox.container_images, {
+            resolution:
+                'oven/bun@sha256:93d5032fe06d163427822dc1598f420363759bb18155c9cc90eb1be05a64a19e',
+            execution:
+                'node@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752',
+            execution_renderer:
+                'mcr.microsoft.com/playwright@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27',
+        });
+        const execution = runConfined({
+            backend,
+            profile: 'execution',
+            ...paths,
+            hostExecutable: process.execPath,
+            containerExecutable: '/usr/local/bin/node',
+            argv: ['-p', 'process.versions.node'],
+            policy,
+        });
+        assert.equal(execution.status, 0, execution.stderr);
+        const executionNode = execution.stdout.trim();
+        assert.equal(
+            executionNode,
+            backend === 'docker' ? '22.22.3' : expectedHost
+        );
+        const resolution = runConfined({
+            backend,
+            profile: 'resolution',
+            ...paths,
+            hostExecutable: realpathSync(
+                execFileSync('which', ['bun'], { encoding: 'utf8' }).trim()
+            ),
+            containerExecutable: '/usr/local/bin/bun',
+            argv: ['--version'],
+            policy,
+        });
+        assert.equal(resolution.status, 0, resolution.stderr);
+        const resolutionBun = resolution.stdout.trim();
+        assert.equal(resolutionBun, expectedBun);
+        t.diagnostic(
+            JSON.stringify({
+                backend,
+                host_node: process.versions.node,
+                execution_node: executionNode,
+                resolution_bun: resolutionBun,
+                policy_sha256: policySha256,
+                container_images: policy.sandbox.container_images,
+                renderer_version_observed: false,
+            })
+        );
     }
 );

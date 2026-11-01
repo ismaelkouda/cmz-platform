@@ -169,14 +169,12 @@ test('runtime: chaque divergence de sources est rouge, restauration verte', () =
     for (const mutate of [
         (s) => s + '\nFROM node:22.22.3-bookworm-slim AS another\n',
         (s) => s.replace('FROM oven/bun:', 'FROM oven/bun@sha256:'),
-        (s) => s.replace('FROM node:22.22.3-bookworm-slim AS build', ''),
-    ])
-        assert.ok(
-            sourceErrors({
-                ...original,
-                Dockerfile: mutate(original.Dockerfile),
-            }).length
-        );
+        (s) => s.replace(/^FROM node:[^\s]+ AS [a-zA-Z0-9_-]+$/m, ''),
+    ]) {
+        const bad = mutate(original.Dockerfile);
+        assert.notEqual(bad, original.Dockerfile);
+        assert.ok(sourceErrors({ ...original, Dockerfile: bad }).length);
+    }
     assert.deepEqual(sourceErrors(original), []);
 });
 
