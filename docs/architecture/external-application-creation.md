@@ -323,3 +323,130 @@ texte limité. Ce câblage n'est pas une CI exécutée. La preuve Mac reste
 distincte. Toute page montrée au propriétaire nécessite ensuite les
 builds/serveurs lancés par lui et une revue visuelle avant/après dans son
 navigateur.
+
+## Réponses observées : modèles candidats R1
+
+`compileRuntimeObservationModels({ targetRoot, mappingPath })`, exporté par
+`adapters/runtime-observation-adapter.mjs`, réutilise l'inspecteur structurel et
+les projections de requêtes OpenAPI. Il retourne un
+`observation-model-candidate` **reference / structural-only**, avec
+`network_verified:false`. Il ne publie pas un contrat backend complet.
+
+Le mapping est une `observation-model-selection` version1.1.0, dans le schéma
+`observation-evidence.schema.json`. Il référence, par chemins relatifs et
+SHA-256, une sélection d'observations v1, un sous-ensemble OpenAPI et un
+complément `observation-model-annotations` v1.1. Ce complément contient les
+modèles déclarés, avec required/nullable explicites pour chaque champ, et les
+références privées de provenance. Le fragment source est lu sous borne,
+empreinte et lignes contrôlées, sans interprétation du langage. Ces références
+établissent une identité de déclaration, pas sa véracité ni une authenticité
+réseau.
+
+L'adaptateur vérifie les formes observées contre ces déclarations : présence,
+nullabilité, types et items. Un null ou tableau vide sans complément n'est pas
+compilable. Les cas sont liés par méthode, chemin d'opération, identifiant,
+statut et média ; le base-path est explicite et distinct d'une origine privée.
+Chaque modèle/champ conserve ses preuves déclarées et les observations
+effectivement disponibles. Les seuls modèles atteignables sont sélectionnés ;
+une dépendance absente ou cyclique et un conflit refusent la compilation
+entière.
+
+Sous-ensemble R1 : types primitifs string/integer/number/boolean, objets et
+tableaux via modèles déclarés, requêtes OpenAPI à composants locaux simples. Les
+descriptions de sortie sont fixes ; ni examples/default, enum ou pattern des
+requêtes, ni servers, métadonnées privées ou contenu capturé ne sont recopiés.
+Une contrainte non supportée est refusée, jamais supprimée silencieusement. La
+nouvelle voie exige une déclaration explicite de sécurité : une absence de
+security ne devient pas un accès public. Les requirements explicitement vides
+restent publics ; l'application effective des permissions reste inconnue. Les
+conventions historiques du compilateur OpenAPI complet restent inchangées.
+
+Tous les fichiers de données passent par les bornes de l'inspecteur avant
+parsing, les chemins physiques et les pointeurs propres RFC6901. Les diagnostics
+sont des codes OBS_* fermés, sans message du parseur ni valeur de source. Deux
+corpus synthétiques distincts sont exercés par
+`runtime-observation-adapter.test.mjs`, découvert par la gate core existante.
+Ces tests n'établissent aucune observation d'un réseau vivant.
+
+R2 devra raccorder ce candidat au compilateur complet et à une origine privée
+injectée au runtime, puis vérifier application-design séparément. R3 devra
+qualifier l'acquisition réelle, sa portée et sa validité, et la consommation des
+sorties CAPTURE. Ni une étiquette declared-code, ni une image/date/empreinte
+déclarée, ni une fixture ne permettent à R1 de produire verified-live. Une page
+réelle attend son contrat complet, ses compléments déclarés relus et ses
+preuves.
+
+Les tables à clés dynamiques sont hors du sous-ensemble R1. Leur nature doit
+être fournie par la source complémentaire ; les noms aperçus dans un échantillon
+ne deviennent pas des propriétés fixes. Une déclaration map/additionalProperties
+est refusée par R1 et exige un raccord ultérieur expressément revu.
+
+La nouvelle voie refuse aussi les contraintes OpenAPI non représentées (par
+exemple format email, exclusiveMinimum), incompatibles avec le type ou
+contradictoires. Les formats date/date-time/uuid/binary restent projetés par la
+primitive native. Ce refus de perte s'applique à R1 ; il ne modifie pas le
+comportement historique du compilateur complet.
+
+## R2 — contrat depuis des observations et compléments sourcés
+
+L'adaptateur `runtime-observation` de `compile-backend-contract.mjs` reçoit une
+sélection explicite `observed-backend-definition` 1.2.0, un `--target-root`
+détenu par l'application et un `--private-root` physique, distinct et de
+mode 0700. Il n'acquiert aucune réponse et n'appelle aucun service. La sélection
+épingle les empreintes de l'OpenAPI privé, d'une liaison runtime, des témoins
+structurels et des déclarations avec fragments de code. Chaque réponse
+sélectionne exactement une opération, un statut, un cas et un pointeur de
+structure.
+
+La source OpenAPI complète est lue sous un plafond de 1 Mio, après contrôle du
+volume déclaré, puis précontrôle de 131072 tokens, 32768 nœuds et profondeur32.
+Le parseur natif est utilisé ; aucun parsing streaming n'est revendiqué. Seules
+les opérations sélectionnées et leurs composants de requête/sécurité
+atteignables sont extraits. L'extrait conserve les pointeurs RFC6901 et
+l'empreinte de la source complète. Il est limité à64Kio,8opérations,32modèles.
+Les sources réelles auth229287 et base-settings483822 octets ont motivé cette
+séparation des budgets ; leur volume ne devient pas un quota de routes dans
+l'IR. Une nouvelle source hors plafond exige une revue, pas une hausse
+implicite. Les limites de données des versions R1 1.0/1.1 restent inchangées.
+Seule la lecture des schémas installés dispose de son budget propre
+de32768nœuds.
+
+Publication en quatre plans distincts, recalculés sous le verrou existant :
+
+1. `--snapshot openapi --out <snapshots.openapi> --dry-run`, puis
+   `--apply <pin>` ;
+2. même procédure pour `observations` ;
+3. même procédure pour `declarations` ;
+4. sans `--snapshot`, plan puis publication du contrat backend.
+
+Le quatrième plan vérifie physiquement les trois capsules publiées. Leur absence
+ou leur dérive bloque la compilation. Aucun répertoire partiellement publié
+n'est déclaré consommable et aucune atomicité entre les quatre publications
+n'est revendiquée. Les empreintes privées et leurs identités ferment le contexte
+recalculé ; le plan public ne donne ni chemin privé ni origine. La publication
+emploie les mêmes primitives de documents, sans écrasement d'un contenu
+différent.
+
+Le contrat backend1.1 conserve le format1.0. Une propriété `format: email` exige
+un champ string ; le binding action-request doit porter la règle native email.
+Un modèle object peut déclarer `additional_properties` avec un type canonique,
+notamment array<string> pour une table dynamique. Les clés observées ne
+deviennent pas des champs fixes. L'ouverture d'une requête OpenAPI n'est pas
+transformée en fermeture : une absence de `additionalProperties` reste
+explicitement ouverte. La primitive `null` représente null seul ; les
+consommateurs action-request qui ne savent pas l'exploiter refusent au lieu de
+produire unknown/json.
+
+Les témoins version1.2 donnent une couverture complète de leurs éléments, avec
+les propriétés optionnelles observées et les tableaux vides explicites. Leurs
+required/nullable/items viennent toujours des déclarations sourcées. La
+vérification suit le témoin fini et borné, même avec un graphe de modèles
+récursif. Une map a au plus128entrées et conserve des types de valeurs, sans
+recopier ses clés.
+
+Le résultat est un contrat `reference`, avec sources au même statut, et une
+qualification structurelle seulement. Une fixture ne prouve aucun réseau, un
+complément ne qualifie pas toutes les branches et un hash n'interprète pas le
+code. La compilation application-design reste distincte ; un backend reference
+ne peut pas piloter une implémentation cible par promotion implicite. La
+qualification vivante et la décision de cycle de vie restent des étapes relues.

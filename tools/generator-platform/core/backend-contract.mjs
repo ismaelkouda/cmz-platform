@@ -7,12 +7,14 @@ import { RegExpParser } from '@eslint-community/regexpp';
 import { validateJsonSchema } from '../validate-ir.mjs';
 
 const TYPE_KEYS = {
+    __proto__: null,
     primitive: ['kind', 'name'],
     model: ['kind', 'model_id'],
     array: ['items', 'kind'],
 };
 
 const MODEL_KEYS = {
+    __proto__: null,
     object: ['description', 'evidence', 'fields', 'id', 'kind', 'status'],
     array: ['description', 'evidence', 'id', 'items', 'kind', 'status'],
     scalar: ['description', 'evidence', 'id', 'kind', 'status', 'type'],
@@ -370,13 +372,6 @@ function validateOperation(
         );
     }
     validateAccess(operation.access, `${path}.access`, securityIds, errors);
-    validateEvidence(
-        operation.evidence,
-        `${path}.evidence`,
-        sourceIds,
-        usedSources,
-        errors
-    );
 
     const parameters = operation.request?.parameters ?? [];
     errors.push(
@@ -554,6 +549,41 @@ export function validateBackendContract(contract, schema) {
             ]
         ).map((error) => `${error} endpoint`)
     );
+    const modern = contract.schema_version === '1.1.0';
+    const pending = [contract];
+    while (pending.length) {
+        const value = pending.pop();
+        if (!value || typeof value !== 'object') continue;
+        if (
+            !modern &&
+            (Object.hasOwn(value, 'format') ||
+                Object.hasOwn(value, 'additional_properties') ||
+                Object.hasOwn(value, 'runtime_binding') ||
+                (value.kind === 'primitive' && value.name === 'null'))
+        )
+            errors.push('new features require backend-contract 1.1.0');
+        if (
+            Object.hasOwn(value, 'format') &&
+            (value.type?.kind !== 'primitive' || value.type.name !== 'string')
+        )
+            errors.push('email format requires a string field');
+        if (
+            value.type?.name === 'null' &&
+            value.nullable !== true &&
+            Object.hasOwn(value, 'nullable')
+        )
+            errors.push('null-only field must be nullable');
+        pending.push(...Object.values(value));
+    }
+    for (const service of contract.services ?? []) {
+        if (
+            Object.hasOwn(service, 'runtime_binding') ===
+            Object.hasOwn(service, 'base_urls')
+        )
+            errors.push(
+                'service requires exactly one of base_urls or runtime_binding'
+            );
+    }
     const sourceIds = new Set(
         (contract.sources ?? []).map((source) => source?.id)
     );
@@ -576,6 +606,25 @@ export function validateBackendContract(contract, schema) {
         validateSourceLifecycle(source, `$.sources[${index}]`, errors);
     }
 
+    // All entities share the same lifecycle/evidence checks.
+    for (const group of [
+        'services',
+        'security_schemes',
+        'models',
+        'operations',
+    ]) {
+        for (const [index, entity] of (contract[group] ?? []).entries()) {
+            const path = `$.${group}[${index}]`;
+            validateEvidence(
+                entity?.evidence,
+                `${path}.evidence`,
+                sourceIds,
+                usedSources,
+                errors
+            );
+            validateStatusEvidence(entity, path, sourceStatusById, errors);
+        }
+    }
     const statusEntities = [
         ...(contract.services ?? []),
         ...(contract.security_schemes ?? []),
@@ -622,56 +671,39 @@ export function validateBackendContract(contract, schema) {
                 (entry) => entry?.environment
             )
         );
-        validateEvidence(
-            service?.evidence,
-            `$.services[${index}].evidence`,
-            sourceIds,
-            usedSources,
-            errors
-        );
-        validateStatusEvidence(
-            service,
-            `$.services[${index}]`,
-            sourceStatusById,
-            errors
-        );
-    }
-    for (const [index, scheme] of (contract.security_schemes ?? []).entries()) {
-        validateEvidence(
-            scheme?.evidence,
-            `$.security_schemes[${index}].evidence`,
-            sourceIds,
-            usedSources,
-            errors
-        );
-        validateStatusEvidence(
-            scheme,
-            `$.security_schemes[${index}]`,
-            sourceStatusById,
-            errors
-        );
     }
     for (const [index, model] of (contract.models ?? []).entries()) {
-        validateEvidence(
-            model?.evidence,
-            `$.models[${index}].evidence`,
-            sourceIds,
-            usedSources,
-            errors
-        );
-        validateStatusEvidence(
-            model,
-            `$.models[${index}]`,
-            sourceStatusById,
-            errors
-        );
         if (!model || typeof model !== 'object') continue;
-        const expectedKeys = MODEL_KEYS[model.kind];
+        const expectedKeys = MODEL_KEYS[model.kind]
+            ?.concat(
+                Object.hasOwn(model, 'additional_properties')
+                    ? ['additional_properties']
+                    : []
+            )
+            .sort();
         if (!expectedKeys || !exactKeys(model, expectedKeys)) {
             errors.push(
                 `$.models[${index}]: invalid closed model shape for ${model.kind ?? 'unknown'}`
             );
             continue;
+        }
+        if (Object.hasOwn(model, 'additional_properties')) {
+            if (model.kind !== 'object')
+                errors.push('additional_properties requires an object');
+            if (
+                model.additional_properties !== false &&
+                (!model.additional_properties ||
+                    typeof model.additional_properties !== 'object' ||
+                    Array.isArray(model.additional_properties))
+            )
+                errors.push('invalid additional_properties type');
+            if (model.additional_properties !== false)
+                validateType(
+                    model.additional_properties,
+                    `$.models[${index}].additional_properties`,
+                    modelIds,
+                    errors
+                );
         }
         if (model.kind === 'object') {
             validateFields(
@@ -699,12 +731,6 @@ export function validateBackendContract(contract, schema) {
         }
     }
     for (const [index, operation] of (contract.operations ?? []).entries()) {
-        validateStatusEvidence(
-            operation,
-            `$.operations[${index}]`,
-            sourceStatusById,
-            errors
-        );
         validateOperation(
             operation,
             index,
@@ -727,7 +753,11 @@ export function validateBackendContract(contract, schema) {
     return [...new Set(errors)].sort();
 }
 
-export async function verifyBackendContractSnapshots(contract, workspaceRoot) {
+export async function verifyBackendContractSnapshots(
+    contract,
+    workspaceRoot,
+    readSnapshot = readFile
+) {
     const errors = [];
     const root = await realpath(resolve(workspaceRoot));
     for (const [index, source] of (contract?.sources ?? []).entries()) {
@@ -752,7 +782,7 @@ export async function verifyBackendContractSnapshots(contract, workspaceRoot) {
                 continue;
             }
             const actual = createHash('sha256')
-                .update(await readFile(canonical))
+                .update(await readSnapshot(canonical))
                 .digest('hex');
             if (actual !== source.sha256)
                 errors.push(`${path}: sha256 mismatch`);

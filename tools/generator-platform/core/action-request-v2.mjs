@@ -34,7 +34,8 @@ function modelById(contract, modelId) {
 
 function hasOnlyPrimitiveFields(model) {
     return (model?.fields ?? []).every(
-        (field) => field.type?.kind === 'primitive'
+        (field) =>
+            field.type?.kind === 'primitive' && field.type.name !== 'null'
     );
 }
 
@@ -169,6 +170,17 @@ function validateInput(action, wireModel, path, errors) {
                 `${path}.input.fields[${index}].validations`
             )
         );
+        if (
+            wireField.format &&
+            !validations.some(
+                (rule) =>
+                    rule.kind === 'format' && rule.format === wireField.format
+            )
+        ) {
+            errors.push(
+                `${path}.input.fields[${index}].validations: format must match backend field`
+            );
+        }
         const required = validations.some(
             (validation) => validation.kind === 'required'
         );
