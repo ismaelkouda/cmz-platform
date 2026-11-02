@@ -9,7 +9,7 @@
       "requirements": {
         "node": ">=26.12.0 <27",
         "bun": ">=1.3.14 <2",
-        "nx": ">=24.0.2 <25",
+        "nx": ">=24.0.3 <25",
         "framework": ">=22.0.0 <23"
       },
       "packages": {
@@ -21,17 +21,17 @@
       "reason": "Piste Tailwind 4 ; vérification complète requise pour chaque nouvelle version effective du framework.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "693e53deb1cbf6805d6c53a23107ace0ecb5d32e",
-        "source_context_sha256": "d179881cc796cbd09050d6ff06d750499871dc20dca1c1c186adc494a4c0abf4",
+        "commit": "ba5b18ce9f19077514a24f7340a98c314ad6c7e6",
+        "source_context_sha256": "ce0a6f0dc6aa4f1f9e82eee0b51f109eb91821c5288efada733b1e8ad3726e66",
         "app": "library-qualification-angular",
-        "plan_id": "library-plan:dd5835d0cd100714353288b82a3b562205fd02c5a6e7eec4ad2dbfb388694aff",
+        "plan_id": "library-plan:3d02810ca9861b271f5b8301c26fc15ee32e3087fad863b728b9e746f26d3023",
         "change_set_id": "changes:0971340b7eb9beabbeb5837c964fa2da47af95099f2dfff704c7b18cd2c0f262",
         "app_tree_sha256": "208320b6cd4423087de2cc35e4768811dbd8ace5ff83d8304e556b87daaec334",
-        "track_sha256": "83e2b9f4b6556877761e654998db9d67183067c63f90b2ea8e5bf2911c2c5ec5",
+        "track_sha256": "884aec63b201924076733d4b6ad4ed685152266dde7c9e5836f18632b6c7fa47",
         "tested_versions": {
           "node": "26.12.0",
           "bun": "1.4.4",
-          "nx": "24.0.2",
+          "nx": "24.0.3",
           "framework": "22.2.3",
           "packages": {
             "@tailwindcss/postcss": "4.3.3",
@@ -102,7 +102,7 @@
             "tools/scaffold-tailwind.mjs": "e12cd0be13839fc2177930d56fdfe1032ec5acdddfe8b0c34e9f134bc071200d"
           }
         },
-        "evidence_sha256": "c96301fdc8133816e8f8f5d08eaf86e6ffcf87c026e4461f6c84518df2c96fa7"
+        "evidence_sha256": "09acd23f796a51594d533e0ae411f68bd5f4dd49924ed7519555862aeff75bbf"
       }
     }
   ]
