@@ -42,6 +42,8 @@ export function parseArgs(argv) {
         else if (argument === '--private-root')
             options.privateRoot = argv[++index];
         else if (argument === '--snapshot') options.snapshotId = argv[++index];
+        else if (argument === '--adopt-reference')
+            options.adoptReference = true;
         else if (argument === '--dry-run') options.dryRun = true;
         else if (argument === '--apply') options.planId = argv[++index];
         else fail(`Argument inconnu : ${argument}`);
@@ -80,6 +82,14 @@ export function parseArgs(argv) {
     )
         fail('Unknown snapshot.');
     if (
+        options.adoptReference &&
+        (options.adapter !== 'structured' ||
+            !options.targetRoot ||
+            options.privateRoot ||
+            options.snapshotId)
+    )
+        fail('Adoption requires structured and an external target root.');
+    if (
         Object.values(options).some(
             (value) => typeof value === 'string' && value.length > 1024
         )
@@ -103,6 +113,7 @@ export async function main(argv = process.argv.slice(2)) {
             : {}),
         privateRoot: options.privateRoot,
         snapshotId: options.snapshotId,
+        adoptReference: options.adoptReference,
         definitionPath: options.definitionPath,
         outputPath: options.outputPath,
         adapter: options.adapter ?? 'structured',
@@ -133,7 +144,8 @@ if (
         const bounded =
             process.argv.includes('runtime-observation') ||
             process.argv.includes('--private-root') ||
-            process.argv.includes('--snapshot');
+            process.argv.includes('--snapshot') ||
+            process.argv.includes('--adopt-reference');
         console.error(
             bounded ? observationDiagnostic(error) : `❌ ${error.message}`
         );

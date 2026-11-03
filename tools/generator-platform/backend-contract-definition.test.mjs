@@ -2,11 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    compileReferenceBackendAdoption,
     compileStructuredBackendDefinition,
     serializeCanonicalBackendContract,
     structuredDefinitionSha256,
 } from './core/structured-backend-adapter.mjs';
 import { loadJson } from './validate-ir.mjs';
+import { compileRuntimeObservationBackend } from './adapters/runtime-observation-backend-adapter.mjs';
+import { observedBackendFixture } from './test-support/runtime-observation-backend-fixture.mjs';
+import { resolveObservationPointer } from './core/runtime-observation-evidence.mjs';
 
 const schema = await loadJson(
     new URL('./schemas/backend-contract.schema.json', import.meta.url)
@@ -199,4 +203,194 @@ test('historical structured definition cannot silently opt in to backend 1.1 fea
             }),
         /require backend-contract 1.1.0/
     );
+});
+
+function adoptionInputs(basis) {
+    if (!basis) {
+        const reference = definition();
+        reference.contract.status = 'reference';
+        reference.source.authority = 'observational';
+        basis = compile(reference);
+    }
+    const basisBytes = serializeCanonicalBackendContract(basis);
+    return {
+        definition: {
+            schema_version: '1.1.0',
+            kind: 'backend-contract-definition',
+            contract: {
+                ...basis.contract,
+                status: 'planned',
+                version: '1.0.1',
+            },
+            source: { id: 'explicit-adoption', authority: 'declared' },
+            basis: {
+                snapshot_uri: 'contracts/reference.json',
+                sha256: structuredDefinitionSha256(basisBytes),
+            },
+            decision: {
+                snapshot_uri: 'contracts/decision.json',
+                sha256: 'd'.repeat(64),
+            },
+        },
+        basis,
+        basisSha256: structuredDefinitionSha256(basisBytes),
+        snapshotUri: 'contracts/adoption.json',
+        snapshotSha256: 'a'.repeat(64),
+        backendContractSchema: schema,
+    };
+}
+
+function withoutAdoptionDelta(value) {
+    const original = structuredClone(value);
+    delete original.contract;
+    original.sources = original.sources.filter(
+        (source) => source.id !== 'explicit-adoption'
+    );
+    const pending = [original];
+    while (pending.length) {
+        const current = pending.pop();
+        if (!current || typeof current !== 'object') continue;
+        if (Object.hasOwn(current, 'evidence'))
+            current.evidence = current.evidence.filter(
+                (entry) => entry.source_id !== 'explicit-adoption'
+            );
+        pending.push(...Object.values(current));
+    }
+    for (const group of [
+        'services',
+        'security_schemes',
+        'models',
+        'operations',
+    ])
+        for (const entity of original[group]) entity.status = 'reference';
+    return original;
+}
+
+test('adopte une référence 1.0 sans perte ni mutation de la source', () => {
+    const input = adoptionInputs();
+    const before = structuredClone(input.basis);
+    const target = compileReferenceBackendAdoption(input);
+    assert.equal(target.schema_version, '1.0.0');
+    assert.equal(target.contract.status, 'planned');
+    assert.deepEqual(input.basis, before);
+    assert.deepEqual(
+        withoutAdoptionDelta(target),
+        withoutAdoptionDelta(before)
+    );
+    assert.deepEqual(target.sources.slice(0, -1), before.sources);
+    assert.deepEqual(target.sources.at(-1), {
+        id: 'explicit-adoption',
+        kind: 'manual',
+        authority: 'declared',
+        status: 'planned',
+        snapshot_uri: input.snapshotUri,
+        sha256: input.snapshotSha256,
+    });
+    for (const group of [
+        'services',
+        'security_schemes',
+        'models',
+        'operations',
+    ]) {
+        for (const entity of target[group]) {
+            assert.equal(entity.status, 'planned');
+            for (const proof of entity.evidence.filter(
+                (entry) => entry.source_id === 'explicit-adoption'
+            ))
+                assert.deepEqual(
+                    resolveObservationPointer(input.definition, proof.locator),
+                    input.definition[proof.locator.slice(1)]
+                );
+        }
+    }
+});
+
+for (const variant of ['dispatch', 'observatory']) {
+    test(`adoption 1.1 sans perte : ${variant}, maps typées, null et alias`, async (t) => {
+        const fixture = await observedBackendFixture(t, variant);
+        const { contract } = await compileRuntimeObservationBackend(
+            fixture.options
+        );
+        const input = adoptionInputs(contract);
+        const target = compileReferenceBackendAdoption(input);
+        assert.equal(target.schema_version, '1.1.0');
+        assert.deepEqual(
+            withoutAdoptionDelta(target),
+            withoutAdoptionDelta(contract)
+        );
+        assert.ok(target.models.some((model) => model.additional_properties));
+        assert.deepEqual(
+            target.services[0].runtime_binding,
+            contract.services[0].runtime_binding
+        );
+        assert.ok(
+            target.sources
+                .slice(0, -1)
+                .every((source) => source.status === 'reference')
+        );
+    });
+}
+
+test('adoption : le hash exact de la base est obligatoire', () => {
+    const input = adoptionInputs();
+    input.basisSha256 = 'b'.repeat(64);
+    assert.throws(
+        () => compileReferenceBackendAdoption(input),
+        /^ObservationError: OBS_HASH$/
+    );
+});
+
+test('adoption : refuse promotion implicite, dérive et clés héritées', () => {
+    const mutations = [
+        (input) => {
+            input.definition.contract.status = 'implemented';
+        },
+        (input) => {
+            input.definition.contract.status = 'verified-live';
+        },
+        (input) => {
+            input.definition.source.authority = 'observational';
+        },
+        (input) => {
+            input.definition.source.id = input.basis.sources[0].id;
+        },
+        (input) => {
+            input.definition.operations = [];
+        },
+        (input) => {
+            input.definition.decision.toString = 'PRIVATE_SENTINEL';
+        },
+        (input) => {
+            input.definition.basis.snapshot_uri = '../escape.json';
+        },
+        (input) => {
+            input.basis.toString = 'PRIVATE_SENTINEL';
+        },
+        (input) => {
+            input.basis.models[0].status = 'planned';
+        },
+    ];
+    for (const mutate of mutations) {
+        const input = adoptionInputs();
+        mutate(input);
+        assert.throws(
+            () => compileReferenceBackendAdoption(input),
+            (error) => {
+                assert.match(error.message, /^OBS_[A-Z]+$/);
+                assert.equal(String(error).includes('PRIVATE_SENTINEL'), false);
+                return true;
+            }
+        );
+    }
+    assert.throws(() => compile(adoptionInputs().definition));
+});
+
+test('adoption : le nom légitime toString reste un champ de modèle', () => {
+    const reference = definition();
+    reference.contract.status = 'reference';
+    reference.source.authority = 'observational';
+    reference.models[0].fields[0].name = 'toString';
+    const basis = compile(reference);
+    const target = compileReferenceBackendAdoption(adoptionInputs(basis));
+    assert.equal(target.models[0].fields[0].name, 'toString');
 });
