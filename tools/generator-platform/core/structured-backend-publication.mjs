@@ -1,4 +1,11 @@
 import { createHash } from 'node:crypto';
+import { compileRuntimeObservationBackend } from '../adapters/runtime-observation-backend-adapter.mjs';
+import { loadObservedBackendInputs } from './runtime-observation-backend-inputs.mjs';
+import {
+    observationInputPrimitives as observationIO,
+    observationDiagnostic,
+    rejectObservation,
+} from './runtime-observation-evidence.mjs';
 import { lstat, readFile, realpath } from 'node:fs/promises';
 import { basename, dirname, relative, resolve, sep } from 'node:path';
 
@@ -138,7 +145,21 @@ export async function planStructuredBackendPublication({
     outputPath,
     backendContractSchema,
     adapter = 'structured',
+    privateRoot,
+    snapshotId,
 }) {
+    if (adapter === 'runtime-observation') {
+        return planObservedBackendPublication({
+            workspaceRoot,
+            targetRoot,
+            definitionPath,
+            outputPath,
+            backendContractSchema,
+            privateRoot,
+            snapshotId,
+            adapter,
+        });
+    }
     const context = await beginCompilationContext({
         workspaceRoot,
         targetRoot,
@@ -202,17 +223,23 @@ export async function planStructuredBackendPublication({
 }
 
 export async function publishStructuredBackendContract(options) {
-    const plan = await planStructuredBackendPublication(options);
-    if (options.planId !== plan.plan_id)
-        fail('reviewed plan id is stale or invalid');
+    try {
+        const plan = await planStructuredBackendPublication(options);
+        if (options.planId !== plan.plan_id)
+            fail('reviewed plan id is stale or invalid');
 
-    return publishCompilationWithContext(
-        options,
-        plan,
-        planStructuredBackendPublication,
-        publishDocument,
-        fail
-    );
+        return await publishCompilationWithContext(
+            options,
+            plan,
+            planStructuredBackendPublication,
+            publishDocument,
+            fail
+        );
+    } catch (error) {
+        if (options.adapter === 'runtime-observation')
+            rejectObservation(observationDiagnostic(error));
+        throw error;
+    }
 }
 
 export function publicBackendPublicationPlan(plan) {
@@ -225,4 +252,115 @@ export function publicBackendPublicationPlan(plan) {
         output: plan.output,
         output_sha256: plan.output_sha256,
     };
+}
+
+// Each source capsule uses the existing single-document publication protocol.
+// The backend plan is consumable only after all exact capsules exist. No
+// directory transaction, network proof or target status promotion is implied.
+async function planObservedBackendPublication(options) {
+    try {
+        if (!options.targetRoot || !options.privateRoot)
+            rejectObservation('OBS_ROOT');
+        const input = options.snapshotId
+            ? await loadObservedBackendInputs(options)
+            : await compileRuntimeObservationBackend(options);
+        const context = await beginCompilationContext(options);
+        if (sha256(context.toolsRoot) !== input.toolsRootHash)
+            rejectObservation('OBS_ROOT');
+        assertCompilationPaths(
+            context,
+            options.definitionPath,
+            options.outputPath
+        );
+        const root = context.productRoot;
+        const output = await resolveOutput(root, options.outputPath);
+        let content;
+        let document;
+        if (options.snapshotId) {
+            const snapshot = input.snapshots.find(
+                (entry) => entry.id === options.snapshotId
+            );
+            if (!snapshot || snapshot.path !== output.relative)
+                rejectObservation('OBS_BINDING');
+            content = snapshot.content;
+            document = { sources: [] };
+            for (const other of input.snapshots) {
+                if (other.id === options.snapshotId) continue;
+                try {
+                    await lstat(resolve(root, other.path));
+                } catch (error) {
+                    if (error.code === 'ENOENT') continue;
+                    throw error;
+                }
+                const bytes = await observationIO.boundedFile(
+                    root,
+                    other.path,
+                    65536
+                );
+                if (sha256(bytes) !== other.sha256)
+                    rejectObservation('OBS_HASH');
+                document.sources.push({
+                    snapshot_uri: other.path,
+                    sha256: other.sha256,
+                });
+            }
+        } else {
+            document = input.contract;
+            const errors = await verifyBackendContractSnapshots(
+                document,
+                root,
+                (absolute) =>
+                    observationIO.boundedFile(
+                        root,
+                        relative(root, absolute).split(sep).join('/'),
+                        65536
+                    )
+            );
+            if (errors.length) rejectObservation('OBS_HASH');
+            content = Buffer.from(serializeCanonicalBackendContract(document));
+        }
+        const compilationContext = await bindCompilationContext(context, {
+            kind: 'backend',
+            sourcePath: options.definitionPath,
+            sourceContent: input.definitionBytes,
+            outputPath: options.outputPath,
+            document,
+            schemas: { 'backend-contract': options.backendContractSchema },
+            inputReader: (sourceRoot, path) =>
+                observationIO.boundedFile(sourceRoot, path, 65536),
+            privateDigest: input.privateDigest,
+        });
+        const outputSha256 = sha256(content);
+        const sourceSha256 = sha256(input.definitionBytes);
+        const planId = sha256(
+            JSON.stringify({
+                adapter: options.adapter,
+                snapshot_id: options.snapshotId ?? null,
+                definition: options.definitionPath,
+                source_sha256: sourceSha256,
+                output: output.relative,
+                output_sha256: outputSha256,
+                compilation_context_sha256: compilationContext.sha256,
+            })
+        );
+        return {
+            plan_id: planId,
+            compilation_context: compilationContext,
+            adapter: options.adapter,
+            definition: options.definitionPath,
+            source_sha256: sourceSha256,
+            output: output.relative,
+            output_sha256: outputSha256,
+            candidate: resolve(
+                output.parent,
+                `.${basename(output.absolute)}.${planId}.candidate`
+            ),
+            content,
+            contract: input.contract,
+            outputAbsolute: output.absolute,
+            outputParent: output.parent,
+        };
+    } catch (error) {
+        rejectObservation(observationDiagnostic(error));
+    }
 }

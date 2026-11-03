@@ -185,3 +185,18 @@ test('l’empreinte de définition dépend des octets exacts, pas du JSON interp
         structuredDefinitionSha256('{ "a": 1 }\n')
     );
 });
+
+test('historical structured definition cannot silently opt in to backend 1.1 features', () => {
+    const value = definition();
+    value.models[0].fields[0].format = 'email';
+    assert.throws(
+        () =>
+            compileStructuredBackendDefinition({
+                definition: value,
+                snapshotUri: 'contracts/input.json',
+                snapshotSha256: 'a'.repeat(64),
+                backendContractSchema: schema,
+            }),
+        /require backend-contract 1.1.0/
+    );
+});

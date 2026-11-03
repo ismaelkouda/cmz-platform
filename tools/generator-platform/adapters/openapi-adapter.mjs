@@ -693,3 +693,16 @@ export function compileOpenApiBackendContract({
         fail('#', `canonical projection rejected:\n${errors.join('\n')}`);
     return contract;
 }
+
+// R1 composes these native projections after bounded input/identity checks.
+// The historical full-contract compiler retains its existing behavior.
+export const selectedOpenApiPrimitives = Object.freeze({
+    projectModels,
+    projectRequest,
+    projectSecurity,
+    projectAccess,
+    canonicalId,
+    localReferenceName,
+    resolveComponent,
+    methods: Object.freeze([...HTTP_METHODS]),
+});

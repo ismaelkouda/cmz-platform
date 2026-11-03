@@ -228,3 +228,50 @@ test('refuse définition et dossier de sortie symboliques', async () => {
         /symbolic path component forbidden/
     );
 });
+
+test('runtime-observation CLI requires explicit private inputs and separates snapshot publication', async () => {
+    const common = [
+        '--adapter',
+        'runtime-observation',
+        '--definition',
+        'descriptions/in.json',
+        '--out',
+        'descriptions/out.json',
+        '--dry-run',
+    ];
+    assert.equal(
+        parseArgs([
+            ...common,
+            '--private-root',
+            '/private/fixture',
+            '--snapshot',
+            'openapi',
+        ]).snapshotId,
+        'openapi'
+    );
+    assert.throws(() => parseArgs([...common, '--snapshot', 'other']));
+    assert.throws(() =>
+        parseArgs([
+            '--adapter',
+            'structured',
+            '--definition',
+            'a.json',
+            '--out',
+            'b.json',
+            '--dry-run',
+            '--private-root',
+            '/private/fixture',
+        ])
+    );
+    await assert.rejects(
+        () =>
+            planStructuredBackendPublication({
+                adapter: 'runtime-observation',
+                workspaceRoot: '/',
+                definitionPath: 'a.json',
+                outputPath: 'b.json',
+                backendContractSchema: schema,
+            }),
+        /OBS_ROOT/
+    );
+});

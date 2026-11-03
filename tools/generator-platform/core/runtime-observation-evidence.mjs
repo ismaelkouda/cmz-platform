@@ -61,6 +61,10 @@ const CODES = new Set([
     'OBS_BINDING',
     'OBS_ASSERTION',
     'OBS_INTERNAL',
+    'OBS_MODELS',
+    'OBS_OPENAPI',
+    'OBS_COMPLEMENT',
+    'OBS_CONFLICT',
 ]);
 
 class ObservationError extends Error {
@@ -124,7 +128,7 @@ async function boundedFile(root, path, limit) {
             const { bytesRead } = await handle.read(
                 buffer,
                 length,
-                buffer.length - length,
+                Math.min(65536, buffer.length - length),
                 length
             );
             if (!bytesRead) break;
@@ -152,7 +156,7 @@ async function boundedFile(root, path, limit) {
 // A resource preflight, NOT a second JSON/YAML parser: accept only JSON flow
 // characters outside double-quoted strings, and bound nesting/tokens BEFORE
 // calling the existing parser. Grammar and duplicate keys remain its job.
-function preflight(text) {
+function preflight(text, limits = OBSERVATION_LIMITS) {
     let quoted = false;
     let escaped = false;
     let depth = 0;
@@ -164,7 +168,7 @@ function preflight(text) {
                 quoted = false;
                 continue;
             }
-            if (++length > OBSERVATION_LIMITS.stringLength) fail('OBS_LIMIT');
+            if (++length > limits.stringLength) fail('OBS_LIMIT');
             if (escaped) escaped = false;
             else if (char === '\\') escaped = true;
         } else if (char === '"') {
@@ -174,50 +178,43 @@ function preflight(text) {
         } else if (char === '{' || char === '[') {
             depth += 1;
             tokens += 1;
-            if (depth > OBSERVATION_LIMITS.depth) fail('OBS_LIMIT');
+            if (depth > limits.depth) fail('OBS_LIMIT');
         } else if (char === '}' || char === ']') {
             depth -= 1;
             if (depth < 0) fail('OBS_PARSE');
         } else if (char === ',' || char === ':') tokens += 1;
         else if (!/[ \t\r\n0-9.eE+\-truefalsn]/.test(char)) fail('OBS_PARSE');
-        if (tokens > OBSERVATION_LIMITS.nodes) fail('OBS_LIMIT');
+        if (tokens > (limits.tokens ?? limits.nodes)) fail('OBS_LIMIT');
     }
     if (quoted || depth !== 0 || !text.trimStart().startsWith('{'))
         fail('OBS_PARSE');
 }
 
-function boundValue(value) {
+function boundValue(value, limits = OBSERVATION_LIMITS) {
     const pending = [[value, 0]];
     let count = 0;
     while (pending.length) {
         const [current, depth] = pending.pop();
-        if (
-            ++count > OBSERVATION_LIMITS.nodes ||
-            depth > OBSERVATION_LIMITS.depth
-        )
-            fail('OBS_LIMIT');
-        if (
-            typeof current === 'string' &&
-            current.length > OBSERVATION_LIMITS.stringLength
-        )
+        if (++count > limits.nodes || depth > limits.depth) fail('OBS_LIMIT');
+        if (typeof current === 'string' && current.length > limits.stringLength)
             fail('OBS_LIMIT');
         if (typeof current === 'number' && !Number.isFinite(current))
             fail('OBS_SCHEMA');
         if (!current || typeof current !== 'object') continue;
         const children = Object.values(current);
-        if (children.length > 256) fail('OBS_LIMIT');
+        if (children.length > (limits.width ?? 256)) fail('OBS_LIMIT');
         for (const child of children) {
             pending.push([child, depth + 1]);
         }
     }
 }
 
-function parse(bytes) {
+function parse(bytes, limits = OBSERVATION_LIMITS) {
     try {
         const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-        preflight(text);
+        preflight(text, limits);
         const value = parseStructuredSource(text, 'observation');
-        boundValue(value);
+        boundValue(value, limits);
         return value;
     } catch (error) {
         if (error instanceof ObservationError) throw error;
@@ -227,7 +224,7 @@ function parse(bytes) {
 }
 
 function parseSchema(bytes) {
-    const schema = parse(bytes);
+    const schema = parse(bytes, { ...OBSERVATION_LIMITS, nodes: 32768 });
     // parse() has already bounded this tree. The native validator performs
     // properties?.[key]: make every schema property table own-only, including
     // tables under $defs, items and combinators. This changes lookup, not the
@@ -560,3 +557,126 @@ export async function inspectRuntimeObservations(options) {
         fail('OBS_INTERNAL');
     }
 }
+
+// R1 composes the existing bounded reader/parser and own-only native schemas.
+// These helpers expose no unbounded file read or raw diagnostic to the adapter.
+export { fail as rejectObservation, schemaCheck as assertObservationSchema };
+
+export async function loadObservationModelInputs(options) {
+    try {
+        if (
+            !options ||
+            typeof options !== 'object' ||
+            Array.isArray(options) ||
+            Object.keys(options).some(
+                (key) => !['targetRoot', 'mappingPath'].includes(key)
+            )
+        )
+            fail('OBS_ARGUMENTS');
+        const { targetRoot, mappingPath } = options;
+        const { toolsRoot, marker, markerHash } = await context(targetRoot);
+        const schema = parseSchema(
+            await boundedFile(
+                toolsRoot,
+                SCHEMAS + 'observation-evidence.schema.json',
+                OBSERVATION_LIMITS.markerBytes
+            )
+        );
+        const bytes = await boundedFile(
+            targetRoot,
+            inputPath(mappingPath, marker),
+            OBSERVATION_LIMITS.documentBytes
+        );
+        const selection = parse(bytes);
+        schemaCheck(selection, schema, 'modelSelection');
+        unique(selection.bindings, 'fact_id', OBSERVATION_LIMITS.facts);
+        const inputs = [
+            selection.observations,
+            selection.openapi,
+            selection.annotations,
+        ];
+        unique(inputs, 'path', 3);
+        if (inputs.some((input) => input.path === mappingPath))
+            fail('OBS_FILE');
+        if (selection.openapi.id === selection.annotations.id)
+            fail('OBS_IDENTITY');
+        const documents = [];
+        for (const input of inputs) {
+            const content = await boundedFile(
+                targetRoot,
+                inputPath(input.path, marker),
+                OBSERVATION_LIMITS.documentBytes
+            );
+            if (sha256(content) !== input.sha256) fail('OBS_HASH');
+            documents.push(parse(content));
+        }
+        schemaCheck(documents[2], schema, 'modelAnnotations');
+        const fragment = documents[2].provenance.fragment;
+        if (
+            inputs.some((input) => input.path === fragment.path) ||
+            fragment.path === mappingPath
+        )
+            fail('OBS_FILE');
+        const sourceBytes = await boundedFile(
+            targetRoot,
+            inputPath(fragment.path, marker),
+            OBSERVATION_LIMITS.documentBytes
+        );
+        if (sha256(sourceBytes) !== fragment.sha256) fail('OBS_HASH');
+        const lines = new TextDecoder('utf-8', { fatal: true })
+            .decode(sourceBytes)
+            .split('\n');
+        if (
+            fragment.last_line < fragment.first_line ||
+            fragment.last_line - fragment.first_line >= 120 ||
+            fragment.last_line > lines.length
+        )
+            fail('OBS_COMPLEMENT');
+        const inventory = await inspectRuntimeObservations({
+            targetRoot,
+            selectionPath: selection.observations.path,
+        });
+        if (
+            inventory.selection_sha256 !== selection.observations.sha256 ||
+            inventory.workspace_id !== marker.workspace_id ||
+            sha256(
+                await boundedFile(
+                    targetRoot,
+                    MARKER,
+                    OBSERVATION_LIMITS.markerBytes
+                )
+            ) !== markerHash
+        )
+            fail('OBS_ROOT');
+        const backendSchema = parseSchema(
+            await boundedFile(
+                toolsRoot,
+                SCHEMAS + 'backend-contract.schema.json',
+                OBSERVATION_LIMITS.markerBytes
+            )
+        );
+        return {
+            selection,
+            inventory,
+            openapi: documents[1],
+            annotations: documents[2],
+            schema,
+            backendSchema,
+            mappingHash: sha256(bytes),
+        };
+    } catch (error) {
+        if (error instanceof ObservationError) throw error;
+        fail('OBS_INTERNAL');
+    }
+}
+
+// R2 reuses the same physical IO/parser/schema checks with explicit local caps.
+// Existing R1 callers keep every default unchanged.
+export const observationInputPrimitives = Object.freeze({
+    boundedFile,
+    parse,
+    parseSchema,
+    context,
+    inputPath,
+    identityChain,
+});

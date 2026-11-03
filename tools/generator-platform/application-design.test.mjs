@@ -1,3 +1,5 @@
+import { compileRuntimeObservationBackend } from './adapters/runtime-observation-backend-adapter.mjs';
+import { observedBackendFixture } from './test-support/runtime-observation-backend-fixture.mjs';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -264,5 +266,21 @@ test('vérifie les snapshots et refuse hash périmé ou lien symbolique', async 
                 workspaceRoot: linked.root,
             })
         ).some((error) => error.includes('symbolic path forbidden'))
+    );
+});
+
+test('R2 reference contract cannot drive an application by accidental lifecycle promotion', async (t) => {
+    const observed = await observedBackendFixture(t);
+    const { contract } = await compileRuntimeObservationBackend(
+        observed.options
+    );
+    const data = await fixture();
+    const reference = data.design.backend_contracts[0];
+    const entry = data.contracts.get(reference.id);
+    data.contracts.set(reference.id, { ...entry, role: 'reference', contract });
+    assert.ok(
+        validate(data.design, data.contracts).some((error) =>
+            error.includes('reference backends cannot drive implementation')
+        )
     );
 });

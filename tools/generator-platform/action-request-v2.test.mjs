@@ -433,3 +433,43 @@ test('la CLI garde une surface nominale fermée', () => {
         /unknown argument/
     );
 });
+
+test('backend email format requires the existing native email validation rule', () => {
+    const contract = structuredClone(activeBackend);
+    const operation = contract.operations.find(
+        (entry) =>
+            entry.id ===
+            activeDefinition.operations[0].operation_ref.operation_id
+    );
+    const model = contract.models.find(
+        (entry) => entry.id === operation.request.body.model_id
+    );
+    const definition = structuredClone(activeDefinition);
+    const binding = definition.operations[0].input.fields[0];
+    const field = model.fields.find(
+        (entry) => entry.name === binding.body_field
+    );
+    field.format = 'email';
+    binding.validations = binding.validations.filter(
+        (rule) => rule.kind !== 'format'
+    );
+    const check = () =>
+        validateActionRequestV2Definition(definition, contract, {
+            backendContractSha256: definition.backend_contract.sha256,
+            backendContractUri: definition.backend_contract.uri,
+        });
+    assert.ok(
+        check().some((error) =>
+            error.includes('format must match backend field')
+        )
+    );
+    binding.validations.push({ kind: 'format', format: 'email' });
+    assert.equal(
+        check().some((error) =>
+            error.includes('format must match backend field')
+        ),
+        false
+    );
+    field.type = { kind: 'primitive', name: 'null' };
+    assert.ok(check().some((error) => error.includes('primitive')));
+});
