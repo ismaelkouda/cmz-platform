@@ -450,3 +450,63 @@ complément ne qualifie pas toutes les branches et un hash n'interprète pas le
 code. La compilation application-design reste distincte ; un backend reference
 ne peut pas piloter une implémentation cible par promotion implicite. La
 qualification vivante et la décision de cycle de vie restent des étapes relues.
+
+## Adoption explicite d'un contrat de référence
+
+Un contrat observé `reference` ne devient pas implicitement une cible de
+`application-design`, même pour une conception en brouillon. L'option
+`--adapter structured --adopt-reference` permet une déclaration distincte :
+l'application prévoit de consommer le graphe exact d'une référence, au statut
+`planned`. Elle ne prouve ni l'implémentation ni un backend vivant. La voie
+structured 1.0 historique et l'adaptateur runtime-observation restent inchangés.
+
+La définition d'adoption est un `backend-contract-definition` 1.1 fermé à six
+clés : `schema_version`, `kind`, `contract`, `source`, `basis`, `decision`.
+`contract` déclare explicitement `id`, `title`, `version`, `description` et
+`status: planned`. `source` contient seulement un identifiant distinct et
+`authority: declared`. `basis` et `decision` contiennent chacun un
+`snapshot_uri` relatif et un `sha256`. La base est un contrat canonique 1.0 ou
+1.1, au statut `reference`, dont toutes les sources restent observationnelles.
+La décision est un document source JSON non vide, versionné et épinglé ; son
+contenu ne déclenche aucune approbation automatique. La définition déclarée et
+la revue explicite du plan portent la décision d'adoption.
+
+Exemple de séquence, dans une racine de compilation privée déjà préparée :
+
+```sh
+node tools/compile-backend-contract.mjs \
+  --adapter structured --adopt-reference --target-root "$racine_privee" \
+  --definition descriptions/auth.adoption.json \
+  --out descriptions/auth.target.backend.json --dry-run
+```
+
+Après revue du plan, reprendre les mêmes arguments avec `--apply <plan_id>`. La
+sortie est un nouveau fichier ; elle ne remplace ni la référence, ni la
+définition, ni la décision, ni une capsule. La reprise du même plan est
+idempotente par le protocole natif de publication. Sans `--adopt-reference`, la
+nouvelle variante est refusée. Le mode exige une racine externe et refuse les
+options privées ou de snapshot de runtime-observation.
+
+Le delta canonique est fermé : identité et version déclarées, statut `planned`
+des entités, nouvelle source `manual / declared / planned`, preuves d'adoption
+résolvant `/basis` et `/decision` dans la définition. Méthodes, routes, types,
+nullabilité, maps typées, format email, permissions, réponses et alias runtime
+restent ceux de la base. Toutes les sources et preuves observées sont conservées
+; aucune ne devient `implemented` ou `verified-live`.
+
+Le mode est choisi avant toute lecture de la définition. Le lecteur borné
+existant limite la définition et la décision à 64 Kio chacune, la base à 1 Mio,
+les capsules à 64 Kio chacune, au plus 16 sources de référence et 2 Mio
+d'intrants uniques au total. Le précontrôle structurel du lecteur R2 précède le
+parseur natif ; ses budgets ne sont pas relevés. Les capsules sont hashées comme
+sources, sans interprétation de leur contenu. Les tables du schéma sont chargées
+par la primitive native sans prototype. Les rejets sont des diagnostics `OBS_*`
+fixes, sans message de parseur ou valeur de source.
+
+Le contexte de compilation ferme les empreintes et identités de la base, de la
+décision, de la définition, des capsules et du code et des schémas natifs. Il
+est recalculé sous le verrou existant avant publication. Une dérive rend le plan
+relu périmé ; elle ne permet ni de remplacer la source ni de poursuivre une
+publication sur un plan ancien. Le design doit ensuite référencer le nouveau
+fichier `planned` et son empreinte réelle. Les preuves d'usage, d'interface et
+de réseau vivant demeurent des étapes distinctes.

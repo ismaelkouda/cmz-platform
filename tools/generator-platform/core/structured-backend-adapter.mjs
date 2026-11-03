@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto';
 
 import { validateBackendContract } from './backend-contract.mjs';
+import { safeRelativePath } from './external-application-paths.mjs';
+import {
+    observationDiagnostic,
+    observationInputPrimitives,
+    rejectObservation,
+} from './runtime-observation-evidence.mjs';
 
 const TOP_LEVEL_KEYS = [
     'contract',
@@ -236,4 +242,124 @@ export function compileStructuredBackendDefinition({
 
 export function structuredDefinitionSha256(content) {
     return createHash('sha256').update(content).digest('hex');
+}
+
+// This is a declaration to consume an immutable reference, never a runtime
+// attestation. The existing canonical validator remains the lifecycle authority.
+export function assertReferenceAdoptionDefinition(definition) {
+    if (
+        !exactKeys(definition, [
+            'basis',
+            'contract',
+            'decision',
+            'kind',
+            'schema_version',
+            'source',
+        ]) ||
+        definition.schema_version !== '1.1.0' ||
+        definition.kind !== 'backend-contract-definition' ||
+        !exactKeys(definition.contract, [
+            'description',
+            'id',
+            'status',
+            'title',
+            'version',
+        ]) ||
+        definition.contract.status !== 'planned' ||
+        !exactKeys(definition.source, SOURCE_KEYS) ||
+        definition.source.authority !== 'declared'
+    )
+        rejectObservation('OBS_SCHEMA');
+    for (const key of ['basis', 'decision']) {
+        const reference = definition[key];
+        if (
+            !exactKeys(reference, ['sha256', 'snapshot_uri']) ||
+            !/^[a-f0-9]{64}$/.test(reference.sha256 ?? '') ||
+            typeof reference.snapshot_uri !== 'string' ||
+            reference.snapshot_uri.length === 0 ||
+            reference.snapshot_uri.length > 256
+        )
+            rejectObservation('OBS_SCHEMA');
+        try {
+            safeRelativePath(reference.snapshot_uri);
+        } catch {
+            rejectObservation('OBS_FILE');
+        }
+    }
+}
+
+export function compileReferenceBackendAdoption({
+    definition,
+    basis,
+    basisSha256,
+    snapshotUri,
+    snapshotSha256,
+    backendContractSchema,
+}) {
+    try {
+        assertReferenceAdoptionDefinition(definition);
+        if (basisSha256 !== definition.basis.sha256)
+            rejectObservation('OBS_HASH');
+        if (
+            !/^[a-f0-9]{64}$/.test(snapshotSha256 ?? '') ||
+            typeof snapshotUri !== 'string' ||
+            !snapshotUri ||
+            snapshotUri.length > 256
+        )
+            rejectObservation('OBS_SCHEMA');
+        // Reuse the native own-only schema loader, including nested properties.
+        const schema = observationInputPrimitives.parseSchema(
+            Buffer.from(JSON.stringify(backendContractSchema))
+        );
+        if (validateBackendContract(basis, schema).length)
+            rejectObservation('OBS_SCHEMA');
+        if (
+            basis.contract.status !== 'reference' ||
+            basis.sources.some(
+                (source) =>
+                    source.status !== 'reference' ||
+                    source.authority !== 'observational'
+            )
+        )
+            rejectObservation('OBS_BINDING');
+        const sourceId = definition.source.id;
+        if (basis.sources.some((source) => source.id === sourceId))
+            rejectObservation('OBS_IDENTITY');
+        const adoptionProofs = [
+            { source_id: sourceId, locator: '/basis' },
+            { source_id: sourceId, locator: '/decision' },
+        ];
+        const contract = structuredClone(basis);
+        // Preserve all semantics and all original evidence, including 1.1 types,
+        // null-only values, typed maps and runtime aliases. No field inference.
+        const pending = [contract];
+        while (pending.length) {
+            const current = pending.pop();
+            if (!current || typeof current !== 'object') continue;
+            if (Object.hasOwn(current, 'evidence'))
+                current.evidence.push(...structuredClone(adoptionProofs));
+            pending.push(...Object.values(current));
+        }
+        contract.contract = structuredClone(definition.contract);
+        for (const group of [
+            'services',
+            'security_schemes',
+            'models',
+            'operations',
+        ])
+            for (const entity of contract[group]) entity.status = 'planned';
+        contract.sources.push({
+            id: sourceId,
+            kind: 'manual',
+            authority: 'declared',
+            status: 'planned',
+            snapshot_uri: snapshotUri,
+            sha256: snapshotSha256,
+        });
+        if (validateBackendContract(contract, schema).length)
+            rejectObservation('OBS_SCHEMA');
+        return canonicalize(contract);
+    } catch (error) {
+        rejectObservation(observationDiagnostic(error));
+    }
 }
