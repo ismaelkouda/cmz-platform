@@ -105,7 +105,8 @@ async function collectInputs(
     sourceContent,
     document,
     kind,
-    inputReader
+    inputReader,
+    additionalInputs
 ) {
     const hashes = new Map([
         [inputPath(context, sourcePath), sha256(sourceContent)],
@@ -120,6 +121,7 @@ async function collectInputs(
         hashes.set(path, reference.sha256);
     };
     for (const source of document.sources ?? []) add(source);
+    for (const reference of additionalInputs) add(reference);
     if (kind === 'design') {
         for (const reference of document.backend_contracts ?? []) {
             add(reference);
@@ -160,6 +162,7 @@ export async function bindCompilationContext(
         schemas,
         inputReader = readProductFile,
         privateDigest,
+        additionalInputs = [],
     }
 ) {
     if (!context) return undefined;
@@ -170,7 +173,8 @@ export async function bindCompilationContext(
         sourceContent,
         document,
         kind,
-        inputReader
+        inputReader,
+        additionalInputs
     );
     if (inputs.some((input) => input.path === outputPath))
         fail('output must not replace a dependency');

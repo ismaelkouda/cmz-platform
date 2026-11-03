@@ -11,7 +11,16 @@ import {
     validateApplicationDesign,
     validateApplicationDesignWithDependencies,
 } from './core/application-design.mjs';
-import { writeApplicationDesignFixture } from './test-support/application-design-fixture.mjs';
+import {
+    backendDefinition,
+    sha256,
+    writeApplicationDesignFixture,
+} from './test-support/application-design-fixture.mjs';
+import {
+    compileReferenceBackendAdoption,
+    compileStructuredBackendDefinition,
+    serializeCanonicalBackendContract,
+} from './core/structured-backend-adapter.mjs';
 
 const applicationDesignSchema = JSON.parse(
     await readFile(
@@ -282,5 +291,85 @@ test('R2 reference contract cannot drive an application by accidental lifecycle 
         validate(data.design, data.contracts).some((error) =>
             error.includes('reference backends cannot drive implementation')
         )
+    );
+});
+
+test('une cible adoptée explicitement est consommable, la référence reste refusée', async () => {
+    const data = await fixture();
+    const sourceDefinition = backendDefinition();
+    sourceDefinition.contract.status = 'reference';
+    sourceDefinition.source.authority = 'observational';
+    const sourcePath = 'contracts/reference.definition.json';
+    const sourceBytes = Buffer.from(
+        JSON.stringify(sourceDefinition, null, 2) + '\n'
+    );
+    await writeFile(join(data.root, sourcePath), sourceBytes);
+    const reference = compileStructuredBackendDefinition({
+        definition: sourceDefinition,
+        snapshotUri: sourcePath,
+        snapshotSha256: sha256(sourceBytes),
+        backendContractSchema,
+    });
+    const referencePath = 'contracts/reference.backend.json';
+    const referenceBytes = Buffer.from(
+        serializeCanonicalBackendContract(reference)
+    );
+    await writeFile(join(data.root, referencePath), referenceBytes);
+    const binding = data.design.backend_contracts[0];
+    binding.snapshot_uri = referencePath;
+    binding.sha256 = sha256(referenceBytes);
+    const refused = await loadApplicationDesignDependencies(
+        data.design,
+        data.root,
+        backendContractSchema
+    );
+    assert.ok(refused.errors.some((error) => /reference|target/.test(error)));
+
+    const decisionPath = 'contracts/decision.json';
+    const decisionBytes = Buffer.from('{"decision":"adopt this reference"}\n');
+    await writeFile(join(data.root, decisionPath), decisionBytes);
+    const adoption = {
+        schema_version: '1.1.0',
+        kind: 'backend-contract-definition',
+        contract: {
+            ...reference.contract,
+            status: 'planned',
+            version: '1.0.1',
+        },
+        source: { id: 'clean-street-adoption', authority: 'declared' },
+        basis: { snapshot_uri: referencePath, sha256: sha256(referenceBytes) },
+        decision: { snapshot_uri: decisionPath, sha256: sha256(decisionBytes) },
+    };
+    const adoptionPath = 'contracts/adoption.json';
+    const adoptionBytes = Buffer.from(JSON.stringify(adoption, null, 2) + '\n');
+    await writeFile(join(data.root, adoptionPath), adoptionBytes);
+    const target = compileReferenceBackendAdoption({
+        definition: adoption,
+        basis: reference,
+        basisSha256: sha256(referenceBytes),
+        snapshotUri: adoptionPath,
+        snapshotSha256: sha256(adoptionBytes),
+        backendContractSchema,
+    });
+    const targetBytes = Buffer.from(serializeCanonicalBackendContract(target));
+    binding.snapshot_uri = 'contracts/target.backend.json';
+    binding.sha256 = sha256(targetBytes);
+    await writeFile(join(data.root, binding.snapshot_uri), targetBytes);
+    assert.deepEqual(
+        await validateApplicationDesignWithDependencies({
+            design: data.design,
+            applicationDesignSchema,
+            backendContractSchema,
+            workspaceRoot: data.root,
+        }),
+        []
+    );
+    assert.deepEqual(
+        await readFile(join(data.root, referencePath)),
+        referenceBytes
+    );
+    assert.equal(target.contract.status, 'planned');
+    assert.ok(
+        target.sources.every((source) => source.status !== 'verified-live')
     );
 });
