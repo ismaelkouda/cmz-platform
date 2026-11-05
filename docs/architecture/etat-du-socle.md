@@ -45,8 +45,8 @@ d'imports, `package.json`/`project.json`/paths TS. Voir son
 Vitest). Build production : `bunx nx run backoffice-angular:build:production`.
 
 <!-- BEGIN:GENERATED:bundle-metrics -->
-- **Bundle initial (production, raw)** : **752.77 kB** — source [`bundle-metrics.json`](../../apps/backoffice-angular/bundle-metrics.json) (mesuré 2026-11-02 via `bun run bundle:record` après build).
-- **ExcelJS (lazy)** : **943.66 kB** raw — hors budget initial.
+- **Bundle initial (production, raw)** : **754.66 kB** — source [`bundle-metrics.json`](../../apps/backoffice-angular/bundle-metrics.json) (mesuré 2026-11-03 via `bun run bundle:record` après build).
+- **ExcelJS (lazy)** : **944.5 kB** raw — hors budget initial.
 - **Budgets** (`project.json`) : warning `900kb` / error `1mb` — politique [ADR-0016](../adr/0016-politique-budget-bundle.md) (hausse interdite sans ADR).
 <!-- END:GENERATED:bundle-metrics -->
 
