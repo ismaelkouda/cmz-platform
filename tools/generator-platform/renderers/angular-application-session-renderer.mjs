@@ -526,7 +526,7 @@ import { ApplicationSessionMenu } from './session/session-menu';
         </header>
         <div class="layout" [class.authenticated]="session.connected()">
             @if (session.connected()) {
-                <nav id="application-navigation" aria-label="Navigation principale" [class.is-open]="menuOpen()" (keydown.escape)="closeMenu()">
+                <nav id="application-navigation" tabindex="-1" aria-label="Navigation principale" [class.is-open]="menuOpen()" (keydown.escape)="closeMenu()">
                     <app-session-menu [items]="session.menu()" />
                 </nav>
             }

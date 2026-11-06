@@ -239,6 +239,8 @@ jobs:
       # gate. Ce script couvre tout tools/**/*.mjs sauf trois zones à dette
       # pré-existante isolée : seos/** (vendored octet-stable), mock-server/**
       # (sous-package, 51 erreurs) et corpus/** (13 erreurs).
+      # Le répertoire généré tools/generator-platform/.stack-test-runtime/**
+      # est aussi exclu ; les applications gardent leurs cibles lint natives.
       - name: check:lint-tools (eslint sur tools/**/*.mjs)
         run: bun run check:lint-tools
 

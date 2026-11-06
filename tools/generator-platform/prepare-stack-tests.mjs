@@ -272,7 +272,7 @@ function sessionConsumers(data) {
             const fields = data.actions.get(action.operation_ref.operation_id)
                 .definition.operations[0].input.fields;
             const names = fields.map((field) => field.name);
-            components.push(`@Component({ selector: 'fixture-${page.path.slice(1)}', changeDetection: ChangeDetectionStrategy.OnPush,
+            components.push(`@Component({ selector: 'app-fixture-${page.path.slice(1)}', changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ReactiveFormsModule], providers: [...${name}Providers],
     template: \`<h1>${page.path.slice(1)}</h1><form [formGroup]="form" (ngSubmit)="submit()">
         @for (field of fields; track field) { <label>{{ field }}<input [attr.name]="field" [formControl]="form.controls[field]" [attr.aria-describedby]="field + '-error'"></label>
@@ -289,7 +289,7 @@ export class ${name} {
 }`);
         } else {
             const load = page.loads[0].id;
-            components.push(`@Component({ selector: 'fixture-catalogue', changeDetection: ChangeDetectionStrategy.OnPush, providers: [...${name}Providers], template: \`<h1>Catalogue</h1><ul>@for (item of page.${load}.items(); track item.id) { <li>{{ item.label }}</li> }</ul>\` })
+            components.push(`@Component({ selector: 'app-fixture-catalogue', changeDetection: ChangeDetectionStrategy.OnPush, providers: [...${name}Providers], template: \`<h1>Catalogue</h1><ul>@for (item of page.${load}.items(); track item.id) { <li>{{ item.label }}</li> }</ul>\` })
 export class ${name} { readonly page = inject(${name}Composition); constructor() { this.page.${load}.load(); } }`);
         }
         entries.push(`${JSON.stringify(id)}: ${name}`);

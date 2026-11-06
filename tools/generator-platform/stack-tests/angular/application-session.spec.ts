@@ -148,16 +148,37 @@ for (const { value: runtime, appType, sessionToken, fixture } of runtimes) {
             if (!toggle) throw new Error('Missing navigation toggle');
             toggle.click();
             component.detectChanges();
+            await component.whenStable();
             expect(toggle.getAttribute('aria-expanded')).toBe('true');
-            const navigation = root.querySelector('nav');
+            const navigation = root.querySelector<HTMLElement>('nav');
             expect(navigation).not.toBeNull();
             if (!navigation) throw new Error('Missing navigation');
-            navigation.dispatchEvent(
+            expect(navigation.isConnected).toBe(true);
+            expect(navigation.getAttribute('tabindex')).toBe('-1');
+            expect(navigation.tabIndex).toBe(-1);
+            const view = navigation.ownerDocument.defaultView;
+            expect(view).not.toBeNull();
+            if (!view) throw new Error('Missing document view');
+            const style = view.getComputedStyle(navigation);
+            expect(style.display).not.toBe('none');
+            expect(style.visibility).not.toBe('hidden');
+            navigation.focus();
+            expect(document.activeElement).toBe(navigation);
+            const catalogueLink = navigation.querySelector<HTMLAnchorElement>(
+                'a[href="/catalogue"]'
+            );
+            expect(catalogueLink).not.toBeNull();
+            if (!catalogueLink) throw new Error('Missing catalogue link');
+            catalogueLink.focus();
+            expect(document.activeElement).toBe(catalogueLink);
+            const routeBeforeEscape = router.url;
+            catalogueLink.dispatchEvent(
                 new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
             );
             component.detectChanges();
             expect(toggle.getAttribute('aria-expanded')).toBe('false');
             expect(document.activeElement).toBe(toggle);
+            expect(router.url).toBe(routeBeforeEscape);
             const logout = [...root.querySelectorAll('button')].find((button) =>
                 button.textContent?.includes('Se déconnecter')
             );
@@ -215,6 +236,13 @@ for (const { value: runtime, appType, sessionToken, fixture } of runtimes) {
         it('parcours DOM consommé : formulaires, reconnexion, tableau de bord puis vraie composition catalogue', async () => {
             const { component, router, http, session } = configure();
             const root = component.nativeElement as HTMLElement;
+            const fixtureHosts: Readonly<Record<string, string>> = {
+                '/enter': 'app-fixture-enter',
+                '/agree': 'app-fixture-agree',
+                '/rotate': 'app-fixture-rotate',
+                '/catalogue': 'app-fixture-catalogue',
+            };
+            const consumedHosts = new Set<string>();
             const send = (values: Readonly<Record<string, string>>) => {
                 component.detectChanges();
                 for (const [name, value] of Object.entries(values)) {
@@ -229,6 +257,15 @@ for (const { value: runtime, appType, sessionToken, fixture } of runtimes) {
                 const form = root.querySelector('form');
                 expect(form).not.toBeNull();
                 if (!form) throw new Error('Missing form');
+                const expectedHost = fixtureHosts[router.url];
+                expect(expectedHost).toBeDefined();
+                if (!expectedHost)
+                    throw new Error('Missing fixture host route');
+                const host = root.querySelector<HTMLElement>(expectedHost);
+                expect(host).not.toBeNull();
+                if (!host) throw new Error('Missing consumed fixture host');
+                expect(form.closest(expectedHost)).toBe(host);
+                consumedHosts.add(expectedHost);
                 form.dispatchEvent(
                     new Event('submit', { bubbles: true, cancelable: true })
                 );
@@ -319,6 +356,22 @@ for (const { value: runtime, appType, sessionToken, fixture } of runtimes) {
             await component.whenStable();
             component.detectChanges();
             expect(root.textContent).toContain('Observed fixture row');
+            const catalogueHost = root.querySelector<HTMLElement>(
+                'app-fixture-catalogue'
+            );
+            expect(catalogueHost).not.toBeNull();
+            if (!catalogueHost)
+                throw new Error('Missing catalogue fixture host');
+            expect(catalogueHost.textContent).toContain('Observed fixture row');
+            consumedHosts.add('app-fixture-catalogue');
+            expect([...consumedHosts].sort()).toEqual(
+                [
+                    'app-fixture-enter',
+                    'app-fixture-agree',
+                    'app-fixture-rotate',
+                    'app-fixture-catalogue',
+                ].sort()
+            );
         });
         it('une nouvelle injection ne récupère aucun jeton après un rechargement', () => {
             const { session } = configure();
