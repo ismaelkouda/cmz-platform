@@ -72,7 +72,7 @@ async function pinned(root, reference, cap, limits = capsuleLimits) {
 // JSON is parsed only after the physical read cap and native resource preflight.
 // Selection walks requests/security only; unrelated operations and responses are
 // never projected, normalized, or copied into the public capsule.
-function selectOpenApi(document, selections, basePath) {
+function selectOpenApi(document, selections, basePath, extended = false) {
     if (!/^3\.(?:0|1|2)\.[0-9]+$/.test(document.openapi ?? ''))
         fail('OBS_OPENAPI');
     const capsule = {
@@ -81,6 +81,7 @@ function selectOpenApi(document, selections, basePath) {
         components: Object.create(null),
     };
     const provenance = [];
+    const responseSelections = [];
     const visited = new Set();
     function reference(ref) {
         if (
@@ -154,6 +155,39 @@ function selectOpenApi(document, selections, basePath) {
         // must nevertheless exist in the original operation's response table.
         if (!own(operation.responses, String(selection.status)))
             fail('OBS_BINDING');
+        // A structural witness of a failure must never become a success.
+        if (selection.status < 200 || selection.status > 299)
+            fail('OBS_BINDING');
+        if (extended) {
+            responseSelections.push({
+                operation_id: selection.id,
+                status: selection.status,
+                outcome: 'success',
+                documentation: 'openapi',
+            });
+            for (const response of selection.error_responses) {
+                const documented = Object.hasOwn(
+                    operation.responses ?? {},
+                    String(response.status)
+                );
+                const entry = own(operation.responses, String(response.status));
+                if (
+                    documented &&
+                    (!entry ||
+                        typeof entry !== 'object' ||
+                        Array.isArray(entry))
+                )
+                    fail('OBS_OPENAPI');
+                if (documented !== (response.documentation === 'openapi'))
+                    fail('OBS_BINDING');
+                responseSelections.push({
+                    operation_id: selection.id,
+                    status: response.status,
+                    outcome: 'error',
+                    documentation: response.documentation,
+                });
+            }
+        }
         for (const key of ['parameters', 'requestBody']) {
             if (Object.hasOwn(operation, key))
                 selected[key] = clean(operation[key]);
@@ -182,7 +216,59 @@ function selectOpenApi(document, selections, basePath) {
     }
     if (Object.keys(capsule.components.schemas ?? {}).length > 32)
         fail('OBS_LIMIT');
-    return { document: capsule, pointers: [...new Set(provenance)].sort() };
+    return {
+        document: capsule,
+        pointers: [...new Set(provenance)].sort(),
+        ...(extended ? { response_selections: responseSelections } : {}),
+    };
+}
+
+function assertErrorSelections(definition, claims, witnesses) {
+    if (definition.schema_version !== '1.3.0') return;
+    const fragments = new Map(
+        claims.fragments.map((fragment) => [fragment.id, fragment])
+    );
+    for (const selection of definition.operations) {
+        const matches = claims.operations.filter(
+            (operation) => operation.id === selection.id
+        );
+        if (matches.length !== 1) fail('OBS_COMPLEMENT');
+        const declared = matches[0].error_responses ?? [];
+        const responses = selection.error_responses;
+        unique(responses.map((response) => response.status));
+        unique(declared.map((response) => response.status));
+        if (declared.length !== responses.length) fail('OBS_COMPLEMENT');
+        for (const response of responses) {
+            const declaration = declared.find(
+                (candidate) => candidate.status === response.status
+            );
+            if (
+                !declaration ||
+                declaration.model_id !== response.model_id ||
+                !declaration.evidence.length
+            )
+                fail('OBS_COMPLEMENT');
+            const observed = pointer(witnesses, response.shape_pointer);
+            if (
+                !witnesses.cases.includes(observed) ||
+                observed.id !== response.case_id ||
+                observed.method !== selection.method ||
+                observed.path !== selection.path ||
+                observed.status !== response.status
+            )
+                fail('OBS_BINDING');
+            // For an undocumented status the server declaration is mandatory,
+            // in addition to the separately pinned structural capture. PHP is
+            // the supported source language of this explicit 1.3 variant.
+            if (
+                response.documentation === 'observed-only' &&
+                !declaration.evidence.some((entry) =>
+                    fragments.get(entry.source_id)?.path.endsWith('.php')
+                )
+            )
+                fail('OBS_COMPLEMENT');
+        }
+    }
 }
 
 function validateBinding(value, definition, openapi) {
@@ -325,6 +411,11 @@ export async function loadObservedBackendInputs({
         unique(definition.operations.map((operation) => operation.id));
         if (!definition.operations.length || definition.operations.length > 8)
             fail('OBS_LIMIT');
+        if (definition.schema_version === '1.3.0')
+            for (const operation of definition.operations)
+                unique(
+                    operation.error_responses.map((response) => response.status)
+                );
         const paths = Object.values(definition.snapshots);
         unique([definitionPath, ...paths]);
         for (const snapshot of paths) io.inputPath(snapshot, context.marker);
@@ -359,6 +450,8 @@ export async function loadObservedBackendInputs({
             schema,
             'backendAnnotations'
         );
+        if (annotations.value.schema_version !== definition.schema_version)
+            fail('OBS_BINDING');
         unique(annotations.value.fragments.map((fragment) => fragment.id));
         if (
             !annotations.value.fragments.length ||
@@ -422,12 +515,14 @@ export async function loadObservedBackendInputs({
         const selected = selectOpenApi(
             source.value,
             definition.operations,
-            definition.openapi.base_path
+            definition.openapi.base_path,
+            definition.schema_version === '1.3.0'
         );
         const claims = safeClaims(
             annotations.value,
             annotations.value.fragments
         );
+        assertErrorSelections(definition, annotations.value, observation.value);
         const values = {
             openapi: {
                 kind: 'selected-openapi',
@@ -466,6 +561,9 @@ export async function loadObservedBackendInputs({
             schema,
             snapshots,
             selected: selected.document,
+            ...(definition.schema_version === '1.3.0'
+                ? { responseSelections: selected.response_selections }
+                : {}),
             claims,
             witnesses: observation.value,
             privateDigest,

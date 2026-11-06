@@ -1,3 +1,8 @@
+import {
+    resolveActionRequestGraphMutation,
+    validateActionGraphDefinition,
+} from './action-request-result-graph.mjs';
+
 const V2_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -68,8 +73,31 @@ function validateBackendReference(definition, contract, sha256, uri, errors) {
     }
 }
 
-function resolveMutation(contract, operation, status, path, errors) {
+function resolveMutation(
+    contract,
+    operation,
+    status,
+    path,
+    errors,
+    graphAction
+) {
     if (!operation) return undefined;
+    if (graphAction) {
+        try {
+            return resolveActionRequestGraphMutation(
+                contract,
+                operation,
+                graphAction
+            );
+        } catch (error) {
+            errors.push(
+                /^AR_GRAPH_[A-Z]+$/.test(error.message)
+                    ? error.message
+                    : 'AR_GRAPH_SCHEMA'
+            );
+            return undefined;
+        }
+    }
     if (!MUTATION_METHODS.has(operation.method)) {
         errors.push(
             `${path}.operation_ref: action-request requires a mutation`
@@ -291,6 +319,13 @@ export function validateActionRequestV2Definition(
     { backendContractSha256, backendContractUri }
 ) {
     const errors = [];
+    const graphMode = definition?.schema_version === '2.1.0';
+    if (graphMode) {
+        errors.push(
+            ...validateActionGraphDefinition(definition, backendContract)
+        );
+        if (errors.length) return errors;
+    }
     validateBackendReference(
         definition,
         backendContract,
@@ -325,14 +360,15 @@ export function validateActionRequestV2Definition(
             operation,
             action.success_response_status,
             path,
-            errors
+            errors,
+            graphMode ? action : undefined
         );
         validateExecution(action.execution, `${path}.execution`, errors);
         if (!resolved) continue;
         validateInput(action, resolved.inputModel, path, errors);
         validateResult(action, resolved.resultModel, path, errors);
     }
-    return errors;
+    return graphMode && errors.length ? ['AR_GRAPH_DEFINITION'] : errors;
 }
 
 function normalizedPath(path) {

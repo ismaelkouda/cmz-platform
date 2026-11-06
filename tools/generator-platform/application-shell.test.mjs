@@ -1,3 +1,4 @@
+import { createApplicationSessionFixture } from './test-support/application-session-fixture.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -711,4 +712,31 @@ test('une app React fraîchement rendue passe la gate library-setup', async (t) 
     const apps = verifyApps(root, recipes.recipes);
     assert.deepEqual(apps.errors, []);
     assert.equal(apps.ok, true);
+});
+
+test('coque session Angular opt-in, React refusée avant sortie et pages anciennes conservées', async (t) => {
+    const data = await createApplicationSessionFixture();
+    t.after(() => rm(data.root, { recursive: true, force: true }));
+    const options = {
+        design: data.design,
+        experienceId: data.design.experiences[0].id,
+        appName: 'session-proof',
+        designPath: 'design/observatory.json',
+        designSha256: data.pages.values().next().value.pageContract.design_ref
+            .sha256,
+        externalWorkspace: true,
+    };
+    const rendered = await renderAngularPwaShell(options);
+    assert.ok(rendered.files['src/app/session/session.store.ts']);
+    assert.equal(rendered.pages.length, 6);
+    assert.equal(rendered.files['src/app/access.guard.ts'], undefined);
+    assert.doesNotMatch(
+        rendered.files['src/app/app.ts'],
+        /localStorage|sessionStorage/
+    );
+    assert.match(rendered.files['src/app/app.ts'], /app-main/);
+    await assert.rejects(
+        renderReactSpaShell(options),
+        /APP_SESSION_REACT_UNSUPPORTED/
+    );
 });

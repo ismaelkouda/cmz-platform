@@ -5,6 +5,7 @@ import test from 'node:test';
 
 import { compileRuntimeObservationBackend } from './adapters/runtime-observation-backend-adapter.mjs';
 import { loadObservedBackendInputs } from './core/runtime-observation-backend-inputs.mjs';
+import { sha256 } from './core/generation-manifest.mjs';
 import {
     observationDiagnostic,
     resolveObservationPointer,
@@ -19,6 +20,8 @@ import {
     observedBackendFixture,
     publishObservedSources,
     scalar,
+    objectShape,
+    arrayShape,
 } from './test-support/runtime-observation-backend-fixture.mjs';
 
 const compile = (fixture) => compileRuntimeObservationBackend(fixture.options);
@@ -412,4 +415,327 @@ test('R2/budget : profil valide mais insuffisant refusé avant lecture de la sou
     assert.equal(result.status, 1);
     assert.equal(result.stderr.trim(), 'OBS_LIMIT');
     assert.equal((result.stdout + result.stderr).includes(sentinel), false);
+});
+
+async function errorFixture(t, variant = 'dispatch') {
+    const fixture = await observedBackendFixture(t, variant);
+    const { definition, documents, privateRoot } = fixture;
+    definition.schema_version = '1.3.0';
+    documents.annotations.schema_version = '1.3.0';
+    const selection = definition.operations[0];
+    const declaration = documents.annotations.operations[0];
+    selection.error_responses = [];
+    declaration.error_responses = [];
+    const php =
+        '<?php\n// PHP_SOURCE_SENTINEL\nthrow new DomainException("Erreur", 400);\n';
+    await writeFile(join(privateRoot, 'error-policy.php'), php);
+    documents.annotations.fragments.push({
+        id: 'server-error-policy',
+        path: 'error-policy.php',
+        sha256: sha256(php),
+        commit: 'b'.repeat(40),
+        start_line: 1,
+        end_line: 3,
+    });
+    const proof = [{ source_id: 'server-error-policy', locator: 'L2-L3' }];
+    const field = (name, type) => ({
+        name,
+        type,
+        required: true,
+        nullable: false,
+        evidence: proof,
+    });
+    documents.annotations.models.push({
+        id: 'validation-fields',
+        kind: 'object',
+        fields: [],
+        additional_properties: {
+            kind: 'array',
+            items: { kind: 'primitive', name: 'string' },
+        },
+        evidence: proof,
+    });
+    for (const status of [400, 401, 422]) {
+        const modelId = `http-error-${status}`;
+        const fields = [
+            field('message', { kind: 'primitive', name: 'string' }),
+        ];
+        const shapes = { message: scalar('string') };
+        if (status === 400) {
+            fields.push(
+                field('error', { kind: 'primitive', name: 'boolean' }),
+                field('statusCode', { kind: 'primitive', name: 'integer' })
+            );
+            shapes.error = scalar('boolean');
+            shapes.statusCode = scalar('number');
+        }
+        if (status === 422) {
+            fields.push(
+                field('errors', {
+                    kind: 'model',
+                    model_id: 'validation-fields',
+                })
+            );
+            shapes.errors = objectShape({
+                first: arrayShape([scalar('string')]),
+                second: arrayShape([scalar('string')]),
+            });
+        }
+        documents.annotations.models.push({
+            id: modelId,
+            kind: 'object',
+            fields,
+            evidence: proof,
+        });
+        const caseId = `failure-${status}`;
+        const index = documents.observation.cases.length;
+        documents.observation.cases.push({
+            id: caseId,
+            method: selection.method,
+            path: selection.path,
+            status,
+            content_type: 'application/json',
+            shape: objectShape(shapes),
+        });
+        selection.error_responses.push({
+            status,
+            case_id: caseId,
+            shape_pointer: `/cases/${index}`,
+            body_pointer: '',
+            model_id: modelId,
+            envelope: { kind: 'none' },
+            documentation: status === 400 ? 'observed-only' : 'openapi',
+        });
+        declaration.error_responses.push({
+            status,
+            model_id: modelId,
+            evidence: proof,
+        });
+        if (status !== 400)
+            documents.openapi.paths[selection.source_path][
+                selection.method.toLowerCase()
+            ].responses[status] = { description: 'Erreur documentée.' };
+    }
+    const capture = JSON.stringify({
+        kind: 'synthetic-capture',
+        cases: documents.observation.cases,
+    });
+    await writeFile(join(privateRoot, 'error-capture.json'), capture);
+    documents.observation.sources.push({
+        id: 'error-capture',
+        path: 'error-capture.json',
+        sha256: sha256(capture),
+    });
+    await fixture.write();
+    return fixture;
+}
+
+for (const variant of ['dispatch', 'observatory']) {
+    test(`R2/1.3/${variant}: erreurs par opération,400 non documenté sourcé et succès préservé`, async (t) => {
+        const fixture = await errorFixture(t, variant);
+        const input = await compile(fixture);
+        const operation = input.contract.operations[0];
+        assert.deepEqual(
+            operation.responses.map(({ status, outcome }) => ({
+                status,
+                outcome,
+            })),
+            [
+                { status: 200, outcome: 'success' },
+                { status: 400, outcome: 'error' },
+                { status: 401, outcome: 'error' },
+                { status: 422, outcome: 'error' },
+            ]
+        );
+        assert.equal(
+            Object.hasOwn(
+                input.selected.paths[
+                    fixture.definition.operations[0].source_path
+                ][operation.method.toLowerCase()],
+                'responses'
+            ),
+            false
+        );
+        const capsule = JSON.parse(input.snapshots[0].content);
+        assert.deepEqual(
+            capsule.response_selections.find(({ status }) => status === 400),
+            {
+                operation_id: operation.id,
+                status: 400,
+                outcome: 'error',
+                documentation: 'observed-only',
+            }
+        );
+        assert.match(operation.responses[1].description, /absente/);
+        assert.equal(input.witnesses.network_verified, false);
+        assert.equal(input.witnesses.origin, 'fixture');
+        const publicText = JSON.stringify([
+            input.contract,
+            input.snapshots.map(({ content }) => content.toString()),
+        ]);
+        for (const sentinel of [
+            'PHP_SOURCE_SENTINEL',
+            'private-fixture.invalid',
+            'verified-live',
+        ])
+            assert.equal(publicText.includes(sentinel), false);
+        for (const response of operation.responses) {
+            for (const ref of response.evidence) {
+                const snapshot = input.snapshots.find(
+                    ({ id }) => id === ref.source_id
+                );
+                assert.ok(
+                    resolveObservationPointer(
+                        JSON.parse(snapshot.content),
+                        ref.locator.slice(1)
+                    )
+                );
+            }
+        }
+    });
+}
+
+const errorMutations = [
+    [
+        'déclaration PHP absente',
+        (f) => {
+            f.documents.annotations.operations[0].error_responses[0].evidence =
+                [];
+        },
+        /OBS_COMPLEMENT/,
+    ],
+    [
+        'texte non PHP pour erreur non documentée',
+        (f) => {
+            f.documents.annotations.operations[0].error_responses[0].evidence =
+                f.documents.annotations.service_evidence;
+        },
+        /OBS_COMPLEMENT/,
+    ],
+    [
+        '400 prétendu documenté',
+        (f) => {
+            f.definition.operations[0].error_responses[0].documentation =
+                'openapi';
+        },
+        /OBS_BINDING/,
+    ],
+    [
+        '401 prétendu absent de OpenAPI',
+        (f) => {
+            f.definition.operations[0].error_responses[1].documentation =
+                'observed-only';
+        },
+        /OBS_BINDING/,
+    ],
+    [
+        'capture autre opération',
+        (f) => {
+            f.documents.observation.cases[1].path = '/other';
+        },
+        /OBS_BINDING/,
+    ],
+    [
+        'capture autre statut',
+        (f) => {
+            f.documents.observation.cases[1].status = 200;
+        },
+        /OBS_BINDING/,
+    ],
+    [
+        'modèle non déclaré',
+        (f) => {
+            f.definition.operations[0].error_responses[0].model_id =
+                'not-declared';
+        },
+        /OBS_COMPLEMENT/,
+    ],
+    [
+        'statut erreur dupliqué',
+        (f) => {
+            f.definition.operations[0].error_responses[1].status = 400;
+        },
+        /OBS_IDENTITY/,
+    ],
+    [
+        'déclaration erreur orpheline',
+        (f) => {
+            f.definition.operations[0].error_responses.pop();
+        },
+        /OBS_COMPLEMENT/,
+    ],
+    [
+        'tableau de messages sans déclaration du type',
+        (f) => {
+            delete f.documents.annotations.models.find(
+                ({ id }) => id === 'validation-fields'
+            ).additional_properties.items;
+        },
+        /OBS_SCHEMA/,
+    ],
+    [
+        'graphe du témoin incompatible',
+        (f) => {
+            f.documents.observation.cases[3].shape.fields[1].shape =
+                scalar('string');
+        },
+        /OBS_CONFLICT/,
+    ],
+    [
+        'capture falsifiée',
+        (f) => {
+            f.documents.observation.sources[1].sha256 = '0'.repeat(64);
+        },
+        /OBS_HASH/,
+    ],
+];
+for (const [label, mutate, expected] of errorMutations) {
+    test(`R2/1.3 refuse ${label}`, async (t) => {
+        const fixture = await errorFixture(t);
+        mutate(fixture);
+        await fixture.write();
+        await stopped(() => compile(fixture), expected);
+    });
+}
+
+test('R2/1.2 : aucune réponse400 ne devient un succès, même présente dans OpenAPI', async (t) => {
+    const fixture = await observedBackendFixture(t);
+    const selection = fixture.definition.operations[0];
+    selection.status = 400;
+    fixture.documents.observation.cases[0].status = 400;
+    fixture.documents.openapi.paths[selection.source_path][
+        selection.method.toLowerCase()
+    ].responses[400] = { description: 'Erreur.' };
+    await fixture.write();
+    await stopped(() => compile(fixture), /OBS_BINDING/);
+});
+
+test('R2/1.3 : publication des capsules et du contrat par la même voie native', async (t) => {
+    const fixture = await errorFixture(t);
+    await publishObservedSources(fixture);
+    const plan = await planStructuredBackendPublication(fixture.options);
+    await publishStructuredBackendContract({
+        ...fixture.options,
+        planId: plan.plan_id,
+    });
+    const published = JSON.parse(
+        await readFile(join(fixture.root, fixture.options.outputPath), 'utf8')
+    );
+    assert.equal(
+        published.operations[0].responses.filter(
+            ({ outcome }) => outcome === 'error'
+        ).length,
+        3
+    );
+    fixture.documents.annotations.operations[0].error_responses[0].model_id =
+        'http-error-401';
+    await fixture.write();
+    await stopped(
+        () =>
+            publishStructuredBackendContract({
+                ...fixture.options,
+                planId: plan.plan_id,
+            }),
+        /OBS_(?:HASH|COMPLEMENT|CONFLICT)/
+    );
 });

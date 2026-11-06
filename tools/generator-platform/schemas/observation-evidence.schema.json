@@ -978,81 +978,14 @@
       }
     },
     "backendSelection": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "schema_version",
-        "kind",
-        "contract",
-        "service",
-        "openapi",
-        "binding",
-        "observation",
-        "annotations",
-        "snapshots",
-        "operations"
-      ],
-      "properties": {
-        "schema_version": {
-          "const": "1.2.0"
+      "oneOf": [
+        {
+          "$ref": "#/$defs/backendSelection12"
         },
-        "kind": {
-          "const": "observed-backend-definition"
-        },
-        "contract": {
-          "$ref": "#/$defs/backendIdentity"
-        },
-        "service": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["id", "runtime_binding"],
-          "properties": {
-            "id": {
-              "$ref": "#/$defs/id"
-            },
-            "runtime_binding": {
-              "$ref": "#/$defs/id"
-            }
-          }
-        },
-        "openapi": {
-          "$ref": "#/$defs/backendSource"
-        },
-        "binding": {
-          "$ref": "#/$defs/backendFile"
-        },
-        "observation": {
-          "$ref": "#/$defs/backendFile"
-        },
-        "annotations": {
-          "$ref": "#/$defs/backendFile"
-        },
-        "snapshots": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["openapi", "observations", "declarations"],
-          "properties": {
-            "openapi": {
-              "type": "string",
-              "maxLength": 256
-            },
-            "observations": {
-              "type": "string",
-              "maxLength": 256
-            },
-            "declarations": {
-              "type": "string",
-              "maxLength": 256
-            }
-          }
-        },
-        "operations": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/backendOperationSelection"
-          }
+        {
+          "$ref": "#/$defs/backendSelection13"
         }
-      }
+      ]
     },
     "backendEvidence": {
       "type": "array",
@@ -1365,52 +1298,14 @@
       }
     },
     "backendAnnotations": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "schema_version",
-        "kind",
-        "fragments",
-        "service_evidence",
-        "security_schemes",
-        "models",
-        "operations"
-      ],
-      "properties": {
-        "schema_version": {
-          "const": "1.2.0"
+      "oneOf": [
+        {
+          "$ref": "#/$defs/backendAnnotations12"
         },
-        "kind": {
-          "const": "sourced-backend-declarations"
-        },
-        "fragments": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/backendSourceFragment"
-          }
-        },
-        "service_evidence": {
-          "$ref": "#/$defs/backendEvidence"
-        },
-        "security_schemes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/backendSecurity"
-          }
-        },
-        "models": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/backendModel"
-          }
-        },
-        "operations": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/backendOperationClaim"
-          }
+        {
+          "$ref": "#/$defs/backendAnnotations13"
         }
-      }
+      ]
     },
     "backendShape": {
       "oneOf": [
@@ -1647,6 +1542,455 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 65536
+        }
+      }
+    },
+    "backendSelection12": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "contract",
+        "service",
+        "openapi",
+        "binding",
+        "observation",
+        "annotations",
+        "snapshots",
+        "operations"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.2.0"
+        },
+        "kind": {
+          "const": "observed-backend-definition"
+        },
+        "contract": {
+          "$ref": "#/$defs/backendIdentity"
+        },
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "runtime_binding"],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "runtime_binding": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        "openapi": {
+          "$ref": "#/$defs/backendSource"
+        },
+        "binding": {
+          "$ref": "#/$defs/backendFile"
+        },
+        "observation": {
+          "$ref": "#/$defs/backendFile"
+        },
+        "annotations": {
+          "$ref": "#/$defs/backendFile"
+        },
+        "snapshots": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["openapi", "observations", "declarations"],
+          "properties": {
+            "openapi": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "observations": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "declarations": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendOperationSelection"
+          }
+        }
+      }
+    },
+    "backendAnnotations12": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "fragments",
+        "service_evidence",
+        "security_schemes",
+        "models",
+        "operations"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.2.0"
+        },
+        "kind": {
+          "const": "sourced-backend-declarations"
+        },
+        "fragments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendSourceFragment"
+          }
+        },
+        "service_evidence": {
+          "$ref": "#/$defs/backendEvidence"
+        },
+        "security_schemes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendSecurity"
+          }
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendModel"
+          }
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendOperationClaim"
+          }
+        }
+      }
+    },
+    "backendErrorSelection13": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "case_id",
+        "shape_pointer",
+        "body_pointer",
+        "model_id",
+        "envelope",
+        "documentation"
+      ],
+      "properties": {
+        "status": {
+          "type": "integer",
+          "minimum": 400,
+          "maximum": 599
+        },
+        "case_id": {
+          "$ref": "#/$defs/id"
+        },
+        "shape_pointer": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "body_pointer": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "model_id": {
+          "$ref": "#/$defs/id"
+        },
+        "envelope": {
+          "$ref": "#/$defs/backendEnvelope"
+        },
+        "documentation": {
+          "enum": ["openapi", "observed-only"]
+        }
+      }
+    },
+    "backendOperationSelection13": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "method",
+        "source_path",
+        "path",
+        "status",
+        "case_id",
+        "shape_pointer",
+        "body_pointer",
+        "model_id",
+        "envelope",
+        "error_responses"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "method": {
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+        },
+        "source_path": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "status": {
+          "type": "integer",
+          "minimum": 200,
+          "maximum": 299
+        },
+        "case_id": {
+          "$ref": "#/$defs/id"
+        },
+        "shape_pointer": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "body_pointer": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "model_id": {
+          "$ref": "#/$defs/id"
+        },
+        "envelope": {
+          "$ref": "#/$defs/backendEnvelope"
+        },
+        "error_responses": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/backendErrorSelection13"
+          }
+        }
+      }
+    },
+    "backendSelection13": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "contract",
+        "service",
+        "openapi",
+        "binding",
+        "observation",
+        "annotations",
+        "snapshots",
+        "operations"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.3.0"
+        },
+        "kind": {
+          "const": "observed-backend-definition"
+        },
+        "contract": {
+          "$ref": "#/$defs/backendIdentity"
+        },
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "runtime_binding"],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "runtime_binding": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        "openapi": {
+          "$ref": "#/$defs/backendSource"
+        },
+        "binding": {
+          "$ref": "#/$defs/backendFile"
+        },
+        "observation": {
+          "$ref": "#/$defs/backendFile"
+        },
+        "annotations": {
+          "$ref": "#/$defs/backendFile"
+        },
+        "snapshots": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["openapi", "observations", "declarations"],
+          "properties": {
+            "openapi": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "observations": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "declarations": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendOperationSelection13"
+          }
+        }
+      }
+    },
+    "backendOperationClaim13": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "method", "path", "access", "evidence"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "method": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "access": {
+          "$ref": "#/$defs/backendAccess"
+        },
+        "evidence": {
+          "$ref": "#/$defs/backendEvidence"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "in", "required", "type", "evidence"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "in": {
+                "enum": ["query", "path", "header"]
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "type": {
+                "$ref": "#/$defs/backendType"
+              },
+              "constraints": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [],
+                "properties": {
+                  "min_length": {
+                    "type": "number"
+                  },
+                  "max_length": {
+                    "type": "number"
+                  },
+                  "minimum": {
+                    "type": "number"
+                  },
+                  "maximum": {
+                    "type": "number"
+                  },
+                  "min_items": {
+                    "type": "number"
+                  },
+                  "max_items": {
+                    "type": "number"
+                  }
+                }
+              },
+              "evidence": {
+                "$ref": "#/$defs/backendEvidence"
+              }
+            }
+          }
+        },
+        "error_responses": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "model_id", "evidence"],
+            "properties": {
+              "status": {
+                "type": "integer",
+                "minimum": 400,
+                "maximum": 599
+              },
+              "model_id": {
+                "$ref": "#/$defs/id"
+              },
+              "evidence": {
+                "$ref": "#/$defs/backendEvidence"
+              }
+            }
+          }
+        }
+      }
+    },
+    "backendAnnotations13": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "fragments",
+        "service_evidence",
+        "security_schemes",
+        "models",
+        "operations"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.3.0"
+        },
+        "kind": {
+          "const": "sourced-backend-declarations"
+        },
+        "fragments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendSourceFragment"
+          }
+        },
+        "service_evidence": {
+          "$ref": "#/$defs/backendEvidence"
+        },
+        "security_schemes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendSecurity"
+          }
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendModel"
+          }
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/backendOperationClaim13"
+          }
         }
       }
     }

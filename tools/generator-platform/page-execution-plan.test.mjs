@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import test from 'node:test';
+import {
+    createApplicationSessionFixture,
+    SESSION_FIXTURE_DOMAINS,
+    sessionArtifact,
+} from './test-support/application-session-fixture.mjs';
 
 import { compileActionRequestV2ExecutionModel } from './core/action-request-v2-compiler.mjs';
 import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
@@ -11,7 +16,7 @@ import {
     validatePageExecutionCapabilities,
     validatePageExecutionPlan,
 } from './core/page-execution-plan.mjs';
-import { repositoryRoot } from './validate-ir.mjs';
+import { repositoryRoot, validateJsonSchema } from './validate-ir.mjs';
 
 const applicationDesignSchema = JSON.parse(
     await readFile(
@@ -543,5 +548,154 @@ test('rejects absent, unknown, or policy-incompatible invalidation targets', () 
     assert.throws(
         () => compile({ pageContract: pageContract(forbiddenTarget) }),
         /declares invalidation targets but its action-request policy is none/
+    );
+});
+
+for (const domain of SESSION_FIXTURE_DOMAINS) {
+    test(`plan 1.1 : liaisons vides si et seulement si la commande est sans corps : ${domain}`, async (t) => {
+        const data = await createApplicationSessionFixture({ domain });
+        t.after(() => rm(data.root, { recursive: true, force: true }));
+        const entries = [...data.pages.values()];
+        const withoutBody = entries.find(
+            (entry) => entry.page.path === '/agree'
+        );
+        const withBody = entries.find((entry) => entry.page.path === '/enter');
+        const schema = data.schemas['page-execution-plan'];
+        assert.equal(
+            data.actions.get(`${domain}-agree`).model.actions[0].port.input
+                .kind,
+            'none'
+        );
+        assert.deepEqual(withoutBody.plan.command_nodes[0].input_bindings, []);
+        assert.deepEqual(
+            validatePageExecutionPlan(withoutBody.plan, schema),
+            []
+        );
+        assert.deepEqual(validatePageExecutionPlan(withBody.plan, schema), []);
+
+        const missing = structuredClone(withBody.plan);
+        missing.command_nodes[0].input_bindings = [];
+        assert.ok(
+            validatePageExecutionPlan(missing, schema).includes(
+                'PAGE_SESSION_BINDING'
+            )
+        );
+        const extra = structuredClone(withoutBody.plan);
+        extra.command_nodes[0].input_bindings = [
+            structuredClone(withBody.plan.command_nodes[0].input_bindings[0]),
+        ];
+        assert.ok(
+            validatePageExecutionPlan(extra, schema).includes(
+                'PAGE_SESSION_BINDING'
+            )
+        );
+
+        const compileChanged = (entry, contract) =>
+            compilePageExecutionPlan({
+                pageContract: sessionArtifact(entry.artifact.uri, contract),
+                listQueryModels: [data.queryArtifact],
+                actionRequestModels: [...data.actions.values()].map(
+                    (action) => action.artifact
+                ),
+                applicationDesignSchema: data.schemas['application-design'],
+                pageExecutionPlanSchema: schema,
+            });
+        const missingPage = structuredClone(withBody.pageContract);
+        missingPage.page.actions[0].input_bindings = [];
+        assert.throws(
+            () => compileChanged(withBody, missingPage),
+            /missing required body field/
+        );
+        const extraPage = structuredClone(withoutBody.pageContract);
+        extraPage.page.controls.push(
+            structuredClone(withBody.pageContract.page.controls[0])
+        );
+        extraPage.page.actions[0].input_bindings = [
+            structuredClone(
+                withBody.pageContract.page.actions[0].input_bindings[0]
+            ),
+        ];
+        assert.throws(
+            () => compileChanged(withoutBody, extraPage),
+            /binds unknown body field/
+        );
+    });
+
+    test(`plan de session ${domain} : producteurs, projection renommée et capsule fermée`, async (t) => {
+        const data = await createApplicationSessionFixture({ domain });
+        t.after(() => rm(data.root, { recursive: true, force: true }));
+        const enter = [...data.pages.values()].find(
+            (entry) => entry.page.path === '/enter'
+        );
+        const plan = enter.plan;
+        assert.equal(plan.schema_version, '1.1.0');
+        assert.equal(plan.query_nodes.length, 0);
+        assert.equal(plan.command_nodes.length, 1);
+        assert.equal(plan.session.effects[0].kind, 'establish');
+        assert.equal(plan.session.effects[0].producer.page_id, enter.page.id);
+        const canonical = plan.session.effects[0].canonical_fields;
+        assert.ok(
+            canonical.some((field) => field.source_field === data.names.token)
+        );
+        if (domain === 'equipment-hire')
+            assert.ok(
+                canonical.every((field) => field.name.startsWith('projected_'))
+            );
+        assert.deepEqual(
+            validatePageExecutionPlan(
+                plan,
+                data.schemas['page-execution-plan']
+            ),
+            []
+        );
+        const changed = structuredClone(enter.pageContract);
+        changed.experience.session.producer.action_id = 'missing';
+        assert.throws(() =>
+            compilePageExecutionPlan({
+                pageContract: sessionArtifact(enter.artifact.uri, changed),
+                listQueryModels: [data.queryArtifact],
+                actionRequestModels: [...data.actions.values()].map(
+                    (entry) => entry.artifact
+                ),
+                applicationDesignSchema: data.schemas['application-design'],
+                pageExecutionPlanSchema: data.schemas['page-execution-plan'],
+            })
+        );
+        const extra = structuredClone(plan);
+        extra.session.toString = 'SENTINEL_PRIVATE_RESPONSE';
+        assert.notDeepEqual(
+            validatePageExecutionPlan(
+                extra,
+                data.schemas['page-execution-plan']
+            ),
+            []
+        );
+        const catalogue = [...data.pages.values()].find(
+            (entry) => entry.page.path === '/catalogue'
+        ).plan;
+        assert.equal(catalogue.command_nodes.length, 0);
+        assert.equal(catalogue.query_nodes.length, 1);
+        assert.deepEqual(catalogue.session.effects, []);
+    });
+}
+
+test('plan 1.0 : une commande conserve au moins une liaison de corps', () => {
+    const plan = compile();
+    assert.equal(plan.schema_version, '1.0.0');
+    plan.command_nodes[0].input_bindings = [];
+    assert.ok(
+        validateJsonSchema(
+            plan,
+            pageExecutionPlanSchema.$defs.plan10,
+            pageExecutionPlanSchema
+        ).some(
+            (error) =>
+                error ===
+                '$.command_nodes[0].input_bindings: must contain at least 1 items'
+        )
+    );
+    assert.notDeepEqual(
+        validatePageExecutionPlan(plan, pageExecutionPlanSchema),
+        []
     );
 });
