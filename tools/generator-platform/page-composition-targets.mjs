@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
-import { lstat, readFile, realpath } from 'node:fs/promises';
-import { isAbsolute, relative, resolve, sep } from 'node:path';
+import {
+    readBoundedPageFile,
+    parsePageDocument,
+} from './core/page-session-binding.mjs';
+import { lstat, realpath } from 'node:fs/promises';
+import { isAbsolute, relative, resolve, sep, posix } from 'node:path';
 
 import {
     bindRenderedArtifacts,
@@ -13,10 +17,19 @@ import { validateListQueryV2ExecutionModel } from './core/list-query-v2-compiler
 import {
     validatePageExecutionCapabilities,
     validatePageExecutionPlan,
+    compilePageExecutionPlan,
 } from './core/page-execution-plan.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularActionRequestV2 } from './renderers/angular-action-request-v2-renderer.mjs';
 import { renderAngularListQueryV2 } from './renderers/angular-list-query-v2-renderer.mjs';
+import {
+    renderSessionQueryFacade,
+    renderSessionHostSupport,
+    renderSessionEndpointTokens,
+    renderSessionProjection,
+    sessionEndpointToken,
+} from './renderers/angular-application-session-renderer.mjs';
+import { observationInputPrimitives as observationIO } from './core/runtime-observation-evidence.mjs';
 import {
     ANGULAR_PAGE_COMPOSITION_CAPABILITIES,
     renderAngularPageComposition,
@@ -84,7 +97,7 @@ async function readRegularArtifact(root, uri) {
     ) {
         fail(`${uri} must resolve inside the artifact root`);
     }
-    return readFile(canonicalPath);
+    return readBoundedPageFile(canonicalPath);
 }
 
 function assertErrors(label, errors) {
@@ -135,11 +148,25 @@ async function renderAngularPrimitive(node, model, operation, hostBindings) {
     const kind =
         model.kind === 'list-query-execution-model' ? 'query' : 'command';
     const artifactPlan = buildArtifactPlan(model, model.kind);
+    const sessionMode = hostBindings.schema_version === '1.1.0';
+    const binding = hostBindings.services[operation.transport.service_id];
     const rendered =
         kind === 'query'
             ? renderAngularListQueryV2(
                   model,
-                  serviceBinding(hostBindings, operation.transport.service_id)
+                  sessionMode
+                      ? {
+                            services: {
+                                [operation.transport.service_id]: {
+                                    module: '@cmz/core',
+                                    token: binding.token,
+                                },
+                            },
+                        }
+                      : serviceBinding(
+                            hostBindings,
+                            operation.transport.service_id
+                        )
               )
             : renderAngularActionRequestV2(
                   model,
@@ -151,11 +178,32 @@ async function renderAngularPrimitive(node, model, operation, hostBindings) {
                       allowStatusEnvelope: true,
                   }
               );
+    if (sessionMode && kind === 'query') {
+        // Transport and decoder remain the existing native renderer's output.
+        // The session host substitutes its real local imports and a native
+        // rxResource facade that discards values from previous principals.
+        for (const [path, source] of Object.entries(rendered.files))
+            rendered.files[path] = source
+                .replaceAll("from '@cmz/core'", `from '${binding.module}'`)
+                .replaceAll(
+                    "from '@cmz/shared-domain'",
+                    `from '${binding.module}'`
+                );
+        rendered.files[`src/${operation.id}.facade.ts`] =
+            renderSessionQueryFacade(operation, binding);
+    }
     const files = await canonicalizeGeneratedFiles(rendered.files);
     const bindings = Object.fromEntries(
         Object.keys(files).map((path) => {
             if (path === 'src/index.ts') return [path, 'public-api'];
             if (path === 'src/models.ts') return [path, 'domain-model'];
+            if (path.startsWith('src/response.') && path.endsWith('.types.ts'))
+                return [path, 'domain-model'];
+            if (
+                path === 'src/response-runtime.ts' ||
+                path.startsWith('src/response.')
+            )
+                return [path, 'response-decoder'];
             if (path === 'src/validation.ts') return [path, 'input-validator'];
             if (path.endsWith('.decoder.ts')) return [path, 'response-decoder'];
             if (path.endsWith('.source.ts'))
@@ -233,6 +281,7 @@ async function resolveCompositionNodes(plan, artifactRoot, capabilities) {
     }
     const nodes = [...plan.query_nodes, ...plan.command_nodes];
     const documents = new Map();
+    const artifacts = new Map();
     const resolved = [];
     for (const node of nodes) {
         const reference = node.primitive_ref;
@@ -247,7 +296,7 @@ async function resolveCompositionNodes(plan, artifactRoot, capabilities) {
                 fail(`${node.id} primitive document hash is stale`);
             }
             try {
-                model = JSON.parse(document.toString('utf8'));
+                model = parsePageDocument(document);
             } catch (error) {
                 fail(
                     `${node.id} primitive document is invalid JSON (${error.message})`
@@ -259,6 +308,12 @@ async function resolveCompositionNodes(plan, artifactRoot, capabilities) {
                     : validateActionRequestV2ExecutionModel(model);
             assertErrors(`${node.id} primitive document is invalid`, errors);
             documents.set(key, model);
+            artifacts.set(key, {
+                uri: reference.uri,
+                sha256: reference.sha256,
+                document,
+                kind: reference.kind,
+            });
         }
         resolved.push({
             node,
@@ -266,7 +321,66 @@ async function resolveCompositionNodes(plan, artifactRoot, capabilities) {
             operation: assertPrimitiveReference(node, model),
         });
     }
-    return resolved;
+    if (plan.schema_version === '1.1.0') {
+        const applicationDesignSchema = await loadJson(
+            new URL('./schemas/application-design.schema.json', import.meta.url)
+        );
+        const values = [...artifacts.values()];
+        const expected = compilePageExecutionPlan({
+            pageContract: {
+                uri: plan.source.page_contract.uri,
+                sha256: digest(pageContractDocument),
+                document: pageContractDocument,
+            },
+            listQueryModels: values.filter(
+                (artifact) => artifact.kind === 'list-query-execution-model'
+            ),
+            actionRequestModels: values.filter(
+                (artifact) => artifact.kind === 'action-request-execution-model'
+            ),
+            applicationDesignSchema,
+            pageExecutionPlanSchema: planSchema,
+        });
+        if (JSON.stringify(expected) !== JSON.stringify(plan))
+            fail('PAGE_SESSION_RECOMPILATION');
+    }
+    return {
+        resolved,
+        pageContract: observationIO.parse(pageContractDocument),
+    };
+}
+
+async function sessionHostTypecheckFiles(bindings, nodes, pageContract) {
+    const support = await renderSessionHostSupport();
+    support['session.projection.ts'] = renderSessionProjection();
+    support['service-endpoints.ts'] = renderSessionEndpointTokens(
+        pageContract.experience.session
+    );
+    support['index.ts'] += "export * from './service-endpoints';\n";
+    const virtual = {};
+    function mount(module, from) {
+        const folder = module.startsWith('.')
+            ? posix.normalize(posix.join(posix.dirname(from), module))
+            : 'node_modules/' + module;
+        for (const [path, content] of Object.entries(support)) {
+            const target = posix.join(folder, path);
+            if (virtual[target] !== undefined && virtual[target] !== content)
+                fail('PAGE_SESSION_HOST_COLLISION');
+            virtual[target] = content;
+        }
+    }
+    mount(bindings.session.module, 'src/page-composition.ts');
+    for (const { node, operation } of nodes) {
+        const binding = bindings.services[operation.transport.service_id];
+        if (
+            !binding ||
+            binding.token !==
+                sessionEndpointToken(operation.transport.service_id)
+        )
+            fail('PAGE_SESSION_ENDPOINT_TOKEN');
+        mount(binding.module, `src/nodes/${node.id}/${operation.id}.source.ts`);
+    }
+    return virtual;
 }
 
 export async function computeAngularPageCompositionTarget({
@@ -274,7 +388,7 @@ export async function computeAngularPageCompositionTarget({
     artifactRoot = repositoryRoot,
     hostBindings,
 } = {}) {
-    const [hostBindingsSchema, profile, resolvedNodes] = await Promise.all([
+    const [hostBindingsSchema, profile, inputs] = await Promise.all([
         loadJson(HOST_BINDINGS_SCHEMA),
         loadJson(ANGULAR_PROFILE),
         resolveCompositionNodes(
@@ -285,19 +399,50 @@ export async function computeAngularPageCompositionTarget({
     ]);
     assertErrors(
         'invalid Angular host bindings',
-        validateJsonSchema(hostBindings, hostBindingsSchema)
+        validateJsonSchema(
+            hostBindings,
+            hostBindings?.schema_version === '1.1.0'
+                ? observationIO.parseSchema(
+                      Buffer.from(JSON.stringify(hostBindingsSchema))
+                  )
+                : hostBindingsSchema
+        )
     );
+    const { resolved: resolvedNodes, pageContract } = inputs;
+    if (
+        plan.schema_version === '1.1.0' &&
+        hostBindings.schema_version !== '1.1.0'
+    )
+        fail('PAGE_SESSION_HOST_BINDING');
     const renderedNodes = [];
     for (const { node, model, operation } of resolvedNodes) {
         renderedNodes.push(
             await renderAngularPrimitive(node, model, operation, hostBindings)
         );
     }
-    const rendered = renderAngularPageComposition(plan, renderedNodes);
+    const rendered = renderAngularPageComposition(
+        plan,
+        renderedNodes,
+        hostBindings
+    );
     const files = await canonicalizeGeneratedFiles(rendered.files);
     const artifactPlan = buildArtifactPlan(plan, 'page-execution-plan');
     const bound = bindRenderedArtifacts(artifactPlan, files, rendered.bindings);
-    typecheckGenerated(bound.files, 'angular-page-composition', repositoryRoot);
+    const hostFiles =
+        plan.schema_version === '1.1.0'
+            ? await sessionHostTypecheckFiles(
+                  hostBindings,
+                  resolvedNodes,
+                  pageContract
+              )
+            : {};
+    if (Object.keys(hostFiles).some((path) => Object.hasOwn(bound.files, path)))
+        fail('PAGE_SESSION_HOST_COLLISION');
+    typecheckGenerated(
+        { ...bound.files, ...hostFiles },
+        'angular-page-composition',
+        repositoryRoot
+    );
     return {
         plan,
         artifactPlan,
@@ -317,7 +462,9 @@ export async function computeReactPageCompositionTarget({
     plan,
     artifactRoot = repositoryRoot,
 } = {}) {
-    const [profile, resolvedNodes] = await Promise.all([
+    if (plan?.schema_version === '1.1.0')
+        fail('PAGE_SESSION_REACT_UNSUPPORTED');
+    const [profile, inputs] = await Promise.all([
         loadJson(REACT_PROFILE),
         resolveCompositionNodes(
             plan,
@@ -325,6 +472,7 @@ export async function computeReactPageCompositionTarget({
             REACT_PAGE_COMPOSITION_CAPABILITIES
         ),
     ]);
+    const resolvedNodes = inputs.resolved;
     const renderedNodes = [];
     for (const { node, model } of resolvedNodes) {
         renderedNodes.push(await renderReactPrimitive(node, model));

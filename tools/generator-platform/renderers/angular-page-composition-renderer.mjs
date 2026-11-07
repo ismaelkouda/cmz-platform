@@ -1,8 +1,8 @@
 import { camelCase, pascalCase } from './shared.mjs';
-import { PAGE_COMPOSITION_CAPABILITIES } from './page-composition-renderer-shared.mjs';
+import { ANGULAR_SESSION_PAGE_CAPABILITIES } from './page-composition-renderer-shared.mjs';
 
 export const ANGULAR_PAGE_COMPOSITION_CAPABILITIES =
-    PAGE_COMPOSITION_CAPABILITIES;
+    ANGULAR_SESSION_PAGE_CAPABILITIES;
 
 function fail(message) {
     throw new Error(`angular page composition renderer: ${message}`);
@@ -40,7 +40,22 @@ function nodeDescriptor(kind, node, target) {
     };
 }
 
-function renderComposition(descriptors) {
+function renderComposition(descriptors, plan, hostBindings) {
+    const sessionMode = plan.schema_version === '1.1.0';
+    const effects = new Map(
+        (plan.session?.effects ?? []).map((effect) => [effect.node_id, effect])
+    );
+    const sessionBinding = hostBindings?.session;
+    if (
+        sessionMode &&
+        (hostBindings?.schema_version !== '1.1.0' ||
+            sessionBinding?.token !== 'APPLICATION_SESSION' ||
+            typeof sessionBinding.module !== 'string' ||
+            !/^(?:[@A-Za-z0-9][@A-Za-z0-9._/-]*|(?:\.\/|(?:\.\.\/){1,8})[A-Za-z0-9][A-Za-z0-9._/-]*)$/.test(
+                sessionBinding.module
+            ))
+    )
+        fail('PAGE_SESSION_HOST_BINDING');
     const imports = descriptors
         .map(
             ({ facadeName, facadeAlias, node }) =>
@@ -51,6 +66,7 @@ function renderComposition(descriptors) {
     const commandDescriptors = descriptors.filter(
         ({ kind }) => kind === 'command'
     );
+    const hasSessionCommands = sessionMode && commandDescriptors.length > 0;
     const authorizedCommandDescriptors = commandDescriptors.filter(
         ({ node }) => node.authorization.mode === 'required'
     );
@@ -109,19 +125,50 @@ function renderComposition(descriptors) {
                 return ${invocation};
             })`
                     : invocation;
-            const submit =
+            let submit =
                 invalidationStatements.length === 0
                     ? guardedInvocation
                     : `${guardedInvocation}.pipe(\n                tap(() => {\n${invalidationStatements.join('\n')}\n                })\n            )`;
+            const effect = effects.get(node.id);
+            if (sessionMode) {
+                const canonical = effect
+                    ? effect.canonical_fields
+                          .map(
+                              (field) =>
+                                  `                    if (result[${JSON.stringify(field.name)}] !== undefined) Object.defineProperty(canonical, ${JSON.stringify(field.source_field)}, { value: result[${JSON.stringify(field.name)}], enumerable: true });`
+                          )
+                          .join('\n')
+                    : '';
+                const transition = effect
+                    ? effect.kind === 'establish'
+                        ? `this.session.establish(${JSON.stringify(effect.producer)}, canonical, epoch)`
+                        : `this.session.complete(${JSON.stringify(effect.stage_id)}, ${JSON.stringify(effect.producer)}, canonical, epoch)`
+                    : '';
+                submit = `defer(() => {
+                const epoch = this.session.epoch();
+${effect ? `                this.${propertyName}SessionError.set(undefined);\n` : ''}
+                return ${submit}.pipe(tap((result) => {
+                    if (this.session.epoch() !== epoch) throw new Error('PAGE_SESSION_CHANGED');
+${effect ? `                    const canonical: Record<string, unknown> = Object.create(null);\n${canonical}\n                    const destination = ${transition};\n                    void this.router.navigateByUrl(destination, { replaceUrl: true });` : '                    void result;'}
+                })${
+                    effect
+                        ? `, map(() => undefined), catchError(() => {
+                    if (this.${propertyName}Facade.state() === 'success') this.${propertyName}SessionError.set(Object.freeze({ kind: 'invalid-response', status: 200, message: 'La session ne peut pas être établie.', fields: Object.freeze({}) }));
+                    return throwError(() => new Error('PAGE_SESSION_ACTION_FAILED'));
+                })`
+                        : ''
+                });
+            })`;
+            }
             return `    readonly ${propertyName} = {
-        state: this.${propertyName}Facade.state,
-        result: this.${propertyName}Facade.result,
-        error: this.${propertyName}Facade.error,
-        authorized: this.${propertyName}Authorized,
+        state: ${effect ? `computed(() => this.${propertyName}SessionError() ? 'error' : this.${propertyName}Facade.state())` : `this.${propertyName}Facade.state`},
+        result: ${effect ? 'computed(() => undefined)' : `this.${propertyName}Facade.result`},
+        error: ${effect ? `computed(() => this.${propertyName}SessionError() ?? this.${propertyName}Facade.error())` : `this.${propertyName}Facade.error`},
+${node.primitive_ref.schema_version === '1.1.0' ? `        fieldErrors: computed<Readonly<Record<string, readonly string[]>>>(() => this.${propertyName}Facade.error()?.fields ?? Object.freeze({})),\n` : ''}        authorized: this.${propertyName}Authorized,
         deniedBehavior: ${JSON.stringify(node.authorization.denied_behavior ?? null)},
         submit: (
             input: Parameters<${facadeAlias}['submit']>[0]
-        ): ReturnType<${facadeAlias}['submit']> =>
+        ): ${effect ? 'Observable<void>' : `ReturnType<${facadeAlias}['submit']>`} =>
             ${submit},
     };`;
         })
@@ -130,14 +177,20 @@ function renderComposition(descriptors) {
     const angularImports = [
         ...(hasAuthorization ? ['InjectionToken'] : []),
         'Service',
-        'computed',
+        ...(!sessionMode || commandDescriptors.length ? ['computed'] : []),
         'inject',
         ...(hasAuthorization ? ['type Signal'] : []),
+        ...(hasSessionCommands ? ['DestroyRef', 'effect'] : []),
+        ...(effects.size ? ['signal'] : []),
     ].join(', ');
     const rxjsImports = [
-        ...(hasAuthorization ? ['defer'] : []),
-        ...(commandDescriptors.some(({ node }) => node.invalidates.length > 0)
+        ...(hasAuthorization || hasSessionCommands ? ['defer'] : []),
+        ...(hasSessionCommands ||
+        commandDescriptors.some(({ node }) => node.invalidates.length > 0)
             ? ['tap']
+            : []),
+        ...(effects.size
+            ? ['map', 'catchError', 'throwError', 'type Observable']
             : []),
     ];
     const rxjsImport =
@@ -168,8 +221,33 @@ export class PageActionPermissionDeniedError extends Error {
     const permissionInjection = hasAuthorization
         ? '    private readonly permissionPort = inject(PAGE_ACTION_PERMISSION_PORT);\n'
         : '';
+    const sessionSetup = hasSessionCommands
+        ? `    private readonly session = inject(${sessionBinding.token});
+${effects.size ? '    private readonly router = inject(Router);\n' : ''}
+    constructor() {
+        let previous = this.session.epoch();
+        const reset = (): void => {
+${commandDescriptors
+    .filter(({ node }) => node.primitive_ref.schema_version === '1.1.0')
+    .map(
+        ({ propertyName }) => `            this.${propertyName}Facade.reset();`
+    )
+    .join('\n')}
+${commandDescriptors
+    .filter(({ node }) => effects.has(node.id))
+    .map(
+        ({ propertyName }) =>
+            `            this.${propertyName}SessionError.set(undefined);`
+    )
+    .join('\n')}
+        };
+        effect(() => { const epoch = this.session.epoch(); if (epoch !== previous) { previous = epoch; reset(); } });
+        inject(DestroyRef).onDestroy(reset);
+    }
+`
+        : '';
     return `import { ${angularImports} } from '@angular/core';
-${rxjsImport}${imports}
+${hasSessionCommands ? `${effects.size ? "import { Router } from '@angular/router';\n" : ''}import { ${sessionBinding.token} } from '${sessionBinding.module}';\n` : ''}${rxjsImport}${imports}
 ${permissionContract}
 
 @Service({ autoProvided: false })
@@ -177,7 +255,15 @@ export class PageComposition {
 ${permissionInjection}
 ${queryProperties}
 ${commandFacades}
-${authorizationSignals}
+${commandDescriptors
+    .filter(({ node }) => effects.has(node.id))
+    .map(
+        ({ propertyName }) =>
+            `    private readonly ${propertyName}SessionError = signal<{ readonly kind: 'invalid-response'; readonly status: number; readonly message: string; readonly fields: Readonly<Record<string, readonly string[]>> } | undefined>(undefined);`
+    )
+    .join(
+        '\n'
+    )}${effects.size ? '\n' : ''}${sessionSetup}${authorizationSignals}
 ${commandProperties}
 }
 `;
@@ -221,7 +307,11 @@ ${namespaces}
 `;
 }
 
-export function renderAngularPageComposition(plan, renderedNodes) {
+export function renderAngularPageComposition(
+    plan,
+    renderedNodes,
+    hostBindings
+) {
     const expected = [
         ...plan.query_nodes.map((node) => ({ kind: 'query', node })),
         ...plan.command_nodes.map((node) => ({ kind: 'command', node })),
@@ -262,7 +352,11 @@ export function renderAngularPageComposition(plan, renderedNodes) {
             bindings[outputPath] = artifactId;
         }
     }
-    files['src/page-composition.ts'] = renderComposition(descriptors);
+    files['src/page-composition.ts'] = renderComposition(
+        descriptors,
+        plan,
+        hostBindings
+    );
     bindings['src/page-composition.ts'] = 'execution-controller';
     files['src/page-composition.providers.ts'] = renderProviders(descriptors);
     bindings['src/page-composition.providers.ts'] = 'runtime-binding';

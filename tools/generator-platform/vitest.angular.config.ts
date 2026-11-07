@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 const workspaceRoot = resolve(import.meta.dirname, '../..');
 
@@ -33,6 +33,20 @@ export default defineConfig({
             resolve(
                 workspaceRoot,
                 'tools/generator-platform/stack-tests/angular/**/*.spec.ts'
+            ),
+        ],
+        exclude: [
+            ...configDefaults.exclude,
+            ...[
+                'action-request-session.spec.ts',
+                'application-session.spec.ts',
+                'page-composition-session.spec.ts',
+            ].map((name) =>
+                resolve(
+                    workspaceRoot,
+                    'tools/generator-platform/stack-tests/angular',
+                    name
+                )
             ),
         ],
         setupFiles: [

@@ -70,7 +70,11 @@ export function renderActionRequestV2Models(action, renderer) {
     return `${renderInputInterface(action, renderer)}\n\n${renderInterface(action.request_model, renderer)}\n\n${renderInterface(action.response_wire_model, renderer)}\n\n${renderInterface(action.result_model, renderer)}\n`;
 }
 
-export function renderActionRequestV2Validation(action, invalidPayloadSource) {
+export function renderActionRequestV2Validation(
+    action,
+    invalidPayloadSource,
+    { enforceBackendConstraints = false } = {}
+) {
     const inputName = `${pascalCase(action.id)}Input`;
     const knownFields = action.port.input.fields.map((field) => field.name);
     const fieldChecks = action.port.input.fields
@@ -78,7 +82,9 @@ export function renderActionRequestV2Validation(action, invalidPayloadSource) {
             const path = `$.${field.name}`;
             const variable = `value${index}`;
             const checks = [
-                `    const ${variable} = record[${property(field.name)}];`,
+                enforceBackendConstraints
+                    ? `    const entry${index} = Object.getOwnPropertyDescriptor(record, ${property(field.name)});\n    if (!entry${index} || !Object.hasOwn(entry${index}, 'value') || !entry${index}.enumerable) invalid(${JSON.stringify(path)}, 'own data field');\n    const ${variable} = entry${index}.value;`
+                    : `    const ${variable} = record[${property(field.name)}];`,
                 `    if (typeof ${variable} !== 'string' || ${variable}.trim().length === 0) invalid(${JSON.stringify(path)}, 'non-empty string');`,
             ];
             for (const validation of field.validations) {
@@ -91,6 +97,18 @@ export function renderActionRequestV2Validation(action, invalidPayloadSource) {
                         `    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(${variable})) invalid(${JSON.stringify(path)}, 'email');`
                     );
                     continue;
+                }
+            }
+            if (enforceBackendConstraints) {
+                for (const [key, operator] of [
+                    ['min_length', '<'],
+                    ['max_length', '>'],
+                ]) {
+                    const bound = field.constraints?.[key];
+                    if (bound !== undefined)
+                        checks.push(
+                            `    if (${variable}.length ${operator} ${JSON.stringify(bound)}) invalid(${JSON.stringify(path)}, 'declared string length');`
+                        );
                 }
             }
             return checks.join('\n');
@@ -109,14 +127,22 @@ function invalid(path: string, expected: string): never {
     throw new InvalidPayloadError(path, expected);
 }
 
-const INPUT_FIELDS = new Set(${JSON.stringify(knownFields)});
+const INPUT_FIELDS${enforceBackendConstraints ? ': ReadonlySet<string>' : ''} = new Set${enforceBackendConstraints ? '<string>' : ''}(${JSON.stringify(knownFields)});
 
 export function validate${inputName}(input: unknown): ${inputName} {
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
         invalid('$', 'object');
     }
     const record = input as Readonly<Record<string, unknown>>;
-    for (const key of Object.keys(record)) {
+${
+    enforceBackendConstraints
+        ? `    if (![Object.prototype, null].includes(Object.getPrototypeOf(record))) invalid('$', 'plain record');
+    const keys = Reflect.ownKeys(record);
+    if (keys.length > 32 || keys.some((key) => typeof key !== 'string' || key.length > 256)) invalid('$', 'bounded own fields');
+    for (const key of keys) { const entry = Object.getOwnPropertyDescriptor(record, key); if (!entry || !Object.hasOwn(entry, 'value') || !entry.enumerable) invalid('$', 'own data field'); }
+`
+        : ''
+}    for (const key of Object.keys(record)) {
         if (!INPUT_FIELDS.has(key)) invalid('$.' + key, 'declared field');
     }
 ${fieldChecks}
@@ -333,6 +359,11 @@ export function assertActionRequestV2RendererModel(
     renderer,
     options = {}
 ) {
+    if (model?.schema_version === '1.1.0' && renderer !== 'Angular')
+        fail(
+            renderer,
+            'execution1.1 typed graph has no renderer on this target'
+        );
     const errors = validateActionRequestV2ExecutionModel(model);
     if (errors.length > 0) {
         fail(renderer, `invalid execution model\n${errors.join('\n')}`);
@@ -341,6 +372,11 @@ export function assertActionRequestV2RendererModel(
         fail(renderer, 'requires exactly one action');
     }
     const action = model.actions[0];
+    if (model.schema_version === '1.1.0') {
+        validateAuthentication(action, renderer, true);
+        validateExecution(action, renderer, options);
+        return action;
+    }
     validateAuthentication(
         action,
         renderer,

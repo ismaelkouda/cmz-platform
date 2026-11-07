@@ -270,6 +270,8 @@ export function ${factoryName}(
 }
 
 export function renderReactActionRequestV2(model, options = {}) {
+    if (model?.schema_version === '1.1.0')
+        throw new Error('AR_GRAPH_REACT_UNSUPPORTED');
     const action = assertActionRequestV2RendererModel(model, 'React', options);
     const files = {
         'src/models.ts': renderActionRequestV2Models(action, 'React'),
