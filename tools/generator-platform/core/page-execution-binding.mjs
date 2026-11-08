@@ -1,9 +1,14 @@
 import { createHash } from 'node:crypto';
-import { lstatSync, readFileSync } from 'node:fs';
+import { lstatSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 
 import { validateJsonSchema } from '../validate-ir.mjs';
 import { compilePageExecutionPlan } from './page-execution-plan.mjs';
+import {
+    parsePageDocument,
+    parsePageSchema,
+    readBoundedPageFile as readFileSync,
+} from './page-session-binding.mjs';
 
 function fail(message) {
     throw new Error(`page execution binding: ${message}`);
@@ -45,11 +50,8 @@ function workspaceFile(root, declaredPath, label) {
 }
 
 function parseJson(content, label) {
-    try {
-        return JSON.parse(content.toString('utf8'));
-    } catch (error) {
-        fail(`${label} is invalid JSON (${error.message})`);
-    }
+    void label;
+    return parsePageDocument(content);
 }
 
 function assertSame(actual, expected, message) {
@@ -274,7 +276,10 @@ export function resolvePageExecutionBinding({
     );
     const planContent = readFileSync(planAbsolute);
     const plan = parseJson(planContent, 'execution plan');
-    const schemaErrors = validateJsonSchema(plan, pageExecutionPlanSchema);
+    const schemaErrors = validateJsonSchema(
+        plan,
+        parsePageSchema(pageExecutionPlanSchema)
+    );
     if (schemaErrors.length > 0)
         fail(`execution plan violates schema\n${schemaErrors.join('\n')}`);
 

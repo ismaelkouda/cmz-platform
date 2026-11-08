@@ -12,6 +12,15 @@ import {
     assertQueryOutputBinding,
 } from './data-binding-projection.mjs';
 import { validateListQueryV2ExecutionModel } from './list-query-v2-compiler.mjs';
+import {
+    duplicateValues,
+    parsePageArtifact as parseArtifact,
+    isNormalizedRelativeUri,
+    compilePageSessionBinding,
+    validatePageSessionBinding,
+    sessionCapabilityRequirements,
+    parsePageSchema,
+} from './page-session-binding.mjs';
 
 const ACCESS_RANK = { public: 0, authenticated: 1, authorized: 2 };
 
@@ -23,44 +32,6 @@ function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
 }
 
-function asBuffer(document, label) {
-    if (Buffer.isBuffer(document)) return document;
-    if (typeof document === 'string') return Buffer.from(document);
-    fail(`${label} document must be bytes or text`);
-}
-
-function isNormalizedRelativeUri(value) {
-    return (
-        typeof value === 'string' &&
-        /^[A-Za-z0-9._/-]+$/.test(value) &&
-        !value.startsWith('/') &&
-        value
-            .split('/')
-            .every((segment) => segment && !['.', '..'].includes(segment))
-    );
-}
-
-function parseArtifact(artifact, label, validate) {
-    if (!artifact || typeof artifact !== 'object') fail(`${label} is required`);
-    if (!isNormalizedRelativeUri(artifact.uri))
-        fail(`${label} uri must be a normalized relative path`);
-    if (!/^[a-f0-9]{64}$/.test(artifact.sha256 ?? ''))
-        fail(`${label} sha256 is invalid`);
-    const document = asBuffer(artifact.document, label);
-    const actualSha256 = sha256(document);
-    if (actualSha256 !== artifact.sha256)
-        fail(`${label} sha256 does not match its document`);
-    let value;
-    try {
-        value = JSON.parse(document.toString('utf8'));
-    } catch (error) {
-        fail(`${label} is not valid JSON (${error.message})`);
-    }
-    const errors = validate(value);
-    if (errors.length > 0) fail(`${label} is invalid\n${errors.join('\n')}`);
-    return { uri: artifact.uri, sha256: actualSha256, value };
-}
-
 function exactKeys(value, expected) {
     if (!value || typeof value !== 'object' || Array.isArray(value))
         return false;
@@ -70,15 +41,6 @@ function exactKeys(value, expected) {
         actual.length === wanted.length &&
         actual.every((key, index) => key === wanted[index])
     );
-}
-
-function duplicateValues(values) {
-    const seen = new Set();
-    return values.filter((value) => {
-        if (seen.has(value)) return true;
-        seen.add(value);
-        return false;
-    });
 }
 
 function primitiveReference(artifact, model, operationId) {
@@ -158,6 +120,15 @@ function actionCapabilities(action) {
         `action.invalidation.${execution.invalidation.mode}@1`,
         `action.post-success.${execution.post_success.mode}@1`,
         `action.retry.${execution.retry.mode}@1`,
+        ...(action.model_graph
+            ? [
+                  'action.typed-result@1',
+                  'action.declared-errors@1',
+                  ...(action.port.input.kind === 'none'
+                      ? ['action.body.none@1']
+                      : []),
+              ]
+            : []),
     ];
 }
 
@@ -529,19 +500,6 @@ function validatePageContract(value, applicationDesignSchema) {
     return errors;
 }
 
-export function validatePageExecutionCapabilities(plan, availableCapabilities) {
-    const duplicates = duplicateValues(availableCapabilities ?? []);
-    const available = new Set(availableCapabilities ?? []);
-    return [
-        ...duplicates.map(
-            (value) => `available capabilities: duplicate ${value}`
-        ),
-        ...(plan?.required_capabilities ?? [])
-            .filter((requirement) => !available.has(requirement))
-            .map((requirement) => `missing target capability ${requirement}`),
-    ];
-}
-
 function sortedIds(entries) {
     return entries.map((entry) => entry?.id).sort();
 }
@@ -551,7 +509,10 @@ function sameValues(left, right) {
 }
 
 export function validatePageExecutionPlan(plan, schema) {
-    const errors = [...validateJsonSchema(plan, schema)];
+    const errors = [
+        ...validateJsonSchema(plan, parsePageSchema(schema)),
+        ...validatePageSessionBinding(plan),
+    ];
     if (!plan || typeof plan !== 'object' || Array.isArray(plan)) return errors;
     const queryNodes = plan.query_nodes ?? [];
     const commandNodes = plan.command_nodes ?? [];
@@ -665,6 +626,7 @@ export function validatePageExecutionPlan(plan, schema) {
     const expectedCapabilities = [
         'composition.independent-node-state@1',
         'composition.producer-node-binding@1',
+        ...sessionCapabilityRequirements(plan),
         ...allNodes.flatMap((node) => node?.capabilities ?? []),
     ];
     const canonicalCapabilities = [...new Set(expectedCapabilities)].sort();
@@ -684,6 +646,7 @@ export function compilePageExecutionPlan({
 }) {
     if (!applicationDesignSchema || !pageExecutionPlanSchema)
         fail('application design and page execution plan schemas are required');
+    applicationDesignSchema = parsePageSchema(applicationDesignSchema);
     const pageArtifact = parseArtifact(pageContract, 'page contract', (value) =>
         validatePageContract(value, applicationDesignSchema)
     );
@@ -703,7 +666,12 @@ export function compilePageExecutionPlan({
     const backendActions = page.actions.filter(
         (action) => action.kind === 'backend'
     );
-    if (page.loads.length === 0 || backendActions.length === 0)
+    const sessionMode = pageArtifact.value.experience.session !== undefined;
+    if (
+        sessionMode
+            ? page.loads.length + backendActions.length === 0
+            : page.loads.length === 0 || backendActions.length === 0
+    )
         fail(
             'a composed plan requires at least one query node and one command node'
         );
@@ -762,6 +730,7 @@ export function compilePageExecutionPlan({
     const outputBindings = page.data_bindings
         .map((binding) => compileOutputBinding(binding, producers))
         .sort((left, right) => left.id.localeCompare(right.id));
+    const session = compilePageSessionBinding(pageArtifact.value, commandPairs);
     const requiredCapabilities = [
         'composition.independent-node-state@1',
         'composition.producer-node-binding@1',
@@ -769,7 +738,8 @@ export function compilePageExecutionPlan({
         ...commandNodes.flatMap((node) => node.capabilities),
     ];
     const model = {
-        schema_version: '1.0.0',
+        schema_version: session ? '1.1.0' : '1.0.0',
+        ...(session ? { session } : {}),
         kind: 'page-execution-plan',
         plan_id: `plan_${sha256(`${pageArtifact.value.design.id}:${page.id}`).slice(0, 16)}`,
         source: {
@@ -786,7 +756,14 @@ export function compilePageExecutionPlan({
             access: structuredClone(page.access),
             state_mode: 'independent-nodes',
         },
-        required_capabilities: [...new Set(requiredCapabilities)].sort(),
+        required_capabilities: [
+            ...new Set([
+                ...requiredCapabilities,
+                ...sessionCapabilityRequirements({
+                    schema_version: session ? '1.1.0' : '1.0.0',
+                }),
+            ]),
+        ].sort(),
         query_nodes: queryNodes,
         command_nodes: commandNodes,
         output_bindings: outputBindings,
@@ -796,3 +773,5 @@ export function compilePageExecutionPlan({
         fail(`compiled plan is invalid\n${errors.join('\n')}`);
     return model;
 }
+
+export { validatePageExecutionCapabilities } from './page-session-binding.mjs';

@@ -510,3 +510,85 @@ relu périmé ; elle ne permet ni de remplacer la source ni de poursuivre une
 publication sur un plan ancien. Le design doit ensuite référencer le nouveau
 fichier `planned` et son empreinte réelle. Les preuves d'usage, d'interface et
 de réseau vivant demeurent des étapes distinctes.
+
+## Session déclarée, actions typées et coque Angular
+
+L’option `application-design` 1.1 ajoute une session explicite à une expérience
+web. Les conceptions 1.0 restent valides avec leurs limites. Le producteur de
+session référence une page, son action backend, son statut de succès et le
+modèle canonique exact. Les pointeurs RFC6901 désignent le jeton, le sujet, le
+menu, les chemins permis et, si nécessaire, une source textuelle de permissions.
+Un nom de champ, un rôle, un booléen `is_admin` ou un item de menu n’invente
+aucune autorisation. Les opérations protégées déclarent leurs identités,
+méthodes, chemins et schémas de sécurité ; la validation les confronte au
+backend ciblé et vérifie leur couverture.
+
+Les étapes ordonnées déclarent un prédicat `is-null` ou `is-true`, une page et
+un producteur de complétion. Acquitter une étape ne modifie pas la valeur
+serveur du résultat initial. L’effet `clear-and-reconnect` efface la session et
+renvoie vers la reconnexion. Une condition de résultat booléenne peut être
+requise avant cet effet. Le sujet peut être optionnel dans une réponse de
+challenge ; établir la session exige néanmoins le sujet et un jeton valides. Les
+champs d’étape sont requis dans ce sujet décodé. Une réponse 200 sans ces
+valeurs n’établit aucune session ; le parcours interactif de second facteur
+reste hors du périmètre rendu.
+
+`action-request` 2.1 produit un modèle d’exécution 1.1. Cette variante autorise
+les graphes de résultats finis : objets fermés, tableaux, maps typées, champs
+optionnels ou nullables et primitive `null`. Le corps absent est explicite et
+n’envoie ni objet vide ni en-tête de contenu. Les anciennes variantes 2.0/1.0
+conservent leurs règles. Les budgets de modèles, champs, profondeur, octets et
+parcours sont appliqués avant lecture ou décodage récursif. Le téléchargement
+réseau avant réception n’est pas borné par cette capacité.
+
+Le chargeur CLI applique une borne commune de **65 536 octets (64 Kio)** aux
+définitions d’action 1.0, 2.0 et 2.1, avant parsing. Au-delà, le fichier est
+refusé avec un code fixe, sans recopier son contenu dans les diagnostics. Cette
+borne de lecture s’ajoute aux règles historiques ; leur compatibilité est
+vérifiée séparément par les suites existantes. Un test CLI permanent couvre la
+frontière de lecture et l’absence de fuite pour les trois versions.
+
+Les réponses d’erreur sont celles déclarées sur chaque opération du contrat
+backend. La sélection observée 1.3 est un opt-in : un 400 absent d’OpenAPI exige
+`observed-only` et des témoins PHP/capture concordants. Cette déclaration ne
+modifie pas l’OpenAPI brut, ne transforme pas une erreur en succès et ne prouve
+pas un backend vivant. La sélection 1.2 et ses succès restent distincts.
+L’action contrôle le statut et le corps typé, borne les messages textuels et lie
+les erreurs aux seuls champs déclarés. Les erreurs inconnues deviennent des
+diagnostics génériques ; aucun corps brut ou rejet du parseur n’est exposé.
+
+Le plan de page 1.1 lie la capsule et les effets à leurs sources sous empreinte.
+Il peut contenir seulement une commande ou seulement une lecture dans cette
+variante. La liaison recompile le plan entier depuis les documents référencés.
+Un binding Angular 1.1 fournit explicitement le module et le jeton
+`APPLICATION_SESSION`. Le résultat d’un producteur de session est consommé après
+décodage ; il n’est pas exposé comme état public de la composition.
+
+La coque Angular produit un store mémoire à signaux readonly, une garde
+fonctionnelle, un intercepteur HttpClient, un menu et la navigation. Les URL des
+services sont liées par `SESSION_ENDPOINTS`, sans URL de banc embarquée. Les
+contextes natifs, dont l’unique `SKIP_AUTH`, sont copiés avec leurs sources et
+empreintes. Le Bearer est limité aux origines, méthodes et chemins déclarés. Les
+requêtes protégées interdisent cache et redirection ; 401 courant efface la
+session, 403 la conserve. Les générations de session et de façade empêchent
+qu’une réponse tardive restaure des données d’un ancien sujet. Aucun stockage
+persistant n’est utilisé ; un rechargement nécessite une reconnexion.
+
+Le menu intersecte les chemins serveur et les routes générées, applique la
+politique de permission déclarée et retire les groupes vides. Les chemins
+externes, ambigus, encodés ou traversants sont refusés. Le rendu utilise des
+liens et groupes HTML natifs, un lien d’évitement, un panneau responsive et une
+cible de focus après navigation. Les libellés sont interpolés comme texte. La
+réalisation des pages métier doit consommer la composition et les erreurs par
+champ ; une façade isolée ne prouve pas cette consommation.
+
+Les nouveaux tests sont découverts par les gates core et Angular existantes.
+Deux domaines de fixture portent des noms et ordres d’étapes différents. Leurs
+formulaires consommateurs montent les fichiers produits et le catalogue passe
+par la composition de lecture native. Ces fixtures ne constituent aucune preuve
+réseau, aucune promotion `verified-live` et aucune application métier livrée.
+Les résultats de tests, le build de la sortie, le clavier et le reflow en
+navigateur ainsi que la revue visuelle restent des preuves distinctes à exécuter
+sur les images relues. Les nouvelles capacités sont explicitement refusées dans
+les trois rendus React ; la régression React historique reste requise et aucune
+parité n’est revendiquée.

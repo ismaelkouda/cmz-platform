@@ -194,6 +194,74 @@ function mergeById(target, entries) {
     }
 }
 
+function responseWitness(input, operation, selection, declarations, used) {
+    const caseValue = pointer(input.witnesses, selection.shape_pointer);
+    if (
+        !input.witnesses.cases.includes(caseValue) ||
+        caseValue.id !== selection.case_id ||
+        caseValue.method !== operation.method ||
+        caseValue.path !== operation.path ||
+        caseValue.status !== selection.status
+    )
+        fail('OBS_BINDING');
+    const body = pointer(caseValue.shape, selection.body_pointer);
+    if (selection.envelope.kind !== 'none') {
+        const expected = `/fields/${caseValue.shape.fields?.findIndex((field) => field.name === selection.envelope.data_field)}/shape`;
+        if (selection.body_pointer !== expected) fail('OBS_BINDING');
+        for (const key of ['data_field', 'error_field', 'message_field'])
+            if (
+                selection.envelope[key] &&
+                !caseValue.shape.fields?.some(
+                    (field) => field.name === selection.envelope[key]
+                )
+            )
+                fail('OBS_BINDING');
+    } else if (selection.body_pointer !== '') fail('OBS_BINDING');
+    witness(
+        body,
+        { kind: 'model', model_id: selection.model_id },
+        declarations
+    );
+    for (const id of reachable(selection.model_id, declarations)) used.add(id);
+}
+
+function errorResponse(input, operation, selection, claim, declarations, used) {
+    responseWitness(input, operation, selection, declarations, used);
+    const declarationIndex = claim.error_responses.findIndex(
+        (candidate) => candidate.status === selection.status
+    );
+    const sourceIndex = input.responseSelections.findIndex(
+        (candidate) =>
+            candidate.operation_id === operation.id &&
+            candidate.status === selection.status &&
+            candidate.outcome === 'error'
+    );
+    if (declarationIndex < 0 || sourceIndex < 0) fail('OBS_COMPLEMENT');
+    const proof = [
+        ...evidence('openapi', `#/response_selections/${sourceIndex}`),
+        ...evidence(
+            'declarations',
+            `#/operations/${input.claims.operations.indexOf(claim)}/error_responses/${declarationIndex}`
+        ),
+        ...evidence('observations', `#${selection.shape_pointer}`),
+    ];
+    return {
+        status: selection.status,
+        outcome: 'error',
+        description:
+            selection.documentation === 'observed-only'
+                ? 'Erreur observée, absente de la documentation OpenAPI.'
+                : 'Erreur documentée et observée, structure sélectionnée.',
+        evidence: proof,
+        body: {
+            media_type: 'application/json',
+            model_id: selection.model_id,
+            envelope: selection.envelope,
+            evidence: proof,
+        },
+    };
+}
+
 export async function compileRuntimeObservationBackend(options) {
     try {
         const input = await loadObservedBackendInputs(options);
@@ -227,39 +295,7 @@ export async function compileRuntimeObservationBackend(options) {
             fail('OBS_LIMIT');
         for (const selection of definition.operations) {
             const claim = sourceClaims(claims, selection);
-            const caseValue = pointer(input.witnesses, selection.shape_pointer);
-            if (
-                !input.witnesses.cases.includes(caseValue) ||
-                caseValue.id !== selection.case_id ||
-                caseValue.method !== selection.method ||
-                caseValue.path !== selection.path ||
-                caseValue.status !== selection.status
-            )
-                fail('OBS_BINDING');
-            const body = pointer(caseValue.shape, selection.body_pointer);
-            if (selection.envelope.kind !== 'none') {
-                const expected = `/fields/${caseValue.shape.fields?.findIndex((field) => field.name === selection.envelope.data_field)}/shape`;
-                if (selection.body_pointer !== expected) fail('OBS_BINDING');
-                for (const key of [
-                    'data_field',
-                    'error_field',
-                    'message_field',
-                ])
-                    if (
-                        selection.envelope[key] &&
-                        !caseValue.shape.fields?.some(
-                            (field) => field.name === selection.envelope[key]
-                        )
-                    )
-                        fail('OBS_BINDING');
-            } else if (selection.body_pointer !== '') fail('OBS_BINDING');
-            witness(
-                body,
-                { kind: 'model', model_id: selection.model_id },
-                declarations
-            );
-            for (const id of reachable(selection.model_id, declarations))
-                used.add(id);
+            responseWitness(input, selection, selection, declarations, used);
             const doc = structuredClone(selected);
             const operation =
                 doc.paths[selection.source_path][
@@ -376,6 +412,18 @@ export async function compileRuntimeObservationBackend(options) {
                             evidence: opEvidence,
                         },
                     },
+                    ...(definition.schema_version === '1.3.0'
+                        ? selection.error_responses.map((response) =>
+                              errorResponse(
+                                  input,
+                                  selection,
+                                  response,
+                                  claim,
+                                  declarations,
+                                  used
+                              )
+                          )
+                        : []),
                 ],
                 evidence: opEvidence,
             });

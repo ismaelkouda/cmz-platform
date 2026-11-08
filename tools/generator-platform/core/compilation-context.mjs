@@ -28,6 +28,10 @@ const COMPILATION_FILES = [
     'tools/generator-platform/core/runtime-observation-evidence.mjs',
     'tools/generator-platform/core/runtime-observation-backend-inputs.mjs',
     'tools/generator-platform/core/backend-contract.mjs',
+    'tools/generator-platform/core/application-design.mjs',
+    'tools/generator-platform/core/application-design-session.mjs',
+    'tools/generator-platform/core/action-request-result-graph.mjs',
+    'tools/generator-platform/validate-ir.mjs',
     'tools/generator-platform/schemas/observation-evidence.schema.json',
 ];
 const RESERVED_ROOTS = new Set([

@@ -276,6 +276,8 @@ export async function renderReactSpaShell({
     designSha256,
     externalWorkspace = false,
 }) {
+    if (design.experiences?.find((entry) => entry.id === experienceId)?.session)
+        throw new Error('APP_SESSION_REACT_UNSUPPORTED');
     if (!/^[a-z][a-z0-9-]*$/.test(appName ?? ''))
         throw new Error('application shell: app name must be kebab-case');
     if (design.design?.status !== 'approved')

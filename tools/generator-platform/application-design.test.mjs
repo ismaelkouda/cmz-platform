@@ -1,7 +1,8 @@
+import { createApplicationSessionFixture } from './test-support/application-session-fixture.mjs';
 import { compileRuntimeObservationBackend } from './adapters/runtime-observation-backend-adapter.mjs';
 import { observedBackendFixture } from './test-support/runtime-observation-backend-fixture.mjs';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -372,4 +373,19 @@ test('une cible adoptée explicitement est consommable, la référence reste ref
     assert.ok(
         target.sources.every((source) => source.status !== 'verified-live')
     );
+});
+
+test('application 1.1 : le statut reference reste interdit et les nouveaux pointeurs restent déclarés', async (t) => {
+    const data = await createApplicationSessionFixture();
+    t.after(() => rm(data.root, { recursive: true, force: true }));
+    assert.deepEqual(validate(data.design, data.contracts), []);
+    const entry = data.contracts.get(data.contract.contract.id);
+    const contracts = new Map([
+        [data.contract.contract.id, { ...entry, role: 'reference' }],
+    ]);
+    assert.notDeepEqual(validate(data.design, contracts), []);
+    const changed = structuredClone(data.design);
+    changed.experiences[0].session.projection.permissions_pointer =
+        '/' + data.names.subject + '/is_admin';
+    assert.notDeepEqual(validate(changed, data.contracts), []);
 });

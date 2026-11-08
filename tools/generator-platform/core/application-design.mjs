@@ -8,6 +8,10 @@ import {
     verifyBackendContractSnapshots,
 } from './backend-contract.mjs';
 import { resolveDataBindingSourceModel } from './data-binding-projection.mjs';
+import {
+    validateExperienceGraph,
+    validateApplicationSessions,
+} from './application-design-session.mjs';
 
 const ACCESS_RANK = { public: 0, authenticated: 1, authorized: 2 };
 const FORBIDDEN_TARGET_TOKENS = [
@@ -513,42 +517,6 @@ function validatePage(page, index, context, errors) {
     validateRegions(page, local, errors);
 }
 
-function validateExperienceGraph(experience, pages, errors) {
-    const allowed = new Set(experience.page_ids ?? []);
-    const visited = new Set([experience.entry_page_id]);
-    const queue = [experience.entry_page_id];
-    while (queue.length > 0) {
-        const page = pages.get(queue.shift());
-        for (const action of page?.actions ?? []) {
-            if (
-                action.kind === 'navigate' &&
-                allowed.has(action.destination_page_id) &&
-                !visited.has(action.destination_page_id)
-            ) {
-                visited.add(action.destination_page_id);
-                queue.push(action.destination_page_id);
-            }
-        }
-    }
-    for (const pageId of allowed) {
-        if (!visited.has(pageId))
-            errors.push(
-                `$.experiences[${experience.id}]: unreachable page ${pageId}`
-            );
-        const page = pages.get(pageId);
-        if (
-            experience.offline_policy !== 'none' &&
-            (page?.loads?.length > 0 ||
-                page?.actions?.some((action) => action.kind === 'backend')) &&
-            !page.states.some((state) => state.kind === 'offline')
-        ) {
-            errors.push(
-                `$.experiences[${experience.id}]: page ${pageId} needs an offline state`
-            );
-        }
-    }
-}
-
 export function validateApplicationDesign(design, schema, backendContracts) {
     const errors = [...validateJsonSchema(design, schema)];
     if (!design || typeof design !== 'object' || Array.isArray(design))
@@ -632,6 +600,9 @@ export function validateApplicationDesign(design, schema, backendContracts) {
         if (!experience.page_ids?.includes(experience.entry_page_id))
             errors.push(`${path}.entry_page_id: must belong to page_ids`);
     }
+    errors.push(
+        ...validateApplicationSessions(design, schema, backendContracts)
+    );
     const context = { contracts: backendContracts, sourceIds, usedSources };
     for (const [index, page] of (design.pages ?? []).entries()) {
         errors.push(
