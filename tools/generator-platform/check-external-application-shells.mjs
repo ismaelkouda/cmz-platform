@@ -43,6 +43,7 @@ import {
     publishNativeSessionShell,
     qualifySessionBrowser,
 } from './proof-support/external-session-native.mjs';
+import { proveNativePublication } from './proof-support/external-publication-native.mjs';
 
 export { qualifyNodeVersion } from './proof-support/external-application-runtime.mjs';
 export { qualifyBrowser, qualifyWeights };
@@ -199,10 +200,16 @@ export async function main(argv = process.argv.slice(2)) {
                 resolve(session.root, `product-${kind.toLowerCase()}`),
                 domain
             );
+            session.lines.push(
+                `X0/${domain} elapsed_ms=${Math.round(performance.now() - started)}`
+            );
+            // X1 : publications scellées sous plan dans cette coque.
+            const published = await proveNativePublication(session, shell);
+            shell.plan = { ...shell.plan, files: published.files };
             sessionShells.push(shell);
             allPlans.push(shell.plan);
             session.lines.push(
-                `X0/${domain} elapsed_ms=${Math.round(performance.now() - started)}`
+                `X1/${domain} elapsed_ms=${Math.round(performance.now() - started)}`
             );
         }
         await session.save();
@@ -239,6 +246,7 @@ export async function main(argv = process.argv.slice(2)) {
             'PASS real-native-shells-and-mutants',
             'PASS EXT03a four document/native cells A+B Angular+React; no PWA or backend claim',
             'PASS X0 two fictitious Angular session shells via create-app --target-root; React refused; no business page or backend claim',
+            'PASS X1 sealed publications under reviewed plans in both session shells; hand-added file and forged registry refused',
             'T19–T28 restent non qualifiés.'
         );
         await session.save();

@@ -27,6 +27,10 @@ import {
 } from './external-application-paths.mjs';
 import { sha256, stableStringify } from './generation-manifest.mjs';
 import {
+    sealShellManifest,
+    verifyApplicationOwnership,
+} from './application-ownership.mjs';
+import {
     commitDirectoryTransaction,
     withGenerationLock,
 } from './generation-transaction.mjs';
@@ -101,7 +105,7 @@ async function verifyWorkspaceRoot(plan, documentSources = false) {
         withFileTypes: true,
     })) {
         if (
-            /^\.[a-z][a-z0-9-]*\.(?:external-candidate-[a-f0-9]{64}|generation-lock(?:\..*)?)$/.test(
+            /^\.[a-z][a-z0-9-]*\.(?:(?:external|publication|previous)-candidate-[a-f0-9]{64}|generation-lock(?:\..*)?)$/.test(
                 entry.name
             )
         ) {
@@ -119,6 +123,8 @@ async function verifyWorkspaceRoot(plan, documentSources = false) {
         );
         if (app.app_name !== entry.name || !plan.profiles.includes(app.profile))
             externalFailure('unowned app manifest');
+        // ADR-0103 : inventaire scellé, expliqué par ses publications.
+        verifyApplicationOwnership(app, plan.manifest.workspace_id);
         const designBytes = await readProductFile(
             productRoot,
             app.design_ref.path
@@ -377,7 +383,7 @@ export async function publishApplicationWorkspace(options) {
     });
 }
 
-async function readOwnedWorkspace(options) {
+export async function readOwnedWorkspace(options) {
     const context = await externalApplicationContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
         targetRoot: options.targetRoot,
@@ -545,6 +551,17 @@ export async function planExternalApplicationShell(options) {
         ...options,
         profile,
     });
+    // ADR-0103 : le manifeste de la coque extérieure naît scellé au produit.
+    const manifestPath = `apps/${options.appName}/.cmz/app-manifest.json`;
+    const sealed = sealShellManifest(
+        JSON.parse(rendered.files['.cmz/app-manifest.json']),
+        workspace.manifest.workspace_id
+    );
+    rendered.files['.cmz/app-manifest.json'] = (
+        await canonicalizeGeneratedFiles({
+            [manifestPath]: JSON.stringify(sealed, null, 2) + '\n',
+        })
+    )[manifestPath];
     const treeSha = sha256(stableStringify(fileArtifacts(rendered.files)));
     const binding = {
         tools_root: workspace.toolsRoot,
@@ -622,7 +639,7 @@ export async function runExternalApplicationCommand(command, args, root) {
     });
 }
 
-function installedBin(plan, packageName, command) {
+export function installedBin(plan, packageName, command) {
     const pkg = plan.installation.installed[packageName];
     const bin = pkg?.bin[command];
     if (!bin) externalFailure('qualified native executable missing');

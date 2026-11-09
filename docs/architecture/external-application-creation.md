@@ -647,3 +647,55 @@ Limites : aucune page métier réalisée, aucun appel backend, aucune connexion
 réussie, aucune étape d’authentification parcourue et aucune parité React. Le
 service worker est bloqué pendant l’oracle ; aucune qualification hors ligne
 n’est revendiquée.
+
+## Inventaire scellé et publications sous plan — X1
+
+[ADR-0103](../adr/0103-propriete-etendue-inventaire-application-scelle.md) étend
+la propriété d’une application extérieure au-delà de la coque. Le registre reste
+`apps/<app>/.cmz/app-manifest.json`. En mode extérieur, `create-app` y ajoute un
+bloc `ownership` : identité du produit, empreinte de l’inventaire de la coque,
+publications acceptées et sceau. Le mode atelier ne change pas.
+
+Chaque commande extérieure vérifie, pour chaque application, que le sceau est
+présent, lié au produit et égal au recalcul. Elle vérifie aussi qu’en annulant
+les publications on retrouve exactement la coque, que chaque publication est
+restée dans ses zones et que l’arbre est égal à l’inventaire, octet pour octet.
+Une application extérieure créée avant X1 n’a pas de sceau : elle est refusée et
+doit être recréée.
+
+`planApplicationPublication` puis `publishApplicationPublication` sont la seule
+voie pour changer cet inventaire :
+
+- ajout sous `src/app/generated/`, ou dans le dossier d’une page dont le contrat
+  `.cmz/pages/<page>.json` existe ;
+- remplacement d’un fichier de page de la coque ou d’un fichier déjà publié,
+  avec l’empreinte d’avant ;
+- aucun autre chemin, aucune suppression, aucun outil hors de la liste fermée
+  (`generate:action-request`, `generate:list-query`,
+  `generate:page-composition`, `page-realization`).
+
+La publication exige le plan relu. Elle recalcule ce plan sous verrou et prépare
+un candidat complet à côté de l’application. Elle le compile avec les binaires
+du produit, échange les deux répertoires, puis lance build, lint, tests,
+`check-workspace` et le contrôle de poids. En cas d’échec, l’arbre précédent
+revient seulement si le nouvel arbre est encore exact. Une publication
+interrompue est annulée à la reprise, sous verrou. Rejouer un plan déjà publié
+ne change rien.
+
+`external-application-publication.test.mjs` couvre, sur les deux domaines
+fictifs, le sceau de création, l’ajout et le remplacement acceptés et une
+seconde publication enchaînée. Il couvre aussi les refus : plan absent, périmé
+ou rejoué, zones non déclarées, fichier ajouté à la main, octet modifié, dossier
+racine non déclaré, registre falsifié (inventaire édité, sceau retiré, sceau
+recalculé sans publication, publication inventée hors zone, autre produit),
+échec à chaque phase, reprise d’une interruption et application non scellée. Le
+runner injecté ne prouve aucune compilation. `check:external-application-shells`
+publie, dans chaque coque avec session des produits A et B, une sortie sous
+`generated/` puis le remplacement d’une page qui la consomme. Il exécute
+réellement la chaîne native et rejoue les refus « fichier ajouté à la main » et
+« registre falsifié » sur le produit installé.
+
+Limites : le sceau n’utilise aucun secret. Une forge délibérée qui recalcule le
+sceau reste possible ; elle est visible dans le Git du produit et relève de la
+revue. Les contenus publiés par la preuve sont fictifs : aucun générateur réel
+n’est encore branché sur cette primitive.

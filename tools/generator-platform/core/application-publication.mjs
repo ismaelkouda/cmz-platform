@@ -1,0 +1,360 @@
+// ADR-0103 : seule voie pour changer l'inventaire d'une application extérieure.
+// Même modèle que create-app : plan relu, verrou, candidat, binaires du
+// produit, échange atomique, contrôles natifs et retour arrière exact.
+import { readdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
+import { EXTERNAL_WORKSPACE_CMZ } from '../renderers/application-workspace-renderer.mjs';
+import {
+    installedBin,
+    qualifyProductInstallation,
+    readOwnedWorkspace,
+    runExternalApplicationCommand,
+} from './application-workspace.mjs';
+import {
+    PUBLICATION_TOOLS,
+    publishedManifest,
+    verifyApplicationOwnership,
+} from './application-ownership.mjs';
+import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
+import {
+    assertSourceWeight,
+    externalFailure,
+    pathExists,
+    readProductFile,
+    stageGeneratedTree,
+    verifyGeneratedTree,
+} from './external-application-paths.mjs';
+import { sha256, stableStringify } from './generation-manifest.mjs';
+import {
+    removeTreeAndSync,
+    renameAndSync,
+    withGenerationLock,
+} from './generation-transaction.mjs';
+
+const APP_MANIFEST = '.cmz/app-manifest.json';
+
+function appLocation(options) {
+    if (!/^[a-z][a-z0-9-]*$/.test(options.appName ?? ''))
+        externalFailure('invalid app name');
+    if (typeof options.targetRoot !== 'string')
+        externalFailure('publication requires a target root');
+    const apps = resolve(options.targetRoot, 'apps');
+    return { apps, output: resolve(apps, options.appName) };
+}
+
+async function currentApplication(workspace, appName) {
+    const root = resolve(workspace.productRoot, 'apps', appName);
+    if (!(await pathExists(root))) externalFailure('application is absent');
+    const manifestBytes = await readProductFile(root, APP_MANIFEST);
+    const manifest = JSON.parse(manifestBytes.toString('utf8'));
+    const files = { [APP_MANIFEST]: manifestBytes.toString('utf8') };
+    for (const entry of manifest.generated_files)
+        files[entry.path] = (await readProductFile(root, entry.path)).toString(
+            'utf8'
+        );
+    return { root, manifest, manifestBytes, files };
+}
+
+export async function planApplicationPublication(options) {
+    const { output } = appLocation(options);
+    if (!PUBLICATION_TOOLS.includes(options.tool))
+        externalFailure('publication tool is not declared');
+    const entries = Object.entries(options.files ?? {});
+    if (
+        entries.length === 0 ||
+        entries.some(([, content]) => typeof content !== 'string')
+    )
+        externalFailure('publication requires file contents');
+    const workspace = await readOwnedWorkspace(options);
+    const workspaceId = workspace.manifest.workspace_id;
+    const installation = await qualifyProductInstallation(workspace);
+    const app = await currentApplication(workspace, options.appName);
+    const current = new Map(
+        app.manifest.generated_files.map((entry) => [entry.path, entry])
+    );
+    const changes = entries
+        .map(([path, content]) => {
+            const before = current.get(path);
+            const change = {
+                path,
+                change: before ? 'replaced' : 'added',
+                sha256: sha256(content),
+                bytes: Buffer.byteLength(content),
+            };
+            if (before)
+                change.before = { sha256: before.sha256, bytes: before.bytes };
+            return change;
+        })
+        .sort((left, right) => (left.path < right.path ? -1 : 1));
+    if (changes.some((entry) => entry.before?.sha256 === entry.sha256))
+        externalFailure('publication without change');
+    const binding = {
+        tools_root: workspace.toolsRoot,
+        target_root: workspace.productRoot,
+        workspace_plan_id: workspace.plan_id,
+        provenance: workspace.provenance,
+        lock_sha256: installation.lock_sha256,
+        installed: installation.metadata,
+        app_name: options.appName,
+        app_manifest_sha256: sha256(app.manifestBytes),
+        tool: options.tool,
+        changes,
+    };
+    const planId = sha256(stableStringify(binding));
+    const record = { plan_id: planId, tool: options.tool, files: changes };
+    const next = publishedManifest(app.manifest, record, workspaceId);
+    const manifestPath = `apps/${options.appName}/${APP_MANIFEST}`;
+    const manifestText = (
+        await canonicalizeGeneratedFiles({
+            [manifestPath]: JSON.stringify(next, null, 2) + '\n',
+        })
+    )[manifestPath];
+    const files = { ...app.files, ...options.files };
+    files[APP_MANIFEST] = manifestText;
+    const candidateName = (kind) =>
+        resolve(
+            workspace.productRoot,
+            'apps',
+            `.${options.appName}.${kind}-candidate-${planId}`
+        );
+    return {
+        plan_id: planId,
+        app_name: options.appName,
+        profile: app.manifest.profile,
+        tool: options.tool,
+        output: `apps/${options.appName}`,
+        outputAbsolute: output,
+        candidate: candidateName('publication'),
+        previous: candidateName('previous'),
+        root: workspace.productRoot,
+        changes,
+        manifest_sha256: sha256(manifestText),
+        files,
+        previousFiles: app.files,
+        workspace,
+        installation,
+    };
+}
+
+export function publicApplicationPublicationPlan(plan) {
+    return {
+        schema_version: '1.0.0',
+        plan_id: plan.plan_id,
+        app_name: plan.app_name,
+        tool: plan.tool,
+        output: plan.output,
+        changes: plan.changes,
+        manifest_sha256: plan.manifest_sha256,
+    };
+}
+
+// Arbre complet et exact selon son propre manifeste, sinon rien n'est retiré.
+async function assertExactOwnedTree(root) {
+    try {
+        const text = (await readProductFile(root, APP_MANIFEST)).toString(
+            'utf8'
+        );
+        const files = { [APP_MANIFEST]: text };
+        for (const entry of JSON.parse(text).generated_files) {
+            const content = await readProductFile(root, entry.path);
+            if (
+                sha256(content) !== entry.sha256 ||
+                content.length !== entry.bytes
+            )
+                externalFailure('drift');
+            files[entry.path] = content.toString('utf8');
+        }
+        await verifyGeneratedTree(root, files);
+    } catch {
+        externalFailure('ambiguous interrupted publication');
+    }
+}
+
+// Un candidat est retiré seulement s'il est un état exact : partiel du plan
+// courant, ou complet selon son propre manifeste.
+async function disposeCandidate(options, candidate) {
+    let plan;
+    try {
+        if (options.tool && options.files)
+            plan = await planApplicationPublication(options);
+    } catch {
+        plan = undefined;
+    }
+    if (plan?.candidate === candidate) {
+        try {
+            await verifyGeneratedTree(candidate, plan.files, { partial: true });
+        } catch {
+            externalFailure('ambiguous interrupted publication');
+        }
+    } else await assertExactOwnedTree(candidate);
+    await removeTreeAndSync(candidate);
+}
+
+// Reprise sous verrou : une publication interrompue est toujours annulée.
+// Le nouvel arbre n'est jamais adopté sans avoir fini ses contrôles, et aucun
+// arbre inexact n'est retiré.
+export async function recoverApplicationPublication(options) {
+    const { apps, output } = appLocation(options);
+    const prefix = `.${options.appName}.`;
+    const own = (await readdir(apps)).filter(
+        (name) =>
+            name.startsWith(prefix) &&
+            /^\.[a-z][a-z0-9-]*\.(?:publication|previous)-candidate-[a-f0-9]{64}$/.test(
+                name
+            )
+    );
+    const previous = own.filter((name) => name.includes('.previous-'));
+    const candidates = own.filter((name) => name.includes('.publication-'));
+    if (previous.length > 1 || candidates.length > 1)
+        externalFailure('ambiguous interrupted publication');
+    if (previous.length === 1) {
+        const previousRoot = resolve(apps, previous[0]);
+        await assertExactOwnedTree(previousRoot);
+        if (await pathExists(output)) {
+            if (candidates.length === 1)
+                externalFailure('ambiguous interrupted publication');
+            // Échange fait, contrôles non confirmés : retour à l'état relu.
+            await assertExactOwnedTree(output);
+            const failed = resolve(
+                apps,
+                previous[0].replace('.previous-', '.publication-')
+            );
+            await renameAndSync(output, failed);
+            await renameAndSync(previousRoot, output);
+            await removeTreeAndSync(failed);
+        } else {
+            await renameAndSync(previousRoot, output);
+            if (candidates.length === 1)
+                await disposeCandidate(options, resolve(apps, candidates[0]));
+        }
+        return { recovered: true };
+    }
+    if (candidates.length === 1) {
+        await disposeCandidate(options, resolve(apps, candidates[0]));
+        return { recovered: true };
+    }
+    return { recovered: false };
+}
+
+async function alreadyPublished(options) {
+    const workspace = await readOwnedWorkspace(options);
+    const app = await currentApplication(workspace, options.appName);
+    return (
+        app.manifest.ownership.publications.at(-1)?.plan_id ===
+        options.expectedPlanId
+    );
+}
+
+export async function publishApplicationPublication(
+    options,
+    dependencies = {}
+) {
+    if (!/^[a-f0-9]{64}$/.test(options.expectedPlanId ?? ''))
+        externalFailure('publication requires a reviewed plan');
+    const run = dependencies.run ?? runExternalApplicationCommand;
+    const phase = dependencies.phase ?? (() => undefined);
+    const { output } = appLocation(options);
+    return withGenerationLock(output, async () => {
+        const recovery = await recoverApplicationPublication(options);
+        if (await alreadyPublished(options))
+            return { plan_id: options.expectedPlanId, recovered: true };
+        const plan = await planApplicationPublication(options);
+        if (plan.plan_id !== options.expectedPlanId)
+            externalFailure('reviewed publication plan is stale');
+        const recheck = async () => {
+            const current = await planApplicationPublication(options);
+            if (current.plan_id !== plan.plan_id)
+                externalFailure('publication inputs changed');
+        };
+        await stageGeneratedTree(plan.candidate, plan.files);
+        let swapped = false;
+        try {
+            await phase('candidate-staged', plan);
+            await run(
+                process.execPath,
+                [
+                    installedBin(
+                        plan,
+                        plan.profile === 'angular-pwa'
+                            ? '@angular/compiler-cli'
+                            : 'typescript',
+                        plan.profile === 'angular-pwa' ? 'ngc' : 'tsc'
+                    ),
+                    '-p',
+                    resolve(plan.candidate, 'tsconfig.app.json'),
+                    '--noEmit',
+                ],
+                plan.root
+            );
+            await verifyGeneratedTree(plan.candidate, plan.files);
+            await phase('compiled', plan);
+            await recheck();
+            await renameAndSync(plan.outputAbsolute, plan.previous);
+            await renameAndSync(plan.candidate, plan.outputAbsolute);
+            swapped = true;
+            await phase('published', plan);
+            for (const target of ['build:production', 'lint', 'test']) {
+                await run(
+                    process.execPath,
+                    [
+                        installedBin(plan, 'nx', 'nx'),
+                        'run',
+                        `${plan.app_name}:${target}`,
+                        '--skipNxCache',
+                        '--outputStyle=stream',
+                    ],
+                    plan.root
+                );
+                await verifyGeneratedTree(plan.outputAbsolute, plan.files);
+                await phase(target, plan);
+            }
+            await run(
+                process.execPath,
+                [
+                    resolve(
+                        plan.root,
+                        `${EXTERNAL_WORKSPACE_CMZ.support}/check-workspace.mjs`
+                    ),
+                ],
+                plan.root
+            );
+            await assertSourceWeight(plan.root);
+            await verifyGeneratedTree(plan.outputAbsolute, plan.files);
+            const after = await readOwnedWorkspace(options);
+            if (after.plan_id !== plan.workspace.plan_id)
+                externalFailure('workspace changed during publication');
+            verifyApplicationOwnership(
+                JSON.parse(plan.files[APP_MANIFEST]),
+                after.manifest.workspace_id
+            );
+            await phase('verified', plan);
+            await removeTreeAndSync(plan.previous);
+            return {
+                plan_id: plan.plan_id,
+                recovered: recovery.recovered,
+                plan,
+            };
+        } catch (error) {
+            try {
+                if (swapped) {
+                    // Seul un arbre encore exact est retiré ; sinon tout reste en place.
+                    await verifyGeneratedTree(plan.outputAbsolute, plan.files);
+                    await renameAndSync(plan.outputAbsolute, plan.candidate);
+                    await renameAndSync(plan.previous, plan.outputAbsolute);
+                }
+                if (await pathExists(plan.candidate)) {
+                    await verifyGeneratedTree(plan.candidate, plan.files);
+                    await removeTreeAndSync(plan.candidate);
+                }
+            } catch (rollbackError) {
+                throw new AggregateError(
+                    [error, rollbackError],
+                    'external application: publication rollback refused; inspect the owned tree locally',
+                    { cause: rollbackError }
+                );
+            }
+            throw error;
+        }
+    });
+}
