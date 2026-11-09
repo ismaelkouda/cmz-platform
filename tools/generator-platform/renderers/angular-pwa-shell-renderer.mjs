@@ -2,7 +2,10 @@ import { createHash } from 'node:crypto';
 
 import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
 import { adaptExternalShellFiles } from './application-workspace-renderer.mjs';
-import { renderAngularApplicationSession } from './angular-application-session-renderer.mjs';
+import {
+    renderAngularApplicationSession,
+    renderExternalSessionGuardSpec,
+} from './angular-application-session-renderer.mjs';
 import { sessionRenderConfiguration } from '../core/application-design-session.mjs';
 
 function sha256(content) {
@@ -613,6 +616,10 @@ self.addEventListener('fetch', (event) => {
         );
         delete files['src/app/access.guard.ts'];
         delete files['src/app/access.guard.spec.ts'];
+        // Le mode atelier ne lance pas la cible test : sa sortie reste inchangée.
+        if (externalWorkspace)
+            files['src/app/session/session.guard.spec.ts'] =
+                renderExternalSessionGuardSpec();
     }
     const canonicalFiles = await canonicalizeGeneratedFiles(
         Object.fromEntries(

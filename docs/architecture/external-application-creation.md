@@ -592,3 +592,52 @@ navigateur ainsi que la revue visuelle restent des preuves distinctes à exécut
 sur les images relues. Les nouvelles capacités sont explicitement refusées dans
 les trois rendus React ; la régression React historique reste requise et aucune
 parité n’est revendiquée.
+
+## Coque Angular avec session en extérieur — X0
+
+Une conception `application-design` 1.1 avec session passe par le même
+`create-app --target-root` que les autres coques : plan revu, verrou, candidat,
+compilation `ngc`, build production, lint, tests et `check-workspace` avec les
+seuls exécutables installés dans le produit. Aucune option, aucun schéma et
+aucun rendu nouveaux ne sont introduits.
+
+En mode extérieur seulement, la coque avec session porte
+`src/app/session/session.guard.spec.ts`. La cible native `test` du produit exige
+au moins un test, et la coque avec session retire `access.guard.spec.ts`. Ce
+test vérifie que les pages publiques restent ouvertes et que les autres pages,
+comme une donnée de route inconnue, redirigent vers la reconnexion sans session.
+Le mode atelier ne lance pas cette cible ; son rendu reste inchangé.
+
+Les entrées restent dans le produit, ici sous `descriptions/` : source déclarée,
+contrat backend, brief et conception. La fermeture du plan contient exactement
+ces fichiers. Les modèles d’exécution, plans de page et contrats du fixture en
+mémoire ne sont pas copiés : la coque produit ses propres contrats de page.
+
+`test:external-application-shells` couvre, pour les deux domaines fictifs
+`observatory` et `equipment-hire` :
+
+- le plan, sa fermeture d’entrées, l’absence d’import `@cmz/` et d’URL de
+  service du contrat dans les fichiers produits ;
+- la garde de session sur chaque route et la redirection par défaut vers la
+  reconnexion ;
+- `create-app --dry-run` puis la publication du plan relu, sans écriture pendant
+  la prévisualisation et avec les binaires du produit seulement ;
+- le refus d’un plan transféré à un produit aux entrées identiques ;
+- le refus d’une entrée modifiée après relecture ;
+- le refus React (`APP_SESSION_REACT_UNSUPPORTED`), en API comme en CLI, sans
+  écriture ;
+- l’état d’entrée du modèle de propriété : un fichier ajouté à la main dans la
+  coque bloque toute commande suivante.
+
+Ces tests utilisent un runner injecté et ne prouvent aucune compilation.
+`check:external-application-shells` ajoute une coque avec session dans chacun
+des produits A et B déjà installés, puis exécute réellement la chaîne native. Le
+navigateur vérifie la page d’entrée publique, le titre, le refus de la page
+d’arrivée sans session, la redirection vers la connexion, celle d’une route
+inconnue et l’absence de requête extérieure. La mutation qui retire la garde
+doit rendre ce contrôle rouge, puis vert après restauration exacte.
+
+Limites : aucune page métier réalisée, aucun appel backend, aucune connexion
+réussie, aucune étape d’authentification parcourue et aucune parité React. Le
+service worker est bloqué pendant l’oracle ; aucune qualification hors ligne
+n’est revendiquée.

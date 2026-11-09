@@ -39,6 +39,10 @@ import {
     runNativeDocumentCell,
     SHARED_DOCUMENT_SOURCE,
 } from './proof-support/external-document-native.mjs';
+import {
+    publishNativeSessionShell,
+    qualifySessionBrowser,
+} from './proof-support/external-session-native.mjs';
 
 export { qualifyNodeVersion } from './proof-support/external-application-runtime.mjs';
 export { qualifyBrowser, qualifyWeights };
@@ -183,6 +187,24 @@ export async function main(argv = process.argv.slice(2)) {
                 };
             }
         }
+        // X0 : une coque Angular avec session par produit fictif indépendant.
+        const sessionShells = [];
+        for (const [kind, domain] of [
+            ['A', 'observatory'],
+            ['B', 'equipment-hire'],
+        ]) {
+            const started = performance.now();
+            const shell = await publishNativeSessionShell(
+                session,
+                resolve(session.root, `product-${kind.toLowerCase()}`),
+                domain
+            );
+            sessionShells.push(shell);
+            allPlans.push(shell.plan);
+            session.lines.push(
+                `X0/${domain} elapsed_ms=${Math.round(performance.now() - started)}`
+            );
+        }
         await session.save();
         const instrumentation = await instrumentProduct(
             session,
@@ -204,6 +226,7 @@ export async function main(argv = process.argv.slice(2)) {
         await qualifyBrowser(session, product, plans, browser);
         await verifyGeneratedTree(instrumentation.proof, instrumentation.files);
         await rm(instrumentation.proof, { recursive: true });
+        await qualifySessionBrowser(session, sessionShells, browser);
         for (const plan of allPlans)
             await verifyGeneratedTree(plan.outputAbsolute, plan.files);
         assert.deepEqual(
@@ -215,6 +238,7 @@ export async function main(argv = process.argv.slice(2)) {
             `native-proof elapsed_ms=${Math.round(performance.now() - proofStarted)}`,
             'PASS real-native-shells-and-mutants',
             'PASS EXT03a four document/native cells A+B Angular+React; no PWA or backend claim',
+            'PASS X0 two fictitious Angular session shells via create-app --target-root; React refused; no business page or backend claim',
             'T19–T28 restent non qualifiés.'
         );
         await session.save();

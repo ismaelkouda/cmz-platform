@@ -598,6 +598,50 @@ self.addEventListener('fetch', (event) => {
 `;
 }
 
+// Mode extérieur seulement : `create-app --target-root` exige que la cible
+// native `test` du produit exécute au moins un test. La coque avec session
+// retire `access.guard.spec.ts` ; ce test prouve sa garde sans session.
+export function renderExternalSessionGuardSpec() {
+    return `import { TestBed } from '@angular/core/testing';
+import { provideRouter, Router, UrlTree, type ActivatedRouteSnapshot, type RouterStateSnapshot } from '@angular/router';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { applicationSessionGuard } from './session.guard';
+import { ApplicationSession, SESSION_CONFIGURATION } from './session.store';
+
+function decide(pageId: unknown): unknown {
+    const route = { data: { page_id: pageId } } as unknown as ActivatedRouteSnapshot;
+    return TestBed.runInInjectionContext(() => applicationSessionGuard(route, {} as RouterStateSnapshot));
+}
+
+describe('applicationSessionGuard sans session', () => {
+    beforeEach(() => {
+        TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    });
+
+    it('laisse ouvertes les pages publiques déclarées', () => {
+        for (const route of SESSION_CONFIGURATION.routes.filter((entry) => entry.access.mode === 'public')) {
+            expect(decide(route.page_id)).toBe(true);
+        }
+    });
+
+    it('redirige chaque page non publique et toute donnée de route inconnue vers la reconnexion', () => {
+        const session = TestBed.inject(ApplicationSession);
+        const router = TestBed.inject(Router);
+        const reconnect = session.path(SESSION_CONFIGURATION.reconnect_page_id);
+        expect(session.connected()).toBe(false);
+        const guarded = SESSION_CONFIGURATION.routes.filter((entry) => entry.access.mode !== 'public');
+        expect(guarded.length).toBeGreaterThan(0);
+        for (const pageId of [...guarded.map((entry) => entry.page_id), undefined, 'page-absente']) {
+            const decision = decide(pageId);
+            expect(decision).toBeInstanceOf(UrlTree);
+            expect(router.serializeUrl(decision as UrlTree)).toBe(reconnect);
+        }
+    });
+});
+`;
+}
+
 export async function renderAngularApplicationSession({ design, experience }) {
     const config = sessionRenderConfiguration(design, experience);
     const support = await renderSessionHostSupport();
