@@ -21,6 +21,7 @@ import {
 } from '../test-support/external-application-fixture.mjs';
 import { runDocumentCli } from '../test-support/external-document-fixture.mjs';
 import {
+    CMZ_MODULE_SPECIFIER,
     createAppArguments,
     sessionShellOptions,
     writeExternalSessionDesign,
@@ -28,7 +29,6 @@ import {
 import { fileMutation } from './external-application-checks.mjs';
 import {
     confinedNode,
-    qualifyNodeVersion,
     record,
     targetArguments,
 } from './external-application-runtime.mjs';
@@ -91,7 +91,7 @@ export async function publishNativeSessionShell(session, root, domain) {
             .filter(([path]) => path.endsWith('.ts'))
             .map(([, content]) => content)
             .join('\n'),
-        /from ['"]@cmz\//
+        CMZ_MODULE_SPECIFIER
     );
     session.lines.push(
         `X0/${domain} app=${plan.app_name} plan_id=${plan.plan_id} tree_sha256=${plan.tree_sha256}`
@@ -165,6 +165,12 @@ try {
 }
 
 export async function qualifySessionBrowser(session, shells, browser) {
+    // Le Node du rendu est le même pour tous les produits ; qualifyBrowser l'a
+    // déjà qualifié et enregistré une fois pour cette preuve.
+    assert.ok(
+        session.lines.some((line) => line.startsWith('renderer_node=')),
+        'Node du rendu non qualifié avant l’oracle de session'
+    );
     const browserRelative = relative(browser.root, browser.executable)
         .split('\\')
         .join('/');
@@ -194,7 +200,6 @@ export async function qualifySessionBrowser(session, shells, browser) {
                     `instrumentation=X0/${domain}/${path} sha256=${hash(content)}`
                 );
             }
-            qualifyNodeVersion(session, product, { browser });
             const build = () =>
                 record(
                     session,

@@ -73,11 +73,11 @@ ATELIER-DEPS-COMPAT-01 restent distincts. Une mise à jour technique du produit
 exigera UPDATE-WORKSPACE-01 : plan relu et transaction. L'évolution n'est pas
 implémentée dans ce premier point.
 
-Le job de preuve Linux est câblé dans le candidat mais n'a pas encore été
-exécuté. Son contexte obligatoire `External application shells` est déclaré dans
-`.github/branch-protection.main.json`. Cette déclaration ne modifie pas la
-protection réelle de GitHub : son application reste un acte séparé du
-propriétaire après la fusion.
+Le job de preuve Linux `External application shells` s'exécute dans la CI. Son
+contexte est déclaré obligatoire dans `.github/branch-protection.main.json` et
+figure parmi les contrôles requis de `main`. Ce fichier ne modifie pas à lui
+seul la protection réelle de GitHub : son application reste un acte séparé du
+propriétaire.
 
 ## Entrées du produit et shells
 
@@ -599,7 +599,8 @@ Une conception `application-design` 1.1 avec session passe par le même
 `create-app --target-root` que les autres coques : plan revu, verrou, candidat,
 compilation `ngc`, build production, lint, tests et `check-workspace` avec les
 seuls exécutables installés dans le produit. Aucune option, aucun schéma et
-aucun rendu nouveaux ne sont introduits.
+aucun rendu de page nouveaux ne sont introduits ; seul le test de garde décrit
+ci-dessous s'ajoute à la coque, en mode extérieur.
 
 En mode extérieur seulement, la coque avec session porte
 `src/app/session/session.guard.spec.ts`. La cible native `test` du produit exige
@@ -613,21 +614,26 @@ contrat backend, brief et conception. La fermeture du plan contient exactement
 ces fichiers. Les modèles d’exécution, plans de page et contrats du fixture en
 mémoire ne sont pas copiés : la coque produit ses propres contrats de page.
 
-`test:external-application-shells` couvre, pour les deux domaines fictifs
+`test:external-application-shells` couvre, sur les deux domaines fictifs
 `observatory` et `equipment-hire` :
 
-- le plan, sa fermeture d’entrées, l’absence d’import `@cmz/` et d’URL de
-  service du contrat dans les fichiers produits ;
+- le plan, sa fermeture d’entrées, l’absence de tout module `@cmz/` (`from`,
+  import nu, `import()` ou `require`) et d’URL de service du contrat dans les
+  fichiers produits ;
 - la garde de session sur chaque route et la redirection par défaut vers la
   reconnexion ;
 - `create-app --dry-run` puis la publication du plan relu, sans écriture pendant
   la prévisualisation et avec les binaires du produit seulement ;
-- le refus d’un plan transféré à un produit aux entrées identiques ;
-- le refus d’une entrée modifiée après relecture ;
-- le refus React (`APP_SESSION_REACT_UNSUPPORTED`), en API comme en CLI, sans
-  écriture ;
-- l’état d’entrée du modèle de propriété : un fichier ajouté à la main dans la
-  coque bloque toute commande suivante.
+- le test de garde présent en mode extérieur et absent en mode atelier.
+
+Quatre contre-tests ne tournent que sur un domaine, le refus ne dépendant pas du
+domaine :
+
+- `observatory` : refus d’un plan transféré à un produit aux entrées identiques,
+  puis d’une entrée modifiée après relecture ;
+- `equipment-hire` : refus React (`APP_SESSION_REACT_UNSUPPORTED`), en API comme
+  en CLI, sans écriture, puis état d’entrée du modèle de propriété : un fichier
+  ajouté à la main dans la coque bloque toute commande suivante.
 
 Ces tests utilisent un runner injecté et ne prouvent aucune compilation.
 `check:external-application-shells` ajoute une coque avec session dans chacun

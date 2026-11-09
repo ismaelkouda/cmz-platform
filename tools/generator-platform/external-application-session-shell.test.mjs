@@ -27,6 +27,7 @@ import {
 } from './test-support/external-application-fixture.mjs';
 import { runDocumentCli } from './test-support/external-document-fixture.mjs';
 import {
+    CMZ_MODULE_SPECIFIER,
     createAppArguments,
     SESSION_FIXTURE_DOMAINS,
     sessionShellOptions,
@@ -71,7 +72,7 @@ test('X0 : deux produits fictifs planifient une coque Angular avec session, sans
         const source = typescript(plan)
             .map(([, content]) => content)
             .join('\n');
-        assert.doesNotMatch(source, /from ['"]@cmz\//);
+        assert.doesNotMatch(source, CMZ_MODULE_SPECIFIER);
         assert.equal(
             typescript(plan).filter(([, content]) =>
                 /export const SKIP_AUTH =/.test(content)
@@ -310,4 +311,23 @@ test('X0 : la coque extérieure avec session porte son test de garde ; le mode a
             )
         );
     }
+});
+
+// V9-R1 : l'oracle du test 37 refuse aussi un import sans `from`.
+test('X0 : l’oracle « aucun module cmz » voit chaque forme d’import, sans faux positif', () => {
+    for (const source of [
+        "import { session } from '@cmz/shared-domain';",
+        "import '@cmz/x';",
+        'import "@cmz/x";',
+        "export * from '@cmz/x';",
+        "const lazy = await import('@cmz/x');",
+        'const old = require(`@cmz/x`);',
+    ])
+        assert.match(source, CMZ_MODULE_SPECIFIER, source);
+    for (const source of [
+        "import { inject } from '@angular/core';",
+        "import { tokens } from '@cmzx/y';",
+        '// cmz est le nom de l’atelier, pas un module.',
+    ])
+        assert.doesNotMatch(source, CMZ_MODULE_SPECIFIER, source);
 });

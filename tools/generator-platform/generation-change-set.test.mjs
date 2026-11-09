@@ -4,6 +4,7 @@ import {
     copyFile,
     mkdtemp,
     readFile,
+    realpath,
     rm,
     writeFile,
 } from 'node:fs/promises';
@@ -37,7 +38,9 @@ async function pathExists(path) {
 }
 
 test('dry-run plans a new dual-target generation without writing', async () => {
-    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-new-'));
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-new-'))
+    );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     try {
         const first = await generateActionRequest({
@@ -65,8 +68,8 @@ test('dry-run plans a new dual-target generation without writing', async () => {
 });
 
 test('apply creates a reviewed first publication when parent directories are absent', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-apply-new-nested-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-apply-new-nested-'))
     );
     const outputRoot = resolve(
         temporaryRoot,
@@ -102,8 +105,8 @@ test('apply creates a reviewed first publication when parent directories are abs
 });
 
 test('apply rejects a stale reviewed first publication before creating output', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-apply-new-stale-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-apply-new-stale-'))
     );
     const outputRoot = resolve(
         temporaryRoot,
@@ -141,8 +144,8 @@ test('apply rejects a stale reviewed first publication before creating output', 
 });
 
 test('dry-run reports an unchanged generated tree and performs no write', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-dry-run-unchanged-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-unchanged-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     try {
@@ -170,8 +173,8 @@ test('dry-run reports an unchanged generated tree and performs no write', async 
 });
 
 test('dry-run refuses drift in a generator-owned artifact without repairing it', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-dry-run-drift-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-drift-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const modelPath = resolve(outputRoot, 'angular/src/models.ts');
@@ -200,8 +203,8 @@ test('dry-run refuses drift in a generator-owned artifact without repairing it',
 });
 
 test('apply reconciles files already equal to the exact deterministic desired output', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-dry-run-exact-desired-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-exact-desired-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const desiredRoot = resolve(temporaryRoot, 'desired-support');
@@ -278,8 +281,8 @@ test('apply reconciles files already equal to the exact deterministic desired ou
 });
 
 test('dry-run computes replacements for an evolved definition without applying them', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-dry-run-evolution-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-evolution-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const evolvedPath = resolve(temporaryRoot, 'support-v2.definition.json');
@@ -324,8 +327,8 @@ test('dry-run computes replacements for an evolved definition without applying t
 });
 
 test('the Change Set identifies obsolete generator-owned artifacts without deleting them', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-dry-run-delete-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-delete-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     try {
@@ -362,8 +365,8 @@ test('the Change Set identifies obsolete generator-owned artifacts without delet
 });
 
 test('dry-run preserves edited human-owned extensions byte-for-byte by observed hash', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-dry-run-human-owned-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-human-owned-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const contents = {
@@ -419,8 +422,8 @@ test('dry-run preserves edited human-owned extensions byte-for-byte by observed 
 });
 
 test('dry-run refuses unsupported ownership pairs', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-dry-run-unsupported-owner-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-unsupported-owner-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const manifestPath = resolve(
@@ -456,8 +459,8 @@ test('dry-run refuses unsupported ownership pairs', async () => {
 });
 
 test('dry-run rejects a structurally invalid previous manifest fail-closed', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-dry-run-invalid-manifest-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-invalid-manifest-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const manifestPath = resolve(
@@ -491,8 +494,8 @@ test('dry-run rejects a structurally invalid previous manifest fail-closed', asy
 });
 
 test('dry-run never converts removal of a human extension into delete', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-dry-run-human-delete-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-dry-run-human-delete-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     try {
