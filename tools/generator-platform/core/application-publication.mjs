@@ -56,7 +56,9 @@ async function currentApplication(workspace, appName) {
     return { root, manifest, manifestBytes, files };
 }
 
-export async function planApplicationPublication(options) {
+// `internal.recoveringApp` : seulement depuis la reprise sous verrou, pour
+// tolérer les candidats de cette application (ADR-0103).
+export async function planApplicationPublication(options, internal = {}) {
     const { output } = appLocation(options);
     if (!PUBLICATION_TOOLS.includes(options.tool))
         externalFailure('publication tool is not declared');
@@ -66,7 +68,7 @@ export async function planApplicationPublication(options) {
         entries.some(([, content]) => typeof content !== 'string')
     )
         externalFailure('publication requires file contents');
-    const workspace = await readOwnedWorkspace(options);
+    const workspace = await readOwnedWorkspace(options, internal);
     const workspaceId = workspace.manifest.workspace_id;
     const installation = await qualifyProductInstallation(workspace);
     const app = await currentApplication(workspace, options.appName);
@@ -177,7 +179,10 @@ async function disposeCandidate(options, candidate) {
     let plan;
     try {
         if (options.tool && options.files)
-            plan = await planApplicationPublication(options);
+            plan = await planApplicationPublication(
+                options,
+                recovering(options)
+            );
     } catch {
         plan = undefined;
     }
@@ -191,10 +196,13 @@ async function disposeCandidate(options, candidate) {
     await removeTreeAndSync(candidate);
 }
 
-// Reprise sous verrou : une publication interrompue est toujours annulée.
-// Le nouvel arbre n'est jamais adopté sans avoir fini ses contrôles, et aucun
-// arbre inexact n'est retiré.
-export async function recoverApplicationPublication(options) {
+const recovering = (options) => ({ recoveringApp: options.appName });
+
+// Reprise, verrou tenu : une publication interrompue est annulée si son état
+// est exact ; sinon elle est refusée comme ambiguë et tout reste en place. Le
+// nouvel arbre n'est jamais adopté sans avoir fini ses contrôles. Tant qu'elle
+// n'est pas reprise, toute autre commande extérieure est refusée.
+async function recoverUnderLock(options) {
     const { apps, output } = appLocation(options);
     const prefix = `.${options.appName}.`;
     const own = (await readdir(apps)).filter(
@@ -237,8 +245,14 @@ export async function recoverApplicationPublication(options) {
     return { recovered: false };
 }
 
+// Commande de reprise explicite : prend le verrou de l'application.
+export async function recoverApplicationPublication(options) {
+    const { output } = appLocation(options);
+    return withGenerationLock(output, () => recoverUnderLock(options));
+}
+
 async function alreadyPublished(options) {
-    const workspace = await readOwnedWorkspace(options);
+    const workspace = await readOwnedWorkspace(options, recovering(options));
     const app = await currentApplication(workspace, options.appName);
     return (
         app.manifest.ownership.publications.at(-1)?.plan_id ===
@@ -254,21 +268,27 @@ export async function publishApplicationPublication(
         externalFailure('publication requires a reviewed plan');
     const run = dependencies.run ?? runExternalApplicationCommand;
     const phase = dependencies.phase ?? (() => undefined);
+    // Injectable pour éprouver un échec entre les deux renommages de l'échange.
+    const swap = dependencies.rename ?? renameAndSync;
+    const internal = recovering(options);
     const { output } = appLocation(options);
     return withGenerationLock(output, async () => {
-        const recovery = await recoverApplicationPublication(options);
+        const recovery = await recoverUnderLock(options);
         if (await alreadyPublished(options))
-            return { plan_id: options.expectedPlanId, recovered: true };
-        const plan = await planApplicationPublication(options);
+            return {
+                plan_id: options.expectedPlanId,
+                replayed: true,
+                recovered: recovery.recovered,
+            };
+        const plan = await planApplicationPublication(options, internal);
         if (plan.plan_id !== options.expectedPlanId)
             externalFailure('reviewed publication plan is stale');
         const recheck = async () => {
-            const current = await planApplicationPublication(options);
+            const current = await planApplicationPublication(options, internal);
             if (current.plan_id !== plan.plan_id)
                 externalFailure('publication inputs changed');
         };
         await stageGeneratedTree(plan.candidate, plan.files);
-        let swapped = false;
         try {
             await phase('candidate-staged', plan);
             await run(
@@ -290,9 +310,8 @@ export async function publishApplicationPublication(
             await verifyGeneratedTree(plan.candidate, plan.files);
             await phase('compiled', plan);
             await recheck();
-            await renameAndSync(plan.outputAbsolute, plan.previous);
-            await renameAndSync(plan.candidate, plan.outputAbsolute);
-            swapped = true;
+            await swap(plan.outputAbsolute, plan.previous);
+            await swap(plan.candidate, plan.outputAbsolute);
             await phase('published', plan);
             for (const target of ['build:production', 'lint', 'test']) {
                 await run(
@@ -321,7 +340,7 @@ export async function publishApplicationPublication(
             );
             await assertSourceWeight(plan.root);
             await verifyGeneratedTree(plan.outputAbsolute, plan.files);
-            const after = await readOwnedWorkspace(options);
+            const after = await readOwnedWorkspace(options, internal);
             if (after.plan_id !== plan.workspace.plan_id)
                 externalFailure('workspace changed during publication');
             verifyApplicationOwnership(
@@ -332,15 +351,27 @@ export async function publishApplicationPublication(
             await removeTreeAndSync(plan.previous);
             return {
                 plan_id: plan.plan_id,
+                replayed: false,
                 recovered: recovery.recovered,
                 plan,
             };
         } catch (error) {
             try {
-                if (swapped) {
-                    // Seul un arbre encore exact est retiré ; sinon tout reste en place.
-                    await verifyGeneratedTree(plan.outputAbsolute, plan.files);
-                    await renameAndSync(plan.outputAbsolute, plan.candidate);
+                // L'ancien arbre mis de côté revient toujours, même si l'échange
+                // s'est arrêté entre ses deux renommages : l'application n'est
+                // jamais laissée absente. Seul un arbre neuf encore exact est
+                // déplacé ; sinon tout reste en place.
+                if (await pathExists(plan.previous)) {
+                    if (await pathExists(plan.outputAbsolute)) {
+                        await verifyGeneratedTree(
+                            plan.outputAbsolute,
+                            plan.files
+                        );
+                        await renameAndSync(
+                            plan.outputAbsolute,
+                            plan.candidate
+                        );
+                    }
                     await renameAndSync(plan.previous, plan.outputAbsolute);
                 }
                 if (await pathExists(plan.candidate)) {

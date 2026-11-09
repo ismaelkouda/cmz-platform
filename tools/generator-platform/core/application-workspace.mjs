@@ -104,13 +104,22 @@ async function verifyWorkspaceRoot(plan, documentSources = false) {
     for (const entry of await readdir(resolve(productRoot, 'apps'), {
         withFileTypes: true,
     })) {
-        if (
-            /^\.[a-z][a-z0-9-]*\.(?:(?:external|publication|previous)-candidate-[a-f0-9]{64}|generation-lock(?:\..*)?)$/.test(
+        const working =
+            /^\.([a-z][a-z0-9-]*)\.(?:(external|publication|previous)-candidate-[a-f0-9]{64}|generation-lock(?:\..*)?)$/.exec(
                 entry.name
-            )
-        ) {
+            );
+        if (working) {
             if (!entry.isDirectory() || entry.isSymbolicLink())
                 externalFailure('invalid working directory');
+            // ADR-0103 : une publication interrompue bloque toute autre
+            // commande ; seule la reprise de cette application passe.
+            if (
+                ['publication', 'previous'].includes(working[2]) &&
+                working[1] !== plan.recoveringApp
+            )
+                externalFailure(
+                    `interrupted publication pending for app ${working[1]}; recover it first`
+                );
             continue;
         }
         if (!entry.isDirectory() || entry.isSymbolicLink())
@@ -239,8 +248,10 @@ async function workspaceSnapshot(context, options, profiles) {
 }
 
 // Public workspace creation and shell generation retain strict ownership.
-export async function planApplicationWorkspace(options) {
-    return planWorkspace(options, false);
+// `internal.recoveringApp` est réservé à la reprise sous verrou d'une
+// publication (application-publication.mjs) ; ce n'est pas une option publique.
+export async function planApplicationWorkspace(options, internal = {}) {
+    return planWorkspace(options, false, internal);
 }
 
 // Compilation only: neighbours may be sources without becoming dependencies.
@@ -248,7 +259,7 @@ export async function planCompilationWorkspace(options) {
     return planWorkspace(options, true);
 }
 
-async function planWorkspace(options, documentSources) {
+async function planWorkspace(options, documentSources, internal = {}) {
     const profiles = normalizeWorkspaceOptions(options);
     const context = await externalApplicationContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
@@ -321,6 +332,7 @@ async function planWorkspace(options, documentSources) {
         inputPaths: options.inputPaths ?? [],
         output: context.productRoot,
         candidate: workspaceCandidate(context.productRoot, planId),
+        recoveringApp: internal.recoveringApp,
     };
     if (await pathExists(context.productRoot))
         await verifyWorkspaceRoot(plan, documentSources);
@@ -383,7 +395,7 @@ export async function publishApplicationWorkspace(options) {
     });
 }
 
-export async function readOwnedWorkspace(options) {
+export async function readOwnedWorkspace(options, internal = {}) {
     const context = await externalApplicationContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
         targetRoot: options.targetRoot,
@@ -412,14 +424,17 @@ export async function readOwnedWorkspace(options) {
             )
         ).map((entry) => entry.path);
     }
-    return planApplicationWorkspace({
-        workspaceRoot: context.toolsRoot,
-        targetRoot: context.productRoot,
-        profiles: manifest.profiles,
-        githubRepository: manifest.github_repository,
-        reviewOwner: manifest.review_owner,
-        inputPaths,
-    });
+    return planApplicationWorkspace(
+        {
+            workspaceRoot: context.toolsRoot,
+            targetRoot: context.productRoot,
+            profiles: manifest.profiles,
+            githubRepository: manifest.github_repository,
+            reviewOwner: manifest.review_owner,
+            inputPaths,
+        },
+        internal
+    );
 }
 
 function inputFilePath(path) {

@@ -273,6 +273,19 @@ commentaire dans l'outil ne retire pas la propriété du produit : un nouveau pl
 vérifie son snapshot intact, sans réécrire les fichiers selon un renderer plus
 récent. Aucune migration ou adoption silencieuse n'est autorisée.
 
+Depuis X1, une publication dans une application existante utilise deux autres
+répertoires de travail : le candidat
+`apps/.<app>.publication-candidate-<plan_id>/` et l'arbre mis de côté
+`apps/.<app>.previous-candidate-<plan_id>/`. Sa reprise est propre à
+`application-publication.mjs` ; elle n'utilise pas le journal de
+`generation-transaction.mjs`. Tant que l'un de ces répertoires existe, toute
+autre commande extérieure sur le produit est refusée
+(`interrupted publication pending for app <app>; recover it first`). Seules
+passent la reprise explicite `recoverApplicationPublication`, qui prend le
+verrou de l'application, et la publication relue de cette même application, qui
+reprend d'abord. La reprise annule l'état interrompu s'il est exact ; sinon elle
+le refuse comme ambigu et laisse tout en place pour une inspection locale.
+
 ## Qualification séparée des tests de fichiers
 
 `test:external-application-shells` teste plans, chemins, marqueurs, refus,
@@ -677,10 +690,14 @@ voie pour changer cet inventaire :
 La publication exige le plan relu. Elle recalcule ce plan sous verrou et prépare
 un candidat complet à côté de l’application. Elle le compile avec les binaires
 du produit, échange les deux répertoires, puis lance build, lint, tests,
-`check-workspace` et le contrôle de poids. En cas d’échec, l’arbre précédent
-revient seulement si le nouvel arbre est encore exact. Une publication
-interrompue est annulée à la reprise, sous verrou. Rejouer un plan déjà publié
-ne change rien.
+`check-workspace` et le contrôle de poids. En cas d’échec, l’arbre mis de côté
+revient toujours, même si l’échange s’est arrêté entre ses deux renommages :
+l’application n’est jamais laissée absente. Le nouvel arbre n’est déplacé que
+s’il est encore exact ; sinon tout reste en place. Une publication interrompue
+bloque toute autre commande extérieure jusqu’à sa reprise (section « Ownership
+et reprise »). La reprise l’annule si l’état interrompu est exact ; sinon elle
+la refuse et conserve tout. Rejouer un plan déjà publié ne change rien et le dit
+(`replayed`).
 
 `external-application-publication.test.mjs` couvre, sur les deux domaines
 fictifs, le sceau de création, l’ajout et le remplacement acceptés et une
@@ -688,14 +705,31 @@ seconde publication enchaînée. Il couvre aussi les refus : plan absent, périm
 ou rejoué, zones non déclarées, fichier ajouté à la main, octet modifié, dossier
 racine non déclaré, registre falsifié (inventaire édité, sceau retiré, sceau
 recalculé sans publication, publication inventée hors zone, autre produit),
-échec à chaque phase, reprise d’une interruption et application non scellée. Le
-runner injecté ne prouve aucune compilation. `check:external-application-shells`
-publie, dans chaque coque avec session des produits A et B, une sortie sous
-`generated/` puis le remplacement d’une page qui la consomme. Il exécute
-réellement la chaîne native et rejoue les refus « fichier ajouté à la main » et
-« registre falsifié » sur le produit installé.
+échec à chaque phase, échec entre les deux renommages, arbre altéré après
+l’échange, octet modifié à longueur égale, reprise d’une interruption, blocage
+des autres commandes tant qu’elle n’est pas reprise et application non scellée.
+Un test nommé « limite connue » montre qu’une forge complète, sceau recalculé,
+passe. Le runner injecté ne prouve aucune compilation.
+`check:external-application-shells` publie, dans chaque coque avec session des
+produits A et B, une sortie sous `generated/` puis le remplacement d’une page
+qui la consomme. Il exécute réellement la chaîne native et rejoue les refus «
+fichier ajouté à la main » et « registre falsifié » sur le produit installé.
 
-Limites : le sceau n’utilise aucun secret. Une forge délibérée qui recalcule le
-sceau reste possible ; elle est visible dans le Git du produit et relève de la
-revue. Les contenus publiés par la preuve sont fictifs : aucun générateur réel
-n’est encore branché sur cette primitive.
+Limites :
+
+- le sceau n’utilise aucun secret. `computeOwnershipSeal` est une fonction
+  exportée de l’atelier : une forge complète coûte quelques lignes et passe ;
+- `tool` et `plan_id` d’une publication sont déclaratifs. Le registre prouve
+  quels octets ont été publiés, pas quel outil les a produits ;
+- la forge n’est visible que si le Git du produit est versionné et relu, ce que
+  l’atelier ne vérifie pas. Le `check-workspace` du produit contrôle les
+  empreintes de l’inventaire, pas le sceau ;
+- la primitive publie du texte UTF-8 seulement ; un actif binaire exigera une
+  extension ;
+- une commande à la fois par produit est supposée : le verrou est par
+  application ;
+- une application créée avant X1 se recrée : supprimer `apps/<app>` dans le
+  produit (le marqueur ne liste pas les applications), puis relancer
+  `create-app --target-root` ;
+- les contenus publiés par la preuve sont fictifs : aucun générateur réel n’est
+  encore branché sur cette primitive.

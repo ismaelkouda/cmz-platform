@@ -156,9 +156,16 @@ export async function main(argv = process.argv.slice(2)) {
                 const run = (command, args, cwd) => {
                     assert.equal(command, process.execPath);
                     assert.equal(cwd, root);
+                    // Libellé stable, sans chemin du laboratoire.
+                    const label =
+                        args[1] === 'run'
+                            ? args[2]
+                            : args[0].endsWith('check-workspace.mjs')
+                              ? 'workspace-contract'
+                              : 'native-compiler';
                     record(
                         session,
-                        `T9-T12/recovery/${args[2] ?? 'compiler'}`,
+                        `T9-T12/recovery/${label}`,
                         confinedNode(session, root, args)
                     );
                 };
@@ -204,12 +211,13 @@ export async function main(argv = process.argv.slice(2)) {
                 `X0/${domain} elapsed_ms=${Math.round(performance.now() - started)}`
             );
             // X1 : publications scellées sous plan dans cette coque.
+            const publishing = performance.now();
             const published = await proveNativePublication(session, shell);
             shell.plan = { ...shell.plan, files: published.files };
             sessionShells.push(shell);
             allPlans.push(shell.plan);
             session.lines.push(
-                `X1/${domain} elapsed_ms=${Math.round(performance.now() - started)}`
+                `X1/${domain} elapsed_ms=${Math.round(performance.now() - publishing)}`
             );
         }
         await session.save();

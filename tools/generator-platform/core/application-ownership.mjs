@@ -1,6 +1,7 @@
 // ADR-0103 : inventaire d'application extérieure scellé et mis à jour sous plan.
 // Le sceau ne dépend d'aucun secret : il empêche l'adoption par erreur ou en
-// silence, pas une forge délibérée, qui reste visible dans le Git du produit.
+// silence, pas une forge délibérée (calcul public, `tool` et `plan_id`
+// déclaratifs) : voir les limites de l'ADR.
 import {
     externalFailure,
     safeRelativePath,

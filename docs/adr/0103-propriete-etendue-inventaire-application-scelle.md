@@ -63,6 +63,13 @@ quelqu'un qui lit son code.
   retiré est refusé.
 - Inconvénients : un format de manifeste propre au mode extérieur.
 
+`commitDirectoryTransaction` (`generation-transaction.mjs`) n'est pas réutilisé
+pour l'échange : il place l'arbre précédent dans `previous`, à côté du candidat.
+Pour un candidat au niveau de `apps/`, ce nom pourrait être celui d'une
+application, et il échapperait au motif toléré et ignoré par Git des répertoires
+de travail. La publication garde donc ses deux répertoires nommés par le plan et
+sa propre reprise.
+
 ## Décision
 
 Option D. En mode extérieur seulement, `apps/<app>/.cmz/app-manifest.json` porte
@@ -103,10 +110,20 @@ La publication suit le modèle de `create-app` : plan relu obligatoire
 (`expectedPlanId`), verrou, plan recalculé sous verrou, candidat complet au même
 niveau que l'application, compilation par les binaires du produit, échange
 atomique de répertoires, puis build, lint, tests, `check-workspace` et poids des
-sources. En cas d'échec, l'arbre précédent est restauré seulement si le nouvel
-arbre est encore exactement celui du plan. Une publication interrompue est
-reprise sous verrou. Le plan lie l'espace, l'installation, le manifeste courant
-(sceau compris), l'outil et chaque fichier publié.
+sources. En cas d'échec, l'arbre mis de côté revient toujours, même si l'échange
+s'est arrêté entre ses deux renommages : l'application n'est jamais laissée
+absente. Le nouvel arbre n'est déplacé que s'il est encore exactement celui du
+plan ; sinon tout reste en place. Le plan lie l'espace, l'installation, le
+manifeste courant (sceau compris), l'outil et chaque fichier publié.
+
+Une publication interrompue laisse `apps/.<app>.publication-candidate-<plan>` ou
+`apps/.<app>.previous-candidate-<plan>`. Tant que l'un d'eux existe,
+`verifyWorkspaceRoot` refuse **toute autre commande extérieure** sur le produit
+: un arbre dont les contrôles n'ont pas fini n'est adopté par aucune commande.
+Seules passent la reprise explicite `recoverApplicationPublication`, qui prend
+le verrou de l'application, et la publication relue de cette même application,
+qui reprend d'abord. La reprise annule l'état interrompu s'il est exact ; sinon
+elle le refuse comme ambigu et conserve tout pour une inspection locale.
 
 ## Justification
 
@@ -116,13 +133,29 @@ publication ou sortir des zones sont tous refusés. Elle garde une seule source
 de vérité et une seule transaction par publication. Elle ne change ni le
 marqueur, ni `workspace_id`, ni le mode atelier.
 
-**Ce que le sceau ne fait pas.** Sans secret ni état extérieur, un acteur qui
-reproduit délibérément le calcul du sceau peut forger un manifeste cohérent. Le
-sceau empêche l'adoption **par erreur ou en silence**, par un outil ou par une
-modification partielle. La forge délibérée reste visible dans le Git du produit,
-où `.cmz/app-manifest.json` change, et relève de la revue. Le LLM qui réalise
-une page n'y a pas accès : son bon de travail limite les fichiers qu'il peut
-écrire.
+**Ce que le sceau ne fait pas.** Le sceau empêche l'adoption **par erreur ou en
+silence**, par un outil ou par une modification partielle. Il n'authentifie rien
+:
+
+- **la forge est bon marché.** Sans secret ni état extérieur, le calcul est
+  public : `computeOwnershipSeal` est une fonction exportée de l'atelier. Écrire
+  le fichier, l'inventaire, un enregistrement en zone légale et appeler cette
+  fonction suffit, en quelques lignes. Le test « limite connue » de
+  `external-application-publication.test.mjs` montre qu'une telle forge passe ;
+- **`tool` et `plan_id` sont déclaratifs.** Ils ne sont jamais revérifiés après
+  coup, et `plan_id` lie une installation qui ne peut pas être recalculée plus
+  tard. Le registre prouve **quels octets** ont été publiés et dans quelles
+  zones, pas **quel outil** les a produits ; l'historique est une trace, pas une
+  preuve ;
+- **la visibilité dans le Git du produit est une hypothèse.** Elle suppose un
+  produit versionné et relu, ce que l'atelier ne vérifie pas ;
+- **le `check-workspace` du produit ne vérifie pas le sceau.** Il contrôle les
+  empreintes de `generated_files`. La CI du produit accepte donc un manifeste
+  édité à la main ; seule une commande de l'atelier le refuse.
+
+Le LLM qui réalise une page n'a pas accès au manifeste : son bon de travail
+limite les fichiers qu'il peut écrire. Pour la réalisation de page, la barrière
+reste ce bon de travail et la relecture du diff.
 
 ## Conséquences
 
@@ -136,8 +169,18 @@ une page n'y a pas accès : son bon de travail limite les fichiers qu'il peut
 ### Négatives / dette acceptée
 
 - **Rupture pour les produits existants :** une application extérieure créée
-  avant cette décision n'a pas de sceau et sera refusée. Il faut la recréer.
-  Aucune adoption automatique n'est proposée, car elle rouvrirait la faille.
+  avant cette décision n'a pas de sceau et sera refusée, ainsi que toute
+  commande extérieure sur son produit. Pour la recréer : supprimer `apps/<app>`
+  dans le produit (le marqueur d'espace ne liste pas les applications, rien
+  d'autre à changer), puis relancer `create-app --target-root`. Aucune adoption
+  automatique n'est proposée, car elle rouvrirait la faille.
+- **Une commande à la fois par produit** est supposée : le verrou est par
+  application, alors que `verifyWorkspaceRoot`, `check-workspace` et le contrôle
+  de poids lisent tout le produit. Une publication en cours est visible par ses
+  répertoires de travail et bloque les autres commandes, mais deux commandes
+  lancées ensemble ne sont pas sérialisées.
+- **Texte seulement :** la primitive lit et écrit du texte UTF-8. Un actif
+  binaire (icône, image) exigera une extension.
 - Le format du manifeste diffère entre le mode atelier et le mode extérieur.
 - Aucune suppression de fichier n'est possible ; elle exigera une décision
   distincte.
