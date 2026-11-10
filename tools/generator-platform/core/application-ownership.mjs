@@ -10,6 +10,7 @@ import { sha256, stableStringify } from './generation-manifest.mjs';
 
 export const OWNERSHIP_SCHEMA_VERSION = '1.0.0';
 export const PUBLICATION_TOOLS = Object.freeze([
+    'compile:page-execution-plan',
     'generate:action-request',
     'generate:list-query',
     'generate:page-composition',

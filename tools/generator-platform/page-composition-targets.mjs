@@ -171,12 +171,7 @@ async function renderAngularPrimitive(node, model, operation, hostBindings) {
             : renderAngularActionRequestV2(
                   model,
                   serviceBinding(hostBindings, operation.transport.service_id),
-                  {
-                      allowAuthenticated: true,
-                      allowCallerDeclaredInvalidation: true,
-                      allowRequiredStringFields: true,
-                      allowStatusEnvelope: true,
-                  }
+                  COMPOSITION_COMMAND_OPTIONS
               );
     if (sessionMode && kind === 'query') {
         // Transport and decoder remain the existing native renderer's output.
@@ -193,7 +188,23 @@ async function renderAngularPrimitive(node, model, operation, hostBindings) {
             renderSessionQueryFacade(operation, binding);
     }
     const files = await canonicalizeGeneratedFiles(rendered.files);
-    const bindings = Object.fromEntries(
+    return {
+        kind,
+        nodeId: node.id,
+        target: {
+            ...rendered,
+            ...bindRenderedArtifacts(
+                artifactPlan,
+                files,
+                angularPrimitiveBindings(node.id, files)
+            ),
+        },
+    };
+}
+
+// Artefact de chaque fichier d'une primitive Angular rendue pour un nœud.
+export function angularPrimitiveBindings(nodeId, files) {
+    return Object.fromEntries(
         Object.keys(files).map((path) => {
             if (path === 'src/index.ts') return [path, 'public-api'];
             if (path === 'src/models.ts') return [path, 'domain-model'];
@@ -210,18 +221,18 @@ async function renderAngularPrimitive(node, model, operation, hostBindings) {
                 return [path, 'integration-client'];
             if (path.endsWith('.facade.ts'))
                 return [path, 'execution-controller'];
-            fail(`${node.id} produced an unclassified file ${path}`);
+            fail(`${nodeId} produced an unclassified file ${path}`);
         })
     );
-    return {
-        kind,
-        nodeId: node.id,
-        target: {
-            ...rendered,
-            ...bindRenderedArtifacts(artifactPlan, files, bindings),
-        },
-    };
 }
+
+// Options du rendu d'une commande comme nœud de composition.
+export const COMPOSITION_COMMAND_OPTIONS = Object.freeze({
+    allowAuthenticated: true,
+    allowCallerDeclaredInvalidation: true,
+    allowRequiredStringFields: true,
+    allowStatusEnvelope: true,
+});
 
 async function renderReactPrimitive(node, model) {
     const kind =

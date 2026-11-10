@@ -23,7 +23,10 @@ function assertTarget(node, target, kind) {
     }
 }
 
-function nodeDescriptor(kind, node, target) {
+// `external` (X3, produit extérieur) : primitive déjà publiée hors de la
+// composition. Ses fichiers sont matérialisés à `root` pour le contrôle des
+// artefacts, et la composition l'importe depuis `module`.
+function nodeDescriptor(kind, node, target, external) {
     assertTarget(node, target, kind);
     const operationId = node.primitive_ref.operation_id;
     const operationName = pascalCase(operationId);
@@ -36,7 +39,8 @@ function nodeDescriptor(kind, node, target) {
         facadeAlias: `${pascalCase(node.id)}NodeFacade`,
         sourceAlias: `${pascalCase(node.id)}NodeSource`,
         propertyName: camelCase(node.id),
-        root: `src/nodes/${node.id}`,
+        root: external?.root ?? `src/nodes/${node.id}`,
+        module: external?.module ?? `./nodes/${node.id}`,
     };
 }
 
@@ -58,8 +62,8 @@ function renderComposition(descriptors, plan, hostBindings) {
         fail('PAGE_SESSION_HOST_BINDING');
     const imports = descriptors
         .map(
-            ({ facadeName, facadeAlias, node }) =>
-                `import { ${facadeName} as ${facadeAlias} } from './nodes/${node.id}/${node.primitive_ref.operation_id}.facade';`
+            ({ facadeName, facadeAlias, node, module }) =>
+                `import { ${facadeName} as ${facadeAlias} } from '${module}/${node.primitive_ref.operation_id}.facade';`
         )
         .join('\n');
     const queryDescriptors = descriptors.filter(({ kind }) => kind === 'query');
@@ -272,9 +276,16 @@ ${commandProperties}
 function renderProviders(descriptors) {
     const imports = descriptors
         .flatMap(
-            ({ facadeName, facadeAlias, sourceName, sourceAlias, node }) => [
-                `import { ${facadeName} as ${facadeAlias} } from './nodes/${node.id}/${node.primitive_ref.operation_id}.facade';`,
-                `import { ${sourceName} as ${sourceAlias} } from './nodes/${node.id}/${node.primitive_ref.operation_id}.source';`,
+            ({
+                facadeName,
+                facadeAlias,
+                sourceName,
+                sourceAlias,
+                node,
+                module,
+            }) => [
+                `import { ${facadeName} as ${facadeAlias} } from '${module}/${node.primitive_ref.operation_id}.facade';`,
+                `import { ${sourceName} as ${sourceAlias} } from '${module}/${node.primitive_ref.operation_id}.source';`,
             ]
         )
         .join('\n');
@@ -297,8 +308,8 @@ ${providers}
 function renderPublicApi(descriptors) {
     const namespaces = descriptors
         .map(
-            ({ node }) =>
-                `export * as ${pascalCase(node.id)}Node from './nodes/${node.id}/index';`
+            ({ node, module }) =>
+                `export * as ${pascalCase(node.id)}Node from '${module}/index';`
         )
         .join('\n');
     return `export * from './page-composition';
@@ -310,7 +321,8 @@ ${namespaces}
 export function renderAngularPageComposition(
     plan,
     renderedNodes,
-    hostBindings
+    hostBindings,
+    { externalNodes = {} } = {}
 ) {
     const expected = [
         ...plan.query_nodes.map((node) => ({ kind: 'query', node })),
@@ -331,7 +343,14 @@ export function renderAngularPageComposition(
         if (!rendered || rendered.kind !== kind) {
             fail(`${node.id} has no matching ${kind} target`);
         }
-        return nodeDescriptor(kind, node, rendered.target);
+        return nodeDescriptor(
+            kind,
+            node,
+            rendered.target,
+            Object.hasOwn(externalNodes, node.id)
+                ? externalNodes[node.id]
+                : undefined
+        );
     });
     const files = {};
     const bindings = {};

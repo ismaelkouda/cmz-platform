@@ -82,6 +82,10 @@ un bloc `ownership` :
   et empreinte ; un remplacement garde aussi l'empreinte d'avant ;
 - `seal_sha256` : l'empreinte canonique de tout le manifeste, ce champ excepté.
 
+Les outils admis forment une liste fermée : `compile:page-execution-plan` (X3),
+`generate:action-request`, `generate:list-query`, `generate:page-composition` et
+`page-realization`.
+
 `create-app --target-root` écrit ce bloc avec une liste de publications vide.
 Une nouvelle primitive, `planApplicationPublication` puis
 `publishApplicationPublication`, est la **seule** voie pour changer l'inventaire

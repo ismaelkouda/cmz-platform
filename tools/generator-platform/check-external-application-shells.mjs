@@ -44,6 +44,7 @@ import {
     qualifySessionBrowser,
 } from './proof-support/external-session-native.mjs';
 import { proveNativeActionRequest } from './proof-support/external-action-request-native.mjs';
+import { proveNativePageComposition } from './proof-support/external-page-composition-native.mjs';
 import { proveNativePublication } from './proof-support/external-publication-native.mjs';
 
 export { qualifyNodeVersion } from './proof-support/external-application-runtime.mjs';
@@ -222,10 +223,20 @@ export async function main(argv = process.argv.slice(2)) {
             const commanding = performance.now();
             const command = await proveNativeActionRequest(session, shell);
             shell.plan = { ...shell.plan, files: command.files };
+            session.lines.push(
+                `X2/${domain} elapsed_ms=${Math.round(performance.now() - commanding)}`
+            );
+            // X3 : plan et composition de la page Connexion, sur la commande X2.
+            const composing = performance.now();
+            const composition = await proveNativePageComposition(
+                session,
+                shell
+            );
+            shell.plan = { ...shell.plan, files: composition.files };
             sessionShells.push(shell);
             allPlans.push(shell.plan);
             session.lines.push(
-                `X2/${domain} elapsed_ms=${Math.round(performance.now() - commanding)}`
+                `X3/${domain} elapsed_ms=${Math.round(performance.now() - composing)}`
             );
         }
         await session.save();
@@ -264,6 +275,7 @@ export async function main(argv = process.argv.slice(2)) {
             'PASS X0 two fictitious Angular session shells via create-app --target-root; React refused; no business page or backend claim',
             'PASS X1 sealed publications under reviewed plans in both session shells; hand-added file and forged registry refused',
             'PASS X2 action-request 2.1 login command published under reviewed plan in both session shells, compiled by product tools; stale plan refused; no business page or backend claim',
+            'PASS X3 login page execution plan and composition published under reviewed plans in both session shells, consuming the X2 command, compiled by product tools; not mounted in a page before X4; no backend claim',
             'T19–T28 restent non qualifiés.'
         );
         await session.save();

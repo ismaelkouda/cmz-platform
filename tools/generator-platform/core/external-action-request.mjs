@@ -31,10 +31,14 @@ export const ACTION_REQUEST_TOOL = 'generate:action-request';
 const SESSION_INDEX = 'src/app/session/index.ts';
 const SESSION_ENDPOINTS = 'src/app/session/service-endpoints.ts';
 // Depuis src/app/generated/actions/<id>/src/ vers src/app/session.
-const SESSION_MODULE = '../../../../session';
+export const SESSION_MODULE = '../../../../session';
 
 export const actionOutputRoot = (actionId) =>
     `src/app/generated/actions/${actionId}`;
+// X3 : le modèle d'exécution est publié avec la commande ; le plan de page le
+// référence, et la composition consomme cette commande publiée.
+export const actionExecutionModelPath = (actionId) =>
+    `${actionOutputRoot(actionId)}/execution-model.json`;
 
 async function digest(root, path) {
     return { path, sha256: sha256(await readProductFile(root, path)) };
@@ -54,7 +58,12 @@ async function inputClosure(root, definitionPath, definition) {
     return Promise.all([...paths].sort().map((path) => digest(root, path)));
 }
 
-async function sessionApplication(root, appName) {
+// Application Angular avec session du produit ; `label` nomme l'outil appelant.
+export async function sessionApplication(
+    root,
+    appName,
+    label = 'external action-request'
+) {
     if (!/^[a-z][a-z0-9-]*$/.test(appName ?? ''))
         externalFailure('invalid app name');
     const appRoot = resolve(root, 'apps', appName);
@@ -66,12 +75,13 @@ async function sessionApplication(root, appName) {
     );
     // Angular seulement : React reste explicitement refusé.
     if (manifest.profile !== 'angular-pwa')
-        externalFailure('external action-request requires an angular-pwa app');
+        externalFailure(`${label} requires an angular-pwa app`);
     const owned = new Set(manifest.generated_files.map((entry) => entry.path));
     if (!owned.has(SESSION_INDEX) || !owned.has(SESSION_ENDPOINTS))
         externalFailure('application has no session module');
     return {
         appRoot,
+        manifest,
         endpoints: (await readProductFile(appRoot, SESSION_ENDPOINTS)).toString(
             'utf8'
         ),
@@ -127,6 +137,27 @@ export function shellServiceBinding(source, token) {
     return null;
 }
 
+// Le jeton de service doit être celui que la coque a généré, lié par elle au
+// même service et au contrat du modèle (M-5) : sinon l'URL résolue serait celle
+// d'un autre contrat. Rend le nom du jeton.
+export function assertShellServiceBinding(endpoints, serviceId, contractId) {
+    const token = sessionEndpointToken(serviceId);
+    const binding = shellServiceBinding(endpoints, token);
+    if (!binding)
+        externalFailure(
+            'service endpoint is not declared by the session shell'
+        );
+    if (
+        binding.ambiguous ||
+        binding.service_id !== serviceId ||
+        binding.contract_id !== contractId
+    )
+        externalFailure(
+            'service endpoint is bound to another service or contract by the session shell'
+        );
+    return token;
+}
+
 async function renderExternalActionRequest(options) {
     const context = await ownedProductContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
@@ -147,38 +178,26 @@ async function renderExternalActionRequest(options) {
         externalFailure('external action-request requires definition 2.1.0');
     // Entrées confinées au produit, vérifiées avant toute compilation.
     const inputs = await inputClosure(root, definitionPath, definition);
-    let token;
-    let serviceId;
     const target = await computeExternalAngularActionRequestTarget({
         definitionPath: resolve(root, definitionPath),
         definitionDocument: document,
         artifactRoot: root,
         hostBindings: (model) => {
-            serviceId = model.actions[0].transport.service_id;
-            token = sessionEndpointToken(serviceId);
+            const serviceId = model.actions[0].transport.service_id;
             return {
                 services: {
-                    [serviceId]: { module: SESSION_MODULE, token },
+                    [serviceId]: {
+                        module: SESSION_MODULE,
+                        token: assertShellServiceBinding(
+                            app.endpoints,
+                            serviceId,
+                            model.backend_contract.id
+                        ),
+                    },
                 },
             };
         },
     });
-    // Le jeton de service doit être celui que la coque a généré, lié par elle
-    // au même service et au contrat de la définition (M-5) : sinon l'URL
-    // résolue serait celle d'un autre contrat.
-    const binding = shellServiceBinding(app.endpoints, token);
-    if (!binding)
-        externalFailure(
-            'service endpoint is not declared by the session shell'
-        );
-    if (
-        binding.ambiguous ||
-        binding.service_id !== serviceId ||
-        binding.contract_id !== target.model.backend_contract.id
-    )
-        externalFailure(
-            'service endpoint is bound to another service or contract by the session shell'
-        );
     const base = actionOutputRoot(target.actionId);
     const files = Object.fromEntries(
         Object.entries(target.files).map(([path, content]) => [
@@ -187,11 +206,14 @@ async function renderExternalActionRequest(options) {
         ])
     );
     const manifestPath = `${base}/generation-manifest.json`;
-    files[manifestPath] = (
+    const modelPath = actionExecutionModelPath(target.actionId);
+    Object.assign(
+        files,
         await canonicalizeGeneratedFiles({
             [manifestPath]: JSON.stringify(target.manifest, null, 2) + '\n',
+            [modelPath]: JSON.stringify(target.model, null, 2) + '\n',
         })
-    )[manifestPath];
+    );
     return {
         actionId: target.actionId,
         modelSha256: target.manifest.input.sha256,

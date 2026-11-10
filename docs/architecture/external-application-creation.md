@@ -723,8 +723,8 @@ voie pour changer cet inventaire :
 - remplacement d’un fichier de page de la coque ou d’un fichier déjà publié,
   avec l’empreinte d’avant ;
 - aucun autre chemin, aucune suppression, aucun outil hors de la liste fermée
-  (`generate:action-request`, `generate:list-query`,
-  `generate:page-composition`, `page-realization`).
+  (`compile:page-execution-plan`, `generate:action-request`,
+  `generate:list-query`, `generate:page-composition`, `page-realization`).
 
 La publication exige le plan relu. Elle recalcule ce plan sous verrou et prépare
 un candidat complet à côté de l’application. Elle le compile avec les binaires
@@ -845,6 +845,66 @@ fichiers possédés de l’application, sans module cmz ni chemin de l’atelier
 coque avec session des produits A et B. Il l’exécute avec les binaires du
 produit, vérifie T11 et rejoue le refus d’un plan périmé.
 
-Limites : aucune page ne consomme encore cette commande (X3, X4) ; aucun backend
-n’est appelé ; la sortie n’est pas exécutée en navigateur. Seule la variante 2.1
-Angular est publiable en extérieur.
+Depuis X3, la commande publie aussi son modèle d’exécution
+(`execution-model.json`), référencé par le plan de page.
+
+Limites : aucun backend n’est appelé ; la sortie n’est pas exécutée en
+navigateur. Seule la variante 2.1 Angular est publiable en extérieur.
+
+## Plan de page et composition extérieurs — X3
+
+Deux commandes fermées, toutes deux sous plan relu et par la primitive de
+l’ADR-0103, pour une application Angular avec session :
+
+```sh
+bun run compile:page-execution-plan --target-root /chemin/absolu/produit --app <app> --page <page_id> --dry-run
+bun run compile:page-execution-plan --target-root /chemin/absolu/produit --app <app> --page <page_id> --apply <plan_id>
+bun run generate:page-composition --target-root /chemin/absolu/produit --app <app> --page <page_id> --dry-run
+bun run generate:page-composition --target-root /chemin/absolu/produit --app <app> --page <page_id> --apply <plan_id>
+```
+
+`compile:page-execution-plan` compile le plan d’exécution de la page depuis les
+seuls fichiers possédés de l’application : le contrat de page
+`.cmz/pages/<page>.json` de la coque et les modèles `execution-model.json`
+publiés par `generate:action-request`. Chaque action backend de la page doit
+avoir sa commande publiée ; sinon le refus nomme l’action et la commande à
+lancer. Le plan est écrit sous `src/app/generated/pages/<page>/plan/`. Ses
+références sont des chemins `apps/<app>/…` du produit. La compilation est
+déterministe : le même état de l’application ne produit rien de neuf
+(`publication without change`). Une page avec lectures est refusée jusqu’à X5.
+
+`generate:page-composition --target-root` lit ce plan dans le registre et refuse
+toute référence hors des fichiers possédés de l’application : chemin hors du
+produit, autre application, fichier non inscrit. Il **recompile** le plan depuis
+l’état courant et exige les mêmes octets : une commande régénérée après coup
+périme le plan (`page execution plan is stale`), qu’il faut recompiler. Les
+liaisons d’hôte viennent de la coque : module `src/app/session`, jeton
+`APPLICATION_SESSION`, et jeton de service vérifié comme en X2 (même service,
+même contrat).
+
+La composition **consomme** la commande publiée par X2 au lieu d’en rendre une
+copie. Elle rend d’abord le nœud comme la composition le ferait et exige que
+chaque fichier soit identique au fichier publié de la commande ; sinon elle
+refuse (`differs from its published command`). Elle publie seulement ses propres
+fichiers sous `src/app/generated/pages/<page>/composition/`, qui importent la
+commande par un chemin relatif. Son `generation-manifest.json` est relatif à
+`src/app/generated/` et lie aussi les empreintes des fichiers de la commande
+consommée. Le compilateur du produit la type-checke sur le candidat, puis build,
+lint, tests et `check-workspace` passent par ses binaires.
+
+En mode atelier, le rendu de composition est inchangé : l’option de nœud
+extérieur n’est utilisée que par ce mode.
+
+`external-page-composition.test.mjs` couvre, sur les deux domaines fictifs : le
+plan et la composition publiés, la recompilation déterministe, le rejeu, le plan
+périmé après régénération de la commande, les refus (commande ou plan absent,
+page inconnue ou à lectures, coque sans session ou React, références hors
+application, commande consommée différente) et les deux CLI fermées.
+`check:external-application-shells` publie le plan et la composition de la page
+Connexion dans chaque coque avec session des produits A et B, avec les binaires
+du produit, et vérifie T11.
+
+Limites : la composition n’est montée dans aucune page avant X4 (la page
+d’attente reste en place) ; elle n’est donc pas exécutée en navigateur ; aucun
+backend n’est appelé. Une page avec lectures attend X5. Une page retirée ou
+renommée laisse son plan et sa composition, faute de suppression.
