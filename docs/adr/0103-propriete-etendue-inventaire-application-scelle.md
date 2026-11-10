@@ -120,10 +120,21 @@ Une publication interrompue laisse `apps/.<app>.publication-candidate-<plan>` ou
 `apps/.<app>.previous-candidate-<plan>`. Tant que l'un d'eux existe,
 `verifyWorkspaceRoot` refuse **toute autre commande extérieure** sur le produit
 : un arbre dont les contrôles n'ont pas fini n'est adopté par aucune commande.
-Seules passent la reprise explicite `recoverApplicationPublication`, qui prend
-le verrou de l'application, et la publication relue de cette même application,
-qui reprend d'abord. La reprise annule l'état interrompu s'il est exact ; sinon
-elle le refuse comme ambigu et conserve tout pour une inspection locale.
+Seules passent la reprise explicite
+`recover:application-publication --target-root <absolu> --app <app>`
+(`recoverApplicationPublication`), qui prend le verrou de l'application, et la
+publication relue de cette même application, qui reprend d'abord. La reprise
+annule l'état interrompu s'il est exact ; sinon elle le refuse comme ambigu et
+conserve tout pour une inspection locale. Sans plan, la reprise explicite ne
+retire qu'un candidat complet selon son propre manifeste ; un candidat partiel
+n'est retiré que par la publication relue du même plan. Une publication en cours
+sur une autre application rend ce cas transitoirement ambigu : il suffit de
+relancer après elle.
+
+L'exception de reprise est un second paramètre interne (`recoveringApp`) de
+fonctions exportées. Un oracle statique de
+`external-application-recovery.test.mjs` limite son usage aux modules du
+planificateur d'espace, de la vérification de la racine et de la publication.
 
 ## Justification
 
@@ -144,7 +155,7 @@ silence**, par un outil ou par une modification partielle. Il n'authentifie rien
   `external-application-publication.test.mjs` montre qu'une telle forge passe ;
 - **`tool` et `plan_id` sont déclaratifs.** Ils ne sont jamais revérifiés après
   coup, et `plan_id` lie une installation qui ne peut pas être recalculée plus
-  tard. Le registre prouve **quels octets** ont été publiés et dans quelles
+  tard. Le registre enregistre **quels octets** ont été publiés et dans quelles
   zones, pas **quel outil** les a produits ; l'historique est une trace, pas une
   preuve ;
 - **la visibilité dans le Git du produit est une hypothèse.** Elle suppose un
@@ -153,9 +164,9 @@ silence**, par un outil ou par une modification partielle. Il n'authentifie rien
   empreintes de `generated_files`. La CI du produit accepte donc un manifeste
   édité à la main ; seule une commande de l'atelier le refuse.
 
-Le LLM qui réalise une page n'a pas accès au manifeste : son bon de travail
-limite les fichiers qu'il peut écrire. Pour la réalisation de page, la barrière
-reste ce bon de travail et la relecture du diff.
+Le LLM qui réalisera une page n'aura pas accès au manifeste (X4) : son bon de
+travail limitera les fichiers qu'il peut écrire. Pour la réalisation de page, la
+barrière reste ce bon de travail et la relecture du diff.
 
 ## Conséquences
 
@@ -179,6 +190,15 @@ reste ce bon de travail et la relecture du diff.
   de poids lisent tout le produit. Une publication en cours est visible par ses
   répertoires de travail et bloque les autres commandes, mais deux commandes
   lancées ensemble ne sont pas sérialisées.
+- **Création de coque interrompue (X0), limite connue :** `create-app` publie la
+  coque par `commitDirectoryTransaction`, sans répertoire de travail après la
+  publication. Si le processus s'arrête après cette publication et avant la fin
+  des contrôles natifs, l'application est en place, scellée et exacte, mais rien
+  ne signale que ses contrôles n'ont pas fini : les autres commandes
+  l'acceptent. Relancer le même `create-app --expect-plan <plan_id>` reprend et
+  termine ces contrôles. Fermer cette fenêtre demande un marqueur durable propre
+  à `create-app`, donc un changement de son protocole de reprise ; ce n'est pas
+  fait dans ce lot.
 - **Texte seulement :** la primitive lit et écrit du texte UTF-8. Un actif
   binaire (icône, image) exigera une extension.
 - Le format du manifeste diffère entre le mode atelier et le mode extérieur.
@@ -196,8 +216,9 @@ reste ce bon de travail et la relecture du diff.
 
 ## Références
 
-- `tools/generator-platform/core/application-workspace.mjs`
+- `tools/generator-platform/core/application-workspace-root.mjs`
   (`verifyWorkspaceRoot`)
+- `tools/recover-application-publication.mjs`
 - `tools/generator-platform/core/application-ownership.mjs`
 - `tools/generator-platform/core/application-publication.mjs`
 - `docs/architecture/external-application-creation.md`

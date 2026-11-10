@@ -15,10 +15,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { planApplicationShell } from './core/application-shell-publication.mjs';
-import {
-    planExternalApplicationShell,
-    publishExternalApplicationShell,
-} from './core/application-workspace.mjs';
+import { planExternalApplicationShell } from './core/application-workspace.mjs';
 import {
     computeOwnershipSeal,
     inventoryTreeSha,
@@ -33,78 +30,20 @@ import { pathExists } from './core/external-application-paths.mjs';
 import { sha256 } from './core/generation-manifest.mjs';
 import { renameAndSync } from './core/generation-transaction.mjs';
 import {
-    installMetadataOnly,
-    prepareFixture,
     schemas,
     snapshotTree,
     TOOLS_ROOT,
 } from './test-support/external-application-fixture.mjs';
+import { SESSION_FIXTURE_DOMAINS } from './test-support/external-session-fixture.mjs';
 import {
-    SESSION_FIXTURE_DOMAINS,
-    sessionShellOptions,
-    writeExternalSessionDesign,
-} from './test-support/external-session-fixture.mjs';
-
-const MANIFEST = '.cmz/app-manifest.json';
-const NOTICE = 'src/app/generated/x1-proof/notice.ts';
-
-async function sessionApp(t, domain) {
-    const fixture = await prepareFixture(t);
-    const input = await writeExternalSessionDesign(fixture.root, domain);
-    await installMetadataOnly(fixture.plan);
-    const shell = sessionShellOptions(input);
-    const plan = await planExternalApplicationShell(shell);
-    await publishExternalApplicationShell(
-        { ...shell, expectedPlanId: plan.plan_id },
-        { run: () => undefined }
-    );
-    const app = join(fixture.root, 'apps', shell.appName);
-    const page = `src/app/pages/${input.entryPage.id}/page.component.ts`;
-    return {
-        ...fixture,
-        input,
-        shell,
-        app,
-        page,
-        workspaceId: plan.workspace.manifest.workspace_id,
-        base: {
-            workspaceRoot: TOOLS_ROOT,
-            targetRoot: fixture.root,
-            appName: shell.appName,
-        },
-    };
-}
-
-const readManifest = async (app) =>
-    JSON.parse(await readFile(join(app, MANIFEST), 'utf8'));
-
-function publication(product, files, tool = 'generate:action-request') {
-    return { ...product.base, tool, files };
-}
-
-async function publish(options, dependencies = {}) {
-    const plan = await planApplicationPublication(options);
-    const labels = [];
-    const result = await publishApplicationPublication(
-        { ...options, expectedPlanId: plan.plan_id },
-        {
-            run: (command, args, cwd) => {
-                assert.equal(command, process.execPath);
-                assert.equal(cwd, options.targetRoot);
-                assert.ok(args[0].startsWith(options.targetRoot + '/'));
-                labels.push(
-                    args[0].endsWith('check-workspace.mjs')
-                        ? 'workspace-contract'
-                        : args[1] === 'run'
-                          ? args[2]
-                          : 'native-compiler'
-                );
-            },
-            ...dependencies,
-        }
-    );
-    return { plan, result, labels };
-}
+    interruptAfterSwap,
+    MANIFEST,
+    NOTICE,
+    publication,
+    publish,
+    readManifest,
+    sessionApp,
+} from './test-support/external-publication-fixture.mjs';
 
 // Un octet change, la longueur reste identique (constat V8-R2).
 function sameLength(bytes) {
@@ -113,34 +52,6 @@ function sameLength(bytes) {
     assert.equal(copy.length, bytes.length);
     assert.notDeepEqual(copy, bytes);
     return copy;
-}
-
-// Arrêt brutal après l'échange : arbre neuf en place, ancien mis de côté.
-async function interruptAfterSwap(product, options) {
-    const plan = await planApplicationPublication(options);
-    const copies = ['interrupted-new', 'interrupted-old'].map((name) =>
-        join(product.root, name)
-    );
-    await assert.rejects(
-        publishApplicationPublication(
-            { ...options, expectedPlanId: plan.plan_id },
-            {
-                run: () => undefined,
-                phase: async (name) => {
-                    if (name !== 'published') return;
-                    await cp(product.app, copies[0], { recursive: true });
-                    await cp(plan.previous, copies[1], { recursive: true });
-                    throw new Error('stop');
-                },
-            }
-        ),
-        /stop/
-    );
-    await rename(product.app, join(product.root, 'apps', '.discard'));
-    await rm(join(product.root, 'apps', '.discard'), { recursive: true });
-    await rename(copies[0], product.app);
-    await rename(copies[1], plan.previous);
-    return plan;
 }
 
 const replacedPage = (title) =>

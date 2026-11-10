@@ -17,8 +17,10 @@ import {
     verifyApplicationOwnership,
 } from './application-ownership.mjs';
 import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
+import { repositoryRoot } from '../validate-ir.mjs';
 import {
     assertSourceWeight,
+    externalApplicationContext,
     externalFailure,
     pathExists,
     readProductFile,
@@ -245,9 +247,21 @@ async function recoverUnderLock(options) {
     return { recovered: false };
 }
 
-// Commande de reprise explicite : prend le verrou de l'application.
+// Commande de reprise explicite (recover:application-publication) : racine du
+// produit vérifiée comme pour toute commande extérieure, puis verrou de
+// l'application.
 export async function recoverApplicationPublication(options) {
     const { output } = appLocation(options);
+    const context = await externalApplicationContext({
+        workspaceRoot: options.workspaceRoot ?? repositoryRoot,
+        targetRoot: options.targetRoot,
+    });
+    if (
+        !(await pathExists(
+            resolve(context.productRoot, EXTERNAL_WORKSPACE_CMZ.manifest)
+        ))
+    )
+        externalFailure('workspace ownership marker missing');
     return withGenerationLock(output, () => recoverUnderLock(options));
 }
 

@@ -281,10 +281,44 @@ répertoires de travail : le candidat
 `generation-transaction.mjs`. Tant que l'un de ces répertoires existe, toute
 autre commande extérieure sur le produit est refusée
 (`interrupted publication pending for app <app>; recover it first`). Seules
-passent la reprise explicite `recoverApplicationPublication`, qui prend le
-verrou de l'application, et la publication relue de cette même application, qui
-reprend d'abord. La reprise annule l'état interrompu s'il est exact ; sinon elle
-le refuse comme ambigu et laisse tout en place pour une inspection locale.
+passent la reprise explicite, qui prend le verrou de l'application, et la
+publication relue de cette même application, qui reprend d'abord. La reprise
+annule l'état interrompu s'il est exact ; sinon elle le refuse comme ambigu et
+laisse tout en place pour une inspection locale.
+
+Marche à suivre quand une commande répond `interrupted publication pending` :
+
+1. Lancer la reprise, sans plan :
+
+    ```sh
+    bun run recover:application-publication --target-root /chemin/absolu/produit --app <app>
+    ```
+
+    Le résultat est `recovered` (état relu rétabli) ou `nothing-to-recover`. Si
+    une autre commande tient le verrou de l'application, attendre sa fin et
+    relancer.
+
+2. Si la reprise répond `ambiguous interrupted publication`, rien n'a été
+   déplacé. Inspecter `apps/<app>` et `apps/.<app>.*-candidate-*` dans le Git du
+   produit. Le cas le plus courant suit un `publication rollback refused` : un
+   fichier a été modifié dans l'application pendant les contrôles. Retirer cette
+   modification (`git status`, `git diff` du produit), puis relancer la reprise.
+   L'arbre redevient exact selon son propre manifeste et l'état relu est
+   rétabli.
+
+3. Un candidat partiel, interrompu pendant sa mise en place, n'est retiré que
+   par la publication relue du même plan : relancer la même commande avec le
+   même `plan_id`. Une publication en cours sur une autre application rend ce
+   cas transitoirement ambigu ; relancer après elle.
+
+4. Ne jamais supprimer à la main un répertoire de travail sans avoir compris son
+   état : l'un d'eux peut contenir le seul exemplaire de l'application relue.
+
+Une création de coque (`create-app`, X0) interrompue après sa publication ne
+laisse aucun répertoire de travail : l'application est en place mais ses
+contrôles natifs peuvent ne pas avoir fini. Relancer le même
+`create-app --expect-plan <plan_id>` les termine. Cette fenêtre est une limite
+connue de l'ADR-0103.
 
 ## Qualification séparée des tests de fichiers
 
