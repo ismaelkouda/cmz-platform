@@ -179,9 +179,11 @@ silence**, par un outil ou par une modification partielle. Il n'authentifie rien
 
 Le LLM qui réalisera une page n'aura pas accès au manifeste (X4) : son bon de
 travail limitera les fichiers qu'il peut écrire. Pour la réalisation de page, la
-barrière est ce bon de travail, la relecture du diff, et deux mécanismes qui ne
-dépendent pas du réalisateur (X4-sécurité) : les commandes du produit confinées,
-et la politique de sécurité de contenu de la coque.
+barrière est ce bon de travail, la relecture du diff, et trois mécanismes qui ne
+dépendent pas du réalisateur : les commandes du produit confinées et la
+politique de sécurité de contenu de la coque (X4-sécurité), et le monde fermé
+par symbole résolu dans lequel l'atelier juge le TypeScript de la page
+(X4-sécurité 2).
 
 ## Conséquences
 
@@ -241,6 +243,14 @@ et la politique de sécurité de contenu de la coque.
   `connect-src 'self'` suit la topologie à une seule origine retenue par le
   propriétaire. La coque ne se republie pas : un produit créé avant X4-sécurité
   ne reçoit la politique qu'en recréant son application, comme ci-dessus.
+- **Monde fermé de la page (X4-sécurité 2) :** l'atelier vérifie la page dans le
+  programme TypeScript du produit (lib ES et DOM installées, types d'Angular et
+  de rxjs, `tsconfig.app.json`) ; chaque référence est résolue en symbole et
+  n'est permise que depuis la page, la composition, rxjs, ou des listes fermées
+  d'Angular, de la lib ES et de la lib DOM, publiées dans le bon de travail et
+  revues contre des versions précises. Un objet du DOM n'est jamais retypé. La
+  politique ne gouvernant pas la navigation de premier niveau, c'est ce monde
+  fermé qui la refuse.
 - **Aucune dépendance entre publications dans la primitive :** une commande
   republiée ne sait pas, par le registre seul, quelles pages la consomment. Les
   outils l'exposent eux-mêmes : `generate:action-request` nomme les pages dont

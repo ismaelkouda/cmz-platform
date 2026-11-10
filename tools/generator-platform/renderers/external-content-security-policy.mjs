@@ -77,5 +77,8 @@ export function renderCspHeaderTemplate() {
 # qui sert l'application ; ne pas l'affaiblir : la coque ne se republie pas,
 # une politique modifiée à la main est un écart du registre.
 add_header Content-Security-Policy "${EXTERNAL_CSP_HEADER}" always;
+# Une fenêtre ouverte par une autre origine ne garde aucune référence à
+# l'application (X4-sécurité 2).
+add_header Cross-Origin-Opener-Policy "same-origin" always;
 `;
 }

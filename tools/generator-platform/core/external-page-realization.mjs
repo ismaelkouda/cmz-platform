@@ -44,14 +44,23 @@ import {
     realizationViolations,
     TEST_PACKAGES,
 } from './external-page-realization-rules.mjs';
+import { REVIEWED_VERSIONS } from './external-page-realization-program.mjs';
 import {
-    ALLOWED_GLOBALS,
     COMPOSITION_NAMES,
     DENIED_PROPERTIES,
     FORBIDDEN_ELEMENTS,
-    FORBIDDEN_IMPORT_NAMES,
     RESOURCE_ATTRIBUTES,
+    TEMPLATE_PIPES,
 } from './external-page-realization-structure.mjs';
+import {
+    ANGULAR_REFUSED,
+    ANGULAR_SYMBOLS,
+    DOM_GLOBALS,
+    DOM_MEMBERS,
+    ES_EXCLUDED,
+    ES_GLOBALS,
+    ES_INTERFACES,
+} from './external-page-realization-symbols.mjs';
 import { sha256, stableStringify } from './generation-manifest.mjs';
 import { loadJson, repositoryRoot } from '../validate-ir.mjs';
 
@@ -70,8 +79,9 @@ const RULES = Object.freeze([
     'Write only allowed_files, in draft_root; verify:page-realization publishes them to publication_root.',
     'Mount the page composition in the @Component providers (PAGE_COMPOSITION_PROVIDERS) and act only through PageComposition; never import a command, the session or HttpClient directly.',
     'Import only allowed_imports, the composition names, and the page files.',
-    'Use only structure.allowed_globals; never read structure.denied_properties, never use a computed key outside a local constant table, never assemble a string from literals.',
-    'Keep the template declarative: no structure.forbidden_elements, no resource or navigation attribute, attr.* bindings for aria-* only.',
+    'In page.component.ts every reference resolves to an allowed symbol (symbols): the page itself, the composition names and their members, rxjs, and the listed Angular, ES and DOM symbols. No declare, no type assertion except as const, no type predicate, no any, no computed key without a literal type, never assemble a string from literals.',
+    'A DOM object is only read through a listed member, compared, or passed whole to a page method whose parameter has a DOM type.',
+    'Keep the template declarative: no structure.forbidden_elements, no resource or navigation attribute, attr.* bindings for aria-* only, no structure.denied_properties, structure.template_pipes only, no $any; pass $event or a #reference whole as an argument of a component method.',
     'Never write an endpoint literal or a URL. The shell Content-Security-Policy blocks any other origin, inline script and dynamic code in the browser; product commands run confined.',
     'Map every contract id to one exact static data-cmz-id selector in the template; add no other data-cmz-id.',
     'Keep keyboard, screen-reader, loading, error and offline behavior explicit.',
@@ -186,13 +196,23 @@ async function buildWorkOrder(app, appName, pageId, toolsRoot) {
             page: [...PAGE_PACKAGES],
             tests: [...TEST_PACKAGES],
             composition_names: [...COMPOSITION_NAMES],
-            forbidden_names: FORBIDDEN_IMPORT_NAMES,
+        },
+        symbols: {
+            reviewed_versions: REVIEWED_VERSIONS,
+            angular: ANGULAR_SYMBOLS,
+            angular_refused: [...ANGULAR_REFUSED],
+            rxjs: 'all, except rxjs/ajax and rxjs/fetch',
+            es_globals: [...ES_GLOBALS],
+            es_interfaces: [...ES_INTERFACES],
+            es_excluded: [...ES_EXCLUDED],
+            dom_globals: [...DOM_GLOBALS],
+            dom_members: [...DOM_MEMBERS],
         },
         structure: {
-            allowed_globals: [...ALLOWED_GLOBALS],
             denied_properties: [...DENIED_PROPERTIES],
             forbidden_elements: [...FORBIDDEN_ELEMENTS],
             resource_attributes: [...RESOURCE_ATTRIBUTES],
+            template_pipes: [...TEMPLATE_PIPES],
         },
         forbidden_patterns: FORBIDDEN_PATTERNS.map(([label, pattern]) => ({
             label,
@@ -347,6 +367,7 @@ async function renderRealization(options) {
         workOrder,
         pageContract: expected.pageContract,
         pageContractSha256: workOrder.page_contract.sha256,
+        environment: { productRoot, appRoot: app.appRoot },
         evidenceSchema: await loadJson(
             new URL(
                 '../schemas/page-realization-evidence.schema.json',

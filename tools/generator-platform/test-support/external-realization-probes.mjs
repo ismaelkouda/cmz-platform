@@ -398,15 +398,20 @@ export const VALIDATOR_PROBES = Object.freeze(
     )
 );
 
-// Fichiers d'une page de référence dont un seul fichier porte la sonde.
+// Fichiers d'une page de référence dont un seul fichier porte la sonde ;
+// `replace` insère le texte après son ancre, qui doit être unique.
 export function probedFiles(files, probe) {
     const original = files[probe.file];
+    if (probe.mode === 'replace' && original.split(probe.find).length !== 2)
+        throw new Error(`probe anchor is not unique: ${probe.id}`);
     return {
         ...files,
         [probe.file]:
             probe.mode === 'prepend'
                 ? probe.text + original
-                : original + probe.text,
+                : probe.mode === 'replace'
+                  ? original.replace(probe.find, () => probe.find + probe.text)
+                  : original + probe.text,
     };
 }
 

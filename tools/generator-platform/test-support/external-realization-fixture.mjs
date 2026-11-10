@@ -70,7 +70,8 @@ export class PageComponent {
     >({});
 
     protected edit(control: string, event: Event): void {
-        const value = (event.target as HTMLInputElement).value;
+        const target = event.target;
+        const value = target instanceof HTMLInputElement ? target.value : '';
         this.values.update((current) => ({ ...current, [control]: value }));
         if (this.outcome() === ${literal(states.error.id)})
             this.outcome.set(${literal(states.ready.id)});

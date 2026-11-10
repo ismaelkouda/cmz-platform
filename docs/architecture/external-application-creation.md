@@ -1039,10 +1039,12 @@ des règles et l’auteur de la page de référence sont le même agent.
 
 ## Sécurité de la page réalisée — X4-sécurité
 
-Les règles du bon de travail sont des filtres. La barrière qui ne dépend pas du
-réalisateur est double : les commandes du produit tournent confinées, et le
-navigateur applique la politique de sécurité de contenu de la coque. Les
-contrôles structurels ferment ce que cette politique ne voit pas.
+Les motifs lexicaux du bon de travail sont des filtres. Les barrières sont trois
+: les commandes du produit tournent confinées, le navigateur applique la
+politique de sécurité de contenu de la coque, et le TypeScript de la page est
+jugé dans un monde fermé, par symbole résolu (X4-sécurité 2). Ce monde fermé
+couvre ce que la politique ne voit pas : navigation de premier niveau, stockage,
+appels de même origine.
 
 **Commandes du produit confinées.** Toute commande que l’atelier lance dans un
 produit extérieur (compilateur, build, lint, tests, contrôle d’espace), y
@@ -1055,7 +1057,9 @@ sable des oracles du mode atelier (`runConfined`, profil `execution`) :
 - lecture limitée au produit et au nœud exécutable qualifié ;
 - écriture limitée aux caches et sorties jetables (`.angular`, `.nx`,
   `coverage`, `dist`, `tmp`, `node_modules/.*`) ; les sources, les brouillons,
-  le marqueur d’espace et chaque paquet installé sont en lecture seule ;
+  le marqueur d’espace et chaque paquet installé sont en lecture seule ; les
+  fichiers et les dossiers neufs de la racine du produit restent inscriptibles,
+  et toute dérive y est refusée après la commande ;
 - sur Linux, le même profil passe par Docker (`--network none`), avec les
   chemins du produit traduits en jetons.
 
@@ -1068,7 +1072,8 @@ génère, et le registre la scelle :
 - en balise `meta` dans `src/index.html`, juste après le jeu de caractères,
   avant toute ressource ;
 - en en-tête dans `deploy/content-security-policy.conf` (directive nginx), avec
-  en plus `frame-ancestors 'none'`, ignorée en `meta`.
+  en plus `frame-ancestors 'none'`, ignorée en `meta`, et
+  `Cross-Origin-Opener-Policy: same-origin`.
 
 ```text
 default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
@@ -1097,38 +1102,81 @@ recréant son application (`create-app --target-root`). Les produits fictifs et
 le banc sont recréés à chaque preuve ; `generate-cmz-backoffice` n’est pas
 encore créé.
 
-**Contrôles structurels.** Ils sont lus dans la syntaxe, pas dans le texte, et
-leurs listes sont publiées dans le bon de travail (`allowed_imports`,
-`structure`) :
+**Monde fermé par symbole résolu (X4-sécurité 2).** Le programme de la page est
+vérifié dans l’atelier, avec les bibliothèques installées du produit (lib ES et
+DOM de son `typescript`, types d’Angular et de rxjs) et le `tsconfig.app.json`
+de l’application. La page doit typer sans erreur. Chaque identifiant, accès de
+propriété, accès par crochets et élément de déstructuration est résolu en
+symbole ; c’est sa déclaration qui décide, pas le nom écrit. Sources permises,
+publiées dans le bon de travail (`symbols`) :
 
-- TypeScript, par l’API du compilateur :
-    - depuis la composition, seuls `PAGE_COMPOSITION_PROVIDERS` et
-      `PageComposition` sont importables (I-2) ; `import * as`, import par
-      défaut et réexportation sont refusés ;
-    - `DOCUMENT`, `ElementRef`, `Renderer2`, `Location` et les symboles privés
-      `ɵ…` ne sont pas importables ;
-    - un identifiant qui ne se résout pas dans le fichier est un global :
-      refusé, sauf une liste permise (`Math`, `JSON`, `Number`, `Date`…) et
-      `navigator.onLine` ;
-    - les propriétés qui mènent au document, à la fenêtre, à la navigation, au
-      stockage ou à l’écriture HTML sont refusées sur tout objet ;
-    - une clé calculée n’est permise que sur une table constante locale ;
-    - une chaîne assemblée de littéraux est refusée ;
-    - `injector.get` ne livre que les jetons de la composition ;
-    - un seul `@Component`, gabarit et styles dans les fichiers de la page, la
-      composition fournie par `providers` (M-2), `host` limité aux écouteurs,
-      classes, styles et `aria-*`.
-- Gabarit, par `parseTemplate` d’`@angular/compiler` :
+- la page elle-même ;
+- la composition générée : `PAGE_COMPOSITION_PROVIDERS`, `PageComposition` et
+  leurs membres (I-2) ;
+- rxjs, sauf `rxjs/ajax` et `rxjs/fetch` ;
+- Angular, sur liste fermée : `Component`, `ChangeDetectionStrategy.OnPush`,
+  signaux (`signal`, `computed`, `effect`, `set`, `update`, `asReadonly`),
+  `inject`, `Injector.get` (jeton de la composition seulement),
+  `ChangeDetectorRef.markForCheck`, `DestroyRef.onDestroy`,
+  `takeUntilDestroyed`, `Router.navigate` et `navigateByUrl` (un chemin littéral
+  de l’application), `RouterLink` et les pipes de `@angular/common` listés.
+  `inject` accepte les jetons de la composition, `Injector`,
+  `ChangeDetectorRef`, `DestroyRef` et `Router`. `DOCUMENT`, `DomSanitizer`,
+  `ElementRef`, `Location`, `PlatformLocation`, `Renderer2`, `RendererFactory2`
+  et `ViewContainerRef` sont hors de la liste ;
+- lib ES : globaux de calcul (`Array`, `JSON`, `Math`, `Number`, `Date`,
+  `Intl`…) et les membres d’interfaces listées, sans `constructor`, `prototype`,
+  `Object.assign`, `getPrototypeOf`, `setPrototypeOf`, `defineProperty(ies)`,
+  `getOwnPropertyDescriptor(s)`, `String.fromCharCode`, `fromCodePoint`, `raw` ;
+  `Function`, `eval`, `Reflect`, `Proxy`, `setTimeout` ne sont pas listés ;
+- lib DOM, étroite : `navigator`, `HTMLInputElement`, `Event.target`,
+  `Event.preventDefault`, `HTMLInputElement.value`, `KeyboardEvent.key`,
+  `NavigatorOnLine.onLine`. Aucun puits de navigation, de stockage ou de réseau.
+
+Tout autre symbole est refusé, de même qu’un symbole non résolu (`globalThis`,
+une propriété synthétique sur un objet de l’hôte). Sont aussi refusés :
+
+- `declare`, les assertions de type sauf `as const`, les prédicats de type
+  (`x is T`, `asserts`), les expressions de type `any`, les directives `///` ;
+- une clé calculée sans type littéral, une déstructuration en affectation, un
+  `__proto__` dans un littéral ;
+- une chaîne assemblée de valeurs littérales (`+`, gabarit, `join`, `concat`) ;
+  un chemin de commande est refusé aussi après décodage des échappements.
+
+Un objet du DOM ne change pas de type : il n’est lu que par un membre listé,
+comparé, rangé dans une constante sans annotation, ou passé entier à une
+fonction de la page dont le paramètre porte un type DOM. Le passer à Angular, à
+rxjs ou à un objet de la page, le retourner, ou le retyper par une annotation
+est refusé. Sans cette règle, un type écrit par la page (`{ href: string }`)
+servirait à lire un objet du DOM hors des listes.
+
+Les listes sont revues contre des versions précises (`typescript` 6.0.3,
+`@angular/*` 22.2.4, `rxjs` 7.8.2) : une autre version installée dans le produit
+est refusée jusqu’à une nouvelle revue.
+
+**Autres contrôles de syntaxe.**
+
+- TypeScript : depuis la composition, seuls `PAGE_COMPOSITION_PROVIDERS` et
+  `PageComposition` sont importables ; `import * as`, import par défaut et
+  réexportation sont refusés ; un seul `@Component`, gabarit et styles dans les
+  fichiers de la page, la composition fournie par `providers` (M-2), `host`
+  limité aux écouteurs, classes, styles et `aria-*`.
+- Gabarit, langage d’expression réduit, par `parseTemplate` :
+    - `$event` et une variable de référence `#ref`, y compris par un alias
+      `@let`, ne s’utilisent qu’entiers, en argument d’une méthode du composant,
+      dont le paramètre porte un type DOM ; `$any` est refusé ;
+    - pipes de `@angular/common` listés seulement ;
     - éléments `script`, `style`, `link`, `meta`, `base`, `iframe`, `object`,
-      `embed` refusés (lus dans l’arbre HTML brut) ;
+      `embed`, `set`, `animate`… refusés (lus dans l’arbre HTML brut) ;
     - attributs de ressource ou de navigation refusés, statiques ou liés, sauf
       un fragment (`href="#…"`) et une image en ligne (`src="data:image/…"`) ;
+      un attribut à espace de noms (`xlink:href`) est jugé par son nom local ;
       `routerLink` statique vers un chemin de l’application ;
     - `[attr.*]` pour `aria-*` seulement ; `[innerHTML]`, `[outerHTML]` et les
-      gestionnaires `on…` refusés ;
+      gestionnaires `on…` refusés ; propriétés de la liste refusées sur toute
+      valeur ;
     - `data-cmz-id` statique, insensible à la casse, déclaré par le contrat
-      (M-1) ;
-    - mêmes propriétés refusées et même règle de clé dans les expressions.
+      (M-1).
 - SCSS : aucune règle structurelle ; la politique gouverne `url()`, `@import` et
   `@font-face`.
 
@@ -1138,22 +1186,31 @@ dans l’oracle confiné.
 **Preuves.**
 
 - `external-page-realization-security.test.mjs` rejoue les 74 pages interdites
-  du validateur et ses 3 témoins. 61 sont refusées par les règles, 11 sont
-  laissées à la politique (styles et SCSS qui visent une autre origine) et 2
-  visent une ressource de même origine, hors des fichiers du bundle. Chaque
-  règle a son cas.
-- `application-workspace.test.mjs` lance une même sonde hors confinement (elle
-  joint le réseau et lit dehors) puis confinée (tout est bloqué).
+  de la validation de X4, ses 3 témoins, et les 127 nouvelles pages de la
+  validation de X4-sécurité, à l’octet près. Des 127, 112 sont refusées par les
+  règles ; 9 sont laissées à la politique (styles et SCSS vers une autre
+  origine), 3 ne demandent rien (`filter: url()`, `@namespace`, `cross-fade`,
+  mesuré dans Chromium avec et sans politique) et 3 restent dans l’application
+  (fragment, route relative). Aucune navigation, aucun appel réseau, aucun accès
+  au stockage n’est accepté.
+- `external-page-realization-symbols.test.mjs` : un cas par entrée de liste ; un
+  membre DOM, Angular ou Node hors liste refusé ; symbole non résolu et
+  `globalThis.fetch` refusés ; flux d’un objet du DOM ; gabarit réduit ;
+  politique épinglée à la chaîne exacte ; versions revues.
+- `external-product-confinement.test.mjs` lance une même sonde hors confinement
+  (elle joint le réseau et lit dehors) puis confinée (tout est bloqué).
 - `check:external-application-shells`, dans chaque coque avec session :
     - une spec piégée publiée par le runner par défaut est refusée et annulée,
       sans réseau, lecture extérieure ni variable de l’hôte ;
     - la page réalisée s’ouvre sans aucune violation ni requête hors bundle ;
-    - une page témoin piégée sous la même politique, avec les 13 sondes du
-      validateur acceptées par les règles, produit chacune sa violation, et la
-      seconde origine ne reçoit aucune requête. Une requête bloquée par la
-      politique n’atteint pas l’interception de Playwright : la preuve compte
-      l’événement `securitypolicyviolation` et les requêtes reçues par une
-      seconde origine.
+    - une page témoin piégée sous la même politique (média, `prefetch`, cadres,
+      scripts, Trusted Types…), avec les sondes acceptées par les règles,
+      produit chacune sa violation, et la seconde origine ne reçoit aucune
+      requête. La preuve compte l’événement `securitypolicyviolation` et les
+      requêtes reçues par une seconde origine ;
+    - une navigation de premier niveau (`location.assign`), que la politique ne
+      gouverne pas, est mesurée par ce qui arrive sur la seconde origine ; la
+      page qui l’écrit est refusée par le monde fermé.
 
 **I-3.** `dependent_pages` dit aussi `realization: true` pour une page réalisée,
 et l’avertissement ajoute `prepare:page-realization` puis
@@ -1168,7 +1225,10 @@ sa préparation. Après préparation, les règles sont rejouées sur la page pub
 - Une requête GET de même origine reste possible (une `url()` de même origine en
   SCSS) ; la preuve navigateur la signale hors bundle et le réalisateur n’a
   aucun fichier à référencer.
-- Les listes TypeScript et de gabarit sont des listes : un nom absent n’est pas
-  refusé. La politique de la coque couvre le réseau et le code dynamique quel
-  que soit le code.
+- Le TypeScript est un monde fermé : un symbole absent des listes est refusé. Le
+  gabarit garde des listes (propriétés, éléments, attributs) dans un langage
+  d’expression réduit ; la politique de la coque couvre le réseau et le code
+  dynamique quel que soit le code.
+- Les mesures « inertes » sont faites dans Chromium seulement ; une requête dans
+  un autre moteur relèverait de `default-src 'self'`.
 - La règle métier inventée reste du ressort de la revue humaine.

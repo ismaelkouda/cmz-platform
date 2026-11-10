@@ -3,9 +3,18 @@
 // par sa composition). Ces règles sont des filtres, pas la barrière : le
 // réseau, les scripts et les ressources d'autres origines sont bloqués dans le
 // navigateur par la politique de sécurité de contenu de la coque, et les
-// commandes du produit tournent confinées (X4-sécurité). Les contrôles
-// structurels ferment ce que cette politique ne voit pas.
+// commandes du produit tournent confinées (X4-sécurité). Dans la page, chaque
+// référence est jugée par son symbole résolu dans le programme réel du
+// produit (monde fermé, X4-sécurité 2).
+import { realpathSync } from 'node:fs';
+import { join } from 'node:path';
 import ts from 'typescript';
+
+import {
+    pageProgram,
+    typeEnvironmentViolations,
+} from './external-page-realization-program.mjs';
+import { symbolViolations } from './external-page-realization-symbols.mjs';
 
 import {
     templateViolations,
@@ -91,18 +100,88 @@ export function moduleSpecifiers(name, source) {
     return found;
 }
 
+// Valeurs décodées des chaînes et morceaux de gabarit d'un fichier.
+function stringValues(name, source) {
+    const file = ts.createSourceFile(
+        name,
+        source,
+        ts.ScriptTarget.ES2022,
+        true
+    );
+    const values = [];
+    const visit = (node) => {
+        if (
+            ts.isStringLiteralLike(node) ||
+            ts.isTemplateHead(node) ||
+            ts.isTemplateMiddle(node) ||
+            ts.isTemplateTail(node)
+        )
+            values.push(node.text);
+        ts.forEachChild(node, visit);
+    };
+    visit(file);
+    return values;
+}
+
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export const endpointLiteral = (literal) =>
     new RegExp(`${escapeRegExp(literal)}(?![A-Za-z0-9_~-])`);
 
+// Page dans son programme : versions revues, typage sans erreur, puis
+// chaque référence par symbole. `calls` : appels du gabarit qui passent
+// `$event` ou une référence entière.
+function pageSymbols(environment, workOrder, text, calls) {
+    const name = 'page.component.ts';
+    if (!environment) return [`type environment is required to check ${name}`];
+    const versions = typeEnvironmentViolations(environment.productRoot);
+    if (versions.length > 0) return versions;
+    let built;
+    let pagePath;
+    let appRoot;
+    try {
+        appRoot = realpathSync(environment.appRoot);
+        pagePath = join(appRoot, workOrder.publication_root, name);
+        built = pageProgram({
+            productRoot: realpathSync(environment.productRoot),
+            appRoot,
+            pagePath,
+            text,
+        });
+    } catch (error) {
+        return [`type environment unavailable: ${error.message}`];
+    }
+    const diagnostics = [
+        ...built.program.getSyntacticDiagnostics(built.file),
+        ...built.program.getSemanticDiagnostics(built.file),
+    ].map(
+        (diagnostic) =>
+            `page does not type-check in ${name}: TS${diagnostic.code} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ').split(appRoot).join('<app>')}`
+    );
+    return [
+        ...diagnostics,
+        ...symbolViolations({
+            name,
+            checker: built.checker,
+            file: built.file,
+            environment: {
+                pagePath,
+                ownedRoot: join(appRoot, 'src', 'app', 'generated'),
+            },
+            opaque: calls,
+        }),
+    ];
+}
+
 // Violations d'un brouillon de réalisation au regard de son bon de travail.
-// `files` : nom → octets (Buffer). Chaque violation est un texte fermé.
+// `files` : nom → octets (Buffer). `environment` : racines du produit et de
+// l'application, où la page est vérifiée. Chaque violation est un texte fermé.
 export function realizationViolations({
     files,
     workOrder,
     pageContract,
     pageContractSha256,
     evidenceSchema,
+    environment,
 }) {
     const violations = [];
     const names = Object.keys(files).sort();
@@ -139,6 +218,14 @@ export function realizationViolations({
                 violations.push(
                     `endpoint literal forbidden in ${name}: ${literal}`
                 );
+    // Même règle sur la valeur décodée des chaînes TypeScript (échappements).
+    for (const name of code.filter((entry) => entry.endsWith('.ts')))
+        for (const value of stringValues(name, text[name]))
+            for (const literal of workOrder.forbidden_literals)
+                if (endpointLiteral(literal).test(value))
+                    violations.push(
+                        `endpoint literal forbidden in ${name}: ${literal}`
+                    );
     // Mécanique générée seulement : imports fermés, lus dans la syntaxe.
     const local = new Set(
         allowed
@@ -170,10 +257,12 @@ export function realizationViolations({
     // Contrôles structurels : la spec ne s'exécute que dans l'oracle confiné ;
     // la page, elle, est lue dans sa syntaxe et son gabarit.
     const ids = contractIds(pageContract.page);
-    const templateCheck = (source, name) =>
-        violations.push(
-            ...templateViolations({ name, text: source }).violations
-        );
+    const calls = [];
+    const templateCheck = (source, name) => {
+        const checked = templateViolations({ name, text: source });
+        violations.push(...checked.violations);
+        calls.push(...checked.calls);
+    };
     for (const name of ['page.component.ts', 'page.component.spec.ts'])
         if (text[name] !== undefined)
             violations.push(
@@ -185,13 +274,23 @@ export function realizationViolations({
                     templateCheck,
                 })
             );
-    if (text['page.component.html'] !== undefined)
+    if (text['page.component.html'] !== undefined) {
+        const checked = templateViolations({
+            name: 'page.component.html',
+            text: text['page.component.html'],
+            declaredIds: ids,
+        });
+        violations.push(...checked.violations);
+        calls.push(...checked.calls);
+    }
+    if (text['page.component.ts'] !== undefined)
         violations.push(
-            ...templateViolations({
-                name: 'page.component.html',
-                text: text['page.component.html'],
-                declaredIds: ids,
-            }).violations
+            ...pageSymbols(
+                environment,
+                workOrder,
+                text['page.component.ts'],
+                calls
+            )
         );
     if (
         text['page.component.ts'] !== undefined &&

@@ -1,10 +1,10 @@
-// X4-sécurité : contrôles structurels d'une réalisation de page extérieure.
-// Ils ferment ce que la politique de sécurité de contenu de la coque ne voit
-// pas (navigation, stockage, accès au document, usage détourné de la
-// composition, sélecteurs inventés). Le réseau, les scripts en ligne, le code
-// dynamique et les ressources d'autres origines sont gouvernés par cette
-// politique, mesurée dans le navigateur. Ce sont des listes : elles sont
-// écrites comme telles et publiées dans le bon de travail.
+// X4-sécurité : contrôles de syntaxe d'une réalisation de page extérieure.
+// TypeScript : imports, métadonnées de `@Component`, `declare`, assertions de
+// type, chaînes assemblées ; les références sont jugées par symbole résolu
+// (external-page-realization-symbols.mjs). Gabarit : langage d'expression
+// réduit, éléments et attributs de ressource refusés. Le réseau, les scripts
+// en ligne, le code dynamique et les ressources d'autres origines sont
+// gouvernés par la politique de la coque, mesurée dans le navigateur.
 import * as angular from '@angular/compiler';
 import ts from 'typescript';
 
@@ -15,55 +15,10 @@ export const COMPOSITION_NAMES = Object.freeze([
     'PageComposition',
 ]);
 
-// Noms refusés depuis les paquets permis : accès direct au document, au rendu
-// ou à la navigation hors routeur.
-export const FORBIDDEN_IMPORT_NAMES = Object.freeze({
-    '@angular/core': [
-        'DOCUMENT',
-        'ElementRef',
-        'Renderer2',
-        'RendererFactory2',
-    ],
-    '@angular/common': [
-        'DOCUMENT',
-        'HashLocationStrategy',
-        'Location',
-        'LocationStrategy',
-        'NgOptimizedImage',
-        'PathLocationStrategy',
-        'PlatformLocation',
-    ],
-});
-
-// Globaux permis à la page ; tout autre global est refusé. `navigator` n'est
-// permis que pour `navigator.onLine` et `typeof navigator`.
-export const ALLOWED_GLOBALS = Object.freeze([
-    'Array',
-    'Boolean',
-    'Date',
-    'Error',
-    'Infinity',
-    'Intl',
-    'JSON',
-    'Map',
-    'Math',
-    'NaN',
-    'Number',
-    'Object',
-    'Promise',
-    'RegExp',
-    'Set',
-    'String',
-    'isFinite',
-    'isNaN',
-    'parseFloat',
-    'parseInt',
-    'undefined',
-]);
-
-// Propriétés refusées sur tout objet, en TypeScript et dans le gabarit : elles
+// Propriétés refusées dans le gabarit, sur toute valeur du composant : elles
 // mènent au document, à la fenêtre, à la navigation, au stockage, à l'écriture
-// HTML ou d'attributs, ou à un constructeur.
+// HTML ou d'attributs, ou à un constructeur. En TypeScript, le symbole résolu
+// gouverne.
 export const DENIED_PROPERTIES = Object.freeze([
     '__defineGetter__',
     '__defineSetter__',
@@ -119,6 +74,7 @@ export const DENIED_PROPERTIES = Object.freeze([
 
 // Gabarit : éléments refusés, attributs porteurs de ressource ou de navigation.
 export const FORBIDDEN_ELEMENTS = Object.freeze([
+    'animate',
     'applet',
     'base',
     'embed',
@@ -130,6 +86,7 @@ export const FORBIDDEN_ELEMENTS = Object.freeze([
     'object',
     'portal',
     'script',
+    'set',
     'style',
 ]);
 export const RESOURCE_ATTRIBUTES = Object.freeze([
@@ -151,9 +108,23 @@ export const RESOURCE_ATTRIBUTES = Object.freeze([
     'src',
     'srcdoc',
     'srcset',
-    'xlink:href',
+]);
+// Pipes permis dans le gabarit (@angular/common).
+export const TEMPLATE_PIPES = Object.freeze([
+    'async',
+    'currency',
+    'date',
+    'lowercase',
+    'number',
+    'percent',
+    'slice',
+    'titlecase',
+    'uppercase',
 ]);
 const HTML_PROPERTIES = new Set(['innerhtml', 'outerhtml', 'routerlink']);
+// Un attribut à espace de noms (`xlink:href`, que le compilateur nomme
+// `:xlink:href`) est jugé par son nom local.
+const attributeName = (name) => name.toLowerCase().replace(/^:?[^:]+:/, '');
 // Seules valeurs statiques permises pour ces attributs : un fragment de la page
 // (lien d'évitement) et une image en ligne. Le réalisateur n'a aucun fichier à
 // référencer : le bon de travail ne lui en accorde pas.
@@ -171,174 +142,6 @@ const deniedName = (name) =>
     DENIED.has(name) || name.startsWith('bypassSecurityTrust');
 
 // --- TypeScript ---------------------------------------------------------
-
-function checkedProgram(name, text) {
-    const file = ts.createSourceFile(name, text, ts.ScriptTarget.ES2022, true);
-    const host = {
-        getSourceFile: (path) => (path === name ? file : undefined),
-        getDefaultLibFileName: () => 'lib.d.ts',
-        writeFile: () => undefined,
-        getCurrentDirectory: () => '/',
-        getCanonicalFileName: (path) => path,
-        useCaseSensitiveFileNames: () => true,
-        getNewLine: () => '\n',
-        fileExists: (path) => path === name,
-        readFile: (path) => (path === name ? text : undefined),
-    };
-    // Sans bibliothèque ni résolution : un identifiant qui ne se résout pas
-    // dans le fichier est un global, quelle que soit sa portée.
-    const program = ts.createProgram({
-        rootNames: [name],
-        options: {
-            noLib: true,
-            noResolve: true,
-            types: [],
-            target: ts.ScriptTarget.ES2022,
-        },
-        host,
-    });
-    return { file, checker: program.getTypeChecker() };
-}
-
-const DECLARATION_NAME = new Set([
-    ts.SyntaxKind.VariableDeclaration,
-    ts.SyntaxKind.Parameter,
-    ts.SyntaxKind.FunctionDeclaration,
-    ts.SyntaxKind.FunctionExpression,
-    ts.SyntaxKind.ClassDeclaration,
-    ts.SyntaxKind.ClassExpression,
-    ts.SyntaxKind.MethodDeclaration,
-    ts.SyntaxKind.PropertyDeclaration,
-    ts.SyntaxKind.GetAccessor,
-    ts.SyntaxKind.SetAccessor,
-    ts.SyntaxKind.PropertyAssignment,
-    ts.SyntaxKind.PropertySignature,
-    ts.SyntaxKind.MethodSignature,
-    ts.SyntaxKind.EnumDeclaration,
-    ts.SyntaxKind.EnumMember,
-    ts.SyntaxKind.BindingElement,
-    ts.SyntaxKind.ImportSpecifier,
-    ts.SyntaxKind.ImportClause,
-    ts.SyntaxKind.NamespaceImport,
-    ts.SyntaxKind.ImportEqualsDeclaration,
-    ts.SyntaxKind.ExportSpecifier,
-    ts.SyntaxKind.TypeAliasDeclaration,
-    ts.SyntaxKind.InterfaceDeclaration,
-    ts.SyntaxKind.TypeParameter,
-    ts.SyntaxKind.ModuleDeclaration,
-    ts.SyntaxKind.LabeledStatement,
-    ts.SyntaxKind.BreakStatement,
-    ts.SyntaxKind.ContinueStatement,
-]);
-
-function inTypePosition(node) {
-    for (let current = node.parent; current; current = current.parent) {
-        if (ts.isTypeNode(current)) return true;
-        if (
-            ts.isHeritageClause(current) &&
-            current.token === ts.SyntaxKind.ImplementsKeyword
-        )
-            return true;
-        if (
-            ts.isInterfaceDeclaration(current) ||
-            ts.isTypeAliasDeclaration(current)
-        )
-            return true;
-        if (ts.isStatement(current) || ts.isClassElement(current)) break;
-    }
-    return false;
-}
-
-// Identifiant en position de valeur, hors nom de propriété ou de déclaration.
-function isValueReference(node) {
-    const parent = node.parent;
-    if (ts.isPropertyAccessExpression(parent) && parent.name === node)
-        return false;
-    if (ts.isQualifiedName(parent)) return false;
-    if (
-        DECLARATION_NAME.has(parent.kind) &&
-        (parent.name === node || parent.label === node)
-    )
-        return false;
-    if (ts.isBindingElement(parent) && parent.propertyName === node)
-        return false;
-    if (ts.isImportSpecifier(parent) || ts.isExportSpecifier(parent))
-        return false;
-    if (ts.isMetaProperty(parent)) return false;
-    return !inTypePosition(node);
-}
-
-function stripped(expression) {
-    let current = expression;
-    while (
-        current &&
-        (ts.isParenthesizedExpression(current) ||
-            ts.isAsExpression(current) ||
-            ts.isSatisfiesExpression(current) ||
-            ts.isTypeAssertionExpression(current) ||
-            ts.isNonNullExpression(current))
-    )
-        current = current.expression;
-    return current;
-}
-
-function localDeclaration(checker, file, identifier) {
-    const symbol = ts.isShorthandPropertyAssignment(identifier.parent)
-        ? checker.getShorthandAssignmentValueSymbol(identifier.parent)
-        : checker.getSymbolAtLocation(identifier);
-    return symbol?.declarations?.find(
-        (declaration) => declaration.getSourceFile() === file
-    );
-}
-
-// Table de correspondance : constante locale initialisée par un littéral
-// d'objet ou de tableau. Seul receveur permis pour une clé calculée.
-function isLookupTable(checker, file, receiver) {
-    const target = stripped(receiver);
-    if (!target || !ts.isIdentifier(target)) return false;
-    const declaration = localDeclaration(checker, file, target);
-    if (!declaration || !ts.isVariableDeclaration(declaration)) return false;
-    if (!(ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const))
-        return false;
-    const initializer = stripped(declaration.initializer);
-    return Boolean(
-        initializer &&
-        (ts.isObjectLiteralExpression(initializer) ||
-            ts.isArrayLiteralExpression(initializer))
-    );
-}
-
-function literalKey(expression) {
-    const key = stripped(expression);
-    if (
-        ts.isStringLiteral(key) ||
-        ts.isNoSubstitutionTemplateLiteral(key) ||
-        ts.isNumericLiteral(key)
-    )
-        return key.text;
-    return undefined;
-}
-
-function isLiteralString(expression) {
-    const value = stripped(expression);
-    if (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value))
-        return true;
-    return (
-        ts.isBinaryExpression(value) &&
-        value.operatorToken.kind === ts.SyntaxKind.PlusToken &&
-        isLiteralString(value.left) &&
-        isLiteralString(value.right)
-    );
-}
-
-function importModule(declaration) {
-    let current = declaration;
-    while (current && !ts.isImportDeclaration(current))
-        current = current.parent;
-    return current && ts.isStringLiteral(current.moduleSpecifier)
-        ? current.moduleSpecifier.text
-        : undefined;
-}
 
 function objectProperty(literal, name) {
     return literal.properties.find(
@@ -474,7 +277,7 @@ export function typescriptViolations({
     templateCheck,
 }) {
     const violations = [];
-    const { file, checker } = checkedProgram(name, text);
+    const file = ts.createSourceFile(name, text, ts.ScriptTarget.ES2022, true);
     const composition = new Set();
     for (const statement of file.statements) {
         if (ts.isExportDeclaration(statement) && statement.moduleSpecifier)
@@ -505,86 +308,31 @@ export function typescriptViolations({
                     );
                 else composition.add(imported);
         }
-        if (!page) continue;
-        for (const imported of names)
-            if (
-                imported.startsWith('ɵ') ||
-                FORBIDDEN_IMPORT_NAMES[specifier]?.includes(imported)
-            )
-                violations.push(
-                    `import name forbidden in ${name}: ${imported} from ${JSON.stringify(specifier)}`
-                );
     }
     if (!page) return violations;
-    const globals = new Set(ALLOWED_GLOBALS);
+    // Une directive à triple barre ajoute des types au programme de la page
+    // (`types="node"`, `lib="esnext"`) : elle élargirait les listes.
+    if (
+        file.referencedFiles.length +
+            file.typeReferenceDirectives.length +
+            file.libReferenceDirectives.length >
+        0
+    )
+        violations.push(`triple-slash reference forbidden in ${name}`);
     const visit = (node) => {
-        if (ts.isIdentifier(node) && isValueReference(node)) {
-            const local = localDeclaration(checker, file, node);
-            const parent = node.parent;
-            const navigatorUse =
-                node.text === 'navigator' &&
-                (ts.isTypeOfExpression(parent) ||
-                    (ts.isPropertyAccessExpression(parent) &&
-                        parent.expression === node &&
-                        parent.name.text === 'onLine'));
-            if (!local && !globals.has(node.text) && !navigatorUse)
-                violations.push(
-                    `global access forbidden in ${name}: ${node.text}`
-                );
-        }
-        if (ts.isPropertyAccessExpression(node) && deniedName(node.name.text))
+        // `declare` n'émet rien : le nom déclaré reste le global de
+        // l'exécution. Une assertion de type trompe le vérificateur.
+        if (node.kind === ts.SyntaxKind.DeclareKeyword)
             violations.push(
-                `property access forbidden in ${name}: ${node.name.text}`
+                `ambient declaration (declare) forbidden in ${name}`
             );
-        if (ts.isElementAccessExpression(node)) {
-            const key = literalKey(node.argumentExpression);
-            if (key !== undefined) {
-                if (deniedName(key))
-                    violations.push(
-                        `property access forbidden in ${name}: ${key}`
-                    );
-            } else if (!isLookupTable(checker, file, node.expression))
-                violations.push(
-                    `computed member access forbidden in ${name} (only on a local constant table)`
-                );
-        }
-        // Une chaîne assemblée de littéraux ne sert qu'à masquer un littéral
-        // interdit (chemin de commande, adresse).
         if (
-            (ts.isBinaryExpression(node) &&
-                node.operatorToken.kind === ts.SyntaxKind.PlusToken &&
-                isLiteralString(node.left) &&
-                isLiteralString(node.right)) ||
-            (ts.isTemplateExpression(node) &&
-                node.templateSpans.every((span) =>
-                    isLiteralString(span.expression)
-                ))
+            (ts.isAsExpression(node) && !ts.isConstTypeReference(node.type)) ||
+            ts.isTypeAssertionExpression(node)
         )
             violations.push(
-                `string assembled from literals forbidden in ${name}`
+                `type assertion forbidden in ${name} (only as const)`
             );
-        // L'injecteur ne livre que les jetons de la composition.
-        if (
-            ts.isCallExpression(node) &&
-            ts.isPropertyAccessExpression(node.expression) &&
-            node.expression.name.text === 'get' &&
-            node.arguments.length > 0 &&
-            ts.isIdentifier(stripped(node.arguments[0]))
-        ) {
-            const declaration = localDeclaration(
-                checker,
-                file,
-                stripped(node.arguments[0])
-            );
-            if (
-                declaration &&
-                ts.isImportSpecifier(declaration) &&
-                importModule(declaration) !== compositionModule
-            )
-                violations.push(
-                    `injector lookup forbidden in ${name}: only composition tokens`
-                );
-        }
         ts.forEachChild(node, visit);
     };
     visit(file);
@@ -595,6 +343,9 @@ export function typescriptViolations({
 // --- Gabarit Angular ----------------------------------------------------
 
 const elementName = (name) => name.replace(/^:[a-z]+:/, '').toLowerCase();
+const implicit = (receiver) =>
+    receiver instanceof angular.ImplicitReceiver ||
+    receiver instanceof angular.ThisReceiver;
 
 export function templateViolations({ name, text, declaredIds }) {
     const violations = [];
@@ -607,7 +358,16 @@ export function templateViolations({ name, text, declaredIds }) {
         );
     const ids = [];
     const seen = new Set();
-    const expression = (node) => {
+    const references = new Set();
+    const reads = [];
+    const expression = (node, parent) => {
+        if (node instanceof angular.PropertyRead && implicit(node.receiver))
+            reads.push([node, parent]);
+        if (
+            node instanceof angular.BindingPipe &&
+            !TEMPLATE_PIPES.includes(node.name)
+        )
+            violations.push(`pipe not allowed in ${name}: ${node.name}`);
         if (
             node instanceof angular.PropertyRead ||
             node instanceof angular.SafePropertyRead
@@ -634,7 +394,7 @@ export function templateViolations({ name, text, declaredIds }) {
         }
     };
     const attribute = (node) => {
-        const key = node.name.toLowerCase();
+        const key = attributeName(node.name);
         if (key.startsWith('on'))
             violations.push(
                 `event handler attribute forbidden in ${name}: ${node.name}`
@@ -653,10 +413,10 @@ export function templateViolations({ name, text, declaredIds }) {
             );
     };
     const binding = (node) => {
-        const key = node.name.toLowerCase();
+        const key = attributeName(node.name);
         const type = node.type;
         if (type === angular.BindingType.Attribute) {
-            if (!key.startsWith('aria-'))
+            if (!node.name.toLowerCase().startsWith('aria-'))
                 violations.push(
                     `attribute binding forbidden in ${name}: attr.${node.name} (aria-* only)`
                 );
@@ -679,19 +439,54 @@ export function templateViolations({ name, text, declaredIds }) {
                 `property binding forbidden in ${name}: ${node.name}`
             );
     };
-    const walk = (value) => {
+    const walk = (value, parent) => {
         if (!value || typeof value !== 'object' || seen.has(value)) return;
         seen.add(value);
-        if (value instanceof angular.AST) expression(value);
+        if (value instanceof angular.AST) expression(value, parent);
         if (value instanceof angular.TmplAstTextAttribute) attribute(value);
         if (value instanceof angular.TmplAstBoundAttribute) binding(value);
+        if (value instanceof angular.TmplAstReference)
+            references.add(value.name);
         for (const [key, child] of Object.entries(value)) {
             if (/span$/i.test(key) || key === 'i18n') continue;
-            if (Array.isArray(child)) child.forEach(walk);
-            else walk(child);
+            if (Array.isArray(child))
+                child.forEach((item) => walk(item, value));
+            else walk(child, value);
         }
     };
-    parsed.nodes.forEach(walk);
+    parsed.nodes.forEach((node) => walk(node));
+    // `$event` et une variable de référence (`#ref`), y compris par un alias
+    // `@let`, ne sont jamais lus dans le gabarit : ils sont passés entiers en
+    // argument d'une méthode du composant, où le symbole résolu gouverne.
+    // `$any` est une assertion de type.
+    const opaque = (read) =>
+        read.name === '$event' || references.has(read.name);
+    const method = (receiver) =>
+        receiver instanceof angular.PropertyRead &&
+        implicit(receiver.receiver) &&
+        receiver.name !== '$any' &&
+        !opaque(receiver);
+    const calls = [];
+    for (const [read, parent] of reads) {
+        if (read.name === '$any') {
+            violations.push(`type assertion $any forbidden in ${name}`);
+            continue;
+        }
+        if (!opaque(read)) continue;
+        const argument =
+            parent instanceof angular.Call &&
+            parent.args.includes(read) &&
+            method(parent.receiver);
+        if (argument)
+            calls.push({
+                method: parent.receiver.name,
+                index: parent.args.indexOf(read),
+            });
+        else
+            violations.push(
+                `${read.name} must be passed whole to a component method in ${name}`
+            );
+    }
     // Le compilateur retire <script> et extrait <style> avant l'arbre du
     // gabarit : les éléments sont donc lus dans l'arbre HTML brut.
     const raw = new angular.HtmlParser().parse(text, name, {
@@ -712,5 +507,5 @@ export function templateViolations({ name, text, declaredIds }) {
             violations.push(
                 `data-cmz-id not declared by the page contract in ${name}: ${JSON.stringify(id)}`
             );
-    return { violations, ids };
+    return { violations, ids, calls };
 }

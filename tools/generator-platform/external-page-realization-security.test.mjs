@@ -30,12 +30,8 @@ import {
     planExternalPageRealizationWorkOrder,
     publishExternalPageRealization,
 } from './core/external-page-realization.mjs';
-import {
-    FORBIDDEN_PATTERNS,
-    realizationViolations,
-} from './core/external-page-realization-rules.mjs';
+import { FORBIDDEN_PATTERNS } from './core/external-page-realization-rules.mjs';
 import { pagePlanPath } from './core/external-publication-paths.mjs';
-import { sha256 } from './core/generation-manifest.mjs';
 import { EXTERNAL_CSP_DIRECTIVES } from './renderers/external-content-security-policy.mjs';
 import { snapshotTree } from './test-support/external-application-fixture.mjs';
 import { MANIFEST } from './test-support/external-publication-fixture.mjs';
@@ -44,6 +40,7 @@ import {
     prepare,
     publish,
     realization,
+    realizationChecker,
     workOrderOf,
     writeDraft,
 } from './test-support/external-realization-product.mjs';
@@ -51,7 +48,7 @@ import {
     probedFiles,
     VALIDATOR_PROBES,
 } from './test-support/external-realization-probes.mjs';
-import { loadJson } from './validate-ir.mjs';
+import { SECOND_PROBES } from './test-support/external-realization-second-probes.mjs';
 
 const TS = 'page.component.ts';
 const HTML = 'page.component.html';
@@ -102,33 +99,49 @@ test('X4-sécurité : les 74 pages interdites du validateur (et 3 témoins) rejo
     );
 });
 
-test('X4-sécurité : chaque règle de la réalisation refuse sa violation et accepte la page de référence', async (t) => {
-    const product = await composedProduct(t, 'observatory');
+// X4-sécurité 2 : les 127 nouvelles pages du validateur, rejouées à l'octet
+// près. Aucune navigation, aucun appel réseau, aucun accès au stockage ne
+// reste accepté : une page acceptée l'est pour son apparence (politique de
+// la coque, mesurée), parce qu'elle ne demande rien, ou parce qu'elle reste
+// dans l'application.
+test('X4-sécurité 2 : les 127 nouvelles pages du validateur rejouées, chacune refusée ou nommée', async (t) => {
+    const product = await composedProduct(t, 'equipment-hire');
     await prepare(product);
     const workOrder = await workOrderOf(product);
     const good = await realization(product, workOrder);
-    const contract = await readFile(
-        join(product.app, workOrder.page_contract.path)
-    );
-    const evidenceSchema = await loadJson(
-        new URL(
-            './schemas/page-realization-evidence.schema.json',
-            import.meta.url
-        )
-    );
-    const violationsOf = (files) =>
-        realizationViolations({
-            files: Object.fromEntries(
-                Object.entries(files).map(([name, text]) => [
-                    name,
-                    Buffer.isBuffer(text) ? text : Buffer.from(text),
-                ])
-            ),
-            workOrder,
-            pageContract: JSON.parse(contract),
-            pageContractSha256: sha256(contract),
-            evidenceSchema,
-        });
+    const directives = new Map(EXTERNAL_CSP_DIRECTIVES);
+    const counts = {};
+    assert.equal(SECOND_PROBES.length, 127);
+    for (const probe of SECOND_PROBES) {
+        await writeDraft(product, workOrder, probedFiles(good, probe));
+        const failure = await planExternalPageRealization(product.options).then(
+            () => null,
+            (error) => error
+        );
+        counts[probe.mechanism] = (counts[probe.mechanism] ?? 0) + 1;
+        if (probe.mechanism === 'static') {
+            assert.ok(failure?.violations?.length, `${probe.id} accepté`);
+            continue;
+        }
+        assert.equal(failure, null, `${probe.id} : ${failure?.message}`);
+        if (probe.mechanism.startsWith('csp:'))
+            assert.match(
+                directives.get(probe.mechanism.slice('csp:'.length)) ?? '',
+                /^'self'(?: data:| 'unsafe-inline')?$/
+            );
+    }
+    assert.deepEqual(counts, {
+        static: 112,
+        'csp:img-src': 8,
+        'in-app': 3,
+        'csp:style-src': 1,
+        inert: 3,
+    });
+});
+
+test('X4-sécurité : chaque règle de la réalisation refuse sa violation et accepte la page de référence', async (t) => {
+    const product = await composedProduct(t, 'observatory');
+    const { workOrder, good, violationsOf } = await realizationChecker(product);
     assert.deepEqual(violationsOf(good), []);
     const module = workOrder.composition.module;
     const [literal] = workOrder.forbidden_literals;
@@ -235,22 +248,22 @@ test('X4-sécurité : chaque règle de la réalisation refuse sa violation et ac
         [
             'DOCUMENT',
             prepend(TS, "import { DOCUMENT } from '@angular/common';\n"),
-            `import name forbidden in ${TS}: DOCUMENT from "@angular/common"`,
+            `symbol not allowed in ${TS}: angular @angular/core:DOCUMENT`,
         ],
         [
             'Renderer2',
             prepend(TS, "import { Renderer2 } from '@angular/core';\n"),
-            `import name forbidden in ${TS}: Renderer2 from "@angular/core"`,
+            `symbol not allowed in ${TS}: angular @angular/core:Renderer2`,
         ],
         [
             'ElementRef',
             prepend(TS, "import { ElementRef } from '@angular/core';\n"),
-            `import name forbidden in ${TS}: ElementRef from "@angular/core"`,
+            `symbol not allowed in ${TS}: angular @angular/core:ElementRef`,
         ],
         [
             'symbole privé',
             prepend(TS, "import { ɵglobal } from '@angular/core';\n"),
-            `import name forbidden in ${TS}: ɵglobal from "@angular/core"`,
+            `symbol not allowed in ${TS}: angular @angular/core:_global`,
         ],
         // Montage lu dans le décorateur (M-2), pas dans un nom importé.
         [
@@ -351,7 +364,7 @@ test('X4-sécurité : chaque règle de la réalisation refuse sa violation et ac
                 TS,
                 '\nlet table: Record<string, number> = { a: 1 };\nexport const read = (k: string) => table[k];\n'
             ),
-            `computed member access forbidden in ${TS} (only on a local constant table)`,
+            `computed key without a literal type forbidden in ${TS}`,
         ],
         [
             'clé littérale refusée dans le gabarit',
@@ -392,28 +405,28 @@ test('X4-sécurité : chaque règle de la réalisation refuse sa violation et ac
         [
             'global',
             append(TS, '\nvoid globalThis;\n'),
-            `global access forbidden in ${TS}: globalThis`,
+            `unresolved symbol in ${TS}: globalThis`,
         ],
         [
             'navigator hors onLine',
             append(TS, '\nvoid navigator.language;\n'),
-            `global access forbidden in ${TS}: navigator`,
+            `symbol not allowed in ${TS}: dom NavigatorLanguage.language`,
         ],
         [
             'propriété refusée',
             append(
                 TS,
-                '\nexport const host = (x: { ownerDocument: unknown }) => x.ownerDocument;\n'
+                '\nexport const host = (event: Event) => event.composedPath();\n'
             ),
-            `property access forbidden in ${TS}: ownerDocument`,
+            `symbol not allowed in ${TS}: dom Event.composedPath`,
         ],
         [
             'clé littérale refusée',
             append(
                 TS,
-                "\nexport const host = (x: Record<string, unknown>) => x['location'];\n"
+                "\nexport const host = (event: UIEvent) => event['view'];\n"
             ),
-            `property access forbidden in ${TS}: location`,
+            `symbol not allowed in ${TS}: dom UIEvent.view`,
         ],
         [
             'clé calculée',
@@ -421,7 +434,7 @@ test('X4-sécurité : chaque règle de la réalisation refuse sa violation et ac
                 TS,
                 '\nexport const read = (x: Record<string, unknown>, k: string) => x[k];\n'
             ),
-            `computed member access forbidden in ${TS} (only on a local constant table)`,
+            `computed key without a literal type forbidden in ${TS}`,
         ],
         [
             'chaîne assemblée',

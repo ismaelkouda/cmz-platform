@@ -298,7 +298,7 @@ const server = createServer(async (request, response) => {
 });
 // Seconde origine : toute requête qui y parvient est une sortie.
 const foreignHits = [];
-const foreign = createServer((request, response) => { foreignHits.push(request.method); response.end(); });
+const foreign = createServer((request, response) => { foreignHits.push(request.method + ' ' + request.url); response.end(); });
 foreign.on('upgrade', (request, socket) => { foreignHits.push('UPGRADE'); socket.destroy(); });
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
 await new Promise((done) => foreign.listen(0, '127.0.0.1', done));
@@ -397,7 +397,7 @@ try {
     assert.ok(/<meta http-equiv="Content-Security-Policy"/.test(index), 'Politique absente du bundle');
     const head = index.slice(0, index.indexOf('</head>'));
     const sub = (text) => text.replaceAll('__FOREIGN__', other);
-    const { probes, traps, scripted } = fixture.csp;
+    const { probes, traps, scripted, navigation } = fixture.csp;
     extra.set('/cmz-csp-trap.js', ['text/javascript', [
         ...scripted.map(({ code }) => 'try { ' + sub(code) + ' } catch {}'),
         ...probes.filter((probe) => probe.script).map((probe) => sub(probe.script)),
@@ -423,7 +423,7 @@ try {
             && (uri.includes('/' + id + '/') || uri.includes(id + '.')
                 || (['frame-src', 'object-src'].includes(directive) && uri === 'http://' + other)));
     stage = 'trap-checks';
-    const result = { traps: [], probes: [], sameOrigin: [] };
+    const result = { traps: [], probes: [], sameOrigin: [], inert: [] };
     // Trusted Types : une violation par écriture par chaîne (HTML, eval,
     // script), sans URL attribuable.
     const typed = [...traps, ...scripted].filter((trap) => trap.directive === 'require-trusted-types-for');
@@ -436,6 +436,11 @@ try {
         result.traps.push(trap.id + ' ' + trap.directive);
     }
     for (const probe of probes) {
+        if (probe.mechanism === 'inert') {
+            assert.ok(!foreignHits.some((hit) => hit.includes('/' + probe.id + '/')), 'Sonde inerte arrivée : ' + probe.id);
+            result.inert.push(probe.id);
+            continue;
+        }
         if (probe.mechanism === 'same-origin') {
             const path = served.find((entry) => entry.includes(probe.id));
             assert.ok(path && !bundle.has(path), 'Sonde de même origine non détectée : ' + probe.id);
@@ -448,6 +453,21 @@ try {
     }
     assert.deepEqual(foreignHits, [], 'Requête reçue par une autre origine');
     result.violations = violations.length;
+    // Navigation de premier niveau : la politique ne la gouverne pas
+    // (navigate-to n'existe pas). On compte ce qui arrive sur la seconde
+    // origine ; la page qui l'écrit est refusée par les règles.
+    extra.set('/cmz-csp-navigation.js', ['text/javascript', sub(navigation)]);
+    extra.set('/cmz-csp-navigation.html', ['text/html', head + '</head><body><script src="/cmz-csp-navigation.js"></script></body></html>']);
+    stage = 'navigation-trap';
+    const navigationPage = await context.newPage();
+    currentPage = navigationPage;
+    await navigationPage.goto(origin + '/cmz-csp-navigation.html');
+    await navigationPage.waitForTimeout(2000);
+    result.navigation = {
+        arrived: foreignHits.filter((hit) => hit.includes('/trap-navigation/')).length,
+        others: foreignHits.filter((hit) => !hit.includes('/trap-navigation/')).length,
+    };
+    assert.equal(result.navigation.others, 0, 'Requête reçue par une autre origine');
     process.stdout.write('CMZ_CSP_RESULT=' + JSON.stringify(result) + '\\n');
     process.stdout.write('Navigateur : page réalisée sans violation ni requête ; page témoin bloquée par la politique.\\n');
 } catch (error) {
@@ -558,6 +578,13 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
                 session.lines.push(
                     `PASS X4S/${domain}/same-origin-probe ${entry} detected outside the bundle`
                 );
+            for (const entry of measured.inert)
+                session.lines.push(
+                    `PASS X4S/${domain}/inert-probe ${entry} nothing requested under the policy`
+                );
+            session.lines.push(
+                `X4S/${domain}/navigation-trap location.assign not governed by the policy: arrived_on_second_origin=${measured.navigation.arrived} (refused by the realization rules)`
+            );
             session.lines.push(
                 `X4S/${domain} csp_violations=${measured.violations} foreign_requests=0`
             );

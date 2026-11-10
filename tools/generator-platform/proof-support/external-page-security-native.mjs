@@ -20,6 +20,7 @@ import {
     measurableProbe,
     VALIDATOR_PROBES,
 } from '../test-support/external-realization-probes.mjs';
+import { SECOND_PROBES } from '../test-support/external-realization-second-probes.mjs';
 
 export const CONFINEMENT_RECORD = 'tmp/cmz-confinement-trap.json';
 
@@ -175,18 +176,20 @@ export async function proveConfinedProductOracle(
 }
 
 // Page témoin piégée, servie sous la politique de la coque construite : un
-// piège par directive, plus les 13 sondes du validateur acceptées par les
-// règles. `__FOREIGN__` est remplacé dans le navigateur par la seconde
-// origine.
+// piège par directive, plus les sondes du validateur acceptées par les règles
+// pour leur apparence (13 de X4, 12 de X4-sécurité 2, dont 3 inertes).
+// `__FOREIGN__` est remplacé dans le navigateur par la seconde origine. La
+// navigation de premier niveau, que la politique ne gouverne pas, est mesurée
+// à part : on compte ce qui arrive sur la seconde origine.
 export function cspTrapFixture() {
     const foreign = 'http://__FOREIGN__';
-    const probes = VALIDATOR_PROBES.filter(
-        (probe) => probe.mechanism !== 'static'
-    ).map((probe) => ({
-        id: probe.id,
-        mechanism: probe.mechanism,
-        ...measurableProbe(probe, foreign),
-    }));
+    const probes = [...VALIDATOR_PROBES, ...SECOND_PROBES]
+        .filter((probe) => !['static', 'in-app'].includes(probe.mechanism))
+        .map((probe) => ({
+            id: probe.id,
+            mechanism: probe.mechanism,
+            ...measurableProbe(probe, foreign),
+        }));
     const traps = [
         ['trap-img', 'img-src', `<img src="${foreign}/trap-img/x.png" alt="">`],
         [
@@ -213,6 +216,11 @@ export function cspTrapFixture() {
             'trap-form',
             'form-action',
             `<form id="trap-form" action="${foreign}/trap-form/" method="post"><input name="n" value="v"></form>`,
+        ],
+        [
+            'trap-prefetch',
+            'default-src',
+            `<link rel="prefetch" href="${foreign}/trap-prefetch/x">`,
         ],
     ].map(([id, directive, html]) => ({ id, directive, html }));
     const scripted = [
@@ -248,10 +256,16 @@ export function cspTrapFixture() {
         ],
         ['trap-eval', 'require-trusted-types-for', "eval('1');"],
         [
+            'trap-audio',
+            'media-src',
+            `(() => { const a = new Audio(); a.preload = 'auto'; a.src = '${foreign}/trap-audio/x.mp3'; a.load(); })();`,
+        ],
+        [
             'trap-script',
             'require-trusted-types-for',
             `(() => { const s = document.createElement('script'); s.src = '${foreign}/trap-script/x.js'; document.head.append(s); })();`,
         ],
     ].map(([id, directive, code]) => ({ id, directive, code }));
-    return { probes, traps, scripted };
+    const navigation = `location.assign('${foreign}/trap-navigation/?d=x');`;
+    return { probes, traps, scripted, navigation };
 }
