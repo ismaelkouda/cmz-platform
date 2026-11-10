@@ -129,12 +129,21 @@ conserve tout pour une inspection locale. Sans plan, la reprise explicite ne
 retire qu'un candidat complet selon son propre manifeste ; un candidat partiel
 n'est retiré que par la publication relue du même plan. Une publication en cours
 sur une autre application rend ce cas transitoirement ambigu : il suffit de
-relancer après elle.
+relancer après elle. En cas de refus, la commande nomme le premier écart, en
+chemin relatif au produit ; plusieurs sauvegardes ou candidats pour la même
+application sont toujours refusés. La reprise ne vérifie que la cohérence de
+chaque arbre avec son propre manifeste : elle ne revérifie ni l'appartenance à
+l'espace (`workspace_id`) ni la racine. Un arbre mis de côté forgé mais cohérent
+serait remis en place ; c'est la forge que cette décision exclut déjà.
 
 L'exception de reprise est un second paramètre interne (`recoveringApp`) de
 fonctions exportées. Un oracle statique de
 `external-application-recovery.test.mjs` limite son usage aux modules du
 planificateur d'espace, de la vérification de la racine et de la publication.
+Cet oracle est lexical : il repère le **mot** dans les `.mjs` de `tools/`, pas
+la propriété. Il rend visible en revue toute extension du passe-droit ; une
+construction délibérée du nom l'éviterait, ce qui relève de la forge déjà
+exclue.
 
 ## Justification
 
@@ -198,12 +207,17 @@ barrière reste ce bon de travail et la relecture du diff.
   l'acceptent. Relancer le même `create-app --expect-plan <plan_id>` reprend et
   termine ces contrôles. Fermer cette fenêtre demande un marqueur durable propre
   à `create-app`, donc un changement de son protocole de reprise ; ce n'est pas
-  fait dans ce lot.
+  fait dans ce lot. Avant la publication, un candidat
+  `apps/.<app>.external-candidate-<plan>` abandonné est toléré en silence par
+  les autres commandes : l'application reste absente pour elles, et la relance
+  du même `create-app` reprend ce candidat.
 - **Texte seulement :** la primitive lit et écrit du texte UTF-8. Un actif
   binaire (icône, image) exigera une extension.
 - Le format du manifeste diffère entre le mode atelier et le mode extérieur.
 - Aucune suppression de fichier n'est possible ; elle exigera une décision
-  distincte.
+  distincte. Conséquence : une sortie renommée (par exemple une commande dont
+  l'identifiant change) laisse son ancien répertoire et ses entrées de registre
+  ; une suppression sous plan est à décider dans un incrément ultérieur.
 - Les zones produit à la racine (par exemple `.github/` ou l'état des bons de
   travail) restent refusées ; elles seront décidées avec leur premier usage.
 

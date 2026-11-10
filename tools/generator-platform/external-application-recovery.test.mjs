@@ -3,15 +3,17 @@
 // recover:application-publication.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cp, readdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import test from 'node:test';
 
 import { planExternalApplicationShell } from './core/application-workspace.mjs';
 import {
     planApplicationPublication,
+    publishApplicationPublication,
     recoverApplicationPublication,
 } from './core/application-publication.mjs';
+import { planExternalActionRequest } from './core/external-action-request.mjs';
 import { pathExists } from './core/external-application-paths.mjs';
 import { withGenerationLock } from './core/generation-transaction.mjs';
 import {
@@ -24,6 +26,7 @@ import {
     publication,
     sessionApp,
 } from './test-support/external-publication-fixture.mjs';
+import { writeExternalActionDefinitions } from './test-support/external-session-fixture.mjs';
 
 const CLI = join(TOOLS_ROOT, 'tools/recover-application-publication.mjs');
 
@@ -153,4 +156,146 @@ test('X2 préparatoire : recover:application-publication reprend, refuse l’amb
         assert.equal(result.status, 1);
         assert.match(result.stderr, pattern);
     }
+});
+
+// V-X2-2 et point 7 du pilote : sans marqueur, chaque commande extérieure
+// refuse par un message fermé, sans erreur système ni chemin local.
+test('X3 préparatoire : un produit sans marqueur est refusé proprement par la reprise et les plans', async (t) => {
+    const product = await sessionApp(t, 'equipment-hire');
+    const { enter } = await writeExternalActionDefinitions(
+        product.root,
+        'equipment-hire'
+    );
+    const marker = join(product.root, '.cmz/application-workspace.json');
+    await rename(marker, `${marker}.aside`);
+    const before = await snapshotTree(product.root, []);
+    const missing = (error) =>
+        error.message ===
+        'external application: workspace ownership marker missing';
+    await assert.rejects(recoverApplicationPublication(product.base), missing);
+    await assert.rejects(
+        planApplicationPublication(
+            publication(product, { [NOTICE]: 'export {};\n' })
+        ),
+        missing
+    );
+    await assert.rejects(
+        planExternalActionRequest({ ...product.base, definitionPath: enter }),
+        missing
+    );
+    const result = recoverCli([
+        '--target-root',
+        product.root,
+        '--app',
+        product.shell.appName,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /workspace ownership marker missing/);
+    assert.doesNotMatch(result.stderr, /\/Users\/|\/private\/|ENOENT/);
+    assert.deepEqual(await snapshotTree(product.root, []), before);
+    await rename(`${marker}.aside`, marker);
+});
+
+// V-X2-3 : plusieurs sauvegardes ou candidats pour une application, la reprise
+// ne choisit pas ; rien ne bouge.
+test('X3 préparatoire : plusieurs sauvegardes ou candidats, reprise refusée sans rien déplacer', async (t) => {
+    const product = await sessionApp(t, 'observatory');
+    const args = [
+        '--target-root',
+        product.root,
+        '--app',
+        product.shell.appName,
+    ];
+    for (const kind of ['previous', 'publication']) {
+        const copies = ['a', 'b'].map((letter) =>
+            join(
+                product.root,
+                'apps',
+                `.${product.shell.appName}.${kind}-candidate-${letter.repeat(64)}`
+            )
+        );
+        for (const copy of copies)
+            await cp(product.app, copy, { recursive: true });
+        const before = await snapshotTree(product.root, []);
+        await assert.rejects(
+            recoverApplicationPublication(product.base),
+            (error) =>
+                /ambiguous interrupted publication/.test(error.message) &&
+                error.drift.kind === 'several'
+        );
+        const result = recoverCli(args);
+        assert.equal(result.status, 1);
+        assert.match(
+            result.stderr,
+            /plusieurs publications interrompues pour cette application/
+        );
+        assert.deepEqual(await snapshotTree(product.root, []), before, kind);
+        for (const copy of copies) await rm(copy, { recursive: true });
+    }
+});
+
+// Fable M-2 et M-3 : après « rollback refused », la commande nomme le fichier
+// en écart sans chemin local ; l'altération retirée, la reprise rend l'état
+// relu.
+test('X3 préparatoire : après un retour arrière refusé, l’écart est nommé puis la reprise rend l’état relu', async (t) => {
+    const product = await sessionApp(t, 'observatory');
+    const options = publication(product, { [NOTICE]: 'export {};\n' });
+    const before = await snapshotTree(product.root, []);
+    const plan = await planApplicationPublication(options);
+    const foreign = 'src/app/generated/etranger.ts';
+    await assert.rejects(
+        publishApplicationPublication(
+            { ...options, expectedPlanId: plan.plan_id },
+            {
+                run: () => undefined,
+                phase: async (name) => {
+                    if (name !== 'published') return;
+                    await writeFile(
+                        join(product.app, foreign),
+                        'export {};\n',
+                        {
+                            flag: 'wx',
+                        }
+                    );
+                    throw new Error('altered');
+                },
+            }
+        ),
+        /publication rollback refused/
+    );
+    assert.equal(await pathExists(plan.previous), true);
+    const args = [
+        '--target-root',
+        product.root,
+        '--app',
+        product.shell.appName,
+    ];
+    const altered = await snapshotTree(product.root, []);
+    let result = recoverCli(args);
+    assert.equal(result.status, 1);
+    assert.ok(
+        result.stderr.includes(
+            `Écart : "apps/${product.shell.appName}/${foreign}" (fichier absent du manifeste de cet arbre).`
+        ),
+        result.stderr
+    );
+    assert.doesNotMatch(result.stderr, /\/Users\/|\/private\//);
+    assert.deepEqual(await snapshotTree(product.root, []), altered);
+    // Marche à suivre : retirer l'altération nommée, relancer la reprise.
+    await rm(join(product.app, foreign));
+    result = recoverCli(args);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).status, 'recovered');
+    assert.deepEqual(await snapshotTree(product.root, []), before);
+    // Un fichier inscrit modifié est nommé comme tel.
+    await interruptAfterSwap(product, options);
+    await writeFile(join(product.app, product.page), 'modifié\n');
+    result = recoverCli(args);
+    assert.equal(result.status, 1);
+    assert.ok(
+        result.stderr.includes(
+            `Écart : "apps/${product.shell.appName}/${product.page}" (contenu différent du manifeste de cet arbre).`
+        ),
+        result.stderr
+    );
 });

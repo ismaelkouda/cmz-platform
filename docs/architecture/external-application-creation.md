@@ -299,12 +299,17 @@ Marche à suivre quand une commande répond `interrupted publication pending` :
     relancer.
 
 2. Si la reprise répond `ambiguous interrupted publication`, rien n'a été
-   déplacé. Inspecter `apps/<app>` et `apps/.<app>.*-candidate-*` dans le Git du
-   produit. Le cas le plus courant suit un `publication rollback refused` : un
-   fichier a été modifié dans l'application pendant les contrôles. Retirer cette
-   modification (`git status`, `git diff` du produit), puis relancer la reprise.
-   L'arbre redevient exact selon son propre manifeste et l'état relu est
-   rétabli.
+   déplacé. La commande nomme le premier écart, en chemin relatif au produit,
+   par exemple
+   `Écart : "apps/<app>/src/app/generated/etranger.ts" (fichier absent du manifeste de cet arbre).`
+   Le cas le plus courant suit un `publication rollback refused` : un fichier a
+   été ajouté ou modifié dans l'application pendant les contrôles. Le critère
+   est le manifeste `.cmz/app-manifest.json` de l'arbre nommé, pas le Git du
+   produit, où toute la publication apparaît comme changement. Retirer ou
+   rétablir le fichier nommé, puis relancer la reprise ; recommencer tant qu'un
+   écart est nommé. L'arbre redevient exact selon son propre manifeste et l'état
+   relu est rétabli. Plusieurs sauvegardes ou candidats pour la même application
+   sont toujours refusés : la reprise ne choisit pas entre eux.
 
 3. Un candidat partiel, interrompu pendant sa mise en place, n'est retiré que
    par la publication relue du même plan : relancer la même commande avec le
@@ -790,8 +795,13 @@ La sortie est écrite sous `src/app/generated/actions/<action>/` : les sources
 TypeScript du rendu Angular 2.1 et son `generation-manifest.json`. Les liaisons
 d’hôte ne sont pas fournies par l’utilisateur. Elles sont déduites de la coque :
 module `src/app/session`, jeton `<SERVICE>_API_URL` que la coque a généré pour
-le service de l’opération. La commande vérifie que ce jeton existe dans
-`service-endpoints.ts`.
+le service de l’opération. La commande lit la déclaration de ce jeton dans
+`service-endpoints.ts` (syntaxe TypeScript, indépendante du formatage) et
+vérifie que la coque le lie au même service et au contrat de la définition : un
+jeton absent est refusé (`service endpoint is not declared…`), un jeton lié à un
+autre service ou à un autre contrat aussi
+(`…bound to another service or contract…`), car l’URL résolue serait celle de
+cet autre service ou contrat.
 
 Le plan lie, en plus de la publication, l’empreinte de la définition, du contrat
 et de ses sources. Ces empreintes sont relues à chaque recalcul, donc aussi sous
@@ -804,7 +814,15 @@ pas cette sortie. Le compilateur installé du produit la compile sur le candidat
 Une régénération ne republie que les fichiers modifiés, déclarés `replaced`.
 Elle couvre tout son répertoire de sortie : si un fichier déjà possédé sous ce
 répertoire n’est plus produit, elle est refusée, puisqu’aucune suppression n’est
-possible. Rejouer un plan déjà publié ne change rien (`already-published`).
+possible. Rejouer un plan déjà publié ne change rien (`already-published`). Pour
+la même raison, une commande renommée (identifiant d’action changé) est publiée
+dans un nouveau répertoire et l’ancien reste, avec ses entrées de registre ; une
+suppression sous plan reste à décider.
+
+Mode atelier : ses sorties sont inchangées et il type-check toujours par défaut
+(`external-action-request-guards.test.mjs`). Deux écarts d’outillage existent :
+l’aide de `generate:action-request` gagne la ligne du mode extérieur, et
+l’oracle Angular du contrôle atelier lance Nx sans démon (`NX_DAEMON=false`).
 
 `external-action-request.test.mjs` couvre, sur les deux domaines fictifs :
 
@@ -816,6 +834,10 @@ possible. Rejouer un plan déjà publié ne change rien (`already-published`).
 - T8 : deux publications concurrentes ;
 - la régénération partielle et les refus de périmètre ;
 - la CLI fermée.
+
+`external-action-request-guards.test.mjs` couvre le jeton absent ou lié à un
+autre contrat, chaque moitié de la garde « coque avec session » et le typage par
+défaut du mode atelier.
 
 Le contrôle T11 vérifie que la sortie n’importe que `@angular/*`, `rxjs` et des
 fichiers possédés de l’application, sans module cmz ni chemin de l’atelier.

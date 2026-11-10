@@ -79,6 +79,8 @@ export function parseExternalArguments(arguments_) {
     };
     for (let index = 0; index < arguments_.length; index += 1) {
         const argument = arguments_[index];
+        // M-8 : l'aide reste accessible en mode extérieur.
+        if (argument === '--help') return { help: true };
         if (argument === '--dry-run') {
             if (options.dryRun) throw new Error('--dry-run is repeated');
             options.dryRun = true;

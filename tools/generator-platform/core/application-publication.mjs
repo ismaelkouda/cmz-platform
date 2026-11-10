@@ -2,7 +2,7 @@
 // Même modèle que create-app : plan relu, verrou, candidat, binaires du
 // produit, échange atomique, contrôles natifs et retour arrière exact.
 import { readdir } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 
 import { EXTERNAL_WORKSPACE_CMZ } from '../renderers/application-workspace-renderer.mjs';
 import {
@@ -11,7 +11,10 @@ import {
     readOwnedWorkspace,
     runExternalApplicationCommand,
 } from './application-workspace.mjs';
-import { inputFilePath } from './application-workspace-root.mjs';
+import {
+    inputFilePath,
+    ownedProductContext,
+} from './application-workspace-root.mjs';
 import {
     PUBLICATION_TOOLS,
     publishedManifest,
@@ -21,11 +24,11 @@ import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
 import { repositoryRoot } from '../validate-ir.mjs';
 import {
     assertSourceWeight,
-    externalApplicationContext,
     externalFailure,
     pathExists,
     readProductFile,
     stageGeneratedTree,
+    treeInventory,
     verifyGeneratedTree,
 } from './external-application-paths.mjs';
 import { sha256, stableStringify } from './generation-manifest.mjs';
@@ -221,8 +224,51 @@ export function publicApplicationPublicationPlan(plan) {
     };
 }
 
+// Premier écart d'un arbre avec son propre manifeste, en chemin relatif à
+// l'application (M-3) : la commande de reprise le nomme sans chemin local.
+async function firstOwnedTreeDrift(root) {
+    let manifest;
+    try {
+        manifest = JSON.parse(
+            (await readProductFile(root, APP_MANIFEST)).toString('utf8')
+        );
+    } catch {
+        return { path: APP_MANIFEST, kind: 'manifest' };
+    }
+    const expected = new Map(
+        (manifest.generated_files ?? []).map((entry) => [entry.path, entry])
+    );
+    let actual;
+    try {
+        actual = await treeInventory(root);
+    } catch {
+        return { path: null, kind: 'entry' };
+    }
+    const present = new Set();
+    for (const entry of actual) {
+        if (entry.path === APP_MANIFEST) continue;
+        const wanted = expected.get(entry.path);
+        if (!wanted) return { path: entry.path, kind: 'unlisted' };
+        present.add(entry.path);
+        if (wanted.sha256 !== entry.sha256 || wanted.bytes !== entry.bytes)
+            return { path: entry.path, kind: 'modified' };
+    }
+    for (const path of expected.keys())
+        if (!present.has(path)) return { path, kind: 'missing' };
+    return { path: null, kind: 'directory' };
+}
+
+function ambiguous(drift) {
+    const error = new Error(
+        'external application: ambiguous interrupted publication'
+    );
+    if (drift) error.drift = drift;
+    throw error;
+}
+
 // Arbre complet et exact selon son propre manifeste, sinon rien n'est retiré.
-async function assertExactOwnedTree(root) {
+// `tree` : nom de l'arbre relatif au produit, pour le diagnostic.
+async function assertExactOwnedTree(root, tree) {
     try {
         const text = (await readProductFile(root, APP_MANIFEST)).toString(
             'utf8'
@@ -239,7 +285,7 @@ async function assertExactOwnedTree(root) {
         }
         await verifyGeneratedTree(root, files);
     } catch {
-        externalFailure('ambiguous interrupted publication');
+        ambiguous({ tree, ...(await firstOwnedTreeDrift(root)) });
     }
 }
 
@@ -260,9 +306,13 @@ async function disposeCandidate(options, candidate) {
         try {
             await verifyGeneratedTree(candidate, plan.files, { partial: true });
         } catch {
-            externalFailure('ambiguous interrupted publication');
+            ambiguous({
+                tree: `apps/${basename(candidate)}`,
+                path: null,
+                kind: 'partial',
+            });
         }
-    } else await assertExactOwnedTree(candidate);
+    } else await assertExactOwnedTree(candidate, `apps/${basename(candidate)}`);
     await removeTreeAndSync(candidate);
 }
 
@@ -285,15 +335,15 @@ async function recoverUnderLock(options) {
     const previous = own.filter((name) => name.includes('.previous-'));
     const candidates = own.filter((name) => name.includes('.publication-'));
     if (previous.length > 1 || candidates.length > 1)
-        externalFailure('ambiguous interrupted publication');
+        ambiguous({ tree: 'apps', path: null, kind: 'several' });
     if (previous.length === 1) {
         const previousRoot = resolve(apps, previous[0]);
-        await assertExactOwnedTree(previousRoot);
+        await assertExactOwnedTree(previousRoot, `apps/${previous[0]}`);
         if (await pathExists(output)) {
             if (candidates.length === 1)
-                externalFailure('ambiguous interrupted publication');
+                ambiguous({ tree: 'apps', path: null, kind: 'several' });
             // Échange fait, contrôles non confirmés : retour à l'état relu.
-            await assertExactOwnedTree(output);
+            await assertExactOwnedTree(output, `apps/${options.appName}`);
             const failed = resolve(
                 apps,
                 previous[0].replace('.previous-', '.publication-')
@@ -320,16 +370,10 @@ async function recoverUnderLock(options) {
 // l'application.
 export async function recoverApplicationPublication(options) {
     const { output } = appLocation(options);
-    const context = await externalApplicationContext({
+    await ownedProductContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
         targetRoot: options.targetRoot,
     });
-    if (
-        !(await pathExists(
-            resolve(context.productRoot, EXTERNAL_WORKSPACE_CMZ.manifest)
-        ))
-    )
-        externalFailure('workspace ownership marker missing');
     return withGenerationLock(output, () => recoverUnderLock(options));
 }
 

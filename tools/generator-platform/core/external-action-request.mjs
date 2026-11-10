@@ -5,6 +5,8 @@
 // type-check rien de cette sortie.
 import { resolve } from 'node:path';
 
+import ts from 'typescript';
+
 import { computeExternalAngularActionRequestTarget } from '../action-request-v2-targets.mjs';
 import { sessionEndpointToken } from '../renderers/angular-application-session-renderer.mjs';
 import { repositoryRoot } from '../validate-ir.mjs';
@@ -13,10 +15,12 @@ import {
     publicApplicationPublicationPlan,
     publishApplicationPublication,
 } from './application-publication.mjs';
-import { inputFilePath } from './application-workspace-root.mjs';
+import {
+    inputFilePath,
+    ownedProductContext,
+} from './application-workspace-root.mjs';
 import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
 import {
-    externalApplicationContext,
     externalFailure,
     pathExists,
     readProductFile,
@@ -74,8 +78,57 @@ async function sessionApplication(root, appName) {
     };
 }
 
+// Contrat et service que la coque lie à un jeton de service : lus dans la
+// déclaration exportée du jeton (syntaxe, indépendante du formatage). Le filtre
+// rendu par la coque compare `endpoint.contract_id` et `endpoint.service_id`
+// à des littéraux ; ce sont eux qui décident l'URL résolue.
+export function shellServiceBinding(source, token) {
+    const file = ts.createSourceFile(
+        'service-endpoints.ts',
+        source,
+        ts.ScriptTarget.ES2022,
+        true
+    );
+    for (const statement of file.statements) {
+        if (
+            !ts.isVariableStatement(statement) ||
+            !statement.modifiers?.some(
+                (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+            )
+        )
+            continue;
+        for (const declaration of statement.declarationList.declarations) {
+            if (
+                !ts.isIdentifier(declaration.name) ||
+                declaration.name.text !== token ||
+                !declaration.initializer
+            )
+                continue;
+            const binding = {};
+            const visit = (node) => {
+                if (
+                    ts.isBinaryExpression(node) &&
+                    node.operatorToken.kind ===
+                        ts.SyntaxKind.EqualsEqualsEqualsToken &&
+                    ts.isPropertyAccessExpression(node.left) &&
+                    ts.isStringLiteral(node.right) &&
+                    ['contract_id', 'service_id'].includes(node.left.name.text)
+                ) {
+                    const key = node.left.name.text;
+                    if (key in binding) binding.ambiguous = true;
+                    binding[key] = node.right.text;
+                }
+                ts.forEachChild(node, visit);
+            };
+            visit(declaration.initializer);
+            return binding;
+        }
+    }
+    return null;
+}
+
 async function renderExternalActionRequest(options) {
-    const context = await externalApplicationContext({
+    const context = await ownedProductContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
         targetRoot: options.targetRoot,
     });
@@ -95,12 +148,13 @@ async function renderExternalActionRequest(options) {
     // Entrées confinées au produit, vérifiées avant toute compilation.
     const inputs = await inputClosure(root, definitionPath, definition);
     let token;
+    let serviceId;
     const target = await computeExternalAngularActionRequestTarget({
         definitionPath: resolve(root, definitionPath),
         definitionDocument: document,
         artifactRoot: root,
         hostBindings: (model) => {
-            const serviceId = model.actions[0].transport.service_id;
+            serviceId = model.actions[0].transport.service_id;
             token = sessionEndpointToken(serviceId);
             return {
                 services: {
@@ -109,10 +163,21 @@ async function renderExternalActionRequest(options) {
             };
         },
     });
-    // Le jeton de service doit être celui que la coque a généré.
-    if (!app.endpoints.includes(`export const ${token} = new InjectionToken`))
+    // Le jeton de service doit être celui que la coque a généré, lié par elle
+    // au même service et au contrat de la définition (M-5) : sinon l'URL
+    // résolue serait celle d'un autre contrat.
+    const binding = shellServiceBinding(app.endpoints, token);
+    if (!binding)
         externalFailure(
             'service endpoint is not declared by the session shell'
+        );
+    if (
+        binding.ambiguous ||
+        binding.service_id !== serviceId ||
+        binding.contract_id !== target.model.backend_contract.id
+    )
+        externalFailure(
+            'service endpoint is bound to another service or contract by the session shell'
         );
     const base = actionOutputRoot(target.actionId);
     const files = Object.fromEntries(

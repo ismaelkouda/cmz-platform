@@ -8,6 +8,7 @@ import { EXTERNAL_WORKSPACE_CMZ } from '../renderers/application-workspace-rende
 import { verifyApplicationOwnership } from './application-ownership.mjs';
 import {
     assertPhysicalPath,
+    externalApplicationContext,
     externalFailure,
     pathExists,
     readProductFile,
@@ -17,6 +18,15 @@ import {
 import { sha256 } from './generation-manifest.mjs';
 
 const MANIFEST = EXTERNAL_WORKSPACE_CMZ.manifest;
+
+// Racine d'un produit déjà créé : racine vérifiée, puis marqueur présent. Sans
+// marqueur, refus fermé plutôt qu'une erreur système portant un chemin local.
+export async function ownedProductContext(options) {
+    const context = await externalApplicationContext(options);
+    if (!(await pathExists(resolve(context.productRoot, MANIFEST))))
+        externalFailure('workspace ownership marker missing');
+    return context;
+}
 
 export async function verifyWorkspaceRoot(plan, documentSources = false) {
     const { productRoot } = plan;

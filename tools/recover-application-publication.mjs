@@ -13,6 +13,24 @@ function fail(message) {
     throw Object.assign(new Error(message), { code: 'CMZ_CLI_USAGE' });
 }
 
+const DRIFT = {
+    unlisted: 'fichier absent du manifeste de cet arbre',
+    modified: 'contenu différent du manifeste de cet arbre',
+    missing: 'fichier inscrit au manifeste mais absent',
+    manifest: 'manifeste d’application illisible',
+    entry: 'entrée spéciale ou lien symbolique',
+    directory: 'répertoire non possédé',
+    partial: 'candidat partiel différent du plan courant',
+    several: 'plusieurs publications interrompues pour cette application',
+};
+
+// M-3 : premier écart, en chemin relatif au produit, jamais un chemin local.
+// Le nom est cité en JSON pour qu'aucun caractère du produit ne s'interprète.
+export function describeDrift({ tree, path, kind }) {
+    const where = path === null ? tree : `${tree}/${path}`;
+    return `Écart : ${JSON.stringify(where)} (${DRIFT[kind] ?? kind}).`;
+}
+
 export function parseArgs(argv) {
     const options = {};
     for (let index = 0; index < argv.length; index += 2) {
@@ -60,10 +78,12 @@ if (
         console.error(
             `❌ ${known ? error.message : locked ? 'Une autre commande tient le verrou de cette application ; relancer la reprise quand elle est terminée.' : 'Reprise refusée ; inspecter le produit localement.'}`
         );
-        if (error.message.includes('ambiguous interrupted publication'))
+        if (error.message.includes('ambiguous interrupted publication')) {
+            if (error.drift) console.error(`   ${describeDrift(error.drift)}`);
             console.error(
                 `   Rien n'a été déplacé. Marche à suivre : ${GUIDE}, section « Ownership et reprise ».`
             );
+        }
         process.exitCode = 1;
     });
 }

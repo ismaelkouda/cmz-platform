@@ -29,6 +29,7 @@ import { sealShellManifest } from './application-ownership.mjs';
 import {
     inputFilePath,
     ownedFiles,
+    ownedProductContext,
     productInputClosure,
     verifyWorkspaceRoot,
 } from './application-workspace-root.mjs';
@@ -256,7 +257,7 @@ export async function publishApplicationWorkspace(options) {
 }
 
 export async function readOwnedWorkspace(options, internal = {}) {
-    const context = await externalApplicationContext({
+    const context = await ownedProductContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
         targetRoot: options.targetRoot,
     });
