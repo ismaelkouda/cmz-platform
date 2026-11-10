@@ -17,6 +17,11 @@ import {
 } from './core/external-application-paths.mjs';
 import { EXTERNAL_WORKSPACE_CMZ as CMZ } from './renderers/application-workspace-renderer.mjs';
 import { renderAngularPwaShell } from './renderers/angular-pwa-shell-renderer.mjs';
+import {
+    EXTERNAL_CSP_HEADER,
+    EXTERNAL_CSP_HEADER_PATH,
+    EXTERNAL_CSP_META,
+} from './renderers/external-content-security-policy.mjs';
 import { createApplicationSessionFixture } from './test-support/application-session-fixture.mjs';
 import {
     hash,
@@ -301,7 +306,7 @@ test('X0 : la coque extérieure avec session porte son test de garde ; le mode a
         assert.deepEqual(specs(external), [spec]);
         assert.deepEqual(
             Object.keys(external).sort(),
-            [...Object.keys(atelier), spec].sort()
+            [...Object.keys(atelier), spec, EXTERNAL_CSP_HEADER_PATH].sort()
         );
         assert.match(external[spec], /from '\.\/session\.guard'/);
         assert.match(external[spec], /toBeInstanceOf\(UrlTree\)/);
@@ -311,6 +316,88 @@ test('X0 : la coque extérieure avec session porte son test de garde ; le mode a
             )
         );
     }
+});
+
+// X4-sécurité : la coque extérieure porte sa politique de sécurité de
+// contenu, en balise meta avant toute ressource et en gabarit d'en-tête, les
+// deux possédés et scellés ; le mode atelier reste sans politique.
+test('X4-sécurité : politique de sécurité de contenu générée par la coque extérieure, mode atelier inchangé', async (t) => {
+    const data = await createApplicationSessionFixture({
+        domain: SESSION_FIXTURE_DOMAINS[0],
+    });
+    t.after(() => rm(data.root, { recursive: true, force: true }));
+    const render = async (externalWorkspace) =>
+        (
+            await renderAngularPwaShell({
+                design: data.design,
+                experienceId: data.design.experiences[0].id,
+                appName: 'session-mode',
+                designPath: 'design/csp.json',
+                designSha256: hash('csp'),
+                externalWorkspace,
+            })
+        ).files;
+    const atelier = await render(false);
+    const external = await render(true);
+    assert.doesNotMatch(atelier['src/index.html'], /Content-Security-Policy/);
+    assert.equal(atelier[EXTERNAL_CSP_HEADER_PATH], undefined);
+    const index = external['src/index.html'];
+    const metas = [
+        ...index.matchAll(
+            /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]*)"/g
+        ),
+    ];
+    assert.equal(metas.length, 1);
+    assert.equal(metas[0][1], EXTERNAL_CSP_META);
+    // Avant toute ressource : base, manifeste, scripts injectés au build.
+    for (const later of ['<base href', '<link rel="manifest"', '<title>'])
+        assert.ok(index.indexOf(metas[0][0]) < index.indexOf(later), later);
+    const directives = new Map(
+        EXTERNAL_CSP_META.split('; ').map((entry) => {
+            const [name, ...values] = entry.split(' ');
+            return [name, values.join(' ')];
+        })
+    );
+    assert.equal(directives.get('connect-src'), "'self'");
+    assert.equal(directives.get('script-src'), "'self'");
+    assert.equal(directives.get('base-uri'), "'self'");
+    assert.equal(directives.get('form-action'), "'self'");
+    assert.equal(directives.get('object-src'), "'none'");
+    assert.equal(directives.get('frame-src'), "'none'");
+    assert.equal(directives.has('frame-ancestors'), false);
+    // Aucune origine nommée, aucun joker, aucun code dynamique.
+    for (const value of directives.values())
+        assert.doesNotMatch(value, /\*|https?:|unsafe-eval|\/\//);
+    assert.equal(
+        EXTERNAL_CSP_HEADER,
+        `${EXTERNAL_CSP_META}; frame-ancestors 'none'`
+    );
+    assert.ok(
+        external[EXTERNAL_CSP_HEADER_PATH].includes(
+            `add_header Content-Security-Policy "${EXTERNAL_CSP_HEADER}" always;`
+        )
+    );
+    const manifest = JSON.parse(external['.cmz/app-manifest.json']);
+    for (const path of ['src/index.html', EXTERNAL_CSP_HEADER_PATH])
+        assert.ok(
+            manifest.generated_files.some((entry) => entry.path === path),
+            path
+        );
+    // Le CSS critique en ligne ajouterait un gestionnaire onload refusé.
+    assert.deepEqual(
+        JSON.parse(external['project.json']).targets.build.configurations
+            .production.optimization,
+        {
+            scripts: true,
+            styles: { minify: true, inlineCritical: false },
+            fonts: false,
+        }
+    );
+    assert.equal(
+        JSON.parse(atelier['project.json']).targets.build.configurations
+            .production.optimization,
+        undefined
+    );
 });
 
 // V9-R1 : l'oracle du test 37 refuse aussi un import sans `from`.

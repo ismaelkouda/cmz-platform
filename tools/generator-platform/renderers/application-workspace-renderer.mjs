@@ -1,4 +1,9 @@
 import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
+import {
+    EXTERNAL_CSP_HEADER_PATH,
+    renderCspHeaderTemplate,
+    withCspMeta,
+} from './external-content-security-policy.mjs';
 
 // Disposition unique du produit extérieur, consommée aussi par ses preuves et gardes.
 export const EXTERNAL_WORKSPACE_CMZ = Object.freeze({
@@ -471,6 +476,17 @@ export default ts.config(
     }
 );
 `;
+        // X4-sécurité : politique de sécurité de contenu générée, scellée.
+        files['src/index.html'] = withCspMeta(files['src/index.html']);
+        files[EXTERNAL_CSP_HEADER_PATH] = renderCspHeaderTemplate();
+        // L'inlining du CSS critique ajoute un gestionnaire `onload` en ligne,
+        // refusé par `script-src 'self'` ; l'inlining des polices joindrait le
+        // réseau au build. Les deux sont coupés explicitement.
+        project.targets.build.configurations.production.optimization = {
+            scripts: true,
+            styles: { minify: true, inlineCritical: false },
+            fonts: false,
+        };
         files['src/main.ts'] = files['src/main.ts'].replace(
             '.catch((error: unknown) => console.error(error));',
             `.catch(() => {
