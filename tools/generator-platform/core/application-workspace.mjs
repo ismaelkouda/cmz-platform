@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -12,6 +11,7 @@ import {
 import { nxConfinementEnvironment } from '../../library-setup/sandbox.mjs';
 import { validateApplicationDesignWithDependencies } from './application-design.mjs';
 import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
+import { runConfinedProductCommand } from './external-product-confinement.mjs';
 import {
     assertPhysicalPath,
     assertSourceWeight,
@@ -414,12 +414,17 @@ export async function planExternalApplicationShell(options) {
     };
 }
 
-export async function runExternalApplicationCommand(command, args, root) {
+// X4-sécurité : chaque commande du produit tourne confinée (aucun réseau,
+// aucune lecture hors du produit, environnement propre).
+export async function runExternalApplicationCommand(
+    command,
+    args,
+    root,
+    options = {}
+) {
     const confinement = nxConfinementEnvironment(root);
-    const home = resolve(root, '.nx/home');
     const temporary = resolve(root, 'tmp');
     for (const path of [
-        home,
         temporary,
         ...Object.values(confinement).filter((value) =>
             value.startsWith(root + '/')
@@ -429,21 +434,9 @@ export async function runExternalApplicationCommand(command, args, root) {
         await mkdir(path, { recursive: true });
         await assertPhysicalPath(path);
     }
-    execFileSync(command, args, {
-        cwd: root,
-        timeout: 300_000,
-        stdio: ['ignore', process.stderr, process.stderr],
-        env: {
-            CI: 'true',
-            PATH: '',
-            HOME: home,
-            TMPDIR: temporary,
-            TMP: temporary,
-            TEMP: temporary,
-            NX_NO_CLOUD: 'true',
-            NX_TASKS_RUNNER_DYNAMIC_OUTPUT: 'false',
-            ...confinement,
-        },
+    await runConfinedProductCommand(command, args, root, {
+        workspaceRoot: repositoryRoot,
+        ...options,
     });
 }
 
