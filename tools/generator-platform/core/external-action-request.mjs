@@ -25,20 +25,24 @@ import {
     pathExists,
     readProductFile,
 } from './external-application-paths.mjs';
+import {
+    ACTION_REQUEST_TOOL,
+    actionExecutionModelPath,
+    actionOutputRoot,
+    ownedAppFile,
+    pagesConsumingCommand,
+} from './external-publication-paths.mjs';
 import { sha256 } from './generation-manifest.mjs';
 
-export const ACTION_REQUEST_TOOL = 'generate:action-request';
+export {
+    ACTION_REQUEST_TOOL,
+    actionExecutionModelPath,
+    actionOutputRoot,
+} from './external-publication-paths.mjs';
 const SESSION_INDEX = 'src/app/session/index.ts';
 const SESSION_ENDPOINTS = 'src/app/session/service-endpoints.ts';
 // Depuis src/app/generated/actions/<id>/src/ vers src/app/session.
 export const SESSION_MODULE = '../../../../session';
-
-export const actionOutputRoot = (actionId) =>
-    `src/app/generated/actions/${actionId}`;
-// X3 : le modèle d'exécution est publié avec la commande ; le plan de page le
-// référence, et la composition consomme cette commande publiée.
-export const actionExecutionModelPath = (actionId) =>
-    `${actionOutputRoot(actionId)}/execution-model.json`;
 
 async function digest(root, path) {
     return { path, sha256: sha256(await readProductFile(root, path)) };
@@ -158,6 +162,23 @@ export function assertShellServiceBinding(endpoints, serviceId, contractId) {
     return token;
 }
 
+// M-2 : même identifiant de contrat, mêmes octets que ceux que les pages de
+// l'application déclarent ; sinon le plan de page le refuserait plus tard.
+async function assertDeclaredContract(app, contract) {
+    for (const { path } of app.manifest.generated_files) {
+        if (!/^\.cmz\/pages\/page_[a-f0-9]{16}\.json$/.test(path)) continue;
+        const page = JSON.parse((await ownedAppFile(app, path)).toString());
+        for (const reference of page.backend_contracts ?? [])
+            if (
+                reference.id === contract.id &&
+                reference.sha256 !== contract.sha256
+            )
+                externalFailure(
+                    'backend contract differs from the contract declared by the application pages'
+                );
+    }
+}
+
 async function renderExternalActionRequest(options) {
     const context = await ownedProductContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
@@ -198,6 +219,7 @@ async function renderExternalActionRequest(options) {
             };
         },
     });
+    await assertDeclaredContract(app, target.model.backend_contract);
     const base = actionOutputRoot(target.actionId);
     const files = Object.fromEntries(
         Object.entries(target.files).map(([path, content]) => [
@@ -217,6 +239,11 @@ async function renderExternalActionRequest(options) {
     return {
         actionId: target.actionId,
         modelSha256: target.manifest.input.sha256,
+        dependentPages: await pagesConsumingCommand(
+            app,
+            options.appName,
+            target.actionId
+        ),
         publication: {
             workspaceRoot: options.workspaceRoot ?? repositoryRoot,
             targetRoot: options.targetRoot,
@@ -239,6 +266,7 @@ export async function planExternalActionRequest(options) {
         ...plan,
         action_id: rendered.actionId,
         model_sha256: rendered.modelSha256,
+        dependent_pages: rendered.dependentPages,
     };
 }
 
@@ -247,6 +275,7 @@ export function publicExternalActionRequestPlan(plan) {
         ...publicApplicationPublicationPlan(plan),
         action_id: plan.action_id,
         model_sha256: plan.model_sha256,
+        dependent_pages: plan.dependent_pages,
     };
 }
 
@@ -258,5 +287,9 @@ export async function publishExternalActionRequest(options, dependencies) {
         { ...rendered.publication, expectedPlanId: options.expectedPlanId },
         dependencies
     );
-    return { ...result, action_id: rendered.actionId };
+    return {
+        ...result,
+        action_id: rendered.actionId,
+        dependent_pages: rendered.dependentPages,
+    };
 }

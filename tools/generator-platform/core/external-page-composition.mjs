@@ -25,24 +25,25 @@ import {
 } from './application-publication.mjs';
 import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
 import {
-    actionExecutionModelPath,
     assertShellServiceBinding,
     SESSION_MODULE,
     sessionApplication,
 } from './external-action-request.mjs';
 import { externalFailure } from './external-application-paths.mjs';
+import { compileOwnedPagePlan } from './external-page-plan.mjs';
 import {
-    compileOwnedPagePlan,
+    ACTION_REQUEST_TOOL,
     ownedAppFile,
+    PAGE_COMPOSITION_TOOL,
     PAGE_PLAN_TOOL,
-    pageOutputRoot,
+    pageCompositionRoot,
     pagePlanPath,
     publishingTool,
-} from './external-page-plan.mjs';
+} from './external-publication-paths.mjs';
 import { buildGenerationManifest } from './generation-manifest.mjs';
 import { validatePageExecutionCapabilities } from './page-execution-plan.mjs';
 
-export const PAGE_COMPOSITION_TOOL = 'generate:page-composition';
+export { PAGE_COMPOSITION_TOOL } from './external-publication-paths.mjs';
 const GENERATED = 'src/app/generated/';
 const ACTION_MODEL =
     /^src\/app\/generated\/actions\/([a-z0-9][a-z0-9._-]*)\/execution-model\.json$/;
@@ -50,8 +51,6 @@ const ACTION_MODEL =
 const COMPOSITION_SESSION_MODULE = '../../../../../session';
 // Depuis la même source vers src/app/generated/actions/<id>/src.
 const actionModule = (actionId) => `../../../../actions/${actionId}/src`;
-
-const compositionRoot = (pageId) => `${pageOutputRoot(pageId)}/composition`;
 
 // Références du plan : seulement des fichiers possédés de cette application,
 // jamais un chemin hors du produit, d'une autre application ou non inscrit.
@@ -88,7 +87,7 @@ async function consumedCommand(app, node, modelPath) {
     const match = ACTION_MODEL.exec(modelPath);
     if (
         !match ||
-        publishingTool(app.manifest, modelPath) !== 'generate:action-request'
+        publishingTool(app.manifest, modelPath) !== ACTION_REQUEST_TOOL
     )
         externalFailure(`page command ${node.id} has no published command`);
     const actionId = match[1];
@@ -98,7 +97,9 @@ async function consumedCommand(app, node, modelPath) {
     const operation = model.actions.find(
         (candidate) => candidate.id === node.primitive_ref.operation_id
     );
-    if (!operation || actionExecutionModelPath(actionId) !== modelPath)
+    // `actionId` vient du chemin du modèle : le chemin est exact par
+    // construction (validation X3, S7).
+    if (!operation)
         externalFailure(`page command ${node.id} has no published command`);
     const serviceId = operation.transport.service_id;
     const token = assertShellServiceBinding(
@@ -223,7 +224,7 @@ async function renderExternalPageComposition(options) {
     // Matérialisation complète, relative à src/app/generated/ : fichiers de la
     // composition et commandes consommées. Seuls les premiers sont publiés ; le
     // manifeste de génération lie les empreintes des secondes.
-    const base = compositionRoot(options.pageId);
+    const base = pageCompositionRoot(options.pageId);
     const local = (path) =>
         path.startsWith('src/')
             ? `${base.slice(GENERATED.length)}/${path}`

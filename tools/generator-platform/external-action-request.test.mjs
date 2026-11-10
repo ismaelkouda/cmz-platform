@@ -23,7 +23,9 @@ import {
     planApplicationPublication,
     publishApplicationPublication,
 } from './core/application-publication.mjs';
+import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
 import { verifyGeneratedTree } from './core/external-application-paths.mjs';
+import { sha256, stableStringify } from './core/generation-manifest.mjs';
 import {
     shellFixture,
     snapshotTree,
@@ -86,6 +88,27 @@ test('X2 : commande de connexion publiée sous plan sur deux produits fictifs', 
             plan.changes.every(({ path }) => path.startsWith(`${base}/`))
         );
         assert.ok(plan.changes.every(({ change }) => change === 'added'));
+        // M-1 : le modèle d'exécution est publié avec la commande, canonisé et
+        // identique à celui que lie le manifeste de génération (56 fichiers).
+        assert.equal(plan.changes.length, 56);
+        const modelPath = `${base}/execution-model.json`;
+        assert.ok(plan.changes.some(({ path }) => path === modelPath));
+        const model = JSON.parse(plan.files[modelPath]);
+        assert.deepEqual(
+            await canonicalizeGeneratedFiles({
+                [modelPath]: JSON.stringify(model, null, 2) + '\n',
+            }),
+            { [modelPath]: plan.files[modelPath] }
+        );
+        assert.equal(sha256(stableStringify(model)), plan.model_sha256);
+        assert.equal(
+            JSON.parse(plan.files[`${base}/generation-manifest.json`]).input
+                .sha256,
+            plan.model_sha256
+        );
+        assert.equal(model.actions[0].id, `${domain}-enter`);
+        // I-1 : aucune page ne consomme encore la commande.
+        assert.deepEqual(visible.dependent_pages, []);
         const labels = [];
         const result = await publishExternalActionRequest(
             { ...product.options, expectedPlanId: plan.plan_id },

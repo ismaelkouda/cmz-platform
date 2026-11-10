@@ -27,6 +27,7 @@ import {
     sessionApp,
 } from './test-support/external-publication-fixture.mjs';
 import { writeExternalActionDefinitions } from './test-support/external-session-fixture.mjs';
+import { describeDrift } from '../recover-application-publication.mjs';
 
 const CLI = join(TOOLS_ROOT, 'tools/recover-application-publication.mjs');
 
@@ -298,4 +299,26 @@ test('X3 préparatoire : après un retour arrière refusé, l’écart est nomm�
         ),
         result.stderr
     );
+});
+
+test('Reprise : chaque écart reçoit un libellé, neutre quand l’inventaire ne l’explique pas (M-5)', () => {
+    assert.equal(
+        describeDrift({ tree: 'apps/app', path: null, kind: 'tree' }),
+        'Écart : "apps/app" (arbre non conforme à son manifeste).'
+    );
+    for (const kind of [
+        'unlisted',
+        'modified',
+        'missing',
+        'manifest',
+        'entry',
+        'tree',
+        'partial',
+        'several',
+    ])
+        assert.doesNotMatch(
+            describeDrift({ tree: 'apps/app', path: 'x.ts', kind }),
+            new RegExp(`\\(${kind}\\)`),
+            kind
+        );
 });

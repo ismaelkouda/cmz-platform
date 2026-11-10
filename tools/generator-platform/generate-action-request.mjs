@@ -15,6 +15,7 @@ import {
     publicExternalActionRequestPlan,
     publishExternalActionRequest,
 } from './core/external-action-request.mjs';
+import { dependentPagesNotice } from './core/external-cli.mjs';
 import { readActionRequestDefinition } from './core/action-request-result-graph.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
 import {
@@ -422,6 +423,7 @@ async function mainExternal(options) {
         process.stdout.write(
             `${JSON.stringify(publicExternalActionRequestPlan(plan), null, 2)}\n`
         );
+        dependentPagesNotice(plan.dependent_pages);
         return;
     }
     const result = await publishExternalActionRequest({
@@ -435,6 +437,7 @@ async function mainExternal(options) {
                 plan_id: result.plan_id,
                 app_name: options.appName,
                 action_id: result.action_id,
+                dependent_pages: result.dependent_pages,
                 status: result.replayed ? 'already-published' : 'published',
                 recovered: result.recovered,
             },
@@ -442,6 +445,7 @@ async function mainExternal(options) {
             2
         )}\n`
     );
+    dependentPagesNotice(result.dependent_pages);
 }
 
 async function main() {

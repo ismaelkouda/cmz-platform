@@ -19,7 +19,7 @@ const DRIFT = {
     missing: 'fichier inscrit au manifeste mais absent',
     manifest: 'manifeste d’application illisible',
     entry: 'entrée spéciale ou lien symbolique',
-    directory: 'répertoire non possédé',
+    tree: 'arbre non conforme à son manifeste',
     partial: 'candidat partiel différent du plan courant',
     several: 'plusieurs publications interrompues pour cette application',
 };

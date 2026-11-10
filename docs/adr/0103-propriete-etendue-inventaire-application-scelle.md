@@ -224,6 +224,11 @@ barrière reste ce bon de travail et la relecture du diff.
   ; une suppression sous plan est à décider dans un incrément ultérieur.
 - Les zones produit à la racine (par exemple `.github/` ou l'état des bons de
   travail) restent refusées ; elles seront décidées avec leur premier usage.
+- **Aucune dépendance entre publications dans la primitive :** une commande
+  republiée ne sait pas, par le registre seul, quelles pages la consomment. Les
+  outils l'exposent eux-mêmes : `generate:action-request` nomme les pages dont
+  le plan publié référence son modèle (`dependent_pages`), et les commandes de
+  page refusent un plan devenu périmé.
 
 ### Points à réévaluer
 

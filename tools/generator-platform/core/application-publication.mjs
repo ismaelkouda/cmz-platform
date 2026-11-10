@@ -255,7 +255,8 @@ async function firstOwnedTreeDrift(root) {
     }
     for (const path of expected.keys())
         if (!present.has(path)) return { path, kind: 'missing' };
-    return { path: null, kind: 'directory' };
+    // Écart que l'inventaire n'explique pas : libellé neutre (M-5).
+    return { path: null, kind: 'tree' };
 }
 
 function ambiguous(drift) {

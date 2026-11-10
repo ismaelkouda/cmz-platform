@@ -26,11 +26,14 @@ export function parseClosedArguments(arguments_, keys, label) {
         options[all[argument]] = value;
         index += 1;
     }
+    // M-8 : seules les options manquantes sont nommées.
     const missing = Object.keys(keys).filter(
         (argument) => !Object.hasOwn(options, keys[argument])
     );
     if (missing.length > 0)
-        throw new Error(`${Object.keys(keys).join(', ')} are required`);
+        throw new Error(
+            `${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} required`
+        );
     if (Boolean(options.dryRun) === Boolean(options.expectedPlanId))
         throw new Error(`${label} requires --dry-run or --apply <plan_id>`);
     return { external: true, ...options };
@@ -58,4 +61,17 @@ export function publicationResult(result, appName, extra) {
         status: result.replayed ? 'already-published' : 'published',
         recovered: result.recovered,
     };
+}
+
+// I-1 : une nouvelle publication de la commande périme le plan et la
+// composition des pages qui la consomment ; elles sont nommées, pas modifiées.
+export function dependentPagesNotice(pages) {
+    if (!pages?.length) return;
+    const names = pages.map(
+        ({ page_id, composition }) =>
+            `${page_id} (plan${composition ? ', composition' : ''})`
+    );
+    console.error(
+        `⚠ Pages qui consomment cette commande : ${names.join(', ')}. Après publication, relancer compile:page-execution-plan puis generate:page-composition pour chacune.`
+    );
 }

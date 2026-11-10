@@ -5,7 +5,7 @@
 // la chaîne native est prouvée par check:external-application-shells.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -14,8 +14,14 @@ import {
     publishExternalApplicationShell,
 } from './core/application-workspace.mjs';
 import {
+    computeOwnershipSeal,
+    inventoryTreeSha,
+} from './core/application-ownership.mjs';
+import {
     planExternalActionRequest,
+    publicExternalActionRequestPlan,
     publishExternalActionRequest,
+    sessionApplication,
 } from './core/external-action-request.mjs';
 import {
     assertPlanReferences,
@@ -24,6 +30,7 @@ import {
     publishExternalPageComposition,
 } from './core/external-page-composition.mjs';
 import {
+    ownedAppFile,
     pagePlanPath,
     planExternalPagePlan,
     publicExternalPagePlan,
@@ -351,13 +358,17 @@ test('X3 : références du plan hors de l’application et commande consommée d
         `apps/${'x'.repeat(app.length)}/src/app/generated/actions/observatory-enter/execution-model.json`,
         `apps/${app}/src/app/generated/unowned.json`,
         `apps/${app}/src/../src/app/generated/actions/observatory-enter/execution-model.json`,
+        // Validation X3, S5 : une URI non textuelle reçoit le même refus fermé.
+        42,
+        null,
+        undefined,
     ]) {
         const forged = structuredClone(plan);
         forged.command_nodes[0].primitive_ref.uri = uri;
         assert.throws(
             () => assertPlanReferences(forged, app, owned),
             /page plan references a file outside the application/,
-            uri
+            String(uri)
         );
     }
     const before = await snapshotTree(product.root, []);
@@ -404,6 +415,214 @@ test('X3 : références du plan hors de l’application et commande consommée d
     assert.deepEqual(await snapshotTree(product.root, []), before);
 });
 
+const ENTER_MODEL =
+    'src/app/generated/actions/observatory-enter/execution-model.json';
+
+// Registre modifié puis rescellé de façon cohérente (forge exclue par
+// l'ADR-0103) : montre ce que fait le code devant un registre valide mais
+// différent, comme la sonde P5 du validateur.
+async function sealedForge(product, edit) {
+    const path = join(product.app, MANIFEST);
+    const original = await readFile(path);
+    const manifest = JSON.parse(original.toString('utf8'));
+    edit(manifest);
+    manifest.tree_sha256 = inventoryTreeSha(manifest.generated_files);
+    manifest.ownership.seal_sha256 = computeOwnershipSeal(manifest);
+    await writeFile(path, JSON.stringify(manifest, null, 2) + '\n');
+    return () => writeFile(path, original);
+}
+
+test('X3 : modèle attribué à un autre outil, refusé dès le plan de page, et lecture exacte des fichiers possédés', async (t) => {
+    const product = await connexionProduct(t, 'observatory');
+    const before = await snapshotTree(product.root, []);
+    // Validation X3, S8 : registre scellé et cohérent où le modèle de la
+    // commande est publié par un autre outil. Le plan ne le retient pas.
+    const restore = await sealedForge(product, (manifest) => {
+        manifest.ownership.publications.findLast((record) =>
+            record.files.some((file) => file.path === ENTER_MODEL)
+        ).tool = 'generate:page-composition';
+    });
+    await assert.rejects(
+        planExternalPagePlan(product.options),
+        /page action enter has no published command; publish it with generate:action-request/
+    );
+    await assert.rejects(
+        publishExternalPagePlan(
+            { ...product.options, expectedPlanId: 'a'.repeat(64) },
+            { run: () => assert.fail('Publication du plan') }
+        ),
+        /page action enter has no published command/
+    );
+    await restore();
+    assert.deepEqual(await snapshotTree(product.root, []), before);
+    // Validation X3, S1 et S2 : fichier non inscrit, puis octets possédés
+    // modifiés sur disque.
+    const app = await sessionApplication(product.root, product.shell.appName);
+    await writeFile(join(product.app, 'src/stray.ts'), 'export {};\n');
+    await assert.rejects(
+        ownedAppFile(app, 'src/stray.ts'),
+        /file is not owned by the application/
+    );
+    await rm(join(product.app, 'src/stray.ts'));
+    const model = await readFile(join(product.app, ENTER_MODEL));
+    await writeFile(join(product.app, ENTER_MODEL), `${model} `);
+    await assert.rejects(
+        ownedAppFile(app, ENTER_MODEL),
+        /owned application file drift/
+    );
+    await writeFile(join(product.app, ENTER_MODEL), model);
+    assert.equal((await ownedAppFile(app, ENTER_MODEL)).equals(model), true);
+    assert.deepEqual(await snapshotTree(product.root, []), before);
+});
+
+// Copie d'une définition du produit sous un autre identifiant de commande,
+// pour la même opération du contrat.
+async function copyDefinition(product, name, id) {
+    const path = `descriptions/session-observatory/actions/${name}.json`;
+    const definition = JSON.parse(
+        await readFile(join(product.root, path), 'utf8')
+    );
+    definition.feature.id = `${id}-feature`;
+    definition.operations[0].id = id;
+    const copy = `descriptions/session-observatory/actions/${id}.json`;
+    await writeFile(
+        join(product.root, copy),
+        JSON.stringify(definition, null, 2) + '\n'
+    );
+    return { ...product.action, definitionPath: copy };
+}
+
+test('X3 : deux commandes publiées pour la même action de page, refusées en les nommant (M-3)', async (t) => {
+    const product = await connexionProduct(t, 'observatory');
+    // Deux commandes pour une opération que la page n'utilise pas : elles ne
+    // changent ni ne bloquent ce plan.
+    const agree = {
+        ...product.action,
+        definitionPath:
+            'descriptions/session-observatory/actions/observatory-agree.json',
+    };
+    await publishCommand(agree);
+    await publishCommand(
+        await copyDefinition(
+            product,
+            'observatory-agree',
+            'observatory-consent'
+        )
+    );
+    const plan = await planExternalPagePlan(product.options);
+    assert.deepEqual(
+        JSON.parse(plan.files[pagePlanPath(product.pageId)]).command_nodes.map(
+            (node) => node.primitive_ref.uri
+        ),
+        [
+            `apps/${product.shell.appName}/src/app/generated/actions/observatory-enter/execution-model.json`,
+        ]
+    );
+    // Deux commandes pour l'action de la page : refus qui les nomme.
+    await publishCommand(
+        await copyDefinition(product, 'observatory-enter', 'observatory-entry')
+    );
+    const before = await snapshotTree(product.root, []);
+    await assert.rejects(
+        planExternalPagePlan(product.options),
+        /page action enter has several published commands \(observatory-enter, observatory-entry\); keep one/
+    );
+    assert.deepEqual(await snapshotTree(product.root, []), before);
+});
+
+test('X3 : commande republiée après le plan ou la composition, pages dépendantes nommées (I-1)', async (t) => {
+    const product = await connexionProduct(t, 'observatory');
+    const definitionPath = join(product.root, product.action.definitionPath);
+    const revise = async (description) => {
+        const definition = JSON.parse(await readFile(definitionPath, 'utf8'));
+        definition.feature.description = description;
+        await writeFile(
+            definitionPath,
+            JSON.stringify(definition, null, 2) + '\n'
+        );
+    };
+    // Une autre page publie son plan avec une autre commande : elle ne dépend
+    // pas de la commande de connexion.
+    await publishCommand({
+        ...product.action,
+        definitionPath:
+            'descriptions/session-observatory/actions/observatory-agree.json',
+    });
+    const agreePage = product.input.design.pages.find((page) =>
+        page.actions.some(
+            (action) =>
+                action.operation_ref?.operation_id === 'observatory-agree'
+        )
+    );
+    const agreePlan = await publishPlan({
+        ...product.options,
+        pageId: agreePage.id,
+    });
+    assert.equal(agreePlan.result.replayed, false);
+    // Plan de connexion publié, sans composition.
+    await publishPlan(product.options);
+    await revise('Synthetic fixture, revised once.');
+    let plan = await planExternalActionRequest(product.action);
+    assert.deepEqual(plan.dependent_pages, [
+        { page_id: product.pageId, composition: false },
+    ]);
+    await publishExternalActionRequest(
+        { ...product.action, expectedPlanId: plan.plan_id },
+        native()
+    );
+    // Plan recompilé, composition publiée, puis nouvelle révision.
+    await publishPlan(product.options);
+    await publishComposition(product.options);
+    await revise('Synthetic fixture, revised twice.');
+    plan = await planExternalActionRequest(product.action);
+    const expected = [{ page_id: product.pageId, composition: true }];
+    assert.deepEqual(
+        publicExternalActionRequestPlan(plan).dependent_pages,
+        expected
+    );
+    const args = [
+        '--target-root',
+        product.root,
+        '--app',
+        product.shell.appName,
+        '--definition',
+        product.action.definitionPath,
+    ];
+    const dry = cli('generate-action-request.mjs', [...args, '--dry-run']);
+    assert.equal(dry.status, 0, dry.stderr);
+    assert.deepEqual(JSON.parse(dry.stdout).dependent_pages, expected);
+    assert.match(
+        dry.stderr,
+        new RegExp(
+            `⚠ Pages qui consomment cette commande : ${product.pageId} \\(plan, composition\\)\\. Après publication, relancer compile:page-execution-plan puis generate:page-composition pour chacune\\.`
+        )
+    );
+    // Un plan inscrit par un autre outil n'est pas un plan de page (registre
+    // rescellé, forge exclue par l'ADR-0103).
+    const restore = await sealedForge(product, (manifest) => {
+        manifest.ownership.publications.findLast((record) =>
+            record.files.some(
+                (file) => file.path === pagePlanPath(product.pageId)
+            )
+        ).tool = 'generate:page-composition';
+    });
+    assert.deepEqual(
+        (await planExternalActionRequest(product.action)).dependent_pages,
+        []
+    );
+    await restore();
+    const result = await publishExternalActionRequest(
+        { ...product.action, expectedPlanId: plan.plan_id },
+        native()
+    );
+    assert.deepEqual(result.dependent_pages, expected);
+    // La page dépendante est périmée, et chaque commande X3 le dit.
+    await assert.rejects(
+        planExternalPageComposition(product.options),
+        /page execution plan is stale; recompile it with compile:page-execution-plan/
+    );
+});
+
 test('X3 : CLI extérieures fermées, plan obligatoire', async (t) => {
     const product = await connexionProduct(t, 'equipment-hire');
     const base = [
@@ -430,7 +649,11 @@ test('X3 : CLI extérieures fermées, plan obligatoire', async (t) => {
             ],
             [[...base, '--dry-run', '--host-bindings', 'x'], /not allowed/],
             [[...base, '--dry-run', '--out', 'x'], /not allowed/],
-            [['--target-root', product.root, '--dry-run'], /are required/],
+            [
+                ['--target-root', product.root, '--dry-run'],
+                /--app, --page are required/,
+            ],
+            [[...base.slice(0, 4), '--dry-run'], /❌ --page is required/],
             [
                 [...base, '--apply', 'f'.repeat(64)],
                 /reviewed publication plan is stale|not published/,
@@ -454,7 +677,7 @@ test('X3 : CLI extérieures fermées, plan obligatoire', async (t) => {
         '--dry-run',
     ]);
     assert.equal(workshop.status, 1);
-    assert.match(workshop.stderr, /are required/);
+    assert.match(workshop.stderr, /--target-root is required/);
     // Plan puis publication par la CLI.
     const planned = cli('compile-page-execution-plan.mjs', [
         ...base,

@@ -11,51 +11,31 @@ import {
     publicApplicationPublicationPlan,
     publishApplicationPublication,
 } from './application-publication.mjs';
+import { sessionApplication } from './external-action-request.mjs';
+import { externalFailure } from './external-application-paths.mjs';
 import {
     ACTION_REQUEST_TOOL,
-    sessionApplication,
-} from './external-action-request.mjs';
-import {
-    externalFailure,
-    readProductFile,
-} from './external-application-paths.mjs';
+    assertPageId,
+    ownedAppFile,
+    PAGE_PLAN_TOOL,
+    pageOutputRoot,
+    pagePlanPath,
+    publishingTool,
+} from './external-publication-paths.mjs';
 import { sha256 } from './generation-manifest.mjs';
 import { loadJson, repositoryRoot } from '../validate-ir.mjs';
 
-export const PAGE_PLAN_TOOL = 'compile:page-execution-plan';
+export {
+    assertPageId,
+    ownedAppFile,
+    PAGE_PLAN_TOOL,
+    pageOutputRoot,
+    pagePlanPath,
+    publishingTool,
+} from './external-publication-paths.mjs';
+
 const MODEL =
-    /^src\/app\/generated\/actions\/[a-z0-9][a-z0-9._-]*\/execution-model\.json$/;
-
-export const pageOutputRoot = (pageId) => `src/app/generated/pages/${pageId}`;
-export const pagePlanPath = (pageId) =>
-    `${pageOutputRoot(pageId)}/plan/page-execution-plan.json`;
-
-export function assertPageId(pageId) {
-    if (!/^page_[a-f0-9]{16}$/.test(pageId ?? ''))
-        externalFailure('invalid page id');
-    return pageId;
-}
-
-// Fichier possédé de l'application, exact selon son registre.
-export async function ownedAppFile(app, path) {
-    const entry = app.manifest.generated_files.find(
-        (candidate) => candidate.path === path
-    );
-    if (!entry) externalFailure('file is not owned by the application');
-    const content = await readProductFile(app.appRoot, path);
-    if (sha256(content) !== entry.sha256 || content.length !== entry.bytes)
-        externalFailure('owned application file drift');
-    return content;
-}
-
-// Dernier outil qui a publié ce fichier ; `null` pour un fichier de la coque.
-export function publishingTool(manifest, path) {
-    return (
-        manifest.ownership.publications.findLast((record) =>
-            record.files.some((file) => file.path === path)
-        )?.tool ?? null
-    );
-}
+    /^src\/app\/generated\/actions\/([a-z0-9][a-z0-9._-]*)\/execution-model\.json$/;
 
 const schemas = () =>
     Promise.all(
@@ -78,37 +58,44 @@ export async function compileOwnedPagePlan(app, appName, pageId) {
     const prefix = `apps/${appName}`;
     const models = [];
     for (const { path } of app.manifest.generated_files) {
+        const match = MODEL.exec(path);
         if (
-            !MODEL.test(path) ||
+            !match ||
             publishingTool(app.manifest, path) !== ACTION_REQUEST_TOOL
         )
             continue;
         const document = await ownedAppFile(app, path);
         models.push({
+            actionId: match[1],
             uri: `${prefix}/${path}`,
-            sha256: sha256(document),
             document,
             model: JSON.parse(document.toString('utf8')),
         });
     }
+    // Une seule commande publiée par action de la page (M-3). Les commandes
+    // que la page n'utilise pas ne changent pas son plan.
     for (const action of page.actions.filter(
         (entry) => entry.kind === 'backend'
-    ))
-        if (
-            !models.some(
-                ({ model }) =>
-                    model.backend_contract.id ===
-                        action.operation_ref.contract_id &&
-                    model.actions.some(
-                        (candidate) =>
-                            candidate.transport.operation_id ===
-                            action.operation_ref.operation_id
-                    )
-            )
-        )
+    )) {
+        const serving = models.filter(
+            ({ model }) =>
+                model.backend_contract.id ===
+                    action.operation_ref.contract_id &&
+                model.actions.some(
+                    (candidate) =>
+                        candidate.transport.operation_id ===
+                        action.operation_ref.operation_id
+                )
+        );
+        if (serving.length === 0)
             externalFailure(
                 `page action ${action.id} has no published command; publish it with generate:action-request`
             );
+        if (serving.length > 1)
+            externalFailure(
+                `page action ${action.id} has several published commands (${serving.map(({ actionId }) => actionId).join(', ')}); keep one`
+            );
+    }
     const [applicationDesignSchema, pageExecutionPlanSchema] = await schemas();
     let plan;
     try {

@@ -12,6 +12,7 @@ import {
     computeExternalAngularActionRequestTarget,
 } from './action-request-v2-targets.mjs';
 import {
+    assertShellServiceBinding,
     planExternalActionRequest,
     shellServiceBinding,
 } from './core/external-action-request.mjs';
@@ -158,6 +159,29 @@ test('X2 : liaison de service lue dans la syntaxe de la coque, quel que soit le 
             null,
             replacement
         );
+    // M-6 : un faux filtre en commentaire n'existe pas dans la syntaxe lue.
+    const commented = source.replace(
+        '(endpoint) =>',
+        "(endpoint) => /* endpoint.service_id === 'other' */\n// endpoint.contract_id === 'other'\n"
+    );
+    assert.notEqual(commented, source);
+    assert.deepEqual(shellServiceBinding(commented, token), expected);
+    // M-6 : un jeton défini comme alias d'un autre ne lie rien ; la garde
+    // refuse, dans le sens sûr.
+    const aliased = `${source.replace(
+        `export const ${token}`,
+        'export const ORIGINAL_API_URL'
+    )}\nexport const ${token} = ORIGINAL_API_URL;\n`;
+    assert.deepEqual(shellServiceBinding(aliased, token), {});
+    assert.throws(
+        () =>
+            assertShellServiceBinding(
+                aliased,
+                expected.service_id,
+                expected.contract_id
+            ),
+        /bound to another service or contract by the session shell/
+    );
     // Deux filtres contradictoires dans la même déclaration : ambigu.
     assert.equal(
         shellServiceBinding(
@@ -240,4 +264,21 @@ test('X2 : l’aide reste accessible avec --target-root (M-8)', () => {
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /--target-root/);
     assert.match(result.stdout, /--dry-run/);
+});
+
+test('X2 : contrat de même identifiant, octets différents de ceux déclarés par les pages, refusé (M-2)', async (t) => {
+    const product = await actionProduct(t, 'observatory');
+    // Même identifiant, même version, même service : seuls les octets changent.
+    const revised = await contractVariant(product, 'revised', (contract) => {
+        contract.contract.description = 'Synthetic declared fixture, revised.';
+    });
+    const before = await snapshotTree(product.root, []);
+    await assert.rejects(
+        planExternalActionRequest(revised),
+        /backend contract differs from the contract declared by the application pages/
+    );
+    assert.deepEqual(await snapshotTree(product.root, []), before);
+    // Le contrat déclaré par les pages reste publiable.
+    const plan = await planExternalActionRequest(product.options);
+    assert.equal(plan.action_id, 'observatory-enter');
 });

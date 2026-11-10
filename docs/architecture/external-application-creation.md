@@ -801,7 +801,12 @@ vérifie que la coque le lie au même service et au contrat de la définition : 
 jeton absent est refusé (`service endpoint is not declared…`), un jeton lié à un
 autre service ou à un autre contrat aussi
 (`…bound to another service or contract…`), car l’URL résolue serait celle de
-cet autre service ou contrat.
+cet autre service ou contrat. Le contrat est comparé par identifiant, vérifié
+contre ses octets par le compilateur. Deux fichiers de contrat de même
+identifiant mais d’octets différents sont distingués par l’empreinte que les
+pages de l’application déclarent pour ce contrat : la commande refuse un contrat
+dont l’empreinte diffère
+(`backend contract differs from the contract declared by the application pages`).
 
 Le plan lie, en plus de la publication, l’empreinte de la définition, du contrat
 et de ses sources. Ces empreintes sont relues à chaque recalcul, donc aussi sous
@@ -835,9 +840,10 @@ l’oracle Angular du contrôle atelier lance Nx sans démon (`NX_DAEMON=false`)
 - la régénération partielle et les refus de périmètre ;
 - la CLI fermée.
 
-`external-action-request-guards.test.mjs` couvre le jeton absent ou lié à un
-autre contrat, chaque moitié de la garde « coque avec session » et le typage par
-défaut du mode atelier.
+`external-action-request-guards.test.mjs` couvre le jeton absent, lié à un autre
+contrat ou défini comme alias, un faux filtre en commentaire, le contrat de même
+identifiant mais d’octets différents, chaque moitié de la garde « coque avec
+session » et le typage par défaut du mode atelier.
 
 Le contrôle T11 vérifie que la sortie n’importe que `@angular/*`, `rxjs` et des
 fichiers possédés de l’application, sans module cmz ni chemin de l’atelier.
@@ -847,6 +853,17 @@ produit, vérifie T11 et rejoue le refus d’un plan périmé.
 
 Depuis X3, la commande publie aussi son modèle d’exécution
 (`execution-model.json`), référencé par le plan de page.
+
+Une commande peut être consommée par des pages. Son plan et son résultat les
+nomment dans `dependent_pages` : chaque page dont le plan publié référence ce
+modèle, avec `composition: true` si sa composition est publiée. La CLI les
+rappelle sur la sortie d’erreur (`⚠ Pages qui consomment cette commande…`).
+**Après toute republication d’une commande, relancer
+`compile:page-execution-plan` puis `generate:page-composition` pour chacune de
+ces pages.** Tant que ce n’est pas fait, les deux commandes X3 refusent la page
+comme périmée. La republication n’est pas refusée : le plan de page ne peut être
+recompilé qu’après elle (commande, puis plan, puis composition), et une option
+pour forcer serait contraire au plan relu obligatoire.
 
 Limites : aucun backend n’est appelé ; la sortie n’est pas exécutée en
 navigateur. Seule la variante 2.1 Angular est publiable en extérieur.
@@ -867,11 +884,14 @@ bun run generate:page-composition --target-root /chemin/absolu/produit --app <ap
 seuls fichiers possédés de l’application : le contrat de page
 `.cmz/pages/<page>.json` de la coque et les modèles `execution-model.json`
 publiés par `generate:action-request`. Chaque action backend de la page doit
-avoir sa commande publiée ; sinon le refus nomme l’action et la commande à
-lancer. Le plan est écrit sous `src/app/generated/pages/<page>/plan/`. Ses
-références sont des chemins `apps/<app>/…` du produit. La compilation est
-déterministe : le même état de l’application ne produit rien de neuf
-(`publication without change`). Une page avec lectures est refusée jusqu’à X5.
+avoir exactement une commande publiée : sans commande, le refus nomme l’action
+et la commande à lancer ; avec plusieurs commandes pour la même opération, il
+les nomme (`several published commands (…); keep one`). Les commandes que la
+page n’utilise pas ne changent pas son plan. Le plan est écrit sous
+`src/app/generated/pages/<page>/plan/`. Ses références sont des chemins
+`apps/<app>/…` du produit. La compilation est déterministe : le même état de
+l’application ne produit rien de neuf (`publication without change`). Une page
+avec lectures est refusée jusqu’à X5.
 
 `generate:page-composition --target-root` lit ce plan dans le registre et refuse
 toute référence hors des fichiers possédés de l’application : chemin hors du
@@ -893,13 +913,17 @@ consommée. Le compilateur du produit la type-checke sur le candidat, puis build
 lint, tests et `check-workspace` passent par ses binaires.
 
 En mode atelier, le rendu de composition est inchangé : l’option de nœud
-extérieur n’est utilisée que par ce mode.
+extérieur n’est utilisée que par ce mode. Seul écart textuel, comme pour
+`generate:action-request` : l’aide de `generate:page-composition` gagne la ligne
+du mode extérieur.
 
 `external-page-composition.test.mjs` couvre, sur les deux domaines fictifs : le
 plan et la composition publiés, la recompilation déterministe, le rejeu, le plan
 périmé après régénération de la commande, les refus (commande ou plan absent,
 page inconnue ou à lectures, coque sans session ou React, références hors
-application, commande consommée différente) et les deux CLI fermées.
+application ou non textuelles, commande consommée différente, modèle attribué à
+un autre outil, deux commandes pour la même action), les pages dépendantes
+nommées par une commande republiée et les deux CLI fermées.
 `check:external-application-shells` publie le plan et la composition de la page
 Connexion dans chaque coque avec session des produits A et B, avec les binaires
 du produit, et vérifie T11.
