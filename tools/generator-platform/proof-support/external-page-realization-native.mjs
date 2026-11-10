@@ -308,9 +308,21 @@ let browser;
 try {
     browser = await chromium.launch({ executablePath: browserPath, headless: true });
     stage = 'browser';
-    const context = await browser.newContext({ serviceWorkers: 'block' });
-    context.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(clean(message.text())); });
-    context.on('weberror', (error) => consoleErrors.push(clean('pageerror ' + error.error()?.message)));
+    // Émulation de connectivité de l'environnement de test (CI de la PR
+    // #389) : sous Docker --network none, Chromium ne voit que la boucle
+    // locale et navigator.onLine vaut false ; sous macOS il vaut true. La
+    // preuve fixe l'état au lieu d'en hériter de l'hôte : le script est
+    // injecté par Playwright avant la page, hors de sa politique, et ne
+    // contourne aucune règle de la page.
+    const connectivity = (online) => Object.defineProperty(globalThis.Navigator.prototype, 'onLine', { configurable: true, get: () => online });
+    const instrumented = async (online) => {
+        const created = await browser.newContext({ serviceWorkers: 'block' });
+        created.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(clean(message.text())); });
+        created.on('weberror', (error) => consoleErrors.push(clean('pageerror ' + error.error()?.message)));
+        await created.addInitScript(connectivity, online);
+        return created;
+    };
+    const context = await instrumented(true);
     await context.addInitScript(() => {
         Reflect.deleteProperty(globalThis.Navigator.prototype, 'serviceWorker');
         const violations = [];
@@ -357,6 +369,26 @@ try {
     assert.deepEqual(await page.evaluate(() => globalThis.__cmzViolations), [], 'Violation de la politique sur la page réalisée');
     const outside = served.filter((path) => path !== '/' && path !== fixture.entryPath && !bundle.has(path));
     assert.deepEqual(outside, [], 'Requête hors bundle');
+    // Hors ligne émulé : l'état hors ligne du contrat est affiché, l'état
+    // prêt ne l'est pas, et l'envoi est impossible (aucune requête).
+    stage = 'offline';
+    const offlineContext = await instrumented(false);
+    const offlineWrites = [];
+    offlineContext.on('request', (request) => { if (request.method() !== 'GET') offlineWrites.push(request.method()); });
+    const offlinePage = await offlineContext.newPage();
+    currentPage = offlinePage;
+    await offlinePage.goto(origin + fixture.entryPath);
+    await offlinePage.getByRole('heading', { name: fixture.entryTitle, exact: true }).waitFor();
+    await offlinePage.locator('[data-cmz-id="' + fixture.offlineState + '"]').waitFor();
+    assert.equal(await offlinePage.locator('[data-cmz-id="' + fixture.readyState + '"]').count(), 0, 'État prêt affiché hors ligne');
+    const offlineAction = offlinePage.getByRole('button', { name: fixture.actionLabel, exact: true });
+    assert.equal(await offlineAction.isDisabled(), true, 'Envoi possible hors ligne');
+    await offlineAction.click({ force: true });
+    await offlinePage.waitForTimeout(500);
+    assert.deepEqual(offlineWrites, [], 'Requête d’envoi hors ligne');
+    await offlineContext.close();
+    currentPage = page;
+    process.stdout.write('CMZ_CONNECTIVITY=online:ready offline:' + fixture.offlineState + '\\n');
     // Page témoin piégée, sous la même politique (en-tête du index.html construit).
     stage = 'trap';
     await context.unroute('**/*');
@@ -450,10 +482,13 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
                 'Cette page doit être réalisée depuis son contrat validé.',
             readyState: page.initial_state_id,
             errorState: action.error_state_id,
+            offlineState: page.states.find((state) => state.kind === 'offline')
+                ?.id,
             actionLabel: action.label,
             controls: page.controls.map(({ id, label }) => ({ id, label })),
             csp: cspTrapFixture(),
         };
+        assert.ok(fixture.offlineState, 'État hors ligne absent du contrat');
         const files = {
             'realization-browser.fixture.json': JSON.stringify(fixture),
             'realization-browser.mjs': realizationBrowserScript(),
@@ -489,6 +524,18 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
                     ],
                     { browser, timeoutMs: 120_000 }
                 )
+            );
+            // Connectivité émulée : les deux états du contrat sont prouvés.
+            assert.ok(
+                opened.stdout
+                    .split('\n')
+                    .includes(
+                        `CMZ_CONNECTIVITY=online:ready offline:${fixture.offlineState}`
+                    ),
+                'Connectivité émulée non prouvée'
+            );
+            session.lines.push(
+                `PASS X4/${domain}/connectivity emulated: online shows the ready state; offline shows the offline state, submit disabled, no request`
             );
             // X4-sécurité : politique mesurée par l'événement de violation.
             const line = opened.stdout
