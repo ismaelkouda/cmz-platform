@@ -124,6 +124,10 @@ export function assertProductOnlyImports(files, owned) {
             /(?:from|import)\s*\(?\s*'([^']+)'/g
         )) {
             if (!specifier.startsWith('.')) {
+                // X4 : une page réalisée porte sa spec, lancée par le vitest
+                // installé du produit, comme les specs de la coque.
+                if (path.endsWith('.spec.ts') && specifier === 'vitest')
+                    continue;
                 assert.match(
                     specifier,
                     /^(?:@angular\/[a-z-]+(?:\/[a-z-]+)?|rxjs)$/,

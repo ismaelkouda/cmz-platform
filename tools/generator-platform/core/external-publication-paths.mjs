@@ -10,6 +10,7 @@ import { sha256 } from './generation-manifest.mjs';
 export const ACTION_REQUEST_TOOL = 'generate:action-request';
 export const PAGE_PLAN_TOOL = 'compile:page-execution-plan';
 export const PAGE_COMPOSITION_TOOL = 'generate:page-composition';
+export const REALIZATION_TOOL = 'page-realization';
 
 export const actionOutputRoot = (actionId) =>
     `src/app/generated/actions/${actionId}`;

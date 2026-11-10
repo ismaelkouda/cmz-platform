@@ -928,7 +928,101 @@ nommées par une commande republiée et les deux CLI fermées.
 Connexion dans chaque coque avec session des produits A et B, avec les binaires
 du produit, et vérifie T11.
 
-Limites : la composition n’est montée dans aucune page avant X4 (la page
-d’attente reste en place) ; elle n’est donc pas exécutée en navigateur ; aucun
+Limites : la composition est montée dans une page par X4 seulement ; aucun
 backend n’est appelé. Une page avec lectures attend X5. Une page retirée ou
 renommée laisse son plan et sa composition, faute de suppression.
+
+## Réalisation de page extérieure — X4
+
+Deux commandes fermées, sous plan relu et par la primitive de l’ADR-0103, pour
+une page dont le plan et la composition sont publiés :
+
+```sh
+bun run prepare:page-realization --target-root /chemin/absolu/produit --app <app> --page <page_id> --dry-run
+bun run prepare:page-realization --target-root /chemin/absolu/produit --app <app> --page <page_id> --apply <plan_id>
+bun run verify:page-realization --target-root /chemin/absolu/produit --app <app> --page <page_id> --dry-run
+bun run verify:page-realization --target-root /chemin/absolu/produit --app <app> --page <page_id> --apply <plan_id>
+```
+
+**Montage (suite de I-1).** `prepare:page-realization` vérifie d’abord que la
+page peut être montée : son plan est publié et égal à sa recompilation, sa
+composition est publiée, liée à ce plan, et chaque fichier qu’elle consomme a
+encore l’empreinte inscrite dans son `generation-manifest.json`. Sinon le refus
+nomme la commande qui répare (`compile:page-execution-plan` ou
+`generate:page-composition`). `verify:page-realization` refait ce contrôle.
+
+**Bon de travail.** Il est publié dans le registre scellé, sous
+`src/app/generated/pages/<page>/realization/work-order.json`, par l’outil
+`page-realization`. Il est déterministe et identifié par l’empreinte de son
+contenu. Il lie le contrat de page, le plan, la composition et les empreintes
+consommées. Il fixe :
+
+- le brouillon où le réalisateur écrit,
+  `descriptions/page-realizations/<app>/<page>/`, hors de l’application, donc
+  sans dérive du registre pendant la réalisation ;
+- la place de publication, `src/app/pages/<page>/`, où se trouve la page
+  d’attente de la coque ;
+- les fichiers permis (`page.component.{html,scss,spec.ts,ts}` et
+  `realization-evidence.json`), les imports permis, les motifs et littéraux
+  interdits, l’oracle du produit et les règles.
+
+**Règles vérifiées sur le brouillon**, toutes listées en cas de refus (la CLI
+écrit `{ "ok": false, "violations": […] }` et sort en échec) :
+
+- seulement les fichiers permis, en UTF-8 ;
+- aucun accès réseau direct (`HttpClient`, `fetch(`, `XMLHttpRequest`, Axios,
+  WebSocket, EventSource, `sendBeacon`, URL `http(s)://`), aucun stockage du
+  navigateur, aucun code dynamique, aucun contournement de sécurité, aucun
+  chemin d’endpoint des commandes de la page ;
+- mécanique générée seulement : imports limités à `@angular/common`,
+  `@angular/core`, `@angular/core/rxjs-interop`, `@angular/router`, `rxjs`, au
+  module de la composition et aux fichiers de la page (plus
+  `@angular/core/testing`, `@angular/platform-browser` et `vitest` dans la spec)
+  ; aucun import dynamique ; la page monte `PAGE_COMPOSITION_PROVIDERS` ; une
+  commande, la session ou `@angular/common/http` importés directement sont
+  refusés ;
+- aucune règle ni contrôle inventés : chaque `data-cmz-id` est statique et
+  déclaré par le contrat ; la preuve `realization-evidence.json` couvre
+  exactement les identifiants du contrat et chaque sélecteur est présent.
+
+L’apparence reste libre. Les autres choix de la page (textes, disposition,
+comportement d’attente) relèvent de la revue humaine : ces règles mécaniques ne
+prouvent pas qu’aucune règle métier n’a été inventée dans le code.
+
+**Publication.** Le brouillon conforme est publié à la place de la page
+d’attente : `page.component.ts` est déclaré `replaced` avec son empreinte
+d’avant, les autres fichiers `added`. Le répertoire de la page est un préfixe
+couvert : aucun fichier ancien n’y reste sans être republié. Les octets du
+brouillon sont liés au plan : une modification après relecture le périme. Le
+compilateur, le build, le lint et les tests du produit, dont la spec de la page,
+décident ; un échec annule tout. Une nouvelle publication de la commande, du
+plan ou de la composition périme le bon de travail, qu’il faut préparer à
+nouveau.
+
+**Adresses de service.** La coque fournit `SESSION_ENDPOINTS` vide par défaut,
+et la source de la commande lit son adresse à sa construction. La page de
+référence crée donc la composition au premier envoi : sans adresse, le
+formulaire s’affiche et l’envoi passe à l’état d’erreur du contrat sans aucune
+requête. La fourniture des adresses au lancement est l’objet de X4-config.
+
+`external-page-realization.test.mjs` couvre, sur les deux domaines fictifs : le
+bon de travail et la page publiés, le remplacement déclaré, le rejeu, chaque
+règle de sécurité en violation (réseau, URL, `HttpClient`, commande ou session
+importées, import dynamique, stockage, code dynamique, littéral d’endpoint,
+contrôle inventé, sélecteur dynamique, composition non montée, fichier en plus
+ou manquant, preuve incomplète), la composition absente ou périmée, le bon de
+travail absent ou périmé, le brouillon absent et les deux CLI fermées.
+`check:external-application-shells` publie le bon de travail puis la page
+Connexion réalisée dans chaque coque avec session des produits A et B, avec les
+binaires du produit. Il rejoue deux violations (réseau direct, commande importée
+sans composition) et une spec rouge, refusées sans changement de l’application,
+puis ouvre la page dans le navigateur : titre, champs étiquetés, page d’attente
+absente, envoi sans adresse passé à l’état d’erreur, aucune requête.
+
+Mode atelier : `prepare:page-realization` et `verify:page-realization` sans
+`--target-root` sont inchangés. Seul ajout partagé : la fonction qui calcule le
+contrat de réalisation (nœud de rôle et archétype) est exportée.
+
+Limites : une seule page de référence, réalisée par l’agent développeur pour les
+deux produits fictifs ; aucun fichier de page supplémentaire n’est permis ;
+aucun backend n’est appelé ; la revue visuelle humaine reste à faire.

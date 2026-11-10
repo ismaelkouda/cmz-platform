@@ -77,14 +77,19 @@ async function verifiedInputs(root, inputs) {
 }
 
 // Un préfixe couvert (X2) est republié en entier : aucun fichier ancien sous
-// ce préfixe ne peut rester sans être expliqué par la nouvelle sortie.
+// ce préfixe ne peut rester sans être expliqué par la nouvelle sortie. X4 : le
+// répertoire d'une page déclarée est aussi un préfixe couvert.
 function assertCoveredPrefix(prefix, files, current) {
     if (prefix === undefined) return null;
     if (
         typeof prefix !== 'string' ||
-        !/^src\/app\/generated\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*\/$/.test(
+        (!/^src\/app\/generated\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*\/$/.test(
             prefix
-        )
+        ) &&
+            !(
+                /^src\/app\/pages\/page_[a-f0-9]{16}\/$/.test(prefix) &&
+                current.has(`.cmz/pages/${prefix.split('/')[3]}.json`)
+            ))
     )
         externalFailure('publication covered prefix is invalid');
     if (Object.keys(files).some((path) => !path.startsWith(prefix)))

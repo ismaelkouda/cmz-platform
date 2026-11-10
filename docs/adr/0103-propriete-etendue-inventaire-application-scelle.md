@@ -224,6 +224,11 @@ barrière reste ce bon de travail et la relecture du diff.
   ; une suppression sous plan est à décider dans un incrément ultérieur.
 - Les zones produit à la racine (par exemple `.github/` ou l'état des bons de
   travail) restent refusées ; elles seront décidées avec leur premier usage.
+- **Page réalisée (X4) :** le répertoire d'une page déclarée,
+  `src/app/pages/<page>/`, est admis comme préfixe couvert, en plus de
+  `src/app/generated/**`. La page d'attente y est remplacée par l'outil
+  `page-realization` ; le bon de travail est publié sous `generated/`, le
+  brouillon du réalisateur reste hors de l'application, dans `descriptions/`.
 - **Aucune dépendance entre publications dans la primitive :** une commande
   republiée ne sait pas, par le registre seul, quelles pages la consomment. Les
   outils l'exposent eux-mêmes : `generate:action-request` nomme les pages dont
