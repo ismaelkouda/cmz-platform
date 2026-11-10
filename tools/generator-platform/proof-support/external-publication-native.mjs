@@ -24,8 +24,9 @@ import { confinedNode, record } from './external-application-runtime.mjs';
 const MANIFEST = '.cmz/app-manifest.json';
 const NOTICE = 'src/app/generated/x1-proof/notice.ts';
 
-async function publishNative(session, label, options, root) {
-    const plan = await planApplicationPublication(options);
+// Runner natif d'une publication : chaque commande du produit est exécutée
+// confinée, avec ses binaires installés, et inscrite au rapport.
+export function nativePublicationRunner(session, label, root) {
     const labels = [];
     const run = (command, args, cwd) => {
         assert.equal(command, process.execPath);
@@ -38,6 +39,12 @@ async function publishNative(session, label, options, root) {
         record(session, `${label}/${name}`, confinedNode(session, root, args));
         labels.push(name);
     };
+    return { run, labels };
+}
+
+async function publishNative(session, label, options, root) {
+    const plan = await planApplicationPublication(options);
+    const { run, labels } = nativePublicationRunner(session, label, root);
     const result = await publishApplicationPublication(
         { ...options, expectedPlanId: plan.plan_id },
         { run }

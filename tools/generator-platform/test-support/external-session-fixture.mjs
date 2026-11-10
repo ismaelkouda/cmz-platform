@@ -101,3 +101,31 @@ export function createAppArguments(options) {
         options.profile,
     ];
 }
+
+// X2 : définitions action-request 2.1 du domaine fictif, écrites dans le produit
+// sous descriptions/ et liées au contrat backend du produit lui-même (chemin et
+// empreinte). Aucune donnée réelle : mêmes définitions que la fixture atelier.
+export async function writeExternalActionDefinitions(root, domain) {
+    const data = await createApplicationSessionFixture({ domain });
+    try {
+        const base = `descriptions/session-${domain}`;
+        const contractPath = `${base}/backend.json`;
+        const contractBytes = await readFile(join(root, contractPath));
+        const definitions = {};
+        for (const [id, { definition }] of data.actions) {
+            const local = structuredClone(definition);
+            local.backend_contract = {
+                ...local.backend_contract,
+                uri: contractPath,
+                sha256: hash(contractBytes),
+            };
+            const path = `${base}/actions/${id}.json`;
+            await mkdir(dirname(join(root, path)), { recursive: true });
+            await writeFile(join(root, path), json(local), { flag: 'wx' });
+            definitions[id] = path;
+        }
+        return { definitions, enter: definitions[`${domain}-enter`] };
+    } finally {
+        await rm(data.root, { recursive: true, force: true });
+    }
+}

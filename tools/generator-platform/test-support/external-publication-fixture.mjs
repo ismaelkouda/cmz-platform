@@ -2,7 +2,7 @@
 // extérieures sous plan (ADR-0103). Le runner injecté ne compile rien.
 import assert from 'node:assert/strict';
 import { cp, readFile, rename, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 
 import {
     planExternalApplicationShell,
@@ -18,6 +18,7 @@ import {
     TOOLS_ROOT,
 } from './external-application-fixture.mjs';
 import {
+    CMZ_MODULE_SPECIFIER,
     sessionShellOptions,
     writeExternalSessionDesign,
 } from './external-session-fixture.mjs';
@@ -109,4 +110,32 @@ export async function interruptAfterSwap(product, options) {
     await rename(copies[0], product.app);
     await rename(copies[1], plan.previous);
     return plan;
+}
+
+// T11 : la sortie n'importe que les paquets installés du produit et ses propres
+// fichiers possédés ; aucun module cmz ni chemin de l'atelier.
+export function assertProductOnlyImports(files, owned) {
+    for (const [path, content] of Object.entries(files)) {
+        assert.doesNotMatch(content, CMZ_MODULE_SPECIFIER, path);
+        assert.equal(content.includes(TOOLS_ROOT), false, path);
+        assert.doesNotMatch(content, /\/Users\/|\/private\/|https?:\/\//, path);
+        if (!path.endsWith('.ts')) continue;
+        for (const [, specifier] of content.matchAll(
+            /(?:from|import)\s*\(?\s*'([^']+)'/g
+        )) {
+            if (!specifier.startsWith('.')) {
+                assert.match(
+                    specifier,
+                    /^(?:@angular\/[a-z-]+(?:\/[a-z-]+)?|rxjs)$/,
+                    path
+                );
+                continue;
+            }
+            const target = posix.join(posix.dirname(path), specifier);
+            assert.ok(
+                owned.has(`${target}.ts`) || owned.has(`${target}/index.ts`),
+                `${path} importe ${specifier} hors de l’application`
+            );
+        }
+    }
 }

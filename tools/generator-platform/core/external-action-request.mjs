@@ -1,0 +1,175 @@
+// X2 : `generate:action-request --target-root`. Une commande 2.1 Angular est
+// rendue depuis les entrées du produit, puis publiée dans son application par
+// la seule primitive scellée (ADR-0103). Le typage est fait par le compilateur
+// installé dans le produit, sur le candidat de publication ; l'atelier ne
+// type-check rien de cette sortie.
+import { resolve } from 'node:path';
+
+import { computeExternalAngularActionRequestTarget } from '../action-request-v2-targets.mjs';
+import { sessionEndpointToken } from '../renderers/angular-application-session-renderer.mjs';
+import { repositoryRoot } from '../validate-ir.mjs';
+import {
+    planApplicationPublication,
+    publicApplicationPublicationPlan,
+    publishApplicationPublication,
+} from './application-publication.mjs';
+import { inputFilePath } from './application-workspace-root.mjs';
+import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
+import {
+    externalApplicationContext,
+    externalFailure,
+    pathExists,
+    readProductFile,
+} from './external-application-paths.mjs';
+import { sha256 } from './generation-manifest.mjs';
+
+export const ACTION_REQUEST_TOOL = 'generate:action-request';
+const SESSION_INDEX = 'src/app/session/index.ts';
+const SESSION_ENDPOINTS = 'src/app/session/service-endpoints.ts';
+// Depuis src/app/generated/actions/<id>/src/ vers src/app/session.
+const SESSION_MODULE = '../../../../session';
+
+export const actionOutputRoot = (actionId) =>
+    `src/app/generated/actions/${actionId}`;
+
+async function digest(root, path) {
+    return { path, sha256: sha256(await readProductFile(root, path)) };
+}
+
+// Fermeture des entrées liées au plan : définition, contrat backend et sources
+// du contrat. Toute dérive périme le plan relu (T5).
+async function inputClosure(root, definitionPath, definition) {
+    const contractPath = inputFilePath(definition.backend_contract?.uri ?? '');
+    const contract = JSON.parse(
+        (await readProductFile(root, contractPath)).toString('utf8')
+    );
+    const paths = new Set([definitionPath, contractPath]);
+    for (const source of contract.sources ?? [])
+        if (typeof source.snapshot_uri === 'string')
+            paths.add(inputFilePath(source.snapshot_uri));
+    return Promise.all([...paths].sort().map((path) => digest(root, path)));
+}
+
+async function sessionApplication(root, appName) {
+    if (!/^[a-z][a-z0-9-]*$/.test(appName ?? ''))
+        externalFailure('invalid app name');
+    const appRoot = resolve(root, 'apps', appName);
+    if (!(await pathExists(appRoot))) externalFailure('application is absent');
+    const manifest = JSON.parse(
+        (await readProductFile(appRoot, '.cmz/app-manifest.json')).toString(
+            'utf8'
+        )
+    );
+    // Angular seulement : React reste explicitement refusé.
+    if (manifest.profile !== 'angular-pwa')
+        externalFailure('external action-request requires an angular-pwa app');
+    const owned = new Set(manifest.generated_files.map((entry) => entry.path));
+    if (!owned.has(SESSION_INDEX) || !owned.has(SESSION_ENDPOINTS))
+        externalFailure('application has no session module');
+    return {
+        appRoot,
+        endpoints: (await readProductFile(appRoot, SESSION_ENDPOINTS)).toString(
+            'utf8'
+        ),
+    };
+}
+
+async function renderExternalActionRequest(options) {
+    const context = await externalApplicationContext({
+        workspaceRoot: options.workspaceRoot ?? repositoryRoot,
+        targetRoot: options.targetRoot,
+    });
+    const root = context.productRoot;
+    const app = await sessionApplication(root, options.appName);
+    const definitionPath = inputFilePath(options.definitionPath ?? '');
+    const document = await readProductFile(root, definitionPath);
+    let definition;
+    try {
+        definition = JSON.parse(document.toString('utf8'));
+    } catch {
+        externalFailure('action-request definition is not JSON');
+    }
+    // 2.0 et 1.0 importent des bibliothèques de l'atelier : refusées ici.
+    if (definition?.schema_version !== '2.1.0')
+        externalFailure('external action-request requires definition 2.1.0');
+    // Entrées confinées au produit, vérifiées avant toute compilation.
+    const inputs = await inputClosure(root, definitionPath, definition);
+    let token;
+    const target = await computeExternalAngularActionRequestTarget({
+        definitionPath: resolve(root, definitionPath),
+        definitionDocument: document,
+        artifactRoot: root,
+        hostBindings: (model) => {
+            const serviceId = model.actions[0].transport.service_id;
+            token = sessionEndpointToken(serviceId);
+            return {
+                services: {
+                    [serviceId]: { module: SESSION_MODULE, token },
+                },
+            };
+        },
+    });
+    // Le jeton de service doit être celui que la coque a généré.
+    if (!app.endpoints.includes(`export const ${token} = new InjectionToken`))
+        externalFailure(
+            'service endpoint is not declared by the session shell'
+        );
+    const base = actionOutputRoot(target.actionId);
+    const files = Object.fromEntries(
+        Object.entries(target.files).map(([path, content]) => [
+            `${base}/${path}`,
+            content,
+        ])
+    );
+    const manifestPath = `${base}/generation-manifest.json`;
+    files[manifestPath] = (
+        await canonicalizeGeneratedFiles({
+            [manifestPath]: JSON.stringify(target.manifest, null, 2) + '\n',
+        })
+    )[manifestPath];
+    return {
+        actionId: target.actionId,
+        modelSha256: target.manifest.input.sha256,
+        publication: {
+            workspaceRoot: options.workspaceRoot ?? repositoryRoot,
+            targetRoot: options.targetRoot,
+            appName: options.appName,
+            tool: ACTION_REQUEST_TOOL,
+            files,
+            inputs,
+            // Régénération : fichiers identiques omis ; aucun fichier ancien
+            // de cette commande ne peut rester sans être republié.
+            omitUnchanged: true,
+            coveredPrefix: `${base}/`,
+        },
+    };
+}
+
+export async function planExternalActionRequest(options) {
+    const rendered = await renderExternalActionRequest(options);
+    const plan = await planApplicationPublication(rendered.publication);
+    return {
+        ...plan,
+        action_id: rendered.actionId,
+        model_sha256: rendered.modelSha256,
+    };
+}
+
+export function publicExternalActionRequestPlan(plan) {
+    return {
+        ...publicApplicationPublicationPlan(plan),
+        action_id: plan.action_id,
+        model_sha256: plan.model_sha256,
+    };
+}
+
+export async function publishExternalActionRequest(options, dependencies) {
+    if (!/^[a-f0-9]{64}$/.test(options.expectedPlanId ?? ''))
+        externalFailure('publication requires a reviewed plan');
+    const rendered = await renderExternalActionRequest(options);
+    const result = await publishApplicationPublication(
+        { ...rendered.publication, expectedPlanId: options.expectedPlanId },
+        dependencies
+    );
+    return { ...result, action_id: rendered.actionId };
+}

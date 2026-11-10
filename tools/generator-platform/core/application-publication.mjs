@@ -11,6 +11,7 @@ import {
     readOwnedWorkspace,
     runExternalApplicationCommand,
 } from './application-workspace.mjs';
+import { inputFilePath } from './application-workspace-root.mjs';
 import {
     PUBLICATION_TOOLS,
     publishedManifest,
@@ -45,6 +46,52 @@ function appLocation(options) {
     return { apps, output: resolve(apps, options.appName) };
 }
 
+// Entrées du produit liées au plan (X2) : relues et comparées à chaque plan,
+// donc aussi sous verrou. Une dérive périme la publication.
+async function verifiedInputs(root, inputs) {
+    if (!Array.isArray(inputs)) externalFailure('publication inputs invalid');
+    const verified = [];
+    for (const input of inputs) {
+        if (
+            !input ||
+            typeof input.path !== 'string' ||
+            !/^[a-f0-9]{64}$/.test(input.sha256 ?? '')
+        )
+            externalFailure('publication inputs invalid');
+        const path = inputFilePath(input.path);
+        if (sha256(await readProductFile(root, path)) !== input.sha256)
+            externalFailure('publication input drift');
+        verified.push({ path, sha256: input.sha256 });
+    }
+    verified.sort((left, right) => (left.path < right.path ? -1 : 1));
+    if (
+        verified.some(
+            (entry, i) => i > 0 && verified[i - 1].path === entry.path
+        )
+    )
+        externalFailure('publication inputs invalid');
+    return verified;
+}
+
+// Un préfixe couvert (X2) est republié en entier : aucun fichier ancien sous
+// ce préfixe ne peut rester sans être expliqué par la nouvelle sortie.
+function assertCoveredPrefix(prefix, files, current) {
+    if (prefix === undefined) return null;
+    if (
+        typeof prefix !== 'string' ||
+        !/^src\/app\/generated\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*\/$/.test(
+            prefix
+        )
+    )
+        externalFailure('publication covered prefix is invalid');
+    if (Object.keys(files).some((path) => !path.startsWith(prefix)))
+        externalFailure('publication outside its covered prefix');
+    for (const path of current.keys())
+        if (path.startsWith(prefix) && !Object.hasOwn(files, path))
+            externalFailure('publication would leave an unexplained file');
+    return prefix;
+}
+
 async function currentApplication(workspace, appName) {
     const root = resolve(workspace.productRoot, 'apps', appName);
     if (!(await pathExists(root))) externalFailure('application is absent');
@@ -77,7 +124,21 @@ export async function planApplicationPublication(options, internal = {}) {
     const current = new Map(
         app.manifest.generated_files.map((entry) => [entry.path, entry])
     );
+    const coveredPrefix = assertCoveredPrefix(
+        options.coveredPrefix,
+        options.files,
+        current
+    );
+    const inputs = await verifiedInputs(
+        workspace.productRoot,
+        options.inputs ?? []
+    );
     const changes = entries
+        .filter(
+            ([path, content]) =>
+                !options.omitUnchanged ||
+                current.get(path)?.sha256 !== sha256(content)
+        )
         .map(([path, content]) => {
             const before = current.get(path);
             const change = {
@@ -91,7 +152,10 @@ export async function planApplicationPublication(options, internal = {}) {
             return change;
         })
         .sort((left, right) => (left.path < right.path ? -1 : 1));
-    if (changes.some((entry) => entry.before?.sha256 === entry.sha256))
+    if (
+        changes.length === 0 ||
+        changes.some((entry) => entry.before?.sha256 === entry.sha256)
+    )
         externalFailure('publication without change');
     const binding = {
         tools_root: workspace.toolsRoot,
@@ -103,6 +167,8 @@ export async function planApplicationPublication(options, internal = {}) {
         app_name: options.appName,
         app_manifest_sha256: sha256(app.manifestBytes),
         tool: options.tool,
+        inputs,
+        covered_prefix: coveredPrefix,
         changes,
     };
     const planId = sha256(stableStringify(binding));
@@ -133,6 +199,7 @@ export async function planApplicationPublication(options, internal = {}) {
         previous: candidateName('previous'),
         root: workspace.productRoot,
         changes,
+        inputs,
         manifest_sha256: sha256(manifestText),
         files,
         previousFiles: app.files,
@@ -148,6 +215,7 @@ export function publicApplicationPublicationPlan(plan) {
         app_name: plan.app_name,
         tool: plan.tool,
         output: plan.output,
+        inputs: plan.inputs,
         changes: plan.changes,
         manifest_sha256: plan.manifest_sha256,
     };

@@ -765,5 +765,64 @@ Limites :
 - une application créée avant X1 se recrée : supprimer `apps/<app>` dans le
   produit (le marqueur ne liste pas les applications), puis relancer
   `create-app --target-root` ;
-- les contenus publiés par la preuve sont fictifs : aucun générateur réel n’est
-  encore branché sur cette primitive.
+- les contenus publiés par la preuve X1 sont fictifs. Le premier générateur
+  branché sur cette primitive est `generate:action-request` (X2).
+
+## Commande extérieure sous plan — X2
+
+`generate:action-request --target-root` génère une commande `action-request` 2.1
+depuis les entrées du produit et la publie dans une de ses applications Angular
+avec session, par la primitive de l’ADR-0103 :
+
+```sh
+bun run generate:action-request --target-root /chemin/absolu/produit --app <app> --definition descriptions/<…>.json --dry-run
+bun run generate:action-request --target-root /chemin/absolu/produit --app <app> --definition descriptions/<…>.json --apply <plan_id>
+```
+
+Le mode est fermé : `--dry-run` ou `--apply <plan_id>` est obligatoire ;
+`--out`, `--artifact-root`, `--host-bindings` et toute cible autre qu’`angular`
+sont refusés. La définition, son contrat backend et les sources de ce contrat
+sont lus dans le produit, à des chemins relatifs confinés hors de `apps/`. Une
+définition 2.0 ou 1.0 est refusée, car son rendu importe des bibliothèques de
+l’atelier. Une application React ou sans module de session est refusée.
+
+La sortie est écrite sous `src/app/generated/actions/<action>/` : les sources
+TypeScript du rendu Angular 2.1 et son `generation-manifest.json`. Les liaisons
+d’hôte ne sont pas fournies par l’utilisateur. Elles sont déduites de la coque :
+module `src/app/session`, jeton `<SERVICE>_API_URL` que la coque a généré pour
+le service de l’opération. La commande vérifie que ce jeton existe dans
+`service-endpoints.ts`.
+
+Le plan lie, en plus de la publication, l’empreinte de la définition, du contrat
+et de ses sources. Ces empreintes sont relues à chaque recalcul, donc aussi sous
+verrou : une dérive après relecture périme le plan, et une dérive pendant la
+publication la fait échouer avec retour à l’état relu. L’atelier ne type-check
+pas cette sortie. Le compilateur installé du produit la compile sur le candidat
+(`tsconfig.app.json` inclut `src/**/*.ts`), puis build, lint, tests et
+`check-workspace` passent par les binaires du produit.
+
+Une régénération ne republie que les fichiers modifiés, déclarés `replaced`.
+Elle couvre tout son répertoire de sortie : si un fichier déjà possédé sous ce
+répertoire n’est plus produit, elle est refusée, puisqu’aucune suppression n’est
+possible. Rejouer un plan déjà publié ne change rien (`already-published`).
+
+`external-action-request.test.mjs` couvre, sur les deux domaines fictifs :
+
+- la publication et le registre ;
+- T4 : un plan relu pour un produit ne publie pas dans un autre ;
+- T5 : la définition, le contrat ou une source modifiés, y compris sous verrou ;
+- T7 : un arrêt réel du processus après l’échange, le refus des autres
+  commandes, puis la reprise par la même commande relue ;
+- T8 : deux publications concurrentes ;
+- la régénération partielle et les refus de périmètre ;
+- la CLI fermée.
+
+Le contrôle T11 vérifie que la sortie n’importe que `@angular/*`, `rxjs` et des
+fichiers possédés de l’application, sans module cmz ni chemin de l’atelier.
+`check:external-application-shells` publie la commande de connexion dans chaque
+coque avec session des produits A et B. Il l’exécute avec les binaires du
+produit, vérifie T11 et rejoue le refus d’un plan périmé.
+
+Limites : aucune page ne consomme encore cette commande (X3, X4) ; aucun backend
+n’est appelé ; la sortie n’est pas exécutée en navigateur. Seule la variante 2.1
+Angular est publiable en extérieur.

@@ -167,7 +167,12 @@ async function computeModel(
     return { definition, model };
 }
 
-async function materializeAngularTarget(model, artifactPlan, hostBindings) {
+async function materializeAngularTarget(
+    model,
+    artifactPlan,
+    hostBindings,
+    { typecheck = true } = {}
+) {
     const profile = await loadJson(ANGULAR_PROFILE);
     const rendered = renderAngularActionRequestV2(model, hostBindings);
     const files = await canonicalizeGeneratedFiles(rendered.files);
@@ -189,7 +194,7 @@ async function materializeAngularTarget(model, artifactPlan, hostBindings) {
             bindings[path] = 'response-decoder';
     }
     const bound = bindRenderedArtifacts(artifactPlan, files, bindings);
-    typecheckGenerated(bound.files, profile.id, repositoryRoot);
+    if (typecheck) typecheckGenerated(bound.files, profile.id, repositoryRoot);
     return {
         ...rendered,
         ...bound,
@@ -288,5 +293,38 @@ export async function computeReactActionRequestV2Target({
         model,
         artifactPlan,
         ...(await materializeReactTarget(model, artifactPlan)),
+    };
+}
+
+// X2 : sortie destinée à un produit extérieur. Les liaisons d'hôte dépendent
+// du service du modèle compilé ; le typage est fait par le compilateur du
+// produit sur son candidat de publication, jamais par celui de l'atelier.
+export async function computeExternalAngularActionRequestTarget({
+    definitionPath,
+    definitionDocument,
+    artifactRoot,
+    hostBindings,
+}) {
+    const { definition, model } = await computeModel(
+        definitionPath,
+        definitionDocument,
+        artifactRoot
+    );
+    if (model.schema_version !== '1.1.0')
+        throw new Error('AR_GRAPH_ROOT_VERSION');
+    const artifactPlan = buildArtifactPlan(
+        model,
+        'action-request-execution-model'
+    );
+    return {
+        definition,
+        model,
+        artifactPlan,
+        ...(await materializeAngularTarget(
+            model,
+            artifactPlan,
+            hostBindings(model),
+            { typecheck: false }
+        )),
     };
 }

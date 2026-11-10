@@ -43,6 +43,7 @@ import {
     publishNativeSessionShell,
     qualifySessionBrowser,
 } from './proof-support/external-session-native.mjs';
+import { proveNativeActionRequest } from './proof-support/external-action-request-native.mjs';
 import { proveNativePublication } from './proof-support/external-publication-native.mjs';
 
 export { qualifyNodeVersion } from './proof-support/external-application-runtime.mjs';
@@ -214,10 +215,17 @@ export async function main(argv = process.argv.slice(2)) {
             const publishing = performance.now();
             const published = await proveNativePublication(session, shell);
             shell.plan = { ...shell.plan, files: published.files };
+            session.lines.push(
+                `X1/${domain} elapsed_ms=${Math.round(performance.now() - publishing)}`
+            );
+            // X2 : commande de connexion 2.1 publiée sous plan dans cette coque.
+            const commanding = performance.now();
+            const command = await proveNativeActionRequest(session, shell);
+            shell.plan = { ...shell.plan, files: command.files };
             sessionShells.push(shell);
             allPlans.push(shell.plan);
             session.lines.push(
-                `X1/${domain} elapsed_ms=${Math.round(performance.now() - publishing)}`
+                `X2/${domain} elapsed_ms=${Math.round(performance.now() - commanding)}`
             );
         }
         await session.save();
@@ -255,6 +263,7 @@ export async function main(argv = process.argv.slice(2)) {
             'PASS EXT03a four document/native cells A+B Angular+React; no PWA or backend claim',
             'PASS X0 two fictitious Angular session shells via create-app --target-root; React refused; no business page or backend claim',
             'PASS X1 sealed publications under reviewed plans in both session shells; hand-added file and forged registry refused',
+            'PASS X2 action-request 2.1 login command published under reviewed plan in both session shells, compiled by product tools; stale plan refused; no business page or backend claim',
             'T19–T28 restent non qualifiés.'
         );
         await session.save();
