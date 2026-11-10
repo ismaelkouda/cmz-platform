@@ -95,6 +95,45 @@ export async function proofSession(options) {
     };
 }
 
+// Canal de diagnostic fermé. Un enfant en échec peut écrire n'importe quoi :
+// on ne garde que des lignes `CMZ_DIAG=<genre>:<valeur>` dont la forme est
+// fermée par genre, sans jeton, sans affectation de variable et sans chemin.
+const DIAGNOSTIC_KINDS = {
+    stage: /^[a-z][a-z0-9-]{0,40}$/,
+    http: /^[1-5]\d\d \/[A-Za-z0-9._~%\-/]{0,120}$/,
+    csp: /^[a-z][a-z-]{0,40}=\d{1,5}$/,
+    error: /^[\x20-\x7e]{1,240}$/,
+    console: /^[\x20-\x7e]{1,240}$/,
+};
+const SECRET_SHAPES = [
+    /\b(?:gh[opsu]_|github_pat_|glpat-|xox[abprs]-|sk-|AKIA|ASIA)[A-Za-z0-9_-]{4,}/,
+    /\b[A-Z][A-Z0-9_]{2,}=\S/,
+    /\bBearer\s+\S/i,
+    /[A-Za-z0-9+/_-]{32,}/,
+];
+const MAX_DIAGNOSTIC_LINES = 60;
+
+export function diagnosticLines(output) {
+    const lines = [];
+    for (const raw of String(output).split(/\r?\n/)) {
+        const found = /^CMZ_DIAG=([a-z]+):(.*)$/.exec(raw);
+        if (!found || !DIAGNOSTIC_KINDS[found[1]]?.test(found[2])) continue;
+        const value = found[2]
+            .replace(/https?:\/\/(?:127\.0\.0\.1|localhost):\d+/g, '<origin>')
+            .replace(/(^|[\s('"=])\/(?!\/)[^\s'"()]*/g, '$1<path>');
+        if (
+            ['error', 'console'].includes(found[1]) &&
+            SECRET_SHAPES.some((shape) => shape.test(value))
+        )
+            continue;
+        lines.push(
+            `CMZ_DIAG=${found[1]}:${found[1] === 'http' ? found[2] : value}`
+        );
+        if (lines.length === MAX_DIAGNOSTIC_LINES) break;
+    }
+    return lines;
+}
+
 export function record(
     session,
     label,
@@ -116,7 +155,13 @@ export function record(
     if (!expected) {
         // Inputs are fictitious and the child has a clean environment, but
         // retain only diagnostic hashes in the durable report, never env/JSON.
+        // Seules les lignes `CMZ_DIAG=` construites par le script de preuve, et
+        // filtrées ici, sont publiées en plus (CI de la PR #389).
         session.lines.push(`diagnostic_sha256=${hash(output)}`);
+        for (const line of diagnosticLines(
+            stripVTControlCharacters(`${result.stdout}\n${result.stderr}`)
+        ))
+            session.lines.push(`diagnostic ${label} ${line}`);
         throw new Error(
             `Échec de la preuve ${label}. Arrêt, sans relance automatique.`
         );

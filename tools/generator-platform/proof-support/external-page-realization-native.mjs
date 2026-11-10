@@ -223,24 +223,61 @@ import { readFile, readdir } from 'node:fs/promises';
 import { extname, relative, resolve } from 'node:path';
 import { chromium } from '@playwright/test';
 
+// Canal de diagnostic fermé (CI de la PR #389) : en cas d'échec, le script
+// n'écrit que des lignes CMZ_DIAG= qu'il construit lui-même, et la preuve
+// ne publie que celles-ci, filtrées par diagnosticLines().
+let stage = 'arguments';
+let currentPage;
+const http = [];
+const consoleErrors = [];
+const clean = (text) => String(text ?? '').split('\\n')[0]
+    .replace(/https?:\\/\\/127\\.0\\.0\\.1:\\d+/g, '<origin>')
+    .replace(/(^|[\\s('"=])\\/(?!\\/)[^\\s'"()]*/g, '$1<path>')
+    .replace(/[^\\x20-\\x7e]/g, '?')
+    .slice(0, 200);
+async function diagnose(error) {
+    const lines = ['stage:' + stage, 'error:' + clean((error?.name ?? 'Error') + ': ' + (error?.message ?? error))];
+    for (const entry of http.slice(-40)) lines.push('http:' + entry);
+    try {
+        const counts = {};
+        for (const [directive] of (await currentPage?.evaluate(() => globalThis.__cmzViolations)) ?? [])
+            counts[directive] = (counts[directive] ?? 0) + 1;
+        for (const [directive, count] of Object.entries(counts)) lines.push('csp:' + directive + '=' + count);
+    } catch { lines.push('stage:page-unreadable'); }
+    for (const text of consoleErrors.slice(0, 20)) lines.push('console:' + text);
+    process.stdout.write(lines.map((line) => 'CMZ_DIAG=' + line).join('\\n') + '\\n');
+    process.exitCode = 1;
+}
 const [buildPath, browserPath, fixturePath] = process.argv.slice(2);
-assert.ok(buildPath && browserPath && fixturePath, 'Arguments de preuve requis');
-const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
-const root = resolve(buildPath);
-const bundle = new Set(
-    (await readdir(root, { recursive: true, withFileTypes: true }))
-        .filter((entry) => entry.isFile())
-        .map((entry) => '/' + relative(root, resolve(entry.parentPath, entry.name)).split('\\\\').join('/'))
-);
+let fixture;
+let root;
+let bundle;
+try {
+    assert.ok(buildPath && browserPath && fixturePath, 'Arguments de preuve requis');
+    fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
+    root = resolve(buildPath);
+    stage = 'bundle';
+    bundle = new Set(
+        (await readdir(root, { recursive: true, withFileTypes: true }))
+            .filter((entry) => entry.isFile())
+            .map((entry) => '/' + relative(root, resolve(entry.parentPath, entry.name)).split('\\\\').join('/'))
+    );
+} catch (error) {
+    await diagnose(error);
+    process.exit(1);
+}
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 const extra = new Map();
 const served = [];
 const server = createServer(async (request, response) => {
+    let pathname = '/';
     try {
-        const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
+        pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
         served.push(pathname);
+        const status = (code) => http.push(code + ' ' + pathname.replace(/[^A-Za-z0-9._~%\\-/]/g, '_').slice(0, 120));
         if (extra.has(pathname)) {
             const [type, body] = extra.get(pathname);
+            status(200);
             response.writeHead(200, { 'content-type': type });
             return response.end(body);
         }
@@ -250,9 +287,14 @@ const server = createServer(async (request, response) => {
         let extension = extname(path);
         try { bytes = await readFile(path); }
         catch { bytes = await readFile(resolve(root, 'index.html')); extension = '.html'; }
+        status(extension === extname(path) ? 200 : 299);
         response.writeHead(200, { 'content-type': types[extension] ?? 'application/octet-stream' });
         response.end(bytes);
-    } catch { response.writeHead(400); response.end(); }
+    } catch {
+        http.push('400 ' + pathname.replace(/[^A-Za-z0-9._~%\\-/]/g, '_').slice(0, 120));
+        response.writeHead(400);
+        response.end();
+    }
 });
 // Seconde origine : toute requête qui y parvient est une sortie.
 const foreignHits = [];
@@ -265,7 +307,10 @@ const other = '127.0.0.1:' + foreign.address().port;
 let browser;
 try {
     browser = await chromium.launch({ executablePath: browserPath, headless: true });
+    stage = 'browser';
     const context = await browser.newContext({ serviceWorkers: 'block' });
+    context.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(clean(message.text())); });
+    context.on('weberror', (error) => consoleErrors.push(clean('pageerror ' + error.error()?.message)));
     await context.addInitScript(() => {
         Reflect.deleteProperty(globalThis.Navigator.prototype, 'serviceWorker');
         const violations = [];
@@ -286,15 +331,25 @@ try {
         return route.continue();
     });
     const page = await context.newPage();
+    currentPage = page;
+    stage = 'goto';
     await page.goto(origin + fixture.entryPath);
+    stage = 'heading';
     await page.getByRole('heading', { name: fixture.entryTitle, exact: true }).waitFor();
+    stage = 'placeholder';
     assert.equal(await page.getByText(fixture.placeholder).count(), 0, 'La page d’attente doit être remplacée');
+    stage = 'ready';
     await page.locator('[data-cmz-id="' + fixture.readyState + '"]').waitFor();
+    stage = 'fill';
     for (const control of fixture.controls)
         await page.getByLabel(control.label, { exact: true }).fill('valeur-' + control.id);
+    stage = 'submit';
     await page.getByRole('button', { name: fixture.actionLabel, exact: true }).click();
+    stage = 'error-state';
     await page.locator('[data-cmz-id="' + fixture.errorState + '"]').waitFor();
+    stage = 'networkidle';
     await page.waitForLoadState('networkidle');
+    stage = 'realized-page-checks';
     assert.deepEqual(external, [], 'Requête extérieure interdite');
     assert.deepEqual(writes, [], 'Aucune requête d’envoi sans adresse de service');
     // Page réalisée sous la politique de la coque : aucune violation, aucune
@@ -303,6 +358,7 @@ try {
     const outside = served.filter((path) => path !== '/' && path !== fixture.entryPath && !bundle.has(path));
     assert.deepEqual(outside, [], 'Requête hors bundle');
     // Page témoin piégée, sous la même politique (en-tête du index.html construit).
+    stage = 'trap';
     await context.unroute('**/*');
     served.length = 0;
     const index = await readFile(resolve(root, 'index.html'), 'utf8');
@@ -321,6 +377,7 @@ try {
         + probes.map((probe) => sub(probe.html)).join('')
         + '<script src="/cmz-csp-trap.js"></script></body></html>']);
     const trapPage = await context.newPage();
+    currentPage = trapPage;
     await trapPage.goto(origin + '/cmz-csp-trap.html');
     await trapPage.waitForTimeout(2000);
     await trapPage.evaluate(() => document.getElementById('trap-form').submit()).catch(() => undefined);
@@ -333,6 +390,7 @@ try {
         effective.startsWith(directive)
             && (uri.includes('/' + id + '/') || uri.includes(id + '.')
                 || (['frame-src', 'object-src'].includes(directive) && uri === 'http://' + other)));
+    stage = 'trap-checks';
     const result = { traps: [], probes: [], sameOrigin: [] };
     // Trusted Types : une violation par écriture par chaîne (HTML, eval,
     // script), sans URL attribuable.
@@ -360,6 +418,8 @@ try {
     result.violations = violations.length;
     process.stdout.write('CMZ_CSP_RESULT=' + JSON.stringify(result) + '\\n');
     process.stdout.write('Navigateur : page réalisée sans violation ni requête ; page témoin bloquée par la politique.\\n');
+} catch (error) {
+    await diagnose(error);
 } finally {
     if (browser) await browser.close();
     await new Promise((done) => foreign.close(done));
