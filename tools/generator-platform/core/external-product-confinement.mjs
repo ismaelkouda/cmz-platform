@@ -107,7 +107,9 @@ export async function runConfinedProductCommand(
             containerExecutable: '/usr/local/bin/node',
             argv: args.map((argument) => tokenized(argument, product)),
             policy: loaded.policy,
-            extraEnv: { CI: 'true', NX_NO_CLOUD: 'true' },
+            // Aucun `extraEnv` : le backend Docker ne l'applique pas encore
+            // (défaut connu de sandbox.mjs, lot séparé). Les deux backends
+            // donnent alors CI=1 et NX_NO_CLOUD=true, comme le mode atelier.
             readOnlyCandidatePaths: await protectedProductDirectories(product),
             nxRoot: '.',
             allowLoopback: false,

@@ -11,10 +11,55 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
 
-import { availableSandboxBackends } from '../library-setup/sandbox.mjs';
+import {
+    availableSandboxBackends,
+    runConfined,
+} from '../library-setup/sandbox.mjs';
 import { runExternalApplicationCommand } from './core/application-workspace.mjs';
 import { pathExists } from './core/external-application-paths.mjs';
+import { runConfinedProductCommand } from './core/external-product-confinement.mjs';
 import { fixtureParent } from './test-support/external-application-fixture.mjs';
+import { repositoryRoot } from './validate-ir.mjs';
+
+// CI de la PR #389 : sur Docker, sandbox.mjs ignore `extraEnv` et fixe
+// CI=1. L'invocation réelle d'une commande du produit est construite pour les
+// deux backends, sans Docker : macOS et Docker injectent le même environnement.
+test('EXT01 : une commande du produit reçoit le même environnement sur macOS et Docker', async (t) => {
+    const root = await fixtureParent(t);
+    const observed = {};
+    await runConfinedProductCommand(process.execPath, ['--version'], root, {
+        workspaceRoot: repositoryRoot,
+        backend: 'macos',
+        output: { write: () => true },
+        run: (options) => {
+            for (const backend of ['macos', 'docker'])
+                runConfined({
+                    ...options,
+                    backend,
+                    spawn: (executable, argv, spawned) => {
+                        observed[backend] = { argv, env: spawned.env };
+                        return { status: 0, stdout: '', stderr: '' };
+                    },
+                });
+            return { status: 0, stdout: '', stderr: '' };
+        },
+    });
+    const docker = Object.fromEntries(
+        observed.docker.argv
+            .filter((argument, index, all) => all[index - 1] === '--env')
+            .map((argument) => argument.split(/=(.*)/s).slice(0, 2))
+    );
+    for (const key of [
+        'CI',
+        'NX_NO_CLOUD',
+        'PATH',
+        'NX_DAEMON',
+        'NX_ISOLATE_PLUGINS',
+    ])
+        assert.equal(observed.macos.env[key], docker[key], key);
+    assert.equal(docker.CI, '1');
+    assert.equal(docker.NX_NO_CLOUD, 'true');
+});
 
 test('EXT01 : le vrai enfant conserve le graphe Nx et ses chemins confinés', async (t) => {
     if (!availableSandboxBackends().length)
@@ -32,7 +77,7 @@ assert.equal(process.env.NX_CACHE_PROJECT_GRAPH, undefined, 'NX_GRAPH_DISABLED')
 assert.equal(process.env.NX_DAEMON, 'false');
 assert.equal(process.env.NX_ISOLATE_PLUGINS, 'false');
 assert.equal(process.env.NX_NO_CLOUD, 'true');
-assert.equal(process.env.CI, 'true');
+assert.equal(process.env.CI, '1');
 assert.equal(process.env.PATH, '');
 assert.equal(process.env.NODE_OPTIONS, undefined);
 for (const [key, suffix] of Object.entries({
