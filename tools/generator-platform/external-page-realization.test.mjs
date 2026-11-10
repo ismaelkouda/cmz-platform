@@ -5,7 +5,7 @@
 // prouvée par check:external-application-shells.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -13,10 +13,6 @@ import {
     computeOwnershipSeal,
     inventoryTreeSha,
 } from './core/application-ownership.mjs';
-import {
-    planExternalActionRequest,
-    publishExternalActionRequest,
-} from './core/external-action-request.mjs';
 import {
     planExternalPageComposition,
     publishExternalPageComposition,
@@ -31,9 +27,9 @@ import {
     planExternalPageRealizationWorkOrder,
     publicExternalPageRealizationPlan,
     publishExternalPageRealization,
-    publishExternalPageRealizationWorkOrder,
     workOrderPath,
 } from './core/external-page-realization.mjs';
+import { pageCompositionRoot } from './core/external-publication-paths.mjs';
 import { sha256 } from './core/generation-manifest.mjs';
 import {
     snapshotTree,
@@ -43,13 +39,17 @@ import {
     assertProductOnlyImports,
     MANIFEST,
     readManifest,
-    sessionApp,
 } from './test-support/external-publication-fixture.mjs';
-import { connexionRealizationFiles } from './test-support/external-realization-fixture.mjs';
 import {
-    SESSION_FIXTURE_DOMAINS,
-    writeExternalActionDefinitions,
-} from './test-support/external-session-fixture.mjs';
+    composedProduct,
+    prepare,
+    publish,
+    publishCommand,
+    realization,
+    workOrderOf,
+    writeDraft,
+} from './test-support/external-realization-product.mjs';
+import { SESSION_FIXTURE_DOMAINS } from './test-support/external-session-fixture.mjs';
 
 const cli = (script, args) =>
     spawnSync(process.execPath, [join(TOOLS_ROOT, 'tools', script), ...args], {
@@ -63,78 +63,6 @@ const labelOf = (args) =>
         : args[0].endsWith('check-workspace.mjs')
           ? 'workspace-contract'
           : 'native-compiler';
-
-async function publish(plan, publisher, options, run = () => undefined) {
-    const reviewed = await plan(options);
-    const result = await publisher(
-        { ...options, expectedPlanId: reviewed.plan_id },
-        { run }
-    );
-    return { plan: reviewed, result };
-}
-
-async function publishCommand(action) {
-    return publish(
-        planExternalActionRequest,
-        publishExternalActionRequest,
-        action
-    );
-}
-
-// Produit fictif : coque avec session, commande, plan et composition publiés.
-async function composedProduct(t, domain, { composition = true } = {}) {
-    const product = await sessionApp(t, domain);
-    const { enter } = await writeExternalActionDefinitions(
-        product.root,
-        domain
-    );
-    const action = { ...product.base, definitionPath: enter };
-    await publishCommand(action);
-    const pageId = product.input.entryPage.id;
-    const options = { ...product.base, pageId };
-    await publish(planExternalPagePlan, publishExternalPagePlan, options);
-    if (composition)
-        await publish(
-            planExternalPageComposition,
-            publishExternalPageComposition,
-            options
-        );
-    return { ...product, action, pageId, options };
-}
-
-async function prepare(product) {
-    return publish(
-        planExternalPageRealizationWorkOrder,
-        publishExternalPageRealizationWorkOrder,
-        product.options
-    );
-}
-
-async function workOrderOf(product) {
-    return JSON.parse(
-        await readFile(join(product.app, workOrderPath(product.pageId)), 'utf8')
-    );
-}
-
-// Réalisation de l'agent (IA) écrite dans le brouillon du bon de travail.
-async function realization(product, workOrder) {
-    const contract = await readFile(
-        join(product.app, workOrder.page_contract.path)
-    );
-    return connexionRealizationFiles({
-        pageContract: JSON.parse(contract),
-        contractSha256: sha256(contract),
-        composition: workOrder.composition.module,
-    });
-}
-
-async function writeDraft(product, workOrder, files) {
-    const root = join(product.root, workOrder.draft_root);
-    await rm(root, { recursive: true, force: true });
-    await mkdir(root, { recursive: true });
-    for (const [name, content] of Object.entries(files))
-        await writeFile(join(root, name), content);
-}
 
 test('X4 : bon de travail puis page Connexion réalisée, publiée à la place de la page d’attente, sur deux produits fictifs', async (t) => {
     for (const domain of SESSION_FIXTURE_DOMAINS) {
@@ -335,7 +263,7 @@ test('X4 : chaque règle de sécurité du bon de travail refuse sa violation, sa
                 html,
                 (text) => `${text}<p [attr.data-cmz-id]="'ready'">x</p>\n`
             ),
-            /data-cmz-id must be static in page\.component\.html/,
+            /attribute binding forbidden in page\.component\.html: attr\.data-cmz-id/,
         ],
         [
             'composition non montée',
@@ -442,6 +370,28 @@ async function sealedForge(product, path, content) {
         await writeFile(manifestPath, original);
     };
 }
+
+// M-4 : une composition scellée sans fichiers consommés ne lie rien ; elle
+// est tenue pour périmée.
+test('X4 : composition sans fichiers consommés, tenue pour périmée (M-4)', async (t) => {
+    const product = await composedProduct(t, 'observatory');
+    const path = `${pageCompositionRoot(product.pageId)}/generation-manifest.json`;
+    const generation = JSON.parse(
+        await readFile(join(product.app, path), 'utf8')
+    );
+    assert.ok(generation.files.length > 0);
+    const restore = await sealedForge(
+        product,
+        path,
+        JSON.stringify({ ...generation, files: [] }, null, 2) + '\n'
+    );
+    await assert.rejects(
+        planExternalPageRealizationWorkOrder(product.options),
+        /page composition is stale; regenerate it with generate:page-composition/
+    );
+    await restore();
+    await planExternalPageRealizationWorkOrder(product.options);
+});
 
 test('X4 : composition absente ou périmée, bon de travail absent ou périmé, brouillon absent : refusés', async (t) => {
     const product = await composedProduct(t, 'equipment-hire', {

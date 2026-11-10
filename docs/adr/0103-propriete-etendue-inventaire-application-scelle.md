@@ -179,7 +179,9 @@ silence**, par un outil ou par une modification partielle. Il n'authentifie rien
 
 Le LLM qui réalisera une page n'aura pas accès au manifeste (X4) : son bon de
 travail limitera les fichiers qu'il peut écrire. Pour la réalisation de page, la
-barrière reste ce bon de travail et la relecture du diff.
+barrière est ce bon de travail, la relecture du diff, et deux mécanismes qui ne
+dépendent pas du réalisateur (X4-sécurité) : les commandes du produit confinées,
+et la politique de sécurité de contenu de la coque.
 
 ## Conséquences
 
@@ -229,11 +231,22 @@ barrière reste ce bon de travail et la relecture du diff.
   `src/app/generated/**`. La page d'attente y est remplacée par l'outil
   `page-realization` ; le bon de travail est publié sous `generated/`, le
   brouillon du réalisateur reste hors de l'application, dans `descriptions/`.
+- **Sécurité de la page réalisée (X4-sécurité) :** toute commande lancée dans le
+  produit (compilateur, build, lint, tests, contrôle d'espace) tourne dans le
+  bac à sable des oracles du mode atelier (`runConfined`, profil `execution`) :
+  aucun réseau, environnement propre, HOME jetable, lecture limitée au produit,
+  écriture limitée aux caches. La coque Angular extérieure génère sa politique
+  de sécurité de contenu (`src/index.html` et
+  `deploy/content-security-policy.conf`), possédée et scellée ;
+  `connect-src 'self'` suit la topologie à une seule origine retenue par le
+  propriétaire. La coque ne se republie pas : un produit créé avant X4-sécurité
+  ne reçoit la politique qu'en recréant son application, comme ci-dessus.
 - **Aucune dépendance entre publications dans la primitive :** une commande
   republiée ne sait pas, par le registre seul, quelles pages la consomment. Les
   outils l'exposent eux-mêmes : `generate:action-request` nomme les pages dont
   le plan publié référence son modèle (`dependent_pages`), et les commandes de
-  page refusent un plan devenu périmé.
+  page refusent un plan devenu périmé. Une page réalisée y est marquée
+  (`realization: true`) : son bon de travail est à préparer à nouveau.
 
 ### Points à réévaluer
 

@@ -56,7 +56,8 @@ export function publishingTool(manifest, path) {
 
 // I-1 : pages dont le plan publié référence le modèle de cette commande. Une
 // nouvelle publication de la commande les rend périmées : le plan, puis la
-// composition, sont à recompiler après elle (X2 → plan → composition).
+// composition, sont à recompiler après elle (X2 → plan → composition), puis,
+// pour une page réalisée, le bon de travail à préparer et vérifier à nouveau.
 export async function pagesConsumingCommand(app, appName, actionId) {
     const uri = `apps/${appName}/${actionExecutionModelPath(actionId)}`;
     const pages = [];
@@ -72,11 +73,16 @@ export async function pagesConsumingCommand(app, appName, actionId) {
         )
             continue;
         const composition = `${pageCompositionRoot(match[1])}/generation-manifest.json`;
+        // I-3 : une page réalisée garde son bon de travail, que la commande
+        // republiée périme ; ses règles sont à rejouer.
+        const page = `src/app/pages/${match[1]}/page.component.ts`;
         pages.push({
             page_id: match[1],
             composition:
                 publishingTool(app.manifest, composition) ===
                 PAGE_COMPOSITION_TOOL,
+            realization:
+                publishingTool(app.manifest, page) === REALIZATION_TOOL,
         });
     }
     return pages.sort((left, right) =>

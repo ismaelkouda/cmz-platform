@@ -856,12 +856,14 @@ Depuis X3, la commande publie aussi son modèle d’exécution
 
 Une commande peut être consommée par des pages. Son plan et son résultat les
 nomment dans `dependent_pages` : chaque page dont le plan publié référence ce
-modèle, avec `composition: true` si sa composition est publiée. La CLI les
-rappelle sur la sortie d’erreur (`⚠ Pages qui consomment cette commande…`).
-**Après toute republication d’une commande, relancer
-`compile:page-execution-plan` puis `generate:page-composition` pour chacune de
-ces pages.** Tant que ce n’est pas fait, les deux commandes X3 refusent la page
-comme périmée. La republication n’est pas refusée : le plan de page ne peut être
+modèle, avec `composition: true` si sa composition est publiée et
+`realization: true` si la page est réalisée (X4). La CLI les rappelle sur la
+sortie d’erreur (`⚠ Pages qui consomment cette commande…`). **Après toute
+republication d’une commande, relancer `compile:page-execution-plan` puis
+`generate:page-composition` pour chacune de ces pages, puis, pour une page
+réalisée, `prepare:page-realization` et `verify:page-realization --dry-run`.**
+Tant que ce n’est pas fait, les commandes X3 et X4 refusent la page comme
+périmée. La republication n’est pas refusée : le plan de page ne peut être
 recompilé qu’après elle (commande, puis plan, puis composition), et une option
 pour forcer serait contraire au plan relu obligatoire.
 
@@ -967,27 +969,33 @@ consommées. Il fixe :
   interdits, l’oracle du produit et les règles.
 
 **Règles vérifiées sur le brouillon**, toutes listées en cas de refus (la CLI
-écrit `{ "ok": false, "violations": […] }` et sort en échec) :
+écrit `{ "ok": false, "violations": […] }` et sort en échec). Ce sont des
+filtres : la propriété « aucune requête vers une autre origine » est établie par
+la politique de sécurité de contenu de la coque et la preuve navigateur, et les
+commandes du produit tournent confinées (voir X4-sécurité ci-dessous).
 
 - seulement les fichiers permis, en UTF-8 ;
-- aucun accès réseau direct (`HttpClient`, `fetch(`, `XMLHttpRequest`, Axios,
-  WebSocket, EventSource, `sendBeacon`, URL `http(s)://`), aucun stockage du
-  navigateur, aucun code dynamique, aucun contournement de sécurité, aucun
-  chemin d’endpoint des commandes de la page ;
+- motifs lexicaux de première intention sur tous les fichiers de code
+  (`HttpClient`, `fetch(`, `XMLHttpRequest`, Axios, WebSocket, EventSource,
+  `sendBeacon`, URL `http(s)://`, stockage du navigateur, `eval(`,
+  `new Function(`, contournement de sécurité) et chemins d’endpoint des
+  commandes de la page, sur leurs frontières de segment ;
 - mécanique générée seulement : imports limités à `@angular/common`,
   `@angular/core`, `@angular/core/rxjs-interop`, `@angular/router`, `rxjs`, au
   module de la composition et aux fichiers de la page (plus
   `@angular/core/testing`, `@angular/platform-browser` et `vitest` dans la spec)
-  ; aucun import dynamique ; la page monte `PAGE_COMPOSITION_PROVIDERS` ; une
-  commande, la session ou `@angular/common/http` importés directement sont
-  refusés ;
-- aucune règle ni contrôle inventés : chaque `data-cmz-id` est statique et
-  déclaré par le contrat ; la preuve `realization-evidence.json` couvre
-  exactement les identifiants du contrat et chaque sélecteur est présent.
+  ; aucun import dynamique ; une commande, la session ou `@angular/common/http`
+  importés directement sont refusés ;
+- contrôles structurels de X4-sécurité sur la page et son gabarit ;
+- chaque `data-cmz-id` est statique, dans le gabarit, et déclaré par le contrat
+  ; la preuve `realization-evidence.json` couvre exactement les identifiants du
+  contrat et chaque sélecteur est présent.
 
 L’apparence reste libre. Les autres choix de la page (textes, disposition,
 comportement d’attente) relèvent de la revue humaine : ces règles mécaniques ne
-prouvent pas qu’aucune règle métier n’a été inventée dans le code.
+prouvent ni l’absence de règle métier inventée, ni celle d’un contrôle inventé
+sans `data-cmz-id`. Elles ne sont pas, à elles seules, la barrière contre le
+réseau, le stockage ou le code dynamique : ce sont des listes.
 
 **Publication.** Le brouillon conforme est publié à la place de la page
 d’attente : `page.component.ts` est déclaré `replaced` avec son empreinte
@@ -995,9 +1003,10 @@ d’avant, les autres fichiers `added`. Le répertoire de la page est un préfix
 couvert : aucun fichier ancien n’y reste sans être republié. Les octets du
 brouillon sont liés au plan : une modification après relecture le périme. Le
 compilateur, le build, le lint et les tests du produit, dont la spec de la page,
-décident ; un échec annule tout. Une nouvelle publication de la commande, du
-plan ou de la composition périme le bon de travail, qu’il faut préparer à
-nouveau.
+décident, confinés ; un échec annule tout. Une nouvelle publication de la
+commande, du plan ou de la composition périme le bon de travail, qu’il faut
+préparer à nouveau : `generate:action-request` le signale (`realization: true`,
+voir I-3).
 
 **Adresses de service.** La coque fournit `SESSION_ENDPOINTS` vide par défaut,
 et la source de la commande lit son adresse à sa construction. La page de
@@ -1025,4 +1034,141 @@ contrat de réalisation (nœud de rôle et archétype) est exportée.
 
 Limites : une seule page de référence, réalisée par l’agent développeur pour les
 deux produits fictifs ; aucun fichier de page supplémentaire n’est permis ;
-aucun backend n’est appelé ; la revue visuelle humaine reste à faire.
+aucun backend n’est appelé ; la revue visuelle humaine reste à faire. L’auteur
+des règles et l’auteur de la page de référence sont le même agent.
+
+## Sécurité de la page réalisée — X4-sécurité
+
+Les règles du bon de travail sont des filtres. La barrière qui ne dépend pas du
+réalisateur est double : les commandes du produit tournent confinées, et le
+navigateur applique la politique de sécurité de contenu de la coque. Les
+contrôles structurels ferment ce que cette politique ne voit pas.
+
+**Commandes du produit confinées.** Toute commande que l’atelier lance dans un
+produit extérieur (compilateur, build, lint, tests, contrôle d’espace), y
+compris par `verify:page-realization --apply` du pilote, passe par le bac à
+sable des oracles du mode atelier (`runConfined`, profil `execution`) :
+
+- refus par défaut, aucun réseau, pas même la boucle locale ;
+- environnement propre : `PATH` vide, aucune variable de l’hôte, HOME jetable
+  hors du produit et en lecture seule ;
+- lecture limitée au produit et au nœud exécutable qualifié ;
+- écriture limitée aux caches et sorties jetables (`.angular`, `.nx`,
+  `coverage`, `dist`, `tmp`, `node_modules/.*`) ; les sources, les brouillons,
+  le marqueur d’espace et chaque paquet installé sont en lecture seule ;
+- sur Linux, le même profil passe par Docker (`--network none`), avec les
+  chemins du produit traduits en jetons.
+
+Un échec rend un message fermé
+(`product command failed under confinement (code N)`), sans chemin.
+
+**Politique de sécurité de contenu de la coque.** La coque Angular extérieure la
+génère, et le registre la scelle :
+
+- en balise `meta` dans `src/index.html`, juste après le jeu de caractères,
+  avant toute ressource ;
+- en en-tête dans `deploy/content-security-policy.conf` (directive nginx), avec
+  en plus `frame-ancestors 'none'`, ignorée en `meta`.
+
+```text
+default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self';
+manifest-src 'self'; frame-src 'none'; object-src 'none'; form-action 'self';
+base-uri 'self'; require-trusted-types-for 'script';
+trusted-types angular angular#bundler
+```
+
+- `connect-src 'self'` est définitif : le propriétaire a retenu une seule
+  origine, le serveur de l’application relaie `/api/<service>/`.
+- `base-uri 'self'` : `'none'` refuserait `<base href="/">`.
+- `style-src 'unsafe-inline'` : Angular insère les styles de composant en
+  éléments `<style>` ; un nonce n’a pas de sens en service statique ; les
+  `url()` restent soumises à `img-src` et `font-src`.
+- Trusted Types est gardé : mesuré sans violation sur la coque construite, sur
+  le serveur de développement et sur une mise à jour à chaud d’un composant.
+- Le serveur de développement (`@angular/build:dev-server`, Vite) ouvre son
+  WebSocket de rechargement sous `'self'` : mesuré, aucune violation.
+- La configuration `production` fixe `inlineCritical: false` (l’inlining du CSS
+  critique ajoute un gestionnaire `onload`, refusé) et `fonts: false` (aucun
+  réseau au build).
+
+La coque ne se republie pas : un produit déjà créé ne reçoit la politique qu’en
+recréant son application (`create-app --target-root`). Les produits fictifs et
+le banc sont recréés à chaque preuve ; `generate-cmz-backoffice` n’est pas
+encore créé.
+
+**Contrôles structurels.** Ils sont lus dans la syntaxe, pas dans le texte, et
+leurs listes sont publiées dans le bon de travail (`allowed_imports`,
+`structure`) :
+
+- TypeScript, par l’API du compilateur :
+    - depuis la composition, seuls `PAGE_COMPOSITION_PROVIDERS` et
+      `PageComposition` sont importables (I-2) ; `import * as`, import par
+      défaut et réexportation sont refusés ;
+    - `DOCUMENT`, `ElementRef`, `Renderer2`, `Location` et les symboles privés
+      `ɵ…` ne sont pas importables ;
+    - un identifiant qui ne se résout pas dans le fichier est un global :
+      refusé, sauf une liste permise (`Math`, `JSON`, `Number`, `Date`…) et
+      `navigator.onLine` ;
+    - les propriétés qui mènent au document, à la fenêtre, à la navigation, au
+      stockage ou à l’écriture HTML sont refusées sur tout objet ;
+    - une clé calculée n’est permise que sur une table constante locale ;
+    - une chaîne assemblée de littéraux est refusée ;
+    - `injector.get` ne livre que les jetons de la composition ;
+    - un seul `@Component`, gabarit et styles dans les fichiers de la page, la
+      composition fournie par `providers` (M-2), `host` limité aux écouteurs,
+      classes, styles et `aria-*`.
+- Gabarit, par `parseTemplate` d’`@angular/compiler` :
+    - éléments `script`, `style`, `link`, `meta`, `base`, `iframe`, `object`,
+      `embed` refusés (lus dans l’arbre HTML brut) ;
+    - attributs de ressource ou de navigation refusés, statiques ou liés, sauf
+      un fragment (`href="#…"`) et une image en ligne (`src="data:image/…"`) ;
+      `routerLink` statique vers un chemin de l’application ;
+    - `[attr.*]` pour `aria-*` seulement ; `[innerHTML]`, `[outerHTML]` et les
+      gestionnaires `on…` refusés ;
+    - `data-cmz-id` statique, insensible à la casse, déclaré par le contrat
+      (M-1) ;
+    - mêmes propriétés refusées et même règle de clé dans les expressions.
+- SCSS : aucune règle structurelle ; la politique gouverne `url()`, `@import` et
+  `@font-face`.
+
+La spec de la page ne reçoit que les règles d’import : elle ne s’exécute que
+dans l’oracle confiné.
+
+**Preuves.**
+
+- `external-page-realization-security.test.mjs` rejoue les 74 pages interdites
+  du validateur et ses 3 témoins. 61 sont refusées par les règles, 11 sont
+  laissées à la politique (styles et SCSS qui visent une autre origine) et 2
+  visent une ressource de même origine, hors des fichiers du bundle. Chaque
+  règle a son cas.
+- `application-workspace.test.mjs` lance une même sonde hors confinement (elle
+  joint le réseau et lit dehors) puis confinée (tout est bloqué).
+- `check:external-application-shells`, dans chaque coque avec session :
+    - une spec piégée publiée par le runner par défaut est refusée et annulée,
+      sans réseau, lecture extérieure ni variable de l’hôte ;
+    - la page réalisée s’ouvre sans aucune violation ni requête hors bundle ;
+    - une page témoin piégée sous la même politique, avec les 13 sondes du
+      validateur acceptées par les règles, produit chacune sa violation, et la
+      seconde origine ne reçoit aucune requête. Une requête bloquée par la
+      politique n’atteint pas l’interception de Playwright : la preuve compte
+      l’événement `securitypolicyviolation` et les requêtes reçues par une
+      seconde origine.
+
+**I-3.** `dependent_pages` dit aussi `realization: true` pour une page réalisée,
+et l’avertissement ajoute `prepare:page-realization` puis
+`verify:page-realization --dry-run`. Le bon de travail périmé est refusé jusqu’à
+sa préparation. Après préparation, les règles sont rejouées sur la page publiée
+; une page conforme répond `publication without change`.
+
+**Limites.**
+
+- Le chemin Docker du confinement est écrit, pas exécuté sur ce poste (démon
+  Docker arrêté) : la CI Linux sera sa première exécution.
+- Une requête GET de même origine reste possible (une `url()` de même origine en
+  SCSS) ; la preuve navigateur la signale hors bundle et le réalisateur n’a
+  aucun fichier à référencer.
+- Les listes TypeScript et de gabarit sont des listes : un nom absent n’est pas
+  refusé. La politique de la coque couvre le réseau et le code dynamique quel
+  que soit le code.
+- La règle métier inventée reste du ressort de la revue humaine.

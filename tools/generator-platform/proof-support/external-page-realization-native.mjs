@@ -34,6 +34,10 @@ import {
     targetArguments,
 } from './external-application-runtime.mjs';
 import { nativePublicationRunner } from './external-publication-native.mjs';
+import {
+    cspTrapFixture,
+    proveConfinedProductOracle,
+} from './external-page-security-native.mjs';
 
 async function writeDraft(root, workOrder, files) {
     const draft = resolve(root, workOrder.draft_root);
@@ -166,6 +170,16 @@ export async function proveNativePageRealization(session, shell) {
     );
     assert.deepEqual(await snapshotTree(app, ['node_modules']), before);
     session.lines.push(`PASS ${label}/red-spec-rolled-back`);
+    // X4-sécurité : la spec d'un réalisateur tourne confinée, y compris par le
+    // runner par défaut de la CLI.
+    await proveConfinedProductOracle(session, `X4S/${domain}`, {
+        root,
+        app,
+        options,
+        workOrder,
+        files,
+        writeDraft,
+    });
     // Réalisation exacte : publiée à la place de la page d'attente.
     await writeDraft(root, workOrder, files);
     const plan = await planExternalPageRealization(options);
@@ -202,21 +216,35 @@ export async function proveNativePageRealization(session, shell) {
     return { plan, page: JSON.parse(contract).page };
 }
 
-function realizationBrowserScript() {
+export function realizationBrowserScript() {
     return `import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { extname, resolve } from 'node:path';
+import { readFile, readdir } from 'node:fs/promises';
+import { extname, relative, resolve } from 'node:path';
 import { chromium } from '@playwright/test';
 
 const [buildPath, browserPath, fixturePath] = process.argv.slice(2);
 assert.ok(buildPath && browserPath && fixturePath, 'Arguments de preuve requis');
 const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
 const root = resolve(buildPath);
+const bundle = new Set(
+    (await readdir(root, { recursive: true, withFileTypes: true }))
+        .filter((entry) => entry.isFile())
+        .map((entry) => '/' + relative(root, resolve(entry.parentPath, entry.name)).split('\\\\').join('/'))
+);
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
+const extra = new Map();
+const served = [];
 const server = createServer(async (request, response) => {
     try {
-        const path = resolve(root, '.' + new URL(request.url ?? '/', 'http://localhost').pathname);
+        const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
+        served.push(pathname);
+        if (extra.has(pathname)) {
+            const [type, body] = extra.get(pathname);
+            response.writeHead(200, { 'content-type': type });
+            return response.end(body);
+        }
+        const path = resolve(root, '.' + pathname);
         assert.ok(path === root || path.startsWith(root + '/'));
         let bytes;
         let extension = extname(path);
@@ -226,16 +254,25 @@ const server = createServer(async (request, response) => {
         response.end(bytes);
     } catch { response.writeHead(400); response.end(); }
 });
+// Seconde origine : toute requête qui y parvient est une sortie.
+const foreignHits = [];
+const foreign = createServer((request, response) => { foreignHits.push(request.method); response.end(); });
+foreign.on('upgrade', (request, socket) => { foreignHits.push('UPGRADE'); socket.destroy(); });
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
-const address = server.address();
-assert.ok(address && typeof address === 'object');
-const origin = 'http://127.0.0.1:' + address.port;
+await new Promise((done) => foreign.listen(0, '127.0.0.1', done));
+const origin = 'http://127.0.0.1:' + server.address().port;
+const other = '127.0.0.1:' + foreign.address().port;
 let browser;
 try {
     browser = await chromium.launch({ executablePath: browserPath, headless: true });
     const context = await browser.newContext({ serviceWorkers: 'block' });
     await context.addInitScript(() => {
         Reflect.deleteProperty(globalThis.Navigator.prototype, 'serviceWorker');
+        const violations = [];
+        Object.defineProperty(globalThis, '__cmzViolations', { value: violations });
+        document.addEventListener('securitypolicyviolation', (event) =>
+            violations.push([event.effectiveDirective, event.blockedURI])
+        );
     });
     const external = [];
     const writes = [];
@@ -260,9 +297,72 @@ try {
     await page.waitForLoadState('networkidle');
     assert.deepEqual(external, [], 'Requête extérieure interdite');
     assert.deepEqual(writes, [], 'Aucune requête d’envoi sans adresse de service');
-    process.stdout.write('Navigateur : page réalisée, envoi sans adresse refusé sans requête.\\n');
+    // Page réalisée sous la politique de la coque : aucune violation, aucune
+    // requête hors des fichiers du bundle (M-3).
+    assert.deepEqual(await page.evaluate(() => globalThis.__cmzViolations), [], 'Violation de la politique sur la page réalisée');
+    const outside = served.filter((path) => path !== '/' && path !== fixture.entryPath && !bundle.has(path));
+    assert.deepEqual(outside, [], 'Requête hors bundle');
+    // Page témoin piégée, sous la même politique (en-tête du index.html construit).
+    await context.unroute('**/*');
+    served.length = 0;
+    const index = await readFile(resolve(root, 'index.html'), 'utf8');
+    assert.ok(/<meta http-equiv="Content-Security-Policy"/.test(index), 'Politique absente du bundle');
+    const head = index.slice(0, index.indexOf('</head>'));
+    const sub = (text) => text.replaceAll('__FOREIGN__', other);
+    const { probes, traps, scripted } = fixture.csp;
+    extra.set('/cmz-csp-trap.js', ['text/javascript', [
+        ...scripted.map(({ code }) => 'try { ' + sub(code) + ' } catch {}'),
+        ...probes.filter((probe) => probe.script).map((probe) => sub(probe.script)),
+    ].join('\\n')]);
+    extra.set('/cmz-csp-trap.html', ['text/html', head
+        + probes.map((probe) => '<style>' + sub(probe.css) + '</style>').join('')
+        + '</head><body>'
+        + traps.map((trap) => sub(trap.html)).join('')
+        + probes.map((probe) => sub(probe.html)).join('')
+        + '<script src="/cmz-csp-trap.js"></script></body></html>']);
+    const trapPage = await context.newPage();
+    await trapPage.goto(origin + '/cmz-csp-trap.html');
+    await trapPage.waitForTimeout(2000);
+    await trapPage.evaluate(() => document.getElementById('trap-form').submit()).catch(() => undefined);
+    await trapPage.waitForTimeout(1500);
+    const violations = await trapPage.evaluate(() => globalThis.__cmzViolations);
+    assert.equal(await trapPage.evaluate(() => globalThis.cmzInline ?? false), false, 'Script en ligne exécuté');
+    // Un cadre ou un objet bloqué n'est rapporté qu'avec son origine : une
+    // seule source par directive le rend attribuable.
+    const blocked = (id, directive) => violations.some(([effective, uri]) =>
+        effective.startsWith(directive)
+            && (uri.includes('/' + id + '/') || uri.includes(id + '.')
+                || (['frame-src', 'object-src'].includes(directive) && uri === 'http://' + other)));
+    const result = { traps: [], probes: [], sameOrigin: [] };
+    // Trusted Types : une violation par écriture par chaîne (HTML, eval,
+    // script), sans URL attribuable.
+    const typed = [...traps, ...scripted].filter((trap) => trap.directive === 'require-trusted-types-for');
+    assert.ok(violations.filter(([effective]) => effective === 'require-trusted-types-for').length >= typed.length, 'Trusted Types non appliqués');
+    for (const trap of [...traps, ...scripted]) {
+        const found = trap.id === 'trap-inline'
+            ? violations.some(([effective, uri]) => effective.startsWith('script-src') && uri === 'inline')
+            : trap.directive === 'require-trusted-types-for' || blocked(trap.id, trap.directive);
+        assert.ok(found, 'Piège sans violation : ' + trap.id);
+        result.traps.push(trap.id + ' ' + trap.directive);
+    }
+    for (const probe of probes) {
+        if (probe.mechanism === 'same-origin') {
+            const path = served.find((entry) => entry.includes(probe.id));
+            assert.ok(path && !bundle.has(path), 'Sonde de même origine non détectée : ' + probe.id);
+            result.sameOrigin.push(probe.id);
+            continue;
+        }
+        const directive = probe.mechanism.slice(4);
+        assert.ok(blocked(probe.id, directive), 'Sonde sans violation : ' + probe.id);
+        result.probes.push(probe.id + ' ' + directive);
+    }
+    assert.deepEqual(foreignHits, [], 'Requête reçue par une autre origine');
+    result.violations = violations.length;
+    process.stdout.write('CMZ_CSP_RESULT=' + JSON.stringify(result) + '\\n');
+    process.stdout.write('Navigateur : page réalisée sans violation ni requête ; page témoin bloquée par la politique.\\n');
 } finally {
     if (browser) await browser.close();
+    await new Promise((done) => foreign.close(done));
     await new Promise((done, reject) => server.close((error) => error ? reject(error) : done()));
 }
 `;
@@ -292,6 +392,7 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
             errorState: action.error_state_id,
             actionLabel: action.label,
             controls: page.controls.map(({ id, label }) => ({ id, label })),
+            csp: cspTrapFixture(),
         };
         const files = {
             'realization-browser.fixture.json': JSON.stringify(fixture),
@@ -314,7 +415,7 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
                     targetArguments(plan, 'build:production')
                 )
             );
-            record(
+            const opened = record(
                 session,
                 `X4/${domain}/browser-realized-page`,
                 confinedNode(
@@ -328,6 +429,30 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
                     ],
                     { browser, timeoutMs: 120_000 }
                 )
+            );
+            // X4-sécurité : politique mesurée par l'événement de violation.
+            const line = opened.stdout
+                .split('\n')
+                .find((entry) => entry.startsWith('CMZ_CSP_RESULT='));
+            assert.ok(line, 'Mesure de la politique absente');
+            const measured = JSON.parse(line.slice('CMZ_CSP_RESULT='.length));
+            session.lines.push(
+                `PASS X4S/${domain}/csp-realized-page zero violation, no request outside the bundle`
+            );
+            for (const entry of measured.traps)
+                session.lines.push(
+                    `PASS X4S/${domain}/csp-trap ${entry} violation, no request`
+                );
+            for (const entry of measured.probes)
+                session.lines.push(
+                    `PASS X4S/${domain}/csp-probe ${entry} violation, no request`
+                );
+            for (const entry of measured.sameOrigin)
+                session.lines.push(
+                    `PASS X4S/${domain}/same-origin-probe ${entry} detected outside the bundle`
+                );
+            session.lines.push(
+                `X4S/${domain} csp_violations=${measured.violations} foreign_requests=0`
             );
         } finally {
             await verifyGeneratedTree(proof, files);

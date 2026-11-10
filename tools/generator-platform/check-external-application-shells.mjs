@@ -293,6 +293,7 @@ export async function main(argv = process.argv.slice(2)) {
             'PASS X2 action-request 2.1 login command published under reviewed plan in both session shells, compiled by product tools; stale plan refused; no business page or backend claim',
             'PASS X3 login page execution plan and composition published under reviewed plans in both session shells, consuming the X2 command, compiled by product tools; no backend claim',
             'PASS X4 login page realized under a published work order in both session shells, replacing the placeholder under a reviewed plan, compiled, built, linted and tested by product tools; network, direct command import and red spec refused; opened in the browser without service address and without any request; no backend claim',
+            'PASS X4-security product commands confined (default runner: trap spec without network, outside read or write, or host environment; publication rolled back); shell Content-Security-Policy measured by violation events: realized page without violation or request outside the bundle, trap page and 13 validator probes blocked with no request to another origin; no backend claim',
             'T19–T28 restent non qualifiés.'
         );
         await session.save();

@@ -44,6 +44,14 @@ import {
     realizationViolations,
     TEST_PACKAGES,
 } from './external-page-realization-rules.mjs';
+import {
+    ALLOWED_GLOBALS,
+    COMPOSITION_NAMES,
+    DENIED_PROPERTIES,
+    FORBIDDEN_ELEMENTS,
+    FORBIDDEN_IMPORT_NAMES,
+    RESOURCE_ATTRIBUTES,
+} from './external-page-realization-structure.mjs';
 import { sha256, stableStringify } from './generation-manifest.mjs';
 import { loadJson, repositoryRoot } from '../validate-ir.mjs';
 
@@ -60,10 +68,12 @@ const compositionModule = (pageId) =>
 const RULES = Object.freeze([
     'Implement only the validated page contract; appearance is free.',
     'Write only allowed_files, in draft_root; verify:page-realization publishes them to publication_root.',
-    'Mount the page composition (PAGE_COMPOSITION_PROVIDERS) and act only through it; never import a command, the session or HttpClient directly.',
-    'Import only allowed_imports, the composition module and the page files.',
-    'Never call the network, browser storage or dynamic code; never write an endpoint literal or a URL.',
-    'Map every contract id to one exact static data-cmz-id selector; add no other data-cmz-id.',
+    'Mount the page composition in the @Component providers (PAGE_COMPOSITION_PROVIDERS) and act only through PageComposition; never import a command, the session or HttpClient directly.',
+    'Import only allowed_imports, the composition names, and the page files.',
+    'Use only structure.allowed_globals; never read structure.denied_properties, never use a computed key outside a local constant table, never assemble a string from literals.',
+    'Keep the template declarative: no structure.forbidden_elements, no resource or navigation attribute, attr.* bindings for aria-* only.',
+    'Never write an endpoint literal or a URL. The shell Content-Security-Policy blocks any other origin, inline script and dynamic code in the browser; product commands run confined.',
+    'Map every contract id to one exact static data-cmz-id selector in the template; add no other data-cmz-id.',
     'Keep keyboard, screen-reader, loading, error and offline behavior explicit.',
     'The product compiler, build, lint and tests decide; a failure publishes nothing.',
 ]);
@@ -102,7 +112,10 @@ async function mountableComposition(app, appName, pageId) {
         app.manifest.generated_files.map((entry) => [entry.path, entry])
     );
     const consumed = [];
-    for (const entry of generation.files ?? []) {
+    // M-4 : une composition sans fichiers ne prouverait rien de ce qu'elle lie.
+    if (!Array.isArray(generation.files) || generation.files.length === 0)
+        stale();
+    for (const entry of generation.files) {
         const path = `${GENERATED}${safeRelativePath(entry.path)}`;
         if (owned.get(path)?.sha256 !== entry.sha256) stale();
         await ownedAppFile(app, path);
@@ -172,6 +185,14 @@ async function buildWorkOrder(app, appName, pageId, toolsRoot) {
         allowed_imports: {
             page: [...PAGE_PACKAGES],
             tests: [...TEST_PACKAGES],
+            composition_names: [...COMPOSITION_NAMES],
+            forbidden_names: FORBIDDEN_IMPORT_NAMES,
+        },
+        structure: {
+            allowed_globals: [...ALLOWED_GLOBALS],
+            denied_properties: [...DENIED_PROPERTIES],
+            forbidden_elements: [...FORBIDDEN_ELEMENTS],
+            resource_attributes: [...RESOURCE_ATTRIBUTES],
         },
         forbidden_patterns: FORBIDDEN_PATTERNS.map(([label, pattern]) => ({
             label,

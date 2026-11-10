@@ -1,12 +1,20 @@
 // X4 : règles d'une réalisation de page extérieure, vérifiées avant toute
-// publication. Apparence libre ; aucun réseau direct, aucune règle ni contrôle
-// inventés, mécanique générée seulement (la page passe par sa composition).
+// publication. Apparence libre ; mécanique générée seulement (la page passe
+// par sa composition). Ces règles sont des filtres, pas la barrière : le
+// réseau, les scripts et les ressources d'autres origines sont bloqués dans le
+// navigateur par la politique de sécurité de contenu de la coque, et les
+// commandes du produit tournent confinées (X4-sécurité). Les contrôles
+// structurels ferment ce que cette politique ne voit pas.
 import ts from 'typescript';
 
+import {
+    templateViolations,
+    typescriptViolations,
+} from './external-page-realization-structure.mjs';
 import { validatePageRealizationEvidence } from './page-realization-verification.mjs';
 
-// Mêmes interdits que le mode atelier, étendus au stockage et à l'évaluation :
-// la session et le réseau appartiennent à la mécanique générée.
+// Motifs lexicaux de première intention, sur tous les fichiers de code : ils
+// nomment l'erreur ordinaire d'un réalisateur de bonne foi.
 export const FORBIDDEN_PATTERNS = Object.freeze([
     ['direct network access', /\bHttpClient\b/],
     ['direct network access', /\bXMLHttpRequest\b/],
@@ -37,8 +45,6 @@ export const TEST_PACKAGES = Object.freeze([
     '@angular/platform-browser',
     'vitest',
 ]);
-
-const CMZ_ID = /data-cmz-id\s*=\s*["']([^"']*)["']/g;
 
 function contractIds(page) {
     return new Set([
@@ -85,13 +91,9 @@ export function moduleSpecifiers(name, source) {
     return found;
 }
 
-function importedNames(node) {
-    const bindings = node.importClause?.namedBindings;
-    if (!bindings || !ts.isNamedImports(bindings)) return [];
-    return bindings.elements.map(
-        (element) => (element.propertyName ?? element.name).text
-    );
-}
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export const endpointLiteral = (literal) =>
+    new RegExp(`${escapeRegExp(literal)}(?![A-Za-z0-9_~-])`);
 
 // Violations d'un brouillon de réalisation au regard de son bon de travail.
 // `files` : nom → octets (Buffer). Chaque violation est un texte fermé.
@@ -130,20 +132,20 @@ export function realizationViolations({
         for (const [label, pattern] of FORBIDDEN_PATTERNS)
             if (pattern.test(text[name]))
                 violations.push(`${label} forbidden in ${name}: ${pattern}`);
+    // M-5 : un chemin de commande est refusé sur ses frontières de segment.
     for (const name of code)
         for (const literal of workOrder.forbidden_literals)
-            if (text[name].includes(literal))
+            if (endpointLiteral(literal).test(text[name]))
                 violations.push(
                     `endpoint literal forbidden in ${name}: ${literal}`
                 );
-    // Mécanique générée seulement : imports fermés, composition montée.
+    // Mécanique générée seulement : imports fermés, lus dans la syntaxe.
     const local = new Set(
         allowed
             .filter((name) => /\.ts$/.test(name) && !/\.spec\.ts$/.test(name))
             .map((name) => `./${name.replace(/\.ts$/, '')}`)
     );
     const composition = workOrder.composition.module;
-    let mounted = false;
     for (const name of Object.keys(text).filter((entry) =>
         entry.endsWith('.ts')
     )) {
@@ -163,34 +165,44 @@ export function realizationViolations({
                 violations.push(
                     `import not allowed by the work order in ${name}: ${JSON.stringify(specifier)}`
                 );
-            if (
-                name === 'page.component.ts' &&
-                specifier === composition &&
-                ts.isImportDeclaration(found.node) &&
-                importedNames(found.node).includes('PAGE_COMPOSITION_PROVIDERS')
-            )
-                mounted = true;
         }
     }
-    if (text['page.component.ts'] !== undefined && !mounted)
-        violations.push(
-            'page does not mount its composition (PAGE_COMPOSITION_PROVIDERS)'
-        );
-    // Aucun contrôle, état ou action inventé : chaque sélecteur est statique et
-    // déclaré par le contrat de page.
+    // Contrôles structurels : la spec ne s'exécute que dans l'oracle confiné ;
+    // la page, elle, est lue dans sa syntaxe et son gabarit.
     const ids = contractIds(pageContract.page);
+    const templateCheck = (source, name) =>
+        violations.push(
+            ...templateViolations({ name, text: source }).violations
+        );
+    for (const name of ['page.component.ts', 'page.component.spec.ts'])
+        if (text[name] !== undefined)
+            violations.push(
+                ...typescriptViolations({
+                    name,
+                    text: text[name],
+                    compositionModule: composition,
+                    page: name === 'page.component.ts',
+                    templateCheck,
+                })
+            );
+    if (text['page.component.html'] !== undefined)
+        violations.push(
+            ...templateViolations({
+                name: 'page.component.html',
+                text: text['page.component.html'],
+                declaredIds: ids,
+            }).violations
+        );
+    if (
+        text['page.component.ts'] !== undefined &&
+        /data-cmz-id/i.test(text['page.component.ts'])
+    )
+        violations.push(
+            'data-cmz-id belongs to the template, not page.component.ts'
+        );
     const markupFiles = Object.keys(text).filter(
         (name) => /\.(?:ts|html)$/.test(name) && !name.endsWith('.spec.ts')
     );
-    for (const name of markupFiles) {
-        if (/attr\.data-cmz-id|\[data-cmz-id\]\s*=/.test(text[name]))
-            violations.push(`data-cmz-id must be static in ${name}`);
-        for (const [, id] of text[name].matchAll(CMZ_ID))
-            if (!ids.has(id))
-                violations.push(
-                    `data-cmz-id not declared by the page contract in ${name}: ${JSON.stringify(id)}`
-                );
-    }
     if (text['realization-evidence.json'] !== undefined) {
         let evidence;
         try {
