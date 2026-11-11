@@ -9,6 +9,7 @@ import {
 import {
     externalExecutionError,
     externalQueryErrors,
+    externalReadFieldError,
     projectReadFields,
 } from './list-query-external-profile.mjs';
 import { validateListQueryV2Definition } from './list-query-v2.mjs';
@@ -293,7 +294,9 @@ function compileQuery(definitionOperation, backendContract, profile) {
     // X5 C2 : en extérieur, politique honnête et projection sur les champs lus.
     const external = profile === 'external';
     const executionError =
-        external && externalExecutionError(definitionOperation.execution);
+        external &&
+        (externalExecutionError(definitionOperation.execution) ??
+            externalReadFieldError(definitionOperation.read_model));
     if (executionError) fail(`${definitionOperation.id} ${executionError}`);
     const wireFields = (
         external

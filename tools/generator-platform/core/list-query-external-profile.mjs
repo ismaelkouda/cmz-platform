@@ -13,6 +13,8 @@
 // Le profil se décrit lui-même dans le modèle : `ignore` n'est valide
 // qu'avec TOUTE cette politique. Le profil interne garde `reject` (Π1).
 
+import { isPrototypeName } from './page-grammar/registries.mjs';
+
 export const EXTERNAL_LIST_QUERY_EXECUTION = Object.freeze({
     cache: Object.freeze({ mode: 'bypass' }),
     concurrency: 'latest-wins',
@@ -41,6 +43,18 @@ export function externalExecutionError(execution) {
     return undefined;
 }
 
+// E5 : chaque colonne reste lisible par la page. Un nom de champ lu ne peut pas
+// être un nom de prototype que la grammaire de page refuse (source unique :
+// isPrototypeName).
+export function externalReadFieldError(readModel) {
+    const field = (readModel?.fields ?? []).find((entry) =>
+        isPrototypeName(entry.name)
+    );
+    return field
+        ? `LIST_QUERY_EXTERNAL_READ_NAME: read field ${field.name} is a prototype name refused by the page grammar`
+        : undefined;
+}
+
 // Champs du fil à décoder : ceux que lit le modèle de lecture, dans l'ordre du
 // contrat. Appliqué AVANT la vérification de type, pour qu'un champ non lu
 // (imbriqué, booléen…) ne bloque pas la page.
@@ -67,5 +81,7 @@ export function externalQueryErrors(query, path) {
         );
     const execution = externalExecutionError(query.controller?.execution);
     if (execution) errors.push(`${path}.controller.execution: ${execution}`);
+    const name = externalReadFieldError(query.read_model);
+    if (name) errors.push(`${path}.read_model: ${name}`);
     return errors;
 }

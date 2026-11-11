@@ -42,7 +42,9 @@ for (const runtime of [observatory, equipment]) {
             label: 'Observed fixture row',
         };
 
-        function configure() {
+        function configure(
+            endpoints: readonly unknown[] = [runtime.fixture.endpoint]
+        ) {
             TestBed.configureTestingModule({
                 providers: [
                     provideHttpClient(
@@ -53,7 +55,7 @@ for (const runtime of [observatory, equipment]) {
                     provideHttpClientTesting(),
                     {
                         provide: runtime.SESSION_ENDPOINTS,
-                        useValue: [runtime.fixture.endpoint],
+                        useValue: endpoints,
                     },
                     {
                         provide: runtime.APPLICATION_SESSION,
@@ -159,6 +161,19 @@ for (const runtime of [observatory, equipment]) {
             await settle();
             http.expectOne(url).error(new ProgressEvent('error'));
             await settle();
+            expect(facade.state()).toBe('error');
+            expect(facade.error()?.statusCode).toBe(0);
+            expect(facade.items()).toEqual([]);
+        });
+
+        // X4-sécurité-3 G3 (C3a) : adresse résolue à l'exécution. Sans
+        // adresse déclarée, la page se construit, la lecture échoue en statut
+        // 0 et aucune requête ne part.
+        it('adresse de service absente : page construite, statut 0, aucune requête', async () => {
+            const { facade, http } = configure([]);
+            facade.load();
+            await settle();
+            http.expectNone(() => true);
             expect(facade.state()).toBe('error');
             expect(facade.error()?.statusCode).toBe(0);
             expect(facade.items()).toEqual([]);

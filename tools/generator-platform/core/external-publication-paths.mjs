@@ -8,6 +8,7 @@ import {
 import { sha256 } from './generation-manifest.mjs';
 
 export const ACTION_REQUEST_TOOL = 'generate:action-request';
+export const LIST_QUERY_TOOL = 'generate:list-query';
 export const PAGE_PLAN_TOOL = 'compile:page-execution-plan';
 export const PAGE_COMPOSITION_TOOL = 'generate:page-composition';
 export const REALIZATION_TOOL = 'page-realization';
@@ -18,6 +19,12 @@ export const actionOutputRoot = (actionId) =>
 // référence, et la composition consomme cette commande publiée.
 export const actionExecutionModelPath = (actionId) =>
     `${actionOutputRoot(actionId)}/execution-model.json`;
+
+// X5 C3a : une lecture publiée, symétrique d'une commande publiée.
+export const queryOutputRoot = (queryId) =>
+    `src/app/generated/queries/${queryId}`;
+export const queryExecutionModelPath = (queryId) =>
+    `${queryOutputRoot(queryId)}/execution-model.json`;
 
 export const pageOutputRoot = (pageId) => `src/app/generated/pages/${pageId}`;
 export const pagePlanPath = (pageId) =>
@@ -54,12 +61,13 @@ export function publishingTool(manifest, path) {
     );
 }
 
-// I-1 : pages dont le plan publié référence le modèle de cette commande. Une
-// nouvelle publication de la commande les rend périmées : le plan, puis la
+// I-1 : pages dont le plan publié référence le modèle de cette commande (ou de
+// cette lecture, X5 C3a). Une nouvelle publication les rend périmées : le plan, puis la
 // composition, sont à recompiler après elle (X2 → plan → composition), puis,
 // pour une page réalisée, le bon de travail à préparer et vérifier à nouveau.
-export async function pagesConsumingCommand(app, appName, actionId) {
-    const uri = `apps/${appName}/${actionExecutionModelPath(actionId)}`;
+// X5 C3a : même règle pour une lecture, par ses nœuds de lecture.
+async function pagesConsuming(app, appName, modelPath, nodesKey) {
+    const uri = `apps/${appName}/${modelPath}`;
     const pages = [];
     for (const { path } of app.manifest.generated_files) {
         const match = PAGE_PLAN.exec(path);
@@ -67,7 +75,7 @@ export async function pagesConsumingCommand(app, appName, actionId) {
             continue;
         const plan = JSON.parse((await ownedAppFile(app, path)).toString());
         if (
-            !(plan.command_nodes ?? []).some(
+            !(plan[nodesKey] ?? []).some(
                 (node) => node.primitive_ref?.uri === uri
             )
         )
@@ -89,3 +97,18 @@ export async function pagesConsumingCommand(app, appName, actionId) {
         left.page_id.localeCompare(right.page_id)
     );
 }
+
+export const pagesConsumingCommand = (app, appName, actionId) =>
+    pagesConsuming(
+        app,
+        appName,
+        actionExecutionModelPath(actionId),
+        'command_nodes'
+    );
+export const pagesConsumingQuery = (app, appName, queryId) =>
+    pagesConsuming(
+        app,
+        appName,
+        queryExecutionModelPath(queryId),
+        'query_nodes'
+    );

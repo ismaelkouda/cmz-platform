@@ -6,6 +6,7 @@ import {
     SESSION_FIXTURE_DOMAINS,
 } from './application-session-fixture.mjs';
 import { hash, TOOLS_ROOT } from './external-application-fixture.mjs';
+import { sessionCatalogueDefinition } from './session-catalogue-query.mjs';
 
 export { SESSION_FIXTURE_DOMAINS };
 
@@ -128,4 +129,27 @@ export async function writeExternalActionDefinitions(root, domain) {
     } finally {
         await rm(data.root, { recursive: true, force: true });
     }
+}
+
+// X5 C3a : définition de la lecture « catalogue » (profil extérieur), écrite
+// dans le produit avec la référence du contrat que porte le produit.
+export async function writeExternalQueryDefinition(root, domain, edit) {
+    const base = `descriptions/session-${domain}`;
+    const contractPath = `${base}/backend.json`;
+    const contractBytes = await readFile(join(root, contractPath));
+    const contract = JSON.parse(contractBytes.toString('utf8'));
+    const definition = await sessionCatalogueDefinition({
+        domain,
+        backendReference: {
+            uri: contractPath,
+            id: contract.contract.id,
+            version: contract.contract.version,
+            sha256: hash(contractBytes),
+        },
+    });
+    edit?.(definition);
+    const path = `${base}/queries/${domain}-catalogue.json`;
+    await mkdir(dirname(join(root, path)), { recursive: true });
+    await writeFile(join(root, path), json(definition));
+    return path;
 }

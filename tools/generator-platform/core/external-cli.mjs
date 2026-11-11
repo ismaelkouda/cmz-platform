@@ -63,10 +63,11 @@ export function publicationResult(result, appName, extra) {
     };
 }
 
-// I-1, I-3 : une nouvelle publication de la commande périme le plan, la
+// I-1, I-3 : une nouvelle publication de la commande (ou de la lecture, X5)
+// périme le plan, la
 // composition et le bon de travail des pages qui la consomment ; elles sont
 // nommées, pas modifiées.
-export function dependentPagesNotice(pages) {
+export function dependentPagesNotice(pages, subject = 'cette commande') {
     if (!pages?.length) return;
     const names = pages.map(
         ({ page_id, composition, realization }) =>
@@ -74,6 +75,6 @@ export function dependentPagesNotice(pages) {
     );
     const realized = pages.some(({ realization }) => realization);
     console.error(
-        `⚠ Pages qui consomment cette commande : ${names.join(', ')}. Après publication, relancer compile:page-execution-plan puis generate:page-composition pour chacune${realized ? ', puis prepare:page-realization et verify:page-realization --dry-run pour une page réalisée' : ''}.`
+        `⚠ Pages qui consomment ${subject} : ${names.join(', ')}. Après publication, relancer compile:page-execution-plan puis generate:page-composition pour chacune${realized ? ', puis prepare:page-realization et verify:page-realization --dry-run pour une page réalisée' : ''}.`
     );
 }

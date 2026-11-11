@@ -263,3 +263,26 @@ test('décodeur interne exécuté : un champ inconnu reste refusé (Π1)', async
         /unknown: declared field/
     );
 });
+
+test('E5 : un nom lu de prototype est refusé à la compilation et à la validation', async () => {
+    const data = await inputs({ execution: external() });
+    data.definition.operations[0].read_model.fields[0].name = '__proto__';
+    assert.throws(
+        () => compile(data, 'external'),
+        /LIST_QUERY_EXTERNAL_READ_NAME: read field __proto__/
+    );
+    const model = compile(await inputs({ execution: external() }), 'external');
+    const forged = structuredClone(model);
+    forged.queries[0].read_model.fields[0].name = 'toString';
+    assert.match(
+        validateListQueryV2ExecutionModel(forged).join('\n'),
+        /LIST_QUERY_EXTERNAL_READ_NAME: read field toString/
+    );
+    // Exclusion nommée de la grammaire : `name` et `length` restent lisibles.
+    const named = await inputs({ execution: external() });
+    named.definition.operations[0].read_model.fields[0].name = 'name';
+    assert.equal(
+        compile(named, 'external').queries[0].read_model.fields[0].name,
+        'name'
+    );
+});

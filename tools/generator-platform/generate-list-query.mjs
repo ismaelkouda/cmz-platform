@@ -16,6 +16,17 @@ import {
 } from './render-list-query-targets.mjs';
 import { computeListQueryV2Targets } from './list-query-v2-targets.mjs';
 import {
+    dependentPagesNotice,
+    parseClosedArguments,
+    publicationResult,
+    reportExternalFailure,
+} from './core/external-cli.mjs';
+import {
+    planExternalListQuery,
+    publicExternalListQueryPlan,
+    publishExternalListQuery,
+} from './core/external-list-query.mjs';
+import {
     loadJson,
     repositoryRoot,
     validateEvidence,
@@ -35,7 +46,24 @@ const schemaPaths = {
 
 const targetValues = ['all', 'angular', 'reactjs', 'angular-layered'];
 
+// X5 C3a : mode extérieur, fermé, sur le modèle de l'action-request (X2).
+// Plan relu obligatoire ; Angular avec session ; la sortie, le profil et les
+// liaisons d'hôte sont fixés par l'application du produit.
+export function parseExternalArguments(arguments_) {
+    return parseClosedArguments(
+        arguments_,
+        {
+            '--target-root': 'targetRoot',
+            '--app': 'appName',
+            '--definition': 'definitionPath',
+        },
+        'external list-query'
+    );
+}
+
 function parseArguments(arguments_) {
+    if (arguments_.includes('--target-root'))
+        return parseExternalArguments(arguments_);
     const options = { target: 'all' };
     for (let index = 0; index < arguments_.length; index += 1) {
         const argument = arguments_[index];
@@ -275,7 +303,32 @@ export async function generateListQuery({
 }
 
 function usage() {
-    return `Usage:\n  bun run generate:list-query --definition <file.json> --out <directory> [--target ${targetValues.join('|')}] [--dry-run | --apply <change_set_id>]\n`;
+    return `Usage:\n  bun run generate:list-query --definition <file.json> --out <directory> [--target ${targetValues.join('|')}] [--dry-run | --apply <change_set_id>]\n\n  External product, Angular with session only:\n  bun run generate:list-query --target-root <absolute> --app <app> --definition <product-relative.json> (--dry-run | --apply <plan_id>)\n`;
+}
+
+async function mainExternal(options) {
+    const common = {
+        workspaceRoot: repositoryRoot,
+        targetRoot: options.targetRoot,
+        appName: options.appName,
+        definitionPath: options.definitionPath,
+    };
+    if (options.dryRun) {
+        const plan = await planExternalListQuery(common);
+        process.stdout.write(
+            `${JSON.stringify(publicExternalListQueryPlan(plan), null, 2)}\n`
+        );
+        dependentPagesNotice(plan.dependent_pages, 'cette lecture');
+        return;
+    }
+    const result = await publishExternalListQuery({
+        ...common,
+        expectedPlanId: options.expectedPlanId,
+    });
+    process.stdout.write(
+        `${JSON.stringify(publicationResult(result, options.appName, { query_id: result.query_id, dependent_pages: result.dependent_pages }), null, 2)}\n`
+    );
+    dependentPagesNotice(result.dependent_pages, 'cette lecture');
 }
 
 async function main() {
@@ -284,6 +337,7 @@ async function main() {
         process.stdout.write(usage());
         return;
     }
+    if (options.external) return mainExternal(options);
     const result = await generateListQuery({
         definitionPath: options.definition,
         outputRoot: options.out,
@@ -316,5 +370,10 @@ if (
     process.argv[1] &&
     import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-    await main();
+    try {
+        await main();
+    } catch (error) {
+        if (!process.argv.includes('--target-root')) throw error;
+        reportExternalFailure(error);
+    }
 }

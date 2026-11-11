@@ -14,6 +14,7 @@ import { buildGenerationManifest } from './core/generation-manifest.mjs';
 import { parseContractGraph } from './core/backend-contract-reader.mjs';
 import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
+import { renderAngularExternalListQuery } from './renderers/angular-external-list-query.mjs';
 import { renderAngularListQueryV2 } from './renderers/angular-list-query-v2-renderer.mjs';
 import { renderReactListQueryV2 } from './renderers/react-list-query-v2-renderer.mjs';
 import {
@@ -62,12 +63,13 @@ function failOnErrors(label, errors) {
     }
 }
 
-function resolveBackendPath(uri) {
+// `root` : l'atelier, ou la racine du produit en extérieur (X5 C3a).
+function resolveBackendPath(uri, root = repositoryRoot) {
     if (typeof uri !== 'string') {
         throw new Error('backend contract uri must be a string');
     }
-    const path = resolve(repositoryRoot, uri);
-    const workspaceRelative = relative(repositoryRoot, path);
+    const path = resolve(root, uri);
+    const workspaceRelative = relative(root, path);
     if (
         workspaceRelative === '..' ||
         workspaceRelative.startsWith(`..${sep}`) ||
@@ -78,14 +80,14 @@ function resolveBackendPath(uri) {
     return path;
 }
 
-async function readBackendDocument(uri) {
-    const path = resolveBackendPath(uri);
+async function readBackendDocument(uri, root = repositoryRoot) {
+    const path = resolveBackendPath(uri, root);
     const metadata = await lstat(path);
     if (!metadata.isFile() || metadata.isSymbolicLink()) {
         throw new Error('backend contract must be a regular non-symlink file');
     }
     const [canonicalRoot, canonicalPath] = await Promise.all([
-        realpath(repositoryRoot),
+        realpath(root),
         realpath(path),
     ]);
     const canonicalRelative = relative(canonicalRoot, canonicalPath);
@@ -99,7 +101,11 @@ async function readBackendDocument(uri) {
     return readFile(canonicalPath);
 }
 
-async function computeListQueryV2Model(definitionPath, definitionDocument) {
+async function computeListQueryV2Model(
+    definitionPath,
+    definitionDocument,
+    { root = repositoryRoot, profile = 'internal' } = {}
+) {
     definitionDocument ??= await readFile(definitionPath);
     const definition = JSON.parse(definitionDocument.toString('utf8'));
     const [backendSchema, definitionSchema] = await Promise.all([
@@ -111,7 +117,8 @@ async function computeListQueryV2Model(definitionPath, definitionDocument) {
         validateJsonSchema(definition, definitionSchema)
     );
     const backendDocument = await readBackendDocument(
-        definition.backend_contract.uri
+        definition.backend_contract.uri,
+        root
     );
     // Lecture bornée du contrat (CI #389, X5) : même budget que tout lecteur.
     let backendContract;
@@ -129,12 +136,13 @@ async function computeListQueryV2Model(definitionPath, definitionDocument) {
     );
     failOnErrors(
         'invalid active backend provenance',
-        await verifyBackendContractSnapshots(backendContract, repositoryRoot)
+        await verifyBackendContractSnapshots(backendContract, root)
     );
     const model = compileListQueryV2ExecutionModel({
         definition,
         backendContractDocument: backendDocument,
         backendContractUri: definition.backend_contract.uri,
+        profile,
     });
     return { definition, model };
 }
@@ -219,5 +227,41 @@ export async function computeReactListQueryV2Target({
         model,
         artifactPlan,
         ...(await materializeReactTarget(model, artifactPlan)),
+    };
+}
+
+// X5 C3a : lecture d'un produit EXTÉRIEUR. Définition et contrat lus dans le
+// produit ; profil extérieur ; rendu extérieur seul. L'atelier ne type-check
+// pas cette sortie : le compilateur installé dans le produit le fait, sur le
+// candidat de publication (comme l'action-request extérieure).
+export async function computeExternalAngularListQueryTarget({
+    definitionPath,
+    definitionDocument,
+    artifactRoot,
+    hostBindings,
+}) {
+    const { definition, model } = await computeListQueryV2Model(
+        definitionPath,
+        definitionDocument,
+        { root: artifactRoot, profile: 'external' }
+    );
+    const artifactPlan = buildArtifactPlan(model, 'list-query-execution-model');
+    const profile = await loadJson(ANGULAR_PROFILE);
+    const rendered = renderAngularExternalListQuery(model, hostBindings(model));
+    const files = await canonicalizeGeneratedFiles(rendered.files);
+    const bound = bindRenderedArtifacts(artifactPlan, files, {
+        'src/index.ts': 'public-api',
+        [`src/${rendered.queryId}.decoder.ts`]: 'response-decoder',
+        [`src/${rendered.queryId}.facade.ts`]: 'execution-controller',
+        [`src/${rendered.queryId}.source.ts`]: 'integration-client',
+        'src/models.ts': 'domain-model',
+    });
+    return {
+        definition,
+        model,
+        artifactPlan,
+        ...rendered,
+        ...bound,
+        manifest: buildGenerationManifest(model, artifactPlan, profile, bound),
     };
 }

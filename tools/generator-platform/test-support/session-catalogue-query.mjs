@@ -8,11 +8,9 @@ import { readFile } from 'node:fs/promises';
 import { EXTERNAL_LIST_QUERY_EXECUTION } from '../core/list-query-external-profile.mjs';
 import { compileListQueryV2ExecutionModel } from '../core/list-query-v2-compiler.mjs';
 
-export async function compileSessionCatalogueQuery({
-    domain,
-    backend,
-    backendReference,
-}) {
+// Définition de la lecture « catalogue » (profil extérieur), aussi écrite dans
+// un produit extérieur par la fixture de C3a.
+export async function sessionCatalogueDefinition({ domain, backendReference }) {
     const definition = JSON.parse(
         await readFile(
             new URL(
@@ -40,6 +38,18 @@ export async function compileSessionCatalogueQuery({
         ],
     };
     query.execution = structuredClone(EXTERNAL_LIST_QUERY_EXECUTION);
+    return definition;
+}
+
+export async function compileSessionCatalogueQuery({
+    domain,
+    backend,
+    backendReference,
+}) {
+    const definition = await sessionCatalogueDefinition({
+        domain,
+        backendReference,
+    });
     return compileListQueryV2ExecutionModel({
         definition,
         backendContractDocument: backend.document,

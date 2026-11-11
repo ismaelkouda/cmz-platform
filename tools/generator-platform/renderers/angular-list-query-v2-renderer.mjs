@@ -92,7 +92,7 @@ export function renderAngularListQuerySource(query, binding, external = false) {
             : '';
     const httpImports = [
         'HttpClient',
-        ...(external ? ['HttpContext'] : []),
+        ...(external ? ['HttpContext', 'HttpErrorResponse'] : []),
         ...(hasQueryInput ? ['HttpParams'] : []),
     ].join(', ');
     const requestOptions = hasQueryInput
@@ -120,6 +120,43 @@ export function renderAngularListQuerySource(query, binding, external = false) {
     const context = external
         ? `new HttpContext().set(SKIP_AUTH, ${query.request_policy.authentication.mode === 'omit'})`
         : 'createListQueryRequestContext(REQUEST_POLICY, { isRefresh })';
+    // X4-sécurité-3 G3, profil extérieur : l'adresse de service est résolue
+    // dans le `defer`, à l'exécution. Une adresse absente devient une erreur
+    // de statut 0 sans requête ; la source, la façade et la page se
+    // construisent toujours.
+    if (external)
+        return `import { ${httpImports} } from '@angular/common/http';
+import { Injector, Service, inject } from '@angular/core';
+${hostImport}
+import { defer, map, throwError, type Observable } from 'rxjs';
+
+import { ${decoderName} } from './${query.id}.decoder';
+import type { ${modelImports} } from './models';
+
+function joinUrl(baseUrl: string, path: string): string {
+    return [baseUrl.replace(/\\/$/, ''), path.replace(/^\\//, '')].join('/');
+}
+
+${requestPath}
+
+@Service({ autoProvided: false })
+export class ${className} {
+    private readonly http = inject(HttpClient);
+    private readonly injector = inject(Injector);
+
+    readAll(${parameters}): Observable<${outputName}> {
+        return defer(() => {
+            let baseUrl: string;
+            try { baseUrl = this.injector.get(${binding.token}); }
+            catch { return throwError(() => new HttpErrorResponse({ status: 0, statusText: 'Service address unavailable' })); }
+            const context = ${context};
+            return this.http
+                .get<unknown>(joinUrl(baseUrl, ${path}), ${requestOptions})
+                .pipe(map(${decoderName}));
+        });
+    }
+}
+`;
     return `import { ${httpImports} } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 ${hostImport}

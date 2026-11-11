@@ -50,7 +50,7 @@ async function digest(root, path) {
 
 // Fermeture des entrées liées au plan : définition, contrat backend et sources
 // du contrat. Toute dérive périme le plan relu (T5).
-async function inputClosure(root, definitionPath, definition) {
+export async function inputClosure(root, definitionPath, definition) {
     const contractPath = inputFilePath(definition.backend_contract?.uri ?? '');
     const contract = JSON.parse(
         (await readProductFile(root, contractPath)).toString('utf8')
@@ -164,7 +164,7 @@ export function assertShellServiceBinding(endpoints, serviceId, contractId) {
 
 // M-2 : même identifiant de contrat, mêmes octets que ceux que les pages de
 // l'application déclarent ; sinon le plan de page le refuserait plus tard.
-async function assertDeclaredContract(app, contract) {
+export async function assertDeclaredContract(app, contract) {
     for (const { path } of app.manifest.generated_files) {
         if (!/^\.cmz\/pages\/page_[a-f0-9]{16}\.json$/.test(path)) continue;
         const page = JSON.parse((await ownedAppFile(app, path)).toString());
