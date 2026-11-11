@@ -7,15 +7,26 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { CSS_AT_RULES, CSS_FUNCTIONS } from './core/page-grammar/style.mjs';
-import {
-    BOUND_PROPERTIES,
-    ELEMENT_ATTRIBUTES,
-    STYLE_PROPERTIES,
-    TEMPLATE_ELEMENTS,
-    TEMPLATE_PIPES,
-} from './core/page-grammar/template.mjs';
+import { readFile } from 'node:fs/promises';
+
 import { grammarFixture } from './test-support/page-grammar-fixture.mjs';
+
+// MU1 : le corpus positif parcourt la copie épinglée des tables, pas la table
+// vivante ; retirer une entrée fait donc échouer sa variante.
+const {
+    css_at_rules: CSS_AT_RULES,
+    css_functions: CSS_FUNCTIONS,
+    bound_properties: BOUND_PROPERTIES,
+    element_attributes: ELEMENT_ATTRIBUTES,
+    style_properties: STYLE_PROPERTIES,
+    template_elements: TEMPLATE_ELEMENTS,
+    pipes: TEMPLATE_PIPES,
+} = JSON.parse(
+    await readFile(
+        new URL('./test-support/page-grammar-registries.json', import.meta.url),
+        'utf8'
+    )
+).approved;
 
 const TS = 'page.component.ts';
 const HTML = 'page.component.html';

@@ -28,6 +28,7 @@ import {
 } from '../test-support/external-application-fixture.mjs';
 import { assertProductOnlyImports } from '../test-support/external-publication-fixture.mjs';
 import { connexionRealizationFiles } from '../test-support/external-realization-fixture.mjs';
+import { createApplicationSessionFixture } from '../test-support/application-session-fixture.mjs';
 import {
     confinedNode,
     record,
@@ -216,6 +217,24 @@ export async function proveNativePageRealization(session, shell) {
     return { plan, page: JSON.parse(contract).page };
 }
 
+// X4-sécurité-3, N2 étendu : scénarios mesurés, dans cet ordre.
+export const N2_SCENARIOS = Object.freeze([
+    'chargement',
+    'hors-ligne-puis-en-ligne',
+    '4xx',
+    '5xx',
+    'reponse-invalide',
+    'serveur-injoignable',
+    'succes-transition',
+]);
+
+// Réponse de session du fixture fictif : même déclaration que le produit.
+async function sessionFixture(domain) {
+    const data = await createApplicationSessionFixture({ domain });
+    await rm(data.root, { recursive: true, force: true });
+    return data;
+}
+
 export function realizationBrowserScript() {
     return `import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -269,6 +288,8 @@ try {
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 const extra = new Map();
 const served = [];
+// X4-config : sans amont joignable, le relais répond 502 ; N2 change ce mode.
+let apiMode = 502;
 const server = createServer(async (request, response) => {
     let pathname = '/';
     try {
@@ -278,9 +299,25 @@ const server = createServer(async (request, response) => {
         // X4-config : le serveur de la preuve joue le relais sans amont, comme
         // nginx sans service joignable (502) ; il ne sert jamais la page sous /api/.
         if (pathname.startsWith('/api/')) {
-            status(502);
-            response.writeHead(502);
-            return response.end();
+            // X4-sécurité-3, N2 : réponse du relais choisie par scénario.
+            if (apiMode === 'unreachable') {
+                status(0);
+                return request.socket.destroy();
+            }
+            if (apiMode === 'invalid') {
+                status(200);
+                response.writeHead(200, { 'content-type': 'application/json' });
+                return response.end('pas du JSON');
+            }
+            if (apiMode === 'success') {
+                status(200);
+                response.writeHead(200, { 'content-type': 'application/json' });
+                return response.end(JSON.stringify(fixture.successBody));
+            }
+            const code = typeof apiMode === 'number' ? apiMode : 502;
+            status(code);
+            response.writeHead(code, { 'content-type': 'application/json' });
+            return response.end('{}');
         }
         if (extra.has(pathname)) {
             const [type, body] = extra.get(pathname);
@@ -399,6 +436,64 @@ try {
     await offlineContext.close();
     currentPage = page;
     process.stdout.write('CMZ_CONNECTIVITY=online:ready offline:' + fixture.offlineState + '\\n');
+    // X4-sécurité-3, N2 étendu (conception v2 §3.5) : aucune soumission native,
+    // y compris en erreur. Par scénario, sur une page neuve : un seul
+    // chargement de document, aucune URL de requête contenant une valeur
+    // saisie, URL sans chaîne de requête, rien sur la seconde origine, aucune
+    // fenêtre ouverte, URL finale parmi les routes déclarées.
+    const routes = new Set(fixture.routes);
+    const scenario = async (label, mode, act) => {
+        stage = 'n2-' + label;
+        apiMode = mode;
+        const scenarioContext = await instrumented(true);
+        const documents = [];
+        const urls = [];
+        scenarioContext.on('request', (request) => {
+            urls.push(request.url());
+            if (request.isNavigationRequest() && request.frame().parentFrame() === null) documents.push(request.method());
+        });
+        const scenarioPage = await scenarioContext.newPage();
+        currentPage = scenarioPage;
+        const foreignBefore = foreignHits.length;
+        await scenarioPage.goto(origin + fixture.entryPath);
+        await scenarioPage.getByRole('heading', { name: fixture.entryTitle, exact: true }).waitFor();
+        await scenarioPage.locator('[data-cmz-id="' + fixture.readyState + '"]').waitFor();
+        const markers = fixture.controls.map((control) => 'n2' + label.replace(/[^a-z0-9]/g, '') + control.id.replace(/[^a-z0-9]/g, ''));
+        await act(scenarioPage, scenarioContext, markers);
+        await scenarioPage.waitForTimeout(700);
+        const final = new URL(scenarioPage.url());
+        assert.deepEqual(documents, ['GET'], label + ' : soumission native ou rechargement');
+        for (const marker of markers) assert.equal(urls.some((url) => url.includes(marker)), false, label + ' : valeur saisie dans une URL');
+        assert.equal(final.search, '', label + ' : chaîne de requête');
+        assert.equal(foreignHits.length - foreignBefore, 0, label + ' : seconde origine');
+        assert.equal(scenarioContext.pages().length, 1, label + ' : fenêtre ouverte');
+        assert.ok(routes.has(final.pathname), label + ' : URL finale hors des routes déclarées');
+        await scenarioContext.close();
+        process.stdout.write('CMZ_N2=' + label + ' documents=1 typed_in_url=0 query=0 arrived_on_second_origin=0 windows=0 route=' + final.pathname + '\\n');
+    };
+    const send = async (target, markers) => {
+        for (const [index, control] of fixture.controls.entries())
+            await target.getByLabel(control.label, { exact: true }).fill(markers[index]);
+        await target.getByRole('button', { name: fixture.actionLabel, exact: true }).click();
+    };
+    const failed = (target) => target.locator('[data-cmz-id="' + fixture.errorState + '"]').waitFor();
+    await scenario('chargement', 502, async () => undefined);
+    await scenario('hors-ligne-puis-en-ligne', 502, async (target, scenarioContext) => {
+        await scenarioContext.setOffline(true);
+        await target.locator('[data-cmz-id="' + fixture.offlineState + '"]').waitFor();
+        await scenarioContext.setOffline(false);
+        await target.locator('[data-cmz-id="' + fixture.readyState + '"]').waitFor();
+    });
+    for (const [label, mode] of [['4xx', 400], ['5xx', 500], ['reponse-invalide', 'invalid'], ['serveur-injoignable', 'unreachable']])
+        await scenario(label, mode, async (target, _context, markers) => {
+            await send(target, markers);
+            await failed(target);
+        });
+    await scenario('succes-transition', 'success', async (target, _context, markers) => {
+        await send(target, markers);
+        await target.waitForURL((url) => url.pathname !== fixture.entryPath, { timeout: 10_000 });
+    });
+    apiMode = 502;
     // Page témoin piégée, sous la même politique (en-tête du index.html construit).
     stage = 'trap';
     await context.unroute('**/*');
@@ -517,6 +612,12 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
             actionLabel: action.label,
             controls: page.controls.map(({ id, label }) => ({ id, label })),
             csp: cspTrapFixture(),
+            // X4-sécurité-3, N2 : routes déclarées et réponse de session du
+            // fixture fictif (même déclaration que le produit).
+            routes: (input.design.experiences[0].session?.routes ?? []).map(
+                (route) => route.path
+            ),
+            successBody: (await sessionFixture(domain)).wireResponse,
         };
         assert.ok(fixture.offlineState, 'État hors ligne absent du contrat');
         const files = {
@@ -578,6 +679,24 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
             );
             session.lines.push(
                 `PASS X4/${domain}/connectivity emulated: online shows the ready state; offline shows the offline state, submit disabled, no request`
+            );
+            // X4-sécurité-3, N2 étendu : un scénario par ligne, tous présents.
+            const scenarios = opened.stdout
+                .split('\n')
+                .filter((entry) => entry.startsWith('CMZ_N2='));
+            assert.deepEqual(
+                scenarios.map(
+                    (entry) => entry.slice('CMZ_N2='.length).split(' ')[0]
+                ),
+                N2_SCENARIOS,
+                'Scénarios N2 incomplets'
+            );
+            for (const entry of scenarios)
+                session.lines.push(
+                    `PASS X4S3/${domain}/n2 ${entry.slice('CMZ_N2='.length)}`
+                );
+            session.lines.push(
+                `X4S3/${domain}/n2 sans-adresse-de-service non reproductible dans le produit construit (adresse toujours de même origine depuis X4-config) : couvert par la spec de contrat P-A3 et la spec de page`
             );
             // X4-sécurité : politique mesurée par l'événement de violation.
             const line = opened.stdout

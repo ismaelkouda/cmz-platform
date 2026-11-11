@@ -43,6 +43,9 @@ const REQUIRED_STANDALONE_SCRIPTS = [
     'check:nginx-relay',
     'check:nginx-digest',
     'check:nginx-relay-browser',
+    // X4-sécurité-3, N4 : témoins natifs de la soumission, à chaque montée
+    // d'Angular (O-S-V), sur la preuve native.
+    'check:page-submit-witnesses',
     'check:library-setup-integration',
     'check:bundle-metrics-freshness',
 ];
