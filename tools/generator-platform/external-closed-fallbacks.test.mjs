@@ -264,6 +264,16 @@ test('balayage : aucun repli sans sa justification sur le site', async () => {
 // un marqueur « repli justifié » ne peut donc pas le contourner. Portée par
 // motif de fichier, sans liste de sites : la grammaire et la chaîne de
 // sécurité de la réalisation.
+//
+// G-1 (Fable) : un balayage par nom ne voit pas une clé non écrite. Sont donc
+// refusées PAR CONSTRUCTION dans ce périmètre, quel que soit le nom lu : toute
+// mention de Reflect, getOwnPropertyDescriptor(s) (alias et crochets compris),
+// et toute clé calculée en déstructuration. La déstructuration est suivie à
+// toute profondeur, en déclaration comme en affectation.
+// Limites DÉCLARÉES, non bannies pour éviter les faux positifs (`arr[i]`,
+// `{ ...options }`) : un accès par crochets à clé non littérale
+// (`parsed[key]`) et l'énumération (Object.entries/values/keys, décomposition
+// `...`) ne sont pas vus. Un test les épingle.
 const PARSER_FIELDS = new Set([
     'errors',
     'directives',
@@ -282,13 +292,37 @@ const guardedByParserList = (node) =>
     node.parent.arguments[0] === node &&
     ts.isIdentifier(node.parent.expression) &&
     node.parent.expression.text === 'parserList';
+const REFLECTIVE_NAMES = new Set([
+    'Reflect',
+    'getOwnPropertyDescriptor',
+    'getOwnPropertyDescriptors',
+]);
+// Un littéral objet ou tableau est une cible de déstructuration s'il est, à
+// n'importe quelle profondeur, le côté gauche d'une affectation `=` ou la
+// variable d'une boucle for…of / for…in.
 const destructuringTarget = (literal) => {
     const parent = literal.parent;
-    return (
+    if (!parent) return false;
+    if (
         ts.isBinaryExpression(parent) &&
-        parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-        parent.left === literal
-    );
+        parent.operatorToken.kind === ts.SyntaxKind.EqualsToken
+    )
+        return parent.left === literal;
+    if (
+        (ts.isForOfStatement(parent) || ts.isForInStatement(parent)) &&
+        parent.initializer === literal
+    )
+        return true;
+    if (
+        ts.isParenthesizedExpression(parent) ||
+        ts.isArrayLiteralExpression(parent) ||
+        ts.isSpreadElement(parent) ||
+        ts.isSpreadAssignment(parent)
+    )
+        return destructuringTarget(parent);
+    if (ts.isPropertyAssignment(parent) && parent.initializer === literal)
+        return destructuringTarget(parent.parent);
+    return false;
 };
 
 function parserFieldReads(text, name = 'module.mjs') {
@@ -300,13 +334,30 @@ function parserFieldReads(text, name = 'module.mjs') {
         ts.ScriptKind.JS
     );
     const reads = [];
-    const read = (node, guarded) =>
+    const read = (node, guarded, kind = 'field') =>
         reads.push({
             line: file.getLineAndCharacterOfPosition(node.getStart()).line + 1,
             guarded,
+            kind,
         });
     const visit = (node) => {
-        if (
+        if (REFLECTIVE_NAMES.has(literalName(node)))
+            read(node, false, 'reflective');
+        else if (
+            ts.isBindingElement(node) &&
+            ts.isObjectBindingPattern(node.parent) &&
+            node.propertyName &&
+            ts.isComputedPropertyName(node.propertyName)
+        )
+            read(node, false, 'computed-key');
+        else if (
+            ts.isPropertyAssignment(node) &&
+            ts.isComputedPropertyName(node.name) &&
+            ts.isObjectLiteralExpression(node.parent) &&
+            destructuringTarget(node.parent)
+        )
+            read(node, false, 'computed-key');
+        else if (
             ts.isPropertyAccessExpression(node) &&
             PARSER_FIELDS.has(node.name.text)
         )
@@ -364,6 +415,49 @@ test('garde structurel : chaque forme de lecture d’un champ de l’analyseur e
         );
     // Un champ du même nom écrit (et non lu) n'est pas une lecture.
     assert.deepEqual(verdict('const result = { errors: [] };'), []);
+    // G-1 : refus par construction, quel que soit le nom lu.
+    const kinds = (code) =>
+        parserFieldReads(code)
+            .filter(({ guarded }) => !guarded)
+            .map(({ kind }) => kind);
+    for (const [code, kind] of [
+        ["Reflect.get(parsed, 'errors');", 'reflective'],
+        ['const read = Reflect.get;', 'reflective'],
+        ["Reflect['get'](parsed, key);", 'reflective'],
+        ["globalThis['Reflect'].get(parsed, key);", 'reflective'],
+        ["Object.getOwnPropertyDescriptor(parsed, 'errors');", 'reflective'],
+        ['Object.getOwnPropertyDescriptors(parsed);', 'reflective'],
+        ["Object['getOwnPropertyDescriptor'](parsed, key);", 'reflective'],
+        ['const { getOwnPropertyDescriptor: d } = Object;', 'reflective'],
+        ["const { ['errors']: found } = parsed;", 'computed-key'],
+        ['const { [key]: found } = parsed;', 'computed-key'],
+        ['let found; ({ [key]: found } = parsed);', 'computed-key'],
+    ])
+        assert.ok(kinds(code).includes(kind), `${code} → ${kinds(code)}`);
+    // Déstructuration imbriquée, à toute profondeur.
+    for (const code of [
+        'const { a: { b: { errors } } } = parsed;',
+        'function f({ a: { directives } }) {}',
+        'let errors; ({ a: { errors } } = parsed);',
+        'let errors; ({ a: { b: { errors } } } = parsed);',
+        'let errors; ({ a: [{ errors }] } = parsed);',
+        'let errors; ({ a: { errors } = {} } = parsed);',
+        'let errors; [{ errors }] = list;',
+        'for ({ errors } of list);',
+    ])
+        assert.ok(
+            verdict(code).some((guarded) => !guarded),
+            code
+        );
+    // Une valeur par défaut ÉCRITE n'est pas une cible de déstructuration.
+    assert.deepEqual(
+        verdict('let x; ({ a: x = { errors: [] } } = parsed);'),
+        []
+    );
+    // Limites DÉCLARÉES (G-1) : clé non littérale et énumération non vues.
+    assert.deepEqual(verdict('parsed[key];'), []);
+    assert.deepEqual(verdict('Object.entries(parsed);'), []);
+    assert.deepEqual(verdict('const copy = { ...parsed };'), []);
 });
 
 test('garde structurel : les champs du contrat de l’analyseur ne se lisent que par parserList', async () => {
@@ -384,9 +478,9 @@ test('garde structurel : les champs du contrat de l’analyseur ne se lisent que
             new URL(`./${path}`, import.meta.url),
             'utf8'
         );
-        for (const { line, guarded } of parserFieldReads(text, path)) {
-            reads++;
-            if (!guarded) unguarded.push(`${path}:${line}`);
+        for (const { line, guarded, kind } of parserFieldReads(text, path)) {
+            if (kind === 'field') reads++;
+            if (!guarded) unguarded.push(`${path}:${line} (${kind})`);
         }
     }
     assert.ok(reads >= 7, `lectures trouvées : ${reads}`);
