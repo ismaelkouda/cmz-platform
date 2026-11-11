@@ -26,7 +26,10 @@ import {
 import { realizationViolations } from '../core/external-page-realization-rules.mjs';
 import { sha256 } from '../core/generation-manifest.mjs';
 import { sessionApp } from './external-publication-fixture.mjs';
-import { connexionRealizationFiles } from './external-realization-fixture.mjs';
+import {
+    connexionOriginalRealizationFiles,
+    connexionRealizationFiles,
+} from './external-realization-fixture.mjs';
 import { writeExternalActionDefinitions } from './external-session-fixture.mjs';
 import { loadJson, repositoryRoot } from '../validate-ir.mjs';
 
@@ -130,6 +133,18 @@ export async function realization(product, workOrder) {
     });
 }
 
+// Page d'origine, à l'octet (base de corroboration du rejeu).
+export async function originalRealization(product, workOrder) {
+    const contract = await readFile(
+        join(product.app, workOrder.page_contract.path)
+    );
+    return connexionOriginalRealizationFiles({
+        pageContract: JSON.parse(contract),
+        contractSha256: sha256(contract),
+        composition: workOrder.composition.module,
+    });
+}
+
 export async function writeDraft(product, workOrder, files) {
     const root = join(product.root, workOrder.draft_root);
     await rm(root, { recursive: true, force: true });
@@ -167,5 +182,10 @@ export async function realizationChecker(product) {
             evidenceSchema,
             environment: environmentOf(product),
         });
-    return { workOrder, good, violationsOf };
+    // Couches de X4-sécurité-2 seules (D6 : renfort) : violations sans le
+    // préfixe `grammar:` de la grammaire fermée, prouvée à part.
+    const layersOf = (files) =>
+        violationsOf(files).filter((entry) => !entry.startsWith('grammar:'));
+    const original = await originalRealization(product, workOrder);
+    return { workOrder, good, original, violationsOf, layersOf };
 }

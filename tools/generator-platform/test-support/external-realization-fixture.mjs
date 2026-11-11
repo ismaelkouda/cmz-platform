@@ -330,6 +330,205 @@ ${action.input_bindings.map((binding) => `            ${binding.target_name}: 'v
 `;
 }
 
+// X4-sécurité-3, G5 : page de référence adaptée à la grammaire fermée (écarts
+// E1 à E12 de la conception v1 §2, soumission sans levée de la v2 §3.2). La
+// connectivité vient de la composition ; le gabarit passe `ref.value` et
+// `(submit)` appelle une méthode typée `false`.
+function adaptedComponent(page, composition) {
+    const states = Object.fromEntries(
+        page.states.map((state) => [state.kind, state])
+    );
+    const [action] = page.actions.filter((entry) => entry.kind === 'backend');
+    return `import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    inject,
+    signal,
+} from '@angular/core';
+
+import {
+    PAGE_COMPOSITION_PROVIDERS,
+    PageComposition,
+} from '${composition}';
+
+type PageState = ${page.states.map((state) => literal(state.id)).join(' | ')} | 'submitting';
+
+const ANNOUNCEMENTS: Readonly<Record<PageState, string>> = {
+${page.states.map((state) => `    ${literal(state.id)}: ${literal(state.announcement)},`).join('\n')}
+    submitting: '',
+};
+
+@Component({
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-page-${page.id.slice(-8)}',
+    templateUrl: './page.component.html',
+    styleUrl: './page.component.scss',
+    providers: [...PAGE_COMPOSITION_PROVIDERS],
+    host: {
+        class: 'page-host',
+    },
+})
+export class PageComponent {
+    private readonly composition = inject(PageComposition);
+    private readonly outcome = signal<PageState>(${literal(states.ready.id)});
+    protected readonly state = computed<PageState>(() =>
+        this.composition.online() ? this.outcome() : ${literal(states.offline.id)}
+    );
+    protected readonly announcement = computed(
+        () => ANNOUNCEMENTS[this.state()]
+    );
+    protected readonly values = signal<Readonly<Record<string, string>>>({});
+    protected readonly fieldErrors = computed(() =>
+        this.composition.${action.id}.fieldErrors()
+    );
+
+    protected edit(control: string, value: string): void {
+        this.values.update((current) => ({ ...current, [control]: value }));
+        if (this.outcome() === ${literal(states.error.id)}) this.outcome.set(${literal(states.ready.id)});
+    }
+
+    protected submit(): false {
+        if (this.state() !== ${literal(action.available_in_state_ids[0])}) {
+            return false;
+        }
+        this.outcome.set('submitting');
+        const values = this.values();
+        this.composition.${action.id}
+            .submit({
+${action.input_bindings.map((binding) => `                ${binding.target_name}: values?.[${literal(binding.control_id)}] ?? '',`).join('\n')}
+            })
+            .subscribe({
+                next: () => this.outcome.set(${literal(action.success_state_id)}),
+                error: () => this.outcome.set(${literal(action.error_state_id)}),
+            });
+        return false;
+    }
+}
+`;
+}
+
+function adaptedTemplate(page) {
+    return template(page)
+        .replace(' (submit)="submit($event)">', ' (submit)="submit()">')
+        .replaceAll(
+            /\n(\s+)\[attr\.aria-invalid\]="fieldErrors\(\)\['([a-z0-9_-]+)'\] \? true : null"\n\s+\(input\)="edit\('\2', \$event\)"/g,
+            (_, indent, id) =>
+                `\n${indent}#${id.replaceAll('-', '_')}\n${indent}[attr.aria-invalid]="fieldErrors()['${id}'] ? true : null"\n${indent}(input)="edit('${id}', ${id.replaceAll('-', '_')}.value)"`
+        );
+}
+
+function adaptedSpec(page, composition) {
+    const states = Object.fromEntries(
+        page.states.map((state) => [state.kind, state])
+    );
+    const [action] = page.actions.filter((entry) => entry.kind === 'backend');
+    const controls = page.controls.map((control) => control.id);
+    return `import { signal } from '@angular/core';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { Subject, throwError, type Observable } from 'rxjs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { PageComposition } from '${composition}';
+import { PageComponent } from './page.component';
+
+type Submit = (input: Readonly<Record<string, string>>) => Observable<unknown>;
+
+function render(submit: Submit, fieldErrors: Readonly<Record<string, readonly string[]>> = {}) {
+    const online = signal(true);
+    TestBed.overrideComponent(PageComponent, {
+        set: {
+            providers: [
+                {
+                    provide: PageComposition,
+                    useFactory: () => ({ online, ${action.id}: { submit, fieldErrors: signal(fieldErrors) } }),
+                },
+            ],
+        },
+    });
+    const fixture = TestBed.createComponent(PageComponent);
+    fixture.detectChanges();
+    return { fixture, online };
+}
+
+function type(fixture: ComponentFixture<PageComponent>, id: string, value: string): void {
+    const input = fixture.nativeElement.querySelector(\`[data-cmz-id="\${id}"]\`) as HTMLInputElement;
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+}
+
+function send(fixture: ComponentFixture<PageComponent>): Event {
+    const event = new Event('submit', { cancelable: true });
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement).dispatchEvent(event);
+    fixture.detectChanges();
+    return event;
+}
+
+const visible = (fixture: ComponentFixture<PageComponent>, id: string): boolean =>
+    fixture.nativeElement.querySelector(\`[data-cmz-id="\${id}"]\`) !== null;
+
+describe('Page ${page.id}', () => {
+    afterEach(() => TestBed.resetTestingModule());
+
+    it('affiche le titre, les champs étiquetés et l’état initial', () => {
+        const { fixture } = render(vi.fn());
+        const root = fixture.nativeElement as HTMLElement;
+        expect(root.querySelector('h1')?.textContent?.trim()).toBe(${literal(page.title)});
+        for (const id of ${JSON.stringify(controls)}) {
+            const input = root.querySelector(\`[data-cmz-id="\${id}"]\`) as HTMLInputElement;
+            expect(root.querySelector(\`label[for="\${input.id}"]\`)).not.toBeNull();
+            expect(input.required).toBe(true);
+        }
+        expect(visible(fixture, ${literal(states.ready.id)})).toBe(true);
+    });
+
+    it('envoie les valeurs saisies par la composition, empêche la soumission native et passe à l’état de succès', () => {
+        const result = new Subject<void>();
+        const submit = vi.fn(() => result.asObservable());
+        const { fixture } = render(submit);
+${action.input_bindings.map((binding) => `        type(fixture, ${literal(binding.control_id)}, 'valeur-${binding.control_id}');`).join('\n')}
+        expect(send(fixture).defaultPrevented).toBe(true);
+        expect(submit).toHaveBeenCalledWith({
+${action.input_bindings.map((binding) => `            ${binding.target_name}: 'valeur-${binding.control_id}',`).join('\n')}
+        });
+        result.next();
+        result.complete();
+        fixture.detectChanges();
+        expect(visible(fixture, ${literal(action.success_state_id)})).toBe(true);
+    });
+
+    it('montre l’erreur et les erreurs de champ quand la commande échoue', () => {
+        const result = new Subject<void>();
+        const { fixture } = render(() => result.asObservable(), { ${literal(controls[0])}: ['Valeur refusée.'] });
+        expect(send(fixture).defaultPrevented).toBe(true);
+        result.error(new Error('refus'));
+        fixture.detectChanges();
+        expect(visible(fixture, ${literal(action.error_state_id)})).toBe(true);
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('Valeur refusée.');
+    });
+
+    it('sans adresse de service, la commande échoue et la page passe à l’état d’erreur', () => {
+        const { fixture } = render(() => throwError(() => new Error('transport')));
+        expect(send(fixture).defaultPrevented).toBe(true);
+        expect(visible(fixture, ${literal(action.error_state_id)})).toBe(true);
+    });
+
+    it('signale la perte du réseau et bloque l’envoi', () => {
+        const submit = vi.fn();
+        const { fixture, online } = render(submit);
+        online.set(false);
+        fixture.detectChanges();
+        expect(visible(fixture, ${literal(states.offline.id)})).toBe(true);
+        expect(send(fixture).defaultPrevented).toBe(true);
+        expect(submit).not.toHaveBeenCalled();
+        online.set(true);
+        fixture.detectChanges();
+        expect(visible(fixture, ${literal(states.ready.id)})).toBe(true);
+    });
+});
+`;
+}
+
 function evidence(page, contractSha256) {
     const map = (ids) =>
         ids.map((id) => ({ id, selector: `[data-cmz-id="${id}"]` }));
@@ -353,7 +552,9 @@ function evidence(page, contractSha256) {
 
 // Fichiers de la réalisation, écrits dans le brouillon du produit indiqué par
 // le bon de travail ; `composition` est le module que la page doit monter.
-export function connexionRealizationFiles({
+// Page d'origine (X4 à X4-sécurité-2), gardée à l'octet : base de
+// corroboration du rejeu des corpus (conception v2 §7, point 3).
+export function connexionOriginalRealizationFiles({
     pageContract,
     contractSha256,
     composition,
@@ -364,6 +565,24 @@ export function connexionRealizationFiles({
         'page.component.scss': styles(),
         'page.component.spec.ts': spec(page, composition),
         'page.component.ts': component(page, composition),
+        'realization-evidence.json':
+            JSON.stringify(evidence(page, contractSha256), null, 2) + '\n',
+    };
+}
+
+// Page de référence (X4-sécurité-3) : la page adaptée, acceptée par la
+// grammaire ; c'est la base de preuve du rejeu.
+export function connexionRealizationFiles({
+    pageContract,
+    contractSha256,
+    composition,
+}) {
+    const { page } = pageContract;
+    return {
+        'page.component.html': adaptedTemplate(page),
+        'page.component.scss': styles(),
+        'page.component.spec.ts': adaptedSpec(page, composition),
+        'page.component.ts': adaptedComponent(page, composition),
         'realization-evidence.json':
             JSON.stringify(evidence(page, contractSha256), null, 2) + '\n',
     };

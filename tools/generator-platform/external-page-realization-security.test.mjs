@@ -32,7 +32,6 @@ import {
 } from './core/external-page-realization.mjs';
 import { FORBIDDEN_PATTERNS } from './core/external-page-realization-rules.mjs';
 import { pagePlanPath } from './core/external-publication-paths.mjs';
-import { EXTERNAL_CSP_DIRECTIVES } from './renderers/external-content-security-policy.mjs';
 import { snapshotTree } from './test-support/external-application-fixture.mjs';
 import { MANIFEST } from './test-support/external-publication-fixture.mjs';
 import {
@@ -44,10 +43,11 @@ import {
     workOrderOf,
     writeDraft,
 } from './test-support/external-realization-product.mjs';
+import { VALIDATOR_PROBES } from './test-support/external-realization-probes.mjs';
 import {
-    probedFiles,
-    VALIDATOR_PROBES,
-} from './test-support/external-realization-probes.mjs';
+    adaptedVerdict,
+    originalVerdict,
+} from './test-support/external-realization-replay.mjs';
 import { SECOND_PROBES } from './test-support/external-realization-second-probes.mjs';
 
 const TS = 'page.component.ts';
@@ -55,93 +55,104 @@ const HTML = 'page.component.html';
 const SCSS = 'page.component.scss';
 const SPEC = 'page.component.spec.ts';
 
-test('X4-sécurité : les 74 pages interdites du validateur (et 3 témoins) rejouées, chacune bloquée par un mécanisme nommé', async (t) => {
-    const product = await composedProduct(t, 'observatory');
-    await prepare(product);
-    const workOrder = await workOrderOf(product);
-    const good = await realization(product, workOrder);
-    await writeDraft(product, workOrder, good);
-    await planExternalPageRealization(product.options);
-    const directives = new Map(EXTERNAL_CSP_DIRECTIVES);
-    const counts = {};
-    for (const probe of VALIDATOR_PROBES) {
-        await writeDraft(product, workOrder, probedFiles(good, probe));
-        const failure = await planExternalPageRealization(product.options).then(
-            () => null,
-            (error) => error
-        );
-        counts[probe.mechanism] = (counts[probe.mechanism] ?? 0) + 1;
-        if (probe.mechanism === 'static') {
-            assert.ok(failure?.violations?.length, `${probe.id} accepté`);
-            continue;
-        }
-        // Apparence libre : acceptée par les règles, gouvernée par la
-        // politique de la coque (mesurée dans le navigateur par la preuve
-        // native), ou ressource de même origine sans sortie.
-        assert.equal(failure, null, `${probe.id} : ${failure?.message}`);
-        if (probe.mechanism === 'same-origin') continue;
-        const directive = probe.mechanism.slice('csp:'.length);
-        assert.match(
-            directives.get(directive) ?? '',
-            /^'self'(?: data:| 'unsafe-inline')?$/
+// X4-sécurité-3 (v1 §6.5, v2 §7 point 3) : rejeu par nom. La base adaptée,
+// acceptée, porte la preuve : chaque sonde donne au moins une violation
+// `grammar:`, toutes commençant dans le texte inséré. La base d'origine, à
+// l'octet, corrobore par attribution différentielle ; un écart d'alignement
+// y serait signalé sans faire échouer la preuve.
+async function replayByName(t, domain, probes) {
+    const product = await composedProduct(t, domain);
+    const { workOrder, good, original } = await realizationChecker(product);
+    const pageContract = JSON.parse(
+        await readFile(join(product.app, workOrder.page_contract.path), 'utf8')
+    );
+    const page = (files) => ({
+        [TS]: files[TS],
+        [HTML]: files[HTML],
+        [SCSS]: files[SCSS],
+    });
+    const context = { workOrder, pageContract };
+    const verdicts = [];
+    for (const probe of probes) {
+        const proof = adaptedVerdict({ base: page(good), probe, ...context });
+        const corroboration = originalVerdict({
+            base: page(original),
+            probe,
+            ...context,
+        });
+        verdicts.push({ id: probe.id, proof, corroboration });
+    }
+    return verdicts;
+}
+
+function assertReplay(t, verdicts, expected) {
+    assert.equal(verdicts.length, expected);
+    for (const { id, proof } of verdicts) {
+        assert.equal(proof.refused, true, `${id} acceptée par la grammaire`);
+        assert.equal(
+            proof.contained,
+            true,
+            `${id} : violation hors du texte inséré ${proof.outside.join(', ')}`
         );
     }
-    assert.deepEqual(counts, {
-        static: 64,
-        'csp:img-src': 8,
-        'csp:style-src': 2,
-        'csp:font-src': 1,
-        'same-origin': 2,
-    });
+    const misaligned = verdicts
+        .filter(({ corroboration }) => !corroboration.aligned)
+        .map(({ id }) => id);
+    t.diagnostic(
+        `base d'origine : ${verdicts.length - misaligned.length}/${verdicts.length} attribuées et alignées${misaligned.length ? ` ; écarts : ${misaligned.join(', ')}` : ''}`
+    );
+}
+
+test('X4-sécurité-3 : les 77 pages du validateur (74 et 3 témoins) rejouées par nom, refusées par la grammaire dans le texte inséré', async (t) => {
+    const verdicts = await replayByName(t, 'observatory', VALIDATOR_PROBES);
+    assertReplay(t, verdicts, 77);
     assert.equal(
         VALIDATOR_PROBES.filter((probe) => probe.id.startsWith('C-')).length,
         3
     );
 });
 
-// X4-sécurité 2 : les 127 nouvelles pages du validateur, rejouées à l'octet
-// près. Aucune navigation, aucun appel réseau, aucun accès au stockage ne
-// reste accepté : une page acceptée l'est pour son apparence (politique de
-// la coque, mesurée), parce qu'elle ne demande rien, ou parce qu'elle reste
-// dans l'application.
-test('X4-sécurité 2 : les 127 nouvelles pages du validateur rejouées, chacune refusée ou nommée', async (t) => {
-    const product = await composedProduct(t, 'equipment-hire');
-    await prepare(product);
-    const workOrder = await workOrderOf(product);
-    const good = await realization(product, workOrder);
-    const directives = new Map(EXTERNAL_CSP_DIRECTIVES);
-    const counts = {};
-    assert.equal(SECOND_PROBES.length, 127);
-    for (const probe of SECOND_PROBES) {
-        await writeDraft(product, workOrder, probedFiles(good, probe));
-        const failure = await planExternalPageRealization(product.options).then(
-            () => null,
-            (error) => error
-        );
-        counts[probe.mechanism] = (counts[probe.mechanism] ?? 0) + 1;
-        if (probe.mechanism === 'static') {
-            assert.ok(failure?.violations?.length, `${probe.id} accepté`);
-            continue;
-        }
-        assert.equal(failure, null, `${probe.id} : ${failure?.message}`);
-        if (probe.mechanism.startsWith('csp:'))
-            assert.match(
-                directives.get(probe.mechanism.slice('csp:'.length)) ?? '',
-                /^'self'(?: data:| 'unsafe-inline')?$/
-            );
-    }
-    assert.deepEqual(counts, {
-        static: 112,
-        'csp:img-src': 8,
-        'in-app': 3,
-        'csp:style-src': 1,
-        inert: 3,
-    });
+test('X4-sécurité-3 : les 127 pages du validateur rejouées par nom, refusées par la grammaire dans le texte inséré', async (t) => {
+    const verdicts = await replayByName(t, 'equipment-hire', SECOND_PROBES);
+    assertReplay(t, verdicts, 127);
+    // v1 §6.5 : le lien d'évitement ne reste accepté que si son fragment
+    // nomme un id du gabarit ; celui de la sonde n'en nomme aucun.
+    const fragment = verdicts.find(({ id }) => id === 'N-html-a-href-fragment');
+    assert.deepEqual(fragment.proof.codes, ['H3']);
+});
+
+// Défense en profondeur (D6) : sur une page qui viole la grammaire et une
+// couche de X4-sécurité-2, la chaîne rend les deux familles ; aucun
+// court-circuit après la grammaire ne fait taire une couche.
+test('X4-sécurité-3 : assemblage, la grammaire et les couches de X4-sécurité-2 rendent chacune leurs violations', async (t) => {
+    const product = await composedProduct(t, 'observatory');
+    const { good, violationsOf, layersOf } = await realizationChecker(product);
+    const files = { ...good, [TS]: good[TS] + "\nvoid fetch('/x');\n" };
+    const violations = violationsOf(files);
+    assert.ok(
+        violations.some((entry) => entry.startsWith('grammar:')),
+        violations.join(' | ')
+    );
+    assert.ok(
+        layersOf(files).includes(
+            `direct network access forbidden in ${TS}: /\\bfetch\\s*\\(/`
+        ),
+        violations.join(' | ')
+    );
 });
 
 test('X4-sécurité : chaque règle de la réalisation refuse sa violation et accepte la page de référence', async (t) => {
     const product = await composedProduct(t, 'observatory');
-    const { workOrder, good, violationsOf } = await realizationChecker(product);
+    // X4-sécurité-3 (D6) : chaque règle de X4-sécurité-2 est jugée seule ;
+    // la page de référence, elle, passe toute la chaîne.
+    const {
+        workOrder,
+        good: adapted,
+        original: good,
+        violationsOf: wholeOf,
+        layersOf: violationsOf,
+    } = await realizationChecker(product);
+    assert.deepEqual(wholeOf(adapted), []);
     assert.deepEqual(violationsOf(good), []);
     const module = workOrder.composition.module;
     const [literal] = workOrder.forbidden_literals;

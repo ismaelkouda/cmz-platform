@@ -21,6 +21,7 @@ import {
     typescriptViolations,
 } from './external-page-realization-structure.mjs';
 import { validatePageRealizationEvidence } from './page-realization-verification.mjs';
+import { pageGrammarViolations } from './page-grammar/index.mjs';
 
 // Motifs lexicaux de première intention, sur tous les fichiers de code : ils
 // nomment l'erreur ordinaire d'un réalisateur de bonne foi.
@@ -42,16 +43,16 @@ export const FORBIDDEN_PATTERNS = Object.freeze([
     ['security bypass', /\bbypassSecurityTrust/],
 ]);
 
+// X4-sécurité-3, G4 : la page n'importe plus rxjs ; sa spec, si.
 export const PAGE_PACKAGES = Object.freeze([
     '@angular/common',
     '@angular/core',
-    '@angular/core/rxjs-interop',
     '@angular/router',
-    'rxjs',
 ]);
 export const TEST_PACKAGES = Object.freeze([
     '@angular/core/testing',
     '@angular/platform-browser',
+    'rxjs',
     'vitest',
 ]);
 
@@ -185,6 +186,25 @@ export function realizationViolations({
 }) {
     const violations = [];
     const names = Object.keys(files).sort();
+    // X4-sécurité-3 : la grammaire fermée s'exécute en premier et fait
+    // autorité ; les couches suivantes restent en renfort (D6).
+    const decoded = {};
+    for (const name of [
+        'page.component.ts',
+        'page.component.html',
+        'page.component.scss',
+    ])
+        if (files[name] !== undefined)
+            try {
+                decoded[name] = new TextDecoder('utf-8', {
+                    fatal: true,
+                }).decode(files[name]);
+            } catch {
+                /* signalé plus bas : fichier non UTF-8 */
+            }
+    violations.push(
+        ...pageGrammarViolations({ files: decoded, workOrder, pageContract })
+    );
     const allowed = workOrder.allowed_files;
     for (const name of names)
         if (!allowed.includes(name))

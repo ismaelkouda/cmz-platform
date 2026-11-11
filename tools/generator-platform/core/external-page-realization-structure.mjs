@@ -473,6 +473,15 @@ export function templateViolations({ name, text, declaredIds }) {
             continue;
         }
         if (!opaque(read)) continue;
+        // X4-sécurité-3 (H6) : une référence se lit `ref.value` ou
+        // `ref.checked` ; la grammaire fermée en gouverne la position.
+        if (
+            references.has(read.name) &&
+            parent instanceof angular.PropertyRead &&
+            parent.receiver === read &&
+            ['value', 'checked'].includes(parent.name)
+        )
+            continue;
         const argument =
             parent instanceof angular.Call &&
             parent.args.includes(read) &&

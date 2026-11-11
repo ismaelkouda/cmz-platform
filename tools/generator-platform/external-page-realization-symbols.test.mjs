@@ -7,7 +7,10 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { REVIEWED_VERSIONS } from './core/external-page-realization-program.mjs';
-import { FORBIDDEN_PATTERNS } from './core/external-page-realization-rules.mjs';
+import {
+    FORBIDDEN_PATTERNS,
+    PAGE_PACKAGES,
+} from './core/external-page-realization-rules.mjs';
 import {
     DENIED_PROPERTIES,
     FORBIDDEN_ELEMENTS,
@@ -49,7 +52,16 @@ const symbol = (kind, key) => `symbol not allowed in ${TS}: ${kind} ${key}`;
 
 test('X4-sécurité 2 : monde fermé par symbole résolu, une entrée de liste par cas', async (t) => {
     const product = await composedProduct(t, 'observatory');
-    const { good, violationsOf } = await realizationChecker(product);
+    // X4-sécurité-3 (D6) : la couche de X4-sécurité-2 est jugée seule, sur
+    // la page d'origine pour laquelle ses cas ont été écrits ; la page de
+    // référence adaptée passe toute la chaîne.
+    const {
+        good: adapted,
+        original: good,
+        violationsOf: wholeOf,
+        layersOf: violationsOf,
+    } = await realizationChecker(product);
+    assert.deepEqual(wholeOf(adapted), []);
     const append = (text) => ({ ...good, [TS]: good[TS] + text });
     const prepend = (text) => ({ ...good, [TS]: text + good[TS] });
     const sample = (imports, expression) => ({
@@ -119,9 +131,18 @@ test('X4-sécurité 2 : monde fermé par symbole résolu, une entrée de liste p
     );
     for (const [pkg, samples] of Object.entries(ANGULAR_SAMPLES))
         for (const [name, [imports, expression]] of Object.entries(samples)) {
+            // X4-sécurité-3, G4 : les paquets de la page sont réduits ; un
+            // exemple qui en importe un autre n'a que ce refus d'import.
+            const narrowed = [...imports.matchAll(/from '([^']+)'/g)]
+                .map(([, module]) => module)
+                .filter((module) => !PAGE_PACKAGES.includes(module))
+                .map(
+                    (module) =>
+                        `import not allowed by the work order in page.component.ts: ${JSON.stringify(module)}`
+                );
             assert.deepEqual(
                 violationsOf(sample(imports, expression)),
-                [],
+                narrowed,
                 `Angular ${pkg}:${name}`
             );
         }
@@ -365,7 +386,16 @@ test('X4-sécurité 2 : monde fermé par symbole résolu, une entrée de liste p
 
 test('X4-sécurité 2 : gabarit réduit, une entrée de liste par cas, politique épinglée', async (t) => {
     const product = await composedProduct(t, 'equipment-hire');
-    const { good, violationsOf } = await realizationChecker(product);
+    // X4-sécurité-3 (D6) : la couche de X4-sécurité-2 est jugée seule, sur
+    // la page d'origine pour laquelle ses cas ont été écrits ; la page de
+    // référence adaptée passe toute la chaîne.
+    const {
+        good: adapted,
+        original: good,
+        violationsOf: wholeOf,
+        layersOf: violationsOf,
+    } = await realizationChecker(product);
+    assert.deepEqual(wholeOf(adapted), []);
     const html = (text) => ({ ...good, [HTML]: good[HTML] + text });
     // Une seule violation, celle de l'entrée ; un motif lexical qui nomme le
     // même mot la précède (défense en profondeur).
@@ -431,11 +461,21 @@ test('X4-sécurité 2 : gabarit réduit, une entrée de liste par cas, politique
             '<button type="button" (click)="submit($event.target)">x</button>\n',
         '$event[...]':
             '<button type="button" (click)="submit($event[\'view\'])">x</button>\n',
-        'ref.value': '<input #champ><p>{{ champ.value }}</p>\n',
         'alias @let': '<input #champ>\n@let alias = champ;\n',
         'hors méthode du composant':
             '<button type="button" (click)="online.set($event)">x</button>\n',
     };
+    // X4-sécurité-3 (v1 §5) : « référence passée entière » est retiré du
+    // contrat. `ref.value` est accepté par cette couche ; hors des arguments
+    // d'un événement, la grammaire le refuse (H6).
+    const read = html('<input #champ><p>{{ champ.value }}</p>\n');
+    assert.equal(
+        violationsOf(read).some((entry) =>
+            / must be passed whole /.test(entry)
+        ),
+        false
+    );
+    assert.ok(wholeOf(read).some((entry) => entry.startsWith('grammar:H6 ')));
     for (const [label, text] of Object.entries(opaque)) {
         const violations = violationsOf(html(text));
         assert.ok(

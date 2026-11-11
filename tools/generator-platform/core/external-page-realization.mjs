@@ -29,6 +29,7 @@ import {
 import { compileOwnedPagePlan } from './external-page-plan.mjs';
 import { expectedExternalPageCompositionFiles } from './external-page-composition.mjs';
 import { externalCompositionApi } from '../renderers/angular-page-composition-api.mjs';
+import { grammarSection } from './page-grammar/work-order.mjs';
 import {
     REALIZATION_TOOL,
     assertPageId,
@@ -76,15 +77,18 @@ export const realizationDraftRoot = (appName, pageId) =>
 const compositionModule = (pageId) =>
     `../../generated/pages/${pageId}/composition/src`;
 
+// X4-sécurité-3, G4 : règles en grammaire positive. La page n'est plus filtrée :
+// elle est écrite dans la grammaire fermée publiée sous `grammar`, et tout ce
+// qui n'y figure pas est refusé.
 const RULES = Object.freeze([
-    'Implement only the validated page contract; appearance is free.',
+    'Implement only the validated page contract; appearance is free, resources are not.',
     'Write only allowed_files, in draft_root; verify:page-realization publishes them to publication_root.',
-    'Mount the page composition in the @Component providers (PAGE_COMPOSITION_PROVIDERS) and act only through PageComposition; never import a command, the session or HttpClient directly.',
-    'Import only allowed_imports, the composition names, and the page files.',
-    'In page.component.ts every reference resolves to an allowed symbol (symbols): the page itself, the composition names and their members, rxjs, and the listed Angular, ES and DOM symbols. No declare, no type assertion except as const, no type predicate, no any, no computed key without a literal type, never assemble a string from literals.',
-    'A DOM object is only read through a listed member, compared, or passed whole to a page method whose parameter has a DOM type.',
-    'Keep the template declarative: no structure.forbidden_elements, no resource or navigation attribute, attr.* bindings for aria-* only, no structure.denied_properties, structure.template_pipes only, no $any; pass $event or a #reference whole as an argument of a component method.',
-    'Never write an endpoint literal or a URL. The shell Content-Security-Policy blocks any other origin, inline script and dynamic code in the browser; product commands run confined.',
+    'page.component.ts, page.component.html and page.component.scss are written in the closed grammar published under grammar; every rule code is listed in grammar.rules.',
+    'The page has one capability root: one private field inject(PageComposition), and PAGE_COMPOSITION_PROVIDERS in @Component providers. It reaches only the published composition paths (composition.api), by kind.',
+    'Logic stays in the generator: signals, computed values, tables, and the seven call forms; no loop, no DOM, no router, no lifecycle.',
+    'A (submit) method is typed false and uses only the non-throwing forms of rule S1 and S2, ending with return false.',
+    'The template passes ref.value or literals to page methods, never $event; routerLink is a static declared route.',
+    'The stylesheet loads nothing and names no resource: no url(), no @import, no @font-face, no ::ng-deep.',
     'Map every contract id to one exact static data-cmz-id selector in the template; add no other data-cmz-id.',
     'Keep keyboard, screen-reader, loading, error and offline behavior explicit.',
     'The product compiler, build, lint and tests decide; a failure publishes nothing.',
@@ -206,6 +210,7 @@ async function buildWorkOrder(app, appName, pageId, toolsRoot, options) {
             profile: target.profile,
             archetype_stack: target.archetypeStack,
         },
+        grammar: grammarSection({ pageId, pageContract }),
         realization_contract: resolveRealizationContract(
             toolsRoot,
             pageContract,
