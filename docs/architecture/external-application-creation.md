@@ -1430,3 +1430,75 @@ couvrent : `apps/<app>/src/app/generated/pages/<page>/composition/src/page-compo
 `apps/<app>/src/app/pages/<page>/page.component.spec.ts` (la page passe à son
 état d'erreur). Firefox et
 WebKit ne sont pas mesurés ; seul Chromium l'est.
+
+## Lecture extérieure sous plan — X5
+
+`generate:list-query --target-root` génère une lecture `list-query` v2 depuis
+les entrées du produit et la publie dans une de ses applications Angular avec
+session, par la primitive de l’ADR-0103, sur le modèle exact de la commande
+extérieure (X2) :
+
+```sh
+bun run generate:list-query --target-root /chemin/absolu/produit --app <app> --definition descriptions/<…>.json --dry-run
+bun run generate:list-query --target-root /chemin/absolu/produit --app <app> --definition descriptions/<…>.json --apply <plan_id>
+```
+
+Le mode est fermé : `--dry-run` ou `--apply <plan_id>` est obligatoire, et toute
+autre option est refusée. La définition (version `2.0.0`), son contrat et les
+sources du contrat sont lus dans le produit. La sortie est écrite sous
+`src/app/generated/queries/<lecture>/`. Les liaisons d’hôte sont déduites de la
+coque, comme pour une commande.
+
+### Profil extérieur d’une lecture
+
+- **Décodage des seuls champs lus.** Le décodeur décode strictement les champs
+  que la page lit (type, requis, nullable, contraintes) et ignore les autres.
+  Un champ non lu d’un type que l’atelier ne décode pas (modèle imbriqué,
+  booléen) ne bloque donc pas la page.
+- **Aucun cache.** La définition déclare `cache: { mode: 'bypass' }`. Une
+  déclaration `host` est refusée, avec le refus nommé
+  `LIST_QUERY_EXTERNAL_CACHE_HOST`, car la coque n’a aucun cache.
+- **Échec sans données périmées.** `on_error: clear` est exigé : une lecture en
+  échec efface ses lignes.
+- **Adresse de service résolue à l’exécution.** Une adresse absente donne une
+  erreur de statut 0, sans requête, et la page se construit.
+- **Noms lus.** Un nom de champ lu ne peut pas être un nom de prototype refusé
+  par la grammaire de page (`LIST_QUERY_EXTERNAL_READ_NAME`). `name` et
+  `length` restent lisibles.
+
+### Test de conformité de contrat généré
+
+La lecture publiée porte `src/<lecture>.contract.spec.ts`, lancé par le vitest
+installé du produit. Il vérifie trois choses :
+
+- une fixture complète et typée du contrat (tous les champs de l’élément, lus
+  ou non) est acceptée, et la sortie ne porte que les champs lus ;
+- un champ non lu modifié, ou un champ ajouté, est accepté et absent de la
+  sortie ;
+- un champ lu de mauvais type est refusé.
+
+La fixture est **synthétisée depuis les types du contrat**. Rien n’est inventé :
+
+- une chaîne respecte ses longueurs ; un entier ou un nombre respecte ses
+  bornes ; un booléen vaut `false` ;
+- une valeur permise du contrat est prise telle quelle ;
+- un tableau a son nombre minimal d’éléments ;
+- un modèle imbriqué est synthétisé récursivement, et un objet sans champ vaut
+  `{}` ;
+- `date`, `datetime` et `uuid` prennent une forme canonique de syntaxe
+  (`2000-01-01`, `2000-01-01T00:00:00Z`,
+  `00000000-0000-4000-8000-000000000000`), qui n’est pas une donnée métier.
+
+**Limite.** Ce que l’atelier ne sait pas synthétiser est un refus nommé
+`LIST_QUERY_CONFORMANCE_UNSYNTHESIZABLE`, qui dit quel champ et pourquoi :
+
+- une contrainte `pattern`, ou toute contrainte inconnue ;
+- un type `json` ou `binary` ;
+- un intervalle vide ;
+- un cycle de modèles ;
+- un modèle non résolu.
+
+**Un contrat qui porte une contrainte `pattern` ne passe donc pas**, tant
+qu’aucune valeur d’exemple fournie par le propriétaire du produit
+(`conformance_sample`) n’existe. Ce champ n’est pas encore au schéma : il sera
+ajouté, avec son propre circuit, quand un contrat réel en aura besoin.

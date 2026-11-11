@@ -86,6 +86,16 @@ test('C3a : lecture extérieure publiée sous plan sur deux produits fictifs', a
         assert.match(source, /baseUrl = this\.injector\.get\(/);
         assert.doesNotMatch(source, /readonly baseUrl = inject\(/);
         assert.deepEqual(visible.dependent_pages, []);
+        // C3b : test de conformité publié avec la lecture, hors du plan
+        // d'artefacts (le manifeste de génération ne le lie pas).
+        const spec = `${base}/src/${plan.query_id}.contract.spec.ts`;
+        assert.match(plan.files[spec], /from 'vitest'/);
+        assert.equal(
+            JSON.parse(
+                plan.files[`${base}/generation-manifest.json`]
+            ).files.some(({ path }) => path.endsWith('.contract.spec.ts')),
+            false
+        );
         const result = await publishExternalListQuery(
             { ...product.options, expectedPlanId: plan.plan_id },
             native()
@@ -167,6 +177,32 @@ test('C3a : M-2, le contrat lu doit être celui que déclarent les pages', async
     await assert.rejects(
         planExternalListQuery({ ...product.base, definitionPath }),
         /backend contract differs from the contract declared by the application pages/
+    );
+});
+
+test('C3b : une contrainte non synthétisable est un refus nommé de la commande', async (t) => {
+    const product = await sessionApp(t, 'observatory');
+    const contractPath = join(
+        product.root,
+        'descriptions/session-observatory/backend.json'
+    );
+    const contract = JSON.parse(await readFile(contractPath, 'utf8'));
+    const item = contract.models.find((model) =>
+        (model.fields ?? []).some((field) => field.name === 'label')
+    );
+    item.fields.push({
+        ...structuredClone(item.fields.find((field) => field.name === 'label')),
+        name: 'reference',
+        constraints: { pattern: '^[A-Z]+$' },
+    });
+    await writeFile(contractPath, JSON.stringify(contract, null, 2) + '\n');
+    const definitionPath = await writeExternalQueryDefinition(
+        product.root,
+        'observatory'
+    );
+    await assert.rejects(
+        planExternalListQuery({ ...product.base, definitionPath }),
+        /^Error: external application: LIST_QUERY_CONFORMANCE_UNSYNTHESIZABLE: field [a-z-]+\.reference has constraint pattern$/
     );
 });
 

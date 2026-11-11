@@ -13,6 +13,14 @@ import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
 import { buildGenerationManifest } from './core/generation-manifest.mjs';
 import { parseContractGraph } from './core/backend-contract-reader.mjs';
 import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
+import {
+    contractModels,
+    queryBindingModelId,
+    resolveListCollection,
+    resolvePageCollection,
+} from './core/list-query-collection.mjs';
+import { conformanceFixture } from './core/list-query-conformance.mjs';
+import { renderListQueryConformanceSpec } from './renderers/angular-list-query-conformance-spec.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularExternalListQuery } from './renderers/angular-external-list-query.mjs';
 import { renderAngularListQueryV2 } from './renderers/angular-list-query-v2-renderer.mjs';
@@ -144,7 +152,7 @@ async function computeListQueryV2Model(
         backendContractUri: definition.backend_contract.uri,
         profile,
     });
-    return { definition, model };
+    return { definition, model, backendContract };
 }
 
 async function materializeAngularTarget(model, artifactPlan, hostBindings) {
@@ -240,11 +248,11 @@ export async function computeExternalAngularListQueryTarget({
     artifactRoot,
     hostBindings,
 }) {
-    const { definition, model } = await computeListQueryV2Model(
-        definitionPath,
-        definitionDocument,
-        { root: artifactRoot, profile: 'external' }
-    );
+    const { definition, model, backendContract } =
+        await computeListQueryV2Model(definitionPath, definitionDocument, {
+            root: artifactRoot,
+            profile: 'external',
+        });
     const artifactPlan = buildArtifactPlan(model, 'list-query-execution-model');
     const profile = await loadJson(ANGULAR_PROFILE);
     const rendered = renderAngularExternalListQuery(model, hostBindings(model));
@@ -263,5 +271,38 @@ export async function computeExternalAngularListQueryTarget({
         ...rendered,
         ...bound,
         manifest: buildGenerationManifest(model, artifactPlan, profile, bound),
+        // C3b : hors du plan d'artefacts (Π1), publié à côté du modèle.
+        conformanceSpec: {
+            path: `src/${rendered.queryId}.contract.spec.ts`,
+            content: renderListQueryConformanceSpec(
+                model.queries[0],
+                externalConformanceFixture(model.queries[0], backendContract)
+            ),
+        },
     };
+}
+
+// Élément (et page) du contrat COMPLET, par le résolveur unique (C1).
+function externalConformanceFixture(query, backendContract) {
+    const resolveModel = contractModels(backendContract);
+    const { result } = query.transport;
+    if (result.kind === 'page') {
+        const page = resolveModel(result.page_model_id);
+        const { item } = resolvePageCollection(
+            resolveModel,
+            page,
+            result.items_field
+        );
+        return conformanceFixture({
+            item,
+            page,
+            itemsField: result.items_field,
+            resolveModel,
+        });
+    }
+    const { item } = resolveListCollection(
+        resolveModel,
+        resolveModel(queryBindingModelId(query))
+    );
+    return conformanceFixture({ item, resolveModel });
 }

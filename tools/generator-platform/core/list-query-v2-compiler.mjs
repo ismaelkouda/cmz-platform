@@ -9,7 +9,6 @@ import {
 import {
     externalExecutionError,
     externalQueryErrors,
-    externalReadFieldError,
     projectReadFields,
 } from './list-query-external-profile.mjs';
 import { validateListQueryV2Definition } from './list-query-v2.mjs';
@@ -293,10 +292,10 @@ function compileQuery(definitionOperation, backendContract, profile) {
     const wireItem = collection.item;
     // X5 C2 : en extérieur, politique honnête et projection sur les champs lus.
     const external = profile === 'external';
+    // E5 (nom lu de prototype) : refusé par le validateur, seul mécanisme,
+    // appelé à la fin de la compilation.
     const executionError =
-        external &&
-        (externalExecutionError(definitionOperation.execution) ??
-            externalReadFieldError(definitionOperation.read_model));
+        external && externalExecutionError(definitionOperation.execution);
     if (executionError) fail(`${definitionOperation.id} ${executionError}`);
     const wireFields = (
         external

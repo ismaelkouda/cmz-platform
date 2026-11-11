@@ -83,7 +83,9 @@ async function renderExternalListQuery(options) {
     } catch (error) {
         // Refus nommés du profil extérieur : exposés tels quels ; tout autre
         // échec reste fermé (aucun chemin ni détail de l'atelier).
-        const named = /LIST_QUERY_EXTERNAL_[A-Z_]+: .*/.exec(error.message);
+        const named = /LIST_QUERY_(?:EXTERNAL|CONFORMANCE)_[A-Z_]+: .*/.exec(
+            error.message
+        );
         if (named) externalFailure(named[0]);
         throw error;
     }
@@ -97,11 +99,15 @@ async function renderExternalListQuery(options) {
     );
     const manifestPath = `${base}/generation-manifest.json`;
     const modelPath = queryExecutionModelPath(target.queryId);
+    // C3b : le test de conformité de contrat, hors du plan d'artefacts, est
+    // publié avec la lecture et lancé par le vitest installé du produit.
     Object.assign(
         files,
         await canonicalizeGeneratedFiles({
             [manifestPath]: JSON.stringify(target.manifest, null, 2) + '\n',
             [modelPath]: JSON.stringify(target.model, null, 2) + '\n',
+            [`${base}/${target.conformanceSpec.path}`]:
+                target.conformanceSpec.content,
         })
     );
     return {
