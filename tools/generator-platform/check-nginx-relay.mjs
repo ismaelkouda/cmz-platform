@@ -374,13 +374,7 @@ export async function runChecks(files, table) {
                         [`${prefix}a.css?x=1`, '/a.css?x=1'],
                     ]) {
                         const response = await get(port, path);
-                        assert.match(
-                            response.body,
-                            new RegExp(
-                                `^path=${upstream.replace(/[.?]/g, '\\$&')}\\|`
-                            ),
-                            path
-                        );
+                        assert.ok(echoes(response.body, upstream), path);
                     }
                 });
             }
@@ -505,6 +499,11 @@ export async function runChecks(files, table) {
     }
     return results;
 }
+
+// Le service d'écho répond `path=<chemin reçu>|…` : comparaison exacte du
+// préfixe, sans expression régulière (aucun métacaractère à échapper).
+export const echoes = (body, upstream) =>
+    typeof body === 'string' && body.startsWith(`path=${upstream}|`);
 
 // Contre-mutations nommées : chacune doit faire échouer la vérification visée.
 export const MUTATIONS = [

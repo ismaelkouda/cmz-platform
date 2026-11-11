@@ -267,8 +267,10 @@ function fail(message) {
 }
 
 export function devProxyConfig(file, productRoot) {
+    // Sans fichier, le serveur de développement démarre sans relayer aucun
+    // service : on avertit sans bloquer. Un fichier refusé, lui, bloque.
     if (!file) {
-        console.warn('CMZ_DEV_PROXY aucun service relayé : définir CMZ_DEV_PROXY_FILE (voir proxy.local.example.json)');
+        process.stderr.write('CMZ_DEV_PROXY aucun service relayé : définir CMZ_DEV_PROXY_FILE (voir proxy.local.example.json)\\n');
         return {};
     }
     const real = realpathSync(file);

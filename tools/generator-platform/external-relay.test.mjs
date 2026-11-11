@@ -325,14 +325,19 @@ test('X4-config : proxy de développement, cibles hors du produit sur chemins r�
         external[RELAY_FILES.devProxy]
     );
     const example = JSON.parse(external[RELAY_FILES.devExample]);
-    const warn = console.warn;
-    console.warn = () => undefined;
+    const write = process.stderr.write;
+    const warnings = [];
+    process.stderr.write = (chunk) => warnings.push(String(chunk)) > 0;
     let module;
     try {
         module = await import(pathToFileURL(join(app, 'proxy.conf.mjs')).href);
     } finally {
-        console.warn = warn;
+        process.stderr.write = write;
     }
+    // Sans fichier : un avertissement, aucun service relayé, pas de blocage.
+    assert.deepEqual(warnings, [
+        'CMZ_DEV_PROXY aucun service relayé : définir CMZ_DEV_PROXY_FILE (voir proxy.local.example.json)\n',
+    ]);
     const { devProxyConfig } = module;
     assert.deepEqual(module.default, {});
     const outside = join(root, 'targets.json');
@@ -460,4 +465,33 @@ test('X4-config : fichiers de configuration locale refusés sous la racine, avec
         await readFile(join(created.root, '.env'), 'utf8'),
         'CMZ_UPSTREAM_X=http://a/\n'
     );
+});
+
+// Correctif CodeQL (CI #389) : le harnais compare le chemin écho par préfixe
+// exact, sans expression régulière construite. Contre-test : métacaractères.
+test('X4-config : le harnais compare le chemin relayé sans expression régulière', async () => {
+    const { echoes } = await import('./check-nginx-relay.mjs');
+    for (const upstream of [
+        '/a/b',
+        '/',
+        '/a.css?x=1',
+        '/a\\b',
+        '/a(b)[c]{d}*+^$|',
+        '/a.b',
+    ]) {
+        assert.equal(
+            echoes(`path=${upstream}|method=GET`, upstream),
+            true,
+            upstream
+        );
+        assert.equal(
+            echoes(`path=${upstream}x|method=GET`, upstream),
+            false,
+            upstream
+        );
+    }
+    // Un `.` ou un `?` n'est jamais un joker.
+    assert.equal(echoes('path=/aXcss|', '/a.css'), false);
+    assert.equal(echoes('path=/a.cs|', '/a.css?'), false);
+    assert.equal(echoes(undefined, '/'), false);
 });
