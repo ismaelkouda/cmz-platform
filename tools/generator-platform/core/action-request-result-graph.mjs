@@ -16,6 +16,27 @@ export const ACTION_RESULT_GRAPH_LIMITS = Object.freeze({
     runtimeMap: 128,
     runtimeString: 8192,
 });
+// Lecture d'un contrat backend en mode graphe 2.1 : un seul budget, partagé
+// par le compilateur et la cible (CI #389, jalon 1). Un contrat adopté n'est
+// pas une observation d'exécution : OBSERVATION_LIMITS (4096 nœuds) reste
+// réservé aux preuves, potentiellement hostiles. Valeurs reprises de ce graphe
+// (aucun nombre nouveau) ; le compilateur les appliquait déjà, la cible lisait
+// le même contrat avec le budget d'une observation. Mesure : contrat SEOS
+// adopté, 4570 jetons et 52 Ko, refusé à 4096.
+export const CONTRACT_GRAPH_LIMITS = Object.freeze({
+    documentBytes: 1048576,
+    depth: ACTION_RESULT_GRAPH_LIMITS.depth,
+    nodes: ACTION_RESULT_GRAPH_LIMITS.runtimeNodes,
+    stringLength: ACTION_RESULT_GRAPH_LIMITS.runtimeString,
+    width: ACTION_RESULT_GRAPH_LIMITS.runtimeArray,
+});
+
+export function parseContractGraph(document) {
+    if (Buffer.byteLength(document) > CONTRACT_GRAPH_LIMITS.documentBytes)
+        fail('AR_GRAPH_LIMIT');
+    return io.parse(Buffer.from(document), CONTRACT_GRAPH_LIMITS);
+}
+
 const PRIMITIVES = new Set([
     'boolean',
     'integer',

@@ -11,6 +11,8 @@ import {
 } from './core/artifact-plan.mjs';
 import { compileActionRequestV2ExecutionModel } from './core/action-request-v2-compiler.mjs';
 import {
+    CONTRACT_GRAPH_LIMITS,
+    parseContractGraph,
     readActionRequestDefinition,
     actionGraphSnapshotReader,
 } from './core/action-request-result-graph.mjs';
@@ -101,7 +103,11 @@ async function readBackendDocument(
         throw new Error('backend contract must resolve inside the workspace');
     }
     return graphMode
-        ? observationIO.boundedFile(canonicalRoot, canonicalRelative, 1048576)
+        ? observationIO.boundedFile(
+              canonicalRoot,
+              canonicalRelative,
+              CONTRACT_GRAPH_LIMITS.documentBytes
+          )
         : readFile(canonicalPath);
 }
 
@@ -136,7 +142,7 @@ async function computeModel(
         artifactRoot
     );
     const backendContract = graphMode
-        ? observationIO.parse(backendDocument)
+        ? parseContractGraph(backendDocument)
         : JSON.parse(backendDocument.toString('utf8'));
     const backendErrors = validateBackendContract(
         backendContract,
