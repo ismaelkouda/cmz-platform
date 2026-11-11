@@ -1349,3 +1349,72 @@ WebKit ne sont pas mesurés dans ce lot ; seul Chromium l'est.
 
 La coque ne se republie pas : un produit créé avant X4-config ne reçoit ces
 fichiers qu'en recréant son application.
+
+## Page fermée et composition bornée — X4-sécurité-3
+
+Décision du propriétaire (#390, option B) : le TypeScript d'une page réalisée
+est réduit au câblage. La page n'est plus filtrée : elle est écrite dans une
+**grammaire fermée**, et tout nœud ou jeton qu'aucune production n'approuve
+est refusé. Les comportements d'écran (tri, filtre, navigation contextuelle,
+validation) passent par le générateur.
+
+**Quatre obligations, prouvées séparément.**
+
+- **O-G, grammaire de la page.** `core/page-grammar/` :
+  `pageGrammarViolations({ files, workOrder })`, fonction pure, sans programme
+  ni vérificateur de types. TypeScript (`grammar:T0` à `T13`) : imports
+  nommés à leur position fixe, une classe `@Component(...) export class
+  PageComponent`, des champs `signal`, `computed`, un seul
+  `inject(PageComposition)` privé, des tables littérales, et sept formes
+  d'appel ; aucun nom libre. Gabarit (`H0` à `H9`) : éléments, attributs et
+  liaisons en listes fermées, événements sans `$event`, références lues
+  `ref.value`, `routerLink` statique vers une route déclarée. SCSS (`C0` à
+  `C4`) : rien n'est chargé, ni `url()`, ni `@import`, ni `@font-face`, ni
+  `::ng-deep`, fonctions en liste fermée (CSS compilé lu par `css-tree`).
+- **O-C, couverture fermée.** Une passe exige que chaque nœud et chaque jeton
+  soient approuvés ; les trivia sont jugées à part, genre par genre (seuls
+  l'espace, la tabulation et les fins de ligne) ; les caractères Cf, U+2028,
+  U+2029 et les contrôles sont refusés dans les trois fichiers. Les registres
+  (genres TypeScript, nœuds Angular, nœuds et jetons CSS) sont lus dans les
+  modules installés et comparés à une copie épinglée : une nouvelle version
+  qui ajoute un genre échoue sûr.
+- **O-S, soumission.** Une méthode liée à `(submit)` est typée `false` et
+  n'emploie que des formes sans levée (`S1`, `S2`), puis `return false`.
+- **O-A, capacité de la composition.** La composition extérieure est rendue
+  depuis une table `api` fermée : `online`, et par commande des signaux en
+  lecture seule (`computed`), une constante et une commande froide (un seul
+  `defer`). Sa seule navigation va vers la destination rendue par la session,
+  qui n'est qu'un `routes[].path`. `page-composition.api.ts` publie la table
+  et une assertion de type compilée par le produit ;
+  `page-composition.contract.spec.ts` la vérifie sous `<app>:test`.
+
+**Bon de travail.** `prepare:page-realization` publie la section `grammar`
+(version, tables, codes de règle, sélecteur, routes) et `composition.api`. Il
+refuse une composition qui n'est pas exactement celle du générateur courant.
+Les couches de X4-sécurité restent derrière la grammaire, en renfort.
+
+**Noms de prototype.** Les noms propres d'`Object.prototype` et de
+`Function.prototype` sont refusés comme membres, sauf `length` et `name` :
+tout appel sur une donnée étant interdit, les lire ne donne aucune capacité.
+
+**Coque.** Les produits créés après ce changement reçoivent
+`src/app/session/connectivity.ts` (`online`, d'après `navigator.onLine` puis
+les événements `online` et `offline`) et deux specs scellées (connectivité,
+navigation de session bornée aux routes déclarées). La coque ne se republie
+pas : un produit plus ancien ne les reçoit qu'en recréant son application.
+
+**Mesures navigateur.** La preuve native (étape T9–T18) ouvre la page réalisée
+dans sept scénarios (chargement, hors ligne puis en ligne, 4xx, 5xx, réponse
+invalide, serveur injoignable, succès puis transition de session) : un seul
+chargement de document, aucune valeur saisie dans une URL, aucune chaîne de
+requête, rien sur une autre origine, aucune fenêtre, une URL finale déclarée.
+`check:page-submit-witnesses` construit trois témoins natifs (écouteur qui rend
+`false`, qui lève, qui rend `undefined`) et attend 0, 0 et 1 soumission native :
+il protège chaque montée d'Angular.
+
+**Limites.** La liberté de logique de la page disparaît (R1). L'apparence est
+libre, pas les ressources : ni image ni police venant de la page, liaisons
+`[style.*]` bornées (R3). L'envoi sans adresse de service n'est pas
+reproductible dans un produit construit depuis X4-config (adresse toujours de
+même origine) : la spec de contrat et la spec de page le couvrent. Firefox et
+WebKit ne sont pas mesurés ; seul Chromium l'est.
