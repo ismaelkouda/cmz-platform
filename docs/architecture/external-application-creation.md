@@ -1321,15 +1321,29 @@ valeur écrite, `nginx -t` par l'entrypoint, invariant sur la configuration
 rendue, contre-mutations) ; la preuve native vérifie que l'envoi de la page
 réalisée part en un seul `POST /api/<svc>/…` de même origine. Elle ne teste pas
 nginx : seule la CI Linux le prouve. `check:nginx-relay-browser` ouvre la coque
-construite par la preuve native, servie par le relais, dans son Chromium :
-politique exacte en en-tête et en `meta`, aucune violation, service worker
-enregistré et actif (URL et portée), nouveau document au rechargement, `cmz-sw`
-fermée (doublon et nom hors liste refusés), `innerHTML` et `new Worker` par
-chaîne toujours bloqués, document installé servi hors ligne.
+construite par la preuve native, servie par le relais, dans son Chromium, pour
+chaque coque Angular avec service worker (avec et sans session) : politique
+exacte en en-tête et en `meta`, aucune violation, service worker enregistré et
+actif (URL et portée), nouveau document au rechargement, `cmz-sw` fermée
+(doublon et nom hors liste refusés), `innerHTML` et `new Worker` par chaîne
+toujours bloqués, cache conforme à la variante déclarée, document servi relais
+arrêté. Garde des deux variantes : la page appelle le relais (fetch GET, fetch
+POST, image GET) et le cache ne contient jamais `/api/`, jamais une requête
+autre que GET, jamais une autre origine ; la contre-mutation d'un service
+worker qui met `/api/` en cache doit la rendre rouge.
+
+**Service worker sans session.** Celui de l'atelier met en cache, réseau
+d'abord, toute requête de même origine de destination document, script, style,
+image ou police, `/api/` compris. La coque extérieure ignore `/api` et `/api/…`
+; le mode atelier est inchangé. Le cache contient la coque et ses ressources de
+même origine ; l'application démarre hors ligne.
 
 **Limites.** Une expérience avec session est en `offline_policy: none` : son
 service worker ne met en cache que le document, le manifeste et l'icône ;
-aucun fonctionnement hors ligne n'est revendiqué. Un déploiement sous un
+aucun fonctionnement hors ligne n'est revendiqué. Défaut possédé :
+`offline_policy` n'est pas lu par le moteur Angular pour choisir le service
+worker, et `none` produit deux comportements selon la variante ; la sémantique
+des valeurs n'est pas définie (lot séparé). Un déploiement sous un
 sous-chemin n'est pas pris en charge (`/sw.js`, `<base href="/">`). Firefox et
 WebKit ne sont pas mesurés dans ce lot ; seul Chromium l'est.
 

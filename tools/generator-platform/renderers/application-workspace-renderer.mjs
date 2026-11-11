@@ -499,6 +499,22 @@ bootstrapApplication(App, appConfig)
 `;
 }
 
+// Coque extérieure : le relais de même origine sert /api/ ; le service worker
+// ne met jamais une réponse /api/ en cache, quelle que soit sa destination
+// (image, document...). La variante avec session remplace ce fichier par le
+// sien, limité au document, au manifeste et à l'icône.
+const WORKER_ORIGIN_GUARD =
+    '    if (requestUrl.origin !== self.location.origin) return;\n';
+
+function externalWorker(worker) {
+    if (worker?.split(WORKER_ORIGIN_GUARD).length !== 2)
+        throw new Error('application shell: sw.js is not the shell worker');
+    return worker.replace(
+        WORKER_ORIGIN_GUARD,
+        `${WORKER_ORIGIN_GUARD}    if (/^\\/api(?:\\/|$)/.test(requestUrl.pathname)) return;\n`
+    );
+}
+
 export function adaptExternalShellFiles(files, { profile, appName }) {
     const root = `apps/${appName}`;
     const project = JSON.parse(files['project.json']);
@@ -558,6 +574,7 @@ export default ts.config(
             fonts: false,
         };
         files['src/main.ts'] = externalMain(files['src/main.ts']);
+        files['public/sw.js'] = externalWorker(files['public/sw.js']);
     } else {
         project.targets.build = {
             // Keep the native Vite command even if its inference input is

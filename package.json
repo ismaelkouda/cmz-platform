@@ -28,7 +28,7 @@
     "check:external-application-shells": "node tools/generator-platform/check-external-application-shells.mjs",
     "check:nginx-relay": "node tools/generator-platform/check-nginx-relay.mjs --mutations",
     "check:nginx-digest": "node tools/generator-platform/check-nginx-digest.mjs",
-    "check:nginx-relay-browser": "node tools/generator-platform/check-nginx-relay-browser.mjs --browser-proof-root",
+    "check:nginx-relay-browser": "node tools/generator-platform/check-nginx-relay-browser.mjs --mutations --browser-proof-root",
     "add-library": "node tools/add-library.mjs",
     "promote-library-compatibility": "node tools/promote-library-compatibility.mjs",
     "retire-app": "node tools/retire-app.mjs",

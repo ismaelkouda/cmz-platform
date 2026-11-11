@@ -17,6 +17,7 @@ import {
     EXTERNAL_CSP_META,
 } from './renderers/external-content-security-policy.mjs';
 import { createApplicationSessionFixture } from './test-support/application-session-fixture.mjs';
+import { applicationDesign } from './test-support/application-design-fixture.mjs';
 import { hash } from './test-support/external-application-fixture.mjs';
 import { SESSION_FIXTURE_DOMAINS } from './test-support/external-session-fixture.mjs';
 
@@ -265,5 +266,130 @@ test('cmz-sw : un main.ts d’atelier qui a dérivé arrête la coque extérieur
                 appName: 'session-sw',
             }),
         /application shell: main\.ts is not the shell main/
+    );
+});
+
+// Le gestionnaire fetch d'un sw.js, exécuté dans un contexte isolé : renvoie
+// les requêtes que le service worker prend en charge (respondWith).
+function handled(worker, requests) {
+    const listeners = {};
+    const sandbox = {
+        URL,
+        self: {
+            location: { origin: 'http://127.0.0.1:8080' },
+            addEventListener: (type, listener) => {
+                listeners[type] = listener;
+            },
+            clients: { claim: () => Promise.resolve() },
+        },
+        caches: {},
+        fetch: () => new Promise(() => undefined),
+    };
+    vm.createContext(sandbox);
+    vm.runInContext(worker, sandbox);
+    return requests.filter(([url, destination, method = 'GET']) => {
+        let responded = false;
+        listeners.fetch({
+            request: {
+                url: 'http://127.0.0.1:8080' + url,
+                method,
+                destination,
+                mode: destination === 'document' ? 'navigate' : 'no-cors',
+            },
+            respondWith: () => {
+                responded = true;
+            },
+        });
+        return responded;
+    });
+}
+
+const API_REQUESTS = [
+    ['/api/svc/avatar.png', 'image'],
+    ['/api/svc/report', 'document'],
+    ['/api/svc/x.js', 'script'],
+    ['/api/svc/x.css', 'style'],
+    ['/api/svc/f.woff2', 'font'],
+    ['/api/svc/data', ''],
+    ['/api', 'document'],
+    ['/api/', 'image'],
+];
+
+test('sw.js extérieur : jamais /api/ pris en charge, quelle que soit la destination ; mode atelier inchangé', async () => {
+    const design = applicationDesign('a'.repeat(64), 'b'.repeat(64));
+    const experience = design.experiences.find((entry) => !entry.session);
+    const render = async (externalWorkspace) =>
+        (
+            await renderAngularPwaShell({
+                design,
+                experienceId: experience.id,
+                appName: 'shell-sw',
+                designPath: 'design/shell.json',
+                designSha256: hash('shell'),
+                externalWorkspace,
+            })
+        ).files['public/sw.js'];
+    const atelier = await render(false);
+    const external = await render(true);
+    assert.doesNotMatch(atelier, /\/api/);
+    assert.equal(external.match(/\/\^\\\/api\(\?:\\\/\|\$\)\//g).length, 1);
+    assert.deepEqual(handled(external, API_REQUESTS), []);
+    // Ressources de la coque : toujours prises en charge (contrôle positif).
+    const shell = [
+        ['/', 'document'],
+        ['/main-ABC.js', 'script'],
+        ['/styles-ABC.css', 'style'],
+        ['/icon.svg', 'image'],
+        ['/apiary.png', 'image'],
+    ];
+    assert.deepEqual(handled(external, shell), shell);
+    // Le mode atelier garde son comportement : toute requête /api/ de
+    // destination cacheable y reste prise en charge (fetch() exclu).
+    assert.deepEqual(
+        handled(atelier, API_REQUESTS),
+        API_REQUESTS.filter(([, destination]) => destination !== '')
+    );
+    // Un sw.js d'atelier qui a dérivé arrête la coque extérieure.
+    const files = {
+        ...(
+            await renderAngularPwaShell({
+                design,
+                experienceId: experience.id,
+                appName: 'shell-sw',
+                designPath: 'design/shell.json',
+                designSha256: hash('shell'),
+                externalWorkspace: false,
+            })
+        ).files,
+    };
+    files['public/sw.js'] = files['public/sw.js'].replace(
+        'requestUrl.origin !== self.location.origin',
+        'requestUrl.origin === null'
+    );
+    assert.throws(
+        () =>
+            adaptExternalShellFiles(files, {
+                profile: 'angular-pwa',
+                appName: 'shell-sw',
+            }),
+        /application shell: sw\.js is not the shell worker/
+    );
+});
+
+test('sw.js de session extérieur : jamais /api/, seulement document, manifeste et icône', async (t) => {
+    const { external } = await renderMains(t);
+    const worker = external['public/sw.js'];
+    assert.match(worker, /cmz-session-static-v1/);
+    assert.deepEqual(handled(worker, API_REQUESTS), []);
+    assert.deepEqual(
+        handled(worker, [
+            ['/', 'document'],
+            ['/index.html', 'document'],
+            ['/manifest.webmanifest', 'manifest'],
+            ['/icon.svg', 'image'],
+            ['/main-ABC.js', 'script'],
+            ['/index.html?x=1', 'document'],
+        ]).map(([url]) => url),
+        ['/', '/index.html', '/manifest.webmanifest', '/icon.svg']
     );
 });

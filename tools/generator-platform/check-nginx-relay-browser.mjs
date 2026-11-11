@@ -4,11 +4,9 @@
 //   10 : Trusted Types et politique exacte en en-tête, meta présente, aucune
 //        violation au chargement ;
 //    8 : service worker enregistré et actif (URL et portée), aucune violation ;
-//        nouveau document au rechargement ; hors ligne, serveur réellement
-//        arrêté : le document installé, servi par le service worker. Une
-//        expérience avec session est en offline_policy none : son cache ne
-//        contient que le document, le manifeste et l'icône, aucun bundle ni
-//        /api/, et aucun fonctionnement hors ligne n'est revendiqué ;
+//        nouveau document au rechargement ; cache conforme à la variante
+//        déclarée par la conception de la coque (table fermée) ; hors ligne,
+//        serveur réellement arrêté, document servi par le service worker ;
 //   cmz-sw : seconde création refusée, nom hors liste refusé ; innerHTML et
 //        new Worker par chaîne toujours bloqués.
 // Usage : --browser-proof-root <racine d'une preuve native>.
@@ -34,10 +32,75 @@ import {
 import { EXTERNAL_CSP_HEADER } from './renderers/external-content-security-policy.mjs';
 
 const READY_TIMEOUT_MS = 15_000;
+// Composant routé : le premier enfant d'app-root est le router-outlet, caché.
+const ROUTED = 'app-root router-outlet + *';
+export const SW_CACHES_API = `
+self.addEventListener('fetch', (event) => {
+    const url = new URL(event.request.url);
+    if (event.request.method !== 'GET' || !url.pathname.startsWith('/api/')) return;
+    event.respondWith(fetch(event.request).then((response) => {
+        const copy = response.clone();
+        return caches.open(CACHE).then((cache) => cache.put(event.request, copy)).then(() => response);
+    }));
+});
+`;
+const SHELL_ENTRIES = [
+    '/',
+    '/icon.svg',
+    '/index.html',
+    '/manifest.webmanifest',
+];
+
+// Attendus par variante déclarée (session, offline_policy). Une variante
+// absente de la table arrête la preuve.
+export const EXPECTATIONS = {
+    // Avec session : offline_policy none (X0) ; document, manifeste et icône
+    // seulement, version installée ; aucun démarrage hors ligne revendiqué.
+    'session:none': {
+        cache: (cached) =>
+            assert.deepEqual(cached, [
+                ['cmz-session-static-v1', SHELL_ENTRIES],
+            ]),
+        offlineDeploy: 0,
+        bootsOffline: false,
+    },
+    // Sans session : service worker de la coque, réseau d'abord ; le cache
+    // garde la coque et ses ressources de même origine, jamais /api/.
+    'shell:none': {
+        cache: (cached, files) => {
+            assert.equal(cached.length, 1);
+            assert.equal(cached[0][0], 'cmz-shell-v1');
+            const entries = cached[0][1];
+            for (const entry of SHELL_ENTRIES)
+                assert.ok(entries.includes(entry), entry);
+            for (const entry of entries.filter(
+                (path) => !SHELL_ENTRIES.includes(path)
+            ))
+                assert.ok(
+                    /^\/[A-Za-z0-9_-]+(?:-[A-Za-z0-9_]+)?\.(?:js|css)$/.test(
+                        entry
+                    ) && files.includes(entry.slice(1)),
+                    entry
+                );
+            for (const prefix of ['main-', 'polyfills-', 'styles-'])
+                assert.ok(
+                    entries.some((entry) => entry.startsWith('/' + prefix)),
+                    prefix
+                );
+        },
+        offlineDeploy: 1,
+        bootsOffline: true,
+    },
+};
 
 // Assertions communes, quel que soit le serveur. `server.update(index)` remplace
 // index.html servi ; `server.stop()` arrête réellement le serveur.
-export async function runShellBrowserChecks(launched, origin, server) {
+export async function runShellBrowserChecks(
+    launched,
+    origin,
+    server,
+    { expectation, files, api }
+) {
     const results = {};
     const check = async (name, run) => {
         try {
@@ -74,7 +137,7 @@ export async function runShellBrowserChecks(launched, origin, server) {
                 1
             );
             await page
-                .locator('app-root *')
+                .locator(ROUTED)
                 .first()
                 .waitFor({ timeout: READY_TIMEOUT_MS });
             assert.deepEqual(await violations(), []);
@@ -108,7 +171,7 @@ export async function runShellBrowserChecks(launched, origin, server) {
             );
             await page.reload();
             await page
-                .locator('app-root *')
+                .locator(ROUTED)
                 .first()
                 .waitFor({ timeout: READY_TIMEOUT_MS });
             assert.equal(
@@ -165,6 +228,43 @@ export async function runShellBrowserChecks(launched, origin, server) {
                 worker: 'TypeError',
             });
         });
+        // Garde de sécurité des deux variantes : la page appelle réellement le
+        // relais (fetch GET, fetch POST, image GET) ; le cache ne contient
+        // jamais /api/, jamais une requête autre que GET, jamais une autre
+        // origine.
+        await check('cache-security', async () => {
+            const statuses = await page.evaluate(async (base) => {
+                const image = await new Promise((done) => {
+                    const element = new Image();
+                    element.onload = element.onerror = () => done('image');
+                    element.src = base + 'ok?image';
+                });
+                return [
+                    (await fetch(base + 'ok')).status,
+                    (await fetch(base + 'echo', { method: 'POST', body: 'x' }))
+                        .status,
+                    image,
+                ];
+            }, api);
+            assert.deepEqual(statuses, [200, 200, 'image']);
+            const requests = await page.evaluate(async () =>
+                (
+                    await Promise.all(
+                        (await caches.keys()).map(async (name) =>
+                            (await (await caches.open(name)).keys()).map(
+                                (entry) => [entry.method, entry.url]
+                            )
+                        )
+                    )
+                ).flat()
+            );
+            assert.ok(requests.length > 0, 'cache vide');
+            for (const [method, url] of requests) {
+                assert.equal(method, 'GET', url);
+                assert.equal(new URL(url).origin, origin, url);
+                assert.ok(!new URL(url).pathname.startsWith('/api'), url);
+            }
+        });
         await check('8-offline-document', async () => {
             const cached = await page.evaluate(async () =>
                 Promise.all(
@@ -176,12 +276,7 @@ export async function runShellBrowserChecks(launched, origin, server) {
                     ])
                 )
             );
-            assert.deepEqual(cached, [
-                [
-                    'cmz-session-static-v1',
-                    ['/', '/icon.svg', '/index.html', '/manifest.webmanifest'],
-                ],
-            ]);
+            expectation.cache(cached, files);
             await server.stop();
             const response = await page.goto(origin + '/');
             assert.equal(response?.status(), 200);
@@ -190,11 +285,15 @@ export async function runShellBrowserChecks(launched, origin, server) {
                 true,
                 'servi par le service worker'
             );
-            // Version installée : le cache n'est pas réécrit au rechargement.
             assert.equal(
                 await page.locator('meta[name="cmz-deploy"]').count(),
-                0
+                expectation.offlineDeploy
             );
+            if (expectation.bootsOffline)
+                await page
+                    .locator(ROUTED)
+                    .first()
+                    .waitFor({ timeout: READY_TIMEOUT_MS });
             assert.equal(
                 await page
                     .locator('meta[http-equiv="Content-Security-Policy"]')
@@ -208,27 +307,63 @@ export async function runShellBrowserChecks(launched, origin, server) {
     return results;
 }
 
-// Coque avec session construite et Chromium d'une racine de preuve native.
+// Variante déclarée d'une coque Angular : session et offline_policy, lues dans
+// la conception que référence son manifeste.
+export async function shellVariant(product, app) {
+    const manifest = JSON.parse(
+        await readFile(
+            join(product, 'apps', app, '.cmz', 'app-manifest.json'),
+            'utf8'
+        )
+    );
+    if (manifest.profile !== 'angular-pwa') return null;
+    const design = JSON.parse(
+        await readFile(join(product, manifest.design_ref.path), 'utf8')
+    );
+    const experience = design.experiences.find(
+        (entry) => entry.id === manifest.experience_id
+    );
+    assert.ok(experience, `${app} : expérience introuvable`);
+    const key = `${experience.session ? 'session' : 'shell'}:${experience.offline_policy}`;
+    assert.ok(EXPECTATIONS[key], `${app} : variante non qualifiée ${key}`);
+    return key;
+}
+
+// Coques Angular construites avec service worker, et Chromium d'une racine de
+// preuve native.
 export async function fromProofRoot(root) {
-    const builds = [];
+    const shells = [];
     for (const product of (await readdir(root))
         .filter((name) => name.startsWith('product-'))
         .sort()) {
-        const apps = join(root, product, 'dist', 'apps');
-        for (const app of (await readdir(apps).catch(() => []))
-            .filter((name) => name.startsWith('session-'))
-            .sort())
-            builds.push(join(apps, app, 'browser'));
+        const dist = join(root, product, 'dist', 'apps');
+        for (const app of (await readdir(dist).catch(() => [])).sort()) {
+            const build = join(dist, app, 'browser');
+            const files = await readdir(build).catch(() => []);
+            if (!files.includes('sw.js')) continue;
+            const variant = await shellVariant(join(root, product), app);
+            if (variant)
+                shells.push({ app: `${product}/${app}`, build, variant });
+        }
     }
     const browsers = (await readdir(join(root, 'browser'), { recursive: true }))
         .filter((path) => /(?:^|\/)chrome-headless-shell$/.test(path))
         .map((path) => join(root, 'browser', path));
-    assert.ok(builds.length > 0, 'coque avec session construite introuvable');
+    for (const variant of Object.keys(EXPECTATIONS))
+        assert.ok(
+            shells.some((shell) => shell.variant === variant),
+            `aucune coque construite pour ${variant}`
+        );
     assert.equal(browsers.length, 1, 'Chromium de la preuve introuvable');
-    return { build: builds[0], browser: browsers[0] };
+    return { shells, browser: browsers[0] };
 }
 
-export async function runRelayBrowserChecks({ build, browser }) {
+export async function runRelayBrowserChecks({
+    build,
+    browser,
+    variant,
+    mutateServiceWorker = false,
+}) {
     const { files, table } = await relayFixture();
     const root = await mkdtemp(join(tmpdir(), 'cmz-nginx-browser-'));
     try {
@@ -236,6 +371,14 @@ export async function runRelayBrowserChecks({ build, browser }) {
         await rm(join(root, 'html'), { recursive: true, force: true });
         await cp(build, join(root, 'html'), { recursive: true });
         const index = join(root, 'html', 'index.html');
+        const builtFiles = await readdir(join(root, 'html'));
+        // Contre-mutation : un service worker qui met /api/ en cache.
+        if (mutateServiceWorker)
+            await writeFile(
+                join(root, 'html', 'sw.js'),
+                (await readFile(join(root, 'html', 'sw.js'), 'utf8')) +
+                    SW_CACHES_API
+            );
         return await withRelay(
             root,
             table[0].variable,
@@ -257,6 +400,11 @@ export async function runRelayBrowserChecks({ build, browser }) {
                                     change(await readFile(index, 'utf8'))
                                 ),
                             stop: async () => stopRelay(relay),
+                        },
+                        {
+                            expectation: EXPECTATIONS[variant],
+                            files: builtFiles,
+                            api: table[0].path,
                         }
                     );
                 } finally {
@@ -275,10 +423,31 @@ async function main() {
         index > 0 && process.argv[index + 1],
         'usage : --browser-proof-root <racine>'
     );
-    const results = await runRelayBrowserChecks(
-        await fromProofRoot(process.argv[index + 1])
-    );
+    const { shells, browser } = await fromProofRoot(process.argv[index + 1]);
+    const results = {};
+    for (const shell of shells)
+        for (const [name, outcome] of Object.entries(
+            await runRelayBrowserChecks({ ...shell, browser })
+        ))
+            results[`${shell.app} ${shell.variant} ${name}`] = outcome;
     let failed = 0;
+    // Contre-mutation par variante : la garde de cache devient rouge.
+    let killed = 0;
+    if (process.argv.includes('--mutations'))
+        for (const variant of Object.keys(EXPECTATIONS)) {
+            const shell = shells.find((entry) => entry.variant === variant);
+            const mutated = await runRelayBrowserChecks({
+                ...shell,
+                browser,
+                mutateServiceWorker: true,
+            });
+            const red = mutated['cache-security'] !== 'PASS';
+            console.log(
+                `${red ? 'PASS' : 'FAIL'} nginx-relay-browser/mutation sw-caches-api ${shell.app} -> cache-security ${red ? 'red' : 'still green'}`
+            );
+            if (red) killed += 1;
+            else failed += 1;
+        }
     for (const [name, outcome] of Object.entries(results)) {
         console.log(
             `${outcome === 'PASS' ? 'PASS' : 'FAIL'} nginx-relay-browser/${name}${outcome === 'PASS' ? '' : ' ' + outcome.slice(5)}`
@@ -288,7 +457,9 @@ async function main() {
     console.log(
         `nginx-relay-browser checks=${Object.keys(results).length} failed=${failed}`
     );
-    process.exitCode = failed || Object.keys(results).length !== 6 ? 1 : 0;
+    process.exitCode =
+        failed || Object.keys(results).length !== 7 * shells.length ? 1 : 0;
+    if (killed) console.log(`nginx-relay-browser mutations killed=${killed}`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
