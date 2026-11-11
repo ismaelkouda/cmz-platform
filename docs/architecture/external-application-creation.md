@@ -1358,6 +1358,13 @@ est réduit au câblage. La page n'est plus filtrée : elle est écrite dans une
 est refusé. Les comportements d'écran (tri, filtre, navigation contextuelle,
 validation) passent par le générateur.
 
+**Portée.** La grammaire, la table `api`, la connectivité de coque et la
+résolution différée de l'adresse de service ne s'appliquent qu'au profil
+extérieur (D7). Le profil interne de l'atelier (`users-management-proof`) est
+inchangé à l'octet (Π1), et aucun chemin réservé (`apps/backoffice-angular/**`,
+`Dockerfile`, `deploy/env.template.js.in`, `deploy/docker-entrypoint.sh`) ne
+change (Π4).
+
 **Quatre obligations, prouvées séparément.**
 
 - **O-G, grammaire de la page.** `core/page-grammar/` :
@@ -1414,7 +1421,11 @@ il protège chaque montée d'Angular.
 
 **Limites.** La liberté de logique de la page disparaît (R1). L'apparence est
 libre, pas les ressources : ni image ni police venant de la page, liaisons
-`[style.*]` bornées (R3). L'envoi sans adresse de service n'est pas
-reproductible dans un produit construit depuis X4-config (adresse toujours de
-même origine) : la spec de contrat et la spec de page le couvrent. Firefox et
+`[style.*]` bornées (R3). Le scénario « adresse du service absente de la
+configuration » n'est pas reproductible dans un produit construit depuis
+X4-config, où l'adresse est toujours dérivée de la même origine. Deux specs le
+couvrent : `apps/<app>/src/app/generated/pages/<page>/composition/src/page-composition.contract.spec.ts`
+(la commande échoue sans requête) et
+`apps/<app>/src/app/pages/<page>/page.component.spec.ts` (la page passe à son
+état d'erreur). Firefox et
 WebKit ne sont pas mesurés ; seul Chromium l'est.
