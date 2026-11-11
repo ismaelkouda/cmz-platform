@@ -281,6 +281,12 @@ export class ApplicationSession implements ApplicationSessionPort {
         return state && state.paths.includes(route.path) && routePermitted(route, state.permissions) ? null : this.nextPath();
     }
     authorize<T>(request: HttpRequest<T>): HttpRequest<T> | null {
+        // Chemin BRUT anormal, avant toute normalisation (CI #389, frontière du
+        // Bearer) : %, \\ ou segment . ou .. ne reçoivent jamais le Bearer, même
+        // s'ils se normalisent vers un chemin déclaré. L'analyseur d'URL décode
+        // %2e%2e en .. et le retire : le contrôle doit précéder new URL.
+        const rawPath = request.url.split(/[?#]/)[0];
+        if (/[%\\\\]/.test(rawPath) || /(?:^|\\/)\\.\\.?(?:\\/|$)/.test(rawPath)) return null;
         const matches = SESSION_CONFIGURATION.protected_operations.filter((operation) => {
             if (operation.method !== request.method) return false;
             const endpoints = this.endpoints.filter((endpoint) => endpoint.contract_id === operation.contract_id && endpoint.service_id === operation.service_id);

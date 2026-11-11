@@ -94,7 +94,21 @@ test('X4 : bon de travail puis page Connexion réalisée, publiée à la place d
             'page.component.ts',
             'realization-evidence.json',
         ]);
-        assert.deepEqual(workOrder.forbidden_literals, ['/access']);
+        // Chemin d'endpoint déclaré par le contrat du produit (versionné pour
+        // equipment-hire) : source unique, aucun littéral.
+        const contract = JSON.parse(
+            await readFile(
+                join(
+                    product.root,
+                    `descriptions/session-${domain}/backend.json`
+                ),
+                'utf8'
+            )
+        );
+        const enter = contract.operations.find(
+            (operation) => operation.id === `${domain}-enter`
+        );
+        assert.deepEqual(workOrder.forbidden_literals, [enter.path]);
         const manifest = await readManifest(product.app);
         const owned = new Map(
             manifest.generated_files.map((entry) => [entry.path, entry])

@@ -198,7 +198,9 @@ for (const { value: runtime, appType, sessionToken, fixture } of runtimes) {
                 runtime.fixture.sessionResult,
                 session.epoch()
             );
-            const url = runtime.fixture.endpoint.base_url + '/items';
+            const url =
+                runtime.fixture.endpoint.base_url +
+                runtime.fixture.operations.catalogue;
             const forbidden = firstValueFrom(client.get(url));
             http.expectOne(url).flush(
                 {},
@@ -276,7 +278,8 @@ for (const { value: runtime, appType, sessionToken, fixture } of runtimes) {
                 send(runtime.fixture.enterInput);
                 expect(session.connected()).toBe(false);
                 http.expectOne(
-                    runtime.fixture.endpoint.base_url + '/access'
+                    runtime.fixture.endpoint.base_url +
+                        runtime.fixture.operations.enter
                 ).flush(wire);
                 await component.whenStable();
                 component.detectChanges();
@@ -307,7 +310,9 @@ for (const { value: runtime, appType, sessionToken, fixture } of runtimes) {
                 );
                 const request = http.expectOne(
                     runtime.fixture.endpoint.base_url +
-                        (stage.id === 'review' ? '/consents' : '/credentials')
+                        (stage.id === 'review'
+                            ? runtime.fixture.operations.agree
+                            : runtime.fixture.operations.rotate)
                 );
                 request.flush(runtime.fixture.commandResult);
                 await component.whenStable();
@@ -338,7 +343,8 @@ for (const { value: runtime, appType, sessionToken, fixture } of runtimes) {
             component.detectChanges();
             TestBed.tick();
             const request = http.expectOne(
-                runtime.fixture.endpoint.base_url + '/items'
+                runtime.fixture.endpoint.base_url +
+                    runtime.fixture.operations.catalogue
             );
             expect(request.request.headers.get('Authorization')).toBe(
                 'Bearer fixture-token-value'

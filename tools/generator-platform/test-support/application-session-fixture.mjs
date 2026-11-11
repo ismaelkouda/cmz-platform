@@ -172,7 +172,7 @@ function declaration(domain) {
         id: id(name),
         service_id: id('service'),
         method,
-        path,
+        path: (alternate ? '/v1.0' : '') + path,
         description: 'Declared fixture operation.',
         access: access(mode),
         request: {

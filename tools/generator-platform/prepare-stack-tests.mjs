@@ -601,6 +601,13 @@ if (target === 'angular') {
                     wireResponse: data.wireResponse,
                     commandResult: data.commandResult,
                     enterInput: data.enterInput,
+                    // Chemins déclarés par le contrat du fixture (source unique).
+                    operations: Object.fromEntries(
+                        data.contract.operations.map((operation) => [
+                            operation.id.slice(domain.length + 1),
+                            operation.path,
+                        ])
+                    ),
                     endpoint: {
                         contract_id: data.contract.contract.id,
                         service_id: domain + '-service',
