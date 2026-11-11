@@ -28,6 +28,7 @@ import {
 } from '../test-support/external-application-fixture.mjs';
 import { assertProductOnlyImports } from '../test-support/external-publication-fixture.mjs';
 import { connexionRealizationFiles } from '../test-support/external-realization-fixture.mjs';
+import { sessionRenderConfiguration } from '../core/application-design-session.mjs';
 import { createApplicationSessionFixture } from '../test-support/application-session-fixture.mjs';
 import {
     confinedNode,
@@ -228,6 +229,34 @@ export const N2_SCENARIOS = Object.freeze([
     'succes-transition',
 ]);
 
+// CI #389 (e) : routes déclarées de N2, dérivées de la conception par la
+// fonction du produit (sessionRenderConfiguration), sans copie de logique ni
+// repli. Une donnée attendue absente arrête la preuve avec un message nommé.
+export function n2DeclaredRoutes(input) {
+    const experiences = input.design.experiences.filter(
+        (experience) => experience.id === input.experienceId
+    );
+    assert.equal(
+        experiences.length,
+        1,
+        'N2 : expérience de la preuve introuvable'
+    );
+    const routes = sessionRenderConfiguration(
+        input.design,
+        experiences[0]
+    ).routes.map((route) => route.path);
+    assert.ok(routes.length > 0, 'N2 : aucune route déclarée');
+    assert.ok(
+        routes.includes(input.entryPage.path),
+        'N2 : route d’entrée absente'
+    );
+    assert.ok(
+        routes.includes(input.landingPage.path),
+        'N2 : route d’accueil absente'
+    );
+    return routes;
+}
+
 // Réponse de session du fixture fictif : même déclaration que le produit.
 async function sessionFixture(domain) {
     const data = await createApplicationSessionFixture({ domain });
@@ -247,6 +276,11 @@ import { chromium } from '@playwright/test';
 // ne publie que celles-ci, filtrées par diagnosticLines().
 let stage = 'arguments';
 let currentPage;
+// Chemins de navigation (CI #389, e) : chemin final et routes attendues d'un
+// scénario N2, filtrés caractère par caractère, sans origine ni requête
+// (genre route de diagnosticLines).
+const routeDiagnostics = [];
+const routePath = (path) => String(path).replace(/[^A-Za-z0-9/_-]/g, '_').slice(0, 80);
 const http = [];
 const consoleErrors = [];
 const clean = (text) => String(text ?? '').split('\\n')[0]
@@ -264,6 +298,7 @@ async function diagnose(error) {
         for (const [directive, count] of Object.entries(counts)) lines.push('csp:' + directive + '=' + count);
     } catch { lines.push('stage:page-unreadable'); }
     for (const text of consoleErrors.slice(0, 20)) lines.push('console:' + text);
+    lines.push(...routeDiagnostics);
     process.stdout.write(lines.map((line) => 'CMZ_DIAG=' + line).join('\\n') + '\\n');
     process.exitCode = 1;
 }
@@ -467,6 +502,8 @@ try {
         assert.equal(final.search, '', label + ' : chaîne de requête');
         assert.equal(foreignHits.length - foreignBefore, 0, label + ' : seconde origine');
         assert.equal(scenarioContext.pages().length, 1, label + ' : fenêtre ouverte');
+        routeDiagnostics.length = 0;
+        routeDiagnostics.push('route:final ' + routePath(final.pathname), 'route:expected ' + [...routes].map(routePath).join(','));
         assert.ok(routes.has(final.pathname), label + ' : URL finale hors des routes déclarées');
         await scenarioContext.close();
         process.stdout.write('CMZ_N2=' + label + ' documents=1 typed_in_url=0 query=0 arrived_on_second_origin=0 windows=0 route=' + final.pathname + '\\n');
@@ -612,11 +649,9 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
             actionLabel: action.label,
             controls: page.controls.map(({ id, label }) => ({ id, label })),
             csp: cspTrapFixture(),
-            // X4-sécurité-3, N2 : routes déclarées et réponse de session du
-            // fixture fictif (même déclaration que le produit).
-            routes: (input.design.experiences[0].session?.routes ?? []).map(
-                (route) => route.path
-            ),
+            // X4-sécurité-3, N2 : routes déclarées (CI #389, e) et réponse de
+            // session du fixture fictif (même déclaration que le produit).
+            routes: n2DeclaredRoutes(input),
             successBody: (await sessionFixture(domain)).wireResponse,
         };
         assert.ok(fixture.offlineState, 'État hors ligne absent du contrat');

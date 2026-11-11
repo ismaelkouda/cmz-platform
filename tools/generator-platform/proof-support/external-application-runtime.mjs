@@ -104,6 +104,9 @@ const DIAGNOSTIC_KINDS = {
     csp: /^[a-z][a-z-]{0,40}=\d{1,5}$/,
     error: /^[\x20-\x7e]{1,240}$/,
     console: /^[\x20-\x7e]{1,240}$/,
+    // CI #389 (e) : chemin final et routes attendues d'un scénario N2, chemins
+    // de l'application seulement (aucune origine, aucune requête).
+    route: /^(?:final|expected) (?:\/[A-Za-z0-9_/-]{0,80}(?:,\/[A-Za-z0-9_/-]{0,80}){0,15})?$/,
 };
 const SECRET_SHAPES = [
     /\b(?:gh[opsu]_|github_pat_|glpat-|xox[abprs]-|sk-|AKIA|ASIA)[A-Za-z0-9_-]{4,}/,
@@ -127,7 +130,7 @@ export function diagnosticLines(output) {
         )
             continue;
         lines.push(
-            `CMZ_DIAG=${found[1]}:${found[1] === 'http' ? found[2] : value}`
+            `CMZ_DIAG=${found[1]}:${['http', 'route'].includes(found[1]) ? found[2] : value}`
         );
         if (lines.length === MAX_DIAGNOSTIC_LINES) break;
     }

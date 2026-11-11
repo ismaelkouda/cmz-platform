@@ -29,6 +29,14 @@ test('seules les lignes CMZ_DIAG de forme fermée sont gardées', () => {
         'CMZ_DIAG=console:Bearer abcdef',
         `CMZ_DIAG=console:${'a'.repeat(40)}`,
         `GITHUB_TOKEN=${FAKE_TOKEN}`,
+        // CI #389 (e) : chemins de navigation N2, chemins seuls.
+        'CMZ_DIAG=route:final /enter',
+        'CMZ_DIAG=route:expected /enter,/agree,/dashboard',
+        'CMZ_DIAG=route:expected ',
+        'CMZ_DIAG=route:final http://127.0.0.1:41234/enter',
+        'CMZ_DIAG=route:final /enter?token=abc',
+        'CMZ_DIAG=route:final enter',
+        'CMZ_DIAG=route:other /enter',
     ].join('\n');
     assert.deepEqual(diagnosticLines(output), [
         'CMZ_DIAG=stage:heading',
@@ -37,6 +45,9 @@ test('seules les lignes CMZ_DIAG de forme fermée sont gardées', () => {
         'CMZ_DIAG=http:299 /connexion',
         'CMZ_DIAG=csp:require-trusted-types-for=2',
         'CMZ_DIAG=console:Refused to load <origin>/x.png from <path>',
+        'CMZ_DIAG=route:final /enter',
+        'CMZ_DIAG=route:expected /enter,/agree,/dashboard',
+        'CMZ_DIAG=route:expected ',
     ]);
     const many = Array.from(
         { length: 80 },
