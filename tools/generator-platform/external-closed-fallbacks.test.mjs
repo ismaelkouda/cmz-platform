@@ -254,3 +254,43 @@ test('balayage : aucun repli sans sa justification sur le site', async () => {
     }
     assert.deepEqual(unmarked, []);
 });
+
+// Garde structurel (E, validation W) : un champ gouverné par le contrat de
+// l'analyseur (errors, directives, unknownBlocks, parseDiagnostics) n'est lu
+// que par parserList. Un marqueur « repli justifié » ne peut donc pas le
+// contourner. Portée par motif de fichier, sans liste de sites : la grammaire
+// et la chaîne de sécurité de la réalisation.
+test('garde structurel : les champs du contrat de l’analyseur ne se lisent que par parserList', async () => {
+    const { readdir } = await import('node:fs/promises');
+    const scoped = [
+        ...(await readdir(new URL('./core/page-grammar/', import.meta.url)))
+            .filter((name) => name.endsWith('.mjs'))
+            .map((name) => `core/page-grammar/${name}`),
+        ...(await readdir(new URL('./core/', import.meta.url)))
+            .filter((name) => /^external-page-realization-.*\.mjs$/.test(name))
+            .map((name) => `core/${name}`),
+    ];
+    assert.ok(scoped.length >= 12, scoped.join(', '));
+    const READ = /\.(errors|directives|unknownBlocks|parseDiagnostics)\b/g;
+    const unguarded = [];
+    let reads = 0;
+    for (const path of scoped) {
+        const text = await readFile(
+            new URL(`./${path}`, import.meta.url),
+            'utf8'
+        );
+        for (const match of text.matchAll(READ)) {
+            reads++;
+            const before = text.slice(
+                Math.max(0, match.index - 80),
+                match.index
+            );
+            if (!/parserList\(\s*[\w.?]*$/.test(before))
+                unguarded.push(
+                    `${path}:${text.slice(0, match.index).split('\n').length}`
+                );
+        }
+    }
+    assert.ok(reads >= 7, `lectures trouvées : ${reads}`);
+    assert.deepEqual(unguarded, []);
+});

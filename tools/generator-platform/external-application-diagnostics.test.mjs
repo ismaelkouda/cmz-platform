@@ -99,3 +99,26 @@ test('record en succès ne publie aucun diagnostic', () => {
     });
     assert.deepEqual(session.lines, ['PASS X4/fictif/ok exit=0']);
 });
+
+// R-ROUTE (Fable) : les genres http et route, publiés bruts, abandonnent une
+// ligne en forme de jeton ; les routes légitimes passent. Les faux jetons sont
+// construits à l'exécution : aucun secret n'est écrit en clair.
+test('http et route : ligne en forme de jeton abandonnée, routes légitimes publiées', () => {
+    const repeat = (unit, count) => unit.repeat(count);
+    const legit = [
+        'CMZ_DIAG=route:expected /enter,/agree,/rotate,/dashboard,/catalogue,/restricted',
+        'CMZ_DIAG=route:expected /connexion,/confidentialite,/mot-de-passe,/territorial-structure/regions',
+        'CMZ_DIAG=route:final /enter',
+        'CMZ_DIAG=http:299 /enter',
+        'CMZ_DIAG=http:200 /main-JXHWV5W3.js',
+        'CMZ_DIAG=http:502 /api/observatory-service/v1.0/access',
+    ];
+    const secret = [
+        `CMZ_DIAG=http:200 /${['ghp', '_'].join('')}${repeat('A1b2', 9)}`,
+        `CMZ_DIAG=route:final /${['AK', 'IA'].join('')}${repeat('Q7', 8)}`,
+        `CMZ_DIAG=route:final /${['s', 'k-'].join('')}${repeat('x9', 10)}`,
+        `CMZ_DIAG=http:200 /x/${repeat('aZ3_', 10)}`,
+        `CMZ_DIAG=route:expected /enter,/${repeat('Kd9-', 10)}`,
+    ];
+    assert.deepEqual(diagnosticLines([...legit, ...secret].join('\n')), legit);
+});

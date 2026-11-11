@@ -115,6 +115,18 @@ const SECRET_SHAPES = [
     /[A-Za-z0-9+/_-]{32,}/,
 ];
 const MAX_DIAGNOSTIC_LINES = 60;
+// R-ROUTE (Fable) : les genres http et route sont publiés bruts. Avant
+// publication, la ligne est abandonnée, jamais masquée, si elle porte un
+// préfixe de jeton, une affectation NOM=valeur ou un Bearer
+// (SECRET_SHAPES[0..2]), ou un segment de chemin d'au moins 32 caractères
+// [A-Za-z0-9_-]. SECRET_SHAPES[3] ne s'applique pas tel quel : sa classe
+// contient `/` et refuserait une liste de routes légitime.
+const RAW_SECRET_SHAPES = SECRET_SHAPES.slice(0, 3);
+const rawLooksSecret = (value) =>
+    RAW_SECRET_SHAPES.some((shape) => shape.test(value)) ||
+    value
+        .split(/[/,\s]/)
+        .some((segment) => /^[A-Za-z0-9_-]{32,}$/.test(segment));
 
 export function diagnosticLines(output) {
     const lines = [];
@@ -128,6 +140,8 @@ export function diagnosticLines(output) {
             ['error', 'console'].includes(found[1]) &&
             SECRET_SHAPES.some((shape) => shape.test(value))
         )
+            continue;
+        if (['http', 'route'].includes(found[1]) && rawLooksSecret(found[2]))
             continue;
         lines.push(
             `CMZ_DIAG=${found[1]}:${['http', 'route'].includes(found[1]) ? found[2] : value}`

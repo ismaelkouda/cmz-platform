@@ -533,7 +533,7 @@ Object.assign(TemplateGrammar.prototype, {
             entry.start
         );
         const mark = this.found.length;
-        if (parsed.errors.length)
+        if (parserList(parsed.errors, 'host binding errors').length)
             this.bad(
                 { start: entry.start, end: entry.start + entry.value.length },
                 'H7',
