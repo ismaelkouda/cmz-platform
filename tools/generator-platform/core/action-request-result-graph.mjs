@@ -4,38 +4,25 @@ import { basename, dirname, relative } from 'node:path';
 
 import { validateJsonSchema } from '../validate-ir.mjs';
 import { validateBackendContract } from './backend-contract.mjs';
+import { CONTRACT_GRAPH_LIMITS } from './backend-contract-reader.mjs';
 import { observationInputPrimitives as io } from './runtime-observation-evidence.mjs';
 
+// Budgets du graphe de résultat : profondeur, nœuds, chaînes et largeur
+// viennent de la lecture bornée des contrats (source unique, CI #389).
 export const ACTION_RESULT_GRAPH_LIMITS = Object.freeze({
     models: 32,
     fields: 32,
-    depth: 32,
+    depth: CONTRACT_GRAPH_LIMITS.depth,
     pointer: 256,
-    runtimeNodes: 32768,
-    runtimeArray: 2048,
+    runtimeNodes: CONTRACT_GRAPH_LIMITS.nodes,
+    runtimeArray: CONTRACT_GRAPH_LIMITS.width,
     runtimeMap: 128,
-    runtimeString: 8192,
+    runtimeString: CONTRACT_GRAPH_LIMITS.stringLength,
 });
-// Lecture d'un contrat backend en mode graphe 2.1 : un seul budget, partagé
-// par le compilateur et la cible (CI #389, jalon 1). Un contrat adopté n'est
-// pas une observation d'exécution : OBSERVATION_LIMITS (4096 nœuds) reste
-// réservé aux preuves, potentiellement hostiles. Valeurs reprises de ce graphe
-// (aucun nombre nouveau) ; le compilateur les appliquait déjà, la cible lisait
-// le même contrat avec le budget d'une observation. Mesure : contrat SEOS
-// adopté, 4570 jetons et 52 Ko, refusé à 4096.
-export const CONTRACT_GRAPH_LIMITS = Object.freeze({
-    documentBytes: 1048576,
-    depth: ACTION_RESULT_GRAPH_LIMITS.depth,
-    nodes: ACTION_RESULT_GRAPH_LIMITS.runtimeNodes,
-    stringLength: ACTION_RESULT_GRAPH_LIMITS.runtimeString,
-    width: ACTION_RESULT_GRAPH_LIMITS.runtimeArray,
-});
-
-export function parseContractGraph(document) {
-    if (Buffer.byteLength(document) > CONTRACT_GRAPH_LIMITS.documentBytes)
-        fail('AR_GRAPH_LIMIT');
-    return io.parse(Buffer.from(document), CONTRACT_GRAPH_LIMITS);
-}
+export {
+    CONTRACT_GRAPH_LIMITS,
+    parseContractGraph,
+} from './backend-contract-reader.mjs';
 
 const PRIMITIVES = new Set([
     'boolean',

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 
+import { parseContractGraph } from './backend-contract-reader.mjs';
 import { validateListQueryV2Definition } from './list-query-v2.mjs';
 
 const CONTROLLER_STATES = [
@@ -670,9 +671,12 @@ export function compileListQueryV2ExecutionModel({
         .digest('hex');
     let backendContract;
     try {
-        backendContract = JSON.parse(backendContractDocument.toString('utf8'));
+        // Lecture bornée du contrat (CI #389, X5).
+        backendContract = parseContractGraph(backendContractDocument);
     } catch (error) {
-        fail(`backend contract is not valid JSON (${error.message})`);
+        fail(
+            `backend contract is not readable within limits (${error.message})`
+        );
     }
     const definitionErrors = validateListQueryV2Definition(
         definition,

@@ -11,6 +11,7 @@ import {
 } from './core/artifact-plan.mjs';
 import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
 import { buildGenerationManifest } from './core/generation-manifest.mjs';
+import { parseContractGraph } from './core/backend-contract-reader.mjs';
 import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularListQueryV2 } from './renderers/angular-list-query-v2-renderer.mjs';
@@ -112,7 +113,16 @@ async function computeListQueryV2Model(definitionPath, definitionDocument) {
     const backendDocument = await readBackendDocument(
         definition.backend_contract.uri
     );
-    const backendContract = JSON.parse(backendDocument.toString('utf8'));
+    // Lecture bornée du contrat (CI #389, X5) : même budget que tout lecteur.
+    let backendContract;
+    try {
+        backendContract = parseContractGraph(backendDocument);
+    } catch (error) {
+        throw new Error(
+            `invalid active backend contract:\nbackend contract is not readable within limits (${error.message})`,
+            { cause: error }
+        );
+    }
     failOnErrors(
         'invalid active backend contract',
         validateBackendContract(backendContract, backendSchema)

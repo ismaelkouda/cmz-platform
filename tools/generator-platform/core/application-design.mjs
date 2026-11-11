@@ -7,6 +7,7 @@ import {
     validateBackendContract,
     verifyBackendContractSnapshots,
 } from './backend-contract.mjs';
+import { parseContractGraph } from './backend-contract-reader.mjs';
 import { resolveDataBindingSourceModel } from './data-binding-projection.mjs';
 import {
     validateExperienceGraph,
@@ -713,7 +714,16 @@ export async function loadApplicationDesignDependencies(
                 reference.sha256,
                 `${path}.snapshot_uri`
             );
-            const contract = JSON.parse(content.toString('utf8'));
+            // Lecture bornée du contrat (CI #389, X5).
+            let contract;
+            try {
+                contract = parseContractGraph(content);
+            } catch (error) {
+                throw new Error(
+                    `${path}: backend contract is not readable within limits (${error.message})`,
+                    { cause: error }
+                );
+            }
             errors.push(
                 ...validateBackendContract(contract, backendContractSchema).map(
                     (error) => `${path}: ${error}`
