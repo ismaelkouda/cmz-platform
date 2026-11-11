@@ -22,6 +22,7 @@ import {
     EXTERNAL_CSP_HEADER_PATH,
     EXTERNAL_CSP_META,
 } from './renderers/external-content-security-policy.mjs';
+import { RELAY_FILES } from './renderers/external-relay-renderer.mjs';
 import { createApplicationSessionFixture } from './test-support/application-session-fixture.mjs';
 import {
     hash,
@@ -306,7 +307,12 @@ test('X0 : la coque extérieure avec session porte son test de garde ; le mode a
         assert.deepEqual(specs(external), [spec]);
         assert.deepEqual(
             Object.keys(external).sort(),
-            [...Object.keys(atelier), spec, EXTERNAL_CSP_HEADER_PATH].sort()
+            [
+                ...Object.keys(atelier),
+                spec,
+                EXTERNAL_CSP_HEADER_PATH,
+                ...Object.values(RELAY_FILES),
+            ].sort()
         );
         assert.match(external[spec], /from '\.\/session\.guard'/);
         assert.match(external[spec], /toBeInstanceOf\(UrlTree\)/);

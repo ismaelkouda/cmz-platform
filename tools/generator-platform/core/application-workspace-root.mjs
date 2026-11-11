@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import { EXTERNAL_WORKSPACE_CMZ } from '../renderers/application-workspace-renderer.mjs';
 import { verifyApplicationOwnership } from './application-ownership.mjs';
 import {
+    assertNoLocalConfiguration,
     assertPhysicalPath,
     externalApplicationContext,
     externalFailure,
@@ -25,6 +26,7 @@ export async function ownedProductContext(options) {
     const context = await externalApplicationContext(options);
     if (!(await pathExists(resolve(context.productRoot, MANIFEST))))
         externalFailure('workspace ownership marker missing');
+    await assertNoLocalConfiguration(context.productRoot);
     return context;
 }
 

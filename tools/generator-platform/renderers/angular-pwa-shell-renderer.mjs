@@ -7,6 +7,7 @@ import {
     renderExternalSessionGuardSpec,
 } from './angular-application-session-renderer.mjs';
 import { sessionRenderConfiguration } from '../core/application-design-session.mjs';
+import { renderExternalRelayFiles } from './external-relay-renderer.mjs';
 
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
@@ -271,6 +272,43 @@ function placeholderPage(page, session = false) {
 })
 export class PageComponent {}
 `;
+}
+
+// Relais de même origine : fichiers possédés, liaisons de même origine
+// fournies à SESSION_ENDPOINTS, proxy du serveur de développement.
+function addExternalRelay(files, appName, design, experience) {
+    const relay = renderExternalRelayFiles({
+        appName,
+        config: sessionRenderConfiguration(design, experience),
+    });
+    Object.assign(files, relay.files);
+    const config = files['src/app/app.config.ts'];
+    const imported =
+        "import { applicationSessionInterceptor } from './session/session.interceptor';";
+    const provided =
+        '{ provide: APPLICATION_SESSION, useExisting: ApplicationSession }]';
+    if (
+        config.split(imported).length !== 2 ||
+        config.split(provided).length !== 2
+    )
+        throw new Error(
+            'application shell: app config is not the session config'
+        );
+    files['src/app/app.config.ts'] = config
+        .replace(
+            imported,
+            `${imported}\nimport { RELAY_ENDPOINTS } from './session/relay-endpoints';`
+        )
+        .replace(
+            provided,
+            '{ provide: APPLICATION_SESSION, useExisting: ApplicationSession }, RELAY_ENDPOINTS]'
+        );
+    const project = JSON.parse(files['project.json']);
+    project.targets.serve.options = {
+        ...project.targets.serve.options,
+        proxyConfig: `apps/${appName}/proxy.conf.mjs`,
+    };
+    files['project.json'] = json(project);
 }
 
 export async function renderAngularPwaShell({
@@ -620,6 +658,9 @@ self.addEventListener('fetch', (event) => {
         if (externalWorkspace)
             files['src/app/session/session.guard.spec.ts'] =
                 renderExternalSessionGuardSpec();
+        // X4-config : relais de même origine (topologie A), extérieur seulement.
+        if (externalWorkspace)
+            addExternalRelay(files, appName, design, experience);
     }
     const canonicalFiles = await canonicalizeGeneratedFiles(
         Object.fromEntries(

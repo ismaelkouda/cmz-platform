@@ -1232,3 +1232,85 @@ sa préparation. Après préparation, les règles sont rejouées sur la page pub
 - Les mesures « inertes » sont faites dans Chromium seulement ; une requête dans
   un autre moteur relèverait de `default-src 'self'`.
 - La règle métier inventée reste du ressort de la revue humaine.
+
+## Relais de même origine et configuration d'exécution — X4-config
+
+Topologie A (décision du propriétaire) : l'application et ses services sont
+joints depuis une seule origine. Le navigateur ne connaît que des chemins
+`/api/<service_id>/` ; les adresses des services ne vivent que dans les
+variables de l'opérateur `CMZ_UPSTREAM_<SERVICE>`, lues par nginx au
+démarrage. Il n'y a pas d'`env.js` dans la coque extérieure (ADR-0007,
+amendement du 2026-11-11, portée : produits extérieurs, topologie A).
+
+**Une seule table de chemins**, générée depuis les services de la session de la
+conception, est lue à l'identique par :
+
+- `src/app/session/relay-endpoints.ts` : fournit `SESSION_ENDPOINTS`
+  (`base_url = new URL('/api/<svc>/', location.origin)`, `[]` hors
+  navigateur), branché dans `app.config.ts` ;
+- `deploy/nginx/templates/default.conf.template` : un bloc
+  `location ^~ /api/<svc>/` par service ;
+- `deploy/nginx/docker-entrypoint.d/15-cmz-upstreams.envsh` : validation ;
+- `proxy.conf.mjs` : proxy du serveur de développement (`proxyConfig` de la
+  cible `serve`).
+
+**Gabarit nginx** (rendu par l'image officielle, `/etc/nginx/templates`,
+`NGINX_ENVSUBST_FILTER=^CMZ_`) :
+
+- un seul niveau d'en-têtes : CSP et COOP (X4-sécurité), `nosniff`, CORP,
+  `Referrer-Policy`, XFO, `Permissions-Policy`, tous `always`, et
+  `Cache-Control` par une `map` ; aucune `location` n'a d'`add_header` ;
+- `map $uri` : `no-cache` pour le document, `sw.js` et le manifeste ; immuable
+  pour les bundles ; **aucun** en-tête sous `/api/` (entrée `~^/api/` vide,
+  avant la regex d'assets) : le service gouverne son cache ;
+- `proxy_pass` littéral, `proxy_redirect` par défaut (un `Location` interne
+  devient `/api/<svc>/…`), `proxy_cookie_path / /api/<svc>/`,
+  `X-Forwarded-Proto` par `map`, `X-Forwarded-Host/For/Prefix` ;
+- `/api/` inconnu et `/api` : 404, jamais le repli SPA ; `try_files $uri
+  /index.html` ; `absolute_redirect off`, `server_tokens off`,
+  `client_max_body_size 10m`, `proxy_read_timeout 60s`.
+
+**Invariant d'échappement.** Seules les variables de l'opérateur, en
+majuscules `CMZ_*`, sont écrites `${…}` ; nginx garde ses variables en
+minuscules. Les noms de variables nginx ignorent la casse : aucune variable
+nginx ne porte le nom, en minuscules, d'une variable de l'opérateur (mesuré :
+`set $cmz_upstreams_validated "${CMZ_UPSTREAMS_VALIDATED}"` se référençait
+lui-même, et nginx acceptait la configuration).
+
+**Validation avant nginx, sans valeur.** Le `.envsh`, sourcé par l'entrypoint
+officiel avant le rendu des gabarits, refuse un filtre autre que `^CMZ_` et
+toute variable absente, vide ou hors de
+`^http://hôte[:port]/` (chemin facultatif, `/` final) ; il n'écrit que le nom
+(`CMZ_UPSTREAM_<SVC>_MISSING|_EMPTY|_INVALID`) et n'exporte
+`CMZ_UPSTREAMS_VALIDATED` qu'en cas de succès. La garde
+`set $cmz_relay_guard "${CMZ_UPSTREAMS_VALIDATED}"` fait refuser la
+configuration si le script n'a pas tourné (non monté ou non exécutable). La
+publication écrit ce seul fichier en `0755`.
+
+**Fichiers locaux hors du produit (T3).** Le proxy de développement lit ses
+cibles dans le fichier désigné par `CMZ_DEV_PROXY_FILE`, refusé s'il est sous
+la racine du produit (chemins réels) ; la commande de référence lit ses
+variables par `--env-file` hors du produit. Toute commande de l'atelier sur un
+produit existant refuse la présence de `proxy.local.json`, `.env` ou `.env.*`
+sous sa racine ou sous `apps/<app>/`, avec ou sans Git. Cette liste est la
+portée de T3 ; un secret au nom arbitraire relève du balayage anti-fuite
+général.
+
+**Image.** `tools/generator-platform/nginx-harness/Dockerfile` (`FROM
+nginx:<tag>@sha256:<digest>`) en est la seule source, suivie par Dependabot
+(écosystème `docker`, groupe `nginx-relay`). `check:nginx-digest` vérifie en CI
+que l'empreinte correspond encore au tag : concordance, empreinte périmée, ou
+vérification impossible (registre injoignable) ; jamais de vert par défaut.
+
+**Preuves.** `external-relay.test.mjs` (table unique, gabarit et invariant,
+script de validation par `sh`, proxy de développement sur chemins réels, mode
+des fichiers, refus de présence avec et sans Git) ; `check:nginx-relay` sur
+l'image épinglée (matrice d'en-têtes sur onze chemins, ce que reçoit l'amont,
+redirection et cookie, arrêt en code non nul de chaque cas d'échec sans
+valeur écrite, `nginx -t` par l'entrypoint, invariant sur la configuration
+rendue, contre-mutations) ; la preuve native vérifie que l'envoi de la page
+réalisée part en un seul `POST /api/<svc>/…` de même origine. Elle ne teste pas
+nginx : seule la CI Linux le prouve.
+
+La coque ne se republie pas : un produit créé avant X4-config ne reçoit ces
+fichiers qu'en recréant son application.

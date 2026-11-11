@@ -407,7 +407,9 @@ export * from './native-errors/http/server-response.error';
     return files;
 }
 
-export function renderSessionEndpointTokens(config) {
+// Services de la session : identifiant → contrat, sans collision de nom de
+// jeton. Source des jetons de service et, en extérieur, du relais (X4-config).
+export function sessionServices(config) {
     const services = new Map();
     for (const operation of config.protected_operations) {
         const previous = services.get(operation.service_id);
@@ -420,6 +422,11 @@ export function renderSessionEndpointTokens(config) {
         services.size
     )
         throw new Error('APP_SESSION_ENDPOINT_COLLISION');
+    return services;
+}
+
+export function renderSessionEndpointTokens(config) {
+    const services = sessionServices(config);
     return `import { InjectionToken, inject } from '@angular/core';
 import { SESSION_ENDPOINTS } from './session.types';
 import { SessionFailure } from './session.projection';

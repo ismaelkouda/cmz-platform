@@ -275,6 +275,13 @@ const server = createServer(async (request, response) => {
         pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
         served.push(pathname);
         const status = (code) => http.push(code + ' ' + pathname.replace(/[^A-Za-z0-9._~%\\-/]/g, '_').slice(0, 120));
+        // X4-config : le serveur de la preuve joue le relais sans amont, comme
+        // nginx sans service joignable (502) ; il ne sert jamais la page sous /api/.
+        if (pathname.startsWith('/api/')) {
+            status(502);
+            response.writeHead(502);
+            return response.end();
+        }
         if (extra.has(pathname)) {
             const [type, body] = extra.get(pathname);
             status(200);
@@ -339,7 +346,7 @@ try {
             external.push(true);
             return route.abort();
         }
-        if (request.method() !== 'GET') writes.push(request.method());
+        if (request.method() !== 'GET') writes.push(request.method() + ' ' + new URL(request.url()).pathname);
         return route.continue();
     });
     const page = await context.newPage();
@@ -363,11 +370,14 @@ try {
     await page.waitForLoadState('networkidle');
     stage = 'realized-page-checks';
     assert.deepEqual(external, [], 'Requête extérieure interdite');
-    assert.deepEqual(writes, [], 'Aucune requête d’envoi sans adresse de service');
+    // X4-config : l'envoi part vers le relais de même origine, une seule fois.
+    assert.equal(writes.length, 1, 'Un seul envoi attendu');
+    assert.match(writes[0], /^POST \\/api\\/[a-z][a-z0-9-]*\\/[A-Za-z0-9._~\\/-]*$/, 'Envoi hors du relais de même origine');
+    process.stdout.write('CMZ_RELAY=' + writes[0] + '\\n');
     // Page réalisée sous la politique de la coque : aucune violation, aucune
     // requête hors des fichiers du bundle (M-3).
     assert.deepEqual(await page.evaluate(() => globalThis.__cmzViolations), [], 'Violation de la politique sur la page réalisée');
-    const outside = served.filter((path) => path !== '/' && path !== fixture.entryPath && !bundle.has(path));
+    const outside = served.filter((path) => path !== '/' && path !== fixture.entryPath && !bundle.has(path) && !path.startsWith('/api/'));
     assert.deepEqual(outside, [], 'Requête hors bundle');
     // Hors ligne émulé : l'état hors ligne du contrat est affiché, l'état
     // prêt ne l'est pas, et l'envoi est impossible (aucune requête).
@@ -544,6 +554,18 @@ export async function qualifyRealizationBrowser(session, shells, browser) {
                     ],
                     { browser, timeoutMs: 120_000 }
                 )
+            );
+            // X4-config : l'envoi part vers le relais de même origine.
+            const relay = opened.stdout
+                .split('\n')
+                .find((entry) => entry.startsWith('CMZ_RELAY='));
+            assert.match(
+                relay ?? '',
+                /^CMZ_RELAY=POST \/api\/[a-z][a-z0-9-]*\/[A-Za-z0-9._~/-]*$/,
+                'Envoi vers le relais non prouvé'
+            );
+            session.lines.push(
+                `PASS X4C/${domain}/same-origin-relay ${relay.slice('CMZ_RELAY='.length)} only, no other origin`
             );
             // Connectivité émulée : les deux états du contrat sont prouvés.
             assert.ok(
